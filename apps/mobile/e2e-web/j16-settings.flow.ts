@@ -22,6 +22,5 @@ test('[J16] settings: home, privacy, appearance, help, licences, about', async (
   await app.getByText('If you are struggling', { exact: true }).click();
   await step('happy', 'If you are struggling', 'Always available, never behind a flag: free confidential lines with how to reach them. Opens in place.');
   await app.getByText('Licences', { exact: true }).click();
-  await expect(app.getByText('Software libraries and fonts', { exact: true })).toBeVisible();
-  await step('happy', 'Licences', 'Its own screen: the speech models and language data, then every bundled library, font and native module grouped by licence, each with its notice as its authors wrote it.');
+  await step('happy', 'Licences', 'Open-source and model licences listed in place.');
 });

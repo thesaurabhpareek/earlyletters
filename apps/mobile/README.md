@@ -31,7 +31,7 @@ npm run typecheck -w @scribe/mobile
 | `src/app` | Screens and routes (Expo Router, file-based) |
 | `src/components` | UI components, grouped by feature |
 | `src/lib` | Device-side logic: local database, capture, transcription, dates, copy. See `src/lib/README.md` |
-| `src/generated` | Files a script writes and git keeps. `licences.json`: every bundled library's notice for Settings > Licences. Run `npm run licences:generate -w @scribe/mobile` after any dependency change; `test/licences.test.ts` fails while it is stale |
+| `src/generated` | Files a script writes and git keeps. `licences.json`: every bundled library's notice, read through `src/lib/licences.ts` by the Licenses page. Run `npm run licences:generate -w @scribe/mobile` after any dependency change; `test/licences.test.ts` fails while it is stale |
 | `modules/` | Local native modules (hand-written Swift lives in `modules/*/ios`) |
 | `test/` | Vitest unit tests for the pure parts of `src/lib` (run in Node, no React Native) |
 | `web-preview/` | Web-only Metro shims used by `metro.config.js` |

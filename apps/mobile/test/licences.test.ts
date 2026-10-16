@@ -1,7 +1,8 @@
 /**
- * Licence notices (release requirement; the Licences screen, BL-404). The app ships the notice of
- * every production npm package, bundled font and third-party native module, because MIT, BSD,
- * Apache and ISC ask for it. src/generated/licences.json is made by scripts/licences/generate.mjs
+ * Licence notices (release requirement; read by the Licenses page, EXPERIENCE_PASS_2026-10 P6).
+ * The app ships the notice of every production npm package, bundled font, third-party native
+ * module and vendored file, because MIT, BSD, Apache and ISC ask for it.
+ * src/generated/licences.json is made by scripts/licences/generate.mjs
  * (`npm run licences:generate -w @scribe/mobile`). These tests fail when that file is missing,
  * empty or stale against package-lock.json, so a dependency change cannot ship without it being
  * regenerated. The lockfile walk itself is proved on a small synthetic lockfile. Only the
@@ -30,7 +31,7 @@ import {
   vendoredEntries,
   workspaceNames,
 } from '../../../scripts/licences/lib.mjs';
-import type { Notices } from '../src/lib/licences';
+import { noticeKey, noticeText, notices, type Notices } from '../src/lib/licences';
 
 const REPO = join(__dirname, '..', '..', '..');
 const FILE = join(REPO, OUTPUT);
@@ -142,6 +143,18 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(n.licences.find((g) => g.entries.includes(e!))?.id).toBe(v.licence);
       expect(n.texts[e!.text!], v.file).toBe(vendoredEntries(REPO, JSON.parse(readFileSync(join(REPO, 'package-lock.json'), 'utf8')), [v])[0].text);
     }
+  });
+});
+
+describe('what the Licenses page reads (src/lib/licences.ts)', () => {
+  it('is the generated file, with a unique key and a readable notice for each row', () => {
+    expect(notices.dependencyHash).toBe(load().dependencyHash);
+    const entries = notices.licences.flatMap((g) => g.entries);
+    expect(new Set(entries.map(noticeKey)).size).toBe(entries.length);
+    const react = entries.find((e) => e.name === 'react')!;
+    expect(noticeText(react)).toMatch(/^MIT License/);
+    expect(noticeText({ name: 'none', kind: 'library', text: null })).toBeNull();
+    expect(noticeKey({ name: 'Mukta', kind: 'font', text: 0 })).toBe('Mukta');
   });
 });
 

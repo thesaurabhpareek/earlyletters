@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Writes apps/mobile/src/generated/licences.json: the licence notice of every production npm
- * package in the app's tree, every bundled font and every third-party native module, grouped by
- * licence, for Settings > Licences (MIT, BSD, Apache and ISC ask for the notice to ship with the
- * code).
+ * package in the app's tree, every bundled font, every third-party native module and every
+ * vendored file, grouped by licence, for the Licenses page (MIT, BSD, Apache and ISC ask for the
+ * notice to ship with the code). The app reads it through apps/mobile/src/lib/licences.ts.
  *
  *   npm run licences:generate -w @scribe/mobile              # after any dependency change
  *   npm run licences:generate -w @scribe/mobile -- --check   # exit 1 when the file would change; writes nothing

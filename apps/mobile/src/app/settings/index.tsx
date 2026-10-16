@@ -13,6 +13,7 @@ import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
 import { listChildren, subscribe, type Child } from '@/lib/store';
+import { licences } from '@scribe/content';
 
 /**
  * Settings home (PRD C, C-REQ-016; PRD B section 9). Every destination is one tap from here.
@@ -23,8 +24,8 @@ import { listChildren, subscribe, type Child } from '@/lib/store';
  * Delete account are not offered; letters live on this phone and leave it only by Export.
  *
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014).
- * "If you are struggling" is always here, never behind a flag (D-034), and opens in place.
- * Licences has its own screen (BL-404): it carries every bundled library's notice.
+ * "If you are struggling" is always here, never behind a flag (D-034). Licences and the
+ * support lines open in place, so nothing here needs its own screen.
  */
 const ROUTES = {
   account: '/settings/account',
@@ -38,7 +39,6 @@ const ROUTES = {
   recordings: '/settings/recordings',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
-  licences: '/settings/licences',
 } as const;
 
 const go = (route: string) => () => router.push(route as Href);
@@ -142,7 +142,38 @@ export default function Settings() {
         </Disclosure>
         <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
         <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
-        <ListRow title={h.licencesLabel} trailing="chevron" onPress={go(ROUTES.licences)} />
+        <Disclosure title={h.licencesLabel}>
+          <Text variant="subhead">{licences.intro}</Text>
+          {licences.sections.map((sec) => (
+            <View key={sec.title} className="gap-1">
+              <Text variant="footnote" caps asHeading>
+                {sec.title}
+              </Text>
+              {sec.items.map((it) => (
+                <View key={it.name} accessible className="gap-0.5">
+                  <Text variant="subhead">{it.name}</Text>
+                  <Text variant="footnote">{it.by === it.name ? it.licence : `${it.by}, ${it.licence}`}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
+          <View className="gap-1">
+            <Text variant="footnote" caps asHeading>
+              {licences.packsTitle}
+            </Text>
+            {licences.packs.map((line) => (
+              <Text key={line} variant="subhead" selectable>
+                {line}
+              </Text>
+            ))}
+          </View>
+          <View className="gap-1">
+            <Text variant="footnote" caps asHeading>
+              {licences.librariesTitle}
+            </Text>
+            <Text variant="subhead">{licences.libraries}</Text>
+          </View>
+        </Disclosure>
       </ListSection>
 
       <ListSection title={copy.settings.about.title} footer={`${copy.settings.neverRewrite} ${copy.trust.short}`}>
