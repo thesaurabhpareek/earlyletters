@@ -21,6 +21,8 @@
 // Experience pass (docs/design/EXPERIENCE_PASS_2026-10.md, package P0): keys marked
 // "retired by EXPERIENCE_PASS_2026-10; delete in P7" are no longer shown once their screen package lands.
 // They stay until P7 so screen code that still reads them keeps compiling. Never reuse their words.
+// Keys marked "held until Pn" keep their old words on purpose: today's screen would show the new words wrongly.
+// The new words are in section 4 of the spec, and that package switches them together with its screen.
 
 import { brand } from '@scribe/brand';
 
@@ -69,7 +71,7 @@ export const en = {
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
-      sampleLabel: "Sample",
+      sampleLabel: "For example",
       sampleRaw: "Today, um, you you held the spoon all by yourself.",
       sampleHint: "Word for word marks every small fix. Tap one to put it back.",
       recordingTitle: "Your voice stays too", // retired by EXPERIENCE_PASS_2026-10; delete in P7
@@ -91,7 +93,7 @@ export const en = {
       birthdayLabel: "Birthday",
       birthdayHelp: "We sort letters by {child}'s month of age.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       expectingLabel: "Not here yet",
-      expectingHelp: "Letters written before the birthday go in Before You.",
+      expectingHelp: "Letters written before the birth go in Before You.",
       dueDateLabel: "Due date",
       // Twins: removes an extra name row.
       removeA11y: "Remove {child}",
@@ -228,7 +230,8 @@ export const en = {
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
     draftWaiting: {
-      title: "A recording is ready to read back.",
+      // Held until P3: today's single waiting card shows this for typed drafts too (spec S09 has the new words).
+      title: "A letter is waiting to be read back.",
     },
     // One card per unfinished letter on Tonight, newest first, never a total (S09). A card shows the person's own
     // first words when it has them; these are the state lines and actions. Spoken and waiting for its words reuses
@@ -306,7 +309,7 @@ export const en = {
     headerToNewborn: "To {child} · The first weeks",
     headerToBefore: "To {child} · Before You",
     // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
-    waitingLong: "A long recording takes a little longer.",
+    waitingLong: "Long recordings take a little more time.",
     laterButton: "Read it back later",
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
@@ -318,11 +321,12 @@ export const en = {
     },
     // Review opened with nothing to read back (a stale link, S23). `errors.generic` stays for real failures.
     noDraft: {
-      title: "Nothing to read back here.",
+      title: "Nothing to read back here",
       button: "Go to the book",
     },
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
-    saveFailed: "That did not save.",
+    // The words are safe first, then what happened (VOICE).
+    saveFailed: "Your words are still here. That did not work this time.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -332,7 +336,7 @@ export const en = {
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     // Zero fixes, three honest wordings.
-    noChanges: "No fixes. This is exactly what you said.",
+    noChanges: "Nothing to fix. This is exactly what you said.",
     noChangesAfterUndo: "Every fix put back. This is exactly what you said.",
     // A language with no fix rules yet: never a "nothing needed fixing" claim there.
     noChangesNoRules: "Exactly as you said it.",
@@ -353,7 +357,7 @@ export const en = {
     voiceOnlyButton: "Keep the recording",
     waiting: {
       title: "Your voice is kept",
-      body: "The words follow once this phone is ready.",
+      body: "The words follow after the one-time download.",
     },
     // Development builds only: the sample transcriber's words are never saved.
     dev: {
@@ -411,10 +415,10 @@ export const en = {
       privateButton: "Keep private",
       privateHelp: "Private letters stay with you. You can add them to the book later.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       addedToast: "Added to {child}'s book.",
-      // The saved moment's chip: where the letter was filed (S21, MOTION 5e).
-      filedChip: "Filed in Month {month}",
-      filedChipNewborn: "Filed in the first weeks",
-      filedChipBefore: "Filed in Before You",
+      // The saved moment's chip: where the letter now sits in the book (S21, MOTION 5e).
+      filedChip: "Kept in Month {month}",
+      filedChipNewborn: "Kept in the first weeks",
+      filedChipBefore: "Kept in Before You",
       privateToast: "Kept just for you.",
       voiceOnlyToast: "Recording kept on this phone.",
     },
@@ -531,8 +535,9 @@ export const en = {
     previousButton: "Back one",
     replayButton: "Hear it again",
     autoplayLabel: "Keep playing",
-    // The dateline (S30): the month first, then who signed it.
-    nowReading: "Month {month} · From {signsAs}",
+    // The dateline (S30): the month first, then who signed it. nowReading is held until P5: today's screen
+    // builds the first-weeks and Before You datelines its own way, so the new words would mix two formats.
+    nowReading: "{signsAs}, Month {month}",
     nowReadingNewborn: "The first weeks · From {signsAs}",
     nowReadingBefore: "Before You · From {signsAs}",
     // VoiceOver only; the screen shows a hairline progress line, never "1 / 5".
@@ -542,7 +547,7 @@ export const en = {
     empty: "Letters you add to the book will be here to read together.",
     // The app adds no sentiment of its own; the letters carry the love (VOICE, the app's own words).
     endOfMonth: "That was Month {month}.",
-    endOfMonthAlt: "That was Month {month}.",
+    endOfMonthAlt: "That was Month {month}.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (now the same as endOfMonth)
     endOfBook: "That is every letter so far. More are still being written.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
@@ -773,7 +778,8 @@ export const en = {
       // Option B (D-100): a synced letter is not only on this phone, so the erase lines name no place.
       // Counsel claims review (listed in the P0 pull request).
       eraseNowBody: "The letter and its recording are erased for good.",
-      restoredToast: "Back in {child}'s book.",
+      // Held until P5: the shelf shows this toast without filling {child} (spec S38 has the new words).
+      restoredToast: "Letter restored.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
@@ -953,9 +959,11 @@ export const en = {
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
     // Off: "Type instead" first, "Open Settings" quiet. Busy and full: `common.tryAgainButton` and `micDenied.typeButton`.
+    // micDenied title and body are held until P4: today every start failure (a call holding the microphone,
+    // a full phone) lands on this screen, so "The microphone is off" would be untrue there (spec S13).
     micDenied: {
-      title: "The microphone is off",
-      body: "Turn it on in Settings, or type this one.",
+      title: "We can't hear you yet",
+      body: "Allow the microphone in Settings to speak your letters. Or type instead.",
       settingsButton: "Open Settings",
       typeButton: "Type instead",
     },
@@ -990,27 +998,28 @@ export const en = {
       body: "Your words are safe. Please try again.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
+    // Error and state titles carry no full stop.
     crash: {
-      title: "This screen could not be shown.",
+      title: "This screen could not be shown",
       body: "Your letters and recordings are safe on this phone.",
       tryAgainButton: "Try again",
       tonightButton: "Go to Tonight",
     },
     // A link or route the app does not have (replaces the router's developer page).
     notFoundPage: {
-      title: "Nothing at this link.",
+      title: "Nothing at this link",
       body: "Your book is right where you left it.",
       button: "Back to Tonight",
     },
     // The book could not be opened at launch (database open or update step failed). Never deletes anything.
     launch: {
-      title: "The book could not open.",
+      title: "The book could not open",
       body: "Your letters and recordings are safe on this phone. Nothing has been removed.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "No recordings or files to export were found on this phone.",
+      exportNothing: "There are no recordings or files on this phone to export.",
       exportFailed: "The export could not be made, and nothing was changed. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
@@ -1033,7 +1042,7 @@ export const en = {
     previewEmpty: "Aa",
     // No timed return to the book (TDD 09 A11Y-F03).
     deletedBody: "It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-    notFoundTitle: "This letter is not in the book.",
+    notFoundTitle: "This letter is not in the book",
     // Shown only when a deleted copy of this letter is on the shelf (S37).
     notFoundDeleted: "It is in Recently deleted.",
     openShelfButton: "Open Recently deleted",
@@ -1228,13 +1237,15 @@ export const en = {
   },
 
   // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.
-  // The stop screen is one line (S02, LEGAL-REQ-002): the app "is currently for adults 18 and over".
+  // The stop screen becomes one line in P2 (S02, LEGAL-REQ-002): the app "is currently for adults 18 and over".
   ageGate: {
     title: "Are you 18 or older?",
     body: "We ask everyone the same question.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     yesButton: "Yes",
     noButton: "No",
-    stopTitle: "{app} is currently for adults 18 and over.",
+    // Held until P2: today's stop screen also shows stopBody, so the new title would repeat its sentence
+    // (spec S02 has the new words).
+    stopTitle: "Thank you for telling us.",
     stopBody: "{app} is currently for adults 18 and over.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (its sentence became the title)
     // Only partly true (the time of the No is stored, D-026), and it refers to nothing.
     stopNote: "Nothing you entered has been kept.", // retired by EXPERIENCE_PASS_2026-10; delete in P7

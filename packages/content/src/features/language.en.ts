@@ -40,6 +40,7 @@ export const languageCopy = {
     noSpace: 'Needs {size} of free space',
     needsUpdate: 'Needs the latest version of the app',
     paused: 'Downloads are paused for now',
+    notReady: 'Not available yet',
     retry: 'Did not finish. Tap to try again.',
     downloadNow: 'Download now on cellular data',
   },

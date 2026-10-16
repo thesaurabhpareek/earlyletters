@@ -6,8 +6,8 @@ Generated from the web end-to-end flows (`apps/mobile/e2e-web/*.flow.ts`), run a
 visible text read from the page.
 
 - Journeys: **20**, steps: **116** (happy 87, unhappy 29), screenshots: **116**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
-- Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), `screens/<id>.png`, `screens/<id>-full.png`.
-- Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
+- Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines) and this index are tracked. `screens/<id>.png`, `screens/<id>-full.png` and the PDF are generated output and are not committed: the Screen links below resolve after a local run or inside the packed zip (`apps/mobile/e2e-web/support/pack-journey.sh`), not on GitHub. See `README.md` next to this file.
+- Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `npm run e2e:web:index -w @scribe/mobile`; `npm run e2e:web:pack -w @scribe/mobile` zips the record, screens and PDF into one artifact.
 - Seeded steps use the fictional family Asha (the web preview switch `EXPO_PUBLIC_WEB_PREVIEW=1`, `?seed=asha`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
 - Safe areas: a browser applies 0 to the top and bottom insets. Each step records `safeArea.appliedOnWeb` and the iPhone 17 Pro nominal insets (top 62, bottom 34) the device frame should keep clear.
 

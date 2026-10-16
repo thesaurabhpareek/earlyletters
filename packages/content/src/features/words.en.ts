@@ -25,10 +25,10 @@ export const wordsCopy = {
     askTitle: 'Get your {name} words ready',
     askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
     askButton: 'Download on Wi-Fi',
-    // The Wi-Fi wait card: one time, this download only. US term (D-087). The spec's "Use cellular data {size}"
-    // is 24 characters and the button budget is 22 (rules.test.ts), so the size follows a comma, as in
-    // `speechSettingsCopy` ("Waits for Wi-Fi, {n} MB").
-    mobileDataButton: 'Use cellular, {size}',
+    // The Wi-Fi wait card: one time, this download only. US term (D-087). The button names the size from this
+    // phone's plan (test/speech-consent.test.ts), and "Use cellular data {size}" is over the 22-character budget
+    // (rules.test.ts), so the size comes first: "Use 575 MB of cellular".
+    mobileDataButton: 'Use {size} of cellular',
     // Review: why a take stopped early, above the sheet (S14).
     stoppedInBackground: 'The recording stopped when you left the app. Everything before that is kept.',
     stoppedInterruption: 'The recording stopped for a call or an alert. Everything before that is kept.',
