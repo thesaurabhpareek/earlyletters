@@ -43,6 +43,11 @@ const nAdded = await letter(N, true);
 await as(B, `select public.review_family_letter($1, 'added')`, [nAdded]);
 await as(A, `update entries set final_text = 'She walked to me.' where id=$1`, [aBook]);
 const photo = `${CHILD}/${A}/${aBook}.jpg`;
+// 20261016000000: one held draft of A's, and one marker, so "0 rows" means "denied", not "empty".
+const aHeld = '0192f000-0000-7000-8000-0000000000aa';
+await as(A, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', 'You smiled.')`, [aHeld, A, CHILD]);
+await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'discarded')`, ['0192f000-0000-7000-8000-0000000000ab', A, CHILD]);
 await as(A, `update entries set photo_path=$1 where id=$2`, [photo, aBook]);
 await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
 await as(A, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, CHILD]);
@@ -124,6 +129,12 @@ const READS = [
   // 20261015030000 (F16-REQ-028): members read the date precision and direction; never the author layer.
   ['book_entries: date precision and direction', 'select 1, occurred_precision, base_direction from book_entries where child_id=$1', [CHILD], [4, 3, 2, 0, 0, '42501']],
   ['entries: author layer (own rows only)', 'select 1, author_edits, locked_spans, pack_ref from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
+  // 20261016000000 (WP-F16-17, M17): held drafts are the author's only, while a parent of the book; markers are
+  // reached only through sync_pull; the words version and the review mark are own-row columns.
+  ['held_drafts', 'select 1 from held_drafts', [],                                    [1, 0, 0, 0, 0, '42501']],
+  ['held_drafts_gone', 'select 1 from held_drafts_gone', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['entries: words version and review mark (own rows only)', 'select 1, text_xid, words_reviewed_at from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
+  ['book_entries: no review mark', 'select 1, words_reviewed_at from book_entries', [], ['42703', '42703', '42703', '42703', '42703', '42703']],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -161,6 +172,13 @@ const WRITES = [
   ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261016000000 (WP-F16-17): a parent writes their own held drafts (sync_push runs as the caller); nobody
+  // deletes one directly (held.discard, Erase now and Keep are the paths); markers are definer-only.
+  ['held_drafts: insert own', `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+    values ('${NEW_ID}', auth.uid(), '${CHILD}', 'held_letter', 'typed', now(), '2026-09-29')`, ['ok', 'ok', '42501', '42501', 'SCANO', '42501']],
+  ['held_drafts: edit A\'s draft', `update held_drafts set typed_text = 'x' where id = '${aHeld}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
+  ['held_drafts: delete A\'s draft', `delete from held_drafts where id = '${aHeld}'`,   ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['held_drafts_gone: write a marker', `insert into held_drafts_gone (id, author_id, child_id, gone) values ('${NEW_ID}', auth.uid(), '${CHILD}', 'erased')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
 // Plus is checked on the device only (ADR 0013, 20261004000000_plus_on_device_only.sql):
