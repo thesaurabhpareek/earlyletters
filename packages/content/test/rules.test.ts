@@ -559,6 +559,13 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders([...leaves(storeListing, 'store'), ...onboardingStories.map((c) => ({ path: c.id, text: `${c.headline} ${c.line}` }))], FAMILY)).toEqual([]);
   });
 
+  it('promises no sharing in the store listing while v1.0 is on-device only (D-085, BL-440)', () => {
+    // Co-parent sharing, sign-in and sync are v1.1 (founder, 3 and 15 Oct 2026). App Review 2.3.1: the listing
+    // describes only what this build does. Remove this test when the server-features switch turns on.
+    const SHARING = /\b(co-?parent|invite|people you invite|write (it )?together|share (your|the) book|sign in|account to sync)\b/i;
+    expect(offenders(leaves(storeListing, 'store'), SHARING)).toEqual([]);
+  });
+
   it('names the seven v1.0 languages in the store listing (D-056)', () => {
     for (const lang of ['English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic', 'Portuguese']) {
       expect(storeListing.description, lang).toContain(lang);
