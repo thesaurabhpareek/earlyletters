@@ -29,6 +29,10 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
 
+**Added 15 Oct, from the first two weeks.**
+- **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
+
 ## 3. Memory: how you keep context between runs
 
 1. **Read before you work:** your charter, `agents/<handle>/MEMORY.md`, and the journal excerpt in your brief (your last entries plus any founder instructions since then).
@@ -46,6 +50,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 ## 4. Branches, commits and pull requests
 
 - Base branch: `develop`. Never push to `develop` or `main`. Never merge, approve, close or force-push anything.
+- **New ids** (BL-###, D-###, ADR numbers): run `node scripts/agents/next-id.mjs` and use what it prints. It counts `develop` and every open PR. Picking the next number by reading `develop` alone collided three times in the first two weeks.
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
@@ -58,7 +63,9 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 ## 5. The journal entry (one per run)
 
-Post it with `gh issue comment <journal number> --body-file <file>`. Use this shape, with no other headings:
+**Post a stub first, finish it last.** Usage limits stopped several runs before they could report. As soon as you know your assignment, post a stub (the marker line, then the **Mode:** line, then `**Did:** started`). At the end, replace it with the full entry: `gh api -X PATCH repos/<repo>/issues/comments/<id> -F body=@<file>`. Use capital `-F`; a lowercase `-f body=@<file>` posts the literal path. Read the comment back and check that its first line is the marker.
+
+The full entry has this shape, with no other headings:
 
 ```
 <!-- journal run:<run id> agent:<handle> -->
@@ -86,6 +93,9 @@ The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the l
 - Never edit requirement documents (`docs/prd/`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`). Propose changes in the PR body. The product agent may edit `docs/BACKLOG.md`; others change only their own task's status line, as the backlog rules say.
 - Never put real family details, the founder's personal information, or anything from the founder's private life into code, docs, issues or memory. Tests use the fictional family "Asha".
 - Mark what you verified versus what you assumed. Never invent library APIs, prices, or legal facts.
+- **Check repository facts with the API, not with docs.** Several PRs repeated "the repo is private" when it is public (`gh api repos/<repo> --jq .private`). Read plan, price and decision facts from `develop` as it is now, not from a document written before the last merge.
+- **Before you trust green tests on a PR, try a scratch merge of `develop`** (`git merge --no-commit origin/develop`, then abort). `develop` adds guard tests, so a PR can pass at its own head and still fail after merge.
+- **If a GitHub write is refused** by a permission check or the session's safety check, do not retry and do not look for another route. Put the text in your PR body or journal, and say what was not posted.
 - If you cannot finish safely, stop, explain why in your journal entry, and open a draft PR or no PR at all.
 
 ## 9. Context and token discipline
