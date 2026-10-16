@@ -1,6 +1,6 @@
 # Early Letters: Design Language
 
-v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`, the icon tile colours and `destructive`). Tokens: `@scribe/design-tokens`; brand values: `packages/brand/index.ts`; brand assets: `docs/brand/BRAND_SYSTEM.md` and `packages/brand/registry.ts`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
+v0.3, 2026-10-16 (v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`, the icon tile colours and `destructive`; v0.3, the experience pass P1: section 2b Atmosphere, the `promptHero` and `numeral` type tokens, the 7.5 s idle breath, and the book cover and website drawings in section 9). Tokens: `@scribe/design-tokens`; brand values: `packages/brand/index.ts`; brand assets: `docs/brand/BRAND_SYSTEM.md` and `packages/brand/registry.ts`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
 
 ## 1. Principles
 
@@ -97,10 +97,23 @@ Full rules: [docs/brand/BRAND_SYSTEM.md](../brand/BRAND_SYSTEM.md). Assets: `pac
 - **Minimum sizes** (height of the SVG as shipped): horizontal lockup 27 px, below that the small cut (17 to 26 px); stacked lockup 66 px; symbol 24 px, below that the small-cut symbol (12 to 23 px); 16 px favicon is the floor. Each registry asset carries its `minSize` and the id to use below it.
 - **The wordmark is artwork.** It is outlined EB Garamond with its `tt` ligature and an opened word space. Never retype the name in a font to stand in for the logo, not even as a fallback; where an image cannot load, the alt text or accessibility label is the brand name.
 - **EB Garamond is for the wordmark only** (and brand display set as artwork: book covers, gift cards, OG image). Never UI, buttons, letters or body text; the app's type stays Mukta, Literata and Tiro (section 3).
-- **Colour:** the logo is one colour, `ink` on light and `inkDark` on dark. `logo.symbol.accent` is the one warm brand moment allowed on paper. Never two-colour lockups, an accent wordmark, accentDark on paper, or a gradient anywhere except the app icon tile.
+- **Colour:** the logo is one colour, `ink` on light and `inkDark` on dark. `logo.symbol.accent` is the one warm brand moment allowed on paper. Never two-colour lockups, an accent wordmark, accentDark on paper, or a gradient anywhere except the app icon tile and the atmosphere lamp (section 2b), which never sits inside, behind or around the mark (BRAND_SYSTEM 4, D-109).
 - **Icon colours:** default tile gradient `tileTop` #9A613C to `tileBottom` #7F4F30 (`accentDeep`) with a `mark` #FBF8F3 (paper, never pure white); dark tile #2C2926 to #1F1B18 with an #D9A47E mark; tinted is the mark shape only. Values in `brand.icon` and `tokens.icon`; icon only, never UI.
-- **One logo per screen.** In the app: splash (symbol alone), welcome or empty book header (small-cut lockup, 20 to 26 pt), paywall (stacked lockup, once), Settings > About. Navigation bars keep the system title.
+- **One logo per screen.** In the app: splash (symbol alone), the age question (the opening pair, `app.brand-device`), welcome (stacked lockup, 96 pt, `app.welcome`), a small header where one is needed (small-cut lockup, 20 to 26 pt, `app.header`), paywall (stacked lockup, once), Settings > About. Navigation bars keep the system title. The small-cut symbol at the head of the book cover is a book mark on a book surface (section 9), as on the printed cover and spine.
 - **Illustration is not the mark.** Line drawings (section 9, CREATIVE.md 3) may show envelopes, lamps, moons and pages; none of them stands in for the logo or sits locked up with the wordmark.
+
+## 2b. Atmosphere: the lamp
+
+The website's lamp light on the app's paper (`tokens.atmosphere`, `components/ui/lamp.tsx`; MOTION 5k). One soft radial pool, decorative only: never text, never the only signal, never a glow around the mark.
+
+| Token | Values | Rule |
+|---|---|---|
+| `atmosphere.tone` | amber `#F3C98B`, gold `#FFE2A8`, rose `#F08C7C`, dusk `#8076E2` | The website's Aurora colours. One palette; the older `lampGold`, `lampRose`, `lampDusk` drafts are retired. |
+| `atmosphere.peak` | light: amber 0.12, gold 0.24, rose 0.05, dusk 0.04; dark: amber 0.18, gold 0.16, rose 0.24, dusk 0.30 | The opacity of a tone at the pool's core. Every text colour (`text`, `textMuted`, `accent`, `success`, `caution`, `recording`, `destructive`, `focus`) keeps 4.5:1 on the lit paper at every tone's peak, both schemes; `packages/design-tokens/test/atmosphere.test.ts` recomputes the limits and `apps/mobile/test/lamp.test.ts` samples the whole gradient. Light mode is warmed by gold and amber; rose and dusk are a whisper there because `caution` would drop under 4.5:1. |
+| `atmosphere.scene` | gate, welcome, form, finish, tonight, write, book, family, readTogether | Where the light appears. Anything not listed has no lamp: Listen, Review, the saved moment, the letter page, the Plus gate and store, Settings, every error and state screen, utility sheets. |
+| `atmosphere.daypart` | earlyMorning to lateNight | Tonight's tone by the greeting's time of day: gold in the morning, amber in the evening, a rose tail at night, dusk late at night. |
+
+Increase Contrast and Reduce Transparency show plain paper (no lamp). Reduce Motion holds the light still in its final state.
 
 ## 3. Typography
 
@@ -141,7 +154,9 @@ Apple's default Body is 17/22 (H1). Mukta sits small on its em, so UI styles are
 | `label` | Mukta 500 | 18 / 22 | Body | none (button and row labels) |
 | `labelSmall` | Mukta 500 | 16 / 20 | Subhead | none (small buttons, chips, field labels) |
 | `signature` | Literata Italic 400 | 20 / 32 | Body | none (scales with Reading Size) |
-| `prompt` | Literata 400 | 24 / 32 | Title 3 | none (Tonight's prompt) |
+| `prompt` | Literata 400 | 24 / 32 | Title 3 | none (the prompt on Listen and Write) |
+| `promptHero` | Literata 400 | 28 / 36 | Title 1 | 1.8x (Tonight's prompt: the screen's one literary line, on the paper with no card) |
+| `numeral` | Literata 500, -0.5 | 64 / 64 | Large Title | 1.4x (a month opener's numeral in the Book; at its cap it is already 90 pt) |
 
 **Faces are bundled (Oct 3 2026):** `packages/design-tokens/fonts`, subset with `build_fonts.py`: Mukta Regular / Medium / SemiBold (Latin, Latin Extended, Devanagari), Literata Regular (opsz 16) / Medium (opsz 30) / Italic (opsz 16) cut from the variable font, Tiro Devanagari Hindi Regular. 1.37 MB raw, 0.64 MB compressed. One family name per face; the `Text` component applies the face and never asks a custom font to synthesise weight or italics.
 
@@ -182,14 +197,17 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 | `motion.standard` | 260 / 30 / 1 | 0.40s / 0.92 | Sheets, navigation, card-to-letter |
 | `motion.gentle` | 90 / 18 / 1 | 0.66s / 0.95 | Breathing glow, chapter reveal, save settle |
 
-- **Breathing glow**: radial `recording` gradient (18 to 40% opacity) behind a 120pt mic disc; scale 1.0 to 1.18 and opacity follow smoothed RMS (attack 80ms, release 400ms) via `motion.gentle`. Silence = slow 4s idle breath, so a pause never looks broken. No waveform.
+- **Breathing glow**: radial `recording` gradient (18 to 40% opacity) behind a 120pt mic disc; scale 1.0 to 1.18 and opacity follow smoothed RMS (attack 80ms, release 400ms) via `motion.gentle`. Silence = a slow 7.5 s idle breath (`motion.breathIdleMs`, 8 breaths a minute), so a pause never looks broken. No waveform.
+- **Moving between rooms** (MOTION 5l, EXPERIENCE_PASS 5.8, the `routeTransitions` table): the room dissolves (Tonight to Listen, Listen to Review, Read together), a page rises (Write, sheets), the book goes one step deeper (a letter, Settings), tabs keep the native swap. The lamp never cuts: it fades down as an unlit room covers it and comes back when it leaves, and it settles from one tab's light to the next. Reduce Motion: our moves are one 200 ms cross-fade, the platform's follow the system.
 - **Word highlight**: `accentSoft` wash (radius 4) slides word to word via `motion.snappy`. No bolding (reflows).
 - **Reduce Motion** (H2): 200ms cross-fades; glow becomes a static ring stepping in opacity; highlight jumps.
 
 ## 9. Imagery
 
 - **No stock baby photos, anywhere.** Typography, paper tone and the family's own photos only.
-- Sparse single-weight line drawings in `textMuted` (envelope, moon, lamp, page). No faces, no mascot. Drawings are illustration only; the brand mark is the quotation pair (section 2a) and a drawing never replaces it.
+- Sparse single-weight line drawings in `textMuted` (envelope, moon, lamp, page). No faces, no mascot. Drawings are illustration only; the brand mark is the quotation pair (section 2a) and a drawing never replaces it. The website's in-house drawings are ported as stroke tables (`components/ui/line-art.data.ts`): the crescent moon, the bedside lamp, the night window and the reading lamp, drawn stroke by stroke the way the site draws them. No attribution duty.
+- **The book cover** (`components/book/book-cover.tsx`, COMPONENTS 2.24): the journey's one object. A 3:4 paper card (`surfaceRaised`, `radius.md`, elevation 1; a 1 pt `line` edge in dark and under Increase Contrast) with the registry's small-cut symbol at its head as a book mark, the child's name in Literata Medium, centred, at most three lines, and "From Mama" in Literata Italic on its foot line. Sizes 88 x 116 (first run), 96 x 128 (Add a child, Export), 132 x 176 (the book opens), 160 x 214 (the empty Book). A name sets itself like a book title: at 17 pt on the smallest cover, smaller (down to the 13 pt floor) when a word would otherwise break, then it wraps at spaces, then it ends in a fade. Never an ellipsis glyph, never a changed letter. Open, it shows the flyleaf: the name small at the top, one hairline where the first letter will go, "From Mama" at the foot. No image files.
+- **Excerpts fade** (`components/motion/excerpt-fade.tsx`): a person's words cut to a few lines end in a fade over the last 40 percent of the final line, into the card's own colour, never an ellipsis glyph; the whole text stays readable to VoiceOver.
 - User photos: 4:5 crop, full-bleed in a `radius.md`/`lg` card, text below, never overlaid; no app filters; 92% brightness in dark mode.
 - Chapter cover: chosen photo, or paper tone with the month numeral in `display`.
 
