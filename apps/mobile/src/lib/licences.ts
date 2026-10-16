@@ -4,17 +4,26 @@
  * Apache and ISC ask for the notice to ship with the code; this is where the app gets it.
  *
  * The data is src/generated/licences.json, made by `npm run licences:generate -w @scribe/mobile`
- * after any dependency change (scripts/licences/generate.mjs). test/licences.test.ts fails when
- * that file is missing, empty or stale against package-lock.json.
+ * after any dependency change (scripts/licences/generate.mjs). test/licences.test.ts runs the
+ * generator's `--check`, so `npm test` fails while that file is missing, stale or edited by hand.
  *
- * What a page should show: each group's `name` as a heading (largest group first), each entry's
- * name and version, and its notice (`noticeText`) word for word. An entry with no text was
- * published without a licence file: show its name and licence only. The speech models, the
- * Phosphor icon artwork credit and the language pack attributions are not here; they stay
- * hand-kept in packages/content (`licences.sections`, `licences.packs`), as do the headings and
- * every other word of copy. Several hundred entries and about 570 KB of text: use a virtualised
- * list and open one notice at a time.
+ * What a page should show:
+ * - `handKeptSections`: the hand-kept credits from packages/content (speech models, the Phosphor
+ *   icon artwork) with every item the generated list already carries taken out, so nothing is
+ *   listed twice. The fonts come from the generated list, with the OFL text their licence asks
+ *   for; content's Fonts section drops out here. Content can retire it once the Settings home
+ *   accordion that still reads `licences.sections` is gone (P6).
+ * - `licences.packs` from packages/content: the language pack attributions, word for word.
+ * - `notices`: each group's `name` as a heading (largest group first), each entry's name and
+ *   version, and its notice (`noticeText`) word for word. An entry with no text was published
+ *   without a licence file: show its name and licence only. A group with id `UNKNOWN` (none
+ *   today) states no licence; take its heading from packages/content, not from `name`.
+ * Headings and every other word of copy come from packages/content. Several hundred entries and
+ * about 570 KB of text: use a virtualised list and open one notice at a time. This module parses
+ * the JSON when it is first imported, so import it from the Licenses page only (or require it
+ * lazily there) to keep it off cold start.
  */
+import { licences } from '@scribe/content';
 import raw from '../generated/licences.json';
 
 /** `vendored`: third-party code adapted into our own file (shims/), credited to the package it came from. */
@@ -32,7 +41,7 @@ export interface NoticeEntry {
 }
 
 export interface NoticeGroup {
-  /** SPDX id or expression, e.g. "MIT" or "(MIT OR CC0-1.0)". */
+  /** SPDX id or expression, e.g. "MIT" or "(MIT OR CC0-1.0)"; `UNKNOWN` when none is stated. */
   id: string;
   /** In plain words, e.g. "MIT License". The authors' name for their licence, not product copy. */
   name: string;
@@ -40,7 +49,7 @@ export interface NoticeGroup {
 }
 
 export interface Notices {
-  /** SHA-256 of the production dependency set the file was made from (the freshness test recomputes it). */
+  /** SHA-256 of the production dependency set the file was made from. */
   dependencyHash: string;
   /** Largest group first; entries in name order. */
   licences: NoticeGroup[];
@@ -55,3 +64,17 @@ export const noticeKey = (e: NoticeEntry): string => (e.version ? `${e.name}@${e
 
 /** The entry's notice, word for word, or null when its package ships none. */
 export const noticeText = (e: NoticeEntry): string | null => (e.text === null ? null : (notices.texts[e.text] ?? null));
+
+/** Names compared without case or spaces, so "Tiro Devanagari Hindi" matches however it is written. */
+const sameName = (s: string): string => s.toLowerCase().replace(/\s+/g, '');
+const generatedNames = new Set(notices.licences.flatMap((g) => g.entries.map((e) => sameName(e.name))));
+
+type HandKeptSection = (typeof licences.sections)[number];
+
+/**
+ * The hand-kept sections from packages/content, less every item the generated list already
+ * carries (today: the three fonts), and less any section left empty. One source per credit.
+ */
+export const handKeptSections: HandKeptSection[] = licences.sections
+  .map((s) => ({ ...s, items: s.items.filter((it) => !generatedNames.has(sameName(it.name))) }))
+  .filter((s) => s.items.length > 0);

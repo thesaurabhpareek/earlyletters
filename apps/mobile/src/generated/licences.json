@@ -1,5 +1,5 @@
 {
-  "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts, apps/mobile/modules and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
+  "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts, apps/mobile/modules, packs and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
   "dependencyHash": "5d3750940f77f141c4e5305692a043502d17d3bf8935eb80e193cc2aa0acfe4d",
   "licences": [
     {
@@ -629,7 +629,7 @@
           "version": "57.0.21",
           "kind": "library",
           "text": 6,
-          "noticeFrom": "@expo/cli"
+          "noticeFrom": "expo"
         },
         {
           "name": "@expo/ws-tunnel",
@@ -1850,7 +1850,7 @@
           "version": "57.0.24",
           "kind": "library",
           "text": 6,
-          "noticeFrom": "@expo/cli"
+          "noticeFrom": "expo"
         },
         {
           "name": "expo-secure-store",
@@ -2025,7 +2025,7 @@
           "version": "250829098.0.17",
           "kind": "library",
           "text": 14,
-          "noticeFrom": "babel-plugin-syntax-hermes-parser"
+          "noticeFrom": "hermes-estree"
         },
         {
           "name": "hermes-estree",

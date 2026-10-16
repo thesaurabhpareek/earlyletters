@@ -51,6 +51,10 @@ export const SHIMS = 'apps/mobile/shims';
  * file still credits that package, version and licence and that every copyright line of that
  * licence file is in the file's header, so the notice shipped is the one the code came with.
  * A file in SHIMS that credits anyone and is not listed here fails the generator and the test.
+ *
+ * apps/mobile/web-preview/sqlite-worker-channel.js is also adapted (from expo-sqlite) but is not
+ * listed or scanned: Metro uses it on web only, so it never ships in the iOS app, and expo-sqlite's
+ * own MIT notice is in the list anyway.
  */
 export const VENDORED = [
   {
@@ -97,8 +101,13 @@ const NAMES = {
   'Python-2.0': 'Python Software Foundation License 2.0',
   'GPL-2.0': 'GNU General Public License 2.0',
   'LGPL-3.0': 'GNU Lesser General Public License 3.0',
-  UNKNOWN: 'No licence stated',
 };
+
+/**
+ * The group id for entries that state no licence. It is an id, not copy: the page takes its
+ * heading from packages/content (none exists today; no UNKNOWN group does either).
+ */
+export const UNKNOWN = 'UNKNOWN';
 
 /**
  * A readable name for an SPDX id or expression: "MIT" is "MIT License", "(MIT OR CC0-1.0)" is
@@ -259,7 +268,8 @@ export function normaliseRepository(repository) {
 export function inheritNotices(entries) {
   /** @type {Map<string, Map<string, { count: number, from: string }>>} repository and licence, then text */
   const tally = new Map();
-  const shorter = (/** @type {string} */ a, /** @type {string} */ b) => (a.length - b.length || a.localeCompare(b, 'en') <= 0 ? a : b);
+  // Shorter name first, then alphabetical: the result does not depend on the order entries arrive in.
+  const shorter = (/** @type {string} */ a, /** @type {string} */ b) => ((a.length - b.length || a.localeCompare(b, 'en')) <= 0 ? a : b);
   for (const e of entries) {
     if (!e.repository || !e.licence || e.text === null) continue;
     const key = `${e.repository}\n${e.licence}`;
@@ -514,7 +524,7 @@ export function buildNotices({ entries, dependencyHash: hash }) {
   /** @type {Map<string, { id: string, name: string, entries: NoticeInput[] }>} */
   const groups = new Map();
   for (const e of entries) {
-    const id = e.licence ?? 'UNKNOWN';
+    const id = e.licence ?? UNKNOWN;
     if (!groups.has(id)) groups.set(id, { id, name: licenceName(id), entries: [] });
     /** @type {any} */ (groups.get(id)).entries.push(e);
   }
@@ -542,9 +552,61 @@ export function buildNotices({ entries, dependencyHash: hash }) {
     })),
   }));
   return {
-    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of ${APP_WORKSPACE}), packages/design-tokens/fonts, apps/mobile/modules and ${SHIMS}. After any dependency change run: ${COMMAND}`,
+    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of ${APP_WORKSPACE}), packages/design-tokens/fonts, apps/mobile/modules, packs and ${SHIMS}. After any dependency change run: ${COMMAND}`,
     dependencyHash: hash,
     licences,
     texts,
   };
+}
+
+/** The file as written: two-space JSON and a final newline. @param {ReturnType<typeof buildNotices>} notices */
+export const serialise = (notices) => `${JSON.stringify(notices, null, 2)}\n`;
+
+/**
+ * Everything the generated file is made from, read from a repo root: the lockfile's production
+ * set, each package's notice in node_modules, the fonts, the native modules, packs/ and the
+ * vendored files. generate.mjs writes or checks `json`; the tests run it on fixture repos to
+ * prove that a change to any of those sources changes the file. Throws on anything the file
+ * cannot be made from (an unresolvable lockfile, a font without its licence, a credited shim not
+ * in VENDORED, a vendored file that no longer matches its notice).
+ * @param {string} repo  absolute repo root
+ * @param {{ vendored?: typeof VENDORED }} [options]
+ */
+export function deriveNotices(repo, { vendored: vendoredList = VENDORED } = {}) {
+  const lock = JSON.parse(readFileSync(join(repo, 'package-lock.json'), 'utf8'));
+  const all = productionPackages(lock, APP_WORKSPACE);
+  const shipped = shippedPackages(all);
+  const hostSpecific = [...all.values()].filter((p) => p.hostSpecific);
+  const own = workspaceNames(lock);
+  const hash = dependencyHash(shipped);
+
+  const libraries = inheritNotices(
+    shipped.map((p) => {
+      const pkgPath = join(repo, p.path, 'package.json');
+      const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, 'utf8')) : {};
+      return {
+        name: p.name,
+        version: p.version,
+        kind: /** @type {const} */ ('library'),
+        licence: p.licence,
+        text: licenceText(join(repo, p.path)),
+        repository: normaliseRepository(pkg.repository),
+      };
+    }),
+  );
+  const fontsDir = join(repo, 'packages', 'design-tokens', 'fonts');
+  const fonts = existsSync(fontsDir) ? fontEntries(fontsDir) : [];
+  const modulesDir = join(repo, APP_WORKSPACE, 'modules');
+  const native = existsSync(modulesDir) ? nativeModuleEntries(modulesDir) : { entries: [], own: [] };
+  const data = packDataEntries(join(repo, 'packs'));
+  const listed = new Set(vendoredList.map((v) => v.file));
+  const unlisted = creditedFiles(join(repo, SHIMS)).filter((f) => !listed.has(`${SHIMS}/${f}`));
+  if (unlisted.length) {
+    throw new Error(`${unlisted.map((f) => `${SHIMS}/${f}`).join(', ')} credit third-party code but are not in VENDORED (scripts/licences/lib.mjs). Add them, with the package whose licence file carries their notice.`);
+  }
+  const vendored = vendoredEntries(repo, lock, vendoredList);
+
+  const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored];
+  const notices = buildNotices({ entries, dependencyHash: hash });
+  return { lock, all, shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, entries, notices, json: serialise(notices) };
 }

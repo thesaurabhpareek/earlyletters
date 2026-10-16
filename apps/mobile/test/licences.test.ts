@@ -3,42 +3,189 @@
  * The app ships the notice of every production npm package, bundled font, third-party native
  * module and vendored file, because MIT, BSD, Apache and ISC ask for it.
  * src/generated/licences.json is made by scripts/licences/generate.mjs
- * (`npm run licences:generate -w @scribe/mobile`). These tests fail when that file is missing,
- * empty or stale against package-lock.json, so a dependency change cannot ship without it being
- * regenerated. The lockfile walk itself is proved on a small synthetic lockfile. Only the
- * vendored-code check reads node_modules (the licence file the shim's notice comes from).
+ * (`npm run licences:generate -w @scribe/mobile`).
+ *
+ * Staleness: the file must be exactly what the generator writes today. The first tests run
+ * `generate.mjs --check`, which re-derives the whole file from package-lock.json, node_modules, the
+ * fonts, the native modules, packs/ and shims/ and compares it byte for byte, so any drift fails
+ * `npm test`: a dependency change, a new font or module, or a hand edit. Fixture repos prove that
+ * each of those sources reaches the file. The lockfile walk is proved on a synthetic lockfile.
  */
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { licences as content } from '@scribe/content';
 import {
   COMMAND,
   OUTPUT,
   SHIMS,
+  UNKNOWN,
   VENDORED,
   buildNotices,
   creditedFiles,
+  deriveNotices,
   dependencyHash,
   dependencyIds,
   flattenNpmLs,
+  fontEntries,
   inheritNotices,
   licenceName,
+  nativeModuleEntries,
   normaliseRepository,
   normaliseText,
+  packDataEntries,
   productionPackages,
   resolveFrom,
+  serialise,
   shippedPackages,
   vendoredEntries,
   workspaceNames,
 } from '../../../scripts/licences/lib.mjs';
-import { noticeKey, noticeText, notices, type Notices } from '../src/lib/licences';
+import { handKeptSections, noticeKey, noticeText, notices, type Notices } from '../src/lib/licences';
 
 const REPO = join(__dirname, '..', '..', '..');
 const FILE = join(REPO, OUTPUT);
+const GENERATOR = join(REPO, 'scripts', 'licences', 'generate.mjs');
 const STALE = `${OUTPUT} is missing or stale. Run: ${COMMAND}`;
+/** The generator reads about 650 licence files and runs `npm ls`: a few seconds, longer on a busy machine. */
+const SLOW = 120_000;
 
 const load = (): Notices & { $comment: string } => JSON.parse(readFileSync(FILE, 'utf8'));
 const allEntries = (n: Notices) => n.licences.flatMap((g) => g.entries);
+const generator = (...args: string[]) => spawnSync(process.execPath, [GENERATOR, ...args], { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+
+const temp: string[] = [];
+afterEach(() => {
+  for (const dir of temp.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+const tempDir = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'licences-'));
+  temp.push(dir);
+  return dir;
+};
+
+describe('the generated notices file is exactly what the generator writes today', () => {
+  it(
+    'generate.mjs --check passes: no dependency, font, module, pack or shim change and no hand edit since it was made',
+    () => {
+      const r = generator('--check');
+      expect(r.status, `${STALE}\n${r.stdout}${r.stderr}`).toBe(0);
+      expect(r.stdout).toContain('is up to date');
+    },
+    SLOW,
+  );
+
+  it(
+    'a hand edit fails the check even when the dependency hash is kept (40 entries deleted, one notice reworded)',
+    () => {
+      const n = load();
+      const mit = n.licences.find((g) => g.id === 'MIT')!;
+      mit.entries.splice(0, 40);
+      n.texts[0] = n.texts[0].replace(/Permission/, 'Leave');
+      const edited = join(tempDir(), 'licences.json');
+      writeFileSync(edited, `${JSON.stringify(n, null, 2)}\n`);
+      const r = generator('--check', '--against', edited);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/stale or edited by hand/);
+    },
+    SLOW,
+  );
+
+  it('its npm set matches package-lock.json (the same check without node_modules)', () => {
+    const lock = JSON.parse(readFileSync(join(REPO, 'package-lock.json'), 'utf8'));
+    expect(load().dependencyHash, STALE).toBe(dependencyHash(shippedPackages(productionPackages(lock))));
+  });
+
+  it('carries exactly the fonts, native modules and pack licence files the repo has today', () => {
+    const n = load();
+    const names = (kind: string) => allEntries(n).filter((e) => e.kind === kind).map((e) => e.name);
+    expect(names('font'), STALE).toEqual(fontEntries(join(REPO, 'packages', 'design-tokens', 'fonts')).map((f) => f.name));
+    expect(names('native'), STALE).toEqual(nativeModuleEntries(join(REPO, 'apps', 'mobile', 'modules')).entries.map((e) => e.name));
+    expect(names('data'), STALE).toEqual(packDataEntries(join(REPO, 'packs')).map((e) => e.name));
+    expect(names('font')).toEqual(['Literata', 'Mukta', 'Tiro Devanagari Hindi']);
+  });
+});
+
+describe('every source reaches the file (deriveNotices on a fixture repo)', () => {
+  /** A repo with one npm package, one font and one of our own native modules; Asha is the fictional family. */
+  function fixture() {
+    const root = tempDir();
+    const w = (rel: string, text: string) => {
+      mkdirSync(dirname(join(root, rel)), { recursive: true });
+      writeFileSync(join(root, rel), text);
+    };
+    w(
+      'package-lock.json',
+      JSON.stringify({
+        lockfileVersion: 3,
+        packages: {
+          '': { name: 'asha', workspaces: ['apps/*'] },
+          'apps/mobile': { name: '@scribe/mobile', dependencies: { a: '^1' } },
+          'node_modules/@scribe/mobile': { resolved: 'apps/mobile', link: true },
+          'node_modules/a': { version: '1.0.0', license: 'MIT' },
+        },
+      }),
+    );
+    w('node_modules/a/package.json', JSON.stringify({ name: 'a', version: '1.0.0', license: 'MIT' }));
+    w('node_modules/a/LICENSE', 'MIT License\n\nCopyright (c) 2026 Asha\n');
+    w('packages/design-tokens/fonts/Asha-Regular.ttf', '');
+    w('packages/design-tokens/fonts/OFL-Asha.txt', 'Copyright 2026 The Asha Project Authors\n\nSIL OPEN FONT LICENSE Version 1.1\n');
+    w('apps/mobile/modules/asha-own/ios/AshaOwn.podspec', "s.license = 'UNLICENSED'\n");
+    return { root, w, derive: () => deriveNotices(root, { vendored: [] }) };
+  }
+  const kinds = (d: ReturnType<typeof deriveNotices>) => d.entries.map((e) => `${e.kind}:${e.name}`).sort();
+
+  it('starts from one library and one font; our own module is not listed', () => {
+    const d = fixture().derive();
+    expect(kinds(d)).toEqual(['font:Asha', 'library:a']);
+    expect(d.native.own).toEqual(['asha-own']);
+    expect(d.json).toBe(serialise(d.notices));
+  });
+
+  it('a new font licence changes the file', () => {
+    const f = fixture();
+    const before = f.derive();
+    f.w('packages/design-tokens/fonts/Bina-Regular.ttf', '');
+    f.w('packages/design-tokens/fonts/OFL-Bina.txt', 'Copyright 2026 The Bina Project Authors\n\nSIL OPEN FONT LICENSE Version 1.1\n');
+    const after = f.derive();
+    expect(after.json).not.toBe(before.json);
+    expect(kinds(after)).toContain('font:Bina');
+    expect(after.hash).toBe(before.hash); // the npm hash alone would not have seen it
+  });
+
+  it('a font without its licence file stops the generator', () => {
+    const f = fixture();
+    f.w('packages/design-tokens/fonts/Cara-Regular.ttf', '');
+    expect(() => f.derive()).toThrow(/Cara/);
+  });
+
+  it('a third-party native module changes the file', () => {
+    const f = fixture();
+    const before = f.derive();
+    f.w('apps/mobile/modules/asha-maps/package.json', JSON.stringify({ name: 'asha-maps', version: '2.0.0', license: 'MIT' }));
+    f.w('apps/mobile/modules/asha-maps/LICENSE', 'MIT License\n\nCopyright (c) 2026 Asha Maps\n');
+    const after = f.derive();
+    expect(after.json).not.toBe(before.json);
+    expect(kinds(after)).toContain('native:asha-maps');
+  });
+
+  it('a licence file under packs/ changes the file', () => {
+    const f = fixture();
+    const before = f.derive();
+    f.w('packs/text-rules/LICENSE-data.txt', 'MIT License\n\nCopyright (c) 2026 Asha Data\n');
+    const after = f.derive();
+    expect(after.json).not.toBe(before.json);
+    expect(kinds(after)).toContain('data:text-rules/LICENSE-data.txt');
+  });
+
+  it('a shim that credits third-party code but is not in VENDORED stops the generator', () => {
+    const f = fixture();
+    f.w(`${SHIMS}/asha.js`, "'use strict';\n/** Adapted from asha 1.0.0, MIT License, Copyright (c) 2026 Asha. */\nmodule.exports = 1;\n");
+    expect(() => f.derive()).toThrow(/VENDORED/);
+  });
+});
 
 describe('the generated notices file (src/generated/licences.json)', () => {
   it('exists and is not empty', () => {
@@ -48,12 +195,6 @@ describe('the generated notices file (src/generated/licences.json)', () => {
     expect(n.licences.length, STALE).toBeGreaterThan(0);
     expect(allEntries(n).length, STALE).toBeGreaterThan(100);
     expect(n.texts.length, STALE).toBeGreaterThan(0);
-  });
-
-  it('is fresh: its dependency hash is the hash of the production set in package-lock.json', () => {
-    const lock = JSON.parse(readFileSync(join(REPO, 'package-lock.json'), 'utf8'));
-    const expected = dependencyHash(shippedPackages(productionPackages(lock)));
-    expect(load().dependencyHash, STALE).toBe(expected);
   });
 
   it('says it is made by the generator, and how', () => {
@@ -85,14 +226,11 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(names.has(lib), lib).toBe(true);
     }
     expect([...names].filter((x) => x.startsWith('@scribe/'))).toEqual([]);
-    const fonts = allEntries(n).filter((e) => e.kind === 'font');
-    expect(fonts.map((f) => f.name)).toEqual(['Literata', 'Mukta', 'Tiro Devanagari Hindi']);
-    for (const f of fonts) {
+    for (const f of allEntries(n).filter((e) => e.kind === 'font')) {
       expect(f.text, f.name).not.toBeNull();
       expect(n.texts[f.text!], f.name).toContain('SIL OPEN FONT LICENSE');
     }
-    const ofl = n.licences.find((g) => g.id === 'OFL-1.1');
-    expect(ofl?.name).toBe('SIL Open Font License 1.1');
+    expect(n.licences.find((g) => g.id === 'OFL-1.1')?.name).toBe('SIL Open Font License 1.1');
   });
 
   it('ships the notice text for nearly every package (only packages published without one lack it)', () => {
@@ -131,6 +269,9 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(e?.noticeFrom, name).toBeDefined();
     }
     for (const e of allEntries(n).filter((x) => x.noticeFrom)) expect(e.text, e.name).not.toBeNull();
+    // The label names the shortest sibling with that text: expo, not @expo/cli.
+    expect(allEntries(n).find((x) => x.name === 'expo-router')?.noticeFrom).toBe('expo');
+    expect(allEntries(n).find((x) => x.name === '@expo/ui')?.noticeFrom).toBe('expo');
   });
 
   it('credits third-party code adapted into shims/: every credited file is in VENDORED and in the file, with its notice', () => {
@@ -155,6 +296,23 @@ describe('what the Licenses page reads (src/lib/licences.ts)', () => {
     expect(noticeText(react)).toMatch(/^MIT License/);
     expect(noticeText({ name: 'none', kind: 'library', text: null })).toBeNull();
     expect(noticeKey({ name: 'Mukta', kind: 'font', text: 0 })).toBe('Mukta');
+  });
+
+  it('lists each credit once: the hand-kept sections drop what the generated list carries (the fonts)', () => {
+    const squash = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+    const generated = new Set(notices.licences.flatMap((g) => g.entries.map((e) => squash(e.name))));
+    const handKept = handKeptSections.flatMap((s) => s.items.map((it) => it.name));
+    expect(handKept.filter((name) => generated.has(squash(name)))).toEqual([]);
+    // The three fonts are in content's Fonts section today and come from the generated list instead.
+    const contentFonts = content.sections.find((s) => s.title === 'Fonts')?.items.map((it) => it.name) ?? [];
+    expect(contentFonts.length).toBeGreaterThan(0);
+    for (const font of contentFonts) {
+      expect(handKept, font).not.toContain(font);
+      expect(generated.has(squash(font)), font).toBe(true);
+    }
+    // What only content knows stays: the speech models and the Phosphor icon artwork.
+    expect(handKept).toEqual(expect.arrayContaining(['whisper.cpp and Whisper models', 'Silero VAD', 'Phosphor Icons']));
+    expect(handKeptSections.every((s) => s.items.length > 0)).toBe(true);
   });
 });
 
@@ -217,7 +375,7 @@ describe('the production set from the lockfile (scripts/licences/lib.mjs)', () =
     expect(resolveFrom(lock.packages, 'apps/app', 'nothing')).toBeNull();
   });
 
-  it('hashes the sorted name@version list, so the same set always hashes the same and a version change does not', () => {
+  it('hashes the sorted name@version list: order does not change it, a version change does', () => {
     const h = dependencyHash(shippedPackages(productionPackages(lock, 'apps/app')));
     expect(h).toMatch(/^[0-9a-f]{64}$/);
     expect(dependencyHash([{ name: 'b', version: '1' }, { name: 'a', version: '1' }])).toBe(dependencyHash([{ name: 'a', version: '1' }, { name: 'b', version: '1' }]));
@@ -245,7 +403,7 @@ describe('the notices file layout', () => {
       ],
       dependencyHash: 'h',
     });
-    expect(built.licences.map((g) => g.id)).toEqual(['MIT', 'OFL-1.1', 'UNKNOWN']);
+    expect(built.licences.map((g) => g.id)).toEqual(['MIT', 'OFL-1.1', UNKNOWN]);
     expect(built.licences[0].entries.map((e) => e.name)).toEqual(['a', 'z']);
     expect(built.licences[0].entries.map((e) => e.text)).toEqual([0, 0]);
     expect(built.licences[1].entries[0]).toEqual({ name: 'f', kind: 'font', text: 1 });
@@ -255,12 +413,13 @@ describe('the notices file layout', () => {
     expect(built.$comment).toContain(COMMAND);
   });
 
-  it('names licences in plain words and leaves an unknown id as it is', () => {
+  it('names licences in plain words, leaves an unknown id as it is, and gives UNKNOWN no wording of its own (copy owns it)', () => {
     expect(licenceName('MIT')).toBe('MIT License');
     expect(licenceName('OFL-1.1')).toBe('SIL Open Font License 1.1');
     expect(licenceName('(MIT OR CC0-1.0)')).toBe('MIT License or CC0 1.0 Universal');
     expect(licenceName('MIT AND Apache-2.0')).toBe('MIT License and Apache License 2.0');
     expect(licenceName('WTFPL')).toBe('WTFPL');
+    expect(licenceName(UNKNOWN)).toBe('UNKNOWN');
   });
 
   it('normalises only whitespace in a notice; the words stay as written', () => {
@@ -296,5 +455,24 @@ describe('the notices file layout', () => {
       { name: 'b', licence: 'MIT', text: 'B\n', repository: repo },
     ]);
     expect(tie[0].text).toBeNull();
+  });
+
+  it('names the shortest sibling whatever order the siblings arrive in (longer names first here)', () => {
+    const repo = 'https://github.com/asha/mono';
+    const siblings = [
+      { name: '@asha/cli', licence: 'MIT', text: 'ROOT\n', repository: repo },
+      { name: '@asha/config', licence: 'MIT', text: 'ROOT\n', repository: repo },
+      { name: 'asha', licence: 'MIT', text: 'ROOT\n', repository: repo },
+      { name: 'asha-router', licence: 'MIT', text: null, repository: repo },
+    ];
+    expect(inheritNotices(siblings)[3].noticeFrom).toBe('asha');
+    expect(inheritNotices([...siblings].reverse())[0].noticeFrom).toBe('asha');
+    // Same length: alphabetical.
+    const same = inheritNotices([
+      { name: 'bb', licence: 'MIT', text: 'ROOT\n', repository: repo },
+      { name: 'aa', licence: 'MIT', text: 'ROOT\n', repository: repo },
+      { name: 'x', licence: 'MIT', text: null, repository: repo },
+    ]);
+    expect(same[2].noticeFrom).toBe('aa');
   });
 });

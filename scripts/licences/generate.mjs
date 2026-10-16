@@ -7,66 +7,51 @@
  *
  *   npm run licences:generate -w @scribe/mobile              # after any dependency change
  *   npm run licences:generate -w @scribe/mobile -- --check   # exit 1 when the file would change; writes nothing
+ *   node scripts/licences/generate.mjs --check --against <file>   # check another copy (the tests use it)
  *
  * Sources: package-lock.json (the production set, walked by lib.mjs), `npm ls --omit=dev --all`
  * (a cross-check of that walk against npm's own), each package's LICENSE and NOTICE files in
  * node_modules, packages/design-tokens/fonts/OFL-*.txt, apps/mobile/modules/*, any licence
  * file under packs/, and third-party code adapted into apps/mobile/shims (VENDORED in lib.mjs).
- * Needs node_modules installed (`npm ci` at the repo root).
+ * Needs node_modules installed (`npm ci` at the repo root). What goes in the file is decided by
+ * deriveNotices in lib.mjs; this file adds the npm ls cross-check, the write and the report.
  *
  * The output is deterministic: no dates, entries sorted, identical texts stored once, and
  * host-specific build binaries (lightningcss-darwin-arm64 and friends, which never ship in the
  * app) left out, so the same lockfile gives the same file on every machine.
- * apps/mobile/test/licences.test.ts fails when the file is missing, empty or stale.
+ * apps/mobile/test/licences.test.ts runs `--check`, so `npm test` fails while the file is
+ * missing, stale or edited by hand.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  APP_PACKAGE,
-  APP_WORKSPACE,
-  COMMAND,
-  EXPECTED_LICENCES,
-  OUTPUT,
-  SHIMS,
-  VENDORED,
-  buildNotices,
-  creditedFiles,
-  dependencyHash,
-  dependencyIds,
-  flattenNpmLs,
-  fontEntries,
-  inheritNotices,
-  licenceText,
-  nativeModuleEntries,
-  normaliseRepository,
-  packDataEntries,
-  productionPackages,
-  shippedPackages,
-  vendoredEntries,
-  workspaceNames,
-} from './lib.mjs';
+import { APP_PACKAGE, COMMAND, EXPECTED_LICENCES, OUTPUT, deriveNotices, dependencyIds, flattenNpmLs } from './lib.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CHECK = process.argv.includes('--check');
+const args = process.argv.slice(2);
+const CHECK = args.includes('--check');
+const against = args.includes('--against') ? args[args.indexOf('--against') + 1] : null;
+if (args.includes('--against') && (!against || !CHECK)) fail('--against <file> needs a file and goes with --check.');
 
-/** @param {string} msg */
+/** @param {string} msg @returns {never} */
 function fail(msg) {
   console.error(`licences: ${msg}`);
   process.exit(1);
 }
 
-// ---------------------------------------------------------------- 1. the production set, from the lockfile
-const lock = JSON.parse(readFileSync(join(REPO, 'package-lock.json'), 'utf8'));
-const all = productionPackages(lock, APP_WORKSPACE);
-const shipped = shippedPackages(all);
-const hostSpecific = [...all.values()].filter((p) => p.hostSpecific);
-const own = workspaceNames(lock);
-const hash = dependencyHash(shipped);
-
-// ---------------------------------------------------------------- 2. cross-check against npm's own walk of the installed tree
+// ---------------------------------------------------------------- 1. the file's contents (lib.mjs)
 if (!existsSync(join(REPO, 'node_modules'))) fail('node_modules is missing: run `npm ci` at the repo root first.');
+/** @type {ReturnType<typeof deriveNotices>} */
+let derived;
+try {
+  derived = deriveNotices(REPO);
+} catch (e) {
+  fail(/** @type {Error} */ (e).message);
+}
+const { shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, entries, notices, json } = derived;
+
+// ---------------------------------------------------------------- 2. cross-check the lockfile walk against npm's own walk of the installed tree
 const ls = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['ls', '--omit=dev', '--all', '--long', '--json', '-w', APP_PACKAGE], {
   cwd: REPO,
   encoding: 'utf8',
@@ -81,10 +66,9 @@ try {
 }
 const app = tree.dependencies?.[APP_PACKAGE];
 if (!app) fail(`npm ls lists no ${APP_PACKAGE} workspace.`);
-const installed = flattenNpmLs(app);
 const hostIds = new Set(dependencyIds(hostSpecific));
 const npmIds = new Set(
-  [...installed.values()]
+  [...flattenNpmLs(app).values()]
     .filter((p) => !own.has(p.name))
     .map((p) => `${p.name}@${p.version}`)
     .filter((id) => !hostIds.has(id)),
@@ -99,51 +83,21 @@ if (onlyLock.length || onlyNpm.length) {
   );
 }
 
-// ---------------------------------------------------------------- 3. notice texts
-const libraries = inheritNotices(
-  shipped.map((p) => {
-    const pkg = JSON.parse(readFileSync(join(REPO, p.path, 'package.json'), 'utf8'));
-    return {
-      name: p.name,
-      version: p.version,
-      kind: /** @type {const} */ ('library'),
-      licence: p.licence,
-      text: licenceText(join(REPO, p.path)),
-      repository: normaliseRepository(pkg.repository),
-    };
-  }),
-);
-const fonts = fontEntries(join(REPO, 'packages', 'design-tokens', 'fonts'));
-const native = nativeModuleEntries(join(REPO, 'apps', 'mobile', 'modules'));
-const data = packDataEntries(join(REPO, 'packs'));
-const listed = new Set(VENDORED.map((v) => v.file));
-const unlisted = creditedFiles(join(REPO, SHIMS)).filter((f) => !listed.has(`${SHIMS}/${f}`));
-if (unlisted.length) fail(`${unlisted.map((f) => `${SHIMS}/${f}`).join(', ')} credit third-party code but are not in VENDORED (scripts/licences/lib.mjs). Add them, with the package whose licence file carries their notice.`);
-/** @type {ReturnType<typeof vendoredEntries>} */
-let vendored = [];
-try {
-  vendored = vendoredEntries(REPO, lock);
-} catch (e) {
-  fail(/** @type {Error} */ (e).message);
-}
-const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored];
-const notices = buildNotices({ entries, dependencyHash: hash });
-const json = `${JSON.stringify(notices, null, 2)}\n`;
-
-// ---------------------------------------------------------------- 4. write, or check
-const outPath = join(REPO, OUTPUT);
+// ---------------------------------------------------------------- 3. write, or check the whole file, byte for byte
+const outPath = against ? resolve(against) : join(REPO, OUTPUT);
+const shown = against ?? OUTPUT;
 const before = existsSync(outPath) ? readFileSync(outPath, 'utf8') : null;
 if (CHECK) {
   if (before === json) {
-    console.log(`licences: ${OUTPUT} is up to date (${entries.length} entries, ${notices.licences.length} licences).`);
+    console.log(`licences: ${shown} is up to date (${entries.length} entries, ${notices.licences.length} licences).`);
     process.exit(0);
   }
-  fail(`${OUTPUT} is ${before === null ? 'missing' : 'stale'}. Run: ${COMMAND}`);
+  fail(`${shown} is ${before === null ? 'missing' : 'stale or edited by hand'}. Run: ${COMMAND}`);
 }
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, json);
 
-// ---------------------------------------------------------------- 5. report
+// ---------------------------------------------------------------- 4. report
 const kb = Math.round(Buffer.byteLength(json, 'utf8') / 1024);
 const label = (/** @type {{ name: string, version?: string }} */ e) => (e.version ? `${e.name}@${e.version}` : e.name);
 console.log(`licences: ${before === json ? 'unchanged' : before === null ? 'wrote' : 'updated'} ${OUTPUT} (${kb} KB, ${notices.texts.length} distinct notice texts)`);
