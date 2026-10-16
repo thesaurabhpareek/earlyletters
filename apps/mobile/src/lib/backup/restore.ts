@@ -156,6 +156,21 @@ const STOPPED_META = 'restoreStopped';
  * rows and emails the owner (#151), so only Try again asks once more.
  */
 const RELEASED_META = 'restoreReleased';
+
+/** Keys escrow released to this device for one request, still sealed to it. */
+interface Release {
+  requestId: string;
+  deviceId: string;
+  keys: ReleasedKey[];
+}
+
+/** The release itself cannot be used here (it does not open, or fails its row's key check): only escrow can fix it. */
+const releaseUnusable = (e: unknown) => {
+  const code = (e as { code?: unknown } | null)?.code;
+  return code === 'key_check_failed' || code === 'key_open_failed';
+};
+/** The Keychain could not take the key just now (the phone locked as the release landed): the release is fine. */
+const keychainBusy = (e: unknown) => (e as { code?: unknown } | null)?.code === 'keychain_unavailable';
 /** The server has confirmed recordings of mine (a returning person: Settings says so when backup is off here). */
 export const HAS_BACKUP_META = 'hasBackup';
 
@@ -164,6 +179,24 @@ export function createRestore(d: RestoreDeps) {
   /** One restore per letter at a time: a pass and an opened letter join the same attempt. */
   const inflight = new Map<string, Promise<RestoreOutcome>>();
   let attempt = 0;
+  /**
+   * This session's copy of the last release, beside the saved one in backup.db: a save that
+   * fails for a reason on this phone retries from it, and so does Try again, without asking
+   * escrow (which would open the keys again and email the owner again). Escrow is asked again
+   * only when the release itself is unusable, or when both copies are gone.
+   */
+  let heldRelease: Release | null = null;
+  const savedRelease = (): Release | null => {
+    const m = d.db.getMeta(RELEASED_META);
+    if (m) {
+      try {
+        return JSON.parse(m) as Release;
+      } catch {
+        // an unreadable saved copy: this session's copy, if any
+      }
+    }
+    return heldRelease;
+  };
   const stopped = () => d.stopped?.() ?? false;
   const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
 
@@ -336,17 +369,25 @@ export function createRestore(d: RestoreDeps) {
    * own after a Stop, a Not me, an expiry or a revoked device.
    */
   /** Stores keys saved from a release. A key that can never be stored here stops (Try again asks escrow once more). */
-  async function storeSaved(held: { requestId: string; deviceId: string; keys: ReleasedKey[] }): Promise<RestoreKeyStatus> {
+  async function storeSaved(held: Release): Promise<RestoreKeyStatus> {
     try {
       await d.keys.storeReleased(held.keys, held.deviceId, held.requestId);
     } catch (e) {
-      // A network blip while checking the rows: try the saved copy again on the next pass, asking escrow nothing.
-      if (e instanceof BackupServerError && e.retryable) return { kind: 'unavailable' };
+      // A network blip while checking the rows, or the Keychain refusing a write as the phone locks:
+      // the release is fine, so the next pass stores it from the kept copy, asking escrow nothing.
+      if ((e instanceof BackupServerError && e.retryable) || keychainBusy(e)) return { kind: 'unavailable' };
       if (needsSignIn(e)) return { kind: 'sign_in_again' };
-      // The release does not open here or fails its row's check: never asked again on its own.
-      d.db.setMeta(STOPPED_META, 'release_unusable');
+      // The release does not open here or fails its row's check: only a new release can help, and
+      // escrow is never asked for one on its own. Try again asks once more.
+      if (releaseUnusable(e)) {
+        d.db.setMeta(STOPPED_META, 'release_unusable');
+        return { kind: 'stopped' };
+      }
+      // Anything else on this phone: stop, and Try again stores from the kept copy (no new release).
+      d.db.setMeta(STOPPED_META, 'release_not_saved');
       return { kind: 'stopped' };
     }
+    heldRelease = null;
     d.db.deleteMeta(RELEASED_META);
     d.db.deleteMeta(REQUEST_META);
     return { kind: 'ready' };
@@ -355,8 +396,8 @@ export function createRestore(d: RestoreDeps) {
   async function escrowStep(): Promise<RestoreKeyStatus> {
     if (d.db.getMeta(STOPPED_META)) return { kind: 'stopped' };
     if (stopped()) return { kind: 'unavailable' };
-    const held = d.db.getMeta(RELEASED_META);
-    if (held) return storeSaved(JSON.parse(held) as { requestId: string; deviceId: string; keys: ReleasedKey[] });
+    const held = savedRelease();
+    if (held) return storeSaved(held);
     if (d.conditions.escrowKilled()) return { kind: 'unavailable' };
     try {
       const device = await d.keys.ensureDevice();
@@ -383,8 +424,13 @@ export function createRestore(d: RestoreDeps) {
       }
       if (r.state !== 'released') return { kind: 'unavailable' };
       // Saved first: whatever happens next, this release is not asked for again on its own.
-      const release = { requestId, deviceId: device.deviceId, keys: r.keys };
-      d.db.setMeta(RELEASED_META, JSON.stringify(release));
+      const release: Release = { requestId, deviceId: device.deviceId, keys: r.keys };
+      heldRelease = release;
+      try {
+        d.db.setMeta(RELEASED_META, JSON.stringify(release));
+      } catch {
+        // kept in memory for the rest of this session
+      }
       d.db.setMeta(REQUEST_META, JSON.stringify({ requestId, holdUntil: req.holdUntil, polledAt: now }));
       return await storeSaved(release);
     } catch (e) {
@@ -463,13 +509,17 @@ export function createRestore(d: RestoreDeps) {
 
     /**
      * The person tapped Try again after a stopped, expired or unusable request. A revoked or
-     * unknown device gets a new device key first (never on its own, ADR 0024); a release that
-     * could not be used is dropped, so escrow is asked once more.
+     * unknown device gets a new device key first (never on its own, ADR 0024). A release kept
+     * here is stored again from that copy, with no new release; only an unusable release is
+     * dropped, so escrow is asked once more.
      */
     async tryAgain(): Promise<void> {
       const why = d.db.getMeta(STOPPED_META);
       if (why === 'device_revoked' || why === 'device_unknown') await d.keys.replaceDevice();
-      d.db.deleteMeta(RELEASED_META);
+      if (why === 'release_unusable') {
+        heldRelease = null;
+        d.db.deleteMeta(RELEASED_META);
+      }
       d.db.deleteMeta(STOPPED_META);
     },
 

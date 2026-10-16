@@ -95,7 +95,13 @@ function nativeVault(): KeyVault {
       try {
         await need().openBookKey(KEYCHAIN_SERVICE, account(r), r.profileId, v, s.enc, s.ct, info, aad, check?.label ?? new Uint8Array(0), check?.expected ?? null);
       } catch (e) {
-        if (scribeKeysErrorCode(e) === 'ERR_SCRIBE_KEYS_CHECK') throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
+        // Portable codes for restore.ts: the release is unusable (check, open), or the Keychain is not taking writes now.
+        const code = scribeKeysErrorCode(e);
+        if (code === 'ERR_SCRIBE_KEYS_CHECK') throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
+        if (code === 'ERR_SCRIBE_KEYS_OPEN') throw Object.assign(new Error('key_open_failed'), { code: 'key_open_failed' });
+        if (code === 'ERR_SCRIBE_KEYS_KEYCHAIN' || code === 'ERR_SCRIBE_KEYS_NO_DEVICE') {
+          throw Object.assign(new Error('keychain_unavailable'), { code: 'keychain_unavailable' });
+        }
         throw e;
       }
     },

@@ -448,6 +448,51 @@ describe('what Settings says, and the recovery service is asked only when it mus
     for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
   });
 
+  it('[security 2] the Keychain refusing the write as the phone locks: stored from the kept copy on the next pass, no second release', async () => {
+    const { backend, c, letters, clock } = await heldRestore();
+    const open = c.vault.openBookKey;
+    let refusals = 2;
+    c.vault.openBookKey = async (...a) => {
+      if (refusals-- > 0) throw Object.assign(new Error('keychain_unavailable'), { code: 'keychain_unavailable' });
+      return open(...a);
+    };
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'unavailable' }); // not stopped: nothing for the person to do
+    clock.t += 1000;
+    await c.service.tick();
+    clock.t += 1000;
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
+  it('[security 2] any other failure saving a release stops; Try again stores from this session\'s copy, never a second release', async () => {
+    const { backend, c, letters } = await heldRestore();
+    // The saved copy cannot be written either: only this session's copy in memory is left.
+    const setMeta = c.backupDb.setMeta.bind(c.backupDb);
+    c.backupDb.setMeta = (k: string, v: string) => {
+      if (k === 'restoreReleased') throw new Error('disk full');
+      setMeta(k, v);
+    };
+    const store = c.service.keys.storeReleased;
+    let failures = 1;
+    c.service.keys.storeReleased = async (...a) => {
+      if (failures-- > 0) throw new Error('unexpected');
+      return store(...a);
+    };
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1); // stopped: nothing is asked on its own
+    await c.service.tryAgain();
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1); // Try again stored from the kept copy
+    expect(backend.unwraps).toHaveLength(1);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
   it('[security 3] a revoked phone stops, never enrols again on its own, and gets a new device key only after Try again', async () => {
     const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
     const backend = new FakeBackend(() => clock.t);

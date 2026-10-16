@@ -58,7 +58,9 @@ export interface KeyVault {
   /**
    * Opens a book key sealed to this device's key (the one for `ref.profileId`) and stores it under `version`. Throws on any
    * mismatch. With `check`, the opened key must match `check.expected` (HMAC under it of
-   * `check.label`, 16 bytes) or nothing is written (`key_check_failed`).
+   * `check.label`, 16 bytes) or nothing is written (`key_check_failed`). Codes: `key_check_failed`
+   * and `key_open_failed` (the release is unusable), `keychain_unavailable` (no device key, or
+   * the Keychain refused the write just now, for example as the phone locks).
    */
   openBookKey(
     ref: BookKeyRef,

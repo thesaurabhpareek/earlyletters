@@ -189,8 +189,13 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
     },
     async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, check: { label: Uint8Array; expected: Uint8Array } | null) {
       const device = v.devices.get(r.profileId);
-      if (!device) throw new Error('no_device');
-      const bk = hpkeOpen(device.sk, s, info, aad);
+      if (!device) throw Object.assign(new Error('keychain_unavailable'), { code: 'keychain_unavailable' });
+      let bk: Uint8Array;
+      try {
+        bk = hpkeOpen(device.sk, s, info, aad);
+      } catch {
+        throw Object.assign(new Error('key_open_failed'), { code: 'key_open_failed' });
+      }
       // As ScribeKeys: a key that fails the row's check is never written.
       if (check && !createHmac('sha256', buf(bk)).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
         throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
