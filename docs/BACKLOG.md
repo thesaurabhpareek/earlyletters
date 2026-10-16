@@ -672,20 +672,20 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Done when: a content rules case rejects invite and write-together promises in `storeListing` while server features are off for v1.0; nothing is pushed to App Store Connect before this lands (guideline 2.3.1).
 
 #### BL-436 Version and store metadata as code (new, D-089)
-- Status: in-review (branch `feat/release-version-metadata`). Mode: agent. Owner: release engineer.
+- Status: in-review (branch `feat/release-version-metadata`). Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: `apps/mobile/version.json` read by `app.config.ts`; `scripts/release/store-config.ts` writes `apps/mobile/store.config.json` (EAS Metadata) from `packages/content`; tests for both and for drift.
 
 #### BL-437 Store-lane release workflow (new, D-089)
-- Status: in-review (branch `ci/release-ios-workflow`, stacked on BL-436). Mode: coordinator and founder (agents never edit `.github/`; the release engineer proposes changes under `docs/ops/proposed/release-*`); founder sets up the `app-store` environment and rulesets (FT-20). Owner: coordinator.
+- Status: in-review (branch `ci/release-ios-workflow`, stacked on BL-436). Mode: coordinator and founder (agents never edit `.github/`; the release engineer proposes changes under `docs/ops/proposed/release-*`); founder sets up the `app-store` environment and rulesets (FT-20). Owner: founder (the coordinator runs it).
 - Scope: `.github/workflows/release-ios.yml`: `ios-v<x.y.z>-rc.<n>` runs checks then an EAS production build with auto-submit to TestFlight; a manual metadata job; `ios-v<x.y.z>` publishes the GitHub Release. Review contact from `ASC_REVIEW_CONTACT_JSON`; review notes from `storeListing.reviewNotes` (BL-341 finishes the text).
 - Needs: production App Store Connect record, `submit.production.ascAppId`, `EXPO_TOKEN`, production signing credentials in EAS, BL-339.
 
 #### BL-438 Release records (new, D-089)
-- Status: ready. Mode: agent. Owner: release engineer.
+- Status: ready. Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: keep `docs/release/1.0.0.md` current twice a week until release; one record per later version; `apple.copyright` once the founder confirms the holder.
 
 #### BL-439 Release health watch (new, D-090)
-- Status: blocked (first release). Mode: agent plus founder numbers. Owner: platform engineer.
+- Status: blocked (first release). Mode: agent plus founder numbers. Owner: platform.
 - Scope: day 1, 3 and 7 health report on the release issue (crash-free sessions and users from App Store Connect, open S0 and S1, pause or hotfix recommendation); `docs/ops/SLO.md` with the G5 thresholds.
 
 ---

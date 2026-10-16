@@ -41,6 +41,7 @@ import {
   type ExportEntry,
   type ExportMachineEdit,
   type OtherVersionsFile,
+  type ExportPhoneConsent,
 } from './schema';
 
 export interface SnapshotChild extends Child {
@@ -65,6 +66,11 @@ export interface SnapshotOtherVersion {
   keptAt: string;
 }
 
+/** The phone's consent choices for account.json (schema 1.1.0). */
+export function phoneConsent(ageConfirmed: boolean, usage: string | null | undefined): ExportPhoneConsent {
+  return { age_confirmed: ageConfirmed, usage_sharing: usage === 'granted' || usage === 'denied' ? usage : 'not_answered' };
+}
+
 export interface ExportSnapshot {
   /** ISO instant the export was made. */
   generatedAt: string;
@@ -78,6 +84,8 @@ export interface ExportSnapshot {
   entries: SnapshotEntry[];
   /** Conflict copies (F16-REQ-023). Absent or empty: no other-versions file. */
   otherVersions?: SnapshotOtherVersion[];
+  /** For account.json: the consent choices this phone holds (never a server record). */
+  consent: ExportPhoneConsent;
 }
 
 export interface TextFile {
@@ -553,6 +561,7 @@ export async function dataFiles(
     plan: snapshot.plan,
     exported_from: 'phone',
     memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    consent_on_this_phone: snapshot.consent,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
   const files: TextFile[] = [
