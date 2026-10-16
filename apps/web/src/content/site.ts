@@ -212,7 +212,7 @@ export const site = {
     label: 'Your email',
     placeholder: 'you@example.com',
     hint: 'Just your email address, nothing else.',
-    note: `One email when ${NAME} is ready. We never share your address, and every email has an unsubscribe link.`,
+    note: `A welcome email now, and one more when ${NAME} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
     button: "Keep me informed",
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
@@ -274,9 +274,7 @@ export const site = {
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
-      { href: '/health-privacy', label: 'Consumer health data' },
-      { href: '/subprocessors', label: 'Subprocessors' },
-      { href: '/delete-account', label: 'Delete your account' },
+      { href: 'mailto:hello@earlyletters.com', label: 'Contact' },
     ],
   },
 } as const;

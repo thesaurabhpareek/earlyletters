@@ -1,4 +1,4 @@
-/** Owner: E1 (web platform). Shared frame for /privacy, /terms, /health-privacy, /subprocessors and /delete-account. */
+/** Owner: E1 (web platform). Shared frame for /privacy and /terms. */
 import type { Viewport } from 'next';
 import { brand } from '@scribe/brand';
 import { LegalFrame } from '@/components/site/LegalFrame';

@@ -192,9 +192,6 @@ export function Landing() {
             </a>
           ))}
         </nav>
-        <a href={`mailto:${site.footer.contact}`} className={styles.contact}>
-          {site.footer.contact}
-        </a>
       </footer>
     </div>
   );
