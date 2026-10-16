@@ -12,6 +12,11 @@
 # After a push the workflow prints which files are not yet listed in
 # .github/migrations-applied.txt. It never edits that file: a pull request
 # records them (DEPLOY.md, "After a deploy").
+#
+# Staging then runs RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts):
+# it also reads SUPABASE_STAGING_URL, SUPABASE_STAGING_PUBLISHABLE_KEY and
+# SUPABASE_STAGING_PROJECT_REF from the staging Environment, all public values
+# kept as secrets so logs mask them, and fails the job if staging is not ready.
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Deploy database
 
@@ -64,7 +69,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # The push, then the smoke (function health retries and, if psql is
+    # missing, an apt install).
+    timeout-minutes: 15
     environment: staging
     concurrency:
       group: deploy-db-staging
@@ -111,6 +118,53 @@ jobs:
             echo
             echo "Open a pull request that adds these lines (docs/ops/DEPLOY.md). This workflow never edits the file."
           } >> "$GITHUB_STEP_SUMMARY"
+      # RA-07-06's content-free smoke after the push (RA-20-04; runbook
+      # docs/ops/runbooks/staging-smoke.md): anonymous reads of the Data API,
+      # Auth and the function health routes, and two read-only catalog
+      # queries through psql. It prints statuses and closed values only: no
+      # URL, key, row or table contents. It runs after the record step so a
+      # red smoke still leaves the list above.
+      - name: Smoke secrets and script are present
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_URL" ] || missing="$missing SUPABASE_STAGING_URL"
+          [ -n "$SUPABASE_PUBLISHABLE_KEY" ] || missing="$missing SUPABASE_STAGING_PUBLISHABLE_KEY"
+          [ -n "$PROJECT_REF" ] || missing="$missing SUPABASE_STAGING_PROJECT_REF"
+          if [ -n "$missing" ]; then
+            echo "::error::Not set on the staging environment:$missing (docs/ops/DEPLOY.md). The migrations were pushed; the smoke did not run."
+            exit 1
+          fi
+          if [ ! -f scripts/ops/staging-smoke.ts ]; then
+            echo "::error::scripts/ops/staging-smoke.ts is not on this commit (RA-07-06, #202). The migrations were pushed; the smoke did not run."
+            exit 1
+          fi
+      # The ubuntu-24.04 image lists PostgreSQL 16 with its client
+      # (actions/runner-images, images/ubuntu/Ubuntu2404-Readme.md, image
+      # 20261012). Checked here, not assumed; Ubuntu's postgresql-client if not.
+      - name: PostgreSQL client for the smoke
+        run: |
+          if command -v psql > /dev/null 2>&1; then
+            echo "psql is on the runner: $(psql --version)"
+          else
+            echo "::notice::psql is not on this runner image; installing postgresql-client from Ubuntu's archive."
+            sudo apt-get update -q
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends postgresql-client
+            psql --version
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Content-free smoke (RA-07-06)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+        run: node scripts/ops/staging-smoke.ts --project-ref "$PROJECT_REF" --summary "$GITHUB_STEP_SUMMARY"
 
   production:
     name: deploy to production

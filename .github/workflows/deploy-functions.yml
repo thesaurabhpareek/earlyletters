@@ -1,0 +1,270 @@
+# Deploys Edge Functions to scribe-staging (RA-20-05). See docs/ops/DEPLOY.md,
+# "Edge Functions to staging", and docs/release/AUTOMATION.md section 2.2.
+#
+#   push to develop   when a function's code changed (its index.ts and every
+#                     file it imports, in supabase/functions/ or packages/), or
+#                     these deploy rules changed: deploys every function
+#   manual run        on develop only; input `function`: one folder, or all
+#
+# Every function, not only the changed ones: GitHub replaces a pending run in
+# the concurrency group with the newest, so the newest run carries every
+# earlier change. Never escrow (D-102: its own project, founder only). Never
+# --prune.
+#
+# Waits in the staging Environment (required reviewer). The one credential is
+# a scoped access token in that Environment, SUPABASE_ACCESS_TOKEN_STAGING
+# (AF-06). Without it nothing is deployed: the run summary says NOT DEPLOYED,
+# prints the commands for the founder's computer, and is never evidence.
+#
+# After the deploys:
+#   1. the CLI's function list shows each function ACTIVE, on a new version,
+#      with the gateway JWT check it was deployed with;
+#   2. RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts --no-db)
+#      needs health 200 from each function with an anonymous health route.
+# Which functions skip the gateway check, and which the smoke reaches, is in
+# .github/scripts/functions-deploy.mjs (NO_VERIFY_JWT, SMOKE_HEALTH).
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: Deploy functions
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'supabase/functions/**'
+      - 'packages/**'
+      - '.github/workflows/deploy-functions.yml'
+      - '.github/scripts/functions-deploy.mjs'
+  workflow_dispatch:
+    inputs:
+      function:
+        description: 'A folder under supabase/functions, or all (never escrow)'
+        required: true
+        default: all
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SUPABASE_CLI_VERSION: 2.119.0
+
+jobs:
+  plan:
+    name: what to deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.plan.outputs.deploy }}
+      no_verify_jwt: ${{ steps.plan.outputs.no_verify_jwt }}
+      smoke: ${{ steps.plan.outputs.smoke }}
+    steps:
+      # The staging Environment also allows main (deploy-db.yml); this keeps a
+      # manual run from putting main's older functions on staging.
+      - name: A manual run deploys develop only
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != "refs/heads/develop" ]; then
+            echo "::error::A manual run deploys develop's functions to staging only (got $REF)."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          FUNCTION: ${{ inputs.function }}
+        run: |
+          out="$RUNNER_TEMP/plan.json"
+          status=0
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            node .github/scripts/functions-deploy.mjs plan --only "$FUNCTION" > "$out" || status=$?
+          elif [ -z "$BEFORE" ] || [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            node .github/scripts/functions-deploy.mjs plan --all > "$out" || status=$?
+          else
+            git diff --name-only "$BEFORE" "$GITHUB_SHA" > "$RUNNER_TEMP/changed.txt"
+            node .github/scripts/functions-deploy.mjs plan --changed "$RUNNER_TEMP/changed.txt" > "$out" || status=$?
+          fi
+          if ! jq -e '.deploy' "$out" > /dev/null 2>&1; then
+            echo "::error::.github/scripts/functions-deploy.mjs did not print a plan (exit $status)."
+            exit 1
+          fi
+          jq -r '.notes[] | "::notice::" + .' "$out"
+          jq -r '.warnings[] | "::warning::" + .' "$out"
+          jq -r '.errors[] | "::error::" + .' "$out"
+          {
+            echo "deploy=$(jq -r '.deploy | join(" ")' "$out")"
+            echo "no_verify_jwt=$(jq -r '.noVerifyJwt | join(" ")' "$out")"
+            echo "smoke=$(jq -r '.smoke | join(",")' "$out")"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Edge Functions: what to deploy"
+            echo
+            echo "- Changed in this push: $(jq -r 'if (.changed | length) == 0 then "none" else .changed | join(", ") end' "$out")"
+            echo "- Deploy: $(jq -r 'if (.deploy | length) == 0 then "nothing" else .deploy | join(", ") end' "$out")"
+            echo "- Without the gateway JWT check (--no-verify-jwt): $(jq -r 'if (.noVerifyJwt | length) == 0 then "none" else .noVerifyJwt | join(", ") end' "$out")"
+            echo "- Health 200 through the smoke: $(jq -r 'if (.smoke | length) == 0 then "none" else .smoke | join(", ") end' "$out"); the rest through the function list"
+            jq -r '(.notes + .warnings + .errors)[] | "- " + .' "$out"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  deploy:
+    name: deploy to staging
+    needs: plan
+    if: needs.plan.outputs.deploy != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    concurrency:
+      group: deploy-functions-staging
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      DEPLOY: ${{ needs.plan.outputs.deploy }}
+      NO_VERIFY_JWT: ${{ needs.plan.outputs.no_verify_jwt }}
+      SMOKE: ${{ needs.plan.outputs.smoke }}
+      SUPABASE_TELEMETRY_DISABLED: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Planted failure 1 (AUTOMATION.md 2.12): without the token this step
+      # says NOT DEPLOYED with a warning, and every later step is skipped.
+      - name: Token check
+        id: token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            if [ -z "$PROJECT_REF" ]; then
+              echo "::error::SUPABASE_STAGING_PROJECT_REF is not set on the staging environment (docs/ops/DEPLOY.md)."
+              exit 1
+            fi
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "deploy=false" >> "$GITHUB_OUTPUT"
+          echo "::warning title=NOT DEPLOYED::No SUPABASE_ACCESS_TOKEN_STAGING on the staging environment, so nothing was deployed and this run is not evidence. The run summary has the commands for your computer."
+          {
+            echo "## NOT DEPLOYED"
+            echo
+            echo "The \`staging\` environment has no \`SUPABASE_ACCESS_TOKEN_STAGING\` (a scoped token, AF-06), so this run deployed nothing. It is **not evidence** that staging runs this commit (docs/release/AUTOMATION.md 2.2)."
+            echo
+            echo "To deploy from your own computer, in a checkout of \`$GITHUB_SHA\`, after \`npx -y supabase@$SUPABASE_CLI_VERSION login\`:"
+            echo
+            echo '```bash'
+            for fn in $DEPLOY; do
+              flag=""
+              case " $NO_VERIFY_JWT " in *" $fn "*) flag=" --no-verify-jwt" ;; esac
+              echo "npx -y supabase@$SUPABASE_CLI_VERSION functions deploy $fn --project-ref <staging ref> --use-api$flag"
+            done
+            echo "npx -y supabase@$SUPABASE_CLI_VERSION functions list --project-ref <staging ref>"
+            if [ -n "$SMOKE" ]; then
+              echo "SUPABASE_URL=https://<staging ref>.supabase.co SUPABASE_PUBLISHABLE_KEY=<staging publishable key> \\"
+              echo "  node scripts/ops/staging-smoke.ts --project-ref <staging ref> --no-db --functions $SMOKE"
+            fi
+            echo '```'
+            echo
+            echo "Each function in the list should be ACTIVE with a new version; the smoke should end GREEN."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.token.outputs.deploy == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - if: steps.token.outputs.deploy == 'true'
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      # Bundled by the Management API (--use-api), as each function's header
+      # says; the access token travels as SUPABASE_ACCESS_TOKEN, never argv.
+      - name: Deploy
+        id: deploy
+        if: steps.token.outputs.deploy == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+        run: |
+          if ! supabase functions list --project-ref "$PROJECT_REF" -o json > "$RUNNER_TEMP/before.json"; then
+            echo "::error::Could not list staging's functions. Check SUPABASE_ACCESS_TOKEN_STAGING (a token that can deploy Edge Functions to the staging project) and SUPABASE_STAGING_PROJECT_REF."
+            exit 1
+          fi
+          ok=""
+          failed=""
+          for fn in $DEPLOY; do
+            args=(--project-ref "$PROJECT_REF" --use-api)
+            case " $NO_VERIFY_JWT " in *" $fn "*) args+=(--no-verify-jwt) ;; esac
+            echo "::group::deploy $fn"
+            if supabase functions deploy "$fn" "${args[@]}"; then
+              ok="$ok $fn"
+            else
+              failed="$failed $fn"
+            fi
+            echo "::endgroup::"
+          done
+          echo "ok=${ok# }" >> "$GITHUB_OUTPUT"
+          echo "failed=${failed# }" >> "$GITHUB_OUTPUT"
+          if [ -n "$failed" ]; then
+            echo "::error::Not deployed:$failed. The others deployed; the next steps still check them."
+            exit 1
+          fi
+      - name: Confirm in the function list
+        if: ${{ !cancelled() && steps.token.outputs.deploy == 'true' && (steps.deploy.outputs.ok != '' || steps.deploy.outputs.failed != '') }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+          OK: ${{ steps.deploy.outputs.ok }}
+          FAILED: ${{ steps.deploy.outputs.failed }}
+        run: |
+          if ! supabase functions list --project-ref "$PROJECT_REF" -o json > "$RUNNER_TEMP/after.json"; then
+            echo "::error::Could not list staging's functions after the deploy."
+            exit 1
+          fi
+          if ! node .github/scripts/functions-deploy.mjs confirm --before "$RUNNER_TEMP/before.json" --after "$RUNNER_TEMP/after.json" \
+              --deployed "$OK" --failed "$FAILED" --no-verify-jwt "$NO_VERIFY_JWT" > "$RUNNER_TEMP/confirm.md"; then
+            cat "$RUNNER_TEMP/confirm.md" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::The function list does not show every deploy (see the run summary)."
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/confirm.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke secrets and script are present
+        id: smoke-ready
+        if: ${{ !cancelled() && steps.token.outputs.deploy == 'true' && env.SMOKE != '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_URL" ] || missing="$missing SUPABASE_STAGING_URL"
+          [ -n "$SUPABASE_PUBLISHABLE_KEY" ] || missing="$missing SUPABASE_STAGING_PUBLISHABLE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Not set on the staging environment:$missing (docs/ops/DEPLOY.md). The functions deployed; the health check did not run."
+            exit 1
+          fi
+          if [ ! -f scripts/ops/staging-smoke.ts ]; then
+            echo "::error::scripts/ops/staging-smoke.ts is not on this commit (RA-07-06, #202). The functions deployed; the health check did not run."
+            exit 1
+          fi
+      # Health 200 from each function with an anonymous route; --no-db because
+      # this job holds no database URL. Prints statuses and closed values only.
+      - name: Content-free smoke (RA-07-06)
+        if: ${{ !cancelled() && steps.smoke-ready.outcome == 'success' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+          PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+        run: node scripts/ops/staging-smoke.ts --project-ref "$PROJECT_REF" --no-db --functions "$SMOKE" --summary "$GITHUB_STEP_SUMMARY"
