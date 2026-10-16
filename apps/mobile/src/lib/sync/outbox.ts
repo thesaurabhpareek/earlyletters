@@ -305,6 +305,9 @@ export function rebaseQueued(db: SqlDb, id: string, v: string, opts: { exceptWor
     const p = JSON.parse(o.payload) as PushOp;
     if (opts.exceptWords && (p.changed ?? ALL_GROUPS).includes('text')) continue;
     if (p.base === v) continue;
+    // Only forward: a base names words this phone has seen, and an older answer arriving
+    // late (a duplicate's applied_v) must not move it back (a false conflict).
+    if (p.base && /^\d+$/.test(p.base) && /^\d+$/.test(v) && BigInt(p.base) > BigInt(v)) continue;
     p.base = v;
     db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
   }

@@ -213,6 +213,45 @@ describe('[F16-REQ-025] queued ops of one letter descend from what this phone wr
     expect(ops(db)[0].base).toBe('100');
   });
 
+  it('a duplicate of a words op from a receipt older than v1, with nothing queued, keeps the version this phone\'s words came from (review A2-1)', () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Shells.');
+    edit(db, id, 'Shells by the door.');
+    answer(db, (o) => ({ dup: true, entry: state(o.id, '260') })); // 260 may hold another phone's words
+    expect(getEntryRow(db, id)?.server_version).toBe('100');
+    edit(db, id, 'Shells by the door, in a row.');
+    expect(ops(db)[0].base).toBe('100'); // compared against those words, never applied over them
+  });
+
+  it('a duplicate of an op without words still records the letter as it is now', () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Kites.');
+    setInBook(db, id, false);
+    answer(db, (o) => ({ dup: true, entry: state(o.id, '265') }));
+    expect(getEntryRow(db, id)?.server_version).toBe('265');
+  });
+
+  it('a base only moves forward: a late duplicate\'s applied_v never takes it back (review A2-2)', () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Puddles.');
+    setInBook(db, id, false);
+    db.run('UPDATE sync_outbox SET sent_at = ?', ctx.now); // in flight, answer lost
+    // A pull brings newer words (this phone has no words queued): later ops descend from 300.
+    db.transaction(() => db.run("UPDATE entries SET final_text = 'Puddles, deep ones.' WHERE id = ?", id));
+    edit(db, id, 'Puddles, deep ones, and boots.');
+    db.run("UPDATE sync_outbox SET payload = json_set(payload, '$.base', '300') WHERE sent_at IS NULL");
+    answer(db, (o) => ({ dup: true, applied_v: '200', entry: state(o.id, '310') }));
+    expect(ops(db)[0].base).toBe('300');
+  });
+
+  it('after a words conflict the phone records the later of the row and words versions, so its own words can go again (review A2-3)', () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Owls.');
+    edit(db, id, 'Owls at night.');
+    answer(db, (o) => ({ applied: true, conflict_groups: ['text'], current: { ...words('Two owls.'), v: '402' }, entry: state(o.id, '401') }));
+    expect(getEntryRow(db, id)?.server_version).toBe('402');
+  });
+
   it('a restore is not a words write: the upsert after it keeps the base its words came from', () => {
     const { db, child } = claimed();
     const id = synced(db, child, 'Snow.');
@@ -385,5 +424,42 @@ describe('[F16-REQ-018] the remote kill switch', () => {
     await e.sync();
     expect(calls).toEqual(['sync_push']); // no pull after the switch went on
     expect(e.status().phase).toBe('paused_server');
+  });
+
+  it('the push-round check alone stops a second round (review B2-1)', async () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Two.');
+    edit(db, id, 'Two more.');
+    db.run('UPDATE sync_outbox SET sent_at = ?', ctx.now);
+    edit(db, id, 'Two more, then three.'); // one op per letter per batch: two rounds
+    let killed = false;
+    const calls: string[] = [];
+    const s: SupabaseLike = {
+      rpc: (fn, args = {}) => {
+        calls.push(fn);
+        killed = true;
+        return Promise.resolve({ data: { results: (args.p_ops as PushOp[]).map((o) => ({ op: o.op, ok: true, entry: state(o.id, '610') })), paused: false, stopped: false }, error: null, status: 200 });
+      },
+    };
+    const e = createSyncEngine({ db, supabase: s, userId: ME, newId: id7, now: () => NOW, random: () => 1, setTimer: () => 0, clearTimer: () => {}, isActive: () => false, paused: () => killed });
+    await e.sync();
+    expect(calls).toEqual(['sync_push']);
+    expect(e.status().pending).toBe(1);
+  });
+
+  it('the pull-page check alone stops the next page (review B2-1)', async () => {
+    const { db } = claimed();
+    let killed = false;
+    const calls: string[] = [];
+    const s: SupabaseLike = {
+      rpc: (fn) => {
+        calls.push(fn);
+        killed = true;
+        return Promise.resolve({ data: { reset: false, epoch: 1, epoch_started_at: ctx.now, books: [], gone: [], more: true }, error: null, status: 200 });
+      },
+    };
+    const e = createSyncEngine({ db, supabase: s, userId: ME, newId: id7, now: () => NOW, random: () => 1, setTimer: () => 0, clearTimer: () => {}, isActive: () => false, paused: () => killed });
+    await e.sync();
+    expect(calls).toEqual(['sync_pull']);
   });
 });
