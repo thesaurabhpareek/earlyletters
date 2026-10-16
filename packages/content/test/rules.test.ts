@@ -15,6 +15,7 @@ import { brand } from '@scribe/brand';
 import {
   accountEmails,
   authEmails,
+  backupEmails,
   billingEmails,
   book,
   emailChrome,
@@ -119,7 +120,7 @@ const ALL: Leaf[] = [
 ];
 /** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
 const EMAIL: Leaf[] = leaves(
-  { authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
+  { authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
   'email',
 );
 /** Everything the rules below apply to: content, email copy and feature-local app copy. */
@@ -629,7 +630,7 @@ describe('onboarding story cards (server fallback, D-066)', () => {
 });
 
 describe('emails', () => {
-  const MAILS = [authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
+  const MAILS = [authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
 
   it('has a subject, preview and heading for every email, and short subjects', () => {
     expect(MAILS.length).toBeGreaterThan(0);

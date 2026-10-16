@@ -2,7 +2,8 @@
  * Typed wrappers for the service-only database functions the worker calls.
  * SQL: supabase/migrations/20261002020000_data_governance.sql (prepare and
  * finalize), 20261003020000_purge_batching.sql (purge_due, backoff) and
- * 20261004200000_ops_deletion_worker.sql (everything named ops_*).
+ * 20261004200000_ops_deletion_worker.sql (everything named ops_*), and
+ * 20261015230000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between).
  * Every id travels in an RPC body, never in a URL.
  */
 import type { ServiceClient } from './lib/service.ts';
@@ -84,6 +85,31 @@ export interface PurgeResult {
   more: boolean;
 }
 
+export interface BackupSweep {
+  orphans: number;
+  stale_pending: number;
+  expired_requests: number;
+  old_requests: number;
+  old_notices: number;
+  old_log_rows: number;
+}
+
+/** One escrow_unwraps row as copied out each day: ids, enums and times, never key bytes. */
+export interface EscrowLogRow {
+  id: number;
+  at: string;
+  reason: 'restore' | 'rotation' | 'legal';
+  outcome: 'opened' | 'failed';
+  profile: string | null;
+  subject: string | null;
+  device: string | null;
+  child: string;
+  kv: number;
+  ekv: number;
+  restore: string | null;
+  req: string | null;
+}
+
 export const db = (c: ServiceClient) => ({
   purgeDue: (limit = 500) => c.rpc<PurgeResult>('purge_due', { p_limit: limit }),
   work: (limit = 10) => c.rpc<DeletionWork>('ops_deletion_work', { p_limit: limit }),
@@ -117,6 +143,9 @@ export const db = (c: ServiceClient) => ({
   ledgerSince: (from: string, until: string, limit = 50_000) =>
     c.rpc<{ t: string; id: string; at: string }[]>('ops_ledger_between', { p_from: from, p_until: until, p_limit: limit }),
   retention: () => c.rpc<Record<string, number>>('ops_retention', {}),
+  backupSweep: (limit = 500) => c.rpc<BackupSweep>('backup_svc_sweep', { p_limit: limit }),
+  escrowLogBetween: (from: string, until: string, limit = 50_000) =>
+    c.rpc<EscrowLogRow[]>('backup_svc_unwraps_between', { p_from: from, p_until: until, p_limit: limit }),
 });
 
 export type Db = ReturnType<typeof db>;

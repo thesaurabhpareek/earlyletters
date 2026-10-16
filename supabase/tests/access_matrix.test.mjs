@@ -63,6 +63,23 @@ await sys(`insert into sync_op_receipts (op_id, profile_id) values ($1, $2)`, [u
 await sys(`insert into sync_rate_windows (profile_id, bucket, window_start, hits) values ($1, 'push', now(), 1)`, [A]);
 // One idempotency key, A's (20261005000000): the table is reached only through functions.
 await sys(`insert into idempotency_keys (profile_id, idem_key, fn, request_sha256, result) values ($1, $2, 'record_policy_act', '\\x00', '{}')`, [A, uuid7()]);
+// Backup (20261015230000, S05; behaviour in audio_backup*.test.mjs): one row of A's in every backup
+// table, so 0 rows for anyone else means denied. app.backup_enabled is unset here, so writes are SCBKO.
+const BDEV = uuid7();
+const BDEV2 = uuid7();
+const BHEX = (b, n) => `'\\x${b.repeat(n)}'::bytea`;
+const BPATH = `${CHILD}/${A}/${aBook}.m4a.enc`;
+await sys(`insert into backup_devices (device_id, profile_id, public_key, enrolled_at) values ($1, $3, ${BHEX('a1', 32)}, now() - interval '30 days'),
+  ($2, $3, ${BHEX('a2', 32)}, now() - interval '30 days')`, [BDEV, BDEV2, A]);
+await sys(`insert into child_keys (child_id, profile_id, key_version, escrow_wrap, escrow_key_version) values ($1, $2, 1, ${BHEX('01', 81)}, 1)`, [CHILD, A]);
+await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes) values ($1, $2, $3, $4, 1, ${BHEX('cd', 60)}, 100)`, [aBook, CHILD, A, BPATH]);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [BPATH]);
+const BREQ = (await sys(`insert into restore_requests (profile_id, device_id, hold_until, stop_token_hash, stop_token_expires_at)
+  values ($1, $2, now() + interval '1 day', ${BHEX('5a', 32)}, now() + interval '7 days') returning id`, [A, BDEV])).rows[0].id;
+await sys(`insert into restore_approvals (request_id, device_id, sealed_code, code_hash) values ($1, $2, ${BHEX('5c', 80)}, sha256(${BHEX('5d', 32)}))`, [BREQ, BDEV2]);
+await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
+  values ($1, $2, $3, 1, 1, 'restore', 'opened', $4)`, [A, BDEV, CHILD, BREQ]);
+await sys(`insert into escrow_rotation_notices (profile_id, to_version) values ($1, 2)`, [A]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -116,6 +133,17 @@ const READS = [
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
+  // Backup (20261015230000): the owner's own rows only (F08-REQ-022); anon has no grant at all.
+  ['backup_devices', 'select 1 from backup_devices', [],                              [2, 0, 0, 0, 0, '42501']],
+  ['child_keys', 'select 1 from child_keys', [],                                      [1, 0, 0, 0, 0, '42501']],
+  ['audio_blobs', 'select 1 from audio_blobs', [],                                    [1, 0, 0, 0, 0, '42501']],
+  ['backup_usage', 'select 1 from backup_usage', [],                                  [1, 0, 0, 0, 0, '42501']],
+  ['restore_requests', 'select 1 from restore_requests', [],                          [1, 0, 0, 0, 0, '42501']],
+  ['restore_approvals', 'select 1 from restore_approvals', [],                        [1, 0, 0, 0, 0, '42501']],
+  ['escrow_unwraps', 'select 1 from escrow_unwraps', [],                              [1, 0, 0, 0, 0, '42501']],
+  ['escrow_rotation_notices', 'select 1 from escrow_rotation_notices', [],            ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_keys: the escrow wrap', 'select escrow_wrap from child_keys', [],           ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage: backup object', 'select 1 from storage.objects where name=$1', [BPATH],  [1, 0, 0, 0, 0, 0]],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -141,6 +169,10 @@ const WRITES = [
   ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Backup (20261015230000): every write goes through a function; the log is never touched by a client.
+  ['audio_blobs: confirm own row directly', `update audio_blobs set state = 'confirmed' where author_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['escrow_unwraps: delete own log rows', `delete from escrow_unwraps where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage: delete own backup object', `delete from storage.objects where name = '${BPATH}'`, ['none', 'none', 'none', 'none', 'none', 'none']],
 ];
 
 // Plus is checked on the device only (ADR 0013, 20261004000000_plus_on_device_only.sql):
@@ -174,6 +206,19 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Backup (20261015230000; behaviour in audio_backup*.test.mjs). The server switch is off here, so
+  // key storage and reservations are SCBKO for everyone; reading, discarding and deleting never are.
+  ['backup_register_device', `select public.backup_register_device('${uuid7()}', ${BHEX('b2', 32)})`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['backup_revoke_device', `select public.backup_revoke_device('${BDEV}')`,             ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_store_key', `select public.backup_store_key('${CHILD}', 1, 1, '{"suite": "hpke-x25519-sha256-aes256gcm", "enc": "${'A'.repeat(43)}=", "ct": "${'A'.repeat(64)}"}'::jsonb)`, ['SCBKO', 'SCBKO', 'SCBKO', 'SCBKO', 'SCANO', '42501']],
+  ['backup_begin', `select public.backup_begin('${aBook}', '${CHILD}', 100, 1, ${BHEX('cd', 60)})`, ['SCBKO', 'SCBKO', 'SCBKO', 'SCBKO', 'SCANO', '42501']],
+  ['backup_confirm', `select public.backup_confirm('${aPrivate}', ${BHEX('ef', 32)})`, ['P0002', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_discard', `select public.backup_discard('${aBook}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // backup_delete_all needs a sign-in in the last 10 minutes; these sessions carry no amr (SCSTP).
+  ['backup_delete_all', `select public.backup_delete_all(0)`,                           ['SCSTP', 'SCSTP', 'SCSTP', 'SCSTP', 'SCANO', '42501']],
+  ['backup_pending_requests', `select public.backup_pending_requests('${BDEV}')`,       ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_approve_request', `select public.backup_approve_request('${BREQ}', '${BDEV2}', ${BHEX('5d', 32)})`, ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_cancel_request', `select public.backup_cancel_request('${BREQ}')`,           ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -188,6 +233,10 @@ const HELPERS = {
   'can_write_content()': [`select public.can_write_content() v`, [true, true, true, true, false, '42501']],
   'require_content_consent()': [`select public.require_content_consent()::text = '' v`, [true, true, true, true, 'SCANO', '42501']],
   'is_valid_client_uuid7(uuid)': [`select public.is_valid_client_uuid7('${uuid7()}') v`, [true, true, true, true, true, '42501']],
+  // The entry-audio Storage policies (20261015230000): the only gate a signed URL passes. Writable is
+  // false for everyone here because the server switch is off.
+  'backup_object_writable(text)': [`select public.backup_object_writable('${BPATH}') v`, [false, false, false, false, false, '42501']],
+  'backup_object_readable(text)': [`select public.backup_object_readable('${BPATH}') v`, [true, false, false, false, false, '42501']],
 };
 // Service role only (Edge Functions, cron, runbooks).
 const SERVICE_ONLY = [
@@ -201,6 +250,20 @@ const SERVICE_ONLY = [
   // Internal helpers (20261005000000): called only from security-definer functions.
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
+  // Backup (20261015230000): internal helpers, the purge worker's and stop endpoint's functions, and
+  // the escrow_* functions (role escrow_svc only; its own grants are tested in audio_backup_escrow).
+  `select public.backup_switch_on('backup')`, `select public.backup_escrow_key_trusted(1)`, `select public.backup_account_deleting('${A}')`,
+  `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
+  `select public.backup_session_live('${A}', '${uuid7()}')`, `select public.backup_recent_sign_in()`,
+  `select public.escrow_rotation_on(1, 2)`, `select public.escrow_approvers('${A}', '${BDEV}')`, `select public.escrow_long_hold('${A}', '${BDEV}')`,
+  `select public.escrow_require_session('${A}', '${uuid7()}')`,
+  `select public.backup_svc_sweep(now(), 1)`, `select public.backup_svc_unwraps_between(now(), now(), 1)`, `select public.backup_svc_stop(${BHEX('00', 32)})`,
+  `select public.escrow_require_on()`, `select public.escrow_request_context('${A}', '${BDEV}')`,
+  `select public.escrow_open_request('${A}', '${BDEV}', '${uuid7()}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
+  `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}', '${uuid7()}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
+  `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 2)`,
+  `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_rotation_failed('${A}', '${CHILD}', 1, 1, 2, null)`, `select public.escrow_rotation_notices_due(2, 1)`, `select public.escrow_rotation_notice_sent('${uuid7()}', true)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -292,7 +355,11 @@ const clientTables = [...new Set(policies.filter((p) => p.permissive === 'PERMIS
 const unguardedTables = clientTables.filter((t) => !policies.some((p) => p.tablename === t && p.permissive === 'RESTRICTIVE' && /is_anonymous/.test(p.expr)));
 for (const t of unguardedTables) console.log(`      no restrictive anonymous policy: public.${t}`);
 check('[K-08] every client-visible table has a restrictive anonymous-session policy', clientTables.length >= 10 && unguardedTables.length === 0);
-check('[K-08] the photo bucket has a restrictive anonymous-session policy',
-  (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE' and qual ~ 'is_anonymous'`)).rows.length === 1);
+// One restrictive anonymous-session policy per client bucket (entry-audio added by 20261015230000).
+for (const bucket of ['entry-photos', 'entry-audio']) {
+  check(`[K-08] the ${bucket} bucket has a restrictive anonymous-session policy`,
+    (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE'
+      and qual ~ 'is_anonymous' and qual ~ $1`, [`'${bucket}'`])).rows.length === 1);
+}
 
 done();

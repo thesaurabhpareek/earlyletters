@@ -51,6 +51,9 @@ import * as trialEndingFinal from './billing/trial-ending-final';
 import * as trialEndingLong from './billing/trial-ending-long';
 import * as trialEndingWeek from './billing/trial-ending-week';
 import * as trialStarted from './billing/trial-started';
+import * as backupRestoreRequested from './backup/backup-restore-requested';
+import * as backupKeyUsed from './backup/backup-key-used';
+import * as backupKeyRotated from './backup/backup-key-rotated';
 
 export type TemplateModule = {
   copy: EmailCopy;
@@ -116,6 +119,11 @@ const groups: Record<string, TemplateModule[]> = {
     trialEndingLong,
     trialEndingWeek,
     trialStarted,
+  ],
+  backup: [
+    backupRestoreRequested,
+    backupKeyUsed,
+    backupKeyRotated,
   ],
 };
 
