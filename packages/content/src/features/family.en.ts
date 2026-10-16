@@ -11,6 +11,35 @@ export const familyCopy = {
     coParent: 'Co-parent',
     invited: 'Invited',
     invitedName: 'Your co-parent',
+    family: 'Family',
+  },
+
+  /**
+   * Leaving a shared book (F11 6.2 D; leave_child). Two equal choices, nothing
+   * chosen, Continue waits for one (F11-REQ-028). {coParent} is the other
+   * parent's sign-off name, or `members.invitedName`.
+   */
+  leave: {
+    button: "Leave {child}'s book",
+    title: "Leave {child}'s book?",
+    keepTitle: 'Leave my letters in the book',
+    keepBody: 'Anyone {coParent} invites later can read letters you leave in the book.',
+    takeOutTitle: 'Take my letters out of the book',
+    takeOutBody: 'Your letters stay yours. You can read, export and delete them on this phone.',
+    cantTakeBack: "Letters already on {coParent}'s phone or in an export can't be taken back.",
+    confirm: 'Leave the book',
+    stay: 'Stay',
+    working: 'Leaving the book',
+    left: "You left {child}'s book. Your letters are still on this phone.",
+  },
+
+  /** Removing a family member (remove_child_member). Parents are never removed this way (F11 D3, F11-REQ-012). */
+  remove: {
+    button: 'Remove from the book',
+    title: 'Remove {name} from the book?',
+    body: "They won't see {child}'s book anymore. The letters they wrote stay in it.",
+    confirm: 'Remove',
+    keep: 'Keep them',
   },
 
   card: {
@@ -38,7 +67,9 @@ export const familyCopy = {
     signsAsPlaceholder: 'Mama, Papa, Amma, Baba',
     signsAsHelp: 'Optional. It signs their letters.',
     oneBook: "This invite is for {child}'s book only.",
-    linkNote: 'The link works once, for 7 days. You can cancel it any time.',
+    linkNote: 'The link works once, for 7 days. You can cancel it any time. They see your name and choose whether to join.',
+    /** Instead of Share when the book already has two parents (F11-U10, F11-REQ-004). */
+    fullNote: "{child}'s book has two parents.",
     share: 'Share invite link',
     working: 'Getting the link ready',
     shareTitle: "Join {child}'s book",
@@ -49,6 +80,17 @@ export const familyCopy = {
 
   accept: {
     title: 'Join the family book',
+    /** Asked before joining, from peek_invite: never the child's name (BL-322, F11 6.2 B step 6). */
+    checking: 'Checking the invite',
+    askTitle: 'Join this book as a parent?',
+    invitedBy: 'Invited by {inviter}.',
+    invitedByUnknown: "The invite doesn't say who sent it.",
+    askBody: 'You will write to the same child and read every letter in the book, from your own phone. Join only if you know who sent you this invite.',
+    join: 'Join as a parent',
+    notNow: 'Not now',
+    declinedTitle: 'You did not join',
+    declinedBody: 'Nothing changed. If you want to join later, open the invite link again.',
+    openHint: 'The book you have open stays open until you choose.',
     pasteLabel: 'Invite link',
     pasteHelp: 'Open the message with the invite, copy the link and paste it here.',
     pastePlaceholder: 'Paste the link here',
@@ -121,5 +163,8 @@ export const familyCopy = {
     signed_out: 'Sign in again to continue.',
     network: "You're offline. Try again when you're back online.",
     unknown: 'Something went wrong. Please try again.',
+    book_full: 'This book already has two parents. Ask the person who invited you.',
+    last_parent: "You're the only parent of {child}'s book, so you can't leave it. You can delete the book in Settings instead.",
+    not_allowed: "That can't be done from here. Write to us if you need help with this book.",
   },
 } as const;
