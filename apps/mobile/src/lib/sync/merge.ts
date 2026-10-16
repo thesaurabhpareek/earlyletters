@@ -39,6 +39,7 @@ import {
 import {
   SYNC_SETTING,
   addConflictCopy,
+  addHeldConflictCopy,
   appendOp,
   enqueueEntryUpsert,
   enqueueHeldDraft,
@@ -332,7 +333,7 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     insertOwnRow(db, row, edits, epoch, now);
     // A letter this author kept on another phone from a draft this phone also holds: the letter takes the
     // draft's recording, if this phone has it, and the draft goes (a kept letter never exists twice).
-    adoptHeldDraft(db, row.id);
+    adoptHeldDraft(db, row.id, now);
     return;
   }
   mergeExistingOwnRow(db, row, local, edits, epoch, now);
@@ -357,9 +358,16 @@ function insertOwnRow(db: SqlDb, row: PulledRow, edits: string, epoch: number, n
  * the letter takes the draft's recording when it has none, and the draft row goes. The recording file
  * itself is never deleted here.
  */
-function adoptHeldDraft(db: SqlDb, id: string): void {
+function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
   const d = getDraftRow(db, id);
   if (!d) return;
+  // This phone changed the held draft's words and the letter was kept elsewhere from other words: they
+  // stay as a conflict copy of the letter (never uploaded unless the author picks them), never lost.
+  const mine = d.typed_text ?? '';
+  const kept = getEntryRow(db, id)?.final_text ?? '';
+  if (mine.trim() !== '' && mine !== kept && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
+    addHeldConflictCopy(db, `kept-${id}`, id, mine, getEntryRow(db, id)?.server_version ?? null, now);
+  }
   db.run(
     `UPDATE entries SET audio_uri = COALESCE(audio_uri, ?),
        audio_duration_ms = COALESCE(audio_duration_ms, (SELECT audio_duration_ms FROM drafts WHERE id = ?)),
@@ -393,12 +401,16 @@ function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: 
       if (h.gone === 'kept') {
         if (entry) {
           db.run('UPDATE entries SET held_v = NULL WHERE id = ?', h.id);
-          adoptHeldDraft(db, h.id);
+          adoptHeldDraft(db, h.id, now);
         }
         continue; // the letter itself arrives in its book
       }
       if (pending) continue;
-      if (draft) db.run("UPDATE drafts SET state = 'discarding', held_v = NULL WHERE id = ? AND state <> 'recording'", h.id);
+      // Let go on another phone: its words go everywhere, this phone's conflict copy of them too.
+      if (draft) {
+        db.run("UPDATE drafts SET state = 'discarding', held_v = NULL WHERE id = ? AND state <> 'recording'", h.id);
+        db.run("DELETE FROM rejected_writes WHERE entity_id = ? AND type = 'held.upsert'", h.id);
+      }
       if (entry && entry.transcript_status === 'waiting' && entry.deleted_at === null) {
         db.run('UPDATE entries SET deleted_at = ?, updated_at = ?, held_v = NULL WHERE id = ?', now, now, h.id);
       }

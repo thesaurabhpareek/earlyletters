@@ -66,6 +66,7 @@ import {
   syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
+  dropHeldConflictCopies,
   dropQueuedHeldUpsert,
   enqueueHeldDiscard,
   enqueueHeldDraft,
@@ -925,7 +926,10 @@ export function beginDiscard(id: string): boolean {
   c.db.transaction(() => {
     held = drafts.isHeld(c, id);
     done = drafts.beginDiscard(c, id);
-    if (done && held) enqueueHeldDiscard(c.db, id, enqueueContext(c));
+    if (done && held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id); // letting it go lets every copy of its words go
+    }
   });
   if (done) bus.emit('drafts');
   if (done && held) signalOutbox();
@@ -949,7 +953,10 @@ export function deleteDraft(id: string): void {
   c.db.transaction(() => {
     held = drafts.isHeld(c, id);
     // Before the row goes: the discard reads the server version the draft holds.
-    if (held) enqueueHeldDiscard(c.db, id, enqueueContext(c));
+    if (held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id);
+    }
     drafts.remove(c, id);
   });
   bus.emit('drafts');

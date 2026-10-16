@@ -468,6 +468,7 @@ export function heldFromWaiting(r: LocalEntryRow): HeldDraftData {
     language: wireLanguage(r.language),
     base_direction: r.base_direction ?? 'ltr',
     prompt_key: r.prompt_key,
+    // A saved letter always has a destination (in the book or private), so "not chosen" never applies here.
     in_book_choice: r.in_book === 1,
     raw_transcript: null,
     final_text: null,
@@ -552,6 +553,11 @@ export function everSent(db: SqlDb, id: string): boolean {
 /** Whether an erase of this letter is still on its way to the server (a pull must not bring it back). */
 export function eraseQueued(db: SqlDb, id: string): boolean {
   return db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type = 'entry.erase'", id)!.n > 0;
+}
+
+/** The author let a held draft go: this phone's conflict copies of its words go with it (never in an export after). */
+export function dropHeldConflictCopies(db: SqlDb, draftId: string): void {
+  db.run("DELETE FROM rejected_writes WHERE entity_id = ? AND type = 'held.upsert' AND code = ?", draftId, CONFLICT_CODE);
 }
 
 /** A held draft became a letter (Keep after Plus): its letter replaces the held row on the server, so no held upload is needed. */
@@ -669,8 +675,9 @@ function sendable(db: SqlDb): string {
 }
 
 /** Ops that can still reach the server (a book the server refused holds its letters on the phone). */
+/** Ops that can leave now (held ops waiting for a server with held drafts are not counted). */
 export function pendingCount(db: SqlDb): number {
-  return db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM sync_outbox o WHERE ${NOT_REFUSED}`)!.n;
+  return db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM sync_outbox o WHERE ${sendable(db)}`)!.n;
 }
 
 export function rejectedUnseenCount(db: SqlDb): number {

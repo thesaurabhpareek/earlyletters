@@ -474,6 +474,49 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(row(papa, ids.held)?.final_text).toBe('More, you said, at breakfast.'); // now a letter in the book
   }, 60_000);
 
+  it('[F16-REQ-029] Keep on one phone while the other changed the held words: those words stay as a conflict copy of the letter (review A-1)', async () => {
+    ids.keptRace = typedDraft(mama, 'You found the cat asleep in the basket.');
+    mama.store.holdDraft(ids.keptRace, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    mama2.store.setDraftTyped(ids.keptRace, 'You found the cat asleep in your basket, and laughed.'); // offline
+    tick(5_000);
+    const d = mama.store.listHeldDrafts(ASHA).find((x) => x.id === ids.keptRace)!;
+    mama.store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'letter', occurredOn: iso().slice(0, 10), capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
+      promptKey: null, engineVersion: 5, rawTranscript: d.typedText!, machineEdits: [], finalText: d.typedText!, inBook: true,
+      soundsLikeMe: null, childId: ASHA, authorSignsAs: 'Mama', audioUri: null,
+    });
+    await mama.sync();
+    await mama2.sync(); // its held upload meets the kept letter, then the letter arrives
+    expect(row(mama2, ids.keptRace)?.final_text).toBe('You found the cat asleep in the basket.');
+    const [copy] = mama2.store.listConflicts(ids.keptRace);
+    expect(copy?.words.final_text).toBe('You found the cat asleep in your basket, and laughed.');
+    expect(mama2.store.resolveConflict(copy.opId, 'mine')).toBe(true);
+    await mama2.sync();
+    expect((await serverEntry(ids.keptRace))?.final_text).toBe('You found the cat asleep in your basket, and laughed.');
+    expect((await serverEntry(ids.keptRace))?.raw_transcript).toBe('You found the cat asleep in the basket.'); // raw never changes
+    await mama.sync();
+  }, 60_000);
+
+  it('[F16-REQ-029] letting a held draft go lets this phone\'s conflict copy of its words go too (review B-1)', async () => {
+    ids.copyGo = typedDraft(mama, 'Your hands in the flour.');
+    mama.store.holdDraft(ids.copyGo, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    mama.store.setDraftTyped(ids.copyGo, 'Your hands in the flour, and on my nose.');
+    mama2.store.setDraftTyped(ids.copyGo, 'Flour everywhere.');
+    await mama.sync();
+    expect((await mama2.sync()).conflicts).toBe(1);
+    expect(mama2.store.listConflicts(ids.copyGo)).toHaveLength(1);
+    expect(mama2.store.beginDiscard(ids.copyGo)).toBe(true);
+    expect(mama2.store.listConflicts()).toEqual([]);
+    await mama2.sync();
+    expect(await heldRow(ids.copyGo)).toBeUndefined();
+    await mama.sync();
+    expect(mama.store.listHeldDrafts(ASHA).map((x) => x.id)).not.toContain(ids.copyGo);
+  }, 60_000);
+
   it('[F16-REQ-029] [F16-U31] let go on one phone: the row leaves the server and the other phone lets its copy go', async () => {
     ids.letGo = typedDraft(mama, 'The day you met the rain.');
     mama.store.holdDraft(ids.letGo, { inBookChoice: null });

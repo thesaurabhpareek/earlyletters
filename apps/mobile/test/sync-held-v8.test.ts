@@ -237,7 +237,10 @@ describe('[F14-REQ-041] [F16-U30] held rows in the pull', () => {
   it('let go elsewhere: the draft is marked for the launch sweep, a waiting letter goes to Recently deleted; nothing is erased here', () => {
     const { db, repo } = signedIn();
     applyPullPage(db, page([{ ...base, id: 'h1', kind: 'held_letter' }, { ...base, id: 'w1', kind: 'waiting_letter', typed_text: null }]), NOW);
+    settleHeldAnswer(db, 'op-h1', 'h1', { held: { id: 'h1', v: '855', updated_at: NOW }, conflict_groups: ['text'], current: { typed_text: 'Elsewhere.', v: '854' } }, NOW);
+    expect(listConflictCopies(db, 'h1')).toHaveLength(1);
     applyPullPage(db, page([{ id: 'h1', gone: 'discarded', updated_at: NOW, v: '860' }, { id: 'w1', gone: 'discarded', updated_at: NOW, v: '861' }]), NOW);
+    expect(listConflictCopies(db, 'h1')).toEqual([]); // the author let it go: this phone's copy of its words goes too
     expect(db.get('SELECT state FROM drafts WHERE id = ?', 'h1')).toEqual({ state: 'discarding' });
     expect(drafts.listHeld(repo, 'c1')).toEqual([]);
     expect(db.get<{ deleted_at: string | null }>('SELECT deleted_at FROM entries WHERE id = ?', 'w1')?.deleted_at).not.toBeNull();

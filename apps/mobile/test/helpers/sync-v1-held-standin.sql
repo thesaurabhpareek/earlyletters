@@ -165,6 +165,10 @@ begin
     -- Kept already (on another phone, or this op arrived late): the letter is the row now.
     return jsonb_build_object('held', null);
   end if;
+  if sync_private.held_id_taken(p_id) then
+    -- Another author's row (RLS hides it): one plain refusal, never a key-violation that names it.
+    raise exception 'held id not available' using errcode = '22023';
+  end if;
   select h.text_xid, h.final_text, h.machine_edits, h.edit_level, h.author_edits, h.locked_spans, h.typed_text into cur
     from public.held_drafts h where h.id = p_id for update;
   if found then
@@ -205,6 +209,14 @@ begin
   return v_res;
 end;
 $$;
+
+-- Whether a held id belongs to someone else (definer: RLS hides other authors' rows).
+create function sync_private.held_id_taken(p_id uuid)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id is distinct from auth.uid());
+$$;
+revoke execute on function sync_private.held_id_taken(uuid) from public, anon;
+grant execute on function sync_private.held_id_taken(uuid) to authenticated;
 
 -- What the author's phone needs after held.upsert: the row's version, and on a refusal the words it keeps.
 create function sync_private.held_state(p_id uuid, p_refused boolean)
@@ -259,7 +271,7 @@ alter function public.sync_pull(jsonb, int) set schema sync_private;
 revoke execute on function sync_private.sync_pull(jsonb, int) from public, anon, authenticated;
 
 create function public.sync_pull(p_since jsonb default '{}'::jsonb, p_limit int default 200)
-returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   c_zero constant uuid := '00000000-0000-0000-0000-000000000000';
   v_snap pg_snapshot := pg_current_snapshot();
@@ -300,13 +312,13 @@ begin
       select * from (
         select h.sync_xid as sx, h.id,
                (to_jsonb(h) - 'author_id' - 'sync_xid' - 'text_xid') || jsonb_build_object('v', h.sync_xid::text) as j
-          from held_drafts h
+          from public.held_drafts h
          where h.author_id = v_uid
-           and exists (select 1 from child_members m where m.child_id = h.child_id and m.profile_id = v_uid and m.role = 'parent')
+           and exists (select 1 from public.child_members m where m.child_id = h.child_id and m.profile_id = v_uid and m.role = 'parent')
         union all
         -- Tombstones only for a phone that pulled before (a fresh pull has nothing to drop).
         select g.sync_xid, g.id, jsonb_build_object('id', g.id, 'gone', g.gone, 'updated_at', g.updated_at, 'v', g.sync_xid::text)
-          from held_drafts_gone g
+          from public.held_drafts_gone g
          where g.author_id = v_uid and v_cur is not null
       ) a
        where (a.sx, a.id) > (v_after_x, v_after_i) and a.sx < v_xmin
