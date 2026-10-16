@@ -12,8 +12,14 @@
  * - Sensitive data: the counsel-approved screen from packages/content.
  *   "Keep on this phone" records a decline; the person stays signed in and
  *   can turn sync on later in Settings, Privacy.
+ * - Then, when this phone's letters belong to no account yet: the claim screen
+ *   (BL-347, F02 6.2 step 6, F02-REQ-019). "Your letters on this phone will be
+ *   kept in the account a***@example.com", "Keep them here" and "Not my
+ *   account". Nothing is claimed or uploaded before "Keep them here"; "Not my
+ *   account" ends the session and leaves the phone as it was.
  *
- * Also the "Finish setting up" target from Family and Account.
+ * Also the "Finish setting up" target from Family and Account, including for
+ * a session whose claim was never answered (the app closed on that screen).
  */
 import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
@@ -45,14 +51,16 @@ export default function ConsentSteps() {
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name ?? k.childFallback;
+  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
 
-  // Done: close, unless a returning person found no book (PRD A F4 "No book here yet").
+  // Done: close, unless a returning person found no book (PRD A F4 "No book here yet"),
+  // or the claim screen still waits for an answer.
   useEffect(() => {
     if (s.status === 'signedOut') {
       if (!switching.current) close();
       return;
     }
-    if (s.status !== 'ready') return;
+    if (s.status !== 'ready' || claiming) return;
     if (getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client || s.sync !== 'on') {
       close();
       return;
@@ -70,7 +78,7 @@ export default function ConsentSteps() {
     };
     // Runs when the state settles; close and children are stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.status]);
+  }, [s.status, claiming]);
 
   const answer = async (step: ConsentStep, accepted: boolean) => {
     haptic('tap');
@@ -99,6 +107,37 @@ export default function ConsentSteps() {
             <Text>{n.startBook}</Text>
           </Button>
         </View>
+      </SheetFrame>
+    );
+  }
+
+  if (claiming) {
+    const c = authCopy.claim;
+    const masked = auth.account.maskedEmail;
+    return (
+      <SheetFrame
+        footer={
+          <>
+            <Button
+              size="lg"
+              onPress={() => {
+                haptic('tap');
+                auth.keepLettersHere();
+              }}>
+              <Text>{c.keep}</Text>
+            </Button>
+            <QuietButton
+              label={c.notMine}
+              onPress={() => {
+                switching.current = false;
+                void auth.notMyAccount();
+              }}
+            />
+          </>
+        }>
+        <SheetTitle>{c.title}</SheetTitle>
+        <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
+        <Text className="text-base leading-6 text-muted-foreground">{c.help}</Text>
       </SheetFrame>
     );
   }
