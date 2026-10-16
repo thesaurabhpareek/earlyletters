@@ -148,6 +148,19 @@ const PRIVACY_MANIFESTS: NonNullable<NonNullable<ExpoConfig['ios']>['privacyMani
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
 
+/**
+ * The marketing version (CFBundleShortVersionString, versionName) lives only in version.json, shared by
+ * iOS and Android (ADR 0022, D-089). Build numbers are never set here: EAS remote versioning owns them
+ * (eas.json `appVersionSource: "remote"`, `autoIncrement`).
+ */
+function readVersion(): string {
+  const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')) as { version?: unknown };
+  if (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error(`apps/mobile/version.json: "version" must be MAJOR.MINOR.PATCH, got ${JSON.stringify(version)}`);
+  }
+  return version;
+}
+
 /** "123-abc.apps.googleusercontent.com" -> "com.googleusercontent.apps.123-abc" (Google's iOS URL scheme). */
 function reversedGoogleClientId(clientId: string | undefined): string | null {
   const m = /^([A-Za-z0-9-]+)\.apps\.googleusercontent\.com$/.exec((clientId ?? '').trim());
@@ -169,7 +182,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   ...config,
   name: brand.name,
   slug: brand.codename,
-  version: '1.0.0',
+  version: readVersion(),
   orientation: 'portrait',
   // The approved mark (docs/brand/BRAND_SYSTEM.md 6). icon*.png are byte copies of the 1024 masters the
   // registry names for contexts app.icon and appstore.icon (packages/brand/assets/logo/primary/app-icon-*.png);
