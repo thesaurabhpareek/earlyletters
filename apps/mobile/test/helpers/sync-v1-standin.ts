@@ -1,6 +1,6 @@
 /**
  * TEST STAND-IN, NOT A MIGRATION: the sync_push half of S03's request to S02
- * (docs/adr/0023-sync-protocol-v1.md section 5; WP-F16-14). The objects protocol
+ * (docs/adr/0025-sync-protocol-v1.md section 5; WP-F16-14). The objects protocol
  * v1 adds are in sync-v1-standin.sql; this file makes six anchored edits to
  * whatever sync_push the real migrations define last, so the stand-in tracks
  * S02's newest body (20261005000000 on develop, 20261015030000 with the R-17

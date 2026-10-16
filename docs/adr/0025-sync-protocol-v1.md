@@ -1,6 +1,6 @@
-# ADR 0023: Sync protocol v1 (outbox push, cursor pull, words compare and set)
+# ADR 0025: Sync protocol v1 (outbox push, cursor pull, words compare and set)
 
-- **Status:** Proposed, 15 Oct 2026, revised the same day after the first review round and S02's and S07's branches (draft for T13; decided at T15, or the spec default in PRD V2 F16 stands). The number is the next free one after 0018 to 0022 on develop and the open merge train; the coordinator confirms it at merge.
+- **Status:** Proposed, 15 Oct 2026, revised the same day after the first review round and S02's and S07's branches (draft for T13; decided at T15, or the spec default in PRD V2 F16 stands). Numbered 0025 by the coordinator on 16 Oct 2026 (0023 is #139's, 0024 is #150's; this record was drafted as 0023).
 - **Deciders:** founder (D-023 is decided; this records how it is built). Architecture review: delivery lead, data and mobile review agents.
 - **Authors:** S03 (local store and sync) with S02 (database and access rules) for the server half.
 - **Supersedes:** ADR 0004 for v1.0 once accepted (D-023: outbox and cursor on expo-sqlite; PowerSync revisited at 10k families).
