@@ -106,6 +106,11 @@ export interface EnsureOptions {
   requireLatest?: boolean;
   /** The person tapped "Download now" on mobile data for this pack only. */
   allowCellularOnce?: boolean;
+  /**
+   * An automatic retry nobody tapped for (transcription-queue/download-retry.ts): large packs wait for Wi-Fi even
+   * when "Use mobile data" is on. Mobile data needs a fresh yes.
+   */
+  wifiOnly?: boolean;
   signal?: AbortSignal;
 }
 
@@ -552,7 +557,7 @@ export class PackManager {
     if (this.env.downloadsPaused()) throw new PackError('downloads_paused');
     const connection = await this.env.network.connection();
     if (connection === 'none') throw new PackError('offline');
-    const cellularOk = entry.bytes <= CELLULAR_FREE_BYTES || this.allowCellular() || opts.allowCellularOnce === true;
+    const cellularOk = entry.bytes <= CELLULAR_FREE_BYTES || (opts.wifiOnly !== true && (this.allowCellular() || opts.allowCellularOnce === true));
     if (connection !== 'wifi' && !cellularOk) throw new PackError('waiting_for_wifi');
     const free = this.fs.freeBytes();
     if (free !== null) {
