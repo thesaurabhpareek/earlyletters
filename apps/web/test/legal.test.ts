@@ -192,10 +192,13 @@ describe('the publisher', () => {
 });
 
 describe('the home page sign-up note', () => {
-  // RULE: the note matches Privacy: Resend stores the address, so "we never share it" would be untrue.
-  it('promises no selling and no advertising, not "never share"', () => {
-    expect(site.notify.note).toBe(`One email when ${site.brand.name} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`);
-    expect(site.notify.note).not.toMatch(/never share/i);
+  // RULE: the note matches Privacy and the code: a welcome email on sign-up, one more at launch (provider.ts sendWelcome),
+  // and Resend stores the address, so "we never share it" would be untrue.
+  it('names both emails and promises no selling and no advertising, not "never share"', () => {
+    expect(site.notify.note).toBe(
+      `A welcome email now, and one more when ${site.brand.name} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
+    );
+    expect(site.notify.note).not.toMatch(/never share|^One email/i);
   });
 });
 

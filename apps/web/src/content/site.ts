@@ -212,7 +212,7 @@ export const site = {
     label: 'Your email',
     placeholder: 'you@example.com',
     hint: 'Just your email address, nothing else.',
-    note: `One email when ${NAME} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
+    note: `A welcome email now, and one more when ${NAME} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
     button: "Keep me informed",
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
