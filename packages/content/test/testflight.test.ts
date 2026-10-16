@@ -1,7 +1,8 @@
 /**
- * RA-16-01 (docs/release/AUTOMATION.md section 5, S16): the TestFlight tester texts. The content rules apply to them
- * as to every word the product says (VOICE.md, BRAND.md), each text fits Apple's field, and each one says only what
- * its build does. Rule checks, not word pins, so the copy can still be improved. If a test fails, fix the copy.
+ * RA-16-01 (docs/release/AUTOMATION.md section 5, S16): the TestFlight tester texts, aligned with S17's tester notice
+ * (RA-17-04, docs/legal/TESTFLIGHT_TESTERS.md on #195). The content rules apply to them as to every word the product
+ * says (VOICE.md, BRAND.md), each text fits Apple's field, and each one says only what its build and group allow.
+ * Rule checks, not word pins, so the copy can still be improved. If a test fails, fix the copy.
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
@@ -15,20 +16,27 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
-const ALL = leaves(testflightCopy, 'testflight');
+const { whatToTest, invitation, groupLines, feedbackEmailPlaceholder } = testflightCopy;
+const ALL = leaves(testflightCopy, 'testflight').filter((l) => l.path !== 'testflight.feedbackEmailPlaceholder');
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
-const { whatToTest, invitation } = testflightCopy;
-/** Texts a tester reads before sending feedback: each must carry the ask (B1-11, B2-20). */
-const ASKED = [
+const WHAT_TO_TEST: Leaf[] = [
   { path: 'whatToTest.build1', text: whatToTest.build1 },
   { path: 'whatToTest.build2', text: whatToTest.build2 },
-  ...leaves(invitation, 'invitation'),
+];
+/** Texts a tester reads before sending feedback: each must carry the ask (B1-11, B2-20). */
+const ASKED: Leaf[] = [...WHAT_TO_TEST, ...leaves(invitation, 'invitation')];
+/** Texts a friend can read. Build 1 goes to Friends; build 2 may, after the R-17 sign-off. */
+const FRIENDS_READ: Leaf[] = [
+  ...WHAT_TO_TEST,
+  { path: 'invitation.friends', text: invitation.friends },
+  { path: 'invitation.friendsServersOn', text: invitation.friendsServersOn },
+  { path: 'betaAppDescription', text: testflightCopy.betaAppDescription },
 ];
 
 describe('[RA-16-01] TestFlight texts: content rules', () => {
   it('finds every text it checks', () => {
-    expect(ALL.length).toBeGreaterThanOrEqual(9);
+    expect(ALL.length).toBeGreaterThanOrEqual(10);
   });
 
   it('has no em dashes, en dashes, curly quotes, ellipsis characters or emoji', () => {
@@ -36,9 +44,12 @@ describe('[RA-16-01] TestFlight texts: content rules', () => {
     expect(offenders(ALL, /\p{Extended_Pictographic}/u)).toEqual([]);
   });
 
-  it('uses no exclamation marks and leaves no placeholder unfilled', () => {
+  it('uses no exclamation marks, and no placeholder but the feedback mailbox', () => {
+    expect(feedbackEmailPlaceholder).toBe('{feedbackEmail}');
     expect(offenders(ALL, /!/)).toEqual([]);
-    expect(offenders(ALL, /\{\w+\}|\$\{/)).toEqual([]);
+    const other = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => p !== 'feedbackEmail');
+    expect(other).toEqual([]);
+    expect(offenders(ALL, /\$\{/)).toEqual([]);
   });
 
   it('has no fear, guilt or loss language', () => {
@@ -48,7 +59,8 @@ describe('[RA-16-01] TestFlight texts: content rules', () => {
   });
 
   it('never implies the app writes for you, and names no machine', () => {
-    expect(offenders(ALL, /\b(AI|A\.I\.|artificial intelligence|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing)|machine|model|transcri\w*)\b/)).toEqual([]);
+    // "model" alone is allowed: the feedback line names the phone's model. A machine model is not.
+    expect(offenders(ALL, /\b(AI|A\.I\.|artificial intelligence|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing)|machine|(?:language|speech) models?|transcri\w*)\b/)).toEqual([]);
     expect(offenders(ALL, /\btid(y|ied|ies|ying|ier)\b|\bclean(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion)?\b|\bimprov\w*/i)).toEqual([]);
   });
 
@@ -63,58 +75,92 @@ describe('[RA-16-01] TestFlight texts: content rules', () => {
 
   it('uses the glossary: one descriptor, "Not much today" in quotes, sign-in link, the other parent in prose', () => {
     expect(testflightCopy.betaAppDescription.startsWith(`${brand.name}, the baby memory book you fill by talking.`)).toBe(true);
-    expect(offenders(ALL, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+    expect(offenders(ALL, /\b(?:the|a) memory book you fill by talking\b/i)).toEqual([]);
     expect(offenders(ALL, /(?<!")Not much today(?!")/)).toEqual([]);
     expect(offenders(ALL, /\b(magic link|log ?in|login|log out|co-?parent|partner|spouse|journal|diary|entry|entries|voice note)\b/i)).toEqual([]);
   });
 
-  it('types the public name only through packages/brand', () => {
-    // The texts carry brand.name from template literals (rules.test.ts checks the source has no typed name).
+  it('types the public name only through packages/brand, and no email address at all (AF-11)', () => {
     expect(ALL.some((l) => l.text.includes(brand.name))).toBe(true);
+    expect(offenders(ALL, /@|\bhello\b|mailto:/i)).toEqual([]);
   });
 });
 
-describe('[RA-16-01] TestFlight texts: fit and truth per build', () => {
+describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on #195)', () => {
   it('caps each text at 4,000 characters (Apple field limit not stated in the API reference, so the plan sets it)', () => {
     for (const l of ALL) expect(l.text.length, l.path).toBeLessThanOrEqual(4000);
   });
 
-  it('asks testers never to put a child\'s name or a letter\'s words into feedback, in every text they read (B1-11, B2-20)', () => {
-    for (const l of ASKED) {
-      expect(l.text, l.path).toMatch(/never include your child's name or the words of a letter/);
+  it("asks testers never to put a child's name or a letter's words into feedback, in every text they read (B1-11, B2-20)", () => {
+    for (const l of ASKED) expect(l.text, l.path).toMatch(/never put your child's name or your letters' words in/);
+  });
+
+  it('says what TestFlight sends, that a screenshot shows the screen, and how to stop, in every What to Test (5.1)', () => {
+    for (const l of WHAT_TO_TEST) {
+      expect(l.text, l.path).toContain(testflightCopy.feedbackLine);
+      expect(l.text, l.path).toMatch(/Feedback you send leaves the phone, and so can a crash report/);
     }
-    expect(testflightCopy.feedbackLine).toMatch(/never include your child's name or the words of a letter/);
-    expect(testflightCopy.feedbackLine).toMatch(/describe it in words instead of sending a screenshot/);
+    expect(testflightCopy.feedbackLine).toMatch(/your name, your email address and details about your phone/);
+    expect(testflightCopy.feedbackLine).toMatch(/A screenshot shows whatever is on your screen/);
+    expect(testflightCopy.feedbackLine).toMatch(/stop testing at any time in TestFlight, and ask us to delete your feedback/);
   });
 
-  it('says other testers can see TestFlight feedback, in every text a tester reads before sending it (AUTOMATION 2.7)', () => {
-    for (const l of ASKED) expect(l.text, l.path).toContain(testflightCopy.visibilityLine);
+  it('says who can see feedback with one line per group, never the old single line (5.3)', () => {
+    expect(offenders(ALL, /other testers on the team/i)).toEqual([]);
+    for (const l of WHAT_TO_TEST) {
+      expect(l.text, l.path).toContain(groupLines.family);
+      expect(l.text, l.path).toContain(groupLines.friends);
+    }
+    expect(invitation.family).toContain(groupLines.family);
+    expect(invitation.friends).toContain(groupLines.friends);
+    expect(invitation.friendsServersOn).toContain(groupLines.friends);
+    expect(groupLines.family).toMatch(/name and email address of every tester/);
+    expect(groupLines.friends).toMatch(/off for this group/);
+    expect(groupLines.friends).toMatch(/Only the founder reads it/);
   });
 
-  it('types no email address: TestFlight feedback goes to the address the founder sets (AF-11)', () => {
-    expect(offenders(ALL, /@|\bhello\b|mailto:/i)).toEqual([]);
-  });
-
-  it('build 1 (servers off) promises no sign-in, sync or sharing', () => {
-    const b1 = [whatToTest.build1, invitation.friends];
-    for (const t of b1) {
-      expect(t).toMatch(/no sign-in/);
-      expect(t).not.toMatch(/\bsync|\binvite\b|Family tab|signing in|sign in with/i);
+  it('never offers Friends in-app screenshot feedback, only the feedback mailbox (4.2)', () => {
+    const OFFER = /take a screenshot|share it as feedback|from inside the app(?! is off)/i;
+    expect(offenders(FRIENDS_READ, OFFER)).toEqual([]);
+    for (const l of [...WHAT_TO_TEST, { path: 'invitation.friends', text: invitation.friends }]) {
+      expect(l.text, l.path).toContain(feedbackEmailPlaceholder);
     }
   });
 
-  it('build 2 (servers on) says letters sync, claims nothing on-device-only for letters, and no backup (D-100; backup is off)', () => {
-    const b2 = [whatToTest.build2, invitation.friendsServersOn];
-    for (const t of b2) {
-      expect(t).toMatch(/sync/);
-      expect(t).not.toMatch(/everything on your phone|stays? (?:only )?on (?:this|your) phone|only on (?:this|your) phone/i);
-      expect(t).not.toMatch(/back(?:ed)? ?up|backup|encrypt/i);
+  it('says early test, 18 or older, and that purchases cost nothing, where the notice asks (5.1)', () => {
+    for (const t of [testflightCopy.betaAppDescription, invitation.family, invitation.friends, invitation.friendsServersOn]) {
+      expect(t).toMatch(/early test/);
+      expect(t).toMatch(/18 or older/);
     }
-    // Build 2 says what happens to recordings, which are not uploaded in that build.
-    expect(whatToTest.build2).toMatch(/Recordings are not uploaded in this build/);
+    expect(testflightCopy.betaAppDescription).toMatch(/Purchases in this test cost nothing/);
+    for (const l of WHAT_TO_TEST) expect(l.text, l.path).toMatch(/Purchases in this test cost nothing/);
+  });
+
+  it('never says everything stays on the phone: feedback and crash reports leave it (5.2)', () => {
+    expect(offenders(ALL, /everything (?:stays )?on (?:this|your) phone|keeps everything/i)).toEqual([]);
+  });
+
+  it('build 1 (servers off) says there is no account, and promises no sign-in, sync, sharing or backup', () => {
+    for (const t of [whatToTest.build1, invitation.friends]) {
+      expect(t).toMatch(/no account/);
+      expect(t).not.toMatch(/\bsync|\binvite\b|Family tab|signing in|sign in|backup|backed up/i);
+    }
+  });
+
+  it('build 2 (servers on) says what reaches the test server, that the policies apply, and claims no on-device-only letters', () => {
+    expect(whatToTest.build2).toMatch(/stored on our test server/);
+    expect(whatToTest.build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
+    expect(whatToTest.build2).toMatch(/Recording backup is off until you turn it on/);
+    expect(whatToTest.build2).toMatch(/Export your book/);
+    expect(whatToTest.build2).toMatch(/Delete account/);
+    for (const t of [whatToTest.build2, invitation.friendsServersOn]) {
+      expect(t).not.toMatch(/stays? (?:only )?on (?:this|your) phone|only on (?:this|your) phone|backed up|encrypt/i);
+    }
+    // Never that letters carry over to the App Store version (5.2).
+    expect(offenders(ALL, /carr(?:y|ies) over|move to the App Store version/i)).toEqual([]);
   });
 
   it('the beta app description holds for both builds: no sign-in, sync, sharing or on-device-only claim', () => {
-    expect(testflightCopy.betaAppDescription).not.toMatch(/\bsync|sign-in|sign in|invite|share|sharing|everything on your phone|only on/i);
+    expect(testflightCopy.betaAppDescription).not.toMatch(/\bsync|sign-in|sign in|invite|share|sharing|everything on your phone|only on|stay on/i);
   });
 });
