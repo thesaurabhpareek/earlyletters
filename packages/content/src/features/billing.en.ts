@@ -104,7 +104,7 @@ export const billingCopy = {
     // `restoreNone` is the S41 wording for this result; P6 moves the screen to it once counsel has seen it, and only
     // then is restoreNothing retired.
     restoreNothing: 'No Plus was found for this Apple Account.',
-    restoreNone: 'No Plus found for this Apple Account.',
+    restoreNone: 'This Apple Account has no Plus to restore.',
     restoreFailed: 'The App Store could not be reached. Please try again in a moment.',
     refund: 'Request a refund',
     refundHelp: 'Apple decides refunds. Your letters, recordings and books never change.',
