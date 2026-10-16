@@ -20,6 +20,21 @@ export const speechSettingsCopy = {
   confirmBody: 'Your recordings and letters stay. New {name} recordings will wait for their words until you add it again.',
   confirmButton: 'Remove',
   cancelButton: 'Keep it',
+  /**
+   * Why speech is not on this phone yet, by pack engine code, for Review and the letter page while words wait
+   * (lib/transcription-queue `useSpeechDownload().failure`). The app tries again by itself, Wi-Fi only (F05-U29),
+   * so a line never asks for a tap that cannot help; where a tap can help it says so.
+   */
+  downloadFailures: {
+    no_manifest: 'Not ready yet. It tries again by itself.',
+    not_in_manifest: 'Not ready yet. It tries again by itself.',
+    downloads_paused: 'Downloads are paused for now. It tries again by itself.',
+    offline: 'It carries on when you are back online.',
+    download_failed: 'The download stopped. It tries again by itself, or tap Try again.',
+    storage_error: 'The download could not be saved. It tries again by itself, or tap Try again.',
+    hash_mismatch: 'The download did not check out. It tries again on Wi-Fi, or tap Try again.',
+    needs_app_update: 'Needs the latest version of the app.',
+  } as Record<string, string>,
 };
 
 /**

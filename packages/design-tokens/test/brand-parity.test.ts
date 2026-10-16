@@ -4,7 +4,7 @@
  * dependency-free. These tests fail the moment the two disagree, a brand colour has no
  * token, or the email package hand-copies a hex value instead of importing it.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { brand } from '../../brand/index';
@@ -60,8 +60,7 @@ describe('brand and tokens agree', () => {
 });
 
 const EMAIL_TOKENS = join(__dirname, '..', '..', 'emails', 'src', 'tokens.ts');
-// Runs once packages/emails exists (it lands in the email library PR, stacked on this one).
-describe.skipIf(!existsSync(EMAIL_TOKENS))('email tokens import colours, never copy them (CA-016)', () => {
+describe('email tokens import colours, never copy them (CA-016)', () => {
   const code = () => readFileSync(EMAIL_TOKENS, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
   it('imports @scribe/brand and @scribe/design-tokens', () => {

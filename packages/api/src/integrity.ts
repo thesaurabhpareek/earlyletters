@@ -146,7 +146,7 @@ export function publicKeyFor(secretKey: Uint8Array): string {
   return bytesToBase64(ed.getPublicKey(secretKey));
 }
 
-/** A fresh keypair: `{ secretKey, publicKey }` as base64. Only `scripts/packs/keygen.mjs` and tests call this. */
+/** A fresh keypair: `{ secretKey, publicKey }` as base64. Only the packs key generator (scripts/packs/keygen.ts) and tests call this. */
 export function generateSigningKey(): { secretKey: string; publicKey: string } {
   const { secretKey, publicKey } = ed.keygen();
   return { secretKey: bytesToBase64(secretKey), publicKey: bytesToBase64(publicKey) };
