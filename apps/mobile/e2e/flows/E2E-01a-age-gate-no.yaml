@@ -11,6 +11,7 @@ name: E2E-01a 18+ gate, No and the 24-hour stop
 tags:
   - e2e
   - E2E-01
+  - p0-nightly
   - PRD-REQ-019
   - LEGAL-REQ-002
   - A-REQ-002
