@@ -1,6 +1,6 @@
 # Coverage
 
-Owner: quality engineering. Numbers measured 16 Oct 2026 on `develop` d1b23ce. Follow-ups with owners: BL-441 (a plan engine bug), BL-442 (ten tests that assert too little), BL-443 (slow tests that flake under load), in `docs/BACKLOG.md`.
+Owner: qa engineer. Numbers measured 16 Oct 2026 on `develop` d1b23ce. Follow-ups with owners: BL-441 (a plan engine bug), BL-442 (ten tests that assert too little), BL-443 (slow tests that flake under load), in `docs/BACKLOG.md`.
 
 ## How to run
 
