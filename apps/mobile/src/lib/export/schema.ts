@@ -14,6 +14,25 @@
  */
 import { brand } from '@scribe/brand';
 
+/**
+ * 1.1.0 (15 Oct 2026; G-19, LEGAL-REQ-034; decision of 15 Oct, delegated by
+ * the founder): account.json gains `consent_on_this_phone`, the choices this
+ * phone holds (the 18+ answer and the usage-sharing choice). It carries no
+ * server consent history; when sign-in is on, that record is added in a later
+ * version as its own optional field. Optional in the schema, so 1.0.0 exports
+ * still validate; this version always writes it. Compatibility is one way: the
+ * 1.0.0 schema closes account.json (additionalProperties: false), so it
+ * rejects a 1.1.0 file. Validate each export against the schema it carries in
+ * schema/export-v1.schema.json (the $id names the format major, not the
+ * version). Each v1 minor reads every earlier v1 file, so anything published
+ * at the $id URL must be the newest v1 minor.
+ */
+/**
+ * Also in 1.1.0 (F16-REQ-023, PR #146; no 1.1.0 export has left a phone yet):
+ * `data/other-versions.json`, present only when this phone keeps another version
+ * of a letter's words that the letter does not show (a conflict copy from a
+ * second phone's edit). A new optional file, so every 1.0.0 export still validates.
+ */
 export const EXPORT_SCHEMA_VERSION = '1.1.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
@@ -110,6 +129,22 @@ export interface AccountFile {
   plan: 'free' | 'plus';
   exported_from: 'phone';
   memberships: { child_id: string; role: 'parent' | 'contributor'; signs_as: string }[];
+  /** Since 1.1.0. */
+  consent_on_this_phone: ExportPhoneConsent;
+}
+
+/**
+ * The consent choices as this phone's settings hold them (`ageGate.passed`,
+ * D-026; the analytics consent setting). Not a server record: with sign-in on,
+ * the server keeps its own record of the Terms acceptance with the 18+
+ * attestation (and, with analytics on, of the usage choice), which this field
+ * does not carry.
+ */
+export interface ExportPhoneConsent {
+  /** The "18 or older" question on this phone was answered yes. */
+  age_confirmed: boolean;
+  /** Sharing usage and crash reports (the Settings, Privacy switch), as answered on this phone. Builds with analytics off never ask, so it is `not_answered` unless an earlier answer is stored. */
+  usage_sharing: 'granted' | 'denied' | 'not_answered';
 }
 
 /**
@@ -337,6 +372,16 @@ export const exportJsonSchema = {
             additionalProperties: false,
             required: ['child_id', 'role', 'signs_as'],
             properties: { child_id: { type: 'string' }, role: { enum: ['parent', 'contributor'] }, signs_as: { type: 'string' } },
+          },
+        },
+        // Since 1.1.0; optional so 1.0.0 exports still validate.
+        consent_on_this_phone: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['age_confirmed', 'usage_sharing'],
+          properties: {
+            age_confirmed: { type: 'boolean' },
+            usage_sharing: { enum: ['granted', 'denied', 'not_answered'] },
           },
         },
       },

@@ -357,6 +357,19 @@ describe('policy', () => {
     expect(m.allowCellular()).toBe(true);
   });
 
+  it('[F05-U29] an automatic retry (wifiOnly) never uses mobile data for a large pack, even with "Use mobile data" on', async () => {
+    const small: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2000) };
+    const big: PackSpec = { id: 'speech-model.test', version: 1, body: bytesOf(CELLULAR_FREE_BYTES + 1), kind: 'speech-model', language: 'mul', required: false };
+    serve(small);
+    serve(big);
+    const m = makeManager({ manifest: async () => manifestOf([small, big]), network: new FakeNetwork('cellular'), chunkBytes: 3_000_000 });
+    m.setAllowCellular(true);
+    expect(await m.ensurePack('speech-model.test', { wifiOnly: true, allowCellularOnce: true })).toEqual({ ok: false, reason: 'waiting_for_wifi' });
+    expect(server.log.length).toBe(0);
+    expect((await m.ensurePack('text-rules.pt', { wifiOnly: true })).ok).toBe(true); // small packs are not mobile data worth asking about
+    expect((await m.ensurePack('speech-model.test')).ok).toBe(true); // the person's own standing yes still works
+  });
+
   it('stops when the remote kill switch pauses downloads, and when offline or out of space', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(1000) };
     serve(pt);
