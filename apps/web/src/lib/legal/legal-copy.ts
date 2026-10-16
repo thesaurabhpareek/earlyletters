@@ -10,9 +10,9 @@ export const legalCopy = {
   backHome: `Back to ${brand.name}`,
   lastUpdated: 'Last updated:',
   /**
-   * Shown where the publisher's legal name goes until PUBLISHER_LEGAL_NAME is set at build (lib/legal/publisher.ts).
-   * The name itself never goes in code (docs/DECISIONS.md D-004).
+   * Who runs the site when PUBLISHER_LEGAL_NAME is not set at build (lib/legal/publisher.ts): "run by its founder".
+   * The legal name itself never goes in code (docs/DECISIONS.md D-004), and no placeholder ever renders.
    */
-  publisherPlaceholder: '[Publisher legal name]',
+  publisherFallback: 'its founder',
   contact: site.footer.contact,
 } as const;

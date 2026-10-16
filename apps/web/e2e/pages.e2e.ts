@@ -8,7 +8,7 @@ import { DRAFT_MARKS, INTERNAL_MARKS, NOT_USED_SERVICES, REMOVED_ROUTES } from '
 
 test.describe('legal pages', () => {
   for (const slug of legalSlugs) {
-    // As the suite builds the site: PUBLISHER_LEGAL_NAME is not set, so the marked placeholder shows.
+    // As the suite builds the site: PUBLISHER_LEGAL_NAME is not set, so the pages say "run by its founder".
     const doc = legalPage(slug, {});
 
     test(`/${slug}: one h1, the date, every section, a way home, the three footer links, indexable`, async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe('legal pages', () => {
       await expect(page.getByText(`${legalCopy.lastUpdated} ${formatDate(doc.lastUpdated)}`)).toBeVisible();
       await expect(page.locator('main time')).toHaveAttribute('datetime', doc.lastUpdated);
       for (const section of doc.sections) await expect(page.getByRole('heading', { level: 2, name: section.heading })).toBeVisible();
-      await expect(page.getByText(`is run by ${legalCopy.publisherPlaceholder}, an individual.`)).toBeVisible();
+      await expect(page.getByText(`is run by ${legalCopy.publisherFallback}, an individual.`)).toBeVisible();
       await expect(page.locator('main').getByRole('link', { name: site.footer.contact }).first()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
       await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
       // The footer: Privacy, Terms, Contact. Nothing else.
@@ -44,6 +44,8 @@ test.describe('legal pages', () => {
       }
       for (const mark of INTERNAL_MARKS) expect(text, `${mark} on /${slug}`).not.toMatch(mark);
       expect(text, `a service the website does not use, named on /${slug}`).not.toMatch(NOT_USED_SERVICES);
+      // No placeholder of any kind ever renders: nothing in square or curly brackets.
+      expect(text, `a bracketed placeholder on /${slug}`).not.toMatch(/[[\]{}]/);
     });
   }
 

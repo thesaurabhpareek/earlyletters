@@ -2,8 +2,9 @@
  * Owner: E1 (web platform). Every word on /terms: the terms for the website and its launch-notice list only.
  * The app gets its own terms when it launches.
  *
- * Sources: the individual publisher (docs/DECISIONS.md D-004); California law as in the draft app Terms, section 24
- * (docs/legal/terms-of-service.md), for the legal reviewer to confirm; the list's emails as in privacy-copy.ts.
+ * Sources: the individual publisher (docs/DECISIONS.md D-004); the list's emails as in privacy-copy.ts.
+ * No governing-law section yet: the founder has not said which state's law applies (coordinator, 16 Oct 2026). Add it
+ * here, as its own section before "Changes to these terms", once the founder answers.
  * Content rules apply (VOICE.md, test/copy-rules.test.ts): no dashes, curly quotes, ellipsis characters or emoji.
  */
 import { brand } from '@scribe/brand';
@@ -18,7 +19,7 @@ export function termsCopy(publisher: string): LegalPageCopy {
     metaTitle: `${NAME} Terms of Use`,
     metaDescription: `The terms for using the ${NAME} website and its launch-notice list.`,
     title: 'Terms of Use',
-    lastUpdated: '2026-10-15',
+    lastUpdated: '2026-10-16',
     intro: [
       `These terms cover the ${NAME} website, earlyletters.com, and its launch-notice list. By using the website, you agree to them. The ${NAME} app is not out yet. It will have its own terms when it launches, and those terms will cover the app.`,
     ],
@@ -26,7 +27,7 @@ export function termsCopy(publisher: string): LegalPageCopy {
       {
         id: 'who-runs-this',
         heading: 'Who runs this',
-        blocks: [`${NAME} is run by ${publisher}, an individual. In these terms, "we" and "us" mean ${publisher}.`],
+        blocks: [`${NAME} is run by ${publisher}, an individual. In these terms, "we" and "us" mean that person.`],
       },
       {
         id: 'the-website',
@@ -68,14 +69,8 @@ export function termsCopy(publisher: string): LegalPageCopy {
         id: 'liability',
         heading: 'Limits on our liability',
         blocks: [
-          'To the extent the law allows, we are not liable for any indirect or consequential loss, or for any loss of data or profits, that comes from using the website or the list. Our total liability to you for anything to do with them is limited to 50 US dollars. Some places do not allow these limits, so they may not apply to you.',
-        ],
-      },
-      {
-        id: 'governing-law',
-        heading: 'Governing law',
-        blocks: [
-          'These terms are governed by the laws of the State of California, without regard to its conflict of law rules. If you live somewhere else, you keep any rights your local law gives you that cannot be waived.',
+          'To the extent the law allows, we are not liable for any indirect or consequential loss, or for any loss of data or profits, that comes from using the website or the list. Our total liability to you for anything to do with them is limited to 50 US dollars.',
+          'Nothing in these terms limits our liability for fraud, gross negligence or willful misconduct, or for anything else the law does not allow us to limit.',
         ],
       },
       {

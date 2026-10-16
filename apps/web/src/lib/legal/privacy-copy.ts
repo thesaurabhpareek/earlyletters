@@ -36,7 +36,7 @@ export function privacyCopy(publisher: string): LegalPageCopy {
     metaTitle: `${NAME} Privacy Policy`,
     metaDescription: `How the ${NAME} website and its launch-notice list handle your information.`,
     title: 'Privacy Policy',
-    lastUpdated: '2026-10-15',
+    lastUpdated: '2026-10-16',
     intro: [
       `This policy covers the ${NAME} website, earlyletters.com, and its launch-notice list. The ${NAME} app is not out yet. It will have its own privacy policy when it launches.`,
     ],
@@ -44,7 +44,7 @@ export function privacyCopy(publisher: string): LegalPageCopy {
       {
         id: 'who-runs-this',
         heading: 'Who runs this',
-        blocks: [`${NAME} is run by ${publisher}, an individual. In this policy, "we" and "us" mean ${publisher}. You can reach us at ${contact}.`],
+        blocks: [`${NAME} is run by ${publisher}, an individual. In this policy, "we" and "us" mean that person. You can reach us at ${contact}.`],
       },
       {
         id: 'what-we-collect',

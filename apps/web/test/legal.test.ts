@@ -62,7 +62,6 @@ describe('length and shape', () => {
       'our-content',
       'no-warranty',
       'liability',
-      'governing-law',
       'changes',
       'contact',
     ]);
@@ -97,19 +96,25 @@ describe('what the pages promise', () => {
     }
   });
 
-  it('Terms covers the website, the list, no warranty, a liability limit, governing law and the app terms to come', () => {
+  it('Terms covers the website, the list, no warranty, a liability limit with its carve-outs, and the app terms to come', () => {
     for (const phrase of [
       'nothing on the website is an offer',
       'Joining the list is free.',
       'as they are and as available',
       'we give no warranties',
       'limited to 50 US dollars',
-      'the laws of the State of California',
+      'Nothing in these terms limits our liability for fraud, gross negligence or willful misconduct, or for anything else the law does not allow us to limit.',
       'It will have its own terms when it launches',
       `Questions about these terms: ${site.footer.contact}.`,
     ]) {
       expect(text.terms, phrase).toContain(phrase);
     }
+  });
+
+  // RULE: no governing-law clause until the founder says which state; none may name a state meanwhile.
+  it('Terms names no state and has no governing-law section yet', () => {
+    expect(terms.sections.some((s) => /governing/i.test(s.id + s.heading))).toBe(false);
+    expect(text.terms).not.toMatch(/California|governed by|laws of the State/i);
   });
 
   // RULE: no internal decision ids, ADR numbers, backlog ids, counsel notes, TODOs or drafting reasoning in published text.
@@ -131,25 +136,32 @@ describe('what the pages promise', () => {
 });
 
 describe('the publisher', () => {
-  // RULE: the legal name never goes in code (D-004); it comes from PUBLISHER_LEGAL_NAME at build, with a marked placeholder.
-  it('shows the marked placeholder until PUBLISHER_LEGAL_NAME is set', () => {
-    expect(resolvePublisherName({})).toEqual({ name: legalCopy.publisherPlaceholder, isPlaceholder: true });
-    for (const page of pages) {
-      expect(pageText(page)).toContain(`is run by ${legalCopy.publisherPlaceholder}, an individual.`);
+  // RULE: the legal name never goes in code (D-004); it comes from PUBLISHER_LEGAL_NAME at build. No placeholder ever renders.
+  const noBrackets = (text: string) => expect(text, 'a bracketed placeholder').not.toMatch(/[[\]{}]/);
+
+  it('unset: "run by its founder, an individual", and "we" means that person, on both pages', () => {
+    expect(resolvePublisherName({})).toEqual({ name: legalCopy.publisherFallback, isFallback: true });
+    expect(pageText(privacy)).toContain('Early Letters is run by its founder, an individual. In this policy, "we" and "us" mean that person.');
+    expect(pageText(terms)).toContain('Early Letters is run by its founder, an individual. In these terms, "we" and "us" mean that person.');
+    for (const page of pages) noBrackets(pageText(page));
+  });
+
+  it('set: the name from the build, and "we" means that person, on both pages', () => {
+    const env = { PUBLISHER_LEGAL_NAME: '  Asha   Example  ' };
+    expect(resolvePublisherName(env)).toEqual({ name: 'Asha Example', isFallback: false });
+    expect(pageText(legalPage('privacy', env))).toContain('Early Letters is run by Asha Example, an individual. In this policy, "we" and "us" mean that person.');
+    expect(pageText(legalPage('terms', env))).toContain('Early Letters is run by Asha Example, an individual. In these terms, "we" and "us" mean that person.');
+    for (const slug of legalSlugs) {
+      expect(pageText(legalPage(slug, env))).not.toContain(legalCopy.publisherFallback);
+      noBrackets(pageText(legalPage(slug, env)));
     }
   });
 
-  it('uses the name from the build when it is a plain name', () => {
-    const env = { PUBLISHER_LEGAL_NAME: '  Asha   Example  ' };
-    expect(resolvePublisherName(env)).toEqual({ name: 'Asha Example', isPlaceholder: false });
-    const page = legalPage('terms', env);
-    expect(pageText(page)).toContain('is run by Asha Example, an individual. In these terms, "we" and "us" mean Asha Example.');
-    expect(pageText(page)).not.toContain(legalCopy.publisherPlaceholder);
-  });
-
-  it('falls back to the placeholder for a value that is not a plain name', () => {
-    for (const value of ['', '   ', '{PUBLISHER_LEGAL_NAME}', '[name]', '<b>x</b>', 'x'.repeat(121), 'a\u0000b']) {
-      expect(resolvePublisherName({ PUBLISHER_LEGAL_NAME: value }).isPlaceholder, JSON.stringify(value)).toBe(true);
+  it('a value that is not a plain name falls back to "its founder", never to the value itself', () => {
+    for (const value of ['', '   ', '{PUBLISHER_LEGAL_NAME}', '[Publisher legal name]', '<b>x</b>', 'x'.repeat(121), 'a\u0000b']) {
+      const resolved = resolvePublisherName({ PUBLISHER_LEGAL_NAME: value });
+      expect(resolved, JSON.stringify(value)).toEqual({ name: legalCopy.publisherFallback, isFallback: true });
+      for (const slug of legalSlugs) noBrackets(pageText(legalPage(slug, { PUBLISHER_LEGAL_NAME: value })));
     }
   });
 });
