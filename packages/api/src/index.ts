@@ -18,3 +18,12 @@ export * from './content';
 export * from './envelope';
 export * from './standards';
 export { TRUSTED_SIGNING_KEYS } from './keys';
+
+// The app <-> database contract (founder decision 17): RPCs, readable rows, DB enums, SQLSTATE registry.
+export * from './version';
+export * from './scalars';
+export * from './enums';
+export * from './errors';
+export * from './rows';
+export * from './rpc';
+export * from './invite';
