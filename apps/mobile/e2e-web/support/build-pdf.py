@@ -1,7 +1,8 @@
 """Journey PDF: one page per step, screen inside an iPhone 17 Pro style frame (own drawing), three reviewer notes beside it.
-Inputs (journey dir J): steps/*.json, screens/<id>.png, critiques/{product,design,quality}.json
+Inputs (journey dir J): steps/*.json, screens/<id>.png (generated locally, not in git), critiques/{product,design,quality}.json
 critique file: {"<stepId>": {"verdict":"ok|fix|gap","findings":[{"sev":"blocker|major|minor","text":"...","fix":"..."}]}}
-usage: python3 build_journey.py <journey_dir> <out.pdf>"""
+The output PDF is generated, gitignored and packed by pack-journey.sh. Normally run through build-pdf.sh.
+usage: python3 build-pdf.py <journey_dir> <out.pdf> [small-images-dir]"""
 import json, sys, glob, os, html, base64
 J, OUT = sys.argv[1], sys.argv[2]
 SMALL = sys.argv[3] if len(sys.argv) > 3 else None
