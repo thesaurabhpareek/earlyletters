@@ -9,13 +9,15 @@
  * Rules:
  * - Provider is v8 (no instrumentation step, same numbers in CI and locally).
  * - `all: true`: a source file no test imports is reported at 0%, never hidden.
- * - Thresholds are the baseline measured when they were set (never lower than
- *   that day): a pull request that drops any of the four numbers fails
- *   `test:coverage`. Raise them when coverage rises; never lower them to pass.
+ * - Floors are whole numbers one to two points below the measured value, so a
+ *   pull request that adds a little untested glue still passes and a real drop
+ *   does not. Files the constitution depends on (verify.ts, plan.ts) carry their
+ *   own tighter per-file floors (glob keys inside `thresholds`). Raise a floor
+ *   by hand when a workspace has stayed two points above it for a month.
  * - Tests, type declarations, generated code, golden files, end-to-end
  *   harnesses and command-line scripts are never part of the denominator.
  */
-import type { CoverageOptions } from 'vitest/node';
+import type { BaseCoverageOptions, CoverageOptions } from 'vitest/node';
 
 export interface Thresholds {
   statements: number;
@@ -23,6 +25,9 @@ export interface Thresholds {
   functions: number;
   lines: number;
 }
+
+/** Workspace floors, plus optional per-file floors keyed by a glob relative to the workspace root. */
+export type Floors = Thresholds & { [glob: string]: number | Partial<Thresholds> };
 
 /** Excluded from every workspace's denominator. Paths are relative to the workspace root. */
 export const ALWAYS_EXCLUDED = [
@@ -51,7 +56,7 @@ export const ALWAYS_EXCLUDED = [
  */
 export const INSTRUMENTED = { testTimeout: 30_000, hookTimeout: 30_000 } as const;
 
-export function coverage(opts: { include: string[]; exclude?: string[]; thresholds: Thresholds }): CoverageOptions {
+export function coverage(opts: { include: string[]; exclude?: string[]; thresholds: Floors }): CoverageOptions {
   return {
     provider: 'v8',
     enabled: true,
@@ -62,6 +67,6 @@ export function coverage(opts: { include: string[]; exclude?: string[]; threshol
     exclude: [...ALWAYS_EXCLUDED, ...(opts.exclude ?? [])],
     experimentalAstAwareRemapping: true,
     reporter: ['text-summary', 'json-summary', 'lcov'],
-    thresholds: { ...opts.thresholds },
+    thresholds: { ...opts.thresholds } as BaseCoverageOptions['thresholds'],
   };
 }

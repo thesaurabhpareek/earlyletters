@@ -112,50 +112,108 @@ describe('shape of the edit itself', () => {
   });
 });
 
+/** One refusal: the edit, and the reason the verifier must give. `what` reads after "refuses an edit that". */
+interface Refusal {
+  what: string;
+  raw: string;
+  type: Edit['type'];
+  original: string;
+  replacement: string;
+  reason: RejectReason;
+  nth?: number;
+  dictionary?: DictionaryTerm[];
+}
+/** One edit the verifier must still accept, next to the refusals it could be mistaken for. */
+type Accepted = Omit<Refusal, 'reason'>;
+
+const check = (c: Accepted) => checkEdit(at(c.raw, c.type, c.original, c.replacement, c.nth ?? 0), ctx(c.raw, 'clean', c.dictionary ? { dictionary: c.dictionary } : {}));
+
+const REMOVALS: Refusal[] = [
+  { what: 'puts words in under a filler label', raw: 'um "bau" she said', type: 'filler', original: 'um ', replacement: 'Proudly ', reason: 'removal_only' },
+  { what: 'puts words in under a repeat label', raw: 'um "bau" she said', type: 'repeat', original: 'um ', replacement: 'the ', reason: 'removal_only' },
+  { what: 'adds a full stop while removing a filler', raw: 'she said um twice', type: 'filler', original: ' um', replacement: '.', reason: 'removal_adds_punctuation' },
+  { what: 'removes a quotation mark with a filler', raw: 'um "bau" she said', type: 'filler', original: 'um "', replacement: '', reason: 'changes_quotes' },
+  { what: 'removes a real word as a filler', raw: 'um she was happy, honestly', type: 'filler', original: 'happy, ', replacement: '', reason: 'not_a_filler' },
+  { what: 'removes an adverb as a filler', raw: 'um she was happy, honestly', type: 'filler', original: 'honestly', replacement: '', reason: 'not_a_filler' },
+  { what: 'removes a word that is not said twice, as a repeat', raw: 'she was happy', type: 'repeat', original: 'was ', replacement: '', reason: 'not_a_repeat' },
+  { what: 'removes a doubled negation, as a repeat', raw: 'I am not not sad', type: 'repeat', original: ' not', replacement: '', reason: 'removes_negation', nth: 1 },
+  { what: 'removes a repeated question, as a repeat', raw: 'why? why? because', type: 'repeat', original: 'why? ', replacement: '', reason: 'changes_sentence_type', nth: 1 },
+  { what: 'removes emphasis ("very very"), as a repeat', raw: 'she was very very tired', type: 'repeat', original: 'very ', replacement: '', reason: 'repeat_is_emphasis' },
+  { what: 'removes a doubled word people say on purpose ("bye bye")', raw: 'bye bye Mumma', type: 'repeat', original: 'bye ', replacement: '', reason: 'repeat_is_emphasis' },
+  { what: 'removes a phrase said twice on purpose ("come on, come on")', raw: 'come on, come on, up you get', type: 'repeat', original: 'come on, ', replacement: '', reason: 'repeat_is_emphasis' },
+  { what: 'removes a clause that is not said again, as a false start', raw: 'I was tired, so we stayed', type: 'false_start', original: 'I was tired, ', replacement: '', reason: 'false_start_not_repeated' },
+  { what: 'removes a negation, as a false start', raw: 'not, not today she said', type: 'false_start', original: 'not, ', replacement: '', reason: 'removes_negation' },
+  { what: 'removes a question, as a false start', raw: 'did you? did you see it', type: 'false_start', original: 'did you? ', replacement: '', reason: 'changes_sentence_type' },
+  { what: 'removes a complete phrase said twice ("I love you, I love you.")', raw: 'I love you, I love you.', type: 'false_start', original: 'I love you, ', replacement: '', reason: 'false_start_complete_phrase' },
+];
+
+const REMOVALS_ACCEPTED: Accepted[] = [
+  { what: 'a listed filler', raw: 'um she was happy, honestly', type: 'filler', original: 'um ', replacement: '' },
+  { what: 'a real restart with a filler inside it', raw: 'she was, um, she was so happy', type: 'false_start', original: 'she was, um, ', replacement: '' },
+];
+
+/** Asha is the child; Usha Devi is a family member whose first name sounds like the child's. */
+const FAMILY_NAME_DICT: DictionaryTerm[] = [
+  { term: 'Asha', kind: 'child', heardAs: ['Asia'] },
+  { term: 'Usha Devi', kind: 'family', heardAs: [] },
+];
+
+const SUBSTITUTIONS: Refusal[] = [
+  { what: 'replaces a word with one that is not in the dictionary', raw: 'the mango fell', type: 'stt_fix', original: 'mango', replacement: 'banana', reason: 'stt_fix_not_dictionary' },
+  { what: 'replaces a pronoun with the child\'s name', raw: 'I love her', type: 'stt_fix', original: 'her', replacement: 'Asha', reason: 'stt_fix_protected_word' },
+  { what: 'replaces another dictionary name with the child\'s name', raw: 'then Neela came', type: 'stt_fix', original: 'Neela', replacement: 'Asha', reason: 'stt_fix_protected_word' },
+  // verify.ts:291 (isTermWord): one word of a multi-word family name is that person, not a mishearing.
+  { what: 'replaces one word of a family member\'s two-word name with the child\'s name', raw: 'then Usha came', type: 'stt_fix', original: 'Usha', replacement: 'Asha', reason: 'stt_fix_protected_word', dictionary: FAMILY_NAME_DICT },
+  { what: 'turns a lowercase common word into a name', raw: 'see the moon', type: 'stt_fix', original: 'moon', replacement: 'Mumma', reason: 'stt_fix_not_heard_as' },
+  { what: 'replaces more than three words with a name', raw: 'then Ah Sha La La ran', type: 'stt_fix', original: 'Ah Sha La La', replacement: 'Asha', reason: 'stt_fix_not_heard_as' },
+  { what: 'changes a capital that is only there because the sentence starts', raw: 'Usher ran to me', type: 'stt_fix', original: 'Usher', replacement: 'Asha', reason: 'stt_fix_not_heard_as' },
+  { what: 'replaces a word with a comma inside it', raw: 'She have, I think, two', type: 'agreement', original: 'have,', replacement: 'has', reason: 'agreement_not_single_word' },
+  { what: 'repairs two words at once', raw: 'She have two', type: 'agreement', original: 'have two', replacement: 'has two', reason: 'agreement_not_single_word' },
+  { what: 'changes the case of the word it repairs', raw: 'Have she two?', type: 'agreement', original: 'Have', replacement: 'has', reason: 'agreement_stem_mismatch' },
+  { what: 'swaps a word for a synonym', raw: 'She is happy', type: 'agreement', original: 'happy', replacement: 'joyful', reason: 'agreement_stem_mismatch' },
+  { what: 'adds a negation', raw: 'I can come', type: 'agreement', original: 'can', replacement: 'cannot', reason: 'changes_negation' },
+  { what: 'changes a modal (can to could)', raw: 'I can come', type: 'agreement', original: 'can', replacement: 'could', reason: 'changes_modal' },
+  { what: 'changes the tense (loves to loved)', raw: 'She loves rain', type: 'agreement', original: 'loves', replacement: 'loved', reason: 'changes_tense' },
+  { what: 'turns a word into a contraction (were to we\'re)', raw: 'We were tired', type: 'agreement', original: 'were', replacement: "we're", reason: 'changes_word' },
+  { what: 'changes a letter (colour to color)', raw: 'her favourite colour', type: 'punctuation', original: 'colour', replacement: 'color', reason: 'punctuation_changed_letters' },
+  { what: 'joins two words (some one to someone)', raw: 'some one came', type: 'punctuation', original: 'some one', replacement: 'someone', reason: 'changes_word' },
+  { what: 'turns a statement into a question', raw: 'You did it.', type: 'punctuation', original: 'it.', replacement: 'it?', reason: 'changes_sentence_type' },
+  { what: 'removes an exclamation', raw: 'Wow! She stood', type: 'punctuation', original: 'Wow!', replacement: 'Wow.', reason: 'changes_sentence_type' },
+  { what: 'adds quotation marks', raw: 'she said bau', type: 'punctuation', original: 'bau', replacement: '"bau"', reason: 'changes_quotes' },
+  { what: 'changes a number (1,000 to 1.000)', raw: 'She ate 1,000 peas', type: 'punctuation', original: '1,000', replacement: '1.000', reason: 'changes_number' },
+  { what: 'changes case inside a word (iPad)', raw: 'my iPad fell', type: 'punctuation', original: 'iPad', replacement: 'Ipad', reason: 'case_change_not_allowed' },
+  { what: 'lowers an all-capitals word (OK)', raw: 'OK then', type: 'punctuation', original: 'OK', replacement: 'ok', reason: 'case_change_not_allowed' },
+  { what: 'lowers the capital of a name mid-sentence', raw: 'we saw Asha', type: 'punctuation', original: 'Asha', replacement: 'asha', reason: 'case_change_not_allowed' },
+  { what: 'lowers the pronoun I', raw: 'so I can', type: 'punctuation', original: 'I', replacement: 'i', reason: 'case_change_not_allowed' },
+];
+
+const SUBSTITUTIONS_ACCEPTED: Accepted[] = [
+  { what: 'a capitalised near-sounding name mid-sentence', raw: 'then Usher ran', type: 'stt_fix', original: 'Usher', replacement: 'Asha' },
+  { what: 'a learned mishearing', raw: 'then Usha ran', type: 'stt_fix', original: 'Usha', replacement: 'Asha' },
+  { what: 'the whole two-word family name, put back in its own case', raw: 'then usha devi came', type: 'stt_fix', original: 'usha devi', replacement: 'Usha Devi', dictionary: FAMILY_NAME_DICT },
+  { what: 'a near-sounding name that is not part of any dictionary term', raw: 'then Usher came', type: 'stt_fix', original: 'Usher', replacement: 'Asha', dictionary: FAMILY_NAME_DICT },
+  { what: 'a one-word agreement repair', raw: 'She have two', type: 'agreement', original: 'have', replacement: 'has' },
+  { what: 'a full stop where there was none', raw: 'she walked home', type: 'punctuation', original: 'home', replacement: 'home.' },
+  { what: 'a positional capital lowered when two sentences join', raw: 'She walked. Then she ran', type: 'punctuation', original: 'walked. Then', replacement: 'walked, then' },
+];
+
 describe('removals: filler, repeat, false start', () => {
-  it('removal_only, removal_adds_punctuation and changes_quotes guard the shape of every removal', () => {
-    const raw = 'um "bau" she said, um, twice';
-    expect(checkEdit(at(raw, 'filler', 'um ', 'Proudly '), ctx(raw))).toBe('removal_only');
-    expect(checkEdit(at(raw, 'filler', ' um', '.', 0), ctx(raw))).toBe('removal_adds_punctuation');
-    expect(checkEdit(at(raw, 'filler', 'um "', ''), ctx(raw))).toBe('changes_quotes');
-    expect(checkEdit(at(raw, 'repeat', 'um ', 'the '), ctx(raw))).toBe('removal_only');
+  it.each(REMOVALS)('$type refuses an edit that $what ($reason)', (c) => {
+    expect(check(c)).toBe(c.reason);
   });
 
-  it('not_a_filler: only listed hesitation sounds go, and only as whole words', () => {
-    const raw = 'um she was happy, honestly';
-    expect(checkEdit(at(raw, 'filler', 'happy, ', ''), ctx(raw))).toBe('not_a_filler');
-    expect(checkEdit(at(raw, 'filler', 'honestly', ''), ctx(raw))).toBe('not_a_filler');
-    expect(checkEdit(at(raw, 'filler', 'um ', ''), ctx(raw))).toBeNull();
-  });
-
-  it('not_a_repeat, removes_negation, changes_sentence_type and repeat_is_emphasis for repeats', () => {
-    expect(checkEdit(at('she was happy', 'repeat', 'was ', ''), ctx('she was happy'))).toBe('not_a_repeat');
-    expect(checkEdit(at('I am not not sad', 'repeat', ' not', '', 1), ctx('I am not not sad'))).toBe('removes_negation');
-    expect(checkEdit(at('why? why? because', 'repeat', 'why? ', '', 1), ctx('why? why? because'))).toBe('changes_sentence_type');
-    expect(checkEdit(at('she was very very tired', 'repeat', 'very ', ''), ctx('she was very very tired'))).toBe('repeat_is_emphasis');
-    expect(checkEdit(at('bye bye Mumma', 'repeat', 'bye ', ''), ctx('bye bye Mumma'))).toBe('repeat_is_emphasis');
-    expect(checkEdit(at('come on, come on, up you get', 'repeat', 'come on, ', ''), ctx('come on, come on, up you get'))).toBe('repeat_is_emphasis');
-  });
-
-  it('false_start_not_repeated, removes_negation, changes_sentence_type and false_start_complete_phrase for false starts', () => {
-    expect(checkEdit(at('I was tired, so we stayed', 'false_start', 'I was tired, ', ''), ctx('I was tired, so we stayed'))).toBe('false_start_not_repeated');
-    expect(checkEdit(at('not, not today she said', 'false_start', 'not, ', ''), ctx('not, not today she said'))).toBe('removes_negation');
-    expect(checkEdit(at('did you? did you see it', 'false_start', 'did you? ', ''), ctx('did you? did you see it'))).toBe('changes_sentence_type');
-    expect(checkEdit(at('I love you, I love you.', 'false_start', 'I love you, ', ''), ctx('I love you, I love you.'))).toBe('false_start_complete_phrase');
-    expect(checkEdit(at('she was, um, she was so happy', 'false_start', 'she was, um, ', ''), ctx('she was, um, she was so happy'))).toBeNull();
+  it.each(REMOVALS_ACCEPTED)('$type still accepts $what', (c) => {
+    expect(check(c)).toBeNull();
   });
 });
 
 describe('substitutions: stt_fix, agreement, punctuation', () => {
-  it('stt_fix: not_dictionary, protected_word and not_heard_as', () => {
-    expect(checkEdit(at('the mango fell', 'stt_fix', 'mango', 'banana'), ctx('the mango fell'))).toBe('stt_fix_not_dictionary');
-    expect(checkEdit(at('I love her', 'stt_fix', 'her', 'Asha'), ctx('I love her'))).toBe('stt_fix_protected_word');
-    expect(checkEdit(at('then Neela came', 'stt_fix', 'Neela', 'Asha'), ctx('then Neela came'))).toBe('stt_fix_protected_word');
-    expect(checkEdit(at('see the moon', 'stt_fix', 'moon', 'Mumma'), ctx('see the moon'))).toBe('stt_fix_not_heard_as');
-    expect(checkEdit(at('then Ah Sha La La ran', 'stt_fix', 'Ah Sha La La', 'Asha'), ctx('then Ah Sha La La ran'))).toBe('stt_fix_not_heard_as');
-    expect(checkEdit(at('Usher ran to me', 'stt_fix', 'Usher', 'Asha'), ctx('Usher ran to me'))).toBe('stt_fix_not_heard_as');
-    expect(checkEdit(at('then Usher ran', 'stt_fix', 'Usher', 'Asha'), ctx('then Usher ran'))).toBeNull();
-    expect(checkEdit(at('then Usha ran', 'stt_fix', 'Usha', 'Asha'), ctx('then Usha ran'))).toBeNull();
+  it.each(SUBSTITUTIONS)('$type refuses an edit that $what ($reason)', (c) => {
+    expect(check(c)).toBe(c.reason);
+  });
+
+  it.each(SUBSTITUTIONS_ACCEPTED)('$type still accepts $what', (c) => {
+    expect(check(c)).toBeNull();
   });
 
   it('[ADR-0014] stt_fix in an uncased script accepts learned mishearings only', () => {
@@ -164,36 +222,6 @@ describe('substitutions: stt_fix, agreement, punctuation', () => {
     const dict: DictionaryTerm[] = [{ term: 'आशा', kind: 'child', heardAs: ['आसा'] }];
     expect(checkEdit(at('फिर आसा हँसी', 'stt_fix', 'आसा', 'आशा'), ctx('फिर आसा हँसी', 'clean', { rules: hi, dictionary: dict }))).toBeNull();
     expect(checkEdit(at('फिर आषा हँसी', 'stt_fix', 'आषा', 'आशा'), ctx('फिर आषा हँसी', 'clean', { rules: hi, dictionary: dict }))).toBe('stt_fix_not_heard_as');
-  });
-
-  it('agreement: not_single_word, stem_mismatch, changes_negation, changes_modal, changes_tense, changes_word', () => {
-    expect(checkEdit(at('She have, I think, two', 'agreement', 'have,', 'has'), ctx('She have, I think, two'))).toBe('agreement_not_single_word');
-    expect(checkEdit(at('She have two', 'agreement', 'have two', 'has two'), ctx('She have two'))).toBe('agreement_not_single_word');
-    expect(checkEdit(at('Have she two?', 'agreement', 'Have', 'has'), ctx('Have she two?'))).toBe('agreement_stem_mismatch');
-    expect(checkEdit(at('She is happy', 'agreement', 'happy', 'joyful'), ctx('She is happy'))).toBe('agreement_stem_mismatch');
-    expect(checkEdit(at('I can come', 'agreement', 'can', 'cannot'), ctx('I can come'))).toBe('changes_negation');
-    expect(checkEdit(at('I can come', 'agreement', 'can', 'could'), ctx('I can come'))).toBe('changes_modal');
-    expect(checkEdit(at('She loves rain', 'agreement', 'loves', 'loved'), ctx('She loves rain'))).toBe('changes_tense');
-    expect(checkEdit(at('We were tired', 'agreement', 'were', "we're"), ctx('We were tired'))).toBe('changes_word');
-    expect(checkEdit(at('She have two', 'agreement', 'have', 'has'), ctx('She have two'))).toBeNull();
-  });
-
-  it('punctuation: changed_letters, changes_word, changes_sentence_type, changes_quotes, changes_number', () => {
-    expect(checkEdit(at('her favourite colour', 'punctuation', 'colour', 'color'), ctx('her favourite colour'))).toBe('punctuation_changed_letters');
-    expect(checkEdit(at('some one came', 'punctuation', 'some one', 'someone'), ctx('some one came'))).toBe('changes_word');
-    expect(checkEdit(at('You did it.', 'punctuation', 'it.', 'it?'), ctx('You did it.'))).toBe('changes_sentence_type');
-    expect(checkEdit(at('Wow! She stood', 'punctuation', 'Wow!', 'Wow.'), ctx('Wow! She stood'))).toBe('changes_sentence_type');
-    expect(checkEdit(at('she said bau', 'punctuation', 'bau', '"bau"'), ctx('she said bau'))).toBe('changes_quotes');
-    expect(checkEdit(at('She ate 1,000 peas', 'punctuation', '1,000', '1.000'), ctx('She ate 1,000 peas'))).toBe('changes_number');
-    expect(checkEdit(at('she walked home', 'punctuation', 'home', 'home.'), ctx('she walked home'))).toBeNull();
-  });
-
-  it('case_change_not_allowed: only a first letter, only in a lowercase word, only lowered where it was positional', () => {
-    expect(checkEdit(at('my iPad fell', 'punctuation', 'iPad', 'Ipad'), ctx('my iPad fell'))).toBe('case_change_not_allowed');
-    expect(checkEdit(at('OK then', 'punctuation', 'OK', 'ok'), ctx('OK then'))).toBe('case_change_not_allowed');
-    expect(checkEdit(at('we saw Asha', 'punctuation', 'Asha', 'asha'), ctx('we saw Asha'))).toBe('case_change_not_allowed');
-    expect(checkEdit(at('so I can', 'punctuation', 'I', 'i'), ctx('so I can'))).toBe('case_change_not_allowed');
-    expect(checkEdit(at('She walked. Then she ran', 'punctuation', 'walked. Then', 'walked, then'), ctx('She walked. Then she ran'))).toBeNull();
   });
 
   it('case_change_not_sentence_start: a capital raised mid-sentence is refused by the whole-list pass', () => {

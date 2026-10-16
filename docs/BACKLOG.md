@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); the next block starts at BL-441.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); the next block starts at BL-444.
 
 ---
 
@@ -1419,6 +1419,41 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
 - Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
 - Test: `apps/mobile/test/perf.sql.test.ts` (from BL-408); journeys J01 (J01-14) and J09 (J09-03).
+
+## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
+
+#### BL-441 `decide()` honours own Plus on an account-level surface
+- Status: ready. Mode: agent (founder merge: engine file, D-107). Owner: plan engine (`packages/core`). Size: S.
+- Satisfies: D-036 and plan rule R-3 (no offer where Plus is already on).
+- Scope: `packages/core/src/plan.ts:203` allows own Plus only while `roleInBook === 'parent'`. With `roleInBook: null` and `book: null` (the documented account-level shape) a person whose Plus is on is offered Plus. Latent: no screen calls `decide()` with a null role yet.
+- Done when: own Plus is `allow` on an account-level surface; the `it.fails` "[BL-441] [R-3] own Plus on an account-level surface..." in `packages/core/test/plan.edges.test.ts` becomes `it` and passes; the property test "never offers Plus where it is already on" in `plan.test.ts` counts a null role as on.
+
+#### BL-442 Ten tests that assert too little
+- Status: ready. Mode: agent. Owner: quality engineering (each file's owner reviews). Size: S.
+- Satisfies: TDD 07 section 9.2 (a test that cannot fail proves nothing).
+- Scope: add the real assertion to each (tests only, nothing deleted):
+  - `apps/mobile/test/capabilities.test.ts` "starts no sync": no `sync_outbox` row after a save.
+  - `apps/mobile/test/resilience.test.ts` "does nothing more if retry itself throws": `timers.setTimeout` never called.
+  - `apps/mobile/test/store.facade.test.ts` "[MOB-05] subscribeTo entries...": the listener receives `['entries']`.
+  - `apps/mobile/test/store.repos.test.ts` "table-scoped listeners..." and "unsubscribing during a notification...": the filtered table list, and the first listener still fires.
+  - `apps/mobile/test/config.test.ts` "has a submit profile": the fields the release needs.
+  - `apps/mobile/test/shelf-strings.test.ts` "screens use only strings that exist": each value is a non-empty string.
+  - `packages/brand/test/registry.test.ts` "npm fonts resolve": the resolved version equals the pinned one.
+  - `packages/content/test/emails.test.ts` "every auth email carries a safety line": a non-empty string.
+  - `packages/emails/test/emails.test.ts` "ports every email develop had": each renders non-empty HTML and text.
+- Done when: each test fails when its subject is broken (checked by hand once per test).
+
+#### BL-443 Slow tests that flake under load
+- Status: ready. Mode: agent. Owner: quality engineering, with each test's owner. Size: M.
+- Satisfies: TDD 07 section 9.2 (quarantine at most 7 days); CI budget (TDD 07 section 10).
+- Scope, one change per test (coverage runs already work around each one in `vitest.coverage.config.ts`):
+  - `packages/core/test/verify.fuzz.test.ts`, `lang.fuzz.test.ts`: split each property into `it` blocks of 2000 cases, so no single synchronous call blocks a worker (instrumented, 40 to 67 s now; vitest's worker report times out).
+  - `apps/mobile/test/billing-plan-reminders.test.ts` "holds every invariant...": a stride knob like `SCRIBE_FUZZ_RUNS` (every 15th day in PR CI, every day nightly); it takes 69 s of its own 120 s plain.
+  - `apps/mobile/test/decode-uri-component-shim.test.ts`: load `metro.config.js` in a `beforeAll` with its own timeout.
+  - `apps/mobile/test/sync-e2e.test.ts`: reuse a PGlite data-dir dump instead of applying every migration in `beforeAll`.
+  - `apps/mobile/test/config.test.ts`: warm `getConfig` in a `beforeAll` (the first call pays the cold `@expo/config` load).
+  - `packages/content/test/no-real-family-data.test.ts`: skip non-text files with `git ls-files --eol` instead of reading each one.
+- Done when: `npm test` and `npm run test:coverage` each pass three times in a row on a 2-core runner, and the coverage-only skip in `apps/mobile/vitest.coverage.config.ts` is removed.
 
 ## Appendix: TDD proposal to BL mapping
 

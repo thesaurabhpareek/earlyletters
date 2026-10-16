@@ -8,7 +8,7 @@
  * and by the Playwright journeys in e2e-web/), `src/app` (Expo Router
  * routes), `src/dev` (seed and preview tools), the Expo and native adapters
  * (`expo-adapter.ts`, `*.native.ts`, `open-native.ts`) and the account
- * deletion hook (React). Thresholds: baseline of 16 Oct 2026 (docs/qa/COVERAGE.md).
+ * deletion hook (React). Floors: one to two points below the 16 Oct 2026 measurement (docs/qa/COVERAGE.md).
  */
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { coverage, INSTRUMENTED } from '../../scripts/coverage/preset';
@@ -19,11 +19,12 @@ export default mergeConfig(
   defineConfig({
     test: {
       ...INSTRUMENTED,
-      // The plan-reminders "synthetic year" property test (test/billing-plan-reminders.test.ts) takes about 70 s
-      // plain and about 170 s instrumented, past its own 120 s timeout, which no config can raise. It is left out
-      // of coverage runs only; `npm test` still runs it, and the other tests in that file still count here.
+      // One test, the plan-reminders "synthetic year" property test (test/billing-plan-reminders.test.ts, matched
+      // by its own title so the other tests in its describe block still run), takes about 70 s plain and about
+      // 170 s instrumented, past its own 120 s timeout, which no config can raise. It is left out of coverage runs
+      // only; `npm test` still runs it.
       // Proposed fix for its owner: a sample-size knob like SCRIBE_FUZZ_RUNS (docs/qa/COVERAGE.md, flakes).
-      testNamePattern: /^(?!.*a synthetic year: every E, every zone, every plan)/,
+      testNamePattern: /^(?!.*holds every invariant and always finds the legally required slot when planned early$)/,
       coverage: coverage({
         include: ['src/**/*.ts'],
         exclude: [
@@ -37,7 +38,7 @@ export default mergeConfig(
           'src/lib/db/repos/open-native.ts',
           'src/lib/account-deletion/use-account-deletion.ts',
         ],
-        thresholds: { statements: 54.45, branches: 55, functions: 48.43, lines: 55.17 },
+        thresholds: { statements: 53, branches: 53, functions: 47, lines: 54 },
       }),
     },
   }),

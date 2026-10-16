@@ -52,22 +52,18 @@ describe('the stored choice', () => {
 describe('the one-time migration, every combination', () => {
   const stored: Array<string | null> = [null, 'yes', 'later', 'junk'];
   const bools = [false, true];
-  const rows: Array<[string | null, boolean, boolean, boolean]> = [];
-  for (const s of stored) for (const migrated of bools) for (const languageChosen of bools) for (const modelInstalled of bools) rows.push([s, migrated, languageChosen, modelInstalled]);
+  /** The spec for one row: nothing once migrated; an answer already given is kept; otherwise a phone that chose a language or holds a model becomes yes. */
+  const expected = (s: string | null, migrated: boolean, languageChosen: boolean, modelInstalled: boolean) =>
+    migrated ? null : { choice: parseChoice(s) ? null : languageChosen || modelInstalled ? 'yes' : null, markMigrated: true };
+  const outcome = (e: ReturnType<typeof expected>) => (e === null ? 'writes nothing' : e.choice === 'yes' ? 'records yes' : 'records no choice');
+  const rows: Array<[string | null, boolean, boolean, boolean, string, ReturnType<typeof expected>]> = [];
+  for (const s of stored) for (const migrated of bools) for (const languageChosen of bools) for (const modelInstalled of bools) {
+    const e = expected(s, migrated, languageChosen, modelInstalled);
+    rows.push([s, migrated, languageChosen, modelInstalled, outcome(e), e]);
+  }
 
-  it.each(rows)('stored=%j migrated=%s language=%s model=%s', (s, migrated, languageChosen, modelInstalled) => {
-    const plan = planConsentMigration({ stored: s, migrated, languageChosen, modelInstalled });
-    if (migrated) {
-      expect(plan).toBeNull();
-      return;
-    }
-    expect(plan?.markMigrated).toBe(true);
-    if (parseChoice(s)) {
-      // an answer the person gave is never overridden
-      expect(plan?.choice).toBeNull();
-    } else {
-      expect(plan?.choice).toBe(languageChosen || modelInstalled ? 'yes' : null);
-    }
+  it.each(rows)('stored=%j migrated=%s language=%s model=%s: %s', (s, migrated, languageChosen, modelInstalled, _outcome, e) => {
+    expect(planConsentMigration({ stored: s, migrated, languageChosen, modelInstalled })).toEqual(e);
   });
 
   it('[D-087] a fresh install stays unset after the migration, so nothing downloads until the person answers', () => {
@@ -104,9 +100,10 @@ describe('the Review ask card, every combination', () => {
   const rows: Array<[SpeechDownloadChoice | null, number | null, 'waiting_for_wifi' | 'no_space' | 'offline' | null]> = [];
   for (const c of choices) for (const p of progresses) for (const h of holds) rows.push([c, p, h]);
 
-  it.each(rows)('choice=%j progress=%j hold=%j', (choice, progress, hold) => {
-    const shown = showReviewAsk({ choice, progress, hold });
-    expect(shown).toBe(choice !== 'yes' && progress === null && hold === null);
+  const titled = rows.map(([c, p, h]) => [c, p, h, c !== 'yes' && p === null && h === null ? 'shows the card' : 'no card'] as const);
+
+  it.each(titled)('choice=%j progress=%j hold=%j: %s', (choice, progress, hold, result) => {
+    expect(showReviewAsk({ choice, progress, hold })).toBe(result === 'shows the card');
   });
 
   it('[D-087] exactly two of the combinations show the card: no answer, or "later", with nothing in flight or held', () => {

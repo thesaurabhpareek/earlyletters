@@ -190,9 +190,9 @@ describe('decide: rule order when several rules apply (TDD 08 2.2)', () => {
    * for exactly this case) offers Plus to a person whose Plus is on, against rule R-3 ("never
    * offers Plus where it is already on") and the file's own "Plus is held per account". No app
    * screen calls decide() with a null role yet (v1.0 has no themes or backup), so nothing shipped
-   * shows the sheet; the test stays `fails` until plan.ts decides the account-level case.
+   * shows the sheet; the test stays `fails` until plan.ts decides the account-level case (BL-441; whoever fixes it flips `it.fails` to `it`).
    */
-  it.fails('[R-3] own Plus on an account-level surface (no book, no role) is allowed, not offered', () => {
+  it.fails('[BL-441] [R-3] own Plus on an account-level surface (no book, no role) is allowed, not offered', () => {
     expect(decide(input({ feature: 'theme_extra', viewer: { roleInBook: null, own: plan() }, book: null }))).toEqual({ kind: 'allow', via: 'plus_own' });
   });
 });

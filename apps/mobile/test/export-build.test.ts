@@ -22,6 +22,7 @@ import {
   oldestFirst,
   paperFor,
   paragraphs,
+  phoneConsent,
   planExport,
   safeSegment,
   yearOf,
@@ -63,7 +64,7 @@ function entry(p: Partial<SnapshotEntry> & Pick<SnapshotEntry, 'id' | 'occurredO
 }
 
 const snapshot = (entries: SnapshotEntry[], children: SnapshotChild[] = [ASHA]): ExportSnapshot => ({
-  generatedAt: '2026-10-03T09:00:00.000Z', appVersion: '1.0.0', engineVersion: 3, locale: 'en-GB', plan: 'free', signedIn: false, children, entries,
+  generatedAt: '2026-10-03T09:00:00.000Z', appVersion: '1.0.0', engineVersion: 3, locale: 'en-GB', plan: 'free', signedIn: false, consent: phoneConsent(true, null), children, entries,
 });
 
 describe('names and paths', () => {
