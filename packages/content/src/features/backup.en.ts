@@ -33,6 +33,7 @@ export const backupCopy = {
   backingUp: 'Backing up',
   waitingWifi: 'Backs up on Wi-Fi',
   paused: 'Backup will carry on later.',
+  signInAgain: 'Sign in again to keep backing up your recordings.',
   quotaReached: "New recordings are not being backed up. Write to us and we'll help.",
   needsConsent: 'Backup is off. Turn it on again to keep backing up new recordings.',
 

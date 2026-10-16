@@ -27,7 +27,7 @@
  * file (a newer local file wins).
  */
 import { bytesToHex } from './bytes';
-import { BackupServerError, ESCROW_DETAILS, type BackupServer, type BlobRow, type EscrowClient } from './contract';
+import { BackupServerError, ESCROW_DETAILS, needsSignIn, type BackupServer, type BlobRow, type EscrowClient } from './contract';
 import { BackupStopped, HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
 import type { KeyManager, BookKeyState } from './keys';
 import type { BackupDb } from './local-db';
@@ -345,15 +345,13 @@ export function createRestore(d: RestoreDeps) {
       return { kind: 'ready' };
     } catch (e) {
       const detail = e instanceof BackupServerError ? e.detail : null;
-      const code = e instanceof BackupServerError ? e.code : null;
       if (detail && (ESCROW_DETAILS.stopped as readonly string[]).includes(detail)) {
         d.db.deleteMeta(REQUEST_META);
         d.db.setMeta(STOPPED_META, detail);
         return { kind: 'stopped' };
       }
-      // The 10-minute step-up (F08 6.5 C1): the request needs a fresh sign-in. Nothing was asked.
-      const again = ESCROW_DETAILS.signInAgain as readonly string[];
-      if ((detail && again.includes(detail)) || (code && again.includes(code))) return { kind: 'sign_in_again' };
+      // The 10-minute step-up (F08 6.5 C1), or a session the Stop link ended: sign in again. Nothing was asked.
+      if (needsSignIn(e)) return { kind: 'sign_in_again' };
       return { kind: 'unavailable' };
     }
   }

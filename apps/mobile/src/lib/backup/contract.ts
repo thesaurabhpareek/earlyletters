@@ -50,7 +50,29 @@ export const BACKUP_ERRORS = {
   notParent: 'SCPAR',
   /** `SCDEL` details `purged`: the letter was erased on the server. */
   deleted: 'SCDEL',
+  /**
+   * `SCSTP` details `step_up_required`: this call needs a sign-in in the last 10 minutes, in a
+   * live session. Ask the person to sign in again, then retry; a silent token refresh cannot
+   * satisfy it (S07 #138 `envelope.ts`: `reauth_required`, `tell_user`).
+   */
+  stepUp: 'SCSTP',
+  /**
+   * `28000`: not signed in, or details `session_ended`: the session was ended (the Stop link
+   * signs out every session). Sign in again (S07 #138 `envelope.ts`: `unauthorized`, `reauth`).
+   */
+  signedOut: '28000',
 } as const;
+
+/**
+ * The person has to sign in again before this can go on: from the main project, `SCSTP`
+ * (step-up) or `28000` (signed out, or `session_ended`); from the escrow function, 401
+ * `reauth_required` or `unauthorized`, or either detail. Nothing is retried silently.
+ */
+export function needsSignIn(e: unknown): boolean {
+  if (!(e instanceof BackupServerError)) return false;
+  const again = ESCROW_DETAILS.signInAgain as readonly string[];
+  return e.code === BACKUP_ERRORS.stepUp || e.code === BACKUP_ERRORS.signedOut || again.includes(e.code) || (e.detail !== null && again.includes(e.detail));
+}
 
 export function isKeyExists(e: unknown): boolean {
   return e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.immutable && e.detail === 'key_exists') || e.code === 'SCDUP');
@@ -150,11 +172,12 @@ export const ESCROW_DETAILS = {
    */
   stopped: ['cancelled', 'expired', 'deletion_pending', 'device_unknown'],
   /**
-   * The request needs a fresh sign-in: the 10-minute step-up (`reauth_required`, detail
+   * The request needs a fresh sign-in: the 10-minute step-up (401 `reauth_required`, detail
    * `step_up_required`), or 401 `unauthorized` when the token was refused or its session has
-   * ended (#151 `SCSES`: a Stop signs out every session). Nothing was asked either way.
+   * ended (sqlstate `28000`, detail `session_ended`: a Stop signs out every session). Nothing
+   * was asked either way. `needsSignIn` checks these with the main project's `SCSTP` and `28000`.
    */
-  signInAgain: ['step_up_required', 'reauth_required', 'unauthorized'],
+  signInAgain: ['step_up_required', 'session_ended', 'reauth_required', 'unauthorized'],
 } as const;
 
 export type RestoreState = 'requested' | 'approved' | 'released' | 'cancelled' | 'expired';

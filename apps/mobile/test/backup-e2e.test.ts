@@ -183,7 +183,7 @@ describe('backup end to end against a fake bucket', () => {
     expect(backend.unwraps).toHaveLength(1);
   });
 
-  it('an old or ended session cannot ask (step-up, SCSES): sign in again; the escrow kill switch asks nothing', async () => {
+  it('an old or ended session cannot ask (step-up, 28000 session_ended): sign in again; the escrow kill switch asks nothing', async () => {
     const clock = { t: 0 };
     const backend = new FakeBackend(() => clock.t);
     const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
@@ -205,7 +205,7 @@ describe('backup end to end against a fake bucket', () => {
     expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
     expect(backend.restores.size).toBe(0);
     backend.stepUpRequired = false;
-    // A session a Stop ended (#151 SCSES, 401 unauthorized): sign in again, never a silent wait.
+    // A session a Stop ended (401 unauthorized, sqlstate 28000, detail session_ended): sign in again, never a silent wait.
     backend.sessionEnded = true;
     await c.service.tick();
     expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
@@ -251,6 +251,33 @@ describe('backup end to end against a fake bucket', () => {
     clock.t += 10 * 60 * 1000;
     await a.service.tick();
     expect(a.service.view().status).toMatchObject({ kind: 'current' });
+  });
+
+  it('an upload call that needs a fresh sign-in (SCSTP step_up_required, 28000 session_ended) says sign in again, counts no attempt, and goes on after', async () => {
+    for (const refusal of [{ code: 'SCSTP', detail: 'step_up_required' }, { code: '28000', detail: 'session_ended' }]) {
+      const clock = { t: 0 };
+      const backend = new FakeBackend(() => clock.t);
+      const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+      addChild(a, ASHA);
+      const letter = recordLetter(a, ASHA, 10_000);
+      await a.service.turnOn();
+      backend.refuseRpc = refusal;
+      await a.service.tick();
+      expect(a.service.view().status, refusal.code).toEqual({ kind: 'sign_in_again' });
+      const job = a.backupDb.job(letter.id);
+      expect(job?.state, refusal.code).toBe('sealed');
+      expect(job?.attempts, refusal.code).toBe(0); // not the recording's fault: no backoff to wait out
+      // Another pass while still signed out asks once and stops again; nothing is refreshed silently.
+      const begins = backend.requests.filter((r) => r.kind === 'begin').length;
+      await a.service.tick();
+      expect(backend.requests.filter((r) => r.kind === 'begin').length - begins, refusal.code).toBe(1);
+      expect(a.service.view().status, refusal.code).toEqual({ kind: 'sign_in_again' });
+      // Signed in again: the next pass backs it up.
+      backend.refuseRpc = null;
+      await a.service.tick();
+      expect(backend.blobs.get(letter.id)?.state, refusal.code).toBe('confirmed');
+      expect(a.service.view().status, refusal.code).toMatchObject({ kind: 'current' });
+    }
   });
 
   it('turning backup off keeps what is backed up and stops new uploads (F08 6.5 D3)', async () => {

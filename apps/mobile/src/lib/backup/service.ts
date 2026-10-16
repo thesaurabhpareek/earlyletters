@@ -41,6 +41,8 @@ export type BackupStatus =
   | { kind: 'needs_consent' }
   | { kind: 'quota' }
   | { kind: 'paused' }
+  /** A server call needs a fresh sign-in (`SCSTP`, `28000`): say so, never retry silently. */
+  | { kind: 'sign_in_again' }
   | { kind: 'backing_up' }
   | { kind: 'waiting_wifi' }
   | { kind: 'current'; lastBackedUpAt: string | null };
@@ -173,6 +175,7 @@ export function createBackupService(d: BackupServiceDeps) {
       if (queue.isRunning()) return { status: { kind: 'backing_up' }, restore: lastRestore };
       if (lastGate === 'wifi' || lastGate === 'offline') return { status: { kind: 'waiting_wifi' }, restore: lastRestore };
       if (lastGate === 'killed') return { status: { kind: 'paused' }, restore: lastRestore };
+      if (lastGate === 'sign_in') return { status: { kind: 'sign_in_again' }, restore: lastRestore };
       // A recording that is retrying, or waiting for its key, is not "backed up": say it carries on later.
       if (d.db.getMeta(META.keyState) || d.db.jobs().some((j) => j.state !== 'confirmed' && j.state !== 'blocked' && j.attempts > 0)) {
         return { status: { kind: 'paused' }, restore: lastRestore };

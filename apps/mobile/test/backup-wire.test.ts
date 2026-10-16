@@ -11,7 +11,7 @@
 import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { b64, bytesToBase64, equalBytes } from '../src/lib/backup/bytes';
-import { BackupServerError, ESCROW_DETAILS, SEAL_SUITE, keyCheckLabel, objectPathFor, packEscrowWrap } from '../src/lib/backup/contract';
+import { BACKUP_ERRORS, BackupServerError, ESCROW_DETAILS, SEAL_SUITE, keyCheckLabel, needsSignIn, objectPathFor, packEscrowWrap } from '../src/lib/backup/contract';
 import { createKeyManager, type MetaStore } from '../src/lib/backup/keys';
 import {
   BLOB_COLUMNS,
@@ -178,6 +178,7 @@ describe('escrow function: two routes, { device_id }, snake_case answers (#151 c
     const cases: [number, string, string | undefined, boolean][] = [
       [401, 'reauth_required', 'step_up_required', false],
       [401, 'unauthorized', undefined, false],
+      [401, 'unauthorized', 'session_ended', false],
       [403, 'deleted', 'deletion_pending', false],
       [404, 'not_found', 'device_unknown', false],
       [429, 'rate_limited', 'limit_restores', true],
@@ -190,11 +191,35 @@ describe('escrow function: two routes, { device_id }, snake_case answers (#151 c
       expect(e).toMatchObject({ code, detail: detail ?? null, retryable });
     }
     // Every detail restore stops on, or asks to sign in again for, is one the escrow function sends.
-    const SERVER_DETAILS = ['step_up_required', 'device_unknown', 'cancelled', 'expired', 'deletion_pending', 'limit_restores', 'limit_keys', 'escrow'];
+    const SERVER_DETAILS = ['step_up_required', 'device_unknown', 'cancelled', 'expired', 'deletion_pending', 'limit_restores', 'limit_keys', 'escrow', 'session_ended'];
     for (const d of ESCROW_DETAILS.stopped) expect(SERVER_DETAILS).toContain(d);
     expect(SERVER_DETAILS).toContain('step_up_required');
-    // 401 unauthorized (a refused token, or #151's SCSES session_ended) asks to sign in again.
+    // 401 unauthorized (a refused token, or sqlstate 28000 session_ended after a Stop) asks to sign in again.
     expect(ESCROW_DETAILS.signInAgain).toContain('unauthorized');
+    expect(ESCROW_DETAILS.signInAgain).toContain('session_ended');
+  });
+
+  it('sign in again: escrow 401s, and the main project\'s SCSTP step_up_required and 28000 session_ended (S07 #138 envelope.ts)', () => {
+    const again = [
+      new BackupServerError('reauth_required', false, null, 'step_up_required'),
+      new BackupServerError('unauthorized', false, null, 'session_ended'),
+      new BackupServerError('unauthorized', false),
+      new BackupServerError(BACKUP_ERRORS.stepUp, false, null, 'step_up_required'),
+      new BackupServerError(BACKUP_ERRORS.signedOut, false, null, 'session_ended'),
+      new BackupServerError(BACKUP_ERRORS.signedOut, false),
+    ];
+    for (const e of again) expect(needsSignIn(e), `${e.code} ${e.detail}`).toBe(true);
+    expect(BACKUP_ERRORS.stepUp).toBe('SCSTP');
+    expect(BACKUP_ERRORS.signedOut).toBe('28000');
+    // Waits and stops are not sign-ins: the switch, a closed request, a revoked device, a network error.
+    const not = [
+      new BackupServerError('paused', true, null, 'escrow'),
+      new BackupServerError(BACKUP_ERRORS.switchedOff, true, null, 'backupUploads'),
+      new BackupServerError('not_found', false, null, 'device_unknown'),
+      new BackupServerError('network', true),
+    ];
+    for (const e of not) expect(needsSignIn(e), `${e.code} ${e.detail}`).toBe(false);
+    expect(needsSignIn(new Error('x'))).toBe(false);
   });
 
   it('a release for another request id, or with another suite or size, is refused', async () => {

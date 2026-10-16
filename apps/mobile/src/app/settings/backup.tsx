@@ -41,6 +41,8 @@ function stateLine(view: ReturnType<Runtime['backupView']>): string | null {
       return t.waitingWifi;
     case 'paused':
       return t.paused;
+    case 'sign_in_again':
+      return t.signInAgain;
     case 'quota':
       return t.quotaReached;
     case 'needs_consent':

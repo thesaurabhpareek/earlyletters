@@ -36,6 +36,7 @@ import {
   BACKUP_ERRORS,
   BackupServerError,
   MAX_OBJECT_BYTES,
+  needsSignIn,
   type BackupServer,
 } from './contract';
 import { BackupStopped, KEY_LEN, NONCE_PREFIX_LEN, SEGMENT_SIZE, encryptObject, objectLength, wrapAad } from './format';
@@ -66,7 +67,7 @@ export interface BackupSource {
   list(): BackupSourceItem[];
 }
 
-export type GateReason = 'off' | 'consent' | 'quota' | 'killed' | 'background' | 'busy' | 'offline' | 'wifi';
+export type GateReason = 'off' | 'consent' | 'quota' | 'killed' | 'background' | 'busy' | 'offline' | 'wifi' | 'sign_in';
 
 export type StepOutcome =
   | { kind: 'progressed' }
@@ -158,6 +159,10 @@ export function createUploadQueue(d: QueueDeps) {
 
   function onServerError(job: UploadJob, e: unknown): StepOutcome {
     if (e instanceof BackupStopped) return { kind: 'gate', reason: 'busy' };
+    // `SCSTP` (a sign-in in the last 10 minutes is needed) or `28000` (signed out, or the Stop link
+    // ended the session): the person signs in again, then the next pass retries. Not the job's
+    // fault, so no attempt is counted, and never a silent token refresh.
+    if (needsSignIn(e)) return { kind: 'gate', reason: 'sign_in' };
     if (e instanceof BackupServerError) {
       if (e.code === BACKUP_ERRORS.consent) {
         d.db.setMeta(META.paused, 'consent');
