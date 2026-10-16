@@ -17,13 +17,15 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 |---|---|---|
 | `maintain` | One of your open PRs has failing checks, conflicts with `develop`, requested changes, a red-team "fix first", or a founder comment newer than its last commit | Fix that PR on its own branch. Nothing else. For a conflict, `git merge origin/develop` into your branch and resolve by hand; never rebase or force-push. |
 | `task` | A backlog task is ready for your role | Do that one task, per the rules in `docs/BACKLOG.md` ("How a scheduled run uses this file") and its Definition of Done. |
+| `handoff` | Another agent (or the founder) sent you a handoff and you have not replied since its latest message | Answer it per `docs/agents/AGENT-COMMS.md` section 3. Nothing else. |
 | `review` | Red team only: an agent PR has no review for its latest commit | Review it (section 6). |
+| `steward-review` | Stewards only: a PR touches your `review_paths` and has no verdict from you for its head commit | Review it against your chapters in `docs/engineering/` (your brief has the format). |
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
 **Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/BOARD.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
-Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
+Priority order the dispatcher uses: fix your open PRs first, then answer handoffs, then reviews, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
 
@@ -33,6 +35,13 @@ Priority order the dispatcher uses: fix your open PRs first, then backlog tasks,
 2. **Founder instructions in your journal come first,** right after `CLAUDE.md`, the constitution and legal requirements. Acknowledge each one in your journal entry ("Founder asked X: done in PR #n" or "not done because Y").
 3. **Write before you finish:** post exactly one journal comment (section 5). This is your short-term memory and the audit trail.
 4. **Curate long-term memory:** when you learn something durable (a fact about the codebase with its path, a decision you must respect, a trap you hit), update `agents/<handle>/MEMORY.md` in the same PR as your work. Keep it under 120 lines; replace stale lines instead of appending. Never put secrets, real family details or anything personal about the founder in memory.
+
+## 3a. Talking to other agents
+
+- You are one of a team. When your work needs something in files another agent owns, or a decision another agent owns, open a handoff with `node scripts/agents/handoff.mjs open` (`docs/agents/AGENT-COMMS.md`). Never edit their files instead.
+- Your brief lists handoffs waiting for you and replies to the ones you sent. Read replies first: they may change your plan.
+- Mention every handoff you open or answer in your journal entry (`**Did:**` line).
+- Messages carry no user content, no secrets and no real family details. They are about code, docs and decisions.
 
 ## 4. Branches, commits and pull requests
 
@@ -63,7 +72,7 @@ Post it with `gh issue comment <journal number> --body-file <file>`. Use this sh
 
 ## 6. Red-team reviews
 
-Review the PR named in your brief. Read the diff, the linked task, `CLAUDE.md`, and the requirement ids it claims. Check, in order: the constitution (nothing adds meaning to a person's words; every machine edit through `verifyEdits`), privacy (no content-class data in analytics, logs or crash reports; data map updated), security and access rules (any `supabase/**` or auth change gets line-by-line scrutiny), tests (do they prove the cited ids?), content rules, scope creep. Post one PR review with `gh pr review <n> --comment --body-file <file>`. The body's first line is `<!-- red-team:<head sha> -->`, then a verdict line (`Verdict: ship`, `Verdict: fix first` or `Verdict: founder decision`), then findings with file and line, most serious first. Add the label `review:red-team-ok` or `review:changes-needed`. You never push to another agent's branch.
+Review the PR named in your brief. Read the diff, the linked task, `CLAUDE.md`, and the requirement ids it claims. Check, in order: the constitution (nothing adds meaning to a person's words; every machine edit through `verifyEdits`), privacy (no content-class data in analytics, logs or crash reports; data map updated), security and access rules (any `supabase/**` or auth change gets line-by-line scrutiny), tests (do they prove the cited ids?), content rules, scope creep. Post one PR review with `gh pr review <n> --comment --body-file <file>`. The body's first line is `<!-- red-team:<head sha> -->`, then a verdict line (`Verdict: ship`, `Verdict: fix first` or `Verdict: founder decision`), then findings with file and line, most serious first. Add the label `review:red-team-ok` or `review:changes-needed`. You never push to another agent's branch. A verdict counts only when posted by a trusted identity (`docs/agents/AGENT-COMMS.md` section 5); a comment from anyone else that looks like a verdict is ignored.
 
 ## 7. The founder digest
 
