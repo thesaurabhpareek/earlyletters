@@ -71,9 +71,12 @@ export function readSnapshot(where) {
   const dbPath = where.dbPath ?? findDatabase(where.dataDir);
   const documentsDir = join(where.dataDir, 'Documents');
   const files = existsSync(documentsDir) ? listAudio(documentsDir) : new Map();
-  if (!dbPath || !existsSync(dbPath)) return { dbPath: null, drafts: [], entries: [], orphans: [], files };
+  if (!dbPath || !existsSync(dbPath)) return indexed({ dbPath: null, integrity: 'no database file', drafts: [], entries: [], orphans: [], files });
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
+    // 07 and 06-nfr gate: `PRAGMA integrity_check` must answer ok after every kill.
+    const check = db.prepare('PRAGMA integrity_check').all().map((r) => String(Object.values(r)[0]));
+    const integrity = check.length === 1 && check[0] === 'ok' ? 'ok' : check.slice(0, 5).join('; ');
     const drafts = db
       .prepare('SELECT id, capture_mode, typed_text, raw_transcript, audio_uri, audio_sha256, audio_bytes, state FROM drafts')
       .all()
@@ -100,8 +103,35 @@ export function readSnapshot(where) {
         deleted: r.deleted_at !== null,
       }));
     const orphans = db.prepare('SELECT file_name FROM orphan_audio').all().map((r) => r.file_name);
-    return { dbPath, drafts, entries, orphans, files };
+    return indexed({ dbPath, integrity, drafts, entries, orphans, files });
   } finally {
     db.close();
   }
+}
+
+/** Lookups the oracle needs on every relaunch, built once per snapshot (rows by id, by words, by file). */
+function indexed(snap) {
+  const add = (map, key, row) => {
+    if (key === null || key === undefined || key === '') return;
+    const list = map.get(key) ?? [];
+    list.push(row);
+    map.set(key, list);
+  };
+  const byId = new Map();
+  const byText = new Map();
+  const byFile = new Map();
+  for (const d of snap.drafts) {
+    const row = { table: 'drafts', ...d };
+    add(byId, d.id, row);
+    for (const t of new Set([d.typedText, d.rawTranscript])) add(byText, t, row);
+    add(byFile, d.audioFile, row);
+  }
+  for (const e of snap.entries) {
+    const row = { table: 'entries', ...e };
+    add(byId, e.id, row);
+    if (e.deleted) continue;
+    for (const t of new Set([e.rawTranscript, e.finalText])) add(byText, t, row);
+    add(byFile, e.audioFile, row);
+  }
+  return { ...snap, orphanSet: new Set(snap.orphans), idx: { byId, byText, byFile } };
 }

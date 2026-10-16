@@ -1,20 +1,31 @@
-// The kill harness loop (RA-19-04): launch, wait for the drill to arm, wait a random time, SIGKILL,
-// relaunch, let the app's own launch sweep run, then judge the killed run from the host (oracle.mjs).
-// Device-neutral: the iOS simulator driver is simctl-driver.mjs; the Node tests drive a fake app.
+// The kill harness loop (RA-19-04): launch, wait for the drill to arm, kill (SIGKILL) at a random moment or
+// exactly at a crash point, relaunch, let the app's own launch sweep run, then judge the killed run and audit
+// the whole database from the host (oracle.mjs). Device-neutral: the iOS simulator driver is simctl-driver.mjs;
+// the Node tests drive a fake app.
 //
-// A run cannot pass vacuously: before the real runs, on its own fresh install, the harness runs planted
-// failures (the app loses or doubles a letter on purpose) and stops with exit 4 unless it caught every one.
-import { classifyDl01, classifyDl02, isBad } from './oracle.mjs';
-import { DRILL_KINDS, PLANT_LOSS_GAP_MS } from './protocol.mjs';
+// A run cannot pass vacuously: before the real runs, on its own fresh install, the harness runs planted failures
+// (the app loses, doubles or damages a letter on purpose) and stops with exit 4 unless it caught every one.
+// A relaunch that fails after a kill is a fail (exit 1), never incomplete. Whatever happens, a report is returned.
+import { auditStore, classifyDl01, classifyDl02, isBad } from './oracle.mjs';
+import { CRASH_POINTS, DRILL_KINDS, PLANT_LOSS_GAP_MS, POINT_EXPECTS } from './protocol.mjs';
 
 export const EXIT = Object.freeze({ pass: 0, fail: 1, usage: 2, incomplete: 3, blind: 4 });
 
 export const DEFAULTS = Object.freeze({
+  // DL-02: 07 "Kill during save", random 0 to 400 ms after Save. DL-01: 07 "Kill while recording", 10 to 120 s.
   dl02: { delayMs: [0, 400], plantDelayMs: [0, 400] },
-  dl01: { delayMs: [2000, 60000], plantDelayMs: [2000, 4000] },
-  timeouts: { bootMs: 120000, armMs: 30000 },
+  dl01: { delayMs: [10000, 120000], plantDelayMs: [2000, 4000] },
+  timeouts: { bootMs: 120000, armMs: 30000, pointMs: 30000 },
   selfCheck: 2,
+  // 07 "Kill while recording": 49 or more of 50 playable to within 5 s.
+  playableShare: 49 / 50,
 });
+
+/** What each planted failure must be judged as. */
+export const PLANT_EXPECTS = Object.freeze({ loss: 'lost', double: 'doubled', damage: 'fail' });
+const PLANTS = { dl02: ['loss', 'double', 'damage'], dl01: ['loss', 'double'] };
+/** The B2-11 gate sizes: 500 random kills a mode, and for DL-02 50 at each crash point. */
+export const GATE = Object.freeze({ runs: 500, pointRuns: 50 });
 
 /** Small seeded generator (mulberry32), so a report's delays can be replayed from its seed. */
 export function seededRandom(seed) {
@@ -28,6 +39,11 @@ export function seededRandom(seed) {
   };
 }
 
+/** With zero failures in n independent runs, the 95% upper bound on the failure rate (about 3/n, the rule of three). */
+export function upperBound95(n) {
+  return n > 0 ? 1 - 0.05 ** (1 / n) : 1;
+}
+
 class HarnessUsageError extends Error {}
 
 function check(cond, message) {
@@ -37,11 +53,14 @@ function check(cond, message) {
 function validate(o) {
   check(o.mode === 'dl01' || o.mode === 'dl02', 'mode must be dl01 or dl02');
   check(Number.isInteger(o.runs) && o.runs >= 1, 'runs must be a whole number from 1');
+  check(Number.isInteger(o.pointRuns) && o.pointRuns >= 0, 'point runs must be a whole number from 0');
+  check(o.mode === 'dl02' || o.pointRuns === 0, 'crash points are DL-02 only');
   for (const k of ['delayMs', 'plantDelayMs']) {
-    const [lo, hi] = o[k];
-    check(Number.isFinite(lo) && Number.isFinite(hi) && lo >= 0 && hi >= lo, `${k} must be a range from 0 up`);
+    const r = o[k];
+    check(Array.isArray(r) && r.length === 2 && Number.isFinite(r[0]) && Number.isFinite(r[1]) && r[0] >= 0 && r[1] >= r[0], `${k} must be a range from 0 up`);
   }
   check(Number.isInteger(o.selfCheck) && o.selfCheck >= 1, 'the self-check needs at least one planted run of each kind');
+  check(Number.isInteger(o.seed) && o.seed >= 0, 'the seed must be a whole number from 0');
   if (o.mode === 'dl02') {
     check(o.kinds.length > 0 && o.kinds.every((k) => DRILL_KINDS.includes(k)), 'unknown DL-02 kind');
     // The planted loss holds the letter in neither table for PLANT_LOSS_GAP_MS; a later kill would miss it.
@@ -49,49 +68,91 @@ function validate(o) {
   }
 }
 
+/** The real runs: random kills, with the crash-point runs spread evenly among them (DL-02). */
+export function planRuns(o) {
+  const kindOf = (i) => (o.mode === 'dl02' ? o.kinds[i % o.kinds.length] : undefined);
+  const random = Array.from({ length: o.runs }, (_, i) => ({ plant: 'none', kind: kindOf(i), point: null }));
+  const points = [];
+  for (let i = 0; i < o.pointRuns; i += 1) {
+    for (const [j, point] of CRASH_POINTS.entries()) {
+      // A file write needs a recording; the other points alternate a typed and a spoken letter.
+      const kind = point === 'after-file-write' ? 'spoken' : (i + j) % 2 === 0 ? 'typed' : 'spoken';
+      points.push({ plant: 'none', kind, point });
+    }
+  }
+  const total = random.length + points.length;
+  const out = [];
+  let r = 0;
+  let p = 0;
+  for (let i = 0; i < total; i += 1) {
+    const takePoint = Math.floor(((i + 1) * points.length) / total) > Math.floor((i * points.length) / total);
+    out.push({ run: i + 1, ...(takePoint ? points[p++] : random[r++]) });
+  }
+  return out;
+}
+
+const defined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+
 /**
  * @param {object} opts
  * @param {object} opts.driver  simctl-driver.mjs or a test fake
  * @param {'dl01'|'dl02'} opts.mode
- * @param {number} opts.runs
+ * @param {number} opts.runs  random kills
+ * @param {number} [opts.pointRuns]  DL-02: runs at each crash point (default runs / 10, rounded up)
  * @param {string[]} [opts.kinds]  DL-02 kinds, used in turn
  * @param {[number, number]} [opts.delayMs]  kill delay after the drill arms
  * @param {[number, number]} [opts.plantDelayMs]
  * @param {number} [opts.seed]
- * @param {number} [opts.selfCheck]  planted runs of each kind (loss, double)
- * @param {{ bootMs: number, armMs: number }} [opts.timeouts]
+ * @param {number} [opts.selfCheck]  planted runs of each kind
+ * @param {{ bootMs: number, armMs: number, pointMs: number }} [opts.timeouts]
  * @param {(line: string) => void} [opts.log]
  */
 export async function runHarness(opts) {
+  const given = defined(opts);
+  const mode = given.mode === 'dl01' || given.mode === 'dl02' ? given.mode : null;
   const o = {
     kinds: ['typed', 'spoken', 'spoken-unhashed'],
     seed: (Date.now() ^ (Math.random() * 2 ** 31)) >>> 0,
     selfCheck: DEFAULTS.selfCheck,
-    timeouts: DEFAULTS.timeouts,
     log: () => {},
-    ...(opts.mode === 'dl01' || opts.mode === 'dl02' ? DEFAULTS[opts.mode] : {}),
-    ...opts,
+    ...(mode ? DEFAULTS[mode] : {}),
+    pointRuns: mode === 'dl02' && Number.isInteger(given.runs) ? Math.ceil(given.runs / 10) : 0,
+    ...given,
+    timeouts: { ...DEFAULTS.timeouts, ...(given.timeouts ?? {}) },
   };
+  /** @type {any} */
   const report = {
     mode: o.mode,
     runsAsked: o.runs,
+    pointRunsAsked: o.pointRuns,
     seed: o.seed,
     delayMs: o.delayMs,
     kinds: o.mode === 'dl02' ? o.kinds : null,
+    selfCheckPerPlant: o.selfCheck,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     device: null,
+    fixtureSha256: null,
     selfCheck: { asked: 0, caught: 0, missed: [], runs: [] },
     runs: [],
+    audits: [],
+    sweep: {},
     errors: [],
+    crashed: null,
     exit: EXIT.usage,
+  };
+  let stage = 'start';
+  const finish = (exit) => {
+    report.finishedAt = new Date().toISOString();
+    report.exit = exit ?? exitFor(report);
+    return report;
   };
   try {
     validate(o);
   } catch (e) {
     if (e instanceof HarnessUsageError) {
       report.errors.push({ phase: 'usage', code: e.message });
-      return report;
+      return finish(EXIT.usage);
     }
     throw e;
   }
@@ -99,7 +160,7 @@ export async function runHarness(opts) {
   const pick = ([lo, hi]) => Math.round(lo + random() * (hi - lo));
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const driver = o.driver;
-  report.device = driver.info ? await driver.info() : null;
+  const io = { sha256: (path) => driver.sha256(path), playable: (path) => driver.playable(path) };
 
   const waitFor = async (kind, run, pid, timeoutMs, pollMs) => {
     const t0 = Date.now();
@@ -114,124 +175,216 @@ export async function runHarness(opts) {
     }
   };
 
-  const judge = (p) => {
-    const snap = driver.snapshot();
-    const io = { sha256: (path) => driver.sha256(path), playable: (path) => driver.playable(path) };
-    const verdict = o.mode === 'dl02' ? classifyDl02(snap, p.armed, io) : classifyDl01(snap, p.armed, io);
-    return {
-      run: p.item.run,
-      plant: p.item.plant,
-      kind: p.item.kind ?? null,
-      delayMs: p.delayMs,
-      waitedMs: p.waitedMs,
-      saveDone: p.saveDone,
-      diedBeforeKill: p.diedBeforeKill,
-      ...verdict,
-    };
-  };
+  const expectFor = (p) =>
+    o.mode === 'dl02'
+      ? { fixtureSha: report.fixtureSha256, outcome: p.item.point ? POINT_EXPECTS[p.item.point] : null, point: p.item.point }
+      : { expectedMs: Number.isFinite(p.armed.recordedMs) ? p.armed.recordedMs + p.waitedMs : null };
 
-  /** One fresh install, the setup launch, then each item killed in turn; returns judged runs and errors. */
+  const baseOf = (p) => ({
+    run: p.item.run,
+    plant: p.item.plant,
+    kind: p.item.kind ?? null,
+    point: p.item.point ?? null,
+    delayMs: p.delayMs,
+    waitedMs: p.waitedMs,
+    saveDone: p.saveDone,
+    diedBeforeKill: p.diedBeforeKill,
+  });
+
+  /** One fresh install, the setup launch, then each item killed in turn. */
   const series = async (items, delayRange, label) => {
-    await driver.reset();
     const results = [];
     const errors = [];
+    const kept = [];
+    const badIds = new Set();
+    const badFiles = new Set();
+    let fatal = false;
+
+    const judge = (p, bootMarker) => {
+      const base = baseOf(p);
+      let snap;
+      try {
+        snap = driver.snapshot();
+      } catch (e) {
+        fatal = true;
+        return { ...base, outcome: 'fail', reasons: [`the database could not be read after this kill: ${String(e?.message ?? e).slice(0, 160)}`] };
+      }
+      const expect = expectFor(p);
+      const verdict = o.mode === 'dl02' ? classifyDl02(snap, p.armed, io, expect) : classifyDl01(snap, p.armed, io, expect);
+      const result = { ...base, ...verdict, reasons: [...verdict.reasons] };
+      if (bootMarker && bootMarker.swept === false) {
+        result.outcome = 'fail';
+        result.reasons.push('the launch sweep did not finish after this kill');
+      }
+      if (isBad(result.outcome) || p.item.plant !== 'none') {
+        badIds.add(p.armed.draftId);
+        if (p.armed.audioFile) badFiles.add(p.armed.audioFile);
+      }
+      const problems = auditStore(snap, io, { mode: o.mode, kept, badIds, badFiles });
+      if (problems.length) {
+        report.audits.push({ afterRun: base.run, problems: problems.map((x) => x.reason) });
+        if (p.item.plant === 'none') {
+          result.outcome = 'fail';
+          result.reasons.push(...problems.map((x) => `after this kill: ${x.reason}`));
+        }
+        for (const x of problems) {
+          const i = kept.findIndex((k) => k.run === x.run);
+          if (i < 0) continue;
+          badIds.add(kept[i].armed.draftId);
+          if (kept[i].armed.audioFile) badFiles.add(kept[i].armed.audioFile);
+          kept.splice(i, 1);
+        }
+      } else if (p.item.plant === 'none' && !isBad(result.outcome)) {
+        kept.push({ run: base.run, outcome: result.outcome, armed: p.armed, expect });
+      }
+      return result;
+    };
+
+    const relaunchFailed = (p, code) => {
+      fatal = true;
+      return {
+        ...baseOf(p),
+        outcome: 'fail',
+        reasons: [`the app did not start again after this kill (${code}); seed ${o.seed}, killed ${p.waitedMs} ms after it ${p.item.point ? `reached ${p.item.point}` : 'armed'}`],
+      };
+    };
+
+    stage = `${label}: reset`;
+    await driver.reset();
+    if (o.mode === 'dl02' && driver.fixtureSha256) report.fixtureSha256 = driver.fixtureSha256();
+    stage = `${label}: setup launch`;
     const setupPid = await driver.launch({ mode: 'setup', run: 0 });
     const setup = await waitFor('boot', 0, setupPid, o.timeouts.bootMs, 50);
     await driver.terminate(setupPid);
-    if (!setup.ok) return { results, errors: [{ phase: label, run: 0, code: setup.code }] };
+    if (!setup.ok) return { results, errors: [{ phase: label, run: 0, code: setup.code }], fatal };
     let pending = null;
     let last = 0;
     for (const item of items) {
       last = item.run;
-      const pid = await driver.launch({ mode: o.mode, run: item.run, kind: item.kind, plant: item.plant });
+      stage = `${label}: run ${item.run}, launch`;
+      const pid = await driver.launch({ mode: o.mode, run: item.run, kind: item.kind, plant: item.plant, point: item.point });
       const boot = await waitFor('boot', item.run, pid, o.timeouts.bootMs, 50);
-      if (!boot.ok) {
+      if (pending) {
+        stage = `${label}: run ${pending.item.run}, judge`;
+        if (!boot.ok) {
+          results.push(relaunchFailed(pending, boot.code));
+          await driver.kill(pid);
+          return { results, errors, fatal };
+        }
+        results.push(judge(pending, boot.marker));
+        pending = null;
+        if (fatal) {
+          await driver.kill(pid);
+          return { results, errors, fatal };
+        }
+      } else if (!boot.ok) {
         errors.push({ phase: label, run: item.run, code: boot.code });
         await driver.kill(pid);
-        pending = null;
-        break;
+        return { results, errors, fatal };
       }
-      if (pending) results.push(judge(pending));
-      pending = null;
+      for (const [k, n] of Object.entries(boot.marker.sweep ?? {})) report.sweep[k] = (report.sweep[k] ?? 0) + Number(n || 0);
+      stage = `${label}: run ${item.run}, arm`;
+      driver.writeGo(item.run);
       const armed = await waitFor('armed', item.run, pid, o.timeouts.armMs, 1);
       if (!armed.ok) {
         errors.push({ phase: label, run: item.run, code: armed.code });
         await driver.kill(pid);
-        break;
+        return { results, errors, fatal };
       }
-      const delayMs = pick(delayRange);
+      let delayMs = 0;
       const t0 = performance.now();
-      if (delayMs > 0) await sleep(delayMs);
+      if (item.point) {
+        const at = await waitFor('point', item.run, pid, o.timeouts.pointMs, 1);
+        if (!at.ok) {
+          errors.push({ phase: label, run: item.run, code: at.code });
+          await driver.kill(pid);
+          return { results, errors, fatal };
+        }
+      } else {
+        delayMs = pick(delayRange);
+        if (delayMs > 0) await sleep(delayMs);
+      }
       const waitedMs = Math.round(performance.now() - t0);
+      stage = `${label}: run ${item.run}, kill`;
       const wasAlive = await driver.kill(pid);
       pending = { item, armed: armed.marker, delayMs, waitedMs, saveDone: driver.readMarker('done', item.run) !== null, diedBeforeKill: !wasAlive };
-      o.log(`${label} run ${item.run}: killed after ${waitedMs} ms`);
+      o.log(`${label} run ${item.run}: killed ${item.point ? `at ${item.point}` : `after ${waitedMs} ms`}`);
     }
     if (pending) {
       const verifyRun = last + 1;
+      stage = `${label}: verify launch`;
       const pid = await driver.launch({ mode: 'verify', run: verifyRun });
       const boot = await waitFor('boot', verifyRun, pid, o.timeouts.bootMs, 50);
-      if (boot.ok) results.push(judge(pending));
-      else errors.push({ phase: label, run: verifyRun, code: boot.code });
+      stage = `${label}: run ${pending.item.run}, judge`;
+      results.push(boot.ok ? judge(pending, boot.marker) : relaunchFailed(pending, boot.code));
       await driver.terminate(pid);
     }
-    return { results, errors };
+    return { results, errors, fatal };
   };
 
-  const kindOf = (i) => (o.mode === 'dl02' ? o.kinds[i % o.kinds.length] : undefined);
+  try {
+    report.device = driver.info ? await driver.info() : null;
 
-  // 1. Self-check: planted failures on their own install. Each must come back as the failure it plants.
-  const planted = [];
-  for (const plant of ['loss', 'double']) {
-    for (let i = 0; i < o.selfCheck; i += 1) planted.push({ run: 9001 + planted.length, plant, kind: kindOf(planted.length) });
-  }
-  const sc = await series(planted, o.plantDelayMs, 'self-check');
-  report.selfCheck.asked = planted.length;
-  report.selfCheck.runs = sc.results.map((r) => ({ run: r.run, plant: r.plant, kind: r.kind, outcome: r.outcome }));
-  for (const r of sc.results) {
-    const want = r.plant === 'loss' ? 'lost' : 'doubled';
-    if (r.outcome === want) report.selfCheck.caught += 1;
-    else report.selfCheck.missed.push({ run: r.run, plant: r.plant, outcome: r.outcome });
-  }
-  report.errors.push(...sc.errors);
-  if (sc.errors.length || sc.results.length < planted.length) {
-    report.exit = EXIT.incomplete;
-    report.finishedAt = new Date().toISOString();
-    return report;
-  }
-  if (report.selfCheck.caught < planted.length) {
-    report.exit = EXIT.blind;
-    report.finishedAt = new Date().toISOString();
-    return report;
-  }
+    // 1. Self-check: planted failures on their own install. Each must come back as the failure it plants.
+    const planted = [];
+    for (const plant of PLANTS[o.mode]) {
+      for (let i = 0; i < o.selfCheck; i += 1) {
+        const kind = o.mode === 'dl02' ? (plant === 'damage' ? 'spoken' : o.kinds[planted.length % o.kinds.length]) : undefined;
+        planted.push({ run: 9001 + planted.length, plant, kind, point: null });
+      }
+    }
+    const sc = await series(planted, o.plantDelayMs, 'self-check');
+    report.selfCheck.asked = planted.length;
+    report.selfCheck.runs = sc.results.map((r) => ({ run: r.run, plant: r.plant, kind: r.kind, outcome: r.outcome, reasons: r.reasons }));
+    for (const r of sc.results) {
+      if (r.outcome === PLANT_EXPECTS[r.plant] && !r.reasons.some((x) => x.startsWith('the app did not start'))) report.selfCheck.caught += 1;
+      else report.selfCheck.missed.push({ run: r.run, plant: r.plant, outcome: r.outcome });
+    }
+    report.errors.push(...sc.errors);
+    if (sc.fatal) {
+      // The app could not start again after a planted kill: that is a failure of the app, not of the oracle.
+      report.runs = sc.results.filter((r) => r.outcome === 'fail' && r.reasons.some((x) => x.startsWith('the app did not start') || x.startsWith('the database could not be read')));
+      return finish(EXIT.fail);
+    }
+    if (sc.errors.length || sc.results.length < planted.length) return finish(EXIT.incomplete);
+    if (report.selfCheck.caught < planted.length) return finish(EXIT.blind);
 
-  // 2. The real runs, on a second fresh install.
-  const items = Array.from({ length: o.runs }, (_, i) => ({ run: i + 1, plant: 'none', kind: kindOf(i) }));
-  const real = await series(items, o.delayMs, 'run');
-  report.runs = real.results;
-  report.errors.push(...real.errors);
-  report.finishedAt = new Date().toISOString();
-  report.exit = exitFor(report);
-  return report;
+    // 2. The real runs, on a second fresh install.
+    const items = planRuns(o);
+    report.runsPlanned = items.length;
+    const real = await series(items, o.delayMs, 'run');
+    report.runs = real.results;
+    report.errors.push(...real.errors);
+    return finish();
+  } catch (e) {
+    report.crashed = { stage, message: String(e?.message ?? e).slice(0, 300) };
+    report.errors.push({ phase: 'harness', stage, code: report.crashed.message });
+    return finish();
+  }
 }
 
 /**
  * The counts a report shows, from its judged runs: one key per outcome, plus the derived figures.
- * @returns {Record<string, number | null> & { completed: number, bad: number }}
+ * @returns {Record<string, any> & { completed: number, bad: number }}
  */
 export function countsOf(report) {
-  /** @type {Record<string, number | null> & { completed: number, bad: number }} */
+  /** @type {Record<string, any> & { completed: number, bad: number }} */
   const c = { completed: report.runs.length, bad: 0 };
   for (const r of report.runs) {
     c[r.outcome] = (c[r.outcome] ?? 0) + 1;
     if (isBad(r.outcome)) c.bad += 1;
   }
+  const stratum = (list) => ({ runs: list.length, bad: list.filter((r) => isBad(r.outcome)).length });
+  c.random = stratum(report.runs.filter((r) => !r.point));
+  c.points = Object.fromEntries(CRASH_POINTS.map((pt) => [pt, stratum(report.runs.filter((r) => r.point === pt))]));
   if (report.mode === 'dl02') {
     // A letter whose save had not returned when the kill came: the kill landed after the commit, inside Save.
-    c.insideSave = report.runs.filter((r) => r.outcome === 'letter' && !r.saveDone).length;
+    c.insideSave = report.runs.filter((r) => !r.point && r.outcome === 'letter' && !r.saveDone).length;
+    c.beforeCommit = report.runs.filter((r) => !r.point && r.outcome === 'draft').length;
   } else {
     const kept = (c['kept-playable'] ?? 0) + (c['kept-unplayable'] ?? 0);
     c.kept = kept;
+    c.within5s = report.runs.filter((r) => r.within5s).length;
     c.unplayableRate = kept ? (c['kept-unplayable'] ?? 0) / kept : null;
     c.wronglyListed = report.runs.filter((r) => r.wronglyListed).length;
   }
@@ -240,29 +393,58 @@ export function countsOf(report) {
 
 export function exitFor(report) {
   if (report.errors.some((e) => e.phase === 'usage')) return EXIT.usage;
-  if (report.selfCheck.asked > 0 && report.selfCheck.caught < report.selfCheck.asked) {
-    return report.errors.length ? EXIT.incomplete : EXIT.blind;
-  }
   const c = countsOf(report);
   if (c.bad > 0) return EXIT.fail;
-  if (report.errors.length || c.completed < report.runsAsked) return EXIT.incomplete;
+  if (report.selfCheck.asked > 0 && report.selfCheck.caught < report.selfCheck.asked) {
+    return report.errors.length || report.crashed ? EXIT.incomplete : EXIT.blind;
+  }
+  const planned = report.runsPlanned ?? report.runsAsked + 4 * (report.pointRunsAsked ?? 0);
+  if (report.crashed || report.errors.length || c.completed < planned) return EXIT.incomplete;
+  // 07: 49 or more of 50 kept takes play to within 5 s of the kill.
+  if (report.mode === 'dl01' && c.within5s < Math.ceil(DEFAULTS.playableShare * c.completed)) return EXIT.fail;
   return EXIT.pass;
 }
 
-/** Sums reports of the same mode (shards of one gate run); the merged report is judged again. */
+/** Whether a report is big enough to be the B2-11 gate. */
+export function meetsGate(report) {
+  const c = countsOf(report);
+  if (report.mode === 'dl01') return c.random.runs >= GATE.runs;
+  return c.random.runs >= GATE.runs && CRASH_POINTS.every((pt) => c.points[pt].runs >= GATE.pointRuns);
+}
+
+const sameSettings = (a, b) =>
+  a.mode === b.mode &&
+  JSON.stringify(a.delayMs) === JSON.stringify(b.delayMs) &&
+  JSON.stringify(a.kinds) === JSON.stringify(b.kinds) &&
+  a.selfCheckPerPlant === b.selfCheckPerPlant &&
+  (a.pointRunsAsked > 0) === (b.pointRunsAsked > 0);
+const sameBuild = (a, b) => ['version', 'build', 'commit', 'bundleId'].every((k) => (a.device ?? {})[k] === (b.device ?? {})[k]);
+
+/** Sums shards of one gate run. Refuses a shard given twice and shards with other settings or another build. */
 export function mergeReports(reports) {
   if (!reports.length) throw new HarnessUsageError('nothing to merge');
-  const mode = reports[0].mode;
-  if (!reports.every((r) => r.mode === mode)) throw new HarnessUsageError('reports of different modes');
+  const seen = new Set();
+  for (const r of reports) {
+    const key = `${r.seed}|${r.startedAt}`;
+    if (seen.has(key)) throw new HarnessUsageError(`the shard with seed ${r.seed} is given twice`);
+    seen.add(key);
+    if (!sameSettings(reports[0], r)) throw new HarnessUsageError('shards with different settings (mode, delays, kinds, self-check or crash points) cannot be merged');
+    if (!sameBuild(reports[0], r)) throw new HarnessUsageError('shards of different builds or commits cannot be merged');
+  }
+  /** @type {any} */
   const merged = {
-    mode,
+    mode: reports[0].mode,
     runsAsked: reports.reduce((n, r) => n + r.runsAsked, 0),
+    pointRunsAsked: reports.reduce((n, r) => n + (r.pointRunsAsked ?? 0), 0),
+    runsPlanned: reports.reduce((n, r) => n + (r.runsPlanned ?? r.runsAsked + 4 * (r.pointRunsAsked ?? 0)), 0),
     seed: reports.map((r) => r.seed),
     delayMs: reports[0].delayMs,
     kinds: reports[0].kinds,
+    selfCheckPerPlant: reports[0].selfCheckPerPlant,
     startedAt: reports.map((r) => r.startedAt).sort()[0],
     finishedAt: reports.map((r) => r.finishedAt ?? '').sort().at(-1),
     device: reports.map((r) => r.device),
+    fixtureSha256: reports.map((r) => r.fixtureSha256),
     selfCheck: {
       asked: reports.reduce((n, r) => n + r.selfCheck.asked, 0),
       caught: reports.reduce((n, r) => n + r.selfCheck.caught, 0),
@@ -270,56 +452,70 @@ export function mergeReports(reports) {
       runs: reports.flatMap((r) => r.selfCheck.runs),
     },
     runs: reports.flatMap((r, i) => r.runs.map((x) => ({ ...x, shard: i + 1 }))),
+    audits: reports.flatMap((r) => r.audits ?? []),
+    sweep: {},
     errors: reports.flatMap((r) => r.errors),
+    crashed: reports.find((r) => r.crashed)?.crashed ?? null,
     exit: EXIT.usage,
   };
+  for (const r of reports) for (const [k, n] of Object.entries(r.sweep ?? {})) merged.sweep[k] = (merged.sweep[k] ?? 0) + n;
   merged.exit = exitFor(merged);
   return merged;
 }
 
 const VERDICT = {
-  [EXIT.pass]: 'PASS: every run kept its letter or recording exactly once, and the self-check caught every planted failure',
-  [EXIT.fail]: 'FAIL: a run lost, doubled or damaged a letter or recording',
+  [EXIT.pass]: 'PASS: every run kept its letter or recording exactly once, the database checked clean after every relaunch, and the self-check caught every planted failure',
+  [EXIT.fail]: 'FAIL: a run lost, doubled or damaged a letter or recording, the app did not start after a kill, or the database check failed',
   [EXIT.usage]: 'NOT RUN: usage error',
   [EXIT.incomplete]: 'INCOMPLETE: not every run finished (see errors); this is not a pass',
   [EXIT.blind]: 'BLIND: the self-check missed a planted failure, so this run proves nothing',
 };
 
+const pct = (x) => `${(x * 100).toFixed(1)}%`;
+
 /** A content-free Markdown summary (run numbers, outcomes and reasons; no ids, no words). */
-export function renderMarkdown(report, gateRuns = 500) {
+export function renderMarkdown(report) {
   const c = countsOf(report);
   const title = report.mode === 'dl02' ? 'DL-02, kill during save' : 'DL-01, kill while recording';
+  const seeds = Array.isArray(report.seed) ? report.seed.join(', ') : report.seed;
   const lines = [
     `# Kill harness: ${title}`,
     '',
     `**${VERDICT[report.exit]}** (exit ${report.exit}).`,
     '',
-    `| | |`,
-    `|---|---|`,
-    `| Runs asked, judged | ${report.runsAsked}, ${c.completed} |`,
-    `| Kill delay after the drill armed | ${report.delayMs[0]} to ${report.delayMs[1]} ms, seed ${Array.isArray(report.seed) ? report.seed.join(', ') : report.seed} |`,
+    '| | |',
+    '|---|---|',
+    `| Runs planned, judged | ${report.runsPlanned ?? report.runsAsked}, ${c.completed} |`,
+    `| Random kills | ${c.random.runs}, ${report.delayMs[0]} to ${report.delayMs[1]} ms after the drill armed; seed ${seeds} (replaying a seed also needs the same --self-check) |`,
   ];
+  if (report.mode === 'dl02') lines.push(`| Crash-point kills | ${CRASH_POINTS.map((pt) => `${pt} ${c.points[pt].runs}`).join(', ')} |`);
   if (report.kinds) lines.push(`| Kinds, in turn | ${report.kinds.join(', ')} |`);
-  lines.push(`| Self-check (planted loss and double) | ${report.selfCheck.caught} of ${report.selfCheck.asked} caught |`);
+  lines.push(`| Self-check (planted failures) | ${report.selfCheck.caught} of ${report.selfCheck.asked} caught |`);
+  lines.push(`| Database checks after every relaunch | integrity_check, rows pointing at missing files, stored hashes, every earlier kept letter judged again: ${report.audits.length ? `${report.audits.length} relaunch(es) found problems` : 'clean'} |`);
   lines.push(`| Started, finished (UTC) | ${report.startedAt}, ${report.finishedAt ?? 'not finished'} |`);
   const devices = (Array.isArray(report.device) ? report.device : [report.device]).filter(Boolean);
   for (const d of devices) lines.push(`| Device and build | ${Object.entries(d).map(([k, v]) => `${k} ${v}`).join('; ')} |`);
+  if (Object.keys(report.sweep ?? {}).length) lines.push(`| The app's launch sweep, summed | ${Object.entries(report.sweep).map(([k, n]) => `${k} ${n}`).join(', ')} |`);
   lines.push('', '| Outcome | Runs |', '|---|---|');
   const order = report.mode === 'dl02' ? ['letter', 'draft', 'lost', 'doubled', 'fail'] : ['kept-playable', 'kept-unplayable', 'lost', 'doubled', 'fail'];
   for (const k of order) lines.push(`| ${k} | ${c[k] ?? 0} |`);
   if (report.mode === 'dl02') {
-    lines.push(`| (letter, killed inside Save after the commit) | ${c.insideSave} |`);
+    lines.push(`| (random kills before the commit: the draft kept) | ${c.beforeCommit} |`);
+    lines.push(`| (random kills inside Save after the commit) | ${c.insideSave} |`);
   } else {
-    lines.push(`| (unplayable rate of kept takes) | ${c.unplayableRate === null ? 'n/a' : `${(c.unplayableRate * 100).toFixed(1)}%`} |`);
+    lines.push(`| (playing to within 5 s of the kill; 07 needs ${pct(DEFAULTS.playableShare)}) | ${c.within5s} of ${c.completed} |`);
     lines.push(`| (playable but listed as unplayable) | ${c.wronglyListed} |`);
   }
-  const passedRuns = c.completed - c.bad;
-  lines.push('', `Gate B2-11 needs ${gateRuns} of ${gateRuns} on the freeze commit: this report has ${passedRuns} of ${report.runsAsked} kept${report.runsAsked < gateRuns ? ` (a ${report.runsAsked}-run set, not the gate)` : ''}.`);
+  lines.push('', 'What a clean result rules out (95% upper bound on the loss rate per kill, zero failures in n runs; about 3/n):', '');
+  const bound = (s) => (s.bad === 0 && s.runs > 0 ? `${s.runs} clean, rules out above ${pct(upperBound95(s.runs))}` : s.runs ? `${s.bad} of ${s.runs} bad` : 'none run');
+  lines.push(`- random kills: ${bound(c.random)}`);
+  if (report.mode === 'dl02') for (const pt of CRASH_POINTS) lines.push(`- at ${pt}: ${bound(c.points[pt])}`);
+  lines.push('', meetsGate(report) ? 'Big enough for the B2-11 gate (on the freeze commit).' : `Smaller than the B2-11 gate (${GATE.runs} random kills${report.mode === 'dl02' ? ` and ${GATE.pointRuns} at each crash point` : ''}).`);
   const bad = report.runs.filter((r) => isBad(r.outcome));
   if (bad.length) {
-    lines.push('', '| Run | Kind | Outcome | Why |', '|---|---|---|---|');
-    for (const r of bad.slice(0, 50)) lines.push(`| ${r.run} | ${r.kind ?? '-'} | ${r.outcome} | ${r.reasons.join('; ')} |`);
-    if (bad.length > 50) lines.push(`| ... | | | ${bad.length - 50} more in report.json |`);
+    lines.push('', '| Run | Kind | Point | Outcome | Why |', '|---|---|---|---|---|');
+    for (const r of bad.slice(0, 50)) lines.push(`| ${r.run} | ${r.kind ?? '-'} | ${r.point ?? '-'} | ${r.outcome} | ${r.reasons.join('; ')} |`);
+    if (bad.length > 50) lines.push(`| ... | | | | ${bad.length - 50} more in report.json |`);
   }
   if (report.selfCheck.missed.length) {
     lines.push('', 'Planted failures the harness missed:');
@@ -327,7 +523,7 @@ export function renderMarkdown(report, gateRuns = 500) {
   }
   if (report.errors.length) {
     lines.push('', 'Errors:');
-    for (const e of report.errors) lines.push(`- ${e.phase} run ${e.run ?? '-'}: ${e.code}`);
+    for (const e of report.errors) lines.push(`- ${e.phase}${e.stage ? ` (${e.stage})` : ''} run ${e.run ?? '-'}: ${e.code}`);
   }
   return `${lines.join('\n')}\n`;
 }

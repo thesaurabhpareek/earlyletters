@@ -58,7 +58,7 @@ cd apps/mobile
 npx eas-cli@latest build --platform ios --profile e2e        # EAS builds the simulator .app
 npx eas-cli@latest build:run --platform ios --profile e2e --latest --simulator "iPhone SE (3rd generation)"
 ```
-`build:run` downloads the latest simulator build and installs it (V: eas-cli README). For the runner scripts, download the archive and pass the `.app` with `--app`. Bundle id: `com.earlyletters.scribe.preview` (`app.config.ts` suffix for the preview profile it extends); every flow reads it from `APP_ID`.
+`build:run` downloads the latest simulator build and installs it (V: eas-cli README). For the runner scripts, download the archive and pass the `.app` with `--app`. Bundle id: `com.earlyletters.scribe.dev`. The e2e seams (`src/dev/e2e-seams.ts`) are compiled only into a build with `EXPO_PUBLIC_E2E=1` whose app env is neither `preview` nor `production`, so the e2e profile uses the development app env (request B-1) and its `.dev` suffix (`app.config.ts`), never a store profile's; every flow reads the id from `APP_ID`.
 
 ### 3.2 The quick authoring loop with an EAS development build
 For writing or fixing one flow while the app code changes:
@@ -100,14 +100,14 @@ Sign-in codes (`scripts/fetch-otp.js`):
 ### 4.3 Commands
 ```bash
 # One flow
-maestro test apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml -e APP_ID=com.earlyletters.scribe.preview
+maestro test apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml -e APP_ID=com.earlyletters.scribe.dev
 # The single-simulator suite, in order, with host checks between flows
 apps/mobile/e2e/bin/run-suite.sh --udid <se3-udid> --app /path/to/EarlyLetters.app --junit
 apps/mobile/e2e/bin/run-suite.sh --only E2E-05
 # The co-parent round trip on two simulators
 apps/mobile/e2e/bin/run-coparent.sh <udid-a> <udid-b> --app /path/to/EarlyLetters.app
 # All flows proving one requirement
-maestro test apps/mobile/e2e --include-tags=PRD-REQ-019 -e APP_ID=com.earlyletters.scribe.preview
+maestro test apps/mobile/e2e --include-tags=PRD-REQ-019 -e APP_ID=com.earlyletters.scribe.dev
 ```
 Artifacts (screenshots, logs, JUnit) go to `~/.maestro/scribe-e2e/<time>` or `$OUT`, never into the repo (COORDINATION section 8). Screenshots may show only the fictional family (Asha, Avi, Mama, Papa).
 
@@ -139,32 +139,39 @@ Real microphone audio and transcription speed, Sign in with Apple and Google she
 
 ## 9. The kill harness (DL-01, DL-02; B2-11, never waived)
 
-`kill/run-kill-harness.mjs` (RA-19-04) kills the app 500 times during save (DL-02) and 500 times while recording (DL-01) on an iOS simulator, and checks after every kill that no letter or recording was lost or doubled (DATA-REQ-048, F04-REQ-024, F08-REQ-019; `docs/qa/DEVICE_TEST_PLAN.md` DL-01 and DL-02). It is not a Maestro flow: Maestro cannot time a kill to the millisecond.
+`kill/run-kill-harness.mjs` (RA-19-04) kills the app during save (DL-02) and while recording (DL-01) on an iOS simulator, and checks after every kill that no letter or recording was lost, doubled or damaged (07 "Kill during save" and "Kill while recording", 06-nfr row 187, DATA-REQ-048, F04-REQ-024, F08-REQ-019; `docs/qa/DEVICE_TEST_PLAN.md` DL-01 and DL-02). It is not a Maestro flow: Maestro cannot time a kill to the millisecond.
 
-**How a run works.** The harness launches the app with launch arguments (`-e2eKillDrill dl02 -e2eKillRun 17 ...`). The e2e build's seam (`apps/mobile/src/dev/kill-drill.ts`, loaded by `src/dev/e2e-seams.ts`) waits for the app's own launch sweep, writes a `boot` marker, makes the run's draft (DL-02: a typed letter, a spoken one hashed at Finish, or a spoken one Save must hash; DL-01: a live take through `beginTake`, as Listen does), writes an `armed` marker and starts the save or the recording through the same store and recorder calls Review and Listen use. The harness sees `armed` from the host, waits a random 0 to 400 ms (DL-02) or 2 to 60 s (DL-01), and sends SIGKILL to the app's process (simulator apps are host processes). The next launch runs the sweep; the harness then reads the app's SQLite file read-only and hashes the files from the host (`kill/snapshot.mjs`), and `kill/oracle.mjs` judges the killed run. The app never judges itself. Markers live in `Library/Caches/kill-drill`, which the sweep never reads; letters say only "Asha kill drill <run>", and spoken DL-02 letters use a generated tone (`afconvert` of a sine wave), never a voice.
+**How a run works.**
+1. The harness launches the app with launch arguments (`-e2eKillDrill dl02 -e2eKillRun 17 ...`).
+2. The e2e build's seam (`apps/mobile/src/dev/kill-drill.ts`, loaded by `src/dev/e2e-seams.ts`) checks that it runs on a simulator, in the development bundle, on an install it made itself; otherwise it writes `refused_...` and does nothing. It then waits for the app's own launch sweep and writes a `boot` marker.
+3. The harness judges the previous run from the host while the app waits, then writes `go`. The seam makes the run's draft (DL-02: a typed letter, a spoken one hashed at Finish, or a spoken one Save must hash; DL-01: a live take through `beginTake`, as Listen does), writes `armed`, and starts the save or the recording through the same store and recorder calls Review and Listen use.
+4. The harness sends SIGKILL to the app's process (simulator apps are host processes): a random 0 to 400 ms after `armed` (DL-02) or 10 to 120 s into the take (DL-01, 07's window); or, for DL-02 crash-point runs, the moment the seam writes `point` and holds at one of four named moments: `after-file-write` (the take's file closed, its draft not finalized), `before-row` (the hash check done, no letter row yet), `inside-transaction` (letter row written, draft removed, nothing committed) and `after-commit` (committed, before the Keychain count). A kill before the commit must leave the draft; after it, the letter.
+5. The next launch runs the sweep. The harness reads the app's SQLite file read-only and hashes the files from the host (`kill/snapshot.mjs`), and `kill/oracle.mjs` judges the killed run, then audits the whole database: `PRAGMA integrity_check` is ok, no row points at a missing file, every stored hash matches its file, and every earlier run judged kept is judged again, so damage a later launch does is caught. The app never judges itself. Spoken DL-02 recordings are compared with the host's own hash of the fixture it placed.
 
-**It cannot pass vacuously.** Before the real runs, on its own fresh install, the harness runs planted failures through the same seam (`-e2eKillPlant loss`: the draft goes and the letter comes 3 s later; `double`: the letter is written and the draft kept; for DL-01, the take's file removed, or two extra letters pointing at it). Each must come back as lost or doubled; if one does not, the harness stops with exit 4 and runs nothing else. The real runs then start on a second fresh install. `apps/mobile/test/qa-kill-harness.test.ts` runs the loop, the oracle and the snapshot reader on Linux in `npm test`, against a fake app built on the app's own migrator, repositories and sweep planner, including an app whose save is not one transaction (exit 1), one that ignores the plants (exit 4) and one that never arms (exit 3).
+Markers live in `Library/Caches/kill-drill`, which the sweep never reads. Letters say only "Asha kill drill <run>", and spoken DL-02 letters use a generated tone (`afconvert` of a sine wave), never a voice.
 
-**Exit codes.** 0 every run kept its letter or take exactly once and the self-check caught every plant; 1 a run lost, doubled or damaged one; 2 usage or a refused setup; 3 incomplete (a timeout, no microphone, fewer runs judged than asked); 4 the self-check missed a plant. Only 0 is green. Reports go to `--out` (default `~/.scribe-kill/<mode>-<UTC time>`, never the repo): `report.json` and `report.md` (run numbers, outcomes and reasons; no ids, no words), also appended to the GitHub step summary.
+**It cannot pass vacuously.** Before the real runs, on its own fresh install, the harness runs planted failures through the same seam: `loss` (the draft goes, the letter comes 3 s later), `double` (the letter is written and the draft kept) and, for DL-02, `damage` (one byte of the recording changed after a real save); for DL-01, the take's file removed, or two extra letters pointing at it. Each must come back as lost, doubled or fail; if one does not, the harness stops with exit 4 and runs nothing else. The real runs then start on a second fresh install. `apps/mobile/test/qa-kill-harness.test.ts` runs the loop, the oracle and the snapshot reader on Linux in `npm test`, against a fake app built on the app's own migrator and repositories that runs the app's own `runLaunchSweep` over a stand-in file system, so the fake has the app's listing rule: an app whose save is not one transaction fails (exit 1), an app that ignores the plants is blind (exit 4), a drill that never arms is incomplete (exit 3), an app that does not start after a kill fails (exit 1), and damage a later launch does is caught.
+
+**Exit codes.** 0 every run kept its letter or take exactly once, the database checked clean after every relaunch and the self-check caught every plant; 1 a run lost, doubled or damaged one, the app did not start again after a kill (the report names the run, the seed and the kill time), or, for DL-01, fewer than 49 in 50 takes play to within 5 s (07); 2 usage or a refused setup; 3 incomplete (a timeout, no microphone, fewer runs judged than planned, an error in the harness, with its stage named); 4 the self-check missed a plant. Only 0 is green. Every exit after the arguments are accepted writes the report: `--out` (default `~/.scribe-kill/<mode>-<UTC time>`, never the repo) gets `report.json` and `report.md` (run numbers, outcomes and reasons; no ids, no words), also appended to the GitHub step summary.
+
+**What a clean result proves.** With zero failures in n runs, the 95% upper bound on the loss rate per kill is about 3/n (rule of three; exactly 1 - 0.05^(1/n)). 500 clean random kills rule out a rate above 0.6% on the Simulator, and 50 clean kills above 5.8%; nothing proves "zero". Random DL-02 kills mostly land after the commit (a save takes a few milliseconds), which is why the crash-point runs exist: 50 clean runs at each point rule out above 5.8% at that point. The report prints these bounds for each stratum. Simulator and SE 3 results are different populations and are not pooled.
 
 **What it needs.**
-1. An e2e simulator build: release JavaScript, `EXPO_PUBLIC_E2E=1`, `EXPO_PUBLIC_APP_ENV` not `production`, and S20's wiring line in `app/_layout.tsx` (RA-20-18): `useE2eSeams();` as the first line of `Root()`, with `import { useE2eSeams } from '@/dev/e2e-seams';`. Without it the app never arms and every run times out (exit 3). `ci/kill-harness.yml.example` builds it on the runner with `xcodebuild -configuration Release -sdk iphonesimulator`.
+1. An e2e simulator build: release JavaScript, `EXPO_PUBLIC_E2E=1` and `EXPO_PUBLIC_APP_ENV=development` (the seam is compiled into no build whose app env is `preview` or `production`, so no TestFlight or App Store build carries it), and S20's wiring line in `app/_layout.tsx` (RA-20-18): `useE2eSeams();` as the first line of `Root()`, with `import { useE2eSeams } from '@/dev/e2e-seams';`. Without it the app never arms and every run times out (exit 3). Its bundle id is `com.earlyletters.scribe.dev`; the harness reads it from the `.app` and refuses any other. `ci/kill-harness.yml.example` builds it on the runner with `xcodebuild -configuration Release -sdk iphonesimulator`.
 2. macOS with Xcode 26 and Node 22. A booted simulator: `xcrun simctl create kill-se3 "iPhone SE (3rd generation)"`.
-3. For DL-01, a microphone input the simulator can record from, and one that hears nothing: the simulator records from the Mac's input for up to a minute a run. **On a Mac, never in a family room:** install a silent virtual input (for example BlackHole), select it in System Settings > Sound > Input, then pass `--mic-silent`. Without the flag DL-01 refuses to start. By default the harness uninstalls the app at the end, which deletes every drill recording. On a hosted runner the flag is safe; whether the runner's simulator can record at all is unverified [U]: if it cannot, the drill writes `record_failed` and the harness exits 3, and DL-01 runs on the founder's Mac (AF-14).
+3. For DL-01, a microphone input the simulator can record from, and one that hears nothing: the simulator records from the Mac's input for up to two minutes a run. **On a Mac, never in a family room:** install a silent virtual input (for example BlackHole), select it in System Settings > Sound > Input, then pass `--mic-silent`. Without the flag DL-01 refuses to start; the report records the name of the input it used. By default the harness uninstalls the app at the end, which deletes every drill recording. On a hosted runner the flag is safe; whether the runner's simulator can record at all is unverified [U]: if it cannot, the drill writes `record_failed` and the harness exits 3, and DL-01 runs on the founder's Mac (AF-14).
 
 ```bash
-# DL-02, the gate size (about 45 min [E])
-node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <udid> --app /path/to/App.app --runs 500
-# DL-01 (about 5 h [E] for 500): two shards of 250 on two simulators, then merge
-node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-1> --app App.app --runs 250 --mic-silent --out /tmp/k1
-node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-2> --app App.app --runs 250 --mic-silent --out /tmp/k2
-node apps/mobile/e2e/kill/run-kill-harness.mjs --merge /tmp/k1/report.json /tmp/k2/report.json
+# DL-02, the gate size: 500 random kills and 50 at each crash point (about 1 h [E])
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <udid> --app /path/to/App.app --runs 500 --point-runs 50
+# DL-01 (about 10 h [E] for 500): four shards of 125 on four simulators or runners, then merge
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-1> --app App.app --runs 125 --mic-silent --out /tmp/k1
+#   ... the same for k2, k3, k4 ...
+node apps/mobile/e2e/kill/run-kill-harness.mjs --merge /tmp/k1/report.json /tmp/k2/report.json /tmp/k3/report.json /tmp/k4/report.json
 ```
-Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed), `--delay-ms A-B`, `--seed N` (a report's seed replays its delays), `--self-check N` (planted runs of each kind, default 2), `--bundle-id`, `--keep-app`, `--json`.
+Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed), `--point-runs N` (default runs/10), `--delay-ms A-B`, `--seed N`, `--self-check N` (planted runs of each kind, default 2), `--bundle-id` (must match the `.app`), `--keep-app`, `--json`. A bad number exits 2. A report's seed replays its delays only with the same `--self-check` value, because the plants draw from the same random stream first. `--merge` refuses a shard given twice and shards with other settings or another build.
 
-**Reading a DL-02 report.** On a fast simulator a save commits in a few milliseconds, so most kills land after the commit: the `draft` row counts kills that came before it, and "killed inside Save after the commit" counts letters whose save had not returned. A report with no `draft` outcomes is still a pass, but say so in the evidence file. The `spoken-unhashed` kind widens the window: Save hashes a 2-minute recording first.
-
-**Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. 500 of 500 on the freeze commit for each mode, plus the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`), is the gate.
+**Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. A pass means kept and checked as above on the Simulator; the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`) is the device half of the gate.
 
 ## Sources (opened 3 Oct 2026)
 

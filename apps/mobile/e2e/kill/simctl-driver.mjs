@@ -1,11 +1,20 @@
 // The iOS simulator driver for the kill harness. macOS only: xcrun simctl, afinfo, afconvert, plutil.
 // The app runs as a host process, so the kill is a real SIGKILL from the host, as when iOS ends an app.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FIXTURE_FILE, MARKER_DIR, launchArgs, markerName } from './protocol.mjs';
 import { readSnapshot, sha256OfFile } from './snapshot.mjs';
+
+/** The bundle id inside an .app (its Info.plist), or null when it cannot be read. */
+export function bundleIdOf(appPath) {
+  try {
+    return execFileSync('plutil', ['-extract', 'CFBundleIdentifier', 'raw', join(appPath, 'Info.plist')], { encoding: 'utf8' }).trim() || null;
+  } catch {
+    return null;
+  }
+}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -39,6 +48,8 @@ export function toneWav(seconds = 120, rate = 48000) {
 export function simctlDriver(o) {
   let dataDir = null;
   let fixture = null;
+  let fixtureDir = null;
+  const playableCache = new Map();
 
   const markers = () => join(dataDir, 'Library', 'Caches', MARKER_DIR);
   const alive = (pid) => {
@@ -53,6 +64,7 @@ export function simctlDriver(o) {
   const makeFixture = () => {
     if (fixture) return fixture;
     const dir = mkdtempSync(join(tmpdir(), 'scribe-kill-fixture-'));
+    fixtureDir = dir;
     const wav = join(dir, 'tone.wav');
     const m4a = join(dir, FIXTURE_FILE);
     writeFileSync(wav, toneWav());
@@ -79,7 +91,19 @@ export function simctlDriver(o) {
           info[k] = execFileSync('plutil', ['-extract', key, 'raw', join(o.appPath, 'Info.plist')], { encoding: 'utf8' }).trim();
         } catch {}
       }
+      info.bundleId = o.bundleId;
       if (process.env.GITHUB_SHA) info.commit = process.env.GITHUB_SHA.slice(0, 12);
+      if (o.mode === 'dl01') {
+        // The simulator records from this Mac's default input: say which one it was (a name, never audio).
+        try {
+          const audio = JSON.parse(execFileSync('system_profiler', ['SPAudioDataType', '-json'], { encoding: 'utf8' }));
+          const items = (audio.SPAudioDataType ?? []).flatMap((x) => x._items ?? []);
+          const input = items.find((x) => x.coreaudio_default_audio_input_device === 'spaudio_yes');
+          info.micInput = input?._name ?? 'none';
+        } catch {
+          info.micInput = 'unknown';
+        }
+      }
       return info;
     },
 
@@ -104,6 +128,16 @@ export function simctlDriver(o) {
       const m = out.match(/:\s*(\d+)\s*$/m);
       if (!m) throw new Error('simctl launch printed no pid');
       return Number(m[1]);
+    },
+
+    /** The host's own hash of the fixture it placed: DL-02 compares recordings with this, not with the app's hash. */
+    fixtureSha256() {
+      return o.needsFixture ? sha256OfFile(makeFixture()) : null;
+    },
+
+    /** Lets the app go on after the host judged the previous run (protocol: the go marker). */
+    writeGo(run) {
+      writeFileSync(join(markers(), markerName('go', run)), JSON.stringify({ run }));
     },
 
     readMarker(kind, run) {
@@ -143,15 +177,28 @@ export function simctlDriver(o) {
 
     /** afinfo opens the file the way Core Audio would play it; a take cut off without its index will not open. */
     playable(path) {
+      const st = statSync(path);
+      const key = `${path}|${st.size}|${st.mtimeMs}`;
+      if (playableCache.has(key)) return playableCache.get(key);
       const r = spawnSync('afinfo', [path], { encoding: 'utf8' });
-      if (r.error) return { ok: null, durationS: null };
-      if (r.status !== 0) return { ok: false, durationS: null };
-      const m = /estimated duration:\s*([\d.]+)\s*sec/.exec(r.stdout);
-      return { ok: true, durationS: m ? Number(m[1]) : null };
+      let out;
+      if (r.error) out = { ok: null, durationS: null };
+      else if (r.status !== 0) out = { ok: false, durationS: null };
+      else {
+        const m = /estimated duration:\s*([\d.]+)\s*sec/.exec(r.stdout);
+        out = { ok: true, durationS: m ? Number(m[1]) : null };
+      }
+      playableCache.set(key, out);
+      return out;
     },
 
     /** Uninstalling deletes the drill's data container, DL-01 recordings included. */
     async cleanup({ keepApp }) {
+      if (fixtureDir) {
+        // Only the harness's own temp file and its folder; nothing else is deleted.
+        rmSync(join(fixtureDir, FIXTURE_FILE), { force: true });
+        rmdirSync(fixtureDir);
+      }
       if (keepApp) return;
       try {
         xcrun('simctl', 'terminate', o.udid, o.bundleId);
