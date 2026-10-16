@@ -283,6 +283,9 @@ function baseFor(db: SqlDb, r: LocalEntryRow, ops: OutboxRow[]): string | null {
     const p = JSON.parse(ops[i].payload) as PushOp;
     return p.base ?? null;
   }
+  // Only a restore-time re-upload is queued: a pull may have moved server_version past words this phone
+  // keeps for the server to judge, so the version proves nothing; '0' means the edit is compared.
+  if (r.server_version !== null && ops.some((o) => o.type === 'entry.reupload')) return '0';
   return r.server_version;
 }
 

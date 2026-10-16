@@ -309,6 +309,21 @@ export function expiredIds({ db }: RepoContext, cutoffIso: string): string[] {
     .map((r) => r.id);
 }
 
+/**
+ * Like expiredIds, for a sync build: only letters the server does not hold (no
+ * server version) with nothing queued for them, which only this phone's clock
+ * can erase. The server's purge owns every other one.
+ */
+export function expiredLocalOnlyIds({ db }: RepoContext, cutoffIso: string): string[] {
+  return db
+    .all<{ id: string }>(
+      `SELECT id FROM entries WHERE deleted_at IS NOT NULL AND deleted_at <= ? AND server_version IS NULL
+         AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id) ORDER BY deleted_at, id`,
+      cutoffIso,
+    )
+    .map((r) => r.id);
+}
+
 /** The audio path of a tombstoned letter (null for typed ones). `undefined` when no such tombstone exists. */
 export function deletedAudioUri({ db }: RepoContext, id: string): string | null | undefined {
   const r = db.get<{ audio_uri: string | null }>('SELECT audio_uri FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
