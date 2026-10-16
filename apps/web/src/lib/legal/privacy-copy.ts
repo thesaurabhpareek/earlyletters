@@ -1,6 +1,6 @@
 /**
- * Owner: E1 (web platform). Every word on /privacy. It covers only what exists today: the website and the
- * launch-notice list. The app gets its own policy when it launches.
+ * Owner: E1 (web platform). Every word on /privacy. It covers only what exists today: the website and its email
+ * list. The app gets its own policy when it launches.
  *
  * Each claim and the code that makes it true (test/legal.test.ts and e2e/pages.e2e.ts check the ones code can check):
  * - Only the email address goes to Resend, as a contact in one segment: src/lib/notify/provider.ts `subscribe`.
@@ -8,19 +8,19 @@
  *   site.welcomeEmail ("we will write once more, when it is ready").
  * - Every email has an unsubscribe link; unsubscribing marks the contact unsubscribed, it is not deleted:
  *   provider.ts headers and body link, src/lib/notify/unsubscribe.ts `unsubscribeContact`.
- * - The IP address is held in memory for rate limiting, windows of 10 minutes at most, never stored or logged:
- *   src/lib/notify/rate-limit.ts, handler.ts, unsubscribe-handler.ts, log.ts.
+ * - The IP address is held in memory only when someone joins or leaves the list (the rate limiters in handler.ts and
+ *   unsubscribe-handler.ts, windows of 10 minutes at most, rate-limit.ts), and never stored or logged (log.ts).
  * - No cookies, no browser storage, no analytics (NEXT_PUBLIC_ANALYTICS is not set and WebAnalytics is not mounted),
- *   nothing loaded from another origin (Content-Security-Policy in next.config.ts), self-hosted fonts (@fontsource).
- * - The services: Vercel (hosting, apps/web/vercel.json) and Resend (the list and the emails). Nothing else.
- *   Mail sent to the contact address arrives through the domain's mail setup (Resend receiving or Porkbun forwarding,
- *   docs/ops/WEBSITE_RUNBOOK.md DNS table, marked Inferred there), so the page names no provider for it.
+ *   nothing loaded from another origin (Content-Security-Policy in next.config.ts).
+ * - The services: Vercel (hosting, apps/web/vercel.json) and Resend (the list, the emails we send, and mail to the
+ *   contact address: Resend receiving is enabled for earlyletters.com, apex MX at priority 9, per the brand review
+ *   of 16 Oct 2026). Nothing else.
  *
  * Content rules apply (VOICE.md, test/copy-rules.test.ts): no dashes, curly quotes, ellipsis characters or emoji.
  */
 import { brand } from '@scribe/brand';
 import { legalCopy } from './legal-copy';
-import type { LegalPageCopy } from './types';
+import type { LegalPageCopy, Publisher } from './types';
 
 const NAME = brand.name;
 const contact = legalCopy.contact;
@@ -28,23 +28,23 @@ const contact = legalCopy.contact;
 /** Every service that handles a visitor's information. Adding one means updating this page first. */
 export const serviceProviders = [
   { name: 'Vercel', role: 'hosts the website.' },
-  { name: 'Resend', role: 'stores the list and sends our emails.' },
+  { name: 'Resend', role: 'stores the list and handles our email.' },
 ] as const;
 
-export function privacyCopy(publisher: string): LegalPageCopy {
+export function privacyCopy(publisher: Publisher): LegalPageCopy {
   return {
     metaTitle: `${NAME} Privacy Policy`,
-    metaDescription: `How the ${NAME} website and its launch-notice list handle your information.`,
+    metaDescription: `How the ${NAME} website and its email list handle your information.`,
     title: 'Privacy Policy',
     lastUpdated: '2026-10-16',
     intro: [
-      `This policy covers the ${NAME} website, earlyletters.com, and its launch-notice list. The ${NAME} app is not out yet. It will have its own privacy policy when it launches.`,
+      `This policy covers the ${NAME} website, earlyletters.com, and its email list. The ${NAME} app is not out yet. It will have its own privacy policy when it launches.`,
     ],
     sections: [
       {
-        id: 'who-runs-this',
-        heading: 'Who runs this',
-        blocks: [`${NAME} is run by ${publisher}, an individual. In this policy, "we" and "us" mean that person. You can reach us at ${contact}.`],
+        id: 'who-we-are',
+        heading: 'Who we are',
+        blocks: [`${NAME} is run by ${publisher.subject} as an individual, not a company. In this policy, "we" and "us" mean ${publisher.reference}.`],
       },
       {
         id: 'what-we-collect',
@@ -52,35 +52,33 @@ export function privacyCopy(publisher: string): LegalPageCopy {
         blocks: [
           {
             list: [
-              'Your email address, if you join the list. We use it to send you one short welcome email now and one email when the app is ready. We do not ask for your name or anything else.',
-              'Your message, if you email us. We use it to answer you.',
-              'The usual details of a visit. Like every website, ours receives your IP address, your browser type and the page you asked for. Our host uses them to deliver the page and keep the site secure. To slow down automated sign-ups, our code also holds your IP address in memory for up to 10 minutes. It is not saved.',
+              'Your email address, if you join the list. We use it to send you a welcome email when you join and one email when the app is ready. We do not ask for your name or anything else.',
+              'Your email address and message, if you write to us. We use them to reply.',
+              'Technical details of your visit. Our host receives your IP address, browser type and the page you asked for, and uses them to deliver the page and keep the site secure. When you join or leave the list, we hold your IP address in memory for up to 10 minutes to block automated requests. We do not save it.',
             ],
           },
         ],
       },
       {
-        id: 'what-we-do-not-do',
-        heading: 'What we do not do',
+        id: 'cookies-and-tracking',
+        heading: 'Cookies and tracking',
         blocks: [
           {
             list: [
               'We do not use cookies.',
-              'We do not use analytics, advertising or tracking tools, and the website loads nothing from other companies. Even our fonts are stored on our own site.',
-              'We do not sell or rent your email address, and we never share it for advertising.',
-              'Our code never writes your email address or IP address to a log.',
+              'We do not use analytics, advertising or tracking tools, and the website loads nothing from other sites.',
             ],
           },
-          'Because nothing here tracks you, there is nothing for a Do Not Track signal to switch off.',
+          'We do not track you, so a Do Not Track signal changes nothing here.',
         ],
       },
       {
-        id: 'who-helps',
-        heading: 'Who helps us run this',
+        id: 'who-we-share-it-with',
+        heading: 'Who we share it with',
         blocks: [
           'Two companies help us run the website and the list:',
           { list: serviceProviders.map((p) => `${p.name} ${p.role}`) },
-          'Emails you send us reach us through our email service. We do not share your information with anyone else, unless the law requires it.',
+          'We do not sell or rent your email address, or share it for advertising. We do not share your information with anyone else unless the law requires it.',
         ],
       },
       {

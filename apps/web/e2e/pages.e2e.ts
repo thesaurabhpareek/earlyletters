@@ -24,7 +24,8 @@ test.describe('legal pages', () => {
       await expect(page.getByText(`${legalCopy.lastUpdated} ${formatDate(doc.lastUpdated)}`)).toBeVisible();
       await expect(page.locator('main time')).toHaveAttribute('datetime', doc.lastUpdated);
       for (const section of doc.sections) await expect(page.getByRole('heading', { level: 2, name: section.heading })).toBeVisible();
-      await expect(page.getByText(`is run by ${legalCopy.publisherFallback}, an individual.`)).toBeVisible();
+      await expect(page.getByText(`is run by ${legalCopy.publisherFallback.subject} as an individual, not a company.`)).toBeVisible();
+      await expect(page.getByText(`"we" and "us" mean ${legalCopy.publisherFallback.reference}.`)).toBeVisible();
       await expect(page.locator('main').getByRole('link', { name: site.footer.contact }).first()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
       await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
       // The footer: Privacy, Terms, Contact. Nothing else.
@@ -53,8 +54,8 @@ test.describe('legal pages', () => {
     await page.goto('/privacy');
     const text = await page.locator('main').innerText();
     expect(text.split(/\s+/).filter(Boolean).length, 'words (200 a minute)').toBeLessThan(600);
-    const helps = page.locator('h2#who-helps + p + ul li');
-    await expect(helps).toHaveText(['Vercel hosts the website.', 'Resend stores the list and sends our emails.']);
+    const helps = page.locator('h2#who-we-share-it-with + p + ul li');
+    await expect(helps).toHaveText(['Vercel hosts the website.', 'Resend stores the list and handles our email.']);
   });
 
   test('/terms links to /privacy, and the link lands', async ({ page }) => {

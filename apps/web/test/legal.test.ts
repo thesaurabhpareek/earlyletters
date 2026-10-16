@@ -13,7 +13,7 @@ import { analyticsEnabled } from '../src/lib/analytics';
 import { legalCopy } from '../src/lib/legal/legal-copy';
 import { formatDate, legalPage, legalSlugs, splitLinks } from '../src/lib/legal/pages';
 import { serviceProviders } from '../src/lib/legal/privacy-copy';
-import { resolvePublisherName } from '../src/lib/legal/publisher';
+import { resolvePublisher } from '../src/lib/legal/publisher';
 import type { LegalBlock, LegalPageCopy } from '../src/lib/legal/types';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -43,11 +43,22 @@ describe('length and shape', () => {
   });
 
   it('has the sections a reader and the publisher need, in order', () => {
+    expect(privacy.sections.map((s) => s.heading)).toEqual([
+      'Who we are',
+      'What we collect and why',
+      'Cookies and tracking',
+      'Who we share it with',
+      'How long we keep it',
+      'Your choices',
+      'Children',
+      'Changes to this policy',
+      'Contact',
+    ]);
     expect(privacy.sections.map((s) => s.id)).toEqual([
-      'who-runs-this',
+      'who-we-are',
       'what-we-collect',
-      'what-we-do-not-do',
-      'who-helps',
+      'cookies-and-tracking',
+      'who-we-share-it-with',
       'how-long',
       'your-choices',
       'children',
@@ -55,9 +66,9 @@ describe('length and shape', () => {
       'contact',
     ]);
     expect(terms.sections.map((s) => s.id)).toEqual([
-      'who-runs-this',
+      'who-we-are',
       'the-website',
-      'the-list',
+      'the-email-list',
       'using-the-website',
       'our-content',
       'no-warranty',
@@ -83,8 +94,12 @@ describe('what the pages promise', () => {
   it('Privacy covers who, what and why, how long, how to leave or be deleted, and where to write', () => {
     for (const phrase of [
       'Your email address, if you join the list',
-      'one short welcome email now and one email when the app is ready',
+      'a welcome email when you join and one email when the app is ready',
+      'Your email address and message, if you write to us.',
+      'When you join or leave the list, we hold your IP address in memory for up to 10 minutes to block automated requests. We do not save it.',
       'We do not use cookies.',
+      'We do not track you, so a Do Not Track signal changes nothing here.',
+      'We do not sell or rent your email address, or share it for advertising. We do not share your information with anyone else unless the law requires it.',
       'until you ask us to delete it',
       'unsubscribe link',
       'To have your address deleted',
@@ -111,6 +126,16 @@ describe('what the pages promise', () => {
     }
   });
 
+  // RULE (brand review of 16 Oct 2026): plain words, no padding, the list is "the email list", one contact address per spot.
+  it('says it plainly: no padding, no internal name for the list, no repeated contact under Who we are', () => {
+    for (const [name, value] of Object.entries(text)) {
+      expect(value, name).not.toMatch(/launch-notice|one short|Like every website|our code also|Even our fonts|never writes your email|that person|Who runs this/);
+    }
+    expect(text.terms).not.toMatch(/those terms will cover the app|It describes what we plan to build|for an app that is not out yet/);
+    const whoWeAre = privacy.sections.find((s) => s.id === 'who-we-are')!;
+    expect(whoWeAre.blocks.map(blockText).join(' ')).not.toContain(site.footer.contact);
+  });
+
   // RULE: no governing-law clause until the founder says which state; none may name a state meanwhile.
   it('Terms names no state and has no governing-law section yet', () => {
     expect(terms.sections.some((s) => /governing/i.test(s.id + s.heading))).toBe(false);
@@ -128,8 +153,8 @@ describe('what the pages promise', () => {
   // RULE: name no service the code does not use.
   it('names exactly the two services the code uses, and no other', () => {
     expect(serviceProviders.map((p) => p.name)).toEqual(['Vercel', 'Resend']);
-    const helps = privacy.sections.find((s) => s.id === 'who-helps')!;
-    expect(helps.blocks.find((b) => typeof b !== 'string')).toEqual({ list: ['Vercel hosts the website.', 'Resend stores the list and sends our emails.'] });
+    const helps = privacy.sections.find((s) => s.id === 'who-we-share-it-with')!;
+    expect(helps.blocks.find((b) => typeof b !== 'string')).toEqual({ list: ['Vercel hosts the website.', 'Resend stores the list and handles our email.'] });
     const notUsed = /\b(PostHog|Sentry|RevenueCat|AWS|Amazon|Google|Anthropic|Stripe|Supabase|PowerSync|Groq|DeepInfra|Cloudflare|Apple|Mailchimp|Segment)\b/;
     for (const [name, value] of Object.entries(text)) expect(value, name).not.toMatch(notUsed);
   });
@@ -139,30 +164,38 @@ describe('the publisher', () => {
   // RULE: the legal name never goes in code (D-004); it comes from PUBLISHER_LEGAL_NAME at build. No placeholder ever renders.
   const noBrackets = (text: string) => expect(text, 'a bracketed placeholder').not.toMatch(/[[\]{}]/);
 
-  it('unset: "run by its founder, an individual", and "we" means that person, on both pages', () => {
-    expect(resolvePublisherName({})).toEqual({ name: legalCopy.publisherFallback, isFallback: true });
-    expect(pageText(privacy)).toContain('Early Letters is run by its founder, an individual. In this policy, "we" and "us" mean that person.');
-    expect(pageText(terms)).toContain('Early Letters is run by its founder, an individual. In these terms, "we" and "us" mean that person.');
+  it('unset: "run by its founder as an individual, not a company", and "we" means the founder, on both pages', () => {
+    expect(resolvePublisher({})).toEqual({ subject: 'its founder', reference: 'the founder', isFallback: true });
+    expect(pageText(privacy)).toContain('Early Letters is run by its founder as an individual, not a company. In this policy, "we" and "us" mean the founder.');
+    expect(pageText(terms)).toContain('Early Letters is run by its founder as an individual, not a company. In these terms, "we" and "us" mean the founder.');
     for (const page of pages) noBrackets(pageText(page));
   });
 
-  it('set: the name from the build, and "we" means that person, on both pages', () => {
+  it('set: the name from the build, in both places, on both pages', () => {
     const env = { PUBLISHER_LEGAL_NAME: '  Asha   Example  ' };
-    expect(resolvePublisherName(env)).toEqual({ name: 'Asha Example', isFallback: false });
-    expect(pageText(legalPage('privacy', env))).toContain('Early Letters is run by Asha Example, an individual. In this policy, "we" and "us" mean that person.');
-    expect(pageText(legalPage('terms', env))).toContain('Early Letters is run by Asha Example, an individual. In these terms, "we" and "us" mean that person.');
+    expect(resolvePublisher(env)).toEqual({ subject: 'Asha Example', reference: 'Asha Example', isFallback: false });
+    expect(pageText(legalPage('privacy', env))).toContain('Early Letters is run by Asha Example as an individual, not a company. In this policy, "we" and "us" mean Asha Example.');
+    expect(pageText(legalPage('terms', env))).toContain('Early Letters is run by Asha Example as an individual, not a company. In these terms, "we" and "us" mean Asha Example.');
     for (const slug of legalSlugs) {
-      expect(pageText(legalPage(slug, env))).not.toContain(legalCopy.publisherFallback);
+      expect(pageText(legalPage(slug, env))).not.toMatch(/its founder|the founder/);
       noBrackets(pageText(legalPage(slug, env)));
     }
   });
 
-  it('a value that is not a plain name falls back to "its founder", never to the value itself', () => {
+  it('a value that is not a plain name falls back to the founder, never to the value itself', () => {
     for (const value of ['', '   ', '{PUBLISHER_LEGAL_NAME}', '[Publisher legal name]', '<b>x</b>', 'x'.repeat(121), 'a\u0000b']) {
-      const resolved = resolvePublisherName({ PUBLISHER_LEGAL_NAME: value });
-      expect(resolved, JSON.stringify(value)).toEqual({ name: legalCopy.publisherFallback, isFallback: true });
+      const resolved = resolvePublisher({ PUBLISHER_LEGAL_NAME: value });
+      expect(resolved, JSON.stringify(value)).toEqual({ ...legalCopy.publisherFallback, isFallback: true });
       for (const slug of legalSlugs) noBrackets(pageText(legalPage(slug, { PUBLISHER_LEGAL_NAME: value })));
     }
+  });
+});
+
+describe('the home page sign-up note', () => {
+  // RULE: the note matches Privacy: Resend stores the address, so "we never share it" would be untrue.
+  it('promises no selling and no advertising, not "never share"', () => {
+    expect(site.notify.note).toBe(`One email when ${site.brand.name} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`);
+    expect(site.notify.note).not.toMatch(/never share/i);
   });
 });
 

@@ -20,6 +20,15 @@ export interface LegalPageCopy {
   readonly sections: readonly LegalSection[];
 }
 
+/**
+ * Who runs the site, in the two places a page names them (lib/legal/publisher.ts): "run by <subject> as an
+ * individual" and "we and us mean <reference>". With the legal name set, both are the name.
+ */
+export interface Publisher {
+  readonly subject: string;
+  readonly reference: string;
+}
+
 /** Text in a paragraph that becomes a link: the contact address, or the name of the other page. */
 export interface InlineLink {
   readonly text: string;

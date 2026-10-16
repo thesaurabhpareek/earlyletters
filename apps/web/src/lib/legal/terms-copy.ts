@@ -1,5 +1,5 @@
 /**
- * Owner: E1 (web platform). Every word on /terms: the terms for the website and its launch-notice list only.
+ * Owner: E1 (web platform). Every word on /terms: the terms for the website and its email list only.
  * The app gets its own terms when it launches.
  *
  * Sources: the individual publisher (docs/DECISIONS.md D-004); the list's emails as in privacy-copy.ts.
@@ -9,38 +9,38 @@
  */
 import { brand } from '@scribe/brand';
 import { legalCopy } from './legal-copy';
-import type { LegalPageCopy } from './types';
+import type { LegalPageCopy, Publisher } from './types';
 
 const NAME = brand.name;
 const contact = legalCopy.contact;
 
-export function termsCopy(publisher: string): LegalPageCopy {
+export function termsCopy(publisher: Publisher): LegalPageCopy {
   return {
     metaTitle: `${NAME} Terms of Use`,
-    metaDescription: `The terms for using the ${NAME} website and its launch-notice list.`,
+    metaDescription: `The terms for using the ${NAME} website and its email list.`,
     title: 'Terms of Use',
     lastUpdated: '2026-10-16',
     intro: [
-      `These terms cover the ${NAME} website, earlyletters.com, and its launch-notice list. By using the website, you agree to them. The ${NAME} app is not out yet. It will have its own terms when it launches, and those terms will cover the app.`,
+      `These terms cover the ${NAME} website, earlyletters.com, and its email list. By using the website, you agree to them. The ${NAME} app is not out yet. It will have its own terms when it launches.`,
     ],
     sections: [
       {
-        id: 'who-runs-this',
-        heading: 'Who runs this',
-        blocks: [`${NAME} is run by ${publisher}, an individual. In these terms, "we" and "us" mean that person.`],
+        id: 'who-we-are',
+        heading: 'Who we are',
+        blocks: [`${NAME} is run by ${publisher.subject} as an individual, not a company. In these terms, "we" and "us" mean ${publisher.reference}.`],
       },
       {
         id: 'the-website',
         heading: 'About the website',
         blocks: [
-          'The website tells you about the app before it launches. It describes what we plan to build. The app, its features, its price and its launch date may change, and nothing on the website is an offer to sell you anything.',
+          'The website describes an app we are still building. Its features, price and launch date may change, and nothing on the website is an offer to sell you anything.',
         ],
       },
       {
-        id: 'the-list',
-        heading: 'The launch-notice list',
+        id: 'the-email-list',
+        heading: 'The email list',
         blocks: [
-          'Joining the list is free. We send one short welcome email when you join and one email when the app is ready. You can leave at any time with the unsubscribe link in any of our emails. Please add only an email address that is yours.',
+          'Joining the list is free. We send a welcome email when you join and one email when the app is ready. You can leave at any time with the unsubscribe link in any of our emails. Please add only an email address that is yours.',
           'Our Privacy Policy explains how we handle your address.',
         ],
       },
@@ -62,7 +62,7 @@ export function termsCopy(publisher: string): LegalPageCopy {
         id: 'no-warranty',
         heading: 'No warranty',
         blocks: [
-          'The website and the list are provided as they are and as available. The website is for an app that is not out yet, so it may change, pause or contain mistakes. To the extent the law allows, we give no warranties about the website or the list, whether stated or implied.',
+          'The website and the list are provided as they are and as available. The website may change, pause or contain mistakes. To the extent the law allows, we give no warranties about the website or the list, whether stated or implied.',
         ],
       },
       {

@@ -4,14 +4,14 @@
  */
 import { legalCopy } from './legal-copy';
 import { privacyCopy } from './privacy-copy';
-import { publisherName } from './publisher';
+import { publisher } from './publisher';
 import { termsCopy } from './terms-copy';
-import type { InlineLink, LegalPageCopy } from './types';
+import type { InlineLink, LegalPageCopy, Publisher } from './types';
 
 export const legalSlugs = ['privacy', 'terms'] as const;
 export type LegalSlug = (typeof legalSlugs)[number];
 
-const build: Record<LegalSlug, (publisher: string) => LegalPageCopy> = { privacy: privacyCopy, terms: termsCopy };
+const build: Record<LegalSlug, (publisher: Publisher) => LegalPageCopy> = { privacy: privacyCopy, terms: termsCopy };
 
 export interface LegalPage extends LegalPageCopy {
   slug: LegalSlug;
@@ -23,7 +23,7 @@ export interface LegalPage extends LegalPageCopy {
 export function legalPage(slug: LegalSlug, env: Readonly<Record<string, string | undefined>> = process.env): LegalPage {
   const links: InlineLink[] = [{ text: legalCopy.contact, href: `mailto:${legalCopy.contact}` }];
   if (slug === 'terms') links.push({ text: 'Privacy Policy', href: '/privacy' });
-  return { ...build[slug](publisherName(env)), slug, href: `/${slug}`, links };
+  return { ...build[slug](publisher(env)), slug, href: `/${slug}`, links };
 }
 
 /** "2026-10-15" as "October 15, 2026", the same on every machine. */
