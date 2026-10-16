@@ -71,7 +71,7 @@ revoke all on public.held_drafts from anon;
 create table public.held_drafts_gone (
   id uuid primary key,
   author_id uuid not null,
-  gone text not null check (gone in ('discarded', 'kept')),
+  gone text not null check (gone in ('discarded', 'kept', 'erased')),
   updated_at timestamptz not null default now(),
   sync_xid xid8 not null default pg_current_xact_id()
 );
@@ -121,7 +121,8 @@ begin
   end if;
   insert into public.held_drafts_gone as g (id, author_id, gone)
   values (old.id, old.author_id,
-          case when exists (select 1 from public.entries e where e.id = old.id) then 'kept' else 'discarded' end)
+          case when current_setting('scribe.held_erase', true) = 'on' then 'erased'
+               when exists (select 1 from public.entries e where e.id = old.id) then 'kept' else 'discarded' end)
   on conflict (id) do update set gone = excluded.gone, updated_at = now(), sync_xid = pg_current_xact_id();
   return old;
 end;
@@ -156,6 +157,9 @@ declare
   v_base xid8 := nullif(o ->> 'base', '')::xid8;
   cur record;
   v_refused boolean := false;
+  -- The words are compared and written only when the op says it changes them (final review B-3).
+  v_text boolean := not (o ? 'changed') or 'text' in (select jsonb_array_elements_text(o -> 'changed'));
+  v_keep boolean;
   v_res jsonb;
 begin
   if (d ->> 'id') is distinct from p_id::text then
@@ -172,7 +176,7 @@ begin
   select h.text_xid, h.final_text, h.machine_edits, h.edit_level, h.author_edits, h.locked_spans, h.typed_text into cur
     from public.held_drafts h where h.id = p_id for update;
   if found then
-    v_refused := cur.text_xid > coalesce(v_base, '0'::xid8) and cur.text_xid <> pg_current_xact_id()
+    v_refused := v_text and cur.text_xid > coalesce(v_base, '0'::xid8) and cur.text_xid <> pg_current_xact_id()
       and (cur.final_text, cur.machine_edits, cur.edit_level, cur.author_edits, cur.locked_spans, cur.typed_text)
           is distinct from (d ->> 'final_text', nullif(d -> 'machine_edits', 'null'::jsonb), d ->> 'edit_level',
                             nullif(d -> 'author_edits', 'null'::jsonb), nullif(d -> 'locked_spans', 'null'::jsonb), d ->> 'typed_text');
@@ -182,12 +186,12 @@ begin
       base_direction = coalesce(d ->> 'base_direction', 'ltr'), prompt_key = d ->> 'prompt_key',
       in_book_choice = (d ->> 'in_book_choice')::boolean,
       raw_transcript = coalesce(nullif(d ->> 'raw_transcript', ''), h.raw_transcript),
-      final_text = case when v_refused then h.final_text else d ->> 'final_text' end,
-      machine_edits = case when v_refused then h.machine_edits else nullif(d -> 'machine_edits', 'null'::jsonb) end,
-      edit_level = case when v_refused then h.edit_level else d ->> 'edit_level' end,
-      author_edits = case when v_refused then h.author_edits else nullif(d -> 'author_edits', 'null'::jsonb) end,
-      locked_spans = case when v_refused then h.locked_spans else nullif(d -> 'locked_spans', 'null'::jsonb) end,
-      typed_text = case when v_refused then h.typed_text else d ->> 'typed_text' end,
+      final_text = case when v_refused or not v_text then h.final_text else d ->> 'final_text' end,
+      machine_edits = case when v_refused or not v_text then h.machine_edits else nullif(d -> 'machine_edits', 'null'::jsonb) end,
+      edit_level = case when v_refused or not v_text then h.edit_level else d ->> 'edit_level' end,
+      author_edits = case when v_refused or not v_text then h.author_edits else nullif(d -> 'author_edits', 'null'::jsonb) end,
+      locked_spans = case when v_refused or not v_text then h.locked_spans else nullif(d -> 'locked_spans', 'null'::jsonb) end,
+      typed_text = case when v_refused or not v_text then h.typed_text else d ->> 'typed_text' end,
       engine_version = (d ->> 'engine_version')::int, pack_ref = d ->> 'pack_ref',
       audio_kept_on_device = coalesce((d ->> 'audio_kept_on_device')::boolean, false),
       child_id = (d ->> 'child_id')::uuid, created_at = (d ->> 'created_at')::timestamptz
@@ -234,36 +238,72 @@ $$;
 create function sync_private.note_held(p_op uuid, p_id uuid, p_refused boolean)
 returns void language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
-  update public.sync_op_receipts r set words_conflict = p_refused, words_refused = p_refused
+  -- applied_v: the version this op wrote, so a duplicate rebases on it and never on the row as it is now
+  -- (which may hold another phone's words; final review A-B1). Null when its words were refused.
+  update public.sync_op_receipts r set words_conflict = p_refused, words_refused = p_refused,
+         applied_v = case when p_refused then null
+                          else (select h.sync_xid from public.held_drafts h where h.id = p_id and h.author_id = auth.uid()) end
    where r.op_id = p_op and r.profile_id = auth.uid();
 end;
 $$;
 
--- A duplicate of a held op answers what its first answer said: the row's state, and a refusal again.
+-- A duplicate of a held op answers what its first answer said: applied_v, or a refusal again.
 create function sync_private.held_dup(p_op uuid, p_id uuid)
 returns jsonb language plpgsql stable security invoker set search_path = pg_catalog, public, pg_temp as $$
 declare
-  v_refused boolean;
+  r record;
 begin
-  select x.words_refused into v_refused from public.sync_op_receipts x where x.op_id = p_op and x.profile_id = auth.uid();
-  return sync_private.held_state(p_id, coalesce(v_refused, false));
+  select x.words_refused, x.applied_v into r from public.sync_op_receipts x where x.op_id = p_op and x.profile_id = auth.uid();
+  return sync_private.held_state(p_id, coalesce(r.words_refused, false))
+    || case when r.applied_v is null then '{}'::jsonb else jsonb_build_object('applied_v', r.applied_v::text) end;
 end;
 $$;
 
--- held.discard: the author let it go. The row goes (its tombstone says 'discarded').
-create function sync_private.held_discard(p_id uuid)
+-- held.discard: the author let it go. The row goes (its tombstone says 'discarded'), unless its words
+-- changed since the version this phone last saw (base): then the later edit wins and the row stays
+-- ({ kept: true }); that phone gets it back at its next pull (final review B-2).
+create function sync_private.held_discard(p_id uuid, p_base xid8)
 returns jsonb language plpgsql security invoker set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_text xid8;
 begin
+  select h.text_xid into v_text from public.held_drafts h where h.id = p_id for update;
+  if not found then
+    return jsonb_build_object('missing', true);
+  end if;
+  if v_text > coalesce(p_base, '0'::xid8) then
+    return jsonb_build_object('kept', true);
+  end if;
   delete from public.held_drafts h where h.id = p_id;
-  return case when found then '{}'::jsonb else jsonb_build_object('missing', true) end;
+  return '{}'::jsonb;
 end;
 $$;
+
+-- Erase now on a voice-only letter waiting for its words (its only server copy is the held row, or the
+-- marker of one let go): the row goes and the marker says 'erased', so every phone of the author erases
+-- its copy, never restorable there. Called by sync_private.erase_entry when no letter has the id.
+create function sync_private.erase_held(p_id uuid)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_deleted boolean;
+begin
+  perform set_config('scribe.held_erase', 'on', true);
+  delete from public.held_drafts h where h.id = p_id and h.author_id = auth.uid();
+  v_deleted := found;
+  perform set_config('scribe.held_erase', 'off', true);
+  update public.held_drafts_gone g set gone = 'erased', updated_at = now(), sync_xid = pg_current_xact_id()
+   where g.id = p_id and g.author_id = auth.uid();
+  return case when v_deleted or found then jsonb_build_object('erased', true) else jsonb_build_object('missing', true) end;
+end;
+$$;
+revoke execute on function sync_private.erase_held(uuid) from public, anon;
+grant execute on function sync_private.erase_held(uuid) to authenticated;
 
 revoke execute on function sync_private.held_upsert(uuid, uuid, jsonb), sync_private.held_state(uuid, boolean),
-  sync_private.note_held(uuid, uuid, boolean), sync_private.held_dup(uuid, uuid), sync_private.held_discard(uuid)
+  sync_private.note_held(uuid, uuid, boolean), sync_private.held_dup(uuid, uuid), sync_private.held_discard(uuid, xid8)
   from public, anon;
 grant execute on function sync_private.held_upsert(uuid, uuid, jsonb), sync_private.held_state(uuid, boolean),
-  sync_private.note_held(uuid, uuid, boolean), sync_private.held_dup(uuid, uuid), sync_private.held_discard(uuid)
+  sync_private.note_held(uuid, uuid, boolean), sync_private.held_dup(uuid, uuid), sync_private.held_discard(uuid, xid8)
   to authenticated;
 
 -- The pull: the migrations' sync_pull, unchanged, plus the held section for a request that asks.

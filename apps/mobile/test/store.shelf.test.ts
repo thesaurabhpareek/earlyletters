@@ -220,6 +220,18 @@ describe('the 30 day purge', () => {
     expect([...d.present]).toEqual([`file:///Documents/${id2}.m4a`]);
   });
 
+  it('[F16-REQ-024] a phone that signed in under a server-on build queues the erase even in an off build, so the server copy goes when sync returns (final review A-M2)', () => {
+    const db = store.localSqlDb();
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', '11111111-1111-1111-1111-111111111111')");
+    save(id1);
+    db.run("UPDATE entries SET server_version = '100', author_id = '11111111-1111-1111-1111-111111111111' WHERE id = ?", id1);
+    store.deleteEntry(id1);
+    setServerFeaturesForTests(false);
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    expect(store.eraseEntry(id1, d.eraser)).toBe(true);
+    expect(db.all<{ type: string }>('SELECT type FROM sync_outbox').map((r) => r.type)).toEqual(['entry.erase']);
+  });
+
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {
     save(id1);
     store.deleteEntry(id1);

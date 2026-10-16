@@ -654,7 +654,7 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect((await serverEntry(ids.first))?.deleted_at).toBeNull();
   }, 60_000);
 
-  it('[F16-REQ-024] Erase now on a voice-only letter waiting for its words: its held row goes too, and the other phone drops it (review A2-1)', async () => {
+  it('[F16-REQ-024] Erase now on a voice-only letter waiting for its words: its held row goes, and the other phone erases its copy, never restorable (review A2-1, final review B4)', async () => {
     tick(5_000);
     const draft = mama.store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-2.m4a', audioDurationMs: 3_000 });
     const e = mama.store.saveVoiceOnlyFromDraft(draft, { childId: ASHA, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true });
@@ -664,11 +664,105 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     tick();
     mama.store.deleteEntry(e.id);
     expect(mama.store.eraseEntry(e.id, () => {})).toBe(true);
-    expect(outbox(mama)).toEqual(['held.discard']);
+    expect(outbox(mama)).toEqual(['entry.erase']);
     await mama.sync();
     expect(await heldRow(e.id)).toBeUndefined();
+    expect(await gone(e.id)).toBe('erased');
     await mama2.sync();
     expect(mama2.store.listWaitingForWords(ASHA).map((x) => x.id)).not.toContain(e.id);
+    expect(mama2.store.listDeleted().map((x) => x.id)).not.toContain(e.id); // nothing left to restore
+    expect(row(mama2, e.id)).toBeNull();
+  }, 60_000);
+
+  it('[F16-REQ-024] Erase now on a waiting letter deleted earlier: the other phone\'s Recently deleted copy is erased too (final review B4)', async () => {
+    tick(5_000);
+    const draft = mama.store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-3.m4a', audioDurationMs: 3_000 });
+    const e = mama.store.saveVoiceOnlyFromDraft(draft, { childId: ASHA, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true });
+    await mama.sync();
+    await mama2.sync();
+    tick();
+    mama.store.deleteEntry(e.id);
+    await mama.sync(); // its held row is let go; the second phone moves it to Recently deleted
+    await mama2.sync();
+    expect(mama2.store.listDeleted().map((x) => x.id)).toContain(e.id);
+    expect(mama.store.eraseEntry(e.id, () => {})).toBe(true);
+    expect(outbox(mama)).toEqual(['entry.erase']);
+    await mama.sync();
+    expect(await gone(e.id)).toBe('erased');
+    await mama2.sync();
+    expect(mama2.store.listDeleted().map((x) => x.id)).not.toContain(e.id);
+    expect(row(mama2, e.id)).toBeNull();
+  }, 60_000);
+
+  // ── Held drafts, final review cases ───────────────────────────────────
+  it('[F16-REQ-010] a lost held answer that returns as a duplicate never lets this phone overwrite words it never saw (final review A-B1)', async () => {
+    const id = typedDraft(mama, 'One.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    mama.store.setDraftTyped(id, 'One, by Mama.');
+    await mama.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' })); // applied, answer lost
+    mama.store.setDraftTyped(id, 'One, by Mama, twice.'); // offline: a second upload queues behind the first
+    await mama2.sync();
+    mama2.store.setDraftTyped(id, 'One, by the second phone.');
+    expect((await mama2.sync()).conflicts).toBe(0);
+    tick(2_000);
+    const r = await mama.sync();
+    expect(r.conflicts).toBe(1);
+    expect((await heldRow(id))?.typed_text).toBe('One, by the second phone.');
+    expect(mama.store.listConflicts(id).map((c) => c.words.final_text)).toEqual(['One, by Mama, twice.']);
+  }, 60_000);
+
+  it('[LEGAL-REQ-009] a held draft let go during a consent pause stays let go when consent returns (final review A-B2, B-1, P9)', async () => {
+    const id = typedDraft(mama, 'You whispered to the dog.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    mama.store.setDraftTyped(id, 'You whispered to the dog, and it listened.');
+    expect((await mama.sync()).phase).toBe('paused_consent');
+    expect(mama.store.beginDiscard(id)).toBe(true);
+    expect(mama.store.finishDiscard(id)).toBe(true);
+    await mama.sync(); // the let-go goes during the pause
+    expect(await heldRow(id)).toBeUndefined();
+    await server.sensitiveConsent(MAMA, 'accept');
+    await mama.sync();
+    expect(await heldRow(id)).toBeUndefined();
+    expect(outbox(mama)).toEqual([]);
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).map((x) => x.id)).not.toContain(id);
+  }, 60_000);
+
+  it('[F16-REQ-029] a late let-go from an offline phone never erases newer words from the other phone (final review B-2, P1)', async () => {
+    const id = typedDraft(mama, 'You sang to the moon.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    expect(mama.store.beginDiscard(id)).toBe(true); // offline: the let-go waits
+    mama2.store.setDraftTyped(id, 'You sang to the moon, then waved at it, then fell asleep.');
+    await mama2.sync();
+    await mama.sync(); // the let-go meets newer words: the row stays, and comes back to this phone
+    expect((await heldRow(id))?.typed_text).toBe('You sang to the moon, then waved at it, then fell asleep.');
+    await mama.sync();
+    expect(mama.store.listHeldDrafts(ASHA).find((x) => x.id === id)?.typedText).toBe('You sang to the moon, then waved at it, then fell asleep.');
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).find((x) => x.id === id)?.typedText).toBe('You sang to the moon, then waved at it, then fell asleep.');
+  }, 60_000);
+
+  it('[F16-REQ-029] a date-only change after words changed elsewhere is no conflict, and the newer words stay (final review B-3, P2)', async () => {
+    const id = typedDraft(mama, 'Your first snow.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    mama.store.setDraftTyped(id, 'Your first snow, and you tried to eat it.');
+    await mama.sync();
+    expect(mama2.store.setDraftOccurred(id, '2026-10-01', 'day')).toBe(true); // before pulling the new words
+    expect((await mama2.sync()).conflicts).toBe(0);
+    expect(mama2.store.listConflicts(id)).toEqual([]);
+    expect(await heldRow(id)).toMatchObject({ typed_text: 'Your first snow, and you tried to eat it.' });
+    expect((await server.sys('select occurred_on::text as d from held_drafts where id = $1', [id])).rows[0].d).toBe('2026-10-01');
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).find((x) => x.id === id)?.typedText).toBe('Your first snow, and you tried to eat it.');
   }, 60_000);
 
   it('[F16-REQ-029] the server refuses a second raw transcript once one is set (SCIMM), and a held row of another author is invisible', async () => {

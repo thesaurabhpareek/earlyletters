@@ -39,9 +39,15 @@ returns jsonb language plpgsql security definer set search_path = pg_catalog, pu
 declare
   v_uid uuid := auth.uid();
   r record;
+  v_res jsonb;
 begin
   select e.id, e.author_id, e.child_id, e.photo_path into r from public.entries e where e.id = p_id for update;
   if not found then
+    -- No letter: a voice-only letter waiting for its words lives only as a held row (when held drafts exist).
+    if to_regprocedure('sync_private.erase_held(uuid)') is not null then
+      execute 'select sync_private.erase_held($1)' into v_res using p_id;
+      return v_res;
+    end if;
     return jsonb_build_object('missing', true);
   end if;
   if r.author_id is distinct from v_uid then

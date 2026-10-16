@@ -341,12 +341,14 @@ export const MIGRATIONS: Migration[] = [
       //   drafts.held_kind       L2  null (never held: stays on this phone) | held_letter | held_words
       //   drafts.in_book_choice  L2  where the author chose to put it when held: 1 the book, 0 private, null not chosen
       //   drafts.held_v          L2  server version of its held_drafts row; null = not on the server
+      //   drafts.held_typed      L4  the typed words as the server last had them (so only a real words change is sent as one)
       //   entries.held_v         L2  the same for a voice-only letter waiting for its words (sent as waiting_letter)
       // Existing drafts were never held, so none of them is queued.
       addColumns(db, 'drafts', [
         ['held_kind', 'TEXT'],
         ['in_book_choice', 'INTEGER'],
         ['held_v', 'TEXT'],
+        ['held_typed', 'TEXT'],
       ]);
       addColumns(db, 'entries', [['held_v', 'TEXT']]);
       // A phone that already signed in: its voice-only letters waiting for words go up now as held rows

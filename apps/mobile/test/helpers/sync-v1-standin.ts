@@ -106,7 +106,7 @@ export const SYNC_PUSH_HELD_EDITS: SyncPushEdit[] = [
       "        when 'held.upsert' then\n" +
       '          v_res := sync_private.held_upsert(v_op, v_id, o);\n\n' +
       "        when 'held.discard' then\n" +
-      '          v_res := sync_private.held_discard(v_id);\n\n' +
+      "          v_res := sync_private.held_discard(v_id, nullif(o ->> 'base', '')::xid8);\n\n" +
       "        else\n          raise exception 'unknown op type' using errcode = '22023';",
   },
 ];

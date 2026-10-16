@@ -263,7 +263,8 @@ export interface PulledHeld extends Omit<HeldDraftData, 'author_edits' | 'locked
 /** A held draft that left the server: let go on another phone, or kept (its letter took the same id). */
 export interface PulledHeldGone {
   id: string;
-  gone: 'discarded' | 'kept';
+  /** v1: 'erased' when the author used Erase now (every phone erases its copy; it is never restorable). */
+  gone: 'discarded' | 'kept' | 'erased';
   updated_at: string;
   v: string;
 }

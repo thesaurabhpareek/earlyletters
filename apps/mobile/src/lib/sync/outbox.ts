@@ -418,6 +418,8 @@ export interface LocalDraftRow {
   held_kind: string | null;
   in_book_choice: number | null;
   held_v: string | null;
+  /** v8: the typed words as the server last had them. */
+  held_typed: string | null;
 }
 
 export function getDraftRow(db: SqlDb, id: string): LocalDraftRow | null {
@@ -487,17 +489,35 @@ export function heldFromWaiting(r: LocalEntryRow): HeldDraftData {
 }
 
 /** Queues the whole held row; an unsent upsert of the same draft is rewritten in place (newest snapshot). */
-function enqueueHeld(db: SqlDb, id: string, data: HeldDraftData | null, heldV: string | null, ctx: EnqueueContext): void {
+/**
+ * The groups a held upload changes, told truthfully (final review B-3): `text` only when the typed
+ * words differ from the words the server last had (`held_typed`), so a date or language change made
+ * after another phone changed the words never raises a words conflict. A row the server never had
+ * sends every group.
+ */
+function heldChanged(heldV: string | null, data: HeldDraftData, serverTyped: string | null): FieldGroup[] {
+  if (!heldV) return [...ALL_GROUPS];
+  const meta = ALL_GROUPS.filter((g) => g !== 'text');
+  return (data.typed_text ?? null) !== (serverTyped ?? null) ? [...ALL_GROUPS] : meta;
+}
+
+function enqueueHeld(db: SqlDb, id: string, data: HeldDraftData | null, heldV: string | null, ctx: EnqueueContext, serverTyped: string | null = null): void {
   if (!data) return;
   const ops = opsFor(db, id);
   const tail = ops[ops.length - 1];
+  const earlier = [...ops].reverse().find((o) => o.type === 'held.upsert');
+  // Behind an upload still queued or unanswered, this one descends from that upload's base (it is rebased
+  // when the answer names the version that upload wrote), never from a version this phone has not seen.
+  const base = earlier ? ((JSON.parse(earlier.payload) as PushOp).base ?? null) : heldV;
+  const changed = heldChanged(base, data, serverTyped);
   if (tail && tail.type === 'held.upsert' && untouched(tail)) {
     const p = JSON.parse(tail.payload) as PushOp;
     p.data = data as unknown as Record<string, unknown>;
+    p.changed = changed;
     db.run('UPDATE sync_outbox SET payload = ?, book_id = ? WHERE seq = ?', JSON.stringify(p), data.child_id, tail.seq);
     return;
   }
-  appendOp(db, { type: 'held.upsert', id, data: data as unknown as Record<string, unknown>, changed: [...ALL_GROUPS], base: heldV }, ctx, { bookId: data.child_id });
+  appendOp(db, { type: 'held.upsert', id, data: data as unknown as Record<string, unknown>, changed, base }, ctx, { bookId: data.child_id });
 }
 
 /**
@@ -509,7 +529,7 @@ export function enqueueHeldDraft(db: SqlDb, draftId: string, ctx: EnqueueContext
   if (!syncOwner(db)) return;
   const d = getDraftRow(db, draftId);
   if (!d) return;
-  enqueueHeld(db, draftId, heldFromDraft(d), d.held_v, ctx);
+  enqueueHeld(db, draftId, heldFromDraft(d), d.held_v, ctx, d.held_typed);
 }
 
 /**
@@ -526,7 +546,9 @@ export function enqueueHeldDiscard(db: SqlDb, id: string, ctx: EnqueueContext): 
   if (!heldV && !everSent) return;
   if (ops.some((o) => o.type === 'held.discard' && untouched(o))) return;
   const book = getDraftRow(db, id)?.child_id ?? getEntryRow(db, id)?.child_id ?? null;
-  appendOp(db, { type: 'held.discard', id, data: {} }, ctx, { bookId: book });
+  // The last version this phone saw: the server keeps the row if its words changed since (a later edit
+  // on another phone wins over this let-go, in either order; final review B-2).
+  appendOp(db, { type: 'held.discard', id, data: {}, base: heldV }, ctx, { bookId: book });
 }
 
 // ── Erase now for a letter the server holds (WP-F16-13, F16-REQ-024) ──────
@@ -548,12 +570,6 @@ export function enqueueEntryErase(db: SqlDb, id: string, bookId: string | null, 
   appendOp(db, { type: 'entry.erase', id, data: {} }, ctx, { lane: ERASE_LANE, bookId });
 }
 
-/** Erase now on a waiting letter the server holds as a held row: one held.discard (no row is left here to read). */
-export function enqueueHeldDiscardForErased(db: SqlDb, id: string, bookId: string | null, ctx: EnqueueContext): void {
-  if (!syncOwner(db)) return;
-  appendOp(db, { type: 'held.discard', id, data: {} }, ctx, { bookId });
-}
-
 /** Whether any held op of this letter or draft ever left the phone. */
 export function heldEverSent(db: SqlDb, id: string): boolean {
   return db.get<{ n: number }>(
@@ -571,9 +587,12 @@ export function eraseQueued(db: SqlDb, id: string): boolean {
   return db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type = 'entry.erase'", id)!.n > 0;
 }
 
-/** The author let a held draft go: this phone's conflict copies of its words go with it (never in an export after). */
+/**
+ * The author let a held draft go: every copy of its words this phone keeps in rejected_writes goes
+ * with it, conflict copies and refused uploads alike (never in an export after; final review A-M3).
+ */
 export function dropHeldConflictCopies(db: SqlDb, draftId: string): void {
-  db.run("DELETE FROM rejected_writes WHERE entity_id = ? AND type = 'held.upsert' AND code = ?", draftId, CONFLICT_CODE);
+  db.run("DELETE FROM rejected_writes WHERE entity_id = ? AND type = 'held.upsert'", draftId);
 }
 
 /** A held draft became a letter (Keep after Plus): its letter replaces the held row on the server, so no held upload is needed. */
@@ -586,43 +605,59 @@ export interface HeldAnswer {
   held?: { id: string; v: string; updated_at: string } | null;
   conflict_groups?: string[];
   current?: { typed_text?: string | null; v: string } | null;
+  /** A duplicate: `held` is the row as it is now, which may hold another phone's words. */
+  dup?: boolean;
+  /** The version this op wrote when it first applied (held receipts; S02 request). */
+  applied_v?: string | null;
 }
 
 /**
- * A held.upsert answer (F16 6.2 I, words by compare and set as 6.2 E). The row's
- * version becomes this phone's base, and an upload of the same draft still queued
- * is rebased on it (the batch carries one op per draft, so it waited for this
- * answer). Words refused (another phone of this author changed them first): this
- * phone's typed words are kept as a conflict copy, never uploaded unless the author
- * picks them; the draft follows the server's words, and the queued upload carries
- * those. A duplicate repeats the first answer, so a lost answer loses nothing.
+ * A held.upsert answer (F16 6.2 I, words by compare and set as 6.2 E).
+ * - The version this phone's words now descend from becomes `held_v`, and an
+ *   upload of the same draft still queued is rebased on it. For a duplicate that
+ *   is only the version this op wrote (`applied_v`), never the row's version now,
+ *   which may hold another phone's words; with no `applied_v` nothing moves, so the
+ *   next upload is compared against what this phone last saw (final review A-B1).
+ * - Words refused (another phone of this author changed them first): this phone's
+ *   typed words are kept as a conflict copy, but only when this phone changed them
+ *   (they differ from `held_typed`); the draft follows the server's words, and the
+ *   queued upload carries those. A `current` without `typed_text` says nothing about
+ *   the typed words: they are kept as they are (final review B7).
+ * - Kept on another phone before this upload arrived (`held: null`): words this phone
+ *   changed stay as a conflict copy until the letter arrives.
  * Returns true when a conflict copy was made.
  */
-export function settleHeldAnswer(db: SqlDb, opId: string, id: string, r: HeldAnswer, now: string): boolean {
-  const v = r.held?.v ?? null;
+export function settleHeldAnswer(
+  db: SqlDb, opId: string, id: string, r: HeldAnswer, now: string, sent?: { typed_text?: string | null; changed?: FieldGroup[] },
+): boolean {
+  const v = r.dup ? (r.applied_v ?? null) : (r.held?.v ?? null);
   if (v) {
     db.run('UPDATE drafts SET held_v = ? WHERE id = ?', v, id);
     db.run("UPDATE entries SET held_v = ? WHERE id = ? AND transcript_status = 'waiting'", v, id);
   }
   let copied = false;
   const draft = getDraftRow(db, id);
-  // Kept on another phone before this phone's upload arrived (`held: null`): the words this phone sent
-  // stay as a conflict copy until the letter arrives (merge.adoptHeldDraft drops it if they match).
-  if (draft && draft.state !== 'discarding' && r.held === null && (draft.typed_text ?? '').trim() !== ''
+  const changedHere = (d: LocalDraftRow) => (d.typed_text ?? null) !== (d.held_typed ?? null);
+  if (draft && draft.state !== 'discarding' && r.held === null && (draft.typed_text ?? '').trim() !== '' && changedHere(draft)
       && !listConflictCopies(db, id).some((c) => c.words.final_text === draft.typed_text)) {
     addHeldConflictCopy(db, opId, id, draft.typed_text!, null, now);
     copied = true;
   }
-  if (draft && (r.conflict_groups ?? []).includes('text') && r.current) {
+  const refused = (r.conflict_groups ?? []).includes('text');
+  if (draft && refused && r.current && 'typed_text' in r.current) {
     const theirs = r.current.typed_text ?? null;
     if ((draft.typed_text ?? null) !== theirs) {
       const mine = draft.typed_text ?? '';
-      if (mine.trim() !== '' && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
+      if (changedHere(draft) && mine.trim() !== '' && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
         addHeldConflictCopy(db, opId, id, mine, r.current.v, now);
         copied = true;
       }
       db.run('UPDATE drafts SET typed_text = ? WHERE id = ?', theirs, id);
     }
+    db.run('UPDATE drafts SET held_typed = ? WHERE id = ?', theirs, id);
+  } else if (draft && v && !refused && sent && (sent.changed ?? ALL_GROUPS).includes('text')) {
+    // These words are the server's now.
+    db.run('UPDATE drafts SET held_typed = ? WHERE id = ?', sent.typed_text ?? null, id);
   }
   const later = opsFor(db, id).filter((o) => o.type === 'held.upsert' && untouched(o));
   if (later.length > 0) {
@@ -633,6 +668,7 @@ export function settleHeldAnswer(db: SqlDb, opId: string, id: string, r: HeldAns
       const p = JSON.parse(o.payload) as PushOp;
       if (data) p.data = data as unknown as Record<string, unknown>;
       if (v) p.base = v;
+      if (data) p.changed = heldChanged(p.base ?? null, data, d?.held_typed ?? null);
       db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
     }
   }
@@ -697,8 +733,11 @@ function sendable(db: SqlDb): string {
   return readSetting(db, SYNC_SETTING.heldServer) === '1' ? NOT_REFUSED : `${NOT_REFUSED} AND o.type NOT LIKE 'held.%'`;
 }
 
-/** Ops that can still reach the server (a book the server refused holds its letters on the phone). */
-/** Ops that can leave now (held ops waiting for a server with held drafts are not counted). */
+/**
+ * Ops that can still reach the server now: a book the server refused holds its letters on the
+ * phone, held ops wait for a server with held drafts, and an erase waiting for a server that can
+ * erase is not counted.
+ */
 export function pendingCount(db: SqlDb): number {
   // An erase waiting for a server that can erase is not pending work either (it never holds a pause or the drain).
   return db.get<{ n: number }>(

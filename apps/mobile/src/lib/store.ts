@@ -61,7 +61,6 @@ import {
   enqueueEntryDelete,
   enqueueEntryErase,
   enqueueEntryRestore,
-  enqueueHeldDiscardForErased,
   everSent,
   heldEverSent,
   getEntryRow,
@@ -724,7 +723,9 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
     serverMayHold = row.sync_state !== 'gone' && row.sync_state !== 'erased'
       && (row.server_version !== null || everSent(c.db, id));
     // A voice-only letter waiting for its words lives on the server as a held row (v8): that row goes too.
-    heldOnServer = row.held_v != null || heldEverSent(c.db, id);
+    // Once let go there, only its marker is left, which this phone no longer tracks: a waiting letter always
+    // sends the erase (idempotent: the server answers missing when it holds nothing), so every phone erases it.
+    heldOnServer = row.held_v != null || heldEverSent(c.db, id) || row.transcript_status === 'waiting';
   }
   try {
     eraseAudio(uri, id);
@@ -734,8 +735,9 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   let done = false;
   c.db.transaction(() => {
     done = entries.eraseRow(c, id);
-    if (done && serverMayHold) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
-    if (done && heldOnServer) enqueueHeldDiscardForErased(c.db, id, bookId, enqueueContext(c));
+    // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
+    // holds, and the author's other phones erase their copy (never restorable there).
+    if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
   });
   if (done) bus.emit('entries');
   if (done && (serverMayHold || heldOnServer)) signalOutbox();

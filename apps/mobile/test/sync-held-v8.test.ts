@@ -15,6 +15,7 @@ import type { SqlDb } from '../src/lib/db/sql';
 import { applyPullPage, buildPullRequest } from '../src/lib/sync/merge';
 import {
   SYNC_SETTING,
+  dropHeldConflictCopies,
   enqueueEntryUpsert,
   enqueueHeldDiscard,
   enqueueHeldDraft,
@@ -57,7 +58,7 @@ describe('[F14-REQ-039] migration 8: held drafts can sync as author-only rows', 
     db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at, typed_text, state) VALUES ('d1', 'c1', 'typed', ?, 'A typed draft', 'ready')", NOW);
     db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", ME);
     expect(migrate(db, qctx)).toMatchObject({ from: 7, to: LATEST_VERSION });
-    expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['held_kind', 'in_book_choice', 'held_v']));
+    expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['held_kind', 'in_book_choice', 'held_v', 'held_typed']));
     expect(cols(db, 'entries')).toContain('held_v');
     expect(db.get('SELECT held_kind, held_v FROM drafts WHERE id = ?', 'd1')).toEqual({ held_kind: null, held_v: null });
     expect(ops(db)).toEqual([]);
@@ -176,6 +177,66 @@ describe('an older server', () => {
   });
 });
 
+describe('[F16 6.2 E] held answers after the final review', () => {
+  it('a duplicate never moves the base to the row as it is now; only applied_v does (A-B1)', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Mine.');
+    drafts.markHeld(repo, d, true);
+    db.run("UPDATE drafts SET held_v = '700', held_typed = 'Mine.' WHERE id = ?", d);
+    enqueueHeldDraft(db, d, qctx);
+    const [first] = db.all<{ op_id: string }>('SELECT op_id FROM sync_outbox');
+    db.run('UPDATE sync_outbox SET sent_at = ?', NOW);
+    drafts.setTyped(repo, d, 'Mine, again.');
+    enqueueHeldDraft(db, d, qctx);
+    db.run('DELETE FROM sync_outbox WHERE op_id = ?', first.op_id);
+    settleHeldAnswer(db, first.op_id, d, { dup: true, held: { id: d, v: '900', updated_at: NOW } }, NOW); // 900: another phone wrote since
+    expect(db.get('SELECT held_v FROM drafts WHERE id = ?', d)).toEqual({ held_v: '700' });
+    expect((JSON.parse(ops(db)[0].payload) as PushOp).base).toBe('700');
+    settleHeldAnswer(db, first.op_id, d, { dup: true, applied_v: '750', held: { id: d, v: '900', updated_at: NOW } }, NOW);
+    expect((JSON.parse(ops(db)[0].payload) as PushOp).base).toBe('750');
+  });
+
+  it('a change of date only is sent without the words group, so it can never raise a words conflict (B-3)', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Snow.');
+    drafts.markHeld(repo, d, true);
+    db.run("UPDATE drafts SET held_v = '700', held_typed = 'Snow.' WHERE id = ?", d);
+    drafts.setOccurred(repo, d, '2026-10-01', 'day');
+    enqueueHeldDraft(db, d, qctx);
+    expect((JSON.parse(ops(db)[0].payload) as PushOp).changed).not.toContain('text');
+    drafts.setTyped(repo, d, 'Snow, and more snow.');
+    enqueueHeldDraft(db, d, qctx);
+    expect((JSON.parse(ops(db)[0].payload) as PushOp).changed).toContain('text');
+  });
+
+  it('a refusal for a draft whose words this phone never changed takes the server words with no copy (B-3)', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Old words.');
+    drafts.markHeld(repo, d, true);
+    db.run("UPDATE drafts SET held_v = '700', held_typed = 'Old words.' WHERE id = ?", d);
+    expect(settleHeldAnswer(db, 'op-1', d, { held: { id: d, v: '800', updated_at: NOW }, conflict_groups: ['text'], current: { typed_text: 'New words.', v: '790' } }, NOW)).toBe(false);
+    expect(listConflictCopies(db, d)).toEqual([]);
+    expect(drafts.get(repo, d)?.typedText).toBe('New words.');
+  });
+
+  it('a current without typed_text says nothing about the typed words: they are kept, no copy (B7)', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Mine here.');
+    drafts.markHeld(repo, d, true);
+    db.run("UPDATE drafts SET held_v = '700', held_typed = 'Before.' WHERE id = ?", d);
+    settleHeldAnswer(db, 'op-1', d, { held: { id: d, v: '800', updated_at: NOW }, conflict_groups: ['text'], current: { v: '790' } }, NOW);
+    expect(drafts.get(repo, d)?.typedText).toBe('Mine here.');
+    expect(listConflictCopies(db, d)).toEqual([]);
+  });
+
+  it('letting a held draft go drops every copy of its words in rejected_writes, refused uploads too (A-M3)', () => {
+    const { db } = signedIn();
+    db.run("INSERT INTO rejected_writes (op_id, type, entity_id, payload, code, rejected_at) VALUES ('op-r', 'held.upsert', 'h9', '{\"data\":{\"typed_text\":\"Words.\"}}', '23514', ?)", NOW);
+    dropHeldConflictCopies(db, 'h9');
+    expect(db.get<{ n: number }>("SELECT COUNT(*) AS n FROM rejected_writes WHERE entity_id = 'h9'")!.n).toBe(0);
+  });
+});
+
 describe('[F16 6.2 E] [F16-REQ-025] a held answer', () => {
   it('sets the server version and rebases the upload still queued on it', () => {
     const { db, repo, draft } = signedIn();
@@ -237,6 +298,7 @@ describe('[F14-REQ-041] [F16-U30] held rows in the pull', () => {
   it('let go elsewhere: the draft is marked for the launch sweep, a waiting letter goes to Recently deleted; nothing is erased here', () => {
     const { db, repo } = signedIn();
     applyPullPage(db, page([{ ...base, id: 'h1', kind: 'held_letter' }, { ...base, id: 'w1', kind: 'waiting_letter', typed_text: null }]), NOW);
+    db.run("UPDATE drafts SET typed_text = 'Changed here.' WHERE id = 'h1'"); // this phone changed the words
     settleHeldAnswer(db, 'op-h1', 'h1', { held: { id: 'h1', v: '855', updated_at: NOW }, conflict_groups: ['text'], current: { typed_text: 'Elsewhere.', v: '854' } }, NOW);
     expect(listConflictCopies(db, 'h1')).toHaveLength(1);
     applyPullPage(db, page([{ id: 'h1', gone: 'discarded', updated_at: NOW, v: '860' }, { id: 'w1', gone: 'discarded', updated_at: NOW, v: '861' }]), NOW);

@@ -269,10 +269,21 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
         refreshEntryState(db, row.entity_id);
       } else if (row.type === 'held.upsert') {
         // The row is on the server now (author-only), or its words met another phone's first.
-        if (settleHeldAnswer(db, row.op_id, row.entity_id, r as HeldAnswer, ctx.now)) conflicts++;
+        const sent = JSON.parse(row.payload) as PushOp;
+        const answer = r as HeldAnswer;
+        if (settleHeldAnswer(db, row.op_id, row.entity_id, answer, ctx.now, { typed_text: (sent.data as { typed_text?: string | null }).typed_text ?? null, changed: sent.changed })) conflicts++;
       } else if (row.type === 'held.discard') {
-        db.run('UPDATE drafts SET held_v = NULL WHERE id = ?', row.entity_id);
-        db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.entity_id);
+        if ((r as { kept?: boolean }).kept) {
+          // The words changed on another phone since this phone last saw them: the server kept the row,
+          // and the next pull brings it back here from the start (a later edit wins over a let-go).
+          writeSetting(db, SYNC_SETTING.heldCursor, null);
+        } else {
+          // Let go on the server: an upload of it queued before the discard (one that waited out a consent
+          // pause) must never put it back (final review A-B2).
+          db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type = 'held.upsert' AND seq < ?", row.entity_id, row.seq);
+          db.run('UPDATE drafts SET held_v = NULL WHERE id = ?', row.entity_id);
+          db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.entity_id);
+        }
       } else if (row.type === 'book.create') {
         db.run("UPDATE children SET server_state = 'synced' WHERE id = ? AND server_state IN ('pending', 'local', 'refused')", row.entity_id);
       } else if (row.type === 'book.first_run') {
@@ -380,7 +391,7 @@ function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
   // was kept elsewhere from other words: they stay as a conflict copy of the letter, never lost.
   const mine = d.typed_text ?? '';
   const kept = getEntryRow(db, id)?.final_text ?? '';
-  const edited = opsFor(db, id).some((o) => o.type === 'held.upsert');
+  const edited = (d.typed_text ?? null) !== (d.held_typed ?? null);
   if (edited && mine.trim() !== '' && mine !== kept && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
     addHeldConflictCopy(db, `kept-${id}`, id, mine, getEntryRow(db, id)?.server_version ?? null, now);
   }
@@ -416,6 +427,14 @@ function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: 
     const draft = getDraftRow(db, h.id);
     const entry = getEntryRow(db, h.id);
     if ('gone' in h) {
+      if (h.gone === 'erased') {
+        // Erase now on another phone of this author: erased here too, whatever is queued for it, never restorable.
+        db.run('DELETE FROM sync_outbox WHERE entity_id = ?', h.id);
+        db.run("DELETE FROM rejected_writes WHERE entity_id = ?", h.id);
+        if (draft) db.run("UPDATE drafts SET state = 'discarding', held_v = NULL WHERE id = ? AND state <> 'recording'", h.id);
+        if (entry) db.run("UPDATE entries SET deleted_at = COALESCE(deleted_at, ?), sync_state = 'erased', held_v = NULL WHERE id = ?", now, h.id);
+        continue;
+      }
       if (h.gone === 'kept') {
         if (entry) {
           db.run('UPDATE entries SET held_v = NULL WHERE id = ?', h.id);
@@ -439,15 +458,19 @@ function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: 
       continue; // the letter row is what this phone shows
     }
     if (draft) {
-      db.run('UPDATE drafts SET held_v = ? WHERE id = ?', h.v, h.id);
+      // With its own ops queued the draft keeps its values and its version (a queued let-go or upload is
+      // compared against what this phone last saw, never a version it has not taken; final review B-2).
       if (pending) continue;
+      // Not pending and still marked for the sweep: the server kept the row (this phone's let-go met newer
+      // words), so the draft comes back with them.
       db.run(
         `UPDATE drafts SET child_id = ?, occurred_on = ?, occurred_precision = ?, language = COALESCE(?, language),
-           base_direction = ?, prompt_key = ?, in_book_choice = ?, typed_text = ?,
-           raw_transcript = COALESCE(raw_transcript, ?), held_kind = ?
+           base_direction = ?, prompt_key = ?, in_book_choice = ?, typed_text = ?, held_typed = ?,
+           raw_transcript = COALESCE(raw_transcript, ?), held_kind = ?, held_v = ?,
+           state = CASE WHEN state = 'discarding' THEN 'ready' ELSE state END
          WHERE id = ?`,
         h.child_id, h.occurred_on, h.occurred_precision, h.language, h.base_direction, h.prompt_key,
-        h.in_book_choice === null ? null : h.in_book_choice ? 1 : 0, h.typed_text, h.raw_transcript, h.kind, h.id,
+        h.in_book_choice === null ? null : h.in_book_choice ? 1 : 0, h.typed_text, h.typed_text, h.raw_transcript, h.kind, h.v, h.id,
       );
       continue;
     }
@@ -464,9 +487,9 @@ function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: 
     } else {
       db.run(
         `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, raw_transcript, typed_text,
-           state, occurred_on, occurred_precision, language, base_direction, held_kind, in_book_choice, held_v)
-         VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, 'ready', ?, ?, ?, ?, ?, ?, ?)`,
-        h.id, h.child_id, h.capture_mode, h.prompt_key, h.created_at, h.raw_transcript, h.typed_text,
+           held_typed, state, occurred_on, occurred_precision, language, base_direction, held_kind, in_book_choice, held_v)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, 'ready', ?, ?, ?, ?, ?, ?, ?)`,
+        h.id, h.child_id, h.capture_mode, h.prompt_key, h.created_at, h.raw_transcript, h.typed_text, h.typed_text,
         h.occurred_on, h.occurred_precision, h.language, h.base_direction, h.kind,
         h.in_book_choice === null ? null : h.in_book_choice ? 1 : 0, h.v,
       );
