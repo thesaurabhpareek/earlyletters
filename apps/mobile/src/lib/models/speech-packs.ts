@@ -58,7 +58,7 @@ export type SpeechEnsureResult = { ok: true; path: string } | { ok: false; reaso
 /** The part of the platform pack API this area calls. */
 export interface SpeechPackHost {
   packPath(id: string): string | null;
-  ensurePack(id: string, opts?: { allowCellularOnce?: boolean; signal?: AbortSignal }): Promise<SpeechEnsureResult>;
+  ensurePack(id: string, opts?: { allowCellularOnce?: boolean; wifiOnly?: boolean; signal?: AbortSignal }): Promise<SpeechEnsureResult>;
   onProgress(listener: (p: SpeechPackProgress) => void): () => void;
   removePack(id: string): Promise<void>;
   addLanguageResolver?(resolver: (language: string) => string[]): () => void;
@@ -146,7 +146,10 @@ export function installedPathsFor(language: SpeechLanguage, tier: Tier = deviceT
  * its recogniser. Wi-Fi and storage rules are the pack engine's. Resolves
  * when every pack is installed or one cannot be fetched now.
  */
-export async function ensureSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; signal?: AbortSignal } = {}): Promise<SpeechEnsureResult> {
+export async function ensureSpeechFor(
+  language: SpeechLanguage,
+  opts: { allowCellularOnce?: boolean; wifiOnly?: boolean; signal?: AbortSignal } = {},
+): Promise<SpeechEnsureResult> {
   const h = speechPackHost();
   const plan = planFor([language]);
   let asrPath = '';
