@@ -77,7 +77,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     // Never let a stray variable from the shell change what is built or where mail goes.
     RESEND_BASE_URL: mock.url,
   };
-  for (const name of ['VERCEL_ENV', 'VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_APP_STORE_URL', 'NEXT_PUBLIC_ANALYTICS', 'ENABLE_LAB', 'NODE_ENV']) {
+  for (const name of ['VERCEL_ENV', 'VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'NEXT_PUBLIC_SITE_URL', 'NEXT_PUBLIC_APP_STORE_URL', 'NEXT_PUBLIC_ANALYTICS', 'ENABLE_LAB', 'NODE_ENV', 'PUBLISHER_LEGAL_NAME']) {
     delete env[name];
   }
 

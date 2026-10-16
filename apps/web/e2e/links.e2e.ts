@@ -88,7 +88,8 @@ test('every internal link on every page leads somewhere that exists, and every f
   for (const [, loc] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) if (!seen.has(new URL(loc).pathname)) failures.push(`sitemap address not reached from the pages: ${loc}`);
 
   expect(failures, failures.join('\n')).toEqual([]);
-  expect(internalLinks, 'the crawl found links').toBeGreaterThan(20);
+  // Proof the crawl is wired up: every page it visited links somewhere on the site (home, or the footer's Privacy and Terms).
+  expect(internalLinks, 'the crawl found links').toBeGreaterThanOrEqual(seen.size);
   expect(seen.size).toBeGreaterThanOrEqual(PAGES.filter((p) => p.status === 200).length);
   test.info().annotations.push({
     type: 'link-check',

@@ -1,23 +1,17 @@
 /**
- * Owner: E1 (web platform). Home, the four legal documents and the deletion page.
- * Legal pages carry the document's own last_updated date. Documents that are not final are still listed;
- * their pages say noindex until their status is final (see components/site/LegalDocument.tsx).
+ * Owner: E1 (web platform). Every address a crawler may index: home, /privacy and /terms. Each legal page carries its
+ * own "Last updated" date. No changefreq or priority: crawlers ignore both.
  */
 import type { MetadataRoute } from 'next';
-import { legalSlugs } from '@/lib/legal/documents';
-import { loadLegalDocument } from '@/lib/legal/load';
+import { legalPage, legalSlugs } from '@/lib/legal/pages';
 import { siteOrigin } from '@/lib/legal/origin';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const legal = await Promise.all(legalSlugs.map((slug) => loadLegalDocument(slug)));
+export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    { url: siteOrigin, changeFrequency: 'monthly', priority: 1 },
-    ...legal.map((doc) => ({
-      url: `${siteOrigin}${doc.href}`,
-      lastModified: doc.lastUpdated,
-      changeFrequency: 'yearly' as const,
-      priority: 0.3,
-    })),
-    { url: `${siteOrigin}/delete-account`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: siteOrigin },
+    ...legalSlugs.map((slug) => {
+      const page = legalPage(slug);
+      return { url: `${siteOrigin}${page.href}`, lastModified: page.lastUpdated };
+    }),
   ];
 }
