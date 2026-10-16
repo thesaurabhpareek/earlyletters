@@ -177,6 +177,7 @@ describe('escrow function: two routes, { device_id }, snake_case answers (#151 c
   it('refusals keep the code and the closed detail; the ones restore stops on are the server\'s words', async () => {
     const cases: [number, string, string | undefined, boolean][] = [
       [401, 'reauth_required', 'step_up_required', false],
+      [401, 'unauthorized', undefined, false],
       [403, 'deleted', 'deletion_pending', false],
       [404, 'not_found', 'device_unknown', false],
       [429, 'rate_limited', 'limit_restores', true],
@@ -186,12 +187,14 @@ describe('escrow function: two routes, { device_id }, snake_case answers (#151 c
       const { client } = fakeEscrow(() => refuse(status, code, detail, retryable));
       const e = await client.request(DEVICE).catch((x: unknown) => x);
       expect(e).toBeInstanceOf(BackupServerError);
-      expect(e).toMatchObject({ code, detail, retryable });
+      expect(e).toMatchObject({ code, detail: detail ?? null, retryable });
     }
     // Every detail restore stops on, or asks to sign in again for, is one the escrow function sends.
     const SERVER_DETAILS = ['step_up_required', 'device_unknown', 'cancelled', 'expired', 'deletion_pending', 'limit_restores', 'limit_keys', 'escrow'];
     for (const d of ESCROW_DETAILS.stopped) expect(SERVER_DETAILS).toContain(d);
     expect(SERVER_DETAILS).toContain('step_up_required');
+    // 401 unauthorized (a refused token, or #151's SCSES session_ended) asks to sign in again.
+    expect(ESCROW_DETAILS.signInAgain).toContain('unauthorized');
   });
 
   it('a release for another request id, or with another suite or size, is refused', async () => {

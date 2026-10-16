@@ -149,7 +149,12 @@ export const ESCROW_DETAILS = {
    * Settings); a revoked phone must never quietly enrol a new key and ask again.
    */
   stopped: ['cancelled', 'expired', 'deletion_pending', 'device_unknown'],
-  signInAgain: ['step_up_required', 'reauth_required'],
+  /**
+   * The request needs a fresh sign-in: the 10-minute step-up (`reauth_required`, detail
+   * `step_up_required`), or 401 `unauthorized` when the token was refused or its session has
+   * ended (#151 `SCSES`: a Stop signs out every session). Nothing was asked either way.
+   */
+  signInAgain: ['step_up_required', 'reauth_required', 'unauthorized'],
 } as const;
 
 export type RestoreState = 'requested' | 'approved' | 'released' | 'cancelled' | 'expired';

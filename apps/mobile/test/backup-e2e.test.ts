@@ -183,7 +183,7 @@ describe('backup end to end against a fake bucket', () => {
     expect(backend.unwraps).toHaveLength(1);
   });
 
-  it('an old session cannot ask (step-up): sign in again; the escrow kill switch asks nothing', async () => {
+  it('an old or ended session cannot ask (step-up, SCSES): sign in again; the escrow kill switch asks nothing', async () => {
     const clock = { t: 0 };
     const backend = new FakeBackend(() => clock.t);
     const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
@@ -205,6 +205,12 @@ describe('backup end to end against a fake bucket', () => {
     expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
     expect(backend.restores.size).toBe(0);
     backend.stepUpRequired = false;
+    // A session a Stop ended (#151 SCSES, 401 unauthorized): sign in again, never a silent wait.
+    backend.sessionEnded = true;
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
+    expect(backend.restores.size).toBe(0);
+    backend.sessionEnded = false;
     await c.service.tick();
     expect(c.service.view().restore?.kind).toBe('waiting_hold');
   });

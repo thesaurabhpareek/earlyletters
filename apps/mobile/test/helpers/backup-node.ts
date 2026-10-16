@@ -297,6 +297,8 @@ export class FakeBackend {
   quotaBytes = 5 * 1024 * 1024 * 1024;
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
+  /** The caller's session has ended (a Stop signed out every session): #151 answers 401 unauthorized, sqlstate SCSES. */
+  sessionEnded = false;
   /** Letters erased on the server (purge_ledger): `backup_begin` refuses them with SCDEL purged, as #151. */
   readonly purged = new Set<string>();
   /** False: rows are read back without a key check (a row stored before #151 kept one). */
@@ -467,6 +469,7 @@ export class FakeBackend {
       async request(deviceId) {
         b.record('escrow.request', { deviceId });
         if (b.stepUpRequired) throw new BackupServerError('reauth_required', false);
+        if (b.sessionEnded) throw new BackupServerError('unauthorized', false);
         const d = b.devices.get(deviceId);
         if (!d || d.uid !== uid || d.revoked) throw new BackupServerError('42501', false);
         const recent = b.now() - 90 * 24 * H;
