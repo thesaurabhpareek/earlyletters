@@ -14,7 +14,7 @@
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { randomBytes } from 'node:crypto';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SqlDb } from '../src/lib/db/sql';
 import type { SyncEngine } from '../src/lib/sync/engine';
 import type { SupabaseLike } from '../src/lib/sync/types';
@@ -139,6 +139,12 @@ describe('two parents, three phones, one server (protocol v1)', () => {
   let mama2: Phone;
   let ASHA = '';
   const ids: Record<string, string> = {};
+
+  // Each case starts a fresh rate window: the server allows 60 pushes a minute per person, and Mama's
+  // two phones share one account across the whole file (the limit itself is S02's, tested in test:db).
+  beforeEach(async () => {
+    if (server) await server.sys('delete from sync_rate_windows');
+  });
 
   beforeAll(async () => {
     server = await startSyncServer({ users: [MAMA, PAPA], protocol: 'v1' });
@@ -671,20 +677,22 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect((await server.userSql(PAPA, 'select id from held_drafts where id = $1', [ids.paused])).rows).toEqual([]);
     await expect(server.userSql(PAPA, "update held_drafts set typed_text = 'x' where id = $1 returning id", [ids.paused])).resolves.toMatchObject({ rows: [] });
     expect((await server.sys('select count(*)::int as n from held_drafts_gone g where g.author_id <> $1', [MAMA])).rows[0].n).toBe(0);
+  }, 60_000);
+
   it('[LEGAL-REQ-009] a letter deleted during a consent pause stays deleted when consent returns (final review B-1, P10)', async () => {
     await server.sensitiveConsent(MAMA, 'withdraw');
-    ids.paused = writeLetter(mama, ASHA, 'You held the spoon by yourself.');
+    ids.pausedLetter = writeLetter(mama, ASHA, 'You held the spoon by yourself.');
     expect((await mama.sync()).phase).toBe('paused_consent'); // the upload met SCCON and waits
     tick();
-    mama.store.deleteEntry(ids.paused);
+    mama.store.deleteEntry(ids.pausedLetter);
     expect(outbox(mama)).toEqual([]); // it never reached the server: deleted before it left, nothing to send
     await mama.sync();
     await server.sensitiveConsent(MAMA, 'accept');
     await mama.sync();
-    expect(await serverEntry(ids.paused)).toBeUndefined();
-    expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.paused);
+    expect(await serverEntry(ids.pausedLetter)).toBeUndefined();
+    expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.pausedLetter);
     await papa.sync();
-    expect(row(papa, ids.paused)).toBeNull();
+    expect(row(papa, ids.pausedLetter)).toBeNull();
   }, 60_000);
 
   it('[LEGAL-REQ-009] a delete the server took drops every earlier upload of the letter still queued', async () => {
