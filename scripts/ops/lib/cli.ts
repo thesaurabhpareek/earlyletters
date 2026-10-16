@@ -34,6 +34,10 @@ export function print(line = ''): void {
   console.log(line);
 }
 
+export function printError(line: string): void {
+  console.error(line);
+}
+
 export function fail(message: string, code = 1): never {
   console.error(message);
   process.exit(code);
@@ -47,6 +51,20 @@ export function writePrivate(path: string, text: string): void {
 /** Appends content-free text (a GitHub step summary, for example). */
 export function appendText(path: string, text: string): void {
   appendFileSync(path, text);
+}
+
+/**
+ * Last line of defence for scripts that may hold a decoded credential: an
+ * uncaught exception or rejection prints `line` (fixed text) instead of the
+ * error and its stack, and exits with `code`.
+ */
+export function guardCrashes(line: string, code = 2): void {
+  const stop = () => {
+    console.error(line);
+    process.exit(code);
+  };
+  process.on('uncaughtException', stop);
+  process.on('unhandledRejection', stop);
 }
 
 export const argv = (): string[] => process.argv.slice(2);

@@ -16,19 +16,19 @@
  * the health routes and Auth's public settings; in Postgres, read only and
  * through psql, catalog and settings rows (the pepper reduced to a boolean
  * there). Prints check names, statuses and closed values; never a body, URL,
- * key, row or psql message. Exit 0 green, 1 red, 2 usage. Node 22, no npm
- * packages; needs psql unless --no-db.
+ * key, row or psql message. Exit 0 green, 1 red, 2 usage or an unexpected
+ * stop (one fixed line, never the error). Node 22, no npm packages; needs psql
+ * unless --no-db.
  */
-import { appendText, argv, env, exit, print } from './lib/cli.ts';
+import { appendText, argv, env, exit, guardCrashes, print, printError } from './lib/cli.ts';
 import { psqlRunner } from './lib/psql.ts';
-import { smokeMain } from './lib/smoke.ts';
+import { runCli, STOPPED_LINE } from './lib/smoke.ts';
 
-const result = await smokeMain(argv(), env, {
+guardCrashes(STOPPED_LINE, 2);
+const code = await runCli(argv(), env, {
   fetch: (url, init) => fetch(url, init),
   sql: (db) => psqlRunner(db),
   now: () => new Date(),
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
-});
-for (const line of result.lines) print(line);
-if (result.summaryPath && result.markdown) appendText(result.summaryPath, result.markdown);
-exit(result.code);
+}, { print, printError, append: appendText });
+exit(code);

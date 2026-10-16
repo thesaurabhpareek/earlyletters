@@ -4,7 +4,8 @@
  * timeout. Connection settings travel as PG* variables (never argv), the
  * parent's environment is not passed on, and psql's own messages are never
  * shown: `VERBOSITY=sqlstate` reduces an error to its SQLSTATE, which is all
- * this reads from stderr. Needs the PostgreSQL client (`psql`) on PATH.
+ * this reads from stderr. A spawn that throws (a bad env value, for example)
+ * resolves as an error without its message. Needs the PostgreSQL client (`psql`) on PATH.
  */
 import { spawn } from 'node:child_process';
 import process from 'node:process';
@@ -18,10 +19,16 @@ export function psqlRunner(db: DbTarget, opts: { timeoutMs?: number; bin?: strin
     new Promise<SqlOutcome>((resolve) => {
       const args = ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate',
         '-c', 'begin transaction read only', '-c', "set local statement_timeout = '5s'", '-c', sql, '-c', 'rollback'];
-      const child = spawn(opts.bin ?? 'psql', args, {
-        env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...db.env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-staging-smoke' },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+      let child: ReturnType<typeof spawn>;
+      try {
+        child = spawn(opts.bin ?? 'psql', args, {
+          env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...db.env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-staging-smoke' },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+      } catch {
+        // spawn throws synchronously on a bad argument or env value, with that value in its message: never shown.
+        return resolve({ ok: false, kind: 'error' });
+      }
       let out = '';
       let err = '';
       let settled = false;
@@ -35,12 +42,12 @@ export function psqlRunner(db: DbTarget, opts: { timeoutMs?: number; bin?: strin
         child.kill('SIGKILL');
         done({ ok: false, kind: 'timeout' });
       }, opts.timeoutMs ?? 30_000);
-      child.stdout.setEncoding('utf8');
-      child.stderr.setEncoding('utf8');
-      child.stdout.on('data', (s: string) => {
+      child.stdout!.setEncoding('utf8');
+      child.stderr!.setEncoding('utf8');
+      child.stdout!.on('data', (s: string) => {
         if (out.length < OUT_CAP) out += s;
       });
-      child.stderr.on('data', (s: string) => {
+      child.stderr!.on('data', (s: string) => {
         if (err.length < 8192) err += s;
       });
       child.on('error', (e: Error & { code?: string }) => done({ ok: false, kind: e.code === 'ENOENT' ? 'no_psql' : 'error' }));

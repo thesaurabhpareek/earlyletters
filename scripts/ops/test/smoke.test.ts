@@ -8,8 +8,9 @@ import { makeForgetHandler } from '../../../supabase/functions/analytics-forget/
 import { makeConfigHandler } from '../../../supabase/functions/config/handler.ts';
 import { makeContentHandler } from '../../../supabase/functions/content/handler.ts';
 import { makeHandler as makePurgeWorker } from '../../../supabase/functions/purge-worker/handler.ts';
+import { psqlRunner } from '../lib/psql.ts';
 import {
-  CRON_JOBS, CRON_SQL, DEFAULT_FUNCTIONS, isAnonymousKey, loggingRisk, PROBE_SQL, smokeMain,
+  CRON_JOBS, CRON_SQL, DEFAULT_FUNCTIONS, isAnonymousKey, loggingRisk, PROBE_SQL, runCli, smokeMain, STOPPED_LINE,
   type Probe, type SmokeDeps, type SqlOutcome,
 } from '../lib/smoke.ts';
 import { dbTargetOf } from '../lib/target.ts';
@@ -136,8 +137,9 @@ Deno.test('green: a seeded staging project passes every check, anonymously', asy
   for (const c of ['policy version terms', 'policy version sensitive-data', 'consent pepper', 'statement logging', 'function config', 'function content', 'function purge-worker', 'auth health', 'sign-up', 'sign-in providers', ...CRON_JOBS.map((j) => `cron ${j.name}`)]) {
     assert.equal(r.byCheck.get(c), 'PASS', c);
   }
-  // apple-token has no health route yet (requested from S01): reported, not hidden, and not counted as green evidence.
+  // apple-token keeps the gateway JWT check and has no route yet (requested from S01): reported, not hidden, not counted as evidence.
   assert.equal(r.byCheck.get('function apple-token'), 'NOT CHECKED');
+  assert.match(r.lines.find((l) => l.includes(' function apple-token:'))!, /behind gateway JWT verification \(401\), as deployed; reading the route needs a session; health route requested from S01/);
   assert.match(r.lines.at(-1)!, /^GREEN: 14 passed, 1 not checked/);
   // Anonymous: the publishable key as apikey, never an Authorization header; read-only SQL, two statements.
   assert.ok(r.requests.every((q) => q.headers.get('apikey') === KEY && !q.headers.has('authorization')));
@@ -168,10 +170,18 @@ Deno.test('functions: deleted, unconfigured, behind the gateway, without the rou
   assert.equal(r.code, 1);
   const line = (c: string) => r.lines.find((l) => l.includes(` ${c}:`))!;
   assert.match(line('function config'), /not deployed, or deployed without the health route \(404\)/);
-  assert.match(line('function content'), /refused by the gateway \(401\): deploy with --no-verify-jwt/);
+  assert.match(line('function content'), /^FAIL .*refused by the gateway \(401\): it is deployed with JWT verification, but develop deploys it with --no-verify-jwt/);
   assert.match(line('function purge-worker'), /required secrets are not all set \(503/);
   assert.match(line('function apple-token'), /^FAIL .*\(404\)/, 'a requested route does not excuse a missing function');
   assert.equal(r.slept(), 0, 'our own 503 envelope is deterministic and not retried');
+
+  // A function that keeps the gateway JWT check on develop is NOT CHECKED behind it; the smoke never asks to change its posture.
+  const g = seeded();
+  g.functions['analytics-forget'] = 'gateway_jwt';
+  const rg = await run(g, [...ARGS, '--functions', 'analytics-forget']);
+  assert.equal(rg.code, 0);
+  assert.match(rg.lines.find((l) => l.includes(' function analytics-forget:'))!, /^NOT CHECKED .*behind gateway JWT verification \(401\), as deployed; reading the route needs a session$/);
+  assert.ok(!rg.text.includes('--no-verify-jwt'));
 
   const t = seeded();
   t.functions.config = 'no_route';
@@ -278,6 +288,8 @@ Deno.test('usage: the target, the key and the database URL are checked before an
     [{ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY, SUPABASE_DB_URL: 'postgresql://postgres:x@10.0.0.1:5432/postgres' }, ARGS, /direct .* or pooler/],
     [{ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY }, [...ARGS, '--functions', 'escrow'], /escrow lives in its own project/],
     [{ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY }, [...ARGS, '--providers', 'github'], /--providers/],
+    [{ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY, SUPABASE_DB_URL: `${DB_URL}?sslmode=disable` }, ARGS, /must use TLS/],
+    [{ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY, SUPABASE_DB_URL: `${DB_URL}?sslmode=prefer` }, ARGS, /must use TLS/],
   ];
   for (const [vars, args, want] of cases) {
     const r = await run(seeded(), args, envOf(vars));
@@ -328,17 +340,54 @@ Deno.test('the SQL reads catalog and settings only, and the pepper only as a len
   assert.equal(loggingRisk('log_min_duration_statement', '0'), "log_min_duration_statement is '0'");
 });
 
-Deno.test('database URL: direct and pooler URLs name their project; the password stays out of argv', () => {
-  const pooled = dbTargetOf(DB_URL)!;
+Deno.test('database URL: direct and pooler URLs name their project; TLS required; the password stays out of argv', () => {
+  const pooled = dbTargetOf(DB_URL).target!;
   assert.equal(pooled.projectRef, REF);
   assert.deepEqual(pooled.env, { PGHOST: 'aws-0-us-west-1.pooler.supabase.com', PGPORT: '5432', PGUSER: `postgres.${REF}`, PGPASSWORD: DB_PASSWORD, PGDATABASE: 'postgres', PGSSLMODE: 'require' });
-  const direct = dbTargetOf(`postgres://postgres:p%40ss@db.${REF}.supabase.co:6543/postgres?sslmode=verify-full`)!;
+  const direct = dbTargetOf(`postgres://postgres:p%40ss@db.${REF}.supabase.co:6543/postgres?sslmode=verify-full`).target!;
   assert.equal(direct.projectRef, REF);
   assert.equal(direct.env.PGPASSWORD, 'p@ss');
   assert.equal(direct.env.PGSSLMODE, 'verify-full');
-  assert.equal(dbTargetOf('https://db.x.supabase.co'), null);
-  assert.equal(dbTargetOf('postgresql://postgres:pw@localhost/postgres')!.projectRef, null);
-  assert.equal(dbTargetOf('postgresql://postgres:pw@localhost/postgres?sslmode=nope'), null);
+  assert.equal(dbTargetOf('https://db.x.supabase.co').problem, 'SUPABASE_DB_URL is not a postgres:// URL');
+  assert.equal(dbTargetOf('postgresql://postgres:pw@localhost/postgres').target!.projectRef, null);
+  for (const mode of ['disable', 'allow', 'prefer', 'nope']) {
+    assert.equal(dbTargetOf(`${DB_URL}?sslmode=${mode}`).problem, 'SUPABASE_DB_URL must use TLS: sslmode require, verify-ca or verify-full');
+  }
+  assert.equal(dbTargetOf(`${DB_URL}?sslmode=verify-ca`).target!.env.PGSSLMODE, 'verify-ca');
+  assert.equal(dbTargetOf(DB_URL.replace(DB_PASSWORD, '%E0%A4')).problem, 'SUPABASE_DB_URL has a malformed percent escape');
+});
+
+Deno.test('[B1] a NUL or other control character in the database URL never reaches spawn, stdout or stderr', async () => {
+  const secret = 'pw-probe-SECRET';
+  for (const planted of [`${secret}%00x`, `${secret}%0Ax`, `${secret}%7F`, `${secret}%1B[2J`]) {
+    const url = DB_URL.replace(DB_PASSWORD, planted);
+    assert.equal(dbTargetOf(url).problem, 'SUPABASE_DB_URL holds a control character');
+    const out: string[] = [];
+    const w = world(seeded());
+    const code = await runCli(ARGS, envOf({ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY, SUPABASE_DB_URL: url }), w.deps, {
+      print: (l) => out.push(`stdout:${l}`), printError: (l) => out.push(`stderr:${l}`), append: () => out.push('summary'),
+    });
+    assert.equal(code, 2);
+    assert.ok(out.includes('stdout:SUPABASE_DB_URL holds a control character'));
+    assert.equal(w.requests.length + w.sql.length, 0, 'nothing is sent');
+    assert.ok(!out.join('\n').includes(secret) && !out.join('\n').includes('\u0000'));
+  }
+  assert.equal(dbTargetOf(`postgresql://postgres.${REF}:pw@aws-0-us-west-1.pooler.supabase.com:5432/post%00gres`).problem, 'SUPABASE_DB_URL holds a control character');
+  assert.equal(dbTargetOf(`postgresql://postgres.${REF}%00:pw@aws-0-us-west-1.pooler.supabase.com:5432/postgres`).problem, 'SUPABASE_DB_URL holds a control character');
+
+  // If a value with a NUL got past the parser anyway, spawn's throw (which quotes the value) is swallowed.
+  const target = { ...dbTargetOf(DB_URL).target!, env: { ...dbTargetOf(DB_URL).target!.env, PGPASSWORD: `${secret}\u0000x` } };
+  assert.deepEqual(await psqlRunner(target, { timeoutMs: 2_000 })(PROBE_SQL), { ok: false, kind: 'error' });
+
+  // And anything thrown anywhere in a run prints one fixed line on stderr, nothing else, exit 2.
+  const out: string[] = [];
+  const w = world(seeded());
+  const throwing: SmokeDeps = { ...w.deps, sql: () => { throw new TypeError(`options.env['PGPASSWORD'] must be a string without null bytes. Received '${secret}\x00x'`); } };
+  const code = await runCli([...ARGS, '--summary', 'summary.md'], ENV, throwing, {
+    print: (l) => out.push(`stdout:${l}`), printError: (l) => out.push(`stderr:${l}`), append: () => out.push('summary'),
+  });
+  assert.equal(code, 2);
+  assert.deepEqual(out, [`stderr:${STOPPED_LINE}`]);
 });
 
 // ─── The health route contract: the smoke against the real function handlers ───

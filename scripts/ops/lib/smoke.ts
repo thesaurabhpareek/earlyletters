@@ -61,15 +61,21 @@ export interface FunctionSpec {
   owner: string;
   /** `route`: answers GET /<name>/health. `requested`: not yet; its owner was asked (RA-07-06 PR). */
   health: 'route' | 'requested';
+  /**
+   * The deploy posture on develop, which the smoke never asks to change (each owner decides):
+   * `open` is deployed with --no-verify-jwt; `jwt` keeps the gateway's JWT check, so without a
+   * session the gateway answers 401 and the route cannot be read: NOT CHECKED, not red.
+   */
+  gateway: 'open' | 'jwt';
 }
 export const FUNCTIONS: readonly FunctionSpec[] = [
-  { name: 'config', owner: 'S07', health: 'route' },
-  { name: 'content', owner: 'S07', health: 'route' },
-  { name: 'purge-worker', owner: 'S07', health: 'route' },
-  { name: 'apple-token', owner: 'S01', health: 'requested' },
-  { name: 'analytics-forget', owner: 'S07', health: 'route' },
-  { name: 'invite-redeem', owner: 'S07', health: 'requested' },
-  { name: 'subscription-status', owner: 'S06', health: 'requested' },
+  { name: 'config', owner: 'S07', health: 'route', gateway: 'open' },
+  { name: 'content', owner: 'S07', health: 'route', gateway: 'open' },
+  { name: 'purge-worker', owner: 'S07', health: 'route', gateway: 'open' },
+  { name: 'apple-token', owner: 'S01', health: 'requested', gateway: 'jwt' },
+  { name: 'analytics-forget', owner: 'S07', health: 'route', gateway: 'jwt' },
+  { name: 'invite-redeem', owner: 'S07', health: 'requested', gateway: 'jwt' },
+  { name: 'subscription-status', owner: 'S06', health: 'requested', gateway: 'jwt' },
 ];
 /** AF-13 deploys these four to staging. `escrow` lives in its own project (D-102) and is never checked here. */
 export const DEFAULT_FUNCTIONS = ['config', 'content', 'purge-worker', 'apple-token'] as const;
@@ -152,8 +158,9 @@ export function resolveSmoke(argv: string[], env: Env): { cfg: SmokeConfig; prob
   let db: DbTarget | null = null;
   const dbUrl = env('SUPABASE_DB_URL');
   if (dbUrl && !skipDb) {
-    db = dbTargetOf(dbUrl);
-    if (!db) problems.push('SUPABASE_DB_URL is not a postgres:// URL');
+    const parsed = dbTargetOf(dbUrl);
+    db = parsed.target;
+    if (!db) problems.push(parsed.problem!);
     else if (!db.projectRef) problems.push("SUPABASE_DB_URL must be the project's direct (db.<ref>.supabase.co) or pooler (user postgres.<ref>) URL");
     else if (ref && db.projectRef !== ref) problems.push('SUPABASE_DB_URL belongs to another project than SUPABASE_URL');
   }
@@ -297,11 +304,14 @@ export async function checkFunction(deps: SmokeDeps, cfg: SmokeConfig, spec: Fun
   if (r.status === 200) return fail(check, 'answered 200 without the health envelope');
   if (r.status === 404) return fail(check, 'not deployed, or deployed without the health route (404)');
   if (r.status === 503 && isEnvelope(body, false)) return fail(check, 'deployed, but its required secrets are not all set (503; docs/ops/SECURITY.md)');
-  if (spec.health === 'requested' && (r.status === 401 || r.status === 403 || r.status === 405)) {
-    const why = r.status === 405 ? 'deployed, no health route yet (405)' : `behind gateway JWT verification (${r.status})`;
-    return notChecked(check, `${why}; health route requested from ${spec.owner}`);
+  const requested = spec.health === 'requested' ? `; health route requested from ${spec.owner}` : '';
+  if (spec.gateway === 'jwt' && (r.status === 401 || r.status === 403)) {
+    return notChecked(check, `behind gateway JWT verification (${r.status}), as deployed; reading the route needs a session${requested}`);
   }
-  if (r.status === 401 || r.status === 403) return fail(check, `refused by the gateway (${r.status}): deploy with --no-verify-jwt so the health route is reachable`);
+  if (spec.health === 'requested' && r.status === 405) return notChecked(check, `deployed, no health route yet (405)${requested}`);
+  if (r.status === 401 || r.status === 403) {
+    return fail(check, `refused by the gateway (${r.status}): it is deployed with JWT verification, but develop deploys it with --no-verify-jwt (docs/ops/README.md step 4)`);
+  }
   if (r.status === 405) return fail(check, 'deployed without the health route (405): redeploy from develop');
   if (r.status >= 500) return fail(check, `did not start, or failed (${r.status})`);
   return fail(check, noAnswer(r));
@@ -491,14 +501,40 @@ export const USAGE = [
   '  SUPABASE_URL=https://<ref>.supabase.co SUPABASE_PUBLISHABLE_KEY=<publishable key> SUPABASE_DB_URL=<postgres URL> \\',
   '  node scripts/ops/staging-smoke.ts --project-ref <ref> [--functions a,b] [--providers email,apple]',
   '    [--signups open|closed] [--no-db] [--attempts 3] [--summary "$GITHUB_STEP_SUMMARY"]',
-  'Exit 0 green, 1 red, 2 usage.',
+  'Exit 0 green, 1 red, 2 usage or an unexpected stop.',
 ];
 
-/** The whole run: exit code 0 green, 1 red, 2 usage. Lines are content-free; the CLI prints them. */
+/** The only line printed when anything throws: an error message could carry a decoded credential. */
+export const STOPPED_LINE = 'STOPPED: the smoke stopped unexpectedly; no detail is printed (exit 2)';
+
+/** The whole run: exit code 0 green, 1 red, 2 usage. May throw (runCli catches). Lines are content-free; the CLI prints them. */
 export async function smokeMain(argv: string[], env: Env, deps: SmokeDeps): Promise<{ code: 0 | 1 | 2; lines: string[]; markdown: string | null; summaryPath: string | null }> {
   if (argv.includes('--help')) return { code: 0, lines: USAGE, markdown: null, summaryPath: null };
   const r = resolveSmoke(argv, env);
   if (!r.cfg) return { code: 2, lines: [...r.problems, ...USAGE], markdown: null, summaryPath: null };
   const report = await runSmoke(deps, r.cfg);
   return { code: report.green ? 0 : 1, lines: reportLines(report), markdown: reportMarkdown(report), summaryPath: r.cfg.summaryPath };
+}
+
+export interface CliIo {
+  print: (line: string) => void;
+  printError: (line: string) => void;
+  append: (path: string, text: string) => void;
+}
+
+/**
+ * scripts/ops/staging-smoke.ts in full, minus process wiring. Anything thrown
+ * (a spawn error, a write error, a bug) becomes STOPPED_LINE and exit 2; the
+ * error itself is never printed.
+ */
+export async function runCli(argv: string[], env: Env, deps: SmokeDeps, io: CliIo): Promise<0 | 1 | 2> {
+  try {
+    const result = await smokeMain(argv, env, deps);
+    for (const line of result.lines) io.print(line);
+    if (result.summaryPath && result.markdown) io.append(result.summaryPath, result.markdown);
+    return result.code;
+  } catch {
+    io.printError(STOPPED_LINE);
+    return 2;
+  }
 }
