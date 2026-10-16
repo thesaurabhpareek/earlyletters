@@ -253,6 +253,15 @@ describe('[F16-REQ-025] queued ops of one letter descend from what this phone wr
     expect(getEntryRow(db, id)?.server_version).toBe('402');
   });
 
+  it('with only a restore-time re-upload queued, a new edit is compared, never based on a pulled version (final review A-M1)', () => {
+    const { db, child } = claimed();
+    const id = synced(db, child, 'Rain.', '500');
+    db.run("INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at) VALUES ('op-r', 0, 'entry.reupload', ?, '{}', ?)", id, ctx.now);
+    edit(db, id, 'Rain, and puddles.');
+    const up = ops(db).find((o) => o.type === 'entry.upsert')!;
+    expect(up.base).toBe('0');
+  });
+
   it('a restore is not a words write: the upsert after it keeps the base its words came from', () => {
     const { db, child } = claimed();
     const id = synced(db, child, 'Snow.');

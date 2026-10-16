@@ -713,16 +713,18 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   let serverMayHold = false;
   let heldOnServer = false;
   let bookId: string | null = null;
-  if (capabilities.sync) {
-    const owner = syncOwner(c.db);
+  // Queueing is local, as every other upload is: a phone that signed in under a server-on build keeps
+  // its queue in an off build, so the erase goes when sync returns (final review A-M2).
+  const owner = syncOwner(c.db);
+  if (owner) {
     const row = getEntryRow(c.db, id);
     if (!row) return false;
-    if (owner && row.author_id !== null && row.author_id !== owner) return false; // only the author erases
+    if (row.author_id !== null && row.author_id !== owner) return false; // only the author erases
     bookId = row.child_id;
-    serverMayHold = owner !== null && row.sync_state !== 'gone' && row.sync_state !== 'erased'
+    serverMayHold = row.sync_state !== 'gone' && row.sync_state !== 'erased'
       && (row.server_version !== null || everSent(c.db, id));
     // A voice-only letter waiting for its words lives on the server as a held row (v8): that row goes too.
-    heldOnServer = owner !== null && (row.held_v != null || heldEverSent(c.db, id));
+    heldOnServer = row.held_v != null || heldEverSent(c.db, id);
   }
   try {
     eraseAudio(uri, id);
@@ -765,17 +767,20 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
 
 /**
  * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when the build syncs (the server owns the clock, spec 2.2 step 7)
- * or when `nowMs` is earlier than the latest recorded launch (a phone clock
- * moved back). Returns how many letters were erased.
+ * nothing when `nowMs` is earlier than the latest recorded launch (a phone
+ * clock moved back). When the build syncs, the server's clock rules every
+ * letter it holds (spec 2.2 step 7), so only letters it never held, or no
+ * longer holds, with nothing queued for them, are erased here, with nothing
+ * sent; otherwise they would wait in Recently deleted forever. Returns how
+ * many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
-  if (capabilities.sync) return 0;
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && nowMs < last) return 0;
   const c = ctx();
+  const cutoff = new Date(nowMs - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of entries.expiredIds(c, new Date(nowMs - SHELF_MS).toISOString())) {
+  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
   return erased;

@@ -1,8 +1,9 @@
 /**
  * TEST STAND-IN, NOT A MIGRATION: the sync_push half of S03's request to S02
  * (docs/adr/0025-sync-protocol-v1.md section 5; WP-F16-14). The objects protocol
- * v1 adds are in sync-v1-standin.sql; this file makes six anchored edits to
- * whatever sync_push the real migrations define last, so the stand-in tracks
+ * v1 adds are in sync-v1-standin.sql; this file makes seven anchored edits to
+ * whatever sync_push the real migrations define last (one of them refuses an upload
+ * that names a past version of a letter that no longer exists), so the stand-in tracks
  * S02's newest body (20261005000000 on develop, 20261015030000 with the R-17
  * gate) and never undoes its hardening. If S02 reshapes sync_push, an anchor
  * goes missing and the server refuses to start, naming it: update the edit, never
@@ -38,6 +39,16 @@ export const SYNC_PUSH_V1_EDITS: SyncPushEdit[] = [
     becomes:
       '          select e.sync_xid, e.text_xid, e.updated_at, e.deleted_at, e.sync_restored_from into cur\n' +
       '            from entries e where e.id = v_id for update;',
+  },
+  {
+    why: 'an upload naming a past version of a letter that no longer exists is gone, never a new insert (the 60 day forget)',
+    anchor: '          v_exists := found;\n',
+    becomes:
+      '          v_exists := found;\n' +
+      "          if not v_exists and v_type = 'entry.upsert' and nullif(o ->> 'base', '') is not null then\n" +
+      "            -- A base proves the server once held this letter: it was erased, and purge_ledger may have forgotten it.\n" +
+      "            raise exception 'this letter was deleted' using errcode = 'SCDEL', detail = 'purged';\n" +
+      '          end if;\n',
   },
   {
     why: 'reset the flags per op',
