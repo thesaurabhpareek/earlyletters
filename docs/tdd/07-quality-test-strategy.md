@@ -558,7 +558,7 @@ Critical path: install (1.5) + mobile (4) = about 5.5 minutes worst case; typica
 - macOS (Xcode pinned): build or reuse the simulator `.app` keyed by `@expo/fingerprint` of native code, so JS-only changes skip the native build; run Maestro E2E-01 to E2E-14 on the SE and current-iPhone simulators; XCUITest accessibility audit; proxy assertions. **F/A** GitHub-hosted macOS runners do not run Docker, so the E2E backend is a dedicated cloud `e2e` Supabase project reset by script plus a PowerSync dev instance (**Q** cost; alternative is a self-hosted Mac mini running both).
 - Failures open an issue labelled by severity; a red nightly blocks G2.
 
-**`release.yml`** on `ios-v*` tags and `rc/*` branches: everything in nightly with no retries; EAS production build; privacy label and `PrivacyInfo.xcprivacy` generation and diff; bundle placeholder scan (`example.com`, scaffold scheme); evidence bundle (JUnit, proxy logs with Asha fixtures only, trace matrix) uploaded as an artifact and summarised in `docs/qa/evidence/`.
+**`release.yml`** on `ios-v*` tags and `rc/*` branches (amended by ADR 0022: built as `release-ios.yml` on `ios-v<x.y.z>-rc.<n>` tags on `release/*` branches; v1.0 runs its tests, typecheck, metadata drift and placeholder scan, and the rest of this list is not yet built): everything in nightly with no retries; EAS production build; privacy label and `PrivacyInfo.xcprivacy` generation and diff; bundle placeholder scan (`example.com`, scaffold scheme); evidence bundle (JUnit, proxy logs with Asha fixtures only, trace matrix) uploaded as an artifact and summarised in `docs/qa/evidence/`.
 
 ### 10.2 Caching
 | Cache | Key | Saves |
