@@ -59,12 +59,18 @@ const PAIRS: Readonly<Record<string, string>> = Object.freeze({
 const AMBIGUOUS_OPENERS = new Set(["'", '’', '”', '»', '›', '＂', '＇']);
 const SPACE_SENSITIVE_CLOSERS = new Set(["'", '’', '”', '＂', '＇']);
 const BEFORE_OPENER = /[\s([{\-–—"“‘«‹「『〝｢]/u;
+/**
+ * A space for quote pairing. JavaScript's \s also matches U+FEFF, an
+ * invisible character: "up﻿’" must still close its quote, or the words
+ * inside lose their protection (found by the F06-REQ-021 property test, 15 Oct).
+ */
+const SPACE = /[^\S﻿]/u;
 
 function opensAt(text: string, i: number): boolean {
   const ch = text[i];
   if (!(ch in PAIRS)) return false;
   const next = text[i + 1] ?? '';
-  if (next === '' || /\s/u.test(next)) return false;
+  if (next === '' || SPACE.test(next)) return false;
   if (!AMBIGUOUS_OPENERS.has(ch)) return true;
   const prev = text[i - 1] ?? '';
   return prev === '' || BEFORE_OPENER.test(prev);
@@ -89,7 +95,7 @@ export function quotedSpans(text: string): Span[] {
     for (let j = i + 1; j < text.length; j++) {
       if (!closers.includes(text[j]) || isWordApostrophe(text, j)) continue;
       // A mark that doubles as an apostrophe closes only right after a word ("dogs' toys" pairs nothing across a space).
-      if (SPACE_SENSITIVE_CLOSERS.has(text[j]) && /\s/u.test(text[j - 1])) continue;
+      if (SPACE_SENSITIVE_CLOSERS.has(text[j]) && SPACE.test(text[j - 1])) continue;
       spans.push({ start: i, end: j + 1 });
       i = j;
       break;

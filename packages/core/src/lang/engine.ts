@@ -17,7 +17,7 @@
  *    parent one untidy word, never put words in their mouth.
  */
 import type { EditLevel } from '../types';
-import { normalizeChars, tokens as wordTokens, type Token } from '../text';
+import { hyphenJoined, normalizeChars, numberDashToHyphen, replaceKeepingNumbers, tokens as wordTokens, type Token } from '../text';
 import { MOOD_CANON } from '../meaning';
 import { ENGLISH_PACK } from './english';
 import { languageInfo } from './languages';
@@ -64,6 +64,9 @@ const BASE_QUOTES = '"“”«»„‟‹›「」『』';
 const BASE_SENTENCE_END = '.!?।॥？！؟';
 const BASE_CLOSERS = `"'”’)]»」』）`;
 const BASE_OPENERS = `"'“‘([«「『（`;
+/** Spaces only (no comma, no mark): two fillers this close are one spoken word ("uh uh", "mm hmm"). */
+const TRAILING_SPACES = /[ \t  ]+$/;
+const LEADING_SPACES = /^[ \t  ]+/;
 
 function escapeClass(chars: string): string {
   return chars.replace(/[\\\]\[^-]/g, '\\$&');
@@ -115,8 +118,9 @@ export function normalizeCharsWith(input: string, house: HousePolicy): string {
   const comma = house.dashTo;
   const c = escapeRe(comma.trim() || ',');
   if (house.dashes === 'replace') {
-    s = s.replace(/(\d)–(\d)/g, '$1-$2');
-    s = s.replace(/\s*[—–]+\s*/g, comma);
+    s = numberDashToHyphen(s); // a range stays a range, never a list (engine 6)
+    // [^\S﻿]: whitespace without U+FEFF, an invisible character never dropped here (engine 6).
+    s = replaceKeepingNumbers(s, /[^\S﻿]*[—–]+[^\S﻿]*/g, comma);
   }
   if (house.quotes === 'straight') {
     s = s.replace(/[‘’′]/g, "'");
@@ -126,10 +130,11 @@ export function normalizeCharsWith(input: string, house: HousePolicy): string {
   if (house.spaces === 'plain') s = s.replace(/[  ]/g, ' ');
   s = s.replace(/­/g, '');
   if (house.dashes === 'replace') {
-    s = s.replace(new RegExp(`${c}\\s*${c}`, 'g'), comma.trim() || ',');
-    s = s.replace(new RegExp(`[ \\t]+${c}`, 'g'), comma.trim() || ',');
-    s = s.replace(new RegExp(`${c}\\s*([.!?。！？؟।])`, 'g'), '$1');
-    s = s.replace(new RegExp(`^${c}\\s*`, 'gm'), '');
+    // None of the tidy steps may join, split or change a number (engine 6).
+    s = replaceKeepingNumbers(s, new RegExp(`${c}[^\\S\\uFEFF]*${c}`, 'g'), comma.trim() || ',');
+    s = replaceKeepingNumbers(s, new RegExp(`[ \\t]+${c}`, 'g'), comma.trim() || ',');
+    s = replaceKeepingNumbers(s, new RegExp(`${c}[^\\S\\uFEFF]*([.!?。！？؟।])`, 'g'), '$1');
+    s = replaceKeepingNumbers(s, new RegExp(`^${c}[^\\S\\uFEFF]*`, 'gm'), '');
   }
   s = s.replace(/[ \t]{2,}/g, ' ');
   return s;
@@ -156,6 +161,7 @@ export class LanguageRules {
   private readonly functionWords: Set<string>;
   private readonly pronouns: Set<string>;
   private readonly kinship: Set<string>;
+  private readonly commonWords: Set<string>;
   private readonly alwaysCap: Set<string>;
   private readonly agreementGroups: Set<string>[];
   private readonly tenseGroups: Set<string>[];
@@ -259,6 +265,7 @@ export class LanguageRules {
     this.functionWords = set(m?.functionWords);
     this.pronouns = set(m?.pronouns);
     this.kinship = set(m?.kinship);
+    this.commonWords = set(m?.commonWords);
     this.tenseGroups = (m?.tenseGroups ?? []).map((g) => strictSet(g));
     this.vowels = m?.vowels ?? '';
     this.minStem = m?.minStem ?? 3;
@@ -508,6 +515,52 @@ export class LanguageRules {
     return this.kinship.has(this.key(word));
   }
 
+  /** A pronoun: the pack's pronoun table (English: hers, myself, someone...). Basic ones are function words. */
+  isPronoun(word: string): boolean {
+    return this.pronouns.has(this.key(word));
+  }
+
+  /** An everyday word that is also a name or nickname (the pack's commonWords: hope, will, grace). */
+  isCommonWord(word: string): boolean {
+    return this.commonWords.has(this.key(word));
+  }
+
+  /**
+   * A word that means something on its own in ordinary speech: a common word
+   * (commonWords) or one of the protected word sets (function words,
+   * pronouns, kinship, negations, modals, numbers). A dictionary term spelled
+   * like one gets no automatic case-only fix (F06-REQ-008, F07 7.2 rule 4).
+   */
+  isEverydayWord(word: string): boolean {
+    return this.isCommonWord(word) || this.isProtectedWord(word);
+  }
+
+  /**
+   * A filler token that is really part of a spoken word, so it is not a filler
+   * (F06-REQ-005, R-01 D6): joined by a hyphen to another word ("uh-uh" no,
+   * "mm-hmm" yes, "uh-oh"), or right next to another filler with only spaces
+   * between them ("uh uh", "mm hmm", "mm mm"), which is how a spoken yes or no
+   * is written. A refusal here keeps one untidy word; a removal could drop a
+   * "no" from a letter. Looks at a small window only (no whole-text pass).
+   */
+  fillerIsPartOfWord(raw: string, start: number, end: number): boolean {
+    if (hyphenJoined(raw, start, end)) return true;
+    const left = raw.slice(Math.max(0, start - 64), start);
+    const gapL = TRAILING_SPACES.exec(left)?.[0] ?? '';
+    if (gapL) {
+      const head = left.slice(0, left.length - gapL.length);
+      const before = this.tokens(head).at(-1);
+      if (before && before.end === head.length && this.isFiller(before.word, true)) return true;
+    }
+    const right = raw.slice(end, end + 64);
+    const gapR = LEADING_SPACES.exec(right)?.[0] ?? '';
+    if (gapR) {
+      const after = this.tokens(right.slice(gapR.length))[0];
+      if (after && after.start === 0 && this.isFiller(after.word, true)) return true;
+    }
+    return false;
+  }
+
   /** Always capitalised wherever it stands (English I). */
   isPronounI(word: string): boolean {
     return this.alwaysCap.has(this.norm(word));
@@ -573,6 +626,8 @@ export class LanguageRules {
         const toks = this.tokens(p);
         const last = toks[toks.length - 1];
         if (!last || !this.isFiller(last.word) || !/^[\s,]*$/.test(p.slice(last.end))) break;
+        // A filler the rules keep ("uh uh", "uh-uh") is a word, so it holds the sentence open (R-01 D6).
+        if (this.fillerIsPartOfWord(p, last.start, last.end)) break;
         p = p.slice(0, last.start).replace(this.stripBeforeWithComma, '');
       }
     }

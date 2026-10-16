@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 5;
+export const ENGINE_VERSION = 6;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -43,15 +43,34 @@ export const ENGINE_VERSION = 5;
 //   नही, मत, ना, न) are guarded. Dictionary terms no longer match the start
 //   of a longer Indic word. ZWJ and ZWNJ stay inside a word. Pinned by
 //   test/golden.test.ts (CORE-08).
-// Pending 6 (2026-10-15, WP-F06-02, not yet bumped): the verifier refuses
-//   more. No edit may add, remove or move a direction mark, joiner or other
-//   invisible character (new reason changes_invisible, R-01 D4); every
-//   Unicode quotation style is counted and protects its words from removals,
-//   dictionary fixes and agreement (R-01 D7); agreement accepts only the
-//   pack's closed verb and article groups, never the generic -s rule, so a
-//   noun's number never changes (R-01 D9). Golden corpus output is
-//   unchanged. F06-REQ-018 moves ENGINE_VERSION to 6 once, with WP-F06-03
-//   and WP-F06-05, and records golden/engine-v6.json then.
+// 6 (2026-10-15): the R-01 launch gate for the alpha (WP-F06-02, WP-F06-03).
+//   Every change refuses more or keeps more as said: engine 6 accepts no
+//   edit that engine 5 refused.
+//   - No edit may add, remove or move a direction mark, joiner or other
+//     invisible character (new reason changes_invisible, R-01 D4).
+//   - Every Unicode quotation style is counted and protects its words from
+//     removals, dictionary fixes and agreement (R-01 D7).
+//   - Agreement accepts only the pack's closed verb and article groups, never
+//     the generic -s rule, so a noun's number never changes (R-01 D9).
+//   - A filler that is part of a word is not a filler: "uh-uh" (no),
+//     "mm-hmm" (yes), "uh-oh", and two fillers with only a space between
+//     ("uh uh"). No removal takes part of a hyphenated word (R-01 D6).
+//   - A dictionary term spelled like an everyday word (the pack's new
+//     meaning.commonWords, or a protected word) gets no case-only fix: "I hope"
+//     and "we will" stay as said for a child named Hope or Will (R-01 D10).
+//   - One family name never becomes another: a fix whose original is another
+//     term, or another term's heard-as, is refused (R-01 D13).
+//   - A taught heard-as that is a negation, modal, number, lone pronoun or
+//     function word, or a kinship word taught to a child, nickname, place or
+//     word term, is never applied ("no" taught for Noa; found 15 Oct).
+//   - A dash between two numbers becomes a hyphen, not a comma, so "2 – 3
+//     hours" is no longer "2, 3 hours" (found 15 Oct; R-01 D14 remains open
+//     for the untracked character changes themselves, WP-F06-05).
+//   - The English-only punctuation provider adds no "." after 。 ？ ！ ؟ (3 Oct).
+//   Golden corpus: every engine 5 case is unchanged; R-01 cases added and
+//   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
+//   development build keeps its text (no saved letter is ever re-cleaned);
+//   WP-F06-12 audits their stored edits once it ships.
 
 export interface CleanOptions {
   level: EditLevel;

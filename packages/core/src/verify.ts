@@ -26,10 +26,11 @@
  * edit is refused as `not_vetted_for_language`.
  */
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
-import { frozenSet, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
+import { frozenSet, hyphenCompounds, hyphenJoined, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
 import { overlaps, quotedSpans } from './protect';
 import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarkCount } from './meaning';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
+import { heardAsCarriesMeaning, isEverydayTerm, targetsOtherTerm } from './lang/dictionary';
 
 /** Starting values. Tune on real recordings (PRD v2 section 24, experiment 2). */
 export const CEILING_RATIO = 0.15;
@@ -134,6 +135,20 @@ function joinsWords(raw: string, e: Edit, R: LanguageRules): boolean {
   const rep = e.replacement;
   if (rep === '') return R.joins(left, right);
   return R.joins(left, rep[0]) || R.joins(rep[rep.length - 1], right);
+}
+
+/**
+ * Does `e` change the hyphenated words around it? Compared in a window of 64
+ * characters either side, so the check stays cheap on a long letter; the
+ * window edges cut both texts the same way.
+ */
+function splitsHyphenated(raw: string, e: Edit): boolean {
+  const a = Math.max(0, e.start - 64);
+  const b = Math.min(raw.length, e.end + 64);
+  const before = raw.slice(a, b);
+  if (!/[-‐‑]/.test(before) && !/[-‐‑]/.test(e.replacement)) return false;
+  const after = raw.slice(a, e.start) + e.replacement + raw.slice(e.end, b);
+  return hyphenCompounds(before).join('|') !== hyphenCompounds(after).join('|');
 }
 
 /** The edit's span widened to whole words, before and after the edit. */
@@ -306,8 +321,17 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (!entry) return 'stt_fix_not_dictionary';
   const original = e.original.trim();
   const o = R.norm(original);
-  // Dictionary-backed: a learned mishearing the parent taught, or the term in another case.
-  if (o === R.norm(entry.term) || entry.heardAs.some((h) => R.norm(h) === o)) return null;
+  // A name fix never changes a sentence's type, whatever its path (quotation marks are counted for every edit in checkEdit).
+  if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
+  // One family name never becomes another (F06-REQ-014, R-01 D13), whatever the
+  // source, and before any dictionary-backed shortcut (F07 7.2 rule 2).
+  if (targetsOtherTerm(e.original, rep, ctx.dictionary, R)) return 'stt_fix_protected_word';
+  // The term in another case. Not for a term spelled like an everyday word:
+  // "I hope" stays as said for a child named Hope, "we will" for Will (F06-REQ-008, R-01 D10).
+  if (o === R.norm(entry.term)) return isEverydayTerm(entry.term, R) ? 'stt_fix_protected_word' : null;
+  // A learned mishearing the parent taught, unless it carries meaning on its own:
+  // a taught "no" must never erase a negation (F07 7.2 rule 5).
+  if (entry.heardAs.some((h) => R.norm(h) === o)) return heardAsCarriesMeaning(original, entry.kind, R) ? 'stt_fix_protected_word' : null;
   // Otherwise only a near-sounding word that is not itself meaningful on its
   // own, and only one the recogniser took for a name: capitalised, and not
   // merely because it starts a sentence. A lowercase word ("moon", "mirror")
@@ -445,6 +469,17 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
     if (joinsWords(raw, e, R)) return 'changes_word';
   }
 
+  // A hyphenated word is one word: no removal takes part or all of "uh-uh"
+  // (no), "mm-hmm" (yes), "uh-oh", "so-so" or "bye-bye" (F06-REQ-005, R-01 D6).
+  if (REMOVAL_TYPES.has(e.type)) {
+    for (const t of R.tokens(e.original)) {
+      if (hyphenJoined(raw, e.start + t.start, e.start + t.end)) return e.type === 'filler' ? 'not_a_filler' : 'splits_word';
+    }
+  } else if ((e.type === 'punctuation' || e.type === 'paragraph') && splitsHyphenated(raw, e)) {
+    // Nor may punctuation or whitespace split one ("uh-oh" -> "uh -oh", "so-so" -> "so so"): found by the F06-REQ-021 property test.
+    return 'changes_word';
+  }
+
   let reason: RejectReason | null = null;
   switch (e.type) {
     case 'filler': {
@@ -452,14 +487,16 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       // Only words on the filler list may be removed under this label.
       // A filler said as its own sentence ("Hmm.") goes with its end mark.
       // Offered-only fillers ("mm" that may mean yes) come back only as
-      // rule edits the parent accepted, never from a model.
+      // rule edits the parent accepted, never from a model. Two fillers with
+      // only a space between them are a spoken yes or no ("uh uh", "mm hmm"):
+      // not fillers (F06-REQ-005, R-01 D6).
       const removed = R.tokens(e.original);
       const withSuggest = e.source === 'rule';
-      if (
-        !reason &&
-        (removed.length === 0 ||
-          !removed.every((t) => R.isFiller(t.word.toLowerCase(), withSuggest) && R.standsAlone(raw, e.start + t.start, e.start + t.end)))
-      ) {
+      const isRemovableFiller = (t: Token) =>
+        R.isFiller(t.word.toLowerCase(), withSuggest) &&
+        R.standsAlone(raw, e.start + t.start, e.start + t.end) &&
+        !R.fillerIsPartOfWord(raw, e.start + t.start, e.start + t.end);
+      if (!reason && (removed.length === 0 || !removed.every(isRemovableFiller))) {
         reason = 'not_a_filler';
       }
       // Spanish: a filler question "¿eh?" goes with both of its marks, never half.
@@ -542,8 +579,12 @@ function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, level: E
   const edited = raw.slice(0, e.start) + e.replacement + raw.slice(e.end);
   return changes.some((c) => {
     if (!c.raised) return false;
-    if (R.isPronounI(wordAt(edited, e.start + c.at).word)) return false;
-    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), level);
+    const word = wordAt(edited, e.start + c.at).word;
+    if (R.isPronounI(word)) return false;
+    // A capital on a filler means the rules keep that filler (the second "uh"
+    // of "Uh uh"), so the fillers before it are kept too: check the prefix as
+    // said, with no filler skipping (engine 6, found by the F06-REQ-021 property test).
+    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), R.isFiller(word) ? 'verbatim' : level);
   });
 }
 
