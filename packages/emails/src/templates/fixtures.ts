@@ -33,7 +33,7 @@ export const previewValues: EmailValues = {
 
   // links
   appUrl: `${SITE}/open`,
-  inviteUrl: `${SITE}/i/preview-not-a-real-invite`, // coparent-invite (universal link, 7 days)
+  inviteUrl: `${SITE}/j#t=preview-not-a-real-invite`, // coparent-invite (universal link, 7 days)
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
   confirmDeleteUrl: `${SITE}/delete-account/confirm#token=preview-not-a-real-token`, // deletion-confirm (web route to build)
   documentUrl: `${SITE}/privacy`,

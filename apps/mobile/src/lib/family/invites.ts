@@ -40,7 +40,7 @@ export type FamilyClient = Pick<SupabaseClient, 'rpc' | 'from'>;
 export interface CreatedInvite {
   /** The invite's id on the server; null when an older server made it (it does not return the id). */
   id: string | null;
-  /** The link to share: https://<brand host>/i/<token>. Never stored, logged or tracked. */
+  /** The link to share: https://<brand host>/j#t=<token> (the token in the fragment, B-NFR-002). Never stored, logged or tracked. */
   url: string;
   /** `device`: the phone made the token (D5). `server`: an older server made it. */
   madeBy: 'device' | 'server';

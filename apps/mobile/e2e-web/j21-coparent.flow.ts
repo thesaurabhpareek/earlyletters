@@ -19,7 +19,7 @@ import { ASHA_BOOK, MAMA, mockServer, PAPA, pgError, stubShareSheet, type MockSe
 const ON = () => process.env.E2E_WEB_ON_URL!;
 // A device-made invite token: 43 base64url characters (32 random bytes).
 const TOKEN = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
-const LINK = `https://earlyletters.com/i/${TOKEN}`;
+const LINK = `https://earlyletters.com/j#t=${TOKEN}`;
 
 async function openOn(page: Page, path = '/') {
   await page.goto(`${ON()}${path}`);
@@ -121,7 +121,7 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await expect(app.getByText('Invite ready. It shows on the Family tab until they join.')).toBeVisible();
   const shared = (await app.evaluate(() => (window as unknown as { __shared: { text?: string; url?: string }[] }).__shared)) ?? [];
   const message = JSON.stringify(shared);
-  const token = /\/i\/([A-Za-z0-9_-]{43})/.exec(message)?.[1];
+  const token = /\/j#t=([A-Za-z0-9_-]{43})/.exec(message)?.[1];
   expect(token, 'the share sheet got a link with a device-made token').toBeTruthy();
   const sent = m.rpcCalls('create_child_invite');
   expect(sent).toHaveLength(1);

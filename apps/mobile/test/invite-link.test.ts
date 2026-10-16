@@ -24,70 +24,83 @@ const ORIGIN = brand.web.origin; // https://earlyletters.com
 // What create_child_invite returns today: two v4 UUIDs without dashes, 64 hex characters.
 const TOKEN = '3f2a9c1e5b7d4e8fa1c2d3e4f5a6b7c89d0e1f2a3b4c5d6e7f8091a2b3c4d5e6';
 
-describe('invite links (PRD A F7, B F5)', () => {
-  it('builds the shared link on the brand origin', () => {
-    expect(inviteUrl(TOKEN, ORIGIN)).toBe(`https://earlyletters.com/i/${TOKEN}`);
-    expect(inviteUrl(TOKEN, `${ORIGIN}/`)).toBe(`https://earlyletters.com/i/${TOKEN}`);
+describe('invite links (PRD A F7, B F5; PRD V2 F11 /j#t=)', () => {
+  it('builds the shared link on the brand origin, the token in the fragment', () => {
+    expect(inviteUrl(TOKEN, ORIGIN)).toBe(`https://earlyletters.com/j#t=${TOKEN}`);
+    expect(inviteUrl(TOKEN, `${ORIGIN}/`)).toBe(`https://earlyletters.com/j#t=${TOKEN}`);
     expect(() => inviteUrl('short', ORIGIN)).toThrow('invite_token_invalid');
+  });
+
+  it('never puts the token where a server sees it (path or query)', () => {
+    const u = inviteUrl(TOKEN, ORIGIN);
+    expect(u.slice(0, u.indexOf('#'))).not.toContain(TOKEN);
   });
 
   it('round-trips: the link it builds is the link it reads', () => {
     expect(parseInviteUrl(inviteUrl(TOKEN, ORIGIN), ORIGIN)).toBe(TOKEN);
   });
 
-  it('accepts a trailing slash, the www host and stray query or fragment', () => {
-    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}/`, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteUrl(`https://www.earlyletters.com/i/${TOKEN}`, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}?utm_source=x#y`, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteUrl(`HTTPS://EarlyLetters.com/i/${TOKEN}`, ORIGIN)).toBe(TOKEN);
+  it('accepts a trailing slash, the www host, a stray query and other fragment parameters', () => {
+    expect(parseInviteUrl(`https://earlyletters.com/j/#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://www.earlyletters.com/j#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://earlyletters.com/j?utm_source=x#t=${TOKEN}&y=1`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`HTTPS://EarlyLetters.com/j#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
   });
 
   it('accepts future base64url tokens (32 random bytes)', () => {
     const b64 = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
     expect(isInviteToken(b64)).toBe(true);
-    expect(parseInviteUrl(`https://earlyletters.com/i/${b64}`, ORIGIN)).toBe(b64);
+    expect(parseInviteUrl(`https://earlyletters.com/j#t=${b64}`, ORIGIN)).toBe(b64);
   });
 
   it('[TDD 04 3.1.6] refuses anything that is not an https link on the brand host', () => {
-    expect(parseInviteUrl(`http://earlyletters.com/i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`scribe://i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.app/i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://evil.example/i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.com.evil.example/i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.com@evil.example/i/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://evil.example@earlyletters.com/i/${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`http://earlyletters.com/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`scribe://j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.app/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://evil.example/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com.evil.example/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com@evil.example/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://evil.example@earlyletters.com/j#t=${TOKEN}`, ORIGIN)).toBeNull();
+  });
+
+  it('refuses a token in the path or the query, and the old /i/<token> form', () => {
+    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/j/${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
   });
 
   it('refuses malformed paths and tokens', () => {
-    expect(parseInviteUrl('https://earlyletters.com/i/', ORIGIN)).toBeNull();
-    expect(parseInviteUrl('https://earlyletters.com/i/abc', ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}/extra`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.com/invite/${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}%00`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl('https://earlyletters.com/j', ORIGIN)).toBeNull();
+    expect(parseInviteUrl('https://earlyletters.com/j#t=', ORIGIN)).toBeNull();
+    expect(parseInviteUrl('https://earlyletters.com/j#t=abc', ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/j/extra#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/invite#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/j#t=${TOKEN}%00`, ORIGIN)).toBeNull();
     expect(parseInviteUrl('not a url', ORIGIN)).toBeNull();
   });
 });
 
 describe('"I was invited": pasted text (A-REQ-029)', () => {
   it('finds the link inside a whole forwarded message', () => {
-    const msg = `Hi, it's Papa. I started a book of letters for Asha. Join me here: https://earlyletters.com/i/${TOKEN} see you soon`;
+    const msg = `Hi, it's Papa. I started a book of letters for Asha. Join me here: https://earlyletters.com/j#t=${TOKEN} see you soon`;
     expect(parseInviteInput(msg, ORIGIN)).toBe(TOKEN);
   });
 
   it('accepts the bare link, the token alone and surrounding spaces', () => {
-    expect(parseInviteInput(`  https://earlyletters.com/i/${TOKEN}  `, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(`  https://earlyletters.com/j#t=${TOKEN}  `, ORIGIN)).toBe(TOKEN);
     expect(parseInviteInput(`\n${TOKEN}\n`, ORIGIN)).toBe(TOKEN);
   });
 
   it('skips lookalike links and takes the first real one', () => {
-    const msg = `https://earlyletters.app/i/${TOKEN.replace('3f', 'aa')} or https://earlyletters.com/i/${TOKEN}.`;
+    const msg = `https://earlyletters.app/j#t=${TOKEN.replace('3f', 'aa')} or https://earlyletters.com/j#t=${TOKEN}.`;
     expect(parseInviteInput(msg, ORIGIN)).toBe(TOKEN);
   });
 
   it('returns null when nothing usable is there', () => {
     expect(parseInviteInput('', ORIGIN)).toBeNull();
     expect(parseInviteInput('hello', ORIGIN)).toBeNull();
-    expect(parseInviteInput(`scribe://i/${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteInput(`scribe://j#t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteInput(`https://earlyletters.com/i/${TOKEN}`, ORIGIN)).toBeNull();
   });
 });
 

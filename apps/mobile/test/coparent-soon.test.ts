@@ -67,7 +67,7 @@ describe('deep links with server features off', () => {
   const on = { serverFeatures: true, gateStopped: false };
 
   it('an invite link opens coming soon and keeps no token', () => {
-    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
     expect(link.kind).toBe('invite');
     expect(planIncomingLink(link, { ...off, path })).toEqual({ route: '/invite', keepInviteToken: false, keepAuthLink: false });
@@ -75,7 +75,7 @@ describe('deep links with server features off', () => {
   });
 
   it('the 18+ stop still wins', () => {
-    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
     expect(planIncomingLink(link, { serverFeatures: false, gateStopped: true, path }).route).toBe('/');
   });
@@ -256,7 +256,7 @@ describe('server features on: the shared flows are live (D-100; option B for the
   });
 
   it('[A-REQ-028] an invite link keeps its token for the join sheet; the 18+ stop still drops it', () => {
-    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
     expect(planIncomingLink(link, { serverFeatures: true, gateStopped: false, path })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
     expect(planIncomingLink(link, { serverFeatures: true, gateStopped: true, path })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });

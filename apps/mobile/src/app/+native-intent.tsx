@@ -7,7 +7,7 @@
  * - https://earlyletters.com/auth/callback#token_hash=...  -> token hash kept
  *   in memory, route /sign-in/verify
  * - scribe://auth/callback (website fallback, no secret)    -> /sign-in/code
- * - https://earlyletters.com/i/<token>                      -> token to the
+ * - https://earlyletters.com/j#t=<token>                    -> token to the
  *   Keychain first (A-REQ-028), route /invite
  * - Google's own redirect scheme                            -> left alone
  *

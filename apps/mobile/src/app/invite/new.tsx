@@ -4,7 +4,7 @@
  * v1.0, B1). `/invite/new?childId=<id>` from the Family tab or a child's settings.
  *
  * The phone makes the invite (lib/family/invite-draft.logic.ts, F11 D5): an id, a 32-byte token
- * and its hash. Only the hash goes to the server; the link https://<brand host>/i/<token> goes
+ * and its hash. Only the hash goes to the server; the link https://<brand host>/j#t=<token> goes
  * straight to the share sheet and is never stored, shown again, logged or tracked. One draft per
  * sheet and signature, so a retry or a second tap is one invite (F11-U15, G-07).
  *
