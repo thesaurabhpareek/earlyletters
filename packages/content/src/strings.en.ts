@@ -54,6 +54,13 @@ export const en = {
     andJoin: "{a} and {b}",
   },
 
+  // Tab titles (experience pass S57): they move here from apps/mobile/src/app/(tabs)/_layout.tsx.
+  tabs: {
+    tonight: "Tonight",
+    book: "Book",
+    family: "Family",
+  },
+
   onboarding: {
     welcome: {
       title: "{app}",
@@ -238,7 +245,8 @@ export const en = {
     // `book.waitingForWords`; read back reuses `tonight.afterSave.reviewButton`.
     draft: {
       held: "Waiting to be kept.",
-      swept: "Kept when the app closed.",
+      // Not "Kept": that is the Keep step's word, and this card is not kept yet.
+      swept: "Recorded before the app closed.",
       typedA11y: "A letter you started, {date}.",
       pickUpButton: "Pick it up",
       openButton: "Open",
@@ -317,7 +325,7 @@ export const en = {
     },
     emptyTake: {
       title: "Nothing was recorded",
-      body: "The take ended before any sound came in.",
+      body: "The recording ended before any sound came in.",
     },
     // Review opened with nothing to read back (a stale link, S23). `errors.generic` stays for real failures.
     noDraft: {
@@ -357,7 +365,7 @@ export const en = {
     voiceOnlyButton: "Keep the recording",
     waiting: {
       title: "Your voice is kept",
-      body: "The words follow after the one-time download.",
+      body: "Your words follow once the download is done.",
     },
     // Development builds only: the sample transcriber's words are never saved.
     dev: {
@@ -470,6 +478,8 @@ export const en = {
     thisMonthLabel: "This month",
     signature: "From {signsAs}",
     together: "From {signsAs} and {child}",
+    // A month opener's signature line when both parents wrote that month (S26).
+    fromTwo: "From {a} and {b}",
     provenance: {
       spokenFixed: "Spoken, with small fixes",
       spokenExact: "Spoken, exactly as said",
@@ -478,6 +488,8 @@ export const en = {
     hearLink: "Hear it in {signsAs}'s voice",
     hearShort: "Hear {signsAs}",
     recordingOnPhone: "Recording kept on this phone",
+    // The letter page when encrypted backup holds the recording too (S27; option B, D-100, D-102). P8 shows it.
+    recordingBackedUp: "Recording kept on this phone and backed up",
     // v1.0: recordings stay on the phone that made them (D-059), so a co-parent's voice is on their own phone.
     recordingElsewhere: "Recording kept on {signsAs}'s phone",
     privateLabel: "Private",
@@ -737,6 +749,14 @@ export const en = {
       keepHelp: "Your voice is saved with each letter, on this phone.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       onPhoneTitle: "Kept on this phone",
       onPhoneBody: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own.",
+      // Option B (D-100, D-102; experience pass S42): the Recordings card with our encrypted backup off, and on.
+      // Nothing shows these until P8 builds the backup screens.
+      onPhoneBodyBackupOff: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Our encrypted backup can keep them too, so they come back on a new phone.",
+      backedUpTitle: "Kept on this phone and backed up",
+      // Disclosure text with "we" (D-102, counsel item C7): it names the recovery key we hold. Counsel must approve it
+      // before any screen shows it; experience-pass.test.ts allows its "we" for that reason only.
+      backedUpBody: "Recordings are kept on this phone and in our encrypted backup. We hold a recovery key under strict, logged access, so they can come back on a new phone. We never listen to them, sell them or use them to train models.",
+      exportFooter: "Export any time to keep a copy of your own.",
       storageUsed: "{count} MB used on this phone",
       // Audio the launch sweep found with no letter while no book existed (TDD 01 3.2.4). Never deleted.
       orphansTitle: "Recordings without a letter",
@@ -913,6 +933,8 @@ export const en = {
       hideLabel: "Hide this book",
       // Names no one else: hiding is kept on this phone today (store.hideChild does not sync it).
       hideBody: "Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.",
+      // With a co-parent in the book (S46): hiding stays on this person's phone. {coParent} is their name.
+      hideShared: "Only for you. {coParent} still sees {child}'s book as before.",
       showButton: "Show this book again",
       hiddenTitle: "Hidden books",
       hiddenEmpty: "No hidden books.",
@@ -1000,7 +1022,7 @@ export const en = {
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.
     crash: {
-      title: "This screen could not be shown",
+      title: "This page did not open",
       body: "Your letters and recordings are safe on this phone.",
       tryAgainButton: "Try again",
       tonightButton: "Go to Tonight",
@@ -1014,13 +1036,13 @@ export const en = {
     // The book could not be opened at launch (database open or update step failed). Never deletes anything.
     launch: {
       title: "The book could not open",
-      body: "Your letters and recordings are safe on this phone. Nothing has been removed.",
+      body: "Your letters and recordings are safe on this phone.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "There are no recordings or files on this phone to export.",
-      exportFailed: "The export could not be made, and nothing was changed. Your files are still on this phone.",
+      exportNothing: "This phone has no recordings or files to export.",
+      exportFailed: "That export did not work. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
     },
@@ -1091,9 +1113,9 @@ export const en = {
   familyTab: {
     membersTitle: "Who writes to {child}",
     youLabel: "You",
-    emptyTitle: "Just you, for now.",
-    emptyBody: "Letters are lovelier with more voices.",
-    inviteNeedsSignIn: "Inviting {child}'s other parent needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
+    emptyTitle: "Just you, for now.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
+    emptyBody: "Letters are lovelier with more voices.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
+    inviteNeedsSignIn: "Inviting {child}'s other parent needs an account, so they can write from their own phone. Sign in arrives in a coming update.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     rolesTitle: "Two ways to join", // v1.1 (one way in v1.0: co-parent)
     coParentLabel: "Co-parent",
     coParentBody: "Writes to {child} and reads the whole book, as an equal.",
@@ -1255,7 +1277,8 @@ export const en = {
 
 // Retired 3 Oct 2026 (bring back from git history if the feature returns):
 // - book.recordingBackedUp, settings.recordings.backedUpTitle and backedUpBody, errors.backupFailed:
-//   no recording upload or backup in v1.0 (D-059).
+//   no recording upload or backup in v1.0 (D-059). The first three returned on 16 Oct 2026 with new words
+//   (experience pass, option B: D-100, D-102); errors.backupFailed has not.
 // - settings.backup.* (Encrypted backup: on, off, turn on, last backed up) and settingsMore.backupNotYet:
 //   removed 4 Oct 2026 (D-085 amends D-073): our own backup needs sign-in and a server, so no claim until then.
 // - settings.privacy.aiLabel: cloud transcription is v1.1 (ROADMAP).

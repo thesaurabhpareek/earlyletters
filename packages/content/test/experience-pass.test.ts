@@ -181,7 +181,25 @@ const ADDED = [
   'en.childrenExtra.edit.born.title',
   'en.childrenExtra.edit.born.hideButton',
   'en.children.add.ctaShort',
+  // Experience pass v1.1 (spec section 6, P0 table): option B and the tab titles.
+  'en.book.fromTwo',
+  'en.book.recordingBackedUp',
+  'en.settings.recordings.onPhoneBodyBackupOff',
+  'en.settings.recordings.backedUpTitle',
+  'en.settings.recordings.backedUpBody',
+  'en.settings.recordings.exportFooter',
+  'en.children.settings.hideShared',
+  'en.tabs.tonight',
+  'en.tabs.book',
+  'en.tabs.family',
 ];
+
+/**
+ * Touched keys whose "we" is allowed although they are not one of the sanctioned promises. Disclosure text only:
+ * backedUpBody names the recovery key we hold (D-102, counsel item C7). Counsel must approve it before any screen
+ * shows it; until then it is not registered and may still change.
+ */
+const WE_ALLOWED = new Set(['en.settings.recordings.backedUpBody']);
 
 /**
  * Section 4 CHG keys that keep their old words for now, and who switches them. Screen holds: today's screen would
@@ -245,6 +263,10 @@ const RETIRED = [
   'en.childrenExtra.edit.born.offer',
   'en.children.add.body',
   'en.readTogether.endOfMonthAlt',
+  // Experience pass v1.1 (S57): the Family tab's coming-soon words.
+  'en.familyTab.emptyTitle',
+  'en.familyTab.emptyBody',
+  'en.familyTab.inviteNeedsSignIn',
 ];
 
 /**
@@ -409,8 +431,12 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
 describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
   it('says "we" only inside the sanctioned promises (principle 2)', () => {
     const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
-    const bad = TOUCHED.filter((l) => /\bwe\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)));
+    const bad = TOUCHED.filter(
+      (l) => !WE_ALLOWED.has(l.path) && /\bwe\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
+    );
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // Every allowed key is a touched key, so the list cannot hide a stale exception.
+    for (const key of WE_ALLOWED) expect(ADDED.includes(key) || CHANGED.includes(key), key).toBe(true);
   });
 
   it('never says tidy, clean, correct, edit or improve (BRAND.md glossary)', () => {
