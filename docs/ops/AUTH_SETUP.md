@@ -326,7 +326,7 @@ Run on a real iPhone with a preview build that has every variable from section 8
 
 ## 12. What only the founder can still do (15 Oct 2026)
 
-The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an agent (no agent sets a secret, applies a migration, deploys a function or touches a dashboard: COORDINATION section 6). Do them on staging first, then production. Until the R-17 gate passes (D-089; `docs/security/REVIEW_R17_AUTH.md`), only the founding family signs in, on builds made with `EXPO_PUBLIC_SERVER_FEATURES=on`; every store profile stays `off`.
+The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an agent (no agent sets a secret, applies a migration, deploys a function or touches a dashboard: COORDINATION section 6). Do them on staging first, then production. Until the R-17 gate passes (D-100; `docs/security/REVIEW_R17_AUTH.md`), only the founding family signs in, on builds made with `EXPO_PUBLIC_SERVER_FEATURES=on`; every store profile stays `off`.
 
 | Order | Task | Steps here | Blocks |
 |---|---|---|---|
@@ -335,7 +335,7 @@ The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an ag
 | 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
 | 4 | **FT-11** `apple-token` | Apply migration `20261004200000` through `deploy-db.yml` if it is not applied yet, and S02's `20261015000000` (the database half of the apple-token limit, `rate_hit('apple_token')`) when its PR merges; set `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`, `TOKEN_KEK_V1` (2.7; the purge worker reads the same); leave `APPLE_EXTRA_CLIENT_IDS` unset (not read yet; see 2.7); `npx supabase functions deploy apple-token --use-api` | Apple token revocation at deletion (App Store 5.1.1(v)) |
 | 5 | Device checks on a switch-on preview build, founding family only | 11.1, 11.3, 11.9 (needs a production-bundle build until the purge worker reads `APPLE_EXTRA_CLIENT_IDS`), 11.10 | The R-17 sign-off |
-| 6 | Read and sign the R-17 auth items, with S02's items, in one shared review | `docs/security/REVIEW_R17_AUTH.md` | Anyone outside the family signing in (D-089) |
+| 6 | Read and sign the R-17 auth items, with S02's items, in one shared review | `docs/security/REVIEW_R17_AUTH.md` | Anyone outside the family signing in (D-100) |
 
 ## Sources (opened 3 Oct 2026)
 

@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * The kill path (lib/capabilities.ts, D-089: "the switch stays as the kill
+ * The kill path (lib/capabilities.ts, D-100: "the switch stays as the kill
  * path"; 08-delivery 8.3 item 1). With EXPO_PUBLIC_SERVER_FEATURES off,
  * nothing BL-347 and BL-330 added runs: no Keychain read or write for the
  * pending-request note, no GET /verify, no apple-token call, no crypto global
