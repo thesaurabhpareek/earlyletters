@@ -15,6 +15,7 @@
 import {
   base64ToBytes,
   canonicalJson,
+  ENDPOINTS,
   parseContentBundle,
   parsePackManifest,
   parseRemoteConfig,
@@ -33,8 +34,11 @@ import {
 } from '../../packages/api/src/index';
 import { validatePackJson, LANGUAGE_CODES, type LanguageCode } from '../../packages/core/src/lang/index';
 import type { Prompt } from '../../packages/core/src/prompts';
+import { SPEECH_MODELS, type SpeechModel } from '../../apps/mobile/src/lib/models/catalog';
 
 export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';
+/** Signed documents change in place, so phones and the CDN must revalidate every time (the signature, not the cache, is the trust). */
+export const DOCUMENT_CACHE = 'no-cache';
 
 // ---------------------------------------------------------------------------
 // Signing key
@@ -46,6 +50,24 @@ export interface SigningKey {
 }
 
 /**
+ * The two lines `scripts/packs/keygen.mjs` prints for the password manager
+ * (`EL_SIGNING_KEY_ID=...`, `EL_SIGNING_KEY=...`), read back from a file the
+ * founder keeps outside the repo (`--key-file`). Blank lines, `#` comments,
+ * an `export ` prefix and quotes around the value are allowed.
+ */
+export function parseKeyFile(text: string): { EL_SIGNING_KEY?: string; EL_SIGNING_KEY_ID?: string } {
+  const out: { EL_SIGNING_KEY?: string; EL_SIGNING_KEY_ID?: string } = {};
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim().replace(/^export\s+/, '');
+    if (!line || line.startsWith('#')) continue;
+    const m = /^(EL_SIGNING_KEY_ID|EL_SIGNING_KEY)\s*=\s*(.*)$/.exec(line);
+    if (!m) continue;
+    out[m[1] as 'EL_SIGNING_KEY' | 'EL_SIGNING_KEY_ID'] = m[2].trim().replace(/^(['"])(.*)\1$/, '$2');
+  }
+  return out;
+}
+
+/**
  * Reads the signing key from the environment: `EL_SIGNING_KEY` (32-byte
  * Ed25519 seed, standard base64) and `EL_SIGNING_KEY_ID`. Refuses a key the
  * app does not trust, so nothing can be published that phones would reject.
@@ -53,7 +75,7 @@ export interface SigningKey {
 export function readSigningKey(env: Record<string, string | undefined>, trusted: readonly TrustedKey[]): SigningKey {
   const raw = env.EL_SIGNING_KEY?.trim();
   const keyId = env.EL_SIGNING_KEY_ID?.trim();
-  if (!raw || !keyId) throw new Error('EL_SIGNING_KEY and EL_SIGNING_KEY_ID must be set (see docs/adr/0016, "Signing key").');
+  if (!raw || !keyId) throw new Error('EL_SIGNING_KEY and EL_SIGNING_KEY_ID must be set, or pass --key-file (docs/ops/PACKS_HOSTING.md, "Signing key").');
   const secret = base64ToBytes(raw);
   if (!secret || secret.length !== 32) throw new Error('EL_SIGNING_KEY is not a 32-byte base64 Ed25519 seed.');
   const pub = publicKeyFor(secret);
@@ -157,8 +179,8 @@ export function buildRemoteConfig(source: unknown, version: number, generatedAt:
   return r.value;
 }
 
-/** Paths in `given` that the parsed value does not keep exactly (unknown keys, or values replaced by a fallback). */
-function ignoredPaths(given: unknown, kept: unknown, path = '$'): string[] {
+/** Paths in `given` that the parsed value does not keep exactly (unknown keys, or values replaced by a fallback). Also used by `verify` (s3.ts). */
+export function ignoredPaths(given: unknown, kept: unknown, path = '$'): string[] {
   if (given && typeof given === 'object' && !Array.isArray(given)) {
     if (!kept || typeof kept !== 'object') return [path];
     return Object.entries(given as Record<string, unknown>).flatMap(([k, v]) =>
@@ -246,4 +268,208 @@ export function uploadCommands(files: readonly BuiltFile[], bucket: string): str
       ? `npx wrangler r2 object put ${bucket}/${f.objectKey} --file dist/packs/${f.objectKey} --content-type ${f.contentType} --cache-control "${IMMUTABLE_CACHE}" --remote`
       : `rclone copyto dist/packs/${f.objectKey} r2:${bucket}/${f.objectKey} --header-upload "Cache-Control: ${IMMUTABLE_CACHE}"`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Signed documents on the static pack host (D-097)
+
+export interface DocumentObject {
+  objectKey: string;
+  text: string;
+}
+
+/**
+ * The signed documents at the object keys the app requests from
+ * EXPO_PUBLIC_DOCS_BASE_URL (packages/api ENDPOINTS paths without the leading
+ * slash). The query string (`?locale=en`) is not part of an R2 object key.
+ */
+export function documentObjects(docs: { remoteConfig: string | null; packManifest: string | null; contentEn: string | null }): DocumentObject[] {
+  const key = (path: string) => path.replace(/^\/+/, '');
+  const out: DocumentObject[] = [];
+  if (docs.remoteConfig) out.push({ objectKey: key(ENDPOINTS.remoteConfig.path), text: docs.remoteConfig });
+  if (docs.packManifest) out.push({ objectKey: key(ENDPOINTS.packManifest.path), text: docs.packManifest });
+  if (docs.contentEn) out.push({ objectKey: key(ENDPOINTS.contentBundle.path), text: docs.contentEn });
+  return out;
+}
+
+export function documentUploadCommands(docs: readonly DocumentObject[], bucket: string): string[] {
+  return docs.map(
+    (d) => `npx wrangler r2 object put ${bucket}/${d.objectKey} --file dist/packs/${d.objectKey} --content-type application/json --cache-control "${DOCUMENT_CACHE}" --remote`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Static release directory (docs/ops/PACKS_HOSTING.md)
+// ---------------------------------------------------------------------------
+
+/**
+ * Where each signed document lives on a static host, so that
+ * `EXPO_PUBLIC_DOCS_BASE_URL` + the path the app already requests
+ * (`ENDPOINTS` in packages/api) is a plain file. Same keys as
+ * `documentObjects` above (one rule for `all` and `release`), served with
+ * `DOCUMENT_CACHE`: a document changes in place, so every cache revalidates.
+ */
+export const RELEASE_DOCUMENTS = Object.fromEntries(
+  // documentObjects returns the text it is given; given each kind as its text, it maps kind -> object key.
+  documentObjects({ remoteConfig: 'remote-config', packManifest: 'pack-manifest', contentEn: 'content-bundle' }).map((o) => [o.text, { path: o.objectKey, cacheControl: DOCUMENT_CACHE }]),
+) as Readonly<Record<DocumentKind, { path: string; cacheControl: string }>>;
+
+export const DOCUMENT_CONTENT_TYPE = 'application/json; charset=utf-8';
+export const MODEL_CONTENT_TYPE = 'application/octet-stream';
+
+/** 'download': fetch upstream models into the release and serve them from our host, upstream as mirror. 'upstream': leave them on their pinned upstream URLs (today's manifest). */
+export type ModelMode = 'download' | 'upstream';
+
+export interface SpeechFilePlan {
+  model: SpeechModel;
+  /** Object key on our host: `<id>/<version>/<fileName>` for upstream builds, the catalog's own path for files we built. */
+  objectKey: string;
+  /** Pinned upstream URL the bytes can be fetched from, or null for a file we built (supplied with --models-dir). */
+  upstreamUrl: string | null;
+}
+
+/**
+ * The speech models a release may carry: every `default` model that is hosted
+ * today, plus any self-built one named in `include` (the founder's explicit
+ * choice: ADR 0015 asks counsel about those weights before they are uploaded).
+ */
+export function speechFilePlan(baseUrl: string, catalog: Record<string, SpeechModel> = SPEECH_MODELS, include: readonly string[] = []): SpeechFilePlan[] {
+  const base = baseUrl.replace(/\/+$/, '');
+  const out: SpeechFilePlan[] = [];
+  for (const model of Object.values(catalog)) {
+    if (model.status !== 'default') continue;
+    const upstream = model.build === 'upstream';
+    if (!model.hosted && !include.includes(model.id)) continue;
+    if (!upstream && !include.includes(model.id)) continue;
+    const objectKey = upstream ? objectKey3(model.id, model.version, model.fileName) : pathOf(model.url, base);
+    out.push({ model, objectKey, upstreamUrl: upstream ? model.url : null });
+  }
+  const unknown = include.filter((id) => !catalog[id]);
+  if (unknown.length) throw new Error(`--include-model names models that are not in the catalog: ${unknown.join(', ')}`);
+  return out;
+}
+
+function objectKey3(id: string, version: number, fileName: string): string {
+  return objectKey(id, version, fileName);
+}
+
+/** The path of a URL on our host, as an object key (no leading slash). A URL on another host keeps its full path. */
+function pathOf(url: string, base: string): string {
+  const path = url.startsWith(`${base}/`) ? url.slice(base.length + 1) : url.replace(/^https?:\/\/[^/]+\//, '');
+  if (!path || path.includes('..')) throw new Error(`cannot derive an object key from ${url}`);
+  return path;
+}
+
+/** The manifest entry for a speech model served from our host (upstream kept as a mirror) or from its upstream URL. */
+export function speechEntry(plan: SpeechFilePlan, baseUrl: string, minAppVersion: string, hostedByUs: boolean): PackEntry {
+  const m = plan.model;
+  const base = baseUrl.replace(/\/+$/, '');
+  if (!hostedByUs && !plan.upstreamUrl) throw new Error(`${m.id} is a file we built; it must be in the release (--models-dir) to be listed`);
+  return {
+    id: m.id,
+    kind: m.kind,
+    language: m.language,
+    version: m.version,
+    url: hostedByUs ? `${base}/${plan.objectKey}` : (plan.upstreamUrl as string),
+    mirrors: hostedByUs && plan.upstreamUrl ? [plan.upstreamUrl] : [],
+    bytes: m.bytes,
+    sha256: m.sha256,
+    fileName: m.fileName,
+    minAppVersion,
+    required: false,
+  };
+}
+
+export interface ReleaseFile {
+  /** Relative to the release directory and to the base URL. */
+  path: string;
+  kind: 'document' | 'pack';
+  contentType: string;
+  cacheControl: string;
+  bytes: number;
+  sha256: string;
+  /** Packs: the manifest id and version. */
+  id?: string;
+  version?: number;
+  /** Documents: which signed document. */
+  document?: DocumentKind;
+  /** built: made in this run. downloaded or copied: bytes fetched and checked against the catalog hash. */
+  origin: 'built' | 'downloaded' | 'copied';
+  source?: string;
+}
+
+export interface NotIncluded {
+  id: string;
+  version: number;
+  url: string;
+  bytes: number;
+  sha256: string;
+  reason: string;
+}
+
+/** `release.json`: what a release directory holds, so the upload step and a reviewer need nothing else. */
+export interface ReleaseIndex {
+  schemaVersion: 1;
+  generatedAt: string;
+  baseUrl: string;
+  manifestVersion: number;
+  files: ReleaseFile[];
+  /** Manifest entries whose bytes are not in this directory: the app fetches them from the URL listed (upstream). Nothing to upload. */
+  notIncluded: NotIncluded[];
+}
+
+export function parseReleaseIndex(text: string): ReleaseIndex {
+  const v = JSON.parse(text) as ReleaseIndex;
+  if (v?.schemaVersion !== 1 || !Array.isArray(v.files) || typeof v.baseUrl !== 'string') throw new Error('release.json is not a release index');
+  for (const f of v.files) {
+    if (typeof f.path !== 'string' || f.path.startsWith('/') || f.path.split('/').includes('..')) throw new Error(`release.json: bad path ${String(f.path)}`);
+  }
+  return v;
+}
+
+/**
+ * Upload order: every pack file first (immutable paths), then the content
+ * bundle and the remote config, and the manifest last, so a phone can never
+ * read a manifest that points at a file not yet uploaded.
+ */
+export function uploadOrder(index: ReleaseIndex): ReleaseFile[] {
+  const rank = (f: ReleaseFile) => (f.kind === 'pack' ? 0 : f.document === 'pack-manifest' ? 3 : f.document === 'remote-config' ? 2 : 1);
+  return [...index.files].sort((a, b) => rank(a) - rank(b) || (a.path < b.path ? -1 : 1));
+}
+
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB'];
+/** Vercel's per-deployment static upload limit on the Hobby plan (vercel.com/docs/limits, read 15 Oct 2026). */
+export const VERCEL_HOBBY_UPLOAD_BYTES = 100_000_000;
+
+/**
+ * `vercel.json` for serving a release directory as a static Vercel project
+ * (docs/ops/PACKS_HOSTING.md, fallback): the same Content-Type and
+ * Cache-Control per file that the bucket upload sets. Not listed in
+ * release.json, so it is never uploaded to the bucket.
+ */
+export function vercelConfig(index: ReleaseIndex): { $schema: string; cleanUrls: false; trailingSlash: false; headers: { source: string; headers: { key: string; value: string }[] }[] } {
+  return {
+    $schema: 'https://openapi.vercel.sh/vercel.json',
+    cleanUrls: false,
+    trailingSlash: false,
+    headers: [...index.files]
+      .sort((a, b) => (a.path < b.path ? -1 : 1))
+      .map((f) => ({
+        source: `/${f.path}`,
+        headers: [
+          { key: 'Content-Type', value: f.contentType },
+          { key: 'Cache-Control', value: f.cacheControl },
+        ],
+      })),
+  };
+}
+
+export function humanBytes(n: number): string {
+  let i = 0;
+  let v = n;
+  while (v >= 1000 && i < BYTE_UNITS.length - 1) {
+    v /= 1000;
+    i++;
+  }
+  return `${i === 0 ? v : v.toFixed(v >= 100 ? 0 : 1)} ${BYTE_UNITS[i]}`;
 }

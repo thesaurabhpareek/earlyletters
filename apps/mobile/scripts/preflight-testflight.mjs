@@ -211,15 +211,26 @@ try {
   }
   const consequence =
     'The build then has NO pack manifest address, so the speech model and every language pack can never download. Recordings are still kept on the phone, but the words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting). Typed letters are unaffected.';
+  const runbook = 'The 15-minute fix, host and key together: docs/ops/PACKS_HOSTING.md.';
   if (value && valid && fromEas) pass(`EXPO_PUBLIC_DOCS_BASE_URL is ${value.replace(/\/+$/, '')} (eas.json testflight profile)`);
-  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the testflight profile or an EAS "preview" environment variable. ${consequence}`);
-  else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence}`);
-  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the testflight profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence}`);
+  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the testflight profile or an EAS "preview" environment variable. ${consequence} ${runbook}`);
+  else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence} ${runbook}`);
+  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the testflight profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence} ${runbook}`);
   if (!keySet) {
     warn(
-      'packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; FT-16 `node scripts/packs/keygen.ts`). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build.',
+      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\` once and paste the public line). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
     );
   } else pass('a pack signing key is present in packages/api/src/keys.ts');
+  // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
+  let manifestPublished = false;
+  try {
+    manifestPublished = !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(read(join(REPO, 'supabase/functions/config/published.ts')));
+  } catch {
+    /* treated as not published */
+  }
+  if (!manifestPublished)
+    warn('No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run `npx tsx scripts/packs/publish.ts all` and the upload commands it prints, or the host answers 404 and nothing downloads.');
+  else unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building.');
 }
 
 // ---------------------------------------------------------------- 6. no real family data (CLAUDE.md privacy rule)
@@ -261,6 +272,7 @@ if (SKIP_PREBUILD) {
         entitlements: read2(`${appDir}.entitlements`) ?? '',
         privacy: read2('PrivacyInfo.xcprivacy'),
         podfile: existsSync(join(iosDir, 'Podfile')),
+        podProps: existsSync(join(iosDir, 'Podfile.properties.json')) ? read(join(iosDir, 'Podfile.properties.json')) : '',
         pbxproj: readdirSync(iosDir).filter((d) => d.endsWith('.xcodeproj')).map((d) => read(join(iosDir, d, 'project.pbxproj'))).join('\n'),
       };
     }
@@ -283,6 +295,15 @@ if (ios) {
   check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
+  {
+    let target = null;
+    try {
+      target = JSON.parse(ios.podProps || '{}')['ios.deploymentTarget'] ?? null;
+    } catch {
+      target = null;
+    }
+    check(target === '17.0', 'generated Podfile.properties.json sets ios.deploymentTarget 17.0 (D-098)', `Generated native project has ios.deploymentTarget ${JSON.stringify(target)}; D-098 needs 17.0 (expo-build-properties in app.config.ts).`);
+  }
   check(new RegExp(`<string>${cfg?.scheme ?? 'scribe'}</string>`).test(ios.plist), `generated Info.plist registers the "${cfg?.scheme}" URL scheme`, `Generated Info.plist does not register the "${cfg?.scheme}" URL scheme.`);
   const ent = plistKeys(ios.entitlements);
   check(ent.includes('com.apple.developer.default-data-protection'), 'generated entitlements: data protection (complete until first unlock)', 'Generated entitlements lack the data-protection class.');

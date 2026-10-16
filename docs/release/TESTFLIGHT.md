@@ -45,10 +45,13 @@ Other 4 Oct decisions are also still open PRs, so they are **not** in a `develop
 
 ### Without this, no words (read before building)
 Speech runs on the phone, but the speech model (about 575 MB) is a downloaded pack. It only installs from a **signed pack manifest**, which needs both:
-1. `EXPO_PUBLIC_DOCS_BASE_URL` in the build: an `https://` origin with no path (`apps/mobile/src/lib/remote/base.logic.ts`). v1.0 never falls back to Supabase. It is a plain-text, non-secret value: put it in the `testflight` profile `env` or in an EAS "preview" environment variable.
-2. A public signing key in `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`, from `node scripts/packs/keygen.ts`). It is empty today, and the app fails closed.
+1. `EXPO_PUBLIC_DOCS_BASE_URL` in the build: an `https://` origin with no path (`apps/mobile/src/lib/remote/base.logic.ts`). v1.0 never falls back to Supabase. It is a plain-text, non-secret value, set in every `eas.json` profile to `https://packs.earlyletters.app` (D-097). Until the founder has created that bucket and domain, the fetch fails quietly and the app uses its bundled defaults.
+2. A public signing key in `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`, from `node scripts/packs/keygen.mjs`). It is empty today, and the app fails closed.
 
 Missing either one: recordings are kept safely on the phone, but **words are never written down** (Review stays on "Writing down what you said", Book cards say words are waiting) and no language pack downloads. Typed letters are unaffected. The preflight reports both as WARN with this consequence. A TestFlight build without them is useful for typing, the Book, reading and layout, not for the spoken path.
+
+### Packs host and signing key: the runbook
+**[docs/ops/PACKS_HOSTING.md](../ops/PACKS_HOSTING.md)** does both in one sitting (about 15 minutes of work, plus DNS time if `earlyletters.app` is not on Cloudflare yet): `node scripts/packs/keygen.mjs` once, paste the public key into `packages/api/src/keys.ts`, then `npx tsx scripts/packs/publish.ts release`, `upload` and `verify`. Order matters: the public key is compiled into the app, so it must be merged **before** `eas build`; the release can be uploaded before or after the build (the app fetches it after its first frame). `publish.ts verify` checks the live host the way a phone does.
 
 ## The two commands
 ```bash
