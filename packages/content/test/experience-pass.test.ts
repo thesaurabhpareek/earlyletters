@@ -12,6 +12,9 @@
  * phones, co-parent sharing and encrypted backup ship in v1.0, so nothing may say or imply that letters never leave
  * the phone, that there are no accounts, or that nothing is shared).
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { faithfulClean, finalText, withoutEdit } from '@scribe/core';
@@ -118,6 +121,8 @@ const CHANGED = [
   'en.errors.launch.hint',
   'en.errors.launch.exportNothing',
   'en.errors.launch.exportFailed',
+  // Not in section 4: changed in review on #181 (the old line named four licences; #175 lists every one).
+  'features.licences.libraries',
 ];
 
 /** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
@@ -195,11 +200,14 @@ const ADDED = [
 ];
 
 /**
- * Touched keys whose "we" is allowed although they are not one of the sanctioned promises. Disclosure text only:
- * backedUpBody names the recovery key we hold (D-102, counsel item C7). Counsel must approve it before any screen
- * shows it; until then it is not registered and may still change.
+ * Touched keys whose "we" or "our" is allowed although they are not one of the sanctioned promises. Disclosure text
+ * only, about our encrypted backup and the recovery key we hold (D-102, counsel item C7). Counsel must approve each
+ * one before any screen shows it; until then it is not registered and may still change.
  */
-const WE_ALLOWED = new Set(['en.settings.recordings.backedUpBody']);
+const WE_ALLOWED = new Set([
+  'en.settings.recordings.backedUpBody', // D-102, C7: no screen shows it until counsel approves it
+  'en.settings.recordings.onPhoneBodyBackupOff', // D-102, C7: no screen shows it until counsel approves it
+]);
 
 /**
  * Section 4 CHG keys that keep their old words for now, and who switches them. Screen holds: today's screen would
@@ -362,7 +370,47 @@ const REGISTERED: Record<string, Text> = {
     'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
   'en.trust.settings.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
   'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
+  // Also registered (P0 rule 3): the sensitive-data consent (consumer-health-data-notice.md HN-4; counsel approves).
+  'en.sensitiveConsent.title': 'Before your book syncs',
+  'en.sensitiveConsent.body':
+    'Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.',
+  'en.sensitiveConsent.use': 'We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.',
+  'en.sensitiveConsent.changeLater': 'You can change this any time in Settings, Privacy.',
+  'en.sensitiveConsent.declineHelp': 'If you keep it on this phone, syncing and sharing stay off.',
+  'en.sensitiveConsent.agreeButton': 'Agree and sync',
+  'en.sensitiveConsent.declineButton': 'Keep on this phone',
 };
+
+/**
+ * The consentCopy never-lines (P0 rule 3) live in apps/mobile, not here. packages/content does not depend on the app,
+ * so the test does not import it: it reads the file's string literals with the TypeScript parser, as rules.test.ts
+ * does for every app copy file.
+ */
+const CONSENT_COPY_FILE = join(__dirname, '..', '..', '..', 'apps', 'mobile', 'src', 'components', 'consent', 'copy.ts');
+const CONSENT_NEVER = {
+  neverTitle: 'What we never do',
+  never: [
+    'We never show ads, and your letters are never used for advertising.',
+    'We never sell your data.',
+    'We never use your words, recordings or photos to train machine learning models.',
+  ],
+};
+
+function consentNeverLines(): { neverTitle?: string; never?: string[] } {
+  const source = ts.createSourceFile(CONSENT_COPY_FILE, readFileSync(CONSENT_COPY_FILE, 'utf8'), ts.ScriptTarget.Latest, true);
+  const out: { neverTitle?: string; never?: string[] } = {};
+  const visit = (node: ts.Node): void => {
+    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name)) {
+      if (node.name.text === 'neverTitle' && ts.isStringLiteral(node.initializer)) out.neverTitle = node.initializer.text;
+      if (node.name.text === 'never' && ts.isArrayLiteralExpression(node.initializer)) {
+        out.never = node.initializer.elements.filter(ts.isStringLiteral).map((e) => e.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return out;
+}
 
 /** The current words of every key the pass touched (held keys keep old words, so they are left out). */
 const TOUCHED: Leaf[] = [...CHANGED, ...ADDED].flatMap((key) => leaves(at(key), key));
@@ -425,14 +473,23 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     const plan = Object.keys(features.billing.plan).map((k) => `features.billing.plan.${k}`);
     const added = new Set(ADDED);
     expect(plan.filter((k) => !(k in REGISTERED) && !added.has(k))).toEqual([]);
+    // Every sensitiveConsent key is pinned, so a new one cannot slip in unregistered.
+    const consent = Object.keys(en.sensitiveConsent).map((k) => `en.sensitiveConsent.${k}`);
+    expect(consent).toHaveLength(7);
+    expect(consent.filter((k) => !(k in REGISTERED))).toEqual([]);
+  });
+
+  it('leaves the consentCopy never-lines in apps/mobile untouched (P0 rule 3), read without importing the app', () => {
+    expect(existsSync(CONSENT_COPY_FILE), CONSENT_COPY_FILE).toBe(true);
+    expect(consentNeverLines()).toEqual(CONSENT_NEVER);
   });
 });
 
 describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
-  it('says "we" only inside the sanctioned promises (principle 2)', () => {
+  it('says "we" or "our" only inside the sanctioned promises (principle 2)', () => {
     const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
     const bad = TOUCHED.filter(
-      (l) => !WE_ALLOWED.has(l.path) && /\bwe\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
+      (l) => !WE_ALLOWED.has(l.path) && /\b(?:we|our)\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
     );
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     // Every allowed key is a touched key, so the list cannot hide a stale exception.
@@ -475,9 +532,8 @@ describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', 
 
 describe('[EXPERIENCE_PASS_2026-10 P0] rules across in-app copy', () => {
   it('spells for the US storefront (D-087)', () => {
-    // The spec's list. "Licences" is the screen title and row; the lowercase noun in `licences.libraries` is not in
-    // section 4 and is left for the content owner.
-    const UK = [/\bLicences\b/, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
+    // The spec's list, plus the lowercase noun since `licences.libraries` changed (code names keep "licences").
+    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
     expect(IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
 
