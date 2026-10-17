@@ -10,9 +10,25 @@
 -- PENDING: not yet applied. Apply after 20261015030000_v1_wire_contract_columns.sql,
 -- following supabase/APPLY.md (section "File 17"). Never edits an earlier file.
 -- Redefined from their newest version: sync_push and sync_pull (20261015030000),
--- entries_set_sync_xid and entries_not_purged (20261004100000), ops_replay_ledger and ops_incident_scope
--- (20261004200000); backup_entry_exists (#151, S05's request) only when #151 has
--- created it. Refuses a second run (55000).
+-- entries_set_sync_xid and entries_not_purged (20261004100000), ops_replay_ledger,
+-- ops_incident_scope and ops_deletion_residue (20261004200000), prepare_account_purge
+-- (20261002020000), purge_due (20261004000000); backup_entry_exists (#151, S05's
+-- request) only when #151 has created it. Refuses a second run (55000).
+--
+-- Review L on #208 (bb552ac), all four blocking findings fixed here:
+--   1. The erasure record notes who could read the letter when it went, and the pull's
+--      digest check counts an erasure only for the author and those readers (G-09, M5).
+--   2. A held draft id is its author's alone: the insert guard refuses any id that is a
+--      letter or another author's draft, marker or erasure (22023), the marker clean-up
+--      and every erasure refusal are scoped to the author, and Erase now on a held
+--      draft writes no global 'entry' ledger row.
+--   3. Erase now also removes the author's held row with the same id, and Keep,
+--      held.upsert and both erase paths serialise on the id (an advisory lock).
+--   4. entry.erase locks only the caller's own row; another person's letter answers
+--      missing without a lock and without trying the held path.
+-- Plus: held.upsert answers 42501 to anyone not a parent of the book named (N1); a
+-- held draft under a legal hold survives leaving the book and holds account deletion
+-- and the book purge (N2); the deletion residue scan reads sync_private (N6).
 --
 -- The stand-ins this replaces. The sync stack (PR #182 at 4abc671) tests against
 -- apps/mobile/test/helpers/sync-v1-standin.sql, sync-v1-held-standin.sql,
@@ -31,11 +47,12 @@
 --      trim: every hard delete of a letter while its book and author exist is
 --      recorded (Erase now, purge_due's 30 day purge, the restore replay), so a phone
 --      away longer than 60 days still cannot bring an erased letter back. It is also
---      the stand-in's digest marker. Ids and times only; it goes with the book and
---      with the author's account (foreign keys).
---   c. A held marker 'erased' refuses any later upload of that id, held or letter,
---      so an offline Restore on another phone cannot undo Erase now (#197, review B).
---      Erase now on a waiting letter also ledgers its id as 'entry' (restore replay).
+--      the stand-in's digest marker, counted only for the letter's readers at the time
+--      it went. Ids, two departure stamps and times; it goes with the book and with the author's
+--      account (foreign keys).
+--   c. A held marker 'erased' refuses any later upload of that id by its author, held
+--      or letter, so an offline Restore on another phone cannot undo Erase now (#197,
+--      review B). The refusals read the author's own record and marker only.
 --   d. entries.text_xid is null for letters written before this file and is read as
 --      coalesce(text_xid, sync_xid), never lower than the words' real version: no
 --      rewrite of every row (the stand-in's backfill fires every entries trigger and
@@ -124,7 +141,10 @@ begin
     new.text_xid := case when new.sync_xid > old.sync_xid then new.sync_xid
                          else ((old.sync_xid::text)::numeric + 1)::text::xid8 end;
   else
-    new.text_xid := old.text_xid;   -- only this trigger writes it (a direct update cannot move it)
+    -- Only this trigger writes it (a direct update cannot move it). A letter from before
+    -- this file gets its words version now, at a version already handed out, so later
+    -- non-word writes stop counting as word changes (review K N4).
+    new.text_xid := coalesce(old.text_xid, old.sync_xid);
   end if;
   return new;
 end;
@@ -135,6 +155,56 @@ alter table public.sync_op_receipts add column if not exists applied_v xid8;
 -- The op's words were refused, or it met words newer than its base: its answer carried current.
 alter table public.sync_op_receipts add column if not exists words_conflict boolean not null default false;
 alter table public.sync_op_receipts add column if not exists words_refused boolean not null default false;
+-- The first answer of an op whose repeat must say the same (review K 2): held.discard,
+-- entry.erase and a refused Keep. Flags and ids only, never words.
+alter table public.sync_op_receipts add column if not exists answer jsonb;
+
+-- A letter's id never changes (review K N2): a direct `update entries set id = ...`
+-- would move a letter onto an erased id past the insert-time refusal. From
+-- 20261015030000; the only change is id in the first check.
+create or replace function public.entries_guard_immutable()
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_client boolean := current_user in ('authenticated', 'anon');
+begin
+  if new.id is distinct from old.id
+     or new.raw_transcript is distinct from old.raw_transcript
+     or new.captured_at is distinct from old.captured_at
+     or new.author_id is distinct from old.author_id
+     or new.child_id is distinct from old.child_id
+     or new.engine_version is distinct from old.engine_version
+     or new.created_at is distinct from old.created_at
+     or new.raw_sha256 is distinct from old.raw_sha256
+     or (old.pack_ref is not null and new.pack_ref is distinct from old.pack_ref) then
+    raise exception 'entries: id, raw_transcript, raw_sha256, captured_at, created_at, author_id, child_id, engine_version and pack_ref are immutable'
+      using errcode = 'SCIMM';
+  end if;
+
+  if old.deleted_at is null and new.deleted_at is not null then
+    -- Tombstone. The clock is the server's: a client cannot back-date to force an early purge.
+    new.deleted_at := now();
+    if v_client or new.deleted_reason is null then new.deleted_reason := 'user'; end if;
+  elsif old.deleted_at is not null and new.deleted_at is null then
+    if v_client then
+      raise exception 'entries: use restore_entry() to restore a deleted entry' using errcode = 'SCTMB';
+    end if;
+    new.deleted_reason := null;
+  elsif old.deleted_at is not null then
+    -- Deletion wins over a concurrent offline edit (DATA-REQ-043).
+    new.deleted_at := old.deleted_at;
+    new.deleted_reason := old.deleted_reason;
+    if v_client and (new.final_text is distinct from old.final_text
+                     or new.in_book is distinct from old.in_book
+                     or new.machine_edits is distinct from old.machine_edits
+                     or new.photo_path is distinct from old.photo_path) then
+      raise exception 'entries: a deleted entry cannot be edited; restore it first' using errcode = 'SCTMB';
+    end if;
+  elsif new.deleted_reason is not null then
+    new.deleted_reason := null;
+  end if;
+  return new;
+end;
+$$;
 
 -- ─── 3. sync_private: helpers the API never exposes ─────────────────────
 -- PostgREST exposes public only (supabase/APPLY.md, File 17: never add sync_private
@@ -182,6 +252,27 @@ begin
   end if;
   return case when r.applied_v is null then '{}'::jsonb else jsonb_build_object('applied_v', r.applied_v::text) end;
 end;
+$$;
+
+-- The receipt keeps an op's answer (flags only) so a lost answer's repeat says the same.
+create or replace function sync_private.note_answer(p_op uuid, p_answer jsonb)
+returns void language sql security definer set search_path = pg_catalog, public, pg_temp as $$
+  update public.sync_op_receipts r set answer = p_answer where r.op_id = p_op and r.profile_id = auth.uid();
+$$;
+create or replace function sync_private.dup_answer(p_op uuid)
+returns jsonb language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select r.answer from public.sync_op_receipts r where r.op_id = p_op and r.profile_id = auth.uid();
+$$;
+
+-- One letter id at a time (review L 3): Keep (the entries insert that takes a held
+-- draft's id), held.upsert, Erase now and the erase of a held draft serialise on the
+-- id, so a held row can never survive next to the letter that replaced or erased it.
+-- A transaction-level advisory lock; taken only after the caller's right to the id is
+-- known, so nobody can hold another person's id. Class 1731 keeps it apart from any
+-- other advisory lock.
+create or replace function sync_private.lock_letter_id(p_id uuid)
+returns void language sql set search_path = pg_catalog, public, pg_temp as $$
+  select pg_advisory_xact_lock(1731, hashtext(p_id::text));
 $$;
 
 -- ─── 4. Held drafts (WP-F16-17; F16 6.2 I, F14-REQ-039, F16-REQ-029) ─────
@@ -260,10 +351,19 @@ revoke all on public.held_drafts_gone from public, anon, authenticated;
 -- removal digest (every phone that holds the letter drops it at its next pull), and
 -- no upload of that id is ever stored again, also after purge_ledger's 60 day trim.
 -- Ids and times only. It goes with the book and with the author (foreign keys).
+-- When the letter left each reader's view (review L 1), as entries_unshared stamps a
+-- departure on the row, carried here because the row is gone: the erasure itself for a
+-- letter those readers could still read, the earlier departure (its tombstone, or the
+-- day it left the book) for one they no longer could, null for one they never could.
+-- The next pull recomputes a reader's digest only when that departure is after the
+-- reader's cursor, so a private letter, a purge of a letter already tombstoned, or a
+-- held draft never shows a co-member that anything happened (G-09, M5, F16-REQ-026).
 create table sync_private.entry_erasures (
   entry_id uuid primary key,
   child_id uuid not null references public.children (id) on delete cascade,
   author_id uuid not null references public.profiles (id) on delete cascade,
+  left_parents_xid xid8,
+  left_family_xid xid8,
   erased_at timestamptz not null default now(),
   sync_xid xid8 not null default pg_current_xact_id()
 );
@@ -272,13 +372,26 @@ create index entry_erasures_author_idx on sync_private.entry_erasures (author_id
 alter table sync_private.entry_erasures enable row level security;   -- no policy: definer code only
 revoke all on sync_private.entry_erasures from public, anon, authenticated;
 
--- Whether an id was erased for good: the ledger (60 days, replayed after a restore),
--- the erasure record (kept), or a held marker 'erased'. Definer: called from triggers.
-create or replace function sync_private.erasure_recorded(p_id uuid)
+-- Whether this author erased an id for good: the ledger (60 days, replayed after a
+-- restore; it holds letters only, and only their authors' purges write it), the
+-- author's erasure record (kept), or the author's held marker 'erased'. Scoped to the
+-- author (review L 2): one person's erasure never refuses another person's upload.
+-- Definer: called from triggers.
+create or replace function sync_private.erasure_recorded(p_id uuid, p_author uuid)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select exists (select 1 from public.purge_ledger l where l.entity_type = 'entry' and l.entity_id = p_id::text)
-      or exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id)
-      or exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.gone = 'erased');
+      or exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id and x.author_id = p_author)
+      or exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.author_id = p_author and g.gone = 'erased');
+$$;
+
+-- Whether a letter id is someone else's (review L 2): another author's letter, held
+-- draft, marker or erasure. A held draft may only take an id nobody else has.
+create or replace function sync_private.letter_id_taken(p_id uuid, p_author uuid)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (select 1 from public.entries e where e.id = p_id and e.author_id is distinct from p_author)
+      or exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id is distinct from p_author)
+      or exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.author_id is distinct from p_author)
+      or exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id and x.author_id is distinct from p_author);
 $$;
 
 -- From 20261004100000 (section 2); the only change is the wider rule above (written
@@ -287,8 +400,8 @@ create or replace function public.entries_not_purged()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if exists (select 1 from public.purge_ledger l where l.entity_type = 'entry' and l.entity_id = new.id::text)
-     or exists (select 1 from sync_private.entry_erasures x where x.entry_id = new.id)
-     or exists (select 1 from public.held_drafts_gone g where g.id = new.id and g.gone = 'erased') then
+     or exists (select 1 from sync_private.entry_erasures x where x.entry_id = new.id and x.author_id = new.author_id)
+     or exists (select 1 from public.held_drafts_gone g where g.id = new.id and g.author_id = new.author_id and g.gone = 'erased') then
     raise exception 'this letter was deleted' using errcode = 'SCDEL', detail = 'purged';
   end if;
   return new;
@@ -298,14 +411,22 @@ $$;
 -- Every hard delete of a letter while its book and author still exist is an erasure
 -- (Erase now, purge_due, ops_replay_ledger). A delete cascaded from the book or the
 -- account is not: those rows go with it.
+-- The departures are taken from the row as it went (the same rule as entries_unshared):
+-- still readable now means it leaves now; otherwise it left at its stamp, or never was
+-- readable. The letter's author owns the id: their record replaces any other.
 create or replace function public.entries_note_erasure()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if exists (select 1 from public.children c where c.id = old.child_id)
      and exists (select 1 from public.profiles p where p.id = old.author_id) then
-    insert into sync_private.entry_erasures as x (entry_id, child_id, author_id)
-    values (old.id, old.child_id, old.author_id)
-    on conflict (entry_id) do update set erased_at = now(), sync_xid = pg_current_xact_id();
+    insert into sync_private.entry_erasures as x (entry_id, child_id, author_id, left_parents_xid, left_family_xid)
+    values (old.id, old.child_id, old.author_id,
+            case when old.deleted_at is null and (old.in_book or old.approval in ('pending', 'set_aside'))
+                 then pg_current_xact_id() else old.left_parents_xid end,
+            case when old.deleted_at is null and old.in_book then pg_current_xact_id() else old.left_family_xid end)
+    on conflict (entry_id) do update set child_id = excluded.child_id, author_id = excluded.author_id,
+      left_parents_xid = excluded.left_parents_xid, left_family_xid = excluded.left_family_xid,
+      erased_at = now(), sync_xid = pg_current_xact_id();
   end if;
   return old;
 end;
@@ -317,27 +438,40 @@ create trigger entries_note_erasure after delete on public.entries
 create trigger held_drafts_consent_gate before insert or update on public.held_drafts
   for each row execute function public.client_content_gate();
 
--- An erased id never comes back as a held draft (#197, review B): another phone of the
--- author may still hold it, waiting or in Recently deleted.
-create or replace function public.held_drafts_not_erased()
+-- Every insert, held.upsert or a direct one (review L 2):
+--   - the id must be free: no letter at all (a kept letter takes over its draft), and
+--     no other author's held draft, marker or erasure. One plain refusal (22023), so a
+--     co-parent who sees a letter id in the book can neither hold it nor learn more;
+--   - an id this author erased never comes back (#197, review B): another phone of the
+--     author may still hold it, waiting or in Recently deleted.
+create or replace function public.held_drafts_guard()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
-  if sync_private.erasure_recorded(new.id) then
+  if auth.uid() is not null and not coalesce(public.is_child_parent(new.child_id), false) then
+    -- A signed-in caller who is not a parent of the book: what RLS would answer anyway,
+    -- before anything about the id (review L N1). (current_user is the owner here.)
+    raise exception 'held drafts are for the book''s parents' using errcode = '42501';
+  end if;
+  if exists (select 1 from public.entries e where e.id = new.id) or sync_private.letter_id_taken(new.id, new.author_id) then
+    raise exception 'held id not available' using errcode = '22023';
+  end if;
+  if sync_private.erasure_recorded(new.id, new.author_id) then
     raise exception 'this letter was erased' using errcode = 'SCDEL', detail = 'purged';
   end if;
   return new;
 end;
 $$;
-create trigger held_drafts_not_erased before insert on public.held_drafts
-  for each row execute function public.held_drafts_not_erased();
+create trigger held_drafts_guard before insert on public.held_drafts
+  for each row execute function public.held_drafts_guard();
 
 create or replace function public.held_drafts_stamp()
 returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 begin
   if tg_op = 'UPDATE' then
-    if new.author_id is distinct from old.author_id or new.child_id is distinct from old.child_id
+    if new.id is distinct from old.id or new.author_id is distinct from old.author_id or new.child_id is distinct from old.child_id
        or new.created_at is distinct from old.created_at then
-      raise exception 'held_drafts: author_id, child_id and created_at are immutable' using errcode = 'SCIMM';
+      -- id too (review K N2): a changed id would slip past the insert guard.
+      raise exception 'held_drafts: id, author_id, child_id and created_at are immutable' using errcode = 'SCIMM';
     end if;
     if coalesce(old.raw_transcript, '') <> '' and new.raw_transcript is distinct from old.raw_transcript then
       raise exception 'held_drafts: raw_transcript is immutable once set' using errcode = 'SCIMM';
@@ -378,11 +512,14 @@ declare
   v_live boolean;
 begin
   if tg_op = 'INSERT' then
-    -- A let-go marker is cleared; an erase marker never is (the insert was refused before this anyway).
-    delete from public.held_drafts_gone g where g.id = new.id and g.gone <> 'erased';
+    -- The author's own let-go marker is cleared; an erase marker never is, and another
+    -- author's never is (the guard refused both before this; review L 2).
+    delete from public.held_drafts_gone g where g.id = new.id and g.author_id = new.author_id and g.gone <> 'erased';
     return new;
   end if;
-  v_kept := exists (select 1 from public.entries e where e.id = old.id and e.author_id = old.author_id);
+  -- Kept: an entries row of the same author took the id (not when Erase now removes both).
+  v_kept := current_setting('scribe.held_erase', true) is distinct from 'on'
+            and exists (select 1 from public.entries e where e.id = old.id and e.author_id = old.author_id);
   v_live := exists (select 1 from public.children c where c.id = old.child_id)
             and exists (select 1 from public.profiles p where p.id = old.author_id);
   if not v_kept then
@@ -396,7 +533,8 @@ begin
     values (old.id, old.author_id, old.child_id,
             case when current_setting('scribe.held_erase', true) = 'on' then 'erased'
                  when v_kept then 'kept' else 'discarded' end)
-    on conflict (id) do update set gone = excluded.gone, updated_at = now(), sync_xid = pg_current_xact_id();
+    on conflict (id) do update set gone = excluded.gone, updated_at = now(), sync_xid = pg_current_xact_id()
+      where g.author_id = excluded.author_id;
   end if;
   return old;
 end;
@@ -407,9 +545,27 @@ create trigger held_drafts_gone_on_insert after insert on public.held_drafts
   for each row execute function public.held_drafts_note_gone();
 
 -- Keep: the letter takes the draft's id, and its held row goes in the same transaction.
+-- Serialised with held.upsert on the id (review L 3): a held.upsert that checked for the
+-- letter just before Keep committed waits here, then sees the letter (held: null).
+-- Held words the keep did not carry are never dropped (review K 1): a keep that names
+-- its held base was already compared (sync_private.keep_check); for one that does not
+-- (an older app), words that differ from the letter's go to its history (entry_versions).
 create or replace function public.entries_drop_held()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_words text;
+  v_edits jsonb;
 begin
+  if not exists (select 1 from public.held_drafts h where h.id = new.id and h.author_id = new.author_id) then
+    return new;
+  end if;
+  perform sync_private.lock_letter_id(new.id);
+  select coalesce(nullif(h.final_text, ''), h.typed_text), h.machine_edits into v_words, v_edits
+    from public.held_drafts h where h.id = new.id and h.author_id = new.author_id for update;
+  if found and coalesce(v_words, '') <> '' and v_words is distinct from new.final_text then
+    insert into public.entry_versions (entry_id, final_text, in_book, machine_edits, superseded_by)
+    values (new.id, v_words, new.in_book, v_edits, new.author_id);
+  end if;
   delete from public.held_drafts h where h.id = new.id and h.author_id = new.author_id;
   return new;
 end;
@@ -419,11 +575,14 @@ create trigger entries_drop_held after insert on public.entries
 
 -- Leaving a book (leave_child, remove_child_member, undo_parent_join): the leaver's held
 -- drafts of that book go too. They could no longer read or let go of them (RLS needs a
--- parent of the book), so they would stay on the server unreachable.
+-- parent of the book), so they would stay on the server unreachable. A draft under a
+-- legal hold (on the draft, its author or the book) stays until the hold lifts (review L N2).
 create or replace function public.child_members_drop_held()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
-  delete from public.held_drafts h where h.author_id = old.profile_id and h.child_id = old.child_id;
+  delete from public.held_drafts h
+   where h.author_id = old.profile_id and h.child_id = old.child_id
+     and not (public.is_held('entry', h.id) or public.is_held('profile', h.author_id) or public.is_held('child', h.child_id));
   return old;
 end;
 $$;
@@ -431,10 +590,11 @@ create trigger child_members_drop_held after delete on public.child_members
   for each row execute function public.child_members_drop_held();
 
 -- ─── 7. Held draft ops (sync_push's held.upsert and held.discard) ────────
--- Whether a held id belongs to someone else (definer: RLS hides other authors' rows).
+-- Whether a held id belongs to someone else: another author's letter, held draft,
+-- marker or erasure (definer: RLS hides other authors' rows; review L 2).
 create or replace function sync_private.held_id_taken(p_id uuid)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
-  select exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id is distinct from auth.uid());
+  select sync_private.letter_id_taken(p_id, auth.uid());
 $$;
 
 -- Whether the caller's own held row is under a legal hold (definer: legal_holds is service-only).
@@ -491,13 +651,21 @@ begin
   if (d ->> 'id') is distinct from p_id::text then
     raise exception 'held id must match the op id' using errcode = '22023';
   end if;
+  if not coalesce(public.is_child_parent((d ->> 'child_id')::uuid), false) then
+    -- Not a parent of the book named: one answer whatever the id is (review L N1).
+    raise exception 'held drafts are for the book''s parents' using errcode = '42501';
+  end if;
+  if sync_private.held_id_taken(p_id) then
+    -- Another author's letter, draft, marker or erasure: one plain refusal, never a key
+    -- violation that names it, and no lock taken on someone else's id.
+    raise exception 'held id not available' using errcode = '22023';
+  end if;
+  -- Serialised with Keep and Erase now on this id (review L 3); every check below sees
+  -- what they committed.
+  perform sync_private.lock_letter_id(p_id);
   if exists (select 1 from public.entries e where e.id = p_id and e.author_id = v_uid) then
     -- Kept already (on another phone, or this op arrived late): the letter is the row now.
     return jsonb_build_object('held', null);
-  end if;
-  if sync_private.held_id_taken(p_id) then
-    -- Another author's row (RLS hides it): one plain refusal, never a key violation that names it.
-    raise exception 'held id not available' using errcode = '22023';
   end if;
   select h.text_xid, h.final_text, h.machine_edits, h.edit_level, h.author_edits, h.locked_spans, h.typed_text into cur
     from public.held_drafts h where h.id = p_id for update;
@@ -579,13 +747,46 @@ begin
 end;
 $$;
 
+-- Keep (review K 1): the entry.upsert that keeps a held draft names, in `held_base`,
+-- the held row's last `v` its phone knew. Under the id lock, when the author's held row
+-- has words newer than that and different from the keep's, the keep is refused as a
+-- words conflict: no letter is made, the held row stays, and the answer carries
+-- conflict_groups ['text'] and current (the held words, with typed_text), exactly as a
+-- refused held.upsert does. The receipt keeps the outcome, so a repeat says the same.
+-- Null when the keep may go ahead (no held row, no held_base, or nothing newer).
+create or replace function sync_private.keep_check(p_op uuid, p_id uuid, p_final_text text, p_held_base xid8)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_uid uuid := auth.uid();
+  cur record;
+  v_ans jsonb;
+begin
+  if p_held_base is null or not exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id = v_uid) then
+    return null;
+  end if;
+  perform sync_private.lock_letter_id(p_id);
+  select h.text_xid, coalesce(nullif(h.final_text, ''), h.typed_text) as words into cur
+    from public.held_drafts h where h.id = p_id and h.author_id = v_uid for update;
+  if not found or not (cur.text_xid > p_held_base and cur.text_xid <> pg_current_xact_id())
+     or cur.words is not distinct from p_final_text then
+    return null;
+  end if;
+  v_ans := jsonb_build_object('applied', false, 'conflict', true, 'entry', null);
+  update public.sync_op_receipts r set answer = v_ans, words_conflict = true, words_refused = true, applied_v = null
+   where r.op_id = p_op and r.profile_id = v_uid;
+  return v_ans || sync_private.held_state(p_id, true);
+end;
+$$;
+
 -- Erase now on a voice-only letter waiting for its words: its only server copy is the
 -- held row, or the marker of one let go. The row goes and the marker says 'erased', so
 -- every phone of the author erases its copy, never restorable there (final review B4).
--- The id is ledgered as a letter and recorded as erased, so no upload of it is stored
--- again (B6, #197) and a restore replay purges it too. Under a legal hold the row stays
--- ({ deferred: true }). Nothing of the author's: { missing: true }.
--- Called by sync_private.erase_entry when no letter has the id.
+-- The author's erasure record keeps any later upload of the id out (B6, #197); the row's
+-- 'held_draft' ledger row is what a restore replay purges again. No 'entry' ledger row
+-- (review L 2): purge_ledger has no author, so after a restore had dropped someone
+-- else's letter with this id, it would refuse that person's re-upload. Under a legal
+-- hold the row stays ({ deferred: true }). Nothing of the author's: { missing: true },
+-- with no lock taken. Called by sync_private.erase_entry when no letter has the id.
 create or replace function sync_private.erase_held(p_id uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -593,6 +794,11 @@ declare
   v_child uuid;
   v_row boolean;
 begin
+  if not exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id = v_uid)
+     and not exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.author_id = v_uid) then
+    return jsonb_build_object('missing', true);
+  end if;
+  perform sync_private.lock_letter_id(p_id);
   select h.child_id into v_child from public.held_drafts h where h.id = p_id and h.author_id = v_uid for update;
   v_row := found;
   if not v_row then
@@ -605,15 +811,16 @@ begin
   end if;
   if v_row then
     perform set_config('scribe.held_erase', 'on', true);
-    delete from public.held_drafts h where h.id = p_id;
+    delete from public.held_drafts h where h.id = p_id and h.author_id = v_uid;
     perform set_config('scribe.held_erase', 'off', true);
   else
     update public.held_drafts_gone g set gone = 'erased', updated_at = now(), sync_xid = pg_current_xact_id()
-     where g.id = p_id;
+     where g.id = p_id and g.author_id = v_uid;
   end if;
-  insert into public.purge_ledger (entity_type, entity_id) values ('entry', p_id::text) on conflict do nothing;
+  -- Author-only: nobody else could read a held draft, so no co-member's digest moves.
   insert into sync_private.entry_erasures as x (entry_id, child_id, author_id) values (p_id, v_child, v_uid)
-    on conflict (entry_id) do update set erased_at = now(), sync_xid = pg_current_xact_id();
+    on conflict (entry_id) do update set erased_at = now(), sync_xid = pg_current_xact_id()
+    where x.author_id = excluded.author_id;
   return jsonb_build_object('erased', true);
 end;
 $$;
@@ -622,27 +829,31 @@ $$;
 -- entry.erase: the author's own letter, deleted or not yet (its delete may still be
 -- queued behind the erase on the phone), is purged now the way purge_due purges it
 -- after 30 days: the photo goes to the storage purge queue, purge_ledger gets 'entry'
--- (so a restore replay never brings it back), the erasure record makes the next pull
--- of the book recompute its digest, and the row goes (entry_versions cascade; #151's
--- trigger takes the recording's backup). A missing letter and another person's letter
--- get the same answer, { missing: true }, and nothing changes: a retry is a no-op and
--- nobody learns that someone else's letter exists. Under a legal hold the letter is
--- kept, tombstoned, until the hold lifts ({ deferred: true }).
+-- (so a restore replay never brings it back), the erasure record (entries_note_erasure)
+-- makes the next pull of the book recompute its digest for whoever could read it, and
+-- the row goes (entry_versions cascade; #151's trigger takes the recording's backup).
+-- A held draft of the author with the same id goes too, and the id's marker says
+-- 'erased' (review L 3: one that survived Keep would otherwise serve the words back).
+-- Only the caller's own row is locked (review L 4). Another person's letter answers
+-- { missing: true }, as no letter at all does, and nothing changes, nothing is locked
+-- and the held path is never tried. Under a legal hold the letter is kept, tombstoned,
+-- until the hold lifts ({ deferred: true }).
 create or replace function sync_private.erase_entry(p_id uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_uid uuid := public.require_user();
   r record;
 begin
-  select e.id, e.author_id, e.child_id, e.photo_path into r from public.entries e where e.id = p_id for update;
+  select e.id, e.photo_path into r from public.entries e where e.id = p_id and e.author_id = v_uid for update;
   if not found then
+    if exists (select 1 from public.entries e where e.id = p_id) then
+      -- The same answer as no letter at all: nothing tells anyone that another person's letter exists.
+      return jsonb_build_object('missing', true);
+    end if;
     -- No letter: a voice-only letter waiting for its words lives only as a held row (or its marker).
     return sync_private.erase_held(p_id);
   end if;
-  if r.author_id is distinct from v_uid then
-    -- The same answer as no letter at all: nothing tells anyone that another person's letter exists.
-    return jsonb_build_object('missing', true);
-  end if;
+  perform sync_private.lock_letter_id(p_id);
   if public.entry_is_held(p_id) then
     update public.entries set deleted_at = coalesce(deleted_at, now()), deleted_reason = coalesce(deleted_reason, 'user') where id = p_id;
     return jsonb_build_object('deferred', true);
@@ -650,10 +861,13 @@ begin
   if r.photo_path is not null then
     perform public.enqueue_storage_purge('entry-photos', r.photo_path, false, 'entry_purge');
   end if;
+  perform set_config('scribe.held_erase', 'on', true);
+  delete from public.held_drafts h where h.id = p_id and h.author_id = v_uid;
+  perform set_config('scribe.held_erase', 'off', true);
+  update public.held_drafts_gone g set gone = 'erased', updated_at = now(), sync_xid = pg_current_xact_id()
+   where g.id = p_id and g.author_id = v_uid and g.gone <> 'erased';
   insert into public.purge_ledger (entity_type, entity_id) values ('entry', p_id::text) on conflict do nothing;
-  insert into sync_private.entry_erasures as x (entry_id, child_id, author_id) values (p_id, r.child_id, r.author_id)
-    on conflict (entry_id) do update set erased_at = now(), sync_xid = pg_current_xact_id();
-  delete from public.entries where id = p_id;
+  delete from public.entries where id = p_id;   -- entries_note_erasure records it
   return jsonb_build_object('erased', true);
 end;
 $$;
@@ -669,7 +883,10 @@ $$;
 --     'purged', which the result marks gone: true), whatever path inserts it.
 --   M17: words_reviewed_at with the text group, only when the op carries it.
 --   WP-F16-13: entry.erase.
---   WP-F16-17: held.upsert and held.discard, and their duplicate answer.
+--   WP-F16-17: held.upsert and held.discard, and their duplicate answer; a Keep that
+--     names `held_base` is compared with the held words (review K 1).
+--   Review K: one push per person at a time (an advisory lock), and the receipt keeps
+--     the answer of held.discard, entry.erase and a refused Keep for its repeat.
 -- An older server answers 22023 to the three new op types; the phone waits (ADR 0025).
 create or replace function public.sync_push(p_ops jsonb)
 returns jsonb language plpgsql volatile security invoker set search_path = pg_catalog, public, pg_temp
@@ -692,6 +909,8 @@ declare
   v_conflict boolean;
   v_newer boolean;
   v_refused boolean;
+  v_keep jsonb;
+  v_ans jsonb;
   v_new boolean;
   v_res jsonb;
   v_results jsonb := '[]'::jsonb;
@@ -707,6 +926,9 @@ begin
   end if;
 
   perform public.rate_hit('push');                -- 60 per minute per person (SCRAT)
+  -- One push per person at a time (review K N1): a held.upsert behind a Keep, or an
+  -- Erase now against a held re-upload, stays in order however the rate limit is kept.
+  perform pg_advisory_xact_lock(1732, hashtext(v_uid::text));
 
   select e.started_at into v_epoch_at from sync_epochs e order by e.epoch desc limit 1;
 
@@ -730,7 +952,13 @@ begin
 
       if not v_new then
         v_res := jsonb_build_object('dup', true);
-        if v_type like 'entry.%' then
+        v_ans := sync_private.dup_answer(v_op);
+        if v_ans is not null then
+          -- The first answer again (review K 2): a let-go that met newer words still says kept,
+          -- an erase still says erased or deferred, a refused Keep still carries the held words.
+          v_res := v_res || v_ans
+                   || case when v_type = 'entry.upsert' then sync_private.held_state(v_id, true) else '{}'::jsonb end;
+        elsif v_type like 'entry.%' then
           v_res := v_res || coalesce(
             (select jsonb_build_object('entry', jsonb_build_object(
                       'id', e.id, 'v', e.sync_xid::text, 'updated_at', e.updated_at, 'deleted_at', e.deleted_at,
@@ -764,6 +992,7 @@ begin
           v_conflict := false;
           v_newer := false;
           v_refused := false;
+          v_keep := null;
           v_deleted := false;
           if v_type = 'entry.reupload' then
             v_known := (o ->> 'known_at')::timestamptz;
@@ -783,6 +1012,11 @@ begin
               v_changed := array_remove(v_changed, 'text');
               v_refused := true;
             end if;
+          elsif not v_exists and v_type = 'entry.upsert' and o ? 'held_base' then
+            -- WP-F16-17, review K 1: a Keep never drops held words it did not carry. A present
+            -- held_base that is null means 0 (the phone knew no version); a missing key is an older app.
+            v_keep := sync_private.keep_check(v_op, v_id, d ->> 'final_text', coalesce(nullif(o ->> 'held_base', ''), '0')::xid8);
+            v_apply := v_keep is null;
           end if;
 
           if v_apply then
@@ -873,7 +1107,8 @@ begin
           v_res := jsonb_build_object('applied', v_apply, 'conflict', v_conflict, 'entry',
             (select jsonb_build_object('id', e.id, 'v', e.sync_xid::text, 'updated_at', e.updated_at,
                                        'deleted_at', e.deleted_at, 'in_book', e.in_book, 'approval', e.approval)
-               from entries e where e.id = v_id));
+               from entries e where e.id = v_id))
+            || coalesce(v_keep, '{}'::jsonb);   -- a refused Keep: no letter, the held words in current
           if v_refused then
             v_res := v_res || jsonb_build_object('conflict_groups', jsonb_build_array('text'));
           end if;
@@ -944,12 +1179,14 @@ begin
 
         when 'entry.erase' then
           v_res := sync_private.erase_entry(v_id);
+          perform sync_private.note_answer(v_op, v_res);
 
         when 'held.upsert' then
           v_res := sync_private.held_upsert(v_op, v_id, o);
 
         when 'held.discard' then
           v_res := sync_private.held_discard(v_id, nullif(o ->> 'base', '')::xid8);
+          perform sync_private.note_answer(v_op, v_res);
 
         else
           raise exception 'unknown op type' using errcode = '22023';
@@ -985,7 +1222,8 @@ comment on function public.sync_push(jsonb) is
 -- ─── 10. sync_pull: the erasure digest check and the held section ───────
 -- From 20261015030000. Changes:
 --   WP-F16-13: an erasure in a book after the cursor recomputes that book's
---     removal digest (the stand-in's one-line v_check addition).
+--     removal digest (the stand-in's v_check addition), for the letter's author and
+--     for the readers the letter had when it went (review L 1).
 --   WP-F16-17: a request that carries `held` ({cursor}) gets the author's held rows
 --     and markers in a `held` section, from the same snapshot and with the same
 --     cursor rules as the books (own rows while a parent of the book; markers only
@@ -1218,8 +1456,16 @@ begin
       -- entries_unshared). A letter that was always private never counts.
       v_check := v_fresh or v_n > 0 or not (coalesce(v_req, '{}'::jsonb) ? 'have')
                  or coalesce((v_req ->> 'verify')::boolean, false) or coalesce((v_req ->> 'ids')::boolean, false)
+                 -- WP-F16-13: a letter erased since the cursor, by this caller, or one that left
+                 -- this caller's role's view since the cursor (review L 1: never a private one,
+                 -- the purge of one that had already left, or a held draft of someone else).
                  or exists (select 1 from sync_private.entry_erasures x
-                             where x.child_id = b.id and x.sync_xid > v_after_x and x.sync_xid < v_xmin)
+                             where x.child_id = b.id and x.sync_xid > v_after_x and x.sync_xid < v_xmin
+                               and (x.author_id = v_uid
+                                    or case when b.role = 'parent'
+                                              then x.left_parents_xid > v_after_x and x.left_parents_xid < v_xmin
+                                            else b.family_can_read
+                                              and x.left_family_xid > v_after_x and x.left_family_xid < v_xmin end))
                  or exists (select 1 from entries e
                              where e.child_id = b.id and (e.sync_xid, e.id) > (v_after_x, v_after_i) and e.sync_xid < v_xmin
                                and e.author_id <> v_uid
@@ -1380,8 +1626,8 @@ begin
   get diagnostics v_c = row_count;
   delete from entries where id = any (v_entries);
   get diagnostics v_e = row_count;
-  -- 20261016000000: held drafts. An id ledgered as a letter too was erased (Erase now on a waiting
-  -- letter): its marker says so, and every phone of the author erases its copy again.
+  -- 20261016000000: held drafts. An id ledgered as a letter too went with its letter in Erase now:
+  -- its marker says erased, and every phone of the author erases its copy again.
   perform set_config('scribe.held_erase', 'on', true);
   delete from held_drafts where id = any (v_held) and id = any (v_entries);
   get diagnostics v_hx = row_count;
@@ -1547,6 +1793,179 @@ begin
 end;
 $$;
 
+-- ─── 11b. Legal holds and the deletion residue (review L N2, N6) ─────────
+-- prepare_account_purge (from 20261002020000) and purge_due (from 20261004000000):
+-- a held draft under a legal hold (on the draft's id, its author or its book) holds
+-- the account deletion and the book purge, as a letter under a hold does. The only
+-- change in each is the marked held_drafts clause.
+create or replace function public.prepare_account_purge(p_request uuid)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_uid uuid; v_entries int; v_books int;
+begin
+  select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
+  if not found then raise exception 'request not executing' using errcode = 'SCDEL'; end if;
+  if public.is_held('profile', v_uid)
+     or exists (select 1 from entries e where e.author_id = v_uid
+                and (public.is_held('entry', e.id) or public.is_held('child', e.child_id)))
+     -- 20261016000000 (review L N2): the person's held drafts count like their letters.
+     or exists (select 1 from held_drafts h where h.author_id = v_uid
+                and (public.is_held('entry', h.id) or public.is_held('child', h.child_id))) then
+    update deletion_requests set status = 'held' where id = p_request;
+    return jsonb_build_object('held', true);
+  end if;
+
+  -- Books where the caller became sole parent during the grace period.
+  update children c set deleted_at = now(), deletion_request_id = p_request
+    where c.deleted_at is null
+      and exists (select 1 from child_members m where m.child_id = c.id and m.profile_id = v_uid and m.role = 'parent')
+      and not exists (select 1 from child_members m where m.child_id = c.id and m.role = 'parent' and m.profile_id <> v_uid);
+
+  -- Every folder the author could have written to (their own subfolder only).
+  insert into storage_purge_queue (bucket_id, object_path, is_prefix, reason, request_id)
+    select distinct 'entry-photos', x.child_id::text || '/' || v_uid::text || '/', true, 'account_purge', p_request
+    from (select child_id from entries where author_id = v_uid
+          union select child_id from child_members where profile_id = v_uid) x
+    on conflict do nothing;
+  -- Books deleted with the account: whole folders (contributors were offered export).
+  insert into storage_purge_queue (bucket_id, object_path, is_prefix, reason, request_id)
+    select 'entry-photos', c.id::text || '/', true, 'account_purge', p_request
+    from children c where c.deletion_request_id = p_request
+    on conflict do nothing;
+
+  -- Only this author's letters; co-parent and family letters are never touched (DATA-REQ-012).
+  insert into purge_ledger (entity_type, entity_id)
+    select 'entry', id::text from entries where author_id = v_uid on conflict do nothing;
+  delete from entries where author_id = v_uid;
+  get diagnostics v_entries = row_count;
+
+  insert into purge_ledger (entity_type, entity_id)
+    select 'child', id::text from children where deletion_request_id = p_request on conflict do nothing;
+  delete from children where deletion_request_id = p_request;
+  get diagnostics v_books = row_count;
+
+  return jsonb_build_object('entries', v_entries, 'books', v_books);
+end;
+$$;
+
+create or replace function public.purge_due(p_now timestamptz default now(), p_limit int default 500)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r record;
+  v_children int := 0;
+  v_entries int := 0;
+  v_accounts int := 0;
+  v_cutoff timestamptz := p_now - interval '30 days';
+  v_limit int := greatest(coalesce(p_limit, 500), 1);
+begin
+  -- 1. Books tombstoned for 30 days.
+  for r in
+    select c.id from children c
+    where c.deleted_at is not null and c.deleted_at < v_cutoff
+      and not public.is_held('child', c.id)
+      and not exists (select 1 from entries e where e.child_id = c.id
+                      and (public.is_held('entry', e.id) or public.is_held('profile', e.author_id)))
+      -- 20261016000000 (review L N2): a held draft under a hold keeps its book too.
+      and not exists (select 1 from held_drafts h where h.child_id = c.id
+                      and (public.is_held('entry', h.id) or public.is_held('profile', h.author_id)))
+    order by c.deleted_at
+    limit v_limit
+    for update skip locked
+  loop
+    perform public.enqueue_storage_purge('entry-photos', r.id::text || '/', true, 'child_purge');
+    insert into purge_ledger (entity_type, entity_id)
+      select 'entry', e.id::text from entries e where e.child_id = r.id on conflict do nothing;
+    insert into purge_ledger (entity_type, entity_id) values ('child', r.id::text) on conflict do nothing;
+    update deletion_requests set status = 'completed', completed_at = p_now
+      where kind = 'book' and child_id = r.id and status in ('scheduled', 'held', 'executing');
+    delete from children where id = r.id;   -- cascades members, prefs, invites, entries, versions, terms
+    perform public.audit('book_purged', 'child', r.id, r.id);
+    v_children := v_children + 1;
+  end loop;
+
+  -- 2. Letters tombstoned for 30 days.
+  for r in
+    select e.id, e.photo_path from entries e
+    where e.deleted_at is not null and e.deleted_at < v_cutoff and not public.entry_is_held(e.id)
+    order by e.deleted_at
+    limit v_limit
+    for update skip locked
+  loop
+    if r.photo_path is not null then
+      perform public.enqueue_storage_purge('entry-photos', r.photo_path, false, 'entry_purge');
+    end if;
+    insert into purge_ledger (entity_type, entity_id) values ('entry', r.id::text) on conflict do nothing;
+    delete from entries where id = r.id;    -- cascades entry_versions
+    v_entries := v_entries + 1;
+  end loop;
+
+  -- 3. Account requests that are due: hand to the deletion worker, unless held.
+  update deletion_requests d
+    set status = case when public.is_held('profile', d.profile_id) then 'held' else 'executing' end,
+        executing_at = p_now
+    where d.id in (select x.id from deletion_requests x
+                    where x.kind = 'account' and x.status = 'scheduled' and x.scheduled_for <= p_now
+                    order by x.scheduled_for limit v_limit for update skip locked);
+  get diagnostics v_accounts = row_count;
+  update deletion_requests d set status = 'executing', executing_at = p_now
+    where d.status = 'held' and d.kind = 'account' and not public.is_held('profile', d.profile_id)
+      and d.scheduled_for <= p_now;
+
+  -- 4. Short-lived records (privacy-policy section 10; DATA-REQ-060, 064, 066).
+  delete from child_invites where coalesce(revoked_at, accepted_at, expires_at) < p_now - interval '90 days';
+  delete from audit_events where at < p_now - interval '24 months';
+  delete from deletion_requests where status in ('completed', 'cancelled')
+    and coalesce(completed_at, cancelled_at) < p_now - interval '3 years';
+  perform set_config('app.retention_purge', 'on', true);
+  delete from policy_acceptances where pseudonymised_at < p_now - interval '3 years';
+  perform set_config('app.retention_purge', 'off', true);
+
+  -- 5. Housekeeping.
+  delete from purge_ledger where purged_at < p_now - interval '60 days';
+  delete from storage_purge_queue where done_at is not null and done_at < p_now - interval '7 days';
+
+  perform public.audit('purge_run', 'system', null, null,
+    jsonb_build_object('books', v_children, 'entries', v_entries, 'accounts_due', v_accounts));
+  return jsonb_build_object('books', v_children, 'entries', v_entries, 'accounts_due', v_accounts,
+                            'more', v_children >= v_limit or v_entries >= v_limit or v_accounts >= v_limit);
+end;
+$$;
+
+-- ops_deletion_residue (from 20261004200000): the residue scan after an account
+-- deletion also looks in sync_private (entry_erasures.author_id). The only change is
+-- the schema list.
+create or replace function public.ops_deletion_residue(p_uid uuid, p_phase text default 'before_finalize')
+returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r record;
+  v_hit boolean;
+  v_out jsonb := '[]'::jsonb;
+  v_skip text[] := array['ops.audit_log.target_profile'];
+begin
+  if p_phase not in ('before_finalize', 'after_finalize') then
+    raise exception 'phase must be before_finalize or after_finalize' using errcode = '22023';
+  end if;
+  if p_phase = 'before_finalize' then
+    v_skip := v_skip || array['public.audit_events.actor_id', 'public.audit_events.subject_id',
+      'public.deletion_requests.profile_id', 'public.entry_versions.superseded_by', 'public.entries.reviewed_by'];
+  end if;
+  for r in
+    select c.table_schema, c.table_name, c.column_name
+      from information_schema.columns c
+      join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
+     where c.table_schema in ('public', 'ops', 'sync_private') and c.data_type = 'uuid' and t.table_type = 'BASE TABLE'
+     order by 1, 2, 3
+  loop
+    continue when (r.table_schema || '.' || r.table_name || '.' || r.column_name) = any (v_skip);
+    execute format('select exists (select 1 from %I.%I where %I = $1)', r.table_schema, r.table_name, r.column_name)
+      into v_hit using p_uid;
+    if v_hit then
+      v_out := v_out || jsonb_build_array(jsonb_build_object('table_schema', r.table_schema, 'table_name', r.table_name, 'column_name', r.column_name));
+    end if;
+  end loop;
+  return v_out;
+end;
+$$;
+
 -- ─── 12. The recording backup sees held drafts (#151, S05's request 3) ───
 -- backup_begin and the orphan sweep ask backup_entry_exists whether a recording id
 -- still has its letter; a waiting letter's recording belongs to its held row. Only
@@ -1569,17 +1988,29 @@ $$;
 -- ─── 13. Privileges ─────────────────────────────────────────────────────
 -- Trigger functions: never called directly.
 revoke execute on function public.entries_set_sync_xid(), public.entries_not_purged(), public.entries_note_erasure(),
-  public.entries_drop_held(), public.child_members_drop_held(), public.held_drafts_not_erased(), public.held_drafts_stamp(),
+  public.entries_drop_held(), public.child_members_drop_held(), public.held_drafts_guard(), public.held_drafts_stamp(),
   public.held_drafts_note_gone()
   from public, anon, authenticated;
 -- sync_private: nothing for anon; signed-in people only what sync_push and sync_pull
--- call as the caller. erasure_recorded is for the definer triggers only.
+-- call as the caller. erasure_recorded and letter_id_taken are for definer code only.
 revoke execute on all functions in schema sync_private from public, anon, authenticated;
 grant execute on function sync_private.note_applied(uuid, uuid, boolean, boolean), sync_private.dup_outcome(uuid, uuid),
   sync_private.held_id_taken(uuid), sync_private.held_on_hold(uuid), sync_private.held_state(uuid, boolean),
   sync_private.note_held(uuid, uuid, boolean), sync_private.held_upsert(uuid, uuid, jsonb), sync_private.held_dup(uuid, uuid),
-  sync_private.held_discard(uuid, xid8), sync_private.erase_held(uuid), sync_private.erase_entry(uuid)
+  sync_private.held_discard(uuid, xid8), sync_private.erase_held(uuid), sync_private.erase_entry(uuid),
+  sync_private.lock_letter_id(uuid), sync_private.note_answer(uuid, jsonb), sync_private.dup_answer(uuid),
+  sync_private.keep_check(uuid, uuid, text, xid8)
   to authenticated;
+-- Service-only, as before (create or replace keeps grants; restated for the reader).
+revoke execute on function public.prepare_account_purge(uuid), public.purge_due(timestamptz, int),
+  public.ops_deletion_residue(uuid, text) from public, anon, authenticated;
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant execute on function public.prepare_account_purge(uuid), public.purge_due(timestamptz, int), public.ops_deletion_residue(uuid, text) to service_role';
+  end if;
+end;
+$$;
 -- Service-only, as before (create or replace keeps grants; restated for the reader).
 revoke execute on function public.ops_replay_ledger(jsonb), public.ops_incident_scope(jsonb) from public, anon, authenticated;
 do $$
@@ -1598,6 +2029,8 @@ comment on column public.entries.words_reviewed_at is
 comment on column public.sync_op_receipts.applied_v is
   'L2 system version: the version the op wrote when its own words applied (ADR 0025 section 2); null otherwise';
 comment on column public.sync_op_receipts.words_conflict is 'L2 flag: the op met words newer than its base: its answer carried current';
+comment on column public.sync_op_receipts.answer is
+  'L2 the first answer of held.discard, entry.erase or a refused Keep, for its repeat: flags only, never words (review K 2)';
 comment on column public.sync_op_receipts.words_refused is 'L2 flag: the op''s words were not applied (conflict_groups text)';
 
 comment on table public.held_drafts is
@@ -1642,5 +2075,7 @@ comment on table sync_private.entry_erasures is
 comment on column sync_private.entry_erasures.entry_id is 'L3 the erased letter''s id';
 comment on column sync_private.entry_erasures.child_id is 'L3 its book';
 comment on column sync_private.entry_erasures.author_id is 'L3 its author';
+comment on column sync_private.entry_erasures.left_parents_xid is 'L2 system version: when the letter left the parents'' view (null: never in it)';
+comment on column sync_private.entry_erasures.left_family_xid is 'L2 system version: when the letter left the family''s view (null: never in it)';
 comment on column sync_private.entry_erasures.erased_at is 'L2 when it was purged';
 comment on column sync_private.entry_erasures.sync_xid is 'L2 system version: the purging transaction, compared with pull cursors';

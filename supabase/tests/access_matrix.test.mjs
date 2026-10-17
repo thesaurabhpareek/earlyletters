@@ -135,6 +135,8 @@ const READS = [
   ['held_drafts_gone', 'select 1 from held_drafts_gone', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['entries: words version and review mark (own rows only)', 'select 1, text_xid, words_reviewed_at from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
   ['book_entries: no review mark', 'select 1, words_reviewed_at from book_entries', [], ['42703', '42703', '42703', '42703', '42703', '42703']],
+  // The erasure record (review L on #208): definer code only, for every persona.
+  ['sync_private.entry_erasures', 'select 1 from sync_private.entry_erasures', [], ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -178,6 +180,10 @@ const WRITES = [
     values ('${NEW_ID}', auth.uid(), '${CHILD}', 'held_letter', 'typed', now(), '2026-09-29')`, ['ok', 'ok', '42501', '42501', 'SCANO', '42501']],
   ['held_drafts: edit A\'s draft', `update held_drafts set typed_text = 'x' where id = '${aHeld}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
   ['held_drafts: delete A\'s draft', `delete from held_drafts where id = '${aHeld}'`,   ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Review L 2: a held draft never takes an id that is a letter or another author's (one plain 22023 for
+  // the book's parents; anyone else gets what RLS would answer).
+  ['held_drafts: insert with another author\'s letter id', `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+    values ('${nAdded}', auth.uid(), '${CHILD}', 'held_letter', 'typed', now(), '2026-09-29')`, ['22023', '22023', '42501', '42501', 'SCANO', '42501']],
   ['held_drafts_gone: write a marker', `insert into held_drafts_gone (id, author_id, child_id, gone) values ('${NEW_ID}', auth.uid(), '${CHILD}', 'erased')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
@@ -356,6 +362,26 @@ check('every security definer function pins search_path', noPath.length === 0);
 const unguarded = fns.filter((f) => f.auth_x && rpcNames.has(f.name) && !/require_user\(\)/.test(f.src) && !/is_anonymous\(\)/.test(f.src));
 for (const f of unguarded) console.log(`      RPC without the anonymous guard: ${f.sig}`);
 check('[K-08] every RPC starts with require_user() or checks is_anonymous()', unguarded.length === 0);
+
+// sync_private (20261016000000, review L on #208): nothing for anon or PUBLIC; signed-in people only the
+// helpers sync_push and sync_pull call as the caller.
+const SYNC_PRIVATE_FOR_SIGNED_IN = ['dup_answer(uuid)', 'dup_outcome(uuid,uuid)', 'erase_entry(uuid)', 'erase_held(uuid)',
+  'held_discard(uuid,xid8)', 'held_dup(uuid,uuid)', 'held_id_taken(uuid)', 'held_on_hold(uuid)', 'held_state(uuid,boolean)',
+  'held_upsert(uuid,uuid,jsonb)', 'keep_check(uuid,uuid,text,xid8)', 'lock_letter_id(uuid)', 'note_answer(uuid,jsonb)',
+  'note_applied(uuid,uuid,boolean,boolean)', 'note_held(uuid,uuid,boolean)'];
+const sp = (await sys(`select p.proname || '(' || coalesce((select string_agg(format_type(t, null), ',' order by i)
+      from unnest(p.proargtypes::oid[]) with ordinality u(t, i)), '') || ')' sig,
+    has_function_privilege('authenticated', p.oid, 'execute') auth_x, has_function_privilege('anon', p.oid, 'execute') anon_x,
+    coalesce(array_to_string(p.proacl, ','), '') acl
+  from pg_proc p where p.pronamespace = 'sync_private'::regnamespace`)).rows
+  .map((f) => ({ ...f, sig: f.sig.replace(/character varying/g, 'varchar').replace(/ /g, '') }));
+const spSigned = sp.filter((f) => f.auth_x).map((f) => f.sig).sort();
+for (const f of spSigned.filter((x) => !SYNC_PRIVATE_FOR_SIGNED_IN.includes(x))) console.log(`      sync_private callable by authenticated, not in the allowlist: ${f}`);
+check('[review L] sync_private: signed-in people execute exactly the allowlisted helpers',
+  JSON.stringify(spSigned) === JSON.stringify([...SYNC_PRIVATE_FOR_SIGNED_IN].sort()));
+check('[review L] sync_private: nothing is executable by anon or PUBLIC, and anon has no usage on the schema',
+  sp.every((f) => !f.anon_x && !/(^|,)=X/.test(f.acl))
+  && !(await sys(`select has_schema_privilege('anon', 'sync_private', 'usage') x`)).rows[0].x);
 
 const policies = (await sys(`select tablename, permissive, array_to_string(roles, ',') roles, coalesce(qual, '') || coalesce(with_check, '') expr
   from pg_policies where schemaname = 'public'`)).rows;

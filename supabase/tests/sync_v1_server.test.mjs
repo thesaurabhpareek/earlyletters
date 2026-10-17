@@ -53,6 +53,10 @@ const ledger = async (kind, id) => (await sys(`select 1 from purge_ledger where 
 const erasure = async (id) => (await sys(`select child_id, author_id from sync_private.entry_erasures where entry_id = $1`, [id])).rows[0];
 const receipt = async (opId) => (await sys(`select applied_v::text a, words_conflict c, words_refused r from sync_op_receipts where op_id = $1`, [opId])).rows[0];
 const book = (r) => r.books.find((b) => b.id === CHILD);
+// jsonb keeps its own key order, so compare JSON values with sorted keys.
+const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === 'object'
+  ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
+const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 const big = (x) => BigInt(x);
 
 // ── 0. Shape ─────────────────────────────────────────────────────────────
@@ -69,7 +73,7 @@ for (const k of ['entry', 'child', 'profile', 'storage_object', 'held_draft']) {
 
 // ── 1. Helper reachability (review B2-3) ─────────────────────────────────
 const helperNames = ['note_applied', 'dup_outcome', 'held_upsert', 'held_discard', 'held_state', 'held_dup', 'note_held',
-  'held_id_taken', 'held_on_hold', 'erase_held', 'erase_entry', 'erasure_recorded'];
+  'held_id_taken', 'held_on_hold', 'erase_held', 'erase_entry', 'erasure_recorded', 'letter_id_taken', 'lock_letter_id'];
 check('the receipt, held and erase helpers are not client RPCs: none is in public',
   (await sys(`select count(*)::int c from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                where n.nspname = 'public' and p.proname = any ($1)`, [helperNames])).rows[0].c === 0);
@@ -77,8 +81,9 @@ check('anon has no usage on sync_private and no execute on any of its functions'
   (await sys(`select not has_schema_privilege('anon', 'sync_private', 'usage')
                  and not exists (select 1 from pg_proc p where p.pronamespace = 'sync_private'::regnamespace
                                   and has_function_privilege('anon', p.oid, 'execute')) as ok`)).rows[0].ok);
-check('signed-in people cannot call erasure_recorded, nor read the erasure record or the held markers',
-  !(await sys(`select has_function_privilege('authenticated', 'sync_private.erasure_recorded(uuid)', 'execute') x`)).rows[0].x
+check('signed-in people cannot call erasure_recorded or letter_id_taken, nor read the erasure record or the held markers',
+  !(await sys(`select has_function_privilege('authenticated', 'sync_private.erasure_recorded(uuid, uuid)', 'execute')
+                 or has_function_privilege('authenticated', 'sync_private.letter_id_taken(uuid, uuid)', 'execute') x`)).rows[0].x
   && (await codeOf(() => as(A, `select 1 from sync_private.entry_erasures`))) === '42501'
   && (await codeOf(() => as(A, `select 1 from held_drafts_gone`))) === '42501');
 check('every sync_private function pins search_path to pg_catalog first and pg_temp last',
@@ -87,7 +92,7 @@ check('every sync_private function pins search_path to pg_catalog first and pg_t
 check('the trigger functions are not callable by anyone',
   (await sys(`select count(*)::int c from pg_proc p where p.pronamespace = 'public'::regnamespace
                and p.proname in ('entries_set_sync_xid', 'entries_not_purged', 'entries_note_erasure', 'entries_drop_held',
-                                 'child_members_drop_held', 'held_drafts_not_erased', 'held_drafts_stamp', 'held_drafts_note_gone')
+                                 'child_members_drop_held', 'held_drafts_guard', 'held_drafts_stamp', 'held_drafts_note_gone')
                and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute'))`)).rows[0].c === 0);
 
 // ── 2. The words version (WP-F16-14) ─────────────────────────────────────
@@ -214,7 +219,7 @@ check('[F16-REQ-024] purge_ledger has the letter; the erasure record has its boo
 check('[F16-REQ-024] the photo is queued for the storage purge by its exact path',
   (await sys(`select 1 from storage_purge_queue where bucket_id = 'entry-photos' and object_path = $1 and not is_prefix`, [photo])).rows.length === 1);
 r = await push(A, [eraseOp]);
-check('a retry of the erase is a no-op duplicate that says missing', r.results[0].dup === true && r.results[0].missing === true);
+check('[review K N6] a retry of the erase is a no-op duplicate that says what the first answer said', r.results[0].dup === true && r.results[0].erased === true);
 const afterB = book(await pull(B, { books: { [CHILD]: { cursor: curB, have: haveB } } }));
 check('[ADR 0025 s12] the next pull of that book recomputes its removal digest (the erasure is after the cursor), not the echo',
   afterB.visible.n === haveB.n - 1 && afterB.rows.every((y) => y.id !== E1));
@@ -360,8 +365,8 @@ await push(A, [op('held.upsert', W1, held(W1, { kind: 'waiting_letter' }))]);
 r = await push(A, [op('entry.erase', W1)]);
 check('[ADR 0025 s12] Erase now on a waiting letter removes its held row and marks it erased', r.results[0].erased === true
   && !(await heldRow(W1)) && (await marker(W1)) === 'erased');
-check('[#197] the erase ledgers the id as a letter and as a held draft, and records the erasure',
-  (await ledger('entry', W1)) && (await ledger('held_draft', W1)) && (await erasure(W1))?.author_id === A);
+check('[#197] the erase ledgers the held draft and records the author\'s erasure; no global letter ledger row (review L 2)',
+  !(await ledger('entry', W1)) && (await ledger('held_draft', W1)) && (await erasure(W1))?.author_id === A);
 r = await push(A, [op('held.upsert', W1, held(W1, { kind: 'waiting_letter' }))]);
 check('[#197, review B-R2] a held upload of an erased id is refused as gone (a Restore made offline never undoes Erase now)',
   r.results[0].code === 'SCDEL' && r.results[0].gone === true && !(await heldRow(W1)) && (await marker(W1)) === 'erased');
@@ -398,6 +403,226 @@ for (let i = 0; i < 3; i++) { const id = id7(); await push(A, [op('held.upsert',
 const page = await pull(A, { held: { cursor: null } }, 2);
 check('held rows page by p_limit with more and a resumable cursor', page.held.rows.length === 2 && page.held.more === true && page.more === true
   && (await pull(A, { held: { cursor: page.held.cursor } }, 200)).held.rows.every((y) => !page.held.rows.some((z) => z.id === y.id)));
+
+// ── 7b. Review L on #208: leaks, id ownership, Erase now, locks, holds ───
+// A second book, so B (co-parent) and N (contributor, family can read) are members throughout.
+const LB = await newChild(A, 'Asha', '2025-04-12');
+await join(B, 'parent', LB, A);
+await join(N, 'contributor', LB, A);
+await sys(`update children set family_can_read = true where id = $1`, [LB]);
+const inLB = (data) => ({ ...data, child_id: LB });
+const bookOf = (r, id) => r.books.find((b) => b.id === id);
+const WRONG = { n: 9999, sum: 1 };
+const lbCursor = async (u) => bookOf(await pull(u, { books: { [LB]: {} } }), LB).cursor;
+// A wrong `have` (a broken or lying phone): an echo means the server did not look; a real digest means
+// something changed that this reader may know about (G-09).
+const lbVisible = async (u, cursor) => bookOf(await pull(u, { books: { [LB]: { cursor, have: WRONG } } }), LB).visible;
+const echoed = (v) => v.n === WRONG.n && v.sum === WRONG.sum;
+const seenBy = async (step) => {
+  const cB = await lbCursor(B);
+  const cN = await lbCursor(N);
+  await step();
+  return { B: !echoed(await lbVisible(B, cB)), N: !echoed(await lbVisible(N, cN)) };
+};
+let seen;
+const LP = id7();
+await push(A, [op('entry.upsert', LP, inLB(letter(LP, { text: 'Just for us two.', inBook: false })))]);
+seen = await seenBy(() => push(A, [op('entry.erase', LP)]));
+check('[review L 1, G-09] Erase now on a private letter: the co-parent and the family member see no change', !seen.B && !seen.N);
+const LT = id7();
+await push(A, [op('entry.upsert', LT, inLB(letter(LT, { text: 'You held the cup.' })))]);
+await push(A, [op('entry.delete', LT)]);
+seen = await seenBy(() => sys(`select public.purge_due(now() + interval '31 days')`));
+check('[review L 1] the day-30 purge of a letter already tombstoned: no change for the co-parent or the family member',
+  !seen.B && !seen.N && !(await entry(LT)) && (await erasure(LT))?.author_id === A);
+const LW = id7();
+await push(A, [op('held.upsert', LW, inLB(held(LW, { kind: 'waiting_letter' })))]);
+seen = await seenBy(() => push(A, [op('entry.erase', LW)]));
+check('[review L 1] Erase now on a waiting letter (author-only): no change for the co-parent or the family member', !seen.B && !seen.N);
+const LV = id7();
+await push(A, [op('entry.upsert', LV, inLB(letter(LV, { text: 'You waved at the train.' })))]);
+seen = await seenBy(() => push(A, [op('entry.erase', LV)]));
+check('[ADR 0025 s12] Erase now on an in-book letter: both readers recompute their digest at the next pull', seen.B && seen.N);
+const LBP = id7();
+await push(A, [op('entry.upsert', LBP, inLB(letter(LBP, { text: 'For the parents.', inBook: false })))]);
+await sys(`update entries set approval = 'pending' where id = $1`, [LBP]);
+seen = await seenBy(() => push(A, [op('entry.erase', LBP)]));
+check('a letter only the parents could read (waiting for review): the co-parent recomputes, the family member does not', seen.B && !seen.N);
+
+// Held ids belong to their author (review L 2).
+const LK = id7();
+await push(A, [op('held.upsert', LK, inLB(held(LK)))]);
+await push(A, [op('entry.upsert', LK, inLB(letter(LK, { text: 'You hummed all the way home.' })))]);
+check('Keep left A\'s kept marker', (await marker(LK)) === 'kept');
+r = await push(B, [op('held.upsert', LK, inLB(held(LK, { typed: 'Papa takes the id.' })))]);
+check('[review L 2] the co-parent cannot hold the id of A\'s letter (one plain 22023), and A\'s kept marker stays',
+  r.results[0].code === '22023' && (await marker(LK)) === 'kept' && !(await heldRow(LK)));
+check('[review L 2] nor by a direct insert', (await codeOf(() => as(B, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-10-01')`, [LK, B, LB]))) === '22023');
+check('nor can A hold a draft with the id of A\'s own letter (it is the letter now)', (await codeOf(() => as(A, `insert into held_drafts
+  (id, author_id, child_id, kind, capture_mode, created_at, occurred_on) values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-10-01')`, [LK, A, LB]))) === '22023');
+const LE = id7();
+await push(A, [op('held.upsert', LE, inLB(held(LE, { kind: 'waiting_letter' })))]);
+await push(A, [op('entry.erase', LE)]);
+r = await push(B, [op('held.upsert', LE, inLB(held(LE)))]);
+check('[review L 2] nor the id of a letter A erased (22023, not "erased": that is A\'s to know)', r.results[0].code === '22023');
+// Review L's restore window: a restore drops A's letter Y before A's phone re-uploads it; B holds Y and erases it.
+const LY = id7();
+await push(A, [op('entry.upsert', LY, inLB(letter(LY, { text: 'Your first word, and it was ball.' })))]);
+await sys(`set session_replication_role = replica`);
+await sys(`delete from entries where id = $1`, [LY]);
+await sys(`set session_replication_role = origin`);
+await push(B, [op('held.upsert', LY, inLB(held(LY, { typed: 'Papa holds the id.' })))]);
+r = await push(B, [op('entry.erase', LY)]);
+check('in the restore window the co-parent can hold and erase the id (nothing on the server says it is A\'s)', r.results[0].erased === true);
+check('[review L 2] that erase writes no global letter ledger row', !(await ledger('entry', LY)));
+r = await push(A, [op('entry.reupload', LY, inLB(letter(LY, { text: 'Your first word, and it was ball.' })), { known_at: new Date().toISOString() })]);
+check('[review L 2] A\'s re-upload of the letter is stored: one person\'s erasure never refuses another person\'s upload',
+  r.results[0].ok && r.results[0].code === undefined && (await entry(LY))?.final_text === 'Your first word, and it was ball.');
+
+// Erase now takes a same-id held row with it (review L 3).
+const LH3 = id7();
+await push(A, [op('entry.upsert', LH3, inLB(letter(LH3, { text: 'You found the moon.' })))]);
+await sys(`set session_replication_role = replica`);   // the state a lost Keep race left behind before this fix
+await sys(`insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text, sync_xid, text_xid)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-10-01', 'You found the moon, second phone.', pg_current_xact_id(), pg_current_xact_id())`, [LH3, A, LB]);
+await sys(`set session_replication_role = origin`);
+r = await push(A, [op('entry.erase', LH3)]);
+check('[review L 3] Erase now removes a held row with the letter\'s id and marks the id erased', r.results[0].erased === true
+  && !(await heldRow(LH3)) && !(await entry(LH3)) && (await marker(LH3)) === 'erased');
+check('[review L 3] and the author\'s pull never serves those words back',
+  !JSON.stringify((await pull(A, { held: { cursor: null } })).held.rows).includes('You found the moon'));
+check('[review L 3] Keep and held.upsert serialise on the id: the lock helper exists and the Keep trigger takes it',
+  (await sys(`select prosrc like '%lock_letter_id%' x from pg_proc where proname = 'entries_drop_held'`)).rows[0].x
+  && (await sys(`select prosrc like '%lock_letter_id%' x from pg_proc where proname = 'held_upsert'`)).rows[0].x);
+
+// entry.erase locks nothing of anyone else's (review L 4).
+const LX = id7();
+await push(A, [op('entry.upsert', LX, inLB(letter(LX, { text: 'You climbed the stairs.' })))]);
+const lockedInside = async (uid, sqlText, params) => {
+  await sys(`delete from sync_rate_windows where profile_id = $1`, [uid]);
+  await h.db.exec('begin');
+  try {
+    await h.db.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claims', $2, true)`,
+      [uid, JSON.stringify({ sub: uid, role: 'authenticated', is_anonymous: false })]);
+    await h.db.exec('set local role authenticated');
+    const res = (await h.db.query(sqlText, params)).rows[0];
+    await h.db.exec('reset role');
+    const row = (await h.db.query(`select (xmax::text::bigint) >= (pg_current_xact_id()::text::numeric % 4294967296)::bigint as locked
+      from entries where id = $1`, [LX])).rows[0];
+    // Class 1731 is the per-letter-id lock (1732 is the per-person push lock, which the caller's own push always takes).
+    const adv = (await h.db.query(`select count(*)::int c from pg_locks where locktype = 'advisory' and classid = 1731 and pid = pg_backend_pid()`)).rows[0].c;
+    return { res, locked: row.locked, advisory: adv };
+  } finally {
+    await h.db.exec('rollback');
+  }
+};
+const probeSelf = await lockedInside(A, `select 1 as x from entries where id = $1 for update`, [LX]);
+check('(the probe sees a row lock when there is one)', probeSelf.locked === true);
+const probe = await lockedInside(C, `select public.sync_push($1::jsonb) r`, [JSON.stringify([op('entry.erase', LX)])]);
+check('[review L 4] an outsider\'s entry.erase of A\'s letter answers missing and locks neither the row nor the id',
+  probe.res.r.results[0].missing === true && probe.locked === false && probe.advisory === 0);
+const probeB = await lockedInside(B, `select public.sync_push($1::jsonb) r`, [JSON.stringify([op('entry.erase', LX)])]);
+check('[review L 4] nor does the co-parent\'s', probeB.res.r.results[0].missing === true && probeB.locked === false && probeB.advisory === 0);
+
+// One answer for anyone who is not a parent of the book named (review L N1).
+const answers = [];
+for (const id of [LX, LE, id7()]) answers.push((await push(C, [op('held.upsert', id, inLB(held(id)))])).results[0].code);
+answers.push((await push(N, [op('held.upsert', LX, inLB(held(LX)))])).results[0].code);
+check('[review L N1] held.upsert by a non-parent answers 42501 whatever the id is (a letter, an erased id, a new one)',
+  answers.every((c) => c === '42501'));
+
+// ── 7c. Review K on #208: Keep against a newer held edit, repeats, ids, order ──
+// K's plain order: phone 1 holds a draft, phone 2 changes its words, phone 1 (not yet pulled) keeps it.
+const KH = id7();
+r = await push(A, [op('held.upsert', KH, inLB(held(KH, { typed: 'One.' })))]);
+const kv1 = r.results[0].held.v;
+await push(A, [op('held.upsert', KH, inLB(held(KH, { typed: 'One, from the second phone.' })), { changed: ['text'], base: kv1 })]);
+const keep1 = op('entry.upsert', KH, inLB(letter(KH, { text: 'One.' })), { held_base: kv1 });
+r = await push(A, [keep1]);
+x = r.results[0];
+check('[review K 1] a Keep that names an older held base is refused as a words conflict: no letter, the held row stays',
+  x.ok && x.applied === false && x.conflict === true && JSON.stringify(x.conflict_groups) === '["text"]'
+  && !(await entry(KH)) && (await heldRow(KH))?.typed_text === 'One, from the second phone.');
+check('[review K 1] its answer carries the held words (typed_text) and their version, and the held state',
+  x.current?.typed_text === 'One, from the second phone.' && x.current.v === (await heldRow(KH)).t && x.held?.id === KH && x.entry === null);
+r = await push(A, [keep1]);
+const { dup, op: _op1, ...rest } = r.results[0];
+const { op: _op2, ...xRest } = x;
+check('[review K 1] a repeat of the refused Keep (a lost answer) says exactly the same', dup === true && same(rest, xRest));
+r = await push(A, [op('entry.upsert', KH, inLB(letter(KH, { text: 'One, from the second phone.' })), { held_base: x.current.v })]);
+check('[review K 1] the keep sent again on the held words version applies: the letter, the held row gone, marker kept',
+  r.results[0].applied === true && (await entry(KH))?.final_text === 'One, from the second phone.' && !(await heldRow(KH)) && (await marker(KH)) === 'kept');
+const KN = id7();
+r = await push(A, [op('held.upsert', KN, inLB(held(KN, { typed: 'Two.' })))]);
+await push(A, [op('held.upsert', KN, inLB(held(KN, { typed: 'Two, changed.' })), { changed: ['text'], base: r.results[0].held.v })]);
+r = await push(A, [op('entry.upsert', KN, inLB(letter(KN, { text: 'Two.' })), { held_base: null })]);
+check('[review K 1, S03] a held_base key that is null counts as 0: refused when the held words differ',
+  r.results[0].applied === false && r.results[0].current?.typed_text === 'Two, changed.' && !!(await heldRow(KN)));
+const KO = id7();
+r = await push(A, [op('held.upsert', KO, inLB(held(KO, { typed: 'Three.' })))]);
+await push(A, [op('held.upsert', KO, inLB(held(KO, { typed: 'Three, changed elsewhere.' })), { changed: ['text'], base: r.results[0].held.v })]);
+r = await push(A, [op('entry.upsert', KO, inLB(letter(KO, { text: 'Three.' })))]);
+check('[review K 1] an older app\'s Keep (no held_base) applies, and the held words it did not carry stay in the letter\'s history',
+  r.results[0].applied === true && !(await heldRow(KO))
+  && (await sys(`select 1 from entry_versions where entry_id = $1 and final_text = 'Three, changed elsewhere.'`, [KO])).rows.length === 1);
+const KS = id7();
+r = await push(A, [op('held.upsert', KS, inLB(held(KS, { typed: 'Four.' })))]);
+r = await push(A, [op('entry.upsert', KS, inLB(letter(KS, { text: 'Four.' })), { held_base: r.results[0].held.v })]);
+check('a Keep on the held version it knew applies at once', r.results[0].applied === true && !(await heldRow(KS)) && (await marker(KS)) === 'kept');
+
+// A repeated held.discard says what the first answer said (review K 2).
+const KD = id7();
+r = await push(A, [op('held.upsert', KD, inLB(held(KD, { typed: 'Five.' })))]);
+const kdv = r.results[0].held.v;
+await push(A, [op('held.upsert', KD, inLB(held(KD, { typed: 'Five, changed elsewhere.' })), { changed: ['text'], base: kdv })]);
+const disc = op('held.discard', KD, {}, { base: kdv });
+r = await push(A, [disc]);
+const firstDiscard = r.results[0];
+r = await push(A, [disc]);
+check('[review K 2] a let-go that met newer words answers kept, and its repeat (a lost answer) says kept again',
+  firstDiscard.kept === true && r.results[0].dup === true && r.results[0].kept === true && !!(await heldRow(KD)));
+
+// A row's id never changes through the Data API (review K N2).
+const KI = id7();
+await push(A, [op('entry.upsert', KI, inLB(letter(KI, { text: 'Six.' })))]);
+check('[review K N2] a direct change of a letter\'s id is refused (SCIMM)',
+  (await codeOf(() => as(A, `update entries set id = $1 where id = $2`, [LE, KI]))) === 'SCIMM');
+check('[review K N2] and of a held draft\'s id', (await codeOf(() => as(A, `update held_drafts set id = $1 where id = $2`, [LE, KD]))) === 'SCIMM');
+
+// One push per person at a time (review K N1).
+await sys(`delete from sync_rate_windows where profile_id = $1`, [A]);
+await h.db.exec('begin');
+await h.db.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claims', $2, true)`,
+  [A, JSON.stringify({ sub: A, role: 'authenticated', is_anonymous: false })]);
+await h.db.exec('set local role authenticated');
+await h.db.query(`select public.sync_push('[]'::jsonb)`);
+await h.db.exec('reset role');
+const personLock = (await h.db.query(`select count(*)::int c from pg_locks where locktype = 'advisory' and classid = 1732
+  and objid = (hashtext($1)::bigint & 4294967295) and pid = pg_backend_pid()`, [A])).rows[0].c;
+await h.db.exec('rollback');
+check('[review K N1] sync_push holds a per-person lock until it commits, so one person\'s pushes never interleave', personLock === 1);
+
+// An older letter gets its words version on its first non-word write (review K N4).
+const KL = id7();
+await push(A, [op('entry.upsert', KL, inLB(letter(KL, { text: 'Seven.' })))]);
+await sys(`alter table entries disable trigger entries_sync_xid`);
+await sys(`update entries set text_xid = null where id = $1`, [KL]);
+await sys(`alter table entries enable trigger entries_sync_xid`);
+const klv = (await entry(KL)).v;
+await push(A, [op('entry.upsert', KL, inLB(letter(KL, { text: 'Seven.', inBook: false })), { changed: ['in_book'] })]);
+check('[review K N4] the first non-word write of an older letter freezes its words version at the version handed out',
+  (await entry(KL)).t === klv);
+r = await push(A, [op('entry.upsert', KL, inLB(letter(KL, { text: 'Seven, edited.' })), { changed: ['text'], base: klv })]);
+check('[review K N4] so a words edit on that version is no conflict', !r.results[0].conflict_groups && (await entry(KL)).final_text === 'Seven, edited.');
+
+// Leaving a book keeps a held draft under a legal hold (review L N2).
+const LHB = id7();
+await push(B, [op('held.upsert', LHB, inLB(held(LHB)))]);
+await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('entry', $1, 'other', 'T-19', 'ops', '2027-01-01')`, [LHB]);
+await as(B, `select public.leave_child($1, true)`, [LB]);
+check('[review L N2] leaving a book keeps the leaver\'s held draft while a legal hold covers it', !!(await heldRow(LHB)));
+await sys(`update legal_holds set released_at = now() where scope_id = $1`, [LHB]);
 
 // ── 8. Every other delete path: leave, book purge, account deletion, replay ──
 const BH = id7();
@@ -440,6 +665,24 @@ await sys(`delete from auth.users where id = $1`, [S]);
 check('[F17 8.4] account deletion takes the person\'s held drafts, markers and erasure records; held_draft is ledgered',
   !(await heldRow(SH2)) && (await sys(`select count(*)::int c from held_drafts_gone where author_id = $1`, [S])).rows[0].c === 0
   && !(await erasure(SE2)) && (await ledger('held_draft', SH2)));
+await sys(`select public.finalize_account_deletion($1, '{}'::jsonb)`, [dreq]);
+const residue = (await sys(`select public.ops_deletion_residue($1, 'after_finalize') r`, [S])).rows[0].r;
+check('[DATA-REQ-034, review L N6] after finalize nothing keyed to the person is left, sync_private included', residue.length === 0);
+const residueA = (await sys(`select public.ops_deletion_residue($1, 'after_finalize') r`, [A])).rows[0].r;
+check('[review L N6] the residue scan reads sync_private (a living author\'s erasure records show up)',
+  residueA.some((x) => x.table_schema === 'sync_private' && x.table_name === 'entry_erasures' && x.column_name === 'author_id'));
+// A held draft under a legal hold holds the account deletion (review L N2).
+const HU = '88888888-8888-8888-8888-888888888888';
+await sys(`insert into auth.users values ('${HU}')`);
+await consent(HU);
+await join(HU, 'parent', S2, C);
+const HH = id7();
+await push(HU, [op('held.upsert', HH, { ...held(HH), child_id: S2 })]);
+await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('entry', $1, 'other', 'T-20', 'ops', '2027-01-01')`, [HH]);
+const dreqH = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'executing', 'ios', now()) returning id`, [HU])).rows[0].id;
+const held2 = (await sys(`select public.prepare_account_purge($1) r`, [dreqH])).rows[0].r;
+check('[review L N2] a held draft under a legal hold holds the account deletion (status held, the draft kept)',
+  held2.held === true && (await sys(`select status from deletion_requests where id = $1`, [dreqH])).rows[0].status === 'held' && !!(await heldRow(HH)));
 // The restore replay (RB-8).
 const RH = id7();
 const RW = id7();
