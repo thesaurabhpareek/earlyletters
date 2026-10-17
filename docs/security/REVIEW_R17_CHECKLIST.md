@@ -19,7 +19,7 @@ Per-stream detail lives with the stream: S01's items and evidence are in `docs/s
 | 5. `peek_invite` with BL-334 | S02 | **pass (self)** in PR #140; the app half is BL-322 |
 | 6. BL-322 | S04 | **pending**: not started on origin on 15 Oct; consumes the `peek_invite` contract in PR #140 |
 | 7. BL-349 | S20 | **pending**: privacy manifest exists (`cf5a4c4`, #27); the archived `PrivacyInfo.xcprivacy` check before C1 is not recorded |
-| 8. Cross-cutting | all | **partly**: 8.1 to 8.6 pass (self) for the database; 8.7 to 8.10 pending |
+| 8. Cross-cutting | all | **partly**: 8.1 to 8.6 and 8.11 pass (self) for the database; 8.7 to 8.10 pending |
 | 9. Sign-off | founder | **not started** |
 
 **Gate status: NOT PASSED.** Blocking today: sections 1, 6 and 7, the two independent reviews of every fenced PR, and the founder's choices in PR #140 ("Founder questions"). One finding from this pass is new and Critical on `develop` (8.2 below, DB-01): fixed in PR #140, so the gate cannot pass on `develop` without it.
@@ -108,8 +108,8 @@ File: `20261015010000_v1_gate_peek_invite_consent_pepper.sql` (ported from `d1cb
 | # | Check | Evidence needed | First pass | Reviewer |
 |---|---|---|---|---|
 | 8.1 | Every public table has RLS; every column is classified (L1 to L4); content columns are L4 | `classification.test.mjs` | pass (self) | |
-| 8.2 | Every table, view and function has an access-matrix row; the anon role executes no public function; every RPC starts with `require_user()` | `access_matrix.test.mjs` structural checks (625 checks, 666 cells in PR #140). **Finding (Critical, `develop` 4183844):** the matrix had no write row for `book_entries`; a probe showed a co-parent can `update book_entries set final_text = ...` on the other parent's in-book letter and the change lands in `entries` (the view runs as its owner). Violates K-10 and the constitution (no one rewrites a person's words). Fixed by `20261015000000` section 6 and pinned by 4.9 | pass (self) after the fix | |
-| 8.3 | Every function in `public`, `ops` and `insights` pins `search_path` with `pg_catalog` first and `pg_temp` last; every function an RLS policy calls is in the sweep; a temp table named like ours changes nothing | `v1_gate_search_path.test.mjs` (sweep of 116 functions, the shadowing regression with a negative control) | pass (self) | |
+| 8.2 | Every table, view and function has an access-matrix row; the anon role executes no public function; every RPC starts with `require_user()` | `access_matrix.test.mjs` structural checks (627 checks, 669 cells in PR #140). **Finding (Critical, `develop` 4183844):** the matrix had no write row for `book_entries`; a probe showed a co-parent can `update book_entries set final_text = ...` on the other parent's in-book letter and the change lands in `entries` (the view runs as its owner). Violates K-10 and the constitution (no one rewrites a person's words). Fixed by `20261015000000` section 6 and pinned by 4.9 | pass (self) after the fix | |
+| 8.3 | Every function in `public`, `ops` and `insights` pins `search_path` with `pg_catalog` first and `pg_temp` last; every function an RLS policy calls is in the sweep; a temp table named like ours changes nothing | `v1_gate_search_path.test.mjs` (sweep of 117 functions, the shadowing regression with a negative control) | pass (self) | |
 | 8.4 | Whether Supabase grants `TEMP` on the database to `authenticated` and `anon` (the shadowing attack needs a direct SQL session) | `select has_database_privilege('authenticated', current_database(), 'TEMP')` on staging | pending (Unverified since PR #32's review; 8.3 does not depend on the answer) | |
 | 8.5 | Author-only working material (raw transcript, machine edits, STT metadata, `language`, and the new `author_edits`, `locked_spans`, `pack_ref`) never leaves through `book_entries` or another member's pull | `v1_wire_contract` "[F06-REQ-033]", "[PRD-REQ-004 Rev]"; `data_governance` K-09 rows | pass (self) | |
 | 8.6 | No applied migration is edited; new files sort after the newest applied one | `migration-guard` CI on the PR; `.github/migrations-applied.txt` unchanged | pass (self, guard run locally) | |
@@ -117,6 +117,7 @@ File: `20261015010000_v1_gate_peek_invite_consent_pepper.sql` (ported from `d1cb
 | 8.8 | Supabase advisors on staging show only the accepted 0029 entries (APPLY.md steps 18 and 21); 0011 (mutable search_path) is empty | Advisor export, dated | pending | |
 | 8.9 | Statement logging is off on staging and production, so no row text reaches Postgres logs (FT-10) | Dashboard setting, dated | pending | |
 | 8.10 | No content, child name, token or person id in any log, event or push payload (LEGAL-REQ-014); `apple-token` canary | S01's canary tests; S07 `_shared/log` | pending here | |
+| 8.11 | Every content column, including file 16's (`author_edits`, `locked_spans`, `pack_ref`, `occurred_precision`, `base_direction`), is behind the sensitive-data consent gate (SCCON), by direct update as well as through `sync_push`; taking a letter out of the book stays ungated (LEGAL-REQ-009) | `v1_wire_contract` "[LEGAL-REQ-006] without consent a direct update of ... is refused (SCCON)" rows (from `3a78bde`) | pass (self) | |
 
 ## 9. Sign-off
 
