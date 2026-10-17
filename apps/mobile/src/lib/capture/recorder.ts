@@ -14,7 +14,7 @@
  * stop, which hands it to the OS; the hash recorded here is re-checked by the
  * DATA-REQ-046 scrub. Residual risk noted in TDD 01 3.4 rule 4.
  */
-import { AudioQuality, IOSOutputFormat, type AudioRecorder, type RecordingOptions } from 'expo-audio';
+import type { AudioRecorder, RecordingOptions } from 'expo-audio';
 import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -27,6 +27,7 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+import { RECORDING_CONTAINER, voiceRecordingOptions } from './recording-format';
 
 /**
  * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
@@ -48,19 +49,12 @@ import {
  * microphone heard it; a clearer copy is made separately
  * (src/lib/audio-enhance).
  *
+ * The container (M4A today, ADTS if ADR 0027 is accepted) is chosen in
+ * recording-format.ts; nothing else differs between them.
+ *
  * listen.tsx uses this object, so these settings have one home.
  */
-export const VOICE_RECORDING_OPTIONS: RecordingOptions = {
-  extension: '.m4a',
-  sampleRate: 48000,
-  numberOfChannels: 1,
-  bitRate: 64000,
-  isMeteringEnabled: true,
-  directory: 'document',
-  ios: { extension: '.m4a', outputFormat: IOSOutputFormat.MPEG4AAC, audioQuality: AudioQuality.HIGH, sampleRate: 48000 },
-  android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac', sampleRate: 48000 },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
-};
+export const VOICE_RECORDING_OPTIONS: RecordingOptions = voiceRecordingOptions(RECORDING_CONTAINER);
 
 export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 

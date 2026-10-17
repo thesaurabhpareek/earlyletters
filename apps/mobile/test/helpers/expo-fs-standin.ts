@@ -127,14 +127,15 @@ export function namesIn(disk: Disk, dir: string): string[] {
 
 /**
  * A stand-in for expo-audio's AudioRecorder with the parts lib/capture/recorder.ts calls. Like the
- * native recorder it picks `recording-<UUID>.m4a` in the recorder folder and creates the file when it
- * prepares; record() is the microphone writing `bytes` of audio.
+ * native recorder it picks `recording-<UUID><extension>` in the recorder folder and creates the file when
+ * it prepares; record() is the microphone writing `bytes` of audio. `extension` is the one the recording
+ * options name (`.m4a` today, `.aac` for ADTS, capture/recording-format.ts).
  */
-export function recorderFor(disk: Disk, bytes = 48_000) {
+export function recorderFor(disk: Disk, bytes = 48_000, extension = '.m4a') {
   return {
     uri: null as string | null,
     async prepareToRecordAsync() {
-      this.uri = `${recorderDir(disk)}/recording-${randomUUID().toUpperCase()}.m4a`;
+      this.uri = `${recorderDir(disk)}/recording-${randomUUID().toUpperCase()}${extension}`;
       put(disk, this.uri, 0);
     },
     record() {

@@ -443,3 +443,35 @@ describe('[J20] Export what is readable, when the book cannot be opened', () => 
     expect(new Map([...h.disk.files].map(([u, f]) => [u, sha256(f.data)]))).toEqual(before);
   });
 });
+
+describe('[ADR 0027] an ADTS take (.aac) needs nothing new from the sweep, erase or recovery export', () => {
+  it('a take killed mid-recording as ADTS is finalized from ExpoAudio, kept byte for byte', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const rec = recorderFor(h.disk, 30_000, '.aac');
+    const take = await app.recorder.beginTake(rec as never, { childId: asha, promptKey: null });
+    expect(rec.uri).toMatch(/\/Documents\/ExpoAudio\/recording-[0-9A-F-]{36}\.aac$/);
+    const written = sha256(bytesAt(rec.uri!));
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finalize-recording': 1 });
+    expect(app.store.getDraft(take.id)).toMatchObject({ state: 'ready', audioUri: rec.uri, audioBytes: 30_000, audioSha256: written });
+    expect(sha256(bytesAt(rec.uri!))).toBe(written); // nothing rewrote the file
+  });
+
+  it('erase removes an ADTS recording, and "Export what is readable" packs one', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const gone = put(h.disk, `${recorderDir(h.disk)}/recording-2C3D4E5F-0000-4000-8000-00000000AAC1.aac`, 500);
+    const kept = put(h.disk, `${recorderDir(h.disk)}/recording-2C3D4E5F-0000-4000-8000-00000000AAC2.aac`, 400);
+    const id = '0199a5b0-0000-7000-8000-00000000e00a';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: gone }));
+    app.store.deleteEntry(id);
+    expect(app.erase.eraseDeletedLetter(id)).toBe(true);
+    expect(h.disk.files.has(gone)).toBe(false);
+    vi.resetModules();
+    const { runRecoveryExport } = await import('../src/lib/resilience/recovery-export');
+    expect(await runRecoveryExport()).toBe('shared');
+    const zip = unzipSync(h.shared[0].data);
+    expect(sha256(zip['recordings/recording-2C3D4E5F-0000-4000-8000-00000000AAC2.aac'])).toBe(sha256(bytesAt(kept)));
+  });
+});
