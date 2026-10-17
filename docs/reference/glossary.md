@@ -8,7 +8,7 @@ verified_on: 2026-10-15
 
 # Glossary
 
-What a word means, what the code calls it, and what the person sees. Code names come from `packages/core/src/domain.ts` and `types.ts` unless noted; screen words come from `packages/content/src/strings.en.ts` unless noted. "Off in every profile" means the code exists on `develop` but every build profile turns it off; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)).
+What a word means, what the code calls it, and what the person sees. Code names come from `packages/core/src/domain.ts` and `types.ts` unless noted; screen words come from `packages/content/src/strings.en.ts` unless noted. "Off in every profile" means the code exists on `develop` but every build profile turns it off; D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145) ([register](../decisions/INDEX.md)).
 
 ## Things in the book
 

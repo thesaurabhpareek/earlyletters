@@ -2,8 +2,8 @@
 title: Speech and languages
 owner: reference-docs
 covers: [apps/mobile/src/lib/transcribe*.ts, apps/mobile/src/lib/transcription-queue/**, apps/mobile/src/lib/models/**, apps/mobile/src/lib/packs/**, apps/mobile/src/lib/language/**, apps/mobile/modules/scribe-audio/**, packages/core/src/**, packs/**, scripts/packs/**]
-verified_at: d74e860
-verified_on: 2026-10-15
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # Speech and languages
@@ -14,8 +14,9 @@ How spoken words become a letter on the phone, how language packs and speech mod
 
 | Step | What happens | Code |
 |---|---|---|
-| Record | AAC M4A, mono, 64 kbps, 48 kHz, into Documents. No voice processing on the original | `apps/mobile/src/lib/capture/recorder.ts` (`VOICE_RECORDING_OPTIONS`) |
+| Record | AAC-LC, mono, 64 kbps, 48 kHz, into `Documents/ExpoAudio`, as M4A on both platforms today (ADR 0027 moves iOS to ADTS once its checks pass). No voice processing on the original | `apps/mobile/src/lib/capture/recorder.ts`, `lib/capture/recording-file.ts` |
 | Queue | A job per recording; a draft open in Review goes first, then letters waiting for words, oldest first | `lib/transcription-queue/machine.ts` |
+| Open the recording | Checks the length the decoder reports. For an ADTS take, the length may not be more than one frame short of the frames counted in the file; if the last frame was cut off by a kill, the run switches once to a temporary copy of the whole frames. A take whose length still cannot be trusted, or with a break inside the file, is refused as `decode_failed` (Try again, or type) rather than transcribed without its end. M4A runs as before | `lib/transcribe-run.ts` (`openRecordingForRun`, `checkedRunDuration`), `lib/capture/adts.ts`, `lib/capture/adts-file.ts` |
 | Decode | 5-minute windows decoded to 16 kHz PCM in memory, no file written | `modules/scribe-audio` (`decodePcm16`) |
 | Loudness check | A window whose loudest 30 ms frame is under -60 dBFS skips VAD and Whisper | `lib/transcribe-energy.ts` |
 | Voice activity | Silero VAD inside whisper.rn finds speech; no speech means an empty transcript and Whisper never runs | `lib/transcribe-whisper.ts` |
@@ -25,7 +26,9 @@ How spoken words become a letter on the phone, how language packs and speech mod
 | Clean | `faithfulClean` and `verifyEdits` from `@scribe/core` | `lib/transcription-queue/clean.ts` |
 | Review | The person sees each fix, can put it back, or keep "Exactly as said" | `apps/mobile/src/app/review.tsx` |
 
-Queue rules (`machine.ts`): one job at a time; nothing runs in the background (a job stopped by backgrounding goes back without counting as a failure); a job waits (`waiting_for_pack`) until its language's speech packs are installed; a failure retries after 30 s and 5 min, then waits for the next launch or "Try again". A recording whose words were set is never transcribed again.
+Queue rules (`machine.ts`): one job at a time; nothing runs in the background (a job stopped by backgrounding goes back without counting as a failure); a job waits (`waiting_for_pack`) until its language's speech packs are installed; a failure retries after 30 s and 5 min, then waits for the next launch or "Try again". A recording whose words were set is never transcribed again. Failures are classified by error code only, never by message text (`machine.ts` `jobFailureOf`).
+
+**Speech downloads that fail** retry by themselves (`lib/transcription-queue/download-retry.ts`): after 1 minute, 5 minutes, 30 minutes, 2 hours, then every 6 hours, only in the foreground, and only on Wi-Fi even when "Use mobile data" is on (`wifiOnly` in `models/speech-packs.ts` and `packs/engine.ts`). A download that failed its hash check retries at most 3 times in 24 hours. No space, an app too old for the pack, and a download the person stopped never retry by themselves. The last failure is shown through `useSpeechDownload` (`use-words.ts`).
 
 **Words that arrive after the letter was saved** (a voice-only letter kept while waiting) are stored exactly as heard, with no machine edits, and the letter asks the parent to read them back (`clean.ts` `lateArrivingWords`, `lib/read-it-back.ts`, D-086).
 
@@ -57,7 +60,7 @@ A pack id is `<kind>.<name>`; kinds are `speech-model`, `text-rules` and `prompt
 | Property | How |
 |---|---|
 | Signed | A pack installs only if it is in the signed pack manifest from `lib/remote`; with no manifest, `ensurePack` fails with `no_manifest` |
-| Verified | The finished file's SHA-256 must equal the manifest entry; a mismatch deletes it and tries a mirror |
+| Verified | The finished file's SHA-256 must equal the manifest entry; a mismatch deletes it and tries a mirror. The hash is streamed natively (`ScribeAudio.sha256File`, CryptoKit) when the module is present, so a large model is not hashed in JavaScript; Expo Go and web fall back to JavaScript (`packs/expo-adapter.ts`) |
 | Resumable | HTTP Range chunks (16 MB) appended to a `.part` file |
 | Atomic | A verified file is moved into `installed/<id>/<version>/` by one rename, with `pack.json` written first |
 | Polite | One download at a time; over 5 MB waits for Wi-Fi unless the person allows mobile data; a remote kill switch (`packDownloads`); a free-space reserve of 1 GB for large packs |

@@ -2,13 +2,13 @@
 title: Operations
 owner: reference-docs
 covers: [.github/**, agents/roster.json, apps/mobile/eas.json, apps/mobile/scripts/**]
-verified_at: b513056
-verified_on: 2026-10-16
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # Operations: CI, releases, environments, agents
 
-How code is checked, how builds and database changes are released, which secrets exist (by name only), and the agent team in brief. Verified at `b513056`: `develop` at `d74e860` plus the documentation-leads commit, which adds two agents to `agents/roster.json`; nothing else on this page differs from `develop`. The release lanes were re-read on 16 Oct against `develop` at `07f1107`, where D-089 to D-092 and ADR 0022 are merged.
+How code is checked, how builds and database changes are released, which secrets exist (by name only), and the agent team in brief. Verified at `develop` `8aabca9`. The two documentation agents (`decision-records`, `reference-docs`) are added to `agents/roster.json` by open PR #164 and are not in the list below until it merges. The release lanes were re-read on 16 Oct against `develop` at `07f1107`, where D-089 to D-092 and ADR 0022 are merged; the proposed release automation (ADR 0026, `docs/release/AUTOMATION.md`) changes no setting yet.
 
 ## Workflows
 
@@ -74,15 +74,13 @@ There is deliberately no `SUPABASE_ACCESS_TOKEN` in CI (POPS-04 in `docs/ops/DEP
 
 ## Agent harness
 
-A dispatcher in plain code (`scripts/agents/dispatch.mjs`) runs role agents from GitHub Actions; they open pull requests into `develop` and never merge. Everything else, including how agents keep context and spend: [`docs/agents/HARNESS.md`](../agents/HARNESS.md), rules in `docs/agents/OPERATING_MODEL.md`, decisions ADR 0018 to 0020.
+A dispatcher in plain code (`scripts/agents/dispatch.mjs`) runs role agents from GitHub Actions; they open pull requests into `develop` and never merge. Everything else, including how agents keep context and spend: [`docs/agents/HARNESS.md`](../agents/HARNESS.md), rules in `docs/agents/OPERATING_MODEL.md`, decisions ADR 0018 to 0021. Five **stewards** (department `standards`, kind `steward`) own the engineering compendium in `docs/engineering/` and review pull requests that touch their paths; delivery agents build (ADR 0021, `docs/agents/OPERATING_MODEL.md` section 1).
 
 <!-- facts:agents -->
 | Handle | Title | Kind | Department |
 |---|---|---|---|
 | `red-team` | Principal Reviewer (red team) | reviewer | quality |
 | `product` | Product Manager | planner | product |
-| `decision-records` | Decision Records Lead | worker | operations |
-| `reference-docs` | Reference Docs Lead | worker | operations |
 | `qa` | Quality Engineer | worker | quality |
 | `mobile` | Mobile Engineer (iOS first, Expo) | worker | engineering |
 | `data-architect` | Data Architect (Supabase) | worker | data |
@@ -94,6 +92,11 @@ A dispatcher in plain code (`scripts/agents/dispatch.mjs`) runs role agents from
 | `design-systems` | Design Systems and Accessibility Lead | worker | design |
 | `analytics` | Analytics Engineer | worker | data |
 | `content` | Brand and Content Lead | worker | brand |
+| `principal-architect` | Principal Architect | steward | standards |
+| `data-steward` | Data Steward | steward | standards |
+| `security-architect` | Identity and Security Architect | steward | standards |
+| `compliance-engineer` | Privacy and Compliance Engineer | steward | standards |
+| `ai-eng-lead` | AI-Assisted Engineering Lead | steward | standards |
 | `decision-science` | Decision Scientist | worker | data |
 | `legal` | Legal Drafting (counsel-facing) | worker | legal |
 | `marketing` | Growth and Marketing Lead | worker | growth |

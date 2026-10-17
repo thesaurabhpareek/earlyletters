@@ -2,20 +2,21 @@
 title: Data and storage
 owner: reference-docs
 covers: [apps/mobile/src/lib/store.ts, apps/mobile/src/lib/db/**, apps/mobile/src/lib/export/**, apps/mobile/src/lib/capture/**, apps/mobile/src/lib/model-files.ts, apps/mobile/src/lib/packs/app-support.ts, apps/mobile/src/lib/supabase/secure-storage.ts, apps/mobile/src/lib/shelf-days.ts, supabase/migrations/**, .github/migrations-applied.txt]
-verified_at: d74e860
-verified_on: 2026-10-15
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # Data and storage
 
-Where every piece of data lives on the phone, how deletion and export work, and the server schema that exists on `develop` (only two migrations applied live; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md))). Classification levels for every column and file: [`docs/legal/DATA_CLASSIFICATION.md`](../legal/DATA_CLASSIFICATION.md). Rules for deletion and export: [`docs/legal/DELETION_AND_EXPORT_SPEC.md`](../legal/DELETION_AND_EXPORT_SPEC.md).
+Where every piece of data lives on the phone, how deletion and export work, and the server schema that exists on `develop` (only two migrations applied live; D-100 ships server features in v1.0, but every build profile on `develop` still has them off ([register](../decisions/INDEX.md))). Classification levels for every column and file: [`docs/legal/DATA_CLASSIFICATION.md`](../legal/DATA_CLASSIFICATION.md). Rules for deletion and export: [`docs/legal/DELETION_AND_EXPORT_SPEC.md`](../legal/DELETION_AND_EXPORT_SPEC.md).
 
 ## On the phone
 
 | What | Where | Backup | Code |
 |---|---|---|---|
 | Database `scribe.db` | expo-sqlite, opened with `openDatabaseSync` | No exclusion set by the app | `lib/store.ts`, `lib/db/repos/open-native.ts` |
-| Recordings (`.m4a`) | Documents directory | Included in the person's iPhone or iCloud backup, on purpose (D-033, D-085) | `lib/capture/recorder.ts`, `lib/model-files.ts` |
+| Recordings (`.m4a` today; `.aac` on iOS once ADR 0027 flips) | The recorder's folder, `Documents/ExpoAudio` on iOS (`<files>/Audio` on Android), plus older takes at the top of Documents | Included in the person's iPhone or iCloud backup, on purpose (D-033, D-085) | `lib/capture/recorder.ts`, `lib/capture/recordings.ts`, `lib/capture/sweep.logic.ts` `recorderFolder` |
+| Whole-frame copies of an ADTS take | Caches, named by a key of the file name and time; removed when the transcription run ends, and by Erase now and the purge | Never backed up | `lib/capture/adts-file.ts` |
 | Listening copies | `Application Support/listening/<letter id>.m4a` plus a `.json` sidecar | Excluded | `lib/audio-enhance/index.ts`, `modules/scribe-audio` |
 | Installed packs and speech models | `Application Support/packs/installed/<id>/<version>/` (partials in `staging/`) | Excluded | `lib/packs/engine.ts`, `lib/packs/app-support.ts` |
 | Signed document cache | `Application Support/remote` | Excluded | `lib/remote/expo-adapter.ts` |
@@ -44,7 +45,11 @@ Per-table detail is in [mobile-app.md](mobile-app.md#device-database). Rules the
 
 - `raw_transcript`, `captured_at` and the audio never change after insert.
 - Review's save is one transaction: insert the letter, delete the draft, count the letter in the ledger (`saveLetterFromDraft`).
-- A draft row exists before the microphone goes live; the launch sweep finishes cut-off takes, rebases paths after an iOS container move, and never deletes audio (`lib/capture/sweep.ts`).
+- A draft row exists before the microphone goes live; the launch sweep finishes cut-off takes, rebases paths after an iOS container move, and never deletes audio (`lib/capture/sweep.ts`). It looks in both recording folders (`recordingFolders()` in `lib/capture/recordings.ts`): the top of Documents, then the recorder's own folder. A row keeps the file at its exact stored path; only when that path is missing is a file matched by name. The sweep, erase and the recovery export all use this one listing.
+
+### The recording container
+
+Every take is AAC-LC (ADR 0005). The container is set per platform in `RECORDING_CONTAINERS` (`lib/capture/recording-file.ts`): both iOS and Android are `'m4a'` on `develop`. ADR 0027 moves iOS to ADTS (`.aac`), which still plays to the last whole frame after the app is killed, once its three checks pass; Android stays M4A. Code already handles both: the file extension names the container, the sweep and erase count `.aac` as a recording (`RECORDING_EXTENSIONS` in `sweep.logic.ts`), Export names each file by its container, and `lib/capture/adts.ts` counts ADTS frames so a transcription run never plans over less audio than the file holds (`lib/transcribe-run.ts`; see [speech-and-languages.md](speech-and-languages.md)). Why: [ADR-0027](../decisions/INDEX.md).
 - New columns need a row in DATA_CLASSIFICATION 4.5 (comment in `migrations.ts`). That section still says version 4; the code is at version 5, which adds no column.
 
 ## Deleting on the phone
@@ -53,12 +58,12 @@ Per-table detail is in [mobile-app.md](mobile-app.md#device-database). Rules the
 |---|---|---|
 | Delete a letter | Asks first, then sets `deleted_at` (a tombstone). The letter moves to Recently deleted | `app/letter/[id].tsx`, `store.deleteEntry` |
 | Restore | Clears the tombstone; the letter returns exactly as it was | `app/settings/recently-deleted.tsx`, `store.undeleteEntry` |
-| Erase now | Removes the recording and its listening copy first, then the row; idempotent | `store.eraseEntry`, `lib/capture/erase.ts` |
+| Erase now | Removes the recording (at its stored path and any same-name file in either recording folder that no other row may own), its listening copy and any whole-frame copy first, then the row; idempotent | `store.eraseEntry`, `lib/capture/erase.ts`, `recordings.ts` `erasableFiles` |
 | 30-day purge | At launch, after the sweep and never during a recording: letters deleted `SHELF_DAYS` (30) days ago or more are erased the same way. Skipped when sync is on, or when the clock is earlier than the last recorded launch | `erase.ts` `purgeShelfAtLaunch`, `store.purgeExpired`, `lib/shelf-days.ts` |
 | Hide a book | Hides the child from lists; nothing is deleted | `store.hideChild` |
 | Remove speech files | Settings, Recordings or Storage; letters and recordings stay, new recordings wait for words | `app/settings/recordings.tsx`, `app/settings/storage.tsx` |
 
-Deleted letters still count toward the free letters (D-083). The ledger exports `eraseLetterLedger()` for "Erase everything"; no screen calls it on `develop`. Account deletion (`app/settings/delete-account.tsx`, `lib/account-deletion`) is a server feature, off in every build profile; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). Reasons: D-085 in [../DECISIONS.md](../DECISIONS.md).
+Deleted letters still count toward the free letters (D-083). The ledger exports `eraseLetterLedger()` for "Erase everything"; no screen calls it on `develop`. Account deletion (`app/settings/delete-account.tsx`, `lib/account-deletion`) is a server feature, off in every build profile on `develop`; D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145) ([register](../decisions/INDEX.md)). Reasons: D-085 in [../DECISIONS.md](../DECISIONS.md).
 
 ## Export
 
@@ -67,10 +72,10 @@ Settings, Export (`app/settings/export.tsx`, `lib/export/`) makes one ZIP on the
 | Path in the ZIP | Holds |
 |---|---|
 | `README.txt`, `index.html` | How to read it without the app |
-| `schema/export-v1.schema.json` | The JSON Schema for the data files |
-| `data/entries.json`, `data/children.json`, `data/account.json` | Every letter on the phone (in book or private, every book including hidden ones); own letters carry raw transcript, its SHA-256, machine edits and engine version |
+| `schema/export-v1.schema.json` | The JSON Schema for the data files. Schema version 1.2.0 (`lib/export/schema.ts` `EXPORT_SCHEMA_VERSION`): 1.1.0 added `consent_on_this_phone` to `account.json`, 1.2.0 allows `.aac` recordings. Older exports still validate against it |
+| `data/entries.json`, `data/children.json`, `data/account.json` | Every letter on the phone (in book or private, every book including hidden ones); own letters carry raw transcript, its SHA-256, machine edits and engine version. `account.json` also carries the consent choices this phone holds: the 18+ answer and the usage-sharing choice (`not_answered` when never asked); not a server record |
 | `letters/<book>/<yyyy-mm>/<date>_<id>.txt` | One text file per letter |
-| `audio/<letter id>.m4a` | Original recordings, byte for byte; a missing one is listed as `audio_missing` |
+| `audio/<letter id>.m4a` or `.aac` | Original recordings, byte for byte, each named and labelled by its own container (`audio/mp4` or `audio/aac`); a missing one is listed as `audio_missing` |
 | `book/<book>.pdf` | The printable book: letters in the book that have words; quiet-day marks never print |
 
 Recently deleted letters are left out by design (`build.logic.ts`). The ZIP is stored without compression and must stay under 4 GiB (`pack.ts` `MAX_EXPORT_BYTES`). The launch recovery screen has its own "Export what is readable" (`lib/resilience/recovery-export.ts`).

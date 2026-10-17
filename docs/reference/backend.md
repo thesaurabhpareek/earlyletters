@@ -2,13 +2,13 @@
 title: Backend
 owner: reference-docs
 covers: [supabase/**, packages/api/src/**, .github/workflows/deploy-db.yml, apps/mobile/src/lib/sync/**, apps/mobile/src/lib/supabase/**]
-verified_at: d74e860
-verified_on: 2026-10-15
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # Backend (Supabase)
 
-**No build profile on `develop` uses anything on this page.** Server code exists, but `EXPO_PUBLIC_SERVER_FEATURES=off` and `EXPO_PUBLIC_ANALYTICS=off` in every `eas.json` profile. Whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). With `EXPO_PUBLIC_SERVER_FEATURES` off, `apps/mobile/src/lib/supabase/client.ts` returns no client and `startSync()` returns at once (`apps/mobile/src/lib/capabilities.ts`). Of the 12 migrations on `develop`, only the 2 in `.github/migrations-applied.txt` are applied to the live project. Whether any Edge Function is deployed is **unverified**: no record of a deploy was found in the repo.
+**No build profile on `develop` uses anything on this page.** Server code exists, but `EXPO_PUBLIC_SERVER_FEATURES=off` and `EXPO_PUBLIC_ANALYTICS=off` in every `eas.json` profile. D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145); analytics stays off in v1.0 (D-095) ([register](../decisions/INDEX.md)). With `EXPO_PUBLIC_SERVER_FEATURES` off, `apps/mobile/src/lib/supabase/client.ts` returns no client and `startSync()` returns at once (`apps/mobile/src/lib/capabilities.ts`). Of the 12 migrations on `develop`, only the 2 in `.github/migrations-applied.txt` are applied to the live project. Whether any Edge Function is deployed is **unverified**: no record of a deploy was found in the repo.
 
 The pieces below are built and tested so a build can switch them on. Reasons: ADR 0004 (sync, amended by D-023), ADR 0016 (signed documents), ADR 0017 (API standards), D-041 (two projects, CI-only migrations).
 
@@ -73,7 +73,7 @@ Plus is not on the server: the entitlement functions and tables created in `chil
 
 ## Contracts (`packages/api`)
 
-Shared by the app, Edge Functions and scripts: the pack manifest, remote config, content bundle, the response envelope and errors, and integrity helpers (canonical JSON, Ed25519, SHA-256). Remote config has a closed vocabulary: kill switches only stop server-dependent features (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`), and there is no key for analytics, consent, prices or the server-features switch (`packages/api/src/remote-config.ts`). Trusted signing keys: `packages/api/src/keys.ts`, empty on `develop`.
+Shared by the app, Edge Functions and scripts: the pack manifest, remote config, content bundle, the response envelope and errors, and integrity helpers (canonical JSON, Ed25519, SHA-256). Remote config has a closed vocabulary: kill switches only stop server-dependent features (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`), and there is no key for analytics, consent, prices or the server-features switch (`packages/api/src/remote-config.ts`). Trusted signing keys: `packages/api/src/keys.ts`, empty on `develop`; its comment says the founder generates a key once with `npx tsx scripts/packs/keygen.ts` and pastes the printed public key there. While it is empty the app fails closed: no downloaded pack installs and the bundled remote-config defaults stay.
 
 ## How deploys work
 

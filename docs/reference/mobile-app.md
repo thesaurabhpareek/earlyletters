@@ -2,13 +2,13 @@
 title: Mobile app
 owner: reference-docs
 covers: [apps/mobile/src/**, apps/mobile/app.config.ts, apps/mobile/eas.json, apps/mobile/modules/**, apps/mobile/package.json, apps/mobile/.env.development]
-verified_at: d74e860
-verified_on: 2026-10-15
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # Mobile app (`apps/mobile`)
 
-The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). Calm brand atmosphere (#99): Tonight and Book draw `Lamp` (`components/ui/lamp.tsx`, a decorative light pool, off under Reduce Motion), and the welcome step of onboarding shows `Lamp` and the `QuotePair` brand device (`components/ui/quote-pair.tsx`; registry context `app.brand-device` in `packages/brand/registry.ts`); the Book empty state uses the device instead of a line drawing (`components/ui/empty-state.tsx`). The whole system: [system.md](system.md).
+The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). Calm brand atmosphere (#99, then the experience pass P1, #192): Tonight and Book draw `Lamp` (`components/ui/lamp.tsx`), a decorative light pool whose scenes, tones and peaks are `tokens.atmosphere` in `packages/design-tokens`. `useUnlitRoom()` (for rooms where the lamp should fade out rather than cut) exists, but no screen calls it on `develop` yet. Contrast rules for the lamp: [D-110](../decisions/INDEX.md). The welcome step of onboarding shows `Lamp` and the `QuotePair` brand device (`components/ui/quote-pair.tsx`; registry context `app.brand-device` in `packages/brand/registry.ts`); the Book empty state uses the device instead of a line drawing (`components/ui/empty-state.tsx`). The whole system: [system.md](system.md).
 
 ## Screens
 
@@ -57,20 +57,20 @@ Expo Router reads `apps/mobile/src/app`. Groups in brackets do not appear in the
 | `/write` | screen | `apps/mobile/src/app/write.tsx` |
 <!-- /facts:routes -->
 
-How they are presented (from the `Stack` in `src/app/_layout.tsx`):
+How they are presented. The root `Stack` in `src/app/_layout.tsx` types no presentation or duration itself: it spreads `useRouteTransitions()` (`lib/motion.ts`) into each screen's options, which reads one table, `ROUTES` in `lib/transitions.logic.ts` (tested in `apps/mobile/test/transitions.test.ts`). Each route has a move: `dissolve` (a cross-fade over `tokens.motion.route.dissolveMs`), `sheet` and `push` (the platform's own), `cardToPage`, or `none` (the tab root). Under Reduce Motion a dissolve shortens to `fadeMs` and native moves follow the system.
 
 | Route | Presentation | What it is |
 |---|---|---|
 | `(tabs)`: `/`, `/book`, `/family` | Tabs | Tonight, Book, Family (`(tabs)/_layout.tsx`) |
 | `/onboarding` | Card, no swipe back | First run: promise, child or children, birthday or due date, signature |
 | `/write` | Modal | Typing a letter, autosaved to a draft |
-| `/listen` | Full screen, no swipe | Recording; starts only from a tap (`lib/resilience/start-intent.ts`) |
-| `/review` | Modal, no swipe | Review fixes, choose "Exactly as said", Keep |
-| `/read-together` | Full screen | One letter at a time, oldest first, plain playback |
-| `/letter/[id]` | Card with transparent header | The reading page |
+| `/listen` | Full screen, no swipe, cross-dissolve | Recording; starts only from a tap (`lib/resilience/start-intent.ts`) |
+| `/review` | Full screen, no swipe, cross-dissolve | Review fixes, choose "Exactly as said", Keep. Full screen (it was a page sheet) so Listen dissolves into Review with no change of shape |
+| `/read-together` | Full screen, cross-dissolve | One letter at a time, oldest first, plain playback |
+| `/letter/[id]` | Platform push, transparent header | The reading page. The card-to-page move (`components/motion/card-transition.tsx`) is built but the route keeps the push until the page mounts it (comment in `lib/transitions.logic.ts`) |
 | `/plus/confirmed` | Modal | Purchase confirmation after a new Plus purchase |
-| `(auth)`, `/invite` | Modal | Server features. With `SERVER_FEATURES=off` (every profile), nothing opens them and a stale link goes home (`(auth)/_layout.tsx`, `+native-intent.tsx`); whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)) |
-| `/settings/*` | Stack | Settings home and every row |
+| `(auth)`, `/invite` | Modal (sheet) | Server features. With `SERVER_FEATURES=off` (every profile on `develop`), nothing opens them and a stale link goes home (`(auth)/_layout.tsx`, `+native-intent.tsx`). D-100 turns server features on for v1.0; the profiles that do so are not on `develop` yet ([register](../decisions/INDEX.md)) |
+| `/settings/*` | Platform push | Settings home and every row |
 
 With server features off, Settings does not offer Account or Delete account (`settings/index.tsx`), and the Family tab shows the co-parent "coming soon" presentation (`components/family/coparent-soon.tsx`).
 
@@ -108,8 +108,8 @@ Screens call these; the API for the store is in `apps/mobile/src/lib/README.md`.
 |---|---|
 | `store.ts` | The facade over the device database: one connection, defaults, change events. SQL lives in `db/repos/*` |
 | `db/` | Migrator (`migrations.ts`), engine-neutral `SqlDb` (`sql.ts`), expo-sqlite adapter, repositories |
-| `capture/` | Recorder (draft before mic), launch sweep, probe of killed takes, erase of deleted recordings |
-| `transcribe*.ts` | The `Transcriber` interface, whisper.rn adapter, chunk planner, post-processing, prompt, loudness check, language codes, dev-only sample |
+| `capture/` | Recorder (draft before mic), launch sweep, probe of killed takes, erase of deleted recordings, the recording container per platform (`recording-file.ts`) and ADTS frame counting (`adts.ts`, `adts-file.ts`). See [data-and-storage.md](data-and-storage.md) |
+| `transcribe*.ts` | The `Transcriber` interface, whisper.rn adapter, chunk planner, the run's input checks (`transcribe-run.ts`), post-processing, prompt, loudness check, language codes, dev-only sample |
 | `transcription-queue/` | One-at-a-time transcription jobs, retries, cleaning through `@scribe/core` |
 | `models/` | Speech model catalog, tiers, speech packs, download consent, whisper runtime |
 | `packs/` | Pack engine: resumable, verified, atomic installs into Application Support |
@@ -125,12 +125,32 @@ Screens call these; the API for the store is in `apps/mobile/src/lib/README.md`.
 | `build-env.ts` | `APP_ENV` and `devShortcutsAllowed` |
 | `read-it-back.ts`, `provenance.ts` | "Words are ready. Read it back." flag; how a letter's words came to be |
 | `copy.ts`, `permission-copy.ts`, `dates.ts` | Strings from `@scribe/content`, OS purpose strings, the one date format |
-| `a11y.ts`, `motion.ts`, `haptics.ts`, `audio-mode.ts` | Accessibility, Reduce Motion, haptics vocabulary, audio session |
+| `a11y.ts`, `motion.ts`, `haptics.ts`, `audio-mode.ts` | Accessibility, Reduce Motion and entry and exit animations, haptics vocabulary, audio session |
+| `transitions.logic.ts` | The screen-transition table and its rules (see Routes above) |
+| `licences.ts` | Licence notices for every bundled library, read from `src/generated/licences.json`, which `npm run licences:generate -w @scribe/mobile` makes (`scripts/licences/generate.mjs`); a test fails when the file is stale. For the Licenses page, which is not on `develop` yet (experience pass P6) |
 | `navigation.logic.ts`, `review-layout.logic.ts`, `shelf-days.ts`, `model-files.ts`, `utils.ts` | Back and close idioms, Review layout rules, the 30-day shelf, dev model folder, class name helper |
 | `analytics/` | Opt-in analytics glue; inert while `ANALYTICS=off` |
-| `auth/`, `supabase/`, `sync/`, `family/`, `account-deletion/` | Server features, off in every build profile; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). Sign-in, the Supabase client, outbox and cursor sync, invites, account deletion. `lib/supabase/secure-storage.ts` is also used, with server features off, by the letter ledger |
+| `auth/`, `supabase/`, `sync/`, `family/`, `account-deletion/` | Server features, off in every build profile on `develop`; D-100 ships them in v1.0 ([register](../decisions/INDEX.md)). Sign-in, the Supabase client, outbox and cursor sync, invites, account deletion. `lib/supabase/secure-storage.ts` is also used, with server features off, by the letter ledger |
 
-Pure logic files end in `.logic.ts` and are tested in Node (`apps/mobile/test`, vitest).
+Pure logic files end in `.logic.ts` and are tested in Node (`apps/mobile/test`, vitest). `npm run test:coverage -w @scribe/mobile` runs them with coverage (`vitest.coverage.config.ts`).
+
+`src/dev/` holds code for test builds only: `e2e-seams.ts` loads the kill drill (`kill-drill.ts`, `kill-drill.logic.ts`) only in a build with `EXPO_PUBLIC_E2E=1` whose app environment is neither `preview` nor `production`, and the drill refuses to arm except on a simulator, in the development bundle. The host side is `apps/mobile/e2e/kill/`. On `develop` the root layout does not call `useE2eSeams()` yet (the file's own comment names the wiring as a request to S20).
+
+## Shared components from the experience pass
+
+Built in P1 (#192, #218); most are not used by a screen on `develop` yet, so later experience-pass packages wire them in.
+
+| Component | Path | What it is | Used by a screen on `develop` |
+|---|---|---|---|
+| `Lamp`, `LampView`, `useUnlitRoom` | `components/ui/lamp.tsx`, `lamp.logic.ts` | The light pool behind a screen, by scene and time of day | `Lamp`: Tonight, Book, onboarding; `useUnlitRoom`: none |
+| `BookCover` | `components/book/book-cover.tsx` | A paper book with the child's name; no images | None |
+| `Toast` | `components/ui/toast.tsx`, `toast.logic.ts` | One quiet confirmation at a time, usually with Undo | The letter page, through `components/ui/provider.tsx` |
+| `PageTurn` | `components/motion/page-turn.tsx` | A sideways page turn for Read together; a 200 ms cross-fade under Reduce Motion | None |
+| `CardToPage` | `components/motion/card-transition.tsx` | A letter card grows into its page, its words staying in place | None |
+| `ExcerptFade` | `components/motion/excerpt-fade.tsx` | A few lines of a person's words ending in a fade, never an ellipsis; the whole text stays readable to VoiceOver | None |
+| `LineArt`, `DrawOn` | `components/ui/line-art.tsx`, `components/motion/draw-on.tsx` | Line drawings, drawn on | `LineArt`: onboarding, empty and state screens, content blocks, the co-parent card |
+
+Specs: `docs/design/MOTION.md`, `docs/design/COMPONENTS.md` and `docs/design/EXPERIENCE_PASS_2026-10.md`.
 
 ## Device database
 

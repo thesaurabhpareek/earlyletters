@@ -2,8 +2,8 @@
 title: The whole system
 owner: reference-docs
 covers: [apps/mobile/src/app/_layout.tsx, apps/mobile/src/lib/capabilities.ts, apps/mobile/src/lib/remote/**, apps/mobile/src/lib/build-env.ts, .github/migrations-applied.txt]
-verified_at: d74e860
-verified_on: 2026-10-15
+verified_at: 8aabca9
+verified_on: 2026-10-17
 ---
 
 # The whole system on one page
@@ -12,7 +12,7 @@ Early Letters (codename `scribe`) is an iOS app, built with Expo, that lets a pa
 
 ## Build switches: server features and analytics are off
 
-Sign-in, sync, co-parent sharing and backup exist as code on `develop`, and every build profile switches them off at build time. Whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)): issue #127 and `apps/mobile/src/lib/capabilities.ts` (founder decision of 3 Oct 2026) describe an on-device v1.0, while later open proposals record server features on in v1.0. This page describes what a build from `develop` does today.
+Sign-in, sync, co-parent sharing and backup exist as code on `develop`, and every build profile switches them off at build time. D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145): the log settles it, replacing the on-device v1.0 in issue #127 (see [the register](../decisions/INDEX.md), D-100 and R-001); the comment in `apps/mobile/src/lib/capabilities.ts` still describes the earlier on-device decision. Analytics stays off in v1.0 (D-095). This page describes what a build from `develop` does today.
 
 | Switch | Read in | Value in every `eas.json` profile | Off means |
 |---|---|---|---|

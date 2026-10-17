@@ -1,6 +1,6 @@
 # Documentation index
 
-Start here. This page says which document answers which question. It is kept current by the `reference-docs` agent (`.claude/agents/reference-docs.md`). Status first: server code (sign-in, sync, co-parent sharing, backup) exists on `develop`, but every build profile turns server features and analytics off, and only two migrations are applied live. Whether these ship in v1.0 is an open decision ([decisions/INDEX.md](decisions/INDEX.md)). Where a document and the code disagree, the [reference pages](reference/README.md) describe what the code does today.
+Start here. This page says which document answers which question. It is kept current by the `reference-docs` agent (`.claude/agents/reference-docs.md`). Status first: server code (sign-in, sync, co-parent sharing, backup) exists on `develop`, but every build profile turns server features and analytics off, and only two migrations are applied live. D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145) ([decisions/INDEX.md](decisions/INDEX.md)). Where a document and the code disagree, the [reference pages](reference/README.md) describe what the code does today.
 
 ## How it works today (as built)
 
