@@ -13,16 +13,22 @@
 # .github/migrations-applied.txt. It never edits that file: a pull request
 # records them (DEPLOY.md, "After a deploy").
 #
-# Staging then runs RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts):
-# it also reads SUPABASE_STAGING_URL, SUPABASE_STAGING_PUBLISHABLE_KEY and
-# SUPABASE_STAGING_PROJECT_REF from the staging Environment, all public values
-# kept as secrets so logs mask them, and fails the job if staging is not ready.
+# Staging also deploys on a push to develop that changes supabase/migrations/**
+# (RA-20-04), behind the staging reviewer, so develop's Edge Functions never wait
+# on main for their schema: deploy-functions.yml deploys nothing until staging
+# has every migration on develop. Approve this run first when both wait.
+#
+# Staging then runs RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts)
+# with --db-only: the database checks this job owns, not function or Auth state
+# it does not deploy. It also reads SUPABASE_STAGING_URL,
+# SUPABASE_STAGING_PUBLISHABLE_KEY and SUPABASE_STAGING_PROJECT_REF from the
+# staging Environment, all public values kept as secrets so logs mask them.
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Deploy database
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ['db-v*']
 
 permissions:
@@ -164,7 +170,9 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
           PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
-        run: node scripts/ops/staging-smoke.ts --project-ref "$PROJECT_REF" --summary "$GITHUB_STEP_SUMMARY"
+        # --db-only (#202): the database checks only. Function health and Auth
+        # belong to deploy-functions.yml and AF-13, which this job does not deploy.
+        run: node scripts/ops/staging-smoke.ts --project-ref "$PROJECT_REF" --db-only --summary "$GITHUB_STEP_SUMMARY"
 
   production:
     name: deploy to production

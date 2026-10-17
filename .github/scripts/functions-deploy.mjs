@@ -5,20 +5,27 @@
 //   node .github/scripts/functions-deploy.mjs plan --changed <file>   a push: <file> lists the changed paths
 //   node .github/scripts/functions-deploy.mjs plan --only <name|all>  a manual run
 //   node .github/scripts/functions-deploy.mjs confirm --before <json> --after <json> --deployed a,b [--failed c]
+//   SUPABASE_DB_URL=... node .github/scripts/functions-deploy.mjs migrations   staging has every local migration?
 //
 // plan prints one JSON object and exits 1 on an error (nothing is deployed then):
 //   { deploy, noVerifyJwt, smoke, changed, notes, warnings, errors }
 // A push deploys every function once any function's code changed, not only the
-// changed ones: GitHub replaces a pending run in the concurrency group with the
-// newest one, so the newest run has to carry every earlier change (deploy-db.yml
-// works the same way: `db push` applies everything pending).
+// changed ones, and the deploy job deploys develop's tip, not the pushed commit:
+// whichever run goes last deploys the newest develop, so neither queue order nor
+// a replaced pending run can move staging backwards or drop a change.
 //
 // confirm reads two `supabase functions list -o json` outputs (before and after
 // the deploys), prints a Markdown table and exits 1 unless every deployed
-// function is ACTIVE, moved to a new version, and has the gateway JWT setting it
+// function is ACTIVE, on a higher version, and has the gateway JWT setting it
 // was deployed with.
 //
-// No network and no secrets: plan reads the repository, confirm reads two files.
+// migrations reads staging's applied versions through psql (credentials as PG*
+// variables, never argv; a read-only transaction) and exits 1 unless every file
+// in supabase/migrations is applied: functions deploy after the migrations they
+// call. It prints file names and counts only.
+//
+// plan and confirm use no network and no secrets.
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,15 +76,51 @@ export function functionFolders(root) {
     .sort();
 }
 
-/** Import specifiers in a module: static, side-effect and dynamic imports, and re-exports. Comments may add extra hits; extra hits only widen the set. */
+/** The source with its comments blanked (newlines kept), skipping over string and template literals. */
+export function withoutComments(source) {
+  let out = '';
+  let i = 0;
+  while (i < source.length) {
+    const c = source[i];
+    const next = source[i + 1];
+    if (c === '/' && next === '/') {
+      while (i < source.length && source[i] !== '\n') {
+        out += ' ';
+        i++;
+      }
+    } else if (c === '/' && next === '*') {
+      const end = source.indexOf('*/', i + 2);
+      const stop = end === -1 ? source.length : end + 2;
+      for (; i < stop; i++) out += source[i] === '\n' ? '\n' : ' ';
+    } else if (c === "'" || c === '"' || c === '`') {
+      let j = i + 1;
+      while (j < source.length && source[j] !== c && !(c !== '`' && source[j] === '\n')) j += source[j] === '\\' ? 2 : 1;
+      out += source.slice(i, j + 1);
+      i = j + 1;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
+}
+
+/**
+ * Import specifiers in a module: static, side-effect and dynamic imports (also
+ * with a plain template literal), and re-exports. Searched in the source as it
+ * is and with its comments blanked, so a comment inside an import clause cannot
+ * hide the import. Extra hits from comments only widen the set. CI compares the
+ * result with `deno info --json` for every function (functions-deploy.test.mjs).
+ */
 export function specifiers(source) {
   const out = new Set();
   const patterns = [
     /\b(?:import|export)\s[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]/g,
     /\bimport\s*['"]([^'"]+)['"]/g,
     /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /\bimport\s*\(\s*`([^`$]+)`\s*\)/g,
   ];
-  for (const re of patterns) for (const m of source.matchAll(re)) out.add(m[1]);
+  for (const text of [source, withoutComments(source)]) for (const re of patterns) for (const m of text.matchAll(re)) out.add(m[1]);
   return [...out];
 }
 
@@ -248,12 +291,13 @@ export function confirm({ before, after, deployed, failed = [], noVerifyJwt = NO
     const problems = [];
     const status = typeof now.status === 'string' && STATUS.test(now.status) ? now.status : 'an unexpected status';
     if (now.status !== 'ACTIVE') problems.push(`status is ${status}`);
+    // Every deploy makes a new version; a later updated_at on the same version is a
+    // metadata change, not this deploy. A version that is not a number fails closed.
     const v0 = num(was?.version);
     const v1 = num(now.version);
-    const u0 = num(was?.updated_at);
-    const u1 = num(now.updated_at);
-    const moved = !was || (v0 !== null && v1 !== null && v1 > v0) || (u0 !== null && u1 !== null && u1 > u0);
-    if (!moved) problems.push('same version and update time as before the deploy');
+    if (v1 === null) problems.push('the function list does not give a numeric version');
+    else if (was && v0 === null) problems.push('the list before the deploy did not give a numeric version');
+    else if (was && v1 <= v0) problems.push(`still version ${v1}, the same as before the deploy`);
     // A posture check: an answer that does not say whether the gateway checks JWTs is a failure, not a pass.
     let jwt = 'not reported';
     if (typeof now.verify_jwt === 'boolean') {
@@ -273,10 +317,88 @@ export function confirm({ before, after, deployed, failed = [], noVerifyJwt = NO
     '|---|---|---|---|',
     ...rows.map((r) => `| ${r.name} | ${r.version} | ${r.jwt} | ${r.ok ? 'PASS' : 'FAIL'}: ${r.result} |`),
     '',
-    'From `supabase functions list -o json` before and after the deploys: slugs, status, version, update time and verify_jwt only.',
+    'From `supabase functions list -o json` before and after the deploys: slugs, status, version and verify_jwt only.',
     '',
   ];
   return { ok: failedCount === 0, rows, markdown: lines.join('\n') };
+}
+
+// ─── Migrations before functions ────────────────────────────────────────────
+
+const MIGRATION_FILE = /^(\d+)_[^/]*\.sql$/;
+
+/** The repository's migrations, as `supabase db push` reads them: <version>_<name>.sql in supabase/migrations. */
+export function localMigrations(root) {
+  const dir = join(root, 'supabase', 'migrations');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .map((file) => ({ file, m: MIGRATION_FILE.exec(file) }))
+    .filter((x) => x.m)
+    .map((x) => ({ version: x.m[1], file: x.file }))
+    .sort((a, b) => a.version.localeCompare(b.version));
+}
+
+/** Local migration files whose version staging has not applied, in file order. */
+export function pendingMigrations(local, applied) {
+  const done = new Set(applied);
+  return local.filter((m) => !done.has(m.version)).map((m) => m.file);
+}
+
+/** libpq settings for a postgres:// URL, so the password travels as PGPASSWORD, never in argv. */
+export function pgEnv(raw) {
+  let u;
+  try {
+    u = new URL(String(raw).trim());
+  } catch {
+    return null;
+  }
+  if ((u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') || !u.hostname || !u.username) return null;
+  try {
+    return {
+      PGHOST: u.hostname,
+      PGPORT: u.port || '5432',
+      PGUSER: decodeURIComponent(u.username),
+      PGPASSWORD: decodeURIComponent(u.password),
+      PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, '')) || 'postgres',
+      PGSSLMODE: u.searchParams.get('sslmode') ?? 'require',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** One read-only statement through psql. Returns its last output line, or the SQLSTATE of the failure (psql's own messages are never kept). */
+export function psqlRead(env, sql, run = spawnSync) {
+  const r = run(
+    'psql',
+    ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-c', 'begin transaction read only', '-c', "set local statement_timeout = '10s'", '-c', sql, '-c', 'rollback'],
+    { env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-deploy-functions' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  if (r.error) return { ok: false, why: r.error.code === 'ENOENT' ? 'psql not found' : 'psql did not run' };
+  if (r.status === 0) {
+    const lines = String(r.stdout).split('\n').map((l) => l.trim()).filter(Boolean);
+    return { ok: true, text: lines.length ? lines[lines.length - 1] : '' };
+  }
+  if (r.status === 2) return { ok: false, why: 'could not connect' };
+  const state = /ERROR:\s+([0-9A-Z]{5})\b/.exec(String(r.stderr))?.[1];
+  return { ok: false, why: state ? `the read failed (SQLSTATE ${state})` : 'the read failed' };
+}
+
+/** Staging's applied versions, then the local files it lacks. */
+export function migrationsCheck(root, dbUrl, read = psqlRead) {
+  const env = pgEnv(dbUrl ?? '');
+  if (!env) return { ok: false, error: 'SUPABASE_DB_URL is not set or not a postgres:// URL' };
+  const exists = read(env, "select to_regclass('supabase_migrations.schema_migrations') is not null");
+  if (!exists.ok) return { ok: false, error: exists.why };
+  let applied = [];
+  if (exists.text === 't') {
+    const versions = read(env, "select coalesce(string_agg(version, ' ' order by version), '') from supabase_migrations.schema_migrations");
+    if (!versions.ok) return { ok: false, error: versions.why };
+    applied = versions.text.split(/\s+/).filter((v) => /^\d+$/.test(v));
+  }
+  const local = localMigrations(root);
+  const pending = pendingMigrations(local, applied);
+  return { ok: true, upToDate: pending.length === 0, local: local.length, pending };
 }
 
 function flags(argv) {
@@ -333,7 +455,12 @@ function main(argv) {
     process.stdout.write(r.markdown);
     return r.ok ? 0 : 1;
   }
-  process.stderr.write('usage: functions-deploy.mjs (plan | confirm) ...\n');
+  if (command === 'migrations') {
+    const r = migrationsCheck(root, process.env.SUPABASE_DB_URL);
+    process.stdout.write(`${JSON.stringify(r)}\n`);
+    return r.ok && r.upToDate ? 0 : 1;
+  }
+  process.stderr.write('usage: functions-deploy.mjs (plan | confirm | migrations) ...\n');
   return 2;
 }
 

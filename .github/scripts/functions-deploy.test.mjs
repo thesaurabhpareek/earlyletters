@@ -3,11 +3,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { closure, confirm, functionFolders, headerDeploy, NEVER, NO_VERIFY_JWT, parseList, plan, SMOKE_HEALTH, specifiers } from './functions-deploy.mjs';
+import { closure, confirm, functionFolders, headerDeploy, localMigrations, migrationsCheck, NEVER, NO_VERIFY_JWT, parseList, pendingMigrations, pgEnv, plan, psqlRead, SMOKE_HEALTH, specifiers } from './functions-deploy.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCRIPT = join(REPO, '.github', 'scripts', 'functions-deploy.mjs');
@@ -222,7 +222,7 @@ test('confirm: an unchanged version, a wrong gateway setting, a missing function
   });
   assert.equal(r.ok, false);
   assert.match(r.markdown, /RED, 5 of 5 not confirmed/);
-  assert.match(r.markdown, /config .*same version and update time/);
+  assert.match(r.markdown, /config .*still version 3, the same as before the deploy/);
   assert.match(r.markdown, /content .*gateway JWT check is on, expected off/);
   assert.match(r.markdown, /purge-worker .*status is THROTTLED/);
   assert.match(r.markdown, /analytics-forget .*not in the function list/);
@@ -244,6 +244,45 @@ test('confirm: a list that does not report verify_jwt fails the posture check, f
   assert.match(r.markdown, /RED, 2 of 2 not confirmed/);
   assert.match(r.markdown, /\| config \| 1 to 2 \| not reported \| FAIL: the function list does not report verify_jwt, so the gateway JWT check \(expected off\) is unconfirmed/);
   assert.match(r.markdown, /analytics-forget .*expected on\) is unconfirmed/);
+});
+
+test('confirm: only a higher version counts as this deploy; a later updated_at on the same version, or a non-numeric version, fails', () => {
+  const r = confirm({
+    before: asList(fn('config', 4, 100, false), fn('content', 2, 100, false), fn('purge-worker', 1, 100, false)),
+    after: asList(fn('config', 4, 999, false), { ...fn('content', 3, 200, false), version: '3' }, fn('purge-worker', 2, 50, false)),
+    deployed: ['config', 'content', 'purge-worker'],
+  });
+  assert.equal(r.ok, false);
+  assert.match(r.markdown, /\| config \| .*FAIL: still version 4, the same as before the deploy/);
+  assert.match(r.markdown, /\| content \| .*FAIL: the function list does not give a numeric version/);
+  assert.match(r.markdown, /\| purge-worker \| 1 to 2 \| off \| PASS/);
+});
+
+test('specifiers: a comment with a quote inside an import clause, and a template-literal dynamic import, are both found', () => {
+  const src = [
+    'import {',
+    '  a, // the "a" helper',
+    "  b, /* it's b */",
+    "} from './ab.ts';",
+    'const lazy = () => import(`./lazy.ts`);',
+    "const url = 'https://example.invalid/x'; // a URL in a string is not a comment",
+    "import { c } from './c.ts';",
+  ].join('\n');
+  const found = specifiers(src);
+  for (const s of ['./ab.ts', './lazy.ts', './c.ts']) assert.ok(found.includes(s), s);
+});
+
+test('closure equals deno info for every function folder (CI sets DENO_INFO_CHECK=1)', { skip: process.env.DENO_INFO_CHECK !== '1' && 'set DENO_INFO_CHECK=1 to compare with deno info' }, () => {
+  for (const name of functionFolders(REPO).filter((n) => !(n in NEVER))) {
+    const dir = join(REPO, 'supabase', 'functions', name);
+    const args = ['-y', 'deno@2.9.6', 'info', '--json', '--no-lock'];
+    if (existsSync(join(dir, 'deno.json'))) args.push('--config', join(dir, 'deno.json'));
+    const out = execFileSync('npx', [...args, join(dir, 'index.ts')], { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    const prefix = `file://${REPO}/`;
+    const deno = JSON.parse(out).modules.map((m) => m.specifier).filter((s) => s.startsWith(prefix)).map((s) => decodeURIComponent(s.slice(prefix.length))).sort();
+    const mine = closure(REPO, name).filter((f) => !f.endsWith('/deno.json'));
+    assert.deepEqual(mine, deno, `${name}: the plan's closure and deno info disagree`);
+  }
 });
 
 test('deploy-functions.yml: the Deploy step refuses an escrow name itself, before any deploy (second guard after the plan)', () => {
@@ -287,4 +326,62 @@ test('CLI: plan prints JSON and exits 1 on an error; confirm exits 1 when red', 
     assert.equal(red.status, 1);
     assert.match(red.stdout, /RED, 1 of 1/);
     assert.equal(spawnSync('node', [SCRIPT, 'nonsense'], { encoding: 'utf8' }).status, 2);
+  }));
+
+test('migrations: local versions in file order, and the files staging lacks', () =>
+  withFixture(
+    {
+      'supabase/migrations/20261002000000_b.sql': 'select 1;\n',
+      'supabase/migrations/20261001000000_a.sql': 'select 1;\n',
+      'supabase/migrations/README.md': 'not a migration\n',
+    },
+    (root) => {
+      const local = localMigrations(root);
+      assert.deepEqual(local.map((m) => m.file), ['20261001000000_a.sql', '20261002000000_b.sql']);
+      assert.deepEqual(pendingMigrations(local, ['20261001000000']), ['20261002000000_b.sql']);
+      assert.deepEqual(pendingMigrations(local, ['20261001000000', '20261002000000', '20990101000000']), []);
+    },
+  ));
+
+test('pgEnv: the pooler URL becomes PG* variables (password decoded, sslmode require by default); anything else is refused', () => {
+  assert.deepEqual(pgEnv('postgresql://postgres.abcdefghijklmnopqrst:p%40ss%2Fw@aws-0-us-west-1.pooler.supabase.com:5432/postgres'), {
+    PGHOST: 'aws-0-us-west-1.pooler.supabase.com',
+    PGPORT: '5432',
+    PGUSER: 'postgres.abcdefghijklmnopqrst',
+    PGPASSWORD: 'p@ss/w',
+    PGDATABASE: 'postgres',
+    PGSSLMODE: 'require',
+  });
+  assert.equal(pgEnv('postgresql://u:p@h/db?sslmode=disable').PGSSLMODE, 'disable');
+  for (const bad of ['', 'not a url', 'https://h/db', 'postgresql://h/db']) assert.equal(pgEnv(bad), null, bad);
+});
+
+test('psqlRead: credentials only in the environment, a read-only transaction, and no psql message kept', () => {
+  const calls = [];
+  const run = (cmd, args, opts) => {
+    calls.push({ cmd, args, env: opts.env });
+    return { status: 1, stdout: '', stderr: 'psql: ERROR:  42501 permission denied for schema secret_host_name' };
+  };
+  const r = psqlRead({ PGHOST: 'h', PGPASSWORD: 'pw' }, 'select 1', run);
+  assert.deepEqual(r, { ok: false, why: 'the read failed (SQLSTATE 42501)' });
+  assert.ok(!calls[0].args.join(' ').includes('pw'));
+  assert.equal(calls[0].env.PGPASSWORD, 'pw');
+  assert.deepEqual(calls[0].args.slice(-8), ['-c', 'begin transaction read only', '-c', "set local statement_timeout = '10s'", '-c', 'select 1', '-c', 'rollback']);
+  assert.deepEqual(psqlRead({}, 'x', () => ({ status: 2, stdout: '', stderr: 'host secret' })), { ok: false, why: 'could not connect' });
+  assert.deepEqual(psqlRead({}, 'x', () => ({ error: Object.assign(new Error('x'), { code: 'ENOENT' }) })), { ok: false, why: 'psql not found' });
+  assert.deepEqual(psqlRead({}, 'x', () => ({ status: 0, stdout: 'BEGIN\nt\n', stderr: '' })), { ok: true, text: 't' });
+});
+
+test('migrationsCheck: a fresh database lacks every file; a partial history lacks the rest; a failed read is an error, not "up to date"', () =>
+  withFixture({ 'supabase/migrations/20261001000000_a.sql': '', 'supabase/migrations/20261002000000_b.sql': '' }, (root) => {
+    const url = 'postgresql://u:p@h/db';
+    const reads = (answers) => {
+      let i = 0;
+      return () => answers[i++];
+    };
+    assert.deepEqual(migrationsCheck(root, url, reads([{ ok: true, text: 'f' }])), { ok: true, upToDate: false, local: 2, pending: ['20261001000000_a.sql', '20261002000000_b.sql'] });
+    assert.deepEqual(migrationsCheck(root, url, reads([{ ok: true, text: 't' }, { ok: true, text: '20261001000000' }])).pending, ['20261002000000_b.sql']);
+    assert.equal(migrationsCheck(root, url, reads([{ ok: true, text: 't' }, { ok: true, text: '20261001000000 20261002000000' }])).upToDate, true);
+    assert.deepEqual(migrationsCheck(root, url, reads([{ ok: false, why: 'could not connect' }])), { ok: false, error: 'could not connect' });
+    assert.equal(migrationsCheck(root, '', reads([])).ok, false);
   }));

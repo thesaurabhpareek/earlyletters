@@ -6,10 +6,12 @@
 #                     these deploy rules changed: deploys every function
 #   manual run        on develop only; input `function`: one folder, or all
 #
-# Every function, not only the changed ones: GitHub replaces a pending run in
-# the concurrency group with the newest, so the newest run carries every
-# earlier change. Never escrow (D-102: its own project, founder only). Never
-# --prune.
+# Every function at develop's tip, not only the changed ones and not the pushed
+# commit: runs can queue out of push order, and GitHub replaces a pending run
+# with the newest, so each run deploys the newest develop and staging never
+# moves backwards. Functions go after their migrations: nothing deploys until
+# staging has every file in supabase/migrations (Deploy database first). Never
+# escrow (D-102: its own project, founder only). Never --prune.
 #
 # Waits in the staging Environment (required reviewer). The one credential is
 # a scoped access token in that Environment, SUPABASE_ACCESS_TOKEN_STAGING
@@ -17,10 +19,11 @@
 # prints the commands for the founder's computer, and is never evidence.
 #
 # After the deploys:
-#   1. the CLI's function list shows each function ACTIVE, on a new version,
-#      with the gateway JWT check it was deployed with;
-#   2. RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts --no-db)
-#      needs health 200 from each function with an anonymous health route.
+#   1. the CLI's function list shows each function ACTIVE, on a higher
+#      version, with the gateway JWT check it was deployed with;
+#   2. only if every deploy landed: RA-07-06's content-free smoke
+#      (scripts/ops/staging-smoke.ts --no-db) needs health 200 from each
+#      function with an anonymous health route.
 # Which functions skip the gateway check, and which the smoke reaches, is in
 # .github/scripts/functions-deploy.mjs (NO_VERIFY_JWT, SMOKE_HEALTH).
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
@@ -120,6 +123,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
+  # Deploys develop's tip, not the commit that triggered the run: the plan job
+  # only decides whether a run is needed. A job joins the concurrency group when
+  # it becomes ready, so runs can queue out of push order and a newer pending
+  # run replaces an older one; deploying the tip means whichever run goes last
+  # deploys the newest develop, and staging never moves backwards.
   deploy:
     name: deploy to staging
     needs: plan
@@ -133,19 +141,61 @@ jobs:
     permissions:
       contents: read
     env:
-      DEPLOY: ${{ needs.plan.outputs.deploy }}
-      NO_VERIFY_JWT: ${{ needs.plan.outputs.no_verify_jwt }}
-      SMOKE: ${{ needs.plan.outputs.smoke }}
       SUPABASE_TELEMETRY_DISABLED: '1'
       DO_NOT_TRACK: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: develop
           persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      # The deploy list, the gateway JWT settings and the smoke list all come
+      # from the tree being deployed.
+      - name: Plan at develop's tip
+        id: tip
+        env:
+          EVENT: ${{ github.event_name }}
+          FUNCTION: ${{ inputs.function }}
+          TRIGGER_SHA: ${{ github.sha }}
+        run: |
+          only=all
+          if [ "$EVENT" = "workflow_dispatch" ]; then only="$FUNCTION"; fi
+          sha="$(git rev-parse HEAD)"
+          out="$RUNNER_TEMP/tip.json"
+          status=0
+          node .github/scripts/functions-deploy.mjs plan --only "$only" > "$out" || status=$?
+          if ! jq -e '.deploy' "$out" > /dev/null 2>&1; then
+            echo "::error::.github/scripts/functions-deploy.mjs did not print a plan at develop's tip (exit $status)."
+            exit 1
+          fi
+          jq -r '.warnings[] | "::warning::" + .' "$out"
+          jq -r '.errors[] | "::error::" + .' "$out"
+          if [ "$status" != 0 ]; then exit "$status"; fi
+          deploy="$(jq -r '.deploy | join(" ")' "$out")"
+          smoke="$(jq -r '.smoke | join(",")' "$out")"
+          {
+            echo "DEPLOY=$deploy"
+            echo "NO_VERIFY_JWT=$(jq -r '.noVerifyJwt | join(" ")' "$out")"
+            echo "SMOKE=$smoke"
+            echo "DEPLOY_SHA=$sha"
+          } >> "$GITHUB_ENV"
+          {
+            echo "deploy=$deploy"
+            echo "smoke=$smoke"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Edge Functions: develop at \`$sha\`"
+            echo
+            echo "- This run was started by \`$TRIGGER_SHA\` and deploys develop's tip at the time the job started, so a later run never deploys older code."
+            echo "- Functions: $(jq -r 'if (.deploy | length) == 0 then "none" else .deploy | join(", ") end' "$out")"
+          } >> "$GITHUB_STEP_SUMMARY"
       # Planted failure 1 (AUTOMATION.md 2.12): without the token this step
       # says NOT DEPLOYED with a warning, and every later step is skipped.
       - name: Token check
         id: token
+        if: steps.tip.outputs.deploy != ''
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
           PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
@@ -165,7 +215,7 @@ jobs:
             echo
             echo "The \`staging\` environment has no \`SUPABASE_ACCESS_TOKEN_STAGING\` (a scoped token, AF-06), so this run deployed nothing. It is **not evidence** that staging runs this commit (docs/release/AUTOMATION.md 2.2)."
             echo
-            echo "To deploy from your own computer, in a checkout of \`$GITHUB_SHA\`, after \`npx -y supabase@$SUPABASE_CLI_VERSION login\`:"
+            echo "To deploy from your own computer, in a checkout of \`$DEPLOY_SHA\`, after \`npx -y supabase@$SUPABASE_CLI_VERSION login\`, and only once \`npx -y supabase@$SUPABASE_CLI_VERSION db push --dry-run --db-url <staging pooler URL>\` says staging is up to date (functions go after their migrations):"
             echo
             echo '```bash'
             for fn in $DEPLOY; do
@@ -183,18 +233,47 @@ jobs:
             echo "Each function in the list should be ACTIVE with a new version; the smoke should end GREEN."
           } >> "$GITHUB_STEP_SUMMARY"
       - if: steps.token.outputs.deploy == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-      - if: steps.token.outputs.deploy == 'true'
         uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
+      # Functions go after the migrations they call (RA-20-04): staging must have
+      # every file in supabase/migrations at the tip, or nothing deploys. A
+      # read-only psql read of supabase_migrations.schema_migrations, with the
+      # credentials as PG* variables, never in argv; it prints file names only.
+      - name: Staging has develop's migrations
+        id: migrations
+        if: steps.token.outputs.deploy == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+        run: |
+          if ! command -v psql > /dev/null 2>&1; then
+            echo "::notice::psql is not on this runner image; installing postgresql-client from Ubuntu's archive."
+            sudo apt-get update -q
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends postgresql-client
+          fi
+          out="$RUNNER_TEMP/migrations.json"
+          if node .github/scripts/functions-deploy.mjs migrations > "$out"; then
+            echo "Staging has all $(jq -r '.local' "$out") migrations on develop."
+            exit 0
+          fi
+          if [ "$(jq -r '.ok' "$out" 2>/dev/null)" != "true" ]; then
+            echo "::error::Could not read staging's migration history ($(jq -r '.error // "no answer"' "$out" 2>/dev/null)). Check SUPABASE_DB_URL_STAGING. Nothing was deployed."
+            exit 1
+          fi
+          echo "::error::Staging lacks $(jq -r '.pending | length' "$out") of develop's migrations, which these functions may call. Approve the Deploy database run first, then re-run this job. Nothing was deployed."
+          {
+            echo "### NOT DEPLOYED: staging is behind develop's migrations"
+            echo
+            jq -r '.pending[] | "- `" + . + "`"' "$out"
+            echo
+            echo "Functions deploy only onto a schema that has every migration they ship with (Deploy database first)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
       # Bundled by the Management API (--use-api), as each function's header
       # says; the access token travels as SUPABASE_ACCESS_TOKEN, never argv.
       - name: Deploy
         id: deploy
-        if: steps.token.outputs.deploy == 'true'
+        if: steps.token.outputs.deploy == 'true' && steps.migrations.outcome == 'success'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
           PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
@@ -229,10 +308,11 @@ jobs:
           echo "ok=${ok# }" >> "$GITHUB_OUTPUT"
           echo "failed=${failed# }" >> "$GITHUB_OUTPUT"
           if [ -n "$failed" ]; then
-            echo "::error::Not deployed:$failed. The others deployed; the next steps still check them."
+            echo "::error::Not deployed:$failed. The others deployed; the function list below still checks them, and the smoke is skipped."
             exit 1
           fi
       - name: Confirm in the function list
+        id: confirm
         if: ${{ !cancelled() && steps.token.outputs.deploy == 'true' && (steps.deploy.outputs.ok != '' || steps.deploy.outputs.failed != '') }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
@@ -251,9 +331,21 @@ jobs:
             exit 1
           fi
           cat "$RUNNER_TEMP/confirm.md" >> "$GITHUB_STEP_SUMMARY"
+      # The smoke runs only after every deploy landed and the list confirmed it.
+      # After a failure it would read the versions staging had before, and a
+      # GREEN table under a red job would mislead; say so instead.
+      - name: Smoke skipped after a failure
+        if: ${{ !cancelled() && steps.token.outputs.deploy == 'true' && steps.tip.outputs.smoke != '' && !(steps.deploy.outcome == 'success' && steps.confirm.outcome == 'success') }}
+        run: |
+          echo "::warning::The content-free smoke did not run: an earlier step failed, so its health checks would read the functions staging had before this run."
+          {
+            echo "### Staging smoke (RA-07-06): NOT RUN"
+            echo
+            echo "An earlier step failed (see above). Health checks now would read the functions staging had before this run, so none were made."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Smoke secrets and script are present
         id: smoke-ready
-        if: ${{ !cancelled() && steps.token.outputs.deploy == 'true' && env.SMOKE != '' }}
+        if: steps.tip.outputs.smoke != '' && steps.deploy.outcome == 'success' && steps.confirm.outcome == 'success'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
@@ -266,13 +358,13 @@ jobs:
             exit 1
           fi
           if [ ! -f scripts/ops/staging-smoke.ts ]; then
-            echo "::error::scripts/ops/staging-smoke.ts is not on this commit (RA-07-06, #202). The functions deployed; the health check did not run."
+            echo "::error::scripts/ops/staging-smoke.ts is not on develop (RA-07-06, #202). The functions deployed; the health check did not run."
             exit 1
           fi
       # Health 200 from each function with an anonymous route; --no-db because
-      # this job holds no database URL. Prints statuses and closed values only.
+      # the database checks belong to deploy-db.yml. Statuses and closed values only.
       - name: Content-free smoke (RA-07-06)
-        if: ${{ !cancelled() && steps.smoke-ready.outcome == 'success' }}
+        if: steps.smoke-ready.outcome == 'success'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
