@@ -4,7 +4,9 @@
  * constitution: raw_transcript is immutable, so a short one could never be fixed). The ADTS frame count
  * is the length the file proves by itself; a decoder that reports less does not plan the run. A take
  * whose last frame a kill cut off is read from a copy of its whole frames, in Caches, and the stored
- * recording is never touched. Fictional Asha family only; no real audio, frames built in the test.
+ * recording is never touched. The length saved at capture is the recorder's clock, not the file, so it
+ * never refuses a run, and an M4A plans exactly as on develop. A file that breaks before its end is
+ * refused with no copy. Fictional Asha family only; no real audio, frames built in the test.
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
@@ -13,9 +15,9 @@ import { createDisk, iosContainer, put, recorderDir, type Disk } from './helpers
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 
-const { AAC_FRAME_SAMPLES, AAC_PRIMING_SAMPLES, adtsLengthEvidence, scanAdts } = await import('../src/lib/capture/adts');
-const { removeWholeFrameCopies, scanRecordingFile, wholeFramesCopy } = await import('../src/lib/capture/adts-file');
-const { RunInputError, STORED_LENGTH_SLACK_MS, checkedRunDuration, openRecordingForRun, runDurationMs } = await import('../src/lib/transcribe-run');
+const { AAC_FRAME_SAMPLES, AAC_PRIMING_SAMPLES, ADTS_MAX_FRAME_BYTES, adtsLengthEvidence, breaksInside, scanAdts } = await import('../src/lib/capture/adts');
+const { copyKeyOf, removeWholeFrameCopies, removeWholeFrameCopiesOf, scanRecordingFile, wholeFramesCopy } = await import('../src/lib/capture/adts-file');
+const { RunInputError, checkedRunDuration, openRecordingForRun, runDurationMs } = await import('../src/lib/transcribe-run');
 const { jobFailureOf } = await import('../src/lib/transcription-queue/machine');
 
 /** One ADTS frame: a 7-byte header (9 with CRC) for AAC-LC, then `payload` bytes. */
@@ -82,6 +84,20 @@ describe('[ADR 0027] counting ADTS frames from their headers', () => {
     expect(scanAdts(concat(whole, adtsFrame(170, { sampleRateIndex: 4 })))).toMatchObject({ frames: 10 }); // 44.1 kHz frame
   });
 
+  it('tells a break inside the file (more bytes after the last whole frame than one frame can hold) from a cut-off tail', () => {
+    const before = stream(10);
+    const after = stream(60); // about 10.6 kB of good frames past the break
+    const broken = scanAdts(concat(before, new Uint8Array([0xff, 0x00, 0x12, 0x34, 0x56, 0x78, 0x9a]), after))!;
+    expect(broken).toMatchObject({ frames: 10, wholeBytes: before.length });
+    expect(broken.tailBytes).toBeGreaterThan(ADTS_MAX_FRAME_BYTES);
+    expect(breaksInside(broken)).toBe(true);
+    // A kill cuts off at most one frame, which is never more than 8191 bytes.
+    expect(breaksInside(scanAdts(concat(before, adtsFrame(170).subarray(0, 100)))!)).toBe(false);
+    expect(breaksInside(scanAdts(concat(before, new Uint8Array(ADTS_MAX_FRAME_BYTES).fill(0x41)))!)).toBe(false);
+    expect(breaksInside(scanAdts(concat(before, new Uint8Array(ADTS_MAX_FRAME_BYTES + 1).fill(0x41)))!)).toBe(true);
+    expect(breaksInside(scanAdts(stream(47))!)).toBe(false);
+  });
+
   it('turns frames into the length the file proves, allowing for the 2112 samples of priming Apple assumes (TN2258) and one frame', () => {
     const e = adtsLengthEvidence(scanAdts(stream(1000))!);
     expect(e.countedMs).toBeCloseTo((1000 * 1024 * 1000) / 48000, 6);
@@ -98,9 +114,37 @@ describe('[ADR 0027] a decoder shorter than the file does not plan the run', () 
     expect(checkedRunDuration(Number.NaN, 90_000, null)).toEqual({ durationMs: 90_000, decoderShort: false });
   });
 
-  it('any container: a decoder more than the slack short of the length stored at capture is not trusted', () => {
-    expect(checkedRunDuration(60_000 - STORED_LENGTH_SLACK_MS + 1, 60_000, null)).toEqual({ durationMs: 60_000 - STORED_LENGTH_SLACK_MS + 1, decoderShort: false });
-    expect(checkedRunDuration(50_000, 60_000, null)).toEqual({ durationMs: 60_000, decoderShort: true });
+  it('M4A plans exactly as on develop, whatever the length stored at capture: checkedRunDuration is runDurationMs', () => {
+    const lengths = [57_500, 60_000, 1, 0, -5, Number.NaN, Number.POSITIVE_INFINITY, null, undefined, 4 * 60 * 60_000 + 1];
+    for (const probed of lengths) {
+      for (const stored of lengths) {
+        let develop: number | 'refused';
+        try {
+          develop = runDurationMs(probed, stored);
+        } catch (e) {
+          expect(e).toBeInstanceOf(RunInputError);
+          develop = 'refused';
+        }
+        if (develop === 'refused') expect(() => checkedRunDuration(probed, stored, null), `${probed} ${stored}`).toThrow(RunInputError);
+        else expect(checkedRunDuration(probed, stored, null), `${probed} ${stored}`).toEqual({ durationMs: develop, decoderShort: false });
+      }
+    }
+  });
+
+  it('[review Y repro 2] a finished M4A whose decoder reads 2.5 s short of the recorder\'s clock transcribes, as on develop', () => {
+    expect(checkedRunDuration(57_500, 60_000, null)).toEqual({ durationMs: 57_500, decoderShort: false });
+  });
+
+  it('[review Y repro 1] the length saved at capture never refuses: 57.49 s of frames against a 60 s progress mark plans over the frames', () => {
+    // A take killed after 2,695 whole frames keeps its last 5 s progress mark (listen.tsx, drafts.ts COALESCE).
+    const killed = adtsLengthEvidence(scanAdts(stream(2695))!);
+    expect(killed.countedMs).toBeCloseTo(57_493.33, 1);
+    const trimmed = killed.countedMs - (AAC_PRIMING_SAMPLES / 48000) * 1000; // a correct decoder, priming trimmed
+    expect(checkedRunDuration(trimmed, 60_000, killed)).toEqual({ durationMs: killed.countedMs, decoderShort: false });
+    expect(checkedRunDuration(killed.countedMs, 60_000, killed)).toEqual({ durationMs: killed.countedMs, decoderShort: false });
+    // Only the file decides: a decoder short of the frames is still not trusted, whatever was stored.
+    expect(checkedRunDuration(killed.minDecodedMs - 1, 60_000, killed)).toEqual({ durationMs: killed.countedMs, decoderShort: true });
+    expect(checkedRunDuration(killed.minDecodedMs - 1, 50_000, killed).decoderShort).toBe(true);
   });
 
   it('ADTS: a decoder that trims the priming, or does not, is trusted, and the plan covers every counted frame', () => {
@@ -160,7 +204,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a sound recording is read where it is; no copy is made', async () => {
     const f = io({ [ORIGINAL]: 10_000 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0 }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0, breakInside: false }, f.makeCopy);
     expect(run.durationMs).toBe(10_000);
     await run.decode(piece);
     run.close();
@@ -170,7 +214,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a cut-off take the decoder cannot open is read from a copy of its whole frames, removed at the end', async () => {
     const f = io({ [ORIGINAL]: Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' }), [COPY]: 9_950 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5 }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
     await run.decode(piece);
     run.close();
     expect(f.log).toEqual([`probe ${ORIGINAL}`, 'copy', `probe ${COPY}`, `decode ${COPY}`]);
@@ -179,7 +223,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a cut-off take the decoder reads short is tried again from the copy, and opens when that is whole', async () => {
     const f = io({ [ORIGINAL]: 6_000, [COPY]: 10_000 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5 }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
     expect(run.durationMs).toBe(10_000);
     run.close();
     expect(f.removed()).toBe(1);
@@ -187,26 +231,42 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('when even the copy is short, the run is refused and the copy removed: no words without their end', async () => {
     const f = io({ [ORIGINAL]: 6_000, [COPY]: 6_000 });
-    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5 }, f.makeCopy)).rejects.toMatchObject({ reason: 'decoder_short' });
+    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy)).rejects.toMatchObject({ reason: 'decoder_short' });
     expect(f.removed()).toBe(1);
   });
 
   it('a short decoder on a take with no cut-off frame is refused without a copy', async () => {
     const f = io({ [ORIGINAL]: 6_000 });
-    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0 }, f.makeCopy)).rejects.toBeInstanceOf(RunInputError);
+    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0, breakInside: false }, f.makeCopy)).rejects.toBeInstanceOf(RunInputError);
     expect(f.log).not.toContain('copy');
   });
 
   it('a decode that throws mid-run switches to the copy once; a second failure is the job\'s', async () => {
     const f = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 }, [ORIGINAL]);
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5 }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
     await run.decode(piece);
     expect(f.log.slice(-3)).toEqual([`decode ${ORIGINAL}`, 'copy', `decode ${COPY}`]);
     const g = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 }, [ORIGINAL, COPY]);
-    const run2 = await openRecordingForRun(g.reader, ORIGINAL, null, { evidence, tailBytes: 5 }, g.makeCopy);
+    const run2 = await openRecordingForRun(g.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, g.makeCopy);
     await expect(run2.decode(piece)).rejects.toMatchObject({ code: 'ERR_SCRIBE_AUDIO_DECODE' });
     run.close();
     run2.close();
+  });
+
+  it('a file with a break inside is refused before anything is read, and no copy is made', async () => {
+    const f = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 });
+    const broken = { evidence, tailBytes: 9_000, breakInside: true };
+    await expect(openRecordingForRun(f.reader, ORIGINAL, 60_000, broken, f.makeCopy)).rejects.toMatchObject({ reason: 'break_inside' });
+    expect(f.log).toEqual([]);
+    expect(jobFailureOf(new RunInputError('break_inside'))).toBe('decode_failed');
+  });
+
+  it('[review Y repro 1] a killed take whose decoder fails on the cut-off frame plans the copy over its frames, never the stored mark', async () => {
+    const killed = { countedMs: 57_493.33, minDecodedMs: 57_428 };
+    const f = io({ [ORIGINAL]: Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' }), [COPY]: 57_449.33 });
+    const run = await openRecordingForRun(f.reader, ORIGINAL, 60_000, { evidence: killed, tailBytes: 5, breakInside: false }, f.makeCopy);
+    expect(run.durationMs).toBe(57_493.33);
+    run.close();
   });
 
   it('an M4A that will not decode fails as before: no copy, no guess', async () => {
@@ -236,6 +296,31 @@ describe('[ADR 0027, LEGAL-REQ-018] the whole-frame copy, on a disk laid out as 
     copy.remove();
     expect(h.disk.files.has(copy.uri)).toBe(false);
     expect(sha(h.disk.files.get(stored)!.data)).toBe(before);
+  });
+
+  it('erase finds a recording\'s copies by a key of its file name (the same after a container move) and leaves other copies', async () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000005'));
+    const take = (n: string) => put(h.disk, `${recorderDir(h.disk)}/recording-0E0E0E0E-0000-4000-8000-0000000AD75${n}.aac`, concat(stream(5), adtsFrame(170).subarray(0, 9)));
+    const a = take('A');
+    const b = take('B');
+    const copyA = await wholeFramesCopy(a, 5);
+    const leftoverB = put(h.disk, `${h.disk.caches}whole-frames-${copyKeyOf(b)}-old.aac`, 10);
+    expect(copyKeyOf(a)).toMatch(/^[0-9a-f]{8}$/);
+    expect(copyKeyOf(a)).toBe(copyKeyOf(a.replace('ASHA00000005', 'ASHA00000006'))); // same name, new container
+    expect(copyKeyOf(a)).not.toBe(copyKeyOf(b));
+    expect(removeWholeFrameCopiesOf(a)).toBe(1);
+    expect(h.disk.files.has(copyA.uri)).toBe(false);
+    expect(h.disk.files.has(leftoverB)).toBe(true);
+    copyA.remove(); // the run's own clean-up after an erase is a no-op
+  });
+
+  it('a recording erased while its copy is being written takes the copy with it', async () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000007'));
+    const stored = put(h.disk, `${recorderDir(h.disk)}/recording-0E0E0E0E-0000-4000-8000-0000000AD758.aac`, concat(stream(5), adtsFrame(170).subarray(0, 9)));
+    const writing = wholeFramesCopy(stored, 5);
+    h.disk.files.delete(stored); // Erase now, between reading the recording and writing the copy
+    await expect(writing).rejects.toMatchObject({ code: 'ERR_SCRIBE_AUDIO_FILE_MISSING' });
+    expect([...h.disk.files.keys()].filter((u) => u.startsWith(h.disk.caches))).toEqual([]);
   });
 
   it('an M4A is not scanned as ADTS, and only whole-frame copies are ever removed from Caches', async () => {

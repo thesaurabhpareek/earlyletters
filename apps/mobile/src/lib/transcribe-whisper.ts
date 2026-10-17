@@ -9,8 +9,10 @@
  *    length is checked against what the file proves (ADR 0027): an ADTS take
  *    whose last frame a kill cut off may be read from a copy of its whole
  *    frames, in Caches, removed when the run ends (capture/adts-file.ts); a
- *    decoder still short of the file refuses the run, so no raw transcript
- *    ever silently lacks its end.
+ *    decoder still short of the file, or a file that breaks before its end,
+ *    refuses the run, so no raw transcript ever silently lacks its end. The
+ *    length saved at capture never refuses a run, and an M4A runs exactly as
+ *    before.
  * 2. No speech anywhere: the transcript is '' and Whisper never runs, so a
  *    white-noise machine can never become words (TDD 03 3.5.7 rule 1).
  * 3. The planner (transcribe-plan.ts) packs speech into chunks of at most
@@ -32,7 +34,7 @@
  * the same steps with whisper.cpp, so its numbers describe this code.
  */
 import { ScribeAudio } from '../../modules/scribe-audio';
-import { adtsLengthEvidence } from './capture/adts';
+import { adtsLengthEvidence, breaksInside } from './capture/adts';
 import { scanRecordingFile, wholeFramesCopy } from './capture/adts-file';
 import { containerOfRecording } from './capture/recording-file';
 import { installedPathsFor } from './models/speech-packs';
@@ -120,7 +122,7 @@ async function transcribeWithWhisper(
     { probeMs: async (uri) => (await audio.probe(uri)).durationMs, decode: (uri, pieces) => audio.decodePcm16(uri, [...pieces]) },
     input.audioUri,
     input.durationMs,
-    adts ? { evidence: adtsLengthEvidence(adts), tailBytes: adts.wholeBytes > 0 ? adts.tailBytes : 0 } : null,
+    adts ? { evidence: adtsLengthEvidence(adts), tailBytes: adts.wholeBytes > 0 ? adts.tailBytes : 0, breakInside: breaksInside(adts) } : null,
     () => wholeFramesCopy(input.audioUri, adts?.wholeBytes ?? 0),
   );
   const durationMs = run.durationMs;

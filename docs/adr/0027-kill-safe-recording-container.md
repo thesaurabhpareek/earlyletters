@@ -75,16 +75,22 @@ The switch is `RECORDING_CONTAINERS` in `apps/mobile/src/lib/capture/recording-f
 - Export already names and labels each recording by its own container.
 - The disk tests' stand-in recorder follows the constant, so a flipped run records `.aac` takes in them. The whole suite passes with iOS flipped (checked in this PR, then set back).
 
-### The tail safeguard (in code now; it protects M4A too)
-`raw_transcript` is immutable and `verifyEdits` cannot see words lost before it exists. So the run must never plan over a length shorter than the file proves.
+### The tail safeguard (in code now, for ADTS; M4A runs exactly as on develop)
+`raw_transcript` is immutable and `verifyEdits` cannot see words lost before it exists. So the run must never plan over a length shorter than the file proves, and must refuse only when the file holds audio the decoder cannot reach.
 - **Frame counting.** `capture/adts.ts` counts ADTS frames from their headers in plain TypeScript. That gives the length the file proves by itself, and where a frame a kill cut off begins.
-- **Length check.** `transcribe-run.ts` `checkedRunDuration` does not trust a decoder length that is:
-  - more than one frame short of the counted frames, after Apple's assumed 2112-sample priming; or
-  - more than 2 s short of the length stored when recording stopped, in any container.
-  The plan then covers the longer length.
+- **Length check.** `transcribe-run.ts` `checkedRunDuration` does not trust a decoder length more than one frame short of the counted frames, after Apple's assumed 2112-sample priming. The plan then covers the counted frames.
+- **The length stored at capture never refuses a run.** It is expo-audio's clock, not audio in the file. A killed take keeps its last 5 s progress mark (`listen.tsx:93-94`, `drafts.ts:80-82, 95`), so it can be seconds past the frames on disk, and no decoder, copy or retry could reach that audio. As on develop, it stands in only when the decoder gives no usable length. With no frame count (M4A), `checkedRunDuration` is exactly develop's `runDurationMs`, tested over a table of lengths. (Review Y's re-check, both repro cases are tests: 57.49 s of frames against a 60 s mark transcribes over the frames; an M4A 2.5 s short of the clock transcribes as on develop.)
+- **A break inside the file is refused.** A kill cuts off at most one frame, and the 13-bit `frame_length` caps a frame at 8,191 bytes (`ADTS_MAX_FRAME_BYTES`). More bytes than that after the last whole frame is a break inside the file (damage, or bytes that are not this stream). The frames after it cannot be counted, so no decoder length can be checked, and a copy would hold only the frames before the break. The run is refused before anything is read (`RunInputError('break_inside')`, a visible `decode_failed`), and no copy is made. The recording itself stays kept, listed and exported byte for byte. A break inside the last 8,191 bytes looks like a cut-off frame and is read from the copy: V2 records whether any killed take ever ends that way.
 - **Opening the run.** `openRecordingForRun`:
-  - If the decoder cannot open or decode a take whose last ADTS frame was cut off, or reads it short, it switches once to a copy of the whole frames. The copy is written in Caches (`capture/adts-file.ts`), removed when the run ends, and swept at launch after an hour if a kill left it. The stored recording is only ever read.
-  - If the length still cannot be trusted, the run is refused (`RunInputError('decoder_short')`, a visible `decode_failed`: Try again, or type). The take waits for its words instead of getting a raw transcript without its end, which could never be fixed.
+  - If the decoder cannot open or decode a take whose last ADTS frame was cut off, or reads it short, it switches once to a copy of the whole frames. The stored recording is only ever read.
+  - If the length still cannot be trusted, the run is refused (`RunInputError('decoder_short')`, a visible `decode_failed`: Try again, or type). The take waits for its words instead of getting a raw transcript without its end, which could never be fixed. The job stays retryable, so a later decoder that reads to the end can still get the words.
+- **The whole-frame copy is a second copy of the voice**, so it never outlives its use (`capture/adts-file.ts`):
+  - it lives in Caches (never backed up), named by a key of the recording's file name and the time, nothing about the letter;
+  - the run removes it when it ends, whatever happened;
+  - Erase now and the 30 day purge remove the copies of the recording they erase, also while a run is reading one (`erase.ts`); a recording erased while its copy is being written takes the copy with it;
+  - the transcription queue removes every copy when it starts, before its first job (a copy then is left from a run the app was killed in);
+  - the launch sweep removes any copy an hour old, as a backstop;
+  - the wipes still to be built (DATA-REQ-023, -024) must remove them too (`recordings.ts`).
 - **No native change.** For S08 and the iOS compile check:
   - whether `AVAudioFile.length` on ADTS is exact (V3);
   - whether priming is trimmed (V3);
@@ -95,11 +101,11 @@ The switch is `RECORDING_CONTAINERS` in `apps/mobile/src/lib/capture/recording-f
 | # | Check | Who | Passes when |
 |---|---|---|---|
 | V1 | A simulator take, and one on a device, from a build with `ios: 'adts'` | S10 | **Gates the flip.** The file starts `FF F1`. The header says AAC-LC, frequency index 3 (48 kHz), channel configuration 1. There is no `ftyp` at offset 4. `afinfo` reports file type `adts`, data format `aac`, about 64 kbps. If not, try A3 |
-| V2 | DL-01 through #203, on the default build and on an `ios: 'adts'` build from this branch (a one-line change on a scratch commit) | S19 | **Gates the flip.** The default build shows whether the risk is real. The ADTS build has 49 or more of 50 takes playing to within 5 s. Request to S19: for ADTS, judge length by counting frames on the host (frames x 1024 / 48000; exact, and it flags a cut-off last frame) instead of `afinfo`'s estimated duration, and assert each take's stored path equals its listed path |
-| V3 | Decode parity, from **twins made of identical frames**: an ADTS take and an M4A remux of the same frames (for example `ffmpeg -i take.aac -c:a copy take.m4a`) | S10 with S08 | **Gates the flip.** Align the twins by cross-correlation; report the start offset (priming) separately from the length. Whether iOS trims TN2258's 2112 samples on ADTS is written down. On finished ADTS takes, `ScribeAudio.probe().durationMs` is within one frame (1024 samples, 21.3 ms) of the recorder's `durationMillis`, and the decoded length within one frame of the counted frames. Files truncated at 3 or more offsets (mid-frame, mid-header) and real DL-01 killed takes all: `probe` opens them (or the whole-frame copy), `decodePcm16` over [0, probe] returns without `ERR_SCRIBE_AUDIO_DECODE`, and the decoded length equals the whole frames within one frame. `enhance` on an ADTS original gives a listening copy whose length equals the original's within one frame |
+| V2 | DL-01 through #203, on the default build and on an `ios: 'adts'` build from this branch (a one-line change on a scratch commit) | S19 | **Gates the flip.** The default build shows whether the risk is real. The ADTS build has 49 or more of 50 takes playing to within 5 s. Request to S19: for ADTS, judge length by counting frames on the host (frames x 1024 / 48000; exact, and it flags a cut-off last frame) instead of `afinfo`'s estimated duration, and assert each take's stored path equals its listed path. Record for each killed take its tail: whole frames, the bytes after them, and whether those bytes are a cut-off frame (more than 8,191 would be refused as a break). **Then run the real transcription job** (the queue's job through `transcribe-whisper.ts`, not only `decodePcm16`) on every killed take that plays, with its stored progress mark, and assert none is refused (`decode_failed`) and each plans over its counted frames |
+| V3 | Decode parity, from **twins made of identical frames**: an ADTS take and an M4A remux of the same frames (for example `ffmpeg -i take.aac -c:a copy take.m4a`) | S10 with S08 | **Gates the flip.** Align the twins by cross-correlation; report the start offset (priming) separately from the length. Whether iOS trims TN2258's 2112 samples on ADTS is written down. On finished ADTS takes, `ScribeAudio.probe().durationMs` is within one frame (1024 samples, 21.3 ms) of the recorder's `durationMillis`, and the decoded length within one frame of the counted frames. Files truncated at 3 or more offsets (mid-frame, mid-header) and real DL-01 killed takes all: `probe` opens them (or the whole-frame copy), `decodePcm16` over [0, probe] returns without `ERR_SCRIBE_AUDIO_DECODE`, and the decoded length equals the whole frames within one frame. `enhance` on an ADTS original gives a listening copy whose length equals the original's within one frame. Also report, for finished M4A and ADTS takes, the gap between the recorder's clock and the file (for the record: the clock never refuses a run) |
 | V4 | Playback | S10 with the player owner | Before build 2 ships. A take of 10 minutes or more and a killed ADTS take. Report the measured duration error and seek landing error, the `scrubbedTo` freeze case, and that the listening copy's length equals the original's. Precise timing may need `seekTo(to, 0, 0)` (in 57.0.5) or the asset key (a patch) |
 | V5 | Export carries `.aac` with `audio/aac` and its hash | S10 (cleared by the coordinator to edit Export) | **Done in this PR** (`test/export-recording-format.test.ts`; the README copy, F15 and DELETION_AND_EXPORT_SPEC name both containers) |
-| V6 | Backup restore names the file by its container | S05 (#150) | Before any flipped build with backup switched on. Restore must find the container from the bytes (ADTS sync `0xFFF` at byte 0; M4A `ftyp` at byte 4), or the backup must record it. Today's fallback name `<entry id>.m4a` would mislabel an ADTS take, and Export would then name and label it `.m4a`; the schema cannot catch that, because name and label agree. A restore drill row with an `.aac` letter |
+| V6 | Backup restore names the file by its container | S05 (#150) | Before any flipped build with backup switched on. Restore must find the container from the bytes, or the backup must record it. `scanAdts` (`capture/adts.ts`) already tells ADTS from the bytes and returns null for an M4A (whose `ftyp` is at byte 4), so restore can reuse it: name the file `.aac` when it scans, `.m4a` when not. Today's fallback name `<entry id>.m4a` would mislabel an ADTS take. Export would then name and label it `.m4a` (the schema cannot catch that, because name and label agree), and the transcription run, which picks the frame scan by extension, would skip the tail safeguard. A restore drill row with an `.aac` letter |
 
 V1, V2 and V3 gate the flip. V4 and V6 come before build 2 ships (V6 before any flipped build with backup on).
 
@@ -107,7 +113,6 @@ V1, V2 and V3 gate the flip. V4 and V6 come before build 2 ships (V6 before any 
 - Amend ADR 0005 (the container line).
 - Update TDD 03 section 3.2 rule 4, F04 section 11.6 and BACKLOG BL-382.
 - Comments for their owners:
-  - `db/repos/types.ts:36` (S03);
   - `modules/scribe-audio/index.ts:6` and `ScribeAudioModule.swift:150` (S08);
   - `kill-drill.logic.ts:59` (S19).
 
@@ -130,8 +135,9 @@ If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1
 - **Size:** about 2% more bytes per take than M4A (0.50 against 0.49 MB/min). Negligible against ADR 0005's estimate of about 19 MB per active family per month.
 - **Two containers on one phone.** iPhones that recorded before the flip keep their M4A takes alongside new ADTS ones. On iOS, the sweep, erase, recovery export, Export and the transcription run handle both, as tested in Node. Decode length and playback timing on ADTS are what V3 and V4 measure. Android records only M4A in build 2.
 - **The constitution holds:**
-  - nothing converts, repairs or rewrites a recording after capture (the whole-frame copy is a temporary read aid, never stored as the recording);
-  - a raw transcript is never stored without its end;
+  - nothing converts, repairs or rewrites a recording after capture (the whole-frame copy is a temporary read aid in Caches, never stored as the recording, and it never outlives an erase);
+  - a raw transcript is never stored without its end, and a run is refused only when the file holds audio the decoder cannot reach (never on the recorder's clock);
+  - an M4A take is transcribed exactly as on develop;
   - no audio or entry text goes to logs.
 
 ## Sources
@@ -159,4 +165,4 @@ If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1
   - `docs/BACKLOG.md` (BL-382)
   - `docs/qa/DEVICE_TEST_PLAN.md` (DL-01)
   - PR #203 review comment 6231791343
-  - PR #213 reviews by X (6232279942) and Y (6232309143)
+  - PR #213 reviews by X (6232279942) and Y (6232309143), and their re-checks (6232622118, 6232635620)

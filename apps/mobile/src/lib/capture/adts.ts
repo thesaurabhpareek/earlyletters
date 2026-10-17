@@ -28,6 +28,9 @@ export const AAC_PRIMING_SAMPLES = 2112;
 /** ADTS sampling_frequency_index to Hz (index 13 to 15 are reserved). */
 export const ADTS_SAMPLE_RATES = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350] as const;
 
+/** The most bytes one ADTS frame can hold, header included: its frame_length field has 13 bits. */
+export const ADTS_MAX_FRAME_BYTES = 8191;
+
 export interface AdtsScan {
   /** Whole AAC frames (raw data blocks) in the stream. */
   frames: number;
@@ -36,7 +39,10 @@ export interface AdtsScan {
   /** Bytes up to the end of the last whole frame. */
   wholeBytes: number;
   totalBytes: number;
-  /** Bytes after the last whole frame: a frame (or header) cut off, by a kill for example. 0 for a finished take. */
+  /**
+   * Bytes after the last whole frame: a frame (or header) cut off, by a kill for example. 0 for a finished
+   * take. More than one frame can hold is a break inside the file (`breaksInside`).
+   */
   tailBytes: number;
 }
 
@@ -87,6 +93,18 @@ export function scanAdts(bytes: Uint8Array): AdtsScan | null {
     totalBytes: bytes.length,
     tailBytes: bytes.length - at,
   };
+}
+
+/**
+ * True when more bytes follow the last whole frame than one frame can hold
+ * (ADTS_MAX_FRAME_BYTES). A kill cuts off at most one frame, so this is a
+ * break inside the file (damage, or bytes that are not this stream), not a
+ * cut-off tail. The audio after a break cannot be counted, so the file's
+ * length cannot be proven, and a copy of the whole frames before it would
+ * leave out what follows (ADR 0027).
+ */
+export function breaksInside(scan: AdtsScan): boolean {
+  return scan.tailBytes > ADTS_MAX_FRAME_BYTES;
 }
 
 /**
