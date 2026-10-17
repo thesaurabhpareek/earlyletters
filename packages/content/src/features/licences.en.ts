@@ -15,8 +15,9 @@ interface Item {
 }
 
 export const licences = {
-  title: 'Licences',
-  rowLabel: 'Licences',
+  // US spelling on screen (D-087); the object and file keep their names so imports stay stable.
+  title: 'Licenses',
+  rowLabel: 'Licenses',
   intro: 'This app is built with the help of open work by many people. Thank you.',
   sections: [
     {
@@ -49,5 +50,5 @@ export const licences = {
   ],
   librariesTitle: 'Software libraries',
   // The notices themselves come from apps/mobile/src/lib/licences.ts (generated), not from copy.
-  libraries: 'React Native, Expo and the other libraries in this app are open source, under the MIT, Apache 2.0, BSD and ISC licences.',
+  libraries: 'React Native, Expo and the other libraries in this app are open source. Each one is listed below with its license.',
 } as const;
