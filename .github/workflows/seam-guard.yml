@@ -27,7 +27,7 @@ jobs:
   guard:
     name: no e2e seam in store bundles (B-8)
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
@@ -42,5 +42,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Guard tests
         run: node --test .github/scripts/seam-guard.test.mjs
-      - name: Export each store profile and search it
-        run: node .github/scripts/seam-guard.mjs --store-profiles
+      # Then the positive control: once the RA-20-18 wiring line is in
+      # app/_layout.tsx, the e2e profile's bundle must carry the seam, which
+      # proves the search can see it (skipped, with a line saying so, before).
+      - name: Export each store profile and search it, then the e2e control
+        run: node .github/scripts/seam-guard.mjs --store-profiles --e2e-control

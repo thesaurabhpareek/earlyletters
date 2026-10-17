@@ -3,6 +3,12 @@
 //
 //   node .github/scripts/seam-guard.mjs --profile testflight [--profile production]
 //   node .github/scripts/seam-guard.mjs --store-profiles      every store profile in eas.json
+//   node .github/scripts/seam-guard.mjs --store-profiles --e2e-control
+//
+// --e2e-control is the positive control: once the RA-20-18 wiring line is in
+// app/_layout.tsx, the `e2e` profile is exported too and must carry the seam,
+// which proves the search can see seam code at all. Before the wiring line no
+// bundle can carry it, so the control says so and is skipped.
 //
 // For each profile: the env from apps/mobile/eas.json (following `extends`),
 // with the e2e switches in FORCED_ON turned on, the worst case where a flag
@@ -42,9 +48,18 @@ export const SEAM_IDENTIFIERS = [
   'e2eKillPlant',
   'kill-drill',
   'Asha kill drill',
-  // The fourth launch-argument key of the drill (TESTID_REQUESTS.md section 3).
+  // The drill's other launch-argument keys (DRILL_ARG in apps/mobile/e2e/kill/protocol.mjs; a test keeps them in sync).
   'e2eKillKind',
+  'e2eKillPoint',
 ];
+
+/** The identifier the e2e bundle must carry for the positive control: the drill's mode key. */
+export const CONTROL_IDENTIFIER = 'e2eKillDrill';
+
+/** The RA-20-18 wiring line: the root layout imports and calls the seams hook. */
+export function wiringPresent(layoutSource) {
+  return /from\s+['"]@\/dev\/e2e-seams['"]/.test(layoutSource) && /\buseE2eSeams\(\)/.test(layoutSource);
+}
 
 /** How app.config.ts says it refused a build for B-9 (apps/mobile/src/lib/build-env.ts, e2eRefusal). */
 export const B9_REFUSAL = /EXPO_PUBLIC_E2E=1 .*\(B-9\)/;
@@ -191,14 +206,48 @@ export async function guard(root, eas, profile, log, run = spawnSync) {
   return true;
 }
 
-const USAGE = 'usage: node .github/scripts/seam-guard.mjs (--profile <name> ... | --store-profiles)';
+/**
+ * The positive control: export the `e2e` profile as it builds (EXPO_PUBLIC_E2E=1, development app env) and
+ * require the seam. Skipped, with a line saying why, while the wiring line is not in app/_layout.tsx.
+ */
+export async function e2eControl(root, eas, log, run = spawnSync) {
+  const layout = join(root, 'apps/mobile/src/app/_layout.tsx');
+  if (!existsSync(layout) || !wiringPresent(readFileSync(layout, 'utf8'))) {
+    log('B-8 positive control: skipped. The RA-20-18 wiring line is not in apps/mobile/src/app/_layout.tsx yet, so no bundle can carry the seam to find.');
+    return true;
+  }
+  if (!eas.build?.e2e) {
+    log(`::error::B-8 positive control: no "e2e" build profile in ${EAS_JSON} (TESTID_REQUESTS.md B-1).`);
+    return false;
+  }
+  const r = await exportAndScan(root, exportEnv(process.env, profileEnv(eas, 'e2e'), false), run);
+  if (r.status !== 'ok') {
+    log(`::error::B-8 positive control: expo export of the e2e profile failed (exit ${r.exit}).`);
+    log(r.output.split('\n').filter(Boolean).slice(-30).join('\n'));
+    return false;
+  }
+  if (!r.looksLikeApp || !r.seen) {
+    log(`::error::B-8 positive control: the e2e export does not look like the app's bundle (${r.files.length} files, ${r.bytes} bytes).`);
+    return false;
+  }
+  if (!r.hits[CONTROL_IDENTIFIER]) {
+    log(`::error::B-8 positive control: the e2e bundle does not carry ${CONTROL_IDENTIFIER}, so a clean store bundle proves nothing. Check the wiring line and the gate in apps/mobile/src/dev/e2e-seams.ts.`);
+    return false;
+  }
+  log(`B-8 positive control: the e2e bundle carries the seam (${Object.entries(r.hits).map(([k, n]) => `${k} x${n}`).join(', ')}), so the search can see it.`);
+  return true;
+}
+
+const USAGE = 'usage: node .github/scripts/seam-guard.mjs (--profile <name> ... | --store-profiles) [--e2e-control]';
 
 export async function main(argv, root = process.cwd(), log = (s) => console.log(s)) {
   const eas = JSON.parse(readFileSync(join(root, EAS_JSON), 'utf8'));
   const profiles = [];
+  let control = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--profile' && argv[i + 1] && !argv[i + 1].startsWith('--')) profiles.push(argv[++i]);
     else if (argv[i] === '--store-profiles') profiles.push(...storeProfiles(eas));
+    else if (argv[i] === '--e2e-control') control = true;
     else {
       log(USAGE);
       return 2;
@@ -220,6 +269,7 @@ export async function main(argv, root = process.cwd(), log = (s) => console.log(
   }
   let ok = true;
   for (const p of [...new Set(profiles)]) ok = (await guard(root, eas, p, log)) && ok;
+  if (control) ok = (await e2eControl(root, eas, log)) && ok;
   return ok ? 0 : 1;
 }
 

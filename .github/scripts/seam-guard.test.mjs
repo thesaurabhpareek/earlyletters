@@ -3,10 +3,11 @@
 // a stand-in that writes a bundle, so these run in seconds.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { B9_REFUSAL, exportEnv, FORCED_ON, guard, main, profileEnv, scan, SEAM_IDENTIFIERS, storeProfiles } from './seam-guard.mjs';
+import { B9_REFUSAL, CONTROL_IDENTIFIER, e2eControl, exportEnv, FORCED_ON, guard, main, profileEnv, scan, SEAM_IDENTIFIERS, storeProfiles, wiringPresent } from './seam-guard.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const REAL_EAS = JSON.parse(readFileSync(join(REPO, 'apps/mobile/eas.json'), 'utf8'));
@@ -117,8 +118,74 @@ test('B-9: when app.config.ts refuses the forced build, the bundle as the profil
   assert.ok(!B9_REFUSAL.test('Error: Cannot find module expo-router'));
 });
 
-test('the identifiers are S19\'s list on #203, plus the drill\'s fourth launch-argument key', () => {
-  for (const id of ['e2eSeed', 'e2eOffline', 'e2eConfig', 'e2eKillDrill', 'e2eKillRun', 'e2eKillPlant', 'kill-drill', 'Asha kill drill', 'e2eKillKind']) assert.ok(SEAM_IDENTIFIERS.includes(id), id);
+test('the identifiers are S19\'s list on #203, plus the drill\'s other launch-argument keys', () => {
+  for (const id of ['e2eSeed', 'e2eOffline', 'e2eConfig', 'e2eKillDrill', 'e2eKillRun', 'e2eKillPlant', 'kill-drill', 'Asha kill drill', 'e2eKillKind', 'e2eKillPoint']) assert.ok(SEAM_IDENTIFIERS.includes(id), id);
+  assert.ok(SEAM_IDENTIFIERS.includes(CONTROL_IDENTIFIER));
+});
+
+const PROTOCOL = join(REPO, 'apps/mobile/e2e/kill/protocol.mjs');
+test('every launch-argument key, the marker folder and the drill text of the kill drill protocol are in SEAM_IDENTIFIERS', { skip: !existsSync(PROTOCOL) && 'apps/mobile/e2e/kill/protocol.mjs arrives with #203' }, async () => {
+  const protocol = await import(PROTOCOL);
+  for (const [name, key] of Object.entries(protocol.DRILL_ARG)) assert.ok(SEAM_IDENTIFIERS.includes(key), `DRILL_ARG.${name} = ${key} is missing from SEAM_IDENTIFIERS`);
+  assert.ok(SEAM_IDENTIFIERS.includes(protocol.MARKER_DIR), `MARKER_DIR ${protocol.MARKER_DIR}`);
+  assert.ok(SEAM_IDENTIFIERS.some((id) => protocol.drillText(7).startsWith(id)), 'the drill text');
+});
+
+test('wiringPresent: the import and the call, both', () => {
+  const wired = "import { useE2eSeams } from '@/dev/e2e-seams';\nfunction Root() {\n  useE2eSeams();\n}";
+  assert.equal(wiringPresent(wired), true);
+  assert.equal(wiringPresent("import { useE2eSeams } from '@/dev/e2e-seams';"), false);
+  assert.equal(wiringPresent('function Root() {}'), false);
+});
+
+/** A small repository for the positive control: a root layout, eas.json with an e2e profile, and the brand. */
+function controlFixture({ wired = true, e2e = true } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'seam-control-'));
+  mkdirSync(join(root, 'apps/mobile/src/app'), { recursive: true });
+  mkdirSync(join(root, 'packages/brand'), { recursive: true });
+  writeFileSync(join(root, 'apps/mobile/src/app/_layout.tsx'), wired ? "import { useE2eSeams } from '@/dev/e2e-seams';\nfunction Root() {\n  useE2eSeams();\n}\n" : 'function Root() {}\n');
+  writeFileSync(join(root, 'packages/brand/index.ts'), "export const brand = { name: 'Early Letters' };\n");
+  const eas = { build: { ...EAS.build } };
+  if (!e2e) delete eas.build.e2e;
+  return { root, eas };
+}
+
+test('positive control: skipped, with a reason, while the wiring line is not in _layout.tsx (this repository today)', async () => {
+  const lines = [];
+  const layout = readFileSync(join(REPO, 'apps/mobile/src/app/_layout.tsx'), 'utf8');
+  const result = await e2eControl(REPO, REAL_EAS, (l) => lines.push(l), () => assert.fail('no export while unwired'));
+  if (wiringPresent(layout)) return; // after RA-20-18 the next tests cover it
+  assert.equal(result, true);
+  assert.match(lines.join('\n'), /positive control: skipped\. The RA-20-18 wiring line is not in/);
+});
+
+test('positive control: with the wiring line, the e2e bundle must carry the seam', async () => {
+  const { root, eas } = controlFixture();
+  try {
+    const lines = [];
+    const good = fakeExport(bundle('"e2eKillDrill"'));
+    assert.equal(await e2eControl(root, eas, (l) => lines.push(l), good.run), true);
+    assert.equal(good.calls[0].env.EXPO_PUBLIC_E2E, '1');
+    assert.equal(good.calls[0].env.EXPO_PUBLIC_APP_ENV, 'preview');
+    assert.match(lines.join('\n'), /the e2e bundle carries the seam \(e2eKillDrill x1\)/);
+    const blind = [];
+    assert.equal(await e2eControl(root, eas, (l) => blind.push(l), fakeExport(bundle()).run), false);
+    assert.match(blind.join('\n'), /does not carry e2eKillDrill, so a clean store bundle proves nothing/);
+    assert.equal(await e2eControl(root, eas, () => {}, fakeExport({ status: 1 }).run), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('positive control: the wiring line without an e2e profile is an error', async () => {
+  const { root, eas } = controlFixture({ e2e: false });
+  try {
+    const lines = [];
+    assert.equal(await e2eControl(root, eas, (l) => lines.push(l), () => assert.fail('no export')), false);
+    assert.match(lines.join('\n'), /no "e2e" build profile/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('usage: no profile, a flag without a value, or an unknown profile exits 2', async () => {
