@@ -2,16 +2,18 @@
  * Launch sweep (TDD 01 F-02, 3.2.4; TDD 03 FM-3; DATA-REQ-048). Runs once per
  * process after the first frame, never awaited by launch (A-REQ-002).
  *
- * Takes one synchronous snapshot of audio files and rows, plans with the
- * pure planLaunchSweep, then applies: finishes takes interrupted by a kill,
- * rebases paths after an app update, re-attaches stray recordings to the
- * active book as drafts (they show on Tonight), and reports the rest in
- * Settings > Recordings. A take a kill cut off is probed first: one that will
- * not play is kept and listed, not shown as ready (D-085). The sweep never
- * deletes audio. After it, the 30 day shelf purge runs (erase.ts), never
- * while a take is being recorded. Returns counts only.
+ * Takes one synchronous snapshot of audio files (where expo-audio writes
+ * them, `Documents/ExpoAudio`, and the top of Documents: recordings.ts) and
+ * rows, plans with the pure planLaunchSweep, then applies: finishes takes
+ * interrupted by a kill, rebases paths after an app update (a row's stored
+ * path names the old container; the file is matched by name in this one),
+ * re-attaches stray recordings to the active book as drafts (they show on
+ * Tonight), and reports the rest in Settings > Recordings. A take a kill cut
+ * off is probed first: one that will not play is kept and listed, not shown
+ * as ready (D-085). The sweep never deletes audio. After it, the 30 day shelf
+ * purge runs (erase.ts), also when the listing failed (erasing needs no
+ * snapshot), never while a take is being recorded. Returns counts only.
  */
-import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import {
   audioRows,
@@ -27,7 +29,8 @@ import {
 import { purgeShelfAtLaunch } from './erase';
 import { probePlayable } from './probe';
 import { activeTakeId, hashAudioFile } from './recorder';
-import { fileNameOf, isAudioFile, planLaunchSweep, type SweepAction, type SweepFile } from './sweep.logic';
+import { filesForRecording, listRecordingFiles } from './recordings';
+import { fileNameOf, planLaunchSweep, type SweepAction, type SweepFile } from './sweep.logic';
 
 export type SweepReport = Record<SweepAction['kind'], number>;
 
@@ -37,14 +40,12 @@ interface FoundFile extends SweepFile {
   createdAt: string;
 }
 
+/** Throws when a folder that exists cannot be listed; the sweep then changes nothing this launch. */
 function listRecordings(): FoundFile[] {
-  const out: FoundFile[] = [];
-  for (const item of Paths.document.list()) {
-    if (!(item instanceof File) || !isAudioFile(item.uri)) continue;
+  return listRecordingFiles().map((item) => {
     const t = item.creationTime ?? item.modificationTime ?? Date.now();
-    out.push({ uri: item.uri, bytes: item.size ?? 0, createdAt: new Date(t).toISOString() });
-  }
-  return out;
+    return { uri: item.uri, bytes: item.size ?? 0, createdAt: new Date(t).toISOString() };
+  });
 }
 
 export function runLaunchSweep(): Promise<SweepReport | null> {
@@ -54,6 +55,24 @@ export function runLaunchSweep(): Promise<SweepReport | null> {
 }
 
 async function sweep(): Promise<SweepReport> {
+  try {
+    return await reconcile();
+  } finally {
+    purgeShelf();
+  }
+}
+
+/** The 30 day shelf purge. Erasing needs no snapshot, so it runs even when the listing failed; never during a recording. */
+function purgeShelf(): void {
+  if (activeTakeId()) return;
+  try {
+    purgeShelfAtLaunch();
+  } catch {
+    // try again at the next launch; nothing is half erased (file first, then row)
+  }
+}
+
+async function reconcile(): Promise<SweepReport> {
   // One synchronous snapshot: nothing can record between these reads.
   const files = listRecordings();
   const rows = audioRows();
@@ -88,10 +107,14 @@ async function sweep(): Promise<SweepReport> {
         finalizeDraftAudio(a.draftId, { audioUri: a.uri, sha256: hash?.sha256 ?? null, bytes: hash?.bytes ?? a.bytes, state: 'unrecoverable', recovered: true });
         break;
       }
-      case 'drop-empty-recording':
-        // Nothing was captured: the row points at no file. Re-check before removing it.
-        if (getDraft(a.draftId)?.state === 'recording') deleteDraft(a.draftId);
+      case 'drop-empty-recording': {
+        // Nothing was captured: the row points at no file. Re-check before removing it: still a take being
+        // recorded, and no file of its name on disk (a listing can miss one: Android lists an unreadable folder
+        // as empty). A take whose file is there is left as it is for the next launch to finish.
+        const d = getDraft(a.draftId);
+        if (d?.state === 'recording' && !(d.audioUri && filesForRecording(d.audioUri).some((f) => f.exists))) deleteDraft(a.draftId);
         break;
+      }
       case 'rebase-draft':
         rebaseAudioUri('drafts', a.draftId, a.uri);
         break;
@@ -116,14 +139,6 @@ async function sweep(): Promise<SweepReport> {
       case 'missing-audio':
         // Reported by count only (no content, no ids leave the phone). The row is left exactly as it is.
         break;
-    }
-  }
-  // The shelf purge never runs in the middle of a recording.
-  if (!activeTakeId()) {
-    try {
-      purgeShelfAtLaunch();
-    } catch {
-      // try again at the next launch; nothing is half erased (file first, then row)
     }
   }
   return report;

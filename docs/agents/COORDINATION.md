@@ -65,3 +65,13 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - Tests sit next to their workspace's `test/` folder, so the workspace's test runner picks them up.
 - Scratch output, screenshots and previews go in the session scratchpad, never in the repo.
 - Reports are short: files changed, test results, what needs a device, what the founder must do, requests to other owners, and facts versus assumptions.
+
+## 9. Writing for the founder
+This covers anything the founder reads: PR descriptions, reports, status updates, the program status sheet and plan docs. Write like an experienced technical and business program manager.
+- Lead with status and the ask. A date is On track, At risk or Off track, with the reason in one line.
+- Use numbers, dates, owners and links, not adjectives. Keep sentences short and words plain.
+- No filler or hype: not "leverage", "robust", "seamless", "comprehensive", "crucial", "delve", "ensure", "streamline", "holistic", "utilize", "empower" or "unlock".
+- Times are in Pacific time with the day, for example "Tue 27 Oct, 5:00 AM PT". Convert UTC times from the repo.
+- Say "unverified" when it is. Don't hedge what you checked.
+- A decision for the founder comes with a recommendation and the date it's needed.
+- Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.

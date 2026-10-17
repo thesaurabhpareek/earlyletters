@@ -5,7 +5,8 @@
 -- PENDING: not yet applied. Apply after 20261015020000_v1_gate_coparent_invites_undo.sql,
 -- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
 -- earlier file. Redefined from their newest version: sync_pull and sync_push
--- (20261015000000), entries_guard_immutable (20261002020000), book_entries
+-- (20261015000000), entries_guard_immutable (20261002020000), entries_family_rules
+-- (20261003000000, five columns added to the consent check), book_entries
 -- (20261003000000, columns appended only). Each change is marked F16-REQ-028.
 --
 -- Why now: the contract freezes before sync reaches a phone (R2 AR-31), so a
@@ -131,6 +132,92 @@ begin
     end if;
   elsif new.deleted_reason is not null then
     new.deleted_reason := null;
+  end if;
+  return new;
+end;
+$$;
+
+-- ─── 2b. The new columns need consent like the words (review L N9 on #208) ───
+-- From 20261003000000; the only change is the five F16-REQ-028 columns in the
+-- content tuple: with sensitive-data consent withdrawn, a direct update of
+-- author_edits, locked_spans, pack_ref, occurred_precision or base_direction is
+-- SCCON, as an edit of the words is. (language has its own guard, 20261005000000.)
+create or replace function public.entries_family_rules()
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_content boolean;
+  v_role text;
+  v_send boolean;
+  v_prev text;
+begin
+  if current_user not in ('authenticated', 'anon') then
+    return new;                                   -- service role, RPCs and purge jobs
+  end if;
+  if public.is_anonymous() then
+    raise exception 'not available to anonymous sessions' using errcode = 'SCANO';
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.approval := 'not_needed';
+    new.reviewed_by := null;
+    new.reviewed_at := null;
+    v_content := true;
+  else
+    if new.approval is distinct from old.approval
+       or new.reviewed_by is distinct from old.reviewed_by
+       or new.reviewed_at is distinct from old.reviewed_at then
+      raise exception 'entries: approval is set by review_family_letter()' using errcode = 'SCAPR';
+    end if;
+    if old.deleted_at is not null then
+      return new;                                 -- entries_guard decides (SCTMB)
+    end if;
+    v_content := (new.final_text, new.machine_edits, new.edit_level, new.stt_meta, new.photo_path, new.kind,
+                  new.occurred_on, new.prompt_key, new.prompt_library_version, new.author_signs_as,
+                  new.sounds_like_me, new.capture_mode, new.audio_kept_on_device,
+                  -- F16-REQ-028: the v1.0 columns are content too (review L N9 on #208).
+                  new.author_edits, new.locked_spans, new.pack_ref, new.occurred_precision, new.base_direction)
+                 is distinct from
+                 (old.final_text, old.machine_edits, old.edit_level, old.stt_meta, old.photo_path, old.kind,
+                  old.occurred_on, old.prompt_key, old.prompt_library_version, old.author_signs_as,
+                  old.sounds_like_me, old.capture_mode, old.audio_kept_on_device,
+                  old.author_edits, old.locked_spans, old.pack_ref, old.occurred_precision, old.base_direction)
+                 or (new.in_book and not old.in_book);
+    -- Tombstoning, and taking a letter out of the book, are never gated (LEGAL-REQ-009).
+  end if;
+
+  if v_content then
+    perform public.require_content_consent();
+    if not public.child_is_live(new.child_id) and public.is_child_member(new.child_id) then
+      raise exception 'book is deleted' using errcode = 'SCDEL';
+    end if;
+  end if;
+
+  v_role := public.my_role_in(new.child_id);
+  if v_role = 'contributor' then
+    if tg_op = 'INSERT' then
+      v_prev := 'not_needed';
+      v_send := new.in_book;
+    else
+      v_prev := old.approval;
+      v_send := case when new.in_book is distinct from old.in_book then new.in_book
+                     else old.approval <> 'not_needed' end;
+      if v_prev = 'added' and new.final_text is distinct from old.final_text
+         and not public.my_auto_add_in(new.child_id) then
+        v_prev := 'not_needed';                   -- new words need a parent's yes again
+      end if;
+    end if;
+    if not v_send then
+      new.approval := 'not_needed';
+      new.reviewed_by := null;
+      new.reviewed_at := null;
+    elsif v_prev = 'not_needed' then
+      new.approval := case when public.my_auto_add_in(new.child_id) then 'added' else 'pending' end;
+      new.reviewed_by := null;
+      new.reviewed_at := null;
+    else
+      new.approval := v_prev;
+    end if;
+    new.in_book := new.approval = 'added';
   end if;
   return new;
 end;

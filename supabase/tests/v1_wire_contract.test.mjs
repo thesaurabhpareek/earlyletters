@@ -128,6 +128,22 @@ check('a prefs op without the key keeps it', (await sys(`select notify_letters, 
 check('an unknown preference is still 22023', (await push(B, [op('prefs.upsert', CHILD, { colour: 'red' })])).results[0].code === '22023');
 check('a person cannot set another person\'s preference', (await as(C, `update child_member_prefs set notify_letters = true where child_id = $1`, [CHILD])).affectedRows === 0);
 
+// ── Consent covers the new columns (review L N9 on #208) ─────────────────
+// With sensitive-data consent withdrawn, a direct update of any v1.0 column on one's own letter is SCCON,
+// as an edit of the words is; taking the letter out of the book or deleting it never is (LEGAL-REQ-009).
+const gated = uuid7();
+await push(A, [op('entry.upsert', gated, base('Before the pause.', { language: undefined }))]);
+await as(A, `select public.record_policy_act('sensitive-data', '1.0.0', 'withdraw', 'settings_toggle', 'settings.privacy', '1', 'ios')`);
+for (const [col, val] of [['author_edits', `'[]'::jsonb`], ['locked_spans', `'[]'::jsonb`], ['pack_ref', `'ar@1.0.0'`],
+  ['occurred_precision', `'month'`], ['base_direction', `'rtl'`]]) {
+  check(`[LEGAL-REQ-006] without consent a direct update of ${col} is refused (SCCON)`,
+    (await codeOf(() => as(A, `update entries set ${col} = ${val} where id = $1`, [gated]))) === 'SCCON');
+}
+check('[LEGAL-REQ-009] without consent the letter can still leave the book and be deleted',
+  (await codeOf(() => as(A, `update entries set in_book = false where id = $1`, [gated]))) === 'ok'
+  && (await codeOf(() => as(A, `select public.delete_entry($1)`, [gated]))) === 'ok');
+await as(A, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1', 'ios')`);
+
 // ── R2 AR-32: no audio hash on the wire ─────────────────────────────────
 check('[R2 AR-32] entries has no audio_sha256 (restore matches by entry id against audio_blobs, F16 6.2 D)',
   (await sys(`select count(*)::int n from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'audio_sha256'`)).rows[0].n === 0);
