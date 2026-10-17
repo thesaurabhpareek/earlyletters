@@ -94,7 +94,7 @@ export const en = {
       title: "Who is this book for?",
       nameLabel: "Name",
       // The second and later name rows (twins or more).
-      nameLabelMore: "Another name",
+      nameLabelMore: "Another child's name",
       namePlaceholder: "First name, or the name you use at home",
       nameHelp: "You can add a nickname later.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       birthdayLabel: "Birthday",
@@ -934,7 +934,7 @@ export const en = {
       // Names no one else: hiding is kept on this phone today (store.hideChild does not sync it).
       hideBody: "Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.",
       // With a co-parent in the book (S46): hiding stays on this person's phone. {coParent} is their name.
-      hideShared: "Only for you. {coParent} still sees {child}'s book as before.",
+      hideShared: "Hiding is only for you. {coParent} still sees {child}'s book as before.",
       showButton: "Show this book again",
       hiddenTitle: "Hidden books",
       hiddenEmpty: "No hidden books.",
