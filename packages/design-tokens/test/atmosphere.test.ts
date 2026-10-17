@@ -30,6 +30,8 @@ const TEXT_ON_PAPER = ['text', 'textMuted', 'accent', 'success', 'caution', 'rec
  */
 const AT_PEAK: Record<Mode, readonly (typeof TEXT_ON_PAPER)[number][]> = { light: a.onLitPaper.reading, dark: TEXT_ON_PAPER };
 const palette = (mode: Mode, hc: boolean) => ({ ...tokens[mode], ...(hc ? tokens.highContrast[mode] : {}) });
+/** The colour a scheme draws a tone in: on paper, its paper tone where it has one. */
+const toneIn = (mode: Mode, t: Tone) => (mode === 'light' ? ((a.paperTone as Partial<Record<Tone, string>>)[t] ?? a.tone[t]) : a.tone[t]);
 const worst = (mode: Mode, hc: boolean, lit: number[]) => Math.min(...AT_PEAK[mode].map((k) => ratio(palette(mode, hc)[k], lit)));
 
 /** The highest alpha at which a tone keeps the scheme's peak colours at 4.5:1 (bisection). */
@@ -38,7 +40,7 @@ function limit(mode: Mode, hc: boolean, tone: Tone): number {
   let hi = 1;
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2;
-    if (worst(mode, hc, mix(a.tone[tone], palette(mode, hc).bg, mid)) >= 4.5) lo = mid;
+    if (worst(mode, hc, mix(toneIn(mode, tone), palette(mode, hc).bg, mid)) >= 4.5) lo = mid;
     else hi = mid;
   }
   return lo;
@@ -73,6 +75,14 @@ describe('atmosphere tokens: the lamp palette', () => {
     expect(a.peak.light.amber).toBeGreaterThan(a.peak.light.dusk);
   });
 
+  it("on paper the dusk is a warm mauve (the website's dusk and rose, half and half), so late night stays warm, not grey", () => {
+    expect(Object.keys(a.paperTone)).toEqual(['dusk']);
+    const [r, g, b] = rgb(a.paperTone.dusk);
+    const mid = [rgb(a.tone.dusk), rgb(a.tone.rose)].reduce((x, y) => x.map((v, i) => (v + y[i]) / 2));
+    for (const [i, v] of [r, g, b].entries()) expect(Math.abs(v - mid[i])).toBeLessThanOrEqual(1);
+    expect(r).toBeGreaterThan(b);
+  });
+
   it('light paper reads lit, not white: gold and amber are strong enough to see (the old whole-pool caps were 0.24 and 0.12)', () => {
     expect(a.peak.light.gold).toBeGreaterThanOrEqual(0.6);
     expect(a.peak.light.amber).toBeGreaterThanOrEqual(0.3);
@@ -89,7 +99,7 @@ describe('atmosphere tokens: text keeps 4.5:1 at every tone peak (dark: every co
     for (const hc of [false, true]) {
       for (const tone of TONES) {
         it(`${mode}${hc ? ' + Increase Contrast' : ''}, ${tone} at its peak (${a.peak[mode][tone]})`, () => {
-          const lit = mix(a.tone[tone], palette(mode, hc).bg, a.peak[mode][tone]);
+          const lit = mix(toneIn(mode, tone), palette(mode, hc).bg, a.peak[mode][tone]);
           for (const k of AT_PEAK[mode]) {
             expect(ratio(palette(mode, hc)[k], lit), `${k} on ${mode} paper lit ${tone}`).toBeGreaterThanOrEqual(4.5);
           }

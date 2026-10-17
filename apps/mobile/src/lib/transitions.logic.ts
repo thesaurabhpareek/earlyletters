@@ -193,13 +193,113 @@ export function cardToPageFrame(card: Rect, screen: { width: number; height: num
   };
 }
 
+/** How far along the veil has fully come up (it draws nothing at rest on the card). */
+export const VEIL_UP = 0.04;
+
+/**
+ * The veil of the page's paper over the list: its solid part is the paper's own frame at `veilLead` times its
+ * progress, so it always runs ahead of the paper's edges (and on the way back stays out until they have passed). Its
+ * soft edge, `feather` wide outside that frame, is as wide at every point of the way: the spring is slow at the end
+ * of the way back, and an edge that narrowed there read as a cut through the list's words. At 0 it is exactly the
+ * card and draws nothing; it comes up over the first VEIL_UP of the way and covers the screen from 1 / veilLead, so
+ * the spring's last points never show the list under the paper.
+ */
+export function veilFrame(card: Rect, screen: { width: number; height: number }, progress: number) {
+  'worklet';
+  const p = Math.min(1, Math.max(0, progress));
+  const f = cardToPageFrame(card, screen, Math.min(1, p * M.cardToPage.veilLead));
+  // By VEIL_UP it is already ahead of the paper's edges (no square corners over the card's rounded ones before).
+  const opacity = Math.min(1, p / VEIL_UP);
+  return { x: f.x, y: f.y, width: f.width, height: f.height, feather: M.cardToPage.veilFeather, opacity };
+}
+
+/**
+ * The veil's box on screen, its soft edge included, on whole device pixels (`pixelRatio`): its pieces (the solid
+ * middle, four edges and four corners, laid out inside it a whole number of points apart) then meet on pixel
+ * boundaries, so no seam shows between them.
+ */
+export function veilBox(card: Rect, screen: { width: number; height: number }, progress: number, pixelRatio: number) {
+  'worklet';
+  const v = veilFrame(card, screen, progress);
+  const snap = (n: number) => Math.round(n * pixelRatio) / pixelRatio;
+  const left = snap(v.x - v.feather);
+  const top = snap(v.y - v.feather);
+  return {
+    left,
+    top,
+    width: snap(v.x + v.width + v.feather) - left,
+    height: snap(v.y + v.height + v.feather) - top,
+    feather: v.feather,
+    opacity: v.opacity,
+  };
+}
+
+/** A block of words on screen, and the line height its body text renders at (lineHeightFor: type, Dynamic Type, Reading Size). */
+export type CarryText = Rect & { lineHeight: number };
+
 /**
  * The words the card and the page share (the dateline and the opening lines) are carried, never redrawn: one block
  * of text, laid out once at the page's column, moves from where it sat on the card to where it sits on the page,
- * with the paper. They need the same column, or the lines would wrap differently and the words would jump.
+ * with the paper. They need the same column and the same type size (a page at a larger Reading Size than the card,
+ * say), or the lines would wrap differently and the words would jump; then the page cross-fades instead.
  */
-export function canCarry(cardText: Rect | undefined, pageText: Rect | undefined): boolean {
-  return !!cardText && !!pageText && Math.abs(cardText.width - pageText.width) <= 1 && pageText.height >= cardText.height - 1;
+export function canCarry(cardText: CarryText | undefined, pageText: CarryText | undefined): boolean {
+  return (
+    !!cardText &&
+    !!pageText &&
+    Math.abs(cardText.width - pageText.width) <= 1 &&
+    Math.abs(cardText.lineHeight - pageText.lineHeight) <= 0.5 &&
+    pageText.height >= cardText.height - 1
+  );
+}
+
+/** The card's excerpt ended in a fade exactly when the page holds more of the letter than the card showed. */
+export function cardWasCut(cardText: Rect, pageText: Rect): boolean {
+  'worklet';
+  return pageText.height > cardText.height + 0.5;
+}
+
+/**
+ * While a card's page is up, the screen behind it (the Book, holding the same words) is hidden from VoiceOver and
+ * TalkBack, so the letter is read once. A transparent modal does not do that by itself: react-native-screens shows
+ * it over the Book without making it modal. Counted, so two pages in a row never uncover the list between them.
+ */
+export function createCoverStore() {
+  let holds = 0;
+  const listeners = new Set<() => void>();
+  const emit = () => listeners.forEach((l) => l());
+  return {
+    get: () => holds > 0,
+    subscribe: (l: () => void) => {
+      listeners.add(l);
+      return () => void listeners.delete(l);
+    },
+    /** The page is up until the returned release is called (idempotent). */
+    hold: () => {
+      holds++;
+      if (holds === 1) emit();
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds--;
+        if (holds === 0) emit();
+      };
+    },
+  };
+}
+
+/** The app's one store of card pages over the Book. */
+export const cardPages = createCoverStore();
+
+/**
+ * Accessibility props for the screen behind a card's page: hidden from screen readers while the page is up
+ * (VoiceOver: accessibilityElementsHidden; TalkBack: importantForAccessibility; the web preview: aria-hidden).
+ */
+export function hiddenBehind(covered: boolean) {
+  return covered
+    ? ({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants', 'aria-hidden': true } as const)
+    : ({ accessibilityElementsHidden: false, importantForAccessibility: 'auto', 'aria-hidden': false } as const);
 }
 
 /**

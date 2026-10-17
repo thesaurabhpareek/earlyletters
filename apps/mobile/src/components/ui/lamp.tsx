@@ -13,11 +13,12 @@
  * scenes yet keep their light.
  *
  * Shape: on paper a large, round, soft pool (21 eased stops, sized by the longer side) whose core sits
- * above or beside the text block, with the website's film grain over it (an 11 KB tile from
- * @scribe/design-tokens/textures) so the soft tail shows no 8-bit rings; in dark mode #99's ellipse.
+ * above or beside the text block; in dark mode #99's ellipse, its four stops drawn as one smooth curve. The
+ * website's film grain lies over both (an 11 KB tile from @scribe/design-tokens/textures; fainter on night paper),
+ * so the soft tail shows no 8-bit rings.
  *
- * Cost (D-065, 60 fps on older iPhones): each light is one SVG RadialGradient (and on paper one grain
- * pattern) drawn once, no blur, no Skia, no new dependency. Only opacity moves: a layer's opacity carries the intensity (it
+ * Cost (D-065, 60 fps on older iPhones): each light is one SVG RadialGradient and one grain pattern, drawn
+ * once, no blur, no Skia, no new dependency. Only opacity moves: a layer's opacity carries the intensity (it
  * arrives, rises and dims over tokens.motion.lamp.arriveMs on M3 easing), and one wrapper carries the
  * breath as a Reanimated CSS animation (native, UI thread, no JS per frame; a real CSS animation on
  * web). A change of scene that moves the pool (the gate's centred light to the welcome's top light)
@@ -59,6 +60,7 @@ import { STANDARD_EASING, useReducedMotion } from '@/lib/motion';
 import {
   breathKeyframes,
   coverTarget,
+  grainOpacity,
   geometryKey,
   lampAllowed,
   lampGeometry,
@@ -221,12 +223,13 @@ export function LampView({ persistKey, arrive, focused = true, ...input }: LampP
   );
 }
 
-/** The grain tile in points (tokens.atmosphere.grain: 128 pixels at @3x). */
+/** The grain tile in points (tokens.atmosphere.grain: 128 pixels drawn at 3 per point). */
 const GRAIN_TILE = tokens.atmosphere.grain.tile / tokens.atmosphere.grain.scale;
 
 /**
- * One gradient, drawn once. Its wrapper's opacity is the light's level. In the light scheme the grain lies over
- * the pool inside the same layer, so it comes and goes with the light and dithers the soft tail (no rings).
+ * One gradient, drawn once. Its wrapper's opacity is the light's level. The grain lies over the pool inside the
+ * same layer, so it comes and goes with the light and dithers the soft tail (no rings); on night paper it is drawn
+ * at tokens.atmosphere.grain.darkOpacity.
  */
 function LampLayer({ layer, scheme, box, reduced, onGone }: { layer: Layer; scheme: ColorScheme; box: LampBox; reduced: boolean; onGone: (id: number) => void }) {
   const id = `lamp${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -246,7 +249,7 @@ function LampLayer({ layer, scheme, box, reduced, onGone }: { layer: Layer; sche
   const style = useAnimatedStyle(() => ({ opacity: o.value }));
 
   const g = lampGeometry(layer.light.anchor, scheme, box);
-  const grain = scheme === 'light';
+  const grain = grainOpacity(scheme);
   return (
     <Animated.View style={[StyleSheet.absoluteFill, style]}>
       <Svg width="100%" height="100%" preserveAspectRatio="none">
@@ -256,14 +259,14 @@ function LampLayer({ layer, scheme, box, reduced, onGone }: { layer: Layer; sche
               <Stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={s.opacity} />
             ))}
           </RadialGradient>
-          {grain ? (
+          {grain > 0 ? (
             <Pattern id={`${id}g`} patternUnits="userSpaceOnUse" x="0" y="0" width={GRAIN_TILE} height={GRAIN_TILE}>
               <SvgImage href={grainTexture} x="0" y="0" width={GRAIN_TILE} height={GRAIN_TILE} preserveAspectRatio="none" />
             </Pattern>
           ) : null}
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
-        {grain ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}g)`} /> : null}
+        {grain > 0 ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}g)`} opacity={grain} /> : null}
       </Svg>
     </Animated.View>
   );

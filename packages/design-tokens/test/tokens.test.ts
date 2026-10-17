@@ -196,6 +196,10 @@ describe('design tokens: motion and targets', () => {
     expect(m.cardToPage.contentFrom).toBeLessThan(1);
     expect(m.cardToPage.behindDim).toBeGreaterThanOrEqual(0.9);
     expect(m.cardToPage.behindDim).toBeLessThan(1);
+    // The veil runs ahead of the paper (more than once as far along) with a soft edge.
+    expect(m.cardToPage.veilLead).toBeGreaterThan(1);
+    // Wide enough that a line of a letter (32 pt) never spans more than half of it: a fade over words, not a cut.
+    expect(m.cardToPage.veilFeather).toBeGreaterThanOrEqual(64);
   });
   it('between rooms the light leaves as fast as an exit and comes back as fast as an entry; a dissolve fits the sequence', () => {
     expect(m.lamp.leaveMs).toBe(m.exitMs);

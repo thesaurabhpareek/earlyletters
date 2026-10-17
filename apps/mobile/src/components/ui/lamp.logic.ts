@@ -112,23 +112,70 @@ const smoothstep = (a: number, b: number, x: number) => {
 };
 
 /**
+ * #99's four dark stops as one smooth curve: a monotone cubic through them (Fritsch and Carlson), so the falloff
+ * has the same values at #99's offsets and no corner between them (the corners showed as faint rings).
+ */
+function darkFalloff(t: number): number {
+  const xs = STOPS.map((s) => s.offset);
+  const ys = STOPS.map((s) => s.opacity);
+  const n = xs.length;
+  const d = xs.slice(1).map((x, i) => (ys[i + 1] - ys[i]) / (x - xs[i]));
+  const m = xs.map((_, i) => (i === 0 ? d[0] : i === n - 1 ? d[n - 2] : d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2));
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) m[i] = m[i + 1] = 0;
+    else {
+      const a = m[i] / d[i];
+      const b = m[i + 1] / d[i];
+      const h = Math.hypot(a, b);
+      if (h > 3) {
+        m[i] = (3 * a * d[i]) / h;
+        m[i + 1] = (3 * b * d[i]) / h;
+      }
+    }
+  }
+  let i = 0;
+  while (i < n - 2 && t > xs[i + 1]) i++;
+  const hgt = xs[i + 1] - xs[i];
+  const u = Math.min(1, Math.max(0, (t - xs[i]) / hgt));
+  const h00 = 2 * u ** 3 - 3 * u ** 2 + 1;
+  const h10 = u ** 3 - 2 * u ** 2 + u;
+  const h01 = -2 * u ** 3 + 3 * u ** 2;
+  const h11 = u ** 3 - u ** 2;
+  return Math.max(0, h00 * ys[i] + h10 * hgt * m[i] + h01 * ys[i + 1] + h11 * hgt * m[i + 1]);
+}
+
+/** The tone a scheme draws: on paper some tones take their paper version (tokens.atmosphere.paperTone). */
+export function toneOf(t: LampTone, scheme: ColorScheme): string {
+  const { tone, paperTone } = tokens.atmosphere;
+  return scheme === 'light' ? ((paperTone as Partial<Record<LampTone, string>>)[t] ?? tone[t]) : tone[t];
+}
+
+/**
  * The gradient's stops for a light. Intensity is the wrapper's opacity.
- * Dark: four stops, each stop's opacity is stop x peak.dark[tone] (offset 0 the core tone, the rest the tail).
+ * Dark: #99's look, the core tone at the centre turning into the tail tone by the first of #99's stops, each at
+ * falloff x peak.dark, as 21 even stops plus #99's own offsets (so its values are kept exactly).
  * Light: PAPER_SHAPE's eased stops; colour and peak move from the core tone to the tail tone along the radius.
  */
 export function lampStops(light: Pick<LampLight, 'core' | 'tail'>, scheme: ColorScheme): LampStop[] {
-  const { tone, peak } = tokens.atmosphere;
+  const { peak } = tokens.atmosphere;
+  const S = PAPER_SHAPE;
+  const core = rgbOf(toneOf(light.core, scheme));
+  const tail = rgbOf(toneOf(light.tail, scheme));
+  const even = Array.from({ length: S.stops }, (_, i) => i / (S.stops - 1));
   if (scheme === 'dark') {
-    return STOPS.map((s, i) => {
-      const t = i === 0 ? light.core : light.tail;
-      return { offset: s.offset, color: tone[t], opacity: s.opacity * peak.dark[t] };
+    const offsets = [...new Set([...even, ...STOPS.map((s) => s.offset)].map((t) => Math.round(t * 10000) / 10000))].sort((a, b) => a - b);
+    const first = STOPS[1].offset;
+    return offsets.map((t) => {
+      // Eased, so the turn from core to tail tone has no corner either.
+      const w = smoothstep(0, first, t);
+      return {
+        offset: t,
+        color: hexOf(core.map((v, k) => v + (tail[k] - v) * w)),
+        opacity: Math.round(darkFalloff(t) * (peak.dark[light.core] + (peak.dark[light.tail] - peak.dark[light.core]) * w) * 10000) / 10000,
+      };
     });
   }
-  const S = PAPER_SHAPE;
-  const core = rgbOf(tone[light.core]);
-  const tail = rgbOf(tone[light.tail]);
-  return Array.from({ length: S.stops }, (_, i) => {
-    const t = i / (S.stops - 1);
+  return even.map((t) => {
     const w = smoothstep(S.shiftFrom, S.shiftTo, t);
     const fall = Math.max(0, 1 - t * t) ** S.power;
     return {
@@ -151,6 +198,15 @@ export function lampGeometry(anchor: LampAnchor, scheme: ColorScheme, box: LampB
   return { units: 'userSpaceOnUse' as const, cx: a.cx * box.width, cy: a.cy * box.height, r: a.r * Math.max(box.width, box.height) };
 }
 
+/** lampStops, kept per tone pair and scheme: the contrast tests ask for it at hundreds of thousands of points. */
+const stopCache = new Map<string, LampStop[]>();
+function stopsFor(light: Pick<LampLight, 'core' | 'tail'>, scheme: ColorScheme): LampStop[] {
+  const key = `${scheme}:${light.core}:${light.tail}`;
+  let s = stopCache.get(key);
+  if (!s) stopCache.set(key, (s = lampStops(light, scheme)));
+  return s;
+}
+
 /**
  * What the gradient paints at a point of the box, before the light's intensity: the colour and opacity SVG
  * interpolates between the two stops around it (straight, not premultiplied). For the contrast tests.
@@ -161,7 +217,7 @@ export function lampPaintAt(light: Pick<LampLight, 'anchor' | 'core' | 'tail'>, 
     g.units === 'objectBoundingBox'
       ? Math.hypot(x / box.width - g.cx, y / box.height - g.cy) / g.r
       : Math.hypot(x - g.cx, y - g.cy) / g.r;
-  const stops = lampStops(light, scheme);
+  const stops = stopsFor(light, scheme);
   if (t >= 1) {
     const last = stops[stops.length - 1];
     return { rgb: rgbOf(last.color), opacity: last.opacity };
@@ -178,12 +234,17 @@ export function lampPaintAt(light: Pick<LampLight, 'anchor' | 'core' | 'tail'>, 
 
 /**
  * The grain's average effect on the paper, as two small alphas: how much black and how much white it lays over
- * every pixel on average (half the specks each, alpha uniform from 0 to its max). Light scheme only.
+ * every pixel on average (half the specks each, alpha uniform from 0 to its max, at the scheme's grain level).
  */
 export function grainMean(scheme: ColorScheme): { black: number; white: number } {
-  if (scheme === 'dark') return { black: 0, white: 0 };
   const g = tokens.atmosphere.grain;
-  return { black: (0.5 * g.blackMax) / 2 / 255, white: (0.5 * g.whiteMax) / 2 / 255 };
+  const k = grainOpacity(scheme);
+  return { black: (k * 0.5 * g.blackMax) / 2 / 255, white: (k * 0.5 * g.whiteMax) / 2 / 255 };
+}
+
+/** How strongly each scheme draws the grain: fully on paper, at darkOpacity on night paper. */
+export function grainOpacity(scheme: ColorScheme): number {
+  return scheme === 'dark' ? tokens.atmosphere.grain.darkOpacity : 1;
 }
 
 /** The lit paper's colour at a point: the pool at `intensity` over the paper, then the grain's average. */

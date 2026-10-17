@@ -29,6 +29,7 @@ import {
 } from '../src/components/ui/lamp.logic';
 
 const A = tokens.atmosphere;
+const rgbOf = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const SCENES = Object.keys(A.scene) as LampScene[];
 const DAYPARTS = Object.keys(A.daypart) as Daypart[];
 
@@ -138,14 +139,36 @@ describe('Lamp gradient', () => {
     for (let i = 1; i < STOPS.length; i++) expect(STOPS[i].opacity).toBeLessThan(STOPS[i - 1].opacity);
   });
 
-  it('dark: the core takes the core tone and the tail the tail tone, each at stop x its own peak', () => {
+  it("dark: #99's look kept exactly at its stops (core tone at the centre, the tail tone from the first stop), smooth between them", () => {
     const night = resolveLamp({ scene: 'tonight', daypart: 'night' })!;
     const stops = lampStops(night, 'dark');
     expect(stops[0]).toEqual({ offset: 0, color: A.tone.amber, opacity: A.peak.dark.amber });
-    for (const [i, s] of stops.slice(1).entries()) {
+    for (const k of STOPS.slice(1)) {
+      const s = stops.find((x) => x.offset === k.offset)!;
+      expect(s, `#99's stop at ${k.offset}`).toBeDefined();
       expect(s.color).toBe(A.tone.rose);
-      expect(s.opacity).toBeCloseTo(STOPS[i + 1].opacity * A.peak.dark.rose);
+      expect(s.opacity).toBeCloseTo(k.opacity * A.peak.dark.rose, 4);
     }
+    // Many stops on one smooth, falling curve: no corner between #99's four points (the corners showed as rings).
+    expect(stops.length).toBeGreaterThanOrEqual(PAPER_SHAPE.stops);
+    for (let i = 1; i < stops.length; i++) expect(stops[i].opacity).toBeLessThanOrEqual(stops[i - 1].opacity);
+    const tail = stops.filter((s) => s.offset >= STOPS[1].offset);
+    for (let i = 2; i < tail.length; i++) {
+      const s1 = (tail[i - 1].opacity - tail[i - 2].opacity) / (tail[i - 1].offset - tail[i - 2].offset);
+      const s2 = (tail[i].opacity - tail[i - 1].opacity) / (tail[i].offset - tail[i - 1].offset);
+      expect(Math.abs(s2 - s1), `slope change at ${tail[i - 1].offset}`).toBeLessThan(0.25 * A.peak.dark.rose * 10);
+    }
+  });
+
+  it('light: late night and Read together stay warm on paper: the dusk is drawn as its paper tone, a warm mauve', () => {
+    const dusk = rgbOf(A.paperTone.dusk);
+    expect(dusk[0]).toBeGreaterThan(dusk[2]); // red over blue: warm, where the website's dusk blue reads grey on cream
+    const late = lampStops(resolveLamp({ scene: 'tonight', daypart: 'lateNight' })!, 'light');
+    expect(late[late.length - 1].color).toBe(A.paperTone.dusk);
+    const rt = lampStops(resolveLamp({ scene: 'readTogether', daypart: 'night' })!, 'light');
+    expect(new Set(rt.map((s) => s.color))).toEqual(new Set([A.paperTone.dusk]));
+    // Dark keeps the website's dusk.
+    expect(lampStops(resolveLamp({ scene: 'readTogether', daypart: 'night' })!, 'dark')[0].color).toBe(A.tone.dusk);
   });
 
   it('light: many eased stops (no corner in the curve, so no rings), falling smoothly from the core tone at its peak to nothing', () => {
@@ -205,38 +228,45 @@ describe('Lamp gradient', () => {
   const grid = (box: LampBox, n = 24) =>
     Array.from({ length: (n + 1) * (n + 1) }, (_, i) => [((i % (n + 1)) / n) * box.width, (Math.floor(i / (n + 1)) / n) * box.height]);
 
+  /** The darkest a set of colours gets against the lit paper over a box's grid, and where (one assertion per light). */
+  function worstOver(light: LampLight, scheme: 'light' | 'dark', box: LampBox, keys: readonly (keyof typeof tokens.light)[], from = 0) {
+    const c = tokens[scheme];
+    const fg = keys.map((k) => [k, lum(rgb(c[k]))] as const);
+    let worst = { ratio: Infinity, at: '' };
+    for (const [x, y] of grid(box)) {
+      if (y < from * box.height) continue;
+      const bg = lum(litPaperAt(light, scheme, c.bg, box, x, y));
+      for (const [k, l] of fg) {
+        const r = (Math.max(l, bg) + 0.05) / (Math.min(l, bg) + 0.05);
+        if (r < worst.ratio) worst = { ratio: r, at: `${k} at ${Math.round(x)},${Math.round(y)} of ${box.width}x${box.height}` };
+      }
+    }
+    return worst;
+  }
+
   it('dark: every text colour keeps 4.5:1 everywhere, in every scene and daypart', () => {
-    const c = tokens.dark;
     for (const [name, light] of lights) {
       for (const box of BOXES) {
-        for (const [x, y] of grid(box)) {
-          const lit = litPaperAt(light, 'dark', c.bg, box, x, y);
-          for (const k of [...READING, ...STATUS]) expect(ratio(rgb(c[k]), lit), `${k} on dark ${name} at ${x},${y}`).toBeGreaterThanOrEqual(4.5);
-        }
+        const w = worstOver(light, 'dark', box, [...READING, ...STATUS]);
+        expect(w.ratio, `dark ${name}: ${w.at}`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
 
   it('light: every reading colour (text, textMuted, accent, focus) keeps 4.5:1 everywhere, even at the core', () => {
-    const c = tokens.light;
     for (const [name, light] of lights) {
       for (const box of BOXES) {
-        for (const [x, y] of grid(box)) {
-          const lit = litPaperAt(light, 'light', c.bg, box, x, y);
-          for (const k of READING) expect(ratio(rgb(c[k]), lit), `${k} on light ${name} at ${x},${y} of ${box.width}x${box.height}`).toBeGreaterThanOrEqual(4.5);
-        }
+        const w = worstOver(light, 'light', box, READING);
+        expect(w.ratio, `light ${name}: ${w.at}`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
 
   it(`light: in a room lit from the top every status colour keeps 4.5:1 from ${STATUS_CLEAR_FROM * 100} percent of the height down`, () => {
-    const c = tokens.light;
     for (const [name, light] of lights.filter(([, l]) => l.anchor === 'top')) {
       for (const box of BOXES) {
-        for (const [x, y] of grid(box).filter(([, gy]) => gy >= STATUS_CLEAR_FROM * box.height)) {
-          const lit = litPaperAt(light, 'light', c.bg, box, x, y);
-          for (const k of STATUS) expect(ratio(rgb(c[k]), lit), `${k} on light ${name} at ${x},${y}`).toBeGreaterThanOrEqual(4.5);
-        }
+        const w = worstOver(light, 'light', box, STATUS, STATUS_CLEAR_FROM);
+        expect(w.ratio, `light ${name}: ${w.at}`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
@@ -248,12 +278,22 @@ describe('Lamp gradient', () => {
    * further from a top light; the reading colours keep 4.5:1 anywhere (above), so a move never breaks them.
    */
   type Box = { what: string; token: keyof typeof tokens.light; x: number; y: number; w: number; h: number };
+  /**
+   * The light a screen shows today, read from its own <Lamp /> (scene and anchor), so a box is checked under the lamp
+   * that is actually on screen; plus the scene its package will move it to.
+   */
+  const shown = (file: string): LampLight[] =>
+    [...readFileSync(join(SRC, file), 'utf8').matchAll(/<Lamp(?:View)?\b([^>]*)\/?>/g)].map((m) => {
+      const scene = /scene="([^"]+)"/.exec(m[1])?.[1] as LampScene | undefined;
+      const anchor = /anchor="([^"]+)"/.exec(m[1])?.[1] as LampLight['anchor'] | undefined;
+      return resolveLamp({ scene, anchor, daypart: 'evening' })!;
+    });
   const ROOMS: { room: string; box: LampBox; lights: LampLight[]; text: Box[] }[] = [
     {
       room: 'Tonight',
       box: { width: 402, height: 808 },
       lights: [
-        resolveLamp({})!,
+        ...shown('app/(tabs)/index.tsx'),
         ...DAYPARTS.map((d) => resolveLamp({ scene: 'tonight', daypart: d })!),
         resolveLamp({ scene: 'tonight', daypart: 'evening', intensity: tokens.motion.lamp.dimTo })!,
       ],
@@ -269,7 +309,7 @@ describe('Lamp gradient', () => {
     {
       room: 'the age question',
       box: { width: 402, height: 874 },
-      lights: [resolveLamp({ scene: 'gate' })!],
+      lights: [...shown('components/gate/age-gate-screen.tsx'), resolveLamp({ scene: 'gate' })!],
       text: [
         { what: 'question', token: 'text', x: 20, y: 59, w: 334, h: 53 },
         { what: 'body', token: 'textMuted', x: 20, y: 127, w: 274, h: 30 },
@@ -279,7 +319,7 @@ describe('Lamp gradient', () => {
     {
       room: 'the welcome',
       box: { width: 402, height: 874 },
-      lights: [resolveLamp({ scene: 'welcome' })!, resolveLamp({ scene: 'form' })!, resolveLamp({ scene: 'finish' })!],
+      lights: [...shown('app/onboarding.tsx'), resolveLamp({ scene: 'welcome' })!, resolveLamp({ scene: 'form' })!, resolveLamp({ scene: 'finish' })!],
       text: [
         { what: 'title', token: 'text', x: 24, y: 336, w: 266, h: 66 },
         { what: 'promise', token: 'textMuted', x: 24, y: 404, w: 328, h: 57 },
@@ -288,6 +328,12 @@ describe('Lamp gradient', () => {
       ],
     },
   ];
+
+  it('each room is checked under the lamp its screen mounts today (the welcome: a centred pool)', () => {
+    expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ anchor: 'center' })]);
+    expect(shown('app/(tabs)/index.tsx')).toEqual([resolveLamp({ anchor: 'top' })]);
+    expect(ROOMS.find((r) => r.room === 'the welcome')!.lights).toContainEqual(resolveLamp({ anchor: 'center' }));
+  });
 
   it('where text actually sits, each text keeps 4.5:1 in its own colour over its whole box (Tonight, the age question, the welcome)', () => {
     for (const scheme of ['light', 'dark'] as const) {
@@ -308,6 +354,106 @@ describe('Lamp gradient', () => {
     }
   });
 
+  /**
+   * The measured boxes above are numbers from one build; this ties them to the screens. In every room the lamp may
+   * light, and in every feature component such a room renders (followed import by import; the ui, motion and
+   * platform primitives draw a status colour only when a caller asks, and the caller is scanned), a status colour
+   * (onLitPaper.status, or a field's `error`, which TextField draws in `caution`) may be used only where the list
+   * below says. Each entry either names a measured box in ROOMS, in that colour, below STATUS_CLEAR_FROM, or names the
+   * surface it sits on (a card or chip, not the lit paper). The gate and Read together allow none. Anything else
+   * (Tonight's subtitle turned to `tone="success"`, a caution line under the greeting, a form error on a lit step)
+   * fails here.
+   */
+  type StatusUse = { use: string; box?: string; room?: string; surface?: string };
+  const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
+    'app/(tabs)/index.tsx': [
+      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight' },
+      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight' }, // its check mark, beside the words
+    ],
+    // "We'll tell you" on the Family tab: a check mark on its own chip.
+    'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
+  };
+  const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
+
+  /** Every use of a status colour in a file's code, comments aside: a tone (plain or in an expression), a colour from useTheme or tokens, a class, a destructive button, a field error. */
+  const statusUses = (src: string) => {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const k = 'success|caution|recording|destructive';
+    const found: string[] = [];
+    for (const m of code.matchAll(new RegExp(`\\btone=(?:["'\`](${k})["'\`]|\\{[^}]*?["'\`](${k})["'\`][^}]*\\})`, 'g'))) found.push(`tone="${m[1] ?? m[2]}"`);
+    for (const m of code.matchAll(new RegExp(`\\bc\\.(${k})\\b`, 'g'))) found.push(`c.${m[1]}`);
+    for (const m of code.matchAll(new RegExp(`\\btokens\\.(?:light|dark)\\.(${k})\\b`, 'g'))) found.push(`tokens.${m[1]}`);
+    for (const m of code.matchAll(new RegExp(`\\b(text|bg|border)-(${k})\\b`, 'g'))) found.push(`${m[1]}-${m[2]}`);
+    for (const m of code.matchAll(/\bvariant=["']destructive["']/g)) found.push(m[0]);
+    for (const m of code.matchAll(/\berror=[{"']/g)) found.push('error=');
+    return found;
+  };
+
+  /** A lit room and every feature component it renders, followed through its imports (primitives excepted). */
+  const renderedBy = (room: string) => {
+    const seen = new Set<string>();
+    const resolve = (spec: string) => {
+      const base = join(SRC, spec.replace(/^@\//, ''));
+      for (const c of [`${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')]) {
+        try {
+          if (statSync(c).isFile()) return relative(SRC, c).split('\\').join('/');
+        } catch {}
+      }
+      return null;
+    };
+    const walk = (f: string) => {
+      if (seen.has(f)) return;
+      seen.add(f);
+      for (const m of readFileSync(join(SRC, f), 'utf8').matchAll(/from '(@\/components\/[^']+)'/g)) {
+        if (/^@\/components\/(ui|motion|platform)\//.test(m[1])) continue;
+        const r = resolve(m[1]);
+        if (r) walk(r);
+      }
+    };
+    walk(room);
+    return [...seen];
+  };
+
+  it('the status-colour scan sees every way a screen sets one', () => {
+    expect(statusUses('<Text tone="success">a</Text>')).toEqual(['tone="success"']);
+    expect(statusUses("<Text tone={kept ? 'caution' : 'muted'}>a</Text>")).toEqual(['tone="caution"']);
+    expect(statusUses('<Icon color={c.recording} /> <View className="text-destructive" />')).toEqual(['c.recording', 'text-destructive']);
+    expect(statusUses('<Button variant="destructive" /> // tone="success" in a comment')).toEqual(['variant="destructive"']);
+    expect(statusUses('<TextField label={l} error={problem} />')).toEqual(['error=']);
+    // The scan follows a room into the feature components it renders.
+    expect(renderedBy('app/(tabs)/family.tsx')).toContain('components/family/coparent-soon.tsx');
+  });
+
+  it('in every room the lamp lights, status colours are used only where a measured box below the core says so (source scan)', () => {
+    const files = new Set([...LIT_ROOMS, ...mounts(LAMP)].flatMap(renderedBy));
+    for (const f of files) {
+      const uses = statusUses(readFileSync(join(SRC, f), 'utf8')).sort();
+      const allowed = (STATUS_ON_LIT_PAPER[f] ?? []).map((a) => a.use).sort();
+      expect(uses, `${f}: status colours on or near lit paper`).toEqual(allowed);
+    }
+    for (const room of NO_STATUS_ROOMS) {
+      for (const f of renderedBy(room)) expect(statusUses(readFileSync(join(SRC, f), 'utf8')), `${f} (inside ${room}) allows none`).toEqual([]);
+    }
+    for (const [f, entries] of Object.entries(STATUS_ON_LIT_PAPER)) {
+      expect(files.has(f), `${f} is rendered by a lit room`).toBe(true);
+      const src = readFileSync(join(SRC, f), 'utf8');
+      for (const a of entries) {
+        if (a.surface) {
+          // On its own surface: the element with the status colour sits in one with that surface, within a few lines.
+          const at = src.indexOf(a.use);
+          expect(src.slice(Math.max(0, at - 400), at), `${f}: ${a.use} sits on ${a.surface}`).toContain(a.surface);
+          continue;
+        }
+        const room = ROOMS.find((r) => r.room === a.room)!;
+        const box = room.text.find((t) => t.what === a.box)!;
+        expect(box, `${f}: ${a.use} names a measured box`).toBeDefined();
+        expect(STATUS as readonly string[], `${a.box} is in a status colour`).toContain(box.token);
+        expect(box.y, `${a.box} sits below the core`).toBeGreaterThanOrEqual(STATUS_CLEAR_FROM * room.box.height);
+      }
+    }
+  });
+
   it('light: the paper reads lit, not white: a warm core at the top that still warms the middle of the screen', () => {
     const box = { width: 402, height: 874 };
     const paper = rgb(tokens.light.bg);
@@ -319,15 +465,19 @@ describe('Lamp gradient', () => {
     expect(paper[2] - middle[2]).toBeGreaterThanOrEqual(12);
   });
 
-  it('light: the grain is signed and faint, and lies inside the light (it comes and goes with it); dark has none', () => {
+  it('the grain is signed and faint, lies inside the light (it comes and goes with it), and is fainter on night paper', () => {
     const g = A.grain;
-    expect(grainMean('dark')).toEqual({ black: 0, white: 0 });
     expect(grainMean('light').black).toBeCloseTo((0.5 * g.blackMax) / 2 / 255);
+    expect(grainMean('dark').white).toBeCloseTo(g.darkOpacity * grainMean('light').white);
+    expect(g.darkOpacity).toBeGreaterThan(0);
+    expect(g.darkOpacity).toBeLessThan(1);
     expect(g.blackMax / 255).toBeLessThanOrEqual(0.02); // a speck moves a pixel by a few levels at most
     expect(g.whiteMax / 255).toBeLessThanOrEqual(0.06);
+    // On night paper the brightest speck lifts a pixel by under two levels: a dither, not a texture.
+    expect(((g.whiteMax * g.darkOpacity) / 255) * (255 - rgbOf(tokens.dark.bg)[0])).toBeLessThan(2);
     const lampSrc = readFileSync(join(SRC, 'components', 'ui', 'lamp.tsx'), 'utf8');
     expect(lampSrc).toMatch(/grainTexture/);
-    expect(lampSrc).toMatch(/const grain = scheme === 'light'/);
+    expect(lampSrc).toContain('const grain = grainOpacity(scheme);');
   });
 });
 
@@ -481,5 +631,7 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
     for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
+    // The empty Book leads with it too, through the empty state's device.
+    expect(readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8')).toMatch(/<EmptyState\s+device/);
   });
 });

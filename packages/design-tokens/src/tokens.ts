@@ -304,9 +304,12 @@ const motion = {
   cover: { holdMs: 300, dx: 8 },
   /**
    * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way,
-   * and the list behind dims to `behindDim` brightness (no blur).
+   * and the list behind dims to `behindDim` brightness (no blur). A veil of the page's paper runs ahead of the
+   * growing paper, `veilLead` times as far along (and back behind it on the way home), with a soft edge
+   * `veilFeather` pt wide (eased, round at the corners, as wide at every point of the way: three lines of a letter),
+   * so the list's words fade away before the paper's edge reaches them and no edge ever cuts a legible line.
    */
-  cardToPage: { contentFrom: 0.6, behindDim: 0.96 },
+  cardToPage: { contentFrom: 0.6, behindDim: 0.96, veilLead: 5, veilFeather: 96 },
   /** Press feedback (COMPONENTS 0.3): controls scale to 0.97, cards to 0.98, on `snappy`. */
   press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
   /** Empty-state illustration breath (MOTION 5j, Calm's slowest pace). */
@@ -357,12 +360,18 @@ const atmosphere = {
   /** The website's lamp colours (apps/web Aurora.module.css on main). Decorative only. */
   tone: { amber: '#F3C98B', gold: '#FFE2A8', rose: '#F08C7C', dusk: '#8076E2' },
   /**
+   * The tones the light-scheme lamp draws on paper, where they differ from `tone`. The website's dusk blue mixed into
+   * amber over cream reads grey; on paper the dusk is the website's dusk and rose half and half, a warm mauve, so
+   * late night and Read together stay dim but warm.
+   */
+  paperTone: { dusk: '#B881AF' },
+  /**
    * Peak opacity of each tone at the core of the pool, by scheme (WCAG 2.x formula; the limits, in
    * brackets, are recomputed by test/atmosphere.test.ts).
    * - Dark: every text colour (onLitPaper.reading and .status) keeps 4.5:1 at the peak:
    *   amber 0.18 (0.220), gold 0.16 (0.197), rose 0.24 (0.283), dusk 0.30 (0.372).
-   * - Light: the reading colours keep 4.5:1 at the peak, so anywhere on the screen:
-   *   amber 0.35 (0.400), gold 0.78 (0.872), rose 0.17 (0.193), dusk 0.12 (0.140); the margin covers the
+   * - Light (with paperTone): the reading colours keep 4.5:1 at the peak, so anywhere on the screen:
+   *   amber 0.35 (0.400), gold 0.78 (0.872), rose 0.17 (0.193), dusk 0.14 (0.161); the margin covers the
    *   blend of two tones along the radius and the grain. The status colours
    *   keep 4.5:1 outside the pool's core, which sits above or beside the text block (the light
    *   geometry in apps/mobile lamp.logic.ts; proven where text actually sits, in apps/mobile
@@ -370,7 +379,7 @@ const atmosphere = {
    *   as plain white.
    */
   peak: {
-    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.12 },
+    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.14 },
     dark: { amber: 0.18, gold: 0.16, rose: 0.24, dusk: 0.3 },
   },
   /**
@@ -384,12 +393,13 @@ const atmosphere = {
     status: ['success', 'caution', 'recording', 'destructive'],
   },
   /**
-   * Film grain over the light-scheme pool, so an 8-bit display shows no rings in the soft tail
-   * (website: atmosphere Grain on paper). Signed specks: black or white, half each, each with an
-   * alpha up to its max (out of 255). Tile: `tile` pixels drawn at 1/`scale` points per pixel.
+   * Film grain over the pool, so an 8-bit display shows no rings in the soft tail (website: atmosphere
+   * Grain). Signed specks: black or white, half each, each with an alpha up to its max (out of 255).
+   * Tile: `tile` pixels drawn at 1/`scale` points per pixel. On night paper it is drawn at
+   * `darkOpacity`: its brightest speck lifts a pixel by under two levels, a dither that does not read as texture.
    * The texture is packages/design-tokens/textures/grain.png, made by src/build-grain.ts.
    */
-  grain: { tile: 128, scale: 3, blackMax: 4, whiteMax: 12, seed: 20261016 },
+  grain: { tile: 128, scale: 3, blackMax: 4, whiteMax: 12, seed: 20261016, darkOpacity: 0.18 },
   /** Tonight's light by greetingKey() (apps/mobile lib/copy.ts): core and tail tone, and intensity (0 to 1). */
   daypart: {
     earlyMorning: { core: 'gold', tail: 'gold', intensity: 0.7 },

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
+import { EASED_STOPS, FADE_FRACTION, LINEAR_STOPS, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
 import { LINE_ART, LINE_ART_NAMES, artHeight, penWidth, strokeProgress } from '../src/components/ui/line-art.data';
 import { ROOT_ROUTE_CONTEXT } from '../src/lib/navigation.logic';
 import {
@@ -17,7 +17,14 @@ import {
   canCarry,
   cardBackMove,
   cardToPageFrame,
+  cardWasCut,
   carryFrame,
+  createCoverStore,
+  hiddenBehind,
+  VEIL_UP,
+  veilBox,
+  veilFrame,
+  type Rect,
   fileIntoMonthPlan,
   moveOptions,
   pageTurnPlan,
@@ -188,8 +195,8 @@ describe('card to page (MOTION 5f)', () => {
   });
 
   // The card's words: dateline and two lines at 32 from the edge; on the page the same column opens 92 from the top.
-  const cardText = { x: 32, y: 336, width: 338, height: 88 };
-  const pageText = { x: 32, y: 92, width: 338, height: 214 };
+  const cardText = { x: 32, y: 336, width: 338, height: 88, lineHeight: 32 };
+  const pageText = { x: 32, y: 92, width: 338, height: 214, lineHeight: 32 };
 
   it("the card's own words are carried, never redrawn: they start exactly where they were and end where the page puts them", () => {
     const start = carryFrame(card, cardText, pageText, screen, 0);
@@ -216,20 +223,170 @@ describe('card to page (MOTION 5f)', () => {
     }
   });
 
-  it("carries only when the page opens in the card's column, so the lines wrap the same; otherwise the page fades in whole", () => {
+  it("carries only when the page opens in the card's column and type, so the lines wrap the same; otherwise the page fades in whole", () => {
     expect(canCarry(cardText, pageText)).toBe(true);
     expect(canCarry(cardText, { ...pageText, width: 362 })).toBe(false);
     expect(canCarry(undefined, pageText)).toBe(false);
     expect(canCarry(cardText, undefined)).toBe(false);
     expect(canCarry(cardText, { ...pageText, height: 40 })).toBe(false);
+    // The same column at another type size (the page at Large Print Reading Size, the card at the default; or a
+    // different Dynamic Type step) wraps differently: no carry.
+    expect(canCarry(cardText, { ...pageText, lineHeight: lineHeightFor('letterBody', 1, tokens.readingScale.largePrint) })).toBe(false);
+    expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 0.823) }, pageText)).toBe(false);
+    expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 1.2) }, { ...pageText, lineHeight: lineHeightFor('letterBody', 1.2) })).toBe(true);
+  });
+
+  it('the veil starts on the card, drawing nothing, runs ahead of the paper, and covers the screen from 1 / veilLead of the way', () => {
+    expect(veilFrame(card, screen, 0)).toMatchObject({ x: card.x, y: card.y, width: card.width, height: card.height, opacity: 0 });
+    expect(veilFrame(card, screen, VEIL_UP).opacity).toBe(1);
+    expect(veilFrame(card, screen, 1 / M.cardToPage.veilLead)).toMatchObject({ x: 0, y: 0, width: screen.width, height: screen.height });
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      const v = veilFrame(card, screen, t);
+      const f = cardToPageFrame(card, screen, t);
+      expect(v.x).toBeLessThanOrEqual(f.x + 1e-9);
+      expect(v.y).toBeLessThanOrEqual(f.y + 1e-9);
+      expect(v.x + v.width).toBeGreaterThanOrEqual(f.x + f.width - 1e-9);
+      expect(v.y + v.height).toBeGreaterThanOrEqual(f.y + f.height - 1e-9);
+    }
+  });
+
+  it("no frame, either way, lets the paper's edge cut a legible line of the list: the veil has covered it first", () => {
+    // The Book: its title, then card a and card b, each with a dateline and two lines. Opening either card, the
+    // other card's lines and the title must be under the veil before the paper's edge meets them (both schemes
+    // alike; the way back is the same frames in reverse, as every frame is a function of progress alone).
+    const title = { what: "the Book's title", x: 16, y: 24, width: 220, height: 44 };
+    const words = (name: string, top: number) => [
+      { what: `${name}'s dateline`, x: 32, y: top + 16, width: 160, height: 18 },
+      { what: `${name}'s first line`, x: 32, y: top + 40, width: 338, height: 32 },
+      { what: `${name}'s second line`, x: 32, y: top + 72, width: 338, height: 32 },
+    ];
+    const cards = [
+      { name: 'card a', rect: { x: 16, y: 80, width: 370, height: 120 }, others: [title, ...words('card b', 212)] },
+      { name: 'card b', rect: { x: 16, y: 212, width: 370, height: 120 }, others: [title, ...words('card a', 80)] },
+    ];
+    const inside = (r: Rect, o: Rect) => r.x >= o.x - 1e-9 && r.y >= o.y - 1e-9 && r.x + r.width <= o.x + o.width + 1e-9 && r.y + r.height <= o.y + o.height + 1e-9;
+    const meets = (r: Rect, o: Rect) => r.x < o.x + o.width && o.x < r.x + r.width && r.y < o.y + o.height && o.y < r.y + r.height;
+    let crossings = 0;
+    for (const { name, rect, others } of cards) {
+      for (let i = 0; i <= 1000; i++) {
+        const t = i / 1000;
+        const paper = cardToPageFrame(rect, screen, t);
+        const v = veilFrame(rect, screen, t);
+        for (const l of others) {
+          if (meets(l, paper) && !inside(l, paper)) {
+            crossings++;
+            // The paper's edge is on this line: it must already be fully under the veil's solid part.
+            expect(v.opacity, `${name} open, ${l.what} at ${t}`).toBe(1);
+            expect(inside(l, v), `${name} open, ${l.what} at ${t}`).toBe(true);
+          }
+        }
+      }
+    }
+    // The sweep did meet the lines (it is not passing for want of crossings).
+    expect(crossings).toBeGreaterThan(100);
+  });
+
+  it("the veil's soft edge is as wide at every point of the way, so no narrowing edge crosses the list's words at the slow end of the way back", () => {
+    for (let i = 0; i <= 1000; i++) expect(veilFrame(card, screen, i / 1000).feather).toBe(M.cardToPage.veilFeather);
+    // Eased, and wide enough that a line of a letter never spans more than half of its strength: a fade, not a cut.
+    let steepest = 0;
+    for (let i = 1; i < EASED_STOPS.length; i++) {
+      const [a, b] = [EASED_STOPS[i - 1]!, EASED_STOPS[i]!];
+      steepest = Math.max(steepest, (b.opacity - a.opacity) / (b.offset - a.offset));
+    }
+    expect((steepest * lineHeightFor('letterBody')) / M.cardToPage.veilFeather).toBeLessThanOrEqual(0.5);
+  });
+
+  it('the eased edge is clear to solid along smoothstep, flat at both ends, so neither end shows as a line', () => {
+    expect(EASED_STOPS[0]).toEqual({ offset: 0, opacity: 0 });
+    expect(EASED_STOPS.at(-1)).toEqual({ offset: 1, opacity: 1 });
+    const steps = EASED_STOPS.slice(1).map((s, i) => s.opacity - EASED_STOPS[i]!.opacity);
+    for (const d of steps) expect(d).toBeGreaterThan(0);
+    // Its first and last steps are a fraction of its middle ones (a straight fade's are all the same).
+    const middle = Math.max(...steps);
+    expect(steps[0]! / middle).toBeLessThan(0.3);
+    expect(steps.at(-1)! / middle).toBeLessThan(0.3);
+    // Symmetric, so a corner's radial fade read from its far end matches the edges beside it.
+    EASED_STOPS.forEach((s, i) => expect(s.opacity + EASED_STOPS[EASED_STOPS.length - 1 - i]!.opacity).toBeCloseTo(1, 12));
+    expect(LINEAR_STOPS).toEqual([
+      { offset: 0, opacity: 0 },
+      { offset: 1, opacity: 1 },
+    ]);
+  });
+
+  it("the veil's box holds its soft edge on whole device pixels, so its pieces meet without a seam", () => {
+    for (const ratio of [2, 3]) {
+      for (let i = 0; i <= 200; i++) {
+        const t = i / 200;
+        const v = veilFrame(card, screen, t);
+        const b = veilBox(card, screen, t, ratio);
+        for (const n of [b.left, b.top, b.left + b.width, b.top + b.height]) expect(Math.abs(n * ratio - Math.round(n * ratio))).toBeLessThan(1e-6);
+        // Within half a pixel of the veil and its soft edge, at the veil's own strength.
+        expect(Math.abs(b.left - (v.x - v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
+        expect(Math.abs(b.top - (v.y - v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
+        expect(Math.abs(b.left + b.width - (v.x + v.width + v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
+        expect(Math.abs(b.top + b.height - (v.y + v.height + v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
+        expect(b.opacity).toBe(v.opacity);
+      }
+    }
+  });
+
+  it('the veil is drawn as one group: a solid middle under its eased edges and round corners (source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toContain('veilBox(from.value, screen, p.value, pixelRatio)');
+    expect(src).toContain('<Veil color={c.bg} style={veil} />');
+    expect(src).toMatch(/<Animated\.View pointerEvents="none" needsOffscreenAlphaCompositing style=\{\[\{ position: 'absolute' \}, style\]\}>/);
+    expect(src).toContain("left: F - 1, top: F - 1, right: F - 1, bottom: F - 1, backgroundColor: color");
+    expect(src.match(/<FadeEdge eased /g)).toHaveLength(4);
+    expect(src.match(/<FadeCorner /g)).toHaveLength(4);
+  });
+
+  it("the card's fade is drawn only when the card was cut: when the page holds more of the letter than the card showed", () => {
+    expect(cardWasCut(cardText, pageText)).toBe(true);
+    expect(cardWasCut(cardText, { ...pageText, height: cardText.height })).toBe(false);
+  });
+
+  it('while a page is up the Book hides from screen readers, until the last page goes (counted, idempotent)', () => {
+    const pages = createCoverStore();
+    let heard = 0;
+    pages.subscribe(() => heard++);
+    expect(pages.get()).toBe(false);
+    const first = pages.hold();
+    const second = pages.hold();
+    expect(pages.get()).toBe(true);
+    first();
+    first();
+    expect(pages.get()).toBe(true);
+    second();
+    expect(pages.get()).toBe(false);
+    expect(heard).toBe(2);
+    expect(hiddenBehind(true)).toEqual({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants', 'aria-hidden': true });
+    expect(hiddenBehind(false)).toEqual({ accessibilityElementsHidden: false, importantForAccessibility: 'auto', 'aria-hidden': false });
   });
 
   it('the card names its words and the page its opening; the fallback fades paper and words together (source)', () => {
-    const src = readFileSync(join(__dirname, '..', 'src', 'components', 'motion', 'card-transition.tsx'), 'utf8');
+    const src = read('components/motion/card-transition.tsx');
     expect(src).toMatch(/export function CardText\b/);
     expect(src).toMatch(/export function PageOpening\b/);
     // Faded: the content takes the same opacity as the paper (fade.value), so no frame shows paper without words.
     expect(src).toContain('opacity: carrying.value ? cardToPageFrame(from.value, screen, p.value).contentOpacity : fade.value');
+  });
+
+  it('screen readers read the letter once and land on the page (source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    // The page is modal, and holds the Book hidden for as long as it is up.
+    expect(src).toMatch(/<View style=\{StyleSheet\.absoluteFill\} accessibilityViewIsModal aria-modal>/);
+    expect(src).toContain('useEffect(() => cardPages.hold(), []);');
+    expect(src).toMatch(/export function useHiddenBehindCardPage\(\)/);
+    // Focus moves to the page's own element once it has arrived, carried or faded.
+    expect(src).toContain("useFocusOnMount(focus, phase === 'settled', 'settled');");
+    expect(src).toContain('{opening(focus)}');
+    // The carried copies never take the focus ref and are hidden from screen readers; the page's own opening is
+    // hidden while a copy stands in for it.
+    expect(src.match(/opening\(null\)/g)).toHaveLength(2);
+    expect(src).toMatch(/accessibilityElementsHidden\s+importantForAccessibility="no-hide-descendants"\s+aria-hidden/);
+    expect(src).toContain("importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}");
   });
 });
 
@@ -253,6 +410,26 @@ describe('excerpt fade', () => {
     expect(lineHeightFor('title1', 3)).toBeCloseTo(34 * 1.8); // capped at its maxScale
     expect(lineHeightFor('letterBody', 1, tokens.readingScale.largePrint)).toBeCloseTo(32 * 1.45);
   });
+
+  // iOS xSmall, Small and Medium reach React Native as these font scales (RCTAccessibilityManager), and Text only
+  // caps growth (maxFontSizeMultiplier), so the words render smaller: the line on screen is lineHeight x scale.
+  for (const [size, fontScale] of [['xSmall', 0.823], ['Small', 0.882], ['Medium', 0.941]] as const) {
+    it(`at the ${size} text size (${fontScale}) two lines clip at exactly two rendered lines, and the fade sits on the second`, () => {
+      for (const variant of ['letterBody', 'body', 'title1'] as const) {
+        const t = tokens.type[variant];
+        const rendered = t.lineHeight * (t.maxScale === null ? fontScale : Math.min(fontScale, t.maxScale));
+        const lh = lineHeightFor(variant, fontScale);
+        expect(lh, variant).toBeLessThan(t.lineHeight);
+        expect((2 * lh) / rendered, `${variant}: lines shown in a two-line clip`).toBeCloseTo(2, 9);
+        const box = fadeBox(2, lh, false);
+        expect(box.top, `${variant}: fade starts at the top of line 2`).toBeCloseTo(rendered, 9);
+        expect(box.top + box.height, `${variant}: and ends at its bottom`).toBeCloseTo(2 * rendered, 9);
+        // The words that fill exactly two lines are not cut, and a third line is.
+        expect(overflows(2 * rendered, 2, lh)).toBe(false);
+        expect(overflows(3 * rendered, 2, lh)).toBe(true);
+      }
+    });
+  }
 
   it('only words that run past their lines get the fade', () => {
     expect(overflows(64, 2, 32)).toBe(false);
