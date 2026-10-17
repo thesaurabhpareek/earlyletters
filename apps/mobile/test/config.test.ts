@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
 import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
-import { APP_ENVS, DEFAULT_APP_ENV, resolveAppEnv, type AppEnv } from '../src/lib/build-env';
+import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type AppEnv } from '../src/lib/build-env';
 
 const ROOT = path.resolve(__dirname, '..');
 const KEY = 'EXPO_PUBLIC_APP_ENV';
@@ -134,9 +134,12 @@ describe('app.config.ts per environment', () => {
 });
 
 type Profile = {
+  extends?: string;
   distribution?: string;
   autoIncrement?: boolean;
   developmentClient?: boolean;
+  withoutCredentials?: boolean;
+  ios?: { simulator?: boolean };
   channel?: string;
   environment?: string;
   env?: Record<string, string>;
@@ -165,10 +168,14 @@ const FROM_EAS_ONLY = [
   'EXPO_PUBLIC_SENTRY_DSN',
 ];
 
-/** Evaluates app.config.ts with exactly a profile's env, the way EAS builds it (EAS-only values unset). */
-function configForProfile(name: string): ExpoConfig {
-  const env = easFile.build[name]?.env ?? {};
-  const names = [...PROFILE_VARIABLES, ...FROM_EAS_ONLY];
+/**
+ * Evaluates app.config.ts with exactly a profile's env, the way EAS builds it (EAS-only values unset).
+ * `easBuild` also sets EAS_BUILD_PROFILE to the profile's name, as EAS does on its builders; `extra`
+ * adds variables on top (an EAS environment variable or a shell value set by mistake).
+ */
+function configForProfile(name: string, opts: { easBuild?: boolean; extra?: Record<string, string> } = {}): ExpoConfig {
+  const env = { ...(easFile.build[name]?.env ?? {}), ...(opts.extra ?? {}), ...(opts.easBuild ? { EAS_BUILD_PROFILE: name } : {}) };
+  const names = [...PROFILE_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
@@ -187,8 +194,8 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
   /** True once the founder has made the R-17 flip (TESTFLIGHT.md, "The flip"): the testflight profile's one line. */
   const TESTFLIGHT_FLIPPED = eas.build.testflight?.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on';
 
-  it('has exactly the three environment profiles and the testflight profile', () => {
-    expect(Object.keys(eas.build).sort()).toEqual([...APP_ENVS, 'testflight'].sort());
+  it('has exactly the three environment profiles, the testflight profile and the e2e simulator profile', () => {
+    expect(Object.keys(eas.build).sort()).toEqual([...APP_ENVS, 'testflight', E2E_PROFILE].sort());
   });
 
   for (const env of APP_ENVS) {
@@ -346,6 +353,72 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
   it('holds no secret-looking names or values', () => {
     expect(easText).not.toMatch(/(KEY|SECRET|TOKEN|PASSWORD|DSN)"\s*:/i);
     expect(easText).not.toMatch(/supabase\.co|sb_publishable_|sb_secret_|eyJ[A-Za-z0-9_-]{10,}|re_[A-Za-z0-9]{8,}/);
+  });
+});
+
+describe('e2e seams stay out of every uploadable build (TESTID_REQUESTS.md B-1, B-9)', () => {
+  const eas = easFile;
+  const STORE = Object.entries(eas.build)
+    .filter(([, p]) => (p.distribution ?? 'store') === 'store' && p.ios?.simulator !== true)
+    .map(([n]) => n)
+    .sort();
+
+  it('the store profiles are preview, production and testflight', () => {
+    expect(STORE).toEqual(['preview', 'production', 'testflight']);
+  });
+
+  it('e2e is a simulator build that is never uploaded: internal, no credentials, no dev client, no channel, no submit profile, extends nothing', () => {
+    const p = eas.build[E2E_PROFILE];
+    expect(p.distribution).toBe('internal');
+    expect(p.ios?.simulator).toBe(true);
+    expect(p.withoutCredentials).toBe(true);
+    expect(p.developmentClient).toBeUndefined();
+    expect(p.extends).toBeUndefined();
+    expect(p.channel).toBeUndefined();
+    expect(p.environment).toBe('development');
+    expect(eas.submit[E2E_PROFILE]).toBeUndefined();
+  });
+
+  it('e2e names the build switches plus EXPO_PUBLIC_E2E=1, with the development app env and servers off', () => {
+    const env = eas.build[E2E_PROFILE].env ?? {};
+    expect(Object.keys(env).sort()).toEqual([...PROFILE_VARIABLES, 'EXPO_PUBLIC_E2E'].sort());
+    expect(env.EXPO_PUBLIC_E2E).toBe('1');
+    expect(env[KEY]).toBe('development');
+    expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    for (const k of FROM_EAS_ONLY) expect(env[k], k).toBeUndefined();
+  });
+
+  it('only the e2e profile sets EXPO_PUBLIC_E2E', () => {
+    const setting = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_E2E !== undefined).map(([n]) => n);
+    expect(setting).toEqual([E2E_PROFILE]);
+  });
+
+  it('app.config.ts builds the e2e profile on EAS, on the .dev bundle id the drill guard expects', () => {
+    expect(configForProfile(E2E_PROFILE, { easBuild: true }).ios?.bundleIdentifier).toBe(`${bundleId()}.dev`);
+  });
+
+  for (const name of ['preview', 'production', 'testflight']) {
+    it(`app.config.ts refuses ${name} with EXPO_PUBLIC_E2E=1, on EAS and locally (B-9)`, () => {
+      expect(() => configForProfile(name, { easBuild: true, extra: { EXPO_PUBLIC_E2E: '1' } })).toThrow(/B-9/);
+      expect(() => configForProfile(name, { extra: { EXPO_PUBLIC_E2E: '1' } })).toThrow(/B-9/);
+    });
+  }
+
+  it('app.config.ts refuses EXPO_PUBLIC_E2E=1 in an EAS build of any profile but e2e, even with the development app env', () => {
+    expect(() => configForProfile('development', { easBuild: true, extra: { EXPO_PUBLIC_E2E: '1' } })).toThrow(/only the e2e profile/);
+  });
+
+  it('a local development build may carry the seams (the kill harness builds the simulator app on the runner)', () => {
+    expect(configForProfile('development', { extra: { EXPO_PUBLIC_E2E: '1' } }).ios?.bundleIdentifier).toBe(`${bundleId()}.dev`);
+  });
+
+  it('e2eRefusal: only the exact value 1 turns the seams on, so only 1 is refused', () => {
+    expect(e2eRefusal({ e2e: undefined, appEnv: 'production' })).toBeNull();
+    expect(e2eRefusal({ e2e: 'true', appEnv: 'production' })).toBeNull();
+    expect(e2eRefusal({ e2e: '0', appEnv: 'preview', easBuildProfile: 'testflight' })).toBeNull();
+    expect(e2eRefusal({ e2e: ' 1 ', appEnv: 'preview' })).toMatch(/EXPO_PUBLIC_APP_ENV=preview/);
+    expect(e2eRefusal({ e2e: '1', appEnv: 'development', easBuildProfile: 'e2e' })).toBeNull();
+    expect(e2eRefusal({ e2e: '1', appEnv: 'development', easBuildProfile: '' })).toBeNull();
   });
 });
 
