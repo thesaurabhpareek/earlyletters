@@ -94,6 +94,14 @@ check(`a letter without a pack records one once, words included (${JSON.stringif
   r.results[0].ok && x.pack_ref === 'en@1.0.0' && x.final_text === 'From an older build, cleaned again.');
 r = await push(A, [op('entry.upsert', old, base('From an older build, cleaned again.', { language: undefined, pack_ref: 'en@1.1.0' }), { changed: ['text'] })]);
 check('after that it is immutable (SCIMM)', r.results[0].ok === false && r.results[0].code === 'SCIMM' && (await row(old)).pack_ref === 'en@1.0.0');
+r = await push(A, [op('entry.upsert', old, base('From an older build, said again.', { language: undefined, pack_ref: null }), { changed: ['text'] })]);
+x = await row(old);
+check(`an op that sends null for pack_ref keeps the stored one, and its words are saved (${JSON.stringify(r.results[0].code ?? 'ok')})`,
+  r.results[0].ok && x.pack_ref === 'en@1.0.0' && x.final_text === 'From an older build, said again.');
+r = await push(A, [op('entry.upsert', old, base('From an older build, said once more.', { language: undefined, pack_ref: undefined }), { changed: ['text'] })]);
+x = await row(old);
+check(`an op without pack_ref keeps it too (${JSON.stringify(r.results[0].code ?? 'ok')})`,
+  r.results[0].ok && x.pack_ref === 'en@1.0.0' && x.final_text === 'From an older build, said once more.');
 r = await push(A, [op('entry.upsert', full, base('Habibi.', { pack_ref: 'ar@1.2.0' }), { changed: ['text'] })]);
 check(`the same pack_ref again is fine (${JSON.stringify(r.results[0].code ?? 'ok')})`, r.results[0].ok);
 

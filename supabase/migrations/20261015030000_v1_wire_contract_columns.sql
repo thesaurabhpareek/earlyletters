@@ -28,8 +28,8 @@
 --     insert, or later only while it is still null: every letter uploaded
 --     before this file (or by an older build) has none, and a newer build that
 --     cleaned it with a pack must be able to record that without its whole op
---     (words included) being refused. A different value, or clearing it, is
---     SCIMM. L4
+--     (words included) being refused. A different value is SCIMM, and so is
+--     clearing it directly; a sync op's null or absent pack_ref keeps it. L4
 --     author-only, because it names the letter's language, which is L4 like
 --     entries.language (F06 section 8 lists it as L2 author-only; S17 confirms).
 --   The author-only columns stay out of book_entries, so the other parent's pull
@@ -548,9 +548,10 @@ comment on function public.sync_pull(jsonb, int) is
 --   update: occurred_precision with the occurred_on group, author_edits and
 --     locked_spans with the text group, base_direction with the text or language
 --     group, each only when the op data carries the key (an older app never
---     clears them); pack_ref is passed through only when sent, so the guard
---     records it once on a letter that has none, refuses a different value or a
---     clear (SCIMM), and an older app that never sends it changes nothing;
+--     clears them); pack_ref is coalesced with the stored value, so null or
+--     absent keeps it (an older app that never sends it, or a null, never
+--     refuses the words with it), the guard records it once on a letter that
+--     has none, and a different value is refused (SCIMM);
 --   prefs.upsert: notify_letters (20261015020000).
 create or replace function public.sync_push(p_ops jsonb)
 returns jsonb language plpgsql volatile security invoker set search_path = pg_catalog, public, pg_temp
@@ -698,7 +699,7 @@ begin
                 captured_at = excluded.captured_at,
                 child_id = excluded.child_id,
                 engine_version = excluded.engine_version,
-                pack_ref = case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end
+                pack_ref = coalesce(excluded.pack_ref, e.pack_ref)
               where (e.final_text, e.machine_edits, e.edit_level, e.in_book, e.sounds_like_me, e.occurred_on,
                      e.raw_transcript, e.captured_at, e.child_id, e.engine_version, e.language,
                      e.occurred_precision, e.base_direction, e.author_edits, e.locked_spans, e.pack_ref)
@@ -717,7 +718,7 @@ begin
                           then excluded.base_direction else e.base_direction end,
                      case when 'text' = any(v_changed) and d ? 'author_edits' then excluded.author_edits else e.author_edits end,
                      case when 'text' = any(v_changed) and d ? 'locked_spans' then excluded.locked_spans else e.locked_spans end,
-                     case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end);
+                     coalesce(excluded.pack_ref, e.pack_ref));
             end if;
             if v_type = 'entry.reupload' then
               if v_exists and cur.deleted_at is null and v_deleted then

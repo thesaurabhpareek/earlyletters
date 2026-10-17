@@ -538,7 +538,7 @@ Tests: `v1_gate_hardening`, `v1_gate_limits_peek_pepper`, `v1_gate_search_path`,
 - Known risk carried from DEPLOY.md: DB-16 (file 3 has its own `begin` / `commit`). The first `db-cli.yml` run on this PR (`supabase db reset` on the real Postgres image) is the first check outside PGlite.
 - After each environment: the run summary lists the files to add to `.github/migrations-applied.txt`; record them in a pull request (DEPLOY.md "After a deploy"). From then on the migration guard blocks any edit to them.
 
-If you must apply by hand (an incident, DEPLOY.md "Rollback"), use the SQL Editor as in step 18: `begin;`, the whole file, `commit;`, then insert its version into `supabase_migrations.schema_migrations`. File 13 refuses a second run (`55000`, "already applied"); file 16 fails on its first `add constraint`. Files 14 and 15 re-run without error and change nothing, as long as files 13 and 16 are not re-run around them.
+If you must apply by hand (an incident, DEPLOY.md "Rollback"), use the SQL Editor as in step 18: `begin;`, the whole file, `commit;`, then insert its version into `supabase_migrations.schema_migrations`. Files 13, 14 and 15 refuse a second run (`55000`, "already applied"); file 16 fails on its first `add constraint` (`42710`). Nothing is changed by a refused run.
 
 ### Step 20. Before files 13 to 16 (staging first, then production)
 
@@ -560,6 +560,10 @@ select n.nspname, p.proname, pg_get_userbyid(p.proowner) from pg_proc p join pg_
         or exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e'));
 -- d) The consent pepper is set (step 6). Expect true before any account deletion runs; file 14 refuses deletions without it.
 select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
+-- e) No phone has synced against this project yet (expect 0). If not 0, stop and tell S02: letters that left a
+--    reader's view before file 13 have no left_*_xid, so that reader's next digest check can miss them (PR #140
+--    fresh review N2); the fix is a backfill in a forward migration, or making the first pull after the deploy a verify pull.
+select count(*) from public.sync_op_receipts;
 ```
 App compatibility (the build in TestFlight today has the switch off, so nothing calls these yet; for a switch-on build):
 - `select *` on `children` is refused (`42501`). The app names its columns (`lib/family/invites.ts` reads `name` only) and reads dates through `sync_books` and `sync_pull`. Any new client code must do the same.
@@ -609,6 +613,7 @@ None is required to apply. Each is read at call time (no migration to change it)
 - **Family invites** (F11 D4): off. Do not turn on in v1.0 (D-055, B1): `alter database postgres set app.contributors_enabled = 'on';` exists for the v1.1 contributor work only.
 - **Second consent at first share** (D-050): off until counsel answers. If counsel says yes: a migration adds the `family-share` row to `policy_documents` and a version, a release turns the sheet on, then `alter database postgres set app.family_share_consent_required = 'on';`.
 - **Cron**: nothing new. The hourly `scribe-sync-housekeeping` job (step 15) now trims receipts by person.
+- **Known limits, accepted for the gate (PR #140 reviews):** a failed `peek_invite` or `accept_child_invite` rolls its counter hit back with the error, so wrong guesses are not counted; links are safe because tokens are 244 bits (server-made) or 32 random bytes (device-made, F11-REQ-002), and the device rule belongs in the `packages/api` contract (S07) with a test. Typed codes are counted by `invite-redeem` outside the transaction (F11-REQ-007). On a quiet database the pull cursor and row versions follow the database-wide transaction counter (see the file 13 header); the sync ADR decides the fix.
 
 ### Error codes added or widened by files 13 to 16
 
@@ -620,7 +625,8 @@ None is required to apply. Each is read at call time (no migration to change it)
 | `SCCID` | `create_child_invite(p_invite_id, ...)`: the id is not a device UUIDv7, or is in use by another request | Permanent; a client bug |
 | `SCCON` detail `family-share` | invite creation while `app.family_share_consent_required` is on | Show the family-share sheet; never drop the request |
 | `SCPAR` | `undo_parent_join` by anyone but the parent whose invite was used, or after 72 hours | Hide the undo row after 72 hours |
-| `SCIMM` | a different `pack_ref`, or clearing it, on a letter that has one (a letter without one records it once) | Permanent (reject); the client never changes it |
+| `22023` | `undo_parent_join` naming yourself, or no one ("use leave_child to leave a book") | Permanent; a client bug (leaving is `leave_child`) |
+| `SCIMM` | a different `pack_ref` on a letter that has one, or clearing it with a direct update. A `sync_push` op that sends `"pack_ref": null` or no `pack_ref` keeps the stored one and saves the rest of the op; a letter without one records it once | Permanent (reject); the client never changes it |
 | `42501` | `select *` or a date column on `children`; a direct insert, update or delete on `child_members`, `sync_op_receipts`, `book_entries` | Name columns; use the RPCs |
 | `55000` | account deletion while the consent pepper is missing (service paths only); also a second run of file 13, 14 or 15 | Ops alert `pepper_missing` (purge worker, `docs/ops/runbooks/stuck-deletion.md` 7a); the deletion retries |
 | `23514` | a new column outside its shape (`occurred_precision`, `base_direction`, `author_edits`, `locked_spans`, `pack_ref`, `dictionary_terms.forms`) | Permanent; a client bug |
@@ -636,20 +642,21 @@ None is required to apply. Each is read at call time (no migration to change it)
 A full rollback reopens the review findings these files close (M1, M3, M5, L1, H2's server half, DB-01, the shadowable `search_path`), so it needs your decision and a new review; the gate does not pass without these files. Write it as one reverse migration (one transaction), in this order. Each step names what the next one depends on.
 
 1. **File 16** (erases what was synced into the new columns):
-   1. Re-run `entries_guard_immutable` from file 4 (`20261002020000`) first, so no update on `entries` reads `pack_ref` after it is gone.
+   1. Re-run `entries_guard_immutable` from file 4 (`20261002020000`) and `entries_family_rules` from file 5 (`20261003000000`) first, so no update on `entries` reads one of the five columns after it is gone. Without `entries_family_rules`, every update by a signed-in person (a direct edit or a `sync_push` text edit) fails with `42703` after step 3.
    2. `drop view public.book_entries;` A `create or replace` cannot remove the two appended columns, and the columns cannot be dropped while the view uses them.
    3. Drop the five `entries` columns (`occurred_precision`, `base_direction`, `author_edits`, `locked_spans`, `pack_ref`) and `dictionary_terms.forms`; their check constraints go with them. Then `drop function public.dictionary_forms_valid(jsonb);`
    4. Re-create `book_entries` with `create view` and file 5's (`20261003000000`) definition, then its privileges as file 13 section 6 left them: `revoke all on public.book_entries from public, anon; revoke insert, update, delete, truncate, references, trigger on public.book_entries from authenticated; grant select on public.book_entries to authenticated;` and the view and column comments from files 4 and 5 (`comment on view`, every `comment on column public.book_entries.*`; the classification test fails without them).
    5. Re-run `sync_pull` and `sync_push` from file 13.
 2. **File 15**: drop `undo_parent_join`, `accept_child_invite_by_code`, the 6-argument `create_child_invite`, `invite_policy_checks`, `family_share_consent_required`, the `child_invites_live_code_idx` index and the `code_hash` and `notify_letters` columns (file 16's rollback already re-ran a `sync_push` that does not write `notify_letters`); re-create the `child_members_leave` policy and `grant delete on public.child_members to authenticated`; re-run `create_child_invite(uuid, text, text)` and `accept_child_invite` from file 12 and `child_members_audit` from file 4; restore the audit constraint from file 5 after deleting or re-labelling any `member_join_undone` rows (the constraint is checked against existing rows).
-3. **File 14**: re-run `policy_acceptances_pseudonymise` from file 4 and `ops_deletion_sla` from file 10 (`20261004200000`); drop `peek_invite`, `consent_pepper_ready`, `contributors_enabled`. The purge worker treats a missing `consent_pepper_missing` key as 0.
+3. **File 14**: re-run `policy_acceptances_pseudonymise` from file 4 and `ops_deletion_sla` from file 10 (`20261004200000`); drop `peek_invite`, `invite_token_well_formed(text)`, `consent_pepper_ready`, `contributors_enabled`. The purge worker treats a missing `consent_pepper_missing` key as 0.
 4. **File 13**, in this order:
    1. Receipts first: delete duplicate op ids (keep one row per `op_id`), `alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey; alter table public.sync_op_receipts add primary key (op_id);` and **`grant insert, delete on public.sync_op_receipts to authenticated;`**. File 12's `sync_push` runs as the caller and writes and trims receipts itself; without the grant every push fails with `42501` (whole call), which the app treats as a rejection.
    2. `grant select on public.children to authenticated;` (file 12's `sync_push` merges `book.update` in place and reads the two date columns).
    3. Re-run `sync_pull`, `sync_push`, `sync_housekeeping` and `rate_hit` from file 12, `create_child` and `create_first_run_children` from file 8, `delete_entry` and `restore_entry` from file 5, `sync_books` from file 9.
    4. Drop the `entries_unshared` trigger and function, `book_update`, `sync_op_claim`, and the two `left_*_xid` columns.
+5. **Last: re-run file 13 section 7** (the `do` block, "search_path: pg_catalog first, pg_temp last"). The `search_path` re-pin is not rolled back: it changes no behaviour and closes a hole. But each function re-run above from an older file comes back with that file's `search_path = public, pg_catalog`: `entries_guard_immutable`, `entries_family_rules`, `sync_pull`, `sync_push`, `sync_books`, `sync_housekeeping`, `rate_hit`, `create_child`, `create_first_run_children`, `delete_entry`, `restore_entry`, `create_child_invite`, `accept_child_invite`, `child_members_audit`, `policy_acceptances_pseudonymise` and `ops_deletion_sla`. The block re-pins them; it changes nothing else and can run any number of times.
 
-The `search_path` re-pin is not rolled back: it changes no behaviour and closes a hole. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration).
+After a rollback, some privileges stay tighter than develop's, and that is safe: `anon` has no select on `children` and no writes on `child_members` or `sync_op_receipts`, and `authenticated` has no insert or update on `child_members` (develop's app never uses them; joining and leaving go through the RPCs). The rate-bucket check stays the superset, and file 13's comments stay. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration), and on real PostgreSQL if you can.
 
 ## File 17: sync protocol v1, the server half (16 Oct 2026, stream S02)
 
