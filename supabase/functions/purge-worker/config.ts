@@ -57,8 +57,12 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
   const keyId = v('APPLE_SIGNIN_KEY_ID');
   const privateKeyPem = get('APPLE_SIGNIN_PRIVATE_KEY') ?? '';
   const extraClients = v('APPLE_SERVICES_ID');
+  // S01 request (PR #139): tokens minted by other bundles of ours (the `.preview` build) can be revoked too.
+  // A comma list of bundle-id-shaped values; anything else is ignored.
+  const moreClients = v('APPLE_EXTRA_CLIENT_IDS').split(',').map((x) => x.trim()).filter((x) => /^[A-Za-z0-9][A-Za-z0-9.-]{0,154}$/.test(x));
+  const clientIds = [...new Set([bundleId(), ...(extraClients ? [extraClients] : []), ...moreClients])];
   const apple: AppleConfig | null = teamId && keyId && privateKeyPem.trim()
-    ? { teamId, keyId, privateKeyPem, clientIds: [bundleId(), ...(extraClients ? [extraClients] : [])] }
+    ? { teamId, keyId, privateKeyPem, clientIds }
     : null;
 
   const budget = Number(v('PURGE_WORKER_BUDGET_MS') || '110000');

@@ -80,8 +80,8 @@
           ],
           "localizations" : [
             {
-              "description" : "Read together and more books, billed yearly",
-              "displayName" : "Plus Yearly",
+              "description" : "Keep adding letters, billed yearly",
+              "displayName" : "Plus Annual",
               "locale" : "en_US"
             }
           ],
@@ -132,7 +132,7 @@
           ],
           "localizations" : [
             {
-              "description" : "Read together and more books, billed monthly",
+              "description" : "Keep adding letters, billed monthly",
               "displayName" : "Plus Monthly",
               "locale" : "en_US"
             }
