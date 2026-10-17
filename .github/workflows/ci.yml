@@ -60,8 +60,8 @@ jobs:
   db:
     name: database rules
     needs: install
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15 # perf.test.mjs seeds 400,000 entries; a slow runner took 139 s for the seed alone (run 39018739219)
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
