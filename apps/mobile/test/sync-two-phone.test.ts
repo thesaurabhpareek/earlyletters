@@ -870,6 +870,57 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(row(mama, e.id)).toBeNull();
   }, 60_000);
 
+  it('[F16-REQ-029] Keep on a phone that has not seen the other phone\'s newer held words: both versions are kept, the author chooses (review K blocking 1)', async () => {
+    const id = typedDraft(mama, 'You built a tower of cups.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    mama2.store.setDraftTyped(id, 'You built a tower of cups, then knocked it down.');
+    await mama2.sync(); // the server's held row has the second phone's words
+    tick(5_000);
+    const d = mama.store.listHeldDrafts(ASHA).find((x) => x.id === id)!; // not pulled: still the old words
+    mama.store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'letter', occurredOn: iso().slice(0, 10), capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
+      promptKey: null, engineVersion: 5, rawTranscript: d.typedText!, machineEdits: [], finalText: d.typedText!, inBook: true,
+      soundsLikeMe: null, childId: ASHA, authorSignsAs: 'Mama', audioUri: null,
+    });
+    const keep = mama.db.get<{ payload: string }>("SELECT payload FROM sync_outbox WHERE entity_id = ? AND type = 'entry.upsert'", id)!;
+    expect(JSON.parse(keep.payload)).toHaveProperty('held_base');
+    const r = await mama.sync();
+    expect(r.conflicts).toBe(1);
+    // The letter follows the newer held words everywhere; this phone keeps its own as a conflict copy.
+    expect((await serverEntry(id))?.final_text).toBe('You built a tower of cups, then knocked it down.');
+    expect(await heldRow(id)).toBeUndefined();
+    expect(row(mama, id)?.final_text).toBe('You built a tower of cups, then knocked it down.');
+    expect(mama.store.listConflicts(id).map((c) => c.words.final_text)).toEqual(['You built a tower of cups.']);
+    await mama2.sync();
+    expect(row(mama2, id)?.final_text).toBe('You built a tower of cups, then knocked it down.');
+    expect(mama2.store.listHeldDrafts(ASHA).map((x) => x.id)).not.toContain(id);
+    // "Use this phone's version": the first phone's words become the letter's, everywhere.
+    expect(mama.store.resolveConflict(mama.store.listConflicts(id)[0].opId, 'mine')).toBe(true);
+    await mama.sync();
+    expect((await serverEntry(id))?.final_text).toBe('You built a tower of cups.');
+    await mama2.sync();
+    expect(row(mama2, id)?.final_text).toBe('You built a tower of cups.');
+  }, 60_000);
+
+  it('[F16-REQ-029] a let-go that met newer words, answered twice after a lost answer, still brings the draft back (review K blocking 2)', async () => {
+    const id = typedDraft(mama, 'You sang in the bath.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync();
+    await mama2.sync();
+    expect(mama.store.beginDiscard(id)).toBe(true); // offline: the let-go waits
+    mama2.store.setDraftTyped(id, 'You sang in the bath, and the duck joined in.');
+    await mama2.sync();
+    await mama.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' })); // kept, answer lost
+    await mama.sync(); // the let-go waits out its backoff; this pull already passes the newer held row
+    tick(2_000);
+    await mama.sync(); // the repeat must answer kept again, or the draft is never pulled back
+    await mama.sync();
+    expect((await heldRow(id))?.typed_text).toBe('You sang in the bath, and the duck joined in.');
+    expect(mama.store.listHeldDrafts(ASHA).find((x) => x.id === id)?.typedText).toBe('You sang in the bath, and the duck joined in.');
+  }, 60_000);
+
   it('[TDD 06 P-1] after a server restore, a letter with an edit queued goes back up with the edit, never as erased (final re-check B-R1, P11)', async () => {
     ids.restored = writeLetter(mama, ASHA, 'Your first word, and it was ball.');
     await mama.sync();

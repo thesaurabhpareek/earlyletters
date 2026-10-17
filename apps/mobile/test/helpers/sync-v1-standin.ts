@@ -81,11 +81,40 @@ export const SYNC_PUSH_V1_EDITS: SyncPushEdit[] = [
  */
 export const SYNC_PUSH_HELD_EDITS: SyncPushEdit[] = [
   {
+    why: 'a variable for a refused Keep',
+    anchor: '  v_newer boolean;\n  v_refused boolean;\n',
+    becomes: '  v_newer boolean;\n  v_refused boolean;\n  v_keep jsonb;\n',
+  },
+  {
+    why: 'the Keep of a held draft is compared with held_base before the letter is made (review K blocking 1)',
+    anchor: '          v_conflict := false;\n          v_newer := false;\n          v_refused := false;\n',
+    becomes:
+      '          v_conflict := false;\n          v_newer := false;\n          v_refused := false;\n' +
+      '          v_keep := null;\n' +
+      "          if not v_exists and v_type = 'entry.upsert' then\n" +
+      '            v_keep := sync_private.held_keep_refusal(v_id, o);\n' +
+      '            if v_keep is not null then\n' +
+      '              v_apply := false;\n' +
+      '            end if;\n' +
+      '          end if;\n',
+  },
+  {
+    why: 'a refused Keep answers the held words and notes the refusal on the receipt',
+    anchor: '          perform sync_private.note_applied(v_op, v_id, v_refused, v_newer);\n',
+    becomes:
+      '          if v_keep is not null then\n' +
+      '            v_res := v_keep;\n' +
+      '            perform sync_private.note_keep_refused(v_op);\n' +
+      '          else\n' +
+      '            perform sync_private.note_applied(v_op, v_id, v_refused, v_newer);\n' +
+      '          end if;\n',
+  },
+  {
     why: 'a duplicate held op repeats its first answer (the row state, and a words refusal again)',
     anchor: '        end if;\n      else\n        case v_type\n',
     becomes:
       "        elsif v_type like 'held.%' then\n" +
-      "          v_res := v_res || case when v_type = 'held.upsert' then sync_private.held_dup(v_op, v_id) else '{}'::jsonb end;\n" +
+      "          v_res := v_res || case when v_type = 'held.upsert' then sync_private.held_dup(v_op, v_id) else sync_private.held_discard_dup(v_id) end;\n" +
       '        end if;\n      else\n        case v_type\n',
   },
   {

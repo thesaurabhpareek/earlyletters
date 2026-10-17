@@ -270,16 +270,23 @@ export function enqueueEntryUpsert(db: SqlDb, id: string, groups: readonly Field
   db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type = 'held.upsert' AND sent_at IS NULL AND attempts = 0 AND lane = 1", id);
   const ops = opsFor(db, id);
   const tail = ops[ops.length - 1];
+  // The Keep of a held draft or a waiting letter (the letter is new on the server): it names the held row's
+  // last version this phone knew, so the server never drops held words it did not carry (review K blocking 1).
+  const heldBase = !r.server_version && r.held_v != null ? r.held_v : undefined;
   if (tail && tail.type === 'entry.upsert' && untouched(tail)) {
     const p = JSON.parse(tail.payload) as PushOp;
     const changed = new Set<FieldGroup>([...(p.changed ?? ALL_GROUPS), ...groups]);
     p.data = data as unknown as Record<string, unknown>;
     p.changed = ALL_GROUPS.filter((g) => changed.has(g));
+    if (heldBase !== undefined) p.held_base = heldBase;
     db.run('UPDATE sync_outbox SET payload = ?, book_id = ? WHERE seq = ?', JSON.stringify(p), data.child_id, tail.seq);
   } else {
     appendOp(
       db,
-      { type: 'entry.upsert', id, data: data as unknown as Record<string, unknown>, changed: [...groups], base: baseFor(db, r, ops) },
+      {
+        type: 'entry.upsert', id, data: data as unknown as Record<string, unknown>, changed: [...groups], base: baseFor(db, r, ops),
+        ...(heldBase !== undefined ? { held_base: heldBase } : {}),
+      },
       ctx,
       { bookId: data.child_id },
     );
@@ -633,7 +640,8 @@ export function settleHeldAnswer(
   const v = r.dup ? (r.applied_v ?? null) : (r.held?.v ?? null);
   if (v) {
     db.run('UPDATE drafts SET held_v = ? WHERE id = ?', v, id);
-    db.run("UPDATE entries SET held_v = ? WHERE id = ? AND transcript_status = 'waiting'", v, id);
+    // The waiting letter, or the letter this draft became while its upload was on the way (its Keep is queued).
+    db.run('UPDATE entries SET held_v = ? WHERE id = ? AND server_version IS NULL', v, id);
   }
   let copied = false;
   const draft = getDraftRow(db, id);
@@ -662,10 +670,18 @@ export function settleHeldAnswer(
   // A let-go queued behind this upload (made before its answer came) names the version this phone now
   // knows, forward only, so the server never keeps the row for words that were this phone's own (re-check R1).
   if (v) {
+    const ahead = (x: string | null | undefined) => !!x && /^\d+$/.test(x) && /^\d+$/.test(v) && BigInt(x) >= BigInt(v);
     for (const o of opsFor(db, id).filter((x) => x.type === 'held.discard' && untouched(x))) {
       const p = JSON.parse(o.payload) as PushOp;
-      if (p.base && /^\d+$/.test(p.base) && /^\d+$/.test(v) && BigInt(p.base) >= BigInt(v)) continue;
+      if (ahead(p.base)) continue;
       p.base = v;
+      db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
+    }
+    // The same for a Keep queued behind this upload: its held_base names the version this phone now knows.
+    for (const o of opsFor(db, id).filter((x) => x.type === 'entry.upsert' && untouched(x))) {
+      const p = JSON.parse(o.payload) as PushOp;
+      if (p.held_base === undefined || ahead(p.held_base)) continue;
+      p.held_base = v;
       db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
     }
   }

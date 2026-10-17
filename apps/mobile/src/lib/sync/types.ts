@@ -157,6 +157,12 @@ export interface PushOp {
    * when it first applies the op and a duplicate ignores it.
    */
   base?: string | null;
+  /**
+   * v1, entry.upsert that makes the letter from a held draft or a waiting letter (the Keep): the held
+   * row's last `v` this phone knew, or null when it knew none. The server refuses the Keep as a words
+   * conflict when the held words moved past it (review K blocking 1, ADR 0025 section 9).
+   */
+  held_base?: string | null;
   /** entry.reupload: the server's updated_at this phone last saw for the letter. */
   known_at?: string;
 }
@@ -175,6 +181,8 @@ export interface EntryState {
 export interface CurrentWords extends WordsGroup {
   /** Server version of these words. */
   v: string;
+  /** A refused Keep: the held draft's typed words (its words when it has no final_text). */
+  typed_text?: string | null;
 }
 
 export interface PushResultOk {

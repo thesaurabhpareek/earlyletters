@@ -262,9 +262,22 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
           if (row.type === 'entry.restore') enqueueEntryUpsert(db, row.entity_id, ALL_GROUPS, ctx);
           if (row.type === 'entry.delete') db.run('UPDATE entries SET server_version = NULL, server_epoch = NULL WHERE id = ?', row.entity_id);
         } else {
-          if (settleWords(db, row, r, ctx)) conflicts++;
+          // A Keep refused because the held words moved on elsewhere (no letter was made; review K blocking 1):
+          // the held words come as current, with typed_text standing in for words a typed draft has as text.
+          const keepRefused = row.type === 'entry.upsert' && !r.entry && !!r.current && (r.conflict_groups ?? []).includes('text');
+          const answer: PushResultOk = keepRefused && r.current
+            ? { ...r, current: { ...r.current, final_text: r.current.final_text ?? r.current.typed_text ?? '', machine_edits: r.current.machine_edits ?? [], edit_level: r.current.edit_level ?? 'verbatim' } }
+            : r;
+          if (settleWords(db, row, answer, ctx)) conflicts++;
           const s = r.entry ? { ...r.entry, v: stateVersion(db, row, r, r.entry.v) } : r.entry;
           if (s) applyEntryState(db, s, epoch, ctx.now);
+          if (r.entry && row.type === 'entry.upsert') db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.entity_id); // kept: no held row now
+          if (keepRefused && answer.current) {
+            // As for an entry: this phone's words are a conflict copy, the letter follows the held words, and the
+            // Keep goes again naming their version, so the letter exists everywhere while the author chooses.
+            db.run('UPDATE entries SET held_v = ? WHERE id = ?', answer.current.v, row.entity_id);
+            enqueueEntryUpsert(db, row.entity_id, ALL_GROUPS, ctx);
+          }
         }
         refreshEntryState(db, row.entity_id);
       } else if (row.type === 'held.upsert') {

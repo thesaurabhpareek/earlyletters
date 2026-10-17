@@ -137,7 +137,17 @@ revoke execute on function public.held_drafts_note_gone() from public, anon, aut
 -- Keep: the letter takes the draft's id, and its held row goes in the same transaction.
 create function public.entries_drop_held()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_words text;
 begin
+  -- A keep with no held_base (an older client) is never compared: the held words it did not carry are
+  -- kept in the letter's history instead of nowhere (review K blocking 1). A keep with held_base that
+  -- met newer held words never gets here: sync_push refuses it first (held_keep_refusal).
+  select coalesce(h.final_text, h.typed_text) into v_words from public.held_drafts h where h.id = new.id and h.author_id = new.author_id;
+  if v_words is not null and v_words is distinct from new.final_text then
+    insert into public.entry_versions (entry_id, final_text, in_book, machine_edits, superseded_by)
+    values (new.id, v_words, new.in_book, '[]'::jsonb, new.author_id);
+  end if;
   delete from public.held_drafts h where h.id = new.id and h.author_id = new.author_id;
   return new;
 end;
@@ -217,6 +227,85 @@ begin
   perform sync_private.note_held(p_op, p_id, v_refused);
   return v_res;
 end;
+$$;
+
+-- The Keep of a held draft (review K blocking 1): an entry.upsert making the letter carries held_base,
+-- the held row's last v that phone knew. When the held words moved past it and differ from the Keep's
+-- words, the keep is refused as a words conflict: no letter, the held row stays, and the answer carries
+-- the held words in current (v = their words version). A present but null held_base counts as 0; no
+-- held_base key (an older client) is never refused here (entries_drop_held keeps the words in history).
+create function sync_private.held_keep_refusal(p_id uuid, o jsonb)
+returns jsonb language plpgsql security invoker set search_path = pg_catalog, public, pg_temp as $$
+declare
+  h record;
+  v_words text;
+begin
+  if not (o ? 'held_base') then
+    return null;
+  end if;
+  select x.id, x.sync_xid, x.text_xid, x.updated_at, x.final_text, x.machine_edits, x.edit_level, x.typed_text into h
+    from public.held_drafts x where x.id = p_id and x.author_id = auth.uid() for update;
+  if not found then
+    return null;
+  end if;
+  v_words := coalesce(h.final_text, h.typed_text);
+  if h.text_xid > coalesce(nullif(o ->> 'held_base', '')::xid8, '0'::xid8) and v_words is not null
+     and v_words is distinct from (o -> 'data' ->> 'final_text') then
+    return jsonb_build_object('applied', false, 'conflict', true, 'conflict_groups', jsonb_build_array('text'),
+      'current', jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
+                                    'typed_text', h.typed_text, 'v', h.text_xid::text),
+      'held', jsonb_build_object('id', h.id, 'v', h.sync_xid::text, 'updated_at', h.updated_at));
+  end if;
+  return null;
+end;
+$$;
+
+create function sync_private.note_keep_refused(p_op uuid)
+returns void language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  update public.sync_op_receipts r set words_conflict = true, words_refused = true, applied_v = null
+   where r.op_id = p_op and r.profile_id = auth.uid();
+end;
+$$;
+
+-- A duplicate of an entry op (sync-v1-standin.sql), plus: a refused Keep repeats its refusal, with the
+-- held words as they are now, never "missing".
+create or replace function sync_private.dup_outcome(p_op uuid, p_entry uuid)
+returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r record;
+  h record;
+begin
+  select x.applied_v, x.words_conflict, x.words_refused into r
+    from public.sync_op_receipts x where x.op_id = p_op and x.profile_id = auth.uid();
+  if not found then
+    return '{}'::jsonb;
+  end if;
+  if r.words_refused and not exists (select 1 from public.entries e where e.id = p_entry) then
+    select x.id, x.sync_xid, x.text_xid, x.updated_at, x.final_text, x.machine_edits, x.edit_level, x.typed_text into h
+      from public.held_drafts x where x.id = p_entry and x.author_id = auth.uid();
+    if found then
+      return jsonb_build_object('missing', false, 'applied', false, 'conflict', true, 'conflict_groups', jsonb_build_array('text'),
+        'current', jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
+                                      'typed_text', h.typed_text, 'v', h.text_xid::text),
+        'held', jsonb_build_object('id', h.id, 'v', h.sync_xid::text, 'updated_at', h.updated_at));
+    end if;
+  end if;
+  if r.words_conflict then
+    return case when r.words_refused then jsonb_build_object('conflict_groups', jsonb_build_array('text')) else '{}'::jsonb end
+      || coalesce((select jsonb_build_object('current', jsonb_build_object('final_text', e.final_text, 'machine_edits', e.machine_edits,
+                                                                            'edit_level', e.edit_level, 'v', e.text_xid::text))
+                     from public.entries e where e.id = p_entry and e.author_id = auth.uid()), '{}'::jsonb);
+  end if;
+  return case when r.applied_v is null then '{}'::jsonb else jsonb_build_object('applied_v', r.applied_v::text) end;
+end;
+$$;
+
+-- A repeated held.discard answers what the first answer said (review K blocking 2): kept while the row is there.
+create function sync_private.held_discard_dup(p_id uuid)
+returns jsonb language sql stable security invoker set search_path = pg_catalog, public, pg_temp as $$
+  select case when exists (select 1 from public.held_drafts h where h.id = p_id and h.author_id = auth.uid())
+              then jsonb_build_object('kept', true) else '{}'::jsonb end;
 $$;
 
 -- Whether this author erased a held id (definer: held_drafts_gone has no client grants).
@@ -311,6 +400,11 @@ end;
 $$;
 revoke execute on function sync_private.erase_held(uuid) from public, anon;
 grant execute on function sync_private.erase_held(uuid) to authenticated;
+
+revoke execute on function sync_private.held_keep_refusal(uuid, jsonb), sync_private.note_keep_refused(uuid),
+  sync_private.held_discard_dup(uuid) from public, anon;
+grant execute on function sync_private.held_keep_refusal(uuid, jsonb), sync_private.note_keep_refused(uuid),
+  sync_private.held_discard_dup(uuid) to authenticated;
 
 revoke execute on function sync_private.held_upsert(uuid, uuid, jsonb), sync_private.held_state(uuid, boolean),
   sync_private.note_held(uuid, uuid, boolean), sync_private.held_dup(uuid, uuid), sync_private.held_discard(uuid, xid8)
