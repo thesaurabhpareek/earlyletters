@@ -1,9 +1,13 @@
 # Applies migrations to the hosted databases (D-041). The only way a
 # migration reaches scribe-staging or scribe-prod. See docs/ops/DEPLOY.md.
 #
-#   staging     push to main that changes supabase/migrations/**
+#   staging     push to develop that changes supabase/migrations/** (RA-20-04),
+#               through the GitHub Environment "staging" (required reviewer).
+#               Staging follows develop only: a push to main deploys nothing to
+#               a database (decided 17 Oct 2026; DEPLOY.md, AUTOMATION.md 2.2)
 #   production  push of a tag db-v*, pointing at a commit on main, through the
-#               GitHub Environment "production" (required reviewers)
+#               GitHub Environment "production" (required reviewers); first
+#               used with AF-42, after the alpha
 #
 # Each environment: dry run, then push. Credentials are one project-scoped
 # Postgres URL per environment (SUPABASE_DB_URL_STAGING, SUPABASE_DB_URL_PROD),
@@ -13,10 +17,9 @@
 # .github/migrations-applied.txt. It never edits that file: a pull request
 # records them (DEPLOY.md, "After a deploy").
 #
-# Staging also deploys on a push to develop that changes supabase/migrations/**
-# (RA-20-04), behind the staging reviewer, so develop's Edge Functions never wait
-# on main for their schema: deploy-functions.yml deploys nothing until staging
-# has every migration on develop. Approve this run first when both wait.
+# Develop's Edge Functions never wait on main for their schema:
+# deploy-functions.yml deploys nothing until staging has every migration on
+# develop. Approve this run first when both wait.
 #
 # Staging then runs RA-07-06's content-free smoke (scripts/ops/staging-smoke.ts)
 # with --db-only: the database checks this job owns, not function or Auth state
@@ -28,7 +31,7 @@ name: Deploy database
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
     tags: ['db-v*']
 
 permissions:
@@ -39,7 +42,7 @@ env:
 
 jobs:
   # Path filters are not used in `on:` so that tag pushes are never filtered
-  # out; this job decides whether a main push changed any migration.
+  # out; this job decides whether a develop push changed any migration.
   changes:
     name: migrations changed
     if: github.ref_type == 'branch'
@@ -83,15 +86,14 @@ jobs:
       group: deploy-db-staging
       cancel-in-progress: false
     steps:
-      # On develop this job applies develop's tip, not the pushed commit. Jobs
-      # join the concurrency group when they become ready, so runs can queue out
-      # of push order, and a newer pending run replaces an older one. With the
-      # tip, whichever run goes last applies every migration on develop, and an
-      # older run never goes backwards (db push only moves forward). A push to
-      # main keeps its own commit.
+      # This job applies develop's tip, not the pushed commit. Jobs join the
+      # concurrency group when they become ready, so runs can queue out of push
+      # order, and a newer pending run replaces an older one. With the tip,
+      # whichever run goes last applies every migration on develop, and an
+      # older run never goes backwards (db push only moves forward).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref == 'refs/heads/develop' && 'develop' || github.sha }}
+          ref: develop
           persist-credentials: false
       - name: Commit being deployed
         env:
@@ -102,7 +104,7 @@ jobs:
           {
             echo "### staging: migrations from \`$sha\`"
             echo
-            echo "Started by \`$TRIGGER_SHA\`. On develop this job applies develop's tip at the time it started, so a later run never applies older migrations."
+            echo "Started by \`$TRIGGER_SHA\`. This job applies develop's tip at the time it started, so a later run never applies older migrations."
             echo
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1

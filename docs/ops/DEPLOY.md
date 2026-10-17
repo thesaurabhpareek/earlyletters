@@ -12,9 +12,8 @@ Labels used below: **Verified** means checked on 3 Oct 2026 against the source o
 |---|---|---|---|---|
 | Pull request | PR that changes `supabase/**` | `.github/workflows/db-cli.yml` | `supabase start`, `supabase db reset --local`, `supabase db lint --local --level error --fail-on error`, `npm run test:db` | No |
 | Nightly | 10:23 UTC daily, or by hand | `.github/workflows/nightly.yml` | Verifier fuzz with a random seed (100000 runs), then the same checks as `db-cli.yml` | No |
-| Staging | Push to `main` that changes `supabase/migrations/**` | `.github/workflows/deploy-db.yml`, job `deploy to staging` | `supabase db push --dry-run`, then `supabase db push` | `scribe-staging` |
+| Staging | Push to `develop` that changes `supabase/migrations/**` (RA-20-04). Staging follows `develop` only: a push to `main` deploys nothing to a database | `.github/workflows/deploy-db.yml`, job `deploy to staging` | After the `staging` reviewer approves: `supabase db push --dry-run`, then `supabase db push`, applied from **`develop`'s tip** (so a later run never applies older migrations); then the smoke's database checks | `scribe-staging` |
 | Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `production` Environment, then dry run, then push | `scribe-prod` |
-| Staging, from `develop` | Push to `develop` that changes `supabase/migrations/**` (RA-20-04) | `.github/workflows/deploy-db.yml`, job `deploy to staging` | After the `staging` reviewer approves: the same dry run and push as from `main`, applied from **`develop`'s tip** (so a later run never applies older migrations); then the smoke's database checks | `scribe-staging` |
 | Edge Functions | Push to `develop` that changes a function's code, or a manual run on `develop` | `.github/workflows/deploy-functions.yml`, jobs `what to deploy`, then `deploy to staging` | Waits in `staging`; checks staging has every migration on `develop`, deploys every function except `escrow` from `develop`'s tip, checks the function list, then the smoke's health checks (see "Edge Functions to staging") | Reads `supabase_migrations.schema_migrations` only |
 
 Rules the database workflows enforce (`deploy-functions.yml` has its own, in "Edge Functions to staging", and is the one workflow that holds an access token):
@@ -25,7 +24,7 @@ Rules the database workflows enforce (`deploy-functions.yml` has its own, in "Ed
 - After a push, the job prints (and writes to the run summary) every migration file not yet listed in `.github/migrations-applied.txt`. It never edits that file. A pull request records them (see "After a deploy").
 - The Supabase CLI is pinned to 2.119.0 in all four workflows (`db-cli.yml`, `nightly.yml`, `deploy-db.yml`, `deploy-functions.yml`), installed by `supabase/setup-cli` pinned to the v3.0.1 commit. Bump both deliberately.
 
-Why the staging trigger is not a `paths:` filter: `deploy-db.yml` triggers on every push to `main` and on `db-v*` tags, and a small `migrations changed` job diffs the push for `supabase/migrations/`. This keeps tag pushes from ever being filtered out by a path rule.
+Why the staging trigger is not a `paths:` filter: `deploy-db.yml` triggers on every push to `develop` and on `db-v*` tags, and a small `migrations changed` job diffs the push for `supabase/migrations/`. This keeps tag pushes from ever being filtered out by a path rule.
 
 ## Environments
 
@@ -61,7 +60,7 @@ Do these in order. None of them can be done by CI or by an agent.
 Settings > Environments.
 
 1. **`staging`**
-   - Deployment branches and tags: "Selected branches and tags", add branches `main` and `develop`.
+   - Deployment branches and tags: "Selected branches and tags", add branch `develop` only. Staging follows `develop`; nothing from `main` deploys to it.
    - Environment secret `SUPABASE_DB_URL_STAGING` = the staging session pooler URL.
    - Required reviewers: you, while staging holds the alpha's real letters (D-106, `docs/ops/ENVIRONMENTS.md`), so a manual run from `develop` waits for your approval. Leave "Prevent self-review" off while you are the only reviewer.
 2. **`production`**
@@ -69,7 +68,7 @@ Settings > Environments.
    - Deployment branches and tags: "Selected branches and tags", add a **tag** rule `db-v*`. Remove any branch rule.
    - Environment secret `SUPABASE_DB_URL_PROD` = the production session pooler URL.
 3. Do **not** create repository-level secrets with these names. Environment secrets are released only to a job that names the environment, and for production only after you approve the run.
-4. Create both Environments before the first migration reaches `main`. If a workflow names an Environment that does not exist, GitHub creates it without any protection (**Assumed**, standard GitHub behaviour), and the job then fails on the missing secret check.
+4. Create both Environments before the first migration reaches `develop`. If a workflow names an Environment that does not exist, GitHub creates it without any protection (**Assumed**, standard GitHub behaviour), and the job then fails on the missing secret check.
 5. Required reviewers on Environments for a **private** repository may need a paid GitHub plan (**Assumed**, not checked; the repo is public today and the GitHub Pro decision is open).
 
 ### 3. Protect the tags
@@ -91,11 +90,11 @@ Brief decision 4: Sign in with Apple, Sign in with Google, email magic link, no 
 ## Tagging flow (a normal release)
 
 1. Merge the migration into `develop` through a PR. `db-cli.yml` and `CI` must pass; the fence needs the `approve-migration` label (D-041).
-2. Open the release PR from `develop` into `main` and merge it.
-3. The push to `main` runs `deploy to staging`: dry run, then push to `scribe-staging`. Read the run summary for the list of files to record.
-4. Check staging (the app against staging, Supabase advisors, the checks in `supabase/APPLY.md` that apply to the new files).
-5. Open a PR that adds the listed file names to `.github/migrations-applied.txt` (see "After a deploy").
-6. Tag the commit on `main` that staging received, and push the tag:
+2. The push to `develop` runs `deploy to staging` after you approve it: dry run, then push to `scribe-staging`. Read the run summary for the list of files to record.
+3. Check staging (the app against staging, Supabase advisors, the checks in `supabase/APPLY.md` that apply to the new files).
+4. Open a PR that adds the listed file names to `.github/migrations-applied.txt` (see "After a deploy").
+5. Open the release PR from `develop` into `main` and merge it. The push to `main` deploys nothing to a database.
+6. Production, from AF-42 on (after the alpha): tag the commit on `main` that carries the migrations staging received, and push the tag:
    ```bash
    git fetch origin
    git tag -a db-v2026.10.12.1 -m "DB: <one line>" <commit on origin/main>
@@ -149,7 +148,7 @@ Today the file still describes `early-letters` (2 files). On the first staging d
 
 **Functions after migrations (RA-20-04).** Staging gets `develop`'s migrations on a **push** to `develop` that changes them, behind the `staging` reviewer: that is RA-20-04, and the main path. #158's manual run on `develop` (once it lands, and once dispatch works, AF-05) is the catch-up path, not a second main path. Both apply `develop`'s tip, so a run that queued late or replaced another never applies older migrations. When a merge carries migrations and functions, two runs wait: **approve Deploy database first**. If you approve the functions run first, it stops before deploying anything and lists the migrations staging lacks. If no Deploy database run is waiting (a run was rejected, cancelled or failed, or the migrations reached `develop` before the push trigger existed), re-run the latest Deploy database run on `develop` whose push changed migrations, use #158's manual run, or push from your computer. Then re-run the functions job.
 
-**Open: staging deploys from `main`.** Once `develop` deploys to staging, staging can hold migrations `main` does not have yet. A push to `main` that changes migrations then fails in `db push`: the remote has versions the local folder lacks. It changes nothing, but the job is red. Whether a push to `main` should still deploy staging after RA-20-04 is a founder decision; this PR does not change that job.
+**Staging follows `develop` only (decided 17 Oct 2026).** A push to `main` deploys nothing to a database. Staging takes `develop`'s migrations and functions; production takes migrations only from a `db-v*` tag on `main`, through `production`, once AF-42 sets that project up after the alpha. Before this decision a push to `main` also deployed staging; with staging ahead of `main` that run could only fail `db push` (the remote holds versions `main` lacks).
 
 **Which functions skip the gateway's JWT check, and which the smoke reaches.** `NO_VERIFY_JWT` and `SMOKE_HEALTH` in `.github/scripts/functions-deploy.mjs`. `NO_VERIFY_JWT` must agree with the deploy line in each function's `index.ts` header; if one disagrees, the plan fails and nothing deploys, so a change to a function's gateway check also changes a `.github/**` file. A function with no deploy line keeps the check, with a warning. `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` keep the check: their health routes cannot answer without a session, so the function list confirms them instead of the smoke. When S01 or S06 gives one an anonymous health route and `--no-verify-jwt`, add it to both lists in the same PR.
 
@@ -158,7 +157,7 @@ Today the file still describes `early-letters` (2 files). On the first staging d
 **The token (AF-06).** `SUPABASE_ACCESS_TOKEN_STAGING` on the `staging` Environment only: the narrowest token that can deploy Edge Functions to the staging project. **Add it only after the `staging` reviewer and branch rules are set and read back, and never as a classic token** (rules 1 and 2 below). Classic tokens carry the whole account; scoped tokens are a public alpha (AUTOMATION.md 2.2). This is the one exception to the no-token rule above (POPS-04): it is not in `deploy-db.yml` and not on `production`. CLI 2.119.0 accepts only tokens shaped `sbp_`, `sbp_oauth_` or `sbp_v0_` followed by 40 hex characters and refuses others before calling the API (**Verified** with the binary); whether a scoped token has that shape is **Unverified**.
 
 Rules for the token, in this order:
-1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branches `main` and `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.
+1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branch `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.
 2. **Never fall back to a classic access token** if a scoped one is refused. A classic token reaches every project on the account, production included. Leave the secret unset instead (the run says NOT DEPLOYED and you deploy from your computer), or keep staging in an organization the token cannot leave (AF-06).
 3. **Until the approver account exists (AF-02)**, any session holding your GitHub credential can approve as you, so the reviewer is a policy, not a control. Hold the token until AF-02 is in place, or accept that for the alpha.
 

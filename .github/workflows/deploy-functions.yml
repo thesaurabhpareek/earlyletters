@@ -66,8 +66,8 @@ jobs:
       no_verify_jwt: ${{ steps.plan.outputs.no_verify_jwt }}
       smoke: ${{ steps.plan.outputs.smoke }}
     steps:
-      # The staging Environment also allows main (deploy-db.yml); this keeps a
-      # manual run from putting main's older functions on staging.
+      # Staging follows develop only (DEPLOY.md). The staging Environment's
+      # branch rule is the control; this makes a manual run elsewhere fail loudly.
       - name: A manual run deploys develop only
         if: github.event_name == 'workflow_dispatch'
         env:
