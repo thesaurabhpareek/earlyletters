@@ -49,10 +49,11 @@ Never copy a constant, type, colour or string into a second place. Import it.
 ## 6. Releases: one train, no surprise publishes
 - **Agents never commit, push, deploy, publish packs or config, apply migrations, change DNS or send email to real people.**
 - **Integration happens per wave.** Agents finish and the coordinator runs all checks (`npm test`, `npm run test:db`, mobile `tsc`, the Deno tests). Green means a commit on the wave branch `auto/<date>-<topic>`, then a merge to `develop`, then push.
-- **`main`** changes only through a release PR from `develop`, approved by the founder. Tags are `ios-v<x.y.z>`. EAS builds come only from tagged commits.
+- **`main`** changes only through a release PR from `develop`, approved by the founder. Store builds come only from tagged commits: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate; `ios-v<x.y.z>` marks the candidate that was released. Preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`). Details: ADR 0022, `docs/ops/RELEASE.md`.
 - **Live migrations:** the founder applies them in the order given in `supabase/APPLY.md`. Every applied file is added to `.github/migrations-applied.txt`. Applied migrations are never edited.
 - **Packs, remote config, content:** signed and published only via `scripts/packs/publish.ts` by the coordinator, with the founder's OK. Git history is the audit log.
 - **Website (other thread):** serves `docs/ops/well-known/*` and the legal pages at the URLs in `packages/brand`. Changes to those URLs or files are coordinated on the board first.
+- **Merging into `develop` (D-107):** the coordinator may merge a pull request that changes app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests once two independent review agents pass it and CI is green on its head. Only the founder merges changes to `supabase/**` (database, migrations, access rules), auth, payments (billing, StoreKit, `packages/core/src/plan.ts`), release configuration (`.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`) or the CODEOWNERS-protected engine files (`EditType`, `verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`), and only the founder approves a production deploy (the website on `main`, the App Store, TestFlight external groups).
 
 ## 7. Cross-thread coordination
 - Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `BOARD.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
@@ -64,3 +65,13 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - Tests sit next to their workspace's `test/` folder, so the workspace's test runner picks them up.
 - Scratch output, screenshots and previews go in the session scratchpad, never in the repo.
 - Reports are short: files changed, test results, what needs a device, what the founder must do, requests to other owners, and facts versus assumptions.
+
+## 9. Writing for the founder
+This covers anything the founder reads: PR descriptions, reports, status updates, the program status sheet and plan docs. Write like an experienced technical and business program manager.
+- Lead with status and the ask. A date is On track, At risk or Off track, with the reason in one line.
+- Use numbers, dates, owners and links, not adjectives. Keep sentences short and words plain.
+- No filler or hype: not "leverage", "robust", "seamless", "comprehensive", "crucial", "delve", "ensure", "streamline", "holistic", "utilize", "empower" or "unlock".
+- Times are in Pacific time with the day, for example "Tue 27 Oct, 5:00 AM PT". Convert UTC times from the repo.
+- Say "unverified" when it is. Don't hedge what you checked.
+- A decision for the founder comes with a recommendation and the date it's needed.
+- Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.

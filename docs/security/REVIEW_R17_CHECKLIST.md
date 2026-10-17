@@ -24,11 +24,13 @@ Per-stream detail lives with the stream: S01's items and evidence are in `docs/s
 
 **Gate status: NOT PASSED.** Blocking today: sections 1, 6 and 7, the two independent reviews of every fenced PR, and the founder's choices in PR #140 ("Founder questions"). One finding from this pass is new and Critical on `develop` (8.2 below, DB-01): fixed in PR #140, so the gate cannot pass on `develop` without it.
 
+**Update, 17 Oct 2026 (S02).** PR #140 leaves draft: no code is left on it. Both review findings lists are fixed (PR comment "Independent review verdicts"), develop is merged in, and it never depended on ADR 0025 (it parked the sync work, which PR #208 now builds on top of it). The six items now have PRs: BL-347 and BL-330 in #139 (open, ready), BL-331 with BL-332 and `peek_invite` with BL-334 in #140, BL-322 in #184 (and the older #148), BL-349 in #211. PR #142 is closed, so the section 10 item on two S02 PRs is resolved. What the gate still needs, by section: 1 (merges at one set of commits, staging through `deploy-db.yml`, the APPLY.md checks on staging, `db-cli.yml`, counsel T17, the founder's label), 2, 3, 6 and 7 (their owners' reviews), 8.4 and 8.7 to 8.10 (staging checks), a fresh re-review of #140's fix commits, the shared reviewer and section 9.
+
 ## 1. Gate-wide
 
 | # | Check | Evidence needed | First pass | Reviewer |
 |---|---|---|---|---|
-| 1.1 | The six items are merged to `develop` at one set of commits, and the review below names those commits | PR numbers and merge commits for BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349 | pending (#139, #140 open as drafts; S04, S20 not opened) | |
+| 1.1 | The six items are merged to `develop` at one set of commits, and the review below names those commits | PR numbers and merge commits for BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349 | pending: all open, none merged (17 Oct: #139, #140, #184, #211) | |
 | 1.2 | Every migration file 1 to 16 is applied to `scribe-staging` through `deploy-db.yml`, never by hand | The workflow run URL; its "Files to record" summary; a PR adding them to `.github/migrations-applied.txt` | pending: staging does not exist; the workflow deploys staging only from `main` today (S20 moves it to `develop`, 08 section 7) | |
 | 1.3 | The APPLY.md checks for every file pass on staging (step 4, step 10, step 18, step 21) | The query output pasted into the PR that records the apply | pending | |
 | 1.4 | `npm run test:db` is green at the reviewed commit, and `db-cli.yml` (`supabase db reset` and `db lint` on the real Postgres image) is green | CI run URLs | local PGlite run green (PR #140 body); `db-cli.yml` not run yet | |
@@ -134,4 +136,4 @@ File: `20261015010000_v1_gate_peek_invite_consent_pepper.sql` (ported from `d1cb
 
 - **Purged ids and the 60-day ledger (PR #32 DB-02, #51 review finding 2).** `purge_due` on `develop` deletes every `purge_ledger` row after 60 days, so a phone offline past about day 90 could upload a deleted letter again. Keeping letter and book ids for good changes the published retention (DATA-REQ-066): a founder and counsel decision, not changed here.
 - **A purged letter's photo can be uploaded again (PR #32 finding 2).** No photo upload exists in the v1.0 app; #51's `photo_entry_is_purged` and the path-shape rule are the fix when photos ship.
-- **Two S02 pull requests cover the same work.** PR #142 (`fix/db-bl-331-bl-332-membership-integrity`) amends the unapplied `20261005000000` and adds `20261015000000_peek_invite_consent_pepper.sql`; PR #140 adds four new files from `20261015000000`. Both cannot merge (the same migration version, overlapping functions). The founder or coordinator picks one before this review runs.
+- **Two S02 pull requests covered the same work (resolved 16 Oct).** PR #142 is closed without merging; PR #140 is the one.
