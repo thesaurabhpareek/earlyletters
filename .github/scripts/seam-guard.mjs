@@ -8,9 +8,15 @@
 // with the e2e switches in FORCED_ON turned on, the worst case where a flag
 // leaks into the build (an EAS environment variable, a shell). Then
 // `expo export --platform ios --no-bytecode` and a search of every exported
-// file for the seam identifiers. Any hit fails the run. A positive control
-// (the public product name from packages/brand, which every bundle shows)
-// makes sure the search can see the bundle at all.
+// file for the seam identifiers. Any hit fails the run.
+//
+// Since B-9, app.config.ts refuses to evaluate when the flag meets a store
+// profile, so the forced export is expected to stop at config time. That
+// refusal counts as holding, and the profile is then exported as it builds
+// (without the flag) and searched the same way. Any other export failure
+// fails the run. A positive control (the public product name from
+// packages/brand, which every bundle shows) makes sure a search can see the
+// bundle at all.
 //
 // No secrets. Run `npm ci` at the repository root first. Exit 0 clean, 1 a seam
 // found or the export failed, 2 usage.
@@ -27,15 +33,21 @@ import { fileURLToPath } from 'node:url';
  * The e2e build must contain them; the kill-harness workflow checks that side.
  */
 export const SEAM_IDENTIFIERS = [
-  'e2eKillDrill',
-  'e2eKillRun',
-  'e2eKillKind',
-  'e2eKillPlant',
+  // S19's list on #203 (B-8, rewritten).
   'e2eSeed',
   'e2eOffline',
   'e2eConfig',
+  'e2eKillDrill',
+  'e2eKillRun',
+  'e2eKillPlant',
+  'kill-drill',
   'Asha kill drill',
+  // The fourth launch-argument key of the drill (TESTID_REQUESTS.md section 3).
+  'e2eKillKind',
 ];
+
+/** How app.config.ts says it refused a build for B-9 (apps/mobile/src/lib/build-env.ts, e2eRefusal). */
+export const B9_REFUSAL = /EXPO_PUBLIC_E2E=1 .*\(B-9\)/;
 
 /** The switches that turn seams on, forced on for the check: if the gate holds with them on, it holds with any value. */
 export const FORCED_ON = { EXPO_PUBLIC_E2E: '1' };
@@ -92,11 +104,14 @@ export function scan(texts, identifiers = SEAM_IDENTIFIERS) {
   return hits;
 }
 
-/** The export's environment: the runner's without any EXPO_PUBLIC_* it had, then the profile's, then FORCED_ON. */
-export function exportEnv(base, profileEnvValues) {
+/**
+ * The export's environment: the runner's without any EXPO_PUBLIC_* it had, then
+ * the profile's, then (when `forced`) FORCED_ON.
+ */
+export function exportEnv(base, profileEnvValues, forced = true) {
   const out = {};
   for (const [k, v] of Object.entries(base)) if (!k.startsWith('EXPO_PUBLIC_')) out[k] = v;
-  return { ...out, ...profileEnvValues, ...FORCED_ON, CI: '1' };
+  return { ...out, ...profileEnvValues, ...(forced ? FORCED_ON : {}), CI: '1' };
 }
 
 function listFiles(dir) {
@@ -112,43 +127,68 @@ async function publicName(root) {
   return brand.name;
 }
 
-/** One profile: export, then search. Returns true when the bundle is clean. */
-export async function guard(root, eas, profile, log, run = spawnSync) {
-  const env = profileEnv(eas, profile);
-  const out = mkdtempSync(join(tmpdir(), `seam-guard-${profile}-`));
+/** One export: { status: 'ok', files, bytes, hits, seen } or { status: 'refused' | 'failed', output }. */
+async function exportAndScan(root, env, run) {
+  const out = mkdtempSync(join(tmpdir(), 'seam-guard-'));
   try {
     const r = run('npx', ['expo', 'export', '--platform', 'ios', '--no-bytecode', '--clear', '--output-dir', out], {
       cwd: join(root, 'apps/mobile'),
-      env: exportEnv(process.env, env),
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
     });
-    if (r.status !== 0) {
-      log(`::error::B-8 ${profile}: expo export failed (exit ${r.status}), so the bundle was not checked.`);
-      log(String(r.stderr || r.stdout || '').split('\n').slice(-30).join('\n'));
-      return false;
-    }
+    const output = `${r.stdout ?? ''}\n${r.stderr ?? ''}`;
+    if (r.status !== 0) return { status: B9_REFUSAL.test(output) ? 'refused' : 'failed', exit: r.status, output };
     const files = listFiles(out).filter((f) => /\.(js|hbc|json)$/.test(f));
     const texts = files.map((f) => readFileSync(f, 'latin1'));
-    const bytes = texts.reduce((s, t) => s + t.length, 0);
+    const bytes = texts.reduce((n, t) => n + t.length, 0);
     const control = await publicName(root);
-    const seen = texts.some((t) => t.includes(control));
-    if (!files.some((f) => f.endsWith('.js')) || bytes < MIN_BUNDLE_BYTES || !seen) {
-      log(`::error::B-8 ${profile}: the export does not look like the app's bundle (${files.length} files, ${bytes} bytes, public name ${seen ? 'found' : 'missing'}), so a clean search would prove nothing.`);
-      return false;
-    }
-    const found = Object.entries(scan(texts));
-    const forced = Object.entries(FORCED_ON).map(([k, v]) => `${k}=${v}`).join(' ');
-    if (found.length) {
-      log(`::error::B-8 ${profile}: the ${profile} bundle carries e2e seam code when ${forced} reaches it (${found.map(([k, n]) => `${k} x${n}`).join(', ')}). The gate in apps/mobile/src/dev/e2e-seams.ts must keep seams out of every store profile; until it does, no wiring line ships (RA-20-18).`);
-      return false;
-    }
-    log(`B-8 ${profile}: clean. ${files.length} files, ${bytes} bytes, EXPO_PUBLIC_APP_ENV=${env.EXPO_PUBLIC_APP_ENV ?? '(unset)'}, ${forced} forced; none of ${SEAM_IDENTIFIERS.length} seam identifiers.`);
-    return true;
+    return { status: 'ok', files, bytes, hits: scan(texts), seen: texts.some((t) => t.includes(control)), looksLikeApp: files.some((f) => f.endsWith('.js')) && bytes >= MIN_BUNDLE_BYTES };
   } finally {
     rmSync(out, { recursive: true, force: true });
   }
+}
+
+/** Checks one export's bundle; logs and returns false on a seam or a bundle that proves nothing. */
+function judge(profile, label, r, log) {
+  if (!r.looksLikeApp || !r.seen) {
+    log(`::error::B-8 ${profile}: the export ${label} does not look like the app's bundle (${r.files.length} files, ${r.bytes} bytes, public name ${r.seen ? 'found' : 'missing'}), so a clean search would prove nothing.`);
+    return false;
+  }
+  const found = Object.entries(r.hits);
+  if (found.length) {
+    log(`::error::B-8 ${profile}: the bundle exported ${label} carries e2e seam code (${found.map(([k, n]) => `${k} x${n}`).join(', ')}). The gate in apps/mobile/src/dev/e2e-seams.ts must keep seams out of every store profile; until it does, no wiring line ships (RA-20-18).`);
+    return false;
+  }
+  return true;
+}
+
+/** One profile: the forced export, then (after a B-9 refusal) the export as it builds. True when nothing leaks. */
+export async function guard(root, eas, profile, log, run = spawnSync) {
+  const env = profileEnv(eas, profile);
+  const forced = Object.entries(FORCED_ON).map(([k, v]) => `${k}=${v}`).join(' ');
+  const appEnv = `EXPO_PUBLIC_APP_ENV=${env.EXPO_PUBLIC_APP_ENV ?? '(unset)'}`;
+  const first = await exportAndScan(root, exportEnv(process.env, env, true), run);
+  if (first.status === 'ok') {
+    if (!judge(profile, `with ${forced}`, first, log)) return false;
+    log(`B-8 ${profile}: clean with ${forced} forced. ${first.files.length} files, ${first.bytes} bytes, ${appEnv}; none of ${SEAM_IDENTIFIERS.length} seam identifiers.`);
+    return true;
+  }
+  if (first.status === 'failed') {
+    log(`::error::B-8 ${profile}: expo export with ${forced} failed (exit ${first.exit}) for a reason other than the B-9 refusal, so the bundle was not checked.`);
+    log(first.output.split('\n').filter(Boolean).slice(-30).join('\n'));
+    return false;
+  }
+  const built = await exportAndScan(root, exportEnv(process.env, env, false), run);
+  if (built.status !== 'ok') {
+    log(`::error::B-8 ${profile}: expo export as the profile builds failed (exit ${built.exit}), so the bundle was not checked.`);
+    log(built.output.split('\n').filter(Boolean).slice(-30).join('\n'));
+    return false;
+  }
+  if (!judge(profile, 'as the profile builds', built, log)) return false;
+  log(`B-8 ${profile}: app.config.ts refused the build with ${forced} (B-9), and the bundle as the profile builds is clean. ${built.files.length} files, ${built.bytes} bytes, ${appEnv}; none of ${SEAM_IDENTIFIERS.length} seam identifiers.`);
+  return true;
 }
 
 const USAGE = 'usage: node .github/scripts/seam-guard.mjs (--profile <name> ... | --store-profiles)';
