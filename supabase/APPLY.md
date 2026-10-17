@@ -560,10 +560,11 @@ select n.nspname, p.proname, pg_get_userbyid(p.proowner) from pg_proc p join pg_
         or exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e'));
 -- d) The consent pepper is set (step 6). Expect true before any account deletion runs; file 14 refuses deletions without it.
 select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
--- e) No phone has synced against this project yet (expect 0). If not 0, stop and tell S02: letters that left a
---    reader's view before file 13 have no left_*_xid, so that reader's next digest check can miss them (PR #140
+-- e) No letter exists in this project yet (expect 0). Letters, not sync receipts: receipts are trimmed after 30 days,
+--    so a project whose phones synced and then went quiet would read 0 there. If not 0, stop and tell S02: letters that
+--    left a reader's view before file 13 have no left_*_xid, so that reader's next digest check can miss them (PR #140
 --    fresh review N2); the fix is a backfill in a forward migration, or making the first pull after the deploy a verify pull.
-select count(*) from public.sync_op_receipts;
+select count(*) from public.entries;
 ```
 App compatibility (the build in TestFlight today has the switch off, so nothing calls these yet; for a switch-on build):
 - `select *` on `children` is refused (`42501`). The app names its columns (`lib/family/invites.ts` reads `name` only) and reads dates through `sync_books` and `sync_pull`. Any new client code must do the same.
@@ -656,7 +657,7 @@ A full rollback reopens the review findings these files close (M1, M3, M5, L1, H
    4. Drop the `entries_unshared` trigger and function, `book_update`, `sync_op_claim`, and the two `left_*_xid` columns.
 5. **Last: re-run file 13 section 7** (the `do` block, "search_path: pg_catalog first, pg_temp last"). The `search_path` re-pin is not rolled back: it changes no behaviour and closes a hole. But each function re-run above from an older file comes back with that file's `search_path = public, pg_catalog`: `entries_guard_immutable`, `entries_family_rules`, `sync_pull`, `sync_push`, `sync_books`, `sync_housekeeping`, `rate_hit`, `create_child`, `create_first_run_children`, `delete_entry`, `restore_entry`, `create_child_invite`, `accept_child_invite`, `child_members_audit`, `policy_acceptances_pseudonymise` and `ops_deletion_sla`. The block re-pins them; it changes nothing else and can run any number of times.
 
-After a rollback, some privileges stay tighter than develop's, and that is safe: `anon` has no select on `children` and no writes on `child_members` or `sync_op_receipts`, and `authenticated` has no insert or update on `child_members` (develop's app never uses them; joining and leaving go through the RPCs). The rate-bucket check stays the superset, and file 13's comments stay. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration), and on real PostgreSQL if you can.
+After a rollback, some privileges stay tighter than develop's, and that is safe: `anon` has no select on `children` and no writes on `child_members` or `sync_op_receipts`, and `authenticated` has no insert or update on `child_members` (develop's app never uses them; joining and leaving go through the RPCs). `book_entries` and `my_policy_state` stay read-only, on purpose: step 1.4 re-creates `book_entries` without write privileges, and the rollback never re-grants writes on `my_policy_state` (file 13 section 6). On develop a co-parent could rewrite the other parent's letter through `book_entries` (DB-01). The rate-bucket check stays the superset, and file 13's comments stay. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration), and on real PostgreSQL if you can.
 
 ## File 17: sync protocol v1, the server half (16 Oct 2026, stream S02)
 
