@@ -18,6 +18,7 @@
  * Fictional data only.
  */
 import { randomUUID } from 'node:crypto';
+import { RECORDING_FILES, recordingContainerFor } from '../../src/lib/capture/recording-file';
 
 export interface Disk {
   /** Every file, by uri (no trailing slash). */
@@ -128,10 +129,11 @@ export function namesIn(disk: Disk, dir: string): string[] {
 /**
  * A stand-in for expo-audio's AudioRecorder with the parts lib/capture/recorder.ts calls. Like the
  * native recorder it picks `recording-<UUID><extension>` in the recorder folder and creates the file when
- * it prepares; record() is the microphone writing `bytes` of audio. `extension` is the one the recording
- * options name (`.m4a` today, `.aac` for ADTS, capture/recording-format.ts).
+ * it prepares; record() is the microphone writing `bytes` of audio. `extension` defaults to the one the
+ * app records on this disk's platform today (`RECORDING_CONTAINERS`, capture/recording-file.ts), so flipping
+ * the switch moves every disk test that records a take.
  */
-export function recorderFor(disk: Disk, bytes = 48_000, extension = '.m4a') {
+export function recorderFor(disk: Disk, bytes = 48_000, extension: string = RECORDING_FILES[recordingContainerFor(disk.os)].extension) {
   return {
     uri: null as string | null,
     async prepareToRecordAsync() {
@@ -177,7 +179,13 @@ export function expoFileSystem(current: () => Disk) {
     }
     create(opts: { overwrite?: boolean } = {}): void {
       if (this.exists && !opts.overwrite) throw new Error('ERR_FILE_EXISTS');
-      put(current(), this.uri, new Uint8Array(0));
+      put(current(), this.uri, new Uint8Array(0), Date.now());
+    }
+    write(content: string | Uint8Array): void {
+      const disk = current();
+      const old = disk.files.get(this.uri);
+      const data = typeof content === 'string' ? new TextEncoder().encode(content) : content.slice();
+      put(disk, this.uri, data, old?.createdMs ?? Date.now());
     }
     delete(): void {
       if (!current().files.delete(this.uri)) throw new Error('ERR_FILE_NOT_FOUND');

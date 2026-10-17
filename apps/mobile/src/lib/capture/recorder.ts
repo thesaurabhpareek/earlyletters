@@ -27,14 +27,15 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
-import { RECORDING_CONTAINER, voiceRecordingOptions } from './recording-format';
+import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format';
 
 /**
  * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
- * AAC-LC, mono, 64 kbps, .m4a in Documents (kept in the device backup, D-033).
+ * AAC-LC, mono, 64 kbps, in Documents (kept in the device backup, D-033).
  * With `directory: 'document'` expo-audio writes each take to
- * `Documents/ExpoAudio/recording-<UUID>.m4a` and the app leaves it there; code
- * that lists or removes recordings goes through capture/recordings.ts.
+ * `Documents/ExpoAudio/recording-<UUID>.m4a` (`.aac` once ADR 0027 flips iOS
+ * to ADTS) and the app leaves it there; code that lists or removes
+ * recordings goes through capture/recordings.ts.
  *
  * 48 kHz rather than 44.1 kHz: iPhone microphones run at 48 kHz, so the
  * recording is not resampled on the way in; 48 kHz to Whisper's 16 kHz is
@@ -49,12 +50,13 @@ import { RECORDING_CONTAINER, voiceRecordingOptions } from './recording-format';
  * microphone heard it; a clearer copy is made separately
  * (src/lib/audio-enhance).
  *
- * The container (M4A today, ADTS if ADR 0027 is accepted) is chosen in
- * recording-format.ts; nothing else differs between them.
+ * The container (M4A today; ADTS on iOS once ADR 0027's checks pass) is
+ * chosen per platform by `RECORDING_CONTAINERS` (recording-file.ts); nothing
+ * else differs between them.
  *
  * listen.tsx uses this object, so these settings have one home.
  */
-export const VOICE_RECORDING_OPTIONS: RecordingOptions = voiceRecordingOptions(RECORDING_CONTAINER);
+export const VOICE_RECORDING_OPTIONS: RecordingOptions = voiceRecordingOptions(RECORDING_CONTAINERS);
 
 export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 

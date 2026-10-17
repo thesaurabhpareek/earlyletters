@@ -15,6 +15,7 @@
 import { createHash } from 'node:crypto';
 import { unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RECORDING_FILES, recordingContainerFor } from '../src/lib/capture/recording-file';
 import type { SqlDb } from '../src/lib/db/sql';
 import {
   androidContainer,
@@ -131,7 +132,7 @@ describe('[DL-01] a take cut off by a kill, on a disk laid out as expo-audio wri
     const asha = addAsha(app);
     const rec = recorderFor(h.disk);
     const take = await app.recorder.beginTake(rec as never, { childId: asha, promptKey: 'first-laugh' });
-    expect(rec.uri).toMatch(/\/Documents\/ExpoAudio\/recording-[0-9A-F-]{36}\.m4a$/);
+    expect(rec.uri).toMatch(new RegExp(`/Documents/ExpoAudio/recording-[0-9A-F-]{36}\\${RECORDING_FILES[recordingContainerFor('ios')].extension}$`));
     expect(take).toMatchObject({ state: 'recording', audioUri: rec.uri });
     // Killed mid-take: finalizeTake never ran. The next launch:
     app = await launch();
@@ -167,7 +168,7 @@ describe('[DL-01] a take cut off by a kill, on a disk laid out as expo-audio wri
     const asha = addAsha(app);
     const rec = recorderFor(h.disk);
     const take = await app.recorder.beginTake(rec as never, { childId: asha, promptKey: null });
-    expect(rec.uri).toMatch(/\/files\/Audio\/recording-[0-9A-F-]{36}\.m4a$/);
+    expect(rec.uri).toMatch(new RegExp(`/files/Audio/recording-[0-9A-F-]{36}\\${RECORDING_FILES[recordingContainerFor('android')].extension}$`));
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({ 'finalize-recording': 1 });
     expect(app.store.getDraft(take.id)).toMatchObject({ state: 'ready', audioUri: rec.uri });
@@ -473,5 +474,37 @@ describe('[ADR 0027] an ADTS take (.aac) needs nothing new from the sweep, erase
     expect(await runRecoveryExport()).toBe('shared');
     const zip = unzipSync(h.shared[0].data);
     expect(sha256(zip['recordings/recording-2C3D4E5F-0000-4000-8000-00000000AAC2.aac'])).toBe(sha256(bytesAt(kept)));
+  });
+
+  it('[D-085] the 30 day purge erases a deleted letter\'s ADTS recording after the container moved', async () => {
+    h.disk = createDisk(OLD);
+    layOutApp(h.disk);
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-2C3D4E5F-0000-4000-8000-00000000AAC4.aac`, 20_000);
+    const id = '0199a5b0-0000-7000-8000-00000000e00b';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
+    app.store.deleteEntry(id);
+    moveContainer(h.disk, NEW);
+    vi.setSystemTime(T0 + 30 * DAY + 60_000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(app.store.listDeleted()).toEqual([]);
+    expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDrafts(asha)).toEqual([]);
+  });
+
+  it('[LEGAL-REQ-018] the launch sweep removes a whole-frame copy a killed transcription left, once it is an hour old', async () => {
+    const app = await launch();
+    addAsha(app);
+    const stale = put(h.disk, `${h.disk.caches}whole-frames-old.aac`, 300, T0 - 2 * 60 * 60 * 1000);
+    const fresh = put(h.disk, `${h.disk.caches}whole-frames-new.aac`, 300, T0 - 60 * 1000);
+    const other = put(h.disk, `${h.disk.caches}exports-keep.zip`, 10, T0 - 2 * 60 * 60 * 1000);
+    await app.sweep.runLaunchSweep();
+    expect(h.disk.files.has(stale)).toBe(false);
+    expect(h.disk.files.has(fresh)).toBe(true); // a run in this process may still be reading it
+    expect(h.disk.files.has(other)).toBe(true);
   });
 });

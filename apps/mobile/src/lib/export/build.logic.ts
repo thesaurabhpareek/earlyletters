@@ -117,8 +117,6 @@ export const MEDIA = {
   json: 'application/json',
   html: 'text/html; charset=utf-8',
   pdf: 'application/pdf',
-  m4a: RECORDING_FILES.m4a.mimeType,
-  aac: RECORDING_FILES.adts.mimeType,
 } as const;
 
 const fill = (text: string, values: Record<string, string | number>) => renderTemplate(text, { app: brand.name, ...values });

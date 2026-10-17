@@ -3,9 +3,14 @@
  * to 3.5). The steps, for one recording:
  *
  * 1. Voice activity: the recording is decoded in 5-minute windows to 16 kHz
- *    PCM in memory (ScribeAudio, no file ever written, LEGAL-REQ-018) and
- *    Silero VAD finds the speech. A window with nothing loud enough to be
- *    anyone talking skips VAD (transcribe-energy.ts).
+ *    PCM in memory (ScribeAudio, no decode buffer ever written, LEGAL-REQ-018)
+ *    and Silero VAD finds the speech. A window with nothing loud enough to be
+ *    anyone talking skips VAD (transcribe-energy.ts). Before that, the run's
+ *    length is checked against what the file proves (ADR 0027): an ADTS take
+ *    whose last frame a kill cut off may be read from a copy of its whole
+ *    frames, in Caches, removed when the run ends (capture/adts-file.ts); a
+ *    decoder still short of the file refuses the run, so no raw transcript
+ *    ever silently lacks its end.
  * 2. No speech anywhere: the transcript is '' and Whisper never runs, so a
  *    white-noise machine can never become words (TDD 03 3.5.7 rule 1).
  * 3. The planner (transcribe-plan.ts) packs speech into chunks of at most
@@ -27,6 +32,9 @@
  * the same steps with whisper.cpp, so its numbers describe this code.
  */
 import { ScribeAudio } from '../../modules/scribe-audio';
+import { adtsLengthEvidence } from './capture/adts';
+import { scanRecordingFile, wholeFramesCopy } from './capture/adts-file';
+import { containerOfRecording } from './capture/recording-file';
 import { installedPathsFor } from './models/speech-packs';
 import { acquireContexts, releaseContextsLater, whisperModule } from './models/whisper-runtime';
 import {
@@ -41,7 +49,7 @@ import {
 } from './transcribe';
 import { toWhisperLanguage } from './transcribe-language';
 import { planChunks } from './transcribe-plan';
-import { DECODE_OPTIONS, VAD_OPTIONS, findSpeech, runDurationMs, transcribeChunks, type ChunkDecoder } from './transcribe-run';
+import { DECODE_OPTIONS, VAD_OPTIONS, findSpeech, openRecordingForRun, transcribeChunks, type ChunkDecoder } from './transcribe-run';
 import { chunkPrompt, DEFAULT_PROMPT_SEEDS, dictionaryPrompt } from './transcribe-prompt';
 
 // The run itself (voice detector settings, chunking, clean-up) is pure and shared with the Mac gate tool.
@@ -104,52 +112,64 @@ async function transcribeWithWhisper(
   });
 
   onProgress?.({ stage: 'preparing', done: 0, total: 0 });
-  const info = await audio.probe(input.audioUri);
-  // NaN, infinity or an absurd length never reach the planner (security review L9).
-  const durationMs = runDurationMs(info.durationMs, input.durationMs);
-  check();
-
-  const ctx = await acquireContexts(paths.asr, paths.vad);
+  // An ADTS take proves its own length by its frame headers (ADR 0027); an M4A's length is in its index.
+  const adts = containerOfRecording(input.audioUri) === 'adts' ? await scanRecordingFile(input.audioUri) : null;
+  // NaN, infinity or an absurd length never reach the planner (security review L9), and a decoder short of what
+  // the file proves never plans the run: the take waits for its words instead of losing its end (ADR 0027).
+  const run = await openRecordingForRun(
+    { probeMs: async (uri) => (await audio.probe(uri)).durationMs, decode: (uri, pieces) => audio.decodePcm16(uri, [...pieces]) },
+    input.audioUri,
+    input.durationMs,
+    adts ? { evidence: adtsLengthEvidence(adts), tailBytes: adts.wholeBytes > 0 ? adts.tailBytes : 0 } : null,
+    () => wholeFramesCopy(input.audioUri, adts?.wholeBytes ?? 0),
+  );
+  const durationMs = run.durationMs;
   try {
-    const spans = await findSpeech(
-      durationMs,
-      {
-        decodeWindow: (startMs, endMs) => audio.decodePcm16(input.audioUri, [{ srcStartMs: startMs, srcEndMs: endMs, silenceBeforeMs: 0 }]),
-        detectSpeech: (pcm) => ctx.vad.detectSpeechData(pcm, VAD_OPTIONS),
-      },
-      check,
-    );
-    const plan = planChunks(spans, durationMs);
-    if (plan.length === 0) return result('', []);
+    check();
+    const ctx = await acquireContexts(paths.asr, paths.vad);
+    try {
+      const spans = await findSpeech(
+        durationMs,
+        {
+          decodeWindow: (startMs, endMs) => run.decode([{ srcStartMs: startMs, srcEndMs: endMs, silenceBeforeMs: 0 }]),
+          detectSpeech: (pcm) => ctx.vad.detectSpeechData(pcm, VAD_OPTIONS),
+        },
+        check,
+      );
+      const plan = planChunks(spans, durationMs);
+      if (plan.length === 0) return result('', []);
 
-    const language = toWhisperLanguage(input.language);
-    const prompt = chunkPrompt(input.dictionary, input.language, input.promptSeed);
-    const seed = (input.promptSeed ?? DEFAULT_PROMPT_SEEDS[input.language] ?? '').trim();
-    const nameList = dictionaryPrompt(input.dictionary);
+      const language = toWhisperLanguage(input.language);
+      const prompt = chunkPrompt(input.dictionary, input.language, input.promptSeed);
+      const seed = (input.promptSeed ?? DEFAULT_PROMPT_SEEDS[input.language] ?? '').trim();
+      const nameList = dictionaryPrompt(input.dictionary);
 
-    const decode: ChunkDecoder = async (chunk, temperature) => {
-      const pcm = await audio.decodePcm16(input.audioUri, chunk.pieces);
-      check();
-      const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature });
-      const stop = () => void job.stop().catch(() => {});
-      signal?.addEventListener('abort', stop);
-      try {
-        const res = await job.promise;
-        if (res.isAborted) throw new TranscriptionAborted();
-        return { result: res.result, segments: res.segments };
-      } finally {
-        signal?.removeEventListener('abort', stop);
-      }
-    };
+      const decode: ChunkDecoder = async (chunk, temperature) => {
+        const pcm = await run.decode(chunk.pieces);
+        check();
+        const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature });
+        const stop = () => void job.stop().catch(() => {});
+        signal?.addEventListener('abort', stop);
+        try {
+          const res = await job.promise;
+          if (res.isAborted) throw new TranscriptionAborted();
+          return { result: res.result, segments: res.segments };
+        } finally {
+          signal?.removeEventListener('abort', stop);
+        }
+      };
 
-    const { raw, words } = await transcribeChunks(
-      plan,
-      decode,
-      { seed, nameList, check, onProgress: (done, total) => onProgress?.({ stage: 'listening', done, total }) },
-      meta,
-    );
-    return result(raw, words);
+      const { raw, words } = await transcribeChunks(
+        plan,
+        decode,
+        { seed, nameList, check, onProgress: (done, total) => onProgress?.({ stage: 'listening', done, total }) },
+        meta,
+      );
+      return result(raw, words);
+    } finally {
+      releaseContextsLater();
+    }
   } finally {
-    releaseContextsLater();
+    run.close();
   }
 }
