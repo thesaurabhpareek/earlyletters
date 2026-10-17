@@ -1,6 +1,6 @@
 # Test evidence
 
-One file per device session: `docs/qa/evidence/<YYYY-MM-DD>-<build>-<device>.md`, for example `2026-10-30-1.0.0(14)-se3.md`. Build is the marketing version and build number shown in Settings > About (or TestFlight). Device is a short tag: `se3`, `ip12`, `ip15`, `current`, `ipad`, `mac`, `win11`. A session that uses two or three phones at once (sign-in, co-parent, sync, backup) is one file named after Phone A, with every phone in the header.
+One file per device session: `docs/qa/evidence/<YYYY-MM-DD>-<build>-<device>.md`, for example `2026-10-30-1.0.0(14)-se3.md`. Build is the marketing version and build number shown in Settings > About (or TestFlight). Device is a short tag: `se3`, `ip12`, `ip15`, `current`, `ipad`, `mac`, `win11`. A session that uses two or three phones at once (sign-in, co-parent, sync, backup) is one file named after Phone A, with every phone in the header. A rehearsal with no phone of its own (`docs/qa/run-sheets/AL-10-rehearsals.md`) is `<YYYY-MM-DD>-rehearsal-<name>.md`, and a simulator kill harness gate run is `<YYYY-MM-DD>-<build>-sim-kill.md`.
 
 Rules (TDD 07 2.1, CLAUDE.md privacy rules, LEGAL-REQ-014):
 - Only the fictional family appears in notes, numbers and screenshots (Asha, Avi, Mama, Papa). Never a real child's name, a real letter, a real email address or a sign-in code.
