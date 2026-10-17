@@ -26,6 +26,7 @@ import {
 import { takeOwnership } from '../src/lib/sync/ownership';
 import { ALL_GROUPS, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { insertBook } from './helpers/store-fixture';
 
 // ── Server (PGlite with every migration) ─────────────────────────────────
 function migrationsDir(): string {
@@ -140,7 +141,7 @@ function engineOn(db: SqlDb, uid: string, supabase: SupabaseLike, pageSize = 200
 function addBook(db: SqlDb, name: string, birthday: string, signsAs = 'Mama'): string {
   const id = uuid7();
   db.transaction(() => {
-    db.run('INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, NULL, ?, ?, ?)', id, name, birthday, signsAs, iso(), iso());
+    insertBook(db, { id, name, birthday, signsAs, at: iso() });
     enqueueBookCreate(db, id, ctx());
   });
   return id;

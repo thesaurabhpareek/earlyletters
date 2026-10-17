@@ -36,13 +36,16 @@ import {
   orphans,
   settings,
   uuidv7From,
+  type BaseDirection,
   type Child,
   type Draft,
+  type DraftKind,
   type DraftState,
   type Entry,
   type Family,
   type Member,
   type NewChild,
+  type OccurredPrecision,
   type OrphanAudio,
   type RepoContext,
   type Table,
@@ -59,24 +62,31 @@ import {
   enqueueEntryRestore,
   enqueueEntryUpsert,
   enqueuePrefs,
+  listConflictCopies,
+  removeConflictCopy,
+  type ConflictCopy,
   type EnqueueContext,
 } from './sync/outbox';
 import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
 export type {
+  BaseDirection,
   CaptureMode,
   Child,
   Draft,
+  DraftKind,
   DraftState,
   Entry,
   EntryKind,
   Family,
   Member,
   NewChild,
+  OccurredPrecision,
   OrphanAudio,
   TranscriptStatus,
 } from './db/repos';
+export type { ConflictCopy } from './sync/outbox';
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
@@ -298,9 +308,22 @@ export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void
   signalOutbox();
 }
 
-/** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
+/**
+ * "Hide this book" for the person on this phone (PRD B F2.4; F12-REQ-005 Rev, per person since
+ * local schema v7): stops prompts for this child; restorable. The other parent sees no change.
+ * Stays on this phone until the server holds the per-person flag (S02, WP-F12-09).
+ */
 export function hideChild(id: string): void {
   children.hide(ctx(), id);
+  bus.emit('children');
+}
+
+/**
+ * "Quiet this book" for the person on this phone (F12-REQ-011): no prompts, reminders, month or
+ * birthday notes for this child; letters untouched; reversible. The planner reads `Child.quiet`.
+ */
+export function setChildQuiet(id: string, quiet: boolean): void {
+  children.setQuiet(ctx(), id, quiet);
   bus.emit('children');
 }
 
@@ -405,7 +428,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
-    // count are written together or not at all. A quiet-day mark is not a letter and never counts.
+    // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
+    // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
     if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
   });
@@ -432,6 +456,8 @@ export function ledgerDb(): LedgerDb {
  * Keep a spoken letter without words (TDD 03 FM-9, TDD 01 3.6): the
  * recording is the true original; words are set once later
  * (setWordsForWaitingEntry). Saved private unless the parent chose the book.
+ * It never counts toward the free letters (M17, F14-REQ-037): it counts when
+ * its words are kept (setTypedWordsForWaitingEntry, keepReviewedWords).
  */
 export function saveVoiceOnlyFromDraft(
   draft: Draft,
@@ -452,7 +478,9 @@ export function listWaitingForWords(childId: string): Entry[] {
  * Sets the words of a voice-only letter, once. raw_transcript is written
  * only while it is still '' and the letter is waiting: the first transcript
  * that exists becomes the immutable raw (TDD 03 FM-9). Returns false if the
- * letter already had words or was deleted.
+ * letter already had words or was deleted. The words wait for the author's
+ * review (Entry.wordsUnreviewed): the letter counts toward the free letters
+ * only when the author keeps them (keepReviewedWords, M17).
  */
 export function setWordsForWaitingEntry(
   id: string,
@@ -481,7 +509,76 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
   let done = false;
   c.db.transaction(() => {
     done = entries.setTypedWordsOnce(c, id, text);
-    if (done) enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
+    if (done) {
+      // Typed by the author with the words on screen: the counting moment (M17, F14-REQ-037).
+      ledger.recordKept(c, id, keychainFloor());
+      enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
+    }
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
+/**
+ * The author kept words the machine wrote later, with them on screen (M17: the
+ * counting moment, F14 6.2 B2). The review mark and the count are written in one
+ * transaction. The words are not changed here (an edit is a separate save).
+ * False when the letter has no words waiting for review. The Keep gate decision
+ * comes first, in the screen (lib/billing keepLetterGate).
+ */
+export function keepReviewedWords(id: string): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.markWordsReviewed(c, id);
+    if (done) ledger.recordKept(c, id, keychainFloor());
+  });
+  if (done) bus.emit('entries');
+  return done;
+}
+
+/** Letters whose machine-written words wait for the author's review, oldest first. */
+export function listWordsToReview(childId: string): Entry[] {
+  return entries.listWordsToReview(ctx(), childId);
+}
+
+/** A quiet-day mark already exists for this book on this day (one per day, D-084). */
+export function hasNotMuchOn(childId: string, isoDate: string): boolean {
+  return entries.hasNotMuchOn(ctx(), childId, isoDate);
+}
+
+// ── Word conflicts (F16 6.2 E; WP-F16-15) ────────────────────────────────
+/**
+ * Letters whose words changed on the author's other phone while this phone had
+ * its own: the letter follows the other phone's words and this phone's version
+ * is kept here, never uploaded, until the author picks (F16-REQ-010). Newest
+ * first; for one letter when `entryId` is given. Empty in a build without sync.
+ */
+export function listConflicts(entryId?: string): ConflictCopy[] {
+  return listConflictCopies(ctx().db, entryId);
+}
+
+/**
+ * The author's choice on the conflict note: 'mine' ("Use this phone's version")
+ * makes this phone's words the letter's words again and sends them (the server
+ * keeps the other words in entry_versions); 'theirs' ("Keep the other one")
+ * lets this phone's copy go. One transaction each. False when the copy is gone,
+ * or for 'mine' when the letter is deleted (restore it first).
+ */
+export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    const copy = listConflictCopies(c.db).find((x) => x.opId === opId);
+    if (!copy) return;
+    if (choice === 'mine') {
+      if (!entries.replaceWords(c, copy.entryId, copy.words)) return;
+      enqueueEntryUpsert(c.db, copy.entryId, ['text'], enqueueContext(c));
+    }
+    done = removeConflictCopy(c.db, opId);
   });
   if (done) {
     bus.emit('entries');
@@ -589,7 +686,11 @@ export function erasesAt(deletedAt: string): string {
  */
 export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   if (capabilities.sync) return false;
-  const c = ctx();
+  return eraseHere(ctx(), id, eraseAudio);
+}
+
+/** The file, then the row: a deleted letter erased on this phone only, nothing sent. */
+function eraseHere(c: RepoContext, id: string, eraseAudio: AudioEraser): boolean {
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
   try {
@@ -604,18 +705,21 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
 
 /**
  * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when the build syncs (the server owns the clock, spec 2.2 step 7)
- * or when `nowMs` is earlier than the latest recorded launch (a phone clock
- * moved back). Returns how many letters were erased.
+ * nothing when `nowMs` is earlier than the latest recorded launch (a phone
+ * clock moved back). When the build syncs, the server's clock rules every
+ * letter it holds (spec 2.2 step 7), so only letters it never held, or no
+ * longer holds, with nothing queued for them, are erased here, with nothing
+ * sent; otherwise they would wait in Recently deleted forever. Returns how
+ * many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
-  if (capabilities.sync) return 0;
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && nowMs < last) return 0;
   const c = ctx();
+  const cutoff = new Date(nowMs - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of entries.expiredIds(c, new Date(nowMs - SHELF_MS).toISOString())) {
-    if (eraseEntry(id, eraseAudio)) erased += 1;
+  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
+    if (eraseHere(c, id, eraseAudio)) erased += 1;
   }
   return erased;
 }
@@ -688,6 +792,56 @@ export function setDraftTyped(id: string, text: string): void {
 
 export function setDraftChild(id: string, childId: string): void {
   drafts.setChild(ctx(), id, childId);
+}
+
+/** Note or letter, chosen in Review (F04-REQ-014). The saved entry takes it. False for a bad value. */
+export function setDraftKind(id: string, kind: DraftKind): boolean {
+  const done = drafts.setKind(ctx(), id, kind);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/**
+ * The date the letter is about and how exactly it is known (F04 11.3). Null
+ * means the local date of the draft's creation. False for a malformed date.
+ */
+export function setDraftOccurred(id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
+  const done = drafts.setOccurred(ctx(), id, occurredOn, precision);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** The take's language as a BCP-47 tag; null for the author's default. False for a malformed tag. */
+export function setDraftLanguage(id: string, language: string | null): boolean {
+  const done = drafts.setLanguage(ctx(), id, language);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** Layout direction of the words (F04 11.3 rule for `base_direction`). */
+export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
+  const done = drafts.setBaseDirection(ctx(), id, dir);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/**
+ * Let it go, confirmed (F04-REQ-009): step 1 marks the draft `discarding`;
+ * the caller then deletes the file, then calls finishDiscard. A kill in
+ * between leaves the mark, and the launch sweep removes the row without ever
+ * re-attaching the file.
+ */
+export function beginDiscard(id: string): boolean {
+  const done = drafts.beginDiscard(ctx(), id);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** Let it go, last step: removes a draft already marked `discarding`, never any other. */
+export function finishDiscard(id: string): boolean {
+  const done = drafts.finishDiscard(ctx(), id);
+  if (done) bus.emit('drafts');
+  return done;
 }
 
 /** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */

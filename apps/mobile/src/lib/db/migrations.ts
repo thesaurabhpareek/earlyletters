@@ -257,6 +257,80 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    name: 'draft kind, occurred date and precision, letter language and base direction (WP-F04-03, G-26)',
+    up(db) {
+      // PRD V2 F04 section 11.3, number fixed by 08-delivery.md section 4. Columns only: every
+      // existing row keeps its values and gains the defaults below (a letter, dated by its day,
+      // left to right, language unknown). Nothing is queued: no letter changes.
+      //   drafts.kind                note | letter (L2). Speak and Type start a letter; the widget a note.
+      //   drafts.occurred_on         YYYY-MM-DD the parent chose (L3); null means the local date of created_at.
+      //   drafts.occurred_precision  day | month (L2); entries.occurred_precision the same once saved.
+      //   drafts.language            BCP-47 tag of the take (L4, a person's language); null is the author's default.
+      //   entries.language           the letter's language (L4, G-26). Syncs as field group `language`, own
+      //                              letters only, mapped to the server's seven codes (sync/outbox.ts wireLanguage).
+      //   drafts/entries.base_direction  ltr | rtl (L2, layout only; never changes the words).
+      // drafts.state gains the value 'discarding' (Let it go confirmed, F04-REQ-009): a text value, no DDL.
+      addColumns(db, 'drafts', [
+        ['kind', "TEXT NOT NULL DEFAULT 'letter'"],
+        ['occurred_on', 'TEXT'],
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+      addColumns(db, 'entries', [
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+    },
+  },
+  {
+    version: 7,
+    name: "per-person book preferences move to child_member_prefs; the book's creator and first-run batch (WP-F12-02)",
+    up(db, ctx) {
+      // PRD V2 F12-REQ-004, number fixed by 08-delivery.md section 4. `children` keeps book-level
+      // columns only; what one person chooses for a book lives in `child_member_prefs`, one row per
+      // book for the person this phone belongs to (one account per install, F16 6.2 G):
+      //   signs_as       L3  what this child calls me (was children.signs_as)
+      //   reminders_on   L2  include this book in my reminders (was children.reminders_on)
+      //   hidden_at      L2  "Hide this book" for me only (was children.hidden_at, set only from this phone)
+      //   quiet_at       L2  "Quiet this book" for me only (F12-REQ-011), new
+      // children.hidden_at stays for the book-level support path (F12 6.2 D), empty on the phone.
+      //   children.created_by       L3  the account that started the book, when known
+      //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
+      // Values move in this one transaction; nothing is queued (nothing changed for the server).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS child_member_prefs (
+          child_id TEXT PRIMARY KEY NOT NULL,
+          signs_as TEXT NOT NULL DEFAULT '',
+          reminders_on INTEGER NOT NULL DEFAULT 1,
+          hidden_at TEXT,
+          quiet_at TEXT,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      addColumns(db, 'children', [
+        ['created_by', 'TEXT'],
+        ['first_run_batch', 'TEXT'],
+      ]);
+      const have = columns(db, 'children');
+      if (have.has('signs_as')) {
+        db.run(
+          `INSERT OR IGNORE INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at)
+           SELECT id, COALESCE(signs_as, ''), COALESCE(reminders_on, 1), hidden_at, COALESCE(updated_at, ?) FROM children`,
+          ctx.now,
+        );
+        db.run('UPDATE children SET hidden_at = NULL WHERE hidden_at IS NOT NULL');
+        db.exec('ALTER TABLE children DROP COLUMN signs_as');
+      }
+      if (have.has('reminders_on')) db.exec('ALTER TABLE children DROP COLUMN reminders_on');
+      // Books started here belong to the account that owns this phone's letters (set at the first sign-in).
+      const owner = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'sync.ownerId'")?.value ?? null;
+      if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
