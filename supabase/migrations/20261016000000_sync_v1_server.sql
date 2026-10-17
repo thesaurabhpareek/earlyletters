@@ -1071,7 +1071,7 @@ begin
                 captured_at = excluded.captured_at,
                 child_id = excluded.child_id,
                 engine_version = excluded.engine_version,
-                pack_ref = case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end
+                pack_ref = coalesce(excluded.pack_ref, e.pack_ref)   -- null or absent keeps it (#140 fresh review)
               where (e.final_text, e.machine_edits, e.edit_level, e.in_book, e.sounds_like_me, e.occurred_on,
                      e.raw_transcript, e.captured_at, e.child_id, e.engine_version, e.language,
                      e.occurred_precision, e.base_direction, e.author_edits, e.locked_spans, e.pack_ref,
@@ -1091,7 +1091,7 @@ begin
                           then excluded.base_direction else e.base_direction end,
                      case when 'text' = any(v_changed) and d ? 'author_edits' then excluded.author_edits else e.author_edits end,
                      case when 'text' = any(v_changed) and d ? 'locked_spans' then excluded.locked_spans else e.locked_spans end,
-                     case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end,
+                     coalesce(excluded.pack_ref, e.pack_ref),
                      case when 'text' = any(v_changed) and d ? 'words_reviewed_at'
                           then excluded.words_reviewed_at else e.words_reviewed_at end);
             end if;
