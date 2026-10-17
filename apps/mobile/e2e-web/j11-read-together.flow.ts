@@ -7,6 +7,8 @@ const openRT = async (app: import('@playwright/test').Page) => {
 /** Where Read together is: the hairline's spoken label ("Letter 1 of 5"); the screen shows no counter. */
 const at = (app: import('@playwright/test').Page, n: number, count = 5) => app.getByLabel(`Letter ${n} of ${count}`);
 const opener = (app: import('@playwright/test').Page) => app.getByRole('heading', { name: /^Month 6\. / });
+/** The header's Close, not "Close the book" on the end page (which may still be leaving after "Read it again"). */
+const close = (app: import('@playwright/test').Page) => app.getByRole('button', { name: 'Close', exact: true });
 
 test('[J11] Read together: pages turn, no limit, every time it opens', async ({ app, record }) => {
   test.setTimeout(120_000);
@@ -27,6 +29,8 @@ test('[J11] Read together: pages turn, no limit, every time it opens', async ({ 
   await btn(app, 'Back one').click();
   await expect(at(app, 1)).toBeAttached();
   await btn(app, 'Next letter').click();
+  // The page that turned away leaves the screen after its fade; then only the current page's chip is there.
+  await expect(app.getByRole('switch', { name: 'Keep playing' })).toHaveCount(1);
   await app.getByRole('switch', { name: 'Keep playing' }).click();
   await expect(app.getByRole('switch', { name: 'Keep playing' })).toBeChecked();
   await step('happy', 'Keep playing', 'A quiet chip under the player, a switch to VoiceOver: when a recording ends the page turns and the next voice starts. It is remembered next time.');
@@ -37,13 +41,13 @@ test('[J11] Read together: pages turn, no limit, every time it opens', async ({ 
   await step('happy', 'The end of the book', 'After the last letter: the moon draws on once above the line, then nothing moves; "Close the book" and "Read it again".');
   await btn(app, /Read it again/).first().click();
   await expect(at(app, 1)).toBeAttached();
-  await btn(app, 'Close').click();
+  await close(app).click();
   // A fourth, fifth and sixth opening are still free: this phone is Free (no Plus) and past the free letters.
   for (let i = 0; i < 4; i++) {
     await openRT(app);
     await expect(at(app, 1)).toBeAttached();
     await expect(app.getByText(/Plus/)).toHaveCount(0);
-    await btn(app, 'Close').click();
+    await close(app).click();
   }
   await expect(opener(app)).toBeVisible();
   await step('happy', 'Opened again and again', 'The fourth opening and every one after it are the same as the first: no Plus gate, nothing counted. Letters that exist are always readable and playable; membership only decides whether a new letter can be kept.');
