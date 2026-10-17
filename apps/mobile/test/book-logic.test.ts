@@ -175,6 +175,19 @@ describe('the letter page (S27, S28, source)', () => {
     expect(src('components/book/letter-card.tsx')).toMatch(/style=\{\{ gap: CARD_TEXT_GAP \}\}/);
   });
 
+  it('keeps the card\'s words in the page\'s column in dark mode too, where the card draws a 1 pt edge (found on the web build)', () => {
+    const card = code(src('components/book/letter-card.tsx'));
+    expect(card).toMatch(/style=\{scheme === 'dark' \? \{ padding: tokens\.space\[4\] - CARD_EDGE_DARK \} : undefined\}/);
+    // 402 pt wide: the list's 20 pt gutter, the card's edge and padding, then the words; the page opens 36 pt in.
+    const width = 402;
+    const light = width - 2 * 20 - 2 * tokens.space[4];
+    const dark = width - 2 * 20 - 2 * 1 - 2 * (tokens.space[4] - 1);
+    expect(light).toBe(width - 2 * 36);
+    expect(dark).toBe(width - 2 * 36);
+    // The raised card's dark edge is the 1 pt the padding gives back.
+    expect(src('components/ui/card.tsx')).toMatch(/raised: 'bg-card dark:border dark:border-border'/);
+  });
+
   it('the dateline is the focus target and says the age aloud', () => {
     expect(page).toMatch(/<Text ref=\{focusRef \?\? undefined\} variant="letterDateline" caps accessibilityLabel=\{spokenDateline\}/);
   });

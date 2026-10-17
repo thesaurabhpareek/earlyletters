@@ -53,6 +53,8 @@ const LAYOUT = layoutSpring('standard');
 export const CARD_TEXT_GAP = 10;
 /** The card's words sit 20 pt (the list's gutter) plus 16 pt (the card's padding) from each edge; the page opens there. */
 export const CARD_TEXT_INSET = 36;
+/** The raised card's edge in dark mode (Card: `dark:border`, 1 pt), which its padding gives back. */
+export const CARD_EDGE_DARK = 1;
 
 function clock(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -73,7 +75,7 @@ export function cardLineHeight(note: boolean, fontScale: number): number {
 }
 
 export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
-  const { c } = useTheme();
+  const { c, scheme } = useTheme();
   const fontScale = useFontScale();
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
@@ -91,7 +93,18 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
     .join('. ');
 
   return (
-    <Card radius="md" padding={4} onPress={() => onPress(entry.id)} accessibilityLabel={label} accessibilityHint={copy.reader.openHint} className="gap-2.5" testID="book.card">
+    <Card
+      radius="md"
+      padding={4}
+      // In dark mode a raised card draws a 1 pt `line` edge inside its box; the padding gives that point back, so the
+      // words sit in the same 330 pt column in both schemes and the page can carry them (canCarry allows 1 pt).
+      style={scheme === 'dark' ? { padding: tokens.space[4] - CARD_EDGE_DARK } : undefined}
+      onPress={() => onPress(entry.id)}
+      accessibilityLabel={label}
+      accessibilityHint={copy.reader.openHint}
+      className="gap-2.5"
+      testID="book.card">
+
       <Wash run={wash} color={c.accentSoft} />
       <CardText lineHeight={cardLineHeight(note, fontScale)} rtl={rtl} style={{ gap: CARD_TEXT_GAP }}>
         <Text variant="letterDateline" caps>
