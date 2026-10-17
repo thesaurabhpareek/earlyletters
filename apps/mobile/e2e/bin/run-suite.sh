@@ -9,7 +9,7 @@
 # nightly set; bin/run-p0-nightly.sh adds the two-simulator E2E-13).
 #
 # Env:
-#   APP_ID   bundle id of the e2e build (default com.earlyletters.scribe.preview)
+#   APP_ID   bundle id of the e2e build (default com.earlyletters.scribe.dev)
 #   OUT      artifact folder (default ~/.maestro/scribe-e2e/<UTC time>; never inside the repo)
 #   MAESTRO_E2E_SUPABASE_URL, MAESTRO_E2E_PROJECT_REF, MAESTRO_E2E_SERVICE_KEY
 #            e2e backend (TESTID_REQUESTS.md section 5). Without them, flows
@@ -19,7 +19,7 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 E2E="$(cd "$HERE/.." && pwd)"
-APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
+APP_ID="${APP_ID:-com.earlyletters.scribe.dev}"
 UDID="booted"
 APP=""
 ONLY=""
