@@ -5,7 +5,7 @@
 #   bin/inspect-container.sh gate-stopped   # after E2E-01a: a No and nothing else
 #   bin/inspect-container.sh gate-passed    # after E2E-01b: a Yes boolean, no age, no date
 #
-# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.preview).
+# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.dev).
 # Proves PRD-REQ-019 and D-026 on the device side: after No there is no child,
 # letter, draft, recording or queued upload, and the only setting is the time of
 # the No; after Yes the only gate value is a boolean.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 MODE="${1:-}"
 UDID="${UDID:-booted}"
-APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
+APP_ID="${APP_ID:-com.earlyletters.scribe.dev}"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 [[ "$MODE" == "gate-stopped" || "$MODE" == "gate-passed" ]] || fail "usage: $0 gate-stopped|gate-passed"
 
