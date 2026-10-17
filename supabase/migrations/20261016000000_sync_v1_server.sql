@@ -18,8 +18,9 @@
 -- Review L on #208 (bb552ac), all four blocking findings fixed here:
 --   1. The erasure record notes who could read the letter when it went, and the pull's
 --      digest check counts an erasure only for the author and those readers (G-09, M5).
---   2. A held draft id is its author's alone: the insert guard refuses any id that is a
---      letter or another author's draft, marker or erasure (22023), the marker clean-up
+--   2. A held draft id is its author's alone: the insert guard refuses a row whose
+--      author is not the caller (42501, before any id check; review L re-check) and any
+--      id that is a letter or another author's draft, marker or erasure (22023), the marker clean-up
 --      and every erasure refusal are scoped to the author, and Erase now on a held
 --      draft writes no global 'entry' ledger row.
 --   3. Erase now also removes the author's held row with the same id, and Keep,
@@ -29,6 +30,23 @@
 -- Plus: held.upsert answers 42501 to anyone not a parent of the book named (N1); a
 -- held draft under a legal hold survives leaving the book and holds account deletion
 -- and the book purge (N2); the deletion residue scan reads sync_private (N6).
+--
+-- Review K's re-check on #208 (f9c83ba), worked through as the state table in ADR 0025
+-- section 9 with S03 (every cell is a test in sync_v1_server section 7d):
+--   1. A Keep is a compare and set against whatever exists for the id. Onto the
+--      author's existing letter (another phone kept it first), held_base stands in for
+--      base: newer words refuse the text group with current, and the first keep's
+--      raw_transcript, captured_at, engine_version and pack_ref stand, so a typed letter
+--      is never SCIMM over its own words. The same provenance rule holds for any op
+--      whose words are refused. A Keep with no held_base key is compared as 0.
+--   2. A repeat of a refused Keep or held.upsert gives the same refusal, with current
+--      recomputed from whatever holds the id's words now: the held row, else the
+--      author's letter, else null. Receipts still hold no words.
+--   N7. The held insert guard and the Keep trigger take the id lock before they look
+--      for each other's row.
+--   Switch: app.held_sync = 'off' turns held-draft sync off without a build (the pull
+--      sends no held section; held ops answer held_off, unclaimed); Keep and Erase now
+--      keep working.
 --
 -- The stand-ins this replaces. The sync stack (PR #182 at 4abc671) tests against
 -- apps/mobile/test/helpers/sync-v1-standin.sql, sync-v1-held-standin.sql,
@@ -447,12 +465,24 @@ create trigger held_drafts_consent_gate before insert or update on public.held_d
 create or replace function public.held_drafts_guard()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
+  if auth.uid() is not null and new.author_id is distinct from auth.uid() then
+    -- A signed-in caller writing a row for someone else: what RLS would answer anyway,
+    -- before anything about the id, so another author's ids answer nothing (review L
+    -- re-check). (current_user is the owner here; auth.uid() is the caller.)
+    raise exception 'held drafts are the author''s own' using errcode = '42501';
+  end if;
   if auth.uid() is not null and not coalesce(public.is_child_parent(new.child_id), false) then
     -- A signed-in caller who is not a parent of the book: what RLS would answer anyway,
-    -- before anything about the id (review L N1). (current_user is the owner here.)
+    -- before anything about the id (review L N1).
     raise exception 'held drafts are for the book''s parents' using errcode = '42501';
   end if;
-  if exists (select 1 from public.entries e where e.id = new.id) or sync_private.letter_id_taken(new.id, new.author_id) then
+  if sync_private.letter_id_taken(new.id, new.author_id) then
+    raise exception 'held id not available' using errcode = '22023';
+  end if;
+  -- The id is the caller's to hold: take its lock before looking for the letter, so a
+  -- Keep still in flight is waited for and then seen (review K re-check N7).
+  perform sync_private.lock_letter_id(new.id);
+  if exists (select 1 from public.entries e where e.id = new.id) then
     raise exception 'held id not available' using errcode = '22023';
   end if;
   if sync_private.erasure_recorded(new.id, new.author_id) then
@@ -547,19 +577,21 @@ create trigger held_drafts_gone_on_insert after insert on public.held_drafts
 -- Keep: the letter takes the draft's id, and its held row goes in the same transaction.
 -- Serialised with held.upsert on the id (review L 3): a held.upsert that checked for the
 -- letter just before Keep committed waits here, then sees the letter (held: null).
--- Held words the keep did not carry are never dropped (review K 1): a keep that names
--- its held base was already compared (sync_private.keep_check); for one that does not
--- (an older app), words that differ from the letter's go to its history (entry_versions).
+-- The lock comes first, on every new letter (review K re-check N7): a held insert
+-- racing this one either waits and then sees the letter, or committed first and is
+-- found here. Every Keep through sync_push was already compared with the held row
+-- (sync_private.keep_check, review K re-check; a missing held_base counts as 0), so
+-- this copy into entry_versions is only a belt for a direct Data API write.
 create or replace function public.entries_drop_held()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_words text;
   v_edits jsonb;
 begin
+  perform sync_private.lock_letter_id(new.id);
   if not exists (select 1 from public.held_drafts h where h.id = new.id and h.author_id = new.author_id) then
     return new;
   end if;
-  perform sync_private.lock_letter_id(new.id);
   select coalesce(nullif(h.final_text, ''), h.typed_text), h.machine_edits into v_words, v_edits
     from public.held_drafts h where h.id = new.id and h.author_id = new.author_id for update;
   if found and coalesce(v_words, '') <> '' and v_words is distinct from new.final_text then
@@ -606,15 +638,23 @@ returns boolean language sql stable security definer set search_path = pg_catalo
 $$;
 
 -- What the author's phone needs after held.upsert: the row's version, and on a refusal the words it keeps.
+-- A refusal's current is whatever holds the id's words now (review K re-check 2): the
+-- held row, else the author's letter that replaced it (kept on another phone), else
+-- null (let go or erased). A repeat recomputes it by this same rule, so it always
+-- names the words to compare against; receipts keep no words (review L).
 create or replace function sync_private.held_state(p_id uuid, p_refused boolean)
 returns jsonb language sql stable security invoker set search_path = pg_catalog, public, pg_temp as $$
   select jsonb_build_object('held', (select jsonb_build_object('id', h.id, 'v', h.sync_xid::text, 'updated_at', h.updated_at)
-                                       from public.held_drafts h where h.id = p_id))
+                                       from public.held_drafts h where h.id = p_id and h.author_id = auth.uid()))
          || case when p_refused then
               jsonb_build_object('conflict_groups', jsonb_build_array('text'), 'current',
-                (select jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
-                                           'typed_text', h.typed_text, 'v', h.text_xid::text)
-                   from public.held_drafts h where h.id = p_id))
+                coalesce(
+                  (select jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
+                                             'typed_text', h.typed_text, 'v', h.text_xid::text)
+                     from public.held_drafts h where h.id = p_id and h.author_id = auth.uid()),
+                  (select jsonb_build_object('final_text', e.final_text, 'machine_edits', e.machine_edits, 'edit_level', e.edit_level,
+                                             'v', coalesce(e.text_xid, e.sync_xid)::text)
+                     from public.entries e where e.id = p_id and e.author_id = auth.uid())))
             else '{}'::jsonb end;
 $$;
 
@@ -910,6 +950,9 @@ declare
   v_newer boolean;
   v_refused boolean;
   v_keep jsonb;
+  v_keepto boolean;   -- a Keep onto a letter that already exists: its provenance never applies
+  v_held_off constant boolean := coalesce(current_setting('app.held_sync', true), '') = 'off';
+  v_b xid8;
   v_ans jsonb;
   v_new boolean;
   v_res jsonb;
@@ -944,6 +987,14 @@ begin
       d := coalesce(o -> 'data', '{}'::jsonb);
       if v_op is null or v_id is null or v_type is null or jsonb_typeof(d) <> 'object' then
         raise exception 'op, type, id and data are required' using errcode = '22023';
+      end if;
+
+      -- The held-draft switch off (ADR 0025 section 9): a held op changes nothing and is not
+      -- claimed, so the phone keeps it queued and the same op id applies once the switch is
+      -- on again. Keep and Erase now are letter ops and always run (words and deletions).
+      if v_held_off and v_type in ('held.upsert', 'held.discard') then
+        v_results := v_results || jsonb_build_array(jsonb_build_object('op', v_op, 'ok', true, 'applied', false, 'held_off', true));
+        continue;
       end if;
 
       -- Idempotency key first: a retry of an applied op changes nothing and reports the current state.
@@ -993,6 +1044,7 @@ begin
           v_newer := false;
           v_refused := false;
           v_keep := null;
+          v_keepto := false;
           v_deleted := false;
           if v_type = 'entry.reupload' then
             v_known := (o ->> 'known_at')::timestamptz;
@@ -1005,16 +1057,25 @@ begin
               v_apply := case when cur.sync_restored_from is not null then v_known > cur.sync_restored_from
                               else cur.updated_at < v_epoch_at and v_known > cur.updated_at end;
             end if;
-          elsif v_exists and nullif(o ->> 'base', '') is not null then
-            v_conflict := cur.sync_xid > (o ->> 'base')::xid8;
-            v_newer := cur.text_xid > (o ->> 'base')::xid8 and cur.text_xid <> pg_current_xact_id();
+          elsif v_exists and (nullif(o ->> 'base', '') is not null or (v_type = 'entry.upsert' and o ? 'held_base')) then
+            -- A Keep onto a letter that already exists (the author's other phone kept the
+            -- draft first; review K re-check 1, ADR 0025 section 9 table row C) is a compare
+            -- and set against that letter, with held_base standing in for base (null counts
+            -- as 0). Its raw_transcript, captured_at, engine_version and pack_ref never apply:
+            -- the first keep's stand, so a typed letter is never SCIMM over its own words.
+            v_keepto := nullif(o ->> 'base', '') is null;
+            v_b := coalesce(nullif(o ->> 'base', ''), nullif(o ->> 'held_base', ''), '0')::xid8;
+            v_conflict := cur.sync_xid > v_b;
+            v_newer := cur.text_xid > v_b and cur.text_xid <> pg_current_xact_id();
             if v_newer and 'text' = any(v_changed) then
               v_changed := array_remove(v_changed, 'text');
               v_refused := true;
             end if;
-          elsif not v_exists and v_type = 'entry.upsert' and o ? 'held_base' then
-            -- WP-F16-17, review K 1: a Keep never drops held words it did not carry. A present
-            -- held_base that is null means 0 (the phone knew no version); a missing key is an older app.
+          elsif not v_exists and v_type = 'entry.upsert'
+                and (o ? 'held_base' or exists (select 1 from held_drafts h where h.id = v_id and h.author_id = v_uid)) then
+            -- WP-F16-17, review K 1: a Keep never drops held words it did not carry. A
+            -- held_base that is null or absent counts as 0 (review K re-check: no words may
+            -- be left only in entry_versions; every client that syncs held drafts sends it).
             v_keep := sync_private.keep_check(v_op, v_id, d ->> 'final_text', coalesce(nullif(o ->> 'held_base', ''), '0')::xid8);
             v_apply := v_keep is null;
           end if;
@@ -1067,11 +1128,14 @@ begin
                 words_reviewed_at = case when 'text' = any(v_changed) and d ? 'words_reviewed_at'
                                          then excluded.words_reviewed_at else e.words_reviewed_at end,
                 -- Never changed: passed through so entries_guard refuses a different value (SCIMM).
-                raw_transcript = excluded.raw_transcript,
-                captured_at = excluded.captured_at,
+                -- ... except for a Keep onto an existing letter or refused words (review K re-check 1):
+                -- the words' provenance stays the stored one, so the refusal never turns into SCIMM.
+                raw_transcript = case when v_keepto or v_refused then e.raw_transcript else excluded.raw_transcript end,
+                captured_at = case when v_keepto or v_refused then e.captured_at else excluded.captured_at end,
                 child_id = excluded.child_id,
-                engine_version = excluded.engine_version,
-                pack_ref = coalesce(excluded.pack_ref, e.pack_ref)   -- null or absent keeps it (#140 fresh review)
+                engine_version = case when v_keepto or v_refused then e.engine_version else excluded.engine_version end,
+                pack_ref = case when v_keepto or v_refused then e.pack_ref
+                                else coalesce(excluded.pack_ref, e.pack_ref) end   -- null or absent keeps it (#140 fresh review)
               where (e.final_text, e.machine_edits, e.edit_level, e.in_book, e.sounds_like_me, e.occurred_on,
                      e.raw_transcript, e.captured_at, e.child_id, e.engine_version, e.language,
                      e.occurred_precision, e.base_direction, e.author_edits, e.locked_spans, e.pack_ref,
@@ -1083,7 +1147,10 @@ begin
                      case when 'in_book' = any(v_changed) then excluded.in_book else e.in_book end,
                      case when 'sounds_like_me' = any(v_changed) then excluded.sounds_like_me else e.sounds_like_me end,
                      case when 'occurred_on' = any(v_changed) then excluded.occurred_on else e.occurred_on end,
-                     excluded.raw_transcript, excluded.captured_at, excluded.child_id, excluded.engine_version,
+                     case when v_keepto or v_refused then e.raw_transcript else excluded.raw_transcript end,
+                     case when v_keepto or v_refused then e.captured_at else excluded.captured_at end,
+                     excluded.child_id,
+                     case when v_keepto or v_refused then e.engine_version else excluded.engine_version end,
                      case when 'language' = any(v_changed) and d ? 'language' then excluded.language else e.language end,
                      case when 'occurred_on' = any(v_changed) and d ? 'occurred_precision'
                           then excluded.occurred_precision else e.occurred_precision end,
@@ -1091,7 +1158,7 @@ begin
                           then excluded.base_direction else e.base_direction end,
                      case when 'text' = any(v_changed) and d ? 'author_edits' then excluded.author_edits else e.author_edits end,
                      case when 'text' = any(v_changed) and d ? 'locked_spans' then excluded.locked_spans else e.locked_spans end,
-                     coalesce(excluded.pack_ref, e.pack_ref),
+                     case when v_keepto or v_refused then e.pack_ref else coalesce(excluded.pack_ref, e.pack_ref) end,
                      case when 'text' = any(v_changed) and d ? 'words_reviewed_at'
                           then excluded.words_reviewed_at else e.words_reviewed_at end);
             end if;
@@ -1242,7 +1309,11 @@ declare
   v_xmax xid8 := pg_snapshot_xmax(v_snap);
   c_zero constant uuid := '00000000-0000-0000-0000-000000000000';
   c_mod constant numeric := 281474976710656;   -- 2^48
-  v_since jsonb := coalesce(p_since, '{}'::jsonb);
+  -- The held-draft switch (ADR 0025 section 9, coordinator's fallback for the alpha): with
+  -- app.held_sync = 'off' the pull never carries the held section, even when asked, so a
+  -- phone keeps its held drafts to itself (as in build 1) while letters still sync.
+  v_since jsonb := case when coalesce(current_setting('app.held_sync', true), '') = 'off'
+                        then coalesce(p_since, '{}'::jsonb) - 'held' else coalesce(p_since, '{}'::jsonb) end;
   v_reqs jsonb;
   v_req jsonb;
   v_epoch int;

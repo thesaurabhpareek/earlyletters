@@ -466,6 +466,16 @@ await push(A, [op('held.upsert', LE, inLB(held(LE, { kind: 'waiting_letter' })))
 await push(A, [op('entry.erase', LE)]);
 r = await push(B, [op('held.upsert', LE, inLB(held(LE)))]);
 check('[review L 2] nor the id of a letter A erased (22023, not "erased": that is A\'s to know)', r.results[0].code === '22023');
+// Review L re-check: a direct insert that names A as the author tells B nothing either. Before the fix, B got
+// SCDEL for A's erased id, 22023 for A's tombstoned letter and 42501 for an unknown id.
+const LTB = id7();
+await push(A, [op('entry.upsert', LTB, inLB(letter(LTB, { text: 'Tombstoned, not erased.' })))]);
+await as(A, `select public.delete_entry($1)`, [LTB]);
+const heldAsA = async (id) => codeOf(() => as(B, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-10-01')`, [id, A, LB]));
+const namedA = { erased: await heldAsA(LE), tombstoned: await heldAsA(LTB), unknown: await heldAsA(id7()) };
+check(`[review L re-check] a direct held insert with another author's author_id is one plain 42501 for an erased, a tombstoned and an unknown id (${JSON.stringify(namedA)})`,
+  namedA.erased === '42501' && namedA.tombstoned === '42501' && namedA.unknown === '42501');
 // Review L's restore window: a restore drops A's letter Y before A's phone re-uploads it; B holds Y and erases it.
 const LY = id7();
 await push(A, [op('entry.upsert', LY, inLB(letter(LY, { text: 'Your first word, and it was ball.' })))]);
@@ -563,9 +573,8 @@ const KO = id7();
 r = await push(A, [op('held.upsert', KO, inLB(held(KO, { typed: 'Three.' })))]);
 await push(A, [op('held.upsert', KO, inLB(held(KO, { typed: 'Three, changed elsewhere.' })), { changed: ['text'], base: r.results[0].held.v })]);
 r = await push(A, [op('entry.upsert', KO, inLB(letter(KO, { text: 'Three.' })))]);
-check('[review K 1] an older app\'s Keep (no held_base) applies, and the held words it did not carry stay in the letter\'s history',
-  r.results[0].applied === true && !(await heldRow(KO))
-  && (await sys(`select 1 from entry_versions where entry_id = $1 and final_text = 'Three, changed elsewhere.'`, [KO])).rows.length === 1);
+check('[review K re-check] a Keep with no held_base key is compared as 0: refused when the held words differ, so no words are left only in entry_versions',
+  r.results[0].applied === false && r.results[0].current?.typed_text === 'Three, changed elsewhere.' && !(await entry(KO)) && !!(await heldRow(KO)));
 const KS = id7();
 r = await push(A, [op('held.upsert', KS, inLB(held(KS, { typed: 'Four.' })))]);
 r = await push(A, [op('entry.upsert', KS, inLB(letter(KS, { text: 'Four.' })), { held_base: r.results[0].held.v })]);
@@ -615,6 +624,203 @@ check('[review K N4] the first non-word write of an older letter freezes its wor
   (await entry(KL)).t === klv);
 r = await push(A, [op('entry.upsert', KL, inLB(letter(KL, { text: 'Seven, edited.' })), { changed: ['text'], base: klv })]);
 check('[review K N4] so a words edit on that version is no conflict', !r.results[0].conflict_groups && (await entry(KL)).final_text === 'Seven, edited.');
+
+// ── 7d. The held draft state table (ADR 0025 section 9; review K re-check on #208 and #182) ──
+// One cell per check: server state (A none, B held at v, C kept as a letter, D discarded, E erased) by the op a
+// phone sends, with its held_base known or stale. The phone half of every cell is in sync-two-phone (S03).
+const TB = await newChild(A, 'Asha', '2025-04-12');
+const inTB = (data) => ({ ...data, child_id: TB });
+const tHeld = (id, typed, extra = {}) => inTB(held(id, { typed, extra }));
+const tKeep = (id, text, extra = {}) => inTB(letter(id, { text, ...extra }));
+const answer = async (o) => (await push(A, [o])).results[0];
+const heldUp = async (id, typed, extra = {}) => answer(op('held.upsert', id, tHeld(id, typed), extra));
+const heldAt = async (id, typed) => (await heldUp(id, typed)).held.v;            // state B at v
+const keptAt = async (id, typed) => {                                            // state C: kept on the other phone
+  const v = await heldAt(id, typed);
+  const r0 = await answer(op('entry.upsert', id, tKeep(id, typed), { held_base: v }));
+  return { v, letter: r0.entry.v };
+};
+let a0;
+// A. None
+let TT = id7();
+a0 = await heldUp(TT, 'A1.');
+check('[table A, held.upsert] none: the row is made; held.v answered', a0.ok && !!a0.held?.v && (await heldRow(TT))?.typed_text === 'A1.');
+TT = id7();
+a0 = await answer(op('held.discard', TT, {}, { base: null }));
+check('[table A, held.discard] none: missing, nothing changes', a0.missing === true && !(await heldRow(TT)) && !(await marker(TT)));
+TT = id7();
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'A3.'), { held_base: null }));
+check('[table A, Keep] none: the letter is made from the Keep', a0.applied === true && (await entry(TT))?.final_text === 'A3.');
+TT = id7();
+a0 = await answer(op('entry.erase', TT));
+check('[table A, entry.erase] none: missing', a0.missing === true);
+// B. Held at v
+TT = id7(); let v = await heldAt(TT, 'B1.');
+a0 = await heldUp(TT, 'B1, edited.', { changed: ['text'], base: v });
+check('[table B, held.upsert text, known] the words are written', !a0.conflict_groups && (await heldRow(TT)).typed_text === 'B1, edited.');
+TT = id7(); v = await heldAt(TT, 'B2.');
+await heldUp(TT, 'B2, the other phone.', { changed: ['text'], base: v });
+a0 = await answer(op('held.upsert', TT, tHeld(TT, 'B2, this phone.', { occurred_on: '2026-10-05' }), { changed: ['text', 'occurred_on'], base: v }));
+check('[table B, held.upsert text, stale] the words are refused with the held words in current; the date applies',
+  JSON.stringify(a0.conflict_groups) === '["text"]' && a0.current?.typed_text === 'B2, the other phone.'
+  && (await heldRow(TT)).typed_text === 'B2, the other phone.' && (await heldRow(TT)).d === '2026-10-05');
+TT = id7(); v = await heldAt(TT, 'B3.');
+await heldUp(TT, 'B3, same words.', { changed: ['text'], base: v });
+a0 = await heldUp(TT, 'B3, same words.', { changed: ['text'], base: v });
+check('[table B, held.upsert text, stale, same words] nothing to refuse', !a0.conflict_groups && a0.held?.v);
+TT = id7(); v = await heldAt(TT, 'B4.');
+const b4t = (await heldRow(TT)).t;
+a0 = await answer(op('held.upsert', TT, tHeld(TT, 'B4.', { occurred_on: '2026-10-06' }), { changed: ['occurred_on'], base: v }));
+check('[table B, held.upsert without text] the date applies and the words version stays (so a held_base must not move to held.v)',
+  (await heldRow(TT)).t === b4t && big(a0.held.v) > big(b4t));
+TT = id7(); v = await heldAt(TT, 'B5.');
+a0 = await answer(op('held.discard', TT, {}, { base: v }));
+check('[table B, held.discard, known] the row goes, marker discarded', !a0.kept && !(await heldRow(TT)) && (await marker(TT)) === 'discarded');
+TT = id7(); v = await heldAt(TT, 'B6.');
+await heldUp(TT, 'B6, the other phone.', { changed: ['text'], base: v });
+a0 = await answer(op('held.discard', TT, {}, { base: v }));
+check('[table B, held.discard, stale] kept: the row and its newer words stay', a0.kept === true && (await heldRow(TT)).typed_text === 'B6, the other phone.');
+TT = id7(); v = await heldAt(TT, 'B7.');
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'B7.'), { held_base: v }));
+check('[table B, Keep, known] the letter is made, the row goes, marker kept', a0.applied === true && !(await heldRow(TT)) && (await marker(TT)) === 'kept');
+TT = id7(); v = await heldAt(TT, 'B8.');
+await heldUp(TT, 'B8, the other phone.', { changed: ['text'], base: v });
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'B8, this phone.'), { held_base: v }));
+check('[table B, Keep, stale] refused: no letter, the row stays, current is the held words',
+  a0.applied === false && a0.entry === null && a0.current?.typed_text === 'B8, the other phone.' && !(await entry(TT)) && !!(await heldRow(TT)));
+TT = id7(); v = await heldAt(TT, 'B10.');
+a0 = await answer(op('entry.erase', TT));
+check('[table B, entry.erase] erased: the row goes, marker erased, erasure recorded', a0.erased === true && !(await heldRow(TT))
+  && (await marker(TT)) === 'erased' && !!(await erasure(TT)));
+// C. Kept as a letter (the other phone kept it first)
+TT = id7(); let k = await keptAt(TT, 'C1.');
+a0 = await heldUp(TT, 'C1, a late upload.', { changed: ['text'], base: k.v });
+check('[table C, held.upsert] held: null, nothing written, the letter unchanged', a0.held === null && !(await heldRow(TT)) && (await entry(TT)).final_text === 'C1.');
+TT = id7(); k = await keptAt(TT, 'C2.');
+a0 = await answer(op('held.discard', TT, {}, { base: k.v }));
+check('[table C, held.discard] missing: the letter stays (a Keep beats a let-go)', a0.missing === true && (await entry(TT)).final_text === 'C2.');
+TT = id7(); k = await keptAt(TT, 'C3, kept first.');
+const c3 = op('entry.upsert', TT, tKeep(TT, 'C3, kept second.', { inBook: false }), { held_base: k.v });
+a0 = await answer(c3);
+let e0 = await entry(TT);
+check('[table C, Keep] a second Keep is a compare and set against the letter: words refused with current, other groups by later arrival',
+  a0.ok && a0.applied === true && JSON.stringify(a0.conflict_groups) === '["text"]' && a0.current?.final_text === 'C3, kept first.'
+  && a0.current.v === e0.t && a0.entry?.id === TT && e0.final_text === 'C3, kept first.' && e0.in_book === false);
+a0 = await answer(c3);
+check('[table C, Keep repeat] the repeat says the same: conflict_groups and current (the letter now)',
+  a0.dup === true && JSON.stringify(a0.conflict_groups) === '["text"]' && a0.current?.final_text === 'C3, kept first.' && a0.entry?.id === TT);
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'C3, kept first.', { inBook: false }), { held_base: e0.t }));
+check('[table C, Keep sent again on the letter version] applies, nothing refused, the words unchanged',
+  a0.applied === true && !a0.conflict_groups && (await entry(TT)).final_text === 'C3, kept first.');
+TT = id7();
+await heldAt(TT, 'C4.');
+const typed1 = { raw: 'Typed on the second phone.', extra: { capture_mode: 'typed', engine_version: 5, pack_ref: 'en@1.0.0' } };
+await answer(op('entry.upsert', TT, tKeep(TT, 'Typed on the second phone.', typed1), { held_base: (await heldRow(TT)).t }));
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'Typed on the first phone.', { raw: 'Typed on the first phone.',
+  extra: { capture_mode: 'typed', engine_version: 6, pack_ref: 'en@2.0.0', captured_at: new Date(Date.parse(NOW) + 1000).toISOString() } }),
+  { held_base: '1' }));
+const c4 = (await sys(`select raw_transcript, engine_version, pack_ref, captured_at, final_text from entries where id = $1`, [TT])).rows[0];
+check(`[table C, Keep of a typed letter] never SCIMM: the first keep's raw transcript, engine, pack and capture time stand, the words are refused (${JSON.stringify(a0.code ?? 'ok')})`,
+  a0.ok === true && JSON.stringify(a0.conflict_groups) === '["text"]' && a0.current?.final_text === 'Typed on the second phone.'
+  && c4.raw_transcript === 'Typed on the second phone.' && c4.engine_version === 5 && c4.pack_ref === 'en@1.0.0'
+  && new Date(c4.captured_at).toISOString() === NOW && c4.final_text === 'Typed on the second phone.');
+TT = id7(); k = await keptAt(TT, 'C5.');
+a0 = await answer(op('entry.erase', TT));
+check('[table C, entry.erase] erased', a0.erased === true && !(await entry(TT)) && !!(await erasure(TT)));
+// D. Discarded
+const discarded = async (id, typed) => { const v1 = await heldAt(id, typed); await answer(op('held.discard', id, {}, { base: v1 })); return v1; };
+TT = id7(); await discarded(TT, 'D1.');
+a0 = await heldUp(TT, 'D1, the other phone still had it.');
+check('[table D, held.upsert] the row is made again, the marker cleared (a later edit beats a let-go)',
+  !!a0.held?.v && (await heldRow(TT))?.typed_text === 'D1, the other phone still had it.' && !(await marker(TT)));
+TT = id7(); await discarded(TT, 'D2.');
+a0 = await answer(op('held.discard', TT, {}, { base: null }));
+check('[table D, held.discard] missing', a0.missing === true && (await marker(TT)) === 'discarded');
+TT = id7(); await discarded(TT, 'D3.');
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'D3, kept on the other phone.'), { held_base: '0' }));
+check('[table D, Keep] the letter is made from the Keep (a Keep beats a let-go)', a0.applied === true && (await entry(TT))?.final_text === 'D3, kept on the other phone.');
+TT = id7(); await discarded(TT, 'D4.');
+a0 = await answer(op('entry.erase', TT));
+check('[table D, entry.erase] the marker becomes erased', a0.erased === true && (await marker(TT)) === 'erased' && !!(await erasure(TT)));
+// E. Erased
+const erasedId = async (id, typed) => { await heldAt(id, typed); await answer(op('entry.erase', id)); };
+TT = id7(); await erasedId(TT, 'E1.');
+a0 = await heldUp(TT, 'E1, a late upload.');
+check('[table E, held.upsert] SCDEL purged, gone', a0.ok === false && a0.code === 'SCDEL' && a0.gone === true && !(await heldRow(TT)));
+TT = id7(); await erasedId(TT, 'E2.');
+a0 = await answer(op('held.discard', TT, {}, { base: null }));
+check('[table E, held.discard] missing', a0.missing === true && (await marker(TT)) === 'erased');
+TT = id7(); await erasedId(TT, 'E3.');
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'E3, kept late.'), { held_base: '0' }));
+check('[table E, Keep] SCDEL purged, gone', a0.ok === false && a0.code === 'SCDEL' && a0.gone === true && !(await entry(TT)));
+TT = id7(); await erasedId(TT, 'E4.');
+a0 = await answer(op('entry.erase', TT));
+check('[table E, entry.erase] erased again, nothing else changes', a0.erased === true && (await marker(TT)) === 'erased');
+// Repeats after a lost answer, when the state moved on in between (review K re-check 2).
+TT = id7(); v = await heldAt(TT, 'R1.');
+await heldUp(TT, 'R1, the other phone.', { changed: ['text'], base: v });
+const r1 = op('held.upsert', TT, tHeld(TT, 'R1, this phone.'), { changed: ['text'], base: v });
+await answer(r1);
+await answer(op('entry.upsert', TT, tKeep(TT, 'R1, the other phone.'), { held_base: (await heldRow(TT)).t }));
+a0 = await answer(r1);
+check('[table repeat, held.upsert refused, then kept elsewhere] the repeat is refused again, with current from the letter',
+  a0.dup === true && JSON.stringify(a0.conflict_groups) === '["text"]' && a0.current?.final_text === 'R1, the other phone.' && a0.held === null);
+TT = id7(); v = await heldAt(TT, 'R2.');
+await heldUp(TT, 'R2, the other phone.', { changed: ['text'], base: v });
+const r2 = op('entry.upsert', TT, tKeep(TT, 'R2, this phone.'), { held_base: v });
+const r2first = await answer(r2);
+await answer(op('entry.upsert', TT, tKeep(TT, 'R2, the other phone.'), { held_base: r2first.current.v }));
+a0 = await answer(r2);
+check('[table repeat, Keep refused, then kept elsewhere] the repeat is the same refusal (applied false, no entry) with current from the letter',
+  a0.dup === true && a0.applied === false && a0.entry === null && JSON.stringify(a0.conflict_groups) === '["text"]'
+  && a0.current?.final_text === 'R2, the other phone.' && a0.current.v === (await entry(TT)).t && a0.held === null);
+TT = id7(); v = await heldAt(TT, 'R3.');
+await heldUp(TT, 'R3, the other phone.', { changed: ['text'], base: v });
+const r3 = op('entry.upsert', TT, tKeep(TT, 'R3, this phone.'), { held_base: v });
+await answer(r3);
+await answer(op('held.discard', TT, {}, { base: (await heldRow(TT)).t }));
+a0 = await answer(r3);
+check('[table repeat, Keep refused, then let go elsewhere] still a refusal (applied false, no entry), current null',
+  a0.dup === true && a0.applied === false && a0.entry === null && a0.current === null && a0.held === null);
+a0 = await answer(op('entry.upsert', TT, tKeep(TT, 'R3, this phone.'), { held_base: '0' }));
+check('[table repeat] and the Keep sent again makes the letter from this phone\'s words (a Keep beats a let-go)',
+  a0.applied === true && (await entry(TT))?.final_text === 'R3, this phone.');
+// The held-draft switch (ADR 0025 section 9; the coordinator's fallback for the alpha): off, held ops change nothing
+// and are not claimed, the pull carries no held section, and letters, Keep and Erase now still work.
+const SW = id7();
+const swUp = op('held.upsert', SW, tHeld(SW, 'Held while the switch is off.'));
+await sys(`select set_config('app.held_sync', 'off', false)`);
+a0 = await answer(swUp);
+const swDisc = await answer(op('held.discard', TT, {}, { base: null }));
+const swPull = await pull(A, { books: {}, held: { cursor: null } });
+const swKeep = id7();
+const swLetter = await answer(op('entry.upsert', swKeep, tKeep(swKeep, 'A letter while the switch is off.')));
+check('[switch off] a held upload changes nothing, is not claimed, and says held_off; a let-go the same',
+  a0.ok === true && a0.applied === false && a0.held_off === true && !(await heldRow(SW)) && !(await receipt(swUp.op))
+  && swDisc.held_off === true);
+check('[switch off] the pull carries no held section, even when asked', swPull.reset === false && !('held' in swPull));
+check('[switch off] letters still sync', swLetter.applied === true && !!(await entry(swKeep)));
+await sys(`select set_config('app.held_sync', 'on', false)`);
+a0 = await answer(swUp);
+check('[switch on again] the same held op applies (it was never claimed)', !a0.dup && !!a0.held?.v && (await heldRow(SW))?.typed_text === 'Held while the switch is off.');
+await sys(`select set_config('app.held_sync', 'off', false)`);
+a0 = await answer(op('entry.upsert', SW, tKeep(SW, 'Kept while the switch is off, other words.'), { held_base: '0' }));
+const swErase = id7();
+await sys(`select set_config('app.held_sync', 'on', false)`);
+const swEraseV = await heldAt(swErase, 'Erased while off.');
+await sys(`select set_config('app.held_sync', 'off', false)`);
+const swErased = await answer(op('entry.erase', swErase));
+await sys(`select set_config('app.held_sync', 'on', false)`);
+check('[switch off] a Keep is still compared with a held row the server has (refused here), and Erase now still erases a held draft',
+  a0.applied === false && a0.current?.typed_text === 'Held while the switch is off.' && !!(await heldRow(SW))
+  && swErased.erased === true && !(await heldRow(swErase)) && (await marker(swErase)) === 'erased' && !!swEraseV);
+// K's N7: a direct held insert and a Keep take the id lock before looking at each other.
+const fnSrc = async (name) => (await sys(`select prosrc from pg_proc where proname = $1`, [name])).rows[0].prosrc;
+const guardSrc = await fnSrc('held_drafts_guard');
+const dropSrc = await fnSrc('entries_drop_held');
+check('[review K re-check N7] the held insert guard takes the id lock before it looks for the letter, and the Keep trigger before it looks for the held row',
+  guardSrc.indexOf('lock_letter_id') > 0 && guardSrc.indexOf('lock_letter_id') < guardSrc.indexOf('from public.entries')
+  && dropSrc.indexOf('lock_letter_id') > 0 && dropSrc.indexOf('lock_letter_id') < dropSrc.indexOf('from public.held_drafts'));
 
 // Leaving a book keeps a held draft under a legal hold (review L N2).
 const LHB = id7();
