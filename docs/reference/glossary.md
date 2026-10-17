@@ -38,6 +38,9 @@ What a word means, what the code calls it, and what the person sees. Code names 
 | Final text | `final_text` | The letter's words | `entries` |
 | Machine edit, small fix | `Edit`, stored as `machine_edits` | "small fix"; struck through or dotted in Review | `packages/core/src/types.ts` |
 | Edit types | `EditType`: `filler`, `false_start`, `repeat`, `stt_fix`, `punctuation`, `agreement`, `paragraph` | Named by what happened | [speech-and-languages.md](speech-and-languages.md#the-faithful-edit-engine-packagescore) |
+| Recording container | `RECORDING_CONTAINERS` (`'m4a'` or `'adts'`), file `.m4a` or `.aac`; the codec is AAC-LC either way | Not shown | `lib/capture/recording-file.ts` (ADR 0027; both platforms `'m4a'` on `develop`) |
+| Whole-frame copy | A temporary copy of an ADTS take's whole frames, made when a kill cut off its last frame | Not shown | `lib/capture/adts-file.ts`; in Caches, removed when the run ends |
+| Run refused | `RunInputError` (`decoder_short`, `break_inside`), shown as the job failure `decode_failed` | The words job's failure state | `lib/transcribe-run.ts`, `transcription-queue/machine.ts` `jobFailureOf` |
 | Edit level | `edit_level` `clean` or `verbatim` | "With small fixes" or "Exactly as said" | `domain.ts` `EDIT_LEVELS`, `strings.en.ts` |
 | Word for word | The feature name for the edit engine (D-074, D-086) | "Word for word", only where the feature is named | `strings.en.ts` |
 | Put it back | `withoutEdit` | Undo of one fix in Review | `packages/core/src/pipeline.ts` |
@@ -98,6 +101,9 @@ What a word means, what the code calls it, and what the person sees. Code names 
 | `scribe` | The permanent codename: packages (`@scribe/*`), the database file `scribe.db`, the last part of the bundle id, and the URL scheme (`brand.scheme` in `packages/brand/index.ts`) |
 | Early Letters | The public name, held only in `packages/brand/index.ts` |
 | Asha | The fictional family every test and sample uses (`CLAUDE.md`) |
+| Lamp, scene, unlit room | The decorative light pool behind a screen (`Lamp`), its per-screen look (`scene`, from `tokens.atmosphere`), and a room where it fades out (`useUnlitRoom`) (`components/ui/lamp.tsx`) |
+| Kill drill | A test-build-only routine the kill harness drives on a simulator to prove a killed recording or save is never lost (`src/dev/kill-drill.ts`, `apps/mobile/e2e/kill/`) |
+| Steward | An agent of kind `steward` that owns chapters of the engineering compendium and reviews PRs in its paths (`agents/roster.json`, ADR 0021) |
 | Tonight, Book, Family | The three tabs (`app/(tabs)/_layout.tsx`) |
 | L1 to L4 | Data classification levels ([data-and-storage.md](data-and-storage.md#classification-in-one-line-each)) |
 | D-###, ADR ####, BL-###, FT-##, LEGAL-REQ-### | Decision log ids (`docs/DECISIONS.md`), architecture decision records (`docs/adr/`), backlog items (`docs/BACKLOG.md`), founder tasks (`docs/FOUNDER_TASKS.md`), legal requirements (`docs/legal/ENGINEERING_REQUIREMENTS.md`) |
