@@ -329,10 +329,13 @@ describe('Lamp gradient', () => {
     },
   ];
 
-  it('each room is checked under the lamp its screen mounts today (the welcome: a centred pool)', () => {
-    expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ anchor: 'center' })]);
+  it('each room is checked under the lamp its screen mounts today (first run: the gate, welcome, form and finish scenes, P2)', () => {
+    // P2 (EXPERIENCE_PASS S01 to S08): the gate and onboarding moved from #99's anchor-only pool to their scenes.
+    expect(shown('components/gate/age-gate-screen.tsx')).toEqual([resolveLamp({ scene: 'gate' })]);
+    expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ scene: 'welcome' }), resolveLamp({ scene: 'finish' }), resolveLamp({ scene: 'form' })]);
     expect(shown('app/(tabs)/index.tsx')).toEqual([resolveLamp({ anchor: 'top' })]);
-    expect(ROOMS.find((r) => r.room === 'the welcome')!.lights).toContainEqual(resolveLamp({ anchor: 'center' }));
+    expect(ROOMS.find((r) => r.room === 'the welcome')!.lights).toContainEqual(resolveLamp({ scene: 'welcome' }));
+    expect(ROOMS.find((r) => r.room === 'the age question')!.lights).toContainEqual(resolveLamp({ scene: 'gate' }));
   });
 
   it('where text actually sits, each text keeps 4.5:1 in its own colour over its whole box (Tonight, the age question, the welcome)', () => {
@@ -377,6 +380,8 @@ describe('Lamp gradient', () => {
     'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
     'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
+    // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.
+    'app/onboarding.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
   const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
