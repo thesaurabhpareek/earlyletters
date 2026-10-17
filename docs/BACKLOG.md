@@ -406,7 +406,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Scope if yes: links become `https://earlyletters.com/i#t=<token>`; the parser reads the fragment and still accepts `/i/<token>` for 7 days; AASA pattern `/i`; generic preview tags. If no: legal-alignment rewrites Privacy Policy line 195 (it says tokens travel where servers do not log) and the website disables logging and analytics on `/i/*` with `Referrer-Policy: no-referrer` (FT-31).
 
 #### BL-349 App-level privacy manifest (review L7) [High]
-- Status: ready. Mode: agent. Owner: mobile engineer.
+- Status: in review (branch `feat/ios-privacy-manifest`, founder merge: `app.config.ts`; includes #145). Mode: agent. Owner: mobile engineer. Built: `src/lib/privacy-manifest.ts` (required reasons for every build; collected data types follow `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` as S17's label 1.4.0 answers them), `test/privacy-manifest.test.ts`, preflight checks of the generated file. Left: Apple's upload email (go/no-go B1-10), the archived `.ipa` check, and the S17 and counsel calls listed in the PR.
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
