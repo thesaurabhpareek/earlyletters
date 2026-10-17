@@ -5,7 +5,7 @@
 #
 #   bin/inspect-export.sh [--originals]
 #
-# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.preview),
+# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.dev),
 #      OUT (default a temp dir; never inside the repo).
 # Proves C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 and TC-17: the archive opens,
 # holds README.txt, the schema, letters, data files, the PDF book and a manifest
@@ -34,7 +34,7 @@ for arg in "$@"; do
 done
 
 UDID="${UDID:-booted}"
-APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
+APP_ID="${APP_ID:-com.earlyletters.scribe.dev}"
 OUT="${OUT:-$(mktemp -d -t scribe-export)}"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
