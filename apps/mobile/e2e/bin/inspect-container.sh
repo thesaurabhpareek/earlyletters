@@ -33,7 +33,8 @@ for t in children entries drafts orphan_audio sync_outbox; do
   echo "rows in $t: $n"
 done
 
-AUDIO="$(find "$DATA" \( -name '*.m4a' -o -name '*.caf' -o -name '*.wav' \) -type f 2>/dev/null | wc -l | tr -d ' ')"
+# Every extension the app counts as a recording (src/lib/capture/sweep.logic.ts AUDIO_EXT), any case: .aac is ADR 0027's ADTS.
+AUDIO="$(find "$DATA" \( -iname '*.m4a' -o -iname '*.mp4' -o -iname '*.aac' -o -iname '*.caf' -o -iname '*.wav' -o -iname '*.3gp' -o -iname '*.webm' \) -type f 2>/dev/null | wc -l | tr -d ' ')"
 echo "audio files: $AUDIO"
 [[ "$AUDIO" == "0" ]] || fail "audio files exist in the container"
 
