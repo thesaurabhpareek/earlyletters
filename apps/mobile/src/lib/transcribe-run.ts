@@ -54,8 +54,9 @@ export const MAX_RUN_MS = 4 * 60 * 60_000;
  * The recording's length cannot be trusted. The job fails (Try again, or type); nothing is cut short or guessed.
  * - `decoder_short`: the decoder reports less audio than the file itself proves, so the tail would not be heard
  *   (ADR 0027).
- * - `break_inside`: an ADTS file breaks before its end (more bytes after the last whole frame than one frame can
- *   hold), so what follows cannot be counted and might not be heard.
+ * - `break_inside`: an ADTS file does not end as a kill leaves it, and the decoder cannot read it as it is (or
+ *   more bytes follow the last whole frame than one frame can hold), so what follows cannot be counted and might
+ *   not be heard.
  * Either way the take waits, visibly, rather than get a short raw transcript, which could never be fixed.
  */
 export class RunInputError extends Error {
@@ -165,26 +166,34 @@ export interface OpenRun {
 /** What an ADTS scan says about one recording (capture/adts.ts): its counted length, and how it ends. */
 export interface AdtsFacts {
   evidence: LengthEvidence;
-  /** Bytes of a frame a kill cut off at the end; 0 when the file ends on a whole frame. */
-  tailBytes: number;
-  /** More bytes after the last whole frame than one frame can hold (`breaksInside`). */
+  /**
+   * How the file ends after its last whole frame (capture/adts.ts `AdtsTail`): `none`, on a whole frame;
+   * `cut`, exactly as a kill leaves it; `break`, anything else (damage, a trailer).
+   */
+  tail: 'none' | 'cut' | 'break';
+  /** More bytes after the last whole frame than one frame can hold (`breaksInside`): the outer bound. */
   breakInside: boolean;
 }
 
 /**
  * Opens one recording for a run (ADR 0027). If probing or decoding throws,
  * or the decoder's length is short of what the file proves, and the file
- * ends in a cut-off ADTS frame (`adts.tailBytes`), it switches once to a
- * copy of the whole frames that `makeCopy` writes in the cache, and reads
- * that instead. The stored recording is only ever read. If the length still
- * cannot be trusted, the run is refused with `RunInputError('decoder_short')`:
- * the take waits for its words, visibly (Try again, or type), instead of
- * getting a raw transcript without its end, which could never be fixed.
+ * ends exactly as a kill leaves it (`adts.tail === 'cut'`), it switches once
+ * to a copy of the whole frames that `makeCopy` writes in the cache, and
+ * reads that instead. The stored recording is only ever read. If the length
+ * still cannot be trusted, the run is refused with
+ * `RunInputError('decoder_short')`: the take waits for its words, visibly
+ * (Try again, or type), instead of getting a raw transcript without its end,
+ * which could never be fixed.
  *
- * An ADTS file with a break inside is refused before anything is read
- * (`RunInputError('break_inside')`), and no copy is made: the frames after
- * the break cannot be counted, so no decoder length can be checked, and a
- * copy would hold only what comes before the break.
+ * A file whose tail is not a kill cut (`adts.tail === 'break'`: damage, or a
+ * trailer) never gets the copy, which would hold only the frames before the
+ * break. If the decoder cannot read the file as it is, or reads it short,
+ * the run is refused with `RunInputError('break_inside')`. A decoder that
+ * reads it well is trusted, so a trailer a writer adds can never refuse a
+ * take. Past the outer bound (`adts.breakInside`, more than one frame of
+ * bytes after the last whole frame) the run is refused before anything is
+ * read: the frames after the break cannot be counted.
  */
 export async function openRecordingForRun(
   io: RecordingIo,
@@ -206,24 +215,29 @@ export async function openRecordingForRun(
     copy = null;
   };
   const useCopy = async (): Promise<boolean> => {
-    if (copyTried || !adts || adts.tailBytes <= 0) return false;
+    if (copyTried || adts?.tail !== 'cut') return false;
     copyTried = true;
     copy = await makeCopy();
     current = copy.uri;
     return true;
+  };
+  /** The decoder cannot read the file as it is, and there is no copy for it: a break is refused as one. */
+  const unreadable = (e: unknown): never => {
+    if (adts?.tail === 'break') throw new RunInputError('break_inside');
+    throw e;
   };
   const probe = async (): Promise<number | null> => {
     try {
       return await io.probeMs(current);
     } catch (e) {
       if (await useCopy()) return io.probeMs(current);
-      throw e;
+      return unreadable(e);
     }
   };
   try {
     let length = checkedRunDuration(await probe(), storedMs, adts?.evidence ?? null);
     if (length.decoderShort && (await useCopy())) length = checkedRunDuration(await probe(), storedMs, adts?.evidence ?? null);
-    if (length.decoderShort) throw new RunInputError('decoder_short');
+    if (length.decoderShort) throw new RunInputError(adts?.tail === 'break' ? 'break_inside' : 'decoder_short');
     return {
       durationMs: length.durationMs,
       decode: async (pieces) => {
@@ -231,7 +245,7 @@ export async function openRecordingForRun(
           return await io.decode(current, pieces);
         } catch (e) {
           if (await useCopy()) return io.decode(current, pieces);
-          throw e;
+          return unreadable(e);
         }
       },
       close,
