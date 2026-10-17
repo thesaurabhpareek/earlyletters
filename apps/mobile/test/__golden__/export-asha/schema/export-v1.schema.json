@@ -20,7 +20,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "pattern": "^audio/[^/]+\\.m4a$"
+          "pattern": "^audio/[^/]+\\.(m4a|aac)$"
         },
         "sha256": {
           "type": "string",
@@ -41,7 +41,10 @@
           "const": "aac-lc"
         },
         "media_type": {
-          "const": "audio/mp4"
+          "enum": [
+            "audio/mp4",
+            "audio/aac"
+          ]
         },
         "integrity": {
           "enum": [
@@ -60,6 +63,32 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "media_type": {
+            "const": "audio/aac"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.aac$"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.m4a$"
+          }
         }
       }
     },

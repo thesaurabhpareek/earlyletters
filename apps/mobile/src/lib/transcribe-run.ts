@@ -50,9 +50,16 @@ export const DECODE_OPTIONS = { translate: false, tdrzEnable: false, tokenTimest
  */
 export const MAX_RUN_MS = 4 * 60 * 60_000;
 
-/** The recording's length cannot be trusted. The job fails (Try again, or type); nothing is cut short or guessed. */
+/**
+ * The recording's length cannot be trusted. The job fails (Try again, or type); nothing is cut short or guessed.
+ * - `decoder_short`: the decoder reports less audio than the file itself proves, so the tail would not be heard
+ *   (ADR 0027).
+ * - `break_inside`: an ADTS file breaks before its end (more bytes after the last whole frame than one frame can
+ *   hold), so what follows cannot be counted and might not be heard.
+ * Either way the take waits, visibly, rather than get a short raw transcript, which could never be fixed.
+ */
 export class RunInputError extends Error {
-  constructor(readonly reason: 'duration_invalid') {
+  constructor(readonly reason: 'duration_invalid' | 'decoder_short' | 'break_inside') {
     super(reason);
     this.name = 'RunInputError';
   }
@@ -74,6 +81,165 @@ export function runDurationMs(probedMs: number | null | undefined, storedMs: num
   const ms = usable(probedMs) ? probedMs : usable(storedMs) ? storedMs : null;
   if (ms === null || ms > MAX_RUN_MS) throw new RunInputError('duration_invalid');
   return ms;
+}
+
+/**
+ * What a recording's own bytes prove about its length (ADR 0027). For ADTS,
+ * the whole frames counted from the headers (capture/adts.ts
+ * `adtsLengthEvidence`): `countedMs` is every whole frame, `minDecodedMs`
+ * the shortest length a correct decoder may report (less the 2112 samples
+ * of priming Apple assumes, TN2258, and one frame).
+ */
+export interface LengthEvidence {
+  countedMs: number;
+  minDecodedMs: number;
+}
+
+export interface RunDuration {
+  /** What the run plans over: never shorter than the counted frames. */
+  durationMs: number;
+  /** The decoder reports less than the file proves: its tail would go unheard. */
+  decoderShort: boolean;
+}
+
+/**
+ * `runDurationMs`, checked against the file's own evidence (ADR 0027). The
+ * decoder's length is not trusted when it is missing or short of
+ * `evidence.minDecodedMs`. Then the plan covers the counted frames and
+ * `decoderShort` is set, so the caller can try a readable copy or refuse the
+ * run, never store a transcript that silently lacks the end. Otherwise the
+ * plan covers the decoder's length or the counted frames, whichever is
+ * longer.
+ *
+ * The length stored at capture never refuses a run. It is the recorder's
+ * clock, not audio in the file: a take a kill cut off keeps its last progress
+ * mark (Listen saves one every 5 s), so it can be seconds past the frames the
+ * file holds, and no decoder or retry could ever reach it. As in
+ * `runDurationMs`, it stands in only when the decoder gives no usable
+ * length. With no evidence (M4A) this is exactly `runDurationMs`.
+ */
+export function checkedRunDuration(
+  probedMs: number | null | undefined,
+  storedMs: number | null | undefined,
+  evidence: LengthEvidence | null,
+): RunDuration {
+  const proof = evidence && usable(evidence.countedMs) ? evidence : null;
+  if (proof && (!usable(probedMs) || probedMs < proof.minDecodedMs)) {
+    const durationMs = Math.max(usable(probedMs) ? probedMs : 0, proof.countedMs);
+    if (durationMs > MAX_RUN_MS) throw new RunInputError('duration_invalid');
+    return { durationMs, decoderShort: true };
+  }
+  const ms = runDurationMs(probedMs, storedMs);
+  const durationMs = proof ? Math.max(ms, proof.countedMs) : ms;
+  if (durationMs > MAX_RUN_MS) throw new RunInputError('duration_invalid');
+  return { durationMs, decoderShort: false };
+}
+
+/** One range to decode, as the planner and ScribeAudio's `decodePcm16` take it. */
+export interface DecodeRange {
+  srcStartMs: number;
+  srcEndMs: number;
+  silenceBeforeMs: number;
+}
+
+/** How a run reads a recording: ScribeAudio on the phone. */
+export interface RecordingIo {
+  /** The decoder's length in ms (ScribeAudio `probe`). */
+  probeMs(uri: string): Promise<number | null>;
+  decode(uri: string, pieces: readonly DecodeRange[]): Promise<ArrayBuffer>;
+}
+
+/** A temporary copy of a recording's whole ADTS frames, in the cache. */
+export interface WholeFrameCopy {
+  uri: string;
+  remove(): void;
+}
+
+export interface OpenRun {
+  durationMs: number;
+  decode(pieces: readonly DecodeRange[]): Promise<ArrayBuffer>;
+  /** Removes the temporary copy, if one was made. Call once the run ends, whatever happened. */
+  close(): void;
+}
+
+/** What an ADTS scan says about one recording (capture/adts.ts): its counted length, and how it ends. */
+export interface AdtsFacts {
+  evidence: LengthEvidence;
+  /** Bytes of a frame a kill cut off at the end; 0 when the file ends on a whole frame. */
+  tailBytes: number;
+  /** More bytes after the last whole frame than one frame can hold (`breaksInside`). */
+  breakInside: boolean;
+}
+
+/**
+ * Opens one recording for a run (ADR 0027). If probing or decoding throws,
+ * or the decoder's length is short of what the file proves, and the file
+ * ends in a cut-off ADTS frame (`adts.tailBytes`), it switches once to a
+ * copy of the whole frames that `makeCopy` writes in the cache, and reads
+ * that instead. The stored recording is only ever read. If the length still
+ * cannot be trusted, the run is refused with `RunInputError('decoder_short')`:
+ * the take waits for its words, visibly (Try again, or type), instead of
+ * getting a raw transcript without its end, which could never be fixed.
+ *
+ * An ADTS file with a break inside is refused before anything is read
+ * (`RunInputError('break_inside')`), and no copy is made: the frames after
+ * the break cannot be counted, so no decoder length can be checked, and a
+ * copy would hold only what comes before the break.
+ */
+export async function openRecordingForRun(
+  io: RecordingIo,
+  uri: string,
+  storedMs: number | null | undefined,
+  adts: AdtsFacts | null,
+  makeCopy: () => Promise<WholeFrameCopy>,
+): Promise<OpenRun> {
+  if (adts?.breakInside) throw new RunInputError('break_inside');
+  let current = uri;
+  let copy: WholeFrameCopy | null = null;
+  let copyTried = false;
+  const close = () => {
+    try {
+      copy?.remove();
+    } catch {
+      // the cache is cleared by iOS too; the launch sweep removes stale copies
+    }
+    copy = null;
+  };
+  const useCopy = async (): Promise<boolean> => {
+    if (copyTried || !adts || adts.tailBytes <= 0) return false;
+    copyTried = true;
+    copy = await makeCopy();
+    current = copy.uri;
+    return true;
+  };
+  const probe = async (): Promise<number | null> => {
+    try {
+      return await io.probeMs(current);
+    } catch (e) {
+      if (await useCopy()) return io.probeMs(current);
+      throw e;
+    }
+  };
+  try {
+    let length = checkedRunDuration(await probe(), storedMs, adts?.evidence ?? null);
+    if (length.decoderShort && (await useCopy())) length = checkedRunDuration(await probe(), storedMs, adts?.evidence ?? null);
+    if (length.decoderShort) throw new RunInputError('decoder_short');
+    return {
+      durationMs: length.durationMs,
+      decode: async (pieces) => {
+        try {
+          return await io.decode(current, pieces);
+        } catch (e) {
+          if (await useCopy()) return io.decode(current, pieces);
+          throw e;
+        }
+      },
+      close,
+    };
+  } catch (e) {
+    close();
+    throw e;
+  }
 }
 
 /** What the device does for the voice detector. */

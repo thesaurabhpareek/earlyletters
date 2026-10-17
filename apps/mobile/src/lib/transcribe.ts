@@ -19,7 +19,7 @@ import type { DictionaryTerm } from '@scribe/core';
 import type { SpeechLanguage, SpeechModelId } from './models/catalog';
 
 export interface TranscribeInput {
-  /** file:// URI of the recording (AAC M4A, ADR 0005). Never leaves the device. */
+  /** file:// URI of the recording (AAC, in M4A per ADR 0005 or ADTS per ADR 0027). Never leaves the device. */
   audioUri: string;
   durationMs: number | null;
   /** Names and words spelled the family's way; rendered into the prompt of every chunk. */
