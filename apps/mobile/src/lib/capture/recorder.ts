@@ -31,6 +31,9 @@ import {
 /**
  * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
  * AAC-LC, mono, 64 kbps, .m4a in Documents (kept in the device backup, D-033).
+ * With `directory: 'document'` expo-audio writes each take to
+ * `Documents/ExpoAudio/recording-<UUID>.m4a` and the app leaves it there; code
+ * that lists or removes recordings goes through capture/recordings.ts.
  *
  * 48 kHz rather than 44.1 kHz: iPhone microphones run at 48 kHz, so the
  * recording is not resampled on the way in; 48 kHz to Whisper's 16 kHz is
