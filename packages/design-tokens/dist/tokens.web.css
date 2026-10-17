@@ -211,6 +211,12 @@
   --text-prompt: 24px;
   --text-prompt--line-height: 32px;
   --text-prompt--letter-spacing: 0px;
+  --text-prompt-hero: 28px;
+  --text-prompt-hero--line-height: 36px;
+  --text-prompt-hero--letter-spacing: 0px;
+  --text-numeral: 64px;
+  --text-numeral--line-height: 64px;
+  --text-numeral--letter-spacing: -0.5px;
   --shadow-e0: none;
   --shadow-e1: 0 2px 6px rgba(43,39,34,0.06);
   --shadow-e2: 0 6px 16px rgba(43,39,34,0.10);
