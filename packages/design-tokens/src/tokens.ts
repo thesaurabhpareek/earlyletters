@@ -303,13 +303,13 @@ const motion = {
   /** The book cover opening in first run (S08): the front holds `holdMs`, then cross-fades to the flyleaf with a `dx` shift, on `standard`. */
   cover: { holdMs: 300, dx: 8 },
   /**
-   * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way,
-   * and the list behind dims to `behindDim` brightness (no blur). A veil of the page's paper runs ahead of the
-   * growing paper, `veilLead` times as far along (and back behind it on the way home), with a soft edge
-   * `veilFeather` pt wide (eased, round at the corners, as wide at every point of the way: three lines of a letter),
-   * so the list's words fade away before the paper's edge reaches them and no edge ever cuts a legible line.
+   * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way.
+   * The Book goes under a veil of the page's paper over lamp.leaveMs, and the card holds `holdMs` before it grows, so
+   * by the time the paper's edge is `clearPt` past the card (short of the next card's words, 28 pt on) the Book is 95
+   * percent gone and no edge ever cuts a legible line; on the way back the veil lifts over lamp.returnMs once the
+   * paper is within `clearPt` of the card.
    */
-  cardToPage: { contentFrom: 0.6, behindDim: 0.96, veilLead: 5, veilFeather: 96 },
+  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24 },
   /** Press feedback (COMPONENTS 0.3): controls scale to 0.97, cards to 0.98, on `snappy`. */
   press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
   /** Empty-state illustration breath (MOTION 5j, Calm's slowest pace). */

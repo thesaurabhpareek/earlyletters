@@ -3,14 +3,15 @@
  * primitives built on it: page turn, card to page, excerpt fade, the stroke tables, and the disabled button. Node
  * cannot load React Native, so the screens' use of the standard is checked in their source.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { EASED_STOPS, FADE_FRACTION, LINEAR_STOPS, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
+import { FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
 import { LINE_ART, LINE_ART_NAMES, artHeight, penWidth, strokeProgress } from '../src/components/ui/line-art.data';
 import { ROOT_ROUTE_CONTEXT } from '../src/lib/navigation.logic';
 import {
+  CARD_TO_PAGE,
   HAND_OFF,
   ROUTES,
   SWIPE,
@@ -20,10 +21,10 @@ import {
   cardWasCut,
   carryFrame,
   createCoverStore,
+  clearProgress,
   hiddenBehind,
-  VEIL_UP,
-  veilBox,
-  veilFrame,
+  veilIn,
+  veilOut,
   type Rect,
   fileIntoMonthPlan,
   moveOptions,
@@ -176,10 +177,8 @@ describe('card to page (MOTION 5f)', () => {
   const card = { x: 16, y: 320, width: 370, height: 148 };
 
   it('starts exactly on the card with its corners, and ends as the whole screen with square corners', () => {
-    expect(cardToPageFrame(card, screen, 0)).toMatchObject({ x: 16, y: 320, width: 370, height: 148, radius: tokens.radius.md, contentOpacity: 0, dim: 0 });
-    const end = cardToPageFrame(card, screen, 1);
-    expect(end).toMatchObject({ x: 0, y: 0, width: 402, height: 874, radius: 0, contentOpacity: 1 });
-    expect(1 - end.dim).toBeCloseTo(M.cardToPage.behindDim);
+    expect(cardToPageFrame(card, screen, 0)).toMatchObject({ x: 16, y: 320, width: 370, height: 148, radius: tokens.radius.md, contentOpacity: 0 });
+    expect(cardToPageFrame(card, screen, 1)).toMatchObject({ x: 0, y: 0, width: 402, height: 874, radius: 0, contentOpacity: 1 });
   });
 
   it("the page's own words arrive only from 60 percent of the way, and a spring's overshoot is clamped", () => {
@@ -236,110 +235,205 @@ describe('card to page (MOTION 5f)', () => {
     expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 1.2) }, { ...pageText, lineHeight: lineHeightFor('letterBody', 1.2) })).toBe(true);
   });
 
-  it('the veil starts on the card, drawing nothing, runs ahead of the paper, and covers the screen from 1 / veilLead of the way', () => {
-    expect(veilFrame(card, screen, 0)).toMatchObject({ x: card.x, y: card.y, width: card.width, height: card.height, opacity: 0 });
-    expect(veilFrame(card, screen, VEIL_UP).opacity).toBe(1);
-    expect(veilFrame(card, screen, 1 / M.cardToPage.veilLead)).toMatchObject({ x: 0, y: 0, width: screen.width, height: screen.height });
-    for (let i = 0; i <= 200; i++) {
-      const t = i / 200;
-      const v = veilFrame(card, screen, t);
-      const f = cardToPageFrame(card, screen, t);
-      expect(v.x).toBeLessThanOrEqual(f.x + 1e-9);
-      expect(v.y).toBeLessThanOrEqual(f.y + 1e-9);
-      expect(v.x + v.width).toBeGreaterThanOrEqual(f.x + f.width - 1e-9);
-      expect(v.y + v.height).toBeGreaterThanOrEqual(f.y + f.height - 1e-9);
+  /** The standard spring the paper grows on, stepped finely (Reanimated solves the same equation): progress by ms. */
+  const springAt = (() => {
+    const s = M.standard;
+    const perMs = 20;
+    const dt = 1 / 1000 / perMs;
+    const out: number[] = [0];
+    let x = 0;
+    let v = 0;
+    for (let i = 1; i <= 1500 * perMs; i++) {
+      v += ((-s.stiffness * (x - 1) - s.damping * v) / s.mass) * dt;
+      x += v * dt;
+      if (i % perMs === 0) out.push(x);
+    }
+    return (ms: number) => (ms <= 0 ? 0 : out[Math.min(out.length - 1, Math.floor(ms))]!);
+  })();
+
+  /** The move as it plays, ms by ms: the paper's progress and the veil, to the page (after the hold) or back to the card. */
+  const timeline = (from: Rect, scr: { width: number; height: number }, way: 'toPage' | 'toCard') => {
+    const frames: { t: number; p: number; veil: number }[] = [];
+    const lift = clearProgress(from, scr);
+    let liftAt: number | null = null;
+    for (let t = 0; t <= 1200; t++) {
+      if (way === 'toPage') {
+        frames.push({ t, p: springAt(t - CARD_TO_PAGE.holdMs), veil: veilIn(t) });
+        continue;
+      }
+      const p = 1 - springAt(t);
+      if (liftAt === null && p <= lift) liftAt = t;
+      frames.push({ t, p, veil: liftAt === null ? 1 : veilOut(t - liftAt) });
+    }
+    return frames;
+  };
+
+  /** The Book on three phones: its title, two letter cards with a dateline and two lines each, and its light. */
+  const PHONES = [
+    { name: 'SE', width: 375, height: 667 },
+    { name: '17 Pro', width: 402, height: 874 },
+    { name: 'Pro Max', width: 440, height: 956 },
+  ];
+  type Thing = Rect & { what: string; line: boolean };
+  const book = (scr: { width: number; height: number }) => {
+    const w = scr.width - 32;
+    const words = (name: string, top: number): Thing[] => [
+      { what: `${name}'s dateline`, x: 32, y: top + 16, width: 160, height: 18, line: true },
+      { what: `${name}'s first line`, x: 32, y: top + 40, width: w - 32, height: 32, line: true },
+      { what: `${name}'s second line`, x: 32, y: top + 72, width: w - 32, height: 32, line: true },
+    ];
+    const title: Thing = { what: "the Book's title", x: 16, y: 24, width: 220, height: 44, line: true };
+    // The lamp, where its light is strongest (above the title) and at the far corner of the screen.
+    const light: Thing[] = [
+      { what: 'the lamp above the title', x: scr.width / 2 - 40, y: 0, width: 80, height: 20, line: false },
+      { what: 'the lamp at the foot', x: 0, y: scr.height - 40, width: 40, height: 40, line: false },
+    ];
+    const a = { x: 16, y: 80, width: w, height: 120 };
+    const b = { x: 16, y: 212, width: w, height: 120 };
+    return [
+      { name: 'card a', rect: a, things: [title, ...light, ...words('card b', b.y)] },
+      { name: 'card b', rect: b, things: [title, ...light, ...words('card a', a.y)] },
+    ];
+  };
+  const overlap = (r: Rect, o: Rect) => {
+    const w = Math.min(r.x + r.width, o.x + o.width) - Math.max(r.x, o.x);
+    const h = Math.min(r.y + r.height, o.y + o.height) - Math.max(r.y, o.y);
+    return w > 0 && h > 0 ? (w * h) / (r.width * r.height) : 0;
+  };
+  /** How much of a thing on the Book is still seen: what the veil leaves of it, outside the paper. */
+  const seen = (thing: Rect, paper: Rect, veil: number) => (1 - veil) * (1 - overlap(thing, paper));
+
+  it('the Book leaves the way its lamp leaves a lit room: no part of it loses more than half its strength in 50 ms, and the title and the light take the whole 160 ms', () => {
+    expect(CARD_TO_PAGE.veilInMs).toBe(M.lamp.leaveMs);
+    expect(M.lamp.leaveMs).toBeGreaterThanOrEqual(160);
+    for (const scr of PHONES) {
+      for (const { name, rect, things } of book(scr)) {
+        const frames = timeline(rect, scr, 'toPage');
+        for (const thing of things) {
+          const s = frames.map((f) => seen(thing, cardToPageFrame(rect, scr, f.p), f.veil));
+          let worst = 0;
+          for (let t = 0; t + 50 < s.length; t++) worst = Math.max(worst, s[t]! - s[t + 50]!);
+          expect(worst, `${scr.name}, ${name} opens: ${thing.what}`).toBeLessThanOrEqual(0.5);
+          if (thing.line && !thing.what.startsWith("the Book's")) continue;
+          // The title and the light: not gone before the lamp's own leaving time.
+          const gone = s.findIndex((v) => v <= 0.001);
+          expect(gone, `${scr.name}, ${name} opens: ${thing.what} is gone by`).toBeGreaterThanOrEqual(M.lamp.leaveMs);
+        }
+      }
     }
   });
 
-  it("no frame, either way, lets the paper's edge cut a legible line of the list: the veil has covered it first", () => {
-    // The Book: its title, then card a and card b, each with a dateline and two lines. Opening either card, the
-    // other card's lines and the title must be under the veil before the paper's edge meets them (both schemes
-    // alike; the way back is the same frames in reverse, as every frame is a function of progress alone).
-    const title = { what: "the Book's title", x: 16, y: 24, width: 220, height: 44 };
-    const words = (name: string, top: number) => [
-      { what: `${name}'s dateline`, x: 32, y: top + 16, width: 160, height: 18 },
-      { what: `${name}'s first line`, x: 32, y: top + 40, width: 338, height: 32 },
-      { what: `${name}'s second line`, x: 32, y: top + 72, width: 338, height: 32 },
-    ];
-    const cards = [
-      { name: 'card a', rect: { x: 16, y: 80, width: 370, height: 120 }, others: [title, ...words('card b', 212)] },
-      { name: 'card b', rect: { x: 16, y: 212, width: 370, height: 120 }, others: [title, ...words('card a', 80)] },
-    ];
+  it("no edge of the paper ever meets a line of the Book that can still be read (5 percent or more of it), either way, on any phone", () => {
     const inside = (r: Rect, o: Rect) => r.x >= o.x - 1e-9 && r.y >= o.y - 1e-9 && r.x + r.width <= o.x + o.width + 1e-9 && r.y + r.height <= o.y + o.height + 1e-9;
-    const meets = (r: Rect, o: Rect) => r.x < o.x + o.width && o.x < r.x + r.width && r.y < o.y + o.height && o.y < r.y + r.height;
     let crossings = 0;
-    for (const { name, rect, others } of cards) {
-      for (let i = 0; i <= 1000; i++) {
-        const t = i / 1000;
-        const paper = cardToPageFrame(rect, screen, t);
-        const v = veilFrame(rect, screen, t);
-        for (const l of others) {
-          if (meets(l, paper) && !inside(l, paper)) {
-            crossings++;
-            // The paper's edge is on this line: it must already be fully under the veil's solid part.
-            expect(v.opacity, `${name} open, ${l.what} at ${t}`).toBe(1);
-            expect(inside(l, v), `${name} open, ${l.what} at ${t}`).toBe(true);
+    for (const scr of PHONES) {
+      for (const { name, rect, things } of book(scr)) {
+        for (const way of ['toPage', 'toCard'] as const) {
+          for (const f of timeline(rect, scr, way)) {
+            const paper = cardToPageFrame(rect, scr, f.p);
+            for (const l of things.filter((x) => x.line)) {
+              if (overlap(l, paper) === 0 || inside(l, paper)) continue;
+              crossings++;
+              expect(1 - f.veil, `${scr.name}, ${name}, ${way}: ${l.what} at ${f.t} ms`).toBeLessThanOrEqual(0.05);
+            }
           }
         }
       }
     }
     // The sweep did meet the lines (it is not passing for want of crossings).
-    expect(crossings).toBeGreaterThan(100);
+    expect(crossings).toBeGreaterThan(500);
   });
 
-  it("the veil's soft edge is as wide at every point of the way, so no narrowing edge crosses the list's words at the slow end of the way back", () => {
-    for (let i = 0; i <= 1000; i++) expect(veilFrame(card, screen, i / 1000).feather).toBe(M.cardToPage.veilFeather);
-    // Eased, and wide enough that a line of a letter never spans more than half of its strength: a fade, not a cut.
-    let steepest = 0;
-    for (let i = 1; i < EASED_STOPS.length; i++) {
-      const [a, b] = [EASED_STOPS[i - 1]!, EASED_STOPS[i]!];
-      steepest = Math.max(steepest, (b.opacity - a.opacity) / (b.offset - a.offset));
+  it("up to clearProgress every edge of the paper is within clearPt of the card, short of the next card's words", () => {
+    for (const scr of PHONES) {
+      for (const y of [0, 80, 212, scr.height / 2, scr.height - 140]) {
+        const r = { x: 16, y, width: scr.width - 32, height: 120 };
+        const f = cardToPageFrame(r, scr, clearProgress(r, scr));
+        const grown = Math.max(r.x - f.x, r.y - f.y, f.x + f.width - (r.x + r.width), f.y + f.height - (r.y + r.height));
+        expect(grown).toBeLessThanOrEqual(M.cardToPage.clearPt + 1e-9);
+        expect(grown).toBeGreaterThan(M.cardToPage.clearPt - 1e-9);
+      }
     }
-    expect((steepest * lineHeightFor('letterBody')) / M.cardToPage.veilFeather).toBeLessThanOrEqual(0.5);
+    // The next card's words begin 28 pt past a card's edge (a 12 pt gap, then 16 pt of padding).
+    expect(M.cardToPage.clearPt).toBeLessThan(28);
   });
 
-  it('the eased edge is clear to solid along smoothstep, flat at both ends, so neither end shows as a line', () => {
-    expect(EASED_STOPS[0]).toEqual({ offset: 0, opacity: 0 });
-    expect(EASED_STOPS.at(-1)).toEqual({ offset: 1, opacity: 1 });
-    const steps = EASED_STOPS.slice(1).map((s, i) => s.opacity - EASED_STOPS[i]!.opacity);
-    for (const d of steps) expect(d).toBeGreaterThan(0);
-    // Its first and last steps are a fraction of its middle ones (a straight fade's are all the same).
-    const middle = Math.max(...steps);
-    expect(steps[0]! / middle).toBeLessThan(0.3);
-    expect(steps.at(-1)! / middle).toBeLessThan(0.3);
-    // Symmetric, so a corner's radial fade read from its far end matches the edges beside it.
-    EASED_STOPS.forEach((s, i) => expect(s.opacity + EASED_STOPS[EASED_STOPS.length - 1 - i]!.opacity).toBeCloseTo(1, 12));
-    expect(LINEAR_STOPS).toEqual([
-      { offset: 0, opacity: 0 },
-      { offset: 1, opacity: 1 },
-    ]);
-  });
-
-  it("the veil's box holds its soft edge on whole device pixels, so its pieces meet without a seam", () => {
-    for (const ratio of [2, 3]) {
-      for (let i = 0; i <= 200; i++) {
-        const t = i / 200;
-        const v = veilFrame(card, screen, t);
-        const b = veilBox(card, screen, t, ratio);
-        for (const n of [b.left, b.top, b.left + b.width, b.top + b.height]) expect(Math.abs(n * ratio - Math.round(n * ratio))).toBeLessThan(1e-6);
-        // Within half a pixel of the veil and its soft edge, at the veil's own strength.
-        expect(Math.abs(b.left - (v.x - v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
-        expect(Math.abs(b.top - (v.y - v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
-        expect(Math.abs(b.left + b.width - (v.x + v.width + v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
-        expect(Math.abs(b.top + b.height - (v.y + v.height + v.feather))).toBeLessThanOrEqual(0.5 / ratio + 1e-9);
-        expect(b.opacity).toBe(v.opacity);
+  it('the card holds only while the Book goes, and the whole move, either way, fits the sequence', () => {
+    expect(CARD_TO_PAGE.holdMs).toBeLessThan(CARD_TO_PAGE.veilInMs);
+    for (const scr of PHONES) {
+      for (const { rect } of book(scr)) {
+        const there = timeline(rect, scr, 'toPage').findIndex((f) => f.p >= 0.999);
+        expect(there).toBeGreaterThan(0);
+        expect(there).toBeLessThanOrEqual(M.sequenceMaxMs);
+        const back = timeline(rect, scr, 'toCard').findIndex((f) => f.veil === 0);
+        expect(back).toBeGreaterThan(0);
+        expect(back).toBeLessThanOrEqual(M.sequenceMaxMs);
       }
     }
   });
 
-  it('the veil is drawn as one group: a solid middle under its eased edges and round corners (source)', () => {
+  it('Reduce Motion, or no carry: nothing moves, the Book goes under the veil and the page fades in from when it is half gone, a hand-off, both ways', () => {
+    const lin = (t: number, from: number, ms: number) => Math.min(1, Math.max(0, (t - from) / ms));
+    const C = CARD_TO_PAGE;
+    // To the page: the Book under the veil on the lamp's leaving line; the page (paper and words) from when the Book is half gone.
+    const book = (t: number) => 1 - veilIn(t);
+    const page = (t: number) => lin(t, C.fadeInFromMs, C.fadeMs);
+    expect(book(C.fadeInFromMs)).toBeCloseTo(0.5);
+    // Back: the page out over fadeMs; the Book back over the lamp's return from when the page is half gone.
+    const pageBack = (t: number) => 1 - lin(t, 0, C.fadeMs);
+    const bookBack = (t: number) => lin(t, C.liftFromMs, C.veilOutMs);
+    expect(pageBack(C.liftFromMs)).toBeCloseTo(0.5);
+    let overlap = 0;
+    for (let t = 0; t <= 1000; t++) {
+      // Nothing on either screen loses more than half its strength in 50 ms.
+      expect(book(t) - book(t + 50)).toBeLessThanOrEqual(0.5);
+      expect(pageBack(t) - pageBack(t + 50)).toBeLessThanOrEqual(0.5);
+      overlap = Math.max(overlap, Math.min(book(t), page(t)), Math.min(pageBack(t), bookBack(t)));
+    }
+    // The two screens' words are never on screen together at more than a quarter of their strength.
+    expect(overlap).toBeLessThanOrEqual(0.25);
+    // The Book and its light take the lamp's whole leaving time, and both ways fit the sequence.
+    expect(book(M.lamp.leaveMs - 1)).toBeGreaterThan(0);
+    expect(C.fadeInFromMs + C.fadeMs).toBeLessThanOrEqual(M.sequenceMaxMs);
+    expect(C.liftFromMs + C.veilOutMs).toBeLessThanOrEqual(M.sequenceMaxMs);
+    expect(C.fadeMs).toBe(M.fadeMs);
+    expect(C.veilOutMs).toBe(M.lamp.returnMs);
+    expect(veilIn(0)).toBe(0);
+    expect(veilOut(0)).toBe(1);
+    expect(veilOut(M.lamp.returnMs)).toBe(0);
+  });
+
+  it("the veil is one full-screen layer of the page's paper with no pieces, timed as above (source)", () => {
     const src = read('components/motion/card-transition.tsx');
-    expect(src).toContain('veilBox(from.value, screen, p.value, pixelRatio)');
-    expect(src).toContain('<Veil color={c.bg} style={veil} />');
-    expect(src).toMatch(/<Animated\.View pointerEvents="none" needsOffscreenAlphaCompositing style=\{\[\{ position: 'absolute' \}, style\]\}>/);
-    expect(src).toContain("left: F - 1, top: F - 1, right: F - 1, bottom: F - 1, backgroundColor: color");
-    expect(src.match(/<FadeEdge eased /g)).toHaveLength(4);
-    expect(src.match(/<FadeCorner /g)).toHaveLength(4);
+    expect(src).toContain('<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: c.bg }, veilStyle]} />');
+    expect(src).toContain('const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));');
+    // No edges, corners or boxes: nothing that could leave a joint.
+    expect(src).not.toMatch(/FadeCorner|veilBox|needsOffscreenAlphaCompositing/);
+    expect(src.match(/<FadeEdge /g)).toHaveLength(1); // the card's own fade over its last line
+    // To the page: the veil on the lamp's leaving line, the card holding, then the spring.
+    expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toContain("p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard')");
+    // Back: the veil lifts once the paper is within clearPt of the card, and the route leaves when both are done.
+    expect(src).toContain('liftFrom.value = clearProgress(r.card, screen);');
+    expect(src).toContain('() => lifting.value === 1 && p.value <= liftFrom.value,');
+    expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }');
+    expect(src).toContain('closeLeft.current = 2;');
+    // The plain fade, both ways: a hand-off on straight lines.
+    expect(src).toMatch(/fade\.value = withDelay\(\s*CARD_TO_PAGE\.fadeInFromMs,\s*withTiming\(1, \{ duration: CARD_TO_PAGE\.fadeMs, easing: Easing\.linear/);
+    expect(src).toContain('fade.value = withTiming(0, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/veil\.value = withDelay\(\s*CARD_TO_PAGE\.liftFromMs,\s*withTiming\(0, \{ duration: CARD_TO_PAGE\.veilOutMs, easing: Easing\.linear/);
+    expect(src).not.toContain('STANDARD_EASING');
+  });
+
+  it('a screen that holds cards for a page hides itself under it, and a page lands screen readers on its opening (P5 contract, source)', () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : /\.tsx$/.test(e.name) ? [join(dir, e.name)] : []));
+    const screens = walk(SRC).filter((f) => !f.endsWith(join('motion', 'card-transition.tsx')));
+    for (const f of screens) {
+      const src = readFileSync(f, 'utf8');
+      if (src.includes('<CardSource')) expect(src, `${f} spreads useHiddenBehindCardPage()`).toContain('useHiddenBehindCardPage()');
+      if (src.includes('<CardToPage')) expect(src, `${f} gives its opening the focus ref`).toMatch(/opening=\{\(focus\)\s*=>[\s\S]*?\bfocus\b/);
+    }
   });
 
   it("the card's fade is drawn only when the card was cut: when the page holds more of the letter than the card showed", () => {

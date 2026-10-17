@@ -191,15 +191,15 @@ describe('design tokens: motion and targets', () => {
     expect(m.cover.holdMs + m.enter.durationMs).toBeLessThanOrEqual(m.sequenceMaxMs);
     expect(m.exitMs).toBeLessThan(m.enter.durationMs); // exits are quicker than entries
   });
-  it('a card grows into its page with its content arriving late and the list behind only slightly dimmed (MOTION 5f)', () => {
+  it('a card grows into its page with its content arriving late, after a short hold while the Book goes (MOTION 5f)', () => {
     expect(m.cardToPage.contentFrom).toBeGreaterThan(0.5);
     expect(m.cardToPage.contentFrom).toBeLessThan(1);
-    expect(m.cardToPage.behindDim).toBeGreaterThanOrEqual(0.9);
-    expect(m.cardToPage.behindDim).toBeLessThan(1);
-    // The veil runs ahead of the paper (more than once as far along) with a soft edge.
-    expect(m.cardToPage.veilLead).toBeGreaterThan(1);
-    // Wide enough that a line of a letter (32 pt) never spans more than half of it: a fade over words, not a cut.
-    expect(m.cardToPage.veilFeather).toBeGreaterThanOrEqual(64);
+    // The card holds while the Book's light leaves, and starts to grow before the light has quite gone.
+    expect(m.cardToPage.holdMs).toBeGreaterThan(0);
+    expect(m.cardToPage.holdMs).toBeLessThan(m.lamp.leaveMs);
+    // Short of the next card's words (a 12 pt gap and 16 pt of padding past a card's edge).
+    expect(m.cardToPage.clearPt).toBeGreaterThan(0);
+    expect(m.cardToPage.clearPt).toBeLessThan(28);
   });
   it('between rooms the light leaves as fast as an exit and comes back as fast as an entry; a dissolve fits the sequence', () => {
     expect(m.lamp.leaveMs).toBe(m.exitMs);

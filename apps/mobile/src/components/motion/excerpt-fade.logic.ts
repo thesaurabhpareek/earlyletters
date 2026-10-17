@@ -37,23 +37,6 @@ export function isRtl(text: string): boolean {
   return false;
 }
 
-export type FadeStop = { offset: number; opacity: number };
-
-/** A plain fade: clear to solid in a straight line (the end of an excerpt's line). */
-export const LINEAR_STOPS: readonly FadeStop[] = [
-  { offset: 0, opacity: 0 },
-  { offset: 1, opacity: 1 },
-];
-
-/**
- * An eased fade (the card-to-page veil's soft edge): clear to solid along smoothstep, in nine stops, so it has no
- * corner at either end to show as a line where it meets the solid part or the screen beneath.
- */
-export const EASED_STOPS: readonly FadeStop[] = Array.from({ length: 9 }, (_, i) => {
-  const t = i / 8;
-  return { offset: t, opacity: t * t * (3 - 2 * t) };
-});
-
 /** Where the fade sits on the last line: the end of the line, a share of its width. */
 export function fadeBox(lines: number, lineHeight: number, rtl: boolean) {
   return { top: (lines - 1) * lineHeight, height: lineHeight, widthPct: FADE_FRACTION * 100, side: rtl ? ('left' as const) : ('right' as const) };

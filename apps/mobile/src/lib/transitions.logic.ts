@@ -173,9 +173,9 @@ export type Rect = { x: number; y: number; width: number; height: number };
 
 /**
  * Where the growing paper is at `progress` (0: exactly over the tapped card; 1: the whole screen), with its corner
- * radius going from `radius.md` to 0, when the page's own content shows, and how much the list behind is dimmed.
- * The paper is one empty view, so its frame and radius may move (MOTION 7's card exception); the page's content
- * is never scaled: it fades in, full size, from contentFrom of the way.
+ * radius going from `radius.md` to 0, and when the page's own content shows. The paper is one empty view, so its
+ * frame and radius may move (MOTION 7's card exception); the page's content is never scaled: it fades in, full size,
+ * from contentFrom of the way.
  */
 export function cardToPageFrame(card: Rect, screen: { width: number; height: number }, progress: number) {
   'worklet';
@@ -188,50 +188,52 @@ export function cardToPageFrame(card: Rect, screen: { width: number; height: num
     height: card.height + (screen.height - card.height) * p,
     radius: tokens.radius.md * (1 - p),
     contentOpacity: Math.min(1, Math.max(0, (p - from) / (1 - from))),
-    /** How much the list behind is dimmed: 0 at the start, 1 - behindDim at the end. */
-    dim: (1 - M.cardToPage.behindDim) * p,
   };
 }
 
-/** How far along the veil has fully come up (it draws nothing at rest on the card). */
-export const VEIL_UP = 0.04;
-
 /**
- * The veil of the page's paper over the list: its solid part is the paper's own frame at `veilLead` times its
- * progress, so it always runs ahead of the paper's edges (and on the way back stays out until they have passed). Its
- * soft edge, `feather` wide outside that frame, is as wide at every point of the way: the spring is slow at the end
- * of the way back, and an edge that narrowed there read as a cut through the list's words. At 0 it is exactly the
- * card and draws nothing; it comes up over the first VEIL_UP of the way and covers the screen from 1 / veilLead, so
- * the spring's last points never show the list under the paper.
+ * The card-to-page timeline (MOTION 5f). The Book goes under a veil of the page's paper: one full-screen layer, no
+ * pieces and so no joints, coming up on a straight line over lamp.leaveMs, the way the lamp leaves a lit room (rule
+ * 1), so nothing on the Book loses more than a third of its strength in 50 ms and the title and the light take the
+ * whole 160 ms. The card holds for holdMs while it does, then the paper grows on `standard`; by the time any edge can
+ * reach another line of the Book (clearPt past the card) the Book is 95 percent gone. On the way back the veil stays
+ * until the paper is within clearPt of the card again, then lifts on a straight line over lamp.returnMs, the way the
+ * lamp comes back.
+ *
+ * Reduce Motion, or no carry: nothing moves. The Book goes under the same veil, and the whole page (paper and words)
+ * fades in over fadeMs from when the Book is half gone; back, the page fades out over fadeMs and the Book returns over
+ * lamp.returnMs from when the page is half gone. A hand-off, not a pile-up (HAND_OFF's rule): the two screens' words
+ * are never on screen together at more than a quarter of their strength, and each fade is a straight line.
  */
-export function veilFrame(card: Rect, screen: { width: number; height: number }, progress: number) {
-  'worklet';
-  const p = Math.min(1, Math.max(0, progress));
-  const f = cardToPageFrame(card, screen, Math.min(1, p * M.cardToPage.veilLead));
-  // By VEIL_UP it is already ahead of the paper's edges (no square corners over the card's rounded ones before).
-  const opacity = Math.min(1, p / VEIL_UP);
-  return { x: f.x, y: f.y, width: f.width, height: f.height, feather: M.cardToPage.veilFeather, opacity };
+export const CARD_TO_PAGE = {
+  veilInMs: M.lamp.leaveMs,
+  holdMs: M.cardToPage.holdMs,
+  veilOutMs: M.lamp.returnMs,
+  fadeMs: M.fadeMs,
+  /** Reduce Motion: the page starts to fade in when the Book is half gone. */
+  fadeInFromMs: M.lamp.leaveMs / 2,
+  /** Reduce Motion, back: the Book starts to return when the page is half gone. */
+  liftFromMs: M.fadeMs / 2,
+} as const;
+
+/** The veil on the way to the page, `ms` after the move begins (0 to 1). */
+export function veilIn(ms: number): number {
+  return Math.min(1, Math.max(0, ms / CARD_TO_PAGE.veilInMs));
+}
+
+/** The veil on the way back, `ms` after the paper came within clearPt of the card (1 to 0). */
+export function veilOut(ms: number): number {
+  return 1 - Math.min(1, Math.max(0, ms / CARD_TO_PAGE.veilOutMs));
 }
 
 /**
- * The veil's box on screen, its soft edge included, on whole device pixels (`pixelRatio`): its pieces (the solid
- * middle, four edges and four corners, laid out inside it a whole number of points apart) then meet on pixel
- * boundaries, so no seam shows between them.
+ * How far along the paper is when its farthest-moving edge has grown cardToPage.clearPt past the card. Up to here no
+ * edge can meet another line of the Book (the next card's words begin 28 pt past a card's edge: a 12 pt gap and the
+ * card's 16 pt padding); the way back lifts the veil from here.
  */
-export function veilBox(card: Rect, screen: { width: number; height: number }, progress: number, pixelRatio: number) {
-  'worklet';
-  const v = veilFrame(card, screen, progress);
-  const snap = (n: number) => Math.round(n * pixelRatio) / pixelRatio;
-  const left = snap(v.x - v.feather);
-  const top = snap(v.y - v.feather);
-  return {
-    left,
-    top,
-    width: snap(v.x + v.width + v.feather) - left,
-    height: snap(v.y + v.height + v.feather) - top,
-    feather: v.feather,
-    opacity: v.opacity,
-  };
+export function clearProgress(card: Rect, screen: { width: number; height: number }): number {
+  const travel = Math.max(card.x, card.y, screen.width - card.x - card.width, screen.height - card.y - card.height);
+  return travel <= 0 ? 1 : Math.min(1, M.cardToPage.clearPt / travel);
 }
 
 /** A block of words on screen, and the line height its body text renders at (lineHeightFor: type, Dynamic Type, Reading Size). */

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
 import { tokens, type Daypart, type LampScene } from '@scribe/design-tokens';
@@ -356,64 +356,94 @@ describe('Lamp gradient', () => {
 
   /**
    * The measured boxes above are numbers from one build; this ties them to the screens. In every room the lamp may
-   * light, and in every feature component such a room renders (followed import by import; the ui, motion and
-   * platform primitives draw a status colour only when a caller asks, and the caller is scanned), a status colour
-   * (onLitPaper.status, or a field's `error`, which TextField draws in `caution`) may be used only where the list
-   * below says. Each entry either names a measured box in ROOMS, in that colour, below STATUS_CLEAR_FROM, or names the
-   * surface it sits on (a card or chip, not the lit paper). The gate and Read together allow none. Anything else
-   * (Tonight's subtitle turned to `tone="success"`, a caution line under the greeting, a form error on a lit step)
-   * fails here.
+   * light, and in every file such a room renders (followed through every import: the `@/` alias, relative paths and
+   * re-exports; the ui, motion and platform primitives draw a status colour only when a caller asks, and the caller
+   * is scanned), a status colour (onLitPaper.status, or a field's `error`, which TextField draws in `caution`) may be
+   * used only where the list below says. Each entry either names a measured box in ROOMS, in that colour, below
+   * STATUS_CLEAR_FROM, and the line in the room's source it must follow (so it cannot move up into the light), or names
+   * the surface it sits on (a card or chip, not the lit paper). The gate and Read together allow none. Anything else
+   * (Tonight's subtitle turned to `tone="success"`, a tone held in a constant, a caution line under the greeting, a
+   * form error on a lit step, a caution line in a component two imports away) fails here.
    */
-  type StatusUse = { use: string; box?: string; room?: string; surface?: string };
+  type StatusUse = { use: string; box?: string; room?: string; after?: string; surface?: string };
+  const QUIET_FOOT = '<View className="min-h-8 flex-1" />';
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
+    // "A quiet day, kept." and its check mark sit in the group the spacer pushes to the foot of Tonight.
     'app/(tabs)/index.tsx': [
-      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight' },
-      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight' }, // its check mark, beside the words
+      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
+      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
     ],
     // "We'll tell you" on the Family tab: a check mark on its own chip.
     'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
+    // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
+    'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
   const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
+  const PRIMITIVES = /^components\/(ui|motion|platform)\//;
 
-  /** Every use of a status colour in a file's code, comments aside: a tone (plain or in an expression), a colour from useTheme or tokens, a class, a destructive button, a field error. */
-  const statusUses = (src: string) => {
-    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  /**
+   * Every use of a status colour in a file's code, comments aside: a tone (plain, in an expression or in an object), a
+   * colour from useTheme or tokens, a class, a destructive button, a field error; in a file that renders (.tsx), any
+   * other status name in quotes too (a tone held in a constant first), except a haptic's kind and a system alert
+   * button's style, which are not colours. A plain module (.ts) uses these names as states ('recording', a 'success'
+   * haptic), so only the colour forms count there.
+   */
+  const statusUses = (src: string, renders = true) => {
+    let code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     const k = 'success|caution|recording|destructive';
     const found: string[] = [];
-    for (const m of code.matchAll(new RegExp(`\\btone=(?:["'\`](${k})["'\`]|\\{[^}]*?["'\`](${k})["'\`][^}]*\\})`, 'g'))) found.push(`tone="${m[1] ?? m[2]}"`);
-    for (const m of code.matchAll(new RegExp(`\\bc\\.(${k})\\b`, 'g'))) found.push(`c.${m[1]}`);
-    for (const m of code.matchAll(new RegExp(`\\btokens\\.(?:light|dark)\\.(${k})\\b`, 'g'))) found.push(`tokens.${m[1]}`);
-    for (const m of code.matchAll(new RegExp(`\\b(text|bg|border)-(${k})\\b`, 'g'))) found.push(`${m[1]}-${m[2]}`);
-    for (const m of code.matchAll(/\bvariant=["']destructive["']/g)) found.push(m[0]);
-    for (const m of code.matchAll(/\berror=[{"']/g)) found.push('error=');
+    const take = (re: RegExp, name: (m: string[]) => string) => {
+      code = code.replace(re, (...m: string[]) => {
+        found.push(name(m));
+        return ' ';
+      });
+    };
+    take(new RegExp(`\\btone(?:=|:\\s*)(?:["'\`](${k})["'\`]|\\{[^}]*?["'\`](${k})["'\`][^}]*\\})`, 'g'), (m) => `tone="${m[1] ?? m[2]}"`);
+    take(new RegExp(`\\bc\\.(${k})\\b`, 'g'), (m) => `c.${m[1]}`);
+    take(new RegExp(`\\btokens\\.(?:light|dark)\\.(${k})\\b`, 'g'), (m) => `tokens.${m[1]}`);
+    take(new RegExp(`\\b(text|bg|border)-(${k})\\b`, 'g'), (m) => `${m[1]}-${m[2]}`);
+    take(/\bvariant=["']destructive["']/g, (m) => m[0]!);
+    take(/\berror=[{"']/g, () => 'error=');
+    if (renders) {
+      code = code.replace(/\bhaptic\(\s*["'`]\w+["'`]\s*\)/g, ' ').replace(/\bstyle:\s*["'`]destructive["'`]/g, ' ');
+      take(new RegExp(`["'\`](${k})["'\`]`, 'g'), (m) => `'${m[1]}'`);
+    }
     return found;
   };
 
-  /** A lit room and every feature component it renders, followed through its imports (primitives excepted). */
+  /** Where an import names a file under src: the `@/` alias, or a path relative to the importing file. */
+  const resolveImport = (from: string, spec: string) => {
+    let base: string;
+    if (spec.startsWith('@/')) base = join(SRC, spec.slice(2));
+    else if (spec.startsWith('.')) base = join(SRC, dirname(from), spec);
+    else return null;
+    for (const c of [base, `${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')]) {
+      try {
+        if (/\.tsx?$/.test(c) && statSync(c).isFile()) return relative(SRC, c).split('\\').join('/');
+      } catch {}
+    }
+    return null;
+  };
+  /** Every module a file names: imports, re-exports (`export ... from`) and side-effect imports. */
+  const importsOf = (src: string) =>
+    [...src.matchAll(/(?:^|[\n;])\s*(?:import|export)\s[^;'"]*?\bfrom\s*["']([^"']+)["']|(?:^|[\n;])\s*import\s*["']([^"']+)["']/g)].map((m) => (m[1] ?? m[2])!);
+
+  /** A lit room and every file it renders, followed through every import (primitives excepted). */
   const renderedBy = (room: string) => {
     const seen = new Set<string>();
-    const resolve = (spec: string) => {
-      const base = join(SRC, spec.replace(/^@\//, ''));
-      for (const c of [`${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')]) {
-        try {
-          if (statSync(c).isFile()) return relative(SRC, c).split('\\').join('/');
-        } catch {}
-      }
-      return null;
-    };
     const walk = (f: string) => {
       if (seen.has(f)) return;
       seen.add(f);
-      for (const m of readFileSync(join(SRC, f), 'utf8').matchAll(/from '(@\/components\/[^']+)'/g)) {
-        if (/^@\/components\/(ui|motion|platform)\//.test(m[1])) continue;
-        const r = resolve(m[1]);
-        if (r) walk(r);
+      for (const spec of importsOf(readFileSync(join(SRC, f), 'utf8'))) {
+        const r = resolveImport(f, spec);
+        if (r && !PRIMITIVES.test(r)) walk(r);
       }
     };
     walk(room);
     return [...seen];
   };
+  const usesIn = (f: string) => statusUses(readFileSync(join(SRC, f), 'utf8'), f.endsWith('.tsx')).sort();
 
   it('the status-colour scan sees every way a screen sets one', () => {
     expect(statusUses('<Text tone="success">a</Text>')).toEqual(['tone="success"']);
@@ -421,27 +451,43 @@ describe('Lamp gradient', () => {
     expect(statusUses('<Icon color={c.recording} /> <View className="text-destructive" />')).toEqual(['c.recording', 'text-destructive']);
     expect(statusUses('<Button variant="destructive" /> // tone="success" in a comment')).toEqual(['variant="destructive"']);
     expect(statusUses('<TextField label={l} error={problem} />')).toEqual(['error=']);
-    // The scan follows a room into the feature components it renders.
-    expect(renderedBy('app/(tabs)/family.tsx')).toContain('components/family/coparent-soon.tsx');
+    // A tone held in a constant first (reviewer C's gap), or set in an object, in a plain module too.
+    expect(statusUses("const QUIET = 'success';\n<Text tone={QUIET}>a</Text>")).toEqual(["'success'"]);
+    expect(statusUses("export const line = { tone: 'caution' as const };", false)).toEqual(['tone="caution"']);
+    // Not colours: a haptic's kind and a system alert button's style; and a plain module's states.
+    expect(statusUses("haptic('success'); Alert.alert(t, b, [{ text: x, style: 'destructive' }]);")).toEqual([]);
+    expect(statusUses("if (mode === 'recording') return;", false)).toEqual([]);
+    // Imports: the alias, relative paths (down and up) and re-exports.
+    expect(importsOf("import { A } from '@/lib/auth/ui';\nimport { B } from './chapters';\nexport { C } from '../c';\nimport './side';")).toEqual([
+      '@/lib/auth/ui',
+      './chapters',
+      '../c',
+      './side',
+    ]);
+    expect(resolveImport('components/book/quiet-day-row.tsx', './chapters')).toBe('components/book/chapters.ts');
+    expect(resolveImport('components/book/shelf.logic.ts', '../../lib/dates')).toBe('lib/dates.ts');
+    // The scan follows a room into everything it renders, @/lib and relative imports included.
+    expect(renderedBy('app/(tabs)/family.tsx')).toEqual(expect.arrayContaining(['components/family/coparent-soon.tsx', 'lib/auth/ui.tsx']));
+    expect(renderedBy('app/(tabs)/book.tsx')).toEqual(expect.arrayContaining(['components/book/quiet-day-row.tsx', 'components/book/chapters.ts']));
   });
 
   it('in every room the lamp lights, status colours are used only where a measured box below the core says so (source scan)', () => {
     const files = new Set([...LIT_ROOMS, ...mounts(LAMP)].flatMap(renderedBy));
     for (const f of files) {
-      const uses = statusUses(readFileSync(join(SRC, f), 'utf8')).sort();
       const allowed = (STATUS_ON_LIT_PAPER[f] ?? []).map((a) => a.use).sort();
-      expect(uses, `${f}: status colours on or near lit paper`).toEqual(allowed);
+      expect(usesIn(f), `${f}: status colours on or near lit paper`).toEqual(allowed);
     }
     for (const room of NO_STATUS_ROOMS) {
-      for (const f of renderedBy(room)) expect(statusUses(readFileSync(join(SRC, f), 'utf8')), `${f} (inside ${room}) allows none`).toEqual([]);
+      for (const f of renderedBy(room)) expect(usesIn(f), `${f} (inside ${room}) allows none`).toEqual([]);
     }
     for (const [f, entries] of Object.entries(STATUS_ON_LIT_PAPER)) {
       expect(files.has(f), `${f} is rendered by a lit room`).toBe(true);
       const src = readFileSync(join(SRC, f), 'utf8');
       for (const a of entries) {
+        const at = src.indexOf(a.use);
+        expect(at, `${f}: ${a.use} is in the source`).toBeGreaterThanOrEqual(0);
         if (a.surface) {
           // On its own surface: the element with the status colour sits in one with that surface, within a few lines.
-          const at = src.indexOf(a.use);
           expect(src.slice(Math.max(0, at - 400), at), `${f}: ${a.use} sits on ${a.surface}`).toContain(a.surface);
           continue;
         }
@@ -450,6 +496,11 @@ describe('Lamp gradient', () => {
         expect(box, `${f}: ${a.use} names a measured box`).toBeDefined();
         expect(STATUS as readonly string[], `${a.box} is in a status colour`).toContain(box.token);
         expect(box.y, `${a.box} sits below the core`).toBeGreaterThanOrEqual(STATUS_CLEAR_FROM * room.box.height);
+        // And it stays there: it follows, in the room's source, the line that pushes it to the foot (reviewer V's note).
+        const anchor = src.indexOf(a.after!);
+        expect(anchor, `${f}: ${a.after} is in the source`).toBeGreaterThanOrEqual(0);
+        expect(src.indexOf(a.after!, anchor + 1), `${f}: ${a.after} is there once`).toBe(-1);
+        expect(at, `${f}: ${a.use} follows ${a.after}`).toBeGreaterThan(anchor);
       }
     }
   });

@@ -6,9 +6,15 @@
  * page's column, and carried from where they sat on the card to where they sit on the page while one paper surface
  * grows from the card's rect to the whole screen on `standard` (its corners from radius.md to 0, its colour from the
  * card's surface to the page's). Only the rest of the words cross-fade in below them, from cardToPage.contentFrom of
- * the way, never past the paper's edge; the rest of the page fades in with them. The list behind dims to
- * tokens.motion.cardToPage.behindDim (no blur). Nothing is scaled, and no frame shows an empty card or page.
- * Back carries the words back into the card while it is still on screen; otherwise the whole page fades (200 ms).
+ * the way, never past the paper's edge; the rest of the page fades in with them. Nothing is scaled, and no frame
+ * shows an empty card or page. Back carries the words back into the card while it is still on screen; otherwise the
+ * whole page fades (200 ms).
+ *
+ * The Book leaves the way its lamp leaves a lit room (EXPERIENCE_PASS 5.8 rule 1): a veil of the page's paper, one
+ * full-screen layer, comes up over lamp.leaveMs on a straight line while the card holds (cardToPage.holdMs), then the
+ * paper grows; by the time its edge can reach another line of the Book the Book is 95 percent gone, so no edge cuts a
+ * legible line and nothing blinks. On the way back the veil stays until the paper is within cardToPage.clearPt of the
+ * card, then lifts over lamp.returnMs (CARD_TO_PAGE, clearProgress).
  *
  *   // the Book: the card's dateline and excerpt in CardText; the list hides from screen readers under a page
  *   const behind = useHiddenBehindCardPage();
@@ -26,8 +32,9 @@
  *
  * The contract that keeps the words still: the page's opening block uses the card's text column and type (the same
  * width, line height and gaps), so its first lines wrap exactly as the card's did. Without it (a page at a larger
- * Reading Size than the card, say), without a measured card, or under Reduce Motion, the page cross-fades in whole
- * over 200 ms: paper and words together, never an empty page.
+ * Reading Size than the card, say), without a measured card, or under Reduce Motion, nothing moves: the Book goes
+ * under the same veil and the page fades in whole over 200 ms from when the Book is half gone (paper and words
+ * together, never an empty page, and never two screens of words on top of each other at strength).
  *
  * Screen readers read the letter once and land on the page: while the page is up it is modal
  * (accessibilityViewIsModal, aria-modal) and the screen behind is hidden (useHiddenBehindCardPage: a transparent
@@ -38,14 +45,37 @@
  * Package P5 switches the letter route to this (ROUTES['letter/[id]'] = 'cardToPage') when the page mounts
  * CardToPage; until then the letter keeps the native push. Pure parts: lib/transitions.logic.ts.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode, type RefObject } from 'react';
-import { PixelRatio, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { ReduceMotion, interpolateColor, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, {
+  Easing,
+  ReduceMotion,
+  interpolateColor,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
-import { STANDARD_EASING, springConfig, useReducedMotion } from '@/lib/motion';
-import { canCarry, cardBackMove, cardPages, cardToPageFrame, cardWasCut, carryFrame, hiddenBehind, veilBox, type CarryText, type Rect } from '@/lib/transitions.logic';
-import { FadeCorner, FadeEdge } from './excerpt-fade';
+import { springConfig, useReducedMotion } from '@/lib/motion';
+import {
+  CARD_TO_PAGE,
+  canCarry,
+  cardBackMove,
+  cardPages,
+  cardToPageFrame,
+  cardWasCut,
+  carryFrame,
+  clearProgress,
+  hiddenBehind,
+  type CarryText,
+  type Rect,
+} from '@/lib/transitions.logic';
+import { FadeEdge } from './excerpt-fade';
 import { FADE_FRACTION } from './excerpt-fade.logic';
 
 type Remembered = { card: Rect; text?: CarryText; rtl?: boolean };
@@ -156,7 +186,6 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const { c } = useTheme();
   const reduced = useReducedMotion();
   const screen = useWindowDimensions();
-  const pixelRatio = PixelRatio.get();
   const full: CarryText = { x: 0, y: 0, width: screen.width, height: screen.height, lineHeight: 0 };
 
   const [phase, setPhase] = useState<Phase>('measuring');
@@ -174,6 +203,9 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const from = useSharedValue<Rect>(full);
   const ct = useSharedValue<Rect>(full);
   const pt = useSharedValue<Rect>(full);
+  const veil = useSharedValue(0);
+  const lifting = useSharedValue(0);
+  const liftFrom = useSharedValue(0);
 
   // The screen behind hides from screen readers for as long as the page is up.
   useEffect(() => cardPages.hold(), []);
@@ -216,8 +248,6 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     return () => cancelAnimationFrame(raf);
   }, [phase, id, reduced, from, ct, pt, carrying]);
 
-  const scrimAlpha = parseInt(c.scrim.slice(7, 9) || 'ff', 16) / 255;
-  const behind = useAnimatedStyle(() => ({ opacity: (cardToPageFrame(from.value, screen, p.value).dim / scrimAlpha) * fade.value }));
   const paper = useAnimatedStyle(() => {
     const f = cardToPageFrame(from.value, screen, p.value);
     // The paper is the card's own surface until the rest of the words arrive, then becomes the page's (so the card's
@@ -225,11 +255,8 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     const backgroundColor = interpolateColor(p.value, [0, tokens.motion.cardToPage.contentFrom, 1], [c.surfaceRaised, c.surfaceRaised, c.bg]);
     return { left: f.x, top: f.y, width: f.width, height: f.height, borderRadius: f.radius, opacity: fade.value, backgroundColor };
   });
-  // The veil of the page's paper runs ahead of the paper's edges, so they never cut a legible line of the list.
-  const veil = useAnimatedStyle(() => {
-    const b = veilBox(from.value, screen, p.value, pixelRatio);
-    return { left: b.left, top: b.top, width: b.width, height: b.height, opacity: fade.value * b.opacity };
-  });
+  // The veil: the page's paper over the whole Book, one layer with no pieces (so no joint can show as a seam).
+  const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));
   // Carried: the rest of the page arrives with the rest of the words. Faded: the whole page at once, paper and words.
   const content = useAnimatedStyle(() => ({ opacity: carrying.value ? cardToPageFrame(from.value, screen, p.value).contentOpacity : fade.value }));
   const block = useAnimatedStyle(() => {
@@ -247,6 +274,25 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     opacity: cardWasCut(ct.value, pt.value) ? carryFrame(from.value, ct.value, pt.value, screen, p.value).cardFade : 0,
   }));
 
+  // The way back finishes when the paper is home and the veil has lifted (both), and only then leaves the route.
+  const closeLeft = useRef(0);
+  const oneDone = useCallback(() => {
+    closeLeft.current -= 1;
+    if (closeLeft.current === 0) onClosed();
+  }, [onClosed]);
+  // On the way back the veil lifts once the paper is within clearPt of the card: no edge can meet a line after that.
+  useAnimatedReaction(
+    () => lifting.value === 1 && p.value <= liftFrom.value,
+    (ready, was) => {
+      if (!ready || was) return;
+      lifting.value = 0;
+      veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
+        if (finished) runOnJS(oneDone)();
+      });
+    },
+    [oneDone],
+  );
+
   // Started once the choice is made, after the styles above are in place (effects run in order).
   useEffect(() => {
     if (phase !== 'moving' || closing.current) return;
@@ -254,24 +300,38 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
       if (done) setPhase('settled');
     };
     if (carry) {
+      // The Book goes under the veil the way its lamp leaves a lit room; the card holds, then grows.
       fade.value = 1;
-      p.value = withSpring(1, springConfig('standard'), (done) => runOnJS(settle)(done));
+      veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard'), (done) => runOnJS(settle)(done)), ReduceMotion.Never);
     } else {
+      // Nothing moves: the Book goes under the same veil, and the whole page fades in from when it is half gone.
       p.value = 1;
-      fade.value = withTiming(1, { duration: tokens.motion.fadeMs, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done));
+      veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      fade.value = withDelay(
+        CARD_TO_PAGE.fadeInFromMs,
+        withTiming(1, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done)),
+        ReduceMotion.Never,
+      );
     }
-  }, [phase, carry, p, fade]);
+  }, [phase, carry, p, fade, veil]);
 
   const close = useCallback(() => {
     if (closing.current) return;
     closing.current = true;
     const done = () => onClosed();
+    // The page fades out whole, and the Book comes back from when it is half gone, the way the lamp comes back.
     const fadeOut = () => {
       carrying.value = 0;
       setCarry(false);
-      fade.value = withTiming(0, { duration: tokens.motion.fadeMs, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }, (finished) => {
-        if (finished) runOnJS(done)();
-      });
+      fade.value = withTiming(0, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      veil.value = withDelay(
+        CARD_TO_PAGE.liftFromMs,
+        withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
+          if (finished) runOnJS(done)();
+        }),
+        ReduceMotion.Never,
+      );
     };
     const r = remembered.current;
     if (!carry || reduced || !r || cardBackMove(r.card, screen) !== 'shrink') return fadeOut();
@@ -281,11 +341,14 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
       if (!now || !canCarry(r.text, now) || now.y + now.height < 0 || now.y > screen.height) return fadeOut();
       pt.value = now;
       setPhase('moving');
+      closeLeft.current = 2;
+      liftFrom.value = clearProgress(r.card, screen);
+      lifting.value = 1;
       p.value = withSpring(0, springConfig('standard'), (finished) => {
-        if (finished) runOnJS(done)();
+        if (finished) runOnJS(oneDone)();
       });
     });
-  }, [carry, reduced, screen, onClosed, p, fade, pt, carrying]);
+  }, [carry, reduced, screen, onClosed, oneDone, p, fade, veil, pt, carrying, lifting, liftFrom]);
 
   const rtl = !!remembered.current?.rtl;
   const lineHeight = remembered.current?.text?.lineHeight ?? 0;
@@ -299,10 +362,8 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     <CardPageContext.Provider value={ctx}>
       {/* Modal for screen readers: only the page is reachable while it is up (the Book also hides itself). */}
       <View style={StyleSheet.absoluteFill} accessibilityViewIsModal aria-modal>
-        {/* The list behind dims a little (a 4 percent ink scrim), never blurs. */}
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: c.scrim }, behind]} />
-        {/* The veil: the page's paper, ahead of the growing paper, with soft edges (the list's words fade, never cut). */}
-        <Veil color={c.bg} style={veil} />
+        {/* The veil: the page's paper over the whole Book, one layer (the Book's words and light leave, never cut). */}
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: c.bg }, veilStyle]} />
         <Animated.View pointerEvents="none" style={[{ position: 'absolute' }, paper]} />
         <Animated.View style={[StyleSheet.absoluteFill, content]}>{children}</Animated.View>
         {showCarry ? (
@@ -328,29 +389,6 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
         ) : null}
       </View>
     </CardPageContext.Provider>
-  );
-}
-
-/**
- * The veil in its box (veilBox): a solid middle, eased edges `veilFeather` wide on every side and round corners
- * between them. The pieces sit a whole number of points apart in a box on whole pixels, the middle reaches a point
- * under each edge, and the box fades as one group (iOS group opacity, the web's opacity, Android's offscreen
- * compositing), so no seam or overlap ever shows as a line.
- */
-function Veil({ color, style }: { color: string; style: ComponentProps<typeof Animated.View>['style'] }) {
-  const F = tokens.motion.cardToPage.veilFeather;
-  return (
-    <Animated.View pointerEvents="none" needsOffscreenAlphaCompositing style={[{ position: 'absolute' }, style]}>
-      <View style={{ position: 'absolute', left: F - 1, top: F - 1, right: F - 1, bottom: F - 1, backgroundColor: color }} />
-      <FadeEdge eased color={color} side="bottom" style={{ position: 'absolute', left: F, right: F, top: 0, height: F }} />
-      <FadeEdge eased color={color} side="top" style={{ position: 'absolute', left: F, right: F, bottom: 0, height: F }} />
-      <FadeEdge eased color={color} side="right" style={{ position: 'absolute', top: F, bottom: F, left: 0, width: F }} />
-      <FadeEdge eased color={color} side="left" style={{ position: 'absolute', top: F, bottom: F, right: 0, width: F }} />
-      <FadeCorner color={color} at="bottomRight" style={{ position: 'absolute', left: 0, top: 0, width: F, height: F }} />
-      <FadeCorner color={color} at="bottomLeft" style={{ position: 'absolute', right: 0, top: 0, width: F, height: F }} />
-      <FadeCorner color={color} at="topRight" style={{ position: 'absolute', left: 0, bottom: 0, width: F, height: F }} />
-      <FadeCorner color={color} at="topLeft" style={{ position: 'absolute', right: 0, bottom: 0, width: F, height: F }} />
-    </Animated.View>
   );
 }
 
