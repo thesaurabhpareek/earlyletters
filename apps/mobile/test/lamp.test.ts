@@ -297,13 +297,18 @@ describe('Lamp gradient', () => {
         ...DAYPARTS.map((d) => resolveLamp({ scene: 'tonight', daypart: d })!),
         resolveLamp({ scene: 'tonight', daypart: 'evening', intensity: tokens.motion.lamp.dimTo })!,
       ],
+      // Tonight as P3 built it (S09, S33), measured on 17 Oct 2026: the greeting in two tones, the prompt on the paper
+      // (three lines, the tallest a prompt runs at the default size; "Another thought" sits below a two- or a three-line
+      // prompt), Speak and Type pinned, and the quiet line in text. Cards sit on their own surface and are not listed.
       text: [
-        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 115, h: 23 },
-        { what: 'greeting', token: 'text', x: 20, y: 45, w: 354, h: 50 },
-        { what: 'subtitle', token: 'textMuted', x: 20, y: 96, w: 346, h: 30 },
-        { what: 'Not much today', token: 'accent', x: 139, y: 745, w: 123, h: 30 },
-        { what: 'A quiet day, kept.', token: 'success', x: 116, y: 746, w: 121, h: 28 },
-        { what: 'Undo', token: 'accent', x: 261, y: 746, w: 37, h: 27 },
+        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 116, h: 23 },
+        { what: 'greeting', token: 'text', x: 20, y: 47, w: 157, h: 33 },
+        { what: 'greeting name', token: 'textMuted', x: 177, y: 47, w: 75, h: 33 },
+        { what: 'prompt', token: 'text', x: 20, y: 99, w: 362, h: 114 },
+        { what: 'Another thought', token: 'accent', x: 46, y: 194, w: 116, h: 63 },
+        { what: 'Not much today', token: 'accent', x: 139, y: 757, w: 124, h: 30 },
+        { what: 'A quiet day, kept.', token: 'text', x: 116, y: 756, w: 121, h: 28 },
+        { what: 'Undo', token: 'accent', x: 261, y: 756, w: 37, h: 27 },
       ],
     },
     {
@@ -367,13 +372,9 @@ describe('Lamp gradient', () => {
    * in a component two imports away or behind a lazy import) fails here.
    */
   type StatusUse = { use: string; box?: string; room?: string; after?: string; surface?: string };
-  const QUIET_FOOT = '<View className="min-h-8 flex-1" />';
+  // Tonight allows none: since P3 (S33) "A quiet day, kept." is in `text` with the Moon in textMuted, so Tonight and
+  // every file it renders (the draft cards, "A month ago", the quiet line) must use no status colour at all.
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
-    // "A quiet day, kept." and its check mark sit in the group the spacer pushes to the foot of Tonight.
-    'app/(tabs)/index.tsx': [
-      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-    ],
     // "We'll tell you" on the Family tab: a check mark on its own chip.
     'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
