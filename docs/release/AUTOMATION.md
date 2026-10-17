@@ -179,7 +179,7 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 **`deploy-db.yml`** (exists; RA-20-04)
 | | |
 |---|---|
-| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database until the production job's first `db-v*` tag (AF-42, after the alpha; decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (`chore/staging-from-develop`, #158); push of tag `db-v*` for production |
+| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database until the production job's first `db-v*` tag (AF-42, after the alpha; decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of tag `db-v*` for production |
 | Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
 | Then | RA-07-06's content-free smoke: anonymous read of `policy_versions` lists `terms` and `sensitive-data`; no table contents are printed |
 | Permissions | `contents: read` |

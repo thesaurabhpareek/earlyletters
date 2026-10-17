@@ -269,7 +269,7 @@ jobs:
             echo "Functions deploy only onto a schema that has every migration they ship with. Then re-run this job:"
             echo
             echo "1. **A Deploy database run is waiting** (Actions > Deploy database): approve it. It deploys develop's tip, so it also carries migrations from runs that were replaced."
-            echo "2. **None is waiting** (a run was rejected, cancelled or failed, or these migrations reached develop before its push trigger existed): re-run the latest Deploy database run on develop whose push changed migrations (Re-run all jobs; it checks out develop's tip), or run it by hand on develop once that is possible (#158, AF-05), or push from your computer (docs/ops/DEPLOY.md)."
+            echo "2. **None is waiting** (a run was rejected, cancelled or failed, or these migrations reached develop before its push trigger existed): re-run the latest Deploy database run on develop whose push changed migrations (Re-run all jobs; it checks out develop's tip), or start a manual run of Deploy database on develop (Run workflow; it appears once the workflow is on the default branch, AF-05), or push from your computer (docs/ops/DEPLOY.md)."
           } >> "$GITHUB_STEP_SUMMARY"
           exit 1
       # Bundled by the Management API (--use-api), as each function's header

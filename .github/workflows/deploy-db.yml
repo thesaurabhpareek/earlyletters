@@ -5,6 +5,12 @@
 #               through the GitHub Environment "staging" (required reviewer).
 #               Staging follows develop only: a push to main deploys nothing to
 #               a database (decided 17 Oct 2026; DEPLOY.md, AUTOMATION.md 2.2)
+#   catch-up    a manual run (Actions > Deploy database > Run workflow) on
+#               develop only, the same staging deploy: for migrations whose push
+#               run was rejected, cancelled or failed, or that reached develop
+#               before the push trigger existed. Any other ref fails at once.
+#               Carried over from #158. Needs the workflow on the default
+#               branch to appear in the Actions tab (AF-05)
 #   production  push of a tag db-v*, pointing at a commit on main, through the
 #               GitHub Environment "production" (required reviewers); first
 #               used with AF-42, after the alpha
@@ -33,6 +39,11 @@ on:
   push:
     branches: [develop]
     tags: ['db-v*']
+  # Staging only, and only from develop (the catch-up path above). Every
+  # migration on develop came in through a PR that passed the fence with the
+  # approve-migration label (D-041); the staging Environment's required
+  # reviewer and deployment-branch rule are the second check.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,7 +56,7 @@ jobs:
   # out; this job decides whether a develop push changed any migration.
   changes:
     name: migrations changed
-    if: github.ref_type == 'branch'
+    if: github.event_name == 'push' && github.ref_type == 'branch'
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
@@ -73,10 +84,33 @@ jobs:
             echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # A manual run deploys only develop. It fails loudly on any other ref rather
+  # than skipping, so a run on main, a feature branch or a tag never looks like
+  # a deploy that happened.
+  manual-ref:
+    name: manual run is on develop
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - env:
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != "refs/heads/develop" ]; then
+            echo "::error::A manual run deploys develop to staging only (got $REF). Production deploys on a db-v* tag."
+            exit 1
+          fi
+          echo "Manual run on develop: deploying develop's tip to staging."
+
   staging:
     name: deploy to staging
-    needs: changes
-    if: needs.changes.outputs.migrations == 'true'
+    needs: [changes, manual-ref]
+    # always() lets this job run when one of its needs was skipped (a push skips
+    # manual-ref; a manual run skips changes); the rest says which case it is.
+    if: >-
+      always() && !cancelled() &&
+      ((github.event_name == 'push' && needs.changes.result == 'success' && needs.changes.outputs.migrations == 'true') ||
+       (github.event_name == 'workflow_dispatch' && needs.manual-ref.result == 'success' && github.ref == 'refs/heads/develop'))
     runs-on: ubuntu-24.04
     # The push, then the smoke (function health retries and, if psql is
     # missing, an apt install).
@@ -197,7 +231,8 @@ jobs:
 
   production:
     name: deploy to production
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'db-v')
+    # Push only: a manual run on a db-v* tag must never reach production.
+    if: github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'db-v')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
