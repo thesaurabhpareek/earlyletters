@@ -372,35 +372,41 @@ describe('card to page (MOTION 5f)', () => {
     }
   });
 
-  it('Reduce Motion, or no carry: nothing moves, the Book goes under the veil and the page fades in from when it is half gone, a hand-off, both ways', () => {
+  it('Reduce Motion, or no carry: nothing moves; a hand-off inside one fadeMs each way, with nothing lost in a rush and the two screens never stacked', () => {
     const lin = (t: number, from: number, ms: number) => Math.min(1, Math.max(0, (t - from) / ms));
-    const C = CARD_TO_PAGE;
-    // To the page: the Book under the veil on the lamp's leaving line; the page (paper and words) from when the Book is half gone.
-    const book = (t: number) => 1 - veilIn(t);
-    const page = (t: number) => lin(t, C.fadeInFromMs, C.fadeMs);
-    expect(book(C.fadeInFromMs)).toBeCloseTo(0.5);
-    // Back: the page out over fadeMs; the Book back over the lamp's return from when the page is half gone.
-    const pageBack = (t: number) => 1 - lin(t, 0, C.fadeMs);
-    const bookBack = (t: number) => lin(t, C.liftFromMs, C.veilOutMs);
-    expect(pageBack(C.liftFromMs)).toBeCloseTo(0.5);
+    const h = CARD_TO_PAGE.handOff;
+    // Either way the leaving screen (the Book under the veil, or the page) goes first, the arriving one comes after it.
+    const leaving = (t: number) => 1 - lin(t, 0, h.leaveMs);
+    const arriving = (t: number) => lin(t, h.arriveFromMs, h.arriveMs);
     let overlap = 0;
-    for (let t = 0; t <= 1000; t++) {
-      // Nothing on either screen loses more than half its strength in 50 ms.
-      expect(book(t) - book(t + 50)).toBeLessThanOrEqual(0.5);
-      expect(pageBack(t) - pageBack(t + 50)).toBeLessThanOrEqual(0.5);
-      overlap = Math.max(overlap, Math.min(book(t), page(t)), Math.min(pageBack(t), bookBack(t)));
+    let shown = 2;
+    for (let t = 0; t <= 400; t++) {
+      // Nothing loses more than half its strength in 50 ms.
+      expect(leaving(t) - leaving(t + 50)).toBeLessThanOrEqual(0.5);
+      overlap = Math.max(overlap, Math.min(leaving(t), arriving(t)));
+      shown = Math.min(shown, leaving(t) + arriving(t));
     }
-    // The two screens' words are never on screen together at more than a quarter of their strength.
+    // The two screens' words are never on screen together at more than a quarter of their strength, and in the
+    // timeline the dip between them leaves at least two fifths of a screen showing (the web frames read about a
+    // third at the deepest point; a dip no deeper than the hand-off needs).
     expect(overlap).toBeLessThanOrEqual(0.25);
-    // The Book and its light take the lamp's whole leaving time, and both ways fit the sequence.
-    expect(book(M.lamp.leaveMs - 1)).toBeGreaterThan(0);
-    expect(C.fadeInFromMs + C.fadeMs).toBeLessThanOrEqual(M.sequenceMaxMs);
-    expect(C.liftFromMs + C.veilOutMs).toBeLessThanOrEqual(M.sequenceMaxMs);
-    expect(C.fadeMs).toBe(M.fadeMs);
-    expect(C.veilOutMs).toBe(M.lamp.returnMs);
+    expect(shown).toBeGreaterThanOrEqual(0.4);
+    // One fadeMs each way (rule 6): it is all done by then, the arriving screen starting before the leaving one has gone.
+    expect(Math.max(h.leaveMs, h.arriveFromMs + h.arriveMs)).toBe(M.fadeMs);
+    expect(M.fadeMs).toBeLessThanOrEqual(250);
+    expect(h.arriveFromMs).toBeLessThan(h.leaveMs);
+    expect(CARD_TO_PAGE.fadeMs).toBe(M.fadeMs);
+    expect(CARD_TO_PAGE.veilOutMs).toBe(M.lamp.returnMs);
     expect(veilIn(0)).toBe(0);
     expect(veilOut(0)).toBe(1);
     expect(veilOut(M.lamp.returnMs)).toBe(0);
+  });
+
+  it('once Back has begun nothing new starts: no carry is chosen, and a page that has gone starts no way back (source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toMatch(/const decide = \(\) => \{\s*if \(closing\.current\) return;/);
+    expect(src).toMatch(/measure\(pageView\.current\)\.then\(\(at\) => \{\s*if \(!mounted\.current\) return;/);
+    expect(src).toMatch(/\(\) => \(\) => \{\s*mounted\.current = false;/);
   });
 
   it("the veil is one full-screen layer of the page's paper with no pieces, timed as above (source)", () => {
@@ -418,10 +424,12 @@ describe('card to page (MOTION 5f)', () => {
     expect(src).toContain('() => lifting.value === 1 && p.value <= liftFrom.value,');
     expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }');
     expect(src).toContain('closeLeft.current = 2;');
-    // The plain fade, both ways: a hand-off on straight lines.
-    expect(src).toMatch(/fade\.value = withDelay\(\s*CARD_TO_PAGE\.fadeInFromMs,\s*withTiming\(1, \{ duration: CARD_TO_PAGE\.fadeMs, easing: Easing\.linear/);
-    expect(src).toContain('fade.value = withTiming(0, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
-    expect(src).toMatch(/veil\.value = withDelay\(\s*CARD_TO_PAGE\.liftFromMs,\s*withTiming\(0, \{ duration: CARD_TO_PAGE\.veilOutMs, easing: Easing\.linear/);
+    // The plain fade, both ways: the hand-off on straight lines.
+    expect(src.match(/const h = CARD_TO_PAGE\.handOff;/g)).toHaveLength(2);
+    expect(src).toContain('veil.value = withTiming(1, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/fade\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(1, \{ duration: h\.arriveMs, easing: Easing\.linear/);
+    expect(src).toContain('fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/veil\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(0, \{ duration: h\.arriveMs, easing: Easing\.linear/);
     expect(src).not.toContain('STANDARD_EASING');
   });
 
