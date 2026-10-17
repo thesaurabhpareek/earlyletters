@@ -1,6 +1,6 @@
 ---
 title: Deletion, export and data integrity specification
-version: 1.2.0
+version: 1.2.1
 status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
@@ -8,6 +8,9 @@ implements: data-policy.md v1.0.0
 sql_migration: supabase/migrations/20261002020000_data_governance.sql (promoted 2 Oct 2026, pending live apply)
 sql_tests: supabase/tests/data_governance.test.mjs (run by npm run test:db)
 changelog:
+  - version: 1.2.1
+    date: 2026-10-17
+    summary: Section 4.2 names both recording containers. A recording is exported as recorded, `audio/<entry_id>.m4a` (`audio/mp4`) or, for an ADTS recording, `audio/<entry_id>.aac` (`audio/aac`), byte-identical either way (ADR 0027, export format 1.2.0). No change to what is exported or deleted.
   - version: 1.2.0
     date: 2026-10-03
     summary: Alignment with the founder decisions of 3 Oct 2026, second round and the built purge worker. Plus is checked on the device with no server records (D-053, ADR 0013), so the `appstore_mapping` step and every `app_account_tokens` and `store_subscriptions` check are removed. Sync is the outbox and cursor engine on Supabase (D-023), so PowerSync steps and tests become outbox equivalents or not applicable. No audio, backup or photos in v1.0 (D-059), so export and purge rules for backed-up audio apply later. Execution table matches `purge-worker/account.ts` (posthog at request time through `analytics-forget`; email_provider not applicable while no contacts are kept). The Resend 30-day message retention is stated as the one exception to the 45-day processor clock (DATA-REQ-036). Diagram made ASCII. Minor.
@@ -325,6 +328,7 @@ data/children.json              name, birthday or due date, signatures used
 data/entries.json               one object per letter (fields below)
 letters/<child>/<YYYY-MM>/<YYYY-MM-DD>_<entry_id>.txt   UTF-8, header lines then final text
 audio/<entry_id>.m4a            original AAC-LC mono M4A, byte-identical to the recording (ADR 0005)
+audio/<entry_id>.aac            or, for an ADTS recording, the original ADTS stream, byte-identical (ADR 0027)
 photos/<entry_id>.<jpg|heic>    original bytes; HEIC also gets a .jpg copy
 book/<child>.pdf                the book as rendered by packages/book
 history/<entry_id>.json         own letters: every entry_versions row
@@ -344,7 +348,8 @@ history/<entry_id>.json         own letters: every entry_versions row
   "engine_version": 1,
   "scope": {"exporter_role": "parent", "children": 1, "include_recently_deleted": false},
   "counts": {"entries": 412, "audio": 380, "audio_missing": 2, "photos": 57},
-  "files": [{"path": "audio/0192b000-....m4a", "bytes": 1048576, "sha256": "...", "media_type": "audio/mp4"}]
+  "files": [{"path": "audio/0192b000-....m4a", "bytes": 1048576, "sha256": "...", "media_type": "audio/mp4"},
+            {"path": "audio/0192b001-....aac", "bytes": 1069056, "sha256": "...", "media_type": "audio/aac"}]
 }
 ```
 The format string comes from `packages/brand` at build time (CLAUDE.md: name only in the brand package).
