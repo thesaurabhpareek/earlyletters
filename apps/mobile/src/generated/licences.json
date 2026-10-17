@@ -1,6 +1,6 @@
 {
   "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts, apps/mobile/modules, packs and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
-  "dependencyHash": "5d3750940f77f141c4e5305692a043502d17d3bf8935eb80e193cc2aa0acfe4d",
+  "dependencyHash": "449ada5259580ef9bd062fc332c7a3ba1c4a100d479e8995a010df2f39c221db",
   "licences": [
     {
       "id": "MIT",
@@ -710,166 +710,154 @@
           "text": 18
         },
         {
-          "name": "@posthog/core",
-          "version": "1.55.3",
-          "kind": "library",
-          "text": 19
-        },
-        {
-          "name": "@posthog/types",
-          "version": "1.413.0",
-          "kind": "library",
-          "text": 19
-        },
-        {
           "name": "@radix-ui/primitive",
           "version": "1.1.7",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-collection",
           "version": "1.1.15",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-compose-refs",
           "version": "1.1.5",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-context",
           "version": "1.2.2",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-dialog",
           "version": "1.1.23",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-direction",
           "version": "1.1.4",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-dismissable-layer",
           "version": "1.1.19",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-focus-guards",
           "version": "1.1.6",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-focus-scope",
           "version": "1.1.16",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-id",
           "version": "1.1.4",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-portal",
           "version": "1.1.17",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-presence",
           "version": "1.1.10",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-primitive",
           "version": "2.1.10",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-roving-focus",
           "version": "1.1.19",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-separator",
           "version": "1.1.15",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-slot",
           "version": "1.3.3",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-tabs",
           "version": "1.1.21",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-use-callback-ref",
           "version": "1.1.4",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-use-controllable-state",
           "version": "1.2.6",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-use-effect-event",
           "version": "0.0.5",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-use-is-hydrated",
           "version": "0.1.3",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@radix-ui/react-use-layout-effect",
           "version": "1.1.4",
           "kind": "library",
-          "text": 20
+          "text": 19
         },
         {
           "name": "@react-native-community/datetimepicker",
           "version": "9.1.0",
           "kind": "library",
-          "text": 21
+          "text": 20
         },
         {
           "name": "@react-native-google-signin/google-signin",
           "version": "16.1.5",
           "kind": "library",
-          "text": 22
+          "text": 21
         },
         {
           "name": "@react-native-masked-view/masked-view",
           "version": "0.3.2",
           "kind": "library",
-          "text": 23
+          "text": 22
         },
         {
           "name": "@react-native/assets-registry",
@@ -972,253 +960,253 @@
           "name": "@rn-primitives/portal",
           "version": "1.5.3",
           "kind": "library",
-          "text": 24
+          "text": 23
         },
         {
           "name": "@rn-primitives/separator",
           "version": "1.5.2",
           "kind": "library",
-          "text": 24
+          "text": 23
         },
         {
           "name": "@rn-primitives/slot",
           "version": "1.5.2",
           "kind": "library",
-          "text": 24
+          "text": 23
         },
         {
           "name": "@rn-primitives/types",
           "version": "1.5.2",
           "kind": "library",
-          "text": 24
+          "text": 23
         },
         {
           "name": "@sinclair/typebox",
           "version": "0.27.12",
           "kind": "library",
-          "text": 25
+          "text": 24
         },
         {
           "name": "@supabase/auth-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@supabase/functions-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@supabase/phoenix",
           "version": "0.4.5",
           "kind": "library",
-          "text": 27
+          "text": 26
         },
         {
           "name": "@supabase/postgrest-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@supabase/realtime-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@supabase/storage-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@supabase/supabase-js",
           "version": "2.117.2",
           "kind": "library",
-          "text": 26
+          "text": 25
         },
         {
           "name": "@tailwindcss/node",
           "version": "4.3.3",
           "kind": "library",
-          "text": 28
+          "text": 27
         },
         {
           "name": "@tailwindcss/oxide",
           "version": "4.3.3",
           "kind": "library",
-          "text": 28
+          "text": 27
         },
         {
           "name": "@types/hammerjs",
           "version": "2.0.46",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/istanbul-lib-coverage",
           "version": "2.0.6",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/istanbul-lib-report",
           "version": "3.0.3",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/istanbul-reports",
           "version": "3.0.4",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/node",
           "version": "22.20.5",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/react",
           "version": "19.2.18",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/react-test-renderer",
           "version": "19.3.0",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/yargs",
           "version": "17.0.35",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@types/yargs-parser",
           "version": "21.0.3",
           "kind": "library",
-          "text": 29
+          "text": 28
         },
         {
           "name": "@xmldom/xmldom",
           "version": "0.8.15",
           "kind": "library",
-          "text": 30
+          "text": 29
         },
         {
           "name": "@xmldom/xmldom",
           "version": "0.9.12",
           "kind": "library",
-          "text": 30
+          "text": 29
         },
         {
           "name": "abort-controller",
           "version": "3.0.0",
           "kind": "library",
-          "text": 31
+          "text": 30
         },
         {
           "name": "accepts",
           "version": "1.3.8",
           "kind": "library",
-          "text": 32
+          "text": 31
         },
         {
           "name": "accepts",
           "version": "2.0.0",
           "kind": "library",
-          "text": 32
+          "text": 31
         },
         {
           "name": "acorn",
           "version": "8.18.0",
           "kind": "library",
-          "text": 33
+          "text": 32
         },
         {
           "name": "agent-base",
           "version": "7.1.4",
           "kind": "library",
-          "text": 34
+          "text": 33
         },
         {
           "name": "agent-cli-detector",
           "version": "0.1.7",
           "kind": "library",
-          "text": 35
+          "text": 34
         },
         {
           "name": "anser",
           "version": "1.4.10",
           "kind": "library",
-          "text": 36
+          "text": 35
         },
         {
           "name": "ansi-escapes",
           "version": "4.3.2",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "ansi-regex",
           "version": "4.1.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "ansi-regex",
           "version": "5.0.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "ansi-styles",
           "version": "3.2.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "ansi-styles",
           "version": "4.3.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "ansi-styles",
           "version": "5.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "arg",
           "version": "5.0.2",
           "kind": "library",
-          "text": 39
+          "text": 38
         },
         {
           "name": "aria-hidden",
           "version": "1.2.6",
           "kind": "library",
-          "text": 40
+          "text": 39
         },
         {
           "name": "asap",
           "version": "2.0.6",
           "kind": "library",
-          "text": 41
+          "text": 40
         },
         {
           "name": "await-lock",
           "version": "2.2.2",
           "kind": "library",
-          "text": 42
+          "text": 41
         },
         {
           "name": "babel-plugin-polyfill-corejs2",
@@ -1248,7 +1236,7 @@
           "name": "babel-plugin-react-native-web",
           "version": "0.21.3",
           "kind": "library",
-          "text": 43
+          "text": 42
         },
         {
           "name": "babel-plugin-syntax-hermes-parser",
@@ -1266,7 +1254,7 @@
           "name": "babel-plugin-transform-flow-enums",
           "version": "0.0.2",
           "kind": "library",
-          "text": 44
+          "text": 43
         },
         {
           "name": "babel-preset-expo",
@@ -1284,19 +1272,19 @@
           "name": "balanced-match",
           "version": "4.0.4",
           "kind": "library",
-          "text": 45
+          "text": 44
         },
         {
           "name": "base64-js",
           "version": "1.5.1",
           "kind": "library",
-          "text": 46
+          "text": 45
         },
         {
           "name": "bplist-creator",
           "version": "0.1.0",
           "kind": "library",
-          "text": 47
+          "text": 46
         },
         {
           "name": "bplist-parser",
@@ -1314,79 +1302,79 @@
           "name": "brace-expansion",
           "version": "5.0.12",
           "kind": "library",
-          "text": 48
+          "text": 47
         },
         {
           "name": "braces",
           "version": "3.0.3",
           "kind": "library",
-          "text": 49
+          "text": 48
         },
         {
           "name": "browserslist",
           "version": "4.29.3",
           "kind": "library",
-          "text": 50
+          "text": 49
         },
         {
           "name": "buffer",
           "version": "6.0.3",
           "kind": "library",
-          "text": 51
+          "text": 50
         },
         {
           "name": "buffer-from",
           "version": "1.1.2",
           "kind": "library",
-          "text": 52
+          "text": 51
         },
         {
           "name": "bytes",
           "version": "3.1.2",
           "kind": "library",
-          "text": 53
+          "text": 52
         },
         {
           "name": "camelcase",
           "version": "6.3.0",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "chalk",
           "version": "2.4.2",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "chalk",
           "version": "4.1.2",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "ci-info",
           "version": "2.0.0",
           "kind": "library",
-          "text": 54
+          "text": 53
         },
         {
           "name": "ci-info",
           "version": "3.9.0",
           "kind": "library",
-          "text": 55
+          "text": 54
         },
         {
           "name": "cli-cursor",
           "version": "2.1.0",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "cli-spinners",
           "version": "2.9.2",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "client-only",
@@ -1398,290 +1386,290 @@
           "name": "clone",
           "version": "1.0.4",
           "kind": "library",
-          "text": 57
+          "text": 56
         },
         {
           "name": "clsx",
           "version": "2.1.1",
           "kind": "library",
-          "text": 58
+          "text": 57
         },
         {
           "name": "color",
           "version": "4.2.3",
           "kind": "library",
-          "text": 59
+          "text": 58
         },
         {
           "name": "color-convert",
           "version": "1.9.3",
           "kind": "library",
-          "text": 60
+          "text": 59
         },
         {
           "name": "color-convert",
           "version": "2.0.1",
           "kind": "library",
-          "text": 60
+          "text": 59
         },
         {
           "name": "color-name",
           "version": "1.1.3",
           "kind": "library",
-          "text": 61
+          "text": 60
         },
         {
           "name": "color-name",
           "version": "1.1.4",
           "kind": "library",
-          "text": 61
+          "text": 60
         },
         {
           "name": "color-string",
           "version": "1.9.1",
           "kind": "library",
-          "text": 62
+          "text": 61
         },
         {
           "name": "commander",
           "version": "2.20.3",
           "kind": "library",
-          "text": 63
+          "text": 62
         },
         {
           "name": "commander",
           "version": "7.2.0",
           "kind": "library",
-          "text": 63
+          "text": 62
         },
         {
           "name": "commander",
           "version": "12.1.0",
           "kind": "library",
-          "text": 63
+          "text": 62
         },
         {
           "name": "compressible",
           "version": "2.0.18",
           "kind": "library",
-          "text": 64
+          "text": 63
         },
         {
           "name": "compression",
           "version": "1.8.2",
           "kind": "library",
-          "text": 65
+          "text": 64
         },
         {
           "name": "connect",
           "version": "3.7.0",
           "kind": "library",
-          "text": 66
+          "text": 65
         },
         {
           "name": "content-type",
           "version": "2.1.0",
           "kind": "library",
-          "text": 67
+          "text": 66
         },
         {
           "name": "convert-source-map",
           "version": "2.0.0",
           "kind": "library",
-          "text": 68
+          "text": 67
         },
         {
           "name": "core-js-compat",
           "version": "3.50.0",
           "kind": "library",
-          "text": 69
+          "text": 68
         },
         {
           "name": "cross-fetch",
           "version": "3.2.0",
           "kind": "library",
-          "text": 70
+          "text": 69
         },
         {
           "name": "cross-spawn",
           "version": "7.0.6",
           "kind": "library",
-          "text": 71
+          "text": 70
         },
         {
           "name": "css-in-js-utils",
           "version": "3.1.0",
           "kind": "library",
-          "text": 72
+          "text": 71
         },
         {
           "name": "css-tree",
           "version": "1.1.3",
           "kind": "library",
-          "text": 73
+          "text": 72
         },
         {
           "name": "csstype",
           "version": "3.2.3",
           "kind": "library",
-          "text": 74
+          "text": 73
         },
         {
           "name": "culori",
           "version": "4.0.2",
           "kind": "library",
-          "text": 75
+          "text": 74
         },
         {
           "name": "debug",
           "version": "2.6.9",
           "kind": "library",
-          "text": 76
+          "text": 75
         },
         {
           "name": "debug",
           "version": "3.2.7",
           "kind": "library",
-          "text": 76
+          "text": 75
         },
         {
           "name": "debug",
           "version": "4.4.3",
           "kind": "library",
-          "text": 77
+          "text": 76
         },
         {
           "name": "decode-uri-component",
           "version": "0.2.2",
           "kind": "library",
-          "text": 78
+          "text": 77
         },
         {
           "name": "decode-uri-component",
           "version": "0.5.0",
           "kind": "vendored",
-          "text": 78,
+          "text": 77,
           "noticeFrom": "decode-uri-component"
         },
         {
           "name": "deepmerge",
           "version": "4.3.1",
           "kind": "library",
-          "text": 79
+          "text": 78
         },
         {
           "name": "defaults",
           "version": "1.0.4",
           "kind": "library",
-          "text": 80
+          "text": 79
         },
         {
           "name": "depd",
           "version": "2.0.0",
           "kind": "library",
-          "text": 81
+          "text": 80
         },
         {
           "name": "destroy",
           "version": "1.2.0",
           "kind": "library",
-          "text": 82
+          "text": 81
         },
         {
           "name": "detect-node-es",
           "version": "1.1.0",
           "kind": "library",
-          "text": 83
+          "text": 82
         },
         {
           "name": "dnssd-advertise",
           "version": "1.1.6",
           "kind": "library",
-          "text": 84
+          "text": 83
         },
         {
           "name": "dom-serializer",
           "version": "2.0.0",
           "kind": "library",
-          "text": 85
+          "text": 84
         },
         {
           "name": "ee-first",
           "version": "1.1.1",
           "kind": "library",
-          "text": 86
+          "text": 85
         },
         {
           "name": "emoji-regex",
           "version": "8.0.0",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "encodeurl",
           "version": "1.0.2",
           "kind": "library",
-          "text": 88
+          "text": 87
         },
         {
           "name": "encodeurl",
           "version": "2.0.0",
           "kind": "library",
-          "text": 88
+          "text": 87
         },
         {
           "name": "enhanced-resolve",
           "version": "5.26.0",
           "kind": "library",
-          "text": 89
+          "text": 88
         },
         {
           "name": "error-stack-parser",
           "version": "2.1.4",
           "kind": "library",
-          "text": 90
+          "text": 89
         },
         {
           "name": "es-errors",
           "version": "1.3.0",
           "kind": "library",
-          "text": 91
+          "text": 90
         },
         {
           "name": "escalade",
           "version": "3.2.0",
           "kind": "library",
-          "text": 58
+          "text": 57
         },
         {
           "name": "escape-html",
           "version": "1.0.3",
           "kind": "library",
-          "text": 92
+          "text": 91
         },
         {
           "name": "escape-string-regexp",
           "version": "1.0.5",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "escape-string-regexp",
           "version": "4.0.0",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "etag",
           "version": "1.8.1",
           "kind": "library",
-          "text": 93
+          "text": 92
         },
         {
           "name": "event-target-shim",
           "version": "5.0.1",
           "kind": "library",
-          "text": 94
+          "text": 93
         },
         {
           "name": "expo",
@@ -1716,6 +1704,12 @@
         {
           "name": "expo-blur",
           "version": "57.0.3",
+          "kind": "library",
+          "text": 6
+        },
+        {
+          "name": "expo-build-properties",
+          "version": "57.0.22",
           "kind": "library",
           "text": 6
         },
@@ -1916,109 +1910,109 @@
           "name": "fast-deep-equal",
           "version": "3.1.3",
           "kind": "library",
-          "text": 95
+          "text": 94
         },
         {
           "name": "fbjs",
           "version": "3.0.5",
           "kind": "library",
-          "text": 96
+          "text": 95
         },
         {
           "name": "fbjs-css-vars",
           "version": "1.0.2",
           "kind": "library",
-          "text": 96
+          "text": 95
         },
         {
           "name": "fdir",
           "version": "6.5.0",
           "kind": "library",
-          "text": 97
+          "text": 96
         },
         {
           "name": "fetch-nodeshim",
           "version": "0.4.10",
           "kind": "library",
-          "text": 98
+          "text": 97
         },
         {
           "name": "fflate",
           "version": "0.8.3",
           "kind": "library",
-          "text": 99
+          "text": 98
         },
         {
           "name": "fill-range",
           "version": "7.1.1",
           "kind": "library",
-          "text": 49
+          "text": 48
         },
         {
           "name": "filter-obj",
           "version": "1.1.0",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "finalhandler",
           "version": "1.1.2",
           "kind": "library",
-          "text": 100
+          "text": 99
         },
         {
           "name": "flow-enums-runtime",
           "version": "0.0.6",
           "kind": "library",
-          "text": 44
+          "text": 43
         },
         {
           "name": "fresh",
           "version": "0.5.2",
           "kind": "library",
-          "text": 101
+          "text": 100
         },
         {
           "name": "function-bind",
           "version": "1.1.2",
           "kind": "library",
-          "text": 102
+          "text": 101
         },
         {
           "name": "gensync",
           "version": "1.0.0-beta.2",
           "kind": "library",
-          "text": 103
+          "text": 102
         },
         {
           "name": "get-nonce",
           "version": "1.0.1",
           "kind": "library",
-          "text": 104
+          "text": 103
         },
         {
           "name": "getenv",
           "version": "2.0.0",
           "kind": "library",
-          "text": 105
+          "text": 104
         },
         {
           "name": "has-flag",
           "version": "3.0.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "has-flag",
           "version": "4.0.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "hasown",
           "version": "2.0.4",
           "kind": "library",
-          "text": 106
+          "text": 105
         },
         {
           "name": "hermes-compiler",
@@ -2067,73 +2061,73 @@
           "name": "http-errors",
           "version": "2.0.1",
           "kind": "library",
-          "text": 107
+          "text": 106
         },
         {
           "name": "https-proxy-agent",
           "version": "7.0.6",
           "kind": "library",
-          "text": 34
+          "text": 33
         },
         {
           "name": "iceberg-js",
           "version": "0.8.1",
           "kind": "library",
-          "text": 108
+          "text": 107
         },
         {
           "name": "ignore",
           "version": "5.3.2",
           "kind": "library",
-          "text": 109
+          "text": 108
         },
         {
           "name": "inline-style-prefixer",
           "version": "7.0.1",
           "kind": "library",
-          "text": 110
+          "text": 109
         },
         {
           "name": "invariant",
           "version": "2.2.4",
           "kind": "library",
-          "text": 96
+          "text": 95
         },
         {
           "name": "is-arrayish",
           "version": "0.3.4",
           "kind": "library",
-          "text": 111
+          "text": 110
         },
         {
           "name": "is-core-module",
           "version": "2.17.0",
           "kind": "library",
-          "text": 112
+          "text": 111
         },
         {
           "name": "is-docker",
           "version": "2.2.1",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "is-fullwidth-code-point",
           "version": "3.0.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "is-number",
           "version": "7.0.0",
           "kind": "library",
-          "text": 49
+          "text": 48
         },
         {
           "name": "is-wsl",
           "version": "2.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "jest-get-type",
@@ -2169,97 +2163,97 @@
           "name": "jiti",
           "version": "2.7.0",
           "kind": "library",
-          "text": 113
+          "text": 112
         },
         {
           "name": "js-tokens",
           "version": "4.0.0",
           "kind": "library",
-          "text": 114
+          "text": 113
         },
         {
           "name": "js-yaml",
           "version": "4.3.2",
           "kind": "library",
-          "text": 115
+          "text": 114
         },
         {
           "name": "jsesc",
           "version": "3.1.0",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "json5",
           "version": "2.2.3",
           "kind": "library",
-          "text": 116
+          "text": 115
         },
         {
           "name": "kleur",
           "version": "3.0.3",
           "kind": "library",
-          "text": 117
+          "text": 116
         },
         {
           "name": "lan-network",
           "version": "0.2.1",
           "kind": "library",
-          "text": 118
+          "text": 117
         },
         {
           "name": "leven",
           "version": "3.1.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "lodash.debounce",
           "version": "4.0.8",
           "kind": "library",
-          "text": 119
+          "text": 118
         },
         {
           "name": "lodash.throttle",
           "version": "4.1.1",
           "kind": "library",
-          "text": 119
+          "text": 118
         },
         {
           "name": "log-symbols",
           "version": "2.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "loose-envify",
           "version": "1.4.0",
           "kind": "library",
-          "text": 120
+          "text": 119
         },
         {
           "name": "magic-string",
           "version": "0.30.21",
           "kind": "library",
-          "text": 121
+          "text": 120
         },
         {
           "name": "memoize-one",
           "version": "5.2.1",
           "kind": "library",
-          "text": 122
+          "text": 121
         },
         {
           "name": "memoize-one",
           "version": "6.0.0",
           "kind": "library",
-          "text": 122
+          "text": 121
         },
         {
           "name": "merge-stream",
           "version": "2.0.0",
           "kind": "library",
-          "text": 123
+          "text": 122
         },
         {
           "name": "metro",
@@ -2433,115 +2427,115 @@
           "name": "micromatch",
           "version": "4.0.8",
           "kind": "library",
-          "text": 49
+          "text": 48
         },
         {
           "name": "mime",
           "version": "1.6.0",
           "kind": "library",
-          "text": 124
+          "text": 123
         },
         {
           "name": "mime-db",
           "version": "1.52.0",
           "kind": "library",
-          "text": 125
+          "text": 124
         },
         {
           "name": "mime-db",
           "version": "1.54.0",
           "kind": "library",
-          "text": 125
+          "text": 124
         },
         {
           "name": "mime-types",
           "version": "2.1.35",
           "kind": "library",
-          "text": 32
+          "text": 31
         },
         {
           "name": "mime-types",
           "version": "3.0.2",
           "kind": "library",
-          "text": 32
+          "text": 31
         },
         {
           "name": "mimic-fn",
           "version": "1.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "mkdirp",
           "version": "1.0.4",
           "kind": "library",
-          "text": 126
+          "text": 125
         },
         {
           "name": "ms",
           "version": "2.0.0",
           "kind": "library",
-          "text": 127
+          "text": 126
         },
         {
           "name": "ms",
           "version": "2.1.3",
           "kind": "library",
-          "text": 128
+          "text": 127
         },
         {
           "name": "multitars",
           "version": "1.0.2",
           "kind": "library",
-          "text": 84
+          "text": 83
         },
         {
           "name": "nanoid",
           "version": "3.3.19",
           "kind": "library",
-          "text": 129
+          "text": 128
         },
         {
           "name": "negotiator",
           "version": "0.6.3",
           "kind": "library",
-          "text": 130
+          "text": 129
         },
         {
           "name": "negotiator",
           "version": "0.6.4",
           "kind": "library",
-          "text": 130
+          "text": 129
         },
         {
           "name": "negotiator",
           "version": "1.1.0",
           "kind": "library",
-          "text": 130
+          "text": 129
         },
         {
           "name": "node-fetch",
           "version": "2.7.0",
           "kind": "library",
-          "text": 131
+          "text": 130
         },
         {
           "name": "node-int64",
           "version": "0.4.0",
           "kind": "library",
-          "text": 132
+          "text": 131
         },
         {
           "name": "node-releases",
           "version": "2.0.57",
           "kind": "library",
-          "text": 133
+          "text": 132
         },
         {
           "name": "nullthrows",
           "version": "1.1.1",
           "kind": "library",
-          "text": 134
+          "text": 133
         },
         {
           "name": "ob1",
@@ -2559,115 +2553,109 @@
           "name": "object-assign",
           "version": "4.1.1",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "on-finished",
           "version": "2.3.0",
           "kind": "library",
-          "text": 135
+          "text": 134
         },
         {
           "name": "on-finished",
           "version": "2.4.1",
           "kind": "library",
-          "text": 135
+          "text": 134
         },
         {
           "name": "on-headers",
           "version": "1.1.0",
           "kind": "library",
-          "text": 136
+          "text": 135
         },
         {
           "name": "onetime",
           "version": "2.0.1",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "open",
           "version": "7.4.2",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "ora",
           "version": "3.4.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "parse-png",
           "version": "2.1.0",
           "kind": "library",
-          "text": 137
+          "text": 136
         },
         {
           "name": "parseurl",
           "version": "1.3.3",
           "kind": "library",
-          "text": 138
+          "text": 137
         },
         {
           "name": "path-key",
           "version": "3.1.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "path-parse",
           "version": "1.0.7",
           "kind": "library",
-          "text": 139
+          "text": 138
         },
         {
           "name": "phosphor-react-native",
           "version": "3.0.6",
           "kind": "library",
-          "text": 140
+          "text": 139
         },
         {
           "name": "picomatch",
           "version": "2.3.2",
           "kind": "library",
-          "text": 141
+          "text": 140
         },
         {
           "name": "picomatch",
           "version": "4.0.7",
           "kind": "library",
-          "text": 141
+          "text": 140
         },
         {
           "name": "plist",
           "version": "3.1.1",
           "kind": "library",
-          "text": 142
+          "text": 141
         },
         {
           "name": "pngjs",
           "version": "3.4.0",
           "kind": "library",
-          "text": 143
+          "text": 142
         },
         {
           "name": "postcss",
           "version": "8.5.28",
           "kind": "library",
-          "text": 144
+          "text": 143
         },
         {
           "name": "postcss-value-parser",
           "version": "4.2.0",
           "kind": "library",
-          "text": 145
-        },
-        {
-          "name": "posthog-react-native",
-          "version": "4.78.4",
-          "kind": "library",
-          "text": 19
+          "text": 144
         },
         {
           "name": "pretty-format",
@@ -2679,37 +2667,37 @@
           "name": "progress",
           "version": "2.0.3",
           "kind": "library",
-          "text": 146
+          "text": 145
         },
         {
           "name": "promise",
           "version": "7.3.1",
           "kind": "library",
-          "text": 147
+          "text": 146
         },
         {
           "name": "promise",
           "version": "8.3.0",
           "kind": "library",
-          "text": 147
+          "text": 146
         },
         {
           "name": "prompts",
           "version": "2.4.2",
           "kind": "library",
-          "text": 148
+          "text": 147
         },
         {
           "name": "query-string",
           "version": "7.1.3",
           "kind": "library",
-          "text": 149
+          "text": 148
         },
         {
           "name": "range-parser",
           "version": "1.2.1",
           "kind": "library",
-          "text": 150
+          "text": 149
         },
         {
           "name": "react",
@@ -2733,25 +2721,25 @@
           "name": "react-fast-compare",
           "version": "3.2.2",
           "kind": "library",
-          "text": 151
+          "text": 150
         },
         {
           "name": "react-freeze",
           "version": "1.0.4",
           "kind": "library",
-          "text": 152
+          "text": 151
         },
         {
           "name": "react-is",
           "version": "16.13.1",
           "kind": "library",
-          "text": 44
+          "text": 43
         },
         {
           "name": "react-is",
           "version": "18.3.1",
           "kind": "library",
-          "text": 44
+          "text": 43
         },
         {
           "name": "react-is",
@@ -2769,79 +2757,79 @@
           "name": "react-native-drawer-layout",
           "version": "4.2.11",
           "kind": "library",
-          "text": 153
+          "text": 152
         },
         {
           "name": "react-native-gesture-handler",
           "version": "2.32.0",
           "kind": "library",
-          "text": 154
+          "text": 153
         },
         {
           "name": "react-native-is-edge-to-edge",
           "version": "1.3.1",
           "kind": "library",
-          "text": 155
+          "text": 154
         },
         {
           "name": "react-native-passkey",
           "version": "3.6.2",
           "kind": "library",
-          "text": 156
+          "text": 155
         },
         {
           "name": "react-native-reanimated",
           "version": "4.5.1",
           "kind": "library",
-          "text": 154
+          "text": 153
         },
         {
           "name": "react-native-safe-area-context",
           "version": "5.7.0",
           "kind": "library",
-          "text": 157
+          "text": 156
         },
         {
           "name": "react-native-screens",
           "version": "4.26.2",
           "kind": "library",
-          "text": 158
+          "text": 157
         },
         {
           "name": "react-native-svg",
           "version": "15.15.4",
           "kind": "library",
-          "text": 159
+          "text": 158
         },
         {
           "name": "react-native-url-polyfill",
           "version": "4.0.0",
           "kind": "library",
-          "text": 160
+          "text": 159
         },
         {
           "name": "react-native-web",
           "version": "0.21.3",
           "kind": "library",
-          "text": 161
+          "text": 160
         },
         {
           "name": "react-native-worklets",
           "version": "0.10.1",
           "kind": "library",
-          "text": 162
+          "text": 161
         },
         {
           "name": "react-refresh",
           "version": "0.14.2",
           "kind": "library",
-          "text": 44
+          "text": 43
         },
         {
           "name": "react-remove-scroll",
           "version": "2.7.2",
           "kind": "library",
-          "text": 40
+          "text": 39
         },
         {
           "name": "react-remove-scroll-bar",
@@ -2853,79 +2841,79 @@
           "name": "react-style-singleton",
           "version": "2.2.3",
           "kind": "library",
-          "text": 40
+          "text": 39
         },
         {
           "name": "regenerate",
           "version": "1.4.2",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "regenerate-unicode-properties",
           "version": "10.3.0",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "regenerator-runtime",
           "version": "0.13.11",
           "kind": "library",
-          "text": 163
+          "text": 162
         },
         {
           "name": "regexpu-core",
           "version": "6.5.2",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "regjsgen",
           "version": "0.8.0",
           "kind": "library",
-          "text": 164
+          "text": 163
         },
         {
           "name": "require-directory",
           "version": "2.1.1",
           "kind": "library",
-          "text": 165
+          "text": 164
         },
         {
           "name": "resolve",
           "version": "1.22.12",
           "kind": "library",
-          "text": 166
+          "text": 165
         },
         {
           "name": "resolve-from",
           "version": "5.0.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "resolve-workspace-root",
           "version": "2.0.1",
           "kind": "library",
-          "text": 167
+          "text": 166
         },
         {
           "name": "restore-cursor",
           "version": "2.0.0",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "safe-buffer",
           "version": "5.2.1",
           "kind": "library",
-          "text": 168
+          "text": 167
         },
         {
           "name": "sandbox-cli-detector",
           "version": "0.2.0",
           "kind": "library",
-          "text": 35
+          "text": 34
         },
         {
           "name": "scheduler",
@@ -2937,19 +2925,19 @@
           "name": "send",
           "version": "0.19.2",
           "kind": "library",
-          "text": 169
+          "text": 168
         },
         {
           "name": "serialize-error",
           "version": "2.1.0",
           "kind": "library",
-          "text": 56
+          "text": 55
         },
         {
           "name": "serve-static",
           "version": "1.16.3",
           "kind": "library",
-          "text": 170
+          "text": 169
         },
         {
           "name": "server-only",
@@ -2961,85 +2949,85 @@
           "name": "setimmediate",
           "version": "1.0.5",
           "kind": "library",
-          "text": 171
+          "text": 170
         },
         {
           "name": "sf-symbols-typescript",
           "version": "2.2.0",
           "kind": "library",
-          "text": 172
+          "text": 171
         },
         {
           "name": "shallowequal",
           "version": "1.1.0",
           "kind": "library",
-          "text": 173
+          "text": 172
         },
         {
           "name": "shebang-command",
           "version": "2.0.0",
           "kind": "library",
-          "text": 137
+          "text": 136
         },
         {
           "name": "shebang-regex",
           "version": "3.0.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "shell-quote",
           "version": "1.11.0",
           "kind": "library",
-          "text": 174
+          "text": 173
         },
         {
           "name": "simple-plist",
           "version": "1.3.1",
           "kind": "library",
-          "text": 175
+          "text": 174
         },
         {
           "name": "simple-swizzle",
           "version": "0.2.4",
           "kind": "library",
-          "text": 176
+          "text": 175
         },
         {
           "name": "sisteransi",
           "version": "1.0.5",
           "kind": "library",
-          "text": 148
+          "text": 147
         },
         {
           "name": "slugify",
           "version": "1.6.9",
           "kind": "library",
-          "text": 177
+          "text": 176
         },
         {
           "name": "source-map-support",
           "version": "0.5.21",
           "kind": "library",
-          "text": 178
+          "text": 177
         },
         {
           "name": "split-on-first",
           "version": "1.1.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "stackframe",
           "version": "1.3.4",
           "kind": "library",
-          "text": 90
+          "text": 89
         },
         {
           "name": "stacktrace-parser",
           "version": "0.1.11",
           "kind": "library",
-          "text": 179
+          "text": 178
         },
         {
           "name": "standard-navigation",
@@ -3051,37 +3039,37 @@
           "name": "statuses",
           "version": "1.5.0",
           "kind": "library",
-          "text": 180
+          "text": 179
         },
         {
           "name": "statuses",
           "version": "2.0.2",
           "kind": "library",
-          "text": 180
+          "text": 179
         },
         {
           "name": "strict-uri-encode",
           "version": "2.0.0",
           "kind": "library",
-          "text": 181
+          "text": 180
         },
         {
           "name": "string-width",
           "version": "4.2.3",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "strip-ansi",
           "version": "5.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "strip-ansi",
           "version": "6.0.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "structured-headers",
@@ -3093,91 +3081,91 @@
           "name": "styleq",
           "version": "0.1.3",
           "kind": "library",
-          "text": 182
+          "text": 181
         },
         {
           "name": "supports-color",
           "version": "5.5.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "supports-color",
           "version": "7.2.0",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "supports-color",
           "version": "8.1.1",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "supports-hyperlinks",
           "version": "2.3.0",
           "kind": "library",
-          "text": 183
+          "text": 182
         },
         {
           "name": "supports-preserve-symlinks-flag",
           "version": "1.0.0",
           "kind": "library",
-          "text": 184
+          "text": 183
         },
         {
           "name": "tailwind-merge",
           "version": "3.7.0",
           "kind": "library",
-          "text": 185
+          "text": 184
         },
         {
           "name": "tailwindcss",
           "version": "4.3.3",
           "kind": "library",
-          "text": 28
+          "text": 27
         },
         {
           "name": "tapable",
           "version": "2.3.3",
           "kind": "library",
-          "text": 186
+          "text": 185
         },
         {
           "name": "terminal-link",
           "version": "2.1.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "throat",
           "version": "5.0.0",
           "kind": "library",
-          "text": 187
+          "text": 186
         },
         {
           "name": "tinyglobby",
           "version": "0.2.17",
           "kind": "library",
-          "text": 188
+          "text": 187
         },
         {
           "name": "to-regex-range",
           "version": "5.0.1",
           "kind": "library",
-          "text": 189
+          "text": 188
         },
         {
           "name": "toidentifier",
           "version": "1.0.1",
           "kind": "library",
-          "text": 190
+          "text": 189
         },
         {
           "name": "toqr",
           "version": "0.1.1",
           "kind": "library",
-          "text": 84
+          "text": 83
         },
         {
           "name": "tr46",
@@ -3189,205 +3177,205 @@
           "name": "ua-parser-js",
           "version": "0.7.41",
           "kind": "library",
-          "text": 191
+          "text": 190
         },
         {
           "name": "ua-parser-js",
           "version": "1.0.41",
           "kind": "library",
-          "text": 191
+          "text": 190
         },
         {
           "name": "undici-types",
           "version": "6.21.0",
           "kind": "library",
-          "text": 192
+          "text": 191
         },
         {
           "name": "unicode-canonical-property-names-ecmascript",
           "version": "2.0.1",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "unicode-match-property-ecmascript",
           "version": "2.0.0",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "unicode-match-property-value-ecmascript",
           "version": "2.2.1",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "unicode-property-aliases-ecmascript",
           "version": "2.2.0",
           "kind": "library",
-          "text": 87
+          "text": 86
         },
         {
           "name": "uniwind",
           "version": "1.12.1",
           "kind": "library",
-          "text": 193
+          "text": 192
         },
         {
           "name": "unpipe",
           "version": "1.0.0",
           "kind": "library",
-          "text": 194
+          "text": 193
         },
         {
           "name": "update-browserslist-db",
           "version": "1.3.3",
           "kind": "library",
-          "text": 195
+          "text": 194
         },
         {
           "name": "use-callback-ref",
           "version": "1.3.3",
           "kind": "library",
-          "text": 40
+          "text": 39
         },
         {
           "name": "use-latest-callback",
           "version": "0.2.6",
           "kind": "library",
-          "text": 196
+          "text": 195
         },
         {
           "name": "use-sidecar",
           "version": "1.1.3",
           "kind": "library",
-          "text": 40
+          "text": 39
         },
         {
           "name": "utils-merge",
           "version": "1.0.1",
           "kind": "library",
-          "text": 197
+          "text": 196
         },
         {
           "name": "uuid",
           "version": "7.0.3",
           "kind": "library",
-          "text": 198
+          "text": 197
         },
         {
           "name": "valibot",
           "version": "1.5.0",
           "kind": "library",
-          "text": 199
+          "text": 198
         },
         {
           "name": "vary",
           "version": "1.1.2",
           "kind": "library",
-          "text": 200
+          "text": 199
         },
         {
           "name": "vaul",
           "version": "1.1.2",
           "kind": "library",
-          "text": 201
+          "text": 200
         },
         {
           "name": "vlq",
           "version": "1.0.1",
           "kind": "library",
-          "text": 202
+          "text": 201
         },
         {
           "name": "warn-once",
           "version": "0.1.1",
           "kind": "library",
-          "text": 203
+          "text": 202
         },
         {
           "name": "wcwidth",
           "version": "1.0.1",
           "kind": "library",
-          "text": 204
+          "text": 203
         },
         {
           "name": "whatwg-fetch",
           "version": "3.6.20",
           "kind": "library",
-          "text": 205
+          "text": 204
         },
         {
           "name": "whatwg-url",
           "version": "5.0.0",
           "kind": "library",
-          "text": 206
+          "text": 205
         },
         {
           "name": "whatwg-url-minimum",
           "version": "0.1.2",
           "kind": "library",
-          "text": 207
+          "text": 206
         },
         {
           "name": "whisper.rn",
           "version": "0.7.4",
           "kind": "library",
-          "text": 208
+          "text": 207
         },
         {
           "name": "wrap-ansi",
           "version": "7.0.0",
           "kind": "library",
-          "text": 37
+          "text": 36
         },
         {
           "name": "ws",
           "version": "7.5.13",
           "kind": "library",
-          "text": 209
+          "text": 208
         },
         {
           "name": "ws",
           "version": "8.22.0",
           "kind": "library",
-          "text": 210
+          "text": 209
         },
         {
           "name": "xml2js",
           "version": "0.6.0",
           "kind": "library",
-          "text": 211
+          "text": 210
         },
         {
           "name": "xmlbuilder",
           "version": "11.0.1",
           "kind": "library",
-          "text": 212
+          "text": 211
         },
         {
           "name": "xmlbuilder",
           "version": "15.1.1",
           "kind": "library",
-          "text": 212
+          "text": 211
         },
         {
           "name": "yargs",
           "version": "17.7.3",
           "kind": "library",
-          "text": 213
+          "text": 212
         },
         {
           "name": "zod",
           "version": "3.25.76",
           "kind": "library",
-          "text": 214
+          "text": 213
         },
         {
           "name": "zustand",
           "version": "5.0.15",
           "kind": "library",
-          "text": 215
+          "text": 214
         }
       ]
     },
@@ -3399,13 +3387,13 @@
           "name": "@isaacs/ttlcache",
           "version": "1.4.1",
           "kind": "library",
-          "text": 216
+          "text": 215
         },
         {
           "name": "@ungap/structured-clone",
           "version": "1.4.0",
           "kind": "library",
-          "text": 217
+          "text": 216
         },
         {
           "name": "boolbase",
@@ -3417,133 +3405,133 @@
           "name": "cliui",
           "version": "8.0.1",
           "kind": "library",
-          "text": 218
+          "text": 217
         },
         {
           "name": "electron-to-chromium",
           "version": "1.5.443",
           "kind": "library",
-          "text": 219
+          "text": 218
         },
         {
           "name": "get-caller-file",
           "version": "2.0.5",
           "kind": "library",
-          "text": 220
+          "text": 219
         },
         {
           "name": "graceful-fs",
           "version": "4.2.11",
           "kind": "library",
-          "text": 221
+          "text": 220
         },
         {
           "name": "hosted-git-info",
           "version": "7.0.2",
           "kind": "library",
-          "text": 222
+          "text": 221
         },
         {
           "name": "inherits",
           "version": "2.0.4",
           "kind": "library",
-          "text": 223
+          "text": 222
         },
         {
           "name": "isexe",
           "version": "2.0.0",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "lru-cache",
           "version": "5.1.1",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "lru-cache",
           "version": "10.4.3",
           "kind": "library",
-          "text": 225
+          "text": 224
         },
         {
           "name": "npm-package-arg",
           "version": "11.0.3",
           "kind": "library",
-          "text": 226
+          "text": 225
         },
         {
           "name": "picocolors",
           "version": "1.1.1",
           "kind": "library",
-          "text": 227
+          "text": 226
         },
         {
           "name": "proc-log",
           "version": "4.2.0",
           "kind": "library",
-          "text": 228
+          "text": 227
         },
         {
           "name": "semver",
           "version": "6.3.1",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "semver",
           "version": "7.8.5",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "setprototypeof",
           "version": "1.2.0",
           "kind": "library",
-          "text": 229
+          "text": 228
         },
         {
           "name": "signal-exit",
           "version": "3.0.7",
           "kind": "library",
-          "text": 230
+          "text": 229
         },
         {
           "name": "validate-npm-package-name",
           "version": "5.0.1",
           "kind": "library",
-          "text": 231
+          "text": 230
         },
         {
           "name": "which",
           "version": "2.0.2",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "y18n",
           "version": "5.0.8",
           "kind": "library",
-          "text": 232
+          "text": 231
         },
         {
           "name": "yallist",
           "version": "3.1.1",
           "kind": "library",
-          "text": 224
+          "text": 223
         },
         {
           "name": "yaml",
           "version": "2.9.1",
           "kind": "library",
-          "text": 233
+          "text": 232
         },
         {
           "name": "yargs-parser",
           "version": "21.1.1",
           "kind": "library",
-          "text": 234
+          "text": 233
         }
       ]
     },
@@ -3555,7 +3543,7 @@
           "name": "baseline-browser-mapping",
           "version": "2.11.26",
           "kind": "library",
-          "text": 235
+          "text": 234
         },
         {
           "name": "bser",
@@ -3567,31 +3555,31 @@
           "name": "chrome-launcher",
           "version": "0.15.2",
           "kind": "library",
-          "text": 236
+          "text": 235
         },
         {
           "name": "chromium-edge-launcher",
           "version": "0.3.0",
           "kind": "library",
-          "text": 236
+          "text": 235
         },
         {
           "name": "class-variance-authority",
           "version": "0.7.1",
           "kind": "library",
-          "text": 237
+          "text": 236
         },
         {
           "name": "detect-libc",
           "version": "2.1.2",
           "kind": "library",
-          "text": 238
+          "text": 237
         },
         {
           "name": "exponential-backoff",
           "version": "3.1.3",
           "kind": "library",
-          "text": 239
+          "text": 238
         },
         {
           "name": "fb-watchman",
@@ -3603,31 +3591,31 @@
           "name": "lighthouse-logger",
           "version": "1.4.2",
           "kind": "library",
-          "text": 236
+          "text": 235
         },
         {
           "name": "marky",
           "version": "1.3.0",
           "kind": "library",
-          "text": 240
+          "text": 239
         },
         {
           "name": "typescript",
           "version": "6.0.3",
           "kind": "library",
-          "text": 241
+          "text": 240
         },
         {
           "name": "walker",
           "version": "1.0.8",
           "kind": "library",
-          "text": 242
+          "text": 241
         },
         {
           "name": "xcode",
           "version": "3.0.1",
           "kind": "library",
-          "text": 243
+          "text": 242
         }
       ]
     },
@@ -3639,67 +3627,67 @@
           "name": "css-select",
           "version": "5.2.2",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "css-what",
           "version": "6.2.2",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "domelementtype",
           "version": "2.3.0",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "domhandler",
           "version": "5.0.3",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "domutils",
           "version": "3.2.2",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "entities",
           "version": "4.5.0",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "fontfaceobserver",
           "version": "2.3.0",
           "kind": "library",
-          "text": 245
+          "text": 244
         },
         {
           "name": "nth-check",
           "version": "2.1.1",
           "kind": "library",
-          "text": 244
+          "text": 243
         },
         {
           "name": "regjsparser",
           "version": "0.13.3",
           "kind": "library",
-          "text": 246
+          "text": 245
         },
         {
           "name": "terser",
           "version": "5.51.2",
           "kind": "library",
-          "text": 247
+          "text": 246
         },
         {
           "name": "webidl-conversions",
           "version": "3.0.1",
           "kind": "library",
-          "text": 248
+          "text": 247
         }
       ]
     },
@@ -3723,49 +3711,49 @@
           "name": "hoist-non-react-statics",
           "version": "3.3.2",
           "kind": "library",
-          "text": 249
+          "text": 248
         },
         {
           "name": "hyphenate-style-name",
           "version": "1.1.0",
           "kind": "library",
-          "text": 250
+          "text": 249
         },
         {
           "name": "ieee754",
           "version": "1.2.1",
           "kind": "library",
-          "text": 251
+          "text": 250
         },
         {
           "name": "makeerror",
           "version": "1.0.12",
           "kind": "library",
-          "text": 252
+          "text": 251
         },
         {
           "name": "source-map",
           "version": "0.5.7",
           "kind": "library",
-          "text": 253
+          "text": 252
         },
         {
           "name": "source-map",
           "version": "0.6.1",
           "kind": "library",
-          "text": 253
+          "text": 252
         },
         {
           "name": "source-map-js",
           "version": "1.2.2",
           "kind": "library",
-          "text": 253
+          "text": 252
         },
         {
           "name": "tmpl",
           "version": "1.0.5",
           "kind": "library",
-          "text": 252
+          "text": 251
         }
       ]
     },
@@ -3777,37 +3765,37 @@
           "name": "glob",
           "version": "13.0.6",
           "kind": "library",
-          "text": 254
+          "text": 253
         },
         {
           "name": "lru-cache",
           "version": "11.5.3",
           "kind": "library",
-          "text": 255
+          "text": 254
         },
         {
           "name": "minimatch",
           "version": "10.2.6",
           "kind": "library",
-          "text": 256
+          "text": 255
         },
         {
           "name": "minipass",
           "version": "7.1.3",
           "kind": "library",
-          "text": 255
+          "text": 254
         },
         {
           "name": "path-scurry",
           "version": "2.0.2",
           "kind": "library",
-          "text": 255
+          "text": 254
         },
         {
           "name": "sax",
           "version": "1.6.1",
           "kind": "library",
-          "text": 255
+          "text": 254
         }
       ]
     },
@@ -3819,19 +3807,19 @@
           "name": "lightningcss",
           "version": "1.30.1",
           "kind": "library",
-          "text": 257
+          "text": 256
         },
         {
           "name": "lightningcss",
           "version": "1.32.0",
           "kind": "library",
-          "text": 257
+          "text": 256
         },
         {
           "name": "lightningcss",
           "version": "1.33.0",
           "kind": "library",
-          "text": 257
+          "text": 256
         }
       ]
     },
@@ -3842,17 +3830,17 @@
         {
           "name": "Literata",
           "kind": "font",
-          "text": 258
+          "text": 257
         },
         {
           "name": "Mukta",
           "kind": "font",
-          "text": 259
+          "text": 258
         },
         {
           "name": "Tiro Devanagari Hindi",
           "kind": "font",
-          "text": 260
+          "text": 259
         }
       ]
     },
@@ -3864,13 +3852,13 @@
           "name": "type-fest",
           "version": "0.7.1",
           "kind": "library",
-          "text": 38
+          "text": 37
         },
         {
           "name": "type-fest",
           "version": "0.21.3",
           "kind": "library",
-          "text": 261
+          "text": 260
         }
       ]
     },
@@ -3882,13 +3870,13 @@
           "name": "jsc-safe-url",
           "version": "0.2.4",
           "kind": "library",
-          "text": 262
+          "text": 261
         },
         {
           "name": "tslib",
           "version": "2.8.1",
           "kind": "library",
-          "text": 263
+          "text": 262
         }
       ]
     },
@@ -3900,7 +3888,7 @@
           "name": "big-integer",
           "version": "1.6.52",
           "kind": "library",
-          "text": 264
+          "text": 263
         },
         {
           "name": "stream-buffers",
@@ -3918,7 +3906,7 @@
           "name": "node-forge",
           "version": "1.4.0",
           "kind": "library",
-          "text": 265
+          "text": 264
         }
       ]
     },
@@ -3942,7 +3930,7 @@
           "name": "caniuse-lite",
           "version": "1.0.30001814",
           "kind": "library",
-          "text": 266
+          "text": 265
         }
       ]
     },
@@ -3954,7 +3942,7 @@
           "name": "mdn-data",
           "version": "2.0.14",
           "kind": "library",
-          "text": 267
+          "text": 266
         }
       ]
     },
@@ -3966,7 +3954,7 @@
           "name": "@expo-google-fonts/material-symbols",
           "version": "0.4.48",
           "kind": "library",
-          "text": 268
+          "text": 267
         }
       ]
     },
@@ -3978,7 +3966,7 @@
           "name": "argparse",
           "version": "2.0.1",
           "kind": "library",
-          "text": 269
+          "text": 268
         }
       ]
     }
@@ -4003,7 +3991,6 @@
     "Copyright 2019 Justin Ridgewell <jridgewell@google.com>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "The MIT License (MIT)\n\nCopyright (c) 2019 Paul Miller (https://paulmillr.com)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the “Software”), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
     "The MIT License (MIT)\n\nCopyright (c) 2022 Paul Miller (https://paulmillr.com)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the “Software”), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
-    "Copyright 2020 Posthog / Hiberly, Inc.\n\nCopyright 2015 Mixpanel, Inc.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this work except in compliance with the License.\nYou may obtain a copy of the License below, or at:\n\n   http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n\n                                 Apache License\n                           Version 2.0, January 2004\n                        http://www.apache.org/licenses/\n\n   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n   1. Definitions.\n\n      \"License\" shall mean the terms and conditions for use, reproduction,\n      and distribution as defined by Sections 1 through 9 of this document.\n\n      \"Licensor\" shall mean the copyright owner or entity authorized by\n      the copyright owner that is granting the License.\n\n      \"Legal Entity\" shall mean the union of the acting entity and all\n      other entities that control, are controlled by, or are under common\n      control with that entity. For the purposes of this definition,\n      \"control\" means (i) the power, direct or indirect, to cause the\n      direction or management of such entity, whether by contract or\n      otherwise, or (ii) ownership of fifty percent (50%) or more of the\n      outstanding shares, or (iii) beneficial ownership of such entity.\n\n      \"You\" (or \"Your\") shall mean an individual or Legal Entity\n      exercising permissions granted by this License.\n\n      \"Source\" form shall mean the preferred form for making modifications,\n      including but not limited to software source code, documentation\n      source, and configuration files.\n\n      \"Object\" form shall mean any form resulting from mechanical\n      transformation or translation of a Source form, including but\n      not limited to compiled object code, generated documentation,\n      and conversions to other media types.\n\n      \"Work\" shall mean the work of authorship, whether in Source or\n      Object form, made available under the License, as indicated by a\n      copyright notice that is included in or attached to the work\n      (an example is provided in the Appendix below).\n\n      \"Derivative Works\" shall mean any work, whether in Source or Object\n      form, that is based on (or derived from) the Work and for which the\n      editorial revisions, annotations, elaborations, or other modifications\n      represent, as a whole, an original work of authorship. For the purposes\n      of this License, Derivative Works shall not include works that remain\n      separable from, or merely link (or bind by name) to the interfaces of,\n      the Work and Derivative Works thereof.\n\n      \"Contribution\" shall mean any work of authorship, including\n      the original version of the Work and any modifications or additions\n      to that Work or Derivative Works thereof, that is intentionally\n      submitted to Licensor for inclusion in the Work by the copyright owner\n      or by an individual or Legal Entity authorized to submit on behalf of\n      the copyright owner. For the purposes of this definition, \"submitted\"\n      means any form of electronic, verbal, or written communication sent\n      to the Licensor or its representatives, including but not limited to\n      communication on electronic mailing lists, source code control systems,\n      and issue tracking systems that are managed by, or on behalf of, the\n      Licensor for the purpose of discussing and improving the Work, but\n      excluding communication that is conspicuously marked or otherwise\n      designated in writing by the copyright owner as \"Not a Contribution.\"\n\n      \"Contributor\" shall mean Licensor and any individual or Legal Entity\n      on behalf of whom a Contribution has been received by Licensor and\n      subsequently incorporated within the Work.\n\n   2. Grant of Copyright License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      copyright license to reproduce, prepare Derivative Works of,\n      publicly display, publicly perform, sublicense, and distribute the\n      Work and such Derivative Works in Source or Object form.\n\n   3. Grant of Patent License. Subject to the terms and conditions of\n      this License, each Contributor hereby grants to You a perpetual,\n      worldwide, non-exclusive, no-charge, royalty-free, irrevocable\n      (except as stated in this section) patent license to make, have made,\n      use, offer to sell, sell, import, and otherwise transfer the Work,\n      where such license applies only to those patent claims licensable\n      by such Contributor that are necessarily infringed by their\n      Contribution(s) alone or by combination of their Contribution(s)\n      with the Work to which such Contribution(s) was submitted. If You\n      institute patent litigation against any entity (including a\n      cross-claim or counterclaim in a lawsuit) alleging that the Work\n      or a Contribution incorporated within the Work constitutes direct\n      or contributory patent infringement, then any patent licenses\n      granted to You under this License for that Work shall terminate\n      as of the date such litigation is filed.\n\n   4. Redistribution. You may reproduce and distribute copies of the\n      Work or Derivative Works thereof in any medium, with or without\n      modifications, and in Source or Object form, provided that You\n      meet the following conditions:\n\n      (a) You must give any other recipients of the Work or\n          Derivative Works a copy of this License; and\n\n      (b) You must cause any modified files to carry prominent notices\n          stating that You changed the files; and\n\n      (c) You must retain, in the Source form of any Derivative Works\n          that You distribute, all copyright, patent, trademark, and\n          attribution notices from the Source form of the Work,\n          excluding those notices that do not pertain to any part of\n          the Derivative Works; and\n\n      (d) If the Work includes a \"NOTICE\" text file as part of its\n          distribution, then any Derivative Works that You distribute must\n          include a readable copy of the attribution notices contained\n          within such NOTICE file, excluding those notices that do not\n          pertain to any part of the Derivative Works, in at least one\n          of the following places: within a NOTICE text file distributed\n          as part of the Derivative Works; within the Source form or\n          documentation, if provided along with the Derivative Works; or,\n          within a display generated by the Derivative Works, if and\n          wherever such third-party notices normally appear. The contents\n          of the NOTICE file are for informational purposes only and\n          do not modify the License. You may add Your own attribution\n          notices within Derivative Works that You distribute, alongside\n          or as an addendum to the NOTICE text from the Work, provided\n          that such additional attribution notices cannot be construed\n          as modifying the License.\n\n      You may add Your own copyright statement to Your modifications and\n      may provide additional or different license terms and conditions\n      for use, reproduction, or distribution of Your modifications, or\n      for any such Derivative Works as a whole, provided Your use,\n      reproduction, and distribution of the Work otherwise complies with\n      the conditions stated in this License.\n\n   5. Submission of Contributions. Unless You explicitly state otherwise,\n      any Contribution intentionally submitted for inclusion in the Work\n      by You to the Licensor shall be under the terms and conditions of\n      this License, without any additional terms or conditions.\n      Notwithstanding the above, nothing herein shall supersede or modify\n      the terms of any separate license agreement you may have executed\n      with Licensor regarding such Contributions.\n\n   6. Trademarks. This License does not grant permission to use the trade\n      names, trademarks, service marks, or product names of the Licensor,\n      except as required for reasonable and customary use in describing the\n      origin of the Work and reproducing the content of the NOTICE file.\n\n   7. Disclaimer of Warranty. Unless required by applicable law or\n      agreed to in writing, Licensor provides the Work (and each\n      Contributor provides its Contributions) on an \"AS IS\" BASIS,\n      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or\n      implied, including, without limitation, any warranties or conditions\n      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A\n      PARTICULAR PURPOSE. You are solely responsible for determining the\n      appropriateness of using or redistributing the Work and assume any\n      risks associated with Your exercise of permissions under this License.\n\n   8. Limitation of Liability. In no event and under no legal theory,\n      whether in tort (including negligence), contract, or otherwise,\n      unless required by applicable law (such as deliberate and grossly\n      negligent acts) or agreed to in writing, shall any Contributor be\n      liable to You for damages, including any direct, indirect, special,\n      incidental, or consequential damages of any character arising as a\n      result of this License or out of the use or inability to use the\n      Work (including but not limited to damages for loss of goodwill,\n      work stoppage, computer failure or malfunction, or any and all\n      other commercial damages or losses), even if such Contributor\n      has been advised of the possibility of such damages.\n\n   9. Accepting Warranty or Additional Liability. While redistributing\n      the Work or Derivative Works thereof, You may choose to offer,\n      and charge a fee for, acceptance of support, warranty, indemnity,\n      or other liability obligations and/or rights consistent with this\n      License. However, in accepting such obligations, You may act only\n      on Your own behalf and on Your sole responsibility, not on behalf\n      of any other Contributor, and only if You agree to indemnify,\n      defend, and hold each Contributor harmless for any liability\n      incurred by, or claims asserted against, such Contributor by reason\n      of your accepting any such warranty or additional liability.\n\n   END OF TERMS AND CONDITIONS\n\n   APPENDIX: How to apply the Apache License to your work.\n\n      To apply the Apache License to your work, attach the following\n      boilerplate notice, with the fields enclosed by brackets \"[]\"\n      replaced with your own identifying information. (Don't include\n      the brackets!)  The text should be enclosed in the appropriate\n      comment syntax for the file format. We also recommend that a\n      file or class name and description of purpose be included on the\n      same \"printed page\" as the copyright notice for easier\n      identification within third-party archives.\n\n   Copyright [yyyy] [name of copyright owner]\n\n   Licensed under the Apache License, Version 2.0 (the \"License\");\n   you may not use this file except in compliance with the License.\n   You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   Unless required by applicable law or agreed to in writing, software\n   distributed under the License is distributed on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n   See the License for the specific language governing permissions and\n   limitations under the License.\n\n\n---\n\nThe @posthog/core package in packages/core is licensed under the MIT License below.\nThird-party code remains subject to its respective notices in this file.\nThis owning notice is preserved from posthog-js-lite, from which @posthog/core was migrated:\nhttps://github.com/PostHog/posthog-js-lite/blob/5fb7bee96f739b243dfea5589e2027f16629e8cd/LICENSE\n\nMIT License\n\nCopyright (c) 2022 PostHog (part of Hiberly Inc)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\npackages/core/src/error-tracking/parsers/index.ts and its compiled distributions contain code\nderived from TraceKit. This license only applies to the relevant code.\n\nMIT License\n\nCopyright (c) 2013 Onur Can Cakmak onur.cakmak@gmail.com and all TraceKit contributors.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this\nsoftware and associated documentation files(the 'Software'), to deal in the Software\nwithout restriction, including without limitation the rights to use, copy, modify,\nmerge, publish, distribute, sublicense, and / or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be included in all copies\nor substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,\nINCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A\nPARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT\nHOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\nCONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE\nOR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n---\n\npackages/core/src/vendor/uuidv7.ts and its compiled distributions contain code from uuidv7:\nhttps://github.com/LiosK/uuidv7/blob/f30b7a7faff73afbce0b27a46c638310f96912ba/src/index.ts\n\nCopyright 2021-2023 LiosK\n\nThis code is licensed under the Apache License, Version 2.0, reproduced above.\n\n---\n\nSome files in this codebase contain code from getsentry/sentry-javascript.\nIn such cases it is explicitly stated in the file header. This license only applies to the relevant code in such cases.\n\nMIT License\n\nCopyright (c) 2012 Functional Software, Inc. dba Sentry\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies\nof the Software, and to permit persons to whom the Software is furnished to do\nso, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\nSome files in this codebase contain code from getsentry/sentry-react-native.\nIn such cases it is explicitly stated in the file header. This license only applies to the relevant code in such cases.\n\nThe MIT License (MIT)\n\nCopyright (c) 2017 Sentry\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\nSome files in this codebase contain code from facebook/metro by Meta Platforms, Inc. and affiliates.\nIn such cases it is explicitly stated in the file header. This license only applies to the relevant code in such cases.\n\nMIT License\n\nCopyright (c) Meta Platforms, Inc. and affiliates.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\nSome files in this codebase contain code from expo/expo by 650 Industries, Inc. (aka Expo).\nIn such cases it is explicitly stated in the file header. This license only applies to the relevant code in such cases.\n\nThe MIT License (MIT)\n\nCopyright (c) 2015-present 650 Industries, Inc. (aka Expo)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\nSome files in this codebase contain code from agentcathq/agentcat-typescript-sdk (formerly MCPCat/mcpcat-typescript-sdk).\nIn such cases it is explicitly stated in the file header. This license only applies to the relevant code in such cases.\n\nMIT License\n\nCopyright (c) 2025 AgentCat, Inc. (formerly MCPcat)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "MIT License\n\nCopyright (c) 2022 WorkOS\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "MIT License\n\nCopyright (c) 2019 React Native Community\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "The MIT License (MIT)\n\nCopyright (c) 2015 Apptailor\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",

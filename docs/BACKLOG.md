@@ -406,7 +406,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Scope if yes: links become `https://earlyletters.com/i#t=<token>`; the parser reads the fragment and still accepts `/i/<token>` for 7 days; AASA pattern `/i`; generic preview tags. If no: legal-alignment rewrites Privacy Policy line 195 (it says tokens travel where servers do not log) and the website disables logging and analytics on `/i/*` with `Referrer-Policy: no-referrer` (FT-31).
 
 #### BL-349 App-level privacy manifest (review L7) [High]
-- Status: ready. Mode: agent. Owner: mobile engineer.
+- Status: in review (PR #211, founder merge: `app.config.ts`; includes #145). Mode: agent. Owner: mobile engineer. Built: `src/lib/privacy-manifest.ts` (required reasons for every build; collected data types follow `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` as S17's label 1.4.0 answers them), `test/privacy-manifest.test.ts`, preflight checks of the generated file. Left: Apple's upload email (go/no-go B1-10), the archived `.ipa` check, and the S17 and counsel calls listed in the PR.
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
@@ -648,10 +648,10 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Why critical: `keys.ts` ships empty, so the app trusts no remote config, no content and no pack (ADR 0016 4.2). Without it there are no kill switches in C1 (LEGAL-REQ-040) and no non-English language pack can install.
 
 #### BL-336 iOS deployment target 17 (new)
-- Status: needs-founder (FT-04 answers Q-002). Then agent: `expo-build-properties` with `ios.deploymentTarget: '17.0'` (app.config.ts plugin; owner mobile-polish this wave); removes the iOS 16 branch of the Plus gate (ADR 0013).
+- Status: in-review (D-098 answers Q-002, 15 Oct; config PR). Was: needs-founder (FT-04 answers Q-002). Then agent: `expo-build-properties` with `ios.deploymentTarget: '17.0'` (app.config.ts plugin; owner mobile-polish this wave); removes the iOS 16 branch of the Plus gate (ADR 0013).
 
 #### BL-337 Pack and model hostname and uploads (new)
-- Status: needs-founder (FT-04 answers Q-001; FT-16 creates the bucket and domain). Then agent: one hostname in `src/lib/models/catalog.ts` (`SELF_HOST_BASE` is `https://models.earlyletters.com/speech` today, while DOMAINS.md says `packs.earlyletters.com` and Q-001 recommends `packs.earlyletters.app`); the founder uploads the Hindi small model and text packs with the commands `publish.ts` prints, then `hosted: true` (ADR 0015 section 9 item 2).
+- Status: in-review for the hostname (D-097 answers Q-001: `packs.earlyletters.app`, 15 Oct; config PR); the bucket, domain and uploads stay founder steps (FT-16). Was: needs-founder (FT-04 answers Q-001; FT-16 creates the bucket and domain). Then agent: one hostname in `src/lib/models/catalog.ts` (`SELF_HOST_BASE` is `https://models.earlyletters.com/speech` today, while DOMAINS.md says `packs.earlyletters.com` and Q-001 recommends `packs.earlyletters.app`); the founder uploads the Hindi small model and text packs with the commands `publish.ts` prints, then `hosted: true` (ADR 0015 section 9 item 2).
 
 #### BL-338 Policy versions for the beta (new) [Critical]
 - Status: needs-decision (Q-009, founder with counsel). Without published `terms` and `sensitive-data` rows in `policy_versions`, every new account stops at "We couldn't finish setting up your account" (AUTH_SETUP 1.4, APPLY step 8.2), so C1 cannot sign in or sync.
