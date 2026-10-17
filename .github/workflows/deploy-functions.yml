@@ -260,13 +260,16 @@ jobs:
             echo "::error::Could not read staging's migration history ($(jq -r '.error // "no answer"' "$out" 2>/dev/null)). Check SUPABASE_DB_URL_STAGING. Nothing was deployed."
             exit 1
           fi
-          echo "::error::Staging lacks $(jq -r '.pending | length' "$out") of develop's migrations, which these functions may call. Approve the Deploy database run first, then re-run this job. Nothing was deployed."
+          echo "::error::Staging lacks $(jq -r '.pending | length' "$out") of develop's migrations, which these functions may call. Nothing was deployed. If a Deploy database run is waiting, approve it, then re-run this job; if none is waiting, see the run summary."
           {
             echo "### NOT DEPLOYED: staging is behind develop's migrations"
             echo
             jq -r '.pending[] | "- `" + . + "`"' "$out"
             echo
-            echo "Functions deploy only onto a schema that has every migration they ship with (Deploy database first)."
+            echo "Functions deploy only onto a schema that has every migration they ship with. Then re-run this job:"
+            echo
+            echo "1. **A Deploy database run is waiting** (Actions > Deploy database): approve it. It deploys develop's tip, so it also carries migrations from runs that were replaced."
+            echo "2. **None is waiting** (a run was rejected, cancelled or failed, or these migrations reached develop before its push trigger existed): re-run the latest Deploy database run on develop whose push changed migrations (Re-run all jobs; it checks out develop's tip), or run it by hand on develop once that is possible (#158, AF-05), or push from your computer (docs/ops/DEPLOY.md)."
           } >> "$GITHUB_STEP_SUMMARY"
           exit 1
       # Bundled by the Management API (--use-api), as each function's header

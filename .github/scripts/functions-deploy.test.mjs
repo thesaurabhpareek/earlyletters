@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { closure, confirm, functionFolders, headerDeploy, localMigrations, migrationsCheck, NEVER, NO_VERIFY_JWT, parseList, pendingMigrations, pgEnv, plan, psqlRead, SMOKE_HEALTH, specifiers } from './functions-deploy.mjs';
+import { closure, confirm, functionFolders, headerDeploy, localMigrations, migrationsCheck, NEVER, NO_VERIFY_JWT, parseList, pendingMigrations, pgEnv, plan, psqlRead, SMOKE_HEALTH, specifiers, STOPPED_LINE } from './functions-deploy.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCRIPT = join(REPO, '.github', 'scripts', 'functions-deploy.mjs');
@@ -256,6 +256,8 @@ test('confirm: only a higher version counts as this deploy; a later updated_at o
   assert.match(r.markdown, /\| config \| .*FAIL: still version 4, the same as before the deploy/);
   assert.match(r.markdown, /\| content \| .*FAIL: the function list does not give a numeric version/);
   assert.match(r.markdown, /\| purge-worker \| 1 to 2 \| off \| PASS/);
+  const lower = confirm({ before: asList(fn('config', 5, 100, false)), after: asList(fn('config', 3, 200, false)), deployed: ['config'] });
+  assert.match(lower.markdown, /FAIL: version 3, lower than 5 before the deploy/);
 });
 
 test('specifiers: a comment with a quote inside an import clause, and a template-literal dynamic import, are both found', () => {
@@ -343,17 +345,65 @@ test('migrations: local versions in file order, and the files staging lacks', ()
     },
   ));
 
-test('pgEnv: the pooler URL becomes PG* variables (password decoded, sslmode require by default); anything else is refused', () => {
+test('pgEnv: the pooler URL becomes PG* variables (password decoded, sslmode require by default)', () => {
   assert.deepEqual(pgEnv('postgresql://postgres.abcdefghijklmnopqrst:p%40ss%2Fw@aws-0-us-west-1.pooler.supabase.com:5432/postgres'), {
-    PGHOST: 'aws-0-us-west-1.pooler.supabase.com',
-    PGPORT: '5432',
-    PGUSER: 'postgres.abcdefghijklmnopqrst',
-    PGPASSWORD: 'p@ss/w',
-    PGDATABASE: 'postgres',
-    PGSSLMODE: 'require',
+    env: {
+      PGHOST: 'aws-0-us-west-1.pooler.supabase.com',
+      PGPORT: '5432',
+      PGUSER: 'postgres.abcdefghijklmnopqrst',
+      PGPASSWORD: 'p@ss/w',
+      PGDATABASE: 'postgres',
+      PGSSLMODE: 'require',
+    },
+    problem: null,
   });
-  assert.equal(pgEnv('postgresql://u:p@h/db?sslmode=disable').PGSSLMODE, 'disable');
-  for (const bad of ['', 'not a url', 'https://h/db', 'postgresql://h/db']) assert.equal(pgEnv(bad), null, bad);
+  for (const mode of ['require', 'verify-ca', 'verify-full']) assert.equal(pgEnv(`postgresql://u:p@h/db?sslmode=${mode}`).env.PGSSLMODE, mode);
+});
+
+test('pgEnv refuses, in fixed sentences that echo nothing: no TLS, control characters, malformed escapes, other schemes', () => {
+  const cases = {
+    '': 'SUPABASE_DB_URL is not set',
+    'not a url': 'SUPABASE_DB_URL is not a postgres:// URL',
+    'https://u:p@h/db': 'SUPABASE_DB_URL is not a postgres:// URL',
+    'postgresql://h/db': 'SUPABASE_DB_URL needs a host and a user',
+    'postgresql://u:pw-probe-SECRET%00x@h/db': 'SUPABASE_DB_URL holds a control character',
+    'postgresql://u%0Aname:pw-probe-SECRET@h/db': 'SUPABASE_DB_URL holds a control character',
+    'postgresql://u:pw-probe-SECRET@h/db%1F': 'SUPABASE_DB_URL holds a control character',
+    'postgresql://u:pw-probe-SECRET\u0000x@h/db': 'SUPABASE_DB_URL holds a control character',
+    'postgresql://u:pw-probe-SECRET%E0%A4%A@h/db': 'SUPABASE_DB_URL has a malformed percent escape',
+  };
+  for (const mode of ['disable', 'allow', 'prefer', 'bogus']) cases[`postgresql://u:pw-probe-SECRET@h/db?sslmode=${mode}`] = 'SUPABASE_DB_URL must use TLS: sslmode require, verify-ca or verify-full';
+  for (const [url, problem] of Object.entries(cases)) {
+    const r = pgEnv(url);
+    assert.equal(r.env, null, url);
+    assert.equal(r.problem, problem, url);
+    assert.doesNotMatch(r.problem, /SECRET|pw-probe/);
+  }
+});
+
+test('planted NUL: the migrations command never prints a decoded credential, on stdout or stderr', () => {
+  for (const url of ['postgresql://postgres.abcdefghijklmnopqrst:pw-probe-SECRET%00x@127.0.0.1:1/postgres', 'postgresql://postgres.abc%00def:pw-probe-SECRET@127.0.0.1:1/po%00stgres']) {
+    const r = spawnSync('node', [SCRIPT, 'migrations'], { encoding: 'utf8', env: { ...process.env, SUPABASE_DB_URL: url } });
+    assert.equal(r.status, 1, url);
+    assert.doesNotMatch(r.stdout + r.stderr, /pw-probe|SECRET|abc.def|po.stgres|TypeError|at /, url);
+    assert.deepEqual(JSON.parse(r.stdout), { ok: false, error: 'SUPABASE_DB_URL holds a control character' });
+    assert.equal(r.stderr, '');
+  }
+});
+
+test('psqlRead: a spawn that throws (with the value in its message) becomes a fixed reason', () => {
+  const r = psqlRead({ PGPASSWORD: 'pw-probe-SECRET' }, 'select 1', () => {
+    throw new TypeError("The property 'options.env['PGPASSWORD']' must be a string without null bytes. Received 'pw-probe-SECRET'");
+  });
+  assert.deepEqual(r, { ok: false, why: 'psql did not run' });
+});
+
+test('anything that throws prints one fixed line and exits 2, never the error or a stack', () => {
+  const r = spawnSync('node', [SCRIPT, 'plan', '--changed', '/nonexistent/pw-probe-SECRET.txt'], { encoding: 'utf8' });
+  assert.equal(r.status, 2);
+  assert.equal(r.stdout.trim(), STOPPED_LINE);
+  assert.equal(r.stderr, '');
+  assert.doesNotMatch(r.stdout, /pw-probe|ENOENT|at /);
 });
 
 test('psqlRead: credentials only in the environment, a read-only transaction, and no psql message kept', () => {

@@ -297,7 +297,8 @@ export function confirm({ before, after, deployed, failed = [], noVerifyJwt = NO
     const v1 = num(now.version);
     if (v1 === null) problems.push('the function list does not give a numeric version');
     else if (was && v0 === null) problems.push('the list before the deploy did not give a numeric version');
-    else if (was && v1 <= v0) problems.push(`still version ${v1}, the same as before the deploy`);
+    else if (was && v1 === v0) problems.push(`still version ${v1}, the same as before the deploy`);
+    else if (was && v1 < v0) problems.push(`version ${v1}, lower than ${v0} before the deploy`);
     // A posture check: an answer that does not say whether the gateway checks JWTs is a failure, not a pass.
     let jwt = 'not reported';
     if (typeof now.verify_jwt === 'boolean') {
@@ -344,36 +345,59 @@ export function pendingMigrations(local, applied) {
   return local.filter((m) => !done.has(m.version)).map((m) => m.file);
 }
 
-/** libpq settings for a postgres:// URL, so the password travels as PGPASSWORD, never in argv. */
+/** Control characters: a NUL makes spawn throw with the value in its message, so they never get that far. */
+const CONTROL_RE = /[\u0000-\u001f\u007f]/;
+
+/**
+ * libpq settings for a postgres:// URL, so the password travels as PGPASSWORD,
+ * never in argv. The same rules as #202's dbTargetOf (scripts/ops/lib/target.ts):
+ * problems are fixed sentences that never echo any part of the URL; a control
+ * character in the URL or in a decoded part is refused; TLS is required
+ * (sslmode require, the default, verify-ca or verify-full).
+ */
 export function pgEnv(raw) {
+  const no = (problem) => ({ env: null, problem });
+  const text = String(raw ?? '').trim();
+  if (text === '') return no('SUPABASE_DB_URL is not set');
+  if (CONTROL_RE.test(text)) return no('SUPABASE_DB_URL holds a control character');
   let u;
   try {
-    u = new URL(String(raw).trim());
+    u = new URL(text);
   } catch {
-    return null;
+    return no('SUPABASE_DB_URL is not a postgres:// URL');
   }
-  if ((u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') || !u.hostname || !u.username) return null;
+  if (u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') return no('SUPABASE_DB_URL is not a postgres:// URL');
+  if (!u.hostname || !u.username) return no('SUPABASE_DB_URL needs a host and a user');
+  let user, password, database;
   try {
-    return {
-      PGHOST: u.hostname,
-      PGPORT: u.port || '5432',
-      PGUSER: decodeURIComponent(u.username),
-      PGPASSWORD: decodeURIComponent(u.password),
-      PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, '')) || 'postgres',
-      PGSSLMODE: u.searchParams.get('sslmode') ?? 'require',
-    };
+    user = decodeURIComponent(u.username);
+    password = decodeURIComponent(u.password);
+    database = decodeURIComponent(u.pathname.replace(/^\//, ''));
   } catch {
-    return null;
+    return no('SUPABASE_DB_URL has a malformed percent escape');
   }
+  if ([user, password, database].some((part) => CONTROL_RE.test(part))) return no('SUPABASE_DB_URL holds a control character');
+  const sslmode = u.searchParams.get('sslmode') ?? 'require';
+  if (!/^(require|verify-ca|verify-full)$/.test(sslmode)) return no('SUPABASE_DB_URL must use TLS: sslmode require, verify-ca or verify-full');
+  return {
+    env: { PGHOST: u.hostname.toLowerCase(), PGPORT: u.port || '5432', PGUSER: user, PGPASSWORD: password, PGDATABASE: database || 'postgres', PGSSLMODE: sslmode },
+    problem: null,
+  };
 }
 
 /** One read-only statement through psql. Returns its last output line, or the SQLSTATE of the failure (psql's own messages are never kept). */
 export function psqlRead(env, sql, run = spawnSync) {
-  const r = run(
-    'psql',
-    ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-c', 'begin transaction read only', '-c', "set local statement_timeout = '10s'", '-c', sql, '-c', 'rollback'],
-    { env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-deploy-functions' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  let r;
+  try {
+    r = run(
+      'psql',
+      ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate', '-c', 'begin transaction read only', '-c', "set local statement_timeout = '10s'", '-c', sql, '-c', 'rollback'],
+      { env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-deploy-functions' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    // spawn throws synchronously on a bad argument or env value, with that value in its message: never shown.
+    return { ok: false, why: 'psql did not run' };
+  }
   if (r.error) return { ok: false, why: r.error.code === 'ENOENT' ? 'psql not found' : 'psql did not run' };
   if (r.status === 0) {
     const lines = String(r.stdout).split('\n').map((l) => l.trim()).filter(Boolean);
@@ -386,8 +410,8 @@ export function psqlRead(env, sql, run = spawnSync) {
 
 /** Staging's applied versions, then the local files it lacks. */
 export function migrationsCheck(root, dbUrl, read = psqlRead) {
-  const env = pgEnv(dbUrl ?? '');
-  if (!env) return { ok: false, error: 'SUPABASE_DB_URL is not set or not a postgres:// URL' };
+  const { env, problem } = pgEnv(dbUrl);
+  if (!env) return { ok: false, error: problem };
   const exists = read(env, "select to_regclass('supabase_migrations.schema_migrations') is not null");
   if (!exists.ok) return { ok: false, error: exists.why };
   let applied = [];
@@ -464,7 +488,20 @@ function main(argv) {
   return 2;
 }
 
+/** The one line printed when anything throws: never the error, its message or a stack (they can hold a decoded credential). */
+export const STOPPED_LINE = '{"ok":false,"error":"stopped: functions-deploy.mjs failed unexpectedly; no detail is printed (exit 2)"}';
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exitCode = main(process.argv.slice(2));
+  const stop = () => {
+    process.stdout.write(`${STOPPED_LINE}\n`);
+    process.exit(2);
+  };
+  process.on('uncaughtException', stop);
+  process.on('unhandledRejection', stop);
+  try {
+    process.exitCode = main(process.argv.slice(2));
+  } catch {
+    stop();
+  }
 }
 
