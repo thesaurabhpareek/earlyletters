@@ -1,9 +1,10 @@
 /// <reference types="node" />
 /**
- * The recording container switch (ADR 0027, proposed; ADR 0005 holds until it is accepted). The default
- * stays M4A; ADTS is a prototype to flip once DL-01 on the simulator (#203) shows ADTS takes play after
- * a kill and Export carries `.aac`. These tests pin that the default did not move, that ADTS changes only
- * the file type, and that the rest of the app already treats an ADTS take as a recording.
+ * The recording container switch (ADR 0027, accepted pending checks V1 and V2). The default stays M4A
+ * until V1 (a simulator take is real ADTS) and V2 (DL-01 on the simulator, #203) pass; then the flip is
+ * the one line `RECORDING_CONTAINER = 'adts'`. These tests pin the M4A settings byte for byte, show that
+ * ADTS changes only the file type, and that the rest of the app (Export included) already treats an ADTS
+ * take as a recording, so they hold before and after the flip.
  */
 import { describe, expect, it, vi } from 'vitest';
 
@@ -25,10 +26,9 @@ const { audioPath } = await import('../src/lib/export/build.logic');
 
 const DOCS = 'file:///var/mobile/Containers/Data/Application/B81D7E44/Documents/';
 
-describe('[ADR 0005] the default recording is unchanged', () => {
+describe('[ADR 0005] the M4A recording is unchanged', () => {
   it('AAC-LC, mono, 48 kHz, 64 kbps, high quality, metering on, in .m4a under Documents, exactly as before', () => {
-    expect(RECORDING_CONTAINER).toBe('m4a');
-    expect(voiceRecordingOptions()).toEqual({
+    expect(voiceRecordingOptions('m4a')).toEqual({
       extension: '.m4a',
       sampleRate: 48000,
       numberOfChannels: 1,
@@ -45,8 +45,10 @@ describe('[ADR 0005] the default recording is unchanged', () => {
     expect(VOICE_RECORDING_OPTIONS).toEqual(voiceRecordingOptions(RECORDING_CONTAINER));
   });
 
-  it('the default stays M4A while Export names every recording .m4a (flip only with S03\'s Export change)', () => {
-    expect(RECORDING_CONTAINER === 'm4a' || !audioPath('0199a5b0-0000-7000-8000-00000000e001').endsWith('.m4a')).toBe(true);
+  it('Export names a take in the current container by that container\'s extension, so the flip needs no Export change', () => {
+    const { extension } = RECORDING_FILES[RECORDING_CONTAINER];
+    const take = `${DOCS}ExpoAudio/recording-5D2E0F11-0000-4000-8000-0000000057A0${extension}`;
+    expect(audioPath('0199a5b0-0000-7000-8000-00000000e001', take)).toBe(`audio/0199a5b0-0000-7000-8000-00000000e001${extension}`);
   });
 });
 

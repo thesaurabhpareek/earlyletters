@@ -1,7 +1,7 @@
 # ADR 0027: A recording container that survives a kill
 
-- **Status:** Proposed, 17 Oct 2026. The founder decides by Wed 21 Oct, before the first nightly kill run on Thu 22 Oct (06-nfr row 188: "below 49, the founder decides on the ADTS fallback before beta C1"). If accepted, it amends ADR 0005 (audio format) for the container only.
-- **Deciders:** founder. Reviewers: S10 (capture), S08 (speech; owns the recording settings), S19 (kill harness, #203), S03 (Export), S05 (backup, #150), the player owner.
+- **Status:** Accepted pending V1 and V2, 17 Oct 2026, for build 2. The coordinator decided on 17 Oct under delegation, and the founder may reverse it. It takes effect when V1 (iOS writes real ADTS) and V2 (DL-01 passes on a simulator) pass; the default stays M4A until then. If V1 fails, the founder decides on 06-nfr row 188 ("below 49, the founder decides on the ADTS fallback before beta C1"). It amends ADR 0005 (audio format) for the container only.
+- **Decider:** the coordinator (delegated). Reviewers: S10 (capture), S08 (speech; owns the recording settings), S19 (kill harness, #203), S03 (Export), S05 (backup, #150), the player owner.
 - **Number:** 0027. It is free on develop and on every open branch (0023 to 0025 are reserved for #139, #150 and #146; 0026 is on develop). The coordinator may renumber it.
 - **Labels:** [V] verified in vendor source or documentation; [S] secondary source; [R] repo fact; [U] unverified until a simulator or device run.
 
@@ -46,16 +46,16 @@ Sizes are arithmetic. AAC at 64 kbps is 8,000 bytes/s, or 0.48 MB/min. At 48 kHz
 | Area | A (recommended) | Others |
 |---|---|---|
 | **Transcription input** | Unchanged in principle: the same AAC-LC frames, decoded to 16 kHz PCM by `AVAudioFile(forReading:)` in `modules/scribe-audio` (`ScribeAudioModule.swift:121-131`). Risk: decode seeks by frame (`file.framePosition`, `:220-223`); with no index, ADTS length and seeks may be estimated [U, check V3] | B and C: LPCM decodes exactly. D: input only as good as the repair. E: chunking across files. F: the same as today |
-| **Export (format and hash)** | Exported as recorded, `.aac` (`audio/aac`). The hash in the export is the SHA-256 of those bytes, the same hash taken at capture, because nothing converts the file. Needs S03: `export/build.logic.ts:146` (`audioPath` hardcodes `.m4a`), `:116` (`MEDIA.m4a`), `export/schema.ts:183` (path pattern `\.m4a$`), plus a schema version step and the golden files | A2: M4A, but the hash is of the remuxed file, not of what the microphone stream wrote. B and C: `.caf` or `.wav`, 12x the export size |
+| **Export (format and hash)** | Exported as recorded, `.aac` (`audio/aac`). The hash in the export is the SHA-256 of those bytes, the same hash taken at capture, because nothing converts the file. Done in this PR (schema 1.2.0): each recording is named and labelled by its own container (`export/build.logic.ts` `recordingFileOf`, `audioPath`; `pack.ts` labels the manifest; `schema.ts` allows `.aac` with `audio/aac` and requires the extension and media type to agree). An M4A keeps its name and label; 1.0.0 and 1.1.0 exports still validate | A2: M4A, but the hash is of the remuxed file, not of what the microphone stream wrote. B and C: `.caf` or `.wav`, 12x the export size |
 | **Backup (#150)** | Encrypts and hashes the file's bytes whatever the format: no change. Restore keeps the stored name when the letter has one (`restore.ts:333`). Its fallback name `<entry id>.m4a` must take the real extension (S05) | B and C: 12x the upload and storage. E: several blobs per letter |
 | **Playback** | AVFoundation plays ADTS `.aac` [S]. Duration and scrubbing come from an estimate when there is no index [U, check V4]. The listening copy reads the original through AVAudioFile, and the copy itself stays M4A | B and C: exact duration. F: as today |
 | **Sweep, erase, recovery export, harness** | No change: they already treat `.aac` as a recording (`sweep.logic.ts` `AUDIO_EXT`; the harness snapshot uses the same list; `afinfo` reads ADTS [S]). Tested in this PR | |
 
-## Decision (proposed)
+## Decision (accepted pending V1 and V2)
 
 **Option A: record AAC-LC as ADTS (`.aac`) and keep the file exactly as recorded.** The same codec, rate, channels, bitrate and quality as ADR 0005; only the container changes. No remux: a finished take and a killed take are the same kind of file, and the capture hash keeps describing the bytes the recorder wrote. A2's remux stays available if check V3 or V4 shows that ADTS duration or seeking is not good enough.
 
-This PR adds the switch, `RECORDING_CONTAINER` in `apps/mobile/src/lib/capture/recording-format.ts`. **The default stays `'m4a'`.** Listen and the kill drill both record with `VOICE_RECORDING_OPTIONS`, so one constant moves both. A test fails if the constant is flipped while Export still names every recording `.m4a`.
+This PR adds the switch, `RECORDING_CONTAINER` in `apps/mobile/src/lib/capture/recording-format.ts`. **The default stays `'m4a'` until V1 and V2 pass.** Listen and the kill drill both record with `VOICE_RECORDING_OPTIONS`, so one constant moves both. The flip is the one line `RECORDING_CONTAINER = 'adts'`: Export already names and labels each recording by its own container, and the whole test suite passes with the constant flipped (checked in this PR, then set back).
 
 ### Checks before the flip
 | # | Check | Who | Passes when |
@@ -64,20 +64,21 @@ This PR adds the switch, `RECORDING_CONTAINER` in `apps/mobile/src/lib/capture/r
 | V2 | DL-01 through #203, on the default build and on an `'adts'` build from this branch (a one-line change on a scratch commit) | S19 | The default build shows whether the risk is real. The `'adts'` build has 49 or more of 50 takes playing to within 5 s |
 | V3 | Decode parity: the same speech recorded in both containers goes through `decodePcm16` | S10 with S08 | Lengths within one AAC frame (21 ms); the words match; seeks land on the same frame |
 | V4 | Playback | S10 with the player owner | Duration within 1 s of the true length; scrubbing works; a listening copy is made from an `.aac` original |
-| V5 | Export carries `.aac` with `audio/aac` and its hash | S03 | An export test with an `.aac` letter passes; the schema and golden files are updated |
-| V6 | The backup restore fallback name keeps the extension | S05 | A restore drill row with an `.aac` letter passes |
+| V5 | Export carries `.aac` with `audio/aac` and its hash | S10 (cleared by the coordinator to edit Export) | **Done in this PR**: `test/export-recording-format.test.ts` exports one M4A and one ADTS letter, checks names, labels, bytes and hashes, validates against schema 1.2.0, and reads the frozen 1.1.0 files |
+| V6 | The backup restore fallback name keeps the extension | S05 (#150) | `restore.ts:333` uses the recording's real extension; a restore drill row with an `.aac` letter passes |
 
-Then: flip the constant, amend ADR 0005 (container line), and update TDD 03 section 3.2 rule 4, F04 section 11.6 and BACKLOG BL-382.
+V1 and V2 gate the flip. V3, V4 and V6 follow before build 2 ships. Then: flip the constant, amend ADR 0005 (container line), and update TDD 03 section 3.2 rule 4, F04 section 11.6 and BACKLOG BL-382.
 
 ### Timeline
-- **Wed 21:** founder decision on this ADR.
-- **Thu 22:** the first nightly runs DL-01 on the default build (V2, which shows whether the risk is real). S19 adds one shard on an `'adts'` build.
-- **Fri 23 to Mon 26:** V1 and V3 to V6.
+- **17 Oct:** accepted pending V1 and V2 (coordinator, delegated).
+- **Thu 22:** the first nightly runs DL-01 on the default build (V2, which shows whether the risk is real). S19 adds one shard on an `'adts'` build. With V1 and V2 green, flip the constant (one line).
+- **Fri 23 to Mon 26:** V3, V4 and V6.
 - **Tue 27 gate:** run on the flipped build.
 
 If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1 fails (the recorder does not write ADTS from `.aac`), the alpha falls back to 06-nfr row 188: the founder decides whether killed takes that are kept and listed but do not play are acceptable for the alpha, and option F becomes post-alpha work.
 
 ## Consequences
+- The export format moves to 1.2.0 (an `.aac` recording is allowed). Open PR #161 also proposes a 1.2.0; whichever lands second takes 1.3.0.
 - About 2% more bytes per take than M4A (0.50 against 0.49 MB/min). Negligible against ADR 0005's estimate of about 19 MB per active family per month.
 - Two container types exist on phones that recorded before the flip. Every reader already handles both: the sweep, erase, recovery export, decode and playback.
 - The constitution holds: nothing converts, repairs or rewrites a recording after capture; no audio or entry text goes to logs.
