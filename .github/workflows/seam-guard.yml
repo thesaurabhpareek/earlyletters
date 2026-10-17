@@ -1,0 +1,49 @@
+# Release check B-8 (apps/mobile/e2e/TESTID_REQUESTS.md section 4) on every pull request that can change the
+# app's bundle. For each store profile in apps/mobile/eas.json (distribution store and not a simulator build:
+# today preview, testflight and production), `expo export --platform ios` with EXPO_PUBLIC_E2E=1 forced on
+# must contain none of the e2e seam identifiers in .github/scripts/seam-guard.mjs. That is the worst case: the
+# flag leaking into a store build through an EAS environment variable or a shell.
+#
+# The release workflows run the same script before they build: testflight.yml for the profile it builds,
+# release-ios.yml for production (request on #110). This check is what keeps the RA-20-18 wiring line in
+# app/_layout.tsx from merging while the seam gate still lets a store build carry the seams.
+#
+# No secrets; read-only. Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: seam guard
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'package-lock.json'
+      - '.github/scripts/seam-guard.mjs'
+      - '.github/workflows/seam-guard.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  guard:
+    name: no e2e seam in store bundles (B-8)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Guard tests
+        run: node --test .github/scripts/seam-guard.test.mjs
+      # Then the positive control: once the RA-20-18 wiring line is in
+      # app/_layout.tsx, the e2e profile's bundle must carry the seam, which
+      # proves the search can see it (skipped, with a line saying so, before).
+      - name: Export each store profile and search it, then the e2e control
+        run: node .github/scripts/seam-guard.mjs --store-profiles --e2e-control
