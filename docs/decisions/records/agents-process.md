@@ -90,7 +90,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Reversal cost:** low today; medium after backup ships free
 - **Revisit when:** cost: no backup storage budget is set (the founder should set one before backup ships); team: review agents pass a PR that later breaks main
 - **Review by:** on trigger
-- **Status:** in force: open PR #128 also records a wider merge delegation (D-107, "Widen.", 15 Oct), not merged
+- **Status:** amended by D-107: D-107 (founder, 15 Oct, merged 16 Oct) replaces the merge rule. The log records the same three defaults as D-104 with status "Proposed; awaits founder confirmation", while issue #127 item 6 records them as accepted: the founder has to say which stands.
 - **As built:** not built (process rule; backup not in v1.0)
 
 ### D-090 Release team: a `release` agent; `ops` as Platform and Reliability
@@ -105,3 +105,48 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **As built:** not built on this branch (open PR #112)
 - **Also:** R-013
 
+### D-104 Three delivery defaults (proposed)
+- **Source:** `docs/DECISIONS.md` D-104 (Proposed by the coordinator, 2026-10-14; awaits founder confirmation); PR #128 (merged 16 Oct 2026)
+- **Decided:** not decided. Proposed: (1) the coordinator may merge docs, evidence and test-only PRs after two independent review agents pass them; (2) encrypted recording backup is free for everyone, and Plus does not gate it; (3) voice-only letters follow D-103. Until confirmed, the founder merges every PR, and items 2 and 3 are the spec defaults PRD V2 is written against.
+- **Why:** not recorded in the source
+- **Door:** one-way after launch: item 2 becomes a pricing promise once backup ships free and is advertised; items 1 and 3 are two-way
+- **Reversal cost:** low today; medium once backup ships free
+- **Revisit when:** cost: no backup storage budget is set before backup ships; team: the founder confirms or rejects each item
+- **Review by:** on trigger
+- **Status:** proposed: item 1 is replaced by D-107; items 2 and 3 await the founder's confirmation (issue #127 item 6, recorded as R-007, says they were accepted)
+- **As built:** not applicable (a proposal)
+- **Also:** related to R-007
+
+### D-107 Merge delegation widened to app code
+- **Source:** `docs/DECISIONS.md` D-107 (Decided, founder, 2026-10-15, about 17:00 UTC: "Widen."); PR #128 (merged 16 Oct 2026)
+- **Decided:** the coordinator may merge PRs into `develop` that change app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests, once two independent review agents pass the PR and CI is green on its head. Founder-only merges: `supabase/**`, auth, payments (billing, StoreKit, `packages/core/src/plan.ts`), release configuration (`.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`), the CODEOWNERS-protected engine files, and any production deploy.
+- **Why:** not recorded in the source
+- **Door:** two-way: an internal merge rule
+- **Reversal cost:** low: a rule in `docs/agents/COORDINATION.md`
+- **Revisit when:** team: a coordinator-merged PR breaks `develop`; team: agents stop acting through the founder's own account (ADR 0026 AF-27)
+- **Review by:** on trigger
+- **Status:** in force: confirms the delegation part of D-106 and replaces item 1 of D-104
+- **As built:** `docs/agents/COORDINATION.md` section 6
+
+### ADR-0021 An engineering compendium owned by five steward agents
+- **Source:** `docs/adr/0021-engineering-compendium-and-stewards.md` (status line: Proposed, 2026-10-03; deciders: founder); PR #42 (merged 16 Oct 2026)
+- **Decided:** one compendium in `docs/engineering/` (a one-page `PRINCIPLES.md`, ten chapters with stable rule ids, and `ENFORCEMENT.md`); five steward agents own its chapters and review PRs in their paths; stewards set and check, delivery agents build; changing a MUST rule needs the founder.
+- **Why:** standards were spread across many documents with about 20 id schemes and no precedence ladder; the 3 Oct architecture review found the same class of bug in several places that a written, enforced standard would have caught; agents on open-weight models follow short, specific, testable rules better than long prose (the ADR's Context).
+- **Alternatives:** standards in `CLAUDE.md` (too long for every run); give them to the existing delivery agents (an agent marking its own work); one architecture agent (too broad); a wiki outside the repo (not versioned or loadable).
+- **Door:** two-way: internal documents and agent charters
+- **Reversal cost:** low: docs and roster entries
+- **Revisit when:** cost: the roster's requested runs (50 a day in the ADR) stay above the team cap of 30; team: stewards idle because nothing in their paths changes
+- **Review by:** on trigger
+- **Status:** proposed: the ADR's status line still reads Proposed although PR #42 merged it on 16 Oct and `docs/agents/OPERATING_MODEL.md` now describes the five stewards; the founder or coordinator should mark it accepted or not
+- **As built:** `docs/engineering/PRINCIPLES.md`, `agents/roster.json`, `docs/agents/OPERATING_MODEL.md`
+
+### R-017 Writing for the founder: status and the ask first, numbers over adjectives
+- **Source:** PR #212 (merged 17 Oct 2026; relayed by an agent session: "The founder asked on 17 Oct that everything written for them read like an experienced technical and business program manager wrote it"); `docs/agents/COORDINATION.md` section 9
+- **Decided:** anything the founder reads (PR descriptions, reports, status updates, the program status sheet, plan docs) leads with status and the ask; every date is On track, At risk or Off track with a one-line reason; numbers, dates, owners and links over adjectives; a list of banned filler words; times in Pacific time with the day; "unverified" when it is; a recommendation and a needed-by date with every decision for the founder.
+- **Why:** not recorded in the source
+- **Door:** two-way: a writing rule for agents
+- **Reversal cost:** low: one section of a doc
+- **Revisit when:** none expected
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `docs/agents/COORDINATION.md` section 9

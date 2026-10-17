@@ -23,8 +23,8 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Reversal cost:** high after launch: key migration across every family's backups
 - **Revisit when:** platform: v1.1 backup work starts (D-032 had moved Vault mode, per-child keys and X25519 grants to later)
 - **Review by:** on trigger
-- **Status:** parked: no backup through our service in v1.0 (D-085); open PR #128 records a founder choice of recoverable escrow keys (D-102, not merged)
-- **As built:** not built
+- **Status:** amended by D-102: recoverable escrow keys and honest copy (founder, 13 Oct, merged 16 Oct); D-100 brings backup into v1.0
+- **As built:** not built on `develop`; the backup client and server are open PRs #150 and #151
 
 ### ADR-0010 Web app: `apps/web` Next.js on Vercel inside the monorepo
 - **Source:** `docs/adr/0010-web-app-placement.md` (Accepted, 2026-10-01)
@@ -141,3 +141,27 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `packages/api/src/remote-config.ts`, `scripts/packs/remote-config.json`, `supabase/functions/config/serve.ts`
+
+### D-102 Recording backup keys are recoverable through escrow, and the copy says so
+- **Source:** `docs/DECISIONS.md` D-102 (Decided, founder, 2026-10-13, PRD V2 M16); PR #128 (merged 16 Oct 2026)
+- **Decided:** keep server escrow so a family can recover recordings after losing every device. Copy says recordings are encrypted, that we hold a recovery key under strict, logged access, and that recordings are never read, sold or used to train models. No copy claims "only your family's keys can open it". The escrow key runs only in a separate project and one function; custody, rotation, the access log and owner emails on each use are in PRD V2 F08 section 6.5 and F17.
+- **Why:** "so a family can recover recordings after losing every device" (the source). The log gives no other reason.
+- **Alternatives:** end to end only (the other option the log lists).
+- **Door:** one-way after launch: the copy is a public privacy promise, and every family's backup is wrapped to the escrow key once backup ships
+- **Reversal cost:** high after launch: moving to end to end only means re-keying every family's backup, new legal text and telling users; low before backup ships
+- **Revisit when:** law: counsel advises against holding a recovery key; customer: families ask for end to end only (ADR 0006's Vault mode)
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** not built on `develop`; the escrow function is in open PR #151
+- **Also:** amends ADR-0006
+
+### D-108 Backup recovery: a device enrolled 7 days approves a restore
+- **Source:** `docs/DECISIONS.md` D-108 (Decided, founder, 2026-10-15); PR #128 (merged 16 Oct 2026)
+- **Decided:** a device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to the backup server as built: ten functions and nine settings, not four functions and three secrets.
+- **Why:** not recorded in the source
+- **Door:** two-way: a server setting and spec text
+- **Reversal cost:** low: a server setting; no stored data changes
+- **Revisit when:** customer: families are locked out of a restore because no enrolled device is 7 days old
+- **Review by:** on trigger
+- **Status:** in force: the F08-REQ-034 text in `docs/prd/v2/features/F08-recordings.md` is updated in a follow-up, per the log
+- **As built:** not built on `develop`; the backup server is open PR #151

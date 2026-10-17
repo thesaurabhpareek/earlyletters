@@ -48,7 +48,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Reversal cost:** medium: new recordings can change format, old ones stay as they are
 - **Revisit when:** technology: an archival export format (Opus or FLAC) is requested; customer: families report poor playback quality
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** in force: ADR-0027 (accepted pending V1, V2 and V3, 17 Oct) would amend the container only, on iOS; both platforms still record M4A
 - **As built:** `apps/mobile/src/lib/capture/recorder.ts` (ADR 0015 moves the rate to 48 kHz, same bitrate)
 
 ### ADR-0009 Word alignment for Read together
@@ -319,3 +319,28 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Status:** in force: follow-ups not yet done (source): set `EXPO_PUBLIC_DOCS_BASE_URL` for the build profiles, move `SELF_HOST_BASE` in the model catalog, update ADR 0016 and the model hosting doc (PR #35), and the founder creates the R2 bucket and DNS record. The code change is in open PR #126
 - **As built:** not built: `apps/mobile/src/lib/models/catalog.ts` still names `models.earlyletters.com` (`SELF_HOST_BASE`)
 - **Also:** answers the host question left open by D-046 and ADR-0016
+
+### D-110 Lamp contrast: reading colours everywhere, status colours where text sits
+- **Source:** `docs/DECISIONS.md` D-110 (Delegated call by the coordinator, 2026-10-16; founder may reverse); PR #170 (P1 acceptance line 2); PR #192 (merged 17 Oct 2026)
+- **Decided:** the everyday text colours (`text`, `textMuted`, `accent`, `focus`) hold 4.5:1 everywhere on screen at every lamp tone's peak, in both schemes. The status colours (`success`, `caution`, `recording`, `destructive`) hold 4.5:1 where text actually sits, and never sit on the lit paper of the age gate or Read together. Tests enforce both over three phone sizes. Increase Contrast and Reduce Transparency still show no lamp.
+- **Why:** WCAG 1.4.3 measures text against the background behind it; capping every lamp tone so that even the status colours kept 4.5:1 at the pool's core left light mode reading as plain paper (the source).
+- **Alternatives:** cap every lamp tone so all colours keep 4.5:1 everywhere (PR #192 revision 1), rejected for the reason above.
+- **Door:** two-way: design tokens and tests
+- **Reversal cost:** low: token values and tests
+- **Revisit when:** law: an accessibility review finds status text on lit paper below 4.5:1; customer: families report text hard to read under the lamp
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `packages/design-tokens/src/tokens.ts` (`atmosphere.onLitPaper`), `packages/design-tokens/test/atmosphere.test.ts`
+
+### ADR-0027 A recording container that survives a kill (ADTS on iOS)
+- **Source:** `docs/adr/0027-kill-safe-recording-container.md` (Accepted pending V1, V2 and V3, 17 Oct 2026, for build 2, iOS only; decided by the coordinator under delegation; the founder may reverse); PR #213 (merged 17 Oct 2026)
+- **Decided:** on iOS, record AAC-LC as ADTS (`.aac`) and keep the file exactly as recorded, with no remux; codec, rate, channels and bitrate stay ADR 0005's. Both platforms record M4A until V1 (iOS writes real ADTS), V2 (DL-01 passes on a simulator) and V3 (decode parity) pass; then the flip is one line. Android stays M4A in build 2. A tail safeguard refuses a transcription run rather than lose the end of a take, because `raw_transcript` is immutable.
+- **Why:** a take recorded as `.m4a` and killed mid-recording most likely has no index, so it will not open, and the kill harness (DL-01) needs 49 of 50 killed takes to play to within 5 s of the kill point; ADTS frames each carry a sync word and length, so a reader stops at the last whole frame (the ADR's Context and options table; the finding is labelled "unverified, likely").
+- **Alternatives:** A2 remux to M4A on a normal stop; A3 set the file type explicitly (the first fallback if V1 fails); CAF; WAV; repairing truncated M4A at launch; 60 s segments; fragmented MP4 through a new native recorder.
+- **Door:** one-way after launch: once families keep ADTS recordings, those files stay as recorded (no remux), so Export, backup and playback must handle them for good
+- **Reversal cost:** medium after the flip: new takes can return to M4A with one line, but kept `.aac` recordings stay `.aac`; low before the flip
+- **Revisit when:** technology: V1, V2 or V3 fails (try A3, then the founder decides on the ADTS fallback per 06-nfr row 188); platform: Android ADTS checks pass (post-alpha)
+- **Review by:** on trigger
+- **Status:** proposed: accepted pending V1, V2 and V3; both platforms record M4A on `develop`
+- **As built:** `apps/mobile/src/lib/capture/recording-file.ts` (`RECORDING_CONTAINERS`, both `'m4a'`), `apps/mobile/src/lib/capture/adts.ts`, `apps/mobile/src/lib/transcribe-run.ts`
+- **Also:** amends ADR-0005 for the container only, once in effect

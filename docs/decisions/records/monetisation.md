@@ -161,8 +161,8 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: removing it needs Privacy Policy and Terms changes and another way to meet 17602
 - **Revisit when:** law: counsel confirms Apple's own emails or local notifications meet 17602 (COUNSEL_PACKET); platform: v1.1 server release starts
 - **Review by:** on trigger
-- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094 (Decided, delegated by founder, 15 Oct)
-- **As built:** not built; on-device reminders in `apps/mobile/src/lib/billing/plan-reminders.ts` stand in (PR #121)
+- **Status:** in force: D-100 (founder, merged 16 Oct) ships the status report in v1.0; until then merged PR #121 ships on-device plan reminders under D-094
+- **As built:** not built on `develop`; on-device reminders in `apps/mobile/src/lib/billing/plan-reminders.ts` stand in (PR #121)
 
 ### D-081 Purchase consent records (supersedes D-049)
 - **Source:** `docs/DECISIONS.md` D-081 (Recommended, counsel confirms, proceed: yes, 2026-10-03)
@@ -194,7 +194,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: code plus a device-side ledger migration; counsel must confirm the Keychain count
 - **Revisit when:** law: counsel answers on the Keychain count and trial wording; platform: App Review raises guideline 3.1.2(a)
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** amended by D-103: a voice letter kept without words no longer counts at once, and only your own letters count
 - **As built:** `apps/mobile/src/lib/billing/letter-ledger.native.ts`, `apps/mobile/src/lib/db/repos/ledger.ts`
 
 ### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy
@@ -208,3 +208,15 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Status:** in force: needs counsel; the Subscription Terms wording is requested on open PR #81, whose 3.0.0 text does not yet call reminders a courtesy (per the source); device test row S2-17 is in open PR #123
 - **As built:** `apps/mobile/src/lib/billing/plan-reminders.ts`, `apps/mobile/src/app/plus/confirmed.tsx`
 - **Also:** stands in for the D-080 server reminder emails while v1.0 has no server
+
+### D-103 Counting the free letters
+- **Source:** `docs/DECISIONS.md` D-103 (Decided, founder, 2026-10-13, PRD V2 M17); PR #128 (merged 16 Oct 2026)
+- **Decided:** a letter counts toward the 2 free letters (D-082) only when you are its author, its words exist, and you keep it from Review with the words on screen. The other parent's synced letters never count. A voice-only letter saved before its speech model arrives is kept safely and counts only once its words exist and you keep it from Review. The ledger still never decreases, and Erase everything still resets it.
+- **Why:** not recorded in the source
+- **Door:** one-way after launch: the count is a rule paying families rely on, and the ledger never decreases
+- **Reversal cost:** medium after launch: a ledger change and user communication; low before launch
+- **Revisit when:** customer: families report a letter counted that they did not expect; platform: App Review questions the free-letter count
+- **Review by:** on trigger
+- **Status:** in force: D-109 (F8) adds that a typed letter meets condition (c) when kept on Write with the words on screen
+- **As built:** `apps/mobile/src/lib/billing/letter-ledger.ts`
+- **Also:** amends D-083

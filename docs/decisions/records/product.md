@@ -126,7 +126,7 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Reversal cost:** medium: a migration and access-rule change on live memberships
 - **Revisit when:** customer: families ask for a third parent or guardian; law: counsel advice on guardianship
 - **Review by:** on trigger
-- **Status:** parked: decided by D-099 (delegated by founder, 15 Oct), effective with co-parent sharing in v1.1; nothing changes in v1.0, which has no sharing
+- **Status:** in force: decided by D-099 (delegated by founder, 15 Oct); D-100 puts co-parent sharing in v1.0, so the server check ships with it
 - **As built:** `supabase/migrations/20261005000000_family_cap_language_idempotency.sql`
 - **Also:** D-099 (its server check and SCCAP `parents_full` are parked for v1.1 with G-02 and G-17)
 
@@ -138,8 +138,8 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Reversal cost:** high: after launch, withdrawing backup means returning or deleting stored recordings and telling families
 - **Revisit when:** cost: no storage budget is set (the founder should set one before backup ships; the cost doc's only trigger is Supabase Pro from $25 a month when real letters go on a server); law: counsel on server-held keys (LEGAL-REQ-022(a))
 - **Review by:** on trigger
-- **Status:** amended by D-085
-- **As built:** not built in v1.0; D-085 says v1.0 relies on the iPhone backup plus Export
+- **Status:** amended by D-085: D-100 (founder, 13 and 15 Oct) removes D-085's amendment for v1.0, so recording backup ships in v1.0 again; D-102 sets recoverable keys
+- **As built:** not built on `develop`; the backup client and server are open PRs #150 and #151
 
 ### D-084 Quiet-day marks carry no sentence
 - **Source:** `docs/DECISIONS.md` D-084 (Decided, delegated by the founder to the CTO, 2026-10-04; debate Q-013)
@@ -160,7 +160,7 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Reversal cost:** medium: the shelf length and copy are code, but every erase already done is permanent
 - **Revisit when:** customer: families ask to restore after 30 days; law: counsel sets a different deletion window (counsel sign-off on the 30 day wording is still needed)
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** amended by D-100: its "amends D-073 for v1.0" clause no longer applies, because recording backup ships in v1.0
 - **As built:** `apps/mobile/src/app/settings/recently-deleted.tsx`, `apps/mobile/src/lib/capture/erase.ts`, `apps/mobile/src/app/settings/export.tsx`
 
 ### D-086 Words for the app's edits
@@ -182,19 +182,19 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Reversal cost:** low: code and copy
 - **Revisit when:** customer: first-run drop-off at the speech download in the C1 beta; law: the 988 language line passes a primary-source check
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** amended by D-100: "I was invited" shows again and the Family tab is live
 - **As built:** `apps/mobile/src/lib/models/speech-consent.ts`, `apps/mobile/src/app/+native-intent.tsx`, `apps/mobile/src/lib/resilience/keep-awake.ts`
 
 ### R-001 v1.0 is the on-device release already built
 - **Source:** issue #127 item 1 (founder-delegated, 14 Oct 2026, posted by the agent-harness session); Project doc `claude/Early-Letters-Coordination.md` (platform thread, 15 Oct: founder answer "On-device v1.0, server in v1.1"; release-engineering thread, 15 Oct); Project doc `infra/cost-decisions-2026-10-03.md` (founder, 3 Oct: co-parent sharing, sign-in and sync moved to v1.1, shipped as PR #54); comment on PR #124 (15 Oct, 06:39 UTC)
 - **Decided:** v1.0 is the on-device build that already exists (D-085, `capabilities.ts`), on the release lane with the freeze on Mon 26 Oct. No sign-in, sync, co-parent sharing or server backup in v1.0.
 - **Why:** the on-device build exists and has a release lane; the TestFlight workflow and runbook are merged (#100); #127 says the build is on TestFlight, but the Project coordination doc says no build had run on a phone as of 15 Oct (FT-01 Apple enrolment pending); PRD V2's own estimate for the server scope is submission in the week of 3 May 2027 at about 40% confidence; the server path carries open security work (BL-347, H2, H3, issue #119). Shipping on-device gets families using the product about six months earlier at lower privacy risk (#127).
-- **Alternatives:** option B (R-016): server features on in v1.0 and the date moves (PRD V2 M14 and M15), recorded in open PR #128 as D-100 and D-101, decided by the founder on 13 Oct with D-100 confirmed on 15 Oct.
+- **Alternatives:** option B: server features on in v1.0 and the date moves (D-100, D-101), which the founder chose.
 - **Door:** one-way after launch: the release families install fixes where their letters live (on the phone) and the privacy label it ships with
 - **Reversal cost:** medium: before submission it is a build switch; after launch, moving to server features needs sign-in, a data upload path and new legal text
 - **Revisit when:** customer: C1 beta families say they cannot use it without sharing; team: the v1.1 security gates (BL-347, BL-330, BL-322, BL-331, issue #119) are closed
 - **Review by:** on trigger
-- **Status:** open: contested with R-016. Sources disagree on 15 Oct. On-device: issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) (posted 06:32 UTC), the Project doc `claude/Early-Letters-Coordination.md` (platform thread, founder quote "On-device v1.0, server in v1.1"; no time given) and [a comment on #124](https://github.com/thesaurabhpareek/earlyletters/pull/124#issuecomment-6186131701) (06:39 UTC). Option B (server features on): open PR [#128](https://github.com/thesaurabhpareek/earlyletters/pull/128) records D-100 (server features on in v1.0) and D-101 (full scope, date moves) as "Decided by the founder, 13 Oct 2026", before #127, with D-100 confirmed by the founder on 15 Oct (no time given), D-106 (alpha by 29 Oct) and D-107 ("Widen.", about 17:00 UTC; PR reopened 17:49 UTC), PR [#145](https://github.com/thesaurabhpareek/earlyletters/pull/145) (12:37 UTC), PR [#152](https://github.com/thesaurabhpareek/earlyletters/pull/152) (15:14 UTC), PR [#163](https://github.com/thesaurabhpareek/earlyletters/pull/163) (18:02 UTC), and the comments on [#81](https://github.com/thesaurabhpareek/earlyletters/pull/81#issuecomment-6198831573) and [#82](https://github.com/thesaurabhpareek/earlyletters/pull/82#issuecomment-6198831926) (18:02 UTC). Merged PR #122 (18:35 UTC; D-093 to D-099, delegated by founder) is written for the on-device v1.0 ("v1.0 has no sharing", D-099), and `docs/DECISIONS.md` still has no D-id for the v1.0 scope. The founder has to confirm which stands, and the coordinator has to log it.
+- **Status:** superseded by D-100: D-100 (founder, 13 Oct, confirmed 15 Oct; merged in PR #128 on 16 Oct) chose option B, server features on in v1.0, and supersedes the on-device-only assumption. Kept for history: the sources disagreed on 15 Oct until the log recorded option B.
 - **As built:** `apps/mobile/src/lib/capabilities.ts`, `apps/mobile/eas.json` (`EXPO_PUBLIC_SERVER_FEATURES` off in every profile on this branch)
 
 ### R-002 PRD V2's server scope becomes the next release
@@ -205,17 +205,42 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Reversal cost:** low: re-tagging requirements in PRD V2
 - **Revisit when:** customer: same as R-001
 - **Review by:** on trigger
-- **Status:** open: contested with R-016; PRD V2 itself (#124) is not merged. Sources disagree on 15 Oct. On-device: issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) (posted 06:32 UTC), the Project doc `claude/Early-Letters-Coordination.md` (platform thread, founder quote "On-device v1.0, server in v1.1"; no time given) and [a comment on #124](https://github.com/thesaurabhpareek/earlyletters/pull/124#issuecomment-6186131701) (06:39 UTC). Option B (server features on): open PR [#128](https://github.com/thesaurabhpareek/earlyletters/pull/128) records D-100 (server features on in v1.0) and D-101 (full scope, date moves) as "Decided by the founder, 13 Oct 2026", before #127, with D-100 confirmed by the founder on 15 Oct (no time given), D-106 (alpha by 29 Oct) and D-107 ("Widen.", about 17:00 UTC; PR reopened 17:49 UTC), PR [#145](https://github.com/thesaurabhpareek/earlyletters/pull/145) (12:37 UTC), PR [#152](https://github.com/thesaurabhpareek/earlyletters/pull/152) (15:14 UTC), PR [#163](https://github.com/thesaurabhpareek/earlyletters/pull/163) (18:02 UTC), and the comments on [#81](https://github.com/thesaurabhpareek/earlyletters/pull/81#issuecomment-6198831573) and [#82](https://github.com/thesaurabhpareek/earlyletters/pull/82#issuecomment-6198831926) (18:02 UTC). Merged PR #122 (18:35 UTC; D-093 to D-099, delegated by founder) is written for the on-device v1.0 ("v1.0 has no sharing", D-099), and `docs/DECISIONS.md` still has no D-id for the v1.0 scope. The founder has to confirm which stands, and the coordinator has to log it.
+- **Status:** superseded by D-101: D-100 puts the server scope in v1.0 and D-101 keeps the full scope with the date moved (both merged in PR #128 on 16 Oct). Kept for history: the sources disagreed on 15 Oct until the log recorded option B.
 - **As built:** `docs/backlog/future/06-coparent-sharing-v1-1.md`
 
-### R-016 Option B: server features on in v1.0, TestFlight alpha against staging by 29 Oct
-- **Source:** open PR [#128](https://github.com/thesaurabhpareek/earlyletters/pull/128): D-100 and D-101 ("Decided by the founder, 13 Oct 2026", PRD V2 M14 and M15), D-100 ("Confirmed by the founder in the build thread, 15 Oct 2026 (chose B: server features on, date moves)"), D-106 ("Alpha in two weeks (founder, 15 Oct 2026)") and D-107 ("Widen.", about 17:00 UTC); PR [#145](https://github.com/thesaurabhpareek/earlyletters/pull/145) (12:37 UTC, alpha profiles), PR [#152](https://github.com/thesaurabhpareek/earlyletters/pull/152) (15:14 UTC, alpha plan), PR [#163](https://github.com/thesaurabhpareek/earlyletters/pull/163) (18:02 UTC, legal set for option B); comments on [#81](https://github.com/thesaurabhpareek/earlyletters/pull/81#issuecomment-6198831573) and [#82](https://github.com/thesaurabhpareek/earlyletters/pull/82#issuecomment-6198831926) (18:02 UTC: "Superseded by #163 under option B (founder, 15 Oct 2026)"). None of these is merged; all are relayed by agent sessions.
-- **Decided:** v1.0 ships with server features on: sign-in, sync, co-parent sharing (at most two parents), encrypted backup of the owner's recordings and the subscription status report with reminder emails. First as an alpha: a TestFlight build with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026; App Store submission is re-planned after the alpha.
-- **Why:** not recorded in the sources read
-- **Alternatives:** R-001 (on-device v1.0, server in the next release).
-- **Door:** one-way after launch: once families sign in and their letters and recordings sit on our server, the release carries live data, escrowed keys and a privacy label of "Data Collected"
-- **Reversal cost:** high after the alpha has outside users: their server data has to be kept, exported or deleted under the Privacy Policy; low before anyone outside the family signs in
-- **Revisit when:** team: the v1.1 security gates (BL-347, BL-330, BL-322, BL-331, issue #119) are not closed before the alpha; law: counsel has not answered the server-product packet (#163) before outside testers sign in
-- **Review by:** 2026-10-29
-- **Status:** open: contested with R-001. Sources disagree on 15 Oct. On-device: issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) (posted 06:32 UTC), the Project doc `claude/Early-Letters-Coordination.md` (platform thread, founder quote "On-device v1.0, server in v1.1"; no time given) and [a comment on #124](https://github.com/thesaurabhpareek/earlyletters/pull/124#issuecomment-6186131701) (06:39 UTC). Option B (server features on): open PR [#128](https://github.com/thesaurabhpareek/earlyletters/pull/128) records D-100 (server features on in v1.0) and D-101 (full scope, date moves) as "Decided by the founder, 13 Oct 2026", before #127, with D-100 confirmed by the founder on 15 Oct (no time given), D-106 (alpha by 29 Oct) and D-107 ("Widen.", about 17:00 UTC; PR reopened 17:49 UTC), PR [#145](https://github.com/thesaurabhpareek/earlyletters/pull/145) (12:37 UTC), PR [#152](https://github.com/thesaurabhpareek/earlyletters/pull/152) (15:14 UTC), PR [#163](https://github.com/thesaurabhpareek/earlyletters/pull/163) (18:02 UTC), and the comments on [#81](https://github.com/thesaurabhpareek/earlyletters/pull/81#issuecomment-6198831573) and [#82](https://github.com/thesaurabhpareek/earlyletters/pull/82#issuecomment-6198831926) (18:02 UTC). Merged PR #122 (18:35 UTC; D-093 to D-099, delegated by founder) is written for the on-device v1.0 ("v1.0 has no sharing", D-099), and `docs/DECISIONS.md` still has no D-id for the v1.0 scope. The founder has to confirm which stands, and the coordinator has to log it.
-- **As built:** not built on this branch: `apps/mobile/eas.json` has `EXPO_PUBLIC_SERVER_FEATURES` off in every profile; the switch is `apps/mobile/src/lib/capabilities.ts`
+### D-100 Server features are on in v1.0 (option B)
+- **Source:** `docs/DECISIONS.md` D-100 (Decided, founder, 2026-10-13, PRD V2 M14; confirmed by the founder in the build thread, 15 Oct 2026); PR #128 (merged 16 Oct 2026)
+- **Decided:** the release build profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`. Sign-in, sync, co-parent sharing (at most two parents, D-069), encrypted backup of the owner's recordings (D-073) and the subscription status report with reminder emails (D-080) ship in v1.0. The switch in `apps/mobile/src/lib/capabilities.ts` stays as the kill path. Gate: nobody outside the family signs in before BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322 and BL-349 merge and pass one shared security review (PRD V2 09 R-17); migrations reach staging, then production, through CI; legal pages describing a server product are live before sign-in.
+- **Why:** not recorded in the source. The log says the founder chose it from three options offered.
+- **Alternatives:** on-device only (R-001, issue #127); on-device plus an anonymous status endpoint.
+- **Door:** one-way after launch: once families sign in and their letters and recordings sit on our server, the release carries live data, escrowed keys (D-102) and a privacy label of "Data Collected"
+- **Reversal cost:** high after outside users sign in: their server data has to be kept, exported or deleted under the Privacy Policy; low before then, because the switch in `capabilities.ts` is the kill path
+- **Revisit when:** team: the R-17 security gate items are not merged and reviewed before outside testers sign in; law: counsel has not answered the server-product packet (#163) before outside testers sign in
+- **Review by:** on trigger
+- **Status:** in force: reverses commit c1764f9 and supersedes the on-device-only assumption behind D-085 to D-088, D-095 and #118 where they conflict (R-001, R-002, R-003); the exact submission date (mid-January or May 2027) is still open per the log
+- **As built:** not built on `develop`: `apps/mobile/eas.json` still has `EXPO_PUBLIC_SERVER_FEATURES` off in every profile; the switch is `apps/mobile/src/lib/capabilities.ts`; the alpha profiles are in open PR #145
+- **Also:** R-016 (the register's record of option B before #128 merged)
+
+### D-101 Full v1.0 scope; the date moves
+- **Source:** `docs/DECISIONS.md` D-101 (Decided, founder, 2026-10-13, after critique round 1, PRD V2 M15); PR #128 (merged 16 Oct 2026)
+- **Decided:** v1.0 keeps every P0 work package, including recording backup and co-parent sharing; only the P1 extras in PRD V2 `08-delivery.md` section 6.4 are cut. The date follows the merge budget. As planned on 15 Oct: submission in the week of Mon 3 May 2027, about 40% confidence. This replaces ROADMAP 2.1's 2 Nov target.
+- **Why:** not recorded in the source
+- **Alternatives:** cut the scope to fit November; raise review capacity (the options the log lists).
+- **Door:** two-way: a scope and date plan, before any submission
+- **Reversal cost:** low: re-planning `08-delivery.md`; no store or user commitment yet
+- **Revisit when:** team: merges fall behind the merge budget in PRD V2 `08-delivery.md` section 2.2; customer: the alpha (D-106) shows the P0 scope is not needed for v1.0
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `docs/prd/v2/08-delivery.md`
+- **Also:** supersedes R-002 (server scope as the next release)
+
+### D-105 PRD V2 is the product spec of record
+- **Source:** `docs/DECISIONS.md` D-105 (Decided, founder, 3 and 13 Oct 2026; takes effect when PR #124 merges); PR #124 (merged 16 Oct 2026)
+- **Decided:** `docs/prd/v2/` replaces `docs/prd/PRD.md` 1.3 as the requirements of record. Existing requirement IDs keep their meaning. Where V2 and a LEGAL-REQ disagree on a legal duty, counsel decides; no founder decision retires a legal duty by itself.
+- **Why:** not recorded in the source
+- **Door:** two-way: which document is the spec
+- **Reversal cost:** low: a document pointer; requirement IDs are unchanged
+- **Revisit when:** none expected: a later PRD version would replace it the same way
+- **Review by:** on trigger
+- **Status:** in force: PR #124 merged on 16 Oct 2026
+- **As built:** `docs/prd/v2/`

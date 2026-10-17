@@ -162,7 +162,7 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** medium: a label update plus counsel review
 - **Revisit when:** law: counsel signs the feedback text; customer: support volume makes email triage unworkable
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** amended by D-100: the "Data Not Collected" label is no longer true once accounts exist; privacy label 1.4.0 is drafted with counsel
 - **As built:** `apps/mobile/src/app/settings/index.tsx` (Help row); `docs/legal/app-store-privacy-labels.md`
 
 ### R-004 Purged-letter retention stays at the published 60 days
@@ -184,7 +184,7 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** medium: the switch is a build setting, but turning it on needs a privacy label change, the consent flow and counsel review
 - **Revisit when:** platform: v1.1 planning starts (the source returns analytics with consent in v1.1); law: counsel changes the consent reading
 - **Review by:** on trigger
-- **Status:** in force
+- **Status:** amended by D-100: the log says the on-device-only assumption behind D-095 is superseded where they conflict; the analytics switch itself is not named as changed
 - **As built:** `apps/mobile/src/lib/capabilities.ts` (`ANALYTICS`), `apps/mobile/eas.json` (`EXPO_PUBLIC_ANALYTICS` off in every profile), `apps/mobile/src/lib/analytics/index.ts`
 - **Also:** amends D-003 and D-062 for v1.0
 

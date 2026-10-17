@@ -165,3 +165,27 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Review by:** on trigger
 - **Status:** in force: the port map (#117), runbook (#111) and test plan rows (#123) are open PRs, not merged
 - **As built:** not built: a branch rule; the branch is still on the remote
+
+### D-106 Alpha in two weeks: option B as a TestFlight alpha against staging
+- **Source:** `docs/DECISIONS.md` D-106 (Decided, founder, build thread, 2026-10-15); PR #128 (merged 16 Oct 2026)
+- **Decided:** option B ships as an alpha: a TestFlight build with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha. The review delegation part was proposed by the coordinator and is settled by D-107.
+- **Why:** not recorded in the source
+- **Door:** one-way after launch: once invited friends sign in, staging holds outside families' letters and recordings
+- **Reversal cost:** low before anyone outside the family signs in; high after, because their data on staging has to be kept, exported or deleted
+- **Revisit when:** team: the R-17 security gate (D-100) has not passed before invited friends sign in; law: counsel has not answered the server-product packet (#163) before outside testers sign in
+- **Review by:** 2026-10-29
+- **Status:** in force
+- **As built:** not built on `develop`: `apps/mobile/eas.json` has `EXPO_PUBLIC_SERVER_FEATURES` off in every profile; the alpha profiles are in open PR #145; the alpha plan is in open PR #152
+- **Also:** R-016 (part); the delegation part is D-107
+
+### ADR-0026 Release automation pipeline (proposed)
+- **Source:** `docs/adr/0026-release-automation-pipeline.md` (Proposed, 16 Oct 2026, revision 2; each numbered decision takes effect when the founder accepts it); PR #185 (merged 16 Oct 2026); plan in `docs/release/AUTOMATION.md`
+- **Decided:** not decided. Proposed: a second GitHub approver account held only by the founder as the only required reviewer; branch protection on `main` and `develop`; `develop` as the default branch after `claude.yml` is hardened; one lineage after the alpha; eight GitHub environments; TestFlight promotion gated on R-17; App Store Connect keys split by job; pack signing never in CI; tester feedback kept private; connectors treated as production credentials; a list of what agents may start; content-free scheduled health checks.
+- **Why:** agents act through the founder's own account, so GitHub cannot tell their approval from the founder's; nothing protects `main` or `develop`; workflows on `develop` cannot be dispatched while `main` is the default branch; the repository is public, so logs and issues are public (the ADR's Context).
+- **Alternatives:** the founder's own account as the only reviewer; keep `main` as default and copy workflows; merge the lineages before the alpha; fastlane for all store work; EAS Workflows; a CI-held signing key; feedback in public issues (each with its reason in the ADR).
+- **Door:** two-way: GitHub, EAS and App Store Connect settings the founder can change back; the second account and environment layout are cheap to undo
+- **Reversal cost:** medium: settings across GitHub, EAS and App Store Connect, and workflows that depend on them
+- **Revisit when:** platform: GitHub blocks `pull_request_target` by default in public repositories from 2 Nov 2026 (decision 3); team: agents stop holding the owner credential (AF-27, after the alpha)
+- **Review by:** on trigger
+- **Status:** proposed: each numbered decision waits for the founder's acceptance; decisions 1 to 3 are founder settings
+- **As built:** `docs/release/AUTOMATION.md` (the plan and founder checklist AF-01 to AF-43); no settings changed per the ADR
