@@ -45,7 +45,7 @@ function leaves(value: unknown, path = ''): Leaf[] {
 // speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
 
-/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below). */
+/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the held ones below), and held keys once switched. */
 const CHANGED = [
   'en.onboarding.child.nameLabel',
   'en.onboarding.child.expectingHelp',
@@ -123,6 +123,9 @@ const CHANGED = [
   'en.errors.launch.exportFailed',
   // Not in section 4: changed in review on #181 (the old line named four licences; #175 lists every one).
   'features.licences.libraries',
+  // Held in #181, switched by P5 with the screens that build all three datelines and fill {child} (spec section 6).
+  'en.readTogether.nowReading',
+  'en.settings.delete.restoredToast',
 ];
 
 /** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
@@ -221,8 +224,6 @@ const HELD: Record<string, string> = {
   'features.billing.keepGate.offline': 'P3', // the same promise
   'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
   'en.errors.micDenied.body': 'P4',
-  'en.readTogether.nowReading': 'P5', // the newborn and Before You datelines are built another way until P5
-  'en.settings.delete.restoredToast': 'P5', // the shelf does not fill {child} yet
   'features.billing.plan.monthly': 'P6, after counsel', // shown beside plan.yearly; registered group
   'features.billing.plan.payment': 'counsel, then P6',
   'features.billing.plan.grace': 'counsel, then P6',
