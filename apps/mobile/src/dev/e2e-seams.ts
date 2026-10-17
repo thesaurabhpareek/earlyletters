@@ -9,12 +9,14 @@
  * with `EXPO_PUBLIC_E2E=1` set by mistake. Both values are inlined at bundle time; in a build that does not
  * meet both, the condition below is a constant false, the bundler's constant folding drops the `require`
  * before it collects dependencies, and no seam code ships. That holds only while every store profile keeps its
- * app env: a store profile switched to `development` would carry the seam, which is why B-8 checks bundles. Proven with `expo export` on #203; release check B-8 greps the
- * `testflight` and `production` bundles for `e2eKillDrill` (request to S20, with RA-20-18).
+ * app env: a store profile switched to `development` would carry the seam. Proven with `expo export` on #203;
+ * release check B-8 (S20, #210) searches the store bundles for the seam's names, before or with RA-20-18.
  *
- * A dedicated e2e marker that no store profile can carry (an `e2e` app env, or a refusal in app.config.ts when
- * `EXPO_PUBLIC_E2E` meets a store profile) is a request to S20 and the founder; until it exists this file gates
- * on what exists. The drill also refuses at run time off a simulator, outside the development bundle, or on an
+ * TODO(#145): when #145 merges, this paragraph changes. A dedicated e2e marker that no store profile can
+ * carry is request B-9; #145 answers it with `e2eRefusal()` in `src/lib/build-env.ts`, which makes
+ * `app.config.ts` refuse `EXPO_PUBLIC_E2E=1` with the preview or production app env, or on an EAS build of
+ * any profile but `e2e`. Until #145 is on `develop` that refusal does not exist here, so this file gates on
+ * what exists. The drill also refuses at run time off a simulator, outside the development bundle, or on an
  * install it did not make (`decideDrillGuard`). The hook is chosen once per build, so every render runs the
  * same hooks.
  */

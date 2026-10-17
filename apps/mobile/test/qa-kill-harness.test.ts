@@ -26,12 +26,12 @@ import { readSnapshot, sha256OfFile } from '../e2e/kill/snapshot.mjs';
 import { nodeDb } from './helpers/node-db';
 
 /**
- * Whether the app's launch sweep sees takes in Documents/ExpoAudio, where expo-audio 57 writes them. On
- * `develop` it does not (the sweep lists only the top of Documents: DEVICE_TEST_PLAN DL-01). S10's fix
- * (`fix/sweep-recordings-dir`) sets this to true in the same pull request, which makes the test that reads it
- * the regression test for that fix.
+ * The app's launch sweep sees takes in Documents/ExpoAudio, where expo-audio 57 writes them, since #207
+ * (`src/lib/capture/recordings.ts`). Before it, the sweep listed only the top of Documents and a killed take
+ * lost its draft (DEVICE_TEST_PLAN DL-01). Two tests below pin this: the real sweep on ExpoAudio takes keeps
+ * every take (it goes red if the sweep goes back to the top of Documents), and a listing that shows only the
+ * top of Documents is a fail the harness reports (exit 1).
  */
-const SWEEP_SEES_EXPOAUDIO = false;
 
 /** Shared with the module stand-ins below (vi.mock factories run before the imports). */
 const env = vi.hoisted(() => ({
@@ -131,7 +131,7 @@ vi.mock('../src/lib/capture/erase', () => ({ purgeShelfAtLaunch: () => {} }));
 const ROOT = mkdtempSync(join(tmpdir(), 'qa-kill-harness-'));
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 
-type Behaviour = 'atomic' | 'non-atomic' | 'ignores-plants' | 'never-arms' | 'record-fails' | 'dies-after-kill-2' | 'damages-run-2' | 'launch-throws';
+type Behaviour = 'atomic' | 'non-atomic' | 'ignores-plants' | 'never-arms' | 'record-fails' | 'dies-after-kill-2' | 'hangs-after-run-2' | 'damages-run-2' | 'launch-throws';
 interface FakeOptions {
   /** Where the fake's recorder writes takes: expo-audio 57's `ExpoAudio`, or '' for the top of Documents. */
   takeDir?: string;
@@ -150,6 +150,8 @@ interface Proc {
   timers: ReturnType<typeof setTimeout>[];
   close: () => void;
   ctx: RepoContext;
+  /** Kills this process ignores before one takes (a launch hung where SIGKILL has not landed yet). */
+  ignoreKills?: number;
 }
 
 const sha = (p: string) => createHash('sha256').update(readFileSync(p)).digest('hex');
@@ -368,6 +370,11 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
         });
         return pid;
       }
+      if (behaviour === 'hangs-after-run-2' && a.run === 3) {
+        // The launch after run 2's kill hangs before its sweep, and the first SIGKILL has not landed when the harness looks.
+        p.ignoreKills = 1;
+        return pid;
+      }
       later(p, 5, () => boot(p, a));
       return pid;
     },
@@ -377,6 +384,11 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
     },
     alive: (pid: number) => procs.get(pid)?.alive ?? false,
     kill: async (pid: number) => {
+      const p = procs.get(pid);
+      if (p?.alive && p.ignoreKills) {
+        p.ignoreKills -= 1;
+        return true;
+      }
       const was = stop(pid);
       if (was && launches > 1) killsSoFar += 1;
       return was;
@@ -696,6 +708,19 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
     expect(report.exit).toBe(EXIT.fail);
     const failed = report.runs.find((r: { outcome: string }) => r.outcome === 'fail');
     expect(failed?.reasons[0]).toMatch(/^the app did not start again after this kill \(app_exited\); seed 11, killed \d+ ms after it armed$/);
+    // Reviewer H: whether the database survived, read once the failed launch is gone.
+    expect(failed?.database).toMatchObject({ read: true, integrity: 'ok', problems: [] });
+    expect(failed?.reasons[1]).toMatch(/^the database after the failed launch: integrity_check ok; this run is \w+ in it/);
+  }, 60_000);
+
+  it('a launch that hangs after a kill is a fail, and its database is not read while that launch may still be writing', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-hangs', 'hangs-after-run-2'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 19, timeouts: { ...fast, bootMs: 2500 } });
+    expect(report.exit).toBe(EXIT.fail);
+    const failed = report.runs.find((r: { run: number }) => r.run === 2);
+    expect(failed).toMatchObject({ outcome: 'fail', database: { read: false } });
+    expect(failed?.reasons[0]).toMatch(/^the app did not start again after this kill \(no_boot_marker\); seed 19, killed \d+ ms after it armed$/);
+    expect(failed?.reasons[1]).toBe('the database after the failed launch: not read: the failed launch was still running after SIGKILL, and a database another process may still be writing would not show what the kill left');
+    expect(renderMarkdown(report)).toContain('not read: the failed launch was still running');
   }, 60_000);
 
   it('damage a later launch does to an earlier letter is caught at the next relaunch', async () => {
@@ -728,25 +753,28 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
     expect(report.exit).toBe(EXIT.fail);
   }, 60_000);
 
-  it('regression: a sweep that sees only the top of Documents loses every DL-01 take kept in Documents/ExpoAudio, and the harness fails it', async () => {
+  it('regression: a listing that shows only the top of Documents never finishes a DL-01 take kept in Documents/ExpoAudio, and the harness fails it', async () => {
+    // The stand-in hides every folder below Documents from the sweep's listing, as the sweep before #207 did.
+    // The sweep plans to drop each draft as empty; since #207 it re-checks the disk first and keeps the draft,
+    // so the take is not lost, but it stays "recording" and never reaches Tonight. Before #207 every one was
+    // lost. Either way it is not kept, and the harness must say so.
     const report = await runHarness({ driver: fakeDriver('dl01-top-only', 'atomic', { takeDir: logic.TAKE_DIR, topLevelOnly: true }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 17, timeouts: fast });
     expect(report.selfCheck.caught).toBe(2);
-    expect(countsOf(report).lost).toBe(3);
-    for (const r of report.runs) expect(r.reasons).toEqual(['no row points at the take: it is not on Tonight or in Settings > Recordings']);
+    expect(countsOf(report)).toMatchObject({ completed: 3, bad: 3, kept: 0 });
+    for (const r of report.runs) expect(r).toMatchObject({ outcome: 'fail', reasons: ['still marked recording after the sweep'] });
     expect(report.sweep['drop-empty-recording']).toBeGreaterThan(0);
     expect(report.exit).toBe(EXIT.fail);
   }, 60_000);
 
-  it(`the app's real sweep on takes where expo-audio 57 writes them (Documents/ExpoAudio): ${SWEEP_SEES_EXPOAUDIO ? 'every take kept' : 'every take lost until S10 fixes the sweep'}`, async () => {
+  it("the app's real sweep on takes where expo-audio 57 writes them (Documents/ExpoAudio) keeps every take; it fails if the sweep goes back to the top of Documents", async () => {
     const report = await runHarness({ driver: fakeDriver('dl01-expoaudio', 'atomic', { takeDir: logic.TAKE_DIR }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 18, timeouts: fast });
     expect(report.selfCheck.caught).toBe(2);
-    if (SWEEP_SEES_EXPOAUDIO) {
-      expect(countsOf(report)).toMatchObject({ kept: 3, bad: 0 });
-      expect(report.exit).toBe(EXIT.pass);
-    } else {
-      expect(countsOf(report).lost).toBe(3);
-      expect(report.exit).toBe(EXIT.fail);
-    }
+    expect(countsOf(report)).toMatchObject({ completed: 3, kept: 3, within5s: 3, bad: 0 });
+    // Summed over every launch, the self-check's included: the one drop is its loss plant, whose file is gone.
+    expect(report.sweep['drop-empty-recording']).toBe(1);
+    expect(report.sweep['finalize-recording']).toBeGreaterThanOrEqual(3);
+    expect(report.audits).toEqual([]);
+    expect(report.exit).toBe(EXIT.pass);
   }, 60_000);
 });
 

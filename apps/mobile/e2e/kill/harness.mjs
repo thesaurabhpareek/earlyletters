@@ -240,13 +240,49 @@ export async function runHarness(opts) {
       return result;
     };
 
-    const relaunchFailed = (p, code) => {
+    /**
+     * What the database holds after a launch that did not start (reviewer H): read only once that launch is
+     * certainly gone, so the snapshot shows what the kill and the failed launch left, not a write in progress.
+     * Never changes the verdict (the run is already a fail); it tells a dead database from a launch that died.
+     */
+    const databaseAfter = async (p, pid) => {
+      await driver.kill(pid);
+      if (await driver.alive(pid)) {
+        return { read: false, why: 'not read: the failed launch was still running after SIGKILL, and a database another process may still be writing would not show what the kill left' };
+      }
+      let snap;
+      try {
+        snap = driver.snapshot();
+      } catch (e) {
+        return { read: false, why: `could not be read: ${String(e?.message ?? e).slice(0, 160)}` };
+      }
+      const v = o.mode === 'dl02' ? classifyDl02(snap, p.armed, io, expectFor(p)) : classifyDl01(snap, p.armed, io, expectFor(p));
+      const others = { mode: o.mode, kept, badIds: new Set([...badIds, p.armed.draftId]), badFiles: new Set([...badFiles, ...(p.armed.audioFile ? [p.armed.audioFile] : [])]) };
+      const problems = auditStore(snap, io, others).map((x) => x.reason);
+      return { read: true, integrity: snap.integrity, run: v.outcome, runReasons: v.reasons, earlierKept: kept.length, problems };
+    };
+
+    const describeDatabase = (d) => {
+      if (!d.read) return `the database after the failed launch: ${d.why}`;
+      const run = `this run is ${d.run} in it${d.runReasons.length ? ` (${d.runReasons.join('; ')})` : ''}`;
+      const rest = d.problems.length ? `${d.problems.length} problem(s): ${d.problems.join('; ')}` : `the ${d.earlierKept} earlier kept run(s) are as judged`;
+      return `the database after the failed launch: integrity_check ${d.integrity}; ${run}; ${rest}`;
+    };
+
+    /** The killed run when the next launch did not start: a fail (exit 1) naming the run, the seed and the kill time. */
+    const relaunchFailed = async (p, code, pid) => {
       fatal = true;
+      const database = await databaseAfter(p, pid);
       return {
         ...baseOf(p),
         outcome: 'fail',
-        reasons: [`the app did not start again after this kill (${code}); seed ${o.seed}, killed ${p.waitedMs} ms after it ${p.item.point ? `reached ${p.item.point}` : 'armed'}`],
+        reasons: [`the app did not start again after this kill (${code}); seed ${o.seed}, killed ${p.waitedMs} ms after it ${p.item.point ? `reached ${p.item.point}` : 'armed'}`, describeDatabase(database)],
+        database,
       };
+    };
+
+    const addSweep = (bootMarker) => {
+      for (const [k, n] of Object.entries(bootMarker?.sweep ?? {})) report.sweep[k] = (report.sweep[k] ?? 0) + Number(n || 0);
     };
 
     stage = `${label}: reset`;
@@ -267,7 +303,7 @@ export async function runHarness(opts) {
       if (pending) {
         stage = `${label}: run ${pending.item.run}, judge`;
         if (!boot.ok) {
-          results.push(relaunchFailed(pending, boot.code));
+          results.push(await relaunchFailed(pending, boot.code, pid));
           await driver.kill(pid);
           return { results, errors, fatal };
         }
@@ -282,7 +318,7 @@ export async function runHarness(opts) {
         await driver.kill(pid);
         return { results, errors, fatal };
       }
-      for (const [k, n] of Object.entries(boot.marker.sweep ?? {})) report.sweep[k] = (report.sweep[k] ?? 0) + Number(n || 0);
+      addSweep(boot.marker);
       stage = `${label}: run ${item.run}, arm`;
       driver.writeGo(item.run);
       const armed = await waitFor('armed', item.run, pid, o.timeouts.armMs, 1);
@@ -316,7 +352,12 @@ export async function runHarness(opts) {
       const pid = await driver.launch({ mode: 'verify', run: verifyRun });
       const boot = await waitFor('boot', verifyRun, pid, o.timeouts.bootMs, 50);
       stage = `${label}: run ${pending.item.run}, judge`;
-      results.push(boot.ok ? judge(pending, boot.marker) : relaunchFailed(pending, boot.code));
+      if (boot.ok) {
+        addSweep(boot.marker);
+        results.push(judge(pending, boot.marker));
+      } else {
+        results.push(await relaunchFailed(pending, boot.code, pid));
+      }
       await driver.terminate(pid);
     }
     return { results, errors, fatal };
