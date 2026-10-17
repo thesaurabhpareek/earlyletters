@@ -180,7 +180,7 @@ describe('a recording that will not erase', () => {
 });
 
 describe('what an erased letter takes with it', () => {
-  it('[D-085] its queued uploads go too, so nothing about an erased letter is ever sent later', () => {
+  it('[D-085] its queued uploads go too, so nothing about an erased letter is ever sent later; only the erase itself, which carries the id alone (F16-REQ-024)', () => {
     // An account owns the phone (the outbox queues) while the build switch stays off (the purge runs here).
     store.setSetting(SYNC_SETTING.owner, 'mama-account');
     save(1);
@@ -195,19 +195,24 @@ describe('what an erased letter takes with it', () => {
     expect(ops(id(2))).toBe(1);
     const d = disk([uri(1), uri(2)]);
     expect(store.purgeExpired(T0 + SHELF_MS, d.eraser)).toBe(1);
-    expect(ops(id(1))).toBe(0);
+    // The server may hold it (its upload left): one entry.erase, so the server's copy goes too (sync final review A-M2).
+    const left = db.all<{ type: string; payload: string }>('SELECT type, payload FROM sync_outbox WHERE entity_id = ?', id(1));
+    expect(left.map((o) => o.type)).toEqual(['entry.erase']);
+    expect((JSON.parse(left[0].payload) as { data: unknown }).data).toEqual({});
     expect(ops(id(2))).toBe(1);
     expect(store.getEntry(id(2))).not.toBeNull();
   });
 
-  it('[D-085] with the server switch on, nothing is erased on the phone even past the cutoff', () => {
+  it('[D-085] with the server switch on, a letter the server holds is never erased by the phone\'s clock; one it never held is (sync final review B5)', () => {
     save(1);
+    save(2);
     del(1);
+    del(2);
+    store.localSqlDb().run("UPDATE entries SET server_version = '100' WHERE id = ?", id(1)); // the server holds it
     setServerFeaturesForTests(true);
-    const d = disk([uri(1)]);
-    expect(store.purgeExpired(T0 + 2 * SHELF_MS, d.eraser)).toBe(0);
-    expect(store.eraseEntry(id(1), d.eraser)).toBe(false);
-    expect(d.asked).toEqual([]);
+    const d = disk([uri(1), uri(2)]);
+    expect(store.purgeExpired(T0 + 2 * SHELF_MS, d.eraser)).toBe(1);
+    expect(d.asked).toEqual([uri(2)]);
     expect(onShelf()).toEqual([id(1)]);
   });
 });

@@ -20,7 +20,7 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { audioRows, eraseEntry, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { audioRows, eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
 import { erasableFiles } from './recordings';
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
@@ -42,9 +42,14 @@ export function eraseDeletedLetter(id: string): boolean {
   return eraseEntry(id, eraseAudioFile);
 }
 
+/** Letters the server erased for good: their files, then their rows (after every pull, and at launch). */
+export function finishErasedLetters(): number {
+  return finishServerErased(eraseAudioFile);
+}
+
 /** Launch purge, then record this launch for the clock guard. Returns how many letters were erased. */
 export function purgeShelfAtLaunch(nowMs = Date.now()): number {
-  const n = purgeExpired(nowMs, eraseAudioFile);
+  const n = purgeExpired(nowMs, eraseAudioFile) + finishServerErased(eraseAudioFile);
   recordLaunch(nowMs);
   return n;
 }
