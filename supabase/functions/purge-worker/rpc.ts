@@ -69,6 +69,8 @@ export interface SlaReport {
   scheduled_overdue: number;
   holds_past_review: number;
   purge_run_age_minutes: number | null;
+  /** 1 while app.consent_pepper is unusable and an account deletion waits (20261015010000); absent before that file. */
+  consent_pepper_missing?: number;
 }
 
 export interface ResidueRow {
