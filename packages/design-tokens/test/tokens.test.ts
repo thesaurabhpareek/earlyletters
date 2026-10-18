@@ -145,8 +145,20 @@ describe('design tokens: type', () => {
       expect(tokens.type[name].maxScale, name).toBeNull();
     }
   });
-  it('capped display styles still reach at least 1.6x', () => {
-    for (const t of Object.values(tokens.type)) if (t.maxScale !== null) expect(t.maxScale).toBeGreaterThanOrEqual(1.6);
+  it('capped display styles still reach at least 1.6x, or are already larger at their cap than display is at its own', () => {
+    const displayCap = tokens.type.display.fontSize * tokens.type.display.maxScale!;
+    for (const [name, t] of Object.entries(tokens.type)) {
+      if (t.maxScale === null) continue;
+      // The month numeral is 64 pt: at 1.4x it is 90 pt, far past display's 54 pt cap.
+      expect(t.maxScale >= 1.6 || t.fontSize * t.maxScale >= displayCap, name).toBe(true);
+    }
+  });
+  it('the two literary lines of the experience pass: Tonight\'s prompt and the month numeral', () => {
+    expect(tokens.type.promptHero).toMatchObject({ fontFamily: tokens.fontFamily.serif, fontSize: 28, lineHeight: 36, letterSpacing: 0, dynamicTypeStyle: 'title1', maxScale: 1.8 });
+    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 64, letterSpacing: -0.5, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    // Tonight's prompt is larger than the old card prompt, and smaller than the first-run hero.
+    expect(tokens.type.promptHero.fontSize).toBeGreaterThan(tokens.type.prompt.fontSize);
+    expect(tokens.type.promptHero.fontSize).toBeLessThan(tokens.type.hero.fontSize);
   });
   it('every bundled face exists in fonts/ with its OFL licence', () => {
     const dir = join(__dirname, '..', 'fonts');
@@ -159,9 +171,48 @@ describe('design tokens: type', () => {
 describe('design tokens: motion and targets', () => {
   const m = tokens.motion;
   it('no timed motion exceeds the 2 s ceiling, and the content sequence fits under 900 ms', () => {
-    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
+    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
     expect(m.enter.durationMs + m.staggerMs * (m.staggerMax - 1)).toBeLessThanOrEqual(m.sequenceMaxMs);
     expect(m.reduceMotion.durationMs).toBe(m.fadeMs);
+  });
+  it('the saved moment files the letter in order, and inside the 900 ms sequence (MOTION 5e)', () => {
+    expect(0).toBeLessThan(m.file.chipAtMs);
+    expect(m.file.chipAtMs).toBeLessThan(m.file.moveAtMs);
+    expect(m.file.moveAtMs).toBeLessThan(m.sequenceMaxMs);
+    // The letter's words are never at partial opacity for longer than the 350 ms exit (EXPERIENCE_PASS S21).
+    expect(m.sequenceMaxMs - m.file.moveAtMs).toBeLessThanOrEqual(350);
+    expect(m.file.scale).toBeGreaterThan(0.8);
+    expect(m.file.scale).toBeLessThan(1);
+    expect(m.file.dy).toBeGreaterThan(0);
+  });
+  it('a page turn and the cover opening are small moves inside the sequence ceiling', () => {
+    expect(m.pageTurn.dx).toBe(24);
+    expect(m.cover.dx).toBeLessThanOrEqual(m.pageTurn.dx);
+    expect(m.cover.holdMs + m.enter.durationMs).toBeLessThanOrEqual(m.sequenceMaxMs);
+    expect(m.exitMs).toBeLessThan(m.enter.durationMs); // exits are quicker than entries
+  });
+  it('a card grows into its page with its content arriving late, after a short hold while the Book goes (MOTION 5f)', () => {
+    expect(m.cardToPage.contentFrom).toBeGreaterThan(0.5);
+    expect(m.cardToPage.contentFrom).toBeLessThan(1);
+    // The card holds while the Book's light leaves, and starts to grow before the light has quite gone.
+    expect(m.cardToPage.holdMs).toBeGreaterThan(0);
+    expect(m.cardToPage.holdMs).toBeLessThan(m.lamp.leaveMs);
+    // Short of the next card's words (a 12 pt gap and 16 pt of padding past a card's edge).
+    expect(m.cardToPage.clearPt).toBeGreaterThan(0);
+    expect(m.cardToPage.clearPt).toBeLessThan(28);
+  });
+  it('between rooms the light leaves as fast as an exit and comes back as fast as an entry; a dissolve fits the sequence', () => {
+    expect(m.lamp.leaveMs).toBe(m.exitMs);
+    expect(m.lamp.returnMs).toBe(m.enter.durationMs);
+    expect(m.lamp.leaveMs).toBeLessThan(m.lamp.returnMs);
+    expect(m.lamp.returnMs).toBeLessThan(m.lamp.arriveMs);
+    expect(m.route.dissolveMs).toBeLessThanOrEqual(m.sequenceMaxMs);
+    expect(m.swapMs).toBeLessThan(m.fadeMs);
+  });
+  it('the idle listening breath is 8 breaths a minute or slower, under HIG Motion\'s 0.2 Hz caution', () => {
+    expect(m.breathIdleMs).toBe(7500);
+    expect(60000 / m.breathIdleMs).toBeLessThanOrEqual(8);
+    expect(1000 / m.breathIdleMs).toBeLessThan(0.2);
   });
   it('springs are critically or near-critically damped (no bouncy UI)', () => {
     for (const k of ['snappy', 'standard', 'gentle'] as const) {

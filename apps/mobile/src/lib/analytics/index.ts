@@ -31,6 +31,7 @@ import {
   noopProvider,
   type ConsentStatus,
   type KeyValueStorage,
+  type PostHogLike,
   type Violation,
 } from '@scribe/analytics';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
@@ -54,11 +55,22 @@ function onViolation(v: Violation): void {
   if (__DEV__ && v.kind !== 'queue_overflow') throw new Error(`analytics_violation:${v.kind}:${v.event}:${v.property ?? ''}`);
 }
 
-const provider = KEY
-  ? createLazyPostHogAdapter({
-      create: async (id) => (await import('./posthog-sdk')).createPostHogClient(KEY, HOST, id, onViolation),
-    })
-  : noopProvider;
+/**
+ * The PostHog client factory. None in v1.0: `posthog-react-native` is not a
+ * dependency, so no SDK code is in the bundle (D-088, D-095; Metro bundles a
+ * dynamic import even when it is never reached). v1.1 re-adds the SDK with
+ * `npm install posthog-react-native -w @scribe/mobile` and one line here:
+ *
+ *   const createClient: PostHogClientFactory | null = async (id) =>
+ *     new (await import('posthog-react-native')).default(KEY, { ...buildPostHogOptions({ host: HOST, distinctId: id, onViolation }) });
+ *
+ * (see packages/analytics `buildPostHogOptions` and `createLazyPostHogAdapter`;
+ * the before_send cast is in git history, src/lib/analytics/posthog-sdk.ts).
+ */
+type PostHogClientFactory = (distinctId: string) => Promise<PostHogLike>;
+const createClient: PostHogClientFactory | null = null;
+
+const provider = KEY && createClient ? createLazyPostHogAdapter({ create: createClient }) : noopProvider;
 
 export const analytics = createAnalytics({
   provider,

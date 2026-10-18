@@ -27,6 +27,7 @@ import { startPacks } from '@/lib/packs';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
+import { useRouteTransitions } from '@/lib/motion';
 import { getSetting, subscribe } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -113,6 +114,8 @@ function Root() {
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
+  // How each route is presented and how it moves (EXPERIENCE_PASS 5.8): one table, read here, no duration typed.
+  const routes = useRouteTransitions();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
@@ -165,17 +168,18 @@ function Root() {
           <SessionProvider onUnder18={closeGate}>
             <ScreenViews />
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="write" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="listen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-              <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
-              <Stack.Screen name="read-together" options={{ presentation: 'fullScreenModal' }} />
-              <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
-              <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="(tabs)" options={routes['(tabs)']} />
+              <Stack.Screen name="onboarding" options={{ gestureEnabled: false, ...routes.onboarding }} />
+              <Stack.Screen name="write" options={routes.write} />
+              <Stack.Screen name="listen" options={{ gestureEnabled: false, ...routes.listen }} />
+              <Stack.Screen name="review" options={{ gestureEnabled: false, ...routes.review }} />
+              <Stack.Screen name="read-together" options={routes['read-together']} />
+              <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent, ...routes['letter/[id]'] }} />
+              <Stack.Screen name="settings" options={routes.settings} />
+              <Stack.Screen name="(auth)" options={routes['(auth)']} />
+              <Stack.Screen name="invite" options={routes.invite} />
               {/* After a new purchase of Plus, over the Keep gate or Settings, Plan (G-15). */}
-              <Stack.Screen name="plus/confirmed" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="plus/confirmed" options={routes['plus/confirmed']} />
             </Stack>
             <PendingInviteWatcher />
             {/* A plan reminder inside the app, once per reminder, on a calm tab root (G-15). */}

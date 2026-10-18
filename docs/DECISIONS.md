@@ -626,6 +626,8 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-106 | Alpha in two weeks: option B ships as a TestFlight alpha against staging, target Thu 29 Oct 2026; submission re-planned after the alpha; review delegation widened to app code | Decided (founder, build thread, 15 Oct 2026); the delegation widening is proposed by the coordinator and awaits the founder's confirmation | Yes for the alpha; the delegation waits | 2026-10-15 |
 | D-107 | Merge delegation widened: the coordinator merges app code, docs and tests into `develop` after two independent reviews and green CI; database, auth, payments, release configuration, the engine files and production deploys stay founder merges | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
 | D-108 | Backup recovery: a device enrolled for at least 7 days approves a restore request; F08-REQ-034 amended to the backup server as built (ten functions, nine settings) | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-109 | Experience pass calls F2 to F8 (PR #170 section 7): lamp gradient allowed, app.welcome lockup, welcome-first order held for counsel, Declared Age Range owner, Plus display names, server surfaces in v1.0, typed letters skip Review | Delegated call by the coordinator (founder may reverse) | Yes, except F4 (held) | 2026-10-16 |
+| D-110 | Lamp contrast (PR #170 P1, PR #192): the everyday text colours hold 4.5:1 everywhere at every lamp tone's peak; the status colours hold 4.5:1 where text sits and never sit on the gate's or Read together's lit paper; tests over three phone sizes | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-16 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -688,3 +690,27 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Decision:** Backup recovery: a device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to match the backup server as built: ten functions and nine settings, not four functions and three secrets.
 - **Effects:** PR #151 (`feat/backup-server`, the S05 backup server). The F08-REQ-034 text in PRD V2 (`docs/prd/v2/features/F08-recordings.md`, PR #124) is updated to match in a follow-up.
 - **Owner:** founder; S05.
+
+### D-109 Experience pass calls (coordinator, 16 Oct 2026)
+- **Status:** Delegated call by the coordinator under the founder's standing delegation (decide what is industry standard; the founder's instruction of 4 Oct, "Decide right answer on my behalf that are standard for industry apps", as for D-083 to D-088), 16 Oct 2026. The founder may reverse any item. Counsel sign-off is not delegated.
+- **Source:** the experience pass spec, PR #170 (`docs/experience-pass-oct`), section 7.
+- **Decision:**
+  1. F2 approved: in BRAND_SYSTEM section 4, the gradient item of the "Never" line becomes "Never: a gradient anywhere except the app icon tile and the atmosphere lamp (tokens.atmosphere, Lamp), which is decorative, capped for contrast, and never sits inside, behind or around the mark." The line's other "Never" items (the two contrast bans and pure black behind the mark) stay. Reason: the founder asked for the website's light and gradients in the app.
+  2. F3 approved: new brand registry context `app.welcome`, the stacked lockup at 96 pt on the welcome screen.
+  3. F4 held: the welcome-first order waits for counsel's answer to C1.
+  4. F5: the Declared Age Range call is owned by S14 with S17, due before App Store submission, not needed for TestFlight; subject to counsel's answer to COUNSEL_PACKET Q5. Note (merge train): in PRD V2 `08-delivery.md` section 3 the age gate (F01) sits with stream S12; the coordinator confirms which stream owns the call.
+  5. F6: the App Store Connect display names are Plus Monthly and Plus Annual; S06 corrects `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
+  6. F7 answered by the founder's option B (D-100): sign-in, sync, co-parent and backup surfaces are in v1.0 and get their own experience package.
+  7. F8 approved: typed letters skip Review, because typed words are never machine-edited.
+- **Effects:** for a typed letter, D-103's condition (c) is met when the author keeps it on Write with the words on screen; the Keep gate and the counting in D-082, D-083 and D-103 are unchanged. Follow-ups, not in this entry: the BRAND_SYSTEM section 4 edit; the `app.welcome` registry context (and the `app.header` title, which names the welcome today); `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (still "Plus Yearly"); PR #170 (S20 for F8).
+- **Owner:** coordinator; founder for reversal.
+
+### D-110 Lamp contrast: reading colours everywhere, status colours where text sits (coordinator, 16 Oct 2026)
+- **Status:** Delegated call by the coordinator (founder may reverse), 16 Oct 2026, under the same standing delegation as D-109. Counsel sign-off is not involved: this is an accessibility and design rule.
+- **Source:** the experience pass spec, PR #170 (`docs/experience-pass-oct`), P1's acceptance line 2; PR #192 (P1, `feat/experience-p1-visual-system`, 3d7c7fd), revision 2, after the coordinator's review of its screenshots. Capping every lamp tone so that even the status colours kept 4.5:1 at the pool's core left light mode reading as plain paper.
+- **Decision:**
+  1. The everyday text colours (`text`, `textMuted`, `accent`, `focus`) hold 4.5:1 everywhere on screen at every lamp tone's peak, in both schemes.
+  2. The status colours (`success`, `caution`, `recording`, `destructive`) hold 4.5:1 where text actually sits, because WCAG 1.4.3 measures text against the background behind it. They never sit on the lit paper of the age gate or of Read together.
+  3. Tests enforce both rules over three phone sizes (iPhone 17 Pro, iPhone SE and the Pro Max size): the everyday colours over the whole screen for every scene and daypart, and the status colours over the areas where status text is placed.
+- **Effects:** P1's acceptance line 2 in the spec (PR #170) reads this way. `tokens.atmosphere.onLitPaper` (PR #192) records which colours may sit where, and the light-mode peaks rise (PR #192: amber 0.35, gold 0.78, rose 0.17, dusk 0.12). Dark mode is unchanged and keeps every text colour at 4.5:1 everywhere. Increase Contrast and Reduce Transparency still show no lamp.
+- **Owner:** coordinator; founder for reversal; P1 (stream S15) for the tests.

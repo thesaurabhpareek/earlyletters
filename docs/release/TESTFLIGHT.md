@@ -1,6 +1,6 @@
 # TestFlight: the first build of v1.0 (on this phone only)
 
-Status: 4 Oct 2026. Written for the first internal build, made from `develop`, for the founder and Ishita.
+Status: 4 Oct 2026. Written for the first internal build, made from `develop`, for the founder and one family tester.
 
 **No build has been made and nothing has been uploaded.** That needs the founder's Apple Developer and Expo accounts. Everything that can be checked without them is checked by `npm run preflight:testflight -w @scribe/mobile` (what it checks is below). Anything marked *unverified* is a fact about Apple or Expo that has not been confirmed from a primary source here: check it in App Store Connect or the Expo docs before relying on it.
 
@@ -37,7 +37,7 @@ Other 4 Oct decisions are also still open PRs, so they are **not** in a `develop
 | 1 | Enrol in the Apple Developer Program as an individual and accept agreements | FT-01 | Everything below waits on it. Time to approve: *unverified*. |
 | 2 | Create an Expo account | FT-17 | The cloud builder. |
 | 3 | App Store Connect: create an app record, iOS, bundle id `com.earlyletters.scribe.preview` (register the id first under Certificates, Identifiers & Profiles if it is not offered), a name such as "Early Letters Preview", primary language English (US) | FT-08 | *Unverified*: exact menu names. |
-| 4 | Add Ishita as an App Store Connect user so she can be an **internal** tester | | She needs an Apple ID. Role and limits: *unverified*. |
+| 4 | Add the family tester as an App Store Connect user so they can be an **internal** tester | | They need an Apple ID. Role and limits: *unverified*. |
 | 5 | For Plus in the sandbox: accept the Paid Apps agreement and create the two subscription products **on this .preview record** with ids exactly `plus.annual` and `plus.monthly` | FT-06, FT-09 | Without this the Plan screen cannot load products. Skip it for a first build that does not test purchases. |
 | 6 | Language packs and speech: host, signing key | FT-16 | See "Without this, no words". Skip only if the first build tests typing, the Book and everything except speech. |
 | 7 | `eas init`, then send the project id it prints so it is added to `extra.eas.projectId` in `apps/mobile/app.config.ts` | FT-17 | `app.config.ts` is a dynamic config, so the CLI may not be able to write it (*unverified*). The preflight warns until the id is there. |
@@ -45,7 +45,7 @@ Other 4 Oct decisions are also still open PRs, so they are **not** in a `develop
 
 ### Without this, no words (read before building)
 Speech runs on the phone, but the speech model (about 575 MB) is a downloaded pack. It only installs from a **signed pack manifest**, which needs both:
-1. `EXPO_PUBLIC_DOCS_BASE_URL` in the build: an `https://` origin with no path (`apps/mobile/src/lib/remote/base.logic.ts`). v1.0 never falls back to Supabase. It is a plain-text, non-secret value: put it in the `testflight` profile `env` or in an EAS "preview" environment variable.
+1. `EXPO_PUBLIC_DOCS_BASE_URL` in the build: an `https://` origin with no path (`apps/mobile/src/lib/remote/base.logic.ts`). v1.0 never falls back to Supabase. It is a plain-text, non-secret value, set in every `eas.json` profile to `https://packs.earlyletters.app` (D-097). Until the founder has created that bucket and domain, the fetch fails quietly and the app uses its bundled defaults.
 2. A public signing key in `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`, from `node scripts/packs/keygen.ts`). It is empty today, and the app fails closed.
 
 Missing either one: recordings are kept safely on the phone, but **words are never written down** (Review stays on "Writing down what you said", Book cards say words are waiting) and no language pack downloads. Typed letters are unaffected. The preflight reports both as WARN with this consequence. A TestFlight build without them is useful for typing, the Book, reading and layout, not for the spoken path.
@@ -84,7 +84,7 @@ npx eas-cli@latest submit --platform ios --profile testflight --latest
 Sign in with Apple and Associated Domains (`applinks:earlyletters.com`) entitlements and the Apple sign-in module are in the build but dormant behind the off switch. If App Review asks: sign-in is not offered in v1.0. The `expo-dev-client` local-network permission string is stripped from Release builds by a build phase (present in the generated project; the stripped result is *unverified* until the first build is inspected). These matter for the store submission, not for internal TestFlight.
 
 ## What to check on a real phone (nobody has)
-The team has never run this on a device. Before anyone else gets it, the founder or Ishita checks:
+The team has never run this on a device. Before anyone else gets it, the founder or the family tester checks:
 1. **Recording**: speak for a minute, finish, Review opens. (Needs the speech model, see above.) Finish at once; a very long take.
 2. **Permissions**: the microphone alert shows our wording; deny it, see the calm card, type instead; allow it again from iOS Settings.
 3. **Kill mid-record**: force-quit while recording, reopen: the launch sweep keeps the take and it plays.
