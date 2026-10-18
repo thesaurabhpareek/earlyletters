@@ -76,15 +76,19 @@ export type SweepAction =
   | { kind: 'report'; fileName: string; bytes: number }
   | { kind: 'missing-audio'; ref: 'draft' | 'entry'; id: string };
 
-const AUDIO_EXT = /\.(m4a|mp4|aac|caf|wav|3gp|webm)$/i;
+/** Every file extension the app counts as a recording (`.aac` is ADR 0027's ADTS). e2e/bin/inspect-container.sh lists the same. */
+export const RECORDING_EXTENSIONS = ['m4a', 'mp4', 'aac', 'caf', 'wav', '3gp', 'webm'] as const;
+
+const AUDIO_EXT = new RegExp(`\\.(${RECORDING_EXTENSIONS.join('|')})$`, 'i');
 
 /**
  * The folder expo-audio 57 writes every take to, inside the folder the
  * recorder is given (`directory: 'document'` in recorder.ts, so Documents):
- * - iOS: `<Documents>/ExpoAudio/recording-<UUID>.m4a` (ios/AudioUtils.swift,
+ * - iOS: `<Documents>/ExpoAudio/recording-<UUID><ext>` (ios/AudioUtils.swift,
  *   createRecordingUrl);
- * - Android: `<files>/Audio/recording-<UUID>.m4a` (AudioRecorder.kt,
+ * - Android: `<files>/Audio/recording-<UUID><ext>` (AudioRecorder.kt,
  *   createRecordingFilePath); expo-file-system's Paths.document is `<files>`.
+ * `<ext>` is the container's: `.m4a`, or `.aac` for ADTS (ADR 0027).
  * The app never moves the file, so this folder is where the rows point.
  * Check it again when expo-audio is upgraded.
  */
