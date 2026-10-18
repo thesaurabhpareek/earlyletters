@@ -2,8 +2,8 @@
 title: Mobile app
 owner: reference-docs
 covers: [apps/mobile/src/**, apps/mobile/app.config.ts, apps/mobile/eas.json, apps/mobile/modules/**, apps/mobile/package.json, apps/mobile/.env.development]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: f524ca1
+verified_on: 2026-10-18
 ---
 
 # Mobile app (`apps/mobile`)

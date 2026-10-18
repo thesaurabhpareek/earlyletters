@@ -2,8 +2,8 @@
 title: Data and storage
 owner: reference-docs
 covers: [apps/mobile/src/lib/store.ts, apps/mobile/src/lib/db/**, apps/mobile/src/lib/export/**, apps/mobile/src/lib/capture/**, apps/mobile/src/lib/model-files.ts, apps/mobile/src/lib/packs/app-support.ts, apps/mobile/src/lib/supabase/secure-storage.ts, apps/mobile/src/lib/shelf-days.ts, supabase/migrations/**, .github/migrations-applied.txt]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: f524ca1
+verified_on: 2026-10-18
 ---
 
 # Data and storage

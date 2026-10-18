@@ -2,8 +2,8 @@
 title: Speech and languages
 owner: reference-docs
 covers: [apps/mobile/src/lib/transcribe*.ts, apps/mobile/src/lib/transcription-queue/**, apps/mobile/src/lib/models/**, apps/mobile/src/lib/packs/**, apps/mobile/src/lib/language/**, apps/mobile/modules/scribe-audio/**, packages/core/src/**, packs/**, scripts/packs/**]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: f524ca1
+verified_on: 2026-10-18
 ---
 
 # Speech and languages
@@ -16,7 +16,7 @@ How spoken words become a letter on the phone, how language packs and speech mod
 |---|---|---|
 | Record | AAC-LC, mono, 64 kbps, 48 kHz, into `Documents/ExpoAudio`, as M4A on both platforms today (ADR 0027 moves iOS to ADTS once its checks pass). No voice processing on the original | `apps/mobile/src/lib/capture/recorder.ts`, `lib/capture/recording-file.ts` |
 | Queue | A job per recording; a draft open in Review goes first, then letters waiting for words, oldest first | `lib/transcription-queue/machine.ts` |
-| Open the recording | Checks the length the decoder reports. For an ADTS take, the length may not be more than one frame short of the frames counted in the file; if the last frame was cut off by a kill, the run switches once to a temporary copy of the whole frames. A take whose length still cannot be trusted, or with a break inside the file, is refused as `decode_failed` (Try again, or type) rather than transcribed without its end. M4A runs as before | `lib/transcribe-run.ts` (`openRecordingForRun`, `checkedRunDuration`), `lib/capture/adts.ts`, `lib/capture/adts-file.ts` |
+| Open the recording | Checks the length the decoder reports. For an ADTS take, the length may not be more than one frame short of the frames counted in the file; if the file ends exactly as a kill leaves it (`tail: 'cut'`), the run switches once to a temporary copy of the whole frames. Any other ending (`tail: 'break'`: damage or a trailer) gets no copy: the run goes ahead if the decoder reads the file to its counted frames, and is refused otherwise; more than one frame of bytes after the last whole frame is refused before anything is read. A refused take shows `decode_failed` (Try again, or type) rather than being transcribed without its end. M4A runs as before | `lib/transcribe-run.ts` (`openRecordingForRun`, `checkedRunDuration`), `lib/capture/adts.ts`, `lib/capture/adts-file.ts` |
 | Decode | 5-minute windows decoded to 16 kHz PCM in memory, no file written | `modules/scribe-audio` (`decodePcm16`) |
 | Loudness check | A window whose loudest 30 ms frame is under -60 dBFS skips VAD and Whisper | `lib/transcribe-energy.ts` |
 | Voice activity | Silero VAD inside whisper.rn finds speech; no speech means an empty transcript and Whisper never runs | `lib/transcribe-whisper.ts` |
