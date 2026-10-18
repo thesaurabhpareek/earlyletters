@@ -72,14 +72,18 @@ describe('sync v1 stand-in (request to S02, WP-F16-14)', () => {
     expect(() => patchSyncPush(`${text}\n  v_conflict boolean;\n`)).toThrow(/found 2 times/);
   });
 
-  it('held drafts (WP-F16-17): two branches and the duplicate answer go into the same sync_push, each anchor once', () => {
+  it('held drafts (WP-F16-17): the branches, the Keep compare, the switch and the duplicate answers go into the same sync_push, each anchor once', () => {
     const { file, text } = newestSyncPush();
     if (text.includes("'held.upsert'")) return; // S02's migration carries held drafts: the stand-in is not loaded
     const v1 = text.includes('conflict_groups') ? text : patchSyncPush(text);
     const out = patchSyncPush(v1, SYNC_PUSH_HELD_EDITS);
     for (const e of SYNC_PUSH_HELD_EDITS) expect(out, `${file}: ${e.why}`).toContain(e.becomes.trim());
     expect(out.indexOf("when 'held.upsert'")).toBeLessThan(out.indexOf("raise exception 'unknown op type'"));
-    expect(v1.split('\n').filter((l) => !out.includes(l))).toEqual([]); // nothing of the v1 body is lost
+    // Nothing of the v1 body is lost, except the lines the Keep's compare and provenance edits rewrite (table row C).
+    const rewritten = (l: string) => SYNC_PUSH_HELD_EDITS.some((e) => !e.becomes.includes(e.anchor)
+      && e.anchor.split('\n').some((a) => a.trim() !== '' && l.includes(a.trim())));
+    expect(v1.split('\n').filter((l) => !out.includes(l) && !rewritten(l))).toEqual([]);
+    expect(v1.split('\n').filter((l) => !out.includes(l))).toHaveLength(7);
   });
 
   it('Erase now (WP-F16-13): the entry.erase branch and the pull digest check apply to the newest sync_push and sync_pull, each anchor once', () => {

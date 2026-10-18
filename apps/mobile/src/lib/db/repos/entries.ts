@@ -257,10 +257,12 @@ export function hasNotMuchOn({ db }: RepoContext, childId: string, isoDate: stri
 }
 
 /**
- * The parent typed the words for a recording that never got any (D-086 "Write the words"). Only a letter that
- * is still waiting, with its raw still '': it was held and never uploaded, so the first raw is still free to
- * set. The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with typed
- * words), so it is never called spoken. False when it already has words, was deleted or is missing.
+ * The parent typed the words for a recording that never got any (D-086 "Write the words"). A letter still
+ * waiting, or a spoken letter whose transcription came back with no words (S28, P5 #222), with its raw still
+ * '' and never on the server, so the first raw is still free to set (the server's raw is fixed once a letter
+ * is there). The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with
+ * typed words), so it is never called spoken. False when it already has words, was deleted, is on the
+ * server, or is missing.
  */
 export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): boolean {
   const words = text.trim();
@@ -268,7 +270,10 @@ export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): b
   ctx.db.run(
     `UPDATE entries SET raw_transcript = ?, machine_edits = '[]', final_text = ?, edit_level = 'verbatim', capture_mode = 'mixed',
        transcript_status = NULL, updated_at = ?
-     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
+     WHERE id = ? AND raw_transcript = '' AND deleted_at IS NULL
+       AND (transcript_status = 'waiting'
+            OR (transcript_status IS NULL AND kind = 'letter' AND final_text = '' AND server_version IS NULL
+                AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id AND (o.sent_at IS NOT NULL OR o.attempts > 0))))`,
     words, words, ctx.now(), id,
   );
   return changes(ctx.db) === 1;

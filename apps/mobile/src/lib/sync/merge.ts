@@ -244,6 +244,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     const row = byOp.get(r.op);
     if (!row) continue;
     answered.add(row.op_id);
+    if (r.ok && row.type.startsWith('held.') && (r as { held_off?: boolean }).held_off) {
+      // Held-draft sync is switched off on the server (app.held_sync = 'off'): the op is not claimed there and
+      // stays queued here, unsent, until a pull carries a held section again (the same op id applies then).
+      writeSetting(db, SYNC_SETTING.heldServer, null);
+      continue;
+    }
     if (r.ok) {
       pushed++;
       removeOp(db, row.seq);
@@ -264,7 +270,8 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
         } else {
           // A Keep refused because the held words moved on elsewhere (no letter was made; review K blocking 1):
           // the held words come as current, with typed_text standing in for words a typed draft has as text.
-          const keepRefused = row.type === 'entry.upsert' && !r.entry && !!r.current && (r.conflict_groups ?? []).includes('text');
+          // Client rule c2: applied false with no letter is a refusal, whatever current says.
+          const keepRefused = row.type === 'entry.upsert' && !r.entry && r.applied === false;
           const answer: PushResultOk = keepRefused && r.current
             ? { ...r, current: { ...r.current, final_text: r.current.final_text ?? r.current.typed_text ?? '', machine_edits: r.current.machine_edits ?? [], edit_level: r.current.edit_level ?? 'verbatim' } }
             : r;
@@ -272,10 +279,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
           const s = r.entry ? { ...r.entry, v: stateVersion(db, row, r, r.entry.v) } : r.entry;
           if (s) applyEntryState(db, s, epoch, ctx.now);
           if (r.entry && row.type === 'entry.upsert') db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.entity_id); // kept: no held row now
-          if (keepRefused && answer.current) {
+          if (keepRefused) {
             // As for an entry: this phone's words are a conflict copy, the letter follows the held words, and the
             // Keep goes again naming their version, so the letter exists everywhere while the author chooses.
-            db.run('UPDATE entries SET held_v = ? WHERE id = ?', answer.current.v, row.entity_id);
+            // With no current (let go or erased elsewhere since), the letter keeps this phone's words and the
+            // Keep goes again as it was; the server then answers by what exists (table rows B to E).
+            if (answer.current) db.run('UPDATE entries SET held_v = ? WHERE id = ?', answer.current.v, row.entity_id);
             enqueueEntryUpsert(db, row.entity_id, ALL_GROUPS, ctx);
           }
         }
@@ -543,7 +552,10 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
   db.run(
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
-       raw_transcript = CASE WHEN raw_transcript = '' THEN ? ELSE raw_transcript END,
+       -- The server's provenance stands: after a second Keep of a held draft (table row C) the letter is the first
+       -- keep's, with its raw transcript, engine and capture time; this phone's words are in its conflict copy.
+       raw_transcript = CASE WHEN ? <> '' THEN ? ELSE raw_transcript END,
+       engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at),
        -- A letter that waited here for its words got them on another phone (v8): they wait for this
        -- author's review here too, and count only once kept (M17; the server has no review mark yet).
        transcript_status = CASE WHEN transcript_status = 'waiting' AND ? <> '' THEN '${WORDS_UNREVIEWED}' ELSE transcript_status END,
@@ -554,7 +566,8 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
-    row.raw_transcript ?? '',
+    row.raw_transcript ?? '', row.raw_transcript ?? '',
+    row.engine_version ?? null, row.captured_at ?? null,
     row.raw_transcript ?? '',
     mergedLanguage(local.language, row.language),
     opt(row.occurred_precision), opt(row.base_direction),

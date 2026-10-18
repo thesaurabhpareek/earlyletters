@@ -517,8 +517,9 @@ export function setWordsForWaitingEntry(
 }
 
 /**
- * "Write the words" on a letter still waiting for its words (D-086): the parent's typing becomes the words,
- * once. False when the letter already had words, was deleted or the text is empty.
+ * "Write the words" on a letter still waiting for its words (D-086), or on a spoken letter whose words came
+ * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once. False
+ * when the letter already had words, was deleted, is on the server, or the text is empty.
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();

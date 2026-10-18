@@ -106,6 +106,20 @@ describe('[F14-REQ-037] words seen: a letter counts at the save where its words 
     expect(counts().recorded).toBe(2);
   });
 
+  it('[S28] a spoken letter whose words came back empty takes typed words once, unless the server already has it (P5 #222)', () => {
+    const c = asha();
+    const v = keepVoiceOnly(c);
+    const w = keepVoiceOnly(c);
+    // The transcription finished with no words: no longer waiting, raw and words still empty.
+    raw.run("UPDATE entries SET transcript_status = NULL WHERE id IN (?, ?)", v, w);
+    raw.run("UPDATE entries SET server_version = '100' WHERE id = ?", w); // the server has this one: its raw is fixed there
+    expect(store.setTypedWordsForWaitingEntry(v, 'You hummed the bath song.')).toBe(true);
+    expect(store.getEntry(v)).toMatchObject({ rawTranscript: 'You hummed the bath song.', finalText: 'You hummed the bath song.', captureMode: 'mixed' });
+    expect(store.setTypedWordsForWaitingEntry(v, 'again')).toBe(false); // once
+    expect(store.setTypedWordsForWaitingEntry(w, 'Not this one.')).toBe(false);
+    expect(counts()).toEqual({ recorded: 1, present: 1 });
+  });
+
   it('words the machine wrote later count only when the author keeps them from Review', () => {
     const c = asha();
     const v = keepVoiceOnly(c);

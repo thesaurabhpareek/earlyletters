@@ -11,6 +11,8 @@
  * Phones: Mama's phone, Papa's phone (the co-parent) and Mama's second phone. A
  * words conflict needs two phones of one author (F16 C1: only the author edits a
  * letter's words), so the conflict is between Mama's two phones while Papa reads.
+ * The second describe is the held draft state table of ADR 0025 section 9, one case
+ * per cell, on its own server with two phones of Mama's (P sends, Q is the other).
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { randomBytes } from 'node:crypto';
@@ -936,5 +938,902 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(await serverEntry(ids.restored)).toMatchObject({ final_text: 'Your first word, and it was ball, twice.', deleted_at: null });
     expect(row(mama, ids.restored)).toMatchObject({ final_text: 'Your first word, and it was ball, twice.', deleted_at: null });
     expect(mama.store.listDeleted().map((e) => e.id)).not.toContain(ids.restored);
+  }, 60_000);
+});
+
+// ── The held draft state table (ADR 0025 section 9; S02's half is #208, section 7d) ──
+/**
+ * One case per cell of the table: one held draft id, one author, two of the author's
+ * phones. P sends the cell's op; Q is the author's other phone. Every case starts from
+ * the cell's state on the server, reached through the store as screens reach it, and
+ * checks what the server answers, what both phones end with, and where the words live.
+ * The two client rules every cell assumes: (c1) held_v and held_base move only to a
+ * words version this phone's own words produced; (c2) applied false with no letter is
+ * a refusal, whatever current says.
+ */
+describe('the held draft state table, ADR 0025 section 9: two phones of one author, one case per cell', () => {
+  let P: Phone; // sends the cell's op
+  let Q: Phone; // the author's other phone
+  let BOOK = '';
+
+  interface Answer {
+    [k: string]: unknown;
+    ok?: boolean;
+    held?: { id: string; v: string } | null;
+    current?: { v: string; final_text?: string | null; typed_text?: string | null } | null;
+    entry?: { id: string; v: string } | null;
+    applied_v?: string | null;
+  }
+  interface Seen { type: string; id: string; op: string; sent: Record<string, unknown>; r: Answer }
+
+  beforeEach(async () => {
+    if (server) await server.sys('delete from sync_rate_windows');
+  });
+
+  beforeAll(async () => {
+    server = await startSyncServer({ users: [MAMA], protocol: 'v1' });
+    await server.consent(MAMA);
+    P = await phone('P', MAMA);
+    Q = await phone('Q', MAMA);
+    BOOK = P.store.addChild({ name: 'Asha', birthday: '2025-04-12', dueDate: null, signsAs: 'Mama' }).id;
+    await P.signIn();
+    await Q.signIn();
+    expect(Q.store.getChild(BOOK)).toMatchObject({ name: 'Asha' });
+  }, 120_000);
+
+  /** Every push answer P gets, with the op it answered, as the phone saw it (a lost answer included). */
+  const watch = (inner: SupabaseLike = server.serverFor(MAMA)) => {
+    const seen: Seen[] = [];
+    const s: SupabaseLike = {
+      rpc(fn, args) {
+        return Promise.resolve(inner.rpc(fn, args)).then((res) => {
+          if (fn === 'sync_push' && res.data) {
+            const sent = (args as { p_ops: Record<string, unknown>[] }).p_ops;
+            for (const a of (res.data as { results?: Answer[] }).results ?? []) {
+              const o = sent.find((x) => x.op === a.op);
+              if (o) seen.push({ type: String(o.type), id: String(o.id), op: String(o.op), sent: o, r: a });
+            }
+          }
+          return res;
+        });
+      },
+    };
+    const of = (type: string, id: string) => seen.filter((x) => x.type === type && x.id === id);
+    return { s, answers: (type: string, id: string) => of(type, id).map((x) => x.r), sent: (type: string, id: string) => of(type, id).map((x) => x.sent) };
+  };
+  const pushOnly = (inner: SupabaseLike) => flaky(inner, { failBefore: 1, only: 'sync_pull' }); // the push, then no pull
+  const lost = (inner: SupabaseLike) => flaky(inner, { loseAnswer: 1, only: 'sync_push' }); // applied, the answer lost
+
+  const held = async (id: string) =>
+    (await server.sys('select typed_text, text_xid::text as v, occurred_on::text as occurred_on from held_drafts where id = $1', [id])).rows[0] as
+      | { typed_text: string | null; v: string; occurred_on: string }
+      | undefined;
+  const marker = async (id: string) => (await server.sys('select gone from held_drafts_gone where id = $1', [id])).rows[0]?.gone as string | undefined;
+  const letter = async (id: string) =>
+    (await server.sys(
+      `select final_text, raw_transcript, engine_version, in_book, text_xid::text as v,
+              (extract(epoch from captured_at) * 1000)::bigint::text as captured_ms
+         from entries where id = $1`, [id])).rows[0] as
+      | { final_text: string; raw_transcript: string; engine_version: number; in_book: boolean; v: string; captured_ms: string }
+      | undefined;
+  /** entry_versions holds only words the author replaced by choice: never a Keep's lost words. */
+  const history = async (id: string) =>
+    (await server.sys('select final_text from entry_versions where entry_id = $1', [id])).rows.map((r) => r.final_text);
+  const receipt = async (op: string) => (await server.sys('select 1 from sync_op_receipts where op_id = $1', [op])).rows.length === 1;
+
+  const draft = (p: Phone, id: string) => p.store.listHeldDrafts(BOOK).find((d) => d.id === id);
+  const heldV = (p: Phone, id: string) => p.db.get<{ held_v: string | null }>('SELECT held_v FROM drafts WHERE id = ?', id)?.held_v ?? null;
+  const copies = (p: Phone, id: string) => p.store.listConflicts(id).map((c) => c.words.final_text);
+  const refusedWrites = (p: Phone, id: string) => p.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM rejected_writes WHERE entity_id = ?', id)!.n;
+  const local = (p: Phone, id: string) =>
+    p.db.get<{ final_text: string; raw_transcript: string; engine_version: number; captured_at: string; in_book: number; deleted_at: string | null }>(
+      'SELECT final_text, raw_transcript, engine_version, captured_at, in_book, deleted_at FROM entries WHERE id = ?', id);
+  const queued = (p: Phone, type: string, id: string) => {
+    const r = p.db.get<{ payload: string; op_id: string }>('SELECT payload, op_id FROM sync_outbox WHERE entity_id = ? AND type = ? ORDER BY seq DESC LIMIT 1', id, type);
+    return r ? { opId: r.op_id, op: JSON.parse(r.payload) as Record<string, unknown> } : undefined;
+  };
+
+  const typed = (p: Phone, text: string) => {
+    tick(5_000);
+    return p.store.createDraft({ childId: BOOK, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text }).id;
+  };
+  /** State B at v on both phones: P holds a typed draft and uploads it; Q pulls it. */
+  const shared = async (text: string) => {
+    const id = typed(P, text);
+    expect(P.store.holdDraft(id, { inBookChoice: true })).toBe(true);
+    await P.sync();
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe(text);
+    expect(heldV(P, id)).not.toBeNull();
+    return id;
+  };
+  /** Keep after Plus, as review.tsx does: the held draft becomes the letter with the draft's words. */
+  const keep = (p: Phone, id: string, over: Partial<Parameters<Store['saveLetterFromDraft']>[1]> = {}) => {
+    tick(5_000);
+    const d = draft(p, id)!;
+    p.store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'letter', occurredOn: iso().slice(0, 10), capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
+      promptKey: null, engineVersion: 5, rawTranscript: d.typedText!, machineEdits: [], finalText: d.typedText!, inBook: true,
+      soundsLikeMe: null, childId: BOOK, authorSignsAs: 'Mama', audioUri: null, ...over,
+    });
+  };
+  const letGo = (p: Phone, id: string) => {
+    expect(p.store.beginDiscard(id)).toBe(true);
+    expect(p.store.finishDiscard(id)).toBe(true);
+  };
+  /** A voice-only letter waiting for its words (a waiting_letter row once uploaded). */
+  const voiceOnly = (p: Phone, take: string) => {
+    tick(5_000);
+    const d = p.store.createDraft({ childId: BOOK, captureMode: 'spoken', promptKey: null, audioUri: `file:///asha/${take}.m4a`, audioDurationMs: 3_000 });
+    return p.store.saveVoiceOnlyFromDraft(d, { childId: BOOK, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true }).id;
+  };
+  const eraseNow = (p: Phone, id: string) => {
+    tick();
+    p.store.deleteEntry(id);
+    expect(p.store.eraseEntry(id, () => {})).toBe(true);
+  };
+
+  // ── A. None: no held row, letter or marker for the id ────────────────────
+  it('[table A, held.upsert] the first upload makes the row at v; this phone takes v; the other phone gets the draft', async () => {
+    const w = watch();
+    const id = typed(P, 'You found the blue cup.');
+    expect(P.store.holdDraft(id, { inBookChoice: true })).toBe(true);
+    await P.sync(w.s);
+    const [a] = w.answers('held.upsert', id);
+    expect(a).toMatchObject({ ok: true, held: { id } });
+    expect(a.conflict_groups).toBeUndefined();
+    expect(heldV(P, id)).toBe(a.held!.v);
+    expect(await receipt(String(w.sent('held.upsert', id)[0].op))).toBe(true);
+    expect((await held(id))?.typed_text).toBe('You found the blue cup.');
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe('You found the blue cup.');
+  }, 60_000);
+
+  it('[table A, held.discard] a let-go that reaches the server before its upload: missing, nothing changes, the words live nowhere', async () => {
+    const w = watch();
+    const id = typed(P, 'You waved at the bus.');
+    expect(P.store.holdDraft(id, { inBookChoice: true })).toBe(true);
+    await P.sync(flaky(w.s, { failBefore: 1, only: 'sync_push' })); // the upload left but never arrived
+    tick(10 * 60_000);
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    letGo(P, id);
+    expect(outbox(P)).toEqual(['held.upsert', 'held.discard']); // the upload may have arrived: the let-go follows it
+    expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the upload waits; the let-go still goes
+    expect(w.answers('held.discard', id)).toEqual([expect.objectContaining({ ok: true, missing: true })]);
+    expect(outbox(P)).toEqual([]); // the server took the let-go: the upload queued before it never goes
+    await server.sensitiveConsent(MAMA, 'accept');
+    await P.sync(w.s);
+    expect(w.answers('held.upsert', id).filter((r) => r.ok)).toEqual([]);
+    expect(await held(id)).toBeUndefined();
+    expect(await marker(id)).toBeUndefined();
+    await Q.sync();
+    expect(draft(Q, id)).toBeUndefined();
+  }, 60_000);
+
+  it('[table A, Keep] a Keep of a draft the server never had makes the letter from this phone\'s words', async () => {
+    const w = watch();
+    const id = typed(P, 'You put your boots on the wrong feet.');
+    expect(P.store.holdDraft(id, { inBookChoice: true })).toBe(true); // held, not uploaded yet
+    keep(P, id);
+    expect(outbox(P)).toEqual(['entry.upsert']); // the unsent upload went with the draft
+    expect(queued(P, 'entry.upsert', id)?.op.held_base).toBe('0');
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id)).toEqual([expect.objectContaining({ ok: true, applied: true, entry: expect.objectContaining({ id }) })]);
+    expect((await letter(id))?.final_text).toBe('You put your boots on the wrong feet.');
+    expect(await held(id)).toBeUndefined();
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You put your boots on the wrong feet.');
+  }, 60_000);
+
+  it('[table A, entry.erase] Erase now on a waiting letter the server never had: missing, erased here, nothing anywhere', async () => {
+    const w = watch();
+    const e = voiceOnly(P, 'take-a4');
+    expect(outbox(P)).toEqual(['held.upsert']);
+    eraseNow(P, e);
+    expect(outbox(P)).toEqual(['entry.erase']); // a waiting letter always sends its erase
+    await P.sync(w.s);
+    expect(w.answers('entry.erase', e)).toEqual([expect.objectContaining({ ok: true, missing: true })]);
+    expect(local(P, e)).toBeNull();
+    expect(await held(e)).toBeUndefined();
+    await Q.sync();
+    expect(local(Q, e)).toBeNull();
+  }, 60_000);
+
+  // ── B. Held at v ─────────────────────────────────────────────────────────
+  it('[table B, held.upsert with text, base known] the words are written at v\'; this phone takes v\'; the other phone gets them', async () => {
+    const id = await shared('You laughed at the kettle.');
+    const v = heldV(P, id)!;
+    P.store.setDraftTyped(id, 'You laughed at the kettle when it sang.');
+    expect(queued(P, 'held.upsert', id)?.op).toMatchObject({ base: v, changed: expect.arrayContaining(['text']) });
+    const w = watch();
+    await P.sync(pushOnly(w.s));
+    const [a] = w.answers('held.upsert', id);
+    expect(a.conflict_groups).toBeUndefined();
+    expect(BigInt(a.held!.v)).toBeGreaterThan(BigInt(v));
+    expect(heldV(P, id)).toBe(a.held!.v);
+    expect((await held(id))?.typed_text).toBe('You laughed at the kettle when it sang.');
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe('You laughed at the kettle when it sang.');
+    expect([copies(P, id), copies(Q, id)]).toEqual([[], []]);
+  }, 60_000);
+
+  it('[table B, held.upsert with text, base stale, words differ] text refused, other fields applied; this phone keeps its words as a copy and takes the server\'s words at current.v (c1)', async () => {
+    const id = await shared('You hid behind the curtain.');
+    Q.store.setDraftTyped(id, 'You hid behind the curtain and giggled.');
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You hid, and we all pretended not to see.'); // offline: its base is stale now
+    expect(P.store.setDraftOccurred(id, '2026-10-02', 'day')).toBe(true);
+    const w = watch();
+    expect((await P.sync(pushOnly(w.s))).conflicts).toBe(1);
+    const [a] = w.answers('held.upsert', id);
+    expect(a).toMatchObject({ conflict_groups: ['text'], current: { typed_text: 'You hid behind the curtain and giggled.' } });
+    expect(await held(id)).toMatchObject({ typed_text: 'You hid behind the curtain and giggled.', occurred_on: '2026-10-02', v: a.current!.v });
+    expect(heldV(P, id)).toBe(a.current!.v); // c1: the version of the words this phone took, never the refused answer's held.v
+    expect(draft(P, id)?.typedText).toBe('You hid behind the curtain and giggled.');
+    expect(copies(P, id)).toEqual(['You hid, and we all pretended not to see.']);
+    await Q.sync();
+    expect(draft(Q, id)).toMatchObject({ typedText: 'You hid behind the curtain and giggled.', occurredOn: '2026-10-02' });
+    expect(copies(Q, id)).toEqual([]);
+  }, 60_000);
+
+  it('[table B, held.upsert with text, base stale, the same words] nothing to refuse: applied at v\'', async () => {
+    const id = await shared('You found a feather.');
+    Q.store.setDraftTyped(id, 'You found a feather on the step.');
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You found a feather on the step.'); // the same words, offline
+    const w = watch();
+    expect((await P.sync(pushOnly(w.s))).conflicts).toBe(0);
+    const [a] = w.answers('held.upsert', id);
+    expect(a.conflict_groups).toBeUndefined();
+    expect(heldV(P, id)).toBe(a.held!.v);
+    expect(copies(P, id)).toEqual([]);
+    await P.sync();
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe('You found a feather on the step.');
+  }, 60_000);
+
+  it('[table B, held.upsert without text] a date change applies, the words version stays v, and held_v does not move (c1)', async () => {
+    const id = await shared('Your first puddle.');
+    const v = heldV(P, id);
+    Q.store.setDraftTyped(id, 'Your first puddle, and both feet in it.');
+    await Q.sync();
+    expect(P.store.setDraftOccurred(id, '2026-10-03', 'day')).toBe(true); // before pulling the new words
+    expect(queued(P, 'held.upsert', id)?.op.changed).not.toContain('text');
+    const w = watch();
+    expect((await P.sync(pushOnly(w.s))).conflicts).toBe(0);
+    const [a] = w.answers('held.upsert', id);
+    expect(a.conflict_groups).toBeUndefined();
+    expect(a.held!.v).not.toBe(v);
+    expect(heldV(P, id)).toBe(v); // an op without text never moves held_v: another phone's words may be newer
+    expect(await held(id)).toMatchObject({ typed_text: 'Your first puddle, and both feet in it.', occurred_on: '2026-10-03' });
+    await P.sync();
+    expect(draft(P, id)?.typedText).toBe('Your first puddle, and both feet in it.');
+    await Q.sync();
+    expect(draft(Q, id)?.occurredOn).toBe('2026-10-03');
+    expect([copies(P, id), copies(Q, id)]).toEqual([[], []]);
+  }, 60_000);
+
+  it('[table B, held.discard, base known] the row goes, marker discarded; the other phone lets its copy go at its next pull', async () => {
+    const id = await shared('You chased the pigeons.');
+    const v = heldV(P, id);
+    letGo(P, id);
+    expect(queued(P, 'held.discard', id)?.op.base).toBe(v);
+    const w = watch();
+    await P.sync(w.s);
+    const [a] = w.answers('held.discard', id);
+    expect(a.ok).toBe(true);
+    expect([a.kept, a.missing]).toEqual([undefined, undefined]);
+    expect(await held(id)).toBeUndefined();
+    expect(await marker(id)).toBe('discarded');
+    await Q.sync();
+    expect(draft(Q, id)).toBeUndefined();
+    expect(outbox(Q)).toEqual([]);
+  }, 60_000);
+
+  it('[table B, held.discard, base stale] the row stays (kept); the draft comes back to this phone with the newer words', async () => {
+    const id = await shared('You sang to the moon again.');
+    expect(P.store.beginDiscard(id)).toBe(true); // offline: the let-go waits
+    Q.store.setDraftTyped(id, 'You sang to the moon, and it stayed up.');
+    await Q.sync();
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.discard', id)).toEqual([expect.objectContaining({ ok: true, kept: true })]);
+    expect((await held(id))?.typed_text).toBe('You sang to the moon, and it stayed up.');
+    await P.sync();
+    expect(draft(P, id)?.typedText).toBe('You sang to the moon, and it stayed up.');
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe('You sang to the moon, and it stayed up.');
+  }, 60_000);
+
+  it('[table B, Keep, held_base known or the same words] the letter is made from this phone\'s words, marker kept; the other phone adopts it and keeps its own changed words as a copy', async () => {
+    const id = await shared('You read the book upside down.');
+    const v = heldV(P, id);
+    Q.store.setDraftTyped(id, 'You read the book upside down, to the cat.'); // offline on Q
+    keep(P, id);
+    expect(queued(P, 'entry.upsert', id)?.op.held_base).toBe(v);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id)).toEqual([expect.objectContaining({ applied: true, entry: expect.objectContaining({ id }) })]);
+    expect(await held(id)).toBeUndefined();
+    expect(await marker(id)).toBe('kept');
+    expect((await letter(id))?.final_text).toBe('You read the book upside down.');
+    await Q.sync();
+    expect(draft(Q, id)).toBeUndefined();
+    expect(local(Q, id)?.final_text).toBe('You read the book upside down.');
+    expect(copies(Q, id)).toEqual(['You read the book upside down, to the cat.']);
+    expect(await history(id)).toEqual([]);
+
+    // A stale held_base with the words the server holds: nothing to refuse, the letter is made.
+    const id2 = await shared('You made a hat from a bowl.');
+    const v2 = heldV(P, id2);
+    Q.store.setDraftTyped(id2, 'You made a hat from a bowl, and wore it.');
+    await Q.sync();
+    P.store.setDraftTyped(id2, 'You made a hat from a bowl, and wore it.'); // offline, the same words
+    keep(P, id2);
+    expect(queued(P, 'entry.upsert', id2)?.op.held_base).toBe(v2);
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id2)).toEqual([expect.objectContaining({ applied: true, entry: expect.objectContaining({ id: id2 }) })]);
+    expect(copies(P, id2)).toEqual([]);
+    await Q.sync();
+    expect(local(Q, id2)?.final_text).toBe('You made a hat from a bowl, and wore it.');
+    expect(copies(Q, id2)).toEqual([]);
+  }, 60_000);
+
+  it('[table B, Keep, held_base stale, words differ] refused, no letter (c2): this phone keeps its words as a copy, the letter takes the held words, and the Keep goes again with held_base = current.v', async () => {
+    const id = await shared('You built a tower of blocks.');
+    Q.store.setDraftTyped(id, 'You built a tower of blocks, then a bridge.');
+    await Q.sync();
+    keep(P, id); // P never pulled the newer words
+    const w = watch();
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    const [first, again] = w.answers('entry.upsert', id);
+    expect(first).toMatchObject({ ok: true, applied: false, conflict: true, conflict_groups: ['text'], current: { typed_text: 'You built a tower of blocks, then a bridge.' } });
+    expect(first.entry ?? null).toBeNull();
+    expect(w.sent('entry.upsert', id)[1].held_base).toBe(first.current!.v);
+    expect(again).toMatchObject({ ok: true, applied: true, entry: { id } });
+    expect((await letter(id))?.final_text).toBe('You built a tower of blocks, then a bridge.');
+    expect(await held(id)).toBeUndefined();
+    expect(local(P, id)?.final_text).toBe('You built a tower of blocks, then a bridge.');
+    expect(copies(P, id)).toEqual(['You built a tower of blocks.']);
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You built a tower of blocks, then a bridge.');
+    expect(draft(Q, id)).toBeUndefined();
+    expect(await history(id)).toEqual([]);
+  }, 60_000);
+
+  it('[table B, Keep with no held_base key] compared as held_base 0: the same refusal, and no words are left only in entry_versions', async () => {
+    const id = await shared('You counted the ducks.');
+    Q.store.setDraftTyped(id, 'You counted the ducks, all seven.');
+    await Q.sync();
+    keep(P, id);
+    const q = P.db.get<{ seq: number; payload: string }>("SELECT seq, payload FROM sync_outbox WHERE entity_id = ? AND type = 'entry.upsert'", id)!;
+    const op = JSON.parse(q.payload) as Record<string, unknown>;
+    delete op.held_base; // as no shipped client sends it
+    P.db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(op), q.seq);
+    const w = watch();
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    const [first, again] = w.answers('entry.upsert', id);
+    expect(first).toMatchObject({ applied: false, conflict_groups: ['text'], current: { typed_text: 'You counted the ducks, all seven.' } });
+    expect(first.entry ?? null).toBeNull();
+    expect(again).toMatchObject({ applied: true, entry: { id } });
+    expect((await letter(id))?.final_text).toBe('You counted the ducks, all seven.');
+    expect(copies(P, id)).toEqual(['You counted the ducks.']);
+    expect(await history(id)).toEqual([]);
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You counted the ducks, all seven.');
+  }, 60_000);
+
+  it('[table B, entry.erase] Erase now on a waiting letter: the row goes, marker erased; the other phone erases its copy, whatever it has queued', async () => {
+    const e = voiceOnly(P, 'take-b10');
+    await P.sync();
+    await Q.sync();
+    expect(Q.store.listWaitingForWords(BOOK).map((x) => x.id)).toContain(e);
+    expect(Q.store.setTypedWordsForWaitingEntry(e, 'You clapped for the bath.')).toBe(true); // offline on Q
+    eraseNow(P, e);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.erase', e)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
+    expect(await held(e)).toBeUndefined();
+    expect(await marker(e)).toBe('erased');
+    await Q.sync();
+    expect(local(Q, e)).toBeNull();
+    expect(Q.store.listDeleted().map((x) => x.id)).not.toContain(e);
+    expect(refusedWrites(Q, e)).toBe(0);
+    expect(outbox(Q)).toEqual([]);
+    expect(await letter(e)).toBeUndefined();
+  }, 60_000);
+
+  // ── C. Kept as a letter at v (another phone kept it first) ───────────────
+  it('[table C, held.upsert] the letter is the row now (held: null): the draft adopts the letter, and changed words become a copy (none when they match)', async () => {
+    const id = await shared('You fed the ducks.');
+    P.store.setDraftTyped(id, 'You fed the ducks and one followed you.'); // offline on P
+    keep(Q, id);
+    await Q.sync();
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.upsert', id)).toEqual([expect.objectContaining({ ok: true, held: null })]);
+    expect(draft(P, id)).toBeUndefined();
+    expect(local(P, id)?.final_text).toBe('You fed the ducks.');
+    expect(copies(P, id)).toEqual(['You fed the ducks and one followed you.']);
+    expect((await letter(id))?.final_text).toBe('You fed the ducks.');
+
+    const id2 = await shared('You wore the red hat.');
+    expect(P.store.setDraftOccurred(id2, '2026-10-04', 'day')).toBe(true); // no words changed
+    keep(Q, id2);
+    await Q.sync();
+    await P.sync(w.s);
+    expect(w.answers('held.upsert', id2)).toEqual([expect.objectContaining({ ok: true, held: null })]);
+    expect(local(P, id2)?.final_text).toBe('You wore the red hat.');
+    expect(copies(P, id2)).toEqual([]);
+    await Q.sync();
+    expect([local(Q, id)?.final_text, copies(Q, id)]).toEqual(['You fed the ducks.', []]);
+  }, 60_000);
+
+  it('[table C, held.discard] missing: the letter stays (a Keep beats a let-go), and comes to this phone at its next pull', async () => {
+    const id = await shared('You hugged the tree.');
+    letGo(P, id); // offline on P
+    keep(Q, id);
+    await Q.sync();
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.discard', id)).toEqual([expect.objectContaining({ ok: true, missing: true })]);
+    expect((await letter(id))?.final_text).toBe('You hugged the tree.');
+    await P.sync();
+    expect(local(P, id)).toMatchObject({ final_text: 'You hugged the tree.', deleted_at: null });
+    expect(draft(P, id)).toBeUndefined();
+  }, 60_000);
+
+  it('[table C, Keep] a second Keep is a compare and set against the letter: text refused, other groups by later arrival, the first keep\'s provenance stands (never SCIMM); this phone takes it from its pull row', async () => {
+    const id = await shared('You drew a sun.');
+    Q.store.setDraftTyped(id, 'You drew a sun with a face.');
+    keep(Q, id);
+    await Q.sync();
+    const first = (await letter(id))!;
+    const v = heldV(P, id);
+    P.store.setDraftTyped(id, 'You drew a sun, and gave it to me.'); // offline: this phone's own words
+    tick(5_000);
+    keep(P, id, { inBook: false, engineVersion: 6, capturedAt: iso() }); // a typed Keep: its raw transcript is its own words
+    expect(queued(P, 'entry.upsert', id)?.op.held_base).toBe(v);
+    const w = watch();
+    const r = await P.sync(w.s);
+    expect(r).toMatchObject({ conflicts: 1, rejected: 0 });
+    const [a] = w.answers('entry.upsert', id);
+    expect(a).toMatchObject({ ok: true, applied: true, conflict: true, conflict_groups: ['text'], current: { final_text: 'You drew a sun with a face.' }, entry: { id } });
+    expect(await letter(id)).toMatchObject({
+      final_text: 'You drew a sun with a face.', raw_transcript: 'You drew a sun with a face.', engine_version: 5,
+      captured_ms: first.captured_ms, in_book: false,
+    });
+    expect(copies(P, id)).toEqual(['You drew a sun, and gave it to me.']);
+    expect(local(P, id)).toMatchObject({ final_text: 'You drew a sun with a face.', raw_transcript: 'You drew a sun with a face.', engine_version: 5, in_book: 0 });
+    expect(String(Date.parse(local(P, id)!.captured_at))).toBe(first.captured_ms);
+    await Q.sync();
+    expect(local(Q, id)).toMatchObject({ final_text: 'You drew a sun with a face.', in_book: 0 });
+    expect(copies(Q, id)).toEqual([]);
+    // This phone's refused words live in its copy, never only in the letter's history (which keeps the author's
+    // own earlier choices: the edit on Q before its Keep, and the state before the in-book change).
+    expect(await history(id)).not.toContain('You drew a sun, and gave it to me.');
+  }, 60_000);
+
+  it('[table C, Keep sent again on the letter version] a Keep refused by the held row, its answer lost, the letter then made elsewhere: the repeat names the letter as current, and the Keep sent again applies with the same words', async () => {
+    const id = await shared('You splashed in the sink.');
+    Q.store.setDraftTyped(id, 'You splashed in the sink and then in me.');
+    await Q.sync();
+    keep(P, id); // stale
+    const w = watch();
+    await P.sync(lost(w.s)); // refused by the held row; the answer is lost
+    expect(w.answers('entry.upsert', id)[0]).toMatchObject({ applied: false, conflict_groups: ['text'] });
+    keep(Q, id);
+    await Q.sync();
+    const made = (await letter(id))!;
+    tick(2_000);
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    const [, repeat, again] = w.answers('entry.upsert', id);
+    expect(repeat).toMatchObject({ dup: true, applied: false, conflict_groups: ['text'], current: { final_text: 'You splashed in the sink and then in me.', v: made.v } });
+    expect(repeat.entry ?? null).toBeNull();
+    expect(w.sent('entry.upsert', id)[2].held_base).toBe(made.v);
+    expect(again).toMatchObject({ ok: true, applied: true, entry: { id } });
+    expect(again.conflict_groups).toBeUndefined();
+    expect(await letter(id)).toMatchObject({ final_text: 'You splashed in the sink and then in me.', v: made.v });
+    expect(local(P, id)?.final_text).toBe('You splashed in the sink and then in me.');
+    expect(copies(P, id)).toEqual(['You splashed in the sink.']);
+    await Q.sync();
+    expect([local(Q, id)?.final_text, copies(Q, id)]).toEqual(['You splashed in the sink and then in me.', []]);
+  }, 60_000);
+
+  it('[table C, entry.erase] Erase now on the kept letter: purged, marker erased; the other phone erases it at its next pull', async () => {
+    const id = await shared('You kissed the window.');
+    keep(Q, id);
+    await Q.sync();
+    await P.sync();
+    expect(local(P, id)?.final_text).toBe('You kissed the window.');
+    eraseNow(P, id);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.erase', id)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
+    expect(await letter(id)).toBeUndefined();
+    expect(await marker(id)).toBe('erased');
+    await Q.sync();
+    expect(local(Q, id)).toBeNull();
+    expect(Q.store.listDeleted().map((x) => x.id)).not.toContain(id);
+  }, 60_000);
+
+  // ── D. Discarded: marker discarded, no row, no letter ─────────────────────
+  it('[table D, held.upsert] an edit after a let-go elsewhere makes the row again (marker cleared); the draft comes back to the other phone', async () => {
+    const id = await shared('You counted the stairs.');
+    P.store.setDraftTyped(id, 'You counted the stairs, all eleven.'); // offline on P
+    letGo(Q, id);
+    await Q.sync();
+    expect(await marker(id)).toBe('discarded');
+    const w = watch();
+    await P.sync(w.s);
+    const [a] = w.answers('held.upsert', id);
+    expect(a).toMatchObject({ ok: true, held: { id } });
+    expect(a.conflict_groups).toBeUndefined();
+    expect(heldV(P, id)).toBe(a.held!.v);
+    expect((await held(id))?.typed_text).toBe('You counted the stairs, all eleven.');
+    expect(await marker(id)).toBeUndefined();
+    await Q.sync();
+    expect(draft(Q, id)?.typedText).toBe('You counted the stairs, all eleven.');
+  }, 60_000);
+
+  it('[table D, held.discard] missing: let go on both phones', async () => {
+    const id = await shared('You named the snail.');
+    letGo(Q, id);
+    await Q.sync();
+    letGo(P, id); // before P pulls
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.discard', id)).toEqual([expect.objectContaining({ ok: true, missing: true })]);
+    expect(outbox(P)).toEqual([]);
+    expect(await held(id)).toBeUndefined();
+    expect(await marker(id)).toBe('discarded');
+    await Q.sync();
+    expect([draft(P, id), draft(Q, id)]).toEqual([undefined, undefined]);
+  }, 60_000);
+
+  it('[table D, Keep] the letter is made from this phone\'s words (no held row to compare); it reaches the other phone (a Keep beats a let-go)', async () => {
+    const id = await shared('You found the moon in the puddle.');
+    letGo(Q, id);
+    await Q.sync();
+    keep(P, id);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id)).toEqual([expect.objectContaining({ ok: true, applied: true, entry: expect.objectContaining({ id }) })]);
+    expect((await letter(id))?.final_text).toBe('You found the moon in the puddle.');
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You found the moon in the puddle.');
+  }, 60_000);
+
+  it('[table D, entry.erase] Erase now on a waiting letter let go elsewhere: the marker becomes erased; the other phone\'s Recently deleted copy is erased', async () => {
+    const e = voiceOnly(P, 'take-d4');
+    await P.sync();
+    await Q.sync();
+    tick();
+    Q.store.deleteEntry(e);
+    await Q.sync(); // its held row is let go
+    expect(await marker(e)).toBe('discarded');
+    await P.sync();
+    expect(P.store.listDeleted().map((x) => x.id)).toContain(e);
+    expect(P.store.eraseEntry(e, () => {})).toBe(true);
+    expect(outbox(P)).toEqual(['entry.erase']);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.erase', e)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
+    expect(await marker(e)).toBe('erased');
+    expect(local(P, e)).toBeNull();
+    await Q.sync();
+    expect(local(Q, e)).toBeNull();
+    expect(Q.store.listDeleted().map((x) => x.id)).not.toContain(e);
+  }, 60_000);
+
+  // ── E. Erased: marker erased, this author's erasure recorded ────────────
+  /** State E: kept on Q, then erased there with Erase now; P still holds the draft, unpulled. */
+  const erasedOnQ = async (text: string) => {
+    const id = await shared(text);
+    keep(Q, id);
+    await Q.sync();
+    eraseNow(Q, id);
+    await Q.sync();
+    expect(await marker(id)).toBe('erased');
+    return id;
+  };
+
+  it('[table E, held.upsert] SCDEL purged, gone: this phone erases its copy, never restorable', async () => {
+    const id = await erasedOnQ('You tasted the lemon.');
+    P.store.setDraftTyped(id, 'You tasted the lemon and made a face.');
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.upsert', id)).toEqual([expect.objectContaining({ ok: false, code: 'SCDEL', gone: true })]);
+    expect(draft(P, id)).toBeUndefined();
+    expect(local(P, id)).toBeNull();
+    expect([copies(P, id), refusedWrites(P, id), outbox(P)]).toEqual([[], 0, []]);
+    expect(await held(id)).toBeUndefined();
+    await Q.sync();
+    expect(local(Q, id)).toBeNull();
+  }, 60_000);
+
+  it('[table E, held.discard] missing: gone on this phone, erased on the other', async () => {
+    const id = await erasedOnQ('You hummed in the car.');
+    letGo(P, id);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('held.discard', id)).toEqual([expect.objectContaining({ ok: true, missing: true })]);
+    expect([draft(P, id), local(P, id), outbox(P)]).toEqual([undefined, null, []]);
+    expect(await held(id)).toBeUndefined();
+    expect(await letter(id)).toBeUndefined();
+  }, 60_000);
+
+  it('[table E, Keep] SCDEL purged, gone: this phone erases its letter (the marker arrives in the same sync), nothing goes up again', async () => {
+    const id = await erasedOnQ('You pointed at the plane.');
+    keep(P, id);
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id)).toEqual([expect.objectContaining({ ok: false, code: 'SCDEL', gone: true })]);
+    expect(await letter(id)).toBeUndefined();
+    expect(local(P, id)).toBeNull();
+    expect(P.store.listDeleted().map((x) => x.id)).not.toContain(id);
+    expect([refusedWrites(P, id), outbox(P)]).toEqual([0, []]);
+    await Q.sync();
+    expect(local(Q, id)).toBeNull();
+  }, 60_000);
+
+  it('[table E, entry.erase] erased: erased on both phones', async () => {
+    const id = await shared('You blew on the soup.');
+    keep(Q, id);
+    await Q.sync();
+    await P.sync(); // P has the letter
+    eraseNow(Q, id);
+    await Q.sync();
+    eraseNow(P, id); // before P pulls
+    const w = watch();
+    await P.sync(w.s);
+    expect(w.answers('entry.erase', id)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
+    expect(local(P, id)).toBeNull();
+    await Q.sync();
+    expect(local(Q, id)).toBeNull();
+  }, 60_000);
+
+  // ── Repeats after a lost answer (the op committed; the receipt answers) ──
+  it('[table repeat, held.upsert applied] dup with applied_v: the upload queued behind it is based on applied_v only (c1), never on the row as it is now', async () => {
+    const id = await shared('You stacked the cups.');
+    const w = watch();
+    P.store.setDraftTyped(id, 'You stacked the cups, red on top.');
+    await P.sync(lost(w.s));
+    const first = w.answers('held.upsert', id)[0];
+    P.store.setDraftTyped(id, 'You stacked the cups, red on top, then blue.'); // offline: queued behind the first
+    await Q.sync();
+    Q.store.setDraftTyped(id, 'You stacked the cups and knocked them over.');
+    await Q.sync();
+    tick(2_000);
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    const [, repeat, second] = w.answers('held.upsert', id);
+    expect(repeat).toMatchObject({ dup: true, applied_v: first.held!.v });
+    expect(w.sent('held.upsert', id)[2].base).toBe(first.held!.v);
+    expect(second).toMatchObject({ conflict_groups: ['text'], current: { typed_text: 'You stacked the cups and knocked them over.' } });
+    expect(draft(P, id)?.typedText).toBe('You stacked the cups and knocked them over.');
+    expect(copies(P, id)).toEqual(['You stacked the cups, red on top, then blue.']);
+  }, 60_000);
+
+  it('[table repeat, held.upsert refused] dup with current recomputed: from the letter once kept elsewhere; null once let go elsewhere (a copy until the pull lets it go)', async () => {
+    const id = await shared('You wore two socks on one foot.');
+    Q.store.setDraftTyped(id, 'You wore two socks on one foot, proudly.');
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You wore both socks on one foot.');
+    const w = watch();
+    await P.sync(lost(w.s)); // refused; the answer is lost
+    expect(w.answers('held.upsert', id)[0]).toMatchObject({ conflict_groups: ['text'] });
+    keep(Q, id);
+    await Q.sync();
+    tick(2_000);
+    await P.sync(w.s);
+    expect(w.answers('held.upsert', id)[1]).toMatchObject({ dup: true, conflict_groups: ['text'], held: null, current: { final_text: 'You wore two socks on one foot, proudly.' } });
+    expect(draft(P, id)).toBeUndefined();
+    expect(local(P, id)?.final_text).toBe('You wore two socks on one foot, proudly.');
+    expect(copies(P, id)).toEqual(['You wore both socks on one foot.']);
+
+    const id2 = await shared('You talked to the fridge.');
+    Q.store.setDraftTyped(id2, 'You talked to the fridge, and it hummed back.');
+    await Q.sync();
+    P.store.setDraftTyped(id2, 'You told the fridge a story.');
+    await P.sync(lost(w.s));
+    letGo(Q, id2); // the author lets it go on the other phone
+    await Q.sync();
+    tick(2_000);
+    await P.sync(pushOnly(w.s));
+    const repeat = w.answers('held.upsert', id2)[1];
+    expect(repeat).toMatchObject({ dup: true, conflict_groups: ['text'], held: null });
+    expect(repeat.current ?? null).toBeNull();
+    expect(copies(P, id2)).toEqual(['You told the fridge a story.']); // kept until the pull says what happened
+    await P.sync();
+    expect(draft(P, id2)).toBeUndefined(); // let go elsewhere (row B, held.discard): it goes, with this phone's copy
+    expect(copies(P, id2)).toEqual([]);
+  }, 60_000);
+
+  it('[table repeat, held.discard] dup with the same answer: {} stays let go, kept brings the draft back, missing stays missing', async () => {
+    const w = watch();
+    const id = await shared('You played peekaboo with the towel.');
+    letGo(P, id);
+    await P.sync(lost(w.s));
+    tick(2_000);
+    await P.sync(w.s);
+    const [d1, d2] = w.answers('held.discard', id);
+    expect([d1.kept, d1.missing, d2.dup, d2.kept, d2.missing ?? false]).toEqual([undefined, undefined, true, undefined, false]);
+    expect(await held(id)).toBeUndefined();
+    await Q.sync();
+    expect(draft(Q, id)).toBeUndefined();
+
+    const id2 = await shared('You sang in the bath again.');
+    expect(P.store.beginDiscard(id2)).toBe(true); // offline: the let-go waits
+    Q.store.setDraftTyped(id2, 'You sang in the bath again, with the duck.');
+    await Q.sync();
+    await P.sync(lost(w.s)); // kept, the answer lost
+    await P.sync(); // the let-go waits out its backoff
+    tick(2_000);
+    await P.sync(w.s);
+    await P.sync();
+    expect(w.answers('held.discard', id2)[1]).toMatchObject({ dup: true, kept: true });
+    expect(draft(P, id2)?.typedText).toBe('You sang in the bath again, with the duck.');
+
+    const id3 = await shared('You patted the dog.');
+    letGo(Q, id3);
+    await Q.sync();
+    letGo(P, id3);
+    await P.sync(lost(w.s));
+    tick(2_000);
+    await P.sync(w.s);
+    const [m1, m2] = w.answers('held.discard', id3);
+    expect(m1).toMatchObject({ missing: true });
+    expect(m2).toMatchObject({ dup: true, missing: true });
+    expect(outbox(P)).toEqual([]);
+  }, 60_000);
+
+  it('[table repeat, Keep applied] dup with entry and applied_v: an edit queued behind the Keep is based on applied_v only', async () => {
+    const id = await shared('You found a button.');
+    keep(P, id);
+    const w = watch();
+    await P.sync(lost(w.s)); // the letter is made; the answer lost
+    const [first] = w.answers('entry.upsert', id);
+    expect(first).toMatchObject({ applied: true, entry: { id } });
+    editWords(P, id, 'You found a button and gave it to me.'); // offline: queued behind the Keep
+    await Q.sync();
+    editWords(Q, id, 'You found a button under the sofa.');
+    await Q.sync();
+    tick(2_000);
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    const [, repeat, edit] = w.answers('entry.upsert', id);
+    expect(repeat).toMatchObject({ dup: true, entry: { id }, applied_v: first.entry!.v });
+    expect(w.sent('entry.upsert', id)[2].base).toBe(first.entry!.v);
+    expect(edit).toMatchObject({ conflict_groups: ['text'], current: { final_text: 'You found a button under the sofa.' } });
+    expect(local(P, id)?.final_text).toBe('You found a button under the sofa.');
+    expect(copies(P, id)).toEqual(['You found a button and gave it to me.']);
+  }, 60_000);
+
+  it('[table repeat, Keep refused by the held row] dup, applied false, no letter, current recomputed: let go elsewhere, so current is null and the Keep sent again makes the letter (row D)', async () => {
+    const id = await shared('You drew on the steamy window.');
+    const v = heldV(P, id);
+    Q.store.setDraftTyped(id, 'You drew a face on the steamy window.');
+    await Q.sync();
+    keep(P, id); // stale
+    const w = watch();
+    await P.sync(lost(w.s)); // refused by the held row; the answer is lost
+    expect(w.answers('entry.upsert', id)[0]).toMatchObject({ applied: false, conflict_groups: ['text'] });
+    letGo(Q, id);
+    await Q.sync();
+    tick(2_000);
+    await P.sync(w.s);
+    const [, repeat, again] = w.answers('entry.upsert', id);
+    expect(repeat).toMatchObject({ dup: true, applied: false, conflict_groups: ['text'] });
+    expect([repeat.entry ?? null, repeat.current ?? null]).toEqual([null, null]);
+    expect(w.sent('entry.upsert', id)[2].held_base).toBe(v); // nothing to take: held_base stays (c1)
+    expect(again).toMatchObject({ ok: true, applied: true, entry: { id } });
+    expect((await letter(id))?.final_text).toBe('You drew on the steamy window.');
+    expect(copies(P, id)).toEqual([]);
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You drew on the steamy window.');
+  }, 60_000);
+
+  it('[table repeat, Keep refused by the letter] dup with entry, conflict_groups and the letter\'s words now: as the first answer', async () => {
+    const id = await shared('You tickled the cat.');
+    Q.store.setDraftTyped(id, 'You tickled the cat, gently.');
+    keep(Q, id);
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You tickled the cat and it purred.');
+    keep(P, id);
+    const w = watch();
+    await P.sync(lost(w.s));
+    expect(w.answers('entry.upsert', id)[0]).toMatchObject({ applied: true, conflict_groups: ['text'] });
+    tick(2_000);
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    expect(w.answers('entry.upsert', id)[1]).toMatchObject({ dup: true, entry: { id }, conflict_groups: ['text'], current: { final_text: 'You tickled the cat, gently.' } });
+    expect(local(P, id)).toMatchObject({ final_text: 'You tickled the cat, gently.', raw_transcript: 'You tickled the cat, gently.' });
+    expect(copies(P, id)).toEqual(['You tickled the cat and it purred.']);
+    expect(await letter(id)).toMatchObject({ final_text: 'You tickled the cat, gently.', raw_transcript: 'You tickled the cat, gently.' });
+  }, 60_000);
+
+  it('[table repeat, entry.erase] dup with the same answer: erased stays erased, missing stays missing', async () => {
+    const e = voiceOnly(P, 'take-r7');
+    await P.sync();
+    await Q.sync();
+    eraseNow(P, e);
+    const w = watch();
+    await P.sync(lost(w.s));
+    tick(2_000);
+    await P.sync(w.s);
+    const [e1, e2] = w.answers('entry.erase', e);
+    expect(e1).toMatchObject({ erased: true });
+    expect(e2).toMatchObject({ dup: true, erased: true });
+
+    const e3 = voiceOnly(P, 'take-r7b');
+    eraseNow(P, e3);
+    await P.sync(lost(w.s));
+    tick(2_000);
+    await P.sync(w.s);
+    const [m1, m2] = w.answers('entry.erase', e3);
+    expect(m1).toMatchObject({ missing: true });
+    expect(m2).toMatchObject({ dup: true, missing: true });
+    expect(outbox(P)).toEqual([]);
+    await Q.sync();
+    expect([local(Q, e), local(Q, e3)]).toEqual([null, null]);
+  }, 60_000);
+
+  // ── The switch: app.held_sync = 'off' (S02's fallback for the alpha) ─────
+  it('[switch off] held uploads and let-gos stay queued, unsent and not done; letters, Keep and Erase now keep working; the same op ids apply once it is on', async () => {
+    const before = await shared('You drummed on the pot.'); // held on the server before the switch
+    const w = watch();
+    await server.sys("select set_config('app.held_sync', 'off', false)");
+    let upOp = '';
+    let goOp = '';
+    const id = typed(P, 'You read to your bear.');
+    try {
+      expect(P.store.holdDraft(id, { inBookChoice: true })).toBe(true);
+      upOp = queued(P, 'held.upsert', id)!.opId;
+      await P.sync(w.s);
+      expect(w.answers('held.upsert', id)).toEqual([expect.objectContaining({ ok: true, applied: false, held_off: true })]);
+      expect(outbox(P)).toEqual(['held.upsert']); // not done
+      expect(queued(P, 'held.upsert', id)?.opId).toBe(upOp);
+      expect(await receipt(upOp)).toBe(false); // not claimed on the server
+      expect(await held(id)).toBeUndefined();
+
+      // While it is off nothing held is sent again, and the pull carries no held section.
+      letGo(P, before);
+      goOp = queued(P, 'held.discard', before)!.opId;
+      const r = await P.sync(w.s);
+      expect(r.phase).toBe('idle');
+      expect([w.answers('held.upsert', id).length, w.answers('held.discard', before).length]).toEqual([1, 0]);
+      const pull = await server.serverFor(MAMA).rpc('sync_pull', { p_since: { books: { [BOOK]: {} }, held: { cursor: null } }, p_limit: 200 });
+      expect((pull.data as Record<string, unknown>).held).toBeUndefined();
+
+      // Letters, Keep and Erase now keep working.
+      const words = writeLetter(P, BOOK, 'You said moon for the first time.');
+      keep(P, id); // its held upload waits; the Keep goes
+      const gone = writeLetter(P, BOOK, 'You sneezed at the pepper.');
+      await P.sync(w.s);
+      eraseNow(P, gone);
+      await P.sync(w.s);
+      expect((await letter(words))?.final_text).toBe('You said moon for the first time.');
+      expect((await letter(id))?.final_text).toBe('You read to your bear.');
+      expect(await letter(gone)).toBeUndefined();
+      expect(w.answers('entry.erase', gone)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
+      expect(outbox(P)).toEqual(['held.upsert', 'held.discard']); // only the held ops wait
+      expect((await held(before))?.typed_text).toBe('You drummed on the pot.');
+      await Q.sync();
+      expect(draft(Q, before)?.typedText).toBe('You drummed on the pot.'); // the other phone keeps its held drafts
+      expect(local(Q, id)?.final_text).toBe('You read to your bear.');
+    } finally {
+      await server.sys("select set_config('app.held_sync', '', false)");
+    }
+
+    // On again: the first pull carries the held section; then the same ops go and apply.
+    await P.sync(w.s);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect([await receipt(upOp), await receipt(goOp)]).toEqual([true, true]);
+    expect(w.answers('held.upsert', id).at(-1)).toMatchObject({ ok: true, held: null }); // kept meanwhile: the letter is the row
+    expect(w.answers('held.discard', before).at(-1)).toMatchObject({ ok: true });
+    expect(await held(before)).toBeUndefined();
+    expect(await marker(before)).toBe('discarded');
+    await Q.sync();
+    expect(draft(Q, before)).toBeUndefined();
+    expect(local(Q, id)?.final_text).toBe('You read to your bear.');
   }, 60_000);
 });

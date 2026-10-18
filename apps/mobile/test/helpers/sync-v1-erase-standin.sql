@@ -68,17 +68,47 @@ begin
   insert into sync_private.entry_erasures as x (entry_id, child_id, author_id) values (p_id, r.child_id, r.author_id)
     on conflict (entry_id) do update set erased_at = now(), sync_xid = pg_current_xact_id();
   delete from public.entries where id = p_id;
+  -- A letter kept from a held draft: its marker says erased now, so the author's other phones erase their
+  -- copy of the draft, and an upload of it is refused (ADR 0025 section 9 table, row C, entry.erase).
+  if to_regclass('public.held_drafts_gone') is not null then
+    update public.held_drafts_gone g set gone = 'erased', updated_at = now(), sync_xid = pg_current_xact_id()
+     where g.id = p_id and g.author_id = v_uid;
+  end if;
   return jsonb_build_object('erased', true);
 end;
 $$;
 -- Whether a letter id was erased (a positive record, never "a base and no row", which a server restore
--- also produces; final re-check B-R1). Definer: clients cannot read entry_erasures.
+-- also produces; final re-check B-R1): the letter's erasure, or the erase marker of a held draft. Definer:
+-- clients cannot read entry_erasures or held_drafts_gone.
 create function sync_private.was_erased(p_id uuid)
-returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
-  select exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id and x.author_id = auth.uid());
+returns boolean language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id and x.author_id = auth.uid()) then
+    return true;
+  end if;
+  if to_regclass('public.held_drafts_gone') is not null then
+    return exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.author_id = auth.uid() and g.gone = 'erased');
+  end if;
+  return false;
+end;
 $$;
 revoke execute on function sync_private.was_erased(uuid) from public, anon;
 grant execute on function sync_private.was_erased(uuid) to authenticated;
 
 revoke execute on function sync_private.erase_entry(uuid) from public, anon;
 grant execute on function sync_private.erase_entry(uuid) to authenticated;
+
+-- The first answer of an erase or a let-go, kept on its receipt (flags only, never words), so the repeat of
+-- a lost answer says the same (ADR 0025 section 9 table, repeats).
+alter table public.sync_op_receipts add column if not exists answer jsonb;
+create function sync_private.receipt_answer_note(p_op uuid, p_answer jsonb)
+returns void language sql security definer set search_path = pg_catalog, public, pg_temp as $$
+  update public.sync_op_receipts r set answer = p_answer where r.op_id = p_op and r.profile_id = auth.uid();
+$$;
+create function sync_private.receipt_answer(p_op uuid)
+returns jsonb language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select case when r.answer is null then null else jsonb_build_object('missing', false) || r.answer end
+    from public.sync_op_receipts r where r.op_id = p_op and r.profile_id = auth.uid();
+$$;
+revoke execute on function sync_private.receipt_answer_note(uuid, jsonb), sync_private.receipt_answer(uuid) from public, anon;
+grant execute on function sync_private.receipt_answer_note(uuid, jsonb), sync_private.receipt_answer(uuid) to authenticated;

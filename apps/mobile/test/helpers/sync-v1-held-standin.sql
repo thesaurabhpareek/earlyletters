@@ -29,6 +29,8 @@ revoke all on schema sync_private from public, anon;
 grant usage on schema sync_private to authenticated;
 alter table public.sync_op_receipts add column if not exists words_conflict boolean not null default false;
 alter table public.sync_op_receipts add column if not exists words_refused boolean not null default false;
+-- A Keep refused by the held row (table row B): its repeat says the same refusal (S02 keeps the answer instead).
+alter table public.sync_op_receipts add column if not exists keep_refused boolean not null default false;
 
 create table public.held_drafts (
   id uuid primary key,
@@ -140,9 +142,9 @@ returns trigger language plpgsql security definer set search_path = pg_catalog, 
 declare
   v_words text;
 begin
-  -- A keep with no held_base (an older client) is never compared: the held words it did not carry are
-  -- kept in the letter's history instead of nowhere (review K blocking 1). A keep with held_base that
-  -- met newer held words never gets here: sync_push refuses it first (held_keep_refusal).
+  -- A keep that met newer held words never gets here: sync_push refuses it first (held_keep_refusal,
+  -- held_base null or absent counting as 0). What is left is a direct insert: the held words it did not
+  -- carry are kept in the letter's history instead of nowhere (review K blocking 1).
   select coalesce(h.final_text, h.typed_text) into v_words from public.held_drafts h where h.id = new.id and h.author_id = new.author_id;
   if v_words is not null and v_words is distinct from new.final_text then
     insert into public.entry_versions (entry_id, final_text, in_book, machine_edits, superseded_by)
@@ -232,17 +234,14 @@ $$;
 -- The Keep of a held draft (review K blocking 1): an entry.upsert making the letter carries held_base,
 -- the held row's last v that phone knew. When the held words moved past it and differ from the Keep's
 -- words, the keep is refused as a words conflict: no letter, the held row stays, and the answer carries
--- the held words in current (v = their words version). A present but null held_base counts as 0; no
--- held_base key (an older client) is never refused here (entries_drop_held keeps the words in history).
+-- the held words in current (v = their words version). A null or absent held_base counts as 0 (review K
+-- re-check: no words may be left only in entry_versions; every client that syncs held drafts sends it).
 create function sync_private.held_keep_refusal(p_id uuid, o jsonb)
 returns jsonb language plpgsql security invoker set search_path = pg_catalog, public, pg_temp as $$
 declare
   h record;
   v_words text;
 begin
-  if not (o ? 'held_base') then
-    return null;
-  end if;
   select x.id, x.sync_xid, x.text_xid, x.updated_at, x.final_text, x.machine_edits, x.edit_level, x.typed_text into h
     from public.held_drafts x where x.id = p_id and x.author_id = auth.uid() for update;
   if not found then
@@ -263,33 +262,27 @@ $$;
 create function sync_private.note_keep_refused(p_op uuid)
 returns void language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
-  update public.sync_op_receipts r set words_conflict = true, words_refused = true, applied_v = null
+  update public.sync_op_receipts r set words_conflict = true, words_refused = true, keep_refused = true, applied_v = null
    where r.op_id = p_op and r.profile_id = auth.uid();
 end;
 $$;
 
--- A duplicate of an entry op (sync-v1-standin.sql), plus: a refused Keep repeats its refusal, with the
--- held words as they are now, never "missing".
+-- A duplicate of an entry op (sync-v1-standin.sql), plus: a Keep refused by the held row repeats that
+-- refusal (applied false, no letter), with current recomputed from whatever holds the id's words now
+-- (the held row, else the author's letter, else null), never "missing" (table, repeats).
 create or replace function sync_private.dup_outcome(p_op uuid, p_entry uuid)
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   r record;
-  h record;
 begin
-  select x.applied_v, x.words_conflict, x.words_refused into r
+  select x.applied_v, x.words_conflict, x.words_refused, x.keep_refused into r
     from public.sync_op_receipts x where x.op_id = p_op and x.profile_id = auth.uid();
   if not found then
     return '{}'::jsonb;
   end if;
-  if r.words_refused and not exists (select 1 from public.entries e where e.id = p_entry) then
-    select x.id, x.sync_xid, x.text_xid, x.updated_at, x.final_text, x.machine_edits, x.edit_level, x.typed_text into h
-      from public.held_drafts x where x.id = p_entry and x.author_id = auth.uid();
-    if found then
-      return jsonb_build_object('missing', false, 'applied', false, 'conflict', true, 'conflict_groups', jsonb_build_array('text'),
-        'current', jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
-                                      'typed_text', h.typed_text, 'v', h.text_xid::text),
-        'held', jsonb_build_object('id', h.id, 'v', h.sync_xid::text, 'updated_at', h.updated_at));
-    end if;
+  if r.keep_refused then
+    return jsonb_build_object('missing', false, 'applied', false, 'conflict', true, 'entry', null)
+      || sync_private.held_state(p_entry, true);
   end if;
   if r.words_conflict then
     return case when r.words_refused then jsonb_build_object('conflict_groups', jsonb_build_array('text')) else '{}'::jsonb end
@@ -325,15 +318,21 @@ revoke execute on function sync_private.held_id_taken(uuid) from public, anon;
 grant execute on function sync_private.held_id_taken(uuid) to authenticated;
 
 -- What the author's phone needs after held.upsert: the row's version, and on a refusal the words it keeps.
+-- A refusal's current is whatever holds the id's words now: the held row, else the author's letter that
+-- replaced it (kept on another phone), else null (let go or erased). A repeat recomputes it the same way.
 create function sync_private.held_state(p_id uuid, p_refused boolean)
 returns jsonb language sql stable security invoker set search_path = pg_catalog, public, pg_temp as $$
   select jsonb_build_object('held', (select jsonb_build_object('id', h.id, 'v', h.sync_xid::text, 'updated_at', h.updated_at)
-                                       from public.held_drafts h where h.id = p_id))
+                                       from public.held_drafts h where h.id = p_id and h.author_id = auth.uid()))
          || case when p_refused then
               jsonb_build_object('conflict_groups', jsonb_build_array('text'), 'current',
-                (select jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
-                                           'typed_text', h.typed_text, 'v', h.text_xid::text)
-                   from public.held_drafts h where h.id = p_id))
+                coalesce(
+                  (select jsonb_build_object('final_text', h.final_text, 'machine_edits', h.machine_edits, 'edit_level', h.edit_level,
+                                             'typed_text', h.typed_text, 'v', h.text_xid::text)
+                     from public.held_drafts h where h.id = p_id and h.author_id = auth.uid()),
+                  (select jsonb_build_object('final_text', e.final_text, 'machine_edits', e.machine_edits, 'edit_level', e.edit_level,
+                                             'v', e.text_xid::text)
+                     from public.entries e where e.id = p_id and e.author_id = auth.uid())))
             else '{}'::jsonb end;
 $$;
 
@@ -435,7 +434,9 @@ declare
   v_more boolean;
 begin
   v_res := sync_private.sync_pull(p_since, p_limit);
-  if coalesce((v_res ->> 'reset')::boolean, false) or not (coalesce(p_since, '{}'::jsonb) ? 'held') then
+  -- The switch (ADR 0025 section 9): with app.held_sync = 'off' the pull never carries the held section.
+  if coalesce((v_res ->> 'reset')::boolean, false) or not (coalesce(p_since, '{}'::jsonb) ? 'held')
+     or coalesce(current_setting('app.held_sync', true), '') = 'off' then
     return v_res;
   end if;
   v_uid := auth.uid();

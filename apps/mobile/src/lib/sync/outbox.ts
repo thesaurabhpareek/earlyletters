@@ -637,7 +637,16 @@ export interface HeldAnswer {
 export function settleHeldAnswer(
   db: SqlDb, opId: string, id: string, r: HeldAnswer, now: string, sent?: { typed_text?: string | null; changed?: FieldGroup[] },
 ): boolean {
-  const v = r.dup ? (r.applied_v ?? null) : (r.held?.v ?? null);
+  // Client rule c1 (ADR 0025 section 9 table): held_v and held_base move only to the words version this
+  // phone's own words produced: held.v of an answer to an op that carried text and was not refused,
+  // applied_v on a repeat of such an op, or current.v once the phone has taken those words. Never from a
+  // refused answer's held.v, nor from an op without text (another phone may have changed the words since).
+  const refused = (r.conflict_groups ?? []).includes('text');
+  const sentText = sent ? (sent.changed ?? ALL_GROUPS).includes('text') : true;
+  const takes = refused && !!r.current && 'typed_text' in r.current;
+  const v = takes ? r.current!.v
+    : refused || !sentText ? null
+      : r.dup ? (r.applied_v ?? null) : (r.held?.v ?? null);
   if (v) {
     db.run('UPDATE drafts SET held_v = ? WHERE id = ?', v, id);
     // The waiting letter, or the letter this draft became while its upload was on the way (its Keep is queued).
@@ -651,8 +660,14 @@ export function settleHeldAnswer(
     addHeldConflictCopy(db, opId, id, draft.typed_text!, null, now);
     copied = true;
   }
-  const refused = (r.conflict_groups ?? []).includes('text');
-  if (draft && refused && r.current && 'typed_text' in r.current) {
+  if (draft && refused && !r.current && (draft.typed_text ?? '').trim() !== '' && changedHere(draft)
+      && !listConflictCopies(db, id).some((c) => c.words.final_text === draft.typed_text)) {
+    // A refusal whose words now live nowhere it can name (let go or erased elsewhere): this phone's words are
+    // kept as a conflict copy, and the pull brings what happened to the draft (table, repeats).
+    addHeldConflictCopy(db, opId, id, draft.typed_text!, null, now);
+    copied = true;
+  }
+  if (draft && takes && r.current) {
     const theirs = r.current.typed_text ?? null;
     if ((draft.typed_text ?? null) !== theirs) {
       const mine = draft.typed_text ?? '';
