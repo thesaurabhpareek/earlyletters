@@ -14,7 +14,29 @@
  */
 import { brand } from '@scribe/brand';
 
-export const EXPORT_SCHEMA_VERSION = '1.0.0';
+/**
+ * 1.1.0 (15 Oct 2026; G-19, LEGAL-REQ-034; decision of 15 Oct, delegated by
+ * the founder): account.json gains `consent_on_this_phone`, the choices this
+ * phone holds (the 18+ answer and the usage-sharing choice). It carries no
+ * server consent history; when sign-in is on, that record is added in a later
+ * version as its own optional field. Optional in the schema, so 1.0.0 exports
+ * still validate; this version always writes it. Compatibility is one way: the
+ * 1.0.0 schema closes account.json (additionalProperties: false), so it
+ * rejects a 1.1.0 file. Validate each export against the schema it carries in
+ * schema/export-v1.schema.json (the $id names the format major, not the
+ * version). Each v1 minor reads every earlier v1 file, so anything published
+ * at the $id URL must be the newest v1 minor.
+ *
+ * 1.2.0 (17 Oct 2026; ADR 0027, coordinator decision of 17 Oct): a recording
+ * may also be an ADTS stream. Its file is `audio/<entry id>.aac` with
+ * `media_type: 'audio/aac'`; an M4A stays `audio/<entry id>.m4a` with
+ * `audio/mp4`, exactly as before. The codec is AAC-LC either way, and the
+ * file is the original, byte for byte. Only allowed values widen, so 1.0.0
+ * and 1.1.0 exports still validate. The same one-way rule applies: the 1.1.0
+ * schema rejects a 1.2.0 export that holds an `.aac` recording. (Open PR #161
+ * also proposes a 1.2.0; whichever lands second takes 1.3.0.)
+ */
+export const EXPORT_SCHEMA_VERSION = '1.2.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -28,7 +50,8 @@ export interface ExportAudio {
   bytes: number;
   duration_ms: number | null;
   codec: 'aac-lc';
-  media_type: 'audio/mp4';
+  /** Since 1.2.0 also `audio/aac` (an ADTS `.aac` file, ADR 0027). */
+  media_type: 'audio/mp4' | 'audio/aac';
   /** `mismatch` when the file no longer matches the hash taken when recording stopped (DATA-REQ-046, -051). */
   integrity: AudioIntegrity;
   /** The hash taken at capture, when there was one. */
@@ -110,6 +133,22 @@ export interface AccountFile {
   plan: 'free' | 'plus';
   exported_from: 'phone';
   memberships: { child_id: string; role: 'parent' | 'contributor'; signs_as: string }[];
+  /** Since 1.1.0. */
+  consent_on_this_phone: ExportPhoneConsent;
+}
+
+/**
+ * The consent choices as this phone's settings hold them (`ageGate.passed`,
+ * D-026; the analytics consent setting). Not a server record: with sign-in on,
+ * the server keeps its own record of the Terms acceptance with the 18+
+ * attestation (and, with analytics on, of the usage choice), which this field
+ * does not carry.
+ */
+export interface ExportPhoneConsent {
+  /** The "18 or older" question on this phone was answered yes. */
+  age_confirmed: boolean;
+  /** Sharing usage and crash reports (the Settings, Privacy switch), as answered on this phone. Builds with analytics off never ask, so it is `not_answered` unless an earlier answer is stored. */
+  usage_sharing: 'granted' | 'denied' | 'not_answered';
 }
 
 export interface ManifestFile {
@@ -151,15 +190,19 @@ export const exportJsonSchema = {
       additionalProperties: false,
       required: ['path', 'sha256', 'bytes', 'duration_ms', 'codec', 'media_type', 'integrity', 'recorded_sha256'],
       properties: {
-        path: { type: 'string', pattern: '^audio/[^/]+\\.m4a$' },
+        // Since 1.2.0 also `.aac` with `audio/aac` (ADR 0027); the extension and the media type always agree.
+        path: { type: 'string', pattern: '^audio/[^/]+\\.(m4a|aac)$' },
         sha256,
         bytes: { type: 'integer', minimum: 0 },
         duration_ms: { type: ['integer', 'null'], minimum: 0 },
         codec: { const: 'aac-lc' },
-        media_type: { const: 'audio/mp4' },
+        media_type: { enum: ['audio/mp4', 'audio/aac'] },
         integrity: { enum: ['ok', 'mismatch', 'unchecked'] },
         recorded_sha256: { anyOf: [sha256, { type: 'null' }] },
       },
+      if: { type: 'object', properties: { media_type: { const: 'audio/aac' } } },
+      then: { type: 'object', properties: { path: { type: 'string', pattern: '\\.aac$' } } },
+      else: { type: 'object', properties: { path: { type: 'string', pattern: '\\.m4a$' } } },
     },
     edit: {
       type: 'object',
@@ -290,6 +333,16 @@ export const exportJsonSchema = {
             additionalProperties: false,
             required: ['child_id', 'role', 'signs_as'],
             properties: { child_id: { type: 'string' }, role: { enum: ['parent', 'contributor'] }, signs_as: { type: 'string' } },
+          },
+        },
+        // Since 1.1.0; optional so 1.0.0 exports still validate.
+        consent_on_this_phone: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['age_confirmed', 'usage_sharing'],
+          properties: {
+            age_confirmed: { type: 'boolean' },
+            usage_sharing: { enum: ['granted', 'denied', 'not_answered'] },
           },
         },
       },

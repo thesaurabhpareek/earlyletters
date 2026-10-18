@@ -404,10 +404,29 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 - **Decision:** the weekly insights agent writes its report and its proposals into the repo working tree only. The coordinator commits them. This resolves DEBATES Q-007 in favour of COORDINATION.md.
 - **Status:** Decided (coordinator).
 
+### D-089 Release engineering model
+- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 (PR #91).
+- **Decision:** ADR 0022. Preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, per `docs/release/TESTFLIGHT.md`. Store lane: `release/1.0` cut from `main` at freeze (Mon 26 Oct), fixes cherry-picked from `develop`; `ios-v1.0.0-rc.<n>` tags build the production profile into the production record's internal TestFlight; the RC that passed FT-39 is submitted (FT-45); `ios-v1.0.0` is pushed after release. One version in `apps/mobile/version.json`; build numbers only from EAS. Store text generated from `packages/content` into `apps/mobile/store.config.json`.
+- **Gate (amended 15 Oct, founder):** the store-lane jobs run in the GitHub environment `app-store` (founder as required reviewer, only `ios-v*` tags and `release/*` branches, store secrets held there), with tag and branch rulesets that only admins bypass (ADR 0022 decision 8, FT-20). The 3 Oct design assumed a private repository; it is public.
+- **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/ops/RELEASE.md` (qa-e2e's release train, amended for D-089); record `docs/release/1.0.0.md`; BL-436 to BL-439.
+
+### D-090 Release team
+- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct).
+- **Decision:** a `release` agent (Release Engineer: versions, release records, store metadata as code, the runbook) and `ops` re-chartered as Platform and Reliability Engineer (DevOps and SRE). Defined on the harness branch; until the harness runs, used in interactive sessions by handle under COORDINATION.md. A separate SRE agent after launch, once there are real users and a first Sev 1 or 2 drill.
+
+### D-091 No OTA updates in v1.0
+- **Status:** Decided (founder, 13 Oct 2026). Changes the 3 Oct recommendation to ship `expo-updates` in v1.0. Matches section 8 of qa-e2e's release train.
+- **Decision:** no `expo-updates` in v1.0. Fixes ship as PATCH builds from the release branch, with expedited review for an S0.
+- **Rationale:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088). An update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission. Revisit for v1.1, when sign-in brings a server anyway.
+
+### D-092 EAS plan
+- **Status:** Decided (founder, 13 Oct 2026; matches the cost decisions of 3 Oct).
+- **Decision:** EAS Free (15 iOS builds a month; expo.dev/pricing, 3 Oct 2026) until builds would exceed it, then Starter ($19 a month plus usage). A second trigger: Free builds queue at low priority with one concurrent build, so if queue time ever holds up a release candidate, move to Starter for that month.
+
 ## Decisions that still need the founder (in priority order)
 
-1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). Needed by 16 Oct.
-2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). Needed by 23 Oct.
+1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sync.
+2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sharing.
 3. **D-001 tooling** StoreKit 2 direct versus RevenueCat (ADR 0013). Override window closes when BL-213 starts (about 9 Nov).
 4. **D-030** Beta on TestFlight; no beta line in the store listing. Needed before the store listing is written (week 13).
 5. **D-004 hedge** Accept the guideline 5.1.1(ix) risk as an individual, or start an entity in parallel. Needed by 27 Nov.
@@ -438,6 +457,10 @@ Two founder answers given on 3 Oct (evening) change second-round entries. Where 
 | D-079 | Old logo directions archived | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-080 | The app reports subscription status only, so we can send the auto-renewal reminders | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-081 | Purchase consent records (supersedes D-049) | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-089 | Release engineering model (ADR 0022): preview lane for C0 and C1; store lane from `release/<major>.<minor>` cut at freeze; one version in `apps/mobile/version.json`; EAS build numbers; `ios-v<x.y.z>-rc.<n>` tags build candidates; the tested RC is the binary submitted; `ios-v<x.y.z>` on release; store text generated from `packages/content` | Decided (founder) | Yes | 2026-10-13 |
+| D-090 | Release team: a `release` agent plus `ops` as Platform and Reliability Engineer (DevOps and SRE); SRE splits out after launch | Decided (founder) | Yes | 2026-10-13 |
+| D-091 | No over-the-air updates (`expo-updates`) in v1.0; fixes ship as PATCH builds; revisit for v1.1 | Decided (founder; changes the 3 Oct recommendation) | Yes | 2026-10-13 |
+| D-092 | EAS Free plan until builds would exceed 15 iOS a month, then Starter ($19 a month plus usage) | Decided (founder) | Yes | 2026-10-13 |
 
 ### D-071 Primary mark: logo round 3 `final-a`
 - **Status:** Decided (founder, 3 Oct 2026).
@@ -547,3 +570,147 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 ### D-088 In-app feedback (delegated; debate Q-016 in-app-feedback)
 - **Decision:** v1.0 submission keeps "Data Not Collected" and uses the Help email row, with a content-free block (version, build, screen) added to the email. The feedback form is built behind a build switch and ships only after counsel signs the text and the founder accepts the label change to Data Collected. Text and screenshots are read by people; agents triage on structure only (screen, category, version, severity, owner) and never contact the reporter. Screenshots are taken at the tap, attached only after a preview with Remove, allowed only on settings and error screens, and travel by email, never into GitHub. The person is identified by a resettable random install id plus an optional email; never IDFA, IDFV or the analytics id. Issues live in a private repo with a machine identity (founder task). Retention: text 90 days after closing, screenshots 30.
 - **Needs outside sign-off:** counsel; creation of the private repo and mailbox (founder).
+
+## Decisions of 15 Oct 2026 (delegated by founder)
+
+The founder delegated these calls to the coordinator on 15 Oct. Each is marked "delegated by founder" and can be reversed by the founder; say so and it is reopened. Ids start after D-092, the highest on PR #108. Counsel and Apple sign-off are not delegated and are stated where they apply. Implementation PRs are named in each entry.
+
+### D-093 The 13 Oct integration branch is never merged (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in `docs/agents/PORT_MAP_2026-10-13.md` (PR #117). The release runbook `docs/ops/RELEASE.md` lands through PR #111 (now targeting `develop`, adapted to the on-device v1.0), and the device test plan rows through their own PR (#123). The branch is kept, not deleted, so parked code can be reused.
+
+### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Needs counsel: COUNSEL_PACKET C-1 to C-3 (on `develop`) and Q37 (added by PR #81).
+- **Decision:** v1.0 ships on-device plan reminders (local notifications in the Q-003 windows, purchaser's phones only, never through Family Sharing) and, after a new purchase, a confirmation of what was agreed with "Save a copy". They follow D-083: no price, "free trial", "free months" or "we will email you" in app copy; Apple's sheet shows the amount and Apple's receipt holds it. Reminders are a courtesy, not a guaranteed delivery: the app and the Subscription Terms say they can come late or not at all, and that Settings, Plan and Apple's receipts hold every date.
+- **Effects:** PR #121 (port of G-15). Subscription Terms must describe reminders as a courtesy: requested on PR #81 (its 3.0.0 text does not say so yet). Device test plan row S2-17 (PR #123).
+
+### D-095 No analytics SDK or consent sheet in v1.0 (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Confirms D-088's "Data Not Collected" and changes the v1.0 part of the 3 Oct analytics decision (opt-in PostHog): it returns, with consent, in v1.1.
+- **Decision:** a build switch, `EXPO_PUBLIC_ANALYTICS`, off in every v1.0 profile. Off: no consent sheet, no usage switch in Settings, Privacy, no PostHog client even if a key is set, and analytics never starts. `packages/analytics` stays.
+- **Effects:** PR #118. The App Store privacy label stays "Data Not Collected".
+
+### D-096 The export carries the consent choices on this phone (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** the export (schema 1.1.0) adds `consent_on_this_phone` to `account.json`: the 18+ answer and the usage-sharing choice. No server consent history in v1.0, because there is no server; a later version adds it as its own field.
+- **Effects:** PR #120 (phone part of G-19, LEGAL-REQ-034).
+
+### D-097 Pack and model host: packs.earlyletters.app on Cloudflare R2 (delegated by founder; DEBATES Q-001)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Takes Q-001 option (b).
+- **Decision:** one hostname, `packs.earlyletters.app`, serves both language packs and speech models from Cloudflare R2. DNS for `earlyletters.com` stays where it is, so email DNS does not move.
+- **Effects (follow-up, not yet done):** set `EXPO_PUBLIC_DOCS_BASE_URL` for the build profiles; `apps/mobile/src/lib/models/catalog.ts` still names `models.earlyletters.com` (`SELF_HOST_BASE`) and moves to the new host; ADR 0016 and `docs/ops/MODEL_HOSTING.md` (PR #35) name it; the founder creates the R2 bucket and the `.app` DNS record (account steps).
+
+### D-098 Minimum iOS 17 (delegated by founder; DEBATES Q-002)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** the lowest supported version is iOS 17, because Apple's subscription store view (the Plus sheet) needs it.
+- **Effects (follow-up, not yet done):** set the iOS deployment target to 17.0 in the app config; the store listing and Help say iOS 17 or later; the "needs iOS 17" fallbacks in billing copy stay for safety.
+
+### D-099 Keep the two-parent cap, effective with v1.1 sharing (delegated by founder; confirms D-069)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Turns D-069 from "Recommended" into decided.
+- **Decision:** at most two parents per book, enforced by the server, and either parent can see and remove family members. It takes effect with co-parent sharing in v1.1. v1.0 has no sharing, so nothing changes in v1.0.
+- **Effects:** the server check and SCCAP (`parents_full`) are parked for v1.1 with G-02 and G-17 (`docs/backlog/future/06-coparent-sharing-v1-1.md` section 5, PR #117).
+
+## Decisions of 13 and 14 Oct 2026 (founder, in the PRD V2 session)
+
+The founder gave D-100 to D-103 in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). D-104 lists three delivery defaults that are proposed, not decided: they take effect only when the founder confirms them, in this PR or in writing. Counsel and Apple sign-off are never delegated.
+
+Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 to D-108 were added on the same day.
+
+| ID | Decision | Status | Proceed? | Date |
+|---|---|---|---|---|
+| D-100 | Server features are on in v1.0: sign-in, sync, co-parent sharing, encrypted recording backup, status report and reminder emails | Decided (founder, 13 Oct 2026; confirmed 15 Oct) | Yes, after the security gate | 2026-10-13 |
+| D-101 | Keep the full v1.0 scope and move the date; the plan of record is PRD V2 `08-delivery.md` | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-102 | Recording backup keys are recoverable through server escrow, and the copy says so | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-103 | A free letter counts only when it is your own letter, its words exist, and you keep it from Review | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-104 | Three delivery defaults: low-risk merges by the coordinator, free backup, voice-only counting | Proposed; awaits founder confirmation | No, until confirmed | 2026-10-14 |
+| D-105 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
+| D-106 | Alpha in two weeks: option B ships as a TestFlight alpha against staging, target Thu 29 Oct 2026; submission re-planned after the alpha; review delegation widened to app code | Decided (founder, build thread, 15 Oct 2026); the delegation widening is proposed by the coordinator and awaits the founder's confirmation | Yes for the alpha; the delegation waits | 2026-10-15 |
+| D-107 | Merge delegation widened: the coordinator merges app code, docs and tests into `develop` after two independent reviews and green CI; database, auth, payments, release configuration, the engine files and production deploys stay founder merges | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-108 | Backup recovery: a device enrolled for at least 7 days approves a restore request; F08-REQ-034 amended to the backup server as built (ten functions, nine settings) | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-109 | Experience pass calls F2 to F8 (PR #170 section 7): lamp gradient allowed, app.welcome lockup, welcome-first order held for counsel, Declared Age Range owner, Plus display names, server surfaces in v1.0, typed letters skip Review | Delegated call by the coordinator (founder may reverse) | Yes, except F4 (held) | 2026-10-16 |
+| D-110 | Lamp contrast (PR #170 P1, PR #192): the everyday text colours hold 4.5:1 everywhere at every lamp tone's peak; the status colours hold 4.5:1 where text sits and never sit on the gate's or Read together's lit paper; tests over three phone sizes | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-16 |
+
+### D-100 Server features are on in v1.0 (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
+- **Status, 15 Oct 2026:** Confirmed by the founder in the build thread, 15 Oct 2026 (chose B: server features on, date moves); the on-device-only assumption behind D-085 to D-088, D-095 and #118 is superseded where they conflict; the exact submission date (mid-January or May 2027) is still open.
+- **Decision:** the release build profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`. Sign-in, sync, co-parent sharing (at most two parents, D-069), encrypted backup of the owner's recordings (D-073) and the subscription status report with reminder emails (D-080) ship in v1.0. The switch in `apps/mobile/src/lib/capabilities.ts` stays as the kill path.
+- **Reverses:** commit c1764f9 ("v1.0 on-device only"). **Amends:** D-085 (its "amends D-073 for v1.0" clause no longer applies; backup ships), D-087 (show "I was invited" again; the Family tab is live), D-088 (the "Data Not Collected" privacy label is no longer true once accounts exist; privacy label 1.4.0 is drafted with counsel).
+- **Gate:** nobody outside the family signs in before BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322 and BL-349 merge and pass one shared security review (PRD V2 09 R-17). Migrations are applied to staging, then production, through CI. Legal pages describing a server product are live before sign-in.
+- **Owner:** founder; streams S01 to S07, S17 and S20 (PRD V2 `08-delivery.md` section 3).
+
+### D-101 Full v1.0 scope, date moves (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, after critique round 1 (options: cut to fit November; keep scope and move the date; raise review capacity). PRD V2 M15.
+- **Decision:** v1.0 keeps every P0 work package, including recording backup and co-parent sharing; only the P1 extras listed in PRD V2 `08-delivery.md` section 6.4 are cut. The date follows the merge budget. As planned on 15 Oct: submission in the week of Mon 3 May 2027, about 40% confidence (`08-delivery.md` section 2.2). This replaces ROADMAP 2.1's 2 Nov target.
+- **Owner:** founder; delivery lead.
+
+### D-102 Recoverable backup keys, honest copy (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from two options (recoverable through escrow; end to end only). PRD V2 M16.
+- **Decision:** keep server escrow so a family can recover recordings after losing every device. Copy says recordings are encrypted, that we hold a recovery key under strict, logged access, and that recordings are never read, sold or used to train models. No copy claims "only your family's keys can open it". The escrow key runs only in a separate project and one function; custody, rotation, the access log and owner emails on each use are specified in PRD V2 F08 section 6.5 and F17.
+- **Effects:** microphone purpose string, Terms 6.2 and 12.4, Privacy Policy, Consumer Health Data notice and privacy labels change before release (counsel). ADR 0006 is amended (stream S05).
+- **Owner:** founder; S05, S16, S17.
+
+### D-103 Counting the free letters (founder)
+- **Status:** Decided by the founder, 13 Oct 2026. PRD V2 M17.
+- **Decision:** a letter counts toward the 2 free letters (D-082) only when (a) you are its author, (b) its words exist, and (c) you keep it from Review with the words on screen. The other parent's synced letters never count. A voice-only letter saved before its speech model arrives is kept safely and counts only once its words exist and you keep it from Review. The ledger still never decreases, and Erase everything still resets it.
+- **Amends:** D-083 (its rule that "a voice letter kept without words" counts at once, and any counting of letters present on the device regardless of author).
+- **Owner:** payments engineer (stream S06), local store (S03).
+
+### D-104 Three delivery defaults (proposed)
+- **Status:** Proposed by the coordinator, 14 Oct 2026. Not in force until the founder confirms each item. Until then the founder merges every pull request, and items 2 and 3 are the spec defaults PRD V2 is written against.
+- **Proposal:**
+  1. The coordinator may merge pull requests that change only docs, evidence or tests, after two independent review agents pass them. Anything touching server code, `supabase/**`, auth, payments, migrations or release configuration is merged only by the founder (D-041).
+  2. Encrypted recording backup is free for everyone. Plus remains the membership that lets you keep new letters (D-082); it does not gate backup.
+  3. Voice-only letters follow D-103.
+- **Owner:** founder (confirmation); coordinator.
+
+### D-105 PRD V2 is the product spec of record
+- **Status:** Decided (founder asked for PRD V2 on 3 Oct and chose its source order on 13 Oct). Takes effect when PR #124 merges to `develop`.
+- **Decision:** `docs/prd/v2/` replaces `docs/prd/PRD.md` 1.3 as the requirements of record. Existing requirement IDs keep their meaning. Where V2 and a LEGAL-REQ disagree on a legal duty, counsel decides; no founder decision retires a legal duty by itself.
+- **Owner:** PM lane.
+
+### D-106 Alpha in two weeks (founder, 15 Oct 2026)
+- **Status:** Decided by the founder in the build thread; the delegation widening is proposed by the coordinator and awaits the founder's one-word confirmation.
+- **Decision:** Option B ships as an alpha: a TestFlight build with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha. Review delegation: app code may be merged by the coordinator after two independent review agents pass it; database, auth, payments, migrations and release configuration stay founder merges, batched daily.
+- **Owner:** founder; coordinator.
+
+### D-107 Merge delegation widened (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026, about 17:00 UTC: "Widen." Confirms the delegation part of D-106 and replaces item 1 of D-104.
+- **Decision:** the coordinator may merge pull requests into `develop` that change app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests, once two independent review agents pass the pull request and CI is green on its head.
+- **Founder-only merges:**
+  - `supabase/**`: database, migrations, access rules.
+  - Auth.
+  - Payments: billing, StoreKit, `packages/core/src/plan.ts`.
+  - Release configuration: `.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`.
+  - The CODEOWNERS-protected engine files: `EditType` and `packages/core/src/types.ts`, `verify.ts`, `meaning.ts`, `pipeline.ts`.
+  - Any production deploy: the website on `main`, the App Store, TestFlight external groups.
+- **Effects:** `docs/agents/COORDINATION.md` section 6 states the rule.
+- **Owner:** founder; coordinator.
+
+### D-108 Backup recovery: device age and F08-REQ-034 (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026.
+- **Decision:** Backup recovery: a device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to match the backup server as built: ten functions and nine settings, not four functions and three secrets.
+- **Effects:** PR #151 (`feat/backup-server`, the S05 backup server). The F08-REQ-034 text in PRD V2 (`docs/prd/v2/features/F08-recordings.md`, PR #124) is updated to match in a follow-up.
+- **Owner:** founder; S05.
+
+### D-109 Experience pass calls (coordinator, 16 Oct 2026)
+- **Status:** Delegated call by the coordinator under the founder's standing delegation (decide what is industry standard; the founder's instruction of 4 Oct, "Decide right answer on my behalf that are standard for industry apps", as for D-083 to D-088), 16 Oct 2026. The founder may reverse any item. Counsel sign-off is not delegated.
+- **Source:** the experience pass spec, PR #170 (`docs/experience-pass-oct`), section 7.
+- **Decision:**
+  1. F2 approved: in BRAND_SYSTEM section 4, the gradient item of the "Never" line becomes "Never: a gradient anywhere except the app icon tile and the atmosphere lamp (tokens.atmosphere, Lamp), which is decorative, capped for contrast, and never sits inside, behind or around the mark." The line's other "Never" items (the two contrast bans and pure black behind the mark) stay. Reason: the founder asked for the website's light and gradients in the app.
+  2. F3 approved: new brand registry context `app.welcome`, the stacked lockup at 96 pt on the welcome screen.
+  3. F4 held: the welcome-first order waits for counsel's answer to C1.
+  4. F5: the Declared Age Range call is owned by S14 with S17, due before App Store submission, not needed for TestFlight; subject to counsel's answer to COUNSEL_PACKET Q5. Note (merge train): in PRD V2 `08-delivery.md` section 3 the age gate (F01) sits with stream S12; the coordinator confirms which stream owns the call.
+  5. F6: the App Store Connect display names are Plus Monthly and Plus Annual; S06 corrects `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
+  6. F7 answered by the founder's option B (D-100): sign-in, sync, co-parent and backup surfaces are in v1.0 and get their own experience package.
+  7. F8 approved: typed letters skip Review, because typed words are never machine-edited.
+- **Effects:** for a typed letter, D-103's condition (c) is met when the author keeps it on Write with the words on screen; the Keep gate and the counting in D-082, D-083 and D-103 are unchanged. Follow-ups, not in this entry: the BRAND_SYSTEM section 4 edit; the `app.welcome` registry context (and the `app.header` title, which names the welcome today); `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (still "Plus Yearly"); PR #170 (S20 for F8).
+- **Owner:** coordinator; founder for reversal.
+
+### D-110 Lamp contrast: reading colours everywhere, status colours where text sits (coordinator, 16 Oct 2026)
+- **Status:** Delegated call by the coordinator (founder may reverse), 16 Oct 2026, under the same standing delegation as D-109. Counsel sign-off is not involved: this is an accessibility and design rule.
+- **Source:** the experience pass spec, PR #170 (`docs/experience-pass-oct`), P1's acceptance line 2; PR #192 (P1, `feat/experience-p1-visual-system`, 3d7c7fd), revision 2, after the coordinator's review of its screenshots. Capping every lamp tone so that even the status colours kept 4.5:1 at the pool's core left light mode reading as plain paper.
+- **Decision:**
+  1. The everyday text colours (`text`, `textMuted`, `accent`, `focus`) hold 4.5:1 everywhere on screen at every lamp tone's peak, in both schemes.
+  2. The status colours (`success`, `caution`, `recording`, `destructive`) hold 4.5:1 where text actually sits, because WCAG 1.4.3 measures text against the background behind it. They never sit on the lit paper of the age gate or of Read together.
+  3. Tests enforce both rules over three phone sizes (iPhone 17 Pro, iPhone SE and the Pro Max size): the everyday colours over the whole screen for every scene and daypart, and the status colours over the areas where status text is placed.
+- **Effects:** P1's acceptance line 2 in the spec (PR #170) reads this way. `tokens.atmosphere.onLitPaper` (PR #192) records which colours may sit where, and the light-mode peaks rise (PR #192: amber 0.35, gold 0.78, rose 0.17, dusk 0.12). Dark mode is unchanged and keeps every text colour at 4.5:1 everywhere. Increase Contrast and Reduce Transparency still show no lamp.
+- **Owner:** coordinator; founder for reversal; P1 (stream S15) for the tests.

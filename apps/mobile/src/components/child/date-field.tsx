@@ -8,13 +8,19 @@
  * save button agree. `min` and `max` only steer the picker.
  *
  * ios: compact picker; android: system dialog; web preview: a native date input.
+ *
+ * `ref.focus()` moves focus to the control (EXPERIENCE_PASS S05: when someone taps a Continue that is waiting for
+ * the date, focus goes to the empty field): VoiceOver focus on a phone, keyboard focus on the web preview's input.
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as React from 'react';
-import { Platform, View } from 'react-native';
+import { AccessibilityInfo, Platform, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/lib/a11y';
 import { isoOf, longDate } from '@/lib/dates';
+
+/** What a screen can ask of the date control. */
+export type DateFieldHandle = { focus: () => void };
 
 function dateOf(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
@@ -32,13 +38,34 @@ export type DateFieldProps = {
   chooseLabel: string;
 };
 
-export function DateField({ label, value, onChange, startISO, min, max, chooseLabel }: DateFieldProps) {
+export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(function DateField({ label, value, onChange, startISO, min, max, chooseLabel }, ref) {
   const { c } = useTheme();
   const [open, setOpen] = React.useState(false);
+  const control = React.useRef<View>(null);
+  const input = React.useRef<{ focus?: () => void } | null>(null);
+
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => {
+        if (Platform.OS === 'web') {
+          input.current?.focus?.();
+          return;
+        }
+        const node = control.current;
+        if (!node) return;
+        try {
+          AccessibilityInfo.sendAccessibilityEvent(node as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0], 'focus');
+        } catch {}
+      },
+    }),
+    [],
+  );
 
   if (Platform.OS === 'web') {
     // Web preview and the recorded flows: the community picker draws nothing on web.
     return React.createElement('input', {
+      ref: input,
       type: 'date',
       'aria-label': label,
       value: value ?? '',
@@ -47,13 +74,14 @@ export function DateField({ label, value, onChange, startISO, min, max, chooseLa
       onChange: (e: { target: { value: string } }) => {
         if (e.target.value) onChange(e.target.value);
       },
-      style: { minHeight: 44, padding: '8px 12px', borderRadius: 12, border: '1px solid transparent', background: c.surface, color: c.text, fontSize: 17, fontFamily: 'inherit' },
+      // A 1 pt controlBorder edge (3:1, WCAG 1.4.11), as every other field: on lit paper a bare surface box disappears.
+      style: { minHeight: 44, padding: '8px 12px', borderRadius: 12, border: `1px solid ${c.controlBorder}`, background: c.surface, color: c.text, fontSize: 17, fontFamily: 'inherit' },
     });
   }
 
   const showPicker = Platform.OS === 'ios' ? value !== null || open : open;
   return (
-    <View className="items-end">
+    <View ref={control} className="items-end">
       {value === null && !open ? (
         <Button variant="secondary" size="sm" label={chooseLabel} accessibilityLabel={`${label}. ${chooseLabel}`} onPress={() => setOpen(true)} />
       ) : Platform.OS !== 'ios' ? (
@@ -77,4 +105,4 @@ export function DateField({ label, value, onChange, startISO, min, max, chooseLa
       ) : null}
     </View>
   );
-}
+});

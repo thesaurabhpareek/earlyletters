@@ -10,6 +10,7 @@
       "channel": "development",
       "environment": "development",
       "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "development",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
@@ -20,6 +21,7 @@
       "channel": "preview",
       "environment": "preview",
       "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "preview",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
@@ -30,6 +32,7 @@
       "channel": "production",
       "environment": "production",
       "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
@@ -41,6 +44,7 @@
       "channel": "preview",
       "environment": "preview",
       "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "preview",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"

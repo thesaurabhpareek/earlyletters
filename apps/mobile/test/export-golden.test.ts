@@ -7,9 +7,9 @@
  */
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { planExport, safeSegment } from '../src/lib/export/build.logic';
+import { phoneConsent, planExport, safeSegment } from '../src/lib/export/build.logic';
 import { ExportCancelledError, packExport, type PackDeps } from '../src/lib/export/pack';
-import { EXPORT_SCHEMA_VERSION, type EntriesFile, type Manifest } from '../src/lib/export/schema';
+import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type Manifest } from '../src/lib/export/schema';
 import { readCentralDirectory, verifyExport, type RandomAccess } from '../src/lib/export/verify';
 import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
@@ -54,11 +54,13 @@ function deps(sink: PackDeps['sink'], extra: Partial<PackDeps> = {}): PackDeps {
 
 const access = (zip: Uint8Array): RandomAccess => ({ size: zip.length, read: (o, l) => zip.subarray(o, o + l) });
 
-async function makeExport() {
+async function makeExport(snapshot = ashaSnapshot()) {
   const m = memorySink();
-  const result = await packExport(ashaSnapshot(), deps(m.sink));
+  const result = await packExport(snapshot, deps(m.sink));
   return { zip: m.bytes(), result };
 }
+
+const accountOf = (zip: Uint8Array) => JSON.parse(strFromU8(unzipSync(zip)['data/account.json'])) as AccountFile;
 
 describe('Asha export (golden)', () => {
   it('holds exactly the expected files', async () => {
@@ -166,6 +168,22 @@ describe('Asha export (golden)', () => {
     expect(asha).not.toContain('ordinary day');
     expect(asha).toContain('You laughed today. A real one.');
     expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
+  });
+
+  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone, and no server history (since 1.1.0)', async () => {
+    // The version itself is pinned in export-recording-format.test.ts (1.2.0, ADR 0027).
+    const account = accountOf((await makeExport()).zip);
+    expect(account.schema_version).toBe(EXPORT_SCHEMA_VERSION);
+    expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
+    expect(Object.keys(account)).not.toContain('consent_history');
+  });
+
+  it('[G-19] reads the usage choice as stored, and anything unknown as not answered', async () => {
+    expect(phoneConsent(false, 'granted')).toEqual({ age_confirmed: false, usage_sharing: 'granted' });
+    expect(phoneConsent(true, 'denied')).toEqual({ age_confirmed: true, usage_sharing: 'denied' });
+    for (const v of [null, undefined, '', 'unknown', 'yes']) expect(phoneConsent(true, v).usage_sharing).toBe('not_answered');
+    const snap = { ...ashaSnapshot(), consent: phoneConsent(true, 'denied') };
+    expect(accountOf((await makeExport(snap)).zip).consent_on_this_phone.usage_sharing).toBe('denied');
   });
 
   it('[DATA-REQ-051] lists every file in the manifest and checks clean', async () => {

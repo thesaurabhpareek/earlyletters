@@ -22,6 +22,8 @@ export function wantedLabels(roster) {
     { name: "backlog", color: "c2e0c6", description: "Mirrors a docs/BACKLOG.md task" },
     { name: "inbox", color: "fbca04", description: "Founder bug or idea, not yet in the backlog" },
     { name: "idea", color: "a2eeef", description: "Founder idea" },
+    { name: "handoff", color: "5319e7", description: "A message from one agent to others (docs/agents/AGENT-COMMS.md)" },
+    { name: "rfc", color: "5319e7", description: "Proposed change to an engineering standard; every steward replies" },
   ];
   for (const a of roster.agents) {
     labels.push({
@@ -29,6 +31,8 @@ export function wantedLabels(roster) {
       color: roster.departments?.[a.department] ?? "ededed",
       description: `${a.title} (${a.department})`.slice(0, 100),
     });
+    labels.push({ name: `from:${a.handle}`, color: "ededed", description: `Handoff sent by ${a.handle}`.slice(0, 100) });
+    labels.push({ name: `to:${a.handle}`, color: roster.departments?.[a.department] ?? "ededed", description: `Handoff waiting for ${a.handle}`.slice(0, 100) });
   }
   return labels;
 }

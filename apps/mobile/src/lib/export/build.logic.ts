@@ -12,8 +12,9 @@
  *   not read it.)
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
- * - Original recordings, byte for byte. A recording that is not on this
- *   phone is listed with `audio_missing`.
+ * - Original recordings, byte for byte, each named and labelled by its own
+ *   container (`.m4a`, `audio/mp4`; `.aac`, `audio/aac`; ADR 0027). A
+ *   recording that is not on this phone is listed with `audio_missing`.
  * - The printable book holds the letters in the book that have words. A quiet-day mark never prints
  *   (D-084), even if an old row says it is in the book.
  * - A quiet-day mark is exported as a row in entries.json with `final_text: ''` (the whole history
@@ -23,6 +24,7 @@
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
+import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
 import { copy } from '../copy';
 import { provenanceKey } from '../provenance';
 import { dayDate, letterDateline } from '../dates';
@@ -37,6 +39,7 @@ import {
   type EntriesFile,
   type ExportAudio,
   type ExportEntry,
+  type ExportPhoneConsent,
 } from './schema';
 
 export interface SnapshotChild extends Child {
@@ -52,6 +55,11 @@ export interface SnapshotEntry extends Entry {
   audioSizeOnPhone: number | null;
 }
 
+/** The phone's consent choices for account.json (schema 1.1.0). */
+export function phoneConsent(ageConfirmed: boolean, usage: string | null | undefined): ExportPhoneConsent {
+  return { age_confirmed: ageConfirmed, usage_sharing: usage === 'granted' || usage === 'denied' ? usage : 'not_answered' };
+}
+
 export interface ExportSnapshot {
   /** ISO instant the export was made. */
   generatedAt: string;
@@ -63,6 +71,8 @@ export interface ExportSnapshot {
   signedIn: boolean;
   children: SnapshotChild[];
   entries: SnapshotEntry[];
+  /** For account.json: the consent choices this phone holds (never a server record). */
+  consent: ExportPhoneConsent;
 }
 
 export interface TextFile {
@@ -75,6 +85,8 @@ export interface AudioJob {
   entryId: string;
   uri: string;
   path: string;
+  /** The recording's own media type (`audio/mp4` or `audio/aac`). */
+  mediaType: ExportAudio['media_type'];
   recordedSha256: string | null;
   durationMs: number | null;
   sizeHint: number | null;
@@ -105,7 +117,6 @@ export const MEDIA = {
   json: 'application/json',
   html: 'text/html; charset=utf-8',
   pdf: 'application/pdf',
-  m4a: 'audio/mp4',
 } as const;
 
 const fill = (text: string, values: Record<string, string | number>) => renderTemplate(text, { app: brand.name, ...values });
@@ -135,7 +146,13 @@ export function childFolders(children: Pick<Child, 'id' | 'name'>[]): Map<string
   return out;
 }
 
-export const audioPath = (entryId: string) => `audio/${entryId}.m4a`;
+/** A recording's extension and media type in the export, from its stored file name (ADR 0027). No name means M4A, as before. */
+export function recordingFileOf(audioUri: string | null | undefined): { extension: string; mimeType: ExportAudio['media_type'] } {
+  const { extension, mimeType } = RECORDING_FILES[containerOfRecording(audioUri)];
+  return { extension, mimeType };
+}
+
+export const audioPath = (entryId: string, audioUri?: string | null) => `audio/${entryId}${recordingFileOf(audioUri).extension}`;
 
 export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn'>): string {
   return `letters/${folder}/${e.occurredOn.slice(0, 7)}/${e.occurredOn.slice(0, 10)}_${e.id}.txt`;
@@ -199,7 +216,7 @@ function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): str
   if (!waiting(e)) lines.push(`${l.how}: ${provenance(e)}`);
   if (spoken(e)) {
     // Own letter: the file here, or a note that it is not on this phone. No line when no recording was kept.
-    const where = !e.own ? l.recordingElsewhere : !e.audioUri ? null : e.audioOnPhone ? audioPath(e.id) : l.recordingElsewhere;
+    const where = !e.own ? l.recordingElsewhere : !e.audioUri ? null : e.audioOnPhone ? audioPath(e.id, e.audioUri) : l.recordingElsewhere;
     if (where) lines.push(`${l.recording}: ${where}`);
   }
   lines.push(`${l.inBook}: ${e.inBook ? l.yes : l.no}`);
@@ -264,7 +281,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
               const missing = audioMissingReason(e);
               const audio =
                 spoken(e) && e.own && e.audioUri && e.audioOnPhone
-                  ? `<audio controls preload="none" src="${audioPath(e.id)}"></audio>`
+                  ? `<audio controls preload="none" src="${audioPath(e.id, e.audioUri)}"></audio>`
                   : missing
                     ? `<p class="note">${escapeHtml(r.recordingNotHere)}</p>`
                     : '';
@@ -433,7 +450,8 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     .map((e) => ({
       entryId: e.id,
       uri: e.audioUri!,
-      path: audioPath(e.id),
+      path: audioPath(e.id, e.audioUri),
+      mediaType: recordingFileOf(e.audioUri).mimeType,
       recordedSha256: e.audioSha256 ?? null,
       durationMs: e.audioDurationMs ?? null,
       sizeHint: e.audioSizeOnPhone ?? e.audioBytes ?? null,
@@ -471,7 +489,7 @@ export async function dataFiles(
         bytes: result.bytes,
         duration_ms: job.durationMs,
         codec: 'aac-lc',
-        media_type: 'audio/mp4',
+        media_type: job.mediaType,
         integrity: !job.recordedSha256 ? 'unchecked' : job.recordedSha256 === result.sha256 ? 'ok' : 'mismatch',
         recorded_sha256: job.recordedSha256,
       };
@@ -538,6 +556,7 @@ export async function dataFiles(
     plan: snapshot.plan,
     exported_from: 'phone',
     memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    consent_on_this_phone: snapshot.consent,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
   return {

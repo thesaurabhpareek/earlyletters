@@ -3,9 +3,20 @@
  * to 3.5). The steps, for one recording:
  *
  * 1. Voice activity: the recording is decoded in 5-minute windows to 16 kHz
- *    PCM in memory (ScribeAudio, no file ever written, LEGAL-REQ-018) and
- *    Silero VAD finds the speech. A window with nothing loud enough to be
- *    anyone talking skips VAD (transcribe-energy.ts).
+ *    PCM in memory (ScribeAudio, no decode buffer ever written, LEGAL-REQ-018)
+ *    and Silero VAD finds the speech. A window with nothing loud enough to be
+ *    anyone talking skips VAD (transcribe-energy.ts). Before that, the run's
+ *    length is checked against what the file proves (ADR 0027): an ADTS take
+ *    whose last frame a kill cut off may be read from a copy of its whole
+ *    frames, in Caches, removed when the run ends (capture/adts-file.ts). A
+ *    decoder still short of the counted frames refuses the run, and so does a
+ *    file that does not end as a kill leaves it, when the decoder cannot read
+ *    it as it is. So a take a kill cut off never loses its end without anyone
+ *    knowing. One case is left (ADR 0027, V3): damage inside the last 8 kB of
+ *    a file (about 1 s) that the decoder neither fails on nor reads short of
+ *    the frames before it; the audio after the damage could then go unheard.
+ *    The length saved at capture never refuses a run, and an M4A runs exactly
+ *    as before.
  * 2. No speech anywhere: the transcript is '' and Whisper never runs, so a
  *    white-noise machine can never become words (TDD 03 3.5.7 rule 1).
  * 3. The planner (transcribe-plan.ts) packs speech into chunks of at most
@@ -21,10 +32,17 @@
  *
  * Never translates (`translate: false`), never diarizes (`tdrzEnable:
  * false`, LEGAL-REQ-019). Abort stops the current chunk at once.
+ *
+ * Steps 1, 3 and 5 are pure (transcribe-run.ts); this file only plugs in
+ * ScribeAudio and whisper.rn. The Mac gate tool (experiments/gate.ts) runs
+ * the same steps with whisper.cpp, so its numbers describe this code.
  */
 import { ScribeAudio } from '../../modules/scribe-audio';
+import { adtsLengthEvidence, breaksInside } from './capture/adts';
+import { scanRecordingFile, wholeFramesCopy } from './capture/adts-file';
+import { containerOfRecording } from './capture/recording-file';
 import { installedPathsFor } from './models/speech-packs';
-import { acquireContexts, releaseContextsLater, whisperModule, type Contexts } from './models/whisper-runtime';
+import { acquireContexts, releaseContextsLater, whisperModule } from './models/whisper-runtime';
 import {
   TranscriberUnavailable,
   TranscriptionAborted,
@@ -35,28 +53,13 @@ import {
   type Transcriber,
   type Word,
 } from './transcribe';
-import { isNearSilent } from './transcribe-energy';
 import { toWhisperLanguage } from './transcribe-language';
-import { joinAtBoundaries, planChunks, vadWindows, type Chunk, type SpeechSpan } from './transcribe-plan';
-import { chunkText, collapseSpaces, joinChunks, looksLikeLoop, speechOnly, speechUnits, withoutOverlap, type ChunkDecode } from './transcribe-post';
-import { chunkPrompt, DEFAULT_PROMPT_SEEDS, dictionaryPrompt, isDictionaryEcho, stripPromptEcho } from './transcribe-prompt';
+import { planChunks } from './transcribe-plan';
+import { DECODE_OPTIONS, VAD_OPTIONS, findSpeech, openRecordingForRun, transcribeChunks, type ChunkDecoder } from './transcribe-run';
+import { chunkPrompt, DEFAULT_PROMPT_SEEDS, dictionaryPrompt } from './transcribe-prompt';
 
-/**
- * Silero VAD settings (E: starting values, tuned on the golden corpus,
- * TDD 03 OQ-5). 200 ms padding keeps word onsets Whisper needs (Silero's
- * default 30 ms cuts them); 300 ms minimum silence avoids splitting at
- * every breath.
- */
-export const VAD_OPTIONS = {
-  threshold: 0.5,
-  minSpeechDurationMs: 250,
-  minSilenceDurationMs: 300,
-  speechPadMs: 200,
-  samplesOverlap: 0.1,
-} as const;
-
-/** Temperature for the one retry of a chunk that looped (whisper.cpp's own fallback steps by 0.2). */
-export const LOOP_RETRY_TEMPERATURE = 0.4;
+// The run itself (voice detector settings, chunking, clean-up) is pure and shared with the Mac gate tool.
+export { LOOP_RETRY_TEMPERATURE, VAD_OPTIONS } from './transcribe-run';
 
 let bindingVersion: string | null = null;
 function binding(): string | null {
@@ -115,105 +118,65 @@ async function transcribeWithWhisper(
   });
 
   onProgress?.({ stage: 'preparing', done: 0, total: 0 });
-  const info = await audio.probe(input.audioUri);
-  const durationMs = Math.max(0, info.durationMs || input.durationMs || 0);
-  check();
-
-  const ctx = await acquireContexts(paths.asr, paths.vad);
-  try {
-    const spans = await findSpeech(ctx, input.audioUri, durationMs, check);
-    const plan = planChunks(spans, durationMs);
-    if (plan.length === 0) return result('', []);
-
-    const language = toWhisperLanguage(input.language);
-    const prompt = chunkPrompt(input.dictionary, input.language, input.promptSeed);
-    const seed = (input.promptSeed ?? DEFAULT_PROMPT_SEEDS[input.language] ?? '').trim();
-    const nameList = dictionaryPrompt(input.dictionary);
-
-    const decode = async (chunk: Chunk, temperature: number): Promise<ChunkDecode> => {
-      const pcm = await audio.decodePcm16(input.audioUri, chunk.pieces);
-      check();
-      const job = ctx.asr.transcribeData(pcm, {
-        language,
-        translate: false,
-        tdrzEnable: false,
-        tokenTimestamps: true,
-        maxLen: 1,
-        prompt: prompt || undefined,
-        temperature,
-      });
-      const stop = () => void job.stop().catch(() => {});
-      signal?.addEventListener('abort', stop);
-      try {
-        const res = await job.promise;
-        if (res.isAborted) throw new TranscriptionAborted();
-        return { result: res.result, segments: res.segments };
-      } finally {
-        signal?.removeEventListener('abort', stop);
-      }
-    };
-
-    const texts: string[] = [];
-    const words: Word[] = [];
-    for (const chunk of plan) {
-      check();
-      onProgress?.({ stage: 'listening', done: chunk.index, total: plan.length });
-
-      let used = chunk;
-      let piece = chunkText(used, await decode(used, 0));
-      if (piece.redecodeWithoutOverlap) {
-        used = withoutOverlap(chunk);
-        piece = chunkText(used, await decode(used, 0));
-      }
-      if (looksLikeLoop(piece.text, chunk.speechMs)) {
-        const again = chunkText(used, await decode(used, LOOP_RETRY_TEMPERATURE));
-        if (!again.redecodeWithoutOverlap && !looksLikeLoop(again.text, chunk.speechMs)) piece = again;
-        else meta.flags.push({ chunk: chunk.index, reason: 'repetition_loop' });
-      }
-
-      let text = speechOnly(piece.text);
-      let changed = text !== collapseSpaces(piece.text);
-      if (changed) meta.dropped.push({ chunk: chunk.index, reason: 'non_speech_tag' });
-      const echo = stripPromptEcho(text, seed);
-      if (echo.echoed) {
-        text = echo.text;
-        changed = true;
-        meta.dropped.push({ chunk: chunk.index, reason: 'prompt_echo' });
-      }
-      if (isDictionaryEcho(text, nameList)) {
-        text = '';
-        changed = true;
-        meta.dropped.push({ chunk: chunk.index, reason: 'dictionary_echo' });
-      }
-
-      texts.push(text);
-      // Word times only where the text is exactly what the tokens spell (v1.1 highlight).
-      if (!changed) words.push(...piece.words);
-      const first = chunk.pieces[0];
-      const last = chunk.pieces[chunk.pieces.length - 1];
-      meta.chunks.push({ startMs: first.srcStartMs, endMs: last.srcEndMs, units: speechUnits(text).length });
-    }
-    onProgress?.({ stage: 'listening', done: plan.length, total: plan.length });
-    return result(joinChunks(texts), words);
-  } finally {
-    releaseContextsLater();
-  }
-}
-
-/** Speech spans of the whole recording, from VAD over 5-minute windows. */
-async function findSpeech(ctx: Contexts, uri: string, durationMs: number, check: () => void): Promise<SpeechSpan[]> {
-  const audio = ScribeAudio!;
-  const windows = vadWindows(durationMs);
-  const spans: SpeechSpan[] = [];
-  for (const w of windows) {
-    check();
-    const pcm = await audio.decodePcm16(uri, [{ srcStartMs: w.startMs, srcEndMs: w.endMs, silenceBeforeMs: 0 }]);
-    if (isNearSilent(new Int16Array(pcm))) continue;
-    const segments = await ctx.vad.detectSpeechData(pcm, VAD_OPTIONS);
-    for (const s of segments) spans.push({ startMs: w.startMs + s.t0 * 10, endMs: w.startMs + s.t1 * 10 });
-  }
-  return joinAtBoundaries(
-    spans,
-    windows.slice(1).map((w) => w.startMs),
+  // An ADTS take proves its own length by its frame headers (ADR 0027); an M4A's length is in its index.
+  const adts = containerOfRecording(input.audioUri) === 'adts' ? await scanRecordingFile(input.audioUri) : null;
+  // NaN, infinity or an absurd length never reach the planner (security review L9), and a decoder short of what
+  // the file proves never plans the run: the take waits for its words instead of losing its end (ADR 0027).
+  const run = await openRecordingForRun(
+    { probeMs: async (uri) => (await audio.probe(uri)).durationMs, decode: (uri, pieces) => audio.decodePcm16(uri, [...pieces]) },
+    input.audioUri,
+    input.durationMs,
+    // A copy needs at least one whole frame; with none, a cut-off first frame is read (or refused) as it is.
+    adts ? { evidence: adtsLengthEvidence(adts), tail: adts.wholeBytes > 0 ? adts.tail : 'none', breakInside: breaksInside(adts) } : null,
+    () => wholeFramesCopy(input.audioUri, adts?.wholeBytes ?? 0),
   );
+  const durationMs = run.durationMs;
+  try {
+    check();
+    const ctx = await acquireContexts(paths.asr, paths.vad);
+    try {
+      const spans = await findSpeech(
+        durationMs,
+        {
+          decodeWindow: (startMs, endMs) => run.decode([{ srcStartMs: startMs, srcEndMs: endMs, silenceBeforeMs: 0 }]),
+          detectSpeech: (pcm) => ctx.vad.detectSpeechData(pcm, VAD_OPTIONS),
+        },
+        check,
+      );
+      const plan = planChunks(spans, durationMs);
+      if (plan.length === 0) return result('', []);
+
+      const language = toWhisperLanguage(input.language);
+      const prompt = chunkPrompt(input.dictionary, input.language, input.promptSeed);
+      const seed = (input.promptSeed ?? DEFAULT_PROMPT_SEEDS[input.language] ?? '').trim();
+      const nameList = dictionaryPrompt(input.dictionary);
+
+      const decode: ChunkDecoder = async (chunk, temperature) => {
+        const pcm = await run.decode(chunk.pieces);
+        check();
+        const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature });
+        const stop = () => void job.stop().catch(() => {});
+        signal?.addEventListener('abort', stop);
+        try {
+          const res = await job.promise;
+          if (res.isAborted) throw new TranscriptionAborted();
+          return { result: res.result, segments: res.segments };
+        } finally {
+          signal?.removeEventListener('abort', stop);
+        }
+      };
+
+      const { raw, words } = await transcribeChunks(
+        plan,
+        decode,
+        { seed, nameList, check, onProgress: (done, total) => onProgress?.({ stage: 'listening', done, total }) },
+        meta,
+      );
+      return result(raw, words);
+    } finally {
+      releaseContextsLater();
+    }
+  } finally {
+    run.close();
+  }
 }
