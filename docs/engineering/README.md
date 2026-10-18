@@ -47,7 +47,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-15 (chapter 11 added; the older rows were not re-verified, see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32), 39 are partly enforced, review-only or covered by the rule they cite, and 81 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
+Status on 2026-10-17 (chapter 11 added, REL-R19 to REL-R22 on 17 Oct; the older rows were not re-verified, see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 212 rules, 43 are enforced on `develop`, 47 are pending in open PRs or branches (mostly #26 to #32), 40 are partly enforced, review-only or covered by the rule they cite, and 82 have no check yet (chapter 11 adds 20 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 
