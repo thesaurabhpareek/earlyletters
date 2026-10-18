@@ -1510,6 +1510,35 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     expect(copies(P, id2)).toEqual(['You hid the spoon and the fork.']);
   }, 60_000);
 
+  it('[table C, note: an upload refused SCIMM for another reason] its words are a copy and nothing is lost; "Keep the other one" leaves the letter showing this phone\'s words until a newer server row arrives (a lag)', async () => {
+    const id = await shared('You found a snail on the step.');
+    keep(P, id);
+    await P.sync();
+    await Q.sync();
+    // A client bug changes this phone's raw transcript of a letter the server holds (not the second-Keep window).
+    P.db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', 'changed by a bug', id);
+    editWords(P, id, 'You found a snail on the step and named it.');
+    const w = watch();
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    expect(w.answers('entry.upsert', id)).toEqual([expect.objectContaining({ ok: false, code: 'SCIMM' })]);
+    expect(copies(P, id)).toEqual(['You found a snail on the step and named it.']);
+    expect(P.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM rejected_writes WHERE entity_id = ? AND code <> 'conflict'", id)!.n).toBe(0);
+    expect((await letter(id))?.final_text).toBe('You found a snail on the step.');
+    // No newer server row comes, so the letter still shows this phone's words. "Keep the other one" lets the copy go,
+    // and the letter goes on showing them: the lag. Nothing is lost: the server keeps its words, nothing is queued.
+    expect(local(P, id)?.final_text).toBe('You found a snail on the step and named it.');
+    expect(P.store.resolveConflict(P.store.listConflicts(id)[0].opId, 'theirs')).toBe(true);
+    await P.sync();
+    expect(local(P, id)?.final_text).toBe('You found a snail on the step and named it.');
+    expect(outbox(P)).toEqual([]);
+    expect((await letter(id))?.final_text).toBe('You found a snail on the step.');
+    // A newer server row ends the lag: the letter takes the server's words, and its raw transcript too.
+    editWords(Q, id, 'You found a snail on the step, and it found you.');
+    await Q.sync();
+    await P.sync();
+    expect(local(P, id)).toMatchObject({ final_text: 'You found a snail on the step, and it found you.', raw_transcript: 'You found a snail on the step.' });
+  }, 60_000);
+
   it('[table C, Keep sent again on the letter version] a Keep refused by the held row, its answer lost, the letter then made elsewhere: the repeat names the letter as current, and the Keep sent again applies with the same words', async () => {
     const id = await shared('You splashed in the sink.');
     Q.store.setDraftTyped(id, 'You splashed in the sink and then in me.');
