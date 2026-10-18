@@ -184,15 +184,29 @@ describe('the 30 day purge', () => {
     expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 10 * DAY).toISOString());
   });
 
-  it('[D-085] with sync on the server owns the clock: nothing is purged or erased here', () => {
+  it('[D-085] with sync on the server owns the clock for a letter it holds: the launch purge leaves it', () => {
     save(id1);
     store.deleteEntry(id1);
+    store.localSqlDb().run("UPDATE entries SET server_version = '100' WHERE id = ?", id1); // the server holds it
     setServerFeaturesForTests(true);
     const d = disk([`file:///Documents/${id1}.m4a`]);
     expect(store.purgeExpired(T0 + 60 * DAY, d.eraser)).toBe(0);
-    expect(store.eraseEntry(id1, d.eraser)).toBe(false);
     expect(d.present.size).toBe(1);
     expect(store.listDeleted()).toHaveLength(1);
+  });
+
+  it('[D-085] with sync on, a letter the server never held is purged here after its 30 days, with nothing sent (review B5)', () => {
+    save(id1);
+    save(id2, { finalText: 'Second letter.' });
+    store.deleteEntry(id1);
+    store.deleteEntry(id2);
+    store.localSqlDb().run("INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at) VALUES ('op-x', 1, 'entry.delete', ?, '{}', ?)", id2, new Date(clock).toISOString());
+    setServerFeaturesForTests(true);
+    const d = disk([`file:///Documents/${id1}.m4a`, `file:///Documents/${id2}.m4a`]);
+    expect(store.purgeExpired(T0 + 29 * DAY, d.eraser)).toBe(0);
+    expect(store.purgeExpired(T0 + 31 * DAY, d.eraser)).toBe(1);
+    expect(store.listDeleted().map((e) => e.id)).toEqual([id2]); // its delete is still on the way: the server decides
+    expect([...d.present]).toEqual([`file:///Documents/${id2}.m4a`]);
   });
 
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {
