@@ -3,7 +3,11 @@
 Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.3, 15 Oct 2026: ported to `develop` from Line B (`d1cbddb`, port map #117), marked for the on-device v1.0, amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread, then revised for the `app-store` environment gate and the 15 Oct reviews; where this file and ADR 0022 differed, ADR 0022 is what the founder approved. Rows that name files, sections or test rows that exist only on `auto/2026-10-05-fixes` (Line B) say so.
 Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-045, D-053, D-060, D-064 to D-067), `docs/ROADMAP.md` 2.1, `docs/FOUNDER_TASKS.md`, TDD 07 sections 9 to 11, `supabase/APPLY.md`, `scripts/packs/publish.ts` and ADR 0016 section 7, `docs/ops/AUTH_SETUP.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, `docs/ops/APP_SIZE.md`, `docs/legal/app-store-privacy-labels.md`, `docs/store/app-store.md`, `docs/qa/DEVICE_TEST_PLAN.md` 1.1.
 
-**v1.0 is on this phone only** (PR #54): no sign-in, accounts, sync or server copy of letters. Sections and rows that describe server work (sign-in setup, database migrations, Edge Functions, the demo account) apply from v1.1, when `EXPO_PUBLIC_SERVER_FEATURES` turns on; they are kept so v1.1 does not start from scratch, and are marked **v1.1** below.
+**Scope changed on 15 Oct (D-100, D-101, D-106).** This file was written for an on-device v1.0. v1.0 now has server features on behind the R-17 gate, the date moves, and a servers-on TestFlight alpha against staging comes first (target Thu 29 Oct; #152, `docs/release/AUTOMATION.md`). So:
+- Every row marked **v1.1** below (sign-in setup, database migrations, Edge Functions, the demo account, the co-parent exit) **applies to the v1.0 store release**.
+- Rows that say v1.0 has no sign-in, no account or no server (5.2 step 4, 5.3 step 3, 6.4, 6.8, section 10's opening line) are superseded for the store release.
+- The alpha runs on the preview lane; this train's store lane starts once the submission date is set.
+- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4).
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
