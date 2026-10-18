@@ -26,7 +26,7 @@ import { announce, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useReducedMotion } from '@/lib/motion';
-import { promiseSample, sampleA11yLabel, type SamplePiece } from './promise-sample.logic';
+import { promiseSample, putBackFix, sampleA11yLabel, undoPutBack, type SamplePiece } from './promise-sample.logic';
 
 const M = tokens.motion;
 /** The strike draws across its words this long, the next one this much later (EXPERIENCE_PASS 5.5). */
@@ -51,13 +51,13 @@ export function PromiseSample() {
   const putBackMark = (edit: number) => {
     if (putBack.includes(edit)) return;
     haptic('tap');
-    setPutBack((all) => [...all, edit]);
+    setPutBack((all) => putBackFix(all, edit));
     announce(`${pendingCopy.review.putBack} ${markText(edit)}`);
   };
   const undo = () => {
     if (last === null) return;
     haptic('tap');
-    setPutBack((all) => all.slice(0, -1));
+    setPutBack(undoPutBack);
   };
 
   const marks = sample.pieces.filter((x): x is Extract<SamplePiece, { kind: 'mark' }> => x.kind === 'mark');
@@ -154,13 +154,17 @@ function Mark({ text, order, back, onPress }: { text: string; order: number; bac
   const plainStyle = useAnimatedStyle(() => ({ opacity: 1 - out.value }));
   const washStyle = useAnimatedStyle(() => ({ opacity: wash.value }));
   const strikeStyle = useAnimatedStyle(() => ({ opacity: out.value, transform: [{ scaleX: draw.value }] }));
+  // 44 pt each way: the slop comes from the measured words, so a short mark ("um,") still reaches 44 pt wide.
+  const [width, setWidth] = useState(0);
   const pad = Math.max(0, (tokens.target.min - lineHeight) / 2);
+  const side = Math.max(8, Math.ceil((tokens.target.min - width) / 2));
 
   return (
     <Pressable
       onPress={back ? undefined : onPress}
       disabled={back}
-      hitSlop={{ top: pad, bottom: pad, left: 8, right: 8 }}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      hitSlop={{ top: pad, bottom: pad, left: side, right: side }}
       accessible={false}
       testID={back ? undefined : 'promise.mark'}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, bottom: 0, left: -2, right: -2, borderRadius: 4, backgroundColor: c.accentSoft }, washStyle]} />

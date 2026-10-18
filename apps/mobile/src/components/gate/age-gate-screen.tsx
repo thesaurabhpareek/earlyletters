@@ -24,7 +24,7 @@
  */
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, View, type Text as RNText } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ const SWAP_OUT = FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never);
 export function AgeGateScreen({ decision, refresh }: Props) {
   const g = copy.ageGate;
   const motion = useMotion();
+  const largeText = useIsLargeText();
   const [view, setView] = useState<'ask' | 'stop'>(decision);
   const [adult, setAdult] = useState<boolean | null>(null); // nothing preselected (K-07)
   const question = useRef<RNText>(null);
@@ -97,41 +98,47 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   return (
     <View className="flex-1 bg-background">
       <LampView scene="gate" persistKey="firstRun" />
-      <SafeAreaView className="flex-1" style={{ paddingHorizontal: ROOM.gutter }}>
-        {/* The mark never moves and never changes between the question and the stop line. */}
-        <Animated.View style={[{ marginTop: ROOM.markTop, alignItems: 'center' }, view === 'ask' ? leaving : null]}>
-          <QuotePair height={ROOM.markHeight} aligned={false} style={{ alignSelf: 'center' }} />
-        </Animated.View>
-        {view === 'ask' ? (
-          <Animated.View key="ask" exiting={SWAP_OUT} className="flex-1">
-            <Animated.View style={leaving}>
-              <Animated.View entering={motion.enter(2)} style={{ marginTop: ROOM.questionGap, alignItems: 'center' }}>
-                <Text ref={question} variant="display" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
-                  {g.title}
-                </Text>
+      <SafeAreaView className="flex-1">
+        {/* Both views scroll (S01, S02 at Dynamic Type): with flexGrow the column fills the screen and nothing moves when it
+            fits; at accessibility sizes on a small phone, Continue and "I answered by mistake" scroll into reach, since
+            someone who cannot reach Continue cannot pass the gate. One ScrollView for both, so the mark stays put. */}
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: ROOM.gutter }} keyboardShouldPersistTaps="handled" testID="gate.scroll">
+          {/* The mark never moves and never changes between the question and the stop line. */}
+          <Animated.View style={[{ marginTop: ROOM.markTop, alignItems: 'center' }, view === 'ask' ? leaving : null]}>
+            <QuotePair height={ROOM.markHeight} aligned={false} style={{ alignSelf: 'center' }} />
+          </Animated.View>
+          {view === 'ask' ? (
+            <Animated.View key="ask" exiting={SWAP_OUT} className="flex-1">
+              <Animated.View style={leaving}>
+                <Animated.View entering={motion.enter(2)} style={{ marginTop: ROOM.questionGap, alignItems: 'center' }}>
+                  <Text ref={question} variant="display" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
+                    {g.title}
+                  </Text>
+                </Animated.View>
               </Animated.View>
+              {/* Controls are opaque from the first frame (MOTION principle 2). */}
+              <AgeAnswers adult={adult} onChoose={setAdult} label={g.title} yes={g.yesButton} no={g.noButton} />
+              <View className="flex-1" />
+              <View style={{ paddingBottom: ROOM.footGap }}>
+                <Button size="lg" fullWidth disabled={adult === null} label={copy.common.continueButton} onPress={submit} testID="gate.continue" />
+              </View>
             </Animated.View>
-            {/* Controls are opaque from the first frame (MOTION principle 2). */}
-            <AgeAnswers adult={adult} onChoose={setAdult} label={g.title} yes={g.yesButton} no={g.noButton} />
-            <View className="flex-1" />
-            <View style={{ paddingBottom: ROOM.footGap }}>
-              <Button size="lg" fullWidth disabled={adult === null} label={copy.common.continueButton} onPress={submit} testID="gate.continue" />
-            </View>
-          </Animated.View>
-        ) : (
-          <Animated.View key="stop" entering={SWAP_IN} className="flex-1 items-center">
-            <View accessibilityLiveRegion="polite" style={{ marginTop: ROOM.questionGap }}>
-              <Text variant="title1" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
-                {g.stopTitle}
-              </Text>
-            </View>
-            {windowPassed ? (
-              <Animated.View entering={SWAP_IN} style={{ marginTop: ROOM.answersGap }}>
-                <Button size="lg" variant="secondary" label={g.mistakeButton} onPress={answeredByMistake} />
-              </Animated.View>
-            ) : null}
-          </Animated.View>
-        )}
+          ) : (
+            <Animated.View key="stop" entering={SWAP_IN} className="flex-1 items-center">
+              <View accessibilityLiveRegion="polite" style={{ marginTop: ROOM.questionGap }}>
+                <Text variant="title1" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
+                  {g.stopTitle}
+                </Text>
+              </View>
+              {windowPassed ? (
+                <Animated.View entering={SWAP_IN} style={{ marginTop: ROOM.answersGap, alignSelf: largeText ? 'stretch' : 'center' }}>
+                  {/* Full width at accessibility sizes, so the words wrap in a wide pill, not a round one. */}
+                  <Button size="lg" variant="secondary" fullWidth={largeText} label={g.mistakeButton} onPress={answeredByMistake} />
+                </Animated.View>
+              ) : null}
+            </Animated.View>
+          )}
+        </ScrollView>
       </SafeAreaView>
     </View>
   );

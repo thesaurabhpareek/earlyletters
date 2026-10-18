@@ -310,21 +310,23 @@ describe('Lamp gradient', () => {
       room: 'the age question',
       box: { width: 402, height: 874 },
       lights: [...shown('components/gate/age-gate-screen.tsx'), resolveLamp({ scene: 'gate' })!],
+      // the age question (P2, measured on e652c4a)
       text: [
-        { what: 'question', token: 'text', x: 20, y: 59, w: 334, h: 53 },
-        { what: 'body', token: 'textMuted', x: 20, y: 127, w: 274, h: 30 },
-        { what: 'Continue (not yet chosen)', token: 'textMuted', x: 166, y: 807, w: 69, h: 30 },
+        { what: 'question', token: 'text', x: 42, y: 195, w: 318, h: 50 },
+        { what: 'Yes', token: 'text', x: 92, y: 286, w: 27, h: 30 },
+        { what: 'No', token: 'text', x: 285, y: 286, w: 23, h: 30 },
+        { what: 'Continue (not yet chosen)', token: 'textMuted', x: 166, y: 807, w: 70, h: 30 },
       ],
     },
     {
       room: 'the welcome',
       box: { width: 402, height: 874 },
       lights: [...shown('app/onboarding.tsx'), resolveLamp({ scene: 'welcome' })!, resolveLamp({ scene: 'form' })!, resolveLamp({ scene: 'finish' })!],
+      // the welcome (P2, measured on e652c4a): the lockup is a drawing, not text; Begin the book sits on its own fill
       text: [
-        { what: 'title', token: 'text', x: 24, y: 336, w: 266, h: 66 },
-        { what: 'promise', token: 'textMuted', x: 24, y: 404, w: 328, h: 57 },
-        { what: 'voice line', token: 'text', x: 24, y: 481, w: 347, h: 54 },
-        { what: 'free line', token: 'textMuted', x: 24, y: 553, w: 208, h: 28 },
+        { what: 'title', token: 'text', x: 55, y: 216, w: 301, h: 216 },
+        { what: 'promise', token: 'textMuted', x: 29, y: 437, w: 348, h: 54 },
+        { what: 'free line', token: 'textMuted', x: 113, y: 498, w: 176, h: 23 },
       ],
     },
   ];
@@ -334,8 +336,8 @@ describe('Lamp gradient', () => {
     expect(shown('components/gate/age-gate-screen.tsx')).toEqual([resolveLamp({ scene: 'gate' })]);
     expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ scene: 'welcome' }), resolveLamp({ scene: 'finish' }), resolveLamp({ scene: 'form' })]);
     expect(shown('app/(tabs)/index.tsx')).toEqual([resolveLamp({ anchor: 'top' })]);
-    expect(ROOMS.find((r) => r.room === 'the welcome')!.lights).toContainEqual(resolveLamp({ scene: 'welcome' }));
-    expect(ROOMS.find((r) => r.room === 'the age question')!.lights).toContainEqual(resolveLamp({ scene: 'gate' }));
+    // ROOMS spreads shown() into each room's lights, so the boxes are checked under exactly what the screens mount; the
+    // exact pins above fail on any change to a screen's lamp (a "ROOMS contains" check here could not fail, review B2).
   });
 
   it('where text actually sits, each text keeps 4.5:1 in its own colour over its whole box (Tonight, the age question, the welcome)', () => {

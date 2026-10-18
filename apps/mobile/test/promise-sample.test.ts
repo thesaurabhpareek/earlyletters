@@ -13,7 +13,7 @@ import { en } from '@scribe/content';
 import { rulesFor, verifyEdits, withoutEdit, finalText, type Edit } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { markableEdits, promiseSample, sampleA11yLabel, samplePieces, sampleText } from '@/components/onboarding/promise-sample.logic';
+import { markableEdits, promiseSample, putBackFix, sampleA11yLabel, samplePieces, sampleText, undoPutBack } from '@/components/onboarding/promise-sample.logic';
 import { cleanSpoken } from '@/lib/transcription-queue/clean';
 
 const SRC = join(__dirname, '..', 'src');
@@ -61,10 +61,18 @@ describe('[S04] the sample is cleaned by the real engine, on the path a recordin
     let applied: Edit[] = [...sample.edits];
     while (applied.length) applied = withoutEdit(raw, applied, 0).applied;
     expect(finalText(raw, applied)).toBe(raw);
-    // One back, then Undo: the same text as before.
-    const before = sampleText(sample, []);
-    expect(sampleText(sample, [0])).not.toBe(before);
-    expect(sampleText(sample, [0].slice(0, -1))).toBe(before);
+    // Put back, then Undo, through the same functions the screen calls: the text goes back to the engine's.
+    const cleaned = sampleText(sample, []);
+    const one = putBackFix([], 1);
+    expect(sampleText(sample, one)).not.toBe(cleaned);
+    expect(sampleText(sample, undoPutBack(one))).toBe(cleaned);
+    // Putting the same fix back twice changes nothing; Undo returns the last one put back, not the first.
+    expect(putBackFix(one, 1)).toEqual([1]);
+    const both = putBackFix(one, 0);
+    expect(both).toEqual([1, 0]);
+    expect(sampleText(sample, both)).toBe(raw);
+    expect(undoPutBack(both)).toEqual([1]);
+    expect(undoPutBack([])).toEqual([]);
   });
 });
 
@@ -111,6 +119,8 @@ describe('[S04] the screen draws the engine, in the UI face, unsigned', () => {
     expect(screen).toMatch(/promiseSample\(p\.sampleRaw\)/);
     expect(screen).not.toMatch(/['"`]um,?['"`]/);
     expect(screen).toMatch(/copy\.common\.undoButton/);
+    expect(screen).toMatch(/setPutBack\(\(all\) => putBackFix\(all, edit\)\)/);
+    expect(screen).toMatch(/setPutBack\(undoPutBack\)/);
     expect(screen).toMatch(/pendingCopy\.review\.putBack/);
   });
 
@@ -126,6 +136,7 @@ describe('[S04] the screen draws the engine, in the UI face, unsigned', () => {
     expect(screen).toMatch(/height: tokens\.stroke\.editMark, backgroundColor: c\.editMark/);
     expect(tokens.stroke.editMark).toBe(1.5);
     expect(screen).toMatch(/tokens\.target\.min - lineHeight/);
+    expect(screen).toMatch(/tokens\.target\.min - width/);
   });
 
   it('first run has no "We can mishear" card; the first Review note and Settings still carry the registered text', () => {

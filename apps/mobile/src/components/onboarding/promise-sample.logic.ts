@@ -82,3 +82,13 @@ export function sampleText(sample: PromiseSample, putBack: readonly number[]): s
 export function sampleA11yLabel(sample: PromiseSample, putBack: readonly number[], takenOut: (words: string) => string): string {
   return sample.pieces.map((p) => (p.kind === 'mark' && !putBack.includes(p.edit) ? takenOut(p.text) : p.text)).join(' ');
 }
+
+/** Put a fix back (once). The list keeps the order fixes were put back in, so Undo returns the last one. */
+export function putBackFix(putBack: readonly number[], edit: number): number[] {
+  return putBack.includes(edit) ? [...putBack] : [...putBack, edit];
+}
+
+/** Undo: the last fix put back is a mark again. */
+export function undoPutBack(putBack: readonly number[]): number[] {
+  return putBack.slice(0, -1);
+}

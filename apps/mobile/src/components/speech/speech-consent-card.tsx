@@ -88,7 +88,10 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
         </>
       ) : choice === 'yes' ? (
         <View className="gap-2" accessibilityLiveRegion="polite">
-          <Text variant="callout">{percent === null ? t.chosenYes : fill(speechSettingsCopy.downloading, { n: percent })}</Text>
+          {/* VoiceOver hears this once, from the progress line below, with its value. */}
+          <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no">
+            {percent === null ? t.chosenYes : fill(speechSettingsCopy.downloading, { n: percent })}
+          </Text>
           <ProgressLine value={percent ?? 0} label={percent === null ? t.chosenYes : fill(speechSettingsCopy.downloading, { n: percent })} />
         </View>
       ) : (
