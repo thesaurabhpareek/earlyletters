@@ -5,8 +5,10 @@
  * is the length the file proves by itself; a decoder that reports less does not plan the run. A take
  * whose last frame a kill cut off is read from a copy of its whole frames, in Caches, and the stored
  * recording is never touched. The length saved at capture is the recorder's clock, not the file, so it
- * never refuses a run, and an M4A plans exactly as on develop. A file that breaks before its end is
- * refused with no copy. Fictional Asha family only; no real audio, frames built in the test.
+ * never refuses a run, and an M4A plans exactly as on develop. Only a tail exactly as a kill leaves it
+ * is read from the copy; any other tail (damage, a trailer) is refused when the decoder cannot read the
+ * file as it is, and a break past one frame's bytes is refused before anything is read. Fictional Asha
+ * family only; no real audio: frames are built in the test, some on the framing of a real encoder.
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
@@ -52,7 +54,7 @@ const sha = (b: Uint8Array) => createHash('sha256').update(b).digest('hex');
 describe('[ADR 0027] counting ADTS frames from their headers', () => {
   it('counts every whole frame of a finished take, at 48 kHz mono, with nothing left over', () => {
     const s = scanAdts(stream(47))!;
-    expect(s).toMatchObject({ frames: 47, sampleRate: 48000, channels: 1, tailBytes: 0 });
+    expect(s).toMatchObject({ frames: 47, sampleRate: 48000, channels: 1, tailBytes: 0, tail: 'none' });
     expect(s.wholeBytes).toBe(s.totalBytes);
   });
 
@@ -70,7 +72,7 @@ describe('[ADR 0027] counting ADTS frames from their headers', () => {
   ])('finds the tail of a take a kill cut off %s', (_name, extra) => {
     const whole = stream(20);
     const cut = concat(whole, adtsFrame(170).subarray(0, extra));
-    expect(scanAdts(cut)).toMatchObject({ frames: 20, wholeBytes: whole.length, tailBytes: extra });
+    expect(scanAdts(cut)).toMatchObject({ frames: 20, wholeBytes: whole.length, tailBytes: extra, tail: 'cut' });
   });
 
   it('reads CRC headers and frames with several raw data blocks', () => {
@@ -80,8 +82,8 @@ describe('[ADR 0027] counting ADTS frames from their headers', () => {
 
   it('stops at bytes that are not this stream\'s next frame', () => {
     const whole = stream(10);
-    expect(scanAdts(concat(whole, new Uint8Array(30).fill(0x41)))).toMatchObject({ frames: 10, tailBytes: 30 });
-    expect(scanAdts(concat(whole, adtsFrame(170, { sampleRateIndex: 4 })))).toMatchObject({ frames: 10 }); // 44.1 kHz frame
+    expect(scanAdts(concat(whole, new Uint8Array(30).fill(0x41)))).toMatchObject({ frames: 10, tailBytes: 30, tail: 'break' });
+    expect(scanAdts(concat(whole, adtsFrame(170, { sampleRateIndex: 4 })))).toMatchObject({ frames: 10, tail: 'break' }); // 44.1 kHz frame
   });
 
   it('tells a break inside the file (more bytes after the last whole frame than one frame can hold) from a cut-off tail', () => {
@@ -204,7 +206,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a sound recording is read where it is; no copy is made', async () => {
     const f = io({ [ORIGINAL]: 10_000 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0, breakInside: false }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'none', breakInside: false }, f.makeCopy);
     expect(run.durationMs).toBe(10_000);
     await run.decode(piece);
     run.close();
@@ -214,7 +216,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a cut-off take the decoder cannot open is read from a copy of its whole frames, removed at the end', async () => {
     const f = io({ [ORIGINAL]: Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' }), [COPY]: 9_950 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'cut', breakInside: false }, f.makeCopy);
     await run.decode(piece);
     run.close();
     expect(f.log).toEqual([`probe ${ORIGINAL}`, 'copy', `probe ${COPY}`, `decode ${COPY}`]);
@@ -223,7 +225,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a cut-off take the decoder reads short is tried again from the copy, and opens when that is whole', async () => {
     const f = io({ [ORIGINAL]: 6_000, [COPY]: 10_000 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'cut', breakInside: false }, f.makeCopy);
     expect(run.durationMs).toBe(10_000);
     run.close();
     expect(f.removed()).toBe(1);
@@ -231,23 +233,23 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('when even the copy is short, the run is refused and the copy removed: no words without their end', async () => {
     const f = io({ [ORIGINAL]: 6_000, [COPY]: 6_000 });
-    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy)).rejects.toMatchObject({ reason: 'decoder_short' });
+    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'cut', breakInside: false }, f.makeCopy)).rejects.toMatchObject({ reason: 'decoder_short' });
     expect(f.removed()).toBe(1);
   });
 
   it('a short decoder on a take with no cut-off frame is refused without a copy', async () => {
     const f = io({ [ORIGINAL]: 6_000 });
-    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 0, breakInside: false }, f.makeCopy)).rejects.toBeInstanceOf(RunInputError);
+    await expect(openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'none', breakInside: false }, f.makeCopy)).rejects.toBeInstanceOf(RunInputError);
     expect(f.log).not.toContain('copy');
   });
 
   it('a decode that throws mid-run switches to the copy once; a second failure is the job\'s', async () => {
     const f = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 }, [ORIGINAL]);
-    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, null, { evidence, tail: 'cut', breakInside: false }, f.makeCopy);
     await run.decode(piece);
     expect(f.log.slice(-3)).toEqual([`decode ${ORIGINAL}`, 'copy', `decode ${COPY}`]);
     const g = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 }, [ORIGINAL, COPY]);
-    const run2 = await openRecordingForRun(g.reader, ORIGINAL, null, { evidence, tailBytes: 5, breakInside: false }, g.makeCopy);
+    const run2 = await openRecordingForRun(g.reader, ORIGINAL, null, { evidence, tail: 'cut', breakInside: false }, g.makeCopy);
     await expect(run2.decode(piece)).rejects.toMatchObject({ code: 'ERR_SCRIBE_AUDIO_DECODE' });
     run.close();
     run2.close();
@@ -255,7 +257,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
 
   it('a file with a break inside is refused before anything is read, and no copy is made', async () => {
     const f = io({ [ORIGINAL]: 10_000, [COPY]: 10_000 });
-    const broken = { evidence, tailBytes: 9_000, breakInside: true };
+    const broken = { evidence, tail: 'break', breakInside: true } as const;
     await expect(openRecordingForRun(f.reader, ORIGINAL, 60_000, broken, f.makeCopy)).rejects.toMatchObject({ reason: 'break_inside' });
     expect(f.log).toEqual([]);
     expect(jobFailureOf(new RunInputError('break_inside'))).toBe('decode_failed');
@@ -264,7 +266,7 @@ describe('[ADR 0027] opening a recording for a run', () => {
   it('[review Y repro 1] a killed take whose decoder fails on the cut-off frame plans the copy over its frames, never the stored mark', async () => {
     const killed = { countedMs: 57_493.33, minDecodedMs: 57_428 };
     const f = io({ [ORIGINAL]: Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' }), [COPY]: 57_449.33 });
-    const run = await openRecordingForRun(f.reader, ORIGINAL, 60_000, { evidence: killed, tailBytes: 5, breakInside: false }, f.makeCopy);
+    const run = await openRecordingForRun(f.reader, ORIGINAL, 60_000, { evidence: killed, tail: 'cut', breakInside: false }, f.makeCopy);
     expect(run.durationMs).toBe(57_493.33);
     run.close();
   });
@@ -274,6 +276,132 @@ describe('[ADR 0027] opening a recording for a run', () => {
     const run = await openRecordingForRun(f.reader, ORIGINAL, 10_000, null, f.makeCopy);
     await expect(run.decode(piece)).rejects.toMatchObject({ code: 'ERR_SCRIBE_AUDIO_DECODE' });
     expect(f.log).not.toContain('copy');
+  });
+});
+
+/**
+ * The framing of a real encoder's ADTS: every frame length, in order, of ffmpeg 6.1's native AAC encoder
+ * (6 s of a 330 Hz tone with pink noise, 48 kHz, mono, 64 kbit/s; 283 frames, 50,565 bytes). Its headers are
+ * `FF F1 4C 40 .. .. FC` with the length bits set, which adtsFrame builds byte for byte; the payload is filler,
+ * since the scanner reads only headers. No audio is committed (.gitignore: never commit recordings).
+ */
+const REAL_FRAME_LENGTHS = [
+  191, 216, 167, 162, 178, 184, 174, 171, 172, 184, 186, 187, 171, 178, 174, 172, 189, 170, 162, 184, 185, 176, 189, 188, 186, 184, 173, 175,
+  179, 202, 175, 165, 170, 187, 165, 171, 167, 172, 188, 178, 182, 171, 172, 190, 183, 198, 186, 184, 170, 184, 171, 172, 167, 178, 195, 179,
+  174, 180, 180, 167, 171, 191, 198, 180, 174, 182, 181, 183, 172, 172, 184, 155, 193, 200, 174, 185, 189, 196, 163, 185, 162, 174, 176, 183,
+  177, 178, 172, 176, 185, 197, 182, 173, 174, 173, 178, 181, 171, 165, 178, 172, 192, 181, 179, 176, 188, 170, 168, 189, 166, 171, 190, 176,
+  190, 167, 163, 188, 188, 186, 172, 185, 188, 172, 174, 205, 192, 185, 164, 186, 171, 166, 171, 175, 187, 173, 173, 163, 203, 164, 163, 178,
+  171, 201, 188, 173, 176, 186, 197, 183, 167, 167, 170, 171, 173, 192, 188, 188, 184, 177, 167, 171, 176, 173, 177, 172, 173, 175, 169, 184,
+  177, 183, 197, 186, 183, 189, 167, 172, 176, 169, 180, 173, 202, 192, 179, 180, 168, 182, 175, 175, 174, 199, 166, 167, 177, 169, 191, 171,
+  179, 175, 180, 183, 184, 181, 177, 178, 191, 182, 166, 170, 173, 176, 178, 181, 189, 183, 175, 178, 174, 176, 170, 179, 187, 176, 176, 177,
+  192, 175, 174, 170, 183, 176, 169, 178, 181, 195, 178, 175, 182, 167, 171, 179, 178, 186, 179, 183, 169, 166, 178, 185, 180, 190, 175, 182,
+  177, 173, 178, 177, 180, 178, 185, 170, 189, 170, 169, 180, 186, 176, 172, 183, 178, 176, 181, 176, 183, 177, 174, 172, 174, 183, 180, 179,
+  179, 174, 215,
+];
+const realStream = () => concat(...REAL_FRAME_LENGTHS.map((len) => adtsFrame(len - 7)));
+
+/**
+ * A decoder that behaves as Core Audio might at worst (V3 finds out): it reads whole frames exactly, priming
+ * trimmed, and fails on any bytes after the last whole frame. `copies` holds what makeCopy wrote.
+ */
+function strictDecoder(files: Map<string, Uint8Array>) {
+  const lengthOf = (uri: string) => {
+    const scan = scanAdts(files.get(uri)!);
+    if (!scan || scan.tail !== 'none') throw Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' });
+    return ((scan.frames * AAC_FRAME_SAMPLES - AAC_PRIMING_SAMPLES) / 48000) * 1000;
+  };
+  return {
+    probeMs: async (uri: string) => lengthOf(uri),
+    decode: async (uri: string) => new ArrayBuffer(lengthOf(uri) > 0 ? 2 : 0),
+  };
+}
+const factsOf = (bytes: Uint8Array) => {
+  const scan = scanAdts(bytes)!;
+  return { scan, facts: { evidence: adtsLengthEvidence(scan), tail: scan.wholeBytes > 0 ? scan.tail : 'none', breakInside: breaksInside(scan) } as const };
+};
+
+describe('[ADR 0027, review Y] only a tail exactly as a kill leaves it is read from the copy', () => {
+  it('a kill cut at every byte of the last 4000 of a real encoder\'s stream is judged a kill cut, never a break, and the run reads its whole frames', async () => {
+    const full = realStream();
+    expect(full.length).toBe(50_565);
+    let cuts = 0;
+    let boundaries = 0;
+    const misjudged: number[] = [];
+    for (let end = full.length - 4000; end < full.length; end++) {
+      const killed = full.subarray(0, end);
+      const { scan, facts } = factsOf(killed);
+      if (scan.tailBytes === 0) {
+        boundaries += 1;
+        continue;
+      }
+      cuts += 1;
+      if (scan.tail !== 'cut' || breaksInside(scan)) {
+        misjudged.push(end);
+        continue;
+      }
+      const files = new Map([['orig', killed]]);
+      const run = await openRecordingForRun(strictDecoder(files), 'orig', 60_000, facts, async () => {
+        files.set('copy', killed.subarray(0, scan.wholeBytes));
+        return { uri: 'copy', remove: () => void files.delete('copy') };
+      });
+      if (run.durationMs !== facts.evidence.countedMs) misjudged.push(end);
+      run.close();
+      if (files.has('copy')) misjudged.push(end);
+    }
+    expect(misjudged).toEqual([]);
+    expect(boundaries).toBe(22); // the frames that end in the last 4000 bytes
+    expect(cuts).toBe(4000 - boundaries);
+  });
+
+  it('a kill cut through CRC headers (9 bytes) is a kill cut at every byte too', () => {
+    const crc = concat(...Array.from({ length: 12 }, (_, i) => adtsFrame(150 + i, { crc: true })));
+    for (let end = 9; end < crc.length; end++) {
+      const scan = scanAdts(crc.subarray(0, end))!;
+      expect(scan.tail, `cut at ${end}`).toBe(scan.tailBytes === 0 ? 'none' : 'cut');
+    }
+  });
+
+  it('[review Y] damage inside the last 8 kB (the sync byte of the frame 20 from the end) is a break: with the decoder failing on it, the run is refused and no copy is made', async () => {
+    const damaged = realStream();
+    const at = REAL_FRAME_LENGTHS.slice(0, -20).reduce((n, len) => n + len, 0);
+    damaged[at] = 0x00;
+    const { scan, facts } = factsOf(damaged);
+    expect(scan).toMatchObject({ frames: REAL_FRAME_LENGTHS.length - 20, tail: 'break' });
+    expect(breaksInside(scan)).toBe(false); // inside one frame's bytes: not refused up front
+    let copies = 0;
+    const makeCopy = async () => {
+      copies += 1;
+      return { uri: 'copy', remove: () => {} };
+    };
+    const files = new Map([['orig', damaged]]);
+    await expect(openRecordingForRun(strictDecoder(files), 'orig', null, facts, makeCopy)).rejects.toMatchObject({ reason: 'break_inside' });
+    // A decoder that opens it but reads short of the frames before the damage: refused the same way.
+    const short = { probeMs: async () => facts.evidence.minDecodedMs - 1, decode: async () => new ArrayBuffer(2) };
+    await expect(openRecordingForRun(short, 'orig', null, facts, makeCopy)).rejects.toMatchObject({ reason: 'break_inside' });
+    // A decoder that opens it and then fails mid-run: refused, never switched to a copy.
+    const failsLater = { probeMs: async () => facts.evidence.countedMs, decode: async () => Promise.reject(Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' })) };
+    const run = await openRecordingForRun(failsLater, 'orig', null, facts, makeCopy);
+    await expect(run.decode([{ srcStartMs: 0, srcEndMs: 1000, silenceBeforeMs: 0 }])).rejects.toMatchObject({ reason: 'break_inside' });
+    run.close();
+    expect(copies).toBe(0);
+    expect(jobFailureOf(new RunInputError('break_inside'))).toBe('decode_failed');
+  });
+
+  it('a trailer a writer might add after a finished take is a break, but one the decoder reads well never refuses the take', async () => {
+    const tag = new Uint8Array(128).fill(0x20);
+    tag.set(new TextEncoder().encode('TAG'), 0); // an ID3v1 block, for example
+    const finished = concat(realStream(), tag);
+    const { scan, facts } = factsOf(finished);
+    expect(scan).toMatchObject({ frames: REAL_FRAME_LENGTHS.length, tail: 'break', tailBytes: 128 });
+    const readsWell = { probeMs: async () => facts.evidence.countedMs - (AAC_PRIMING_SAMPLES / 48000) * 1000, decode: async () => new ArrayBuffer(2) };
+    let copies = 0;
+    const run = await openRecordingForRun(readsWell, 'orig', null, facts, async () => {
+      copies += 1;
+      return { uri: 'copy', remove: () => {} };
+    });
+    expect(run.durationMs).toBe(facts.evidence.countedMs);
+    run.close();
+    expect(copies).toBe(0);
   });
 });
 

@@ -229,6 +229,20 @@ describe('[ADR 0027] the length saved at capture never refuses the transcription
     expect(copiesInCaches()).toEqual([]);
     expect(sha256(h.disk.files.get(uri)!.data)).toBe(sha256(broken));
   });
+  it('[review Y] damage inside the last 8 kB (not a kill cut) is refused when the decoder fails on it: no copy of the frames before it, nothing decoded', async () => {
+    const app = await launch();
+    h.failsOnCutFrame = true;
+    const damaged = stream(400);
+    // stream() frames are 7 + 160 + (i % 5) bytes long: zero the sync byte of the frame 20 from the end.
+    damaged[Array.from({ length: 380 }, (_, i) => 167 + (i % 5)).reduce((n, len) => n + len, 0)] = 0x00;
+    const uri = takeAt('recording-5D2E0F11-0000-4000-8000-0000000057B2.aac', damaged);
+    const refused = await transcribe(app, uri, 9_000).catch((e: unknown) => e);
+    expect(refused).toMatchObject({ name: 'RunInputError', reason: 'break_inside' });
+    expect(app.jobFailureOf(refused)).toBe('decode_failed');
+    expect(h.windows).toEqual([]);
+    expect(copiesInCaches()).toEqual([]);
+    expect(sha256(h.disk.files.get(uri)!.data)).toBe(sha256(damaged));
+  });
 });
 
 describe('[ADR 0027, privacy] the whole-frame copy never outlives an erase', () => {
