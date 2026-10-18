@@ -27,6 +27,8 @@ const h = vi.hoisted(() => ({
   m4aMs: new Map<string, number>(),
   /** Core Audio might throw on a partial last ADTS frame (V3 finds out); some tests say it does. */
   failsOnCutFrame: false,
+  /** Past damage, Core Audio might stop silently (the default here) or read on to the frames after it (V3). */
+  readsPastDamage: false,
   /** Runs once, inside the first decode: something the person does while the words are being written. */
   duringDecode: null as null | (() => void),
   probed: [] as string[],
@@ -97,7 +99,8 @@ vi.mock('../modules/scribe-audio', async () => {
     }
     const scan = scanAdts(file.data);
     if (!scan || (h.failsOnCutFrame && scan.tailBytes > 0)) throw Object.assign(new Error('decode'), { code: 'ERR_SCRIBE_AUDIO_DECODE' });
-    return ((scan.frames * 1024 - 2112) / 48000) * 1000; // Apple's assumed priming trimmed (TN2258)
+    const frames = scan.frames + (h.readsPastDamage ? ((scan as { framesAfterBreak?: number }).framesAfterBreak ?? 0) : 0);
+    return ((frames * 1024 - 2112) / 48000) * 1000; // Apple's assumed priming trimmed (TN2258)
   };
   return {
     ScribeAudio: {
@@ -174,6 +177,7 @@ beforeEach(() => {
   layOutApp(h.disk);
   h.m4aMs = new Map();
   h.failsOnCutFrame = false;
+  h.readsPastDamage = false;
   h.duringDecode = null;
   h.probed = [];
   h.windows = [];
@@ -242,6 +246,30 @@ describe('[ADR 0027] the length saved at capture never refuses the transcription
     expect(h.windows).toEqual([]);
     expect(copiesInCaches()).toEqual([]);
     expect(sha256(h.disk.files.get(uri)!.data)).toBe(sha256(damaged));
+  });
+  it('[review Y on #219] damage inside the last 8 kB that the decoder stops at without an error is refused: the frames after it are counted, so the decoder reads short', async () => {
+    const app = await launch();
+    const damaged = stream(400);
+    damaged[Array.from({ length: 380 }, (_, i) => 167 + (i % 5)).reduce((n, len) => n + len, 0)] = 0x00; // sync byte, 20 frames from the end
+    const uri = takeAt('recording-5D2E0F11-0000-4000-8000-0000000057B3.aac', damaged);
+    const refused = await transcribe(app, uri, 9_000).catch((e: unknown) => e);
+    expect(refused).toMatchObject({ name: 'RunInputError', reason: 'break_inside' });
+    expect(app.jobFailureOf(refused)).toBe('decode_failed');
+    expect(h.probed).toEqual([uri]);
+    expect(h.windows).toEqual([]);
+    expect(copiesInCaches()).toEqual([]);
+  });
+
+  it('[review Y on #219] the same damaged take transcribes over every frame the file proves when the decoder reads past the damage', async () => {
+    const app = await launch();
+    h.readsPastDamage = true;
+    const damaged = stream(400);
+    damaged[Array.from({ length: 380 }, (_, i) => 167 + (i % 5)).reduce((n, len) => n + len, 0)] = 0x00;
+    const uri = takeAt('recording-5D2E0F11-0000-4000-8000-0000000057B4.aac', damaged);
+    const res = await transcribe(app, uri, 9_000);
+    expect(res.outcome).toBe('ok');
+    expect(h.windows[0].endMs).toBeCloseTo(framesMs(399), 6); // 380 before the damage, 19 after it
+    expect(copiesInCaches()).toEqual([]);
   });
 });
 
