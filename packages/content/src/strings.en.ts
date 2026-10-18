@@ -1265,9 +1265,9 @@ export const en = {
     body: "We ask everyone the same question.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     yesButton: "Yes",
     noButton: "No",
-    // Held until P2: today's stop screen also shows stopBody, so the new title would repeat its sentence
-    // (spec S02 has the new words).
-    stopTitle: "Thank you for telling us.",
+    // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop. Switched with P2's stop screen,
+    // which no longer shows stopBody or stopNote.
+    stopTitle: "{app} is currently for adults 18 and over",
     stopBody: "{app} is currently for adults 18 and over.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (its sentence became the title)
     // Only partly true (the time of the No is stored, D-026), and it refers to nothing.
     stopNote: "Nothing you entered has been kept.", // retired by EXPERIENCE_PASS_2026-10; delete in P7

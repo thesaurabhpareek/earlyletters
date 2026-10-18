@@ -45,8 +45,10 @@ function leaves(value: unknown, path = ''): Leaf[] {
 // speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
 
-/** Section 4 CHG keys with their new words: P0's (87 in the spec, less the 13 it held), then the screen packages' switches. */
+/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below), and the held keys switched since. */
 const CHANGED = [
+  // Switched by P2 with the stop screen that shows it alone (S02).
+  'en.ageGate.stopTitle',
   'en.onboarding.child.nameLabel',
   'en.onboarding.child.expectingHelp',
   'en.onboarding.child.addAnotherHelp',
@@ -221,7 +223,6 @@ const WE_ALLOWED = new Set([
  * billingCopy.plan.* is registered text (in-app-disclosures.md section 3), so its new words wait for counsel.
  */
 const HELD: Record<string, string> = {
-  'en.ageGate.stopTitle': 'P2', // the stop screen also shows stopBody, so the new title would repeat it
   'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
   'en.errors.micDenied.body': 'P4',
   'en.readTogether.nowReading': 'P5', // the newborn and Before You datelines are built another way until P5
