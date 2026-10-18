@@ -32,6 +32,7 @@ import {
   openedAtRoot,
   pageTurnPlan,
   paperTone,
+  holdDip,
   pressTransform,
   pressedRect,
   routeTransitions,
@@ -297,6 +298,23 @@ describe('card to page (MOTION 5f)', () => {
     expect(carryFrame(card, cardText, pageText, screen, (M.cardToPage.contentFrom + CARD_TO_PAGE.toneFrom) / 2).cardFade).toBeCloseTo(0.5);
   });
 
+  it("while the veil and the paper are partway, the card's fade takes the same share of the page's paper as the card under it", () => {
+    // Composite one channel, the card's surface S = 1 and the page's paper B = 0: the card, the veil of B at v over it,
+    // then the paper of S at v over that. What is left of B is exactly the share laid over the card's fade.
+    const over = (under: number, colour: number, alpha: number) => under * (1 - alpha) + colour * alpha;
+    for (let i = 0; i <= 20; i++) {
+      const v = i / 20;
+      const card = over(over(1, 0, v), 1, v);
+      expect(1 - card).toBeCloseTo(holdDip(v));
+      // The fade's opaque end, S with that share of B over it, matches the card beside it.
+      expect(over(1, 0, holdDip(v))).toBeCloseTo(card);
+    }
+    expect(holdDip(0)).toBe(0);
+    expect(holdDip(1)).toBe(0);
+    expect(holdDip(0.5)).toBe(0.25);
+    expect(holdDip(1.2)).toBe(0);
+  });
+
   it('the carried words are home once within homePt of their place on the page, for the rest of the page to come in (useCardToPagePhase)', () => {
     expect(CARD_TO_PAGE.homePt).toBe(4);
     const travel = Math.hypot(pageText.x - cardText.x, pageText.y - cardText.y);
@@ -502,7 +520,11 @@ describe('card to page (MOTION 5f)', () => {
     expect(src).toContain('const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));');
     // No edges, corners or boxes: nothing that could leave a joint.
     expect(src).not.toMatch(/FadeCorner|veilBox|needsOffscreenAlphaCompositing/);
-    expect(src.match(/<FadeEdge /g)).toHaveLength(1); // the card's own fade over its last line
+    // The card's own fade over its last line, in the card's surface, and the page's paper laid over it by holdDip.
+    expect(src.match(/<FadeEdge /g)).toHaveLength(2);
+    expect(src).toContain('<FadeEdge color={c.surfaceRaised} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
+    expect(src).toContain('<FadeEdge color={c.bg} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
+    expect(src).toContain('const cardFadeDip = useAnimatedStyle(() => ({ opacity: carrying.value ? holdDip(veil.value) : 0 }));');
     // To the page: the veil on the lamp's leaving line, the card holding, then the spring.
     expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
     expect(src).toContain("p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard')");

@@ -269,6 +269,18 @@ export const CARD_TO_PAGE = {
   homePt: HOME_PT,
 } as const;
 
+/**
+ * Carried, the paper over the card comes and goes with the veil, so while both are partway (the hold, and the lift on
+ * the way back) the card under the carried words shows the page's paper by this much: the veil's `v` over the card,
+ * less the paper's `v` over that, v(1 - v), a quarter at most, half way. The card's fade over its last line is drawn
+ * in the card's surface; the same share of the page's paper is laid over it, so its end matches the card beside it.
+ */
+export function holdDip(veil: number): number {
+  'worklet';
+  const v = Math.min(1, Math.max(0, veil));
+  return v * (1 - v);
+}
+
 /** How far the paper has turned from the card's surface (0) to the page's (1), at `progress`. */
 export function paperTone(progress: number): number {
   'worklet';

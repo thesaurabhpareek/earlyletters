@@ -78,6 +78,7 @@ import {
   carryFrame,
   clearProgress,
   hiddenBehind,
+  holdDip,
   paperTone,
   pressTransform,
   pressedRect,
@@ -357,6 +358,8 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const cardFade = useAnimatedStyle(() => ({
     opacity: cardWasCut(ct.value, pt.value) ? carryFrame(from.value, ct.value, pt.value, screen, p.value).cardFade : 0,
   }));
+  // The card under the words dips toward the page's paper while the veil and the paper are partway: so does its fade.
+  const cardFadeDip = useAnimatedStyle(() => ({ opacity: carrying.value ? holdDip(veil.value) : 0 }));
 
   // The carried words are home: the page may bring in the rest of itself (useCardToPagePhase). Once, on the way in.
   useAnimatedReaction(
@@ -488,6 +491,9 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
               {opening(null)}
               <Animated.View style={[fadeEdgeBox(lineHeight, rtl), cardFade]}>
                 <FadeEdge color={c.surfaceRaised} side={rtl ? 'left' : 'right'} style={StyleSheet.absoluteFill} />
+                <Animated.View style={[StyleSheet.absoluteFill, cardFadeDip]}>
+                  <FadeEdge color={c.bg} side={rtl ? 'left' : 'right'} style={StyleSheet.absoluteFill} />
+                </Animated.View>
               </Animated.View>
             </Animated.View>
             {/* The rest of the letter, below them: cross-fades in, and never draws past the paper. */}
