@@ -628,7 +628,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-108 | Backup recovery: a device enrolled for at least 7 days approves a restore request; F08-REQ-034 amended to the backup server as built (ten functions, nine settings) | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
 | D-109 | Experience pass calls F2 to F8 (PR #170 section 7): lamp gradient allowed, app.welcome lockup, welcome-first order held for counsel, Declared Age Range owner, Plus display names, server surfaces in v1.0, typed letters skip Review | Delegated call by the coordinator (founder may reverse) | Yes, except F4 (held) | 2026-10-16 |
 | D-110 | Lamp contrast (PR #170 P1, PR #192): the everyday text colours hold 4.5:1 everywhere at every lamp tone's peak; the status colours hold 4.5:1 where text sits and never sit on the gate's or Read together's lit paper; tests over three phone sizes | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-16 |
-| D-111 | Alpha calls resolved, 17 Oct: fictional family only on main, Vercel previews off, D-097 domains, English-only transcription, kill test on the runner with a Mac fallback, D-104 confirmed, erasure records kept until the book or account is deleted, the R-17 calls on #140, held-draft sync on in build 2, the first keep's transcript stands, promise copy about 60 words, the name field stays in view (480 pt); the alpha merge queue runs on two reviews and green CI | Decided (founder, 17 Oct 2026); counsel items open | Yes | 2026-10-17 |
+| D-111 | Alpha calls resolved, 17 Oct: fictional family only on main, Vercel previews off, D-097 domains, English-only transcription, kill test on the runner with a Mac fallback, D-104 confirmed, erasure records kept until the book or account is deleted, the R-17 calls on #140, held-draft sync on in build 2, the first keep's transcript stands, promise copy about 60 words, the name field stays in view (480 pt) | Decided (founder, 17 Oct 2026); counsel items open | Yes | 2026-10-17 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -717,14 +717,14 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Owner:** coordinator; founder for reversal; P1 (stream S15) for the tests.
 
 ### D-111 Alpha calls resolved (founder, 17 Oct 2026)
-- **Status:** Decided by the founder, 17 Oct 2026, about 11:00 PM PT, by accepting the recommendations in the alpha readiness plan as they stood that evening. Items that need counsel stay open and are marked.
+- **Status:** Decided by the founder, 17 Oct 2026, about 11:00 PM PT, by accepting the recommendations in the alpha readiness plan (the founder's plan doc of 16 Oct; its repo copies are `docs/release/ALPHA_PLAN.md` on PR #152 and `docs/release/AUTOMATION.md` on `develop`) as they stood that evening. Items that need counsel stay open and are marked.
 - **Decision:**
   1. The website copy on `main` uses the fictional family only. The real-family-name guard runs in `main`'s CI. The fix deploys with its merge. A history purge is not requested.
   2. Vercel preview deployments are off for this project: only `main` builds. This stops pull requests into `develop` from hitting the free plan's daily deploy cap. Vercel Pro before commercial use stays a founder purchase.
   3. Domains: D-097 (`earlyletters.app` as a Cloudflare zone for the pack host), not D-063.
   4. The alpha transcribes English only. Another language needs a native reviewer first.
   5. The 500-kill test runs on the hosted macOS runner, with the founder's Mac and a silent virtual microphone as the fallback if the runner cannot record (AF-14).
-  6. D-104 confirmed: backup is free for everyone, and the backup screen may say so.
+  6. D-104 item 2 confirmed: backup is free for everyone in v1.0 (not a Plus feature), and the backup screen may say so. D-104 items 1 and 3 are not changed here.
   7. The server keeps the record that a letter was erased (ids and times, never words) until the book or the account is deleted, so an offline phone cannot bring an erased letter back after the 60-day forget. The privacy policy's retention section says so. Counsel reviews that wording (open).
   8. The R-17 database gate (#140): accept the rate limits and measure them during the alpha; never name the child before the invitee consents; accept the pull-timing residual for the family alpha and fix it before public launch. The remaining three calls on #140 (the invite contract, one data class, purged-id retention) take S02's recommended option, recorded on the pull request.
   9. Held-draft sync between two phones of one author ships on in build 2 (#208 question 6). `app.held_sync = 'off'` stays as the switch that turns it off with no new build.
@@ -732,6 +732,5 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
   11. The first-run promise screen is shortened to about 60 words. The content owner drafts it under the content rules, with the meaning of its recording and privacy lines unchanged.
   12. The name step's cover rule changes from 640 pt of free height to "the name field stays in view", with 480 pt as the threshold. The experience spec is updated.
   13. Legal pages for Friends on build 2: which server-on pages are needed is counsel's call (open). Holding pages otherwise.
-  14. The alpha merge queue in the plan (#188, #201, #126, #125, #145, #210, #211, #179, #146, #166, #182, #138, #178, #202, #205, #139, #140, #208, #151, #150, #184, #148, #165, #193, #214, #215, and #144 into `main`) merges in that order as each pull request gets two passing reviews on its current head and green CI; a database pull request also needs `npm run test:db` green. The coordinator runs the queue for the alpha and records each merge on its pull request. Steps that need the founder's own accounts or hands (Apple, Expo, App Store Connect, the signing key, Resend, the staging organization, `EXPO_TOKEN`, counsel) stay with the founder, as does the Thu 29 go/no-go (F27).
 - **Effects:** pull requests follow for item 1 (into `main`) and items 11 and 12 (content and the spec). Item 2 is a Vercel project setting. Items 3 to 6 and 8 are recorded on their pull requests and in the alpha plan. Items 9 and 10 are built on #182 and #208.
 - **Owner:** founder; coordinator; counsel for items 7 and 13.
