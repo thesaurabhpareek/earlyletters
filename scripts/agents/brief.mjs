@@ -216,6 +216,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
+import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
 // docs/agents/BOARD.md on develop. Their live claims are off limits.
@@ -280,6 +281,7 @@ const doc = [
   ...assignmentSection(),
   "",
   ...otherThreadsSection(),
+  ...memoryBrief.briefLines({ ROOT, handle, recent }),
   "## Finish the run",
   "",
   `1. Labels on every PR you open or update: \`agent:${handle}\` and \`from:agent\` (\`gh pr edit <n> --add-label agent:${handle},from:agent\`).`,

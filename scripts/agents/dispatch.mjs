@@ -24,6 +24,10 @@ import {
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
 import { needsIndependentReview } from "./hardening.mjs";
+import * as lane from "./lane.mjs";
+import * as reviewfp from "./reviewfp.mjs";
+import * as verdicts from "./verdicts.mjs";
+import * as pause from "./pause.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -101,6 +105,9 @@ for (const [handle, c] of Object.entries(state.claims)) {
 for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
   delete state.claims[h];
 }
+// Hardening hooks (docs/agents/hardening/). Each module is optional and removable.
+const hctx = () => ({ state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames });
+lane.recordTick(hctx());
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
 // ---------- per-PR facts (lazy, cached) ----------
@@ -259,6 +266,8 @@ for (const agent of roster.agents) {
     ? { mode: env.FORCE_MODE || "task", task: env.FORCE_TASK, label: `${env.FORCE_MODE || "task"} ${env.FORCE_TASK}` }
     : nextWork(agent, mine, queue);
   if (!work) { row.now = `idle: ${idleReason(agent, mine)}`; continue; }
+  const pauseWhy = pause.blockedReason(hctx(), agent, work);
+  if (pauseWhy) { row.now = `idle: ${pauseWhy}`; continue; }
   if ((work.mode === "task" || work.mode === "standing") && teamOpen >= teamCap) {
     row.now = `idle: team limit, ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
     continue;
@@ -282,6 +291,7 @@ for (const agent of roster.agents) {
   assignments.push(a);
   slots--;
   state.runs[h] = runsToday + 1;
+  if (a.mode === "review" && a.pr) reviewfp.recordAssigned(hctx(), openPRs.find((p) => String(p.number) === a.pr));
   if (CLAIM) {
     state.claims[h] = { mode: a.mode, task: a.task, pr: a.pr, at: now.toISOString(), run: runId, source: LOCAL ? "local" : "actions" };
   }
@@ -309,7 +319,7 @@ function nextWork(agent, mine, queue) {
     if (pick) return { mode: "steward-review", pr: pick.number, reason: pick.title, label: `steward review #${pick.number}` };
   }
   if (agent.kind === "reviewer") {
-    const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending);
+    const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending && !reviewfp.equivalentReviewed(hctx(), pr));
     const pick = candidates.find(sensitive) ?? firstD041Target() ?? candidates[0];
     if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick)}: ${pick.title}`, label: `review #${pick.number}` };
   }
@@ -420,6 +430,7 @@ function renderBoard() {
   }
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
+  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");
