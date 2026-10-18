@@ -330,6 +330,15 @@ describe('[S33] not much today, and the light', () => {
 describe('[S09] Tonight renders every draft, one question and the daypart light (source)', () => {
   const screen = code('app/(tabs)/index.tsx');
 
+  it('reads its room on the first render, so the first painted frame has the lamp and the words (P1 on #221)', () => {
+    // An empty first render (`useState(undefined)`, then a read in useFocusEffect) returned null for one frame: no lamp
+    // and no words, and on the web build that frame stayed through the mount's long frame (150 to 430 ms), so the light
+    // from "The book is open." went out on the way to Tonight. readRoom is synchronous, the same store read as before.
+    expect(screen).toContain('const [room, setRoom] = useState<Room | undefined>(readRoom);');
+    expect(screen).not.toMatch(/useState<Room \| undefined>\(undefined\)/);
+    expect(screen).toMatch(/function readRoom\(\): Room \{/);
+  });
+
   it('lists every draft from listDrafts, never only the first', () => {
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);

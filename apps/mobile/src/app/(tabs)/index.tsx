@@ -97,7 +97,9 @@ function readRoom(): Room {
 export default function Tonight() {
   const motion = useMotion();
   const t = copy.tonight;
-  const [room, setRoom] = useState<Room | undefined>(undefined);
+  // Read on the first render, so the first painted frame has the lamp and the words: the light from "The book is
+  // open." never goes out on the way to Tonight (P1 on #221). Focus, the store and a resume read it again.
+  const [room, setRoom] = useState<Room | undefined>(readRoom);
   // Prompt inputs are read on focus and on coming back to the front only, so a save or a quiet-day mark never swaps
   // the prompt under the person.
   const [recent, setRecent] = useState<string[]>([]);
