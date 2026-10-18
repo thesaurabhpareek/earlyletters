@@ -18,11 +18,12 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
-- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** under "Check-ins" in `BOARD.md`:
-  `HH:MM <agent> | done: … | next: … | blocked/needs: …`
-- Before each check-in, read the last 20 check-ins. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
+- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** to your own check-in file, `docs/agents/checkins/<agent>.md`, named after the agent in your claim line (for example `S10.md` or `experience-p1-visual-system.md`; create it on your first check-in). Time is UTC, from `date -u`:
+  `HH:MM (DD Mon) <agent> | done: ... | next: ... | blocked/needs: ...`
+- Never append check-ins to `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section in `BOARD.md` stays as history.
+- Before each check-in, read the newest check-ins on every branch: `git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' && git log --remotes -n 20 -p --format='%h %ci %s' -- docs/agents/checkins/`. File times in a fresh clone are checkout times, so don't sort by them. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
 - When you finish, change your claim to `done` and put a pointer to your report in the claim line.
-- Keep `BOARD.md` edits append-only, except your own claim line. Re-read the file right before writing.
+- In `BOARD.md`, add your claim line when you start (section 2); after that, change only your own claim line. Re-read the file right before writing.
 
 ## 4. One answer per question: propose, debate, converge
 Some choices shape other people's work: a library, a data shape, an API contract, a naming scheme, a UX pattern, a copy convention, a folder layout. For those:
