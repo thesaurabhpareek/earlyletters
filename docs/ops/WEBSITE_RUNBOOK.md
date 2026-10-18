@@ -171,7 +171,7 @@ link in Messages or WhatsApp, or paste it into a card validator (opengraph.xyz, 
 so test with a fresh link such as `https://earlyletters.com/?v=2`.
 
 **Scroll motion.** The home page uses scroll-linked ("scrubbed") motion built on `motion` (MIT), in `apps/web/src/components/landing/scrub.tsx`:
-the hero recedes, "Meera is asleep." and the proof letter are pinned scenes your scroll plays (and reverses) and that fade into one another,
+the hero recedes, "Asha is asleep." and the proof letter are pinned scenes your scroll plays (and reverses) and that fade into one another,
 paragraphs fill from dim to bright as you read them, and the other blocks lift into place the same way (opacity and a short lift only: no
 blur, bounce or sideways slides). The server renders every scene finished, so the page reads without JavaScript; visitors who prefer reduced motion get no pinning or
 scrubbing; a scene that does not fit a short screen is not pinned. Verified (headless Chromium, desktop, laptop, phone, short phone).

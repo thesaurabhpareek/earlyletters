@@ -109,7 +109,7 @@ Status: **Supported**, **Qualify** (true, wording gap), **Overstated**, **Unsupp
 | 3 | s04: "We never rewrite your words." | BRIEF decision 7 (line 18); CLAUDE.md constitution | Supported |
 | 4 | meta: "keeps every word exactly as you said it" | VOICE.md (approved line "Kept exactly as you said it"); CLAUDE.md (raw transcript immutable, every edit stored and reversible); BRIEF decision 7 (um and stumbles are removed) | Supported (brand-approved). Strictly, fillers are removed and punctuation added, which s04 says. Low risk |
 | 5 | s05: "The recording is kept with every letter." | PRD C-habits:85 (play original audio, free); privacy-policy.md:166; BRIEF decision 8 (line 19, original never altered); `site.en.ts` FAQ ("attached to its letter") | **Qualify.** Spoken letters only (typed letters have none). Kept on the phone that made it; without backup, a lost phone loses it (terms-of-service.md:207, C-habits:98). D-033 (iCloud device backup) is still "Recommended (needs founder OK)". See fix C |
-| 6 | s06: filed "under Meera's age that month and signed with your name" | PRD.md:22 ("files the letter by the child's month of age") | Supported |
+| 6 | s06: filed "under Asha's age that month and signed with your name" | PRD.md:22 ("files the letter by the child's month of age") | Supported |
 | 7 | s06: "Both parents write in the same book." | BRIEF decision 5 (line 11, co-parent only); DECISIONS.md:115 (D-008) | Supported. Each parent needs the app and an account |
 | 8 | s07: "Open any letter and hear it in the voice that said it" | See section 4 | **Partly unsupported** at v1.0 |
 | 9 | s08: the seven languages, "each written in its own script" | BRIEF decision 6 (lines 12-15) | Supported. Qualify: Hindi script default is open (D-031); "Mandarin" does not say Simplified or Traditional. Availability is promised, not accuracy: on-device model quality for Hindi and Arabic is unproven (ADR 0001 WER figures; BL-043 experiment) |
@@ -132,12 +132,12 @@ Status: **Supported**, **Qualify** (true, wording gap), **Overstated**, **Unsupp
 ### Proposed exact fixes to `site.ts` (coordinator applies; none are required for the tests to pass)
 
 **A. s04 support and the demo slip.** Choose one:
-- Preferred, so the film shows only what the engine does. Text: `support: 'Transcription happens on your phone by default and only fixes slips, like a misheard name or a stray um. We never rewrite your words.'` Demo slip: a name from the words list, for example `slip: { heard: 'Mira', fixed: 'Meera' }`, placed where the engine accepts it (a mishearing the parent taught, or a capitalised near-sounding name that does not start a sentence), and run through `verifyEdits` before it goes in the film.
+- Preferred, so the film shows only what the engine does. Text: `support: 'Transcription happens on your phone by default and only fixes slips, like a misheard name or a stray um. We never rewrite your words.'` Demo slip: a name from the words list, for example `slip: { heard: 'Usher', fixed: 'Asha' }`, placed where the engine accepts it (a mishearing the parent taught, or a capitalised near-sounding name that does not start a sentence), and run through `verifyEdits` before it goes in the film.
 - Or keep "light snitch" and change what the scene shows: the app flags "snitch" and the parent taps it and types "switch" (`appFixHint` already says "Tap a word to check it"). Then the support line should end "...and lets you fix a word with a tap." and `sampleLetter.slip`'s comment should say the parent makes the change.
 
 **B. s10 support.** Remove the recording backup until audio upload is confirmed for v1.0: `support: 'Writing, reading, playing your recordings and export are free, always. Plus is optional, $3.99 a month or $29.99 a year, and adds books for more children.'` This also fixes the "from" wording in row 16. Do not add themes (ROADMAP.md:131 puts them in v1.2 or later) or Read together (word highlighting is v1.1, BRIEF decision 9). The founder or PM should send the final v1.0 Plus list and update subscription-terms.md:23-26, which must match the in-app sheet (Apple 3.1.2(c)).
 
-**C. s05 support.** `support: 'Every letter you speak keeps its recording. One day Meera can hear how you sounded tonight.'`
+**C. s05 support.** `support: 'Every letter you speak keeps its recording. One day Asha can hear how you sounded tonight.'`
 
 **D. s09 first point and s03 `appAudience`.** `'Your letters are shared only with the people you invite.'` and `appAudience: 'Shared only with people you invite'`. Same warmth, and it is the claim the Privacy Policy makes.
 

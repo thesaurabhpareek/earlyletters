@@ -120,7 +120,7 @@ const WRITES = [
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
   ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
-  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-05-20')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -137,8 +137,8 @@ const WRITES = [
 // A holds Plus in this fixture (see apply_store_transaction above), so A may start
 // another book; the no-Plus refusal (SCPLS) is covered in children_entitlements.test.mjs.
 const RPCS = [
-  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-05-20')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-05-20"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-04-12"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
@@ -179,7 +179,7 @@ const SERVICE_ONLY = [
   `select public.apply_store_transaction(null, 'SUBSCRIBED', null, now(), 'production', '1', null, 'p', 'active', now())`,
   `select public.has_plus('${A}')`, `select public.record_purge_attempt(1, true)`, `select public.record_deletion_step('${dreq}', 'auth_user', 'done')`,
   `select * from public.content_gate_state('${A}')`, `select public.has_active_consent('${A}', 'terms')`,
-  `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-05-20', null, true)`,
+  `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-04-12', null, true)`,
   `select public.enqueue_storage_purge('entry-photos', 'x', false, 'orphan')`, `select public.is_held('child', '${CHILD}')`,
   `select public.entry_is_held('${aBook}')`, `select public.store_environment_allowed('production')`, `select public.purge_backoff(1)`,
 ];
