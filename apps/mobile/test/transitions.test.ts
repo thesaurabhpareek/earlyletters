@@ -32,6 +32,8 @@ import {
   openedAtRoot,
   pageTurnPlan,
   paperTone,
+  pressTransform,
+  pressedRect,
   routeTransitions,
   sheetMotion,
   stepMotion,
@@ -550,6 +552,53 @@ describe('card to page (MOTION 5f)', () => {
     expect(heard).toBe(2);
     expect(hiddenBehind(true)).toEqual({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants', 'aria-hidden': true });
     expect(hiddenBehind(false)).toEqual({ accessibilityElementsHidden: false, importantForAccessibility: 'auto', 'aria-hidden': false });
+  });
+
+  it('the move starts from the card as its press shows it: the pressed rect, and the words scaled with the card about its centre', () => {
+    const k = M.press.cardScale;
+    expect(k).toBe(0.98);
+    const r = pressedRect(card, k);
+    expect(r.width).toBeCloseTo(card.width * k);
+    expect(r.height).toBeCloseTo(card.height * k);
+    // About the card's centre, as the press scales the card.
+    expect(r.x + r.width / 2).toBeCloseTo(card.x + card.width / 2);
+    expect(r.y + r.height / 2).toBeCloseTo(card.y + card.height / 2);
+    expect(pressedRect(card, 1)).toEqual(card);
+    // The paper's first frame is the pressed card, not the card at rest (no snap from 0.98 back to 1 at release).
+    expect(cardToPageFrame(r, screen, 0)).toMatchObject({ x: r.x, y: r.y, width: r.width, height: r.height });
+    // The carried words: every corner lands where scaling about the card's centre puts it (the card's own words, pressed).
+    const [{ translateX }, { translateY }, { scale }] = pressTransform(cardText.x, cardText.y, cardText.width, cardText.height, card, k);
+    const cx = card.x + card.width / 2;
+    const cy = card.y + card.height / 2;
+    const bx = cardText.x + cardText.width / 2;
+    const by = cardText.y + cardText.height / 2;
+    for (const [qx, qy] of [[cardText.x, cardText.y], [cardText.x + cardText.width, cardText.y + cardText.height]] as const) {
+      expect(bx + translateX + scale * (qx - bx)).toBeCloseTo(cx + k * (qx - cx));
+      expect(by + translateY + scale * (qy - by)).toBeCloseTo(cy + k * (qy - cy));
+    }
+    // Let go, nothing is moved or scaled.
+    expect(pressTransform(cardText.x, cardText.y, cardText.width, cardText.height, card, 1)).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
+  });
+
+  it('the card keeps its press through the hold and the page lets it go as the paper starts to grow (S26, source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    // CardSource takes the press of the card inside it; the page holds it from its first frame.
+    expect(src).toMatch(/<PressHoldContext\.Provider value=\{registerPress\}>/);
+    expect(src).toContain('const press = useRef(presses.get(id)).current;');
+    expect(src).toMatch(/useEffect\(\(\) => \{\s*press\?\.hold\(\);\s*return \(\) => press\?\.release\(\);/);
+    expect(src).toContain('() => p.value > 0,');
+    expect(src).toMatch(/if \(moving && !was\) runOnJS\(letGo\)\(\);/);
+    // The paper and the carried words read the press as it is, every frame.
+    expect(src).toContain('cardToPageFrame(pressedRect(from.value, 1 - (1 - pressScale) * pressed.value), screen, p.value)');
+    expect(src).toContain('transform: pressTransform(k.x, k.y, pt.value.width, ct.value.height, from.value, scale)');
+    const press = read('components/motion/press.ts');
+    // A held press ignores the finger's release; a press already gone is not brought back.
+    expect(press).toMatch(/if \(to === 0 && held\.current\) return;/);
+    expect(press).toMatch(/held\.current = true;\s*if \(p\.value > 0\) animate\(1\);/);
+    expect(press).toMatch(/if \(kind !== 'card' \|\| !enabled \|\| !register\) return;/);
+    expect(press).toContain('scale: reduced ? 1 : target,');
+    // Every pressable card uses it (Card), so the Book's letter cards hand their press over with no change of their own.
+    expect(read('components/ui/card.tsx')).toContain("usePressScale('card', !!onPress)");
   });
 
   it('carried, the paper over the card comes and goes with the veil, so the rest of the card leaves and returns with the Book (P5, source)', () => {

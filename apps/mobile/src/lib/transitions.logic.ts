@@ -386,6 +386,36 @@ export function carryFrame(card: Rect, cardText: Rect, pageText: Rect, screen: {
 }
 
 /**
+ * The card as its press shows it: `scale` about its centre (the press scales the card about its centre, 0.98 at a full
+ * press, motion.press.cardScale). The paper starts from here, so the card does not snap back to its resting size as
+ * the move begins.
+ */
+export function pressedRect(card: Rect, scale: number): Rect {
+  'worklet';
+  const dx = (card.width * (1 - scale)) / 2;
+  const dy = (card.height * (1 - scale)) / 2;
+  return { x: card.x + dx, y: card.y + dy, width: card.width * scale, height: card.height * scale };
+}
+
+/**
+ * The carried block (top left `x`, `y`, its size) as the card's press shows it: `scale` about the card's centre, the
+ * way the card itself is scaled. As the press is let go (scale back to 1) the block is where carryFrame puts it.
+ */
+export function pressTransform(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  card: Rect,
+  scale: number,
+): [{ translateX: number }, { translateY: number }, { scale: number }] {
+  'worklet';
+  const cx = card.x + card.width / 2;
+  const cy = card.y + card.height / 2;
+  return [{ translateX: (1 - scale) * (cx - (x + width / 2)) }, { translateY: (1 - scale) * (cy - (y + height / 2)) }, { scale }];
+}
+
+/**
  * Whether the carried words are home: within CARD_TO_PAGE.homePt of their place on the page at `progress`. They move
  * in a straight line with the paper, so what is left is the rest of the way times the distance (a spring's overshoot
  * is clamped, as the block's own place is).

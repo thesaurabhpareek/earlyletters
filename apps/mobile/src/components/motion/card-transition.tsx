@@ -17,7 +17,9 @@
  * card, then lifts over lamp.returnMs (CARD_TO_PAGE, clearProgress). The paper over the card comes and goes with the
  * veil, so the rest of the card (its signature, Private, its length) leaves with the Book and comes back with it.
  * The card's fade over its last line is gone before the paper turns to the page's colour (paperTone), so it never
- * shows as a patch of the card's surface on the page.
+ * shows as a patch of the card's surface on the page. The card keeps its press feedback through the hold: a Card
+ * inside a CardSource hands its press over (PressHoldContext in ./press), the page holds it until the paper starts to
+ * grow and then lets it go, and the paper and the carried words start from the card exactly as pressed.
  *
  *   // the Book: the card's dateline and excerpt in CardText; the list hides from screen readers under a page
  *   const behind = useHiddenBehindCardPage();
@@ -77,11 +79,14 @@ import {
   clearProgress,
   hiddenBehind,
   paperTone,
+  pressTransform,
+  pressedRect,
   type CarryText,
   type Rect,
 } from '@/lib/transitions.logic';
 import { FadeEdge } from './excerpt-fade';
 import { FADE_FRACTION } from './excerpt-fade.logic';
+import { PressHoldContext, type PressHold } from './press';
 
 type Remembered = { card: Rect; text?: CarryText; rtl?: boolean };
 
@@ -93,6 +98,9 @@ export const cardRects = {
   set: (id: string, r: Remembered) => void rects.set(id, r),
   forget: (id: string) => void rects.delete(id),
 };
+
+/** The press of the card inside each CardSource, by id, for the page that opens from it to hold. */
+const presses = new Map<string, PressHold>();
 
 const measure = (v: View | null) =>
   new Promise<Rect | undefined>((resolve) => {
@@ -114,11 +122,20 @@ export function CardSource({ id, children, style }: { id: string; children: Reac
     });
   }, [id]);
   const register = useCallback((slot: TextSlot | null) => void (text.current = slot), []);
+  const registerPress = useCallback(
+    (hold: PressHold | null) => {
+      if (hold) presses.set(id, hold);
+      else presses.delete(id);
+    },
+    [id],
+  );
   return (
     <CardSourceContext.Provider value={register}>
-      <View ref={ref} collapsable={false} onTouchStart={remember} style={style}>
-        {children}
-      </View>
+      <PressHoldContext.Provider value={registerPress}>
+        <View ref={ref} collapsable={false} onTouchStart={remember} style={style}>
+          {children}
+        </View>
+      </PressHoldContext.Provider>
     </CardSourceContext.Provider>
   );
 }
@@ -244,9 +261,28 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const veil = useSharedValue(0);
   const lifting = useSharedValue(0);
   const liftFrom = useSharedValue(0);
+  // The card's press, held through the hold and let go as the paper starts to grow (none: the card at rest).
+  const press = useRef(presses.get(id)).current;
+  const resting = useSharedValue(0);
+  const pressed = press?.pressed ?? resting;
+  const pressScale = press?.scale ?? 1;
 
   // The screen behind hides from screen readers for as long as the page is up.
   useEffect(() => cardPages.hold(), []);
+  // The tapped card keeps its press through the hold; it is let go when the paper starts to move (below), and at the
+  // latest when the page goes.
+  const letGo = useCallback(() => press?.release(), [press]);
+  useEffect(() => {
+    press?.hold();
+    return () => press?.release();
+  }, [press]);
+  useAnimatedReaction(
+    () => p.value > 0,
+    (moving, was) => {
+      if (moving && !was) runOnJS(letGo)();
+    },
+    [letGo],
+  );
   useEffect(
     () => () => {
       mounted.current = false;
@@ -294,7 +330,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   }, [phase, id, reduced, from, ct, pt, carrying]);
 
   const paper = useAnimatedStyle(() => {
-    const f = cardToPageFrame(from.value, screen, p.value);
+    const f = cardToPageFrame(pressedRect(from.value, 1 - (1 - pressScale) * pressed.value), screen, p.value);
     // The paper is the card's own surface until the card's fade over its last line has given way, then becomes the
     // page's (paperTone), so that fade, drawn in the card's surface, always matches the paper under it. Carried, it
     // comes and goes with the veil: the rest of the card leaves with the Book and comes back with it, never cut.
@@ -306,12 +342,14 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   // Carried: the rest of the page arrives with the rest of the words. Faded: the whole page at once, paper and words.
   const content = useAnimatedStyle(() => ({ opacity: carrying.value ? cardToPageFrame(from.value, screen, p.value).contentOpacity : fade.value }));
   const block = useAnimatedStyle(() => {
-    const k = carryFrame(from.value, ct.value, pt.value, screen, p.value);
-    return { left: k.x, top: k.y, width: pt.value.width };
+    const scale = 1 - (1 - pressScale) * pressed.value;
+    const k = carryFrame(pressedRect(from.value, scale), ct.value, pt.value, screen, p.value);
+    // The card's words as the press shows them, scaled with the card about its centre until the press is let go.
+    return { left: k.x, top: k.y, width: pt.value.width, transform: pressTransform(k.x, k.y, pt.value.width, ct.value.height, from.value, scale) };
   });
   const excerptBox = useAnimatedStyle(() => ({ height: ct.value.height }));
   const extraBox = useAnimatedStyle(() => {
-    const k = carryFrame(from.value, ct.value, pt.value, screen, p.value);
+    const k = carryFrame(pressedRect(from.value, 1 - (1 - pressScale) * pressed.value), ct.value, pt.value, screen, p.value);
     return { top: k.excerpt, height: k.extra, opacity: k.extraOpacity };
   });
   const extraInner = useAnimatedStyle(() => ({ top: -ct.value.height }));
