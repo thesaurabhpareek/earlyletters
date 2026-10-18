@@ -150,3 +150,15 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `docs/agents/COORDINATION.md` section 9
+
+### R-018 Check-ins go in one file per agent, not at the end of BOARD.md
+- **Source:** PR #224 (merged 18 Oct 2026; relayed by an agent session); `docs/agents/COORDINATION.md` section 3; `docs/agents/checkins/README.md`
+- **Decided:** every agent appends check-ins (at most 3 lines, UTC times) to its own file `docs/agents/checkins/<agent>.md`, never to `BOARD.md`; `BOARD.md` keeps claims only, and each agent changes only its own claim line; `.gitattributes` marks the check-in files `merge=union`.
+- **Why:** when every open PR appended to the end of `BOARD.md`, any two open PRs conflicted; on 17 Oct this cost three merge cycles (#218, #219, #223) (the PR body).
+- **Alternatives:** not recorded in the source
+- **Door:** two-way: a coordination rule and one attributes line
+- **Reversal cost:** low: docs and `.gitattributes`
+- **Revisit when:** platform: GitHub's own merge is found not to honour `merge=union` (the PR marks this unverified); team: one agent keeps two branches open on its check-in file
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `docs/agents/COORDINATION.md` section 3, `docs/agents/checkins/README.md`, `.gitattributes`
