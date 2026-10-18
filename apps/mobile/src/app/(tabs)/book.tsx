@@ -30,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
+import { BookCover } from '@/components/book/book-cover';
 import { BlurSurface } from '@/components/platform/blur-surface';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { Button, IconButton } from '@/components/ui/button';
@@ -255,13 +256,15 @@ export default function Book() {
         {chapters.length === 0 ? (
           <View className="flex-1">
             {header}
-            <View className="flex-1 justify-center px-5 pb-16">
-              <EmptyState
-                device
-                title={copy.book.empty.bookTitle}
-                body={fill(copy.book.empty.bookBody, { child })}
-                action={{ label: copy.book.empty.bookCta, onPress: () => router.navigate('/') }}
-              />
+            {/* S24: the closed cover the person named and signed in first run, 160 x 214, centred and still (the lamp is
+                the only light). Decorative to VoiceOver: the heading above already says "Asha's book", so the reader
+                hears the title, the body and the button, never the name twice. No count of what is missing. */}
+            <View className="flex-1 items-center justify-center gap-8 px-5">
+              <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
+              <EmptyState align="center" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+            </View>
+            <View className="px-5 pb-6">
+              <Button size="lg" fullWidth label={copy.book.empty.bookCta} onPress={() => router.navigate('/')} />
             </View>
           </View>
         ) : (

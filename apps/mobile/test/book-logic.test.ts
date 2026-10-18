@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { tokens } from '@scribe/design-tokens';
 import { arrivalOf, belowIsBook, createBookHandoff, firstSeen, pageRestPlan, parseSeen, SEEN_MAX, springArrivalMs, withLeaving } from '../src/components/book/book.logic';
 import type { Entry } from '../src/lib/store';
+import { ROUTES, type Move } from '../src/lib/transitions.logic';
 
 const src = (f: string) => readFileSync(join(__dirname, '../src', f), 'utf8');
 const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -186,6 +187,28 @@ describe('the letter page (S27, S28, source)', () => {
     expect(dark).toBe(width - 2 * 36);
     // The raised card's dark edge is the 1 pt the padding gives back.
     expect(src('components/ui/card.tsx')).toMatch(/raised: 'bg-card dark:border dark:border-border'/);
+  });
+
+  it("takes its mode from P1's route row, so the page and the stack never disagree (reviewer C's gap)", () => {
+    // The page reads the table itself, never a copy of it.
+    expect(page).toMatch(/import \{ ROUTES\b[^}]*\} from '@\/lib\/transitions\.logic';/);
+    expect(page).not.toMatch(/\b(?:const|let|var|function)\s+ROUTES\b/);
+    // One declaration of the mode, and it reads the letter route's row.
+    const decls = [...page.matchAll(/\b(?:const|let|var)\s+CARD_MODE\s*=\s*([^;]+);/g)];
+    expect(decls).toHaveLength(1);
+    const expr = decls[0]![1]!.trim();
+    expect(expr).toContain("ROUTES['letter/[id]'].move");
+    // Evaluated against the row as it stands, and with the row switched either way, it is card mode exactly when the
+    // row's move is 'cardToPage'. A hard-coded `false` or `true`, or an inverted test, fails here.
+    const row = ROUTES['letter/[id]'];
+    const now = row.move as Move;
+    const modeFor = (move: Move): unknown =>
+      new Function('ROUTES', `return (${expr.replace(/\s+as\s+\w+/g, '')});`)({ ...ROUTES, 'letter/[id]': { ...row, move } });
+    expect(modeFor(now)).toBe(now === 'cardToPage');
+    expect(modeFor('cardToPage')).toBe(true);
+    expect(modeFor('push')).toBe(false);
+    // And card mode mounts CardToPage around the page; the plain push returns the page itself.
+    expect(page).toMatch(/if \(!CARD_MODE\) return page;\s*return \(\s*<CardToPage id=\{entry\.id\} opening=\{\(focus\) => openingFor\(focus\)\} onClosed=\{goBack\}>\s*\{page\}\s*<\/CardToPage>/);
   });
 
   it('the dateline is the focus target and says the age aloud', () => {

@@ -736,7 +736,10 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
     for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
-    // The empty Book leads with it too, through the empty state's device.
-    expect(readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8')).toMatch(/<EmptyState\s+device/);
+    // The empty Book leads with the book cover instead (S24): the closed cover at 160 x 214, with the child's name and
+    // "From {signsAs}", and no quotation pair through the empty state's device.
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/<BookCover name=\{child\} signsAs=\{active\.signsAs\} size="lg"/);
+    expect(book).not.toMatch(/<EmptyState\s+device/);
   });
 });
