@@ -200,20 +200,23 @@ export function cardToPageFrame(card: Rect, screen: { width: number; height: num
  * until the paper is within clearPt of the card again, then lifts on a straight line over lamp.returnMs, the way the
  * lamp comes back.
  *
- * Reduce Motion, or no carry: nothing moves. The Book goes under the same veil, and the whole page (paper and words)
- * fades in over fadeMs from when the Book is half gone; back, the page fades out over fadeMs and the Book returns over
- * lamp.returnMs from when the page is half gone. A hand-off, not a pile-up (HAND_OFF's rule): the two screens' words
- * are never on screen together at more than a quarter of their strength, and each fade is a straight line.
+ * Reduce Motion, or no carry: nothing moves, and the whole move is one fadeMs (200 ms) each way, as rule 6 asks, as a
+ * hand-off, not a pile-up (HAND_OFF's rule). The leaving screen (the Book under the veil, or on the way back the page,
+ * paper and words) fades over the first 70 percent of it; the arriving one fades in over the last 60 percent. Each
+ * fade is a straight line, so nothing loses more than half its strength in 50 ms, and the two screens' words are never
+ * on screen together at more than a quarter of their strength.
  */
 export const CARD_TO_PAGE = {
   veilInMs: M.lamp.leaveMs,
   holdMs: M.cardToPage.holdMs,
   veilOutMs: M.lamp.returnMs,
   fadeMs: M.fadeMs,
-  /** Reduce Motion: the page starts to fade in when the Book is half gone. */
-  fadeInFromMs: M.lamp.leaveMs / 2,
-  /** Reduce Motion, back: the Book starts to return when the page is half gone. */
-  liftFromMs: M.fadeMs / 2,
+  /** Reduce Motion, or no carry, either way: the leaving screen, and the arriving one from 40 percent of the fade. */
+  handOff: {
+    leaveMs: Math.round(M.fadeMs * 0.7),
+    arriveFromMs: Math.round(M.fadeMs * 0.4),
+    arriveMs: Math.round(M.fadeMs * 0.6),
+  },
 } as const;
 
 /** The veil on the way to the page, `ms` after the move begins (0 to 1). */

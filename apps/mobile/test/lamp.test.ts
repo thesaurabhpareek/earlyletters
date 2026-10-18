@@ -356,14 +356,15 @@ describe('Lamp gradient', () => {
 
   /**
    * The measured boxes above are numbers from one build; this ties them to the screens. In every room the lamp may
-   * light, and in every file such a room renders (followed through every import: the `@/` alias, relative paths and
-   * re-exports; the ui, motion and platform primitives draw a status colour only when a caller asks, and the caller
+   * light, and in every file such a room renders (followed through every import: the `@/` alias, relative paths,
+   * re-exports and lazy `import()`; the ui, motion and platform primitives draw a status colour only when a caller asks, and the caller
    * is scanned), a status colour (onLitPaper.status, or a field's `error`, which TextField draws in `caution`) may be
    * used only where the list below says. Each entry either names a measured box in ROOMS, in that colour, below
    * STATUS_CLEAR_FROM, and the line in the room's source it must follow (so it cannot move up into the light), or names
    * the surface it sits on (a card or chip, not the lit paper). The gate and Read together allow none. Anything else
-   * (Tonight's subtitle turned to `tone="success"`, a tone held in a constant, a caution line under the greeting, a
-   * form error on a lit step, a caution line in a component two imports away) fails here.
+   * (Tonight's subtitle turned to `tone="success"`, a tone held in a constant here or in a module, the theme under
+   * another name, a raw status colour, a caution line under the greeting, a form error on a lit step, a caution line
+   * in a component two imports away or behind a lazy import) fails here.
    */
   type StatusUse = { use: string; box?: string; room?: string; after?: string; surface?: string };
   const QUIET_FOOT = '<View className="min-h-8 flex-1" />';
@@ -382,30 +383,68 @@ describe('Lamp gradient', () => {
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
   const PRIMITIVES = /^components\/(ui|motion|platform)\//;
 
+  /** The status colours' own values, light and dark: a raw colour that equals one is that status colour by another name. */
+  const STATUS_HEX = new Set(STATUS.flatMap((k) => [tokens.light[k], tokens.dark[k]]).map((h) => h.toLowerCase()));
+
+  /** The parts of a `tone={...}` expression that give its value (the branches of a condition, or the whole), strings blanked. */
+  const toneValues = (expr: string) => {
+    const bare = expr.replace(/(["'`])(?:\\.|(?!\1)[^\\])*\1/g, "''");
+    const q = bare.indexOf('?');
+    return (q < 0 ? [bare] : bare.slice(q + 1).split(':')).map((x) => x.trim());
+  };
+
   /**
-   * Every use of a status colour in a file's code, comments aside: a tone (plain, in an expression or in an object), a
-   * colour from useTheme or tokens, a class, a destructive button, a field error; in a file that renders (.tsx), any
-   * other status name in quotes too (a tone held in a constant first), except a haptic's kind and a system alert
-   * button's style, which are not colours. A plain module (.ts) uses these names as states ('recording', a 'success'
-   * haptic), so only the colour forms count there.
+   * Every use of a status colour in a file's code, comments aside:
+   * - a tone: plain, in an expression or in an object;
+   * - a theme colour under any name the file gives its theme (`c`, or what it binds to useTheme().c, useColors(),
+   *   useTheme()'s `c`, tokens.light, tokens.dark, tokens[scheme], or another theme name), or picked by a computed key;
+   * - a class (also one built in a template), a destructive button, a field error, a raw colour equal to a status one.
+   * In a file that renders (.tsx) also any other status member (`colors.caution`), any status name in quotes (a tone
+   * held in a constant first), and a tone that comes from a name, a call or a module (`tone={T}`), which has to be
+   * declared; a haptic's kind and a system alert button's style are not colours. A plain module (.ts) uses the status
+   * names as states ('recording', a 'success' haptic), so only the colour forms count there; a tone it hands a screen
+   * is caught at the screen, where it arrives as `tone={...}`.
    */
   const statusUses = (src: string, renders = true) => {
     let code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     const k = 'success|caution|recording|destructive';
     const found: string[] = [];
-    const take = (re: RegExp, name: (m: string[]) => string) => {
+    const take = (re: RegExp, name: (m: string[]) => string | null) => {
       code = code.replace(re, (...m: string[]) => {
-        found.push(name(m));
+        const n = name(m);
+        if (n === null) return m[0]!;
+        found.push(n);
         return ' ';
       });
     };
+    const themes = new Set<string>(renders ? ['c'] : []);
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(?:useTheme\(\)\.c|useColors\(\)|tokens\.(?:light|dark)\b|tokens\[[^\]]+\])/g)) themes.add(m[1]!);
+    for (const m of code.matchAll(/\{([^}]*)\}\s*=\s*useTheme\(\)/g)) for (const b of m[1]!.matchAll(/\bc\b(?:\s*:\s*(\w+))?/g)) themes.add(b[1] ?? 'c');
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const m of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(\w+)\s*(?:;|\n)/g)) {
+        if (themes.has(m[2]!) && !themes.has(m[1]!)) {
+          themes.add(m[1]!);
+          grew = true;
+        }
+      }
+    }
+    const theme = [...themes].join('|');
     take(new RegExp(`\\btone(?:=|:\\s*)(?:["'\`](${k})["'\`]|\\{[^}]*?["'\`](${k})["'\`][^}]*\\})`, 'g'), (m) => `tone="${m[1] ?? m[2]}"`);
-    take(new RegExp(`\\bc\\.(${k})\\b`, 'g'), (m) => `c.${m[1]}`);
     take(new RegExp(`\\btokens\\.(?:light|dark)\\.(${k})\\b`, 'g'), (m) => `tokens.${m[1]}`);
+    take(new RegExp(`\\btokens\\[[^\\]]+\\]\\.(${k})\\b`, 'g'), (m) => `tokens.${m[1]}`);
+    if (theme) {
+      take(new RegExp(`\\b(${theme})\\.(${k})\\b`, 'g'), (m) => `${m[1]}.${m[2]}`);
+      take(new RegExp(`\\b(${theme})\\[(?!\\s*\\d)[^\\]]+\\]`, 'g'), (m) => `${m[1]}[...]`);
+    }
     take(new RegExp(`\\b(text|bg|border)-(${k})\\b`, 'g'), (m) => `${m[1]}-${m[2]}`);
+    take(/\b(text|bg|border)-\$\{/g, (m) => `${m[1]}-\${...}`);
     take(/\bvariant=["']destructive["']/g, (m) => m[0]!);
     take(/\berror=[{"']/g, () => 'error=');
+    take(/["'`](#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)["'`]/g, (m) => (STATUS_HEX.has(m[1]!.toLowerCase()) ? `'${m[1]!.toLowerCase()}'` : null));
     if (renders) {
+      take(new RegExp(`\\b([A-Za-z_$][\\w$]*)\\.(${k})\\b`, 'g'), (m) => `${m[1]}.${m[2]}`);
+      take(/\btone=\{([^}]*)\}/g, (m) => (toneValues(m[1]!).some((v) => /^[A-Za-z_$]/.test(v)) ? `tone={${m[1]!.trim()}}` : null));
       code = code.replace(/\bhaptic\(\s*["'`]\w+["'`]\s*\)/g, ' ').replace(/\bstyle:\s*["'`]destructive["'`]/g, ' ');
       take(new RegExp(`["'\`](${k})["'\`]`, 'g'), (m) => `'${m[1]}'`);
     }
@@ -425,9 +464,13 @@ describe('Lamp gradient', () => {
     }
     return null;
   };
-  /** Every module a file names: imports, re-exports (`export ... from`) and side-effect imports. */
+  /** Every module a file names: imports, re-exports (`export ... from`), side-effect imports, and `import()` and `require()` (a lazy screen). */
   const importsOf = (src: string) =>
-    [...src.matchAll(/(?:^|[\n;])\s*(?:import|export)\s[^;'"]*?\bfrom\s*["']([^"']+)["']|(?:^|[\n;])\s*import\s*["']([^"']+)["']/g)].map((m) => (m[1] ?? m[2])!);
+    [
+      ...src.matchAll(
+        /(?:^|[\n;])\s*(?:import|export)\s[^;'"]*?\bfrom\s*["']([^"']+)["']|(?:^|[\n;])\s*import\s*["']([^"']+)["']|\b(?:import|require)\(\s*["']([^"']+)["']\s*\)/g,
+      ),
+    ].map((m) => (m[1] ?? m[2] ?? m[3])!);
 
   /** A lit room and every file it renders, followed through every import (primitives excepted). */
   const renderedBy = (room: string) => {
@@ -451,19 +494,30 @@ describe('Lamp gradient', () => {
     expect(statusUses('<Icon color={c.recording} /> <View className="text-destructive" />')).toEqual(['c.recording', 'text-destructive']);
     expect(statusUses('<Button variant="destructive" /> // tone="success" in a comment')).toEqual(['variant="destructive"']);
     expect(statusUses('<TextField label={l} error={problem} />')).toEqual(['error=']);
-    // A tone held in a constant first (reviewer C's gap), or set in an object, in a plain module too.
-    expect(statusUses("const QUIET = 'success';\n<Text tone={QUIET}>a</Text>")).toEqual(["'success'"]);
+    // A tone held in a constant first, or set in an object, in a plain module too.
+    expect(statusUses("const QUIET = 'success';\n<Text tone={QUIET}>a</Text>").sort()).toEqual(["'success'", 'tone={QUIET}']);
     expect(statusUses("export const line = { tone: 'caution' as const };", false)).toEqual(['tone="caution"']);
+    // A tone that comes from a module, a call or a branch is declared, whatever the module holds (C's gap B).
+    expect(statusUses("import { ZZ_TONE } from '@/lib/zz-tone';\n<Text tone={ZZ_TONE}>a</Text>")).toEqual(['tone={ZZ_TONE}']);
+    expect(statusUses('<Text tone={toneFor(kind)}>a</Text>')).toEqual(['tone={toneFor(kind)}']);
+    expect(statusUses("<Text tone={kept ? 'muted' : KEPT_TONE}>a</Text>")).toEqual(["tone={kept ? 'muted' : KEPT_TONE}"]);
+    expect(statusUses("<Text tone={kept ? 'muted' : 'default'}>a</Text>")).toEqual([]);
+    // The theme under another name (V's gap), in a module too, or picked by a computed key; a class built in a template.
+    expect(statusUses('const colors = useTheme().c;\n<Icon color={colors.caution} />')).toEqual(['colors.caution']);
+    expect(statusUses('const { c: palette } = useTheme();\nconst p2 = palette;\nexport const warn = p2.caution;', false)).toEqual(['p2.caution']);
+    expect(statusUses('const t = tokens.dark;\nexport const warn = t.recording;', false)).toEqual(['t.recording']);
+    expect(statusUses('<Icon color={c[kind]} />')).toEqual(['c[...]']);
+    expect(statusUses('<Text className={`text-${tone}`}>a</Text>')).toEqual(['text-${...}']);
+    // A raw colour equal to a status colour, in a module too; any other colour is not one.
+    expect(statusUses(`export const WARN = '${tokens.light.caution}';`, false)).toEqual([`'${tokens.light.caution.toLowerCase()}'`]);
+    expect(statusUses(`export const INK = '${tokens.light.text}';`, false)).toEqual([]);
     // Not colours: a haptic's kind and a system alert button's style; and a plain module's states.
     expect(statusUses("haptic('success'); Alert.alert(t, b, [{ text: x, style: 'destructive' }]);")).toEqual([]);
     expect(statusUses("if (mode === 'recording') return;", false)).toEqual([]);
-    // Imports: the alias, relative paths (down and up) and re-exports.
-    expect(importsOf("import { A } from '@/lib/auth/ui';\nimport { B } from './chapters';\nexport { C } from '../c';\nimport './side';")).toEqual([
-      '@/lib/auth/ui',
-      './chapters',
-      '../c',
-      './side',
-    ]);
+    // Imports: the alias, relative paths (down and up), re-exports, and a lazy screen (C's gap A).
+    expect(
+      importsOf("import { A } from '@/lib/auth/ui';\nimport { B } from './chapters';\nexport { C } from '../c';\nimport './side';\nconst Z = lazy(() => import('@/components/family/zz-lazy'));\nconst m = require('./native');"),
+    ).toEqual(['@/lib/auth/ui', './chapters', '../c', './side', '@/components/family/zz-lazy', './native']);
     expect(resolveImport('components/book/quiet-day-row.tsx', './chapters')).toBe('components/book/chapters.ts');
     expect(resolveImport('components/book/shelf.logic.ts', '../../lib/dates')).toBe('lib/dates.ts');
     // The scan follows a room into everything it renders, @/lib and relative imports included.
