@@ -101,6 +101,15 @@ jobs:
           if grep -rnE "example\.com|com\.example\." packages/brand/index.ts apps/mobile/app.config.ts; then
             echo "::error::placeholder domain or bundle id"; exit 1
           fi
+      - name: No e2e seam in the production bundle (B-8, #210)
+        run: |
+          set -euo pipefail
+          if [ -f .github/scripts/seam-guard.mjs ]; then
+            node .github/scripts/seam-guard.mjs --profile production
+          else
+            echo "::warning::.github/scripts/seam-guard.mjs is not on this commit (#210 not merged): the e2e seam check did not run"
+            echo "Seam guard (B-8) did not run: #210 is not merged on this commit." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: The RC can verify signed documents (speech, language packs, kill switches)
         run: |
           set -euo pipefail
