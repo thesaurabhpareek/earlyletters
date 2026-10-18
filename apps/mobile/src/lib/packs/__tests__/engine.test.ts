@@ -2,12 +2,15 @@
 /**
  * Pack engine against a real file system and a real HTTP Range server
  * (ADR 0016). Run by `npm test -w @scribe/api` (vitest.consumers.config.ts).
+ * The interrupted-install matrix runs on in-memory ports instead
+ * (`memory-ports.ts`), so the kill it plans is the only fault it can meet.
  */
 import * as fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { generateSigningKey, base64ToBytes, parsePackManifest, signDocument, type PackManifest } from '@scribe/api';
-import { CELLULAR_FREE_BYTES, PackManager, type PackEnv, type PackProgress } from '../engine';
+import { CELLULAR_FREE_BYTES, PackManager, type PackEnv, type PackFs, type PackProgress } from '../engine';
 import { SignedDocumentClient } from '../../remote/documents';
+import { MemoryDisk, MemoryFs, MemoryHttp } from './memory-ports';
 import { bytesOf, CrashError, FakeNetwork, LocalHttp, MemoryKv, NodeFs, sha256, startRangeServer, tempRoot, type CrashPlan, type ServedFile } from './node-ports';
 
 const CHUNK = 1000;
@@ -59,18 +62,26 @@ let root: string;
 beforeEach(async () => {
   files = {};
   server = await startRangeServer(files);
-  root = tempRoot('engine');
 });
 afterEach(async () => {
   await server.close();
-  fs.rmSync(root, { recursive: true, force: true });
 });
+
+/** Gives each test in the calling describe a fresh folder on the real disk, as `root`. */
+function useTempRoot() {
+  beforeEach(() => {
+    root = tempRoot('engine');
+  });
+  afterEach(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+}
 
 function serve(spec: PackSpec, extra: Partial<ServedFile> = {}) {
   files[spec.path ?? `/${spec.id}/${spec.version}/file.bin`] = { body: spec.body, ...extra };
 }
 
-function makeManager(over: Partial<PackEnv> & { manifest?: () => Promise<PackManifest | null>; fsImpl?: NodeFs; network?: FakeNetwork } = {}) {
+function makeManager(over: Partial<PackEnv> & { manifest?: () => Promise<PackManifest | null>; fsImpl?: PackFs; network?: FakeNetwork } = {}) {
   const env: PackEnv = {
     fs: over.fsImpl ?? new NodeFs(root),
     http: new LocalHttp(server.base),
@@ -90,6 +101,8 @@ function makeManager(over: Partial<PackEnv> & { manifest?: () => Promise<PackMan
 const read = (p: string) => new Uint8Array(fs.readFileSync(p));
 
 describe('install', () => {
+  useTempRoot();
+
   it('[DECISION-15] downloads in Range chunks, verifies SHA-256 and installs atomically', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(4500) };
     serve(pt);
@@ -141,6 +154,8 @@ describe('install', () => {
 });
 
 describe('resume', () => {
+  useTempRoot();
+
   it('[ADR-0016] continues from a partial file left by an earlier session', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(5000) };
     serve(pt);
@@ -184,6 +199,8 @@ describe('resume', () => {
 });
 
 describe('integrity', () => {
+  useTempRoot();
+
   it('[ADR-0016] rejects a file whose SHA-256 does not match, and installs nothing', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
     serve(pt, { corrupt: true });
@@ -241,6 +258,8 @@ describe('integrity', () => {
 });
 
 describe('atomic swap', () => {
+  useTempRoot();
+
   it('[ADR-0016] keeps serving the old version until the new one is in place, then removes the old', async () => {
     const v1: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(1500, 1) };
     const v2: PackSpec = { id: 'text-rules.pt', version: 2, body: bytesOf(2500, 2) };
@@ -280,6 +299,9 @@ describe('atomic swap', () => {
 });
 
 describe('interrupted install', () => {
+  // In memory: no disk and no socket, so a case meets the kill it plans and nothing else. On the shared
+  // disk, a full volume once failed a real write here (ENOSPC, 17 Oct) and it read as an engine result.
+  const ROOT = '/packs';
   const plans: CrashPlan[] = [];
   for (const op of ['rename', 'writeText', 'remove', 'appendFile'] as const) for (let nth = 1; nth <= 12; nth++) plans.push({ op, nth });
 
@@ -288,10 +310,12 @@ describe('interrupted install', () => {
     const v2: PackSpec = { id: 'text-rules.pt', version: 2, body: bytesOf(2600, 22) };
     serve(v1);
     serve(v2);
-    await makeManager({ manifest: async () => manifestOf([v1]) }).ensurePack('text-rules.pt');
+    const disk = new MemoryDisk();
+    const ports = (crash: CrashPlan | null = null) => ({ fsImpl: new MemoryFs(disk, ROOT, crash), http: new MemoryHttp(files, disk) });
+    await makeManager({ manifest: async () => manifestOf([v1]), ...ports() }).ensurePack('text-rules.pt');
 
     // The "crash": the file system throws once at the chosen step, and the process is gone (a fresh manager follows).
-    const crashing = makeManager({ manifest: async () => manifestOf([v1, v2], 2), fsImpl: new NodeFs(root, plan) });
+    const crashing = makeManager({ manifest: async () => manifestOf([v1, v2], 2), ...ports(plan) });
     let crashed = false;
     try {
       const r = await crashing.ensurePack('text-rules.pt', { requireLatest: true });
@@ -301,11 +325,11 @@ describe('interrupted install', () => {
     }
     crashing.dispose();
 
-    const restarted = makeManager({ manifest: async () => manifestOf([v1, v2], 2) });
+    const restarted = makeManager({ manifest: async () => manifestOf([v1, v2], 2), ...ports() });
     restarted.load();
     const path = restarted.packPath('text-rules.pt');
     expect(path).not.toBeNull();
-    const digest = sha256(read(path!));
+    const digest = sha256(disk.read(path!));
     expect([sha256(v1.body), sha256(v2.body)]).toContain(digest);
     expect(restarted.listInstalled()).toHaveLength(1);
     if (!crashed) expect(digest).toBe(sha256(v2.body));
@@ -313,23 +337,26 @@ describe('interrupted install', () => {
     // And the next attempt always ends on v2.
     const r = await restarted.ensurePack('text-rules.pt', { requireLatest: true });
     expect(r).toMatchObject({ ok: true, version: 2 });
-    expect(sha256(read(restarted.packPath('text-rules.pt')!))).toBe(sha256(v2.body));
-    expect(fs.readdirSync(`${root}/installed/text-rules.pt`)).toEqual(['2']);
+    expect(sha256(disk.read(restarted.packPath('text-rules.pt')!))).toBe(sha256(v2.body));
+    expect(disk.list(`${ROOT}/installed/text-rules.pt`)).toEqual(['2']);
   });
 
   it('cleans broken and orphaned version folders on load', () => {
-    fs.mkdirSync(`${root}/installed/text-rules.pt/1`, { recursive: true });
-    fs.writeFileSync(`${root}/installed/text-rules.pt/1/file.bin`, 'abc');
-    fs.writeFileSync(`${root}/installed/text-rules.pt/1/pack.json`, JSON.stringify({ id: 'text-rules.pt', version: 1, fileName: 'file.bin', bytes: 999, sha256: 'x' }));
-    fs.mkdirSync(`${root}/installed/junk`, { recursive: true });
-    const m = makeManager();
+    const disk = new MemoryDisk();
+    disk.mkdirp(`${ROOT}/installed/text-rules.pt/1`);
+    disk.write(`${ROOT}/installed/text-rules.pt/1/file.bin`, 'abc');
+    disk.write(`${ROOT}/installed/text-rules.pt/1/pack.json`, JSON.stringify({ id: 'text-rules.pt', version: 1, fileName: 'file.bin', bytes: 999, sha256: 'x' }));
+    disk.mkdirp(`${ROOT}/installed/junk`);
+    const m = makeManager({ fsImpl: new MemoryFs(disk, ROOT) });
     m.load();
     expect(m.listInstalled()).toEqual([]);
-    expect(fs.readdirSync(`${root}/installed`)).toEqual([]);
+    expect(disk.list(`${ROOT}/installed`)).toEqual([]);
   });
 });
 
 describe('policy', () => {
+  useTempRoot();
+
   it('[DECISION-15] large packs wait for Wi-Fi by default, then start on their own', async () => {
     const big: PackSpec = { id: 'speech-model.test', version: 1, body: bytesOf(CELLULAR_FREE_BYTES + 1), kind: 'speech-model', language: 'mul', required: false };
     serve(big);
@@ -381,6 +408,8 @@ describe('policy', () => {
 });
 
 describe('languages and removal', () => {
+  useTempRoot();
+
   it('[DECISION-15] choosing Portuguese downloads the Portuguese packs and nothing else', async () => {
     const specs: PackSpec[] = [
       { id: 'text-rules.pt', version: 1, body: bytesOf(1100) },

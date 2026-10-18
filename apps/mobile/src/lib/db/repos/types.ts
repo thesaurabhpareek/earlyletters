@@ -37,7 +37,10 @@ export interface Entry {
   authorId?: string;
   /** Signature at save time ("Papa"), so a later rename never rewrites old letters. */
   authorSignsAs?: string;
-  /** Local file URI of the AAC M4A recording (ADR 0005), kept in the app's document directory. */
+  /**
+   * Local file URI of the AAC recording, kept in the app's document directory (`Documents/ExpoAudio` on iOS):
+   * M4A (`.m4a`, ADR 0005), or ADTS (`.aac`, ADR 0027) once a platform records it. The extension names the container.
+   */
   audioUri?: string | null;
   audioDurationMs?: number | null;
   /** SHA-256 (hex) of the audio file, computed when recording stopped (DATA-REQ-046). */

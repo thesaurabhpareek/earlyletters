@@ -26,6 +26,7 @@ import {
   rebaseAudioUri,
   reportOrphanAudio,
 } from '../store';
+import { removeWholeFrameCopies } from './adts-file';
 import { purgeShelfAtLaunch } from './erase';
 import { probePlayable } from './probe';
 import { activeTakeId, hashAudioFile } from './recorder';
@@ -59,6 +60,11 @@ async function sweep(): Promise<SweepReport> {
     return await reconcile();
   } finally {
     purgeShelf();
+    try {
+      removeWholeFrameCopies(); // copies a transcription run left when the app was killed (an hour old or more)
+    } catch {
+      // try again next launch
+    }
   }
 }
 
