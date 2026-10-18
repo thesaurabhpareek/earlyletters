@@ -1301,6 +1301,51 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     expect(await history(id)).toEqual([]);
   }, 60_000);
 
+  it('[table B, held.upsert with text, base stale, words differ, the draft gone from this phone before the answer] nothing takes the words, so held_v, the Keep\'s held_base and the let-go\'s base stay (c1): both versions are kept (review K re-check R3)', async () => {
+    // Kept here while its upload was on the way: the Keep is refused, and c2 keeps both versions.
+    const id = await shared('You lined up the shoes.');
+    const v = heldV(P, id);
+    Q.store.setDraftTyped(id, 'You lined up the shoes by the door.');
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You lined up all the shoes, even mine.');
+    const w = watch();
+    await P.sync(flaky(w.s, { failBefore: 1, only: 'sync_push' })); // the upload left but never arrived
+    keep(P, id); // the Keep queues behind it
+    expect(outbox(P)).toEqual(['held.upsert', 'entry.upsert']);
+    tick(10 * 60_000);
+    expect((await P.sync(w.s)).conflicts).toBe(1);
+    expect(w.answers('held.upsert', id)).toEqual([expect.objectContaining({ conflict_groups: ['text'], current: expect.objectContaining({ typed_text: 'You lined up the shoes by the door.' }) })]);
+    expect(w.sent('entry.upsert', id)[0].held_base).toBe(v); // the refused answer moved nothing
+    const [refusedKeep, again] = w.answers('entry.upsert', id);
+    expect(refusedKeep).toMatchObject({ applied: false, conflict_groups: ['text'] });
+    expect(again).toMatchObject({ applied: true, entry: { id } });
+    expect((await letter(id))?.final_text).toBe('You lined up the shoes by the door.');
+    expect(local(P, id)?.final_text).toBe('You lined up the shoes by the door.');
+    expect(copies(P, id)).toEqual(['You lined up all the shoes, even mine.']);
+    expect(await history(id)).not.toContain('You lined up the shoes by the door.');
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You lined up the shoes by the door.');
+
+    // Let go here while its upload was on the way: the let-go keeps its base, so the server keeps the newer words.
+    const id2 = await shared('You fed the fish.');
+    const v2 = heldV(P, id2);
+    Q.store.setDraftTyped(id2, 'You fed the fish and said goodnight to them.');
+    await Q.sync();
+    P.store.setDraftTyped(id2, 'You fed the fish twice.');
+    await P.sync(flaky(w.s, { failBefore: 1, only: 'sync_push' }));
+    expect(P.store.beginDiscard(id2)).toBe(true); // the launch sweep has not finished it yet
+    expect(outbox(P)).toEqual(['held.upsert', 'held.discard']);
+    tick(10 * 60_000);
+    await P.sync(w.s);
+    expect(w.sent('held.discard', id2)[0].base).toBe(v2);
+    expect(w.answers('held.discard', id2)).toEqual([expect.objectContaining({ ok: true, kept: true })]);
+    expect((await held(id2))?.typed_text).toBe('You fed the fish and said goodnight to them.');
+    await P.sync();
+    expect(draft(P, id2)?.typedText).toBe('You fed the fish and said goodnight to them.');
+    await Q.sync();
+    expect(draft(Q, id2)?.typedText).toBe('You fed the fish and said goodnight to them.');
+  }, 60_000);
+
   it('[table B, Keep with no held_base key] compared as held_base 0: the same refusal, and no words are left only in entry_versions', async () => {
     const id = await shared('You counted the ducks.');
     Q.store.setDraftTyped(id, 'You counted the ducks, all seven.');
@@ -1412,6 +1457,57 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     // This phone's refused words live in its copy, never only in the letter's history (which keeps the author's
     // own earlier choices: the edit on Q before its Keep, and the state before the in-book change).
     expect(await history(id)).not.toContain('You drew a sun, and gave it to me.');
+  }, 60_000);
+
+  it('[table C, an edit after a second Keep, before its pull row] the server keeps the first keep\'s raw transcript and refuses the edit (SCIMM): the edit stays as a conflict copy the author sees and goes up once picked; a pull row that comes while it waits gives it the letter\'s raw transcript, and it applies (review K re-check 4)', async () => {
+    const id = await shared('You found the torch.');
+    Q.store.setDraftTyped(id, 'You found the torch under the bed.');
+    keep(Q, id);
+    await Q.sync();
+    P.store.setDraftTyped(id, 'You found the torch and lit the ceiling.');
+    keep(P, id); // a typed Keep: its raw transcript is this phone's words
+    const w = watch();
+    await P.sync(pushOnly(w.s)); // refused by the letter (row C); the pull that would bring its raw transcript fails
+    expect(w.answers('entry.upsert', id)[0]).toMatchObject({ applied: true, conflict_groups: ['text'] });
+    expect(copies(P, id)).toEqual(['You found the torch and lit the ceiling.']);
+    editWords(P, id, 'You found the torch under the bed, and read with it.'); // before the next sync
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id)[1]).toMatchObject({ ok: false, code: 'SCIMM' });
+    // Never only in a refused write the author cannot see: the edit is a conflict copy.
+    expect(P.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM rejected_writes WHERE entity_id = ? AND code <> 'conflict'", id)!.n).toBe(0);
+    expect(copies(P, id)).toContain('You found the torch under the bed, and read with it.');
+    expect(local(P, id)).toMatchObject({ final_text: 'You found the torch under the bed.', raw_transcript: 'You found the torch under the bed.' });
+    // "Use this phone's version": it goes up with the letter's own raw transcript now, and applies.
+    const copy = P.store.listConflicts(id).find((c) => c.words.final_text === 'You found the torch under the bed, and read with it.')!;
+    expect(P.store.resolveConflict(copy.opId, 'mine')).toBe(true);
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id).at(-1)).toMatchObject({ ok: true, applied: true });
+    expect(await letter(id)).toMatchObject({ final_text: 'You found the torch under the bed, and read with it.', raw_transcript: 'You found the torch under the bed.' });
+    await Q.sync();
+    expect(local(Q, id)?.final_text).toBe('You found the torch under the bed, and read with it.');
+
+    // When the pull row comes while the edit still waits (here a consent pause), the edit takes the letter's
+    // raw transcript too, and applies as the letter.
+    const id2 = await shared('You hid the spoon.');
+    Q.store.setDraftTyped(id2, 'You hid the spoon in the plant.');
+    keep(Q, id2);
+    await Q.sync();
+    P.store.setDraftTyped(id2, 'You hid the spoon and the fork.');
+    keep(P, id2);
+    await P.sync(pushOnly(w.s)); // refused by the letter (row C); its pull fails
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    try {
+      editWords(P, id2, 'You hid the spoon in the plant, and laughed.');
+      expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the edit waits; this pull brings the letter's row
+      expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
+      expect(queued(P, 'entry.upsert', id2)?.op.data).toMatchObject({ raw_transcript: 'You hid the spoon in the plant.' });
+    } finally {
+      await server.sensitiveConsent(MAMA, 'accept');
+    }
+    await P.sync(w.s);
+    expect(w.answers('entry.upsert', id2).at(-1)).toMatchObject({ ok: true, applied: true });
+    expect(await letter(id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
+    expect(copies(P, id2)).toEqual(['You hid the spoon and the fork.']);
   }, 60_000);
 
   it('[table C, Keep sent again on the letter version] a Keep refused by the held row, its answer lost, the letter then made elsewhere: the repeat names the letter as current, and the Keep sent again applies with the same words', async () => {

@@ -24,6 +24,7 @@ import {
   ALL_GROUPS,
   type BookMeta,
   type Digest,
+  type EntryData,
   type EntryState,
   type GoneBook,
   type PulledBook,
@@ -228,6 +229,55 @@ export interface PushOutcome {
   stoppedAt: OutboxRow | null;
 }
 
+/**
+ * An upload of this author's letter refused because the server holds other provenance for it (SCIMM: its
+ * raw transcript, engine or capture time). That happens after a second Keep of one held draft, when this
+ * phone's edit left before the pull row that brings the first keep's provenance. Words the upload carried
+ * become a conflict copy the author sees and can pick ("Use this phone's version" sends them again with the
+ * letter's provenance by then), because the next pull gives the letter the server's words. A letter the
+ * server does not hold for this phone keeps its words itself (DATA-REQ-043, a plain refused write). False
+ * when it carried no words, or they are already a copy.
+ */
+function keepWordsOfRefusedUpload(db: SqlDb, row: OutboxRow, now: string): boolean {
+  if (row.type !== 'entry.upsert' && row.type !== 'entry.reupload') return false;
+  const p = JSON.parse(row.payload) as PushOp;
+  if (row.type === 'entry.upsert' && !(p.changed ?? ALL_GROUPS).includes('text')) return false;
+  const local = getEntryRow(db, row.entity_id);
+  if (!local || local.server_version === null) return false;
+  if (local.author_id !== null && local.author_id !== syncOwner(db)) return false;
+  const data = p.data as unknown as EntryData;
+  const words: WordsGroup = { final_text: data.final_text, machine_edits: data.machine_edits ?? [], edit_level: data.edit_level };
+  if (typeof words.final_text !== 'string' || words.final_text.trim() === '') return false;
+  if (listConflictCopies(db, row.entity_id).some((c) => sameWords(c.words, words))) return true;
+  addConflictCopy(db, row.op_id, data, local.server_version, now);
+  return true;
+}
+
+/**
+ * The server's provenance of this author's letter (raw transcript, engine version, capture time; immutable
+ * there) is the letter's on this phone too, and in its uploads still queued, which the server would refuse
+ * (SCIMM) with any other. After a second Keep of one held draft (ADR 0025 section 9, row C) the letter is the
+ * first keep's; this phone's own words are in its conflict copy.
+ */
+function takeProvenance(db: SqlDb, row: PulledRow): void {
+  const raw = row.raw_transcript ?? '';
+  db.run(
+    `UPDATE entries SET raw_transcript = CASE WHEN ? <> '' THEN ? ELSE raw_transcript END,
+       engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at) WHERE id = ?`,
+    raw, raw, row.engine_version ?? null, row.captured_at ?? null, row.id,
+  );
+  for (const o of opsFor(db, row.id)) {
+    if (!untouchedOp(o) || (o.type !== 'entry.upsert' && o.type !== 'entry.reupload')) continue;
+    const p = JSON.parse(o.payload) as PushOp;
+    const d = { ...p.data } as Record<string, unknown>;
+    if (raw !== '') d.raw_transcript = raw;
+    if (row.engine_version !== null && row.engine_version !== undefined) d.engine_version = row.engine_version;
+    if (row.captured_at) d.captured_at = row.captured_at;
+    p.data = d;
+    db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
+  }
+}
+
 /** Applies one sync_push answer. `rows` is the batch as sent, in order. */
 export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushResponse, ctx: EnqueueContext): PushOutcome {
   const epoch = currentEpoch(db);
@@ -329,6 +379,14 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
       continue;
     }
     if (row.book_id && parked.has(row.book_id)) continue; // failed only because its book is not on the server
+    if (r.code === 'SCIMM' && keepWordsOfRefusedUpload(db, row, ctx.now)) {
+      // The server holds another raw transcript for this letter (a second Keep whose pull row has not come yet;
+      // review K re-check 4): the words are never left in a refused write the author cannot see.
+      conflicts++;
+      removeOp(db, row.seq);
+      refreshEntryState(db, row.entity_id);
+      continue;
+    }
     if (row.type === 'held.upsert' && r.gone) {
       // Erased with Erase now on another phone (its marker says so): this phone's copy goes too, words and
       // all, whatever was queued for it (a Restore made offline never undoes an erase; re-check B-R2).
@@ -538,6 +596,7 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
     'UPDATE entries SET server_version = ?, server_updated_at = ?, server_epoch = ?, synced_at = ?, author_id = ? WHERE id = ?',
     row.v, row.updated_at, epoch, now, row.author_id, row.id,
   );
+  takeProvenance(db, row);
   if (hasPendingOps(db, row.id)) {
     // Our queued ops are the later writer for the groups they change; only a delete from elsewhere wins over them.
     if (row.deleted_at && !local.deleted_at) db.run('UPDATE entries SET deleted_at = ? WHERE id = ?', row.deleted_at, row.id);
@@ -552,10 +611,6 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
   db.run(
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
-       -- The server's provenance stands: after a second Keep of a held draft (table row C) the letter is the first
-       -- keep's, with its raw transcript, engine and capture time; this phone's words are in its conflict copy.
-       raw_transcript = CASE WHEN ? <> '' THEN ? ELSE raw_transcript END,
-       engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at),
        -- A letter that waited here for its words got them on another phone (v8): they wait for this
        -- author's review here too, and count only once kept (M17; the server has no review mark yet).
        transcript_status = CASE WHEN transcript_status = 'waiting' AND ? <> '' THEN '${WORDS_UNREVIEWED}' ELSE transcript_status END,
@@ -566,8 +621,6 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
-    row.raw_transcript ?? '', row.raw_transcript ?? '',
-    row.engine_version ?? null, row.captured_at ?? null,
     row.raw_transcript ?? '',
     mergedLanguage(local.language, row.language),
     opt(row.occurred_precision), opt(row.base_direction),

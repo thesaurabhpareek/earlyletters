@@ -641,9 +641,14 @@ export function settleHeldAnswer(
   // phone's own words produced: held.v of an answer to an op that carried text and was not refused,
   // applied_v on a repeat of such an op, or current.v once the phone has taken those words. Never from a
   // refused answer's held.v, nor from an op without text (another phone may have changed the words since).
+  // The server's words are taken only into a draft still here and not being let go. A draft kept or let go
+  // while this upload was on the way takes nothing, so nothing moves: the queued Keep is compared from the
+  // version this phone last showed (refused, c2 keeps both versions), and so is the queued let-go (kept, the
+  // draft comes back with the newer words). Review K re-check R3.
+  const draft = getDraftRow(db, id);
   const refused = (r.conflict_groups ?? []).includes('text');
   const sentText = sent ? (sent.changed ?? ALL_GROUPS).includes('text') : true;
-  const takes = refused && !!r.current && 'typed_text' in r.current;
+  const takes = refused && !!r.current && 'typed_text' in r.current && !!draft && draft.state !== 'discarding';
   const v = takes ? r.current!.v
     : refused || !sentText ? null
       : r.dup ? (r.applied_v ?? null) : (r.held?.v ?? null);
@@ -653,7 +658,6 @@ export function settleHeldAnswer(
     db.run('UPDATE entries SET held_v = ? WHERE id = ? AND server_version IS NULL', v, id);
   }
   let copied = false;
-  const draft = getDraftRow(db, id);
   const changedHere = (d: LocalDraftRow) => (d.typed_text ?? null) !== (d.held_typed ?? null);
   if (draft && draft.state !== 'discarding' && r.held === null && (draft.typed_text ?? '').trim() !== '' && changedHere(draft)
       && !listConflictCopies(db, id).some((c) => c.words.final_text === draft.typed_text)) {
