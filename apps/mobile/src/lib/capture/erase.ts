@@ -1,6 +1,9 @@
 /**
  * The device half of "Erase now" and the 30 day purge (D-085): removes a
- * deleted letter's recording and its listening copy. The store calls this
+ * deleted letter's recording, its listening copy, and any temporary copy of
+ * its whole frames a transcription run made (ADR 0027; capture/adts-file.ts),
+ * also while that run is still going: no copy of the voice outlives the
+ * erase. The store calls this
  * first and removes the row only after it returns (store.eraseEntry), so a
  * file never outlives its row where the sweep could re-attach it.
  *
@@ -21,12 +24,14 @@
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
 import { audioRows, eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.
   if (uri && Platform.OS !== 'web') {
     for (const f of erasableFiles(uri, otherAudioUris(entryId))) if (f.exists) f.delete();
+    removeWholeFrameCopiesOf(uri);
   }
   removeListeningCopy(entryId);
 };

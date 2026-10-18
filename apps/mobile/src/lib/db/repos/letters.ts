@@ -22,16 +22,20 @@ export class AudioMissingError extends Error {
 export function saveFromDraft(
   ctx: RepoContext,
   draftId: string,
-  e: Entry,
+  entry: Entry,
   defaults: entries.InsertDefaults,
   audioExists = true,
   /** Runs inside the same transaction, after the letter is written (the facade queues the upload here). */
   inTransaction?: () => void,
 ): void {
-  if (e.audioUri && !audioExists) throw new AudioMissingError();
+  if (entry.audioUri && !audioExists) throw new AudioMissingError();
+  // Review's choices on the draft are read before the transaction (the store is synchronous: nothing runs in
+  // between), so the transaction is exactly the letter, then the draft's removal, the crash point the kill
+  // harness watches (qa-kill-harness, DATA-REQ-048).
+  const d = drafts.get(ctx, draftId);
+  const e = d ? withDraftChoices(entry, d) : entry;
   ctx.db.transaction(() => {
-    const d = drafts.get(ctx, draftId);
-    entries.upsert(ctx, d ? withDraftChoices({ ...e, id: draftId }, d) : { ...e, id: draftId }, defaults);
+    entries.upsert(ctx, { ...e, id: draftId }, defaults);
     drafts.remove(ctx, draftId);
     inTransaction?.();
   });
