@@ -58,6 +58,8 @@ const CHANGED = [
   'features.language.picker.none',
   'features.speechConsent.body',
   'features.speechConsent.chosenLater',
+  // Changed after P2 landed (#220 review R5, spec v1.3): the promise body is the sanctioned promise word for word (S04).
+  'en.onboarding.promise.body2',
   'features.words.pack.stoppedInBackground',
   'en.review.waiting.body',
   'features.words.pack.mobileDataButton',
