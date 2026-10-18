@@ -218,14 +218,16 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Blocks: final legal text (FT-41).
 
 - [ ] **FT-20 GitHub: branch protection and labels**
-  - Time: 15 minutes.
+  - Time: 15 minutes, plus the release gate below.
   - Cost: US $0.
-  - Steps: protect `develop` and `main` requiring the CI `required` job; labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
-  - Release gate (ADR 0022 decision 8; free because the repository is public; about 15 more minutes, needed before the first RC on Mon 26 Oct):
-    - Settings, Environments: create `app-store`. Add yourself as required reviewer. Under deployment branches and tags, choose selected ones and add tag `ios-v*` and branch `release/*`.
-    - In `app-store`, add the environment secrets `EXPO_TOKEN` (a token used only for the store lane) and `ASC_REVIEW_CONTACT_JSON` (shape in `docs/ops/RELEASE.md` 3.5). Delete any repository secret of the same name.
-    - Settings, Rules, Rulesets: a tag ruleset for `ios-v*` and a branch ruleset for `release/*`, each restricting creations, updates and deletions, with Repository admin as the only bypass.
-  - By: Fri 9 Oct (release gate: Fri 23 Oct).
+  - Steps: protect `develop` and `main` requiring the CI `required` job (the release gate's script does this); labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
+  - Release gate (corrected 17 Oct to match ADR 0026 and `docs/security/SECRETS_REVIEW.md` #206; the 15 Oct text made you the reviewer and gave admins a ruleset bypass, but agent sessions act as your account, so neither was a gate). About 30 minutes, before any secret is added:
+    1. AUTOMATION AF-02: make a second GitHub account (the approver), passkey only, never connected to claude.ai, a connector, a CLI or an agent machine. Invite it to the repository with Write and accept the invitation from that account.
+    2. From your own computer, signed in to `gh` as yourself: `npx tsx scripts/release/github-settings.ts --approver <approver login>`. It prints every call: the eight environments with the approver as the only reviewer, prevent self-review on, admin bypass off and selected refs only (`app-store`: tag `ios-v*`, branch `release/*`); branch protection on `develop` and `main` (AF-03); and rulesets that stop anyone moving or deleting `ios-v*` and `db-v*` tags or force-pushing or deleting `release/*` (AF-23). Read it, then run it again with `--apply`.
+    3. Run it with `--verify`: it must print "Settings match the spec". Then look in Settings, Environments: "Allow administrators to bypass" is off on each (the API may not show it).
+    4. Only then add secrets, in each environment, as `docs/security/SECRETS_REVIEW.md` section 9 orders them (for `app-store`: `EXPO_TOKEN` from an Expo robot user, `ASC_REVIEW_CONTACT_JSON` in the shape of `docs/ops/RELEASE.md` 3.5). Keep the repository `EXPO_TOKEN` until the workflow that reads the environment one has merged and one run with it is green (AF-07, AF-22); then delete it.
+    5. From then on, every pull request into `main` (the website too) needs the approver's review, and nobody, you included, can push to `develop` or `main` directly.
+  - By: Fri 9 Oct (release gate: Mon 19 Oct, AUTOMATION 0.2 row 5).
   - Blocks: BL-005, BL-122; lets scheduled agents take more of the backlog safely.
 
 ---
