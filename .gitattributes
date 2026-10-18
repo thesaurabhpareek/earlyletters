@@ -1,0 +1,4 @@
+# Append-only agent logs: a merge keeps both sides' lines instead of conflicting.
+docs/agents/checkins/*.md merge=union
+# The rules file is not a log: edits to it merge normally and can conflict.
+docs/agents/checkins/README.md !merge
