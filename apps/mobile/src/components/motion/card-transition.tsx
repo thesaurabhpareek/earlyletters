@@ -14,7 +14,10 @@
  * full-screen layer, comes up over lamp.leaveMs on a straight line while the card holds (cardToPage.holdMs), then the
  * paper grows; by the time its edge can reach another line of the Book the Book is 95 percent gone, so no edge cuts a
  * legible line and nothing blinks. On the way back the veil stays until the paper is within cardToPage.clearPt of the
- * card, then lifts over lamp.returnMs (CARD_TO_PAGE, clearProgress).
+ * card, then lifts over lamp.returnMs (CARD_TO_PAGE, clearProgress). The paper over the card comes and goes with the
+ * veil, so the rest of the card (its signature, Private, its length) leaves with the Book and comes back with it.
+ * The card's fade over its last line is gone before the paper turns to the page's colour (paperTone), so it never
+ * shows as a patch of the card's surface on the page.
  *
  *   // the Book: the card's dateline and excerpt in CardText; the list hides from screen readers under a page
  *   const behind = useHiddenBehindCardPage();
@@ -29,6 +32,7 @@
  *     <ScrollView>... <PageOpening lineHeight={lineHeightFor('letterBody', fontScale)} /> ...</ScrollView>
  *   </CardToPage>
  *   const close = useCardToPageClose();   // inside the page: Back, swipe down, Android back
+ *   const { carried, home } = useCardToPagePhase();   // inside the page: the rest waits until the words are home
  *
  * The contract that keeps the words still: the page's opening block uses the card's text column and type (the same
  * width, line height and gaps), so its first lines wrap exactly as the card's did. Without it (a page at a larger
@@ -59,7 +63,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { tokens } from '@scribe/design-tokens';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { springConfig, useReducedMotion } from '@/lib/motion';
 import {
@@ -69,9 +72,11 @@ import {
   cardPages,
   cardToPageFrame,
   cardWasCut,
+  carriedHome,
   carryFrame,
   clearProgress,
   hiddenBehind,
+  paperTone,
   type CarryText,
   type Rect,
 } from '@/lib/transitions.logic';
@@ -143,12 +148,41 @@ export function CardText({ children, lineHeight, rtl, style }: { children: React
  */
 export type Opening = (focus: RefObject<any> | null) => ReactNode;
 
-type PageContext = { close: () => void; opening: Opening; focus: RefObject<any>; hidden: boolean; place: (v: View | null, lineHeight: number) => void };
-const CardPageContext = createContext<PageContext>({ close: () => {}, opening: () => null, focus: { current: null }, hidden: false, place: () => {} });
+/**
+ * Where a CardToPage is, for the page inside it:
+ * - `phase`: 'measuring' (its first frames, choosing a carry or a fade; the page is not on screen yet), 'moving',
+ *   'settled' (arrived; screen readers are on the page), or 'closing' (Back has begun);
+ * - `carried`: the card's words are carried in. False: the page fades in whole, and the rest of it is part of that;
+ * - `home`: the carried words are within CARD_TO_PAGE.homePt of their place, so the rest of the page can come in with
+ *   no line of it under words still on their way. True at once when nothing is carried, false while measuring.
+ */
+export type CardToPagePhase = { phase: 'measuring' | 'moving' | 'settled' | 'closing'; carried: boolean; home: boolean };
+
+type PageContext = {
+  close: () => void;
+  opening: Opening;
+  focus: RefObject<any>;
+  hidden: boolean;
+  place: (v: View | null, lineHeight: number) => void;
+  phase: CardToPagePhase;
+};
+const CardPageContext = createContext<PageContext>({
+  close: () => {},
+  opening: () => null,
+  focus: { current: null },
+  hidden: false,
+  place: () => {},
+  phase: { phase: 'settled', carried: false, home: true },
+});
 
 /** Inside a CardToPage: closes the page the way it came (the words back into the card, or a fade). */
 export function useCardToPageClose(): () => void {
   return useContext(CardPageContext).close;
+}
+
+/** Inside a CardToPage: where the move is (CardToPagePhase), so the page times the rest of itself by it. */
+export function useCardToPagePhase(): CardToPagePhase {
+  return useContext(CardPageContext).phase;
 }
 
 /** For the screen behind a card's page (the Book): spread on its root, so screen readers cannot reach it under the page. */
@@ -190,6 +224,9 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   const [phase, setPhase] = useState<Phase>('measuring');
   const [carry, setCarry] = useState(false);
+  // The carried words came within homePt of their place (once), and Back has begun: for useCardToPagePhase.
+  const [home, setHome] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const remembered = useRef<Remembered | undefined>(cardRects.get(id));
   const pageView = useRef<View | null>(null);
   const pageLine = useRef(0);
@@ -258,10 +295,11 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   const paper = useAnimatedStyle(() => {
     const f = cardToPageFrame(from.value, screen, p.value);
-    // The paper is the card's own surface until the rest of the words arrive, then becomes the page's (so the card's
-    // fade over its last line, drawn in that surface, always matches the paper under it).
-    const backgroundColor = interpolateColor(p.value, [0, tokens.motion.cardToPage.contentFrom, 1], [c.surfaceRaised, c.surfaceRaised, c.bg]);
-    return { left: f.x, top: f.y, width: f.width, height: f.height, borderRadius: f.radius, opacity: fade.value, backgroundColor };
+    // The paper is the card's own surface until the card's fade over its last line has given way, then becomes the
+    // page's (paperTone), so that fade, drawn in the card's surface, always matches the paper under it. Carried, it
+    // comes and goes with the veil: the rest of the card leaves with the Book and comes back with it, never cut.
+    const backgroundColor = interpolateColor(paperTone(p.value), [0, 1], [c.surfaceRaised, c.bg]);
+    return { left: f.x, top: f.y, width: f.width, height: f.height, borderRadius: f.radius, opacity: carrying.value ? veil.value : fade.value, backgroundColor };
   });
   // The veil: the page's paper over the whole Book, one layer with no pieces (so no joint can show as a seam).
   const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));
@@ -281,6 +319,14 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const cardFade = useAnimatedStyle(() => ({
     opacity: cardWasCut(ct.value, pt.value) ? carryFrame(from.value, ct.value, pt.value, screen, p.value).cardFade : 0,
   }));
+
+  // The carried words are home: the page may bring in the rest of itself (useCardToPagePhase). Once, on the way in.
+  useAnimatedReaction(
+    () => carrying.value === 1 && carriedHome(ct.value, pt.value, p.value),
+    (now, was) => {
+      if (now && !was) runOnJS(setHome)(true);
+    },
+  );
 
   // The way back finishes when the paper is home and the veil has lifted (both), and only then leaves the route.
   const closeLeft = useRef(0);
@@ -328,10 +374,13 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const close = useCallback(() => {
     if (closing.current) return;
     closing.current = true;
+    setLeaving(true);
     const done = () => onClosed();
     // The same hand-off back: the page fades out whole, and the Book comes back after it.
     const fadeOut = () => {
       const h = CARD_TO_PAGE.handOff;
+      // A carried paper was at the veil's strength: the fade starts from there, so the paper never jumps up first.
+      if (carrying.value) fade.value = Math.min(fade.value, veil.value);
       carrying.value = 0;
       setCarry(false);
       fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
@@ -365,8 +414,19 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const lineHeight = remembered.current?.text?.lineHeight ?? 0;
   const showCarry = carry && phase === 'moving';
   const ctx = useMemo<PageContext>(
-    () => ({ close, opening, focus, hidden: phase !== 'settled' && (carry || phase === 'measuring'), place }),
-    [close, opening, phase, carry, place],
+    () => ({
+      close,
+      opening,
+      focus,
+      hidden: phase !== 'settled' && (carry || phase === 'measuring'),
+      place,
+      phase: {
+        phase: leaving ? 'closing' : phase,
+        carried: carry && phase !== 'measuring',
+        home: phase !== 'measuring' && (!carry || home),
+      },
+    }),
+    [close, opening, phase, carry, place, leaving, home],
   );
 
   return (

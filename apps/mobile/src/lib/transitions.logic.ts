@@ -28,9 +28,11 @@ const M = tokens.motion;
  *   sheet       a page held over the room (Write, sign-in, invites, the purchase confirmation): the platform's rise
  *   push        one step further, the way back at the left edge (Settings, a letter until P5): the platform's push
  *   cardToPage  the tapped card grows into its page (MOTION 5f, CardToPage), drawn by the page itself
+ *   cut         first run: no move of its own. It continues the age question's lit room (R1), so it is on screen at
+ *               once, on any path that brings it (the stack's first route, or a redirect from a tab)
  *   none        the tab root
  */
-export type Move = 'none' | 'dissolve' | 'sheet' | 'push' | 'cardToPage';
+export type Move = 'none' | 'dissolve' | 'sheet' | 'push' | 'cardToPage' | 'cut';
 export type Presentation = 'modal' | 'fullScreenModal' | 'transparentModal';
 
 /** One row of the table: the 5.8 rows it carries, how the route is presented and the move that brings it on. */
@@ -39,7 +41,7 @@ type Row = { rows: readonly (number | string)[]; presentation?: Presentation; mo
 /** Root stack routes (src/app/_layout.tsx). Rows are EXPERIENCE_PASS 5.8's. */
 export const ROUTES = {
   '(tabs)': { rows: [6], move: 'none' },
-  onboarding: { rows: [], move: 'none' },
+  onboarding: { rows: [], move: 'cut' },
   listen: { rows: [1, 2, 3], presentation: 'fullScreenModal', move: 'dissolve' },
   // Full screen (was a page sheet), so Listen dissolves into Review with no change of shape (row 4).
   review: { rows: [4, 5], presentation: 'fullScreenModal', move: 'dissolve' },
@@ -72,6 +74,9 @@ export function moveOptions(move: Move, reduced: boolean): RouteOptions {
     case 'cardToPage':
       // CardToPage draws the growth itself (and its own 200 ms cross-fade under Reduce Motion).
       return { presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } };
+    case 'cut':
+      // Nothing slides, under either setting: first run's own scenes carry the change (stepMotion, the lamp).
+      return { animation: 'none' };
     case 'sheet':
     case 'push':
     case 'none':
@@ -95,6 +100,40 @@ export function routeTransitions(reduced: boolean): Record<RootRoute, RouteOptio
  * ones start as the old are half gone.
  */
 export const HAND_OFF = 0.35;
+
+/* ------------------------------------------------------------------ */
+/* First run opens directly (R1)                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Whether the app opened at its front door rather than on a link: no launch address, a web address at "/" (the web
+ * preview), the app's own scheme with no route, or a development build's launcher (which carries the bundle's
+ * address, not a route). Anything else is a link (an invite, a sign-in callback, a letter), whatever +native-intent
+ * later makes of it. Read by hand, not with URL: React Native's URL only knows web addresses.
+ */
+export function openedAtRoot(url: string | null | undefined): boolean {
+  if (!url) return true;
+  const m = /^([a-z][a-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)/i.exec(url);
+  if (!m) return false;
+  const [, scheme, host, path] = m;
+  if (/^https?$/i.test(scheme)) return path === '' || path === '/';
+  if (host === 'expo-development-client') return true;
+  return host === '' && (path === '' || path === '/');
+}
+
+/**
+ * R1 (EXPERIENCE_PASS S01.3, S03.5): whether the tabs are in the root stack (src/app/_layout.tsx, Stack.Protected).
+ * - A phone with no book that opened at the root shows first run as the stack's first route. The tabs are not
+ *   mounted first, so no tab bar and no unlit page show between the age question and the welcome.
+ * - The tabs join as soon as a book exists (first run's last step, signing in, joining), in the same render as
+ *   first run's replace to "/", and then stay for the session (`hadTabs`). A later route never loses the room
+ *   under it; a phone that later has no book goes back to first run through Tonight, as before.
+ * - A launch on a link keeps the tabs under it, so its sheet always has a room to close to (Tonight then opens
+ *   first run, as before).
+ */
+export function tabsInStack(s: { hasBook: boolean; openedAtRoot: boolean; hadTabs: boolean }): boolean {
+  return s.hadTabs || s.hasBook || !s.openedAtRoot;
+}
 
 /* ------------------------------------------------------------------ */
 /* Sheets (ui/sheet.tsx, our own sheet, so rule 6 applies)             */
@@ -206,6 +245,15 @@ export function cardToPageFrame(card: Rect, screen: { width: number; height: num
  * fade is a straight line, so nothing loses more than half its strength in 50 ms, and the two screens' words are never
  * on screen together at more than a quarter of their strength.
  */
+/**
+ * The card's fade over its last line gives way over the first half of the rest's arrival (contentFrom to here), and
+ * only then does the paper turn from the card's surface to the page's (here to 1). The fade is drawn in the card's
+ * surface, so it never lies over paper of another colour (no pale patch on the last line).
+ */
+const TONE_FROM = M.cardToPage.contentFrom + (1 - M.cardToPage.contentFrom) / 2;
+/** The carried words are home within this of their place on the page: the rest of the page may come in under them. */
+const HOME_PT = 4;
+
 export const CARD_TO_PAGE = {
   veilInMs: M.lamp.leaveMs,
   holdMs: M.cardToPage.holdMs,
@@ -217,7 +265,15 @@ export const CARD_TO_PAGE = {
     arriveFromMs: Math.round(M.fadeMs * 0.4),
     arriveMs: Math.round(M.fadeMs * 0.6),
   },
+  toneFrom: TONE_FROM,
+  homePt: HOME_PT,
 } as const;
+
+/** How far the paper has turned from the card's surface (0) to the page's (1), at `progress`. */
+export function paperTone(progress: number): number {
+  'worklet';
+  return Math.min(1, Math.max(0, (progress - TONE_FROM) / (1 - TONE_FROM)));
+}
 
 /** The veil on the way to the page, `ms` after the move begins (0 to 1). */
 export function veilIn(ms: number): number {
@@ -313,7 +369,8 @@ export function hiddenBehind(covered: boolean) {
  * - `excerpt`: the height of the lines the card showed, always fully visible (the card's own words never leave);
  * - `extra`: how much of the rest shows below them, never past the paper's bottom edge;
  * - `extraOpacity`: the rest of the words fade in from contentFrom of the way (and out first on the way back);
- * - `cardFade`: the card's own fade over the end of its last line, which gives way as the rest arrives.
+ * - `cardFade`: the card's own fade over the end of its last line, which gives way as the rest begins to arrive and
+ *   is gone before the paper changes colour (paperTone).
  */
 export function carryFrame(card: Rect, cardText: Rect, pageText: Rect, screen: { width: number; height: number }, progress: number) {
   'worklet';
@@ -323,7 +380,20 @@ export function carryFrame(card: Rect, cardText: Rect, pageText: Rect, screen: {
   const y = cardText.y + (pageText.y - cardText.y) * p;
   const excerpt = cardText.height;
   const extra = Math.min(Math.max(0, pageText.height - excerpt), Math.max(0, f.y + f.height - (y + excerpt)));
-  return { x, y, excerpt, extra, extraOpacity: f.contentOpacity, cardFade: 1 - f.contentOpacity };
+  const from = M.cardToPage.contentFrom;
+  const cardFade = 1 - Math.min(1, Math.max(0, (p - from) / (TONE_FROM - from)));
+  return { x, y, excerpt, extra, extraOpacity: f.contentOpacity, cardFade };
+}
+
+/**
+ * Whether the carried words are home: within CARD_TO_PAGE.homePt of their place on the page at `progress`. They move
+ * in a straight line with the paper, so what is left is the rest of the way times the distance (a spring's overshoot
+ * is clamped, as the block's own place is).
+ */
+export function carriedHome(cardText: Rect, pageText: Rect, progress: number): boolean {
+  'worklet';
+  const p = Math.min(1, Math.max(0, progress));
+  return (1 - p) * Math.hypot(pageText.x - cardText.x, pageText.y - cardText.y) <= HOME_PT;
 }
 
 /** Back reverses the growth only while the card is still on screen; otherwise the page fades (MOTION 5f). */
