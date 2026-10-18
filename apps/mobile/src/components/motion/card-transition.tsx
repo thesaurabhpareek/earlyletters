@@ -32,8 +32,8 @@
  *
  * The contract that keeps the words still: the page's opening block uses the card's text column and type (the same
  * width, line height and gaps), so its first lines wrap exactly as the card's did. Without it (a page at a larger
- * Reading Size than the card, say), without a measured card, or under Reduce Motion, nothing moves: the Book goes
- * under the same veil and the page fades in whole over 200 ms from when the Book is half gone (paper and words
+ * Reading Size than the card, say), without a measured card, or under Reduce Motion, nothing moves: inside one 200 ms
+ * fade the Book goes under the same veil and the page fades in whole after it, a hand-off both ways (paper and words
  * together, never an empty page, and never two screens of words on top of each other at strength).
  *
  * Screen readers read the letter once and land on the page: while the page is up it is modal
@@ -195,6 +195,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
   const pageLine = useRef(0);
   const pageRect = useRef<CarryText | undefined>(undefined);
   const closing = useRef(false);
+  const mounted = useRef(true);
   const focus = useRef<any>(null);
 
   const p = useSharedValue(0);
@@ -209,6 +210,12 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   // The screen behind hides from screen readers for as long as the page is up.
   useEffect(() => cardPages.hold(), []);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   // When the page has arrived (carried or faded), VoiceOver and TalkBack land on its first element, once.
   useFocusOnMount(focus, phase === 'settled', 'settled');
 
@@ -227,6 +234,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     let frames = 0;
     let raf = 0;
     const decide = () => {
+      if (closing.current) return;
       const r = cardRects.get(id) ?? remembered.current;
       const ready = !!r?.card && !!pageRect.current;
       if (!reduced && !ready && frames++ < MEASURE_FRAMES) {
@@ -305,12 +313,13 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
       veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
       p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard'), (done) => runOnJS(settle)(done)), ReduceMotion.Never);
     } else {
-      // Nothing moves: the Book goes under the same veil, and the whole page fades in from when it is half gone.
+      // Nothing moves: a hand-off inside one fadeMs. The Book goes under the veil, the whole page fades in after it.
+      const h = CARD_TO_PAGE.handOff;
       p.value = 1;
-      veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      veil.value = withTiming(1, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
       fade.value = withDelay(
-        CARD_TO_PAGE.fadeInFromMs,
-        withTiming(1, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done)),
+        h.arriveFromMs,
+        withTiming(1, { duration: h.arriveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done)),
         ReduceMotion.Never,
       );
     }
@@ -320,14 +329,15 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     if (closing.current) return;
     closing.current = true;
     const done = () => onClosed();
-    // The page fades out whole, and the Book comes back from when it is half gone, the way the lamp comes back.
+    // The same hand-off back: the page fades out whole, and the Book comes back after it.
     const fadeOut = () => {
+      const h = CARD_TO_PAGE.handOff;
       carrying.value = 0;
       setCarry(false);
-      fade.value = withTiming(0, { duration: CARD_TO_PAGE.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
       veil.value = withDelay(
-        CARD_TO_PAGE.liftFromMs,
-        withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
+        h.arriveFromMs,
+        withTiming(0, { duration: h.arriveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
           if (finished) runOnJS(done)();
         }),
         ReduceMotion.Never,
@@ -337,6 +347,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     if (!carry || reduced || !r || cardBackMove(r.card, screen) !== 'shrink') return fadeOut();
     // The page may have scrolled: find its opening again, and carry the words back only if they still match.
     void measure(pageView.current).then((at) => {
+      if (!mounted.current) return;
       const now = at ? { ...at, lineHeight: pageLine.current } : undefined;
       if (!now || !canCarry(r.text, now) || now.y + now.height < 0 || now.y > screen.height) return fadeOut();
       pt.value = now;
