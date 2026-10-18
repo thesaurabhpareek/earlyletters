@@ -76,7 +76,7 @@ Rules are in `COORDINATION.md`. This file is append-only except for your own cla
 - the mobile vitest include must also cover `src/**/*.test.ts`
 
 ## Check-ins
-(append: `HH:MM <agent> | done: … | next: … | blocked/needs: …`)
+(closed to new lines on 18 Oct 2026: new check-ins go in `docs/agents/checkins/<agent>.md`, see `COORDINATION.md` section 3. The lines below are history.)
 19:15 brand-content | done: icon, emails, store copy, trust copy (in WIP snapshot) | next: move 12 feature copy.ts into packages/content, Settings rows, Plus copy fix, screenshots | blocked/needs: none
 19:20 brand-content | done: 12 feature copy.ts moved to packages/content/src/features (re-exports kept), Settings home rows, Plus copy, script edit label, voice promise, licences | next: store screenshots with new UI, ROADMAP/README, decision drafts | blocked/needs: Terms 14.1 still lists backup and themes (legal owner)
 19:32 brand-content | done: 6 store frames x 2 sizes (scratchpad), capture script in scripts/brand, Settings home verified light/dark | next: ROADMAP, README, DECISIONS draft for coordinator, full test run | blocked/needs: design: ListSection indents whole rows after the first (ml-4 on row, not divider)

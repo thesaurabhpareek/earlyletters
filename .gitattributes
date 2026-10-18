@@ -1,0 +1,2 @@
+# Append-only agent logs: a merge keeps both sides' lines instead of conflicting.
+docs/agents/checkins/*.md merge=union

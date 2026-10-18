@@ -18,11 +18,12 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
-- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** under "Check-ins" in `BOARD.md`:
-  `HH:MM <agent> | done: … | next: … | blocked/needs: …`
-- Before each check-in, read the last 20 check-ins. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
+- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** to your own check-in file, `docs/agents/checkins/<agent>.md` (create it on your first check-in; one file per agent or stream, for example `S10.md` or `experience-p1.md`):
+  `HH:MM (DD Mon) <agent> | done: … | next: … | blocked/needs: …`
+- Never append check-ins to `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section in `BOARD.md` stays as history.
+- Before each check-in, read the newest check-ins across `docs/agents/checkins/` (`ls -t`, then the last lines of each). If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
 - When you finish, change your claim to `done` and put a pointer to your report in the claim line.
-- Keep `BOARD.md` edits append-only, except your own claim line. Re-read the file right before writing.
+- In `BOARD.md`, edit only your own claim line. Re-read the file right before writing.
 
 ## 4. One answer per question: propose, debate, converge
 Some choices shape other people's work: a library, a data shape, an API contract, a naming scheme, a UX pattern, a copy convention, a folder layout. For those:
