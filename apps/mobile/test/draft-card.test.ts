@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { en, reminderCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { afterEach, describe, expect, it } from 'vitest';
-import { lineHeightFor } from '../src/components/motion/excerpt-fade.logic';
+import { fadeBox, lineHeightFor } from '../src/components/motion/excerpt-fade.logic';
 import {
   EVENING_DAYPARTS,
   EXCERPT,
@@ -23,7 +23,9 @@ import {
   draftState,
   draftWords,
   greetingParts,
+  resumed,
   resurfaced,
+  roomClock,
   spoken,
   tonightArrival,
   tonightDateline,
@@ -49,6 +51,8 @@ function draft(over: Partial<DraftFields> = {}): DraftFields {
     captureMode: 'spoken',
     audioUri: 'file:///Documents/ExpoAudio/asha-take.m4a',
     audioDurationMs: 42_000,
+    audioBytes: 336_000,
+    state: 'ready',
     rawTranscript: ASHA_SAID,
     typedText: null,
     recoveredAt: null,
@@ -125,6 +129,27 @@ describe('[S09] a card for every waiting draft: its line and action come from it
     expect(draftState(draft({ recoveredAt: at(2026, 10, 17, 7), audioDurationMs: 0 }))).toBe('swept');
   });
 
+  it('a take with no sound in it says so, never that its words are coming (review note 4 on #221)', () => {
+    // The recorder stores a 0-byte take as unrecoverable (lib/capture/recorder.ts); its words will never come.
+    const empty = draftCard(draft({ state: 'unrecoverable', audioBytes: 0, audioDurationMs: 0, rawTranscript: null }), NOW);
+    expect(empty.state).toBe('empty');
+    expect(empty.line).toBe(en.review.emptyTake.body);
+    expect(empty.line).toBe('The recording ended before any sound came in.');
+    expect(empty.words).toBeNull();
+    expect(empty.action).toBe(t.draft.openButton);
+    expect(empty.route).toEqual({ pathname: '/review', params: { draftId: 'draft-1' } });
+    expect(empty.clock).toBeNull();
+    expect(empty.a11yLabel).toBe(`${dayDate('2026-10-13')}. The recording ended before any sound came in. Open.`);
+    expect(empty.a11yLabel).not.toContain(en.book.waitingForWords);
+    // Found empty by the launch sweep: the same honest line, which is truer than "Read it back".
+    expect(draftState(draft({ state: 'unrecoverable', audioBytes: 0, rawTranscript: null, recoveredAt: at(2026, 10, 17, 7) }))).toBe('empty');
+    // A take the sweep kept but could not open (it has bytes): found by the sweep, as before.
+    expect(draftState(draft({ state: 'unrecoverable', audioBytes: 5_120, rawTranscript: null, recoveredAt: at(2026, 10, 17, 7) }))).toBe('swept');
+    // Held wins, and words win: an unrecoverable row that somehow has words shows them.
+    expect(draftState(draft({ state: 'unrecoverable', audioBytes: 0, held: true }))).toBe('held');
+    expect(draftState(draft({ state: 'unrecoverable', audioBytes: 0 }))).toBe('ready');
+  });
+
   it('a state that cannot be read (a spoken row with no file yet) is the first row', () => {
     expect(draftState(draft({ audioUri: null, rawTranscript: null }))).toBe('ready');
     expect(draftCard(draft({ audioUri: null, rawTranscript: null }), NOW).line).toBe(t.draftWaiting.title);
@@ -169,6 +194,33 @@ describe('[S09] the dateline and what VoiceOver reads', () => {
     expect(clockOf(0)).toBeNull();
     expect(clockOf(null)).toBeNull();
     expect(draftCard(draft(), NOW).clock).toBe('0:42');
+  });
+
+  it("the weekday holds for six days and gives way to the full date at seven, by the phone's calendar, in four time zones", () => {
+    const before = process.env.TZ;
+    try {
+      for (const tz of ['America/Los_Angeles', 'Asia/Kolkata', 'Pacific/Auckland', 'UTC']) {
+        process.env.TZ = tz;
+        // Saturday 10 PM on the phone's clock.
+        const made = new Date(2026, 9, 17, 22, 0).toISOString();
+        expect(reminderCopy.weekdays[new Date(made).getDay()], tz).toBe('Saturday');
+        expect(draftDateline(made, new Date(2026, 9, 23, 22, 0)), `${tz}: 6 days on`).toBe('Saturday');
+        expect(draftDateline(made, new Date(2026, 9, 23, 23, 59)), `${tz}: the last minute of the sixth day`).toBe('Saturday');
+        // From the seventh calendar day the weekday would be today's own, so the full date shows instead.
+        expect(draftDateline(made, new Date(2026, 9, 24, 0, 1)), `${tz}: the first minute of the seventh day`).toBe(dayDate('2026-10-17'));
+        expect(draftDateline(made, new Date(2026, 9, 24, 22, 1)), `${tz}: 7 days and a minute on`).toBe(dayDate('2026-10-17'));
+        // Started at 11:50 PM on Tuesday, seen at 12:10 AM on Wednesday: still Tuesday's.
+        expect(draftDateline(new Date(2026, 9, 13, 23, 50).toISOString(), new Date(2026, 9, 14, 0, 10)), `${tz}: past midnight`).toBe('Tuesday');
+        // Across the US clock change (1 Nov 2026): six calendar days are still six, seven are a week.
+        expect(draftDateline(new Date(2026, 9, 31, 21, 0).toISOString(), new Date(2026, 10, 6, 21, 0)), `${tz}: across 1 Nov`).toBe('Saturday');
+        expect(draftDateline(new Date(2026, 9, 31, 21, 0).toISOString(), new Date(2026, 10, 7, 21, 0)), `${tz}: a week across 1 Nov`).toBe(dayDate('2026-10-31'));
+        // A draft dated after the phone's clock (the clock moved back) gets the full date, never a weekday.
+        expect(draftDateline(new Date(2026, 9, 18, 9, 0).toISOString(), new Date(2026, 9, 17, 9, 0)), `${tz}: from the future`).toBe(dayDate('2026-10-18'));
+      }
+    } finally {
+      if (before === undefined) delete process.env.TZ;
+      else process.env.TZ = before;
+    }
   });
 
   it('a card reads as sentences: the full date, the words or the state, the action; no separator glyph, no total', () => {
@@ -255,7 +307,7 @@ describe('[S33] not much today, and the light', () => {
   it('the mark stores no words, and the kept line is the line in text with the Moon, never a count or a success colour (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toContain('newQuietMark(');
-    expect(screen).toContain('markOn(listEntries(), today)');
+    expect(screen).toContain('markOn(listEntries(), day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
@@ -271,7 +323,7 @@ describe('[S33] not much today, and the light', () => {
     expect(screen).toMatch(/const undoNotMuch = \(\) => \{\s*if \(keptMark\) deleteEntry\(keptMark\);\s*setKeptMark\(null\);/);
     expect(screen).toContain('tonightLampIntensity(daypart, !!markOn(room.entries, today))');
     // The line stays until Undo or until the person leaves Tonight (blur), never moving content on a return.
-    expect(screen).toContain('return () => setKeptMark(null);');
+    expect(screen).toMatch(/return \(\) => \{\s*focused\.current = false;\s*setKeptMark\(null\);\s*\};/);
   });
 });
 
@@ -281,7 +333,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
   it('lists every draft from listDrafts, never only the first', () => {
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);
-    expect(screen).toContain('draftCards(room?.drafts ?? [])');
+    expect(screen).toContain('draftCards(room?.drafts ?? [], room?.at)');
     expect(screen).toMatch(/cards\.map\(\(card, i\) =>/);
   });
 
@@ -293,7 +345,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
 
   it('the lamp follows the greeting\'s daypart, settles between tabs, and dims for a quiet evening', () => {
     expect(screen).toContain('<Lamp scene="tonight" daypart={daypart} persistKey="tabs" intensity={lampLevel} />');
-    expect(screen).toContain('const daypart = greetingKey();');
+    expect(screen).toContain('const daypart = clock.daypart;');
     expect(screen).toContain('t.greeting[daypart]');
   });
 
@@ -322,36 +374,129 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
 });
 
 describe('[P3] whole-line excerpts at every Dynamic Type size, xSmall, Small and Medium included', () => {
-  // iOS text sizes as React Native's fontScale (RCTAccessibilityManager): xSmall to xxxLarge, then AX1 to AX5.
+  /**
+   * The oracle, written out and not computed by the code under test: iOS text sizes as React Native's fontScale
+   * (RCTAccessibilityManager: xSmall to xxxLarge, then AX1 to AX5) and the line a letterBody line (20/32, no cap)
+   * renders at. Text scales a line by fontScale and caps it only at maxFontSizeMultiplier, which is 0 (none) for
+   * letterBody, so the rendered line is 32 x fontScale, and two whole lines are twice that (52.672 pt at xSmall).
+   */
   const SIZES = [
-    ['xSmall', 0.823],
-    ['Small', 0.882],
-    ['Medium', 0.941],
-    ['Large (default)', 1],
-    ['xLarge', 1.118],
-    ['xxLarge', 1.235],
-    ['xxxLarge', 1.353],
-    ['AX1', 1.786],
-    ['AX5', 3.118],
+    ['xSmall', 0.823, 26.336],
+    ['Small', 0.882, 28.224],
+    ['Medium', 0.941, 30.112],
+    ['Large (default)', 1, 32],
+    ['xLarge', 1.118, 35.776],
+    ['xxLarge', 1.235, 39.52],
+    ['xxxLarge', 1.353, 43.296],
+    ['AX1', 1.786, 57.152],
+    ['AX5', 3.118, 99.776],
   ] as const;
 
-  for (const [size, fontScale] of SIZES) {
-    it(`at ${size} (${fontScale}) a card's excerpt clips at exactly ${EXCERPT.lines} rendered lines`, () => {
-      const type = tokens.type[EXCERPT.variant];
-      const rendered = type.lineHeight * (type.maxScale === null ? fontScale : Math.min(fontScale, type.maxScale));
-      const clip = EXCERPT.lines * lineHeightFor(EXCERPT.variant, fontScale);
-      expect(clip / rendered).toBeCloseTo(EXCERPT.lines, 9);
-      if (fontScale < 1) expect(lineHeightFor(EXCERPT.variant, fontScale)).toBeLessThan(type.lineHeight);
-    });
+  const CARDS = ['components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx'];
+
+  /** Every ExcerptFade a card draws, as written in its source, with its props resolved (EXCERPT.* to their values). */
+  function excerptsIn(rel: string) {
+    const value = (props: string, name: string): string | number | undefined => {
+      const m = new RegExp(`\\b${name}=(?:\\{([^}]+)\\}|"([^"]+)")`).exec(props);
+      if (!m) return undefined;
+      const v = (m[1] ?? m[2]).trim();
+      if (v === 'EXCERPT.lines') return EXCERPT.lines;
+      if (v === 'EXCERPT.variant') return EXCERPT.variant;
+      if (/^\d+(\.\d+)?$/.test(v)) return Number(v);
+      if (m[2]) return v;
+      throw new Error(`${rel}: ExcerptFade ${name}={${v}} is not resolved by this test; teach it the value`);
+    };
+    return [...code(rel).matchAll(/<ExcerptFade\b([\s\S]*?)\/>/g)].map((m) => ({
+      lines: value(m[1], 'lines') as number,
+      variant: value(m[1], 'variant') as keyof typeof tokens.type,
+      scale: (value(m[1], 'scale') as number | undefined) ?? 1,
+      props: m[1],
+    }));
   }
 
-  it('the draft and month-old cards draw their words with ExcerptFade (two lines, a fade, never an ellipsis glyph)', () => {
-    expect(EXCERPT).toEqual({ lines: 2, variant: 'letterBody' });
-    for (const f of ['components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx']) {
+  it('ExcerptFade clips at its lines times the line its text renders at, and never sets numberOfLines (source)', () => {
+    const src = code('components/motion/excerpt-fade.tsx');
+    // The clip and the drawn text share one line height, from lineHeightFor with the same variant, fontScale and scale.
+    expect(src).toContain('const lh = lineHeightFor(variant, fontScale, scale ?? 1);');
+    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]}>");
+    expect(src).toMatch(/<Text variant=\{variant\} scale=\{scale\}/);
+    // Callers cannot pass numberOfLines (it is left out of the props), and the component sets no ellipsis itself.
+    expect(src).toContain("Omit<TextProps, 'children' | 'variant' | 'numberOfLines'>");
+    expect(src).not.toMatch(/numberOfLines=|ellipsizeMode=/);
+  });
+
+  it('each card draws its words with ExcerptFade only, with nothing that cuts or ellipsises them (source)', () => {
+    for (const f of CARDS) {
       const src = code(f);
-      expect(src, f).toContain('<ExcerptFade text={card.words} lines={EXCERPT.lines} variant={EXCERPT.variant} surface={c.surfaceRaised} />');
-      expect(src, f).not.toMatch(/numberOfLines=|ellipsizeMode=|maxHeight|height:/);
+      const found = excerptsIn(f);
+      expect(found.length, f).toBe(1);
+      expect(found[0].props, f).not.toMatch(/containerStyle|numberOfLines|ellipsizeMode/);
+      // No ellipsis on any text in the card, and nothing around the excerpt that sets a height or clips it.
+      expect(src, f).not.toMatch(/numberOfLines|ellipsizeMode|maxHeight|height:|overflow/);
     }
+  });
+
+  for (const [size, fontScale, line] of SIZES) {
+    it(`at ${size} (${fontScale}) each card's excerpt shows whole lines, cut at a line's end, and the fade sits on the last one`, () => {
+      expect(tokens.type.letterBody.lineHeight * fontScale, 'the oracle matches the letterBody token').toBeCloseTo(line, 9);
+      for (const f of CARDS) {
+        for (const ex of excerptsIn(f)) {
+          const type = tokens.type[ex.variant];
+          // What Text renders: the token's line, times Reading Size, times Dynamic Type up to the style's cap.
+          const rendered = type.lineHeight * ex.scale * (type.maxScale === null ? fontScale : Math.min(fontScale, type.maxScale));
+          if (ex.variant === 'letterBody') expect(rendered, `${f}: the rendered line`).toBeCloseTo(line * ex.scale, 9);
+          // What ExcerptFade clips at (its own formula, pinned above).
+          const lh = lineHeightFor(ex.variant, fontScale, ex.scale);
+          const clip = ex.lines * lh;
+          const shown = clip / rendered;
+          expect(Math.abs(shown - Math.round(shown)), `${f}: ${shown.toFixed(3)} lines shown, so a line is cut through`).toBeLessThan(1e-9);
+          expect(Math.round(shown), `${f}: lines shown`).toBe(ex.lines);
+          const fade = fadeBox(ex.lines, lh, false);
+          expect(fade.top, `${f}: the fade starts at the top of the last line`).toBeCloseTo((ex.lines - 1) * rendered, 9);
+          expect(fade.top + fade.height, `${f}: and ends at its foot`).toBeCloseTo(clip, 9);
+        }
+      }
+    });
+  }
+});
+
+describe('Tonight comes back from the background up to date (review note 3 on #221)', () => {
+  it('reads its room again when the app comes to the front, and only then', () => {
+    expect(resumed('background', 'active')).toBe(true);
+    expect(resumed('inactive', 'active')).toBe(true);
+    expect(resumed(null, 'active')).toBe(true);
+    expect(resumed('active', 'active')).toBe(false);
+    expect(resumed('active', 'background')).toBe(false);
+    expect(resumed('active', 'inactive')).toBe(false);
+  });
+
+  it('a room read again after midnight has the new day, the new greeting and light, and fresh datelines', () => {
+    const evening = roomClock(new Date(2026, 9, 17, 20, 30));
+    const pastMidnight = roomClock(new Date(2026, 9, 18, 0, 20));
+    expect(evening).toMatchObject({ today: '2026-10-17', daypart: 'evening' });
+    expect(pastMidnight).toMatchObject({ today: '2026-10-18', daypart: 'lateNight' });
+    expect(t.greeting[pastMidnight.daypart]).not.toBe(t.greeting[evening.daypart]);
+    expect(tokens.atmosphere.daypart[pastMidnight.daypart]).not.toEqual(tokens.atmosphere.daypart[evening.daypart]);
+    // A Saturday 10 PM draft read on Friday night shows "Saturday"; read again a week on, its full date.
+    const sat = draft({ createdAt: new Date(2026, 9, 17, 22, 0).toISOString() });
+    expect(draftCards([sat], roomClock(new Date(2026, 9, 23, 21, 0)).at)[0].dateline).toBe('Saturday');
+    expect(draftCards([sat], roomClock(new Date(2026, 9, 24, 22, 1)).at)[0].dateline).toBe(dayDate('2026-10-17'));
+    expect(roomClock(new Date(2026, 9, 18, 9, 30)).daypart).toBe('morning');
+  });
+
+  it('Tonight listens for the app coming to the front and takes every time from the room it read (source)', () => {
+    const screen = code('app/(tabs)/index.tsx');
+    expect(screen).toContain("const sub = AppState.addEventListener('change', (next) => {");
+    expect(screen).toContain('if (resumed(last, next) && focused.current) refresh();');
+    expect(screen).toContain('return () => sub.remove();');
+    expect(screen).toContain('at: new Date()');
+    expect(screen).toContain('const clock = roomClock(room?.at ?? new Date());');
+    // Nothing in the render reads the clock on its own: the day, the daypart and the cards' "now" are the room's.
+    const render = screen.slice(screen.indexOf('const today = clock.today'), screen.indexOf('const keepNotMuch'));
+    expect(render).not.toMatch(/greetingKey\(|todayISO\(|new Date\(\)\)/);
+    // The refresh is the focus refresh: the room and the prompt's inputs.
+    expect(screen).toMatch(/const refresh = useCallback\(\(\) => \{\s*load\(\);/);
+    expect(screen).toMatch(/focused\.current = true;\s*refresh\(\);/);
   });
 });
 

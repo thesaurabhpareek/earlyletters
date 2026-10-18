@@ -302,8 +302,10 @@ describe('Lamp gradient', () => {
       // prompt), Speak and Type pinned, and the quiet line in text. Cards sit on their own surface and are not listed.
       text: [
         { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 116, h: 23 },
-        { what: 'greeting', token: 'text', x: 20, y: 47, w: 157, h: 33 },
-        { what: 'greeting name', token: 'textMuted', x: 177, y: 47, w: 75, h: 33 },
+        // Both tones over the widest greeting of any daypart (P1's re-measure on #221: x 20 to 354), since where the
+        // name starts depends on the greeting before it.
+        { what: 'greeting', token: 'text', x: 20, y: 47, w: 334, h: 33 },
+        { what: 'greeting name', token: 'textMuted', x: 20, y: 47, w: 334, h: 33 },
         { what: 'prompt', token: 'text', x: 20, y: 99, w: 362, h: 114 },
         { what: 'Another thought', token: 'accent', x: 46, y: 194, w: 116, h: 63 },
         { what: 'Not much today', token: 'accent', x: 139, y: 757, w: 124, h: 30 },

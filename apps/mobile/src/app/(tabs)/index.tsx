@@ -25,13 +25,16 @@
  * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`, Not much today `soft`. Nothing else.
  * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo. Nothing on Tonight counts:
  * no totals, no days-since, no streak.
+ * Time: the day, the greeting's daypart, the lamp's tone and each card's dateline come from the moment the room was
+ * read (roomClock), and the room is read again on focus, on a change in the store and when the app comes back to the
+ * front, so none of them is left from before the app went to the background.
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { ageOn, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
@@ -39,7 +42,16 @@ import { tokens } from '@scribe/design-tokens';
 import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
-import { draftCards, greetingParts, resurfaced, tonightArrival, tonightDateline, tonightLampIntensity } from '@/components/tonight/draft-card.logic';
+import {
+  draftCards,
+  greetingParts,
+  resumed,
+  resurfaced,
+  roomClock,
+  tonightArrival,
+  tonightDateline,
+  tonightLampIntensity,
+} from '@/components/tonight/draft-card.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -48,7 +60,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce } from '@/lib/a11y';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
-import { copy, greetingKey } from '@/lib/copy';
+import { copy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
@@ -70,19 +82,24 @@ import {
 
 const M = tokens.motion;
 
-/** What Tonight shows from the store: the book, every waiting draft (listDrafts, all of them), the book's entries. */
-type Room = { family: Family | null; drafts: Draft[]; entries: Entry[] };
+/**
+ * What Tonight shows: the book, every waiting draft (listDrafts, all of them), the book's entries, and the moment they
+ * were read. The day, the greeting's daypart, the lamp's tone and each card's dateline all come from `at`, so a room read
+ * again (on focus, on a change in the store, on coming back from the background) is never stale.
+ */
+type Room = { family: Family | null; drafts: Draft[]; entries: Entry[]; at: Date };
 
 function readRoom(): Room {
   const childId = getActiveChildId();
-  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries() };
+  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries(), at: new Date() };
 }
 
 export default function Tonight() {
   const motion = useMotion();
   const t = copy.tonight;
   const [room, setRoom] = useState<Room | undefined>(undefined);
-  // Prompt inputs are read on focus only, so a save or a quiet-day mark never swaps the prompt under the person.
+  // Prompt inputs are read on focus and on coming back to the front only, so a save or a quiet-day mark never swaps
+  // the prompt under the person.
   const [recent, setRecent] = useState<string[]>([]);
   const [daysSince, setDaysSince] = useState<number | null>(null);
   const [shuffle, setShuffle] = useState(0);
@@ -95,20 +112,41 @@ export default function Tonight() {
   const behind = useHiddenBehindCardPage();
 
   const load = useCallback(() => setRoom(readRoom()), []);
+  const focused = useRef(false);
 
   // Child switcher, saves, drafts and marks elsewhere update Tonight live.
   useEffect(() => subscribe(load), [load]);
 
+  // The room and the prompt's inputs, read again: on focus, and when the app comes back to the front.
+  const refresh = useCallback(() => {
+    load();
+    const entries = listEntries();
+    setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
+    setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
+  }, [load]);
+
   useFocusEffect(
     useCallback(() => {
-      load();
-      const entries = listEntries();
-      setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
-      setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
-      // The kept line stays until Undo or until the person leaves Tonight (S33).
-      return () => setKeptMark(null);
-    }, [load]),
+      focused.current = true;
+      refresh();
+      return () => {
+        focused.current = false;
+        // The kept line stays until Undo or until the person leaves Tonight (S33).
+        setKeptMark(null);
+      };
+    }, [refresh]),
   );
+
+  // Back from the background (after midnight, or into another part of the day): the day, the greeting, the lamp's
+  // tone, the cards' datelines and the drafts are read again. A tab behind another one waits for its own focus.
+  useEffect(() => {
+    let last = AppState.currentState;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (resumed(last, next) && focused.current) refresh();
+      last = next;
+    });
+    return () => sub.remove();
+  }, [refresh]);
 
   useEffect(() => {
     if (!room?.family || !arriving) return;
@@ -116,7 +154,8 @@ export default function Tonight() {
     setArriving(false);
   }, [room?.family, arriving]);
 
-  const today = todayISO();
+  const clock = roomClock(room?.at ?? new Date());
+  const today = clock.today;
   const family = room?.family;
   const age = family?.childBirthday ? ageOn(family.childBirthday, today) : null;
 
@@ -137,7 +176,7 @@ export default function Tonight() {
     [age?.months, daysSince, recent, today, shuffle],
   );
 
-  const cards = useMemo(() => draftCards(room?.drafts ?? []), [room?.drafts]);
+  const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
   const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 
   if (room === undefined) return null;
@@ -145,7 +184,7 @@ export default function Tonight() {
   const book = room.family;
 
   const child = book.childName;
-  const daypart = greetingKey();
+  const daypart = clock.daypart;
   const greeting = greetingParts(t.greeting[daypart], book.signsAs);
   const dateline = tonightDateline(child, ageText({ birthday: book.childBirthday }, today), dayDate(today));
   // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
@@ -163,8 +202,10 @@ export default function Tonight() {
 
   const keepNotMuch = () => {
     // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
-    const existing = markOn(listEntries(), today);
-    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: today, capturedAt: new Date().toISOString() });
+    // Today by the clock at the tap, not the room's last read.
+    const day = todayISO();
+    const existing = markOn(listEntries(), day);
+    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });
     if (!existing) saveEntry(mark);
     haptic('soft');
     announce(copy.notMuch.savedToast);

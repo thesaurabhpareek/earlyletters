@@ -7,10 +7,15 @@
  *
  *   state    read from                                   line                                      action
  *   held     Draft.held (local schema v8, #182)          first words, then tonight.draft.held       Keep it      (Review, then the gate)
+ *   empty    state 'unrecoverable', 0 bytes, no words    review.emptyTake.body                     Open         (Review)
  *   swept    Draft.recoveredAt (the launch sweep)        tonight.draft.swept                       Read it back (Review)
  *   typed    captureMode 'typed', no audioUri            first words                               Pick it up   (Write)
  *   waiting  audioUri, no rawTranscript and no typing    book.waitingForWords                      Open         (Review)
  *   ready    everything else (the first row)             first words, else draftWaiting.title       Read it back (Review)
+ *
+ * `empty` is a take with no sound in it: the recorder (or the launch sweep) stored 0 bytes and marked it unrecoverable.
+ * Its words will never come, so it never says they are waiting; it says what happened, in Review's own words for the
+ * same take (S16), and opens Review. S09 has no row for it (review note on #221).
  *
  * `held` arrives with #182 (S03, local schema v8). Until it merges no draft carries the field, so a draft held at
  * the Plus gate shows the first row; nothing is inferred from a second gate call. The card reads `held` through the
@@ -21,7 +26,7 @@
  */
 import { reminderCopy } from '@scribe/content';
 import { tokens, type Daypart, type TypeToken } from '@scribe/design-tokens';
-import { copy, fill } from '@/lib/copy';
+import { copy, fill, greetingKey } from '@/lib/copy';
 import { dayDate, isoOf } from '@/lib/dates';
 import type { Draft, Entry } from '@/lib/store';
 
@@ -30,11 +35,14 @@ import type { Draft, Entry } from '@/lib/store';
 /* ------------------------------------------------------------------ */
 
 /** What a card reads from a draft. `held` is optional until #182 adds it to Draft (local schema v8). */
-export type DraftFields = Pick<Draft, 'id' | 'captureMode' | 'audioUri' | 'audioDurationMs' | 'rawTranscript' | 'typedText' | 'recoveredAt' | 'createdAt'> & {
+export type DraftFields = Pick<
+  Draft,
+  'id' | 'captureMode' | 'audioUri' | 'audioDurationMs' | 'audioBytes' | 'state' | 'rawTranscript' | 'typedText' | 'recoveredAt' | 'createdAt'
+> & {
   held?: boolean;
 };
 
-export type DraftCardState = 'ready' | 'waiting' | 'typed' | 'held' | 'swept';
+export type DraftCardState = 'ready' | 'waiting' | 'typed' | 'held' | 'empty' | 'swept';
 
 /** The draft's words for display, or null: what was typed (on a typed or a mixed draft), else the raw transcript. */
 export function draftWords(d: Pick<DraftFields, 'typedText' | 'rawTranscript'>): string | null {
@@ -48,6 +56,7 @@ export function draftWords(d: Pick<DraftFields, 'typedText' | 'rawTranscript'>):
 /** The card's state, from the draft's own fields only. A state that cannot be read is the first row ('ready'). */
 export function draftState(d: DraftFields): DraftCardState {
   if (d.held === true) return 'held';
+  if (d.state === 'unrecoverable' && !d.audioBytes && !draftWords(d)) return 'empty';
   if (d.recoveredAt) return 'swept';
   if (!d.audioUri && d.captureMode === 'typed') return 'typed';
   if (d.audioUri && d.rawTranscript == null && !draftWords({ typedText: d.typedText, rawTranscript: null })) return 'waiting';
@@ -119,23 +128,25 @@ const ACTION: Record<DraftCardState, string> = {
   waiting: t.draft.openButton,
   typed: t.draft.pickUpButton,
   held: t.draft.keepButton,
+  empty: t.draft.openButton,
   swept: t.afterSave.reviewButton,
+};
+
+/** The state line under the words (or in their place). A ready draft with no words says its words are ready. */
+const LINE: Record<DraftCardState, string | null> = {
+  ready: null,
+  waiting: copy.book.waitingForWords,
+  typed: null,
+  held: t.draft.held,
+  empty: copy.review.emptyTake.body,
+  swept: t.draft.swept,
 };
 
 /** One card for one draft (S09). */
 export function draftCard(d: DraftFields, now: Date = new Date()): DraftCard {
   const state = draftState(d);
-  const words = state === 'swept' || state === 'waiting' ? null : draftWords(d);
-  const line =
-    state === 'held'
-      ? t.draft.held
-      : state === 'swept'
-        ? t.draft.swept
-        : state === 'waiting'
-          ? copy.book.waitingForWords
-          : state === 'ready' && !words
-            ? t.draftWaiting.title
-            : null;
+  const words = state === 'swept' || state === 'waiting' || state === 'empty' ? null : draftWords(d);
+  const line = state === 'ready' && !words ? t.draftWaiting.title : LINE[state];
   const typed = state === 'typed';
   const at = new Date(d.createdAt);
   const longDate = Number.isNaN(at.getTime()) ? '' : dayDate(isoOf(at));
@@ -143,7 +154,8 @@ export function draftCard(d: DraftFields, now: Date = new Date()): DraftCard {
     id: d.id,
     state,
     dateline: draftDateline(d.createdAt, now),
-    clock: d.audioUri ? clockOf(d.audioDurationMs) : null,
+    // No length for a take with no sound in it: there is nothing to play.
+    clock: d.audioUri && state !== 'empty' ? clockOf(d.audioDurationMs) : null,
     words,
     line,
     action: ACTION[state],
@@ -228,6 +240,25 @@ export const EVENING_DAYPARTS: readonly Daypart[] = ['evening', 'night', 'lateNi
  */
 export function tonightLampIntensity(daypart: Daypart, quietDayKept: boolean): number {
   return quietDayKept && EVENING_DAYPARTS.includes(daypart) ? tokens.motion.lamp.dimTo : 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* The room's clock, and coming back from the background               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Everything on Tonight that depends on the time comes from the moment the room was read: the day (the prompt's
+ * seed, the dateline, "A month ago", today's quiet mark), the greeting's daypart and with it the lamp's tone, and each
+ * card's dateline. Tonight reads its room again on focus, on a change in the store and when the app comes back to the
+ * front, so none of them is left from before the app went to the background.
+ */
+export function roomClock(at: Date): { at: Date; today: string; daypart: Daypart } {
+  return { at, today: isoOf(at), daypart: greetingKey(at.getHours()) };
+}
+
+/** The app came back to the front (AppState: background or inactive, then active): read the room again. */
+export function resumed(previous: string | null | undefined, next: string): boolean {
+  return next === 'active' && previous !== 'active';
 }
 
 /* ------------------------------------------------------------------ */
