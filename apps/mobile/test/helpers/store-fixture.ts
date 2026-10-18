@@ -64,9 +64,10 @@ export function insertBook(
   b: { id: string; name?: string; birthday?: string | null; dueDate?: string | null; signsAs?: string; serverState?: string; at?: string },
 ): string {
   const at = b.at ?? new Date(T0).toISOString();
+  // children.signs_as stays (NOT NULL, kept by v7 for a v6 build) and mirrors the prefs value, as the repo writes it.
   db.run(
-    'INSERT INTO children (id, name, birthday, due_date, created_at, updated_at, server_state) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    b.id, b.name ?? 'Asha', b.birthday === undefined ? '2026-03-01' : b.birthday, b.dueDate ?? null, at, at, b.serverState ?? 'local',
+    'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at, server_state) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    b.id, b.name ?? 'Asha', b.birthday === undefined ? '2026-03-01' : b.birthday, b.dueDate ?? null, b.signsAs ?? 'Mama', at, at, b.serverState ?? 'local',
   );
   db.run('INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, updated_at) VALUES (?, ?, 1, ?)', b.id, b.signsAs ?? 'Mama', at);
   return b.id;

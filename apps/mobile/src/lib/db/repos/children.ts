@@ -75,20 +75,27 @@ export function prefsRow(
   return r ? { signsAs: r.signs_as, remindersOn: r.reminders_on !== 0, hidden: r.hidden_at !== null, quiet: r.quiet_at !== null } : null;
 }
 
-/** Writes this person's signature and reminder choice for a book, creating the prefs row if needed. */
+/**
+ * Writes this person's signature and reminder choice for a book, creating the prefs row if needed.
+ * The same two values are mirrored into `children.signs_as` and `children.reminders_on`, which v7 keeps
+ * (never reads) so that a v6 build opening this file after a rollback still lists its books with the
+ * current signature (review L on #166). The mirror goes with the columns once MOB-09 ships.
+ */
 export function upsertPrefs(db: RepoContext['db'], id: string, p: { signsAs: string; remindersOn: boolean }, now: string): void {
   db.run(
     `INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, updated_at) VALUES (?, ?, ?, ?)
      ON CONFLICT(child_id) DO UPDATE SET signs_as = excluded.signs_as, reminders_on = excluded.reminders_on, updated_at = excluded.updated_at`,
     id, p.signsAs, p.remindersOn ? 1 : 0, now,
   );
+  db.run('UPDATE children SET signs_as = ?, reminders_on = ? WHERE id = ?', p.signsAs, p.remindersOn ? 1 : 0, id);
 }
 
 export function insert(ctx: RepoContext, id: string, input: NewChild): void {
   const now = ctx.now();
+  // signs_as is written here as well: the column is NOT NULL on every file since v1, and v7 keeps it.
   ctx.db.run(
-    'INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-    id, input.name, input.birthday, input.dueDate, now, now,
+    'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    id, input.name, input.birthday, input.dueDate, input.signsAs, now, now,
   );
   upsertPrefs(ctx.db, id, { signsAs: input.signsAs, remindersOn: true }, now);
 }

@@ -40,11 +40,11 @@ describe('[F12-REQ-004] migration 7: per-person choices move to child_member_pre
     return db;
   }
 
-  it('every book\'s signature, reminder switch and hide move with no value lost; children keeps book columns only', () => {
+  it('every book\'s signature, reminder switch and hide move with no value lost; the app reads them from child_member_prefs only', () => {
     const db = atV6();
     expect(migrate(db, ctx)).toMatchObject({ from: 6, to: LATEST_VERSION });
-    expect(cols(db, 'children')).not.toContain('signs_as');
-    expect(cols(db, 'children')).not.toContain('reminders_on');
+    // The two old columns stay until MOB-09 exists (review L on #166; the next test), but nothing reads them.
+    expect(cols(db, 'children')).toEqual(expect.arrayContaining(['signs_as', 'reminders_on']));
     expect(cols(db, 'children')).toEqual(expect.arrayContaining(['created_by', 'first_run_batch', 'hidden_at']));
     expect(db.all('SELECT child_id, signs_as, reminders_on, hidden_at, quiet_at FROM child_member_prefs ORDER BY child_id')).toEqual([
       { child_id: 'c1', signs_as: 'Mama', reminders_on: 1, hidden_at: null, quiet_at: null },
@@ -55,6 +55,26 @@ describe('[F12-REQ-004] migration 7: per-person choices move to child_member_pre
     const repo: RepoContext = { db, now: () => NOW, newId: ctx.newId };
     expect(children.listVisible(repo).map((c) => [c.id, c.signsAs, c.remindersOn])).toEqual([['c1', 'Mama', true], ['c3', 'Papa', true]]);
     expect(children.listHidden(repo).map((c) => [c.id, c.signsAs, c.remindersOn])).toEqual([['c2', 'Amma', false]]);
+  });
+
+  /** The v6 build's books read (PR #146 db/repos/children.ts, COLS and LISTED), word for word. */
+  const V6_BOOKS =
+    "SELECT id, name, birthday, due_date, signs_as, reminders_on, family_can_read, role, created_by_me FROM children WHERE hidden_at IS NULL AND server_state NOT IN ('left', 'deleted') ORDER BY created_at ASC, id ASC";
+
+  it('[review L on #166] a v6 build (build 1) opening a v7 file still reads its books, with the current signature and reminder choice (until MOB-09 ships)', () => {
+    const db = atV6();
+    migrate(db, ctx);
+    const repo: RepoContext = { db, now: () => NOW, newId: ctx.newId };
+    const v6 = () => db.all<{ id: string; signs_as: string; reminders_on: number }>(V6_BOOKS).map((r) => [r.id, r.signs_as, r.reminders_on]);
+    // Every book is listed: a hide is per person now, so a book hidden here (c2) shows again on the older build. Nothing is lost.
+    expect(v6()).toEqual([['c1', 'Mama', 1], ['c2', 'Amma', 0], ['c3', 'Papa', 1]]);
+    // Books made, and choices changed, by the v7 build are mirrored into the kept columns.
+    children.insert(repo, 'c4', { name: 'Tara', birthday: '2026-08-01', dueDate: null, signsAs: 'Mum' });
+    expect(children.update(repo, 'c1', { signsAs: 'Mummy', remindersOn: false })).toBe(true);
+    expect(v6()).toEqual([['c1', 'Mummy', 0], ['c2', 'Amma', 0], ['c3', 'Papa', 1], ['c4', 'Mum', 1]]);
+    // And the v7 build reads only child_member_prefs: a stale mirror never reaches a screen.
+    db.run("UPDATE children SET signs_as = 'stale' WHERE id = 'c1'");
+    expect(children.get(repo, 'c1')?.signsAs).toBe('Mummy');
   });
 
   it('a phone that already signed in records itself as the creator of the books it started', () => {
