@@ -11,10 +11,12 @@
  *    frames, in Caches, removed when the run ends (capture/adts-file.ts). A
  *    decoder still short of the counted frames refuses the run, and so does a
  *    file that does not end as a kill leaves it, when the decoder cannot read
- *    it as it is. So a take a kill cut off never loses its end without anyone
- *    knowing. One case is left (ADR 0027, V3): damage inside the last 8 kB of
- *    a file (about 1 s) that the decoder neither fails on nor reads short of
- *    the frames before it; the audio after the damage could then go unheard.
+ *    it as it is. The stream's frames after damage near the end are counted
+ *    too, so a decoder that stops at the damage reads short and is refused.
+ *    So a take a kill cut off never loses its end without anyone knowing.
+ *    What is left needs real damage (ADR 0027, V3): a decoder whose length
+ *    reads past the damage while its read stops there (ScribeAudio would
+ *    return silence), and up to about 65 ms inside the length tolerance.
  *    The length saved at capture never refuses a run, and an M4A runs exactly
  *    as before.
  * 2. No speech anywhere: the transcript is '' and Whisper never runs, so a

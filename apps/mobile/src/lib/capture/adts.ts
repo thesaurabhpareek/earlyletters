@@ -32,11 +32,23 @@ export const ADTS_SAMPLE_RATES = [96000, 88200, 64000, 48000, 44100, 32000, 2400
 export const ADTS_MAX_FRAME_BYTES = 8191;
 
 /**
+ * The most bytes one raw data block may carry per channel: 6144 bits, the
+ * decoder input buffer every AAC bitstream must fit (ISO/IEC 14496-3,
+ * 4.5.3.1; ISO/IEC 13818-7, 8.2.2). For our mono recordings that caps a
+ * frame at 7 + 768 bytes, about 4.5 times the 64 kbit/s average.
+ */
+export const AAC_MAX_BLOCK_BYTES_PER_CHANNEL = 768;
+
+/** A run of this many of the stream's whole frames, back to back to the end of the file, is audio after a break. */
+export const MIN_FRAMES_AFTER_BREAK = 2;
+
+/**
  * How an ADTS stream ends after its last whole frame:
  * - `none`: on a whole frame (a finished take);
  * - `cut`: exactly as a kill leaves it, a header cut short (under 7 bytes,
- *   every byte this stream's own), or this stream's own header whose frame
- *   runs past the end of the file;
+ *   every byte this stream's own), or this stream's own header with a
+ *   possible frame length that runs past the end of the file, and none of
+ *   the stream's frames after it;
  * - `break`: anything else (damage, a trailer, bytes that are not this
  *   stream).
  */
@@ -57,6 +69,13 @@ export interface AdtsScan {
   tailBytes: number;
   /** What those bytes are (`AdtsTail`). Only a `cut` tail is read from a copy of the whole frames. */
   tail: AdtsTail;
+  /**
+   * Whole frames (raw data blocks) of this stream found after a break, back to back to the end of the file
+   * (`framesChainedToEnd`). They are audio the file holds past the damage, so they count toward the length the
+   * file proves (`adtsLengthEvidence`): a decoder that stops at the damage reads short and is refused. 0 when
+   * the tail is `none` or `cut`.
+   */
+  framesAfterBreak: number;
 }
 
 interface Header {
@@ -80,12 +99,36 @@ function headerAt(b: Uint8Array, at: number): Header | null {
   return { sampleRateIndex, channels, frameLength, headerLength, blocks };
 }
 
+/** Channels for an ADTS channel configuration: 1 to 6 as written, 7 is 7.1 (8); 0 (set elsewhere) is unknown. */
+function channelCount(configuration: number): number {
+  return configuration === 7 ? 8 : configuration;
+}
+
+/**
+ * True when a header's frame_length is possible for this stream: at most the
+ * header plus 6144 bits per channel for each raw data block (and the 4 bytes
+ * of block positions and CRC a protected multi-block frame adds per block).
+ * A length past that is damage, never a frame an encoder wrote.
+ */
+function plausibleLength(h: Header): boolean {
+  const n = channelCount(h.channels);
+  if (n === 0) return true;
+  return h.frameLength <= h.headerLength + h.blocks * (n * AAC_MAX_BLOCK_BYTES_PER_CHANNEL + 4);
+}
+
+/** This stream's own header at `at` (same sampling frequency index and channel configuration), or null. */
+function ownHeaderAt(b: Uint8Array, at: number, first: Header): Header | null {
+  const h = headerAt(b, at);
+  return h && h.sampleRateIndex === first.sampleRateIndex && h.channels === first.channels ? h : null;
+}
+
 /**
  * True when the bytes from `at` to the end are exactly what a kill leaves:
  * a header cut short whose bytes are all this stream's (sync word and layer,
  * then the sampling frequency index and channel configuration as far as they
- * go), or this stream's own whole header with a frame length that runs past
- * the end. A kill only cuts the file short; it never changes earlier bytes.
+ * go), or this stream's own whole header with a possible frame length
+ * (`plausibleLength`) that runs past the end. A kill only cuts the file
+ * short; it never changes earlier bytes.
  */
 function isKillCut(b: Uint8Array, at: number, first: Header): boolean {
   const rest = b.length - at;
@@ -97,15 +140,56 @@ function isKillCut(b: Uint8Array, at: number, first: Header): boolean {
     if (rest > 3 && b[at + 3] >> 6 !== (first.channels & 0x03)) return false;
     return true;
   }
-  const h = headerAt(b, at);
-  return !!h && h.sampleRateIndex === first.sampleRateIndex && h.channels === first.channels && h.frameLength > rest;
+  const h = ownHeaderAt(b, at, first);
+  return !!h && plausibleLength(h) && h.frameLength > rest;
+}
+
+/**
+ * Whole frames (raw data blocks) of this stream in a run that starts at `p`
+ * and goes back to back to the end of the file, ending exactly there or in a
+ * kill cut, when the run has at least MIN_FRAMES_AFTER_BREAK frames; else 0.
+ */
+function chainFrom(b: Uint8Array, p: number, first: Header): number {
+  let at = p;
+  let whole = 0;
+  let blocks = 0;
+  while (at < b.length) {
+    const h = ownHeaderAt(b, at, first);
+    if (!h || !plausibleLength(h) || at + h.frameLength > b.length) {
+      if (!isKillCut(b, at, first)) return 0;
+      break;
+    }
+    whole += 1;
+    blocks += h.blocks;
+    at += h.frameLength;
+  }
+  return whole >= MIN_FRAMES_AFTER_BREAK ? blocks : 0;
+}
+
+/**
+ * This stream's frames after a break: the first run, starting anywhere from
+ * `from` on, of at least MIN_FRAMES_AFTER_BREAK whole frames back to back to
+ * the end of the file (ending exactly there, or in a kill cut). A kill leaves
+ * nothing of the stream after its cut, and a trailer or zeroed blocks hold no
+ * such run, so a run found is audio past damage.
+ */
+function framesChainedToEnd(b: Uint8Array, from: number, first: Header): number {
+  for (let p = from; p + 7 <= b.length; p++) {
+    if (b[p] !== 0xff) continue;
+    const blocks = chainFrom(b, p, first);
+    if (blocks > 0) return blocks;
+  }
+  return 0;
 }
 
 /**
  * Counts the whole frames of an ADTS stream. Null when the bytes do not
  * start with an ADTS header (an M4A, for example). Counting stops at the
  * first frame that does not fit in the bytes, or whose header is not one of
- * this stream's: what follows is the tail, judged by `isKillCut`.
+ * this stream's: what follows is the tail. Within the outer bound, the tail is
+ * searched for this stream's frames running to the end of the file
+ * (`framesChainedToEnd`): found, the tail is a break with that audio after
+ * it; not found, it is a `cut` when `isKillCut`, else a break.
  */
 export function scanAdts(bytes: Uint8Array): AdtsScan | null {
   const first = headerAt(bytes, 0);
@@ -119,14 +203,22 @@ export function scanAdts(bytes: Uint8Array): AdtsScan | null {
     frames += h.blocks;
     at += h.frameLength;
   }
+  const tailBytes = bytes.length - at;
+  let tail: AdtsTail = 'none';
+  let framesAfterBreak = 0;
+  if (tailBytes > 0) {
+    framesAfterBreak = tailBytes <= ADTS_MAX_FRAME_BYTES ? framesChainedToEnd(bytes, at + 1, first) : 0;
+    tail = framesAfterBreak === 0 && isKillCut(bytes, at, first) ? 'cut' : 'break';
+  }
   return {
     frames,
     sampleRate: ADTS_SAMPLE_RATES[first.sampleRateIndex],
     channels: first.channels,
     wholeBytes: at,
     totalBytes: bytes.length,
-    tailBytes: bytes.length - at,
-    tail: at === bytes.length ? 'none' : isKillCut(bytes, at, first) ? 'cut' : 'break',
+    tailBytes,
+    tail,
+    framesAfterBreak,
   };
 }
 
@@ -146,12 +238,12 @@ export function breaksInside(scan: AdtsScan): boolean {
 
 /**
  * What the counted frames prove about the length, for the planner:
- * `countedMs`, every whole frame; `minDecodedMs`, the shortest length a
- * correct decoder may report (the counted length less Apple's assumed
- * priming and one frame of tolerance).
+ * `countedMs`, every whole frame, those found after a break included;
+ * `minDecodedMs`, the shortest length a correct decoder may report (the
+ * counted length less Apple's assumed priming and one frame of tolerance).
  */
 export function adtsLengthEvidence(scan: AdtsScan): { countedMs: number; minDecodedMs: number } {
-  const counted = scan.frames * AAC_FRAME_SAMPLES;
+  const counted = (scan.frames + scan.framesAfterBreak) * AAC_FRAME_SAMPLES;
   const ms = (samples: number) => (Math.max(0, samples) / scan.sampleRate) * 1000;
   return { countedMs: ms(counted), minDecodedMs: ms(counted - AAC_PRIMING_SAMPLES - AAC_FRAME_SAMPLES) };
 }
