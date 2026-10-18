@@ -74,6 +74,13 @@ jobs:
       - name: Test
         run: npm test -w @scribe/web
 
+      # Privacy guard (CLAUDE.md): no real family name or birth date in any tracked file, on the site or
+      # elsewhere in the repo. It already runs inside `npm test` above; naming it here makes a failure
+      # obvious at a glance. The matching copy on develop lives in packages/content/test.
+      - name: Privacy guard (fictional family only)
+        run: npx vitest run test/no-real-family-data.test.ts
+        working-directory: apps/web
+
       - name: Build (prelaunch, as it ships first)
         run: npm run build -w @scribe/web
 
