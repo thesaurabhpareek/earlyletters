@@ -34,8 +34,12 @@ export const ADTS_MAX_FRAME_BYTES = 8191;
 /**
  * The most bytes one raw data block may carry per channel: 6144 bits, the
  * decoder input buffer every AAC bitstream must fit (ISO/IEC 14496-3,
- * 4.5.3.1; ISO/IEC 13818-7, 8.2.2). For our mono recordings that caps a
- * frame at 7 + 768 bytes, about 4.5 times the 64 kbit/s average.
+ * 4.5.3.1, "6144*NCC bits"). Unverified (secondary sources): we have not read
+ * the standard; the rule is quoted from it in a USPTO patent and on the MPEG
+ * mp4-tech list, and FFmpeg's AAC encoder caps every frame at 6144 bits per
+ * channel "so the frame fits the decoder buffer". For our mono recordings
+ * that caps a frame at 7 + 768 bytes, about 4.5 times the 64 kbit/s average;
+ * `plausibleLength` allows 4 bytes more (779), the safe direction.
  */
 export const AAC_MAX_BLOCK_BYTES_PER_CHANNEL = 768;
 
@@ -106,9 +110,10 @@ function channelCount(configuration: number): number {
 
 /**
  * True when a header's frame_length is possible for this stream: at most the
- * header plus 6144 bits per channel for each raw data block (and the 4 bytes
- * of block positions and CRC a protected multi-block frame adds per block).
- * A length past that is damage, never a frame an encoder wrote.
+ * header plus 6144 bits per channel for each raw data block, and 4 bytes more
+ * per block (the block positions and CRC a protected multi-block frame adds;
+ * allowed on every frame, so a mono frame may claim up to 7 + 772 = 779). A
+ * length past that is damage, never a frame an encoder wrote.
  */
 function plausibleLength(h: Header): boolean {
   const n = channelCount(h.channels);
@@ -186,28 +191,33 @@ function framesChainedToEnd(b: Uint8Array, from: number, first: Header): number 
  * Counts the whole frames of an ADTS stream. Null when the bytes do not
  * start with an ADTS header (an M4A, for example). Counting stops at the
  * first frame that does not fit in the bytes, or whose header is not one of
- * this stream's: what follows is the tail. Within the outer bound, the tail is
- * searched for this stream's frames running to the end of the file
- * (`framesChainedToEnd`): found, the tail is a break with that audio after
- * it; not found, it is a `cut` when `isKillCut`, else a break.
+ * this stream's: what follows is the tail. Within the outer bound, the bytes
+ * from inside the last counted frame on are searched for this stream's frames
+ * running to the end of the file (`framesChainedToEnd`): found, the tail is a
+ * break with that audio after it; not found, it is a `cut` when `isKillCut`,
+ * else a break.
  */
 export function scanAdts(bytes: Uint8Array): AdtsScan | null {
   const first = headerAt(bytes, 0);
   if (!first) return null;
   let at = 0;
   let frames = 0;
+  let last = -1; // where the last counted frame starts
   for (;;) {
     const h = headerAt(bytes, at);
     if (!h || h.sampleRateIndex !== first.sampleRateIndex || h.channels !== first.channels) break;
     if (at + h.frameLength > bytes.length) break; // the last frame was cut off
     frames += h.blocks;
+    last = at;
     at += h.frameLength;
   }
   const tailBytes = bytes.length - at;
   let tail: AdtsTail = 'none';
   let framesAfterBreak = 0;
   if (tailBytes > 0) {
-    framesAfterBreak = tailBytes <= ADTS_MAX_FRAME_BYTES ? framesChainedToEnd(bytes, at + 1, first) : 0;
+    // From inside the last counted frame (past its header): if its frame_length was damaged, the stream's true
+    // next header lies inside the span it claimed, and the frames it swallowed are counted too (review Y on #226).
+    framesAfterBreak = tailBytes <= ADTS_MAX_FRAME_BYTES ? framesChainedToEnd(bytes, last >= 0 ? last + 7 : at + 1, first) : 0;
     tail = framesAfterBreak === 0 && isKillCut(bytes, at, first) ? 'cut' : 'break';
   }
   return {

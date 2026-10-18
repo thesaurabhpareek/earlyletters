@@ -537,6 +537,23 @@ describe('[ADR 0027, reviews Y and X on #219] damage near the end is never read 
     expect(scanAdts(bytes)).toMatchObject({ frames: 296, tail: 'break', framesAfterBreak: 3 });
   });
 
+  it.each([
+    ['20-byte quiet frames, the header 40 from the end claiming 775 bytes (X: 832 ms unheard before)', 20, 500, 460],
+    ['171-byte frames, the header 8 from the end claiming 775 bytes (X: 149 ms unheard before)', 171, 300, 292],
+  ])('[X and Y on #226] %s: the frames a damaged possible length swallows are counted, so a decoder that stops at the damage is refused', async (_name, size, total, damagedAt) => {
+    const bytes = concat(...Array.from({ length: total }, () => adtsFrame(size - 7)));
+    claimLength(bytes, damagedAt * size, 775); // possible (at most 779), lands inside a later frame
+    const { scan, facts } = factsOf(bytes);
+    expect(scan).toMatchObject({ frames: damagedAt + 1, tail: 'break' });
+    expect(scan.frames + scan.framesAfterBreak).toBe(total); // the damaged frame, the frames it swallowed, and the rest
+    // Stops before the damaged frame, or reads it and stops at the bad landing; priming trimmed or kept.
+    for (const heard of [damagedAt, damagedAt + 1]) {
+      for (const stopped of [framesMs(heard) - priming, framesMs(heard)]) {
+        await expect(openRecordingForRun(decoderOf(stopped), 'orig', null, facts, async () => ({ uri: 'copy', remove: () => {} }))).rejects.toMatchObject({ reason: 'break_inside' });
+      }
+    }
+  });
+
   it('[X] X\'s repro: the header 5 frames from the end claiming 4,000 bytes is refused when the decoder fails on it, never read from a copy of the 295 frames before it', async () => {
     const bytes = sevenOneStream(300);
     claimLength(bytes, 295 * 171, 4000);
