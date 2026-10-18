@@ -141,7 +141,7 @@ build/bin/whisper-quantize out-hindi-small/ggml-model.bin ggml-whisper-hindi-sma
 sha256sum ggml-*.bin
 ```
 
-Host (D-046, founder picks): upstream files can stay on their pinned Hugging Face revisions (free, Range requests work, V-prior). Files we build need our own zero-egress bucket; the catalog points them at `https://models.earlyletters.com/speech/<name>/<source revision>/<file>` and marks them `hosted: false` until uploaded, so nothing ever points at a missing file. Licences travel with the files: MIT (whisper.cpp models, Silero VAD) and Apache-2.0 (Hindi small, Belle) notices go in the app's acknowledgements screen.
+Host (D-046, founder picks): upstream files can stay on their pinned Hugging Face revisions (free, Range requests work, V-prior). Files we build need our own zero-egress bucket; the catalog points them at `https://models.earlyletters.com/speech/<name>/<source revision>/<file>` (since D-097, 15 Oct 2026: `https://packs.earlyletters.app/speech/...`) and marks them `hosted: false` until uploaded, so nothing ever points at a missing file. Licences travel with the files: MIT (whisper.cpp models, Silero VAD) and Apache-2.0 (Hindi small, Belle) notices go in the app's acknowledgements screen.
 
 **Training-data caution (U, counsel):** an Apache-2.0 licence on weights does not settle the terms of the data they were trained on. Belle lists AISHELL-2 and HKUST (LDC) among its sets; the Hindi small model lists GramVaani, ULCA, Shrutilipi and FLEURS. Counsel should confirm commercial use before either is uploaded.
 
