@@ -155,7 +155,7 @@ There is no key or block for: turning off recording, typing, saving, reading, pl
 | # | Question | Recommendation |
 |---|---|---|
 | F-1 | Pack host | Cloudflare R2 + custom domain; Hugging Face mirrors for upstream weights |
-| F-2 | Domain for packs | `packs.earlyletters.com` if you are happy to move earlyletters.com DNS to Cloudflare (recreate Vercel and Resend records first); else `packs.earlyletters.app` |
+| F-2 | Domain for packs | `packs.earlyletters.com` if you are happy to move earlyletters.com DNS to Cloudflare (recreate Vercel and Resend records first); else `packs.earlyletters.app` Decided 15 Oct 2026 (D-097): `packs.earlyletters.app`, for packs, models and signed documents. |
 | F-3 | Mobile data threshold | Packs of 5 MB or less on any network; larger ones on Wi-Fi unless allowed |
 | F-4 | Signing key | Run keygen once; keep the secret only in your password manager |
 

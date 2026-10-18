@@ -13,6 +13,8 @@
  *   Idempotency-Key: <uuid> (optional; the call is idempotent by nature)
  *   {"ids": ["<uuid>", ...1 to 21], "reason": "account_deletion" | "device_after_deletion"}
  * 202 {ok: true, data: {accepted: n}, requestId}; errors use the packages/api envelope.
+ * GET /functions/v1/analytics-forget/health: 200 when its secrets are set, 503 otherwise
+ * (RA-07-06; _shared/health). The gateway's JWT check runs first.
  *
  * PostHog (verified 3 Oct 2026, posthog.com/docs/api/persons):
  *   POST https://us.posthog.com/api/projects/:project_id/persons/bulk_delete/
@@ -22,6 +24,7 @@
 import {
   failure, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID, httpStatusFor, IDEMPOTENCY_KEY_RE, success, type ApiErrorCode,
 } from '../../../packages/api/src/envelope.ts';
+import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
 import { createLogger, type ErrorCode, type LogSink, type Reason } from '../_shared/log/log.ts';
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
@@ -76,15 +79,22 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
       return reply(status, failure({ code, retryable }, log.reqId), extra);
     };
 
-    if (req.method !== 'POST') return fail('bad_request', false, 405);
-    if (!ROUTE_RE.test(new URL(req.url).pathname)) return fail('not_found', false);
-
     const supabaseUrl = (env('SUPABASE_URL') ?? '').replace(/\/+$/, '');
     const serviceKey = env('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const phKey = env('POSTHOG_PERSONAL_API_KEY') ?? '';
     const phProject = env('POSTHOG_PROJECT_ID') ?? '';
     const phHost = (env('POSTHOG_HOST') || 'https://us.posthog.com').replace(/\/+$/, '');
-    if (!supabaseUrl || !serviceKey || !phKey || !/^[0-9]{1,12}$/.test(phProject)) {
+    const configured = Boolean(supabaseUrl && serviceKey && phKey && /^[0-9]{1,12}$/.test(phProject));
+
+    // GET /analytics-forget/health (RA-07-06). Behind gateway JWT verification it needs a session to reach here.
+    if (isHealthRequest(req, 'analytics-forget')) {
+      log.info('request.done', { status: configured ? 200 : 503, outcome: configured ? 'ok' : 'server_error' });
+      return healthResponse(req, configured, log.reqId);
+    }
+    if (req.method !== 'POST') return fail('bad_request', false, 405);
+    if (!ROUTE_RE.test(new URL(req.url).pathname)) return fail('not_found', false);
+
+    if (!configured) {
       log.error('forget.failed', { code: 'config' });
       return reply(503, failure({ code: 'unavailable', retryable: true }, log.reqId));
     }
