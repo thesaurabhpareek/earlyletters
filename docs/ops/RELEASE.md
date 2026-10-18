@@ -133,9 +133,9 @@ Store text: `apps/mobile/store.config.json` is generated from `packages/content`
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
 The repository is public, so GitHub Free includes environments with required reviewers, environment secrets, deployment tag and branch rules, and rulesets (V: GitHub "Deployments and environments" and "About rulesets", per the 15 Oct review; `deploy-db.yml` already uses an environment).
-- Environment `app-store`: the founder is the required reviewer; deployment rules allow tag `ios-v*` and branch `release/*` only. The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
-- Rulesets: tag `ios-v*` and branch `release/*`, restricting creations, updates and deletions, with repository admins as the only bypass. The coordinator pushes tags from a founder-credential session; the agent harness's App cannot.
-- Limit: every Claude session runs on the founder's GitHub account, which is an admin. The rulesets and the approval stop the harness App and anyone without admin rights. A session on the founder's credentials is held by the written rule (COORDINATION.md) and by the founder seeing each approval request.
+- Environment `app-store`: the approver account (a second account only the founder holds, ADR 0026 decision 1) is the only required reviewer, with prevent self-review on and admin bypass off; deployment rules allow tag `ios-v*` and branch `release/*` only. Create it with `scripts/release/github-settings.ts` (FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SECRETS_REVIEW SR-11). The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
+- Rulesets, for immutability only (SECRETS_REVIEW SR-3): `ios-v*` and `db-v*` tags cannot be moved or deleted, and `release/*` cannot be force-pushed or deleted; no bypass list. They do not decide who may create a tag, because every session uses the same account; the approver's click is the control.
+- Limit: the founder's account still owns the repository and can change these settings back; `github-settings.ts --verify` reads them back, and ADR 0026 AF-27 is the durable fix.
 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
