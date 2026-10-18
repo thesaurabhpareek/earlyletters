@@ -6,10 +6,13 @@
 #   manual run, job=metadata  pushes store text (apps/mobile/store.config.json) with the review contact
 #
 # The gate (ADR 0022 decision 8; the repository is public, so GitHub Free includes all of this):
-# - `build` and `metadata` run in the environment `app-store`: the founder is its required reviewer, it allows
-#   only tags ios-v* and branches release/*, and it holds the secrets EXPO_TOKEN and ASC_REVIEW_CONTACT_JSON.
-#   A run on any other ref never receives them, and every RC build and metadata push waits for the founder.
-# - Rulesets on ios-v* tags and release/* branches let only admins create, move or delete them (FT-20).
+# - `build` and `metadata` run in the environment `app-store`: its only required reviewer is the approver account
+#   (ADR 0026 decision 1; not the owner account agent sessions use), prevent self-review on, admin bypass off; it
+#   allows only tags ios-v* and branches release/*, and holds the secrets EXPO_TOKEN and ASC_REVIEW_CONTACT_JSON.
+#   A run on any other ref never receives them, and every RC build and metadata push waits for the approver.
+# - Rulesets with no bypass keep ios-v* tags and release/* branches immutable; they do not decide who creates a
+#   tag (SECURITY SR-3). Create the environment before this file merges, or a run creates it unprotected (SR-11):
+#   `npx tsx scripts/release/github-settings.ts --approver <login>` (FT-20, #236).
 # - Jobs that hold secrets install with a fresh `npm ci` and setup-node pinned by SHA, never a restored cache.
 # Builds run on EAS (--no-wait), so this workflow uses a few Actions minutes per release.
 # Needs (docs/release/1.0.0.md section 1): the `app-store` environment and its two secrets (FT-20);
