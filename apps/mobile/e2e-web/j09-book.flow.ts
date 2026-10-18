@@ -7,7 +7,9 @@ test('[J09] the Book: empty, one letter, many letters', async ({ app, record }) 
   await app.getByText('Book', { exact: true }).last().click();
   await expect(app.getByText('The first page is waiting.')).toBeVisible();
   await expect(app.getByText('Tell Asha one thing about today.')).toBeVisible();
-  await step('happy', 'An empty book', 'One mark, one plain sentence, one action: "Write a letter". No counts, no gaps, nothing to fill in. With one book there is no "For Asha" row: "Asha\'s book" already says the name.');
+  // S24: the closed cover from first run, with the name and "From Mama" (decorative: the heading already says the name).
+  await expect(app.getByText('From Mama', { exact: true }).first()).toBeVisible();
+  await step('happy', 'An empty book', 'The closed cover named and signed in first run, one plain sentence, one action: "Write a letter". No counts, no gaps, nothing to fill in. With one book there is no "For Asha" row: "Asha\'s book" already says the name.');
   await btn(app, 'Write a letter').click();
   await expect(app.getByRole('heading', { level: 1 })).toBeVisible();
   await typeLetter(app, 'You laughed at the dog today, a whole belly laugh.');
