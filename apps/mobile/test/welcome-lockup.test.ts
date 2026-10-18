@@ -84,6 +84,18 @@ describe('[S03] the welcome never types the name (BRAND_SYSTEM 2a)', () => {
     expect(doors).not.toMatch(/icon=\{/);
   });
 
+  it('[MOTION 5l] steps hand off, never pile up: the next step mounts only after the leaving one is gone, and the speech card does not animate in', () => {
+    // The leaving step exits over exitMs; the arriving one is not rendered until then (review P2-V B1).
+    expect(welcome).toMatch(/setTimeout\(\(\) => setShown\(step\), tokens\.motion\.exitMs\)/);
+    const open = welcome.indexOf('{shown === step ? (');
+    expect(open).toBeGreaterThan(0);
+    expect(welcome.indexOf('key={step}')).toBeGreaterThan(open);
+    expect(welcome.indexOf('exiting={motion.leave()}')).toBeGreaterThan(open);
+    // The card holds controls (Download on Wi-Fi, Not now): it arrives with its step, with no entrance of its own.
+    const card = welcome.slice(welcome.lastIndexOf('<', welcome.indexOf('<SpeechConsentCard') - 1), welcome.indexOf('<SpeechConsentCard'));
+    expect(card).not.toMatch(/entering=/);
+  });
+
   it('the welcome\'s doors open the sign-in sheet with trigger sign_in and the invite route, and a book that arrives lands on the Book', () => {
     expect(welcome).toMatch(/router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'sign_in' \} \}\)/);
     expect(welcome).toMatch(/router\.push\(inviteHref\('onboarding_join', capabilities\.coParent\) as Href\)/);

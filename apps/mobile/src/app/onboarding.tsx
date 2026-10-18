@@ -187,6 +187,16 @@ export default function Onboarding() {
 
   useFocusOnMount(heading, step !== 'welcome', step);
 
+  // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
+  // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
+  // (Back, the reason line, Continue) change at once: they never animate.
+  const [shown, setShown] = useState<Step>(step);
+  useEffect(() => {
+    if (shown === step) return;
+    const id = setTimeout(() => setShown(step), tokens.motion.exitMs);
+    return () => clearTimeout(id);
+  }, [step, shown]);
+
   const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
@@ -272,214 +282,222 @@ export default function Onboarding() {
             {step !== 'welcome' && <BackButton onPress={back} />}
           </View>
 
-          <Animated.View
-            key={step}
-            entering={step === 'welcome' || step === 'finish' ? undefined : motion.enter()}
-            exiting={motion.leave()}
-            onTouchStart={step === 'finish' ? () => setSettledOpen(true) : undefined}
-            className={step === 'welcome' ? 'flex-1 items-center pb-8' : step === 'finish' ? 'flex-1 items-center justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
-            {step === 'welcome' && (
-              <>
-                {/* The one logo: the stacked lockup, its top 96 pt below the safe area. The name is never typed (BRAND_SYSTEM 2a). */}
-                <WelcomeLockup label={o.welcome.title} style={{ marginTop: WELCOME_LOCKUP.top - BACK_ROW }} />
-                <Animated.View entering={enterAt(120)} style={{ marginTop: WELCOME.heroGap }}>
-                  <Text variant="hero" asHeading={1} className="text-center">
-                    {o.welcome.subtitle}
-                  </Text>
-                </Animated.View>
-                <Animated.View entering={enterAt(150)} style={{ marginTop: WELCOME.bodyGap }}>
-                  <Text variant="body" tone="muted" className="text-center">
-                    {fill(o.welcome.body, { child: 'your child' })}
-                  </Text>
-                </Animated.View>
-                <Animated.View entering={enterAt(180)} style={{ marginTop: WELCOME.freeGap }}>
-                  <Text variant="footnote" className="text-center">
-                    {o.welcome.freeLine}
-                  </Text>
-                </Animated.View>
-              </>
-            )}
-
-            {step === 'promise' && (
-              <>
-                <View className="gap-3">
-                  <Text ref={heading} variant="display" asHeading={1}>
-                    {o.promise.title}
-                  </Text>
-                  <Text variant="body">{o.promise.body2}</Text>
-                </View>
-                {/* A small fix, shown: the real engine's marks on a fictional sentence (S04). */}
-                <PromiseSample />
-                <View className="gap-6">
-                  <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: 'your child' })} />
-                  <IconRow icon={LockSimpleIcon} text={o.promise.privateNote} />
-                </View>
-              </>
-            )}
-
-            {step === 'child' && (
-              <>
-                <View className="flex-row items-start gap-4">
-                  <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                    {o.child.title}
-                  </Text>
-                  {showCover ? (
-                    <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                      <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
-                    </Animated.View>
-                  ) : null}
-                </View>
-                <View className="gap-3">
-                  {names.map((n, i) => (
-                    <TextField
-                      key={i}
-                      ref={(r) => {
-                        nameFields.current[i] = r;
-                      }}
-                      label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
-                      value={n}
-                      onChangeText={(v) => setNameAt(i, v)}
-                      placeholder={i === 0 ? o.child.namePlaceholder : undefined}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                      autoFocus={i > 0}
-                      textContentType="givenName"
-                      autoComplete="given-name"
-                      returnKeyType="done"
-                      helper={
-                        nearLimit(textLength(n), CHILD_NAME_MAX)
-                          ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
-                          : i === names.length - 1 && names.length > 1
-                            ? o.child.addAnotherHelp
-                            : undefined
-                      }
-                      trailing={
-                        i > 0 ? (
-                          <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" />
-                        ) : undefined
-                      }
-                    />
-                  ))}
-                  {names.length < MAX_FIRST_RUN_CHILDREN && (
-                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
-                  )}
-                </View>
-                {dateShown ? (
-                  <Animated.View entering={motion.enter()} className="gap-4">
-                    <ChoiceGroup
-                      label={o.child.birthdayLabel}
-                      value={expecting ? 'expecting' : 'born'}
-                      onChange={(v) => setExpecting(v === 'expecting')}
-                      options={[
-                        { value: 'born', label: o.child.birthdayLabel },
-                        { value: 'expecting', label: o.child.expectingLabel },
-                      ]}
-                    />
-                    <View className="gap-2">
-                      <View className="min-h-12 flex-row flex-wrap items-center justify-between gap-2">
-                        <Text variant="labelSmall" tone="muted">
-                          {expecting ? pc.dueDateLabel : o.child.birthdayLabel}
-                        </Text>
-                        <View className="flex-row flex-wrap items-center justify-end gap-2">
-                          {/* "Born today" is a chip beside the date control (S05). */}
-                          {!expecting && birthday !== today ? <Chip label={o.child.bornToday} onPress={() => setBirthday(today)} /> : null}
-                          <DateField
-                            ref={dateField}
-                            key={expecting ? 'due' : 'born'}
-                            label={expecting ? pc.dueDateLabel : o.child.birthdayLabel}
-                            chooseLabel={o.child.chooseDate}
-                            value={expecting ? dueDate : birthday}
-                            onChange={expecting ? setDueDate : setBirthday}
-                            startISO={today}
-                            min={expecting ? today : undefined}
-                            max={expecting ? latestDueDate(today) : today}
-                          />
-                        </View>
-                      </View>
-                      {expecting ? <Text variant="footnote">{o.child.expectingHelp}</Text> : null}
-                    </View>
+          {shown === step ? (
+            <Animated.View
+              key={step}
+              entering={step === 'welcome' || step === 'finish' ? undefined : motion.enter()}
+              exiting={motion.leave()}
+              onTouchStart={step === 'finish' ? () => setSettledOpen(true) : undefined}
+              className={step === 'welcome' ? 'flex-1 items-center pb-8' : step === 'finish' ? 'flex-1 items-center justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
+              {step === 'welcome' && (
+                <>
+                  {/* The one logo: the stacked lockup, its top 96 pt below the safe area. The name is never typed (BRAND_SYSTEM 2a). */}
+                  <WelcomeLockup label={o.welcome.title} style={{ marginTop: WELCOME_LOCKUP.top - BACK_ROW }} />
+                  <Animated.View entering={enterAt(120)} style={{ marginTop: WELCOME.heroGap }}>
+                    <Text variant="hero" asHeading={1} className="text-center">
+                      {o.welcome.subtitle}
+                    </Text>
                   </Animated.View>
-                ) : null}
-              </>
-            )}
+                  <Animated.View entering={enterAt(150)} style={{ marginTop: WELCOME.bodyGap }}>
+                    <Text variant="body" tone="muted" className="text-center">
+                      {fill(o.welcome.body, { child: 'your child' })}
+                    </Text>
+                  </Animated.View>
+                  <Animated.View entering={enterAt(180)} style={{ marginTop: WELCOME.freeGap }}>
+                    <Text variant="footnote" className="text-center">
+                      {o.welcome.freeLine}
+                    </Text>
+                  </Animated.View>
+                </>
+              )}
 
-            {step === 'signsAs' && (
-              <>
-                <View className="flex-row items-start gap-4">
-                  <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                    {signsAsTitle}
-                  </Text>
-                  {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
-                  {showCover ? (
-                    <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                      <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+              {step === 'promise' && (
+                <>
+                  <View className="gap-3">
+                    <Text ref={heading} variant="display" asHeading={1}>
+                      {o.promise.title}
+                    </Text>
+                    <Text variant="body">{o.promise.body2}</Text>
+                  </View>
+                  {/* A small fix, shown: the real engine's marks on a fictional sentence (S04). */}
+                  <PromiseSample />
+                  <View className="gap-6">
+                    <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: 'your child' })} />
+                    <IconRow icon={LockSimpleIcon} text={o.promise.privateNote} />
+                  </View>
+                </>
+              )}
+
+              {step === 'child' && (
+                <>
+                  <View className="flex-row items-start gap-4">
+                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
+                      {o.child.title}
+                    </Text>
+                    {showCover ? (
+                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
+                        <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                      </Animated.View>
+                    ) : null}
+                  </View>
+                  <View className="gap-3">
+                    {names.map((n, i) => (
+                      <TextField
+                        key={i}
+                        ref={(r) => {
+                          nameFields.current[i] = r;
+                        }}
+                        label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
+                        value={n}
+                        onChangeText={(v) => setNameAt(i, v)}
+                        placeholder={i === 0 ? o.child.namePlaceholder : undefined}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        autoFocus={i > 0}
+                        textContentType="givenName"
+                        autoComplete="given-name"
+                        returnKeyType="done"
+                        helper={
+                          nearLimit(textLength(n), CHILD_NAME_MAX)
+                            ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
+                            : i === names.length - 1 && names.length > 1
+                              ? o.child.addAnotherHelp
+                              : undefined
+                        }
+                        trailing={
+                          i > 0 ? (
+                            <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" />
+                          ) : undefined
+                        }
+                      />
+                    ))}
+                    {names.length < MAX_FIRST_RUN_CHILDREN && (
+                      <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
+                    )}
+                  </View>
+                  {dateShown ? (
+                    <Animated.View entering={motion.enter()} className="gap-4">
+                      <ChoiceGroup
+                        label={o.child.birthdayLabel}
+                        value={expecting ? 'expecting' : 'born'}
+                        onChange={(v) => setExpecting(v === 'expecting')}
+                        options={[
+                          { value: 'born', label: o.child.birthdayLabel },
+                          { value: 'expecting', label: o.child.expectingLabel },
+                        ]}
+                      />
+                      <View className="gap-2">
+                        <View className="min-h-12 flex-row flex-wrap items-center justify-between gap-2">
+                          <Text variant="labelSmall" tone="muted">
+                            {expecting ? pc.dueDateLabel : o.child.birthdayLabel}
+                          </Text>
+                          <View className="flex-row flex-wrap items-center justify-end gap-2">
+                            {/* "Born today" is a chip beside the date control (S05). */}
+                            {!expecting && birthday !== today ? <Chip label={o.child.bornToday} onPress={() => setBirthday(today)} /> : null}
+                            <DateField
+                              ref={dateField}
+                              key={expecting ? 'due' : 'born'}
+                              label={expecting ? pc.dueDateLabel : o.child.birthdayLabel}
+                              chooseLabel={o.child.chooseDate}
+                              value={expecting ? dueDate : birthday}
+                              onChange={expecting ? setDueDate : setBirthday}
+                              startISO={today}
+                              min={expecting ? today : undefined}
+                              max={expecting ? latestDueDate(today) : today}
+                            />
+                          </View>
+                        </View>
+                        {expecting ? <Text variant="footnote">{o.child.expectingHelp}</Text> : null}
+                      </View>
                     </Animated.View>
                   ) : null}
-                </View>
-                <TextField
-                  ref={signsAsField}
-                  label={signsAsTitle}
-                  labelHidden
-                  value={signsAs}
-                  onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
-                  helper={nearLimit(textLength(signsAs), SIGNS_AS_MAX) ? fill(copy.childrenExtra.edit.signsAsLimit, { n: SIGNS_AS_MAX }) : undefined}
-                  placeholder={o.signsAs.placeholder}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-                <View className="gap-2">
-                  <Text variant="labelSmall" tone="muted">
-                    {o.signsAs.examplesLabel}
-                  </Text>
-                  <ChipGroup label={o.signsAs.examplesLabel}>
-                    {o.signsAs.examples.map((ex) => (
-                      <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => chooseSignsAs(ex)} />
-                    ))}
-                  </ChipGroup>
-                  <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
-                </View>
-                {/* The spoken language, under a hairline, with no footer (S06). */}
-                <View className="gap-4">
-                  <Separator />
-                  <ListSection>
-                    <ListRow
-                      title={copy.settingsHome.languageLabel}
-                      trailing={languageInfo(spoken.primary.code).native}
-                      onPress={() => setLanguageOpen(true)}
-                      accessibilityHint={languageCopy.picker.rowHint}
-                    />
-                  </ListSection>
-                </View>
-              </>
-            )}
+                </>
+              )}
 
-            {step === 'finish' && (
-              <>
-                {/* The cover opens: the light comes up as the book opens (S08). */}
-                <BookCover
-                  name={names[0] ?? ''}
-                  signsAs={signsAs.trim() || undefined}
-                  size="md"
-                  state="open"
-                  openOnMount
-                  animate={!settled}
-                  behindName={names.length > 1 ? names[1] : undefined}
-                />
-                <Animated.View entering={enterAt(200)} className="gap-3">
-                  <Text ref={heading} variant="hero" asHeading={1} className="text-center">
-                    {o.finish.title}
-                  </Text>
-                  <Text variant="body" className="text-center">
-                    {fill(o.finish.body, { child })}
-                  </Text>
-                </Animated.View>
-                {/* One explicit ask for the speech download: nothing starts until the person taps (D-087). */}
-                <Animated.View entering={enterAt(260)} className="self-stretch">
-                  <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
-                </Animated.View>
-              </>
-            )}
-          </Animated.View>
+              {step === 'signsAs' && (
+                <>
+                  <View className="flex-row items-start gap-4">
+                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
+                      {signsAsTitle}
+                    </Text>
+                    {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
+                    {showCover ? (
+                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
+                        <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                      </Animated.View>
+                    ) : null}
+                  </View>
+                  <TextField
+                    ref={signsAsField}
+                    label={signsAsTitle}
+                    labelHidden
+                    value={signsAs}
+                    onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
+                    helper={nearLimit(textLength(signsAs), SIGNS_AS_MAX) ? fill(copy.childrenExtra.edit.signsAsLimit, { n: SIGNS_AS_MAX }) : undefined}
+                    placeholder={o.signsAs.placeholder}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+                  <View className="gap-2">
+                    <Text variant="labelSmall" tone="muted">
+                      {o.signsAs.examplesLabel}
+                    </Text>
+                    <ChipGroup label={o.signsAs.examplesLabel}>
+                      {o.signsAs.examples.map((ex) => (
+                        <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => chooseSignsAs(ex)} />
+                      ))}
+                    </ChipGroup>
+                    <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
+                  </View>
+                  {/* The spoken language, under a hairline, with no footer (S06). */}
+                  <View className="gap-4">
+                    <Separator />
+                    <ListSection>
+                      <ListRow
+                        title={copy.settingsHome.languageLabel}
+                        trailing={languageInfo(spoken.primary.code).native}
+                        onPress={() => setLanguageOpen(true)}
+                        accessibilityHint={languageCopy.picker.rowHint}
+                      />
+                    </ListSection>
+                  </View>
+                </>
+              )}
+
+              {step === 'finish' && (
+                <>
+                  {/* The cover opens: the light comes up as the book opens (S08). */}
+                  <View testID="onboarding.finish.cover">
+                    <BookCover
+                      name={names[0] ?? ''}
+                      signsAs={signsAs.trim() || undefined}
+                      size="md"
+                      state="open"
+                      openOnMount
+                      animate={!settled}
+                      behindName={names.length > 1 ? names[1] : undefined}
+                    />
+                  </View>
+                  <Animated.View entering={enterAt(200)} className="gap-3">
+                    <Text ref={heading} variant="hero" asHeading={1} className="text-center">
+                      {o.finish.title}
+                    </Text>
+                    <Text variant="body" className="text-center">
+                      {fill(o.finish.body, { child })}
+                    </Text>
+                  </Animated.View>
+                  {/* One explicit ask for the speech download: nothing starts until the person taps (D-087). It holds
+                      controls, so it does not animate in (MOTION principle 2); it arrives with the step. */}
+                  <View className="self-stretch">
+                    <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
+                  </View>
+                </>
+              )}
+            </Animated.View>
+          ) : (
+            // The moment between two steps: the leaving words finish going (exitMs) before the next ones come.
+            <View className="flex-1" testID="onboarding.handoff" />
+          )}
 
           {/* Controls never animate in (MOTION principle 2). */}
           {block ? <ReasonLine text={block} raised={nudged} /> : null}
