@@ -1,0 +1,41 @@
+{
+  "$comment": "Advisories the security workflow tolerates in `npm audit --omit=dev`. Each entry needs a reason, the date it was added and an expiry; an expired entry fails the gate so it is looked at again. Reviewed 2026-10-03 (findings register CI-05). All four sit in Expo build and dev-client tooling (CLI, config plugins, router query parsing), not in code that handles family data. Never run `npm audit fix --force`.",
+  "ignore": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "severity": "high",
+      "path": "expo > @expo/cli > @expo/metro-file-map > micromatch > braces@3.0.3",
+      "reason": "Build tool only: file globbing in the Expo CLI and Metro on the developer machine and CI. Patterns are ours, not user input. Waits for an Expo release with a fixed micromatch.",
+      "added": "2026-10-03",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "GHSA-86w9-cpqp-85rv",
+      "package": "node-forge",
+      "severity": "high",
+      "path": "expo > @expo/cli > node-forge@1.4.0 (and @expo/code-signing-certificates)",
+      "reason": "Build tool only: Expo CLI code signing for development updates. The app does not use node-forge at runtime. Waits for an Expo release with node-forge above 1.4.0.",
+      "added": "2026-10-03",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "GHSA-vcc3-ghjq-m6fr",
+      "package": "decode-uri-component",
+      "severity": "moderate",
+      "path": "expo-router > query-string@7 > decode-uri-component@0.2.2",
+      "reason": "Below the high gate today; listed so a severity change is a reviewed decision. Deep links are allowlisted before routing (WS-11). Waits for expo-router to move off query-string 7.",
+      "added": "2026-10-03",
+      "expires": "2027-01-03"
+    },
+    {
+      "id": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid",
+      "severity": "moderate",
+      "path": "expo-splash-screen > @expo/config-plugins > xcode > uuid@7.0.3",
+      "reason": "Build tool only: Xcode project editing during prebuild. We never pass a buffer to uuid v3/v5/v6. Below the high gate today; listed for the same reason as above.",
+      "added": "2026-10-03",
+      "expires": "2027-01-03"
+    }
+  ]
+}

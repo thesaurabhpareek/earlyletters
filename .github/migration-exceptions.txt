@@ -1,0 +1,16 @@
+# Reviewed exceptions to the applied-migration rule. One entry per line:
+#   <migration file name>@<40-hex git blob sha>
+# An entry lets exactly that file differ from its first applied version, and
+# only while its content is exactly that blob (`git rev-parse <ref>:<path>`).
+# Any later edit fails the guard again.
+#
+# The guard reads this file from the base ref (or origin/develop when the base
+# predates the guard), never from the pull request, so a pull request cannot
+# grant itself an exception. Adding a line needs its own pull request with the
+# founder's approve-migration review (D-041) and a reason here.
+#
+# 20261001000000_scribe_hardening.sql: commit 3730551 (2 Oct 2026) changed the
+# file to match what was actually applied to the live database, and moved the
+# unapplied policy change to 20261002010000_entries_select_policy.sql. Findings
+# register CI-02. Reviewed 3 Oct 2026.
+20261001000000_scribe_hardening.sql@fab49f91bb9341bf5bebeed0a47286336e56b836
