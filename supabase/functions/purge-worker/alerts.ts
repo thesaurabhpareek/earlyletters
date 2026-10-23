@@ -29,6 +29,7 @@ export function conditionsFromSla(sla: SlaReport): [AlertKind, number][] {
   add('queue_stuck', (sla.queue_stuck ?? 0) + (sla.queue_attempts_high ?? 0));
   add('scheduled_overdue', sla.scheduled_overdue);
   add('holds_review', sla.holds_past_review);
+  add('pepper_missing', sla.consent_pepper_missing);
   if (sla.purge_run_age_minutes === null || sla.purge_run_age_minutes > PURGE_SILENT_MINUTES) add('purge_silent', 1);
   return out;
 }

@@ -26,14 +26,17 @@
  * edit is refused as `not_vetted_for_language`.
  */
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
-import { frozenSet, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
-import { overlaps } from './protect';
-import { MOOD_CANON } from './meaning';
+import { frozenSet, hyphenCompounds, hyphenJoined, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
+import { overlaps, quotedSpans } from './protect';
+import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarks } from './meaning';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
+import { heardAsCarriesMeaning, isEverydayTerm, targetsOtherTerm } from './lang/dictionary';
 
 /** Starting values. Tune on real recordings (PRD v2 section 24, experiment 2). */
 export const CEILING_RATIO = 0.15;
 export const CEILING_MIN_WORDS = 3;
+/** The same end mark twice in a row, in any script the engine knows ("..", "!!", "？？", "।।"). */
+const DOUBLED_END_MARK = /([.!?。！？؟।॥])\1/u;
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
@@ -41,6 +44,41 @@ const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.f
 });
 
 const REMOVAL_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start']);
+
+/**
+ * Edit types that may add, remove or move an invisible character (direction
+ * mark, joiner, zero-width space). None at v1.0 (F06-REQ-003): a type that
+ * needs to (a future script conversion, say) must be listed here on purpose,
+ * with its own test.
+ */
+const INVISIBLE_EDIT_TYPES: ReadonlySet<EditType> = frozenSet<EditType>([]);
+
+/**
+ * Edit types that may never land inside quoted speech in any quotation style
+ * (F06-REQ-006). Checked against the raw text itself, so it holds whatever
+ * spans the caller passed. Punctuation and paragraph edits are held by the
+ * letter, word and quotation-mark guards instead (French spacing inside « »).
+ */
+const QUOTE_GUARDED_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start', 'stt_fix', 'agreement']);
+
+/** quotedSpans and the quotation-mark count of the last raw text seen; verifyEdits checks many edits against one raw. */
+// quoteMarks is the sequence of marks, not the count: a swap of one mark for another is a change too (tests-lens review Note A, 23 Oct 2026).
+let rawMemo: { raw: string; quotes: Span[]; quoteMarks: string } | null = null;
+function rawFacts(raw: string): { quotes: Span[]; quoteMarks: string } {
+  if (rawMemo?.raw !== raw) rawMemo = { raw, quotes: quotedSpans(raw), quoteMarks: quotationMarks(raw) };
+  return rawMemo;
+}
+
+/**
+ * No invisible character added, removed or swapped; and in a punctuation or
+ * paragraph edit, none moved relative to the visible characters around it.
+ */
+function changesInvisible(e: Edit): boolean {
+  if (INVISIBLE_EDIT_TYPES.has(e.type)) return false;
+  if (invisiblesOf(e.original) !== invisiblesOf(e.replacement)) return true;
+  if (e.type !== 'punctuation' && e.type !== 'paragraph') return false;
+  return invisibleSignature(e.original) !== invisibleSignature(e.replacement);
+}
 
 /*
  * Single words whose immediate double is an accidental repeat (not emphasis)
@@ -102,6 +140,20 @@ function joinsWords(raw: string, e: Edit, R: LanguageRules): boolean {
   return R.joins(left, rep[0]) || R.joins(rep[rep.length - 1], right);
 }
 
+/**
+ * Does `e` change the hyphenated words around it? Compared in a window of 64
+ * characters either side, so the check stays cheap on a long letter; the
+ * window edges cut both texts the same way.
+ */
+function splitsHyphenated(raw: string, e: Edit): boolean {
+  const a = Math.max(0, e.start - 64);
+  const b = Math.min(raw.length, e.end + 64);
+  const before = raw.slice(a, b);
+  if (!/[-\u2010\u2011]/.test(before) && !/[-\u2010\u2011]/.test(e.replacement)) return false;
+  const after = raw.slice(a, e.start) + e.replacement + raw.slice(e.end, b);
+  return hyphenCompounds(before).join('|') !== hyphenCompounds(after).join('|');
+}
+
 /** The edit's span widened to whole words, before and after the edit. */
 function wordWindow(raw: string, e: Edit): { before: string; after: string } {
   let s = e.start;
@@ -119,6 +171,43 @@ function wordWindow(raw: string, e: Edit): { before: string; after: string } {
  */
 export function startsSentence(prefix: string, level: EditLevel, rules: LanguageRules = ENGLISH_RULES): boolean {
   return rules.startsSentence(prefix, level);
+}
+
+/**
+ * The name-signal test of checkSttFix: a capital counts as a name signal only
+ * when it is not positional. Engine 5 skipped every trailing filler here. Engine
+ * 6 keeps "uh uh" as a word (R-01 D6), which on its own would make a capital
+ * after it read as a signal and accept a fix engine 5 refused ("uh uh Asho came"
+ * to Asha; found by the #179 review's differential, 23 Oct 2026). The recogniser
+ * capitalises after a kept pair just as after a removed filler, so this test
+ * keeps skipping: engine 6 accepts no edit that engine 5 refused.
+ */
+function startsSentenceSkippingFillers(prefix: string, level: EditLevel, R: LanguageRules): boolean {
+  let p = prefix;
+  for (;;) {
+    if (R.startsSentence(p, level)) return true;
+    if (level !== 'clean') return false;
+    const toks = R.tokens(p);
+    const last = toks[toks.length - 1];
+    // Offered fillers too ("mm", D-112): the recogniser's capital after one is as positional as after "um" (#179 re-check N5).
+    if (!last || !R.isFiller(last.word, true) || !/^[\s,]*$/.test(p.slice(last.end))) return false;
+    p = p.slice(0, last.start);
+  }
+}
+
+/**
+ * The word window widened by two characters each side, so an end mark put
+ * next to one already there is seen with it: an insertion of "." after
+ * "She said no." has a word window of just "." (#179 re-check, Note D).
+ */
+function markWindow(raw: string, e: Edit): { before: string; after: string } {
+  let s = e.start;
+  let t = e.end;
+  while (s > 0 && WORD_CHAR.test(raw[s - 1])) s--;
+  while (t < raw.length && WORD_CHAR.test(raw[t])) t++;
+  s = Math.max(0, s - 2);
+  t = Math.min(raw.length, t + 2);
+  return { before: raw.slice(s, t), after: raw.slice(s, e.start) + e.replacement + raw.slice(e.end, t) };
 }
 
 interface CaseChange {
@@ -272,8 +361,17 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (!entry) return 'stt_fix_not_dictionary';
   const original = e.original.trim();
   const o = R.norm(original);
-  // Dictionary-backed: a learned mishearing the parent taught, or the term in another case.
-  if (o === R.norm(entry.term) || entry.heardAs.some((h) => R.norm(h) === o)) return null;
+  // A name fix never changes a sentence's type, whatever its path (quotation marks are counted for every edit in checkEdit).
+  if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
+  // One family name never becomes another (F06-REQ-014, R-01 D13), whatever the
+  // source, and before any dictionary-backed shortcut (F07 7.2 rule 2).
+  if (targetsOtherTerm(e.original, rep, ctx.dictionary, R)) return 'stt_fix_protected_word';
+  // The term in another case. Not for a term spelled like an everyday word:
+  // "I hope" stays as said for a child named Hope, "we will" for Will (F06-REQ-008, R-01 D10).
+  if (o === R.norm(entry.term)) return isEverydayTerm(entry.term, R) ? 'stt_fix_protected_word' : null;
+  // A learned mishearing the parent taught, unless it carries meaning on its own:
+  // a taught "no" must never erase a negation (F07 7.2 rule 5).
+  if (entry.heardAs.some((h) => R.norm(h) === o)) return heardAsCarriesMeaning(original, entry.kind, R) ? 'stt_fix_protected_word' : null;
   // Otherwise only a near-sounding word that is not itself meaningful on its
   // own, and only one the recogniser took for a name: capitalised, and not
   // merely because it starts a sentence. A lowercase word ("moon", "mirror")
@@ -292,7 +390,7 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (/[?!"“”]/.test(e.original) || R.moodMarks(e.original) || R.quoteMarkCount(e.original) > 0) return 'changes_sentence_type';
   const lead = e.original.length - e.original.trimStart().length;
   if (!ws.every((t) => /^\p{Lu}/u.test(t.word))) return 'stt_fix_not_heard_as';
-  if (R.startsSentence(ctx.raw.slice(0, e.start + lead), ctx.level)) return 'stt_fix_not_heard_as';
+  if (startsSentenceSkippingFillers(ctx.raw.slice(0, e.start + lead), ctx.level, R)) return 'stt_fix_not_heard_as';
   return R.soundsLike(original, entry.term) ? null : 'stt_fix_not_heard_as';
 }
 
@@ -306,7 +404,12 @@ function checkAgreement(e: Edit, R: LanguageRules): RejectReason | null {
   }
   const a = o[0].word;
   const b = r[0].word;
-  if (!R.isAgreementPair(a, b)) return R.classifyWordSwap(a, b);
+  // A closed table only (F06-REQ-007): the pack's listed verb and article
+  // groups. The pack's generic -s, -es, -ies inflections are never used, so
+  // a noun's number ("daughters" -> "daughter") cannot change.
+  if (!isClosedAgreementPair(a, b, R.pack?.meaning.agreementGroups ?? [], (w) => R.isKinship(w))) {
+    return R.isAgreementPair(a, b) ? 'agreement_stem_mismatch' : R.classifyWordSwap(a, b);
+  }
   if ((a[0] === a[0].toUpperCase()) !== (b[0] === b[0].toUpperCase())) return 'agreement_stem_mismatch';
   return null;
 }
@@ -362,6 +465,10 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Sentence type is the speaker's: a period may be added where there was no
   // end mark, but ? and ! are never added, removed or swapped (in any script: ？ ؟ count as ?).
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
+  // Nor may a repair leave a doubled end mark the raw did not have ("She said no." to "no..", or
+  // a "." put after it; tests-lens review of #179, 23 Oct 2026). A run already said ("...") may stay.
+  const marks = markWindow(ctx.raw, e);
+  if (DOUBLED_END_MARK.test(marks.after) && !DOUBLED_END_MARK.test(marks.before)) return 'changes_sentence_type';
   if (R.pairOpeners) {
     const opener = checkOpeners(e, ctx, R);
     if (opener) return opener;
@@ -385,6 +492,9 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (!LEVEL_TYPES[ctx.level].has(e.type)) return 'type_not_allowed_at_level';
   if (!enabledForLanguage(e.type, R)) return 'not_vetted_for_language';
 
+  // Direction marks and joiners change how a word reads without being seen (F06-REQ-003).
+  if (changesInvisible(e)) return 'changes_invisible';
+
   // No edit may start or end inside one written character: between a letter
   // and its vowel sign, after a virama, or inside a surrogate pair (CORE-01).
   if (splitsCluster(raw, e.start) || splitsCluster(raw, e.end)) return 'splits_word';
@@ -392,6 +502,8 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Dictionary corrections from our own rules are allowed to land on a
   // mis-cased name; everything else must stay clear of protected spans.
   if (ctx.protectedSpans.some((p) => overlaps(p, e))) return 'overlaps_protected';
+  const facts = rawFacts(raw);
+  if (QUOTE_GUARDED_TYPES.has(e.type) && facts.quotes.some((q) => overlaps(q, e))) return 'overlaps_protected';
 
   // Only punctuation may work inside a word (sentence case is one letter);
   // its own check compares whole words. Nothing may glue two words together.
@@ -401,6 +513,25 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
     if (joinsWords(raw, e, R)) return 'changes_word';
   }
 
+  // A hyphenated word is one word: no removal takes part or all of "uh-uh"
+  // (no), "mm-hmm" (yes), "uh-oh", "so-so" or "bye-bye" (F06-REQ-005, R-01 D6).
+  if (REMOVAL_TYPES.has(e.type)) {
+    const removed = R.tokens(e.original);
+    for (const t of removed) {
+      if (hyphenJoined(raw, e.start + t.start, e.start + t.end)) return e.type === 'filler' ? 'not_a_filler' : 'splits_word';
+    }
+    // Filler sounds are the filler label's business, where the offered-only and spoken-pair rules
+    // apply. A repeat or false start made only of them ("mm " out of "mm mm Asho said no.", which
+    // would leave a lone "mm", a no that reads as yes) is refused; a real restart that carries a
+    // filler inside it ("she was, um, she was") is still a false start (#179 re-check N6, 23 Oct 2026).
+    if (e.type !== 'filler' && e.replacement === '' && removed.length > 0 && removed.every((t) => R.isFiller(t.word, true))) {
+      return e.type === 'repeat' ? 'repeat_is_emphasis' : 'false_start_complete_phrase';
+    }
+  } else if ((e.type === 'punctuation' || e.type === 'paragraph') && splitsHyphenated(raw, e)) {
+    // Nor may punctuation or whitespace split one ("uh-oh" -> "uh -oh", "so-so" -> "so so"): found by the F06-REQ-021 property test.
+    return 'changes_word';
+  }
+
   let reason: RejectReason | null = null;
   switch (e.type) {
     case 'filler': {
@@ -408,14 +539,16 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       // Only words on the filler list may be removed under this label.
       // A filler said as its own sentence ("Hmm.") goes with its end mark.
       // Offered-only fillers ("mm" that may mean yes) come back only as
-      // rule edits the parent accepted, never from a model.
+      // rule edits the parent accepted, never from a model. Two fillers with
+      // only a space between them are a spoken yes or no ("uh uh", "mm hmm"):
+      // not fillers (F06-REQ-005, R-01 D6).
       const removed = R.tokens(e.original);
       const withSuggest = e.source === 'rule';
-      if (
-        !reason &&
-        (removed.length === 0 ||
-          !removed.every((t) => R.isFiller(t.word.toLowerCase(), withSuggest) && R.standsAlone(raw, e.start + t.start, e.start + t.end)))
-      ) {
+      const isRemovableFiller = (t: Token) =>
+        R.isFiller(t.word.toLowerCase(), withSuggest) &&
+        R.standsAlone(raw, e.start + t.start, e.start + t.end) &&
+        !R.fillerIsPartOfWord(raw, e.start + t.start, e.start + t.end);
+      if (!reason && (removed.length === 0 || !removed.every(isRemovableFiller))) {
         reason = 'not_a_filler';
       }
       // Spanish: a filler question "¿eh?" goes with both of its marks, never half.
@@ -442,6 +575,11 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       break;
   }
   if (reason) return reason;
+
+  // Every Unicode quotation style, counted on the whole text so an apostrophe
+  // inside a word is told apart from a closing quote (F06-REQ-006).
+  // The marks in order, not their count: U+201C to U+00AB is a restyling no edit may do (tests-lens review Note A).
+  if (quotationMarks(raw.slice(0, e.start) + e.replacement + raw.slice(e.end)) !== facts.quoteMarks) return 'changes_quotes';
 
   // Belt and braces for every substitution, whatever its label: the words
   // around the edit keep their negations, numbers, end marks and quotes.
@@ -494,8 +632,12 @@ function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, level: E
   const edited = raw.slice(0, e.start) + e.replacement + raw.slice(e.end);
   return changes.some((c) => {
     if (!c.raised) return false;
-    if (R.isPronounI(wordAt(edited, e.start + c.at).word)) return false;
-    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), level);
+    const word = wordAt(edited, e.start + c.at).word;
+    if (R.isPronounI(word)) return false;
+    // A capital on a filler means the rules keep that filler (the second "uh"
+    // of "Uh uh"), so the fillers before it are kept too: check the prefix as
+    // said, with no filler skipping (engine 6, found by the F06-REQ-021 property test).
+    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), R.isFiller(word) ? 'verbatim' : level);
   });
 }
 

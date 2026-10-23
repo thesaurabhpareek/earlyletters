@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 5;
+export const ENGINE_VERSION = 6;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -43,6 +43,55 @@ export const ENGINE_VERSION = 5;
 //   नही, मत, ना, न) are guarded. Dictionary terms no longer match the start
 //   of a longer Indic word. ZWJ and ZWNJ stay inside a word. Pinned by
 //   test/golden.test.ts (CORE-08).
+// 6 (2026-10-15): the R-01 launch gate for the alpha (WP-F06-02, WP-F06-03).
+//   Every change refuses more or keeps more as said: engine 6 accepts no
+//   edit that engine 5 refused.
+//   - No edit may add, remove or move a direction mark, joiner or other
+//     invisible character (new reason changes_invisible, R-01 D4).
+//   - Every Unicode quotation style is counted and protects its words from
+//     removals, dictionary fixes and agreement (R-01 D7).
+//   - Agreement accepts only the pack's closed verb and article groups, never
+//     the generic -s rule, so a noun's number never changes (R-01 D9).
+//   - A filler that is part of a word is not a filler: "uh-uh" (no),
+//     "mm-hmm" (yes), "uh-oh", and two fillers with only a space between
+//     ("uh uh"). No removal takes part of a hyphenated word (R-01 D6).
+//   - A dictionary term spelled like an everyday word (the pack's new
+//     meaning.commonWords, or a protected word) gets no case-only fix: "I hope"
+//     and "we will" stay as said for a child named Hope or Will (R-01 D10).
+//   - One family name never becomes another: a fix whose original is another
+//     term, or another term's heard-as, is refused (R-01 D13).
+//   - A taught heard-as that is a negation, modal, number, lone pronoun or
+//     function word, or a kinship word taught to a child, nickname, place or
+//     word term, is never applied ("no" taught for Noa; found 15 Oct).
+//   - A dash between two numbers becomes a hyphen, not a comma, so "2 – 3
+//     hours" is no longer "2, 3 hours" (found 15 Oct; R-01 D14 remains open
+//     for the untracked character changes themselves, WP-F06-05).
+//   - The English-only punctuation provider adds no "." after 。 ？ ！ ؟ (3 Oct).
+//   - Also in 6, listed on review (23 Oct): the house rule's tidy steps keep
+//     a match that would join, split or change a number (text.ts
+//     replaceKeepingNumbers); a name fix may not change ? or ! (checkSttFix);
+//     a filler the rules keep holds its sentence open for the capitals check
+//     (lang/engine.ts startsSentence); no punctuation or whitespace edit
+//     splits a hyphenated word (verify.ts splitsHyphenated).
+//   Amended 2026-10-23, before any letter is saved under 6 (D-112 and the
+//   #179 review): "mm" is offered in Review, never removed (fillers.suggest;
+//   F06-REQ-010 amendment pending); commonWords drops mason, carter, cooper,
+//   hunter and rowan; the house rule keeps a soft hyphen (U+00AD) as it
+//   keeps U+FEFF; the name-signal test in checkSttFix skips a kept filler
+//   pair too (startsSentenceSkippingFillers). The claim above holds on the
+//   reviewer's differentials, not on a proof: 37 letters gave 0 of 271,598
+//   after that fix; 9 more letters then gave 52 cases, all one shape, "mm"
+//   leaving the auto list (a name fix after "mm"; a repeat or false start
+//   taking one "mm" of a pair). Closed the same day: the skip covers offered
+//   fillers too, and a repeat or false start made only of filler sounds is
+//   refused. No other shape is known. From the tests-lens review, same day:
+//   quotation marks are compared in order, so a swap of one mark for another
+//   (U+201C to U+00AB) is changes_quotes; and no punctuation edit leaves a
+//   doubled end mark the raw did not have, by replacement or insertion ("no..").
+//   Golden corpus: every engine 5 case is unchanged; R-01 cases added and
+//   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
+//   development build keeps its text (no saved letter is ever re-cleaned);
+//   WP-F06-12 audits their stored edits once it ships.
 
 export interface CleanOptions {
   level: EditLevel;

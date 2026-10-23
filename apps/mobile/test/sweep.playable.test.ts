@@ -139,3 +139,27 @@ describe('file names', () => {
     expect(a).toEqual([{ kind: 'reattach', uri: `${DOCS}same.m4a`, fileName: 'same.m4a', bytes: 2, childId: 'asha' }]);
   });
 });
+
+describe('[DATA-REQ-048] a row keeps the exact file it names; the name is only the fallback', () => {
+  // The top of Documents is listed first and the recorder's folder last, so the recorder's copy wins a same-name clash.
+  const top = `${DOCS}same.m4a`;
+  const rec = `${DOCS}ExpoAudio/same.m4a`;
+  const files: SweepFile[] = [{ uri: top, bytes: 100 }, { uri: rec, bytes: 50 }];
+
+  it('a letter and a read-back draft whose exact path is listed stay on that file', () => {
+    expect(planLaunchSweep(snap({ files, entries: [{ id: 'e1', audioUri: top }] }))).toEqual([]);
+    expect(planLaunchSweep(snap({ files, drafts: [{ id: 'd1', audioUri: top, state: 'ready' }] }))).toEqual([]);
+  });
+
+  it('a killed take whose exact path is listed is finalized on that file', () => {
+    expect(planLaunchSweep(snap({ files, drafts: [{ id: 'd1', audioUri: top, state: 'recording' }] }))).toEqual([
+      { kind: 'finalize-recording', draftId: 'd1', uri: top, bytes: 100 },
+    ]);
+  });
+
+  it('a stale path still falls back to the name, where the recorder folder wins', () => {
+    expect(planLaunchSweep(snap({ files, entries: [{ id: 'e1', audioUri: `${OLD}ExpoAudio/same.m4a` }] }))).toEqual([
+      { kind: 'rebase-entry', entryId: 'e1', uri: rec },
+    ]);
+  });
+});

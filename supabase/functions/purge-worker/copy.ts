@@ -41,4 +41,5 @@ export const ALERT_RUNBOOK = {
   apple_config: 'docs/ops/SECURITY.md',
   holds_review: 'docs/ops/runbooks/stuck-deletion.md',
   scheduled_overdue: 'docs/ops/runbooks/purge-failing.md',
+  pepper_missing: 'docs/ops/runbooks/stuck-deletion.md',
 } as const;

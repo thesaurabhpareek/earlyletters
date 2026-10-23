@@ -13,6 +13,7 @@ name: E2E-12 Sign in with email
 tags:
   - e2e
   - E2E-12
+  - p0-nightly
   - A-REQ-018
   - PRD-REQ-002
   - LEGAL-REQ-001

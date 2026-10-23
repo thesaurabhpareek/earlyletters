@@ -14,6 +14,7 @@ import { enqueueEntryDelete, enqueueEntryRestore, enqueueEntryUpsert, pendingCou
 import { retryRefusedBook, takeOwnership } from '../src/lib/sync/ownership';
 import { ALL_GROUPS, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { insertBook } from './helpers/store-fixture';
 
 const ME = '11111111-1111-1111-1111-111111111111';
 const PAPA = '22222222-2222-2222-2222-222222222222';
@@ -29,7 +30,7 @@ function phone(): SqlDb {
 }
 function book(db: SqlDb, name = 'Asha'): string {
   const id = id7();
-  db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES (?, ?, '2025-04-12', 'Mama', ?, ?)", id, name, ctx.now, ctx.now);
+  insertBook(db, { id, name, birthday: '2025-04-12', at: ctx.now });
   return id;
 }
 function letter(db: SqlDb, child: string, text = 'She walked to me.', author: string | null = null): string {
@@ -125,7 +126,7 @@ describe('sync: per-op answers', () => {
     takeOwnership(db, ME, ctx);
     await engine(db, scripted(okServer())).sync();
     const later = id7();
-    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES (?, 'Leo', '2026-09-01', 'Mama', ?, ?)", later, ctx.now, ctx.now);
+    insertBook(db, { id: later, name: 'Leo', birthday: '2026-09-01', at: ctx.now });
     db.transaction(() => {
       // As store.addChild does after sign-in.
       db.run("UPDATE children SET server_state = 'pending', role = 'parent', created_by_me = 1 WHERE id = ?", later);
@@ -178,7 +179,8 @@ describe('sync: the local queue', () => {
   it('[DATA-REQ-040] upgrading an existing install keeps every letter word for word, local only, with nothing queued', () => {
     const { db } = nodeDb();
     migrate(db, { now: ctx.now, newId: id7 }, MIGRATIONS.slice(0, 3)); // an install from before sync
-    const c = book(db);
+    const c = id7();
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES (?, 'Asha', '2025-04-12', 'Mama', ?, ?)", c, ctx.now, ctx.now);
     const l = letter(db, c, 'Written before sync existed.');
     expect(migrate(db, { now: ctx.now, newId: id7 })).toMatchObject({ from: 3, to: LATEST_VERSION });
     expect(db.get<{ final_text: string; sync_state: string }>('SELECT final_text, sync_state FROM entries WHERE id = ?', l))
