@@ -537,7 +537,7 @@ Tests: `v1_gate_hardening`, `v1_gate_limits_peek_pepper`, `v1_gate_search_path`,
 ### How these files reach a project
 
 **Through CI, not the SQL Editor** (D-041, D-089: "migrations are applied to staging, then production, through CI"). `.github/workflows/deploy-db.yml` (PR #36) runs `supabase db push --dry-run` then `supabase db push` with the environment's database URL:
-- **Staging (`scribe-staging`)**: today the workflow runs on a push to `main` that changes `supabase/migrations/**`. PRD V2 08 section 7 moves this to a `workflow_dispatch` from `develop` with the `approve-migration` label (S20, wave 1, not built yet; this PR does not touch `.github/**`). Until S20's change lands, files 13 to 16 reach staging only when a release PR carries them to `main`.
+- **Staging (`scribe-staging`)**: the workflow runs on a push to `develop` that changes `supabase/migrations/**`, through the GitHub Environment `staging` (required reviewer), or by a manual run on `develop` to catch up; a push to `main` deploys nothing to a database (`deploy-db.yml`, decided 17 Oct 2026).
 - **Production (`scribe-prod`)**: a `db-v*` tag on a commit on `main`, through the GitHub Environment `production` (your approval). Never before staging has run them and the checks in step 21 are green.
 - `supabase db push` applies every file the target has not recorded, in filename order, each in its own transaction. On a fresh `scribe-staging` that is files 1 to 16 in one run, so steps 17 and 20 run before the first push, against an empty project they find nothing, and the run stops at the first file that fails, leaving the later ones unapplied.
 - Known risk carried from DEPLOY.md: DB-16 (file 3 has its own `begin` / `commit`). The first `db-cli.yml` run on this PR (`supabase db reset` on the real Postgres image) is the first check outside PGlite.
@@ -898,7 +898,7 @@ select exists (select 1 from pg_attribute where attrelid = 'public.children'::re
 select to_regprocedure('public.book_purge_held(uuid)');
 ```
 
-**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 20 (`55000`).
+**Apply.** Through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 20 (`55000`).
 
 **Check** (expect 0, then true):
 ```sql
@@ -909,6 +909,6 @@ select has_function_privilege('service_role', 'public.purge_due(timestamptz, int
    and has_function_privilege('service_role', 'public.prepare_account_purge(uuid)', 'execute')
    and has_function_privilege('service_role', 'public.ops_deletion_sla(timestamptz)', 'execute');
 ```
-Then repeat step 21's `search_path` query (expect 0 rows). Advisors: none new expected. Afterwards, from the SQL Editor (as the owner), `select count(*) from children c where c.deleted_at is not null and public.book_purge_held(c.id);` counts the tombstoned books a hold keeps, and `select count(*) from deletion_requests where kind = 'account' and status = 'held';` the account requests waiting on a hold (both 0 while no hold is placed).
+Then repeat step 21's `search_path` query (expect 0 rows). Advisors: none new expected. Afterwards, from the SQL Editor (as the owner), `select count(*) from children c where c.deleted_at is not null and c.purged_at is null and public.book_purge_held(c.id);` counts the tombstoned books a hold keeps (the function leaves out a kept book's former members itself, as `purge_due` step 1 does), and `select count(*) from deletion_requests where kind = 'account' and status = 'held';` the account requests waiting on a hold (both 0 while no hold is placed).
 
 **Rollback.** Prefer fixing forward; rolling back brings the gap back. At any time, as one transaction (test it in PGlite first): re-run `purge_due`, `prepare_account_purge` and `ops_deletion_sla` from file 20 (`20261023010000`), then `drop function public.book_purge_held(uuid);` (in that order: the three call it). No data changes either way.
