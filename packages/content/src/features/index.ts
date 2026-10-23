@@ -3,6 +3,7 @@
 // checked by test/rules.test.ts.
 export { accountDeletionCopy } from './account-deletion.en';
 export { authCopy } from './auth.en';
+export { backupCopy } from './backup.en';
 export { billingCopy } from './billing.en';
 export { contentBlocksCopy } from './content-blocks.en';
 export { exportCopy } from './export.en';
@@ -17,6 +18,7 @@ export { languageNames, wordsCopy } from './words.en';
 
 import { accountDeletionCopy } from './account-deletion.en';
 import { authCopy } from './auth.en';
+import { backupCopy } from './backup.en';
 import { billingCopy } from './billing.en';
 import { contentBlocksCopy } from './content-blocks.en';
 import { exportCopy } from './export.en';
@@ -33,6 +35,7 @@ import { languageNames, wordsCopy } from './words.en';
 export const features = {
   accountDeletion: accountDeletionCopy,
   auth: authCopy,
+  backup: backupCopy,
   billing: billingCopy,
   contentBlocks: contentBlocksCopy,
   export: exportCopy,
