@@ -42,7 +42,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Sign in with Apple `.p8`, Key ID, Team ID | Password manager; later the `apple-token` function's secrets | Founder, FT-07 | Downloadable once |
 | `APPLE_TEAM_ID`, `IOS_BUNDLE_ID` | Vercel project, Production environment (website) | Founder, TESTFLIGHT.md step 10 | `IOS_BUNDLE_ID` is the production id; the site adds `.preview` |
 | Pack signing keys (secret halves) | Password manager only | Founder, FT-16 | Public halves in `packages/api/src/keys.ts` |
-| `EXPO_TOKEN` | GitHub repository secret | Founder, TESTFLIGHT.md step 3 | Read only by the build step of `.github/workflows/testflight.yml` |
+| `EXPO_TOKEN` | GitHub Environment secret `testflight` (branch `develop` only; FT-20) | Founder, TESTFLIGHT.md step 3 | From an Expo robot user. Read only by the build step of `.github/workflows/testflight.yml`, whose build job runs in that environment (RA-20-06a). The interim repository secret of the same name is deleted after the first green run with this one (AF-22) |
 | iOS distribution certificate and profile, App Store Connect API key | EAS credentials for the project | Founder, TESTFLIGHT.md steps 2.6 and 5 | Builds and submits run in GitHub Actions or on the founder's computer, never in an agent sandbox |
 | `submit.<profile>.ios.ascAppId` | `apps/mobile/eas.json` | PR after step 2.4 | The app record's Apple ID; not secret |
 

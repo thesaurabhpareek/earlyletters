@@ -9,19 +9,25 @@
 # App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
 #
 # What it expects, by name (nothing else; no value is ever in this repository):
-#   GitHub repository secret  EXPO_TOKEN (read only by the build step)
+#   GitHub Environment         testflight, its environment secret EXPO_TOKEN (read only by the build step); the
+#                              environment admits branch develop only (scripts/release/github-settings.ts, FT-20)
 #   EAS, environment preview   EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (build 2), optional
 #                              EXPO_PUBLIC_EMAIL_OTP_LENGTH; EAS reads them on its own servers, this job never sees them
 #   EAS, credentials           the iOS distribution certificate and profile for the .preview id, and for submit an
 #                              App Store Connect API key; app.config.ts extra.eas.projectId; eas.json submit ascAppId
 #
 # One-time setup the founder does first (docs/release/TESTFLIGHT.md):
-#   1. EXPO_TOKEN repository secret (Expo account, Access tokens). It is read only by the last step.
+#   1. The GitHub Environment testflight (FT-20: scripts/release/github-settings.ts creates it with branch develop
+#      only and the approver as its reviewer), then its environment secret EXPO_TOKEN from an Expo robot user
+#      (docs/security/SECRETS_REVIEW.md section 1). Create the environment before the first run: a run that names a
+#      missing environment creates it with no protection (SR-11). It is read only by the last step.
 #   2. Link the Expo project (`eas init`) and commit extra.eas.projectId in apps/mobile/app.config.ts.
 #   3. Sign the first build on a computer (`eas build --platform ios --profile testflight`, say yes to
 #      credentials), or add an App Store Connect API key to EAS, so this workflow can sign without a prompt.
 #      It uses --non-interactive and fails without that.
 #   4. Create the App Store Connect app record for the bundle id the preflight prints.
+#
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: testflight
 
 on:
@@ -59,9 +65,14 @@ jobs:
     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/ios-v')
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    # RA-20-06a (AUTOMATION.md 2.0 and 2.3, SECRETS_REVIEW.md 4.3): EXPO_TOKEN is this environment's secret. Its
+    # deployment refs (branch develop only) are the control; the if above is not. Open: a run on an ios-v tag
+    # (ADR 0022 decision 5, C1 builds after the freeze) is refused by those refs until the founder decides
+    # whether the tag joins them or that build moves to app-store.
+    environment: testflight
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -93,10 +104,13 @@ jobs:
       - name: Build on EAS
         working-directory: apps/mobile
         env:
+          # The testflight environment's secret. An environment secret takes precedence over a repository secret of
+          # the same name (GitHub's secrets documentation, not re-read here), so delete the interim repository
+          # EXPO_TOKEN after the first green run with this one (AF-07, AF-22): then nothing can fall back to it.
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           # Fail without printing the token, a command line that contains it, or the environment.
-          if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN repository secret is not set"; exit 1; fi
+          if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN is not set on the testflight environment"; exit 1; fi
           case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
           args=(build --platform ios --profile "$PROFILE" --non-interactive --wait)
           if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi

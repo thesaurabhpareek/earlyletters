@@ -198,7 +198,7 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 
 ### 2.3 `develop` to TestFlight internal
 
-**For the alpha**: build 1 and build 2 come from #145's `testflight.yml` (or the founder's computer) with the founder adding each build to a group by hand. Request RA-20-06a to #145, before it merges if possible: name `environment: testflight` on the build job and pin actions by SHA. The founder keeps the repository `EXPO_TOKEN` until the workflow that reads the environment secret has merged and one dispatch with it is green, and deletes it in that same window (AF-22).
+**For the alpha**: build 1 and build 2 come from #145's `testflight.yml` (or the founder's computer) with the founder adding each build to a group by hand. RA-20-06a, a follow-up after #145 merged without it: the build job runs in `environment: testflight` and every action is pinned by SHA. The founder keeps the repository `EXPO_TOKEN` until that workflow is on `develop` and one dispatch with the environment secret is green, and deletes it in that same window (AF-22).
 
 **`testflight.yml` v2** (RA-20-06, after Thu 29)
 | | |
