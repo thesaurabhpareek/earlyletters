@@ -39,7 +39,7 @@ vi.mock('../src/lib/store', () => ({ uuidv7: () => '0199a000-0000-7000-8000-0000
 
 const touchedKeychain = () => secure.getItem.mock.calls.length + secure.setItem.mock.calls.length + secure.removeItem.mock.calls.length;
 
-describe('kill path: server features off (every v1.0 profile today)', () => {
+describe('kill path: server features off (the development, e2e, testflight and production profiles; preview is on)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://asha-fixture.supabase.co';

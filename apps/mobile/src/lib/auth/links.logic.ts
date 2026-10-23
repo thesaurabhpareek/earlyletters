@@ -5,8 +5,9 @@
  * Sign-in email link (PRD A F5, TDD 04 3.1.3):
  *   https://earlyletters.com/auth/callback#token_hash=<hash>&type=email
  * The token hash travels in the fragment so the website, Vercel logs and mail
- * scanners never receive it; a query string is also accepted. The app calls
- * verifyOtp({ token_hash, type }) with it.
+ * scanners never receive it; a query string is also accepted. The app opens
+ * it only through PKCE: GET /auth/v1/verify, then exchangeCodeForSession with
+ * this phone's code verifier (email-link.logic.ts, email.ts; ADR 0023).
  *
  * Custom-scheme fallback: `scribe://auth/callback` opens the code screen. A
  * token hash or invite token arriving on the custom scheme is ignored, never
