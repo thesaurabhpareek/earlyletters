@@ -3,7 +3,7 @@
  * step 3b, F02-U09; WP-F02-10). Used by /auth/confirm and by /auth/callback, the path the app and the email
  * templates on `develop` still use until they move to /auth/confirm.
  *
- * Rules (A-REQ-023, F02-REQ-011, F21-REQ-024; docs/ops/AUTH_SETUP.md 5.3):
+ * Rules (A-REQ-023, F02-REQ-011, F21-REQ-024; docs/ops/AUTH_SETUP.md 5.3 on `develop`, not yet on `main`):
  * - It verifies nothing. The token sits in the URL fragment, which no server receives, and nothing here reads it:
  *   no Supabase call on load, on script run or on any button; no form; no analytics; no third-party script.
  *   After load, ForgetAddress takes the fragment (and any query) out of the address bar.

@@ -284,8 +284,9 @@ The file is served at `https://earlyletters.com/.well-known/apple-app-site-assoc
 `src/app/.well-known/apple-app-site-association/route.ts` (E1). Verified (repo).
 
 - Built at `next build` from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`. Set both **before** the production build, or Redeploy after
-  setting them. With either missing or malformed, or with `IOS_BUNDLE_ID` ending in `.preview` or `.dev`, it answers 404 and
-  logs a warning.
+  setting them. It answers 404 when either is missing or malformed, or when `IOS_BUNDLE_ID` ends in `.preview` or `.dev`, and
+  logs a warning. With both unset it warns only in a production build (`VERCEL_ENV=production`), so previews stay quiet.
+- The Team ID is in the Apple Developer account, under Membership details.
 - Content: `appIDs: ["<TEAMID>.<bundle id>", "<TEAMID>.<bundle id>.preview"]` (the production app and the TestFlight builds);
   paths `/auth/confirm`, `/auth/callback` and `/j`, each bare and with a trailing slash, and nothing else. The email sign-in
   link is `/auth/callback#token_hash=...` (moving to `/auth/confirm`) and invites are `/j#t=<token>`: every token is in the
@@ -305,7 +306,7 @@ Verify:
 # 1. Direct: 200, JSON, no redirect (look for "HTTP/2 200", content-type application/json, and no "location" header)
 curl -sSI https://earlyletters.com/.well-known/apple-app-site-association
 
-# 2. Content: the app id must read TEAMID.bundle.id exactly as in the Apple Developer account
+# 2. Content: two app ids, TEAMID.bundle.id and TEAMID.bundle.id.preview, exactly as in the Apple Developer account
 curl -sS https://earlyletters.com/.well-known/apple-app-site-association | python3 -m json.tool
 
 # 3. What Apple's CDN holds (can lag up to 24 h behind step 2)
@@ -316,7 +317,8 @@ curl -sSI https://www.earlyletters.com/.well-known/apple-app-site-association | 
 ```
 
 On an iPhone with the app installed: Notes > type `https://earlyletters.com/j` > long press shows "Open in Early Letters"
-(wording depends on the app name) when the link is associated. Inferred.
+(wording depends on the app name) when the link is associated. Do the same with `https://earlyletters.com/auth/callback`, the
+path the alpha's sign-in emails use, on the production app and on a TestFlight (`.preview`) build. Inferred.
 
 ## 9. Production checks
 
