@@ -33,7 +33,7 @@ import {
   type TrustedKey,
   type VersionDecision,
 } from '../../packages/api/src/index';
-import { ignoredPaths, parseReleaseIndex, RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
+import { DOCUMENT_CACHE, IMMUTABLE_CACHE, ignoredPaths, parseReleaseIndex, RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
 import { sha256File } from './release';
 
 // ---------------------------------------------------------------------------
@@ -487,7 +487,10 @@ export async function checkHosted(
       bad(`${kind}: signature check failed (${verified.reason}); the app would ignore it. Trusted key ids: ${trusted.map((k) => k.keyId).join(', ') || 'none'}`);
       return null;
     }
-    good(`${kind}: signed by ${verified.doc.keyId}, ${text.length} bytes, Cache-Control "${res.headers.get('cache-control') ?? ''}"`);
+    const cacheControl = res.headers.get('cache-control') ?? '';
+    // A cached signed document delays kill switches (LEGAL-REQ-040), so anything but a revalidate-every-time header fails (review B of #162, B7).
+    if (!/\b(no-cache|no-store)\b|\bmax-age=0\b/i.test(cacheControl)) bad(`${kind}: Cache-Control is "${cacheControl}", expected "${DOCUMENT_CACHE}"; a cached copy delays kill switches. Set it when uploading (upload does).`);
+    else good(`${kind}: signed by ${verified.doc.keyId}, ${text.length} bytes, Cache-Control "${cacheControl}"`);
     return verified.doc.payload;
   }
 
@@ -495,8 +498,9 @@ export async function checkHosted(
   const compareVersion = (kind: DocumentKind, live: number) => {
     const c = committed[kind];
     if (!c) return;
-    if (live < c) warn(`${kind}: the host serves v${live}, but published.ts says v${c} was published. A phone that has v${c} refuses v${live} as a rollback; upload the latest release.`);
-    else if (live > c) warn(`${kind}: the host serves v${live}, newer than published.ts (v${c}). Commit supabase/functions/*/published.ts, or the next release reuses a version and upload refuses it.`);
+    // Any difference fails (review B of #162, B7): "every check passed" must mean the host serves what git says was published.
+    if (live < c) bad(`${kind}: the host serves v${live}, but published.ts says v${c} was published. A phone that has v${c} refuses v${live} as a rollback; upload the latest release.`);
+    else if (live > c) bad(`${kind}: the host serves v${live}, newer than published.ts (v${c}). Commit supabase/functions/*/published.ts, or the next release reuses a version and upload refuses it.`);
   };
 
   const payload = await document('pack-manifest', true);
@@ -546,6 +550,8 @@ export async function checkHosted(
         bad(`${p.id} v${p.version}: ${p.url} has ${len} bytes, manifest says ${p.bytes}`);
         ok = false;
       } else {
+        const packCache = head.headers.get('cache-control') ?? '';
+        if (p.url.startsWith(`${base}/`) && !/\bimmutable\b/i.test(packCache)) warn(`${p.id} v${p.version}: Cache-Control is "${packCache}", expected "${IMMUTABLE_CACHE}"; phones and the CDN will revalidate a file that never changes`);
         const range = await fetchFn(p.url, { headers: { range: 'bytes=0-15' } });
         await range.arrayBuffer().catch(() => undefined);
         // Small packs are fetched whole and hashed, as a phone does: a wrong file of the right size is caught here, not on a phone.

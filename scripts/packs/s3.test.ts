@@ -377,10 +377,11 @@ describe('checkHosted accepts a document only as the app does (review A of #162,
   const config = (over: Record<string, unknown> = {}) => ({ schemaVersion: 1, version: 3, generatedAt: at, ...over });
   const bundle = (blocks: unknown[]) => ({ schemaVersion: 1, version: 2, generatedAt: at, locale: 'en', blocks });
   /** A host serving exactly these signed documents, and pack files by URL and size. */
+  let cacheOf: Partial<Record<DocumentKind, string>> = {};
   const host = (docs: Partial<Record<DocumentKind, unknown>>, files: Record<string, number> = {}): typeof fetch => async (input, init) => {
     const url = String(input).replace(/\?.*$/, '');
     const kind = (Object.keys(docs) as DocumentKind[]).find((k) => url === `${BASE}/${PATHS[k]}`);
-    if (kind) return new Response(JSON.stringify(signDocument(kind, docs[kind], secret, 'el-test')), { status: 200, headers: { 'content-type': 'application/json', etag: '"x"' } });
+    if (kind) return new Response(JSON.stringify(signDocument(kind, docs[kind], secret, 'el-test')), { status: 200, headers: { 'content-type': 'application/json', etag: '"x"', 'cache-control': cacheOf[kind] ?? 'no-cache' } });
     const size = files[url];
     if (size === undefined) return new Response('', { status: 404 });
     const range = new Headers(init?.headers).get('range');
@@ -413,11 +414,29 @@ describe('checkHosted accepts a document only as the app does (review A of #162,
   it('compares the live versions with the ones committed in published.ts (rollback protection)', async () => {
     const docs = host({ 'pack-manifest': manifest(4), 'remote-config': config(), 'content-bundle': bundle([]) });
     const behind = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 5, 'remote-config': 3, 'content-bundle': 2 });
-    expect(behind.lines).toContain('WARN pack-manifest: the host serves v4, but published.ts says v5 was published. A phone that has v5 refuses v4 as a rollback; upload the latest release.');
+    // Review B of #162, B7: any difference from published.ts fails, so "every check passed" cannot print over a stale host.
+    expect(behind.ok).toBe(false);
+    expect(behind.lines).toContain('FAIL pack-manifest: the host serves v4, but published.ts says v5 was published. A phone that has v5 refuses v4 as a rollback; upload the latest release.');
     const ahead = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 3 });
-    expect(ahead.lines.some((l) => /^WARN pack-manifest: the host serves v4, newer than published.ts \(v3\)/.test(l))).toBe(true);
+    expect(ahead.ok).toBe(false);
+    expect(ahead.lines.some((l) => /^FAIL pack-manifest: the host serves v4, newer than published.ts \(v3\)/.test(l))).toBe(true);
     const same = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 4, 'remote-config': 3, 'content-bundle': 2 });
-    expect(same.lines.filter((l) => l.startsWith('WARN'))).toEqual([]);
+    expect(same.ok).toBe(true);
+    expect(same.lines.filter((l) => !l.startsWith('ok'))).toEqual([]);
+  });
+
+  it('fails a document served with a caching header, and warns about a pack on our host that is not immutable (review B of #162, B7)', async () => {
+    const entry = { id: 'speech-model.silero-vad-v6.2.0', kind: 'speech-model', language: 'mul', version: 1, url: `${BASE}/v/1/vad.bin`, mirrors: [], bytes: 20, sha256: sha256Hex(Buffer.from('x'.repeat(20))), fileName: 'vad.bin', minAppVersion: '1.0.0', required: false };
+    cacheOf = { 'remote-config': 'public, max-age=3600' };
+    try {
+      const r = await checkHosted(BASE, trusted, host({ 'pack-manifest': manifest(1, [entry]), 'remote-config': config(), 'content-bundle': bundle([]) }, { [entry.url]: 20 }));
+      expect(r.ok).toBe(false);
+      expect(r.lines).toContain('FAIL remote-config: Cache-Control is "public, max-age=3600", expected "no-cache"; a cached copy delays kill switches. Set it when uploading (upload does).');
+      expect(r.lines.some((l) => l.startsWith('ok   pack-manifest: signed by el-test'))).toBe(true);
+      expect(r.lines).toContain('WARN speech-model.silero-vad-v6.2.0 v1: Cache-Control is "", expected "public, max-age=31536000, immutable"; phones and the CDN will revalidate a file that never changes');
+    } finally {
+      cacheOf = {};
+    }
   });
 
   it('checks every mirror for the listed size', async () => {
