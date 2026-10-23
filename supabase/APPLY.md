@@ -880,3 +880,35 @@ select count(*) from pg_proc p where p.proname in ('book_kept_authors', 'purge_b
 Then repeat step 21's `search_path` query (expect 0 rows). Advisors: none new expected. Afterwards, `select count(*) from children where purged_at is not null;` counts the books kept for a former member (0 until one is purged).
 
 **Rollback.** Prefer fixing forward. Before any book has been kept (`purged_at` null everywhere), as one transaction (test it in PGlite first): re-run `purge_due` and `prepare_account_purge` from file 17, `ops_deletion_sla` from file 14 (`20261015010000`) and `child_members_drop_held` from file 17; `alter policy held_drafts_author_read on public.held_drafts using (author_id = (select auth.uid()) and public.is_child_parent(child_id));`; `drop function public.purge_book_keep_authors(uuid, uuid[], text, uuid), public.book_kept_authors(uuid);`; `alter table public.children drop column purged_at;`. Do not grant the consent tables back to `service_role`. Once a book has been kept, do not roll back: the old `purge_due` would delete the kept letters with the book row.
+
+## File 21: legal holds stop the account purge (23 Oct 2026, stream S02)
+
+`20261023020000_purge_legal_holds.sql`. Review A's N5 on #248 (comment 6374328519): `prepare_account_purge` checked legal holds only on the deleting person's own letters and held drafts, so a book deleted with the account was purged even under a hold on the book, or with a family member's held letter in it (`purge_due` skipped such a book on day 30, and the worker's `prepare_account_purge` then deleted it in the same hour). Apply it after `20261023010000_s02_purge_and_consent_guards.sql`. It adds one internal function and redefines `purge_due`, `prepare_account_purge` and `ops_deletion_sla`; it adds no column and drops nothing. Tests: `purge_legal_holds` (new) and new rows in `access_matrix`.
+
+What it changes:
+- **One rule for every row a purge deletes.** A row is held when a hold names its own id (`entry`: a letter, a held draft, a recording backup), its person (`profile`: the author, a book key's holder) or its book (`child`); a Storage object by the book and person its path names. This is the rule the existing checks already used, now applied to every row. `book_purge_held(child)` (new, callable by no API role and not by `service_role`) answers it for a whole book: the book, its letters, held drafts, recording backups, book keys and the objects in its people's folders.
+- **`purge_due`** steps 1 and 2b skip a book `book_purge_held` covers, and purge the rest, as before. Step 1 used to check the book, its letters and its held drafts; step 2b the book only.
+- **`prepare_account_purge`** holds the whole request, before anything changes, when a hold covers any row it would delete: as before the person's own letters and held drafts, and now also their recording backups and book keys in a held book (the rule "Delete the backup" uses), their Storage objects in a held book (their folders, and anything the worker's ownership sweep would delete or move, such as a book photo they uploaded), and every book deleted with the account with everyone's rows in it (`book_purge_held`), including a book that became theirs alone during the grace period, which is then not even tombstoned. As before, the answer is `{"held": true}`, the request is `held`, and no SQLSTATE is raised; the worker logs `account.held` and stops. `purge_due` hands a request held by anything but a hold on the person back to the worker each run, which asks again, so the purge resumes on the first run after the hold is released.
+- **`ops_deletion_sla`** does not count a tombstoned book that `purge_due` skips for a hold as overdue (it counted one unless the hold named the book itself).
+- The kept-author behaviour of file 20 is unchanged, and no function signature changes.
+
+**Before.** Every earlier file. Read only (expect true, then null):
+```sql
+select exists (select 1 from pg_attribute where attrelid = 'public.children'::regclass and attname = 'purged_at' and not attisdropped);
+select to_regprocedure('public.book_purge_held(uuid)');
+```
+
+**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 20 (`55000`).
+
+**Check** (expect 0, then true):
+```sql
+select count(*) from pg_proc p where p.proname = 'book_purge_held'
+   and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute')
+        or has_function_privilege('service_role', p.oid, 'execute'));
+select has_function_privilege('service_role', 'public.purge_due(timestamptz, int)', 'execute')
+   and has_function_privilege('service_role', 'public.prepare_account_purge(uuid)', 'execute')
+   and has_function_privilege('service_role', 'public.ops_deletion_sla(timestamptz)', 'execute');
+```
+Then repeat step 21's `search_path` query (expect 0 rows). Advisors: none new expected. Afterwards, from the SQL Editor (as the owner), `select count(*) from children c where c.deleted_at is not null and public.book_purge_held(c.id);` counts the tombstoned books a hold keeps, and `select count(*) from deletion_requests where kind = 'account' and status = 'held';` the account requests waiting on a hold (both 0 while no hold is placed).
+
+**Rollback.** Prefer fixing forward; rolling back brings the gap back. At any time, as one transaction (test it in PGlite first): re-run `purge_due`, `prepare_account_purge` and `ops_deletion_sla` from file 20 (`20261023010000`), then `drop function public.book_purge_held(uuid);` (in that order: the three call it). No data changes either way.

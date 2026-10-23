@@ -341,6 +341,8 @@ const SERVICE_ONLY = [
   `select public.subscription_retention_purge(now())`,
   // 20261023010000: the book purge that keeps a former member's rows, and its author list (definer code only).
   `select public.book_kept_authors('${CHILD}')`, `select public.purge_book_keep_authors('${CHILD}', array['${B}']::uuid[], 'child_purge', null)`,
+  // 20261023020000: whether a legal hold covers anything a book's purge deletes (definer code only).
+  `select public.book_purge_held('${CHILD}')`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -390,8 +392,9 @@ for (const sql of SERVICE_ONLY) {
   cells += 3;
   check(`service-only ${name}: refused for users, anonymous and anon`, got.every((g) => g === '42501') || console.log(`      got ${got}`));
 }
-// 20261023010000: those two are not the service role's either (hosted Supabase grants it every new function).
-for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)']) {
+// 20261023010000: those are not the service role's either (hosted Supabase grants it every new function);
+// 20261023020000 adds book_purge_held.
+for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid)']) {
   check(`internal ${sig}: not executable by service_role`,
     !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
 }
