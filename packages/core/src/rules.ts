@@ -13,6 +13,7 @@ function escapeClass(chars: string): string {
 /**
  * "So um she, uh, walked" -> "So she walked".
  * Removes the filler plus one adjacent comma/space so punctuation stays tidy.
+ * Never part of a word: "uh-uh" (no), "mm-hmm" (yes) and "uh uh" stay as said.
  * With `suggest`, returns the offered-only fillers instead ("mm" that may
  * mean yes), never applied by the engine.
  */
@@ -30,6 +31,7 @@ export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, s
   for (const t of R.tokens(raw)) {
     if (suggest ? !R.isSuggestFiller(t.word) : !R.isFiller(t.word)) continue;
     if (!R.standsAlone(raw, t.start, t.end)) continue; // 呃逆 is "hiccup", not a filler
+    if (R.fillerIsPartOfWord(raw, t.start, t.end)) continue; // "uh-uh" and "uh uh" are a spoken no (R-01 D6)
     let start = t.start;
     let end = t.end;
     // Spanish: "¿eh?" carries its opening mark; it goes with the filler.
