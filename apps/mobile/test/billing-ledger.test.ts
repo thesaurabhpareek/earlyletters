@@ -171,9 +171,10 @@ describe('ledger repository: counted inside the save transaction', () => {
     expect(ledger.countPresent(f.ctx)).toBe(3);
   });
 
-  it('a voice letter kept without words counts (it is a letter)', () => {
+  it('[F14-REQ-037] a voice letter kept without words does not count until its words are kept (D-103 amends D-083)', () => {
     keep(draft().id, { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' });
-    expect(ledger.readState(f.ctx).n).toBe(1);
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
   });
 
   it('a quiet-day mark is not a letter: it never counts', () => {
