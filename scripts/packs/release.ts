@@ -105,6 +105,14 @@ function sizeOf(path: string): number | null {
   }
 }
 
+/** Every file under `dir`, as paths relative to it with `/` separators. */
+function filesUnder(dir: string, prefix = ''): string[] {
+  return readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((e) => {
+    const rel = prefix ? `${prefix}/${e.name}` : e.name;
+    return e.isDirectory() ? filesUnder(dir, rel) : [rel];
+  });
+}
+
 function writeFile(path: string, bytes: Uint8Array | string): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, bytes);
@@ -218,8 +226,11 @@ export async function buildRelease(o: BuildReleaseOptions): Promise<BuiltRelease
     const local = o.modelsDir ? join(o.modelsDir, m.fileName) : null;
     let origin: ReleaseFile['origin'] | null = null;
     let source = plan.upstreamUrl ?? local ?? '';
+    // The mode decides (review B of #162, B6): an upstream release never takes an upstream model from the out folder,
+    // so a file left by an earlier download run cannot move the model onto our host. A model we built has no upstream.
+    const reuse = o.models === 'download' || !plan.upstreamUrl;
     try {
-      if (await fileMatches(dest, expect)) {
+      if (reuse && (await fileMatches(dest, expect))) {
         origin = 'copied';
         source = dest;
         log(`model ${m.id}: already in the release, verified`);
@@ -248,6 +259,22 @@ export async function buildRelease(o: BuildReleaseOptions): Promise<BuiltRelease
       entries.push(entry);
       notIncluded.push({ id: m.id, version: m.version, url: entry.url, bytes: m.bytes, sha256: m.sha256, reason: o.models === 'upstream' ? 'served from its pinned upstream URL (--models upstream)' : 'not downloaded here; served from its pinned upstream URL' });
     }
+  }
+
+  // An out folder holding files this release does not include (an earlier run with other --models or --languages) is
+  // refused before any document is written: a static host such as the Vercel fallback serves the folder as it is.
+  const expected = new Set<string>([
+    ...files.map((f) => f.path),
+    ...plans.map((p) => `${p.objectKey}.part`),
+    ...Object.values(RELEASE_DOCUMENTS).map((d) => d.path),
+    RELEASE_INDEX_FILE,
+    VERCEL_CONFIG_FILE,
+  ]);
+  const stale = filesUnder(out).filter((p) => !expected.has(p));
+  if (stale.length) {
+    throw new Error(
+      `${out} holds ${stale.length} file(s) this release does not include, left by an earlier run with other --models or --languages: ${stale.slice(0, 3).join(', ')}${stale.length > 3 ? ` and ${stale.length - 3} more` : ''}. Use an empty --out, or delete them.`,
+    );
   }
 
   // 3. Signed documents, each one version higher than the last published.

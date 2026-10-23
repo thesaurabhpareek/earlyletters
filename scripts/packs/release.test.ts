@@ -336,6 +336,25 @@ describe('release directory', () => {
       expect(languagesNotAllowed(manifestText, parseLanguages(null))).toEqual(['ar', 'es', 'fr', 'hi', 'pt', 'zh']);
     });
 
+    it('the mode decides what an out folder may hold: an upstream run never reuses a downloaded model, and leftovers are refused (review B of #162, B6)', async () => {
+      const en = { languages: undefined, includeModels: [] };
+      const dir = tmp('mixed');
+      const down = await buildRelease(options({ ...en, out: dir }));
+      expect(down.index.notIncluded).toEqual([]);
+      // Before this fix the upstream run reused both files and put the models on our host (about 765 MB on R2).
+      await expect(buildRelease(options({ ...en, out: dir, models: 'upstream' }))).rejects.toThrow(/holds 2 file\(s\) this release does not include, left by an earlier run .*speech-model\./);
+      const up = await buildRelease(options({ ...en, out: tmp('fresh-upstream'), models: 'upstream' }));
+      expect(up.index.notIncluded.map((n) => n.id)).toEqual(['speech-model.silero-vad-v6.2.0', 'speech-model.whisper-small-q5_1']);
+      expect(up.index.files.filter((f) => f.kind === 'pack')).toEqual([]);
+      // A download run into its own folder still reuses its verified files.
+      const again = await buildRelease(options({ ...en, out: dir }));
+      expect(again.index.files.filter((f) => f.kind === 'pack').map((f) => f.origin)).toEqual(['copied', 'copied']);
+      // Text packs left by an earlier --languages run are refused too (a static host would serve them).
+      const langs = tmp('langs');
+      await buildRelease(options({ ...en, out: langs, models: 'upstream', languages: ['en', 'es'] }));
+      await expect(buildRelease(options({ ...en, out: langs, models: 'upstream' }))).rejects.toThrow(/text-rules\.es\/1000000\/es\.rules\.json/);
+    });
+
     it('refuses an unknown or empty code, and a model for a language the list does not name', async () => {
       expect(parseLanguages(null)).toEqual(['en']);
       expect(parseLanguages('hi')).toEqual(['en', 'hi']);
