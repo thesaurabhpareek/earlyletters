@@ -1,7 +1,8 @@
 # Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
 # end to end. Every job has a timeout; the longest path is install (4) plus
-# one check job (5), or plus the seam guard (15) when a change can reach the
-# app bundle. Branch protection requires only the `required` job.
+# the database rules (15, room for a slow runner's perf seed), or plus the
+# seam guard (15) when a change can reach the app bundle; the other check
+# jobs have 5. Branch protection requires only the `required` job.
 name: CI
 
 on:
