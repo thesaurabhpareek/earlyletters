@@ -9,9 +9,10 @@ What the app expects, in one table:
 | Thing | Value |
 |---|---|
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
-| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` |
+| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email`. Opened only on the phone that asked for it, through PKCE (section 4.6, ADR 0023) |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
 | Invite link | `https://earlyletters.com/i/<token>` |
+| Apple token capture | Edge Function `apple-token` (section 2.7) |
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview`, `.dev` (internal builds) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
@@ -57,7 +58,7 @@ Keys > **+**:
 - Name: `Early Letters Sign in with Apple`; tick **Sign in with Apple** > Configure > Primary App ID `com.earlyletters.scribe`.
 - Download `AuthKey_<KEYID>.p8` (Apple lets you download it **once**). Note the **Key ID**.
 - Store the `.p8`, Key ID and Team ID in your password manager. Never in the repo (`.gitignore` already ignores `*.p8`).
-- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the future `apple-token` Edge Function that exchanges the authorization code at sign-in and revokes Apple's token when someone deletes their account (TDD 04 3.1.1; not built yet, see the hand-off).
+- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the `apple-token` Edge Function (section 2.7), which exchanges the authorization code at sign-in, and the purge worker, which revokes Apple's token when someone deletes their account (TDD 04 3.1.1, App Store 5.1.1(v)). Both sign a fresh 10-minute client secret from the `.p8` on every call, so nothing expires on you there.
 
 ### 2.5 Email relay for "Hide My Email"
 Apple Developer > **Services** > Sign in with Apple for Email Communication > Configure:
@@ -70,6 +71,29 @@ Supabase > Authentication > Sign In / Providers > **Apple**: enable.
 - **Secret Key (for OAuth)**: leave empty for native-only. Fill it only with the web flow (generated from the `.p8`; Supabase's guide links a generator).
 
 The app sends Apple the SHA-256 of a random nonce and Supabase the raw value, so a replayed identity token fails (`src/lib/auth/apple.ts`). Apple shares the person's name only the first time; the app keeps it in the Keychain until Terms are accepted and then writes it to `profiles.display_name`.
+
+### 2.7 The `apple-token` Edge Function (BL-330, security review H3)
+
+Why: when someone deletes their account, Apple must stop listing Early Letters under "Sign in with Apple" for their Apple ID (App Store 5.1.1(v)). Revoking needs Apple's refresh token, which exists only if the app's one-time authorization code is exchanged within five minutes of sign-in. The app sends the code to this function right after Sign in with Apple (`captureAppleToken` in `src/lib/auth/apple.ts`), in the background: sign-in never waits for it or fails because of it.
+
+What it does (`supabase/functions/apple-token/handler.ts`): checks the caller's session (a real account with an Apple identity), exchanges the code at `https://appleid.apple.com/auth/token`, checks that Apple's `id_token` is for the same Apple user and client id, wraps the refresh token with AES-256-GCM under the newest `TOKEN_KEK_V<n>` (the profile id is the additional data) and stores it with `ops_apple_token_put` (service role only). It answers 204 with no body. The purge worker's `apple_token_revoke` step unwraps and revokes it. Nothing it receives is logged; log lines carry statuses and closed error codes only. Limit: 10 calls per person per hour, per function instance and in the database (`rate_hit('apple_token')`, S02's migration `20261015000000`; until that is applied the instance limit alone holds). Apple codes work once anyway.
+
+Before you deploy it:
+1. Migration `20261004200000_ops_deletion_worker.sql` (which creates `ops.apple_tokens` and `ops_apple_token_put`) is applied to the project, through `deploy-db.yml` (`supabase/APPLY.md`). Without it every capture answers 503 and nothing is stored.
+2. The secrets below are set (Supabase > Edge Functions > Secrets; the purge worker reads the same names, so set them once).
+
+| Secret | Value | Without it |
+|---|---|---|
+| `APPLE_TEAM_ID` | Team ID from 2.2 | 503, nothing stored; deletion receipts say `apple: no_token` and the worker alerts `apple_no_token` |
+| `APPLE_SIGNIN_KEY_ID` | Key ID from 2.4 | Same |
+| `APPLE_SIGNIN_PRIVATE_KEY` | The whole `.p8` file, including the BEGIN and END lines (a value with literal `\n` also works) | Same |
+| `TOKEN_KEK_V1` | 32 random bytes, base64: `openssl rand -base64 32`. Never reuse another secret. To rotate, add `TOKEN_KEK_V2` and keep V1 while tokens wrapped with it exist (the function always writes with the highest version present; the worker keeps all of them to unwrap) | Same |
+| `APPLE_SERVICES_ID` | Optional, only with 2.3 | Codes from web or Android sign-in are refused (403) |
+| `APPLE_EXTRA_CLIENT_IDS` | **Not read yet, by either function.** Later, comma separated (for example `com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`), to capture tokens from internal builds. It waits for the purge worker to read the same list, so that no token is stored that deletion cannot revoke (request to S07 in PR #139, with a ready patch). When it is read, set it only for builds whose App ID uses the Sign in with Apple key from 2.4, and confirm one test deletion revokes (11.9): if Apple refuses the client secret, the deletion step stops with an `apple_config` alert | Codes from internal builds are refused (403): those testers' deletions say `apple: no_token` |
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase. The session check and `rate_hit` are called with the person's own token and the anon key as `apikey`; `rate_hit` is skipped, with a log line, if the anon key is missing, and is never sent with the service key. Only the store call (`ops_apple_token_put`) uses the service role.
+
+Deploy: `npx supabase functions deploy apple-token --use-api` (keep "Verify JWT" on; the function checks the session again itself). Device check: section 11, item 9.
 
 ## 3. Google
 
@@ -126,6 +150,16 @@ Supabase > Authentication > Sign In / Providers > **Email**:
 - Enable Email provider: on. Confirm email: on. Secure email change: on.
 - **Email OTP expiration**: `3600` seconds (link and code live one hour, A-REQ-018).
 - **Email OTP length**: `6`. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (default 6). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). TDD 04 OQ-S1 recommends 8 for brute-force margin; PRD A says 6. Product call; change both together.
+
+### 4.6 PKCE for email links (BL-347, security review H1, ADR 0023)
+
+Nothing to set in the dashboard, and no template change. The app runs Supabase Auth with `flowType: 'pkce'`: when this phone asks for an email it keeps a code verifier in its Keychain and a note that it asked (the time only, no address, one hour at most). An opened link is used only if this phone asked and nobody is signed in on it; then the app calls `GET /auth/v1/verify` (redirects not followed), which answers with an auth code that only this phone's verifier can exchange. A link someone else asked for, or a link opened while signed in, is never used: the person is offered the code from the same email instead. After any sign-in, consent comes first, then "Keep your letters in this account?" with the account's email masked (`a***@example.com`); nothing on the phone joins the account or uploads before "Keep them here".
+
+What must stay as it is:
+- The redirect URL `https://earlyletters.com/auth/callback` in the allow list (5.1): Supabase puts the auth code on it, and the app reads it from the redirect without loading the page.
+- The template link `{{ .SiteURL }}/auth/callback#token_hash={{ .TokenHash }}&type=email` (section 6, `supabase/templates/magic_link.html`). With PKCE on, `{{ .TokenHash }}` is the `pkce_` token; the app tries `type=email` links as `magiclink`, then `signup`.
+
+Assumptions, each checked by device test 11.10: Supabase answers `GET /verify` for a PKCE email with a redirect carrying `?code=`; the typed code still signs in with PKCE on; the verifier survives the app being closed between asking and tapping.
 
 ## 5. Redirect URLs, universal links and the website
 
@@ -258,17 +292,19 @@ Changing a Google id needs a new build (it changes a native URL scheme); the oth
 
 ## 9. What happens after sign-in (for support questions)
 
-1. The person signs in (Apple, Google, email link or code, or a passkey).
+1. The person signs in (Apple, Google, email link or code, or a passkey). An email link works only on the phone that asked for it and only while nobody is signed in there; otherwise the app offers the code. After Apple sign-in the app also sends Apple's one-time code to `apple-token` in the background (2.7).
 2. The app reads `my_sync_gate()`. If Terms are not current, it shows the Terms sheet with "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy" and records `record_policy_act('terms', ..., context {auth, age_attested: true})`. If Terms are current without the attestation, it asks "Are you 18 or older?" once; No ends the session and shows the 18+ stop screen.
 3. Then the sensitive-data sheet ("Before your book syncs"). "Agree and sync" records an accept and sync may start. "Keep on this phone" records a decline; the person stays signed in, letters stay on the phone, and Family or Account offers "Agree and sync" later.
-4. Nothing syncs before step 3 is accepted: the app checks, and the server refuses content writes with `SCCON` anyway.
+3a. If this phone's books and letters belong to no account yet: "Keep your letters in this account?" with the account's email masked. "Keep them here" lets them join the account; "Not my account" ends the session and nothing changes. A session left on this screen syncs nothing; Family and Settings > Account show "Finish setting up".
+4. Nothing syncs before step 3 is accepted (and 3a, when shown): the app checks, and the server refuses content writes with `SCCON` anyway.
 5. Sign-out waits until queued letters have uploaded, then ends the session on this phone only. Local letters are never deleted by signing out.
 
 ## 10. Keys and owners
 
 | Secret | Where it lives | Rotation |
 |---|---|---|
-| Apple `.p8`, Key ID, Team ID | Password manager; later the `apple-token` function's secrets | The OAuth client secret made from it expires within 6 months (Apple); calendar reminder |
+| Apple `.p8`, Key ID, Team ID | Password manager, and Edge Function secrets `APPLE_SIGNIN_PRIVATE_KEY`, `APPLE_SIGNIN_KEY_ID`, `APPLE_TEAM_ID` (`apple-token`, `purge-worker`) | The functions sign a fresh 10-minute secret per call. Only the web OAuth client secret (2.6, if used) expires within 6 months; calendar reminder |
+| `TOKEN_KEK_V<n>` | Edge Function secrets only (`apple-token`, `purge-worker`), password manager | Add a new version and keep the old one while tokens wrapped with it exist |
 | Resend SMTP API key | Supabase SMTP settings, password manager | When anyone with access leaves, or yearly |
 | Google web client secret | Supabase Google provider | Only on suspicion; rotating it does not affect native sign-in |
 | Supabase service role key | Supabase only | Never in the app, CI only through a protected environment |
@@ -285,6 +321,21 @@ Run on a real iPhone with a preview build that has every variable from section 8
 6. **Offline:** airplane mode, cold start: the app opens signed in, records and saves letters.
 7. **Passkeys (only for section 7):** Settings > Account > Add a passkey shows Face ID and succeeds; sign out; "Use a passkey" signs back in. Supabase shows the passkey under the user.
 8. **Revocation:** iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using. Relaunch: the app signs out after letters upload.
+9. **Apple token capture (2.7):** with a production-bundle build, sign in with Apple on a fresh account. Within a minute, SQL Editor: `select count(*), max(key_version) from ops.apple_tokens;` shows one more row (never select the ciphertext). Then delete that account in the app and let the purge worker run: the receipt says `apple: revoked`, and iOS Settings > Apple Account > Sign in with Apple no longer lists Early Letters.
+10. **A link from someone else (security review H1, ADR 0023):** phone A signed out, with a book and a letter, has not asked for an email. On phone B ask for an email and open that link on phone A: phone A says "Type the code from the email on this phone instead." and nothing signs in. Then on phone A ask for an email, close the app completely, and open the link: it signs in, shows the consent sheets, then "Keep your letters in this account?" with the address masked. "Not my account" leaves the letter on the phone and unsynced (Supabase shows no rows for it); sign in again and "Keep them here" syncs it. Also: open a link while signed in: "You're signed in as another account. Sign out first to use this link."; and a typed code still signs in on any phone.
+
+## 12. What only the founder can still do (15 Oct 2026)
+
+The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an agent (no agent sets a secret, applies a migration, deploys a function or touches a dashboard: COORDINATION section 6). Do them on staging first, then production. Until the R-17 gate passes (D-100; `docs/security/REVIEW_R17_AUTH.md`), only the founding family signs in, on builds made with `EXPO_PUBLIC_SERVER_FEATURES=on`; every store profile stays `off`.
+
+| Order | Task | Steps here | Blocks |
+|---|---|---|---|
+| 1 | **FT-07** Apple identifiers, Team ID, Sign in with Apple key, email relay | 2.1, 2.2, 2.4, 2.5 (one `.p8` serves sign-in, capture and revocation; `docs/ops/SECURITY.md` 5) | 2, 4, the AASA Team ID, every Apple sign-in |
+| 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking on, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider; 5.1 redirect URLs (exactly two); 6 templates as `supabase/templates/README.md` lists them. **One mismatch to settle:** the generated templates say "work once, for 15 minutes", while 4.4 and FOUNDER_TASKS FT-12 say OTP expiry 3600. Either set **900** seconds (the templates' words, and the review M4 recommendation), or keep 3600 and regenerate the templates with `--expires="1 hour"`. Code length stays 6 until the M4 work package (FT-04 item 8). PKCE needs no setting (4.6) | All sign-in; device checks 11 |
+| 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
+| 4 | **FT-11** `apple-token` | Apply migration `20261004200000` through `deploy-db.yml` if it is not applied yet, and S02's `20261015000000` (the database half of the apple-token limit, `rate_hit('apple_token')`) when its PR merges; set `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`, `TOKEN_KEK_V1` (2.7; the purge worker reads the same); leave `APPLE_EXTRA_CLIENT_IDS` unset (not read yet; see 2.7); `npx supabase functions deploy apple-token --use-api` | Apple token revocation at deletion (App Store 5.1.1(v)) |
+| 5 | Device checks on a switch-on preview build, founding family only | 11.1, 11.3, 11.9 (needs a production-bundle build until the purge worker reads `APPLE_EXTRA_CLIENT_IDS`), 11.10 | The R-17 sign-off |
+| 6 | Read and sign the R-17 auth items, with S02's items, in one shared review | `docs/security/REVIEW_R17_AUTH.md` | Anyone outside the family signing in (D-100) |
 
 ## Sources (opened 3 Oct 2026)
 
