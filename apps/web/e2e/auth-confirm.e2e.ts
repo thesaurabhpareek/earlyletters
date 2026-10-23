@@ -57,8 +57,18 @@ for (const path of ['/auth/confirm', '/auth/callback']) {
         expect(r.url(), 'no Supabase call').not.toMatch(/supabase/i);
         expect(carriesToken(r), `request carries the token: ${r.method()} ${r.url()}`).toBe(false);
       }
-      // The token stayed where the email put it: in the fragment, in this browser only.
-      expect(new URL(page.url()).hash).toContain(TOKEN);
+      // The token never left this browser, and after load it is not even in the address bar.
+      expect(page.url()).not.toContain(TOKEN);
+    });
+
+    test('takes the token hash out of the address bar after load; the words and the Open button stay', async ({ page, baseURL }) => {
+      await page.goto(`${path}#token_hash=${TOKEN}&type=email`);
+      await expect(page).toHaveURL(new URL(path, baseURL).href);
+      expect(page.url()).not.toContain('token_hash');
+      expect(await page.evaluate(() => window.location.hash)).toBe('');
+      await expect(page.getByText(copy.body)).toBeVisible();
+      await expect(page.getByText(copy.expired)).toBeVisible();
+      await expect(page.getByRole('link', { name: copy.open })).toHaveAttribute('href', `${brand.scheme}://auth/callback`);
     });
 
     test('is not indexed, is static, and sends no Referer from the page', async ({ request }) => {

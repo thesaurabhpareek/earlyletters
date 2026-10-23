@@ -6,6 +6,7 @@
  * Rules (A-REQ-023, F02-REQ-011, F21-REQ-024; docs/ops/AUTH_SETUP.md 5.3):
  * - It verifies nothing. The token sits in the URL fragment, which no server receives, and nothing here reads it:
  *   no Supabase call on load, on script run or on any button; no form; no analytics; no third-party script.
+ *   After load, ForgetAddress takes the fragment (and any query) out of the address bar.
  * - "Open the app" uses the app's own scheme with no token in it, ever. The custom scheme lands on the app's
  *   "type the code" screen (apps/mobile src/lib/auth/links.logic.ts), and any app could claim a scheme, so a
  *   secret never travels in one.
@@ -17,6 +18,7 @@ import Link from 'next/link';
 import { brand } from '@scribe/brand';
 import { site } from '@/content/site';
 import styles from './confirm.module.css';
+import { ForgetAddress } from './ForgetAddress';
 
 /** The app's "type the code" screen. Scheme from packages/brand; the path matches the app's AUTH_CALLBACK_PATH. */
 export const OPEN_APP_HREF = `${brand.scheme}://auth/callback`;
@@ -42,6 +44,7 @@ export function AuthConfirm() {
       <Link className={styles.home} href="/" prefetch={false}>
         {copy.home}
       </Link>
+      <ForgetAddress />
     </main>
   );
 }
