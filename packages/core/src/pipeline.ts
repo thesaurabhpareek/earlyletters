@@ -99,9 +99,10 @@ export const ENGINE_VERSION = 7;
 //     ("more?.", "it!.") is refused as changes_sentence_type (#179 re-check
 //     Note E), and so is a run that grows ("no..." to "no...."). A mark
 //     behind spaces, closing quotes, brackets or invisible characters still
-//     touches. Removing the extra mark of a doubled pair is still a fair
-//     punctuation edit while the mark that stands is the one said (a "?"
-//     stays a "?").
+//     touches. In a run of touching marks only a later mark may be removed
+//     or changed; the first mark said stands ("हँसी।." may lose the ".",
+//     never the danda; the same for U+3002 and U+2026), so a "?" or "!"
+//     said first stays (#249 review N2).
 //   - The check reads the run of marks around the edit, up to the first
 //     letter or the text's edge, instead of a fixed two-character window: a
 //     run said elsewhere ("Yes..no.") no longer excuses a new pair, and a

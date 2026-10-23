@@ -302,6 +302,40 @@ function removalChangesSentenceEnd(raw: string, e: Edit, R: LanguageRules): bool
   return i > 0 && !isEndMark(raw[i - 1], R);
 }
 
+/**
+ * In a run of touching end marks the mark said first stands (#249 review N2):
+ * an edit may remove or change only the later marks of the run. "हँसी।." may
+ * lose its ".", never its danda; U+3002 and the ellipsis character the same.
+ * The first mark stands when the replacement keeps the original as it was up
+ * to and including it (letters compared without case, so "more?." to "More?"
+ * keeps it; a "?" or "!" in its author's script, "？" for "?", counts as kept).
+ */
+function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
+  const o = e.original;
+  const r = e.replacement;
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase() || (MOOD_CANON[a] !== undefined && MOOD_CANON[a] === MOOD_CANON[b]);
+  let kept = 0;
+  while (kept < o.length && kept < r.length && same(o[kept], r[kept])) kept++;
+  let s = e.start;
+  let t = e.end;
+  while (s > 0 && nearMark(raw[s - 1], R)) s--;
+  while (t < raw.length && nearMark(raw[t], R)) t++;
+  let first = -1;
+  let marks = 0;
+  const moved = () => marks >= 2 && first >= e.start && first < e.end && first - e.start >= kept;
+  for (let i = s; i < t; i++) {
+    if (isEndMark(raw[i], R)) {
+      if (first < 0) first = i;
+      marks++;
+    } else if (!nearMark(raw[i], R)) {
+      if (moved()) return true;
+      first = -1;
+      marks = 0;
+    }
+  }
+  return moved();
+}
+
 /** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks)? */
 function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
   const p = markRunPairs(raw, e.start, e.end, e.replacement, R);
@@ -594,9 +628,9 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
   // Nor may a repair put an end mark next to one already said, the same mark or another ("She
   // said no." to "no..", "more?" to "more?.", "हँसी।" to "हँसी।.", "她睡了？" to "她睡了？."; #179
-  // tests-lens review and its re-check Note E, 23 Oct 2026). A run already said ("...") stays as
-  // said: it may lose a mark, never gain one, and the mark that stands is the speaker's.
-  if (addsEndMarkPair(ctx.raw, e, R)) return 'changes_sentence_type';
+  // tests-lens review and its re-check Note E, 23 Oct 2026). A run of touching marks may lose a
+  // later mark, never gain one, and its first mark is never removed or changed (movesFirstMark).
+  if (addsEndMarkPair(ctx.raw, e, R) || movesFirstMark(ctx.raw, e, R)) return 'changes_sentence_type';
   if (R.pairOpeners) {
     const opener = checkOpeners(e, ctx, R);
     if (opener) return opener;
@@ -704,6 +738,7 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   }
   if (reason) return reason;
   if (REMOVAL_TYPES.has(e.type) && removalChangesSentenceEnd(raw, e, R)) return 'changes_sentence_type';
+  if (e.type !== 'punctuation' && movesFirstMark(raw, e, R)) return 'changes_sentence_type';
   // Whatever its label, no edit leaves two end marks touching that the raw kept apart: a filler
   // removal of " um" alone out of "She said no. um." would ("no.."); the rules take " um." with its
   // own mark. Punctuation is checked in checkPunctuation, where the reason is the same.

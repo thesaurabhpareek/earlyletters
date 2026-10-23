@@ -373,6 +373,31 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     const hi = 'आशा हँसी।.';
     expect(verdictIn(HI, hi, edit(hi, 'punctuation', '।.', '।'))).toBeNull();
   });
+
+  it.each([
+    ['hi', 'आशा हँसी।.', '।'],
+    ['zh', '她睡了。.', '。'],
+    ['en', 'Asha waited\u2026.', '\u2026'],
+    ['en', 'Asha slept\u3002.', '\u3002'],
+  ] as const)('%s "%s": only the later mark of a touching pair may go; the first, "%s", stands (#249 review N2)', (lang, raw, said) => {
+    const rules = lang === 'hi' ? HI : lang === 'zh' ? ZH : ENGLISH_RULES;
+    const pair = `${said}.`;
+    const at0 = raw.indexOf(pair);
+    // The later mark: alone, or with the pair in the span.
+    expect(verdictIn(rules, raw, at(at0 + said.length, '', '.'))).toBeNull();
+    expect(verdictIn(rules, raw, edit(raw, 'punctuation', pair, said))).toBeNull();
+    // The first mark: removed, or swapped for the later one.
+    expect(verdictIn(rules, raw, at(at0, '', said))).toBe('changes_sentence_type');
+    expect(verdictIn(rules, raw, edit(raw, 'punctuation', pair, '.'))).toBe('changes_sentence_type');
+    expect(verdictIn(rules, raw, edit(raw, 'punctuation', pair, '..'))).toBe('changes_sentence_type');
+  });
+
+  it('a "?" or "!" said first stands too, held by the mood check as well, and so does each "!" of "!!"', () => {
+    const raw = 'Was there more?. It was.';
+    expect(v7(raw, at(raw.indexOf('.'), '', '.'))).toBeNull();
+    expect(v7(raw, at(raw.indexOf('?'), '', '?'))).toBe('changes_sentence_type');
+    expect(v7('Wow!!', at(4, '', '!'))).toBe('changes_sentence_type'); // every "!" is the speaker's mood, the later one too
+  });
 });
 
 describe("[F06-REQ-006] engine 7: the verifier's windows at the edges of a letter (#179 follow-up, wordWindow)", () => {
