@@ -50,7 +50,7 @@
  */
 import { failure, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
 import { bundleId } from '../../../packages/brand/index.ts';
-// The shared health route comes with PR #202 (S07, RA-07-06); it must be on develop before this merges.
+// The shared health route (S07, RA-07-06; on develop since #202, fbae767). Imported, never copied.
 import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
 import { createLogger, type ErrorCode, type FunctionName, type LogSink, type Provider } from '../_shared/log/log.ts';
 import { APPLE_AUDIENCE, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
