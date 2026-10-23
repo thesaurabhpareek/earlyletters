@@ -393,8 +393,11 @@ if (SERVER_ON) {
   // Same rule as docsBaseFor in src/lib/remote/base.logic.ts: an https origin, no path, no trailing slash.
   const valid = /^https:\/\/[^\s/]+$/.test(value.replace(/\/+$/, ''));
   let keySet = false;
+  let keyIds = [];
   try {
-    keySet = /^\s*\{[^}]*publicKey\s*:/m.test(read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, ''));
+    const keysSource = read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, '');
+    keySet = /^\s*\{[^}]*publicKey\s*:/m.test(keysSource);
+    keyIds = [...keysSource.matchAll(/keyId\s*:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
   } catch {
     /* treated as not set */
   }
@@ -410,7 +413,13 @@ if (SERVER_ON) {
       `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\` twice, with two key ids, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
     );
     step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs` twice, with two key ids, and paste both public lines)');
-  } else pass('a pack signing key is present in packages/api/src/keys.ts');
+  } else {
+    // The app and publish.ts take the first key with a given id, so a second key under the same id is never used (F19-REQ-002: two keys).
+    const repeated = [...new Set(keyIds.filter((id, i) => keyIds.indexOf(id) !== i))];
+    if (repeated.length) fail(`packages/api/src/keys.ts lists key id ${repeated.join(', ')} more than once; only the first is ever used, so the other key fails when it is needed. Give the backup its own id: \`node scripts/packs/keygen.mjs --backup\`.`);
+    else if (keyIds.length < 2) warn(`packages/api/src/keys.ts trusts ${keyIds.length || 'one'} signing key; F19-REQ-002 asks for two, a primary and a cold backup (\`node scripts/packs/keygen.mjs --backup\`). With one, losing it stops every new document until an app release.`);
+    else pass(`${keyIds.length} pack signing keys in packages/api/src/keys.ts, each with its own id`);
+  }
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
   let manifestPublished = false;
   try {

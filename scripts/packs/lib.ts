@@ -79,7 +79,9 @@ export function readSigningKey(env: Record<string, string | undefined>, trusted:
   const secret = base64ToBytes(raw);
   if (!secret || secret.length !== 32) throw new Error('EL_SIGNING_KEY is not a 32-byte base64 Ed25519 seed.');
   const pub = publicKeyFor(secret);
-  const match = trusted.find((k) => k.keyId === keyId);
+  const matches = trusted.filter((k) => k.keyId === keyId);
+  if (matches.length > 1) throw new Error(`packages/api/src/keys.ts lists key id ${keyId} more than once; phones use only the first. Give each key its own id (keygen.mjs --backup).`);
+  const match = matches[0];
   if (!match) throw new Error(`Key id ${keyId} is not in packages/api/src/keys.ts; phones would reject the documents.`);
   if (match.publicKey !== pub) throw new Error(`EL_SIGNING_KEY does not match the public key for ${keyId} in packages/api/src/keys.ts.`);
   return { secret, keyId };

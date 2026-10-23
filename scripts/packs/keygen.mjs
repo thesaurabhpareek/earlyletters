@@ -4,7 +4,8 @@
  * Run ONCE, on your own computer, with plain Node 22 or later. No install,
  * no network, nothing written to disk:
  *
- *   node scripts/packs/keygen.mjs [key-id]        # key-id defaults to el-YYYY-MM; prints only to a terminal
+ *   node scripts/packs/keygen.mjs [key-id]            # the primary; key-id defaults to el-YYYY-MM; prints only to a terminal
+ *   node scripts/packs/keygen.mjs --backup [key-id]   # the cold backup (F19-REQ-002); key-id defaults to el-YYYY-MM-backup
  *
  * It prints two things:
  *  1. the PUBLIC key line to paste into packages/api/src/keys.ts (commit it;
@@ -36,7 +37,16 @@ export function generate() {
   return { secretKey: std(jwk.d), publicKey: std(pub.x) };
 }
 
-export function render(keyId, { secretKey, publicKey }) {
+const PRIMARY_STORAGE = `To publish, either export both in your shell, or save those two lines in a file
+OUTSIDE this repo (for example ~/.config/early-letters/signing.env, chmod 600)
+and pass --key-file <path>. Next: docs/ops/PACKS_HOSTING.md.
+`;
+const BACKUP_STORAGE = `This is the cold backup. Keep its two lines in a password manager entry of their
+own and in an offline copy, apart from the primary; never in signing.env or on
+the publishing computer. Use it only if the primary is lost (docs/ops/PACKS_HOSTING.md, custody).
+`;
+
+export function render(keyId, { secretKey, publicKey }, { backup = false } = {}) {
   return `1. Paste into packages/api/src/keys.ts (TRUSTED_SIGNING_KEYS), then commit and build the app:
 
   { keyId: '${keyId}', publicKey: '${publicKey}', kinds: ['pack-manifest', 'remote-config', 'content-bundle'] },
@@ -46,10 +56,7 @@ export function render(keyId, { secretKey, publicKey }) {
   EL_SIGNING_KEY_ID=${keyId}
   EL_SIGNING_KEY=${secretKey}
 
-To publish, either export both in your shell, or save those two lines in a file
-OUTSIDE this repo (for example ~/.config/early-letters/signing.env, chmod 600)
-and pass --key-file <path>. Next: docs/ops/PACKS_HOSTING.md.
-`;
+${backup ? BACKUP_STORAGE : PRIMARY_STORAGE}`;
 }
 
 /**
@@ -59,8 +66,10 @@ and pass --key-file <path>. Next: docs/ops/PACKS_HOSTING.md.
  */
 export function main(argv = process.argv.slice(2), io = { isTTY: Boolean(process.stdout.isTTY), ci: Boolean(process.env.CI) }) {
   const toPipe = argv.includes('--to-pipe');
+  const backup = argv.includes('--backup');
   const positional = argv.filter((a) => !a.startsWith('--'));
-  const keyId = positional[0] ?? `el-${new Date().toISOString().slice(0, 7)}`;
+  // The backup gets its own default id, so two runs in one month never give two keys one id (the app takes the first match).
+  const keyId = positional[0] ?? `el-${new Date().toISOString().slice(0, 7)}${backup ? '-backup' : ''}`;
   if (!KEY_ID_RE.test(keyId)) {
     process.stderr.write('key id: lowercase letters, digits and hyphens, 2 to 32 characters\n');
     return 2;
@@ -71,7 +80,7 @@ export function main(argv = process.argv.slice(2), io = { isTTY: Boolean(process
     );
     return 3;
   }
-  process.stdout.write(render(keyId, generate()));
+  process.stdout.write(render(keyId, generate(), { backup }));
   return 0;
 }
 

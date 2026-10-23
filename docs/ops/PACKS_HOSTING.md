@@ -35,11 +35,11 @@ Times are an Assumption (nobody has run these steps on the real accounts yet).
 
 ### 1. Signing keys (once: a primary and a cold backup)
 
-Two keys from the first ceremony (F19-REQ-002 Rev, R2 AR-28): every build trusts both, so if the primary is lost you keep publishing with the backup instead of waiting for an app release. In your own terminal (it refuses to print the secret to a pipe, a file or CI), run it twice with two different key ids (the default, `el-YYYY-MM`, would be the same for both runs in one month):
+Two keys from the first ceremony (F19-REQ-002 Rev, R2 AR-28): every build trusts both, so if the primary is lost you keep publishing with the backup instead of waiting for an app release. In your own terminal (it refuses to print the secret to a pipe, a file or CI), run it twice, the second time with `--backup` so the two keys get different ids (the app and `publish.ts` use only the first key with a given id, and the preflight fails on a repeated one):
 
 ```bash
-node scripts/packs/keygen.mjs el-2026-10-primary    # plain Node, writes nothing to disk
-node scripts/packs/keygen.mjs el-2026-10-backup     # the cold backup
+node scripts/packs/keygen.mjs             # the primary, key id el-YYYY-MM; plain Node, writes nothing to disk
+node scripts/packs/keygen.mjs --backup    # the cold backup, key id el-YYYY-MM-backup
 ```
 
 Each run prints:

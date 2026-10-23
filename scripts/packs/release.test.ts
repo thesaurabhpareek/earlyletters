@@ -100,6 +100,20 @@ describe('keygen.mjs', () => {
     }
   });
 
+  it('gives the cold backup its own key id and its own storage advice, so two runs in one month never share an id (review A of #162, N5)', () => {
+    const month = new Date().toISOString().slice(0, 7);
+    const primary = spawnSync(process.execPath, [KEYGEN, '--to-pipe'], { encoding: 'utf8' });
+    const backup = spawnSync(process.execPath, [KEYGEN, '--backup', '--to-pipe'], { encoding: 'utf8' });
+    expect([primary.status, backup.status]).toEqual([0, 0]);
+    expect(parseKeyFile(primary.stdout).EL_SIGNING_KEY_ID).toBe(`el-${month}`);
+    expect(parseKeyFile(backup.stdout).EL_SIGNING_KEY_ID).toBe(`el-${month}-backup`);
+    expect(primary.stdout).toMatch(/--key-file <path>/);
+    expect(backup.stdout).toContain('This is the cold backup.');
+    expect(backup.stdout).toContain('never in signing.env');
+    expect(backup.stdout).not.toMatch(/--key-file <path>/);
+    expect(parseKeyFile(primary.stdout).EL_SIGNING_KEY).not.toBe(parseKeyFile(backup.stdout).EL_SIGNING_KEY);
+  });
+
   it('makes a key with plain Node that the app verifier accepts, and prints the secret once, to stdout only', () => {
     const r = spawnSync(process.execPath, [KEYGEN, 'el-2026-10', '--to-pipe'], { encoding: 'utf8' });
     expect(r.status).toBe(0);
