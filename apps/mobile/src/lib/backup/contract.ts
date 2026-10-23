@@ -43,7 +43,7 @@ export const BACKUP_ERRORS = {
   quota: 'SCQTA',
   /** Backup or escrow switched off on the server (`app.backup_enabled`): wait, never drop. */
   switchedOff: 'SCBKO',
-  /** `P0002` details `entry`: no `entries` or `held_drafts` row of mine with this id yet: wait for the outbox. */
+  /** `P0002` details `entry`: no `entries` row of mine with this id yet (held drafts are refused for now, #151): wait for the outbox. */
   notFound: 'P0002',
   /** `SCIMM` details `key_exists`: that book key version exists for (child, me): another of my devices stored it first. */
   immutable: 'SCIMM',

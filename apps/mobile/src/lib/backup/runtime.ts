@@ -414,7 +414,8 @@ async function current(): Promise<BackupService | null> {
     conditions: conditions(() => backupDb),
     clock: { now: () => Date.now(), sleep: (ms) => new Promise((r) => setTimeout(r, ms)) },
     profileId: s.uid,
-    // Held drafts wait for S03's held-draft op (WP-F14-22): with no `heldOnServer`, they are not listed at all.
+    // No `heldOnServer`, so held drafts are not listed at all. S03's held-draft op is on develop (#182), but the
+    // server backs up letters only until a held draft's backup survives an undone join (#151, backup_entry_exists).
     source: backupSource({ db: localSqlDb, profileId: s.uid }),
     local: restoreLocal({ db: localSqlDb, profileId: s.uid, fileExists: nativeFiles.exists, changed: notifyStoreChanged }),
     escrowKeys,

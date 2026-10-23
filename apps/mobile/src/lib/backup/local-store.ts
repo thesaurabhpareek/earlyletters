@@ -39,11 +39,13 @@ export interface SourceOptions {
   /** The signed-in person. Letters with no author were written on this phone before sign-in: theirs. */
   profileId: string;
   /**
-   * Whether the server has a `held_drafts` row for this draft id. Held drafts
-   * travel through S03's held-draft op (WP-F14-22, local v8), not built yet.
-   * Without it (the app today) held drafts are not listed at all: a draft that
-   * could never upload must not sit in the queue as a recording "waiting"
-   * (F08-U31). They join once S03's op exists and passes this in.
+   * Whether the server has a `held_drafts` row for this draft id. S03's
+   * held-draft op (WP-F14-22, local v8) is on develop (#182), but the server
+   * refuses held drafts for backup (P0002 entry) until a held draft's backup
+   * survives an undone join (#151, backup_entry_exists). Until a server file
+   * adds them, nothing passes this in, so held drafts are not listed at all: a
+   * draft that could never upload must not sit in the queue as a recording
+   * "waiting" (F08-U31).
    */
   heldOnServer?: (draftId: string) => boolean;
 }
