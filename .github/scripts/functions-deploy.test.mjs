@@ -286,7 +286,7 @@ test('specifiers: a comment with a quote inside an import clause, and a template
 });
 
 test('closure equals deno info for every function folder (CI sets DENO_INFO_CHECK=1)', { skip: process.env.DENO_INFO_CHECK !== '1' && 'set DENO_INFO_CHECK=1 to compare with deno info' }, () => {
-  for (const name of functionFolders(REPO).filter((n) => !(n in NEVER))) {
+  for (const name of functionFolders(REPO)) {
     const dir = join(REPO, 'supabase', 'functions', name);
     const args = ['-y', 'deno@2.9.6', 'info', '--json', '--no-lock'];
     if (existsSync(join(dir, 'deno.json'))) args.push('--config', join(dir, 'deno.json'));

@@ -899,7 +899,12 @@ const replay = (await sys(`select public.ops_replay_ledger($1::jsonb) r`, [JSON.
 check('[RB-8] the restore replay purges held drafts again (discarded), and an erased waiting letter again (erased)',
   replay.held_drafts === 2 && !(await heldRow(RH)) && (await marker(RH)) === 'discarded' && (await marker(RW)) === 'erased'
   && (await ledger('held_draft', RH)) && (await ledger('entry', RW)));
-check('[RB-8] audio_blob rows are skipped while #151 is not applied', replay.audio_blobs === 0 && !(await ledger('audio_blob', RH)));
+// The kind follows whether #151's file (audio_blobs) is applied: skipped without it; with it, ledgered
+// again (no backup row exists for RH, so nothing is deleted).
+const backupApplied = (await sys(`select to_regclass('public.audio_blobs') is not null v`)).rows[0].v === true;
+check(backupApplied ? '[RB-8] audio_blob rows are ledgered again once #151 is applied (none existed to delete)'
+  : '[RB-8] audio_blob rows are skipped while #151 is not applied',
+  replay.audio_blobs === 0 && (await ledger('audio_blob', RH)) === backupApplied);
 
 // ── 9. Incident scope (LEGAL-REQ-039) ────────────────────────────────────
 const IH = id7();
