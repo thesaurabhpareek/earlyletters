@@ -210,7 +210,9 @@ describe('[F06-REQ-007] agreement is a closed table of verb and article pairs: R
     expect(verdict(raw, e, compileRules('es', loadPack('es')))).toBe('not_vetted_for_language');
     const vetted = loadPack('es');
     for (const k of ['fillers', 'meaning', 'repeats', 'phonetic'] as const) vetted[k].review = { status: 'native-reviewed', by: 'test' };
-    expect(verdict(raw, e, compileRules('es', vetted))).not.toBeNull();
+    // Named reason (tests-lens review, 23 Oct): even vetted, the es pack has no agreement groups, so agreement is not
+    // enabled for the language; the generic -s inflection alone never opens the gate (F06-REQ-007).
+    expect(verdict(raw, e, compileRules('es', vetted))).toBe('not_vetted_for_language');
   });
 
   it('[F06-REQ-007] a pack generic -s rule never reaches the verifier, and a kinship noun in a group is still refused', () => {

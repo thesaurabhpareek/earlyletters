@@ -72,6 +72,9 @@ describe('[F06-REQ-019] Portuguese, word tables vetted: removals', () => {
 describe('[F06-REQ-010] the language must be passed: R-01 D12 in core', () => {
   it('with no language core defaults to English and removes "um"; the app always passes it (cleanSpoken)', () => {
     // Documents the core default the app relies on passing past (apps/mobile transcription-queue/clean.ts).
+    // Intended (tests-lens review Note C, 23 Oct 2026): the alpha transcribes English only (D-111 item 4), the English
+    // pack is the only bundled one, and the app always passes the letter's language, so a Portuguese letter never reaches
+    // this default. Making `language` required is a pipeline.ts API change for after the alpha (gap list row 11).
     expect(faithfulClean('Te dou um beijo.', { level: 'clean', dictionary: [] }).text).toBe('Te dou beijo.');
     expect(faithfulClean('Te dou um beijo.', { level: 'clean', dictionary: [], language: 'pt' }).text).toBe('Te dou um beijo.');
   });

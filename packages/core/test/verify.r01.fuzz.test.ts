@@ -240,7 +240,10 @@ const QUOTE = /\p{Quotation_Mark}/u;
  * space put before it moves no mark (seed 20261003 run 8161, 18 Oct).
  */
 const APOSTROPHE_LIKE = new Set(["'", '’', '‛', '＇']);
-const quoteCount = (s: string) => [...s].filter((c, i, a) => QUOTE.test(c) && !(APOSTROPHE_LIKE.has(c) && WORDISH.test(a[i - 1] ?? '') && WORDISH.test(a[i + 1] ?? ''))).length;
+/** The quotation marks in order (tests-lens review Note A, 23 Oct): a swap of one mark for another is a change, not only a count. */
+const quoteMarks = (s: string) => [...s].filter((c, i, a) => QUOTE.test(c) && !(APOSTROPHE_LIKE.has(c) && WORDISH.test(a[i - 1] ?? '') && WORDISH.test(a[i + 1] ?? ''))).join('');
+/** The house rule may straighten curly quotes (D14, D-112 item 1) and nothing else: compare the final text after that one mapping. */
+const houseQuotes = (s: string) => s.replace(/[“”„‟″]/g, '"').replace(/[‘’‚‛′]/g, "'");
 const INVISIBLE = /[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]/u;
 const invisibles = (s: string) => [...s].filter((c) => INVISIBLE.test(c)).join('');
 const DIGITS = /\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu;
@@ -345,7 +348,7 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
     const ws = toks(e.original, lang.char);
     if (!(e.type === 'filler' && e.replacement === '' && ws.length > 0 && ws.every((t) => lang.fillers.has(t.lw)))) return 'mood_changed';
   }
-  if (quoteCount(text) !== quoteCount(raw)) return 'quotes_changed';
+  if (quoteMarks(text) !== quoteMarks(raw)) return 'quotes_changed';
   const q = quoted(raw);
   for (const e of accepted) {
     if (e.type !== 'punctuation' && e.type !== 'paragraph' && q.some((s) => s.start < e.end && e.start < s.end)) return 'quoted_words_edited';
@@ -382,9 +385,12 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
 function brokenFinal(editedRaw: string, final: string, lang: Lang): string | null {
   const edited = editedRaw.trim();
   if (lettersOnly(final) !== lettersOnly(edited)) return 'final_changed_letters';
+  // Words, not letters only (tests-lens review Note B, 23 Oct): "we're" to "were" keeps the letters and changes the word.
+  const words = (s: string) => toks(houseQuotes(s).normalize('NFC'), lang.char).map((t) => t.lw).join(' ');
+  if (words(final) !== words(edited)) return 'final_changed_words';
   if (digits(final) !== digits(edited)) return 'final_changed_numbers';
   if (moodOf(final) !== moodOf(edited)) return 'final_changed_mood';
-  if (quoteCount(final) !== quoteCount(edited)) return 'final_changed_quotes';
+  if (quoteMarks(houseQuotes(final)) !== quoteMarks(houseQuotes(edited))) return 'final_changed_quotes';
   if (invisibles(final) !== invisibles(edited)) return 'final_changed_invisible';
   const neg = (s: string) => toks(s, lang.char).filter((t) => lang.negations(t.lw)).map((t) => t.lw).join('|');
   if (neg(final) !== neg(edited)) return 'final_changed_negation';
@@ -578,5 +584,10 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     expect(bz(said, at(said, '「', ''))).toBe('quotes_changed'); // D7: the mark itself may not go
     expect(b("Asha's duck.", at("Asha's duck.", "Asha's", 'Asha’s', 'punctuation'))).toBeNull(); // an apostrophe swap quotes nothing
     expect(b('She said ’up’.', at('She said ’up’.', '’up’', 'up'))).toBe('quotes_changed'); // paired marks around a word are quotes
+    // Tests-lens review (23 Oct): a swap of one quotation mark for another is a change (Note A); the final pass may not change a word (Note B).
+    expect(b('She said “bau” today.', at('She said “bau” today.', '“bau”', '«bau»'))).toBe('quotes_changed');
+    expect(brokenFinal("We're here.", 'Were here.', en)).toBe('final_changed_words');
+    expect(brokenFinal('We’re here, “up”.', 'We\'re here, "up".', en)).toBeNull(); // the house rule's straight quotes are allowed
+    expect(brokenFinal('She said “bau”.', 'She said «bau».', en)).toBe('final_changed_quotes');
   });
 });

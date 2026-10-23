@@ -79,7 +79,10 @@ export const ENGINE_VERSION = 6;
 //   hunter and rowan; the house rule keeps a soft hyphen (U+00AD) as it
 //   keeps U+FEFF; the name-signal test in checkSttFix skips a kept filler
 //   pair too (startsSentenceSkippingFillers), so the claim above holds: the
-//   review's differential found that one shape and no other.
+//   review's differential found that one shape and no other. From the
+//   tests-lens review, same day: quotation marks are compared in order, so a
+//   swap of one mark for another (U+201C to U+00AB) is changes_quotes; and no
+//   punctuation edit leaves a doubled end mark the raw did not have ("no..").
 //   Golden corpus: every engine 5 case is unchanged; R-01 cases added and
 //   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
 //   development build keeps its text (no saved letter is ever re-cleaned);

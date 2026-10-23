@@ -115,6 +115,24 @@ describe('[F06-REQ-008] commonWords after D-112: names rarely meant as the every
   });
 });
 
+describe('[F06-REQ-006] quotation marks are compared in order, and an end mark is never doubled (#179 tests-lens review, 23 Oct 2026)', () => {
+  it('a swap of one quotation mark for another is refused as changes_quotes (U+201C to U+00AB)', () => {
+    const raw = 'She said “bau” today.';
+    expect(verdict(raw, edit(raw, 'punctuation', '“bau”', '«bau»'))).toBe('changes_quotes');
+    expect(verdict(raw, edit(raw, 'punctuation', '“bau”', '"bau"'))).toBe('changes_quotes'); // straightening is the house rule's, never an edit
+    expect(verdict(raw, edit(raw, 'punctuation', 'today', 'today,'))).toBeNull(); // a comma elsewhere is still fine
+  });
+
+  it('a repair may not leave a doubled end mark the raw did not have ("no." to "no..")', () => {
+    const raw = 'She said no.';
+    expect(verdict(raw, edit(raw, 'punctuation', 'no.', 'no..'))).toBe('changes_sentence_type');
+    const said = 'She said no';
+    expect(verdict(said, edit(said, 'punctuation', 'no', 'no.'))).toBeNull(); // one end mark where there was none
+    const dots = 'She said no...';
+    expect(verdict(dots, edit(dots, 'punctuation', 'no...', 'no....'))).toBeNull(); // a run already said may stay
+  });
+});
+
 describe('[F06-REQ-014] a kept filler pair leaves a capital positional for the name-signal test (#179 review N1)', () => {
   const dict: DictionaryTerm[] = [{ term: 'Asha', kind: 'child', heardAs: [] }];
 

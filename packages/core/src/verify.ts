@@ -28,13 +28,15 @@
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
 import { frozenSet, hyphenCompounds, hyphenJoined, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
 import { overlaps, quotedSpans } from './protect';
-import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarkCount } from './meaning';
+import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarks } from './meaning';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
 import { heardAsCarriesMeaning, isEverydayTerm, targetsOtherTerm } from './lang/dictionary';
 
 /** Starting values. Tune on real recordings (PRD v2 section 24, experiment 2). */
 export const CEILING_RATIO = 0.15;
 export const CEILING_MIN_WORDS = 3;
+/** The same end mark twice in a row, in any script the engine knows ("..", "!!", "？？", "।।"). */
+const DOUBLED_END_MARK = /([.!?。！？؟।॥])\1/u;
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
@@ -60,9 +62,10 @@ const INVISIBLE_EDIT_TYPES: ReadonlySet<EditType> = frozenSet<EditType>([]);
 const QUOTE_GUARDED_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start', 'stt_fix', 'agreement']);
 
 /** quotedSpans and the quotation-mark count of the last raw text seen; verifyEdits checks many edits against one raw. */
-let rawMemo: { raw: string; quotes: Span[]; quoteMarks: number } | null = null;
-function rawFacts(raw: string): { quotes: Span[]; quoteMarks: number } {
-  if (rawMemo?.raw !== raw) rawMemo = { raw, quotes: quotedSpans(raw), quoteMarks: quotationMarkCount(raw) };
+// quoteMarks is the sequence of marks, not the count: a swap of one mark for another is a change too (tests-lens review Note A, 23 Oct 2026).
+let rawMemo: { raw: string; quotes: Span[]; quoteMarks: string } | null = null;
+function rawFacts(raw: string): { quotes: Span[]; quoteMarks: string } {
+  if (rawMemo?.raw !== raw) rawMemo = { raw, quotes: quotedSpans(raw), quoteMarks: quotationMarks(raw) };
   return rawMemo;
 }
 
@@ -446,6 +449,9 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Sentence type is the speaker's: a period may be added where there was no
   // end mark, but ? and ! are never added, removed or swapped (in any script: ？ ؟ count as ?).
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
+  // Nor may a repair leave a doubled end mark the raw did not have ("She said no." to "no..";
+  // tests-lens review of #179, 23 Oct 2026). A run already said ("...") may stay.
+  if (DOUBLED_END_MARK.test(after) && !DOUBLED_END_MARK.test(before)) return 'changes_sentence_type';
   if (R.pairOpeners) {
     const opener = checkOpeners(e, ctx, R);
     if (opener) return opener;
@@ -547,7 +553,8 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
 
   // Every Unicode quotation style, counted on the whole text so an apostrophe
   // inside a word is told apart from a closing quote (F06-REQ-006).
-  if (quotationMarkCount(raw.slice(0, e.start) + e.replacement + raw.slice(e.end)) !== facts.quoteMarks) return 'changes_quotes';
+  // The marks in order, not their count: U+201C to U+00AB is a restyling no edit may do (tests-lens review Note A).
+  if (quotationMarks(raw.slice(0, e.start) + e.replacement + raw.slice(e.end)) !== facts.quoteMarks) return 'changes_quotes';
 
   // Belt and braces for every substitution, whatever its label: the words
   // around the edit keep their negations, numbers, end marks and quotes.

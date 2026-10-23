@@ -100,6 +100,18 @@ export function quotationMarkCount(text: string): number {
   for (let i = 0; i < text.length; i++) if (QUOTATION_MARK.test(text[i]) && !isWordApostrophe(text, i)) n++;
   return n;
 }
+
+/**
+ * The quotation marks of a text in order, as one string. Two texts with the
+ * same count can still differ here: a swap of one mark for another (U+201C
+ * to U+00AB) changes the sequence, and no machine edit may restyle a quote
+ * (#179 tests-lens review, Note A, 23 Oct 2026).
+ */
+export function quotationMarks(text: string): string {
+  let out = '';
+  for (let i = 0; i < text.length; i++) if (QUOTATION_MARK.test(text[i]) && !isWordApostrophe(text, i)) out += text[i];
+  return out;
+}
 const QUOTATION_MARK = /\p{Quotation_Mark}/u;
 
 /* ---------- invisible characters (F06-REQ-003, R-01 D4) ---------- */

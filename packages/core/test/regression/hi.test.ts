@@ -24,7 +24,9 @@ describe.each([...PACK_MODES, 'none'] as const)('[F06-REQ-019] Hindi, pack %s: R
   it('[F06-REQ-002] never genders the child: R-01 D2 (बेटी, daughter, to बेटा, son)', () => {
     const raw = 'मेरी प्यारी बेटी सो गई।';
     expect(verdict(raw, edit(raw, 'punctuation', 'बेटी', 'बेटा'), R)).toBe('punctuation_changed_letters');
-    expect(verdict(raw, edit(raw, 'agreement', 'बेटी', 'बेटा'), R)).not.toBeNull();
+    // Named reason (tests-lens review, 23 Oct): in every pack mode the Hindi pack has no agreement table, so
+    // agreement is not enabled for the language and the edit is refused before any word check.
+    expect(verdict(raw, edit(raw, 'agreement', 'बेटी', 'बेटा'), R)).toBe('not_vetted_for_language');
   });
 
   it.each(INVISIBLES.map((c) => [`U+${c.codePointAt(0)!.toString(16).toUpperCase()}`, c]))(
