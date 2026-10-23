@@ -341,10 +341,22 @@ export interface EntryUpsertOp extends OpBase<'entry.upsert', EntryData> {
   /**
    * The Keep (ADR 0025 section 9, review K 1): the `v` of the held draft this
    * letter is made from, as this phone last knew it. Sent on a Keep, always
-   * with a value, and on no other op: as built (20261016000000 `sync_push`),
-   * the key's presence alone makes an `entry.upsert` a Keep, even as null,
-   * which counts as 0. So an ordinary edit that carried it would have its
-   * words compared as a Keep and refused when the server's are newer.
+   * with a value, and on no other op. As built (20261016000000 `sync_push`):
+   * on a letter that exists with `base` set, `held_base` is ignored (`base`
+   * wins); with `base` null, or when no letter has the id yet, the key's
+   * presence alone makes the op a Keep, even as null, which counts as 0. So
+   * an ordinary edit with no `base` that carried it would have its words
+   * compared as a Keep and refused when the server's are newer.
+   *
+   * A phone that knows no held version (the answer to its upload never came,
+   * or it never saw the row's `v`) sends `'0'`, which compares against any
+   * words on the server, so the Keep never replaces words it has not seen.
+   * Omitting the key is not the same: onto a new letter the server still
+   * compares as 0 when it holds a held row with that id, but onto an
+   * existing letter with no `base` (another phone kept first) there is no
+   * compare at all: the Keep's words replace the letter's, or the op fails
+   * SCIMM on the first keep's provenance. (The app omits it today when it
+   * knows no version, outbox.ts; WP-F16-01 should send `'0'` instead.)
    *  - Onto a new letter (`keep_check`): when the author's held row has
    *    words newer than it and different from the keep's, the keep is
    *    refused as a words conflict: no letter is made, the held row stays,
@@ -444,12 +456,14 @@ export const PushResultOkSchema = v.object({
   /**
    * WP-F16-14: the groups not applied, today only `["text"]`. This alone
    * marks a words refusal (`isWordsConflict`), whatever `conflict` says. As
-   * built (20261016000000): a refused Keep (`keep_check`) and its repeat
-   * (`dup_answer`) carry it with `conflict: true`; a refused `entry.upsert`
-   * carries `conflict` as its own row compare says (the row's `v` past
-   * `base`, nearly always true there); a duplicate of a refused
-   * `entry.upsert` (`dup_outcome`), a refused `held.upsert` (`held_state`)
-   * and its repeat (`held_dup`) carry it without `conflict`.
+   * built (20261016000000): a refused Keep onto a new letter (`keep_check`)
+   * and its repeat (`dup_answer`) carry it with `conflict: true`; a refused
+   * `entry.upsert` carries `conflict` as its own row compare says (the row's
+   * `v` past `base`, nearly always true there), and so does a Keep onto a
+   * letter that already exists (another phone kept first: the letter path,
+   * `held_base` standing in for `base`); a duplicate of either of those two
+   * (`dup_outcome`), a refused `held.upsert` (`held_state`) and its repeat
+   * (`held_dup`) carry it without `conflict`.
    */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
   /**
@@ -760,7 +774,10 @@ export const PullResponseSchema = v.object({
   gone: v.optional(v.array(GoneBookSchema)),
   /**
    * WP-F16-17, as built (20261016000000 `sync_pull`, unchanged by
-   * 20261023010000): present only when the request carried `held`. The
+   * 20261023010000): present only when the request carried `held`, and
+   * absent even then while the server's held switch is off (`app.held_sync
+   * = 'off'`, ADR 0025 section 9). Read "asked for but absent" as: keep the
+   * local held drafts and the held cursor as they are. The
    * author's own held drafts after the held cursor, one page across all
    * books, of every book the author is a parent of now. The server answers
    * `rows`, `cursor` and `more` only: there is no digest, so a phone cannot
@@ -901,10 +918,12 @@ export function isFieldGroupList(x: unknown): x is FieldGroup[] {
 /**
  * True when a push result is a words refusal the author must resolve (F16
  * 6.2 E step 3): `conflict_groups` contains `text`, whatever `conflict`
- * says. As built (20261016000000), a refused Keep, first answer and repeat,
- * carries `conflict: true` beside it, and a refused `entry.upsert` nearly
- * always does; a duplicate of a refused `entry.upsert`, a refused
- * `held.upsert` and its repeat carry `conflict_groups` without `conflict`.
+ * says. As built (20261016000000), a refused Keep onto a new letter, first
+ * answer and repeat, carries `conflict: true` beside it, and a refused
+ * `entry.upsert` or a refused Keep onto a letter that already exists nearly
+ * always does on its first answer; the repeat of either of those two
+ * (`dup_outcome`), a refused `held.upsert` and its repeat carry
+ * `conflict_groups` without `conflict`.
  * None of those words may be taken as applied. `conflict: true` without
  * `conflict_groups` is advisory: the op was applied by the later-arrival
  * rule and there is nothing to resolve.

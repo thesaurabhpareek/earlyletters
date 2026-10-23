@@ -167,7 +167,7 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(sendablePushOpTypes()).toEqual([...PUSH_OP_TYPES]);
   });
 
-  it('[F16-REQ-010] a words refusal is conflict_groups with text, with or without conflict: a duplicate, a refused held.upsert, a refused Keep and its repeat', () => {
+  it('[F16-REQ-010] a words refusal is conflict_groups with text, with or without conflict: a duplicate, a refused held.upsert, a refused Keep and its repeat, a Keep onto a kept letter repeated', () => {
     const entry = { id: ASHA_ENTRY, v: '900', updated_at: '2026-10-15T19:00:01Z', deleted_at: null, in_book: true, approval: 'not_needed' };
     const r = parsePushResponse({
       results: [
@@ -182,6 +182,8 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
         // Its repeat (dup_answer, then held_state): the same refusal, conflict: true again.
         { op: OP, ok: true, dup: true, applied: false, conflict: true, entry: null, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' },
           conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', typed_text: null, v: '41' } },
+        // A Keep onto a letter another phone kept first is refused on the letter path; its repeat (dup_outcome) has no conflict key.
+        { op: OP, ok: true, dup: true, entry, conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', v: '900' } },
       ],
       paused: false, stopped: false,
     });
