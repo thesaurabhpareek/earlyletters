@@ -69,7 +69,12 @@ export interface Logger {
 
 export const randomReqId = (): string => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
 
-export function makeLogger(sink: (line: string) => void, version: string, reqId = randomReqId()): Logger {
+/** The version a line may carry: the same closed shape as supabase/functions/_shared/log/log.ts, else '0'. */
+export const VERSION_SHAPE = /^[0-9][0-9A-Za-z.]{0,15}$/;
+
+export function makeLogger(sink: (line: string) => void, rawVersion: string, reqId = randomReqId()): Logger {
+  // ESCROW_VERSION is a setting, so it is checked here, before it can reach any line (review B N1).
+  const version = typeof rawVersion === 'string' && VERSION_SHAPE.test(rawVersion) ? rawVersion : '0';
   const line = (level: 'info' | 'warn' | 'error', event: EventName, fields?: Fields) => {
     const { out, dropped } = clean(fields);
     const e = has(EVENTS, event) ? event : 'request.failed';

@@ -194,6 +194,19 @@ Deno.test('[review B S3] ESCROW_SWITCH=rotation serves only /rotate; restores st
   }
 });
 
+Deno.test('[review B N1] ESCROW_VERSION reaches a log line only in its closed shape', async () => {
+  const s = await setup({ ESCROW_VERSION: ASHA.email });
+  await s.call({ device_id: ASHA.newPhone });
+  assert.ok(s.lines.length >= 2);
+  for (const l of s.lines) {
+    assert.ok(!l.includes(ASHA.email));
+    assert.equal(JSON.parse(l).version, '0');
+  }
+  const ok = await setup({ ESCROW_VERSION: '1.4.2' });
+  await ok.call({ device_id: ASHA.newPhone });
+  assert.equal(JSON.parse(ok.lines[0]).version, '1.4.2');
+});
+
 Deno.test('[F08-REQ-029] over a limit: 429 rate_limited, and the founder gets one content-free alert', async () => {
   const s = await setup();
   const p = await phone(s.db, s.escrow.pk);
