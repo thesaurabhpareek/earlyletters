@@ -98,12 +98,15 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await stubShareSheet(app);
   const m = await mockServer(app, { user: MAMA, email: 'mama@example.invalid' });
   const invites: Record<string, unknown>[] = [];
+  let book: string | null = null;
   m.rpc('create_child_invite', (c) => {
     const args = c.body as Record<string, unknown>;
-    invites.push({ id: args.p_invite_id, role: 'parent', signs_as: args.p_signs_as ?? null, created_at: '2026-10-15T09:00:00.000Z', expires_at: '2026-10-22T09:00:00.000Z', accepted_at: null, revoked_at: null });
+    book = String(args.p_child);
+    invites.push({ id: args.p_invite_id, role: 'parent', signs_as: args.p_signs_as ?? null, created_at: '2026-10-15T09:00:00.000Z', expires_at: '2026-10-22T09:00:00.000Z', status: 'open' });
     return { body: args.p_invite_id };
   });
-  m.table('child_invites', () => ({ body: invites }));
+  // The pending list is the server's own: sync_books().books[].invites, never a select on child_invites.
+  m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: book ? [{ id: book, role: 'parent', name: CHILD, members: [], invites }] : [] } }));
   await openOn(app, '/?seed=asha');
   await app.getByText('Family', { exact: true }).last().click();
   await expect(app.getByText('Write this book together')).toBeVisible();
@@ -136,6 +139,7 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await expect(app.getByText(/Invited, open until/)).toBeVisible();
   await expect(btn(app, 'Cancel invite')).toBeVisible();
   await expect(btn(app, 'Invite a co-parent')).toHaveCount(0);
+  expect(m.calls.filter((c) => c.path === '/rest/v1/child_invites'), 'the list comes from sync_books only').toEqual([]);
   await step('happy', 'Invite open', 'The member list shows the open invite with the day it stops working, Share again and Cancel invite (F11-REQ-019). The invite card steps aside while an invite is open.');
 });
 

@@ -14,6 +14,12 @@
  * device-made invite, leave only through the RPC, contributors refused) run too. Without them
  * the app's fallbacks are what is tested: the server-made token and the unnamed ask.
  *
+ * The pending list is the server's own (`sync_books().books[].invites`, never a select on
+ * child_invites): the server's clock marks an invite expired and keeps it 14 days. The remote kill
+ * switches `killSwitches.invites` and `killSwitches.sync` are driven through the app's own reader
+ * seam (lib/family/invites-switch.ts): invites paused, nothing is sent and nothing is lost, and Cancel
+ * invite still closes a link; sync paused, the list is not asked for.
+ *
  * Fictional family "Asha" only (CLAUDE.md): Mama (A) starts the book, Papa (B) joins, C is a
  * stranger holding a forwarded link, and D is the co-parent Mama invites after Papa leaves.
  */
@@ -27,10 +33,12 @@ import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { get as getChildRow, insert as insertChild, listVisible, upsertPrefs } from '../src/lib/db/repos/children';
 import { setSetting } from '../src/lib/db/repos/settings';
 import type { SqlDb } from '../src/lib/db/sql';
-import { inviteErrorKind } from '../src/lib/family/invite-errors.logic';
+import { FINAL_INVITE_ERRORS, inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { newInviteDraft, type InviteDraft } from '../src/lib/family/invite-draft.logic';
 import { parseInviteInput, parseInviteUrl } from '../src/lib/family/invite-link.logic';
+import { openInvites } from '../src/lib/family/invite-list.logic';
 import { acceptInvite, createCoParentInvite, leaveBook, listPendingInvites, peekInvite, revokeInvite, shareInviteAgain, type FamilyClient } from '../src/lib/family/invites';
+import { setFamilyKillSourceForTests } from '../src/lib/family/invites-switch';
 import { joinedView, joinPlan } from '../src/lib/family/join-flow.logic';
 import { familyTabState, leftSince, type MemberLike } from '../src/lib/family/members.logic';
 import { createSyncEngine } from '../src/lib/sync/engine';
@@ -62,6 +70,10 @@ const C = '33333333-3333-3333-3333-333333333333'; // a stranger with a forwarded
 const D = '44444444-4444-4444-4444-444444444444'; // a later co-parent, invited with no suggested sign-off
 
 let pg: PGlite;
+/** `killSwitches.invites` and `killSwitches.sync` as the phones read them (the signed remote config in the app). */
+let invitesSwitchOn = false;
+let syncSwitchOn = false;
+setFamilyKillSourceForTests({ on: (key) => (key === 'invites' ? invitesSwitchOn : syncSwitchOn) });
 let lock: Promise<unknown> = Promise.resolve();
 /** PGlite has one connection: role switches and the call must not interleave. */
 function serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -389,10 +401,10 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     expect(rows).toHaveLength(1);
     expect(JSON.stringify(rows)).not.toContain(draft.token);
     // F11-REQ-019: the open invite is listed for Mama, without any hash column.
-    const open = await listPendingInvites(mama, ASHA, new Date(clock.t));
+    const open = await listPendingInvites(mama, ASHA);
     expect(open).toHaveLength(1);
-    expect(open[0]).toMatchObject({ signsAs: 'Papa' });
-    expect(Object.keys(open[0]).sort()).toEqual(['createdAt', 'expiresAt', 'id', 'signsAs']);
+    expect(open[0]).toMatchObject({ signsAs: 'Papa', status: 'open' });
+    expect(Object.keys(open[0]).sort()).toEqual(['createdAt', 'expiresAt', 'id', 'signsAs', 'status']);
     expect(Date.parse(open[0].expiresAt) - Date.parse(open[0].createdAt)).toBe(7 * 24 * 3600 * 1000);
     // A second invite, made while the book has one parent: it is forwarded to a stranger later.
     const second = await createCoParentInvite(mama, ASHA, null, await newInviteDraft(draftDeps));
@@ -406,7 +418,7 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     }
     const mama = familyClient(A);
     const papa = familyClient(B);
-    const row = (await listPendingInvites(mama, ASHA, new Date(clock.t))).find((r) => r.signsAs === 'Papa')!;
+    const row = (await listPendingInvites(mama, ASHA)).find((r) => r.signsAs === 'Papa')!;
     expect(row).toBeDefined();
     // Closed without sending: the first link still works, and the new invite, which nobody has, is cancelled again.
     const closed = await newInviteDraft(draftDeps);
@@ -420,9 +432,9 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     };
     expect(await shareInviteAgain(mama, ASHA, row, failed, unavailable)).toBe('not_sent');
     expect(await peekInvite(papa, token)).toMatchObject({ inviter: 'Mama', known: true });
-    expect((await listPendingInvites(mama, ASHA, new Date(clock.t))).map((r) => r.id)).toEqual(expect.arrayContaining([row.id, failed.id]));
+    expect((await listPendingInvites(mama, ASHA)).map((r) => r.id)).toEqual(expect.arrayContaining([row.id, failed.id]));
     await revokeInvite(mama, failed.id); // back to the two open invites of the story
-    expect(await listPendingInvites(mama, ASHA, new Date(clock.t))).toHaveLength(2);
+    expect(await listPendingInvites(mama, ASHA)).toHaveLength(2);
   }, 60_000);
 
   it('[F11-REQ-019] Share again, sent: the first link stops working; when cancelling it fails, both work and Mama is told', async (t) => {
@@ -432,7 +444,7 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     }
     const mama = familyClient(A);
     const papa = familyClient(B);
-    const row = (await listPendingInvites(mama, ASHA, new Date(clock.t))).find((r) => r.signsAs === 'Papa')!;
+    const row = (await listPendingInvites(mama, ASHA)).find((r) => r.signsAs === 'Papa')!;
     let sent = '';
     const share = async (url: string): Promise<'shared'> => {
       sent = url;
@@ -457,7 +469,113 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     expect(await peekInvite(papa, fresh.token)).toEqual({ inviter: 'Mama', role: 'parent', joined: false, known: true });
     link = sent;
     token = fresh.token;
-    expect(await listPendingInvites(mama, ASHA, new Date(clock.t))).toHaveLength(2);
+    expect(await listPendingInvites(mama, ASHA)).toHaveLength(2);
+  }, 60_000);
+
+  it('[F11-REQ-019] the pending list is the server\'s: one sync_books call, no select on child_invites, no hash, and expired as the server marks it for 14 days', async () => {
+    const log: { fn: string; args: Record<string, unknown> }[] = [];
+    const base = familyClient(A, log);
+    const tables: string[] = [];
+    const mama = { rpc: base.rpc, from: (t: string) => (tables.push(t), base.from(t)) } as unknown as FamilyClient;
+    const before = await listPendingInvites(mama, ASHA);
+    expect(log.map((c) => c.fn)).toEqual(['sync_books']);
+    expect(tables).toEqual([]);
+    expect(before.map((r) => r.status)).toEqual(['open', 'open']);
+    // What the server sends has no hash column and no hash value in it.
+    const sent = JSON.stringify((await callRpc(A, 'sync_books', {}, {})).data);
+    expect(sent).not.toMatch(/token_hash|code_hash/);
+    const hashes = (await sys(`select encode(token_hash, 'hex') h from child_invites where child_id = $1`, [ASHA])).rows.map((r) => String(r.h));
+    expect(hashes.length).toBeGreaterThan(0);
+    for (const h of hashes) expect(sent).not.toContain(h);
+    // An invite that ran out on the server's clock is still listed, marked expired, and holds nothing back.
+    const made = await createCoParentInvite(base, ASHA, null, await newInviteDraft(draftDeps));
+    const id = made.id ?? String((await sys('select id from child_invites where child_id = $1 order by created_at desc limit 1', [ASHA])).rows[0].id);
+    await sys(`update child_invites set created_at = now() - interval '8 days', expires_at = now() - interval '1 day' where id = $1`, [id]);
+    const withExpired = await listPendingInvites(base, ASHA);
+    expect(withExpired.map((r) => (r.id === id ? `expired:${r.status}` : r.status))).toEqual(['open', 'open', 'expired:expired']);
+    expect(openInvites(withExpired).map((r) => r.id)).toEqual(before.map((r) => r.id));
+    // After 14 days the server stops listing it, and the list is what it was.
+    await sys(`update child_invites set created_at = now() - interval '22 days', expires_at = now() - interval '15 days' where id = $1`, [id]);
+    expect(await listPendingInvites(base, ASHA)).toEqual(before);
+    // [F11-U04] Share again on an expired row: a new link for the same co-parent, and the expired row goes.
+    if (gate) {
+      const late = await createCoParentInvite(base, ASHA, null, await newInviteDraft(draftDeps));
+      await sys(`update child_invites set created_at = now() - interval '8 days', expires_at = now() - interval '1 day' where id = $1`, [late.id]);
+      const expiredRow = (await listPendingInvites(base, ASHA)).find((r) => r.id === late.id)!;
+      expect(expiredRow.status).toBe('expired');
+      const fresh = await newInviteDraft(draftDeps);
+      expect(await shareInviteAgain(base, ASHA, expiredRow, fresh, async () => 'shared')).toBe('shared');
+      const after = await listPendingInvites(base, ASHA);
+      expect(after.find((r) => r.id === late.id)).toBeUndefined();
+      expect(after.find((r) => r.id === fresh.id)).toMatchObject({ status: 'open', signsAs: null });
+      await revokeInvite(base, fresh.id); // back to the two open invites of the story
+      expect(await listPendingInvites(base, ASHA)).toEqual(before);
+    }
+    // Only the book's parents get its invites: a stranger's sync_books does not list the book.
+    expect(await listPendingInvites(familyClient(C), ASHA)).toEqual([]);
+  }, 60_000);
+
+  it('[F19-REQ-011] killSwitches.invites on: create, Share again, peek and join send nothing, Cancel invite still closes a link, and no invite or link is lost', async () => {
+    const log: { fn: string; args: Record<string, unknown> }[] = [];
+    const mama = familyClient(A, log);
+    const papa = familyClient(B, log);
+    // A link Mama will want to close during the pause (made before it).
+    const stray = await createCoParentInvite(mama, ASHA, null, await newInviteDraft(draftDeps));
+    const strayId = stray.id ?? String((await sys('select id from child_invites where child_id = $1 order by created_at desc limit 1', [ASHA])).rows[0].id);
+    const listed = await listPendingInvites(mama, ASHA);
+    const row = listed.find((r) => r.signsAs === 'Papa')!;
+    expect(row).toBeDefined();
+    const onServer = async () => (await sys('select id, accepted_at, revoked_at, expires_at from child_invites where child_id = $1 and id <> $2 order by id', [ASHA, strayId])).rows;
+    const stored = await onServer();
+    log.length = 0;
+    invitesSwitchOn = true;
+    try {
+      let sheets = 0;
+      const share = async (): Promise<'shared'> => {
+        sheets++;
+        return 'shared';
+      };
+      expect(await kindOf(createCoParentInvite(mama, ASHA, 'Papa', await newInviteDraft(draftDeps)))).toBe('paused');
+      expect(await kindOf(shareInviteAgain(mama, ASHA, row, await newInviteDraft(draftDeps), share))).toBe('paused');
+      expect(await kindOf(peekInvite(papa, token))).toBe('paused');
+      expect(await kindOf(acceptInvite(papa, token))).toBe('paused');
+      expect(sheets).toBe(0);
+      expect(log).toEqual([]); // not one invite request reached the server
+      // Cancel invite is not paused: the switch stops creating and redeeming, and closing a link is the safe direction.
+      expect(await kindOf(revokeInvite(mama, strayId))).toBe('ok');
+      expect(log.map((c) => c.fn)).toEqual(['revoke_invite']);
+      expect((await sys('select revoked_at is not null as closed from child_invites where id = $1', [strayId])).rows[0].closed).toBe(true);
+      // Nothing else changed there, the list still shows every other invite, and Papa's phone keeps the link (paused is never final).
+      expect(await onServer()).toEqual(stored);
+      expect(await listPendingInvites(mama, ASHA)).toEqual(listed.filter((r) => r.id !== strayId));
+      expect(FINAL_INVITE_ERRORS).not.toContain('paused');
+      expect((await sys('select count(*)::int n from child_members where child_id = $1 and profile_id = $2', [ASHA, B])).rows[0].n).toBe(0);
+    } finally {
+      invitesSwitchOn = false;
+    }
+    // Lifted: the same link works as before.
+    if (gate) expect(await peekInvite(papa, token)).toMatchObject({ inviter: 'Mama', known: true });
+  }, 60_000);
+
+  it('[F19-REQ-011] killSwitches.sync on: the pending list is not asked for (sync_books is sync\'s), and reads again once lifted', async () => {
+    const log: { fn: string; args: Record<string, unknown> }[] = [];
+    const mama = familyClient(A, log);
+    const before = await listPendingInvites(mama, ASHA);
+    // Mama's pull counter (sync_books counts in it): a list nobody asked for counts nothing.
+    const pulls = async () => (await sys(`select hits, window_start from sync_rate_windows where profile_id = $1 and bucket = 'pull'`, [A])).rows;
+    const counted = await pulls();
+    expect(counted).toHaveLength(1);
+    log.length = 0;
+    syncSwitchOn = true;
+    try {
+      expect(await kindOf(listPendingInvites(mama, ASHA))).toBe('paused');
+      expect(log).toEqual([]);
+      expect(await pulls()).toEqual(counted);
+    } finally {
+      syncSwitchOn = false;
+    }
+    expect(await listPendingInvites(mama, ASHA)).toEqual(before);
+    expect(log.map((c) => c.fn)).toEqual(['sync_books']);
   }, 60_000);
 
   it('[BL-322] before sign-in nothing about the invite can be learned', async () => {
@@ -542,7 +660,7 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     expect(await kindOf(acceptInvite(stranger, spare))).toBe('book_full');
     expect((await sys('select count(*)::int n from child_members where child_id = $1 and profile_id = $2', [ASHA, C])).rows[0].n).toBe(0);
     // The leftover invite can still be cancelled by either parent.
-    const open = await listPendingInvites(familyClient(B), ASHA, new Date(clock.t));
+    const open = await listPendingInvites(familyClient(B), ASHA);
     expect(open).toHaveLength(1);
     await revokeInvite(familyClient(B), open[0].id);
     expect(await kindOf(acceptInvite(stranger, spare))).toBe('revoked');
