@@ -44,6 +44,7 @@
 --   public.subscription_report_switch()             internal: the server-side switch
 --   public.subscription_rate_hit(uuid, text)        internal
 --   public.subscription_consents_guard()            trigger: append-only except pseudonymise and purge
+--   public.subscription_consents_no_truncate()      trigger: no TRUNCATE of the consent records
 --   public.subscription_consents_pseudonymise()     trigger on profiles, before delete
 --   public.subscription_retention_purge(timestamptz) service role: deletes consents 3 years after pseudonymisation
 --
@@ -73,7 +74,9 @@
 -- New SQLSTATEs: none (SCKIL has its rule in packages/api SQLSTATE_RULES).
 -- Reused: 28000, SCANO (require_user), SCRAT (rate),
 -- 22023 (bad report; with DETAIL 'idempotency' for a reused key), 40001
--- (idempotent request still in progress), 55000 (pepper missing at deletion).
+-- (idempotent request still in progress), 55000 (pepper missing at deletion),
+-- SCIMM (a TRUNCATE of the consent records). An update or delete of a consent
+-- row outside pseudonymisation and the purge raises P0001.
 
 -- ─── 1. Tables ───────────────────────────────────────────────────────────
 
@@ -459,6 +462,18 @@ $$;
 create trigger subscription_consents_guard before update or delete on public.subscription_consents
   for each row execute function public.subscription_consents_guard();
 
+-- TRUNCATE skips row triggers, so a statement-level guard keeps the records
+-- append-only against it too (the pattern of escrow_unwraps_no_truncate in
+-- S05's PR #151). The retention purge deletes rows and never truncates.
+create or replace function public.subscription_consents_no_truncate()
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
+begin
+  raise exception 'subscription_consents rows are append-only' using errcode = 'SCIMM';
+end;
+$$;
+create trigger subscription_consents_no_truncate before truncate on public.subscription_consents
+  for each statement execute function public.subscription_consents_no_truncate();
+
 -- Pseudonymise before the profile row disappears, with the same pepper and hash
 -- input as policy_acceptances (so one person's rows match across both tables).
 -- Fails closed (55000) when there is something to pseudonymise and the pepper is
@@ -507,6 +522,7 @@ revoke execute on function public.subscription_rate_hit(uuid, text) from public,
 revoke execute on function public.subscription_instant(jsonb, boolean) from public, anon, authenticated;
 revoke execute on function public.subscription_report_switch() from public, anon, authenticated;
 revoke execute on function public.subscription_consents_guard() from public, anon, authenticated;
+revoke execute on function public.subscription_consents_no_truncate() from public, anon, authenticated;
 revoke execute on function public.subscription_consents_pseudonymise() from public, anon, authenticated;
 revoke execute on function public.subscription_retention_purge(timestamptz) from public, anon, authenticated;
 revoke execute on function public.status_salt() from public, anon;

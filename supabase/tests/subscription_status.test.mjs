@@ -161,6 +161,8 @@ check('[F14-REQ-044] a win-back offer is recorded as its own offer type (contrac
 check('an offer type outside the contract is still refused', (await reportCode(B, base(subRef(sB, 2000000809), { consent: consentFacts({ offer_type: 'winback' }) }))) === '22023');
 check('consent rows are append-only (an update is refused)', (await codeOf(() => sys(`update subscription_consents set terms_shown = '9.9.9'`))) !== 'ok');
 check('consent rows are append-only (a delete outside the retention purge is refused)', (await codeOf(() => sys(`delete from subscription_consents`))) !== 'ok');
+check('consent rows are append-only (a TRUNCATE is refused, SCIMM) and every record stays',
+  (await codeOf(() => sys(`truncate subscription_consents`))) === 'SCIMM' && (await consentRows()).length === 3);
 
 // ── 6. Idempotency (ADR 0017 rule 3) ─────────────────────────────────────
 const key = randomUUID();
