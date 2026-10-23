@@ -52,7 +52,10 @@ export const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
  * What may sit between two end marks that still touch: spaces, closing quotes
  * and invisible characters. Not a closing bracket: a mark inside brackets ends
  * the bracketed words only, and the sentence around them still takes its own
- * ("We went home (it rained!)."; #249 review F1 and N1).
+ * ("We went home (it rained!)."; #249 review F1 and N1). Nor the CJK closing
+ * brackets U+3011, U+3009 and U+300B: as bridges they would refuse more, but
+ * would also let an edit delete one, or move a mark across it, and join the
+ * two marks said on each side (the #249 follow-up's single-edit differential).
  */
 export const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』]$/u;
 
