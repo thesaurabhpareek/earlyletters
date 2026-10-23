@@ -178,8 +178,10 @@ alter table public.idempotency_keys add constraint idempotency_keys_fn_check
 
 -- ─── 2. Internal helpers ─────────────────────────────────────────────────
 
+-- Not security definer: only status_salt() and status_report_store() call it, and they are,
+-- so it runs as their owner; no client may execute it (section 5).
 create or replace function public.subscription_rate_hit(p_uid uuid, p_bucket text)
-returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
+returns void language plpgsql volatile set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_window constant interval := interval '1 hour';
   v_limit constant int := 30;      -- STATUS_REPORTS_PER_HOUR in packages/api; the same for the salt
