@@ -1,6 +1,7 @@
 // GitHub settings for the release pipeline, as code: branch protection (AF-03), the environments and their
 // deployment refs (AF-07, AF-22), and the rulesets that keep release tags and branches immutable (AF-23).
-// Sources: docs/release/AUTOMATION.md 2.0 and 2.1, ADR 0026, docs/security/SECRETS_REVIEW.md sections 5 and 8.
+// Sources: docs/release/AUTOMATION.md 2.0 and 2.1, ADR 0026 (Proposed), docs/security/SECRETS_REVIEW.md sections 5
+// and 8 (on #206 until it merges).
 //
 // The founder runs it from their own computer, signed in to `gh` as the repository owner. Agents never run
 // `--apply`: settings are founder actions (D-107, ADR 0026 decision 11).
@@ -10,7 +11,8 @@
 //   npx tsx scripts/release/github-settings.ts --approver <login> --verify   # read back, exit 1 on any drift
 //
 // It never reads, writes or prints a secret or variable. Secrets are added by hand, in Settings, only after
-// `--verify` passes (SECRETS_REVIEW section 9). Facts marked [U] in comments are not verified on GitHub's pages.
+// `--verify` passes (SECRETS_REVIEW section 9, on #206 until it merges). Facts marked [U] in comments are not
+// verified on GitHub's pages.
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,9 +23,13 @@ export const REPO = 'thesaurabhpareek/earlyletters';
 export type Ref = { type: 'branch' | 'tag'; name: string };
 export type EnvironmentSpec = { name: string; reviewer: boolean; refs: Ref[] };
 
-/** SECRETS_REVIEW section 5. `db-production` replaces `production`, which is Vercel's environment (SR-2). */
+/**
+ * AUTOMATION.md 2.0 and SECRETS_REVIEW section 5. `staging` takes `develop` only: staging follows `develop`, and a
+ * push to `main` deploys nothing to a database (17 Oct). `db-production` replaces `production`, which is Vercel's
+ * environment (SR-2); `deploy-db.yml` names `db-production`.
+ */
 export const ENVIRONMENTS: EnvironmentSpec[] = [
-  { name: 'staging', reviewer: true, refs: [{ type: 'branch', name: 'develop' }, { type: 'branch', name: 'main' }] },
+  { name: 'staging', reviewer: true, refs: [{ type: 'branch', name: 'develop' }] },
   { name: 'db-production', reviewer: true, refs: [{ type: 'tag', name: 'db-v*' }] },
   { name: 'testflight', reviewer: true, refs: [{ type: 'branch', name: 'develop' }] },
   { name: 'testers', reviewer: true, refs: [{ type: 'branch', name: 'develop' }] },

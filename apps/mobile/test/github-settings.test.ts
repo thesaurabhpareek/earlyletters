@@ -1,6 +1,6 @@
 // scripts/release/github-settings.ts: the GitHub settings the release pipeline needs, as code (AF-03, AF-07,
-// AF-22, AF-23; docs/security/SECRETS_REVIEW.md section 5). These tests pin the plan and the drift checks;
-// nothing here calls GitHub.
+// AF-22, AF-23; docs/security/SECRETS_REVIEW.md section 5, on #206 until it merges). These tests pin the plan and
+// the drift checks; nothing here calls GitHub.
 import { describe, expect, it } from 'vitest';
 import {
   BRANCHES,
@@ -40,11 +40,11 @@ describe('environments (SECRETS_REVIEW section 5)', () => {
     expect(ENVIRONMENTS.filter((e) => !e.reviewer).map((e) => e.name)).toEqual(['health', 'agents']);
   });
 
-  it('allows app-store only release tags and release branches, and db-production only db tags', () => {
+  it('allows app-store only release tags and release branches, db-production only db tags, and staging only develop', () => {
     const refs = (n: string) => ENVIRONMENTS.find((e) => e.name === n)!.refs;
     expect(refs('app-store')).toEqual([{ type: 'tag', name: 'ios-v*' }, { type: 'branch', name: 'release/*' }]);
     expect(refs('db-production')).toEqual([{ type: 'tag', name: 'db-v*' }]);
-    expect(refs('staging')).toEqual([{ type: 'branch', name: 'develop' }, { type: 'branch', name: 'main' }]);
+    expect(refs('staging')).toEqual([{ type: 'branch', name: 'develop' }]);
     for (const e of ENVIRONMENTS) for (const r of e.refs) expect(r.name).not.toMatch(/refs\/pull/);
   });
 });
