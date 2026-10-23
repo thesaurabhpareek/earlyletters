@@ -101,6 +101,16 @@ describe('checkKeyFile: every bypass of a text comparison is refused', () => {
     expect(c.problem).toContain(other);
   });
 
+  it('a folder inside the repo whose name starts with two dots, even with no git to fall back on (review A of #162, N6)', () => {
+    const r = tmp('dotdot');
+    const folder = path.join(r, '..keys');
+    fs.mkdirSync(folder);
+    const noGit = () => null;
+    expect(checkKeyFile(keyFileIn(folder), r, { git: noGit }).problem).toMatch(/inside this repository/);
+    // A real way out is still outside.
+    expect(checkKeyFile(keyFileIn(tmp('dotdot-outside')), r, { git: noGit }).problem).toBeNull();
+  });
+
   it('the git directory itself (shared by every worktree)', () => {
     const r = repo('gitdir');
     expect(checkKeyFile(keyFileIn(path.join(r, '.git')), r).problem).toMatch(/inside this repository/);
@@ -119,5 +129,7 @@ describe('isInside', () => {
     expect(isInside('/a/b', '/a/b', false)).toBe(true);
     expect(isInside('/a/bc', '/a/b', false)).toBe(false);
     expect(isInside('/a', '/a/b', false)).toBe(false);
+    expect(isInside('/a/b/..keys/signing.env', '/a/b', false)).toBe(true);
+    expect(isInside('/a/..b/signing.env', '/a/b', false)).toBe(false);
   });
 });

@@ -68,7 +68,8 @@ export function isInside(child: string, parent: string, caseInsensitive: boolean
   const p = caseInsensitive ? parent.toLowerCase() : parent;
   if (c === p) return true;
   const rel = relative(p, c);
-  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel) && !rel.split(sep).includes('..');
+  // A folder named `..keys` is inside: only a `..` segment leads out (review A of #162, N6).
+  return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel) && !rel.split(sep).includes('..');
 }
 
 /** Every root a key file must stay out of, for the repo at `root`: its worktrees and its git common dir, real paths. */
