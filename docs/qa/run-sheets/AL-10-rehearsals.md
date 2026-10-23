@@ -13,7 +13,7 @@
 | Plan | Not relevant to parts A, C, E and F. Part B: Free or Plus; nothing is kept. Part D: whatever Phone B held after AL-08 |
 | Phones and accounts | Part B: Phone A (SE 3), a drill phone. Parts D and F: Phone B, a drill phone. Part A test users: `delivered+scratch-stop@resend.dev` and `delivered+scratch-stop2@resend.dev`, never a person's |
 | Founder time | A about 45 min, B about 40 min, C about 90 min (mostly waiting), D about 10 min (parts A to D about 3 h), E about 20 min, F about 15 min: **about 3 h 40 min** [E], on top of the alpha plan's hours (#152) and AUTOMATION's. Part C falls on or before Wed 21, already a 3.25 h founder day |
-| When | C by Wed 21 Oct; F Wed 21 Oct; A and E before Thu 22 Oct; B Fri 23 Oct; D Tue 27 or Wed 28 Oct (AUTOMATION 2.10. AUTOMATION 0.2 item 15 puts the staging stop on Fri 23 with the kill path; this sheet follows 2.10, the earlier date, and S20 is asked to align item 15) |
+| When | C by Wed 21 Oct; F Wed 21 Oct; A and E before Thu 22 Oct; B Fri 23 Oct; D Tue 27 or Wed 28 Oct (AUTOMATION 2.10; 0.2 item 15 gives the staging stop the same date, before Thu 22) |
 | Record in | one evidence file per part: `docs/qa/evidence/<YYYY-MM-DD>-rehearsal-<staging-stop, pack-switch, restore, testflight-expiry, function-redeploy, promotion-undo>.md`, rows AL-10.A1 and on |
 
 ## Part A: the staging stop, on a scratch project (B2-23). Founder only

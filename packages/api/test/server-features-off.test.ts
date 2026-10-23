@@ -66,7 +66,11 @@ function walkFiles(dir: string, out: string[] = []): string[] {
  * gate that keeps it from running in an off build. Empty on 15 Oct 2026:
  * S03, S04, S05 and S06 add their modules here when they adopt the contracts.
  */
-const GATED_VALUE_IMPORTERS: Record<string, string> = {};
+const GATED_VALUE_IMPORTERS: Record<string, string> = {
+  // S06, WP-F14-15a: reached only through import('./status-report.native') in plan-store startPlus and
+  // actions presentPlusStore, each behind `capabilities.statusReport` (build flag plus server switch).
+  'apps/mobile/src/lib/billing/status-report.logic.ts': 'capabilities.statusReport (dynamic import from lib/billing/plan-store.ts and actions.ts)',
+};
 
 describe('[M14] EXPO_PUBLIC_SERVER_FEATURES=off loads no server-feature contract', () => {
   it('the package root exports none of the server contracts', () => {

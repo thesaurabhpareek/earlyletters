@@ -4,6 +4,7 @@
  *   startPlus()            boot: StoreKit listener, foreground re-read (wire in app/_layout.tsx)
  *   usePlan()              screens: PlanView, details, plusOn, Plan screen line, store support
  *   keepLetterGate()       decideKeepLetter for the Keep step (D-082, D-083): 2 free letters, then Plus
+ *   keepGateFor({wordsOnScreen})  the M17 gate (D-103): null when no words are on screen (never counts, never a sheet)
  *   hasPlus(), isJoinedBook(child)   replacements for the old store.ts stubs
  *   lettersKeptNow(), eraseLetterLedger()  the letter ledger (letter-ledger.ts); Erase everything clears it
  *   presentPlusStore()     Apple's SubscriptionStoreView
@@ -26,7 +27,9 @@ export {
   bookFactsOf,
   freeLettersAllowance,
   hasPlus,
+  hasWords,
   isJoinedBook,
+  keepGateFor,
   keepLetterGate,
   lettersKeptNow,
   setFreeLettersAllowanceSource,

@@ -221,6 +221,37 @@ describe('[F02-REQ-019] the real "anything to claim?" reader errs towards asking
     expect(pendingCount(db)).toBe(0);
   });
 
+  // Since #182 takeOwnership also queues drafts held at the Keep gate (ownership.ts), so the reader counts them too.
+  const heldDraft = (db: SqlDb, heldKind: string | null) =>
+    db.run(
+      "INSERT INTO drafts (id, child_id, capture_mode, created_at, typed_text, state, held_kind) VALUES (?, ?, 'typed', ?, 'Asha found the big puddle.', 'ready', ?)",
+      id7(), id7(), ctx.now, heldKind,
+    );
+  // Held ops wait in the queue for a server with held drafts, so pendingCount leaves them out; count them here.
+  const heldQueued = (db: SqlDb) => db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE type = 'held.upsert'")!.n;
+
+  it('a draft held at the Keep gate counts; a draft that was never held stays on this phone and does not', () => {
+    const db = empty();
+    heldDraft(db, null);
+    expect(phoneHoldsAnyRow(db)).toBe(false);
+    heldDraft(db, 'held_letter');
+    expect(phoneHoldsAnyRow(db)).toBe(true);
+  });
+
+  it('a phone holding only a held draft still shows the claim screen; the draft is queued only after the tap', async () => {
+    const db = empty();
+    heldDraft(db, 'held_words');
+    const { store, claimedFor, send } = await wiredStore(db);
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
+    send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: PARENT, method: 'email' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false });
+    expect(store.accountClaimPending()).toBe(true);
+    expect(claimedFor).toEqual([]);
+    expect(heldQueued(db)).toBe(0);
+    store.confirmAccountClaim(PARENT);
+    expect(claimedFor).toEqual([PARENT]);
+    expect(heldQueued(db)).toBe(1);
+  });
+
   it('a phone with nothing on it needs no claim screen: the session is released after consent', async () => {
     const db = empty();
     const { store, claimedFor, send } = await wiredStore(db);
