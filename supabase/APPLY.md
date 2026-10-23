@@ -858,6 +858,8 @@ What it changes:
 - **Undo** (`undo_parent_join`) no longer deletes the removed parent's held drafts on the server, and an author reads their own held drafts in any book.
 - **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`.
 
+**After a database restore** (RB-8, `docs/ops/runbooks/restore-drill.md` Part 2): if the restore point is before an account purge that kept a book for a former member, the replay brings the book back live with the deleted person still its only parent, so deleting their Auth user again fails with `SCLPG` (Auth reports a database error). Nothing is lost and it heals on its own: the restored account request is `executing` again, the worker's next run keeps the book for the former member, and then deletes the user (`former_member_purge` section 5).
+
 **Before.** Every earlier file. Read only (expect null, then true):
 ```sql
 select (select attname from pg_attribute where attrelid = 'public.children'::regclass and attname = 'purged_at' and not attisdropped);

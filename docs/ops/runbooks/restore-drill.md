@@ -40,6 +40,7 @@ Prefer fixing forward. Restore only when the data itself is wrong and cannot be 
      --restore-point <ISO> --started-at <ISO> --out ~/incident/INC-<n>-restore.json
    ```
    It reads the ledger files from the restored project's `ops-ledger` bucket, re-deletes the letters and books, clears restored Storage metadata of accounts that were deleted and deletes their Auth users again.
+   If deleting one of those Auth users fails with a database error (`SCLPG`: the restore point is before their account purge, and they are the last parent of a book that still holds a former member's letters, which their purge keeps since 20261023010000), the script stops there. Nothing is lost, and it heals on its own: their restored account request runs again (step 5), keeps the book for the former member and deletes the user; then run this step again (a second replay changes nothing it already did).
 4. **Begin a new sync epoch** so phones re-upload what the restore lost instead of losing it (`20261004100000_sync_engine.sql`, service role, after the replay in step 3):
    ```sql
    select public.sync_begin_epoch('database_restore', '<restore point ISO>');

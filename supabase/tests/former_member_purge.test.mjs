@@ -7,7 +7,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7 } from './harness.mjs';
 
-const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
+const { db, check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, join } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S } = users;
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
@@ -223,5 +223,47 @@ check('[F11-REQ-008] step 2b keeps the row while that held draft is all that is 
 await as(C, `select sync_private.erase_entry($1)`, [cHeld]);
 res = (await sys(`select public.purge_due(now() + interval '36 days') r`)).rows[0].r;
 check('once they erase it (their own ask), the next run removes the row', res.kept_removed === 1 && !(await book(H)));
+
+// ── 5. A restore to a point before the account purge, then the ledger replay (review A N2 on #248; RB-8) ──
+// The person became the book's only parent during their grace period, so prepare_account_purge is what
+// deletes the book. A savepoint stands in for the restore point: the purge runs to the end, the ledger rows
+// it wrote are kept (the daily ledger file), the database goes back to the savepoint, and the rows are replayed.
+await sys(`delete from sync_rate_windows`);
+const R = await newChild(N, 'Asha', '2025-10-01');
+await join(B, 'parent', R, N);
+const bR = await letter(B, R, 'Asha waved at the moon.');
+const nR = await letter(N, R);
+const dreqN = (await one(N, `select request_id from public.request_account_deletion('ios')`)).request_id;
+check('at the request the book still has two parents, so it is not deleted with the account', (await book(R))?.tombstoned === false);
+await one(B, `select public.leave_child($1, true) r`, [R]);
+await sys(`update deletion_requests set status = 'executing', executing_at = now() where id = $1`, [dreqN]);
+await db.exec('begin');
+await db.exec('savepoint restore_point');
+await sys(`select public.prepare_account_purge($1)`, [dreqN]);
+await sys(`delete from storage.objects where owner = $1`, [N]);
+await sys(`delete from auth.users where id = $1`, [N]);
+await sys(`select public.finalize_account_deletion($1, '{}'::jsonb)`, [dreqN]);
+const ledgerCopy = (await sys(`select entity_type t, entity_id id from purge_ledger
+  where purged_at = now() and entity_type in ('entry', 'child', 'profile', 'held_draft', 'audio_blob')`)).rows;
+check('the purge ran to the end: the book was kept, no child ledger row, the person ledgered',
+  ledgerCopy.some((x) => x.t === 'profile' && x.id === N) && !ledgerCopy.some((x) => x.t === 'child') && (await book(R))?.kept === true);
+await db.exec('rollback to savepoint restore_point');
+const replay = (await sys(`select public.ops_replay_ledger($1::jsonb) r`, [JSON.stringify(ledgerCopy)])).rows[0].r;
+check('[RB-8] after the replay the person\'s letter is gone again and they are named for deletion again; the book is live and they are still its member',
+  replay.profiles_to_delete.includes(N) && await n(`entries where id = $1`, [nR.id]) === 0 && (await book(R))?.tombstoned === false
+  && await n(`child_members where child_id = $1 and profile_id = $2`, [R, N]) === 1 && await n(`entries where id = $1 and author_id = $2`, [bR.id, B]) === 1);
+await db.exec('savepoint try_delete');
+const deleteAgain = await codeOf(() => sys(`delete from auth.users where id = $1`, [N]));
+await db.exec('rollback to savepoint try_delete');
+check('[RB-8] deleting their Auth user again then fails with SCLPG (the last parent of a live book), and nothing changes',
+  deleteAgain === 'SCLPG' && await n(`profiles where id = $1`, [N]) === 1 && await n(`entries where id = $1`, [bR.id]) === 1);
+const prepAgain = (await sys(`select public.prepare_account_purge($1) r`, [dreqN])).rows[0].r;
+await sys(`delete from auth.users where id = $1`, [N]);
+await sys(`select public.finalize_account_deletion($1, '{}'::jsonb)`, [dreqN]);
+await db.exec('commit');
+check('[RB-8] it heals when the restored request runs again: the book is kept for the former co-parent and the person is deleted',
+  prepAgain.books_kept === 1 && (await book(R))?.kept === true && await n(`entries where id = $1 and author_id = $2`, [bR.id, B]) === 1
+  && await n(`profiles where id = $1`, [N]) === 0
+  && (await sys(`select status from deletion_requests where id = $1`, [dreqN])).rows[0]?.status === 'completed');
 
 done();
