@@ -376,11 +376,13 @@ export function createUploadQueue(d: QueueDeps) {
     try {
       await d.server.confirm(job.entryId, job.cipherSha256!);
     } catch (e) {
-      // The server has no object at the path (`P0002 object`) or one of another size (`22023 size`):
-      // asking again would never succeed, so the recording goes again from the start, after a backoff.
-      if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && e.detail === 'object') || (e.code === '22023' && e.detail === 'size'))) {
+      // The server has no object at the path (`P0002 object`), one of another size (`22023 size`), or no
+      // reservation at all (`P0002` with no detail: the daily sweep removed a pending row older than 24
+      // hours; review A on #150): asking again would never succeed, so the recording goes again from the
+      // start, after a backoff.
+      if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && (e.detail === 'object' || !e.detail)) || (e.code === '22023' && e.detail === 'size'))) {
         const attempts = job.attempts + 1;
-        reset(job, { attempts, lastError: `${e.code}:${e.detail}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
+        reset(job, { attempts, lastError: `${e.code}:${e.detail ?? 'none'}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
         return { kind: 'retry_later' };
       }
       throw e;

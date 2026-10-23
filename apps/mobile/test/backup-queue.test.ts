@@ -668,3 +668,23 @@ describe('[F08-U17] the kill path: a kill at any step resumes to one confirmed, 
     expect(pathToFileURL(join(r.files.tmpDir, `${item.entryId}.enc`)).toString()).toBe(r.db().job(item.entryId)!.tmpUri);
   });
 });
+
+describe('review fixes on #150: a swept reservation, the tus loop, the upload URL', () => {
+  it('[review A, outside its lens] a confirm whose reservation the daily sweep removed (P0002, no detail) starts over', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE + 5);
+    r.kill.at = 'before:confirm';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    expect(r.db().job(item.entryId)!.state).toBe('uploaded');
+    // #151's daily sweep: a reservation never confirmed in 24 hours goes, and its object with it.
+    const row = r.backend.blobs.get(item.entryId)!;
+    r.backend.objects.delete(row.objectPath);
+    r.backend.blobs.delete(item.entryId);
+    r.reopen();
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+});
