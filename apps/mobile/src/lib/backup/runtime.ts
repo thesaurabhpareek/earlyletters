@@ -32,6 +32,7 @@ import { localSqlDb, notifyStoreChanged, subscribe, uuidv7 } from '../store';
 import { errorCode, errorStatus, getSupabaseOrNull, isNetworkError } from '../supabase';
 import { readSupabaseEnv } from '../supabase/env';
 import { APP_ENV } from '../build-env';
+import { mayRun } from '../capabilities';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -362,9 +363,10 @@ function conditions(db: () => BackupDb | null): Conditions {
     foreground: () => AppState.currentState === 'active',
     busy: () => getAudioMode() !== 'idle' || activeTakeId() !== null,
     cellularAllowed: () => db()?.getMeta('cellular') === 'on',
-    // `backupUploads` and `escrow` are in the remote-config vocabulary from #138 (S07); on develop's schema they read false.
-    uploadsKilled: () => (getRemoteConfig().killSwitches as Record<string, boolean | undefined>).backupUploads === true,
-    escrowKilled: () => (getRemoteConfig().killSwitches as Record<string, boolean | undefined>).escrow === true,
+    // mayRun (lib/capabilities, #145): the build flag, then the `backupUploads` or `escrow` kill switch
+    // (F19 6.5). Those keys join packages/api's schema in WP-F19-16; until then they read as not paused.
+    uploadsKilled: () => !mayRun('backupUploads', getRemoteConfig()),
+    escrowKilled: () => !mayRun('escrow', getRemoteConfig()),
   };
 }
 

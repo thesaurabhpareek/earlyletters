@@ -9,7 +9,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { backupEnabled, capabilities, setBackupForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
+import { buildFlagEnabled, capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 import { backupInBuild, loadBackup, startBackup } from '../src/lib/backup/gate';
 
 const APP = join(__dirname, '..');
@@ -46,7 +46,7 @@ function resolveSpec(from: string, spec: string): string | null {
 
 afterEach(() => {
   setServerFeaturesForTests(null);
-  setBackupForTests(null);
+  setBuildFlagForTests('backup', null);
 });
 
 describe('[F08-REQ-041] capabilities.backup is its own flag, off by default', () => {
@@ -57,12 +57,12 @@ describe('[F08-REQ-041] capabilities.backup is its own flag, off by default', ()
   });
 
   it('needs server features too: backup on with the server off is still off', () => {
-    setBackupForTests(true);
-    expect(backupEnabled()).toBe(false);
+    setBuildFlagForTests('backup', true);
+    expect(buildFlagEnabled('backup')).toBe(false);
     setServerFeaturesForTests(true);
-    expect(backupEnabled()).toBe(true);
-    setBackupForTests(false);
-    expect(backupEnabled()).toBe(false);
+    expect(buildFlagEnabled('backup')).toBe(true);
+    setBuildFlagForTests('backup', false);
+    expect(buildFlagEnabled('backup')).toBe(false);
   });
 
   it('server features on do not turn backup on', () => {
