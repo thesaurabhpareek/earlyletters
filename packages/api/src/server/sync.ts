@@ -731,12 +731,21 @@ export const PulledHeldRowSchema = v.union([PulledHeldGoneSchema, PulledHeldSche
 export type PulledHeldRow = PulledHeld | PulledHeldGone;
 
 /**
- * The held section, checked row by row (review A 3 on #138). `held_drafts`
- * has no check on `capture_mode`, `edit_level` or its jsonb columns
- * (20261016000000, unlike `entries`), and `held.upsert` stores them as sent,
- * so a row this contract refuses can come from any of the author's phones.
- * Such a row is dropped and counted in `rejected`; every other row, and the
- * rest of the pull with its books, still parses.
+ * The held section, checked row by row (review A 3 on #138). Since
+ * 20261023030000 `held_drafts` has the `entries` checks too: `capture_mode`
+ * and `edit_level` take the same lists (`edit_level` may also be null), and
+ * `machine_edits`, `author_edits` and `locked_spans` are each null or a JSON
+ * array, beside the `kind`, `occurred_precision` and `base_direction` checks
+ * of 20261016000000. A write that fails one is refused with 23514, so the
+ * writing phone keeps a copy the person can see, and a `current` built from
+ * a held row that passes them parses. Still unchecked on a held row: the
+ * `entries` size caps on `author_edits` and `locked_spans`, and `language`
+ * and `pack_ref`; this schema accepts any value of those, so none of them
+ * makes a row fail here. A row stored before 20261023030000 can still fail:
+ * the migration never changes a stored row, and a check such a row fails
+ * stays NOT VALID (supabase/APPLY.md, File 22). Such a row is dropped and
+ * counted in `rejected`; every other row, and the rest of the pull with its
+ * books, still parses.
  *
  * What happens to the dropped row: the server keeps it, the cursor moves
  * past it, and nothing heals it. It is never shown on this phone; a phone
@@ -747,10 +756,10 @@ export type PulledHeldRow = PulledHeld | PulledHeldGone;
  * vanish silently):
  *  - WP-F16-01 tells the person when `rejected` is above 0, and logs it as
  *    a count only, never the row, its id or its words (CLAUDE.md privacy);
- *  - S02 adds the `entries` checks to `held_drafts` (`capture_mode`,
- *    `edit_level`, the jsonb types), so the writing phone is refused at
- *    write time and keeps a copy the person can see. The same checks stop
- *    a held row's `current` from failing a whole push answer.
+ *  - the server refuses such a row at write time, so the writing phone
+ *    keeps a copy the person can see and a held row's `current` cannot
+ *    fail a whole push answer: built in 20261023030000 (the five checks
+ *    above), so only a row stored before it can still be dropped here.
  */
 export const PulledHeldSectionSchema = v.pipe(
   v.object({ rows: v.array(v.unknown()), cursor: nullableStr, more: v.boolean() }),
