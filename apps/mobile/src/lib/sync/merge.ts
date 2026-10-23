@@ -17,6 +17,7 @@
  * - raw_transcript is never changed once set.
  * - A restore never deletes anything here: see enterRestoreMode.
  */
+import { prefsRow, upsertPrefs } from '../db/repos/children';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -416,12 +417,14 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
   if (!c) {
     if (!m) return false;
     db.run(
-      `INSERT INTO children (id, name, birthday, due_date, signs_as, reminders_on, family_can_read, created_at, updated_at,
-         role, created_by_me, nickname, server_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-      b.id, m.name, m.date_of_birth, m.due_date, m.my_signs_as ?? '', m.include_in_reminders ? 1 : 0, m.family_can_read ? 1 : 0,
-      now, now, m.role, m.created_by_me ? 1 : 0, m.nickname,
+      `INSERT INTO children (id, name, birthday, due_date, family_can_read, created_at, updated_at,
+         role, created_by_me, created_by, nickname, server_state, signs_as)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
+      b.id, m.name, m.date_of_birth, m.due_date, m.family_can_read ? 1 : 0,
+      now, now, m.role, m.created_by_me ? 1 : 0, m.created_by_me ? syncOwner(db) : null, m.nickname,
+      m.my_signs_as ?? '', // NOT NULL since v1; v7 keeps the column for a v6 build (upsertPrefs mirrors it)
     );
+    upsertPrefs(db, b.id, { signsAs: m.my_signs_as ?? '', remindersOn: m.include_in_reminders }, now);
     return true;
   }
   if (c.server_state !== 'synced') db.run("UPDATE children SET server_state = 'synced' WHERE id = ?", b.id);
@@ -430,12 +433,17 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
   // Settings or my signature changed here and not yet sent: the queued op wins; ask again later.
   if (hasPendingOps(db, b.id)) return false;
   db.run(
-    `UPDATE children SET name = ?, birthday = ?, due_date = ?, family_can_read = ?, nickname = ?,
-       signs_as = COALESCE(?, signs_as), reminders_on = ?, updated_at = ?
+    `UPDATE children SET name = ?, birthday = ?, due_date = ?, family_can_read = ?, nickname = ?, updated_at = ?
      WHERE id = ?`,
     m.name, m.role === 'parent' ? m.date_of_birth : null, m.role === 'parent' ? m.due_date : null, m.family_can_read ? 1 : 0, m.nickname,
-    m.my_signs_as, m.include_in_reminders ? 1 : 0, now, b.id,
+    now, b.id,
   );
+  // This person's choices (v7): the server holds the signature and the reminder switch; hide and quiet stay
+  // on the phone until the server has them (S02 WP-F12-09).
+  const mine = prefsRow(db, b.id);
+  const next = { signsAs: m.my_signs_as ?? mine?.signsAs ?? '', remindersOn: m.include_in_reminders };
+  // Written only when something differs, so updated_at keeps saying when this person last chose.
+  if (!mine || mine.signsAs !== next.signsAs || mine.remindersOn !== next.remindersOn) upsertPrefs(db, b.id, next, now);
   return true;
 }
 

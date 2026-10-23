@@ -107,6 +107,7 @@ The server never counts letters (D-080). On the phone a letter counts only when 
 - One op per letter per batch costs an extra round trip only when a letter has two queued ops (a restore, or an edit after a lost answer).
 - The protocol works with today's server: the new result fields are optional, so the client behaves as before against `20261005000000`, and gains compare and set the day S02's migration is applied. Staging must hold `20261005000000` before a v1 client syncs (the `language` group is refused by older servers).
 - A second phone of the same author cannot tell that pulled machine words are still unreviewed (section 11 gap), so it may count such a letter one keep early. Fix: a review mark on the wire (request to S02 and S07 below).
+- Local schema v7 moves the signature and the reminder switch to `child_member_prefs` but keeps `children.signs_as` and `children.reminders_on` in place, written as a mirror of the prefs value and never read (review L on #166). A v6 build (build 1) reads those columns by name, and the "update the app" screen for a newer file (MOB-09) does not exist yet; dropping them would leave a tester who rolls back with a Book that cannot list its books. The two columns and the mirror go in the first schema version after MOB-09 ships.
 
 ## Alternatives considered
 

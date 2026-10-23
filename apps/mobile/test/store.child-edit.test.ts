@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { bornPatch, checkBirthday, checkChildName, checkSignsAs, dueDatePassed, monthOfAgeOn } from '@scribe/core';
 import { children, entries } from '../src/lib/db/repos';
-import { fixture, letter, rawRow, seedChild, type Fixture } from './helpers/store-fixture';
+import { fixture, insertBook, letter, rawRow, seedChild, type Fixture } from './helpers/store-fixture';
 
 let f: Fixture;
 const defaults = { childId: null, authorSignsAs: null };
@@ -58,7 +58,7 @@ describe('editing a child never touches a letter', () => {
 describe('a due date becomes a birthday', () => {
   const today = '2026-10-04';
   beforeEach(() => {
-    f.db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('child-nila', 'Nila', NULL, '2026-09-28', 'Mama', ?, ?)", f.ctx.now(), f.ctx.now());
+    insertBook(f.db, { id: 'child-nila', name: 'Nila', birthday: null, dueDate: '2026-09-28', at: f.ctx.now() });
   });
 
   it('is offered once the due date has gone by, and the update sets the birthday and clears the due date', () => {

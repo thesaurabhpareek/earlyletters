@@ -30,6 +30,7 @@ import {
 import { takeOwnership } from '../src/lib/sync/ownership';
 import { ALL_GROUPS, type PullResponse, type PushOp, type PushResponse, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { insertBook } from './helpers/store-fixture';
 
 const ME = '11111111-1111-1111-1111-111111111111';
 const PAPA = '22222222-2222-2222-2222-222222222222';
@@ -45,7 +46,7 @@ function phone(): SqlDb {
 }
 function book(db: SqlDb): string {
   const id = id7();
-  db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at, server_state) VALUES (?, 'Asha', '2025-04-12', 'Mama', ?, ?, 'synced')", id, ctx.now, ctx.now);
+  insertBook(db, { id, birthday: '2025-04-12', serverState: 'synced', at: ctx.now });
   return id;
 }
 /** A letter of mine the server already holds at version `v`. */
