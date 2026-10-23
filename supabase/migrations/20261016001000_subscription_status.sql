@@ -19,8 +19,15 @@
 -- (product, offer type, Subscription Terms version shown as `terms_shown`, time). Never here: receipts, signed transactions, a
 -- transaction id in clear, `appAccountToken`, prices, card or payment data.
 -- `sub_ref` is SHA-256(per-account salt || original transaction id), made on
--- the phone by the native store module; the salt never leaves this database
--- except to its own account, so a `sub_ref` cannot be turned back into an id.
+-- the phone by the native store module; the salt leaves this database only to
+-- its own account. What the salt protects against: someone who has a `sub_ref`
+-- but not the salt cannot test transaction ids against it, and one purchase
+-- gives unrelated `sub_ref`s in two accounts. What it does not protect against:
+-- a reader of this database (service role, a dump, a backup) while the account
+-- exists, because the salt is here too and an original transaction id is a
+-- short decimal number, so trying candidates recovers it. Once the account and
+-- its salt are deleted, the pseudonymised consent row can no longer be tied to
+-- a transaction id that way.
 --
 -- The server never enforces Plus and never answers "is this person a member"
 -- (D-080 rule 4): no table here is readable by any client, and the report RPC
