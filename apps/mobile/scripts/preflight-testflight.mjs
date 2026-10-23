@@ -214,9 +214,13 @@ if (cfg) {
   // Privacy manifest declared.
   const pm = cfg.ios?.privacyManifests;
   check(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0, `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories)`, 'No privacy manifest in the config (ios.privacyManifests), or tracking is not false.');
-  if (pm?.NSPrivacyAccessedAPITypes?.some((t) => t.NSPrivacyAccessedAPIType === 'NSPrivacyAccessedAPICategoryDiskSpace')) {
-    warn('Privacy manifest declares the DiskSpace category (E174.1) for expo-sqlite; app.config.ts marks this UNVERIFIED. Apple may email a warning after the first upload either way: read it and adjust.');
-  }
+  // Collected data follows the build's switches (BL-349; src/lib/privacy-manifest.ts; S17 worksheet 3.2 and 3.4).
+  const collected = (pm?.NSPrivacyCollectedDataTypes ?? []).map((c) => String(c.NSPrivacyCollectedDataType).replace('NSPrivacyCollectedDataType', ''));
+  if (SERVER_ON)
+    check(collected.length > 0, `privacy manifest declares the data this build keeps on our servers: ${collected.join(', ')} (App Store Connect's App Privacy answers must say the same)`, 'The privacy manifest declares no collected data, but this build signs in and syncs (BL-349; S17 App Privacy worksheet 3.2).');
+  else
+    check(collected.length === 0, 'privacy manifest declares no collected data (server features off: nothing we keep leaves the phone)', `The privacy manifest declares collected data (${collected.join(', ')}) in a build with server features off.`);
+  warn("Apple's processing email after upload is the final check of the required-reason declarations (ITMS-91053; go/no-go B1-10). Read it: expo-sqlite's fstatfs rests on the DiskSpace category (E174.1), and the dynamic frameworks (hermes, React Native's prebuilt core, Expo's precompiled modules) are checked by Apple, not here.");
 
   // Export compliance.
   if (full) check(full.ios?.config?.usesNonExemptEncryption === false, 'ios.config.usesNonExemptEncryption is false (no export-compliance question at upload)', 'ios.config.usesNonExemptEncryption is not false: App Store Connect will ask the export-compliance question on every upload.');
@@ -484,6 +488,11 @@ if (ios) {
   check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
+  if (ios.privacy !== null) {
+    const generated = [...ios.privacy.matchAll(/<key>NSPrivacyCollectedDataType<\/key>\s*<string>([^<]+)<\/string>/g)].map((m) => m[1]).sort();
+    const wanted = (cfg?.ios?.privacyManifests?.NSPrivacyCollectedDataTypes ?? []).map((c) => c.NSPrivacyCollectedDataType).sort();
+    check(JSON.stringify(generated) === JSON.stringify(wanted), `generated PrivacyInfo.xcprivacy declares the config's collected data, no more (${generated.length} types)`, `Generated PrivacyInfo.xcprivacy declares ${generated.join(', ') || 'no'} collected types; the config says ${wanted.join(', ') || 'none'}.`);
+  }
   {
     let target = null;
     try {
@@ -492,6 +501,16 @@ if (ios) {
       target = null;
     }
     check(target === '17.0', 'generated Podfile.properties.json sets ios.deploymentTarget 17.0 (D-098)', `Generated native project has ios.deploymentTarget ${JSON.stringify(target)}; D-098 needs 17.0 (expo-build-properties in app.config.ts).`);
+    let precompiled = null;
+    try {
+      precompiled = JSON.parse(ios.podProps || '{}')['EXPO_USE_PRECOMPILED_MODULES'] ?? null;
+    } catch {
+      precompiled = null;
+    }
+    // BL-349: a dynamic framework that calls a required-reason API needs a manifest in its own bundle (Apple,
+    // "Describing use of required reason API"); the app's manifest does not cover it.
+    if (precompiled === 'true')
+      warn('Expo links some modules as precompiled dynamic frameworks (EXPO_USE_PRECOMPILED_MODULES=true, the SDK 57 default). expo-file-system 57.0.7 ships ExpoFileSystem.framework, which reads file timestamps and free disk space, with no PrivacyInfo.xcprivacy in its bundle, and ios.privacyManifests cannot add one. If the upload email names Frameworks/ExpoFileSystem.framework, rebuild with usePrecompiledModules: false under ios in the expo-build-properties plugin (BL-349 PR).');
   }
   check(new RegExp(`<string>${cfg?.scheme ?? 'scribe'}</string>`).test(ios.plist), `generated Info.plist registers the "${cfg?.scheme}" URL scheme`, `Generated Info.plist does not register the "${cfg?.scheme}" URL scheme.`);
   const ent = plistKeys(ios.entitlements);
@@ -522,9 +541,6 @@ if (cfg) {
   if (SERVER_ON) {
     notes.push('Server features are ON: sign-in (Apple, email link and code), sync and co-parent sharing talk to the staging Supabase project named by the EAS "preview" environment. Recording backup and the status report stay off (build flags). Analytics is off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no PostHog client. Kill path: rebuild with EXPO_PUBLIC_SERVER_FEATURES=off and expire this build in App Store Connect (TESTFLIGHT.md "If something goes wrong").');
     notes.push('Not for anyone outside the family until the R-17 security gate passes (D-100): put this build in the family internal group only, with automatic distribution off for every other group.');
-    const collected = cfg.ios?.privacyManifests?.NSPrivacyCollectedDataTypes ?? [];
-    if (collected.length === 0)
-      warn('The privacy manifest declares no collected data (NSPrivacyCollectedDataTypes is empty) but this build signs in and syncs. Fine for internal TestFlight [unverified]; fill it from docs/legal/data-map.yaml (BL-349, WP-F21-09) before any external group or store build.');
   } else {
     notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
     if (prof?.environment === 'preview')
