@@ -198,6 +198,17 @@ test('this repository: the plan has no errors, and NO_VERIFY_JWT matches every f
   }
 });
 
+test('this repository: every function that takes a person\'s session keeps the gateway JWT check and is confirmed through the function list', () => {
+  const r = plan(REPO, { only: 'all' });
+  assert.deepEqual(r.warnings, [], 'every function names its own deploy line');
+  for (const n of ['analytics-forget', 'apple-token', 'invite-redeem', 'subscription-status']) {
+    assert.ok(r.deploy.includes(n), `${n} is deployed`);
+    assert.ok(!r.noVerifyJwt.includes(n), `${n} keeps the gateway JWT check`);
+    assert.ok(!r.smoke.includes(n), `${n} has no anonymous health route, so the smoke never calls it`);
+    assert.equal(headerDeploy(REPO, n)?.noVerifyJwt, false, `${n}: its index.ts deploy line has no --no-verify-jwt`);
+  }
+});
+
 const fn = (slug, version, updated, verifyJwt, status = 'ACTIVE') => ({ id: 'x', slug, name: slug, status, version, created_at: 1, updated_at: updated, verify_jwt: verifyJwt });
 const asList = (...fns) => parseList(JSON.stringify(fns));
 
