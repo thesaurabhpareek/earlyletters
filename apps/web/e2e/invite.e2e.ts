@@ -106,6 +106,9 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(html).toContain('<meta property="og:url" content="https://earlyletters.com/j"');
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/earlyletters\.com\//);
     expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
+    // Before the fragment is read the page shows neither the button nor the ask-again line, so neither flashes.
+    expect(html).not.toContain('<button');
+    expect(html).not.toContain('role="status"');
     // The old /i/<token> form is gone: no page answers it, so nothing invites a token into a path.
     expect((await request.get(`/i/${TOKEN}`, { maxRedirects: 0 })).status()).toBe(404);
   });

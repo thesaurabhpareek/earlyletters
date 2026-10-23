@@ -23,8 +23,9 @@ function inviteToken(hash: string): string | null {
 
 export function CopyInvite({ label, copied, failed, missing }: Props) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  // Read after hydration: the server never sees the fragment, so the first render always shows the button.
-  const [complete, setComplete] = useState(true);
+  // Read after hydration: the server never sees the fragment. Until then this slot stays empty, so a link without
+  // its invite never flashes the button and a good link never flashes the ask-again line.
+  const [complete, setComplete] = useState<boolean | null>(null);
   useEffect(() => {
     const { pathname, search, hash } = window.location;
     if (search) window.history.replaceState(null, '', `${pathname}${hash}`);
@@ -44,6 +45,8 @@ export function CopyInvite({ label, copied, failed, missing }: Props) {
       setState('failed');
     }
   }
+
+  if (complete === null) return null;
 
   if (!complete) {
     return (
