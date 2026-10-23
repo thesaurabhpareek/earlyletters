@@ -8,7 +8,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createDb, users } from './harness.mjs';
 
 const { check, as, asAnon, sys, codeOf, done, consent, publishPolicies } = await createDb(process.argv.slice(2));
-const { A, B, C, W } = users;
+const { A, B, C, U, W } = users;
 
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${W}')`);
 await publishPolicies();
@@ -159,8 +159,8 @@ r = await report(B, base(subRef(sB, 2000000808), { consent: consentFacts({ offer
 check('[F14-REQ-044] a win-back offer is recorded as its own offer type (contract OFFER_TYPES, S07 #138)', r.consent === 'recorded'
   && (await consentRows()).some((c) => c.offer_type === 'win_back'));
 check('an offer type outside the contract is still refused', (await reportCode(B, base(subRef(sB, 2000000809), { consent: consentFacts({ offer_type: 'winback' }) }))) === '22023');
-check('consent rows are append-only (an update is refused)', (await codeOf(() => sys(`update subscription_consents set terms_shown = '9.9.9'`))) !== 'ok');
-check('consent rows are append-only (a delete outside the retention purge is refused)', (await codeOf(() => sys(`delete from subscription_consents`))) !== 'ok');
+check('consent rows are append-only (an update is refused by the guard, P0001)', (await codeOf(() => sys(`update subscription_consents set terms_shown = '9.9.9'`))) === 'P0001');
+check('consent rows are append-only (a delete outside the retention purge is refused by the guard, P0001)', (await codeOf(() => sys(`delete from subscription_consents`))) === 'P0001');
 check('consent rows are append-only (a TRUNCATE is refused, SCIMM) and every record stays',
   (await codeOf(() => sys(`truncate subscription_consents`))) === 'SCIMM' && (await consentRows()).length === 3);
 
@@ -198,6 +198,41 @@ await sys(`select set_config('app.consent_pepper', '', false)`);
 check('[D-081] deleting an account with consent records and no pepper is refused (fails closed, 55000)',
   (await codeOf(() => sys(`delete from auth.users where id = $1`, [A]))) === '55000');
 check('nothing was deleted by the refused attempt', (await statusRows(A)).length === 3);
+
+// The same rule on its own (review A note 5). U has a consent record and no policy acceptance, so at
+// deletion only S06's subscription_consents_pseudonymise has work to do; S02's acceptances trigger has none.
+const refusal = async (fn) => { try { await fn(); return null; } catch (e) { return { code: e.code, where: String(e.where ?? '') }; } };
+await sys(`insert into auth.users values ('${U}')`);
+const refU = subRef(await salt(U), 2000000999);
+check('(U has one consent record, a salt, rate counters and an idempotency key, and no policy acceptance)',
+  (await report(U, base(refU, { consent: consentFacts() }), { key: randomUUID() })).consent === 'recorded'
+  && (await sys(`select count(*)::int n from policy_acceptances where profile_id = $1`, [U])).rows[0].n === 0
+  && (await sys(`select 1 from subscription_salts where profile_id = $1`, [U])).rows.length === 1
+  && (await sys(`select 1 from subscription_report_rates where profile_id = $1`, [U])).rows.length === 2
+  && (await sys(`select 1 from idempotency_keys where profile_id = $1`, [U])).rows.length === 1);
+for (const [label, pepper] of [['empty', ''], ['31 characters', 'p'.repeat(31)], ['31 characters padded with spaces', `  ${'p'.repeat(31)}  `]]) {
+  await sys(`select set_config('app.consent_pepper', $1, false)`, [pepper]);
+  const e = await refusal(() => sys(`delete from auth.users where id = $1`, [U]));
+  check(`[D-081] a pepper that is ${label}: subscription_consents_pseudonymise alone refuses the delete (55000)`,
+    e?.code === '55000' && e.where.includes('subscription_consents_pseudonymise'));
+}
+check('the refused attempts deleted nothing of U', (await sys(`select 1 from profiles where id = $1`, [U])).rows.length === 1
+  && (await consentRows()).some((c) => c.sub_ref === refU && c.profile_id === U) && (await statusRows(U)).length === 1);
+const pepper40 = '0123456789'.repeat(4);
+await sys(`select set_config('app.consent_pepper', $1, false)`, [pepper40]);
+check('with a 40-character pepper the delete goes through', (await codeOf(() => sys(`delete from auth.users where id = $1`, [U]))) === 'ok');
+const cU = (await consentRows()).filter((c) => c.sub_ref === refU);
+check('[D-081] U\'s consent record stays: profile_id null, pseudonymised_at set, subject_hash = sha256(id || pepper)',
+  cU.length === 1 && cU[0].profile_id === null && cU[0].pseudonymised_at !== null
+  && Buffer.compare(Buffer.from(cU[0].subject_hash), createHash('sha256').update(U + pepper40, 'utf8').digest()) === 0);
+check('[D-080] U\'s salt, status rows, rate counters and idempotency keys went with the account',
+  (await sys(`select 1 from subscription_salts where profile_id = $1`, [U])).rows.length === 0
+  && (await statusRows(U)).length === 0
+  && (await sys(`select 1 from subscription_report_rates where profile_id = $1`, [U])).rows.length === 0
+  && (await sys(`select 1 from idempotency_keys where profile_id = $1`, [U])).rows.length === 0);
+check('ops_deletion_residue finds nothing of U, before or after finalize',
+  (await sys(`select public.ops_deletion_residue($1, 'before_finalize') v`, [U])).rows[0].v.length === 0
+  && (await sys(`select public.ops_deletion_residue($1, 'after_finalize') v`, [U])).rows[0].v.length === 0);
 await sys(`select set_config('app.consent_pepper', $1, false)`, ['f'.repeat(64)]);
 check('deleting the account succeeds with the pepper set', (await codeOf(() => sys(`delete from auth.users where id = $1`, [A]))) === 'ok');
 check('[D-080] the status rows go with the account', (await statusRows(A)).length === 0);
@@ -216,9 +251,9 @@ check('an account with no consent records deletes without the pepper', await (as
 
 // ── 9. Retention: 3 years after pseudonymisation (D-081, Privacy Policy section 10) ──
 const purge = async (at) => (await sys(`select public.subscription_retention_purge($1::timestamptz) n`, [at])).rows[0].n;
-check('the retention purge keeps a record younger than 3 years', (await purge(iso(Date.now() + 2 * 365 * DAY))) === 0 && (await consentRows()).length === 3);
-check('the retention purge deletes it 3 years after pseudonymisation, and only the pseudonymised one',
-  (await purge(iso(Date.now() + 3 * 366 * DAY))) === 1 && (await consentRows()).every((c) => c.profile_id === B));
+check('the retention purge keeps a record younger than 3 years', (await purge(iso(Date.now() + 2 * 365 * DAY))) === 0 && (await consentRows()).length === 4);
+check('the retention purge deletes them 3 years after pseudonymisation, and only the pseudonymised ones (A\'s and U\'s)',
+  (await purge(iso(Date.now() + 3 * 366 * DAY))) === 2 && (await consentRows()).every((c) => c.profile_id === B));
 check('the retention purge is service role only', (await codeOf(() => as(B, `select public.subscription_retention_purge()`))) === '42501');
 
 done();
