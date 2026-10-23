@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { billingCopy } from '@scribe/content';
 import { subRefReference, TERMS_VERSION_RE, type StatusReport } from '@scribe/api/server';
 import type { NativeStatusRef } from '../modules/scribe-store/types';
+import type { AuthState } from '../src/lib/auth/machine.logic';
 import { SUBSCRIPTION_TERMS_DOC_VERSION } from '../src/lib/billing/config';
 import { createStatusReporter, RETRY_AFTER_MS, type ReporterDeps, type StoreAnswer } from '../src/lib/billing/status-report';
 import {
@@ -24,6 +25,7 @@ import {
   planReports,
   purchaseKey,
   REPORT_FUNCTION,
+  reportingUserOf,
   SALT_FUNCTION,
   saltFromAnswer,
   sanitizeRefs,
@@ -187,6 +189,29 @@ describe('status-report.logic: when to report', () => {
     expect(errorCodeFromAnswer({ ok: false, error: { code: 'rate_limited', retryable: true } })).toBe('rate_limited');
     expect(errorCodeFromAnswer('junk')).toBe('unavailable');
     expect([REPORT_FUNCTION, SALT_FUNCTION]).toEqual(['subscription-status/v1/report', 'subscription-status/v1/salt']);
+  });
+});
+
+describe('[BL-347] who a report goes to (the claim screen from #139)', () => {
+  const never = () => false;
+  it('a ready session with no claim waiting reports, whether or not letters sync', () => {
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'on' }, never)).toBe(ASHA_MAMA);
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'off' }, never)).toBe(ASHA_MAMA);
+  });
+
+  it('a session waiting for "Keep them here" gets no report, so a purchase on this phone never goes to an account the person has not confirmed', () => {
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, () => true)).toBeNull();
+  });
+
+  it('no report before consent, while signing in or out, or signed out; the claim is not read then', () => {
+    const claim = vi.fn(() => false);
+    const states: AuthState[] = [
+      { status: 'restoring' }, { status: 'signedOut' }, { status: 'checkingConsent', userId: ASHA_MAMA, method: null },
+      { status: 'needsConsent', userId: ASHA_MAMA, method: null, steps: ['terms'] },
+      { status: 'signingOut', userId: ASHA_MAMA, reason: 'user', waitingForUploads: true, sync: 'on' },
+    ];
+    for (const s of states) expect(reportingUserOf(s, claim)).toBeNull();
+    expect(claim).not.toHaveBeenCalled();
   });
 });
 

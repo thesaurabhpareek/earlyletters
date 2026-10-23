@@ -7,12 +7,12 @@
  *
  * Triggers: the start of the app, every plan change (purchase, renewal, cancel seen at the
  * next open, D-080), the app coming to the foreground, and a sign-in (the signed-out queue,
- * F14-REQ-043). Each trigger waits a moment so a burst becomes one flush.
+ * F14-REQ-043), counted once the claim screen is settled (reportingUserOf). Each trigger waits a moment so a burst becomes one flush.
  */
 import { AppState } from 'react-native';
 import type { StatusReport } from '@scribe/api/server';
 import { ScribeStore } from '../../../modules/scribe-store';
-import { getAuthSnapshot, subscribeAuth } from '../auth/auth-store';
+import { accountClaimPending, getAuthSnapshot, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { getRemoteConfig } from '../remote';
 import { getSetting, setSetting, uuidv7 } from '../store';
@@ -25,6 +25,7 @@ import { createStatusReporter, type SaltAnswer, type StatusReporter, type StoreA
 import {
   errorCodeFromAnswer,
   REPORT_FUNCTION,
+  reportingUserOf,
   SALT_FUNCTION,
   saltFromAnswer,
   STATUS_REPORT_STATE_KEY,
@@ -75,13 +76,15 @@ async function sendReport(report: StatusReport, idempotencyKey: string): Promise
 
 let reporter: StatusReporter | null = null;
 
+/** The released account for a report (reportingUserOf), or null. */
+function reportingUser(): string | null {
+  return reportingUserOf(getAuthSnapshot(), accountClaimPending);
+}
+
 function reporterNow(): StatusReporter {
   reporter ??= createStatusReporter({
     mayRun: () => mayRun('statusReport', getRemoteConfig()),
-    userId: () => {
-      const s = getAuthSnapshot();
-      return s.status === 'ready' ? s.userId : null;
-    },
+    userId: reportingUser,
     readState: () => getSetting(STATUS_REPORT_STATE_KEY),
     writeState: (v) => setSetting(STATUS_REPORT_STATE_KEY, v),
     fetchSalt,
@@ -108,9 +111,10 @@ export function startStatusReport(): () => void {
   const stops: Array<() => void> = [];
   try {
     stops.push(subscribePlan(schedule));
-    let wasReady = getAuthSnapshot().status === 'ready';
-    stops.push(subscribeAuth((s) => {
-      const ready = s.status === 'ready';
+    // subscribeAuth also fires when the claim screen is confirmed, so a report waiting for it goes then.
+    let wasReady = reportingUser() !== null;
+    stops.push(subscribeAuth(() => {
+      const ready = reportingUser() !== null;
       if (ready && !wasReady) schedule();
       wasReady = ready;
     }));

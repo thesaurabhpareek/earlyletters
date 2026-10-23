@@ -38,7 +38,7 @@ export type StoreAnswer =
 export interface ReporterDeps {
   /** Build flag and kill switch (capabilities.mayRun('statusReport', remote config)). */
   mayRun(): boolean;
-  /** The signed-in account whose consent is complete (auth state `ready`), or null. */
+  /** The account a report goes to: auth state `ready` with the claim settled (status-report.logic reportingUserOf), or null. */
   userId(): string | null;
   readState(): string | null;
   writeState(value: string): void;

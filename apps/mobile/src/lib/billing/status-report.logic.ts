@@ -39,6 +39,7 @@ import {
   type StatusReport,
 } from '@scribe/api/server';
 import type { NativeOfferType, NativeStatusRef, RenewalStateName } from '../../../modules/scribe-store/types';
+import type { AuthState } from '../auth/machine.logic';
 import { isPlusProduct } from './config';
 
 /** Edge Function names for supabase-js `functions.invoke`, from the contract's paths. */
@@ -81,6 +82,19 @@ export interface ReportState {
 export const EMPTY_REPORT_STATE: ReportState = { owner: null, sent: {}, consented: [], pending: [] };
 
 const isIso = (v: unknown): v is string => typeof v === 'string' && v.length <= 40 && !Number.isNaN(Date.parse(v));
+
+/**
+ * The account a report goes to: a `ready` session whose claim on this phone's letters is
+ * settled (PR #139, BL-347). While the claim screen waits for "Keep them here", the session
+ * may be someone else's account, so this phone's purchase is not reported to it; the report
+ * goes once the person confirms, or at once when no claim is needed. The content consent
+ * (`sync` on or off) does not gate it: a report carries no letter, as before. `claimPending`
+ * is asked only for a ready session.
+ */
+export function reportingUserOf(state: AuthState, claimPending: () => boolean): string | null {
+  if (state.status !== 'ready') return null;
+  return claimPending() ? null : state.userId;
+}
 
 /** The local key of one purchase: product and first-purchase date. Not an id, and not sent anywhere. */
 export function purchaseKey(productId: string, originalPurchasedAt: string): string {
