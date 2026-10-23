@@ -154,7 +154,7 @@ In order of speed:
 2. **Stop the build.** App Store Connect > TestFlight > the build > Expire build: no new installs, and installed copies stop opening (*unverified*).
 3. **Ship a servers-off build** to the family: build the `testflight` profile while it is still off, and add it to "Family". After the flip, revert the flip line first (one line) and build that.
 4. **Tell the family and decide about staging data.** Say what happened and what was or was not exposed, in plain words. Letters synced to staging stay there until removed. If they must go, first have each person export their book (Settings > Export your book) so nothing depends on staging, then the founder removes the data or deletes the staging project. Follow `docs/ops/runbooks/suspected-data-leak.md` for the first hour and `docs/ops/runbooks/incident-notification.md` for who is told and when, and write down what happened in `docs/ops/` before the next build.
-5. Remote kill switches do not help in the alpha: `sync` and `invites` have no consumers yet (WP-F19-12s, -12f), and no signed remote config reaches a phone before founder step 4's signing keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
+5. Remote kill switches do not help in the alpha: the app reads `sync` and, since #243, `invites`, but no signed remote config reaches a phone before founder step 4's signing keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
 
 ## What testers get
 

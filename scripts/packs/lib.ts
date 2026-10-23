@@ -222,6 +222,19 @@ export const SERVER_ENFORCED_KILL_SWITCHES = ['invites', 'statusReport', 'backup
  * switch on a phone that sees it late (F19-REQ-008): after clearing one,
  * publish config again weekly until active phones have refreshed.
  */
+/**
+ * Item 3 of what `publish.ts release` prints next: the server steps for the
+ * kill switches this release signed (its remote-config document text), as
+ * killSwitchSteps prints them. Kept here so release.test.ts checks the lines.
+ */
+export function releaseServerStep(remoteConfigText: string): string[] {
+  const signed = JSON.parse(remoteConfigText) as { payload: { killSwitches: Record<string, boolean> } };
+  return [
+    '  3. Make the server match the kill switches this release signed (skip this during the alpha: docs/ops/PACKS_HOSTING.md step 6):',
+    ...killSwitchSteps(signed.payload.killSwitches).map((s) => `     ${s}`),
+  ];
+}
+
 export function killSwitchSteps(killSwitches: Record<string, boolean>): string[] {
   const on = Object.entries(killSwitches).filter(([, v]) => v).map(([k]) => k).sort();
   const fnSwitches = on.filter((k) => k === 'invites' || k === 'statusReport');

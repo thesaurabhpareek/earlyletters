@@ -43,7 +43,7 @@ import { SPEECH_MODELS, type SpeechModel } from '../../apps/mobile/src/lib/model
 import { SignedDocumentClient, type DocHttp } from '../../apps/mobile/src/lib/remote/documents';
 import { PackManager } from '../../apps/mobile/src/lib/packs/engine';
 import { bytesOf, FakeNetwork, LocalHttp, MemoryKv, NodeFs, sha256, tempRoot } from '../../apps/mobile/src/lib/packs/__tests__/node-ports';
-import { documentObjects, languagesNotAllowed, manifestLanguages, parseKeyFile, parseLanguages, readSigningKey, RELEASE_DOCUMENTS, speechFilePlan, uploadOrder, type ReleaseIndex } from './lib';
+import { documentObjects, languagesNotAllowed, manifestLanguages, parseKeyFile, parseLanguages, readSigningKey, releaseServerStep, RELEASE_DOCUMENTS, speechFilePlan, uploadOrder, type ReleaseIndex } from './lib';
 import { buildRelease, fetchVerified, serveRelease, sha256File, type BuildReleaseOptions } from './release';
 
 const REPO = path.resolve(__dirname, '../..');
@@ -156,6 +156,7 @@ describe('release directory', () => {
   let modelsDir: string;
   let index: ReleaseIndex;
   let manifestText: string;
+  let remoteConfigText: string;
   const log: string[] = [];
 
   const options = (over: Partial<BuildReleaseOptions> = {}): BuildReleaseOptions => ({
@@ -193,12 +194,27 @@ describe('release directory', () => {
     const built = await buildRelease(options());
     index = built.index;
     manifestText = built.documents['pack-manifest'];
+    remoteConfigText = built.documents['remote-config'];
     served = await serveRelease(out);
   });
 
   afterAll(async () => {
     await upstream.close();
     await served.close();
+  });
+
+  it('[F19-REQ-008] prints step 3 for the switches this release signed, the status report database setting included (review B note 6 on #253)', () => {
+    const step = releaseServerStep(remoteConfigText);
+    expect(step[0]).toMatch(/^  3\. Make the server match the kill switches this release signed \(skip this during the alpha/);
+    // remote-config.json signs every switch off, so each server setting is printed on.
+    expect(step).toContain("       alter database postgres set app.status_report_enabled = 'on';");
+    expect(step).toContain("       alter database postgres set app.backup_enabled = 'on';");
+    expect(step).toContain('       npx supabase secrets unset KILL_SWITCHES');
+    const signed = JSON.parse(remoteConfigText) as { payload: { killSwitches: Record<string, boolean> } };
+    signed.payload.killSwitches.statusReport = true;
+    const killed = releaseServerStep(JSON.stringify(signed));
+    expect(killed).toContain("       alter database postgres set app.status_report_enabled = 'off';");
+    expect(killed).toContain('       npx supabase secrets set KILL_SWITCHES=statusReport');
   });
 
   it('puts the signed documents at the exact paths the app requests under EXPO_PUBLIC_DOCS_BASE_URL', () => {
