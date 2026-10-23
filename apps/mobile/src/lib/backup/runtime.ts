@@ -325,8 +325,8 @@ function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
   });
 }
 
-/** [R] `EXPO_PUBLIC_ESCROW_KEY`: the staging drill key, trusted only in a development-profile build (escrow-keys.ts). */
-const escrowKeys = () => escrowKeysFor(APP_ENV, process.env.EXPO_PUBLIC_ESCROW_KEY, BUNDLED_ESCROW_KEYS);
+/** [R] `EXPO_PUBLIC_ESCROW_KEYS` (#138's JSON list): the staging drill key, trusted only in a development-profile build (escrow-keys.ts). */
+const escrowKeys = () => escrowKeysFor(APP_ENV, process.env.EXPO_PUBLIC_ESCROW_KEYS, BUNDLED_ESCROW_KEYS);
 
 // ── Transport ─────────────────────────────────────────────────────────────
 

@@ -70,6 +70,9 @@ const GATED_VALUE_IMPORTERS: Record<string, string> = {
   // S06, WP-F14-15a: reached only through import('./status-report.native') in plan-store startPlus and
   // actions presentPlusStore, each behind `capabilities.statusReport` (build flag plus server switch).
   'apps/mobile/src/lib/billing/status-report.logic.ts': 'capabilities.statusReport (dynamic import from lib/billing/plan-store.ts and actions.ts)',
+  // S05, backup client: parseEscrowKeys for EXPO_PUBLIC_ESCROW_KEYS. Reached only from lib/backup/runtime.ts, which
+  // lib/backup/gate.ts requires behind `capabilities.backup` (build flag plus server features; test/backup-gate.test.ts).
+  'apps/mobile/src/lib/backup/escrow-keys.ts': 'capabilities.backup (require of lib/backup/runtime.ts in lib/backup/gate.ts)',
 };
 
 describe('[M14] EXPO_PUBLIC_SERVER_FEATURES=off loads no server-feature contract', () => {
