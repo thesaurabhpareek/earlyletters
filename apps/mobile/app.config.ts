@@ -92,65 +92,19 @@ export const DATA_PROTECTION_ENTITLEMENT = 'com.apple.developer.default-data-pro
 export const DATA_PROTECTION_CLASS = 'NSFileProtectionCompleteUntilFirstUserAuthentication';
 
 /**
- * Required-reason APIs (LEGAL-REQ-043; docs/legal/app-store-privacy-labels.md 3).
- * Only categories tied to a dependency this app actually links. Evidence was
- * read from node_modules on 2026-10-03 (expo SDK 57, react-native 0.86):
- * each pod's PrivacyInfo.xcprivacy, or source and symbols where a pod ships
- * no manifest. Expo merges these into the app's PrivacyInfo.xcprivacy at
- * prebuild. Re-check after every native dependency change, and treat Apple's
- * upload warning email as the final check.
+ * The iOS privacy manifest (BL-349, LEGAL-REQ-043): required-reason APIs, no
+ * tracking, and the collected data types for this build's switches, from
+ * src/lib/privacy-manifest.ts (evidence and Apple's sources are there). A build
+ * with server features off declares no collected data; a server-on build
+ * declares what S17's App Privacy worksheet lists for its build flags
+ * (docs/legal/app-store-privacy-labels.md 1.4.0, sections 3.2 and 3.4).
+ * Expo writes it into ios/<app>/PrivacyInfo.xcprivacy at prebuild and merges
+ * into a file that is already there, so the native folder must be generated
+ * fresh for each profile (it is never committed; EAS and the preflight prebuild
+ * clean). Pod install then adds the pods' own reasons to the file.
  */
-const PRIVACY_MANIFESTS: NonNullable<NonNullable<ExpoConfig['ios']>['privacyManifests']> = {
-  // No tracking and no tracking domains (PRD: no ads, no data brokers).
-  NSPrivacyTracking: false,
-  NSPrivacyTrackingDomains: [],
-  NSPrivacyAccessedAPITypes: [
-    {
-      // VERIFIED. react-native (React/Resources/PrivacyInfo.xcprivacy;
-      // RCTBundleURLProvider), expo-constants (EXConstantsInstallationIdProvider)
-      // and expo-system-ui each declare CA92.1 in their own manifests. App code
-      // does not use UserDefaults directly (expo-sqlite/kv-store is not used).
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
-      NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
-    },
-    {
-      // VERIFIED. react-native core, boost, glog and RCT-Folly declare C617.1.
-      // expo-file-system declares only 0A2A.1 (wrapper) and 3B52.1, so the app
-      // owns the reason for its own calls: src/lib/capture/sweep.ts reads
-      // creationTime/modificationTime of recordings in the app's Documents
-      // directory. expo-sqlite ships no manifest and its vendored sqlite3.c
-      // calls stat/fstat/lstat on the database files in the app container.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
-      NSPrivacyAccessedAPITypeReasons: ['C617.1'],
-    },
-    {
-      // VERIFIED. react-native (ReactCommon/react/timing) and boost declare
-      // 35F9.1: elapsed time between in-app events. whisper.rn links only
-      // clock_gettime, which is not on Apple's list.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
-      NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
-    },
-    {
-      // UNVERIFIED. expo-sqlite ships no manifest; its vendored sqlite3.c
-      // calls fstatfs() on every database open on Apple platforms
-      // (unixOpen, `defined(__APPLE__)`), only to read the filesystem type
-      // name, never free space. fstatfs is on Apple's disk-space list. E174.1
-      // is the closest approved reason and the one already planned for the
-      // model downloader, but whether Apple's scan flags this symbol, and
-      // whether E174.1 is the right reason for it, is unconfirmed. Confirm on
-      // the first TestFlight upload; drop it if the warning email is silent
-      // without it. App code does not query free space today.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
-      NSPrivacyAccessedAPITypeReasons: ['E174.1'],
-    },
-  ],
-  // Still empty, and no longer true for every build: the `preview` alpha syncs
-  // (account email, letters, consents). Fill this from docs/legal/data-map.yaml
-  // (LEGAL-REQ-041) and docs/legal/app-store-privacy-labels.md 3.3 before any
-  // external TestFlight group or store build with server features on (BL-349,
-  // WP-F21-09). The preflight warns for a server-on profile until then.
-  NSPrivacyCollectedDataTypes: [],
-};
+type PrivacyManifestModule = typeof import('./src/lib/privacy-manifest');
+const { privacyManifest } = loadTs<PrivacyManifestModule>('./src/lib/privacy-manifest.ts');
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
 
@@ -225,7 +179,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     entitlements: {
       [DATA_PROTECTION_ENTITLEMENT]: DATA_PROTECTION_CLASS,
     },
-    privacyManifests: PRIVACY_MANIFESTS,
+    // The same switches as `extra` below, read in the same evaluation.
+    privacyManifests: privacyManifest(capabilityFlags()),
   },
   android: {
     package: appId,

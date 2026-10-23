@@ -413,7 +413,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Scope as shipped in the app (#165): `inviteUrl` writes only `https://earlyletters.com/j#t=<token>`. A system link and a pasted link give a token only from the fragment's `t`, never from the path or the query, and `/i/<token>` is refused everywhere (`apps/mobile/src/lib/family/invite-link.logic.ts`; `test/invite-link.test.ts`, `test/deep-link.allowlist.test.ts`). E2E-13 reads the `/j#t=` link from the pasteboard (`e2e/bin/run-coparent.sh`). Website: the `/j` page and the AASA entry for `/j` without `/i/*` (PR #144).
 
 #### BL-349 App-level privacy manifest (review L7) [High]
-- Status: ready. Mode: agent. Owner: mobile engineer.
+- Status: in review (PR #211, founder merge: `app.config.ts`; #145 merged 23 Oct). Mode: agent. Owner: mobile engineer. Built: `src/lib/privacy-manifest.ts` (required reasons for every build; collected data types follow `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` as S17's label 1.4.0 answers them), `test/privacy-manifest.test.ts`, preflight checks of the generated file. Left: Apple's upload email (go/no-go B1-10), the archived `.ipa` check, and the S17 and counsel calls listed in the PR.
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
