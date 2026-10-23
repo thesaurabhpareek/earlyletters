@@ -281,7 +281,7 @@ export const site = {
     body: `Open ${NAME} on your iPhone and type the code from the same email. That signs you in, or confirms your email if you are new.`,
     onPhone: 'Already on your iPhone? Tap below, then type the code.',
     open: `Open ${NAME}`,
-    expired: 'If the app says the code has expired, ask it for a new email.',
+    expired: 'If the app says the code has expired, tap "Send a new email".',
     notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
     home: `Back to ${NAME}`,
   },
@@ -290,16 +290,20 @@ export const site = {
    * The page behind a co-parent invite link, https://earlyletters.com/j#t=<token> (app/j/page.tsx; PRD V2 F11 6.3
    * step 1). It shows only when the app did not open the link: no app on this phone, a laptop, or a mail or chat
    * app's own browser. It joins nothing; the person copies the link and pastes it into the app's "I was invited".
-   * No child or inviter name, because the page knows neither.
+   * No child or inviter name, because the page knows neither. When the copy cannot work (the browser refused, or a
+   * chat or mail app's own browser dropped the fragment), the words send the person back to the message, where the
+   * whole link still is (F11-U02).
    */
   invite: {
     title: 'An invite to share a book',
     line: 'Someone invited you to share a book.',
-    body: `This invite opens in ${NAME} on an iPhone. On that iPhone, copy the invite, open ${NAME}, tap "I was invited" and paste it.`,
+    body: `This invite opens in ${NAME} on an iPhone.`,
+    steps: ['Tap "Copy the invite".', `Open ${NAME} and tap "I was invited".`, 'Paste the invite.'],
+    onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     copy: 'Copy the invite',
     copied: `Copied. Now open ${NAME} and tap "I was invited".`,
-    copyFailed: 'This browser would not copy it. Copy the address of this page instead, then paste it in the app.',
-    missing: 'This link arrived without its invite. Ask the person who invited you to send it again, and open it on your iPhone.',
+    copyFailed: `This browser would not copy it. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
+    missing: `This page opened without its invite. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
     notYou: 'If you were not expecting an invite, you can ignore it. Nothing changes.',
     home: `Back to ${NAME}`,
   },

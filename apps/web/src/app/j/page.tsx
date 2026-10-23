@@ -27,7 +27,13 @@ export default function InvitePage() {
     <main className={styles.page}>
       <h1 className={styles.line}>{copy.line}</h1>
       <p className={styles.body}>{copy.body}</p>
+      <ol className={styles.steps}>
+        {copy.steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
       <CopyInvite label={copy.copy} copied={copy.copied} failed={copy.copyFailed} missing={copy.missing} />
+      <p className={styles.small}>{copy.onComputer}</p>
       <p className={styles.small}>{copy.notYou}</p>
       <Link className={styles.home} href="/" prefetch={false}>
         {copy.home}

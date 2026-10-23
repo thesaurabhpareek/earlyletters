@@ -26,7 +26,9 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await page.goto(LINK);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
     await expect(page.getByText(copy.body)).toBeVisible();
+    await expect(page.getByRole('listitem')).toHaveText([...copy.steps]);
     await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+    await expect(page.getByText(copy.onComputer)).toBeVisible();
     await expect(page.getByText(copy.notYou)).toBeVisible();
     await expect(page).toHaveTitle(new RegExp(copy.title));
     await expect(page.locator('form')).toHaveCount(0);
