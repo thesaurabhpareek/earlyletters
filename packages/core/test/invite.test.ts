@@ -80,9 +80,9 @@ describe('invite code (F11 D5, TDD 04 3.4.1)', () => {
   it('[A-REQ-029] reads a typed code whatever the case, spaces or dash', () => {
     expect(normaliseInviteCode('abcd-efgh')).toBe('ABCDEFGH');
     expect(normaliseInviteCode('  ABCD EFGH ')).toBe('ABCDEFGH');
-    expect(normaliseInviteCode('abcd–efgh')).toBe('ABCDEFGH'); // en dash
-    expect(normaliseInviteCode('abcd—efgh')).toBe('ABCDEFGH'); // em dash
-    expect(normaliseInviteCode('abcd−efgh')).toBe('ABCDEFGH'); // minus sign
+    expect(normaliseInviteCode('abcd\u2013efgh')).toBe('ABCDEFGH'); // en dash
+    expect(normaliseInviteCode('abcd\u2014efgh')).toBe('ABCDEFGH'); // em dash
+    expect(normaliseInviteCode('abcd\u2212efgh')).toBe('ABCDEFGH'); // minus sign
     expect(normaliseInviteCode('ab-cd-ef-gh')).toBe('ABCDEFGH');
     expect(normaliseInviteCode('ＡＢＣＤＥＦＧＨ')).toBe('ABCDEFGH'); // full-width letters
   });
