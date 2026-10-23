@@ -416,6 +416,45 @@ describe('[ADR-0017] every live RPC in ENDPOINTS exists in the migrations', () =
   });
 });
 
+describe('[ADR-0017] shared rate buckets are named on every row that shares them, with the SQL limit (review A 8 on #138)', () => {
+  const WINDOW_SECONDS: Record<string, number> = { minute: 60, hour: 3600, day: 86_400 };
+  const limits = new Map([...newestDefinition('rate_hit').matchAll(/\('([a-z_]+)',\s*(\d+),\s*interval '1 (minute|hour|day)'\)/g)]
+    .map((m) => [m[1], { limit: Number(m[2]), windowSeconds: WINDOW_SECONDS[m[3]] }]));
+  /** The buckets an RPC counts against: its newest definition of each parameter list. */
+  const bucketsOf = (fn: string) => {
+    const re = new RegExp(`create or replace function public\\.${fn}\\s*\\(`, 'g');
+    const newest = new Map<string, string>();
+    for (const { text } of sql) {
+      for (const m of text.matchAll(re)) newest.set(callAt(text, m.index!), text.slice(m.index!, text.indexOf('\n$$;', m.index!)));
+    }
+    return new Set([...newest.values()].flatMap((body) => [...body.matchAll(/rate_hit\('([a-z_]+)'\)/g)].map((b) => b[1])));
+  };
+  const rpcs = (Object.entries(ENDPOINTS) as [string, EndpointSpec][])
+    .filter(([, e]) => e.status === 'live' && e.path.startsWith('/rest/v1/rpc/'))
+    .map(([name, e]) => ({ name, e, buckets: bucketsOf(e.path.slice('/rest/v1/rpc/'.length)) }));
+
+  it('reads the bucket table', () => {
+    expect(limits.get('membership')).toEqual({ limit: 120, windowSeconds: 3600 });
+    expect(limits.get('pull')).toEqual({ limit: 120, windowSeconds: 60 });
+  });
+
+  it('a bucket two endpoints count against is named on both, and the row carries the SQL limit and window', () => {
+    const users = new Map<string, string[]>();
+    for (const r of rpcs) for (const b of r.buckets) users.set(b, [...(users.get(b) ?? []), r.name]);
+    for (const [b, names] of users) {
+      if (names.length < 2) continue;
+      for (const r of rpcs.filter((x) => names.includes(x.name))) {
+        expect(r.e.rateLimit.bucket, `${r.name} shares the ${b} bucket with ${names.join(', ')}`).toBe(b);
+      }
+    }
+    for (const r of rpcs.filter((x) => x.e.rateLimit.bucket)) {
+      const b = r.e.rateLimit.bucket!;
+      expect(r.buckets.has(b), `${r.name} names the ${b} bucket, but its SQL never counts it`).toBe(true);
+      expect({ limit: r.e.rateLimit.limit, windowSeconds: r.e.rateLimit.windowSeconds }, r.name).toEqual(limits.get(b));
+    }
+  });
+});
+
 /** Splits a parameter list on top-level commas, quote-aware. */
 function splitArgs(list: string): string[] {
   const out: string[] = [];
