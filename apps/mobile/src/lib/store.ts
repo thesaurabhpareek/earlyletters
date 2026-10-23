@@ -308,9 +308,22 @@ export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void
   signalOutbox();
 }
 
-/** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
+/**
+ * "Hide this book" for the person on this phone (PRD B F2.4; F12-REQ-005 Rev, per person since
+ * local schema v7): stops prompts for this child; restorable. The other parent sees no change.
+ * Stays on this phone until the server holds the per-person flag (S02, WP-F12-09).
+ */
 export function hideChild(id: string): void {
   children.hide(ctx(), id);
+  bus.emit('children');
+}
+
+/**
+ * "Quiet this book" for the person on this phone (F12-REQ-011): no prompts, reminders, month or
+ * birthday notes for this child; letters untouched; reversible. The planner reads `Child.quiet`.
+ */
+export function setChildQuiet(id: string, quiet: boolean): void {
+  children.setQuiet(ctx(), id, quiet);
   bus.emit('children');
 }
 

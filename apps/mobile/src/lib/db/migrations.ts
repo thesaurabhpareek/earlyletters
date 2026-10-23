@@ -286,6 +286,55 @@ export const MIGRATIONS: Migration[] = [
       ]);
     },
   },
+  {
+    version: 7,
+    name: "per-person book preferences move to child_member_prefs; the book's creator and first-run batch (WP-F12-02)",
+    up(db, ctx) {
+      // PRD V2 F12-REQ-004, number fixed by 08-delivery.md section 4. `children` keeps book-level
+      // columns only; what one person chooses for a book lives in `child_member_prefs`, one row per
+      // book for the person this phone belongs to (one account per install, F16 6.2 G):
+      //   signs_as       L3  what this child calls me (was children.signs_as)
+      //   reminders_on   L2  include this book in my reminders (was children.reminders_on)
+      //   hidden_at      L2  "Hide this book" for me only (was children.hidden_at, set only from this phone)
+      //   quiet_at       L2  "Quiet this book" for me only (F12-REQ-011), new
+      // children.hidden_at stays for the book-level support path (F12 6.2 D), empty on the phone.
+      //   children.created_by       L3  the account that started the book, when known
+      //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
+      // Values move in this one transaction; nothing is queued (nothing changed for the server).
+      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (build 1)
+      // reads them by name, and the "update the app" screen (MOB-09) does not exist yet, so dropping them would
+      // leave a tester who rolls back with a Book that cannot list its books. The app reads them from
+      // child_member_prefs only, and writes the prefs value into them as a mirror (db/repos/children.ts
+      // upsertPrefs), so the older build sees the current signature and reminder choice. The columns go in
+      // the first schema version after MOB-09 ships.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS child_member_prefs (
+          child_id TEXT PRIMARY KEY NOT NULL,
+          signs_as TEXT NOT NULL DEFAULT '',
+          reminders_on INTEGER NOT NULL DEFAULT 1,
+          hidden_at TEXT,
+          quiet_at TEXT,
+          updated_at TEXT NOT NULL
+        );
+      `);
+      addColumns(db, 'children', [
+        ['created_by', 'TEXT'],
+        ['first_run_batch', 'TEXT'],
+      ]);
+      const have = columns(db, 'children');
+      if (have.has('signs_as')) {
+        db.run(
+          `INSERT OR IGNORE INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at)
+           SELECT id, COALESCE(signs_as, ''), COALESCE(reminders_on, 1), hidden_at, COALESCE(updated_at, ?) FROM children`,
+          ctx.now,
+        );
+        db.run('UPDATE children SET hidden_at = NULL WHERE hidden_at IS NOT NULL');
+      }
+      // Books started here belong to the account that owns this phone's letters (set at the first sign-in).
+      const owner = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'sync.ownerId'")?.value ?? null;
+      if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

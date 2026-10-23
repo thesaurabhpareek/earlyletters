@@ -83,7 +83,7 @@ export type Task = (typeof TASKS)[number];
 /** Conditions the worker can alert on (docs/ops/runbooks). */
 export const ALERT_KINDS = [
   'tombstones_overdue', 'request_stuck', 'step_failed', 'step_retrying', 'queue_stuck', 'purge_silent',
-  'purge_failing', 'residue', 'apple_no_token', 'apple_config', 'holds_review', 'scheduled_overdue',
+  'purge_failing', 'residue', 'apple_no_token', 'apple_config', 'holds_review', 'scheduled_overdue', 'pepper_missing',
 ] as const;
 export type AlertKind = (typeof ALERT_KINDS)[number];
 
