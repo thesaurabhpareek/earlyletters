@@ -46,6 +46,17 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | `develop` moved after this plan was checked | Since ed16ca3, `develop` (56ec5b5, 15 Oct) merged PR #121 (plan reminders, cards and the purchase confirmation with Save a copy: the work of WP-F14-02, -06 and -07, BL-342), PR #114 (same-version different-body refusal: WP-F19-05), PR #113 (native decode guards: the WP-F05-01 clamp), PR #118 (`EXPO_PUBLIC_ANALYTICS` off in every profile, see F18 Q9), PR #4 and #39 (ADR 0018 to 0020). Section 13 keeps its 15 Oct marks | The wave 1 rows for S06, S07 and S08 are "verify first": close each with evidence if the merged code meets the WP's Done when, and the slot returns to the reserve |
 | v1.0 list | Rebuilt from section 12 of every spec (R7 R2P-01, R9 R2D-02): 229 work packages that are not built or partly built and carry a P0 requirement are now in section 6.3, 14 human or device ones are in section 10 (the WP-F08-B6 drill also has an evidence slot), and 3 P1 extras stay cut with a stated condition | Slots to the last feature merge rise from 128 to 281; submission moves to the week of Mon 3 May 2027 (section 2.2) |
 
+### 1.2 Status on Fri 23 Oct 2026 (daily PRD update)
+
+| Item | State on 23 Oct | What changes |
+|---|---|---|
+| Next milestone | **Alpha first (D-106, founder, 15 Oct).** A TestFlight alpha of option B with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha | Section 2.2's week of Mon 3 May 2027 is the last plan of record for submission; it is not re-confirmed and gets re-planned after the alpha (D-106). The alpha plan itself is `docs/release/ALPHA_PLAN.md` on PR #152 (open) |
+| Default (a), merges | **Decided (D-107, 15 Oct).** The coordinator merges app code, docs and tests into `develop` after two independent review agents pass and CI is green. Founder-only: `supabase/**`, auth, payments, release configuration, the CODEOWNERS engine files, production deploys | Section 2.2 row 1 and section 6.2 read default (a) as this wider rule |
+| Default (b), backup free | **Decided (D-111 item 6, 17 Oct).** Backup is free for everyone in v1.0 | F08 Q2 answered; `plan.ts` still gates `backup_upload` and changes with WP-F08-B5c |
+| Default (c), voice-only counting | Still proposed (D-104 item 3) | none |
+| Alpha calls | **Decided (D-111, 17 Oct).** The alpha transcribes English only; the 500-kill test runs on the hosted macOS runner with the founder's Mac as fallback; held-draft sync is on in build 2 unless the held-draft table is not green in `sync-two-phone` by Fri 23 Oct | `_AUTHORING.md` M24 |
+| Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-111 (the 15 Oct row above saying it ends at D-088 is history) | none |
+
 ## 2. The plan
 
 ### 2.1 Every date in one table
@@ -909,7 +920,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F03-07 | Not built | 1 | Human or device (section 10) |
 | WP-F04-01 | Not run | 0 | 1.0.x: carries no P0 requirement |
 | WP-F04-02 | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F04-03 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F04-03 | Partly built (#146; classification rows not built) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F04-04 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-05 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-06 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
@@ -1068,7 +1079,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F14-17 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S06) |
 | WP-F14-18 | Not built | 4 | In 6.3, round 2 additions (waves 3 and 4, S20) |
 | WP-F14-19 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F14-20 | Not built | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-20 | Partly built (#146: the S03 ledger query `countPresent` in `lib/db/repos/ledger.ts`) | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-22 | Not built | 2 | In 6.3 as: Wave 2: S02 held-draft table, S03 held-draft sync op, S13 export `waiting/` |
 | WP-F15-01 | Partly built | 0 | 1.0.x: carries no P0 requirement |
@@ -1097,7 +1108,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F16-12 | Not run | 0 | Cut (6.4): P1, no P0 requirement |
 | WP-F16-13 | Not built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F16-14 | Not built | 2 | In 6.3 as: S02 wave 2 words-group compare-and-set |
-| WP-F16-15 | Not built | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
+| WP-F16-15 | Partly built (#146; conflict note not built) | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
 | WP-F16-16 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S03+S07) |
 | WP-F16-17 | Not built | 3 | In 6.3 as: Wave 2: S02 held-draft table and S03 held-draft sync op (the same work as WP-F14-22) |
 | WP-F16-18 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S07) |

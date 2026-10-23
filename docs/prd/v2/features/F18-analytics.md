@@ -378,7 +378,7 @@ Only for what is missing or partly built.
 | Q6 Linked or Not linked (Q-005) **[Counsel]** | Counsel; 29 Oct (default Linked) | Label, manifest |
 | Q7 The seven-code `lang` property (Q-004) **[Counsel]** | Counsel; 16 Oct (default ship) | Two events |
 | Q8 PostHog billing limit value | Founder; before C1 | Volume cap |
-| Q9 Does v1.0 ship with `EXPO_PUBLIC_ANALYTICS` on (this spec, D-003, B10) or off (PR #122 D-095, built by PR #118)? Spec default until answered: off, as `develop` is built; every requirement here then binds from v1.1 or from the build that turns it on | Founder; T02 | Sections 4, 7 and 12 of this spec; F17 Privacy screen; the privacy label (F21) |
+| Q9 Does v1.0 ship with `EXPO_PUBLIC_ANALYTICS` on (this spec, D-003, B10) or off? Answered by D-095 (delegated by the founder, 15 Oct, now on `develop`): off in every v1.0 profile; analytics returns with consent in v1.1. Built by PR #118; PR #125 also takes `posthog-react-native` out of the v1.0 bundle. Every requirement here binds from v1.1 or from the build that turns it on | Founder; T02 | Sections 4, 7 and 12 of this spec; F17 Privacy screen; the privacy label (F21) |
 
 | A | Assumption | How we validate |
 |---|---|---|
