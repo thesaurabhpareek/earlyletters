@@ -399,7 +399,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 
 #### BL-322 Invite asks before it joins, and never switches the open book by itself (review H2, app part) [High]
 - Status: ready. Mode: agent (needs a `peek_invite(token)` RPC from db-followup or the next migration range). Owner: family owner.
-- Scope: `src/app/invite/index.tsx` shows "Join {child}'s book as a parent? Invited by {signsAs}" and waits for a tap; `peek_invite` returns only the child's first name and the inviter's signature; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
+- Scope: `src/app/invite/index.tsx` shows "Join this book as a parent?" and "Invited by {inviter}" and waits for a tap; `peek_invite` returns only the inviter's sign-off and the role, never the child's name or ids (D-111 item 8), so the child's name appears only after joining; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
 
 #### BL-348 Invite token in the URL fragment (review M2; FAM-04 parts 1 and 2 pulled forward)
 - Status: decided, in review (founder, 15 Oct 2026, FT-04 item 7: yes, the token moves into the fragment). Mode: agent plus website thread.

@@ -91,7 +91,7 @@ File: `20261015010000_v1_gate_peek_invite_consent_pepper.sql` (ported from `d1cb
 
 | # | Check | Evidence needed | First pass | Reviewer |
 |---|---|---|---|---|
-| 6.1 | The invite screen shows "Join {child}'s book as a parent? Invited by {signsAs}" from `peek_invite` and waits for a tap; never accepts on open | S04 test names; Maestro flow F11-join | pending (not started) | |
+| 6.1 | The invite screen shows "Join this book as a parent?" and "Invited by {inviter}" from `peek_invite` (the inviter's sign-off and the role only, never the child's name or ids; the name appears only after joining) and waits for a tap; never accepts on open | S04 test names; Maestro flow F11-join | pending (not started) | |
 | 6.2 | Joining never switches the open book without a tap | S04 test | pending | |
 | 6.3 | `SCCAP` maps to "parents full" end to end (F11-REQ-026); `SCINV` details `role_disabled`, `code_taken` handled | S04 and S07 tests; `packages/api` `SQLSTATE_RULES` | pending | |
 | 6.4 | One idempotency key per user action, reused on every retry (APPLY.md "App changes for file 12") | S04 test of `createCoParentInvite` retries | pending | |
