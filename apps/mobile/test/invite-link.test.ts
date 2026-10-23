@@ -97,13 +97,44 @@ describe('"I was invited": pasted text (A-REQ-029)', () => {
     expect(parseInviteInput(msg, ORIGIN)).toBe(TOKEN);
   });
 
-  it('accepts a stray query before the fragment, as parseInviteUrl does; the token still comes only from the fragment', () => {
-    const withQuery = `https://earlyletters.com/j?x=1#t=${TOKEN}`;
-    expect(parseInviteUrl(withQuery, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteInput(withQuery, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteInput(`Join me here: https://www.earlyletters.com/j/?utm_source=x&y=2#t=${TOKEN} see you`, ORIGIN)).toBe(TOKEN);
-    expect(parseInviteUrl(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
-    expect(parseInviteInput(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
+  it('accepts every form parseInviteUrl accepts: a query on /j, other fragment parameters, www, any case', () => {
+    for (const url of [
+      `https://earlyletters.com/j?x=1#t=${TOKEN}`,
+      `https://earlyletters.com/j?utm=x#t=${TOKEN}`,
+      `https://earlyletters.com/j#y=1&t=${TOKEN}`,
+      `https://earlyletters.com/j/?utm_source=x&y=2#y=1&t=${TOKEN}&z=3`,
+      `https://www.earlyletters.com/j#t=${TOKEN}`,
+      `HTTPS://EarlyLetters.com/j#t=${TOKEN}`,
+    ]) {
+      expect(parseInviteUrl(url, ORIGIN), url).toBe(TOKEN);
+      expect(parseInviteInput(url, ORIGIN), url).toBe(TOKEN);
+      expect(parseInviteInput(`Join me here: ${url} see you`, ORIGIN), url).toBe(TOKEN);
+      expect(parseInviteInput(`(${url}).`, ORIGIN), url).toBe(TOKEN);
+    }
+  });
+
+  it('agrees with parseInviteUrl on every link, accepted or refused', () => {
+    const OTHER = 'b'.repeat(64);
+    const links = [
+      `https://earlyletters.com/j#t=${TOKEN}`,
+      `https://earlyletters.com/j/#t=${TOKEN}&y=1`,
+      `https://earlyletters.com/j#t=${OTHER}&t=${TOKEN}`,
+      `https://earlyletters.com/j#%74=${TOKEN}`,
+      `https://earlyletters.com:443/j#t=${TOKEN}`,
+      `https://earlyletters.com/j?t=${TOKEN}`,
+      `https://earlyletters.com/j/${TOKEN}`,
+      `https://earlyletters.com/i/${TOKEN}`,
+      `https://earlyletters.com/i#t=${TOKEN}`,
+      `https://earlyletters.com/j#T=${TOKEN}`,
+      `https://earlyletters.com/j#t=`,
+      `https://earlyletters.com/j#t=${TOKEN}+`,
+      `https://earlyletters.com/j/x#t=${TOKEN}`,
+      `https://earlyletters.com.evil.example/j#t=${TOKEN}`,
+      `https://evil.example@earlyletters.com/j#t=${TOKEN}`,
+      `https://earlyletters.com@evil.example/j#t=${TOKEN}`,
+      `https://earlyletters.app/j#t=${TOKEN}`,
+    ];
+    for (const url of links) expect(parseInviteInput(url, ORIGIN), url).toBe(parseInviteUrl(url, ORIGIN));
   });
 
   it('returns null when nothing usable is there', () => {
