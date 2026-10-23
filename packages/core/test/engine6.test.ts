@@ -372,6 +372,18 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     expect(verdictIn(ZH, zh, edit(zh, 'punctuation', '？.', '.'))).toBe('changes_sentence_type');
     const hi = 'आशा हँसी।.';
     expect(verdictIn(HI, hi, edit(hi, 'punctuation', '।.', '।'))).toBeNull();
+    expect(verdictIn(HI, hi, edit(hi, 'punctuation', '।.', '.'))).toBe('changes_sentence_type'); // the danda said first stays
+    const ar = 'آشا نامت\u061F.';
+    expect(verdictIn(AR, ar, at(ar.length - 1, '', '.'))).toBeNull();
+    expect(verdictIn(AR, ar, edit(ar, 'punctuation', '\u061F.', '.'))).toBe('changes_sentence_type'); // the Arabic "?" stays
+    expect(faithfulClean(ar, { level: 'clean', dictionary: [], rules: AR, modelEdits: [at(ar.length - 1, '', '.')] }).text).toBe('آشا نامت\u061F');
+  });
+
+  it('every quotation mark sits between two marks that touch, and U+3002 is an end mark under any rules (#249 review B-N2)', () => {
+    const low = 'She said \u201Eno.\u201C';
+    expect(v7(low, atEnd(low, '.'))).toBe('changes_sentence_type'); // U+201C as a closing mark, seen through quoteMarkCount
+    const han = 'Asha slept\u3002';
+    expect(v7(han, atEnd(han, '.'))).toBe('changes_sentence_type'); // English rules: U+3002 is in END_MARK, not in the rules' sentence ends
   });
 
   it.each([
