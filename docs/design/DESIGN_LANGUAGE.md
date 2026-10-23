@@ -158,6 +158,7 @@ Apple's default Body is 17/22 (H1). Mukta sits small on its em, so UI styles are
 | `labelSmall` | Mukta 500 | 16 / 20 | Subhead | none (small buttons, chips, field labels) |
 | `signature` | Literata Italic 400 | 20 / 32 | Body | none (scales with Reading Size) |
 | `prompt` | Literata 400 | 24 / 32 | Title 3 | none (the prompt on Listen and Write) |
+| `nameField` | Literata 400 | 22 / 28 | Title 2 | none (the child's name as it is typed on first run: the book's title, S05) |
 | `promptHero` | Literata 400 | 28 / 36 | Title 1 | 1.8x (Tonight's prompt: the screen's one literary line, on the paper with no card) |
 | `numeral` | Literata 500, -0.5 | 64 / 64 | Large Title | 1.4x (a month opener's numeral in the Book; at its cap it is already 90 pt) |
 
