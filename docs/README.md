@@ -26,7 +26,7 @@ Start here. This page says which document answers which question. It is kept cur
 |---|---|
 | What did we decide, why, and how hard is it to undo? | [decisions/README.md](decisions/README.md) (register format) and [decisions/INDEX.md](decisions/INDEX.md) (generated; being filled) |
 | The dated decision log, D-001 onwards | [DECISIONS.md](DECISIONS.md) |
-| Why a technical design was chosen (ADR 0001 to 0022, 0026 and 0027 proposed or pending, 0101) | [adr/](adr/) |
+| Why a technical design was chosen (ADR 0001 to 0022, 0025 to 0027 proposed or pending, 0101) | [adr/](adr/) |
 | Technical design per area (mobile, sync, audio, security, privacy, performance, quality, payments, accessibility, red team) | [tdd/](tdd/) (TDD 01 to 10) |
 
 ## What we are building
@@ -53,7 +53,7 @@ Start here. This page says which document answers which question. It is kept cur
 | How agents talk, open questions, the board, the 3 Oct brief, adding an agent, the 13 Oct port map | [agents/AGENT-COMMS.md](agents/AGENT-COMMS.md), [agents/DEBATES.md](agents/DEBATES.md), [agents/BOARD.md](agents/BOARD.md), [agents/BRIEF-2026-10-03.md](agents/BRIEF-2026-10-03.md), [agents/CHARTER_TEMPLATE.md](agents/CHARTER_TEMPLATE.md), [agents/PORT_MAP_2026-10-13.md](agents/PORT_MAP_2026-10-13.md) |
 | Where agents post check-ins (one file each, never at the end of the board) | [agents/checkins/README.md](agents/checkins/README.md) |
 | Operations: deletion pipeline, deploys, secrets, domains, auth setup, app size, subscriptions setup | [ops/README.md](ops/README.md), [ops/DEPLOY.md](ops/DEPLOY.md), [ops/SECURITY.md](ops/SECURITY.md), [ops/DOMAINS.md](ops/DOMAINS.md), [ops/AUTH_SETUP.md](ops/AUTH_SETUP.md), [ops/APP_SIZE.md](ops/APP_SIZE.md), [ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md](ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md) |
-| What to do in an incident or when deletion is stuck | [ops/runbooks/](ops/runbooks/) (incident notification, purge failing, restore drill, stuck deletion, suspected leak) |
+| What to do in an incident or when deletion is stuck | [ops/runbooks/](ops/runbooks/) (incident notification, purge failing, restore drill, staging smoke, stuck deletion, suspected leak) |
 | Files served from the website's `.well-known` | [ops/well-known/](ops/well-known/) |
 | Applying migrations to the live project by hand | [../supabase/APPLY.md](../supabase/APPLY.md) |
 | CI, review rules and branch protection | [../.github/README.md](../.github/README.md) |

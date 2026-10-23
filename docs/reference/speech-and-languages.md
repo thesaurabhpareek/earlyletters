@@ -2,8 +2,8 @@
 title: Speech and languages
 owner: reference-docs
 covers: [apps/mobile/src/lib/transcribe*.ts, apps/mobile/src/lib/transcription-queue/**, apps/mobile/src/lib/models/**, apps/mobile/src/lib/packs/**, apps/mobile/src/lib/language/**, apps/mobile/modules/scribe-audio/**, packages/core/src/**, packs/**, scripts/packs/**]
-verified_at: f524ca1
-verified_on: 2026-10-18
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Speech and languages
@@ -16,7 +16,7 @@ How spoken words become a letter on the phone, how language packs and speech mod
 |---|---|---|
 | Record | AAC-LC, mono, 64 kbps, 48 kHz, into `Documents/ExpoAudio`, as M4A on both platforms today (ADR 0027 moves iOS to ADTS once its checks pass). No voice processing on the original | `apps/mobile/src/lib/capture/recorder.ts`, `lib/capture/recording-file.ts` |
 | Queue | A job per recording; a draft open in Review goes first, then letters waiting for words, oldest first | `lib/transcription-queue/machine.ts` |
-| Open the recording | Checks the length the decoder reports. For an ADTS take, the length may not be more than one frame short of the frames counted in the file; if the file ends exactly as a kill leaves it (`tail: 'cut'`), the run switches once to a temporary copy of the whole frames. Any other ending (`tail: 'break'`: damage or a trailer) gets no copy: the run goes ahead if the decoder reads the file to its counted frames, and is refused otherwise; more than one frame of bytes after the last whole frame is refused before anything is read. A refused take shows `decode_failed` (Try again, or type) rather than being transcribed without its end. M4A runs as before | `lib/transcribe-run.ts` (`openRecordingForRun`, `checkedRunDuration`), `lib/capture/adts.ts`, `lib/capture/adts-file.ts` |
+| Open the recording | Checks the length the decoder reports. For an ADTS take, the length may not be more than one frame short of the frames counted in the file; if the file ends exactly as a kill leaves it (`tail: 'cut'`), the run switches once to a temporary copy of the whole frames. A kill-cut header must claim a possible frame length (at most 779 bytes, `plausibleLength`), and a run of 2 or more of the stream's whole frames found after damage near the end makes the tail a break and counts toward the length (#226). Any other ending (`tail: 'break'`: damage or a trailer) gets no copy: the run goes ahead if the decoder reads the file to its counted frames, and is refused otherwise; more than one frame of bytes after the last whole frame is refused before anything is read. A refused take shows `decode_failed` (Try again, or type) rather than being transcribed without its end. M4A runs as before | `lib/transcribe-run.ts` (`openRecordingForRun`, `checkedRunDuration`), `lib/capture/adts.ts`, `lib/capture/adts-file.ts` |
 | Decode | 5-minute windows decoded to 16 kHz PCM in memory, no file written | `modules/scribe-audio` (`decodePcm16`) |
 | Loudness check | A window whose loudest 30 ms frame is under -60 dBFS skips VAD and Whisper | `lib/transcribe-energy.ts` |
 | Voice activity | Silero VAD inside whisper.rn finds speech; no speech means an empty transcript and Whisper never runs | `lib/transcribe-whisper.ts` |
@@ -45,7 +45,7 @@ Queue rules (`machine.ts`): one job at a time; nothing runs in the background (a
 | Every language | Silero VAD v6.2.0, downloaded with the first model | same |
 
 - **Tiers** (`models/tiers.ts`): full needs at least 3.4e9 bytes of RAM; under that, unknown RAM, or two memory failures gives compact.
-- **Hosting**: upstream files point at Hugging Face at a pinned revision. Files the team builds (Hindi small, a Mandarin candidate) point at the self host `models.earlyletters.com` and are `hosted: false`, so they are never chosen yet. Candidates (`status: 'candidate'`) are never chosen until the golden corpus says so.
+- **Hosting**: upstream files point at Hugging Face at a pinned revision. Files the team builds (Hindi small, a Mandarin candidate) point at the self host `https://packs.earlyletters.app/speech` (`PACKS_ORIGIN`, `SELF_HOST_BASE` in `catalog.ts`; D-097, since #126) and are `hosted: false`, so they are never chosen yet. Candidates (`status: 'candidate'`) are never chosen until the golden corpus says so.
 - **Consent** (`models/speech-consent.ts`): the model downloads only after an explicit yes, stored as a device setting.
 - **Dev only**: a model copied by hand into `Application Support/models` is used by a development build after its SHA-256 matches (`models/speech-packs.ts`, `lib/model-files.ts`).
 
@@ -66,9 +66,9 @@ A pack id is `<kind>.<name>`; kinds are `speech-model`, `text-rules` and `prompt
 | Polite | One download at a time; over 5 MB waits for Wi-Fi unless the person allows mobile data; a remote kill switch (`packDownloads`); a free-space reserve of 1 GB for large packs |
 | Not backed up | Root is `Application Support/packs`, excluded from backup |
 
-**Signed manifest.** The manifest, remote config and content bundle are Ed25519-signed documents checked against `TRUSTED_SIGNING_KEYS` in `packages/api/src/keys.ts`. That list is **empty on `develop`**, and no `eas.json` profile sets `EXPO_PUBLIC_DOCS_BASE_URL`, so a build made today installs no downloaded pack: no text rules beyond English and no speech model. Recordings are kept and wait for their words. The founder steps are in `docs/release/TESTFLIGHT.md`.
+**Signed manifest.** The manifest, remote config and content bundle are Ed25519-signed documents checked against `TRUSTED_SIGNING_KEYS` in `packages/api/src/keys.ts`. That list is **empty on `develop`** (a founder step, comment in `keys.ts`). Every `eas.json` profile now reads signed documents from `https://packs.earlyletters.app` (`EXPO_PUBLIC_DOCS_BASE_URL`, #126), but with no trusted key nothing verifies, so a build made today installs no downloaded pack: no text rules beyond English and no speech model. Recordings are kept and wait for their words. The founder steps are in `docs/release/TESTFLIGHT.md`.
 
-**Publishing** is manual: `scripts/packs/publish.ts` builds every non-English text-rules pack, adds the hosted speech models from `catalog.ts`, signs the manifest, and writes signed documents into `supabase/functions/<fn>/published.ts`. It uploads nothing and deploys nothing. Keys come from `scripts/packs/keygen.ts`. Where the documents are served from: [backend.md](backend.md#edge-functions).
+**Publishing** is manual: `scripts/packs/publish.ts` builds every non-English text-rules pack, adds the hosted speech models from `catalog.ts`, signs the manifest, writes signed documents into `supabase/functions/<fn>/published.ts`, and writes the same documents under `dist/packs/` at the object keys the app requests (`documentObjects` in `scripts/packs/lib.ts`). It uploads nothing and deploys nothing: it prints the `wrangler r2 object put` commands for bucket `early-letters-packs` (documents with `Cache-Control: no-cache`), and marks the Supabase function deploys optional, only for a build with no documents host. Keys come from `scripts/packs/keygen.ts`. Where the documents are served from: [backend.md](backend.md#edge-functions).
 
 ## The faithful-edit engine (`packages/core`)
 

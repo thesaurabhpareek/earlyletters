@@ -2,8 +2,8 @@
 title: Operations
 owner: reference-docs
 covers: [.github/**, agents/roster.json, apps/mobile/eas.json, apps/mobile/scripts/**]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Operations: CI, releases, environments, agents
@@ -34,7 +34,9 @@ How code is checked, how builds and database changes are released, which secrets
 | `migration-guard.yml` | Fails a change that edits, renames or deletes an applied migration, removes a line from `.github/migrations-applied.txt`, or adds a migration that sorts before the newest applied one (`.github/scripts/migration-guard.mjs`) | Yes |
 | `db-cli.yml` | On PRs touching `supabase/**`: real Supabase CLI stack, `db reset` from every migration, `db lint`, then the PGlite suite. Also called by Nightly | No |
 | `nightly.yml` | 10:23 UTC daily: verifier fuzz with a random seed and 10x runs, then the `db-cli` checks | No |
-| `deploy-db.yml` | Staging on a push to `main` that changes migrations; production on a `db-v*` tag behind the `production` Environment. Never edits `migrations-applied.txt` | No; never run ([backend.md](backend.md#how-deploys-work)) |
+| `deploy-db.yml` | Staging on a push to `develop` that changes migrations (a manual run on `develop` only), then the content-free staging smoke with `--db-only`; production on a `db-v*` tag on `main` behind the `production` Environment. A push to `main` deploys nothing to a database (R-019, #205). Never edits `migrations-applied.txt` | No; never run ([backend.md](backend.md#how-deploys-work)) |
+| `deploy-functions.yml` | On a push to `develop` that changes function code or its deploy rules (or a manual run on `develop`): deploys every Edge Function at `develop`'s tip to staging, except `escrow`, after staging has every migration; checks each is active, then the health smoke. Waits in the `staging` Environment; without `SUPABASE_ACCESS_TOKEN_STAGING` it deploys nothing. Plan and checks: `.github/scripts/functions-deploy.mjs` | No; never run |
+| `deploy-scripts.yml` | On PRs that can change what `functions-deploy.mjs` decides: its tests, read-only, no secrets | No (path-filtered) |
 | `testflight.yml` | Manual, on `develop` or an `ios-v*` tag: typecheck, tests, preflight, then an EAS build with the `testflight` profile, optionally submitted | No; never run |
 | `agents.yml` | Every 30 minutes the dispatcher assigns work and starts up to six agents. Skipped entirely unless the repository variable `AGENTS_ENABLED` is `true` | No |
 | `agents-check.yml` | Roster, charters, memory files and dispatcher tests stay consistent | No |
@@ -51,9 +53,9 @@ From `CLAUDE.md`, ADR 0022 (`docs/adr/0022-release-engineering.md`), `docs/relea
 | Feature work | Short branches (`feat/`, `fix/`, `chore/`, `docs/`, `exp/`) into `develop` by PR | CI plus migration guard | In use |
 | TestFlight (internal) | `develop` | EAS profile `testflight`: store distribution, `EXPO_PUBLIC_APP_ENV=preview`, so the bundle id ends in `.preview`; server features and analytics off | No build made yet (`TESTFLIGHT.md`) |
 | App Store | A `release/<major>.<minor>` branch cut from `main` at freeze, with fixes cherry-picked from `develop`; an `ios-v<x.y.z>-rc.<n>` tag builds a candidate, and `ios-v<x.y.z>` marks the one released (D-089, ADR 0022) | EAS profile `production`; `app.config.ts` says not to upload it until the publisher domain is final. The store workflow (BL-437) and the version file (BL-436) are in open PRs #110 and #109, so no workflow on `develop` builds from an RC tag | Not started: `release/1.0` not cut, no RC tags (`docs/release/1.0.0.md`) |
-| Database | `main`, then a `db-v*` tag | `deploy-db.yml` | Target projects do not exist yet (`docs/ops/DEPLOY.md`) |
+| Database and Edge Functions | Staging from `develop`; production from a `db-v*` tag on `main` (first used at AF-42, after the alpha) | `deploy-db.yml`, `deploy-functions.yml` (staging only) | Target projects do not exist yet (`docs/ops/DEPLOY.md`) |
 
-`main` is always releasable (`CLAUDE.md`). There are no over-the-air updates in v1.0: fixes ship as new builds (D-091). Release record and readiness for v1.0: `docs/release/1.0.0.md`. Before a TestFlight build, `npm run preflight:testflight -w @scribe/mobile` (`apps/mobile/scripts/preflight-testflight.mjs`) checks configuration and prints WARN and UNVERIFIED lines; it needs no secrets. Build profiles in full: [mobile-app.md](mobile-app.md#build-profiles-and-switches).
+`main` is always releasable (`CLAUDE.md`). There are no over-the-air updates in v1.0: fixes ship as new builds (D-091). Release record and readiness for v1.0: `docs/release/1.0.0.md`. Before a TestFlight build, `npm run preflight:testflight -w @scribe/mobile` (`apps/mobile/scripts/preflight-testflight.mjs`) checks configuration and prints WARN and UNVERIFIED lines; it needs no secrets. Since #126 it also warns while no signed pack manifest is published (`PACK_MANIFEST` is `null` in `supabase/functions/config/published.ts`) and checks that the generated native project sets `ios.deploymentTarget` 17.0 (D-098). Build profiles in full: [mobile-app.md](mobile-app.md#build-profiles-and-switches).
 
 `docs/release/journey/` is generated: 20 journeys of screenshots and step JSON from the web end-to-end flows (`apps/mobile/e2e-web`), with critiques and a PDF (`docs/release/journey/INDEX.md`).
 
@@ -63,10 +65,10 @@ Names only, from `docs/ops/SECURITY.md`, `docs/ops/DEPLOY.md`, `apps/mobile/app.
 
 | Where | Names | Used by |
 |---|---|---|
-| EAS build env (non-secret, in `eas.json`) | `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_ANALYTICS` | The app build |
-| EAS environment variables (not set in any profile) | `EXPO_PUBLIC_DOCS_BASE_URL`, `EXPO_PUBLIC_SUPABASE_URL` and key, `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Signed documents host; server and analytics features |
+| EAS build env (non-secret, in `eas.json`) | `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_ANALYTICS`, `EXPO_PUBLIC_DOCS_BASE_URL` (since #126) | The app build; the signed documents host |
+| EAS environment variables (not set in any profile) | `EXPO_PUBLIC_SUPABASE_URL` and key, `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Server, analytics and Google sign-in features |
 | GitHub repository secret | `EXPO_TOKEN` | `testflight.yml` |
-| GitHub Environment secrets | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `deploy-db.yml` |
+| GitHub Environment secrets | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD`; in `staging` also `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN_STAGING`, `SUPABASE_STAGING_URL`, `SUPABASE_STAGING_PUBLISHABLE_KEY` | `deploy-db.yml`, `deploy-functions.yml`, the staging smoke |
 | GitHub agent secrets and variables | Secrets `OPENROUTER_API_KEY`, `AGENTS_APP_PRIVATE_KEY`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`; repository variables `AGENTS_APP_CLIENT_ID`, `AGENTS_BOT_LOGINS`, `AGENTS_ENABLED`, `AGENTS_PAUSED` | `agents.yml`, `claude.yml`, `scripts/agents/lib.mjs` |
 | Supabase Edge Function secrets | `PURGE_WORKER_SECRET`, `RESEND_API_KEY`, `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_PROJECT_ID`, `POSTHOG_HOST`, `TOKEN_KEK` (versioned), Apple sign-in key names | `purge-worker`, `analytics-forget` |
 | Supabase Vault | `project_url`, `publishable_key`, `purge_worker_secret` | `supabase/cron/purge-worker.sql` |

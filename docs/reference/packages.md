@@ -2,8 +2,8 @@
 title: Packages and workspaces
 owner: reference-docs
 covers: [package.json, apps/mobile/package.json, packages/*/package.json, packages/*/src/index.ts, packages/brand/index.ts, packages/content/src/**, packages/design-tokens/**, packages/emails/**, packages/analytics/**, experiments/package.json]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Packages and workspaces
@@ -39,7 +39,7 @@ Who imports what was read from `import ... from '@scribe/...'` lines and, for Ed
 | `@scribe/brand` | `brand` (name, store name, subtitle, publisher, web addresses, support, email identity, colours, scheme, codename) and `bundleId()` | `apps/mobile` (also loaded by `app.config.ts` at config time), `@scribe/content`, `@scribe/emails`, `purge-worker` |
 | `@scribe/design-tokens` | `tokens` (colours light and dark, high contrast, `atmosphere` (the lamp's scenes, tones and peaks per scheme, which colours may sit on lit paper (`onLitPaper`, D-110), and the light-scheme grain), type, spacing, radii, elevation, motion including `lamp` and `route`), generated CSS (`tokens.native.css`, `tokens.web.css`), `fonts`, and `textures` (the grain image, `grainTexture`, kept out of `tokens.ts` so Node and the web build never load a binary; `npm run build:grain -w @scribe/design-tokens` remakes it) | `apps/mobile`, `@scribe/emails` |
 | `@scribe/emails` | React Email components and templates, `renderForResend`, logo attachments | No other workspace imports it; its own `packages/emails/scripts/export-supabase.ts` generates `supabase/templates`. Email copy comes from `@scribe/content` |
-| `@scribe/analytics` | Event allowlist, consent gate, `createAnalytics`, PostHog adapter, insights engine (not exported from the index) | `apps/mobile/src/lib/analytics` (inert while `ANALYTICS=off`), `scripts/insights` |
+| `@scribe/analytics` | Event allowlist, consent gate, `createAnalytics`, PostHog adapter, insights engine (not exported from the index) | `apps/mobile/src/lib/analytics` (inert while `ANALYTICS=off`; the app has no PostHog SDK dependency in v1.0, #125), `scripts/insights` |
 | `@scribe/mobile` | The app; exports nothing | nobody |
 
 `apps/mobile` imports `@scribe/analytics` but does not list it in `apps/mobile/package.json` dependencies; it resolves through the workspace.

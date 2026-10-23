@@ -2,8 +2,8 @@
 title: Backend
 owner: reference-docs
 covers: [supabase/**, packages/api/src/**, .github/workflows/deploy-db.yml, apps/mobile/src/lib/sync/**, apps/mobile/src/lib/supabase/**]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Backend (Supabase)
@@ -41,7 +41,9 @@ The pieces below are built and tested so a build can switch them on. Reasons: AD
 | `purge-worker` | Body `{"task": "run" \| "daily"}` | Bearer `PURGE_WORKER_SECRET`, compared in constant time | Every 15 minutes: `purge_due` in batches, drains the Storage purge queue, deletion emails, due account deletions, SLA alert. Daily: ledger copy and ops retention (`worker.ts`, `daily.ts`) |
 | `analytics-forget` | `POST /functions/v1/analytics-forget/v1` | Signed-in user's token | Deletes PostHog persons for random analytics ids at deletion time; ids are never stored or logged (`handler.ts`) |
 
-`config` and `content` hold no user data. Their documents are signed offline by `scripts/packs/publish.ts`, which writes `published.ts` and prints the deploy commands; it runs none of them. The app fetches these documents only from `EXPO_PUBLIC_DOCS_BASE_URL` while server features are off (`apps/mobile/src/lib/remote/base.logic.ts`), so with server features off these two functions would be reached only if that URL pointed at them.
+Every function also answers `GET` or `HEAD /functions/v1/<name>/health` (#202, `supabase/functions/_shared/health/health.ts`): 200 `ready` when it is deployed with its required settings, 503 `unavailable` otherwise, content-free and never naming a missing setting. Reachable without a session only for the functions deployed without the gateway JWT check (`config`, `content`, `purge-worker`; `NO_VERIFY_JWT` in `.github/scripts/functions-deploy.mjs`).
+
+`config` and `content` hold no user data. Their documents are signed offline by `scripts/packs/publish.ts`, which writes `published.ts` and the same documents for the pack host, and prints the upload and deploy commands; it runs none of them. The app fetches these documents only from `EXPO_PUBLIC_DOCS_BASE_URL` while server features are off (`apps/mobile/src/lib/remote/base.logic.ts`), and every `eas.json` profile now sets that to `https://packs.earlyletters.app` (#126, D-097), so builds from `develop` do not reach these two functions.
 
 Functions import shared code from outside `supabase/` (deployed with `--use-api`): `packages/api` (response envelope, standards), `packages/brand` and `packages/content` (purge-worker emails).
 
@@ -68,7 +70,7 @@ Plus is not on the server: the entitlement functions and tables created in `chil
 | Module | What it would do |
 |---|---|
 | `apps/mobile/src/lib/supabase/` | The one client, configured from `EXPO_PUBLIC_SUPABASE_URL` and its key; session in the Keychain |
-| `apps/mobile/src/lib/sync/` | Outbox push then cursor pull (D-023): ordered upload queue in `sync_outbox`, refused writes in `rejected_writes`, per-book cursors in `sync_books`. Store writes enqueue in the same transaction; with sync off the outbox stays empty |
+| `apps/mobile/src/lib/sync/` | Outbox push then cursor pull (D-023), with the phone side of protocol v1 (ADR 0025, proposed; #146): each upsert carries a `base` version, a push batch carries at most one op per letter, and a words conflict keeps this phone's words as a conflict copy in `rejected_writes` (code `conflict`) until the author picks. Refused writes in `rejected_writes`, per-book cursors in `sync_books`. Store writes enqueue in the same transaction; with sync off the outbox stays empty. With it on, `killSwitches.sync` in the signed remote config pauses push and pull (phase `paused_server`) and an unreadable switch keeps sync paused. The server half of v1 (compare and set in `sync_push`, `held_drafts`) is in open PRs #140 and #208, not on `develop`; until then the new result fields are absent and later arrival wins |
 | `apps/mobile/src/lib/auth/`, `lib/family/`, `lib/account-deletion/` | Sign-in (Apple, Google, email), invites, account deletion |
 
 ## Contracts (`packages/api`)
@@ -82,6 +84,6 @@ Two paths exist, for two different targets:
 | Target | How | State |
 |---|---|---|
 | The current live project `early-letters` | By hand in the SQL editor, following `supabase/APPLY.md`, then a line added to `.github/migrations-applied.txt` in a PR | 2 files applied (`scribe_core`, `scribe_hardening`); the rest pending. `docs/ops/DEPLOY.md` says this project is slated for retirement, pending the founder |
-| New projects `scribe-staging` and `scribe-prod` | `.github/workflows/deploy-db.yml`: staging on a push to `main` that changes `supabase/migrations/**`; production on a `db-v*` tag on `main`, behind the `production` GitHub Environment. Dry run, then `supabase db push`. One Postgres URL secret per environment; no account access token | `docs/ops/DEPLOY.md`: the projects, environments and secrets do not exist yet and the workflow has not run |
+| New projects `scribe-staging` and `scribe-prod` | `.github/workflows/deploy-db.yml`: staging on a push to `develop` that changes `supabase/migrations/**` (it applies `develop`'s tip; a manual run works on `develop` only), then the content-free staging smoke (`scripts/ops/staging-smoke.ts --db-only`); production on a `db-v*` tag on `main`, behind the `production` GitHub Environment. A push to `main` deploys nothing to a database (R-019, #205). Dry run, then `supabase db push`. `.github/workflows/deploy-functions.yml`: on a push to `develop` that changes function code, every function at `develop`'s tip goes to staging (never `escrow`, never `--prune`), after staging has every migration, then the function health smoke | `docs/ops/DEPLOY.md`: the projects, environments and secrets do not exist yet and no workflow in it has run. Without `SUPABASE_ACCESS_TOKEN_STAGING` the functions run deploys nothing and says NOT DEPLOYED |
 
-Guards: `.github/workflows/migration-guard.yml` fails a change that edits, renames or deletes an applied migration, or adds one that sorts before the newest applied. `db-cli.yml` rebuilds the local stack from every migration and lints it on PRs that touch `supabase/**`. Edge Functions are deployed by hand with the Supabase CLI (commands in each function's `index.ts`). Secrets by name: [operations.md](operations.md#environments-and-secrets).
+Guards: `.github/workflows/migration-guard.yml` fails a change that edits, renames or deletes an applied migration, or adds one that sorts before the newest applied. `db-cli.yml` rebuilds the local stack from every migration and lints it on PRs that touch `supabase/**`. Edge Functions reach staging through `deploy-functions.yml`; anything else is deployed by hand with the Supabase CLI (commands in each function's `index.ts`). The smoke's runbook: `docs/ops/runbooks/staging-smoke.md`. Secrets by name: [operations.md](operations.md#environments-and-secrets).

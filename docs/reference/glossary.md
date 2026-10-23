@@ -63,6 +63,7 @@ What a word means, what the code calls it, and what the person sees. Code names 
 | Speech model, tier | `SpeechModel`, `Tier` `full` or `compact` | Speech files in Settings, Recordings | `lib/models/` |
 | Signed documents | remote config, pack manifest, content bundle | Not shown | `lib/remote/`, `packages/api` |
 | Kill switch | `killSwitches` in remote config (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`) | Not shown | `packages/api/src/remote-config.ts` |
+| Pack host | `PACKS_ORIGIN`, `EXPO_PUBLIC_DOCS_BASE_URL` | Not shown | `https://packs.earlyletters.app` (D-097), `lib/models/catalog.ts`, `apps/mobile/eas.json` |
 
 ## People and family (server features, off in every profile)
 
@@ -74,6 +75,8 @@ What a word means, what the code calls it, and what the person sees. Code names 
 | Invite | `child_invites`, token link `/i/<token>` | Current builds show the co-parent "coming soon" presentation instead | `lib/family/`, `app/invite/` |
 | Family review | `approval`: `not_needed`, `pending`, `added`, `set_aside` | Not shown in current builds | `domain.ts` `APPROVALS` |
 | Author | `author_id` | The person who wrote a letter | `entries` |
+| Conflict copy | a `rejected_writes` row with code `conflict` (`CONFLICT_CODE`, `ConflictCopy`) | No screen on `develop`; the store's `listConflicts` and `resolveConflict` (`mine` or `theirs`) | `lib/sync/outbox.ts`, `store.ts`; exported as `data/other-versions.json` (ADR 0025) |
+| Paused by the server | sync phase `paused_server` (`killSwitches.sync`) | Not shown | `lib/sync/index.ts` |
 
 ## Money
 
