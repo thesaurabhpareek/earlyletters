@@ -263,7 +263,7 @@ Funnel by method (UR §2.3: no public benchmark).
 
 ## 12. Dependencies
 
-**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/i/<token>` format; Q5; notice placement consistent with §7.
+**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/j#t=<token>` format; Q5; notice placement consistent with §7.
 
 **Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet.
 

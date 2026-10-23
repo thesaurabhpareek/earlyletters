@@ -404,7 +404,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Needed before C1 (Mon 19 Oct): a phishing link would otherwise upload a family's letters to an attacker's account.
 
 #### BL-322 Invite asks before it joins, and never switches the open book by itself (review H2, app part) [High]
-- Status: ready. Mode: agent (needs a `peek_invite(token)` RPC from db-followup or the next migration range). Owner: family owner.
+- Status: in review (#184; `peek_invite` is on develop with #140). Mode: agent. Owner: family owner.
 - Scope: `src/app/invite/index.tsx` shows "Join this book as a parent?" and "Invited by {inviter}" and waits for a tap; `peek_invite` returns only the inviter's sign-off and the role, never the child's name or ids (D-111 item 8), so the child's name appears only after joining; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
 
 #### BL-348 Invite token in the URL fragment (review M2; FAM-04 parts 1 and 2 pulled forward)
