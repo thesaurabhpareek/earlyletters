@@ -66,7 +66,7 @@ promote -> Family (internal), Friends (external) + Beta App Review -- testers en
 release PR -> release/x.y -> RC tag -> production build -- app-store env --------- approver: 1 click per RC
 store text, screenshots, submit for review, phased release -- app-store env ------ approver: 1 click each
 founder signs packs on own computer -> PR -> R2 upload -- packs env -------------- approver: 1 click
-db-v tag -> production DB -------------------------- production env ------------- approver: 1 click
+db-v tag -> production DB -------------------------- db-production env ---------- approver: 1 click
 website: PR into main ------------------------------ branch protection on main --- approver review, then merge
 health, advisors, drift, reminders, feedback pointers -- health env, private repo -- no click
 ```
@@ -179,11 +179,11 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 **`deploy-db.yml`** (exists; RA-20-04)
 | | |
 |---|---|
-| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database until the production job's first `db-v*` tag (AF-42, after the alpha; decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of tag `db-v*` for production |
-| Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
+| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database (decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of a tag `db-v*` on a commit on `main` for production, first used with AF-42 after the alpha |
+| Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `db-production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
 | Then | RA-07-06's content-free smoke: anonymous read of `policy_versions` lists `terms` and `sensitive-data`; no table contents are printed |
 | Permissions | `contents: read` |
-| Environment | `staging`, `production` (approver; DEPLOY.md's "no reviewer for staging" changes because staging holds family letters) |
+| Environment | `staging`, `db-production` (approver; `production` would resolve to Vercel's `Production`, SR-2; DEPLOY.md's "no reviewer for staging" changes because staging holds family letters) |
 | Owner | S20; S02 for migrations |
 | Proof | 2.12; do the first staging run before staging holds letters (before Thu 22). "`test:db` against staging" means R-17 checklist 1.4 on #140 (PGlite plus `db-cli.yml` at the reviewed commit), not a run that writes to a database holding letters [V-QA]; checklist rows 1.2, 1.3 and 8.8 (advisor export) stay manual for the alpha |
 
@@ -243,7 +243,7 @@ Apple facts [V17, V24]: an internal group must exist first; up to 10,000 externa
 | Secrets | `EXPO_TOKEN`, `ASC_REVIEW_CONTACT_JSON`, `gha-release` |
 | Permissions | `contents: read`; `contents: write` only on the GitHub Release job |
 | Environment | `app-store` |
-| Tags | the coordinator pushes `ios-v<x.y.z>-rc.<n>` and `db-v*` tags (ADR 0022, DEPLOY.md): the one exception to "agents never push tags" in 2.11. A tag alone does nothing: its build waits in `app-store` or `production` for the approver |
+| Tags | the coordinator pushes `ios-v<x.y.z>-rc.<n>` and `db-v*` tags (ADR 0022, DEPLOY.md): the one exception to "agents never push tags" in 2.11. A tag alone does nothing: its build waits in `app-store` or `db-production` for the approver |
 | Owner | S20; S16 listing text; S17 privacy answers |
 
 ### 2.6 Speech packs and signed documents to R2
@@ -407,7 +407,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 | AF-04 | = #152 F02: Expo account, `eas init`, send the project id | 20 | every EAS build | #145 step 3 |
 | AF-05 | After RA-20-02a (`claude.yml` hardened) merges: in Vercel confirm the Production Branch is `main`, **then** set GitHub's default branch to `develop`. `web-e2e.yml` loses its Run button until RA-20-01 [V-S01] | 15 | dispatch, the nightly (B2-22), the kill-harness schedule (B2-11), the fence, `@claude` | [V1]; whether Vercel follows the default branch [U] |
 | AF-06 | = #152 F04, with three changes: create `scribe-staging` in a **Supabase organization the agents' connector is not authorized for** (the grant is per organization [V-S01]), or reconnect the connector read-only and scoped to a development project [V-S01]; give build 2 a **named publishable key**; deactivate the legacy keys on staging [V36] | 90 + 10 | staging, build 2, the staging stop (2.10) | DEPLOY.md; [V36] |
-| AF-07 | Environments `staging` (approver, refs `develop` and `main`) with `SUPABASE_DB_URL_STAGING`, and `testflight` (refs `develop` only; the approver as reviewer until AF-21) with `EXPO_TOKEN` from an Expo **robot user** with the Developer role (never a personal token [V37]). **Keep the repository `EXPO_TOKEN`** until the workflow that reads the environment secret has merged and one dispatch with it is green | 20 | RA-20-04; RA-20-06a | [V2]; [V37] |
+| AF-07 | Environments `staging` (approver, ref `develop` only: staging follows `develop`, decided 17 Oct) with `SUPABASE_DB_URL_STAGING`, and `testflight` (refs `develop` only; the approver as reviewer until AF-21) with `EXPO_TOKEN` from an Expo **robot user** with the Developer role (never a personal token [V37]). **Keep the repository `EXPO_TOKEN`** until the workflow that reads the environment secret has merged and one dispatch with it is green | 20 | RA-20-04; RA-20-06a | [V2]; [V37] |
 | AF-08 | = #152 F09, after deciding D-063 (both domains at Porkbun) against D-097 (`earlyletters.app` as a Cloudflare zone for R2) | 150 + DNS | keys PR, words in both builds | #162 runbook |
 | AF-09 | = #152 F08, changed: internal groups "Founder" and "Family", **external group "Friends"**, automatic distribution off on each [V18]; family as internal testers with the lowest role the screen accepts and access to the `.preview` app only; record in writing that internal testers can read each other's feedback | 45 | builds 1 and 2; Friends safely | [V18]; roles [V-S01, U] |
 | AF-10 | = #152 F12, plus: when `eas credentials` creates the App Store Connect key, choose **App Manager**, never the Admin default [V28] | 45 | build 1, every later submit | [V23], [V28] |
@@ -433,7 +433,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 
 ### Production (after the post-alpha re-plan, D-106)
 
-AF-40 the production record `com.earlyletters.scribe` (permanent from the first upload) and `submit.production.ascAppId`; AF-41 App Privacy answers by hand from S17's worksheet [V16]; AF-42 production Supabase in the same separate organization as staging, `SUPABASE_DB_URL_PROD` in `production`, the first `db-v*` tag; AF-43 review the external test information once.
+AF-40 the production record `com.earlyletters.scribe` (permanent from the first upload) and `submit.production.ascAppId`; AF-41 App Privacy answers by hand from S17's worksheet [V16]; AF-42 production Supabase in the same separate organization as staging, `SUPABASE_DB_URL_PROD` in `db-production` (never `production`, SR-2), the first `db-v*` tag; AF-43 review the external test information once.
 
 ## 5. Work packages, by owner stream
 
