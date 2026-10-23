@@ -67,7 +67,11 @@
 --       any delete of an audio_blobs row enqueues its exact object_path in storage_purge_queue
 --       and writes `audio_blob` and `storage_object` rows in purge_ledger, in the same
 --       transaction. Rows go when their letter is purged (entries trigger), discarded,
---       deleted with the backup, swept as orphans, or cascaded with the book or the person;
+--       deleted with the backup, swept as orphans, or cascaded with the book or the person.
+--       A confirmed backup of a letter still on the server goes only with that letter or
+--       through backup_delete_all (count and fresh sign-in); backup_discard takes reservations
+--       and orphans only. No backup path deletes a row under a legal hold (backup_row_held);
+--       a held letter, book or account is never purged, so its cascades never reach one;
 --       a new account deletion request cancels every open restore request at once;
 --       deleting a profile pseudonymises its escrow_unwraps rows with the consent pepper
 --       (fails closed, 55000, like 20261015010000 G-12) and cascades every other backup row.
@@ -184,6 +188,15 @@ $$;
 create or replace function public.backup_entry_exists(p_entry uuid, p_author uuid, p_child uuid)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select exists (select 1 from entries e where e.id = p_entry and e.author_id = p_author and e.child_id = p_child);
+$$;
+
+-- Whether a backup row is under a legal hold: on its letter, its author or its book. The
+-- backup's own delete paths (backup_discard, backup_delete_all, backup_svc_sweep) keep such
+-- a row, the same rule purge_due, erase_entry and prepare_account_purge follow for letters.
+-- A letter's own purge never reaches a held letter, so the entries trigger needs no check.
+create or replace function public.backup_row_held(p_entry uuid, p_author uuid, p_child uuid)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select public.is_held('entry', p_entry) or public.is_held('profile', p_author) or public.is_held('child', p_child);
 $$;
 
 -- Whether an auth session still exists. Access tokens stay valid until they expire (up to an
@@ -973,14 +986,22 @@ begin
 end;
 $$;
 
--- Let a recording's backup go (held.discard, or a letter erased on the phone). Never gated.
+-- Let a reservation go, or a backup whose letter is no longer on the server (F08 6.5 D5, D6).
+-- A confirmed backup of a letter the server still holds, live or in Recently deleted, is kept
+-- ({discarded: false}): it goes only with its letter (Erase now, the 30-day purge, the book or
+-- the account) or through "Delete the backup" with its count and a fresh sign-in (F08 6.5 D2,
+-- F08-REQ-035), so a stolen session cannot empty the backup one recording at a time. Nothing
+-- under a legal hold goes. Never switched off or consent-gated.
 create or replace function public.backup_discard(p_entry uuid)
 returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_uid uuid := public.require_user();
   v_n int;
 begin
-  delete from audio_blobs where entry_id = p_entry and author_id = v_uid;
+  delete from audio_blobs b
+   where b.entry_id = p_entry and b.author_id = v_uid
+     and (b.state = 'pending' or not public.backup_entry_exists(b.entry_id, b.author_id, b.child_id))
+     and not public.backup_row_held(b.entry_id, b.author_id, b.child_id);
   get diagnostics v_n = row_count;
   return jsonb_build_object('discarded', v_n > 0);
 end;
@@ -1005,13 +1026,22 @@ begin
   if p_expected_confirmed is distinct from v_have then
     raise exception 'the count does not match what is backed up' using errcode = '22023', detail = 'count', hint = v_have::text;
   end if;
+  -- A legal hold on the person, or on any book or letter they have backed up, holds the whole
+  -- request, as it holds an account deletion (prepare_account_purge): nothing changes and the
+  -- answer says held. Deleting part of the backup would leave a copy nobody asked to keep once
+  -- the hold lifts; the person asks again then.
+  if public.is_held('profile', v_uid)
+     or exists (select 1 from audio_blobs b where b.author_id = v_uid and public.backup_row_held(b.entry_id, b.author_id, b.child_id))
+     or exists (select 1 from child_keys k where k.profile_id = v_uid and public.is_held('child', k.child_id)) then
+    return jsonb_build_object('held', true, 'deleted_recordings', 0, 'deleted_keys', 0);
+  end if;
   update restore_requests set state = 'cancelled', cancelled_at = now(), cancel_source = 'owner'
    where profile_id = v_uid and state in ('requested', 'approved');
   delete from audio_blobs where author_id = v_uid;
   get diagnostics v_blobs = row_count;
   delete from child_keys where profile_id = v_uid;
   get diagnostics v_keys = row_count;
-  return jsonb_build_object('deleted_recordings', v_blobs, 'deleted_keys', v_keys);
+  return jsonb_build_object('held', false, 'deleted_recordings', v_blobs, 'deleted_keys', v_keys);
 end;
 $$;
 
@@ -1545,15 +1575,18 @@ declare
   v_log int;
   v_notices int;
 begin
+  -- Neither pass touches a row under a legal hold (backup_row_held).
   delete from audio_blobs b where b.entry_id in (
     select x.entry_id from audio_blobs x
      where x.created_at < p_now - interval '30 days'
        and not public.backup_entry_exists(x.entry_id, x.author_id, x.child_id)
+       and not public.backup_row_held(x.entry_id, x.author_id, x.child_id)
      order by x.created_at limit v_limit);
   get diagnostics v_orphans = row_count;
   delete from audio_blobs b where b.entry_id in (
     select x.entry_id from audio_blobs x
      where x.state = 'pending' and x.updated_at < p_now - interval '24 hours'
+       and not public.backup_row_held(x.entry_id, x.author_id, x.child_id)
      order by x.updated_at limit v_limit);
   get diagnostics v_stale = row_count;
   update restore_requests set state = 'expired', expired_at = p_now
@@ -1618,7 +1651,8 @@ declare f text;
 begin
   foreach f in array array[
     'public.backup_switch_on(text)', 'public.backup_escrow_key_trusted(int)', 'public.backup_account_deleting(uuid)',
-    'public.backup_entry_exists(uuid, uuid, uuid)', 'public.backup_forget_entry(uuid)', 'public.backup_recent_sign_in()',
+    'public.backup_entry_exists(uuid, uuid, uuid)', 'public.backup_row_held(uuid, uuid, uuid)',
+    'public.backup_forget_entry(uuid)', 'public.backup_recent_sign_in()',
     'public.backup_session_live(uuid, uuid)', 'public.escrow_rotation_on(int, int)', 'public.escrow_approvers(uuid, uuid)',
     'public.escrow_long_hold(uuid, uuid)', 'public.escrow_require_session(uuid, uuid)',
     'public.audio_blobs_after_change()', 'public.audio_blobs_touch()', 'public.escrow_unwraps_guard()',

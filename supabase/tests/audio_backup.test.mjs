@@ -249,6 +249,24 @@ check('once the old object is gone, the live letter can be backed up again', (aw
 await as(A, `select public.backup_discard($1)`, [L3]);
 await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio'`);
 check('discarding someone else\'s recording does nothing', (await one(B, `select public.backup_discard($1) r`, [L1])).r.discarded === false);
+// A confirmed backup of a letter the server still holds is never discarded (F08 6.5 D2): it goes with
+// its letter, or through "Delete the backup" with its count and a fresh sign-in, so a stolen session
+// cannot empty the backup one recording at a time.
+const blobState = async (entry) => (await sys(`select state from audio_blobs where entry_id = $1`, [entry])).rows[0]?.state ?? null;
+check('[F08-REQ-035] discarding a confirmed backup of a live letter keeps it',
+  (await one(A, `select public.backup_discard($1) r`, [L1])).r.discarded === false && await blobState(L1) === 'confirmed');
+await sys(`update entries set deleted_at = now(), deleted_reason = 'user' where id = $1`, [L1]);
+check('[F08-REQ-035] nor while its letter is in Recently deleted (restoring the letter keeps its recording)',
+  (await one(A, `select public.backup_discard($1) r`, [L1])).r.discarded === false && await blobState(L1) === 'confirmed');
+await sys(`update entries set deleted_at = null, deleted_reason = null where id = $1`, [L1]);
+// Nothing under a legal hold is discarded, not even a reservation.
+const LH = await letter(A);
+await begin(A, LH);
+await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('entry', $1, 'other', 'T-B1', 'ops', '2027-01-01')`, [LH]);
+check('a reservation under a legal hold is not discarded', (await one(A, `select public.backup_discard($1) r`, [LH])).r.discarded === false && await blobState(LH) === 'pending');
+await sys(`update legal_holds set released_at = now(), released_by = 'ops' where scope_id = $1`, [LH]);
+check('once the hold lifts, the reservation can go', (await one(A, `select public.backup_discard($1) r`, [LH])).r.discarded === true && await blobState(LH) === null);
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio'`);
 
 const confirmed = Number((await sys(`select count(*) n from audio_blobs where author_id = $1 and state = 'confirmed'`, [A])).rows[0].n);
 // "Delete the backup" needs a sign-in in the last 10 minutes (amr in the JWT PostgREST passes)
@@ -277,8 +295,19 @@ check('nor can one whose session has passed its end', await codeOf(() => withAmr
 await sys(`update auth.sessions set not_after = null where id = $1`, [SESS_A]);
 const wrong = await (async () => { try { await withAmr(A, 60, `select public.backup_delete_all($1)`, [confirmed + 1]); } catch (e) { return `${e.code} ${e.detail} ${e.hint}`; } })();
 check('[F08-REQ-035] "Delete the backup" deletes nothing unless the count matches what is backed up', wrong === `22023 count ${confirmed}`);
+// A legal hold on the person, or on one backed-up letter, holds the whole request (as an account deletion).
+const countsA = async () => [(await sys(`select count(*)::int n from audio_blobs where author_id = $1`, [A])).rows[0].n,
+  (await sys(`select count(*)::int n from child_keys where profile_id = $1`, [A])).rows[0].n];
+const beforeHold = await countsA();
+for (const [scope, id, ref] of [['entry', L1, 'T-B2'], ['profile', A, 'T-B3']]) {
+  await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ($1, $2, 'other', $3, 'ops', '2027-01-01')`, [scope, id, ref]);
+  const held = (await withAmr(A, 60, `select public.backup_delete_all($1) r`, [confirmed])).rows[0].r;
+  check(`a legal hold on the ${scope} holds "Delete the backup": nothing changes and the answer says held`,
+    held.held === true && held.deleted_recordings === 0 && held.deleted_keys === 0 && JSON.stringify(await countsA()) === JSON.stringify(beforeHold));
+  await sys(`update legal_holds set released_at = now(), released_by = 'ops' where scope_id = $1`, [id]);
+}
 const del = (await withAmr(A, 60, `select public.backup_delete_all($1) r`, [confirmed])).rows[0].r;
-check('[F08-REQ-035] with the right count, every recording and the book key go', del.deleted_recordings >= 1 && del.deleted_keys === 1
+check('[F08-REQ-035] with the right count, every recording and the book key go', del.held === false && del.deleted_recordings >= 1 && del.deleted_keys === 1
   && (await sys(`select count(*)::int n from audio_blobs where author_id = $1`, [A])).rows[0].n === 0
   && (await sys(`select count(*)::int n from child_keys where profile_id = $1`, [A])).rows[0].n === 0);
 check('every deleted recording\'s exact path is queued', (await sys(`select count(*)::int n from storage_purge_queue where bucket_id = 'entry-audio' and object_path like $1`,

@@ -117,6 +117,21 @@ check('the sweep purges a reservation never confirmed in 24 hours (its object, i
 check('a reservation younger than 24 hours stays (a slow upload)', await blobs('entry_id = $1', [l5]) === 1);
 await as(A, `select public.backup_discard($1)`, [l5]);
 check('users cannot run the sweep', await codeOf(() => as(A, `select public.backup_svc_sweep(now(), 1)`)) === '42501');
+// A legal hold (on the book here) keeps every backup row the sweep would take, until it lifts.
+const orphanHeld = uuid7();
+await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes, created_at)
+  values ($1, $2, $3, $4, 1, $5::bytea, 10, now() - interval '40 days')`, [orphanHeld, SHARED, A, `${SHARED}/${A}/${orphanHeld}.m4a.enc`, hex('dd', 60)]);
+const l6 = await letter(A, SHARED);
+await as(A, `select public.backup_begin($1, $2, 1000, 1, $3::bytea)`, [l6, SHARED, hex('dd', 60)]);
+await sys(`update audio_blobs set updated_at = now() - interval '25 hours' where entry_id = $1`, [l6]);
+await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', $1, 'other', 'T-B3', 'ops', '2027-01-01')`, [SHARED]);
+const swHeld = await sweep();
+check('under a legal hold the sweep takes neither an orphan nor a stale reservation', swHeld.orphans === 0 && swHeld.stale_pending === 0
+  && await blobs('entry_id = any($1::uuid[])', [[orphanHeld, l6]]) === 2);
+await sys(`update legal_holds set released_at = now(), released_by = 'ops' where scope = 'child' and scope_id = $1`, [SHARED]);
+const swLifted = await sweep();
+check('once the hold lifts, the next sweep takes both', swLifted.orphans === 1 && swLifted.stale_pending === 1
+  && await blobs('entry_id = any($1::uuid[])', [[orphanHeld, l6]]) === 0);
 
 // ── Account deletion from request to finalize (F17 8.4, F08-REQ-040 server part) ──
 const keepB = await backedUp(B, SHARED);

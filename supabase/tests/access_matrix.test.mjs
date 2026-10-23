@@ -309,7 +309,7 @@ const SERVICE_ONLY = [
   // Backup (20261023000000): internal helpers, the purge worker's and stop endpoint's functions, and
   // the escrow_* functions (role escrow_svc only; its own grants are tested in audio_backup_escrow).
   `select public.backup_switch_on('backup')`, `select public.backup_escrow_key_trusted(1)`, `select public.backup_account_deleting('${A}')`,
-  `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
+  `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_row_held('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
   `select public.backup_session_live('${A}', '${uuid7()}')`, `select public.backup_recent_sign_in()`,
   `select public.escrow_rotation_on(1, 2)`, `select public.escrow_approvers('${A}', '${BDEV}')`, `select public.escrow_long_hold('${A}', '${BDEV}')`,
   `select public.escrow_require_session('${A}', '${uuid7()}')`,
