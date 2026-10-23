@@ -56,7 +56,6 @@ public class ScribeKeysModule: Module {
   /// Read-modify-write of an item must not interleave; async functions may run concurrently.
   private static let lock = NSLock()
 
-  @available(iOS 17.0, *)
   /// One purpose per key (review A note 3 on #150): the file-key wrap and the key check each use a
   /// subkey of the book key, HKDF-SHA256 with no salt and one of these labels as info. The same
   /// strings are BOOK_SUBKEY_INFO in lib/backup/contract.ts. Fixed from the first stored key.
@@ -67,6 +66,7 @@ public class ScribeKeysModule: Module {
     HKDF<SHA256>.deriveKey(inputKeyMaterial: key, info: Data(info.utf8), outputByteCount: 32)
   }
 
+  @available(iOS 17.0, *)
   private static func suite() -> HPKE.Ciphersuite {
     HPKE.Ciphersuite(kem: .Curve25519_HKDF_SHA256, kdf: .HKDF_SHA256, aead: .AES_GCM_256)
   }
