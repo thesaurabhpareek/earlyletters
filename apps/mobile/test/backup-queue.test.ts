@@ -688,6 +688,33 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
   });
 
+  it(`[review B re-check] a confirm that keeps answering P0002 restarts at most ${MAX_JOB_ATTEMPTS} times, then rests until the next launch`, async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(2000); // one part: one PATCH per upload
+    let sweeping = true;
+    // Every upload lands, then its reservation is gone before backup_confirm (P0002, no detail).
+    r.onHttp((m) => {
+      const row = r.backend.blobs.get(item.entryId);
+      if (sweeping && m === 'PATCH' && row) {
+        r.backend.objects.delete(row.objectPath);
+        r.backend.blobs.delete(item.entryId);
+      }
+    });
+    const begins = () => r.backend.requests.filter((x) => x.kind === 'begin').length;
+    const q = r.make();
+    for (let pass = 0; pass < 30; pass++) {
+      await q.drain();
+      r.clock.t += 6 * 60 * 1000;
+    }
+    expect(begins()).toBe(MAX_JOB_ATTEMPTS);
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'queued', attempts: MAX_JOB_ATTEMPTS, lastError: 'P0002:none' });
+    expect(q.nextWakeAt()).toBeNull();
+    sweeping = false;
+    await r.make().drain(); // the next launch tries again
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
   const EP = 'https://fake.storage/storage/v1/upload/resumable';
   const input = (http: HttpLike, url: string | null = null) => ({
     http, target: { endpoint: EP, headers: { Authorization: `Bearer ${MAMA}` } }, bucket: 'entry-audio', objectPath: `${ASHA}/${MAMA}/x.m4a.enc`,

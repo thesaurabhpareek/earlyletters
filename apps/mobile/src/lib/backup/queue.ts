@@ -379,9 +379,12 @@ export function createUploadQueue(d: QueueDeps) {
       // The server has no object at the path (`P0002 object`), one of another size (`22023 size`), or no
       // reservation at all (`P0002` with no detail: the daily sweep removed a pending row older than 24
       // hours; review A on #150): asking again would never succeed, so the recording goes again from the
-      // start, after a backoff.
+      // start, after a backoff. Each restart counts as an attempt, and at MAX_JOB_ATTEMPTS the recording
+      // rests until the next launch like every other refusal, so a confirm that keeps failing never
+      // re-sends the whole file all day (review B re-check on #150).
       if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && (e.detail === 'object' || !e.detail)) || (e.code === '22023' && e.detail === 'size'))) {
         const attempts = job.attempts + 1;
+        if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
         reset(job, { attempts, lastError: `${e.code}:${e.detail ?? 'none'}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
         return { kind: 'retry_later' };
       }
