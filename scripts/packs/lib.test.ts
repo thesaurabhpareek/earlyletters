@@ -46,6 +46,13 @@ const spanishSource = JSON.stringify({ ...structuredClone(ENGLISH_PACK), languag
 const opts = { baseUrl: 'https://packs.earlyletters.app/', minAppVersion: '1.0.0' };
 
 describe('signing key', () => {
+  it('refuses a key id that keys.ts lists twice: phones use only the first (review A of #162, N5)', () => {
+    const other = generateSigningKey();
+    const twice: TrustedKey[] = [...trusted, { keyId: 'el-test', publicKey: other.publicKey, kinds: trusted[0].kinds }];
+    expect(() => readSigningKey(env, twice)).toThrow(/lists key id el-test more than once/);
+    expect(() => readSigningKey({ EL_SIGNING_KEY: other.secretKey, EL_SIGNING_KEY_ID: 'el-test' }, twice)).toThrow(/more than once/);
+  });
+
   it('reads a trusted key from the environment', () => {
     const k = readSigningKey(env, trusted);
     expect(k.keyId).toBe('el-test');

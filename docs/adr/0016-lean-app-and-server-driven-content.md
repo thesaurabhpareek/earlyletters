@@ -72,7 +72,7 @@ Text-rules packs are kilobytes to a few megabytes; their cost is noise on any ho
 
 - Signed bytes: `early-letters/<kind>/v1\n` + canonical JSON of the payload (sorted keys, no whitespace, JSON.stringify strings and numbers; an RFC 8785 subset exact for our values). The prefix stops a signed config from being replayed as a manifest.
 - Ed25519 via `@noble/ed25519` 3.2.0 with synchronous SHA-512 from `@noble/hashes` 2.4.0 (both MIT, pure JS, released Aug 2026; Hermes has no WebCrypto Ed25519). Validation with `valibot` 1.5.0 (MIT, Sep 2026). Bundle cost measured in APP_SIZE.md (valibot is about 105 KB of minified JS because Metro does not tree-shake).
-- Keys: `packages/api/src/keys.ts` lists the trusted public keys and which kinds each may sign. It ships **empty**: until the founder runs `scripts/packs/keygen.ts`, the app trusts nothing, installs no downloaded pack, keeps its bundled config defaults and shows the packaged copy (fail closed).
+- Keys: `packages/api/src/keys.ts` lists the trusted public keys and which kinds each may sign. It ships **empty**: until the founder runs `scripts/packs/keygen.mjs`, the app trusts nothing, installs no downloaded pack, keeps its bundled config defaults and shows the packaged copy (fail closed).
 - Rollback protection: the app refuses a document whose `version` is lower than the last one it accepted.
 - Rotation: add the new key, release the app, sign with the new key, drop the old key in a later release. Revocation also needs a release, which is why the secret never leaves the founder's password manager and shell (not CI, not EAS, not Supabase).
 
@@ -145,7 +145,9 @@ There is no key or block for: turning off recording, typing, saving, reading, pl
 
 ## 7. Publishing (manual, by the founder)
 
-1. Once: `npx tsx scripts/packs/keygen.ts` prints a public key line for `packages/api/src/keys.ts` (commit it, ship an app release) and a secret for the password manager.
+1. Once: `node scripts/packs/keygen.mjs` (plain Node, no install; was `keygen.ts`) prints a public key line for `packages/api/src/keys.ts` (commit it, ship an app release) and a secret for the password manager.
+
+Since 15 Oct 2026 the builds read the three documents from the pack host (D-097), and `publish.ts release` builds one static directory (documents at the `ENDPOINTS` paths, text packs, speech models fetched from their pinned upstream and hash-checked), `publish.ts upload` sends it to any S3-compatible bucket (packs first, manifest last, nothing overwritten or deleted) and `publish.ts verify` checks the live host as a phone does. Founder runbook: `docs/ops/PACKS_HOSTING.md`. The steps below remain the step-by-step path.
 2. Each time: load `EL_SIGNING_KEY` and `EL_SIGNING_KEY_ID` into the shell, then `npx tsx scripts/packs/publish.ts packs|config|content|all`. It validates every text pack with `validatePackJson` (ADR 0014), writes them to `dist/packs/`, adds the hosted speech models from the speech catalog, signs the manifest, config and content, checks each signature the way a phone does, and rewrites `supabase/functions/*/published.ts`. It refuses a key the app does not trust. `--kill sync` and `--unkill sync` edit `scripts/packs/remote-config.json` first.
 3. The script prints, and never runs: upload commands (`wrangler r2 object put` for files up to 300 MB; `rclone copyto` above that, because Wrangler uploads stop at 315 MB, V) and `npx supabase functions deploy config|content --no-verify-jwt --use-api`.
 4. Commit the changed `published.ts` and `remote-config.json`: git history is the audit log of what was served (C-NFR-009).

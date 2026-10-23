@@ -17,6 +17,7 @@ export async function createDb(files, options = {}) {
   await db.exec(`
     create role authenticated nologin; create role anon nologin; create role service_role nologin bypassrls;
     create schema auth; create table auth.users (id uuid primary key);
+    create table auth.sessions (id uuid primary key, user_id uuid not null, not_after timestamptz);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     grant usage on schema auth to authenticated, anon;
     create schema storage;
@@ -26,10 +27,11 @@ export async function createDb(files, options = {}) {
     alter table storage.objects enable row level security;
     grant usage on schema storage to authenticated, anon; grant all on storage.objects to authenticated, anon;
     -- Mirror Supabase's default privileges (TDD 02 C18): every table and view a
-    -- migration creates is granted to both API roles at creation, so a
-    -- migration's own revoke (for example on book_entries) is what the tests see.
-    grant usage on schema public to authenticated, anon;
-    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
+    -- migration creates is granted to both API roles and the service role at
+    -- creation, so a migration's own revoke (for example on book_entries, or the
+    -- backup tables' revoke from service_role) is what the tests see.
+    grant usage on schema public to authenticated, anon, service_role;
+    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon, service_role;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
   // Session settings the hosted project sets with `alter database` (supabase/APPLY.md):

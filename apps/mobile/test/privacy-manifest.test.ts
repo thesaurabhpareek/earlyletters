@@ -8,10 +8,13 @@
  *    static pod's manifest, so the app must cover each category in its own binary);
  *  - a build with server features off declares any collected data (alpha build 1, the kill path);
  *  - a server-on build's collected types drift from S17's App Privacy worksheet for its build flags;
- *  - the native folder could be reused across profiles (Expo merges into an existing file).
+ *  - the native folder could be reused across profiles (Expo merges into an existing file);
+ *  - the preflight lets a Google client id into a build that does not offer Google sign-in (GoogleSignIn's own
+ *    manifest ships in every build, and this app's manifest has none of Google's data types).
  *
  * Every build is evaluated through Expo's own loader, the way `expo config`, prebuild and EAS read it.
  */
+import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -171,14 +174,17 @@ function podManifests(): { file: string; categories: string[] }[] {
 
 /**
  * Pods that come from CocoaPods trunk, not node_modules (GoogleSignIn ~> 9.0 through
- * @react-native-google-signin/google-signin, and its dependencies). Categories as read from each SDK's
- * PrivacyInfo.xcprivacy in its own repository on 16 Oct 2026. AppAuth 2.0.0, GTMAppAuth 5.0.0 and
- * PromisesObjC 2.4.0 declare none.
+ * @react-native-google-signin/google-signin, and its dependencies). Categories as read on 23 Oct 2026 from
+ * each SDK's PrivacyInfo.xcprivacy in its own repository, at the newest trunk versions ~> 9.0 allowed that
+ * day (GoogleSignIn 9.2.0; its manifest is byte-identical to 9.0.0's). AppAuth 2.1.0 (AppAuthCore),
+ * GTMAppAuth 5.0.0, PromisesObjC 2.4.1 and PromisesSwift 2.4.1 ship a manifest that declares none.
+ * AppCheckCore 11.3.2 and RecaptchaInterop 101.0.0 ship no manifest. No Podfile.lock is committed, so a later
+ * pod install can resolve newer versions within these ranges; their manifests are unverified until read again.
  */
 const TRUNK_POD_CATEGORIES: Record<string, string[]> = {
-  'GoogleSignIn 9.0.0': ['NSPrivacyAccessedAPICategoryUserDefaults'],
-  'GTMSessionFetcher 3.5.0': ['NSPrivacyAccessedAPICategoryUserDefaults'],
-  'GoogleUtilities 8.1.0': ['NSPrivacyAccessedAPICategoryFileTimestamp', 'NSPrivacyAccessedAPICategoryUserDefaults'],
+  'GoogleSignIn 9.2.0': ['NSPrivacyAccessedAPICategoryUserDefaults'],
+  'GTMSessionFetcher/Core 3.5.0': ['NSPrivacyAccessedAPICategoryUserDefaults'],
+  'GoogleUtilities 8.1.5': ['NSPrivacyAccessedAPICategoryFileTimestamp', 'NSPrivacyAccessedAPICategoryUserDefaults'],
 };
 
 describe('every category a linked SDK declares is in the app manifest', () => {
@@ -205,7 +211,8 @@ describe('every category a linked SDK declares is in the app manifest', () => {
     }
   });
 
-  it('the GoogleSignIn pin these categories were read for is still the one the library asks for', () => {
+  // This sees the range the library asks for, not the version pod install resolves inside it.
+  it('the library still asks for GoogleSignIn ~> 9.0, the range these categories were read in', () => {
     const rel = 'node_modules/@react-native-google-signin/google-signin/package.json';
     const file = [path.join(ROOT, rel), path.join(REPO, rel)].find((f) => fs.existsSync(f));
     expect(file, 'the Google sign-in library is installed').toBeDefined();
@@ -215,10 +222,9 @@ describe('every category a linked SDK declares is in the app manifest', () => {
 });
 
 describe('LEGAL-REQ-043 collected data types: exactly true for each build', () => {
-  it('alpha build 1 (testflight, servers off) declares nothing collected', () => {
-    const env = profileEnv('testflight');
-    if (env.EXPO_PUBLIC_SERVER_FEATURES === 'on') return; // after the R-17 flip it is build 2; the flip test covers it
-    expect(manifestFor(env).NSPrivacyCollectedDataTypes).toEqual([]);
+  // After the R-17 flip testflight is build 2, so this shows as skipped and the flip test below covers it.
+  it.skipIf(profileEnv('testflight').EXPO_PUBLIC_SERVER_FEATURES === 'on')('alpha build 1 (testflight, servers off) declares nothing collected', () => {
+    expect(manifestFor(profileEnv('testflight')).NSPrivacyCollectedDataTypes).toEqual([]);
   });
 
   it('development and production (servers off) declare nothing collected', () => {
@@ -340,4 +346,47 @@ describe('the generated PrivacyInfo.xcprivacy', () => {
     const preflight = fs.readFileSync(path.join(ROOT, 'scripts', 'preflight-testflight.mjs'), 'utf8');
     expect(preflight).toMatch(/'prebuild', '--platform', 'ios', '--no-install', '--clean'/);
   });
+});
+
+describe('Google sign-in: offered by no alpha build, so no Google client id gets in', () => {
+  // The GoogleSignIn pod is autolinked (package.json), so its own manifest, with Google's data types, ships in
+  // every build; this app's manifest has none of them. The preflight fails a profile that sets a client id.
+  const IOS_ID = '000000000000-asha.apps.googleusercontent.com';
+  const WEB_ID = '000000000001-asha.apps.googleusercontent.com';
+  const preflight = (profile: string, set: Record<string, string>) =>
+    new Promise<{ code: number; out: string }>((resolve) => {
+      // Nothing from this shell or this vitest run that the preflight would read: build switches, B-9, nested vitest.
+      const env = { ...process.env };
+      for (const k of Object.keys(env)) if (/^(EXPO_PUBLIC_|VITEST)/.test(k) || k === 'EAS_BUILD_PROFILE') delete env[k];
+      Object.assign(env, set);
+      const args = [path.join(ROOT, 'scripts', 'preflight-testflight.mjs'), '--profile', profile, '--skip-prebuild'];
+      execFile(process.execPath, args, { cwd: ROOT, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+        resolve({ code: err ? Number(err.code ?? 1) : 0, out: `${stdout}${stderr}` });
+      });
+    });
+  const googleLines = (out: string, level: string) => out.split('\n').filter((l) => l.startsWith(level) && /Google client id|GOOGLE_(IOS|WEB)_CLIENT_ID/.test(l));
+
+  it('no eas.json profile sets a Google client id', () => {
+    for (const [name, p] of Object.entries(eas.build)) {
+      expect(Object.keys(p.env ?? {}).filter((k) => k.startsWith('EXPO_PUBLIC_GOOGLE_')), name).toEqual([]);
+    }
+  });
+
+  it('the preflight fails either build when a Google client id is set, naming the variable and never its value', async () => {
+    const [clean, build1, build2] = await Promise.all([
+      preflight('testflight', {}),
+      preflight('testflight', { EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: IOS_ID }),
+      preflight('preview', { EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: IOS_ID, EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: WEB_ID }),
+    ]);
+    expect(googleLines(clean.out, 'FAIL'), clean.out).toEqual([]);
+    expect(googleLines(clean.out, 'PASS'), clean.out).toHaveLength(1);
+    expect(build1.code).toBe(1);
+    expect(googleLines(build1.out, 'FAIL').join('\n'), build1.out).toMatch(/EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in this shell/);
+    expect(build2.code).toBe(1);
+    expect(googleLines(build2.out, 'FAIL').join('\n'), build2.out).toMatch(/EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in this shell.*EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in this shell/);
+    for (const r of [build1, build2]) {
+      expect(r.out).not.toContain(IOS_ID);
+      expect(r.out).not.toContain(WEB_ID);
+    }
+  }, 180_000);
 });

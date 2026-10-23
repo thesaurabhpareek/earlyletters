@@ -10,6 +10,9 @@
  *
  * A book that already has two parents (D-069) shows "{child}'s book has two parents." instead of
  * Share, from the last pull or from the server's SCCAP (F11-REQ-004, F11-REQ-026).
+ *
+ * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused
+ * and sends nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -26,7 +29,7 @@ import { familyCopy } from '@/lib/family/copy';
 import { childIndexOf, track, trackInviteCreated } from '@/lib/analytics/track';
 import { makeInviteDraft } from '@/lib/family/device-invite';
 import type { InviteDraft } from '@/lib/family/invite-draft.logic';
-import { inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
+import { inviteErrorKind, NEW_DRAFT_ERRORS, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { createCoParentInvite } from '@/lib/family/invites';
 import { familyTabState } from '@/lib/family/members.logic';
 import { shareInviteLink } from '@/lib/family/share';
@@ -80,8 +83,8 @@ function InviteCoParent() {
       try {
         invite = await createCoParentInvite(auth.client, book.id, s || null, await draftFor(s, false));
       } catch (e) {
-        // An id or token collision is the phone's to fix: one more try with a new draft.
-        if (inviteErrorKind(e) !== 'retry_new_invite') throw e;
+        // An id, code or token collision is the phone's to fix: one more try with a new draft.
+        if (!NEW_DRAFT_ERRORS.includes(inviteErrorKind(e))) throw e;
         invite = await createCoParentInvite(auth.client, book.id, s || null, await draftFor(s, true));
       }
       const shared = await shareInviteLink(invite.url, child, s || null);
@@ -91,7 +94,8 @@ function InviteCoParent() {
       setDone(true);
     } catch (e) {
       const kind = inviteErrorKind(e);
-      track('invite_failed', { stage: 'create', reason: trackedInviteReason(kind) });
+      // A pause sent nothing, so there is no failed invite to count.
+      if (kind !== 'paused') track('invite_failed', { stage: 'create', reason: trackedInviteReason(kind) });
       setError(kind);
     } finally {
       setBusy(false);

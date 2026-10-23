@@ -63,4 +63,8 @@ export const previewValues: EmailValues = {
   backupClearDate: 'Monday, November 9, 2026',
   documentName: 'Privacy Policy',
   changeSummary: 'Preview only: the approved plain-language summary of the change goes here.',
+
+  // recording backup and the recovery key (backup.en.ts; sent by the escrow function)
+  holdUntil: 'Sunday, October 4, 2026 at 9:14 pm UTC',
+  stopUrl: `${SITE}/stop#t=preview-not-a-real-token`,
 };
