@@ -186,9 +186,10 @@ export function createRestore(d: RestoreDeps) {
   const unlisted = new Set<string>();
   /**
    * Missing letters whose recording a listing named but no key here opens, while their keys wait on
-   * escrow (a hold) or escrow was stopped (review B N4 on #252): no more listings for them in this
-   * run either. Escrow is asked on its own meanwhile (`waitsForKeys`, at its own pace), and the set
-   * is cleared once keys are stored or the person taps Try again, so they are listed again then.
+   * escrow: a hold, a Stop (review B N4 on #252), the escrow switch off, a fresh sign-in, or a try
+   * that did not get through. No more listings for them in this run either, since a listing cannot
+   * change any of those. Escrow is asked on its own meanwhile (`waitsForKeys`, at its own pace), and
+   * the set is cleared once keys are stored or the person taps Try again, so they are listed again then.
    */
   const unopenable = new Set<string>();
   /** A missing letter's restore has something left to do (nothing has settled it: done, kept here or failed). */
@@ -564,7 +565,7 @@ export function createRestore(d: RestoreDeps) {
       const first = await pass();
       if (first.needEscrow) {
         const keys = await escrowStep();
-        if (keys.kind === 'waiting_hold' || keys.kind === 'stopped') for (const id of first.keyless) unopenable.add(id);
+        if (keys.kind !== 'ready') for (const id of first.keyless) unopenable.add(id);
         if (keys.kind !== 'ready') return { restored: first.restored, keys, remaining: first.remaining, escrow: true };
         const second = await pass();
         return { restored: first.restored + second.restored, keys: second.needEscrow ? { kind: 'unavailable' } : { kind: 'ready' }, remaining: second.remaining, escrow: true };

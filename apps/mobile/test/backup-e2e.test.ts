@@ -607,6 +607,48 @@ describe('what Settings says, and the recovery service is asked only when it mus
     expect(backend.unwraps).toHaveLength(0);
   });
 
+  it('[#252 follow-up] with the escrow switch off, then a fresh sign-in needed, the list is read once in this run; escrow alone is asked after', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    const letters = [recordLetter(a, ASHA, 20_000), recordLetter(a, ASHA, 5_000)];
+    await a.service.turnOn();
+    await a.service.tick();
+    const c = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-c', live });
+    syncText(a, c);
+    await c.service.tick(); // iCloud Keychain may still bring the key
+    clock.t += ICLOUD_WAIT_MS;
+    const n = reads(live);
+    c.cond.escrowKilled = true;
+    for (let i = 0; i < 5; i++) {
+      await c.service.tick();
+      clock.t += 1000;
+    }
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'unavailable' });
+    expect(backend.restores.size).toBe(0);
+    c.cond.escrowKilled = false;
+    backend.stepUpRequired = true;
+    for (let i = 0; i < 5; i++) {
+      await c.service.tick();
+      clock.t += 1000;
+    }
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
+    expect(backend.restores.size).toBe(0);
+    backend.stepUpRequired = false; // signed in again
+    await c.service.tick();
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    expect(n.listBlobs).toBe(1);
+    clock.t += 72 * HOUR;
+    await c.service.tick();
+    expect(n.listBlobs).toBe(2); // the keys are here: listed once more, and every recording comes back
+    expect(backend.releaseCalls).toBe(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
   /** Phone B has Mama's own new letter and no book key (no iCloud Keychain): the upload side asked escrow and waits on the hold. */
   async function heldUpload() {
     const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
