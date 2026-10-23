@@ -27,7 +27,9 @@ const Q4 = 'a4444444-4444-4444-8444-444444444444';
 const Q5 = 'a5555555-5555-4555-8555-555555555555';
 const R1 = 'a6666666-6666-4666-8666-666666666666';
 const R2 = 'a7777777-7777-4777-8777-777777777777';
-const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1, Q2, Q3, Q4, Q5, R1, R2];
+const R3 = 'a8888888-8888-4888-8888-888888888888';
+const R4 = 'a9999999-9999-4999-8999-999999999999';
+const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1, Q2, Q3, Q4, Q5, R1, R2, R3, R4];
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
   ct: Buffer.from(b.repeat(48), 'hex').toString('base64') });
@@ -261,6 +263,29 @@ check('[review A N2] a hold on the former co-parent\'s letter alone does not: th
   res.books === 1 && res.books_kept === 1 && (await book(K3))?.kept === true
   && await n(`entries where id = $1 and author_id = $2`, [r2l.id, R2]) === 1 && await n(`entries where id = $1`, [rnl.id]) === 0);
 await release(r2l.id);
+
+// ── 4d. The book photo a held former co-parent uploaded (review A re-check on #251, probe PF) ──
+// A kept book's own photo folder (child-photos/{book}/) is queued whole, so the photo Storage records as
+// theirs goes with the book unless the hold on them holds the purge.
+const K4 = await newChild(R4, 'Asha', '2025-09-25');
+await join(R3, 'parent', K4, R4);
+const r3l = await letter(R3, K4, 'Asha blew a kiss.');
+const k4Photo = `${K4}/${uuid7()}.jpg`;
+await orphanObject('child-photos', k4Photo, R3);
+await sys(`update children set photo_path = $2 where id = $1`, [K4, k4Photo]);
+check('the co-parent who uploaded the book photo leaves, keeping their letter', (await one(R3, `select public.leave_child($1, true) r`, [K4])).r === 'left');
+check('the remaining parent deletes the book', (await one(R4, `select public.request_book_deletion($1, 'ios') r`, [K4])).r === 'book_scheduled');
+const photoFolderQueued = async (child) => n(`storage_purge_queue where bucket_id = 'child-photos' and object_path = $1 and is_prefix`, [`${child}/`]);
+await hold('profile', R3, 'T-K4');
+res = await purgeDue(31);
+check('[DATA-REQ-035] day 30 skips a kept book whose photo was uploaded by a former co-parent under a hold, and queues nothing',
+  res.books === 0 && (await book(K4))?.kept === false && await photoFolderQueued(K4) === 0
+  && await n(`storage.objects where name = $1`, [k4Photo]) === 1);
+await release(R3);
+res = await purgeDue(31);
+check('with no hold it is purged and kept for them as before, its photo folder queued and their letter kept',
+  res.books === 1 && res.books_kept === 1 && (await book(K4))?.kept === true && await photoFolderQueued(K4) === 1
+  && await n(`entries where id = $1 and author_id = $2`, [r3l.id, R3]) === 1);
 
 // ── 5. The person's own rows in a book that survives them ──
 // A co-parent with no letter in a held book: their book key, an object in their folder there, and the

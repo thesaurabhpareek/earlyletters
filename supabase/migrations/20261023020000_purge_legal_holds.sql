@@ -28,7 +28,8 @@
 -- What is checked now, beyond the person's own letters and held drafts:
 --   - book_purge_held(child, keep), new: the book, every letter, held draft and recording backup in it
 --     (by id and author), every book key in it (by holder), and every object in a person's folder of it
---     (by that person), leaving out the rows of the authors in keep. It was the book, letters and held
+--     (by that person), leaving out the rows of the authors in keep, and every object in the book's own
+--     photo folder (by the person Storage records as its owner). It was the book, letters and held
 --     drafts in purge_due step 1. Every caller passes the book's kept authors (book_kept_authors), whose
 --     rows purge_book_keep_authors never deletes, so a hold covers exactly what the purge touches: a hold
 --     on a former member's own row holds neither the deleting parent's account nor the day-30 book purge
@@ -67,25 +68,47 @@ $$;
 -- --- 1. One rule for a book's rows ----------------------------------------
 -- Whether a legal hold covers anything a purge of this book deletes, leaving out the rows and folders
 -- of the authors in p_keep (a kept book's former members: the purge does not touch them, and the book
--- row it keeps is tombstoned, not deleted). The object branch reads the folders the worker clears for a
--- book ({child}/{person}/... in entry-photos, entry-audio and any bucket keyed the same way); the book's
--- own folder (child-photos/{child}/) is the book's, held by 'child'.
+-- row it keeps is tombstoned, not deleted). The person-folder branch reads the folders the worker clears
+-- for a book ({child}/{person}/... in entry-photos, entry-audio and any bucket keyed the same way). The
+-- book's own folder (child-photos/{child}/) goes whole, kept book or not, so an object there is held by
+-- the book ('child') and by the person Storage records as its owner (review A re-check on #251, probe
+-- PF: a former co-parent under a hold who uploaded the book photo). storage.objects has owner (uuid,
+-- deprecated) and owner_id (text) on current projects, either may be absent (as in
+-- ops_storage_owned_by), so that branch is dynamic SQL.
 create or replace function public.book_purge_held(p_child uuid, p_keep uuid[] default '{}'::uuid[])
-returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
-  select public.is_held('child', p_child)
-      or exists (select 1 from public.entries e where e.child_id = p_child and e.author_id <> all (coalesce(p_keep, '{}'))
-                  and (public.is_held('entry', e.id) or public.is_held('profile', e.author_id)))
-      or exists (select 1 from public.held_drafts h where h.child_id = p_child and h.author_id <> all (coalesce(p_keep, '{}'))
-                  and (public.is_held('entry', h.id) or public.is_held('profile', h.author_id)))
-      or exists (select 1 from public.audio_blobs b where b.child_id = p_child and b.author_id <> all (coalesce(p_keep, '{}'))
-                  and (public.is_held('entry', b.entry_id) or public.is_held('profile', b.author_id)))
-      or exists (select 1 from public.child_keys k where k.child_id = p_child and k.profile_id <> all (coalesce(p_keep, '{}'))
-                  and public.is_held('profile', k.profile_id))
-      or exists (select 1 from (select case when split_part(o.name, '/', 2) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-                                            then split_part(o.name, '/', 2)::uuid end person
-                                  from storage.objects o
-                                 where o.bucket_id <> 'ops-ledger' and o.name like p_child::text || '/%/%') x
-                  where x.person <> all (coalesce(p_keep, '{}')) and public.is_held('profile', x.person));
+returns boolean language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_keep uuid[] := coalesce(p_keep, '{}'::uuid[]);
+  v_held boolean := false;
+begin
+  if public.is_held('child', p_child)
+     or exists (select 1 from public.entries e where e.child_id = p_child and e.author_id <> all (v_keep)
+                 and (public.is_held('entry', e.id) or public.is_held('profile', e.author_id)))
+     or exists (select 1 from public.held_drafts h where h.child_id = p_child and h.author_id <> all (v_keep)
+                 and (public.is_held('entry', h.id) or public.is_held('profile', h.author_id)))
+     or exists (select 1 from public.audio_blobs b where b.child_id = p_child and b.author_id <> all (v_keep)
+                 and (public.is_held('entry', b.entry_id) or public.is_held('profile', b.author_id)))
+     or exists (select 1 from public.child_keys k where k.child_id = p_child and k.profile_id <> all (v_keep)
+                 and public.is_held('profile', k.profile_id))
+     or exists (select 1 from (select case when split_part(o.name, '/', 2) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                                           then split_part(o.name, '/', 2)::uuid end person
+                                 from storage.objects o
+                                where o.bucket_id <> 'ops-ledger' and o.name like p_child::text || '/%/%') x
+                 where x.person <> all (v_keep) and public.is_held('profile', x.person)) then
+    return true;
+  end if;
+  if exists (select 1 from pg_attribute where attrelid = 'storage.objects'::regclass and attname = 'owner' and not attisdropped) then
+    execute 'select exists (select 1 from storage.objects o where o.bucket_id = ''child-photos'' and o.name like $1
+               and public.is_held(''profile'', o.owner))'
+      into v_held using p_child::text || '/%';
+  end if;
+  if not v_held and exists (select 1 from pg_attribute where attrelid = 'storage.objects'::regclass and attname = 'owner_id' and not attisdropped) then
+    execute 'select exists (select 1 from storage.objects o where o.bucket_id = ''child-photos'' and o.name like $1
+               and public.is_held(''profile'', case when o.owner_id ~* $2 then o.owner_id::uuid end))'
+      into v_held using p_child::text || '/%', '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  end if;
+  return v_held;
+end;
 $$;
 
 -- From 20261023010000. Change (20261023020000): steps 1 and 2b skip a book under any hold that covers
