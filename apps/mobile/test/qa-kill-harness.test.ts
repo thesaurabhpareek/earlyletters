@@ -19,7 +19,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { migrate } from '../src/lib/db/migrations';
 import { children, drafts, entries, letters, settings, uuidv7From, type Entry, type RepoContext } from '../src/lib/db/repos';
 import * as logic from '../src/dev/kill-drill.logic';
-import { EXIT, countsOf, meetsGate, mergeReports, planRuns, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
+import { EXIT, countsOf, meetsGate, mergeReports, planRuns, plantCaught, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
 import { auditStore, classifyDl01, classifyDl02 } from '../e2e/kill/oracle.mjs';
 import * as protocol from '../e2e/kill/protocol.mjs';
 import { readSnapshot, sha256OfFile } from '../e2e/kill/snapshot.mjs';
@@ -137,6 +137,8 @@ interface FakeOptions {
   takeDir?: string;
   topLevelOnly?: boolean;
   playable?: boolean;
+  /** The launch of this run exits before its sweep: the app does not start again after the kill before it. */
+  exitsAtLaunch?: number;
 }
 interface LaunchArgs {
   mode: string;
@@ -370,6 +372,12 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
         });
         return pid;
       }
+      if (fo.exitsAtLaunch === a.run) {
+        later(p, 5, () => {
+          stop(pid);
+        });
+        return pid;
+      }
       if (behaviour === 'hangs-after-run-2' && a.run === 3) {
         // The launch after run 2's kill hangs before its sweep, and the first SIGKILL has not landed when the harness looks.
         p.ignoreKills = 1;
@@ -403,7 +411,13 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
   };
 }
 
-const fast = { bootMs: 4000, armMs: 4000, pointMs: 4000 };
+/**
+ * Each fake launch imports the app's sweep afresh (vi.resetModules), which a busy CI runner can stretch past 4 s:
+ * on #252's CI (run 40034060676) the self-check's last relaunch did, the harness judged that launch as not started,
+ * and the damage plant it was judging was reported missed. GitHub Actions sets CI on every job. A wait ends as soon
+ * as the launch boots, so the wider budget costs a green run nothing; the tests that time a launch out set their own.
+ */
+const fast = { bootMs: process.env.CI ? 30_000 : 4000, armMs: 4000, pointMs: 4000 };
 
 describe('[DATA-REQ-048] [F04-REQ-024] the kill drill protocol is one protocol on both sides', () => {
   it('app and host agree on every name, folder and constant', () => {
@@ -706,12 +720,60 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
   it('a relaunch that fails after a kill is a fail that names the run, the seed and the kill time', async () => {
     const report = await runHarness({ driver: fakeDriver('dl02-dies', 'dies-after-kill-2'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 11, timeouts: fast });
     expect(report.exit).toBe(EXIT.fail);
+    // The launch that does not start is the self-check's third, after the double plant: the database read once it
+    // is gone holds that letter twice, so the plant counts as caught, and the series stops there.
+    expect(report.selfCheck).toMatchObject({ asked: 3, caught: 2, missed: [] });
     const failed = report.runs.find((r: { outcome: string }) => r.outcome === 'fail');
     expect(failed?.reasons[0]).toMatch(/^the app did not start again after this kill \(app_exited\); seed 11, killed \d+ ms after it armed$/);
     // Reviewer H: whether the database survived, read once the failed launch is gone.
     expect(failed?.database).toMatchObject({ read: true, integrity: 'ok', problems: [] });
     expect(failed?.reasons[1]).toMatch(/^the database after the failed launch: integrity_check ok; this run is \w+ in it/);
   }, 60_000);
+
+  it('a plant whose relaunch does not start still counts as caught when the database holds it as planted; the run is still a fail of the app', async () => {
+    // The #252 CI flake, made certain: the launch after the damage plant (the self-check's last) never boots.
+    const report = await runHarness({ driver: fakeDriver('dl02-sc-exits', 'atomic', { exitsAtLaunch: 9004 }), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 20, timeouts: fast });
+    expect(report.selfCheck).toMatchObject({ asked: 3, caught: 3, missed: [] });
+    expect(report.exit).toBe(EXIT.fail);
+    const damage = report.runs.find((r: { run: number }) => r.run === 9003);
+    expect(damage).toMatchObject({ plant: 'damage', outcome: 'fail', database: { read: true, run: 'fail', runReasons: expect.arrayContaining(['the recording changed']) } });
+    expect(damage?.reasons[0]).toMatch(/^the app did not start again after this kill \(app_exited\); seed 20, /);
+    const md = renderMarkdown(report);
+    expect(md).toContain('FAIL');
+    expect(md).toContain('| Self-check (planted failures) | 3 of 3 caught |');
+    expect(md).not.toContain('Planted failures the harness missed');
+  }, 60_000);
+
+  it('a plant the app ignored is still missed when its relaunch does not start', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-sc-exits-blind', 'ignores-plants', { exitsAtLaunch: 9004 }), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 21, timeouts: fast });
+    expect(report.selfCheck).toMatchObject({ asked: 3, caught: 0 });
+    expect(report.selfCheck.missed).toEqual([
+      { run: 9001, plant: 'loss', outcome: expect.stringMatching(/^(letter|draft)$/) },
+      { run: 9002, plant: 'double', outcome: expect.stringMatching(/^(letter|draft)$/) },
+      { run: 9003, plant: 'damage', outcome: 'fail' },
+    ]);
+    // Its own outcome is the fail of a launch that did not start; the database holds an intact letter or draft.
+    expect(report.runs.find((r: { run: number }) => r.run === 9003)?.database).toMatchObject({ read: true, run: expect.stringMatching(/^(letter|draft)$/) });
+    expect(report.exit).toBe(EXIT.fail);
+    expect(renderMarkdown(report)).toContain('- run 9003, planted damage, judged fail');
+  }, 60_000);
+
+  it('a plant counts as caught only as the failure it plants; after a relaunch that did not start, only from the database read once it was gone', () => {
+    const notStarted = 'the app did not start again after this kill (no_boot_marker); seed 7, killed 120 ms after it armed';
+    const late = (plant: string, database?: { read: boolean; run?: string; runReasons?: string[] }) => ({ plant, outcome: 'fail', reasons: [notStarted, 'the database after the failed launch: integrity_check ok'], database });
+    // The #252 CI shape: the relaunch after the damage plant booted after the budget, and the database shows the damage.
+    expect(plantCaught(late('damage', { read: true, run: 'fail', runReasons: ['the recording changed', 'the letter hash differs from its file'] }))).toBe(true);
+    expect(plantCaught(late('damage', { read: true, run: 'fail', runReasons: ['the letter words differ from what was saved'] }))).toBe(false);
+    expect(plantCaught(late('damage', { read: true, run: 'letter', runReasons: [] }))).toBe(false);
+    expect(plantCaught(late('damage', { read: false }))).toBe(false);
+    expect(plantCaught(late('damage'))).toBe(false);
+    expect(plantCaught(late('loss', { read: true, run: 'lost', runReasons: ['no letter and no draft'] }))).toBe(true);
+    expect(plantCaught(late('double', { read: true, run: 'draft', runReasons: [] }))).toBe(false);
+    // A relaunch that started: judged by its sweep, as before.
+    expect(plantCaught({ plant: 'double', outcome: 'doubled', reasons: ['2 rows hold this letter'] })).toBe(true);
+    expect(plantCaught({ plant: 'loss', outcome: 'draft', reasons: [] })).toBe(false);
+    expect(plantCaught({ plant: 'none', outcome: 'letter', reasons: [] })).toBe(false);
+  });
 
   it('a launch that hangs after a kill is a fail, and its database is not read while that launch may still be writing', async () => {
     const report = await runHarness({ driver: fakeDriver('dl02-hangs', 'hangs-after-run-2'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 19, timeouts: { ...fast, bootMs: 2500 } });
