@@ -6,7 +6,10 @@
  *
  * One flush:
  *   1. `mayRun()`: the build flag (EXPO_PUBLIC_SERVER_FEATURES and EXPO_PUBLIC_STATUS_REPORT)
- *      and the remote `statusReport` kill switch. Off: nothing at all happens.
+ *      and the remote `statusReport` kill switch. Off: nothing is sent and nothing is asked
+ *      of the server or StoreKit. Consent facts recorded at a purchase still wait on the
+ *      phone, so a purchase made while the switch is on keeps its D-081 facts for the first
+ *      report after it clears (the module is loaded only when the build flag is on).
  *   2. A signed-in, ready account that may report for this phone (reportingUserOf). Signed
  *      out: nothing is sent; consent facts recorded at a purchase wait on the phone until
  *      sign-in (F14-REQ-043).
@@ -140,7 +143,9 @@ export function createStatusReporter(deps: ReporterDeps): StatusReporter {
       return inflight;
     },
     recordPurchase(purchase) {
-      if (!deps.mayRun() || !purchase.productId || !purchase.originalPurchasedAt) return;
+      // Not gated on mayRun(): the facts exist only at this moment and stay on the phone; the
+      // kill switch stops sending (flush), never the record of what this phone showed.
+      if (!purchase.productId || !purchase.originalPurchasedAt) return;
       const now = deps.now();
       let owner: string | null = null;
       try {

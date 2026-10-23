@@ -285,7 +285,7 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
   };
   return {
     deps, sent, reporter: createStatusReporter(deps),
-    signOut: () => (user = null), signIn: (u = ASHA_MAMA) => (user = u), off: () => (on = false),
+    signOut: () => (user = null), signIn: (u = ASHA_MAMA) => (user = u), off: () => (on = false), on: () => (on = true),
     ownPhone: (u: string | null) => (phoneOwner = u), tick: (ms: number) => (clock += ms),
     state: () => parseReportState(stored),
   };
@@ -294,15 +294,23 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
 describe('the sender', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('[F14-REQ-032] off (build flag or kill switch): no salt, no StoreKit call, no request', async () => {
+  it('[F14-REQ-032] off (kill switch): no salt, no StoreKit call, no request; a purchase meanwhile keeps its consent facts and sends them once it clears (review B2)', async () => {
     const h = harness();
     h.off();
     expect(await h.reporter.flush()).toBe('off');
     h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
+    expect(await h.reporter.flush()).toBe('off');
     expect(h.deps.fetchSalt).not.toHaveBeenCalled();
     expect(h.deps.nativeRefs).not.toHaveBeenCalled();
     expect(h.sent).toEqual([]);
-    expect(h.state()).toEqual(EMPTY_REPORT_STATE);
+    expect(h.state().pending).toHaveLength(1);
+    h.on();
+    expect(await h.reporter.flush()).toBe('sent');
+    expect(await h.reporter.flush()).toBe('nothing');
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0].report.consent).toMatchObject({ product_id: 'plus.annual', offer_type: 'introductory' });
+    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^1\.4\.0\+[0-9a-f]{8}$/);
+    expect(h.state().pending).toEqual([]);
   });
 
   it('[BL-347] consent facts recorded while one account owned the phone never ride on another account\'s report (review B1)', async () => {
