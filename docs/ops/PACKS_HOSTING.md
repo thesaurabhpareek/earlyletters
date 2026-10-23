@@ -8,7 +8,7 @@ Labels: **Measured** (run in this repo on 15 Oct 2026), **Read** (read on the ve
 Every build reads three signed documents from `EXPO_PUBLIC_DOCS_BASE_URL`, which every `eas.json` profile sets to `https://packs.earlyletters.app` (D-097). The pack manifest lists every language pack and speech model the phone may download. Until a manifest signed with a key the app trusts is served there, **spoken letters get no words** and no language pack installs (`docs/release/TESTFLIGHT.md`, "Without this, no words").
 
 You need two things, both done below:
-1. a public signing key in `packages/api/src/keys.ts`, merged **before** `eas build` (the key is compiled into the app);
+1. two public signing keys in `packages/api/src/keys.ts`, merged **before** `eas build` (the keys are compiled into the app);
 2. the signed release on `https://packs.earlyletters.app` (any time; the app fetches it after its first frame and every few hours).
 
 ## Before you start
@@ -23,7 +23,7 @@ Times are an Assumption (nobody has run these steps on the real accounts yet).
 
 | # | Step | Time (Assumption) |
 |---|---|---|
-| 1 | Signing key | 3 min |
+| 1 | Signing keys (a primary and a cold backup) | 5 min |
 | 2 | Bucket | 1 min |
 | 3 | Custom domain | 2 min, plus activation |
 | 4 | API token | 2 min |
@@ -33,17 +33,20 @@ Times are an Assumption (nobody has run these steps on the real accounts yet).
 | 8 | Commit and open the PR | 3 min |
 | 9 | Verify with curl and the preflight | 2 min |
 
-### 1. Signing key (once)
+### 1. Signing keys (once: a primary and a cold backup)
 
-In your own terminal (it refuses to print the secret to a pipe, a file or CI):
+Two keys from the first ceremony (F19-REQ-002 Rev, R2 AR-28): every build trusts both, so if the primary is lost you keep publishing with the backup instead of waiting for an app release. In your own terminal (it refuses to print the secret to a pipe, a file or CI), run it twice with two different key ids (the default, `el-YYYY-MM`, would be the same for both runs in one month):
 
 ```bash
-node scripts/packs/keygen.mjs            # key id defaults to el-YYYY-MM; plain Node, writes nothing to disk
+node scripts/packs/keygen.mjs el-2026-10-primary    # plain Node, writes nothing to disk
+node scripts/packs/keygen.mjs el-2026-10-backup     # the cold backup
 ```
 
-It prints:
-- a **public** line: paste it into `TRUSTED_SIGNING_KEYS` in `packages/api/src/keys.ts`;
-- two **secret** lines (`EL_SIGNING_KEY_ID=...`, `EL_SIGNING_KEY=...`), shown once. Save them in the password manager, **and** in a file outside every git checkout for the scripts:
+Each run prints:
+- a **public** line: paste **both** into `TRUSTED_SIGNING_KEYS` in `packages/api/src/keys.ts`;
+- two **secret** lines (`EL_SIGNING_KEY_ID=...`, `EL_SIGNING_KEY=...`), shown once.
+
+The **backup's** secret lines go in a password manager entry of their own and in an offline copy kept in a different place from the primary; never in a file on the publishing computer. The **primary's** secret lines go in the password manager, **and** in a file outside every git checkout for the scripts:
 
 ```bash
 mkdir -p ~/.config/early-letters && chmod 700 ~/.config/early-letters
@@ -155,7 +158,7 @@ One short branch, one PR:
 git switch -c chore/packs-signing-key
 git add packages/api/src/keys.ts supabase/functions/config/published.ts supabase/functions/content/published.ts scripts/packs/remote-config.json
 node scripts/packs/secret-scan.mjs --staged      # must say "no signing key or upload secret"; stop if it names a file
-git commit -m "chore(packs): trust the el-YYYY-MM signing key; first signed release"
+git commit -m "chore(packs): trust the primary and backup signing keys; first signed release"
 git push -u origin chore/packs-signing-key
 gh pr create --base develop --fill
 ```
@@ -248,7 +251,10 @@ The rule that decides everything: **a phone replaces an installed pack only with
 
 ## Signing key custody and rotation
 
-- The secret exists only in the password manager and in `~/.config/early-letters/signing.env` on the publishing computer. Lost: generate a new key and ship an app release with it. Leaked: the same, then remove the old key in the next release (ADR 0016 section 4.2).
+- The primary's secret exists only in the password manager and in `~/.config/early-letters/signing.env` on the publishing computer; the backup's only in its own password manager entry and its offline copy.
+- Primary lost: publish with the backup (its two lines in `signing.env`), which every build already trusts; then make a new backup key and add it in the next app release.
+- Primary leaked: the same, and remove the leaked key from `keys.ts` in that release. Until phones have that release, documents signed with the leaked key are still accepted (ADR 0016 section 4.2).
+- Both lost: generate a new key and ship an app release with it.
 - Rotation: add the new public key next to the old one in `keys.ts`, ship an app release, sign with the new key, remove the old key in a later release.
 - The R2 token can only touch this one bucket; rotate it in the dashboard at any time (the next `upload` needs the new one).
 
@@ -301,7 +307,7 @@ Not proven here (needs the founder's accounts or a real iPhone):
 
 ## Files
 
-- `scripts/packs/keygen.mjs`: the key, once (terminal only).
+- `scripts/packs/keygen.mjs`: the two keys, once each (terminal only).
 - `scripts/packs/publish.ts`: `release`, `upload`, `verify`, `serve`. **`release` then `upload` is the only supported way to publish.** The step-by-step `packs`, `config`, `content`, `all` commands are for development only: they print `wrangler` upload commands that overwrite without the checks `upload` makes (versioned paths, G-18).
 - `scripts/packs/release.ts`: the release directory, model downloads, the local static server.
 - `scripts/packs/s3.ts`: S3-compatible upload (SigV4) and the hosted check.
