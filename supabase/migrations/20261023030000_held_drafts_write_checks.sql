@@ -36,8 +36,10 @@
 --
 -- How a refusal is answered. A violation is a check_violation (23514, the code entries answer), raised
 -- by the insert or update in held.upsert, so sync_push answers that op {op, ok: false, code: '23514'}
--- (no message, no value), changes nothing for it, and goes on with the rest of the batch; the phone
--- keeps the draft and the refused write where the person sees them (apps/mobile rejected_writes). The
+-- (no message, no value), changes nothing for it, and goes on with the rest of the batch. The phone
+-- keeps the draft and the op in rejected_writes (apps/mobile merge.ts), but nothing is shown yet: the
+-- only signal is SyncStatus.rejected, which no screen reads, and held drafts have no rejected state
+-- (letters do). WP-F16-01 must surface SyncStatus.rejected and give held drafts a rejected state. The
 -- constraint names name the column, never a value. Every held row a write leaves passes the checks, so
 -- once they are validated every `current` built from a held row (held_state, keep_check, held_dup, the
 -- dup_answer of a refused Keep) parses. One gap stays in entries, outside this file:
@@ -49,8 +51,11 @@
 -- and it is validated only when that count is 0. Otherwise it stays NOT VALID, a warning names it and
 -- the count (counts and constraint names only, never an id or a value: CLAUDE.md privacy), and APPLY.md
 -- File 22 says what to do. A row that fails a NOT VALID check cannot be updated until a write brings
--- valid values: the author's next held.upsert with valid words heals it, and one that keeps the bad
--- value is refused 23514 like any other. Deletes (let go, Keep, Erase now, leaving, the purges) are
+-- valid values, and one that keeps the bad value is refused 23514 like any other. A bad capture_mode
+-- heals with the next upload (every upload writes it). A row that fails a words check (edit_level,
+-- machine_edits, author_edits, locked_spans) heals only with an upload that changes the words on the
+-- current base: held_upsert keeps the stored layers for a date-only or a stale words upload
+-- (20261016000000), so both of those are refused 23514. Deletes (let go, Keep, Erase now, leaving, the purges) are
 -- never checked. Until such a row heals, a Keep of it refused as a words conflict still carries its
 -- words in `current` (keep_check, held_state), bad edit_level or machine_edits included (N2, as before).
 --

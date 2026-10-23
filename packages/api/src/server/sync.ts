@@ -736,9 +736,11 @@ export type PulledHeldRow = PulledHeld | PulledHeldGone;
  * and `edit_level` take the same lists (`edit_level` may also be null), and
  * `machine_edits`, `author_edits` and `locked_spans` are each null or a JSON
  * array, beside the `kind`, `occurred_precision` and `base_direction` checks
- * of 20261016000000. A write that fails one is refused with 23514, so the
- * writing phone keeps a copy the person can see, and a `current` built from
- * a held row that passes them parses. Still unchecked on a held row: the
+ * of 20261016000000. A write that fails one is refused with 23514: the
+ * writing phone keeps the draft and the op in `rejected_writes`, though
+ * nothing shows it yet (WP-F16-01 must surface `SyncStatus.rejected` and
+ * give held drafts a rejected state), and a `current` built from a held row
+ * that passes them parses. Still unchecked on a held row: the
  * `entries` size caps on `author_edits` and `locked_spans`, and `language`
  * and `pack_ref`; this schema accepts any value of those, so none of them
  * makes a row fail here. A row stored before 20261023030000 can still fail:
@@ -757,9 +759,9 @@ export type PulledHeldRow = PulledHeld | PulledHeldGone;
  *  - WP-F16-01 tells the person when `rejected` is above 0, and logs it as
  *    a count only, never the row, its id or its words (CLAUDE.md privacy);
  *  - the server refuses such a row at write time, so the writing phone
- *    keeps a copy the person can see and a held row's `current` cannot
- *    fail a whole push answer: built in 20261023030000 (the five checks
- *    above), so only a row stored before it can still be dropped here.
+ *    keeps its draft and a held row's `current` cannot fail a whole push
+ *    answer: built in 20261023030000 (the five checks above), so only a
+ *    row stored before it can still be dropped here.
  */
 export const PulledHeldSectionSchema = v.pipe(
   v.object({ rows: v.array(v.unknown()), cursor: nullableStr, more: v.boolean() }),
