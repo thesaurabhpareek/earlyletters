@@ -128,8 +128,8 @@ Re-read at `develop` b7669ba (16 Oct): since the first revision #111 (`docs/ops/
 
 | Environment | Required reviewer | Deployment refs | Secrets (names only) | Variables | Used by |
 |---|---|---|---|---|---|
-| `staging` | approver | `develop`, `main` | `SUPABASE_DB_URL_STAGING` (exists in DEPLOY.md), `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN_STAGING` (only a scoped token, AF-06) | | `deploy-db.yml`, `deploy-functions.yml` |
-| `production` | approver | tag `db-v*` | `SUPABASE_DB_URL_PROD` (exists); later the production twins | | `deploy-db.yml` |
+| `staging` | approver | `develop` only (staging follows `develop`; a push to `main` deploys nothing to a database, decided 17 Oct) | `SUPABASE_DB_URL_STAGING` (exists in DEPLOY.md), `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN_STAGING` (only a scoped token, AF-06), `SUPABASE_STAGING_URL` and `SUPABASE_STAGING_PUBLISHABLE_KEY` (RA-07-06's smoke; public values kept as secrets so logs mask them) | | `deploy-db.yml`, `deploy-functions.yml` |
+| `db-production` (renamed from `production`, which resolves to Vercel's `Production`: SR-2 in `docs/security/SECRETS_REVIEW.md`, on #206 until it merges) | approver | tag `db-v*` | `SUPABASE_DB_URL_PROD` (exists); later the production twins | | `deploy-db.yml` |
 | `testflight` | approver until AF-21 is in force, then none (see below) | **`develop` only**; release candidates build in `app-store` | `EXPO_TOKEN` from an Expo **robot user** with the Developer role (AF-07) | | `testflight.yml` |
 | `testers` | approver | `develop` | `ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`, `ASC_API_KEY_P8` holding key `gha-testers`; `EXPO_TOKEN` from a robot user with the Viewer role, for the build lookup [U: whether Viewer is enough] | `R17_PASSED` | `testflight-testers.yml` |
 | `app-store` | approver | tag `ios-v*`, `release/*` (ADR 0022) | `EXPO_TOKEN` (store-lane robot), `ASC_REVIEW_CONTACT_JSON` (ADR 0022), `ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`, `ASC_API_KEY_P8` holding key `gha-release` | | `release-ios.yml` |
@@ -179,7 +179,7 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 **`deploy-db.yml`** (exists; RA-20-04)
 | | |
 |---|---|
-| Trigger | push to `develop` or `main` with a `changes` job for `supabase/migrations/**`; `workflow_dispatch` on `develop` (`chore/staging-from-develop`); push of tag `db-v*` |
+| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database until the production job's first `db-v*` tag (AF-42, after the alpha; decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of tag `db-v*` for production |
 | Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
 | Then | RA-07-06's content-free smoke: anonymous read of `policy_versions` lists `terms` and `sensitive-data`; no table contents are printed |
 | Permissions | `contents: read` |
@@ -506,7 +506,7 @@ RA-17-01 the App Privacy worksheet per build that changes data collection; RA-17
 
 ### S01: secrets and permissions (`docs/security/**`)
 
-RA-01-01, before any secret is added: the approver account and environment settings (read back), branch protection, every workflow's `permissions:`, token scopes (Expo robots, App Store Connect roles, R2, Supabase, fine-grained GitHub token), the `agents` environment, the cache rule, the fence label check, the lint role, and the **connectors as production credentials** (Supabase, Vercel, mail); `docs/security/RELEASE_SECRETS_REVIEW.md` signed.
+RA-01-01, before any secret is added: the approver account and environment settings (read back), branch protection, every workflow's `permissions:`, token scopes (Expo robots, App Store Connect roles, R2, Supabase, fine-grained GitHub token), the `agents` environment, the cache rule, the fence label check, the lint role, and the **connectors as production credentials** (Supabase, Vercel, mail); `docs/security/SECRETS_REVIEW.md` signed.
 
 ## 6. Order and dependencies
 

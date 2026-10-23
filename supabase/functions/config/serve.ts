@@ -16,6 +16,7 @@
  */
 import { CACHE_POLICY } from '../../../packages/api/src/standards.ts';
 import { failure, HEADER_REQUEST_ID, REQUEST_ID_RE, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
+import { healthResponse } from '../_shared/health/health.ts';
 import { createLogger, type FunctionName, type LogSink } from '../_shared/log/log.ts';
 
 export interface PublishedDocument {
@@ -97,6 +98,11 @@ export function makeDocumentHandler(fn: 'config' | 'content', routes: DocumentRo
       if (req.method !== 'GET' && req.method !== 'HEAD') return fail(405, 'bad_request', false);
       const url = new URL(req.url);
       const route = routeOf(url.pathname, fn);
+      // GET /<fn>/health (RA-07-06): no secrets to check; nothing published yet still counts as ready (the app keeps its defaults).
+      if (route === 'health') {
+        log.info('request.done', { status: 200, outcome: 'ok', duration_ms: Date.now() - started });
+        return healthResponse(req, true, log.reqId);
+      }
       const resolve = route !== null ? routes[route] : undefined;
       const doc = resolve ? resolve(url) : null;
       if (!doc) return fail(404, 'not_found', false);
