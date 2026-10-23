@@ -156,6 +156,10 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
         if (sqlstate === '22023') return detail === 'idempotency' ? refuse('idempotency_conflict', false) : refuse('bad_request', false);
         // The SQL-side switch (app.status_report_enabled, requested from S06) answers like the function's own.
         if (sqlstate === 'SCKIL') return pausedReply('statusReport', id);
+        // The session check above confirmed a full account, so 42501 here can only be a missing grant: a deploy
+        // fault, never this person's refusal. Retryable, so the phone keeps the report and its D-081 consent
+        // record for later (F14-REQ-043; review B N3 on #138).
+        if (sqlstate === '42501') return unavailable(res.status, 'forbidden');
         const rule = classifySqlstate(sqlstate);
         if (rule.code === 'internal') return unavailable(res.status, 'sqlstate');
         return refuse(rule.code, rule.code === 'rate_limited' ? true : rule.retryable, httpStatusFor(rule.code),

@@ -51,6 +51,7 @@ import {
   SYNC_API_VERSION,
   UnwrapNoticeSchema,
   WORDS_GROUP,
+  WORDS_VERSION_COLUMNS,
   type EntryUpsertOp,
   type StatusReport,
 } from '../server';
@@ -73,6 +74,20 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(Object.keys(FIELD_GROUP_COLUMNS).sort()).toEqual([...FIELD_GROUPS].sort());
     expect(WORDS_GROUP).toBe('text');
     expect(FIELD_GROUP_COLUMNS.text).toEqual(['final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans']);
+  });
+
+  it('[F16 6.2 E] current is the words only, never the author layer: an extra author_edits key is dropped (review A 6 on #138)', () => {
+    const r = parsePushResponse({
+      results: [{ op: OP, ok: true, applied: true, conflict: true, conflict_groups: ['text'],
+        current: { final_text: 'Asha laughed.', machine_edits: [], edit_level: 'clean', author_edits: [{ start: 0, end: 4, replacement: 'Asha' }], v: '900' } }],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok && r.value.results[0].ok) expect(r.value.results[0].current).toEqual({ final_text: 'Asha laughed.', machine_edits: [], edit_level: 'clean', v: '900' });
+    // A letter's words version is narrower than its words group (the author layer travels with it but does not move it).
+    expect(WORDS_VERSION_COLUMNS.entry.every((c) => FIELD_GROUP_COLUMNS.text.includes(c))).toBe(true);
+    expect(WORDS_VERSION_COLUMNS.entry).not.toContain('author_edits');
+    expect(WORDS_VERSION_COLUMNS.held).toEqual([...FIELD_GROUP_COLUMNS.text, 'typed_text']);
   });
 
   it('[F11-REQ-085] author-only columns include the v1.0 author layer and the language', () => {
@@ -152,7 +167,7 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(sendablePushOpTypes()).toEqual([...PUSH_OP_TYPES]);
   });
 
-  it('[F16-REQ-010] a words refusal is conflict_groups with text, with or without conflict: a duplicate, a refused held.upsert and a refused Keep', () => {
+  it('[F16-REQ-010] a words refusal is conflict_groups with text, with or without conflict: a duplicate, a refused held.upsert, a refused Keep and its repeat, a Keep onto a kept letter repeated', () => {
     const entry = { id: ASHA_ENTRY, v: '900', updated_at: '2026-10-15T19:00:01Z', deleted_at: null, in_book: true, approval: 'not_needed' };
     const r = parsePushResponse({
       results: [
@@ -161,9 +176,14 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
         // A refused held.upsert (held_state): the held words, which may have none yet, and typed_text.
         { op: OP, ok: true, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' }, conflict_groups: ['text'],
           current: { final_text: null, machine_edits: null, edit_level: null, typed_text: 'Asha found the puddle first', v: '41' } },
-        // A refused Keep (keep_check): no letter, the held row stays.
+        // A refused Keep (keep_check): no letter, the held row stays, and conflict: true.
         { op: OP, ok: true, applied: false, conflict: true, entry: null, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' },
           conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', typed_text: null, v: '41' } },
+        // Its repeat (dup_answer, then held_state): the same refusal, conflict: true again.
+        { op: OP, ok: true, dup: true, applied: false, conflict: true, entry: null, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' },
+          conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', typed_text: null, v: '41' } },
+        // A Keep onto a letter another phone kept first is refused on the letter path; its repeat (dup_outcome) has no conflict key.
+        { op: OP, ok: true, dup: true, entry, conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', v: '900' } },
       ],
       paused: false, stopped: false,
     });
@@ -199,13 +219,45 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     for (const x of r.value.results) expect(isWordsConflict(x)).toBe(false);
   });
 
-  it('[F16-REQ-024] an erased held marker parses; an unknown marker is refused', () => {
+  it('[F16-REQ-024] an erased held marker parses; an unknown marker is dropped and counted, never adopted', () => {
     const pull = (gone: string) => parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z',
       held: { rows: [{ id: ASHA_ENTRY, gone, updated_at: '2026-10-15T19:00:00Z', v: '9' }], cursor: '9', more: false },
     });
-    for (const g of ['discarded', 'kept', 'erased']) expect(pull(g).ok, g).toBe(true);
-    expect(pull('vanished').ok).toBe(false);
+    for (const g of ['discarded', 'kept', 'erased']) {
+      const r = pull(g);
+      expect(r.ok && r.value.held, g).toMatchObject({ rows: [{ id: ASHA_ENTRY, gone: g }], rejected: 0 });
+    }
+    const unknown = pull('vanished');
+    expect(unknown.ok && unknown.value.held).toEqual({ rows: [], cursor: '9', more: false, rejected: 1 });
+  });
+
+  it('[F16 6.2 I] one malformed held row is dropped and counted; the good rows and the books still parse (review A 3 on #138)', () => {
+    const book = { id: ASHA_CHILD, access: 'parent', repull: false, meta_hash: 'x', rows: [], cursor: '20:0', more: false };
+    const draft = {
+      id: ASHA_ENTRY, child_id: ASHA_CHILD, kind: 'held_letter', capture_mode: 'typed', created_at: '2026-10-15T19:00:00Z',
+      occurred_on: '2026-10-15', occurred_precision: 'day', language: null, base_direction: 'ltr', prompt_key: null, in_book_choice: true,
+      raw_transcript: null, final_text: null, machine_edits: null, edit_level: null, author_edits: null, locked_spans: null,
+      typed_text: 'Asha found the puddle first', engine_version: null, pack_ref: null, audio_kept_on_device: false,
+      updated_at: '2026-10-15T19:00:01Z', v: '12',
+    };
+    const marker = { id: '0192e000-0000-7000-8000-00000000e002', gone: 'discarded', updated_at: '2026-10-15T19:00:02Z', v: '13' };
+    // held_drafts checks neither column (20261016000000), so a phone can store these through held.upsert.
+    const badMode = { ...draft, id: '0192e000-0000-7000-8000-00000000e0b1', capture_mode: 'dictated', typed_text: 'Asha splashed in the big puddle' };
+    const badEdits = { ...draft, id: '0192e000-0000-7000-8000-00000000e0b2', author_edits: {}, typed_text: 'Asha splashed in the big puddle' };
+    const r = parsePullResponse({
+      reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [book], gone: [],
+      held: { rows: [draft, badMode, marker, badEdits, null], cursor: '14:0', more: false },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.books).toEqual([book]);
+    expect(r.value.held).toEqual({ rows: [draft, marker], cursor: '14:0', more: false, rejected: 3 });
+    // The report is a count: nothing of a dropped row (its id or its words) is in the result.
+    const out = JSON.stringify(r.value);
+    for (const s of ['Asha splashed in the big puddle', 'e0b1', 'e0b2', 'dictated']) expect(out).not.toContain(s);
+    // The envelope is still strict: a held section without its rows array is refused.
+    expect(parsePullResponse({ reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', held: { rows: {}, cursor: null, more: false } }).ok).toBe(false);
   });
 
   it('[M17] the review mark travels on own rows and in entry.upsert, author-only', () => {
@@ -220,6 +272,42 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
       },
     };
     expect(op.data.words_reviewed_at).toBe('2026-10-15T19:00:05.000Z');
+  });
+
+  it('[F16-REQ-025] held_base is sent only on a Keep, always with a value: its presence alone makes the op a Keep (review A 5 on #138)', () => {
+    const data: EntryUpsertOp['data'] = {
+      id: ASHA_ENTRY, child_id: ASHA_CHILD, kind: 'letter', occurred_on: '2026-10-01', captured_at: '2026-10-15T19:00:00.000Z',
+      capture_mode: 'typed', edit_level: 'verbatim', prompt_key: null, engine_version: 6, raw_transcript: 'Asha found the puddle first.',
+      machine_edits: [], final_text: 'Asha found the puddle first.', in_book: true, sounds_like_me: null, author_signs_as: 'Papa',
+      audio_kept_on_device: false,
+    };
+    const keep: EntryUpsertOp = { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: null, held_base: '41', data };
+    const edit: EntryUpsertOp = { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: '812', data };
+    expect('held_base' in edit).toBe(false);
+    // @ts-expect-error null still makes the op a Keep on the server (counted as 0), so the contract refuses it.
+    const nullKeep: EntryUpsertOp = { ...keep, held_base: null };
+    expect(nullKeep.held_base).toBeNull();
+  });
+
+  it('[F16-REQ-025] applied_v comes only on a duplicate and is a row version; a first answer rebases on entry.v (review A 4 on #138)', () => {
+    const entry = { id: ASHA_ENTRY, v: '905', updated_at: '2026-10-15T19:00:03Z', deleted_at: null, in_book: true, approval: 'not_needed' };
+    const r = parsePushResponse({
+      results: [
+        // First answer (sync_push): applied, entry.v is the row version this op wrote; no applied_v.
+        { op: OP, ok: true, applied: true, conflict: false, entry: { ...entry, v: '900' } },
+        // Its repeat (dup_outcome): the letter as it is now, plus applied_v, the row version the op wrote.
+        { op: OP, ok: true, dup: true, entry, applied_v: '900' },
+        // A held.upsert's repeat (held_dup): the held row now, plus applied_v.
+        { op: OP, ok: true, dup: true, held: { id: ASHA_ENTRY, v: '44', updated_at: '2026-10-15T19:00:04Z' }, applied_v: '41' },
+      ],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const [first, dup, heldDup] = r.value.results;
+    expect(first.ok && [first.applied_v, first.entry?.v]).toEqual([undefined, '900']);
+    expect(dup.ok && [dup.applied_v, dup.entry?.v]).toEqual(['900', '905']);
+    expect(heldDup.ok && heldDup.applied_v).toBe('41');
   });
 
   it('[F16-REQ-029] a held tombstone carries only id, gone, updated_at and v, and the pull still parses', () => {
@@ -254,7 +342,7 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(JSON.stringify(ops).length).toBe(391);
   });
 
-  it('parses a pull response with the planned held section', () => {
+  it('parses a pull response with the held section as built: rows, cursor and more, no digest', () => {
     const r = parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [], gone: [],
       held: { rows: [], cursor: null, more: false },

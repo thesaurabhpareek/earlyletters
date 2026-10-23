@@ -87,12 +87,14 @@ Deno.test('the canary scanner finds fixtures and generic shapes', () => {
 // everything goes through the logger (the one sink in log.ts) or the ops CLI printer.
 Deno.test('no console.* calls outside the logger sink and the ops CLI printer', async () => {
   const root = new URL('../../../../', import.meta.url);
-  const dirs = [
-    'supabase/functions/purge-worker', 'supabase/functions/analytics-forget', 'supabase/functions/_shared',
-    'supabase/functions/config', 'supabase/functions/content', 'supabase/functions/invite-redeem',
-    'supabase/functions/subscription-status', 'scripts/ops',
-  ];
+  // The whole functions folder, so apple-token and every future function are covered (review B N5 on #138).
+  const dirs = ['supabase/functions', 'scripts/ops'];
   const allowed = new Set(['supabase/functions/_shared/log/log.ts', 'scripts/ops/lib/cli.ts']);
+  // Single lines allowed in an otherwise banned file (review B note 4 on #253): the escrow project's one
+  // sink, which feeds its own content-free logger (escrow/log.ts). Any other console call in it fails.
+  const allowedLines: Record<string, string[]> = {
+    'supabase/functions/escrow/handler.ts': ['const sink = deps.logSink ?? ((l: string) => console.log(l));'],
+  };
   const offenders: string[] = [];
   const walk = async (rel: string) => {
     let entries: Deno.DirEntry[] = [];
@@ -105,11 +107,21 @@ Deno.test('no console.* calls outside the logger sink and the ops CLI printer', 
       const path = `${rel}/${e.name}`;
       if (e.isDirectory) await walk(path);
       else if (/\.(ts|mjs|js)$/.test(e.name) && !/\.test\.ts$/.test(e.name) && !allowed.has(path)) {
-        const text = await Deno.readTextFile(new URL(path, root));
+        const lines = (await Deno.readTextFile(new URL(path, root))).split('\n');
+        const exempt = allowedLines[path] ?? [];
+        const text = lines.filter((l) => !exempt.includes(l.trim())).join('\n');
         if (/\bconsole\s*\.\s*(log|info|warn|error|debug|trace|dir|table)\b/.test(text)) offenders.push(path);
       }
     }
   };
   for (const d of dirs) await walk(d);
   assert.deepEqual(offenders, []);
+  // Each allowed line is still there (a moved or renamed sink must update this list, not widen it).
+  for (const [path, exempt] of Object.entries(allowedLines)) {
+    const text = (await Deno.readTextFile(new URL(path, root))).split('\n').map((l) => l.trim());
+    for (const l of exempt) assert.ok(text.includes(l), `${path}: ${l}`);
+  }
+  // The walk reached every function folder, apple-token included.
+  const folders = [...Deno.readDirSync(new URL('supabase/functions', root))].filter((e) => e.isDirectory).map((e) => e.name);
+  assert.ok(folders.includes('apple-token') && folders.length >= 8, folders.join(','));
 });

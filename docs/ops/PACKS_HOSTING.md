@@ -110,7 +110,7 @@ npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/sign
 
 This writes `dist/release/` (git-ignored), checks every signature the way a phone does, and bumps the document versions in `supabase/functions/config/published.ts` and `supabase/functions/content/published.ts` (git is the version counter: see step 8).
 
-**During the alpha, skip item 3 of the printed next steps** (the server kill-switch commands): with every switch off they would turn backup and escrow on, which `supabase/APPLY.md` keeps off until backup is applied and neither alpha build has (`docs/release/TESTFLIGHT.md`).
+**During the alpha, skip item 3 of the printed next steps** (the server kill-switch commands): with every switch off they would turn backup, escrow and the status report on (`app.backup_enabled`, `app.escrow_enabled`, `app.status_report_enabled`), which `supabase/APPLY.md` keeps off until each is applied and turned on on purpose, and which neither alpha build has (`docs/release/TESTFLIGHT.md`).
 
 **Languages: English only unless named** (`--languages`, D-111 item 4). With no flag the release carries no text pack (English is bundled in the app), and its manifest lists only the multilingual speech models; `--languages en,hi` adds Hindi. `upload` takes the same flag and refuses a release that offers a language it does not name.
 

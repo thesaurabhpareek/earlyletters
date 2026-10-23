@@ -107,6 +107,28 @@ export const FIELD_GROUP_COLUMNS: Readonly<Record<FieldGroup, readonly string[]>
 export const WORDS_GROUP: FieldGroup = 'text';
 
 /**
+ * What moves the words version (`text_xid`) that the compare reads, exactly
+ * as built (20261016000000; review A 6 on #138). The whole `text` group
+ * travels and applies together (FIELD_GROUP_COLUMNS), but the version is
+ * narrower than the group for a letter:
+ *  - a letter (`entries_set_sync_xid`): only `final_text`, `machine_edits`
+ *    and `edit_level`. A change to `author_edits` or `locked_spans` alone is
+ *    not newer words: another phone's `text` op whose `base` predates that
+ *    change replaces it with no words conflict, at most the advisory
+ *    `conflict: true` (left to S02 with the M17 follow-up);
+ *  - a held draft (`held_drafts_stamp`): all five group columns and
+ *    `typed_text`, and a refused `held.upsert` compares all six;
+ *  - a Keep (`keep_check`): the held row's words (`final_text`, or
+ *    `typed_text` when it has none) against the keep's `final_text`.
+ * `current` never carries the author layer (ConflictCurrentSchema). The
+ * drift test reads both lists from the triggers.
+ */
+export const WORDS_VERSION_COLUMNS = {
+  entry: ['final_text', 'machine_edits', 'edit_level'],
+  held: ['final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans', 'typed_text'],
+} as const;
+
+/**
  * Columns that belong to no single group: the server applies them when any
  * of the listed groups is in `changed` (S02's 20261015030000). The letter's
  * direction follows its words and its language (F04 11.3).
@@ -310,17 +332,43 @@ export interface EntryUpsertOp extends OpBase<'entry.upsert', EntryData> {
    * (`text_xid`, ADR 0025 section 5) above `base`, the server does not apply
    * the words and answers `conflict_groups: ['text']` with `current`
    * (WP-F16-14). After an op applies, the client rebases every later queued
-   * op for that letter to the returned `applied_v` (F16-REQ-025).
+   * op for that letter (F16-REQ-025): on a first answer to `entry.v`, the
+   * row version the answer carries; on a duplicate's answer (`dup`) only to
+   * its `applied_v`, never to `entry.v`, which may hold another phone's
+   * later write. A duplicate without `applied_v` moves no base.
    */
   base: string | null;
   /**
    * The Keep (ADR 0025 section 9, review K 1): the `v` of the held draft this
-   * letter is made from, as this phone last knew it. When the held words moved
-   * past it, the keep is refused as a words conflict (no letter is made, the
-   * held row stays, `current` carries the held words). Absent on an ordinary
-   * upsert; a keep without it is compared as 0.
+   * letter is made from, as this phone last knew it. Sent on a Keep, always
+   * with a value, and on no other op. As built (20261016000000 `sync_push`):
+   * on a letter that exists with `base` set, `held_base` is ignored (`base`
+   * wins); with `base` null, or when no letter has the id yet, the key's
+   * presence alone makes the op a Keep, even as null, which counts as 0. So
+   * an ordinary edit with no `base` that carried it would have its words
+   * compared as a Keep and refused when the server's are newer.
+   *
+   * A phone that knows no held version (the answer to its upload never came,
+   * or it never saw the row's `v`) sends `'0'`, which compares against any
+   * words on the server, so the Keep never replaces words it has not seen.
+   * Omitting the key is not the same: onto a new letter the server still
+   * compares as 0 when it holds a held row with that id, but onto an
+   * existing letter with no `base` (another phone kept first) there is no
+   * compare at all: the Keep's words replace the letter's, or the op fails
+   * SCIMM on the first keep's provenance. (The app omits it today when it
+   * knows no version, outbox.ts; WP-F16-01 should send `'0'` instead.)
+   *  - Onto a new letter (`keep_check`): when the author's held row has
+   *    words newer than it and different from the keep's, the keep is
+   *    refused as a words conflict: no letter is made, the held row stays,
+   *    `current` carries the held words with `typed_text`. A Keep without
+   *    the key is compared as 0 too whenever the author holds a held row
+   *    with that id.
+   *  - Onto the author's existing letter with no `base` (another phone kept
+   *    the draft first): it stands in for `base`, newer words refuse the
+   *    text group with `current`, and the stored `raw_transcript`,
+   *    `captured_at`, `engine_version` and `pack_ref` stand.
    */
-  held_base?: string | null;
+  held_base?: string;
 }
 export interface EntryReuploadOp extends OpBase<'entry.reupload', EntryData> {
   /** The server `updated_at` this phone last saw (restore epoch, F16 6.2 F). */
@@ -385,13 +433,15 @@ export type EntryState = v.InferOutput<typeof EntryStateSchema>;
  * For a held draft (a refused `held.upsert` or Keep) they are the held row's,
  * which may still have no words (`null`), with `typed_text` beside them
  * (ADR 0025 section 9; S03's request in ADR 0025 "Requests", item 1).
+ * As built (20261016000000) no `current` carries `author_edits` or
+ * `locked_spans`, for a letter or a held draft: the keys are exactly these
+ * (the drift test reads every builder). `v` is the words version
+ * (`text_xid`), see WORDS_VERSION_COLUMNS.
  */
 export const ConflictCurrentSchema = v.object({
   final_text: nullableStr,
   machine_edits: v.nullable(v.array(v.unknown())),
   edit_level: v.nullable(v.picklist(EDIT_LEVELS)),
-  author_edits: v.nullish(v.array(v.unknown())),
-  locked_spans: v.nullish(v.array(v.unknown())),
   typed_text: v.optional(nullableStr),
   v: str,
 });
@@ -405,8 +455,15 @@ export const PushResultOkSchema = v.object({
   conflict: v.optional(v.boolean()),
   /**
    * WP-F16-14: the groups not applied, today only `["text"]`. This alone
-   * marks a words refusal (`isWordsConflict`): a duplicate's answer, a
-   * refused `held.upsert` and a refused Keep carry it without `conflict`.
+   * marks a words refusal (`isWordsConflict`), whatever `conflict` says. As
+   * built (20261016000000): a refused Keep onto a new letter (`keep_check`)
+   * and its repeat (`dup_answer`) carry it with `conflict: true`; a refused
+   * `entry.upsert` carries `conflict` as its own row compare says (the row's
+   * `v` past `base`, nearly always true there), and so does a Keep onto a
+   * letter that already exists (another phone kept first: the letter path,
+   * `held_base` standing in for `base`); a duplicate of either of those two
+   * (`dup_outcome`), a refused `held.upsert` (`held_state`) and its repeat
+   * (`held_dup`) carry it without `conflict`.
    */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
   /**
@@ -417,9 +474,15 @@ export const PushResultOkSchema = v.object({
    */
   current: v.optional(v.nullable(ConflictCurrentSchema)),
   /**
-   * WP-F16-14 (ADR 0025 section 2): the words version this op wrote when it
-   * first applied. A duplicate (`dup`) answers it too, so a lost answer
-   * rebases on it, never on `entry.v`.
+   * WP-F16-14 (ADR 0025 section 2), as built (20261016000000): sent only on
+   * a duplicate's answer (`dup: true`; `dup_outcome`, `held_dup`), never on
+   * a first answer. It is the row version (`sync_xid`, the kind of value
+   * `entry.v` and `held.v` carry, not the words version) that this op wrote
+   * when it first applied, so a lost answer rebases on it and never on
+   * `entry.v`. Absent when the first answer was a words conflict (that
+   * answer's `conflict_groups` and `current` come again instead) or the op
+   * wrote nothing (a re-upload the server did not take). After a first
+   * answer, rebase on `entry.v` (a held draft: `held.v`).
    */
   applied_v: v.optional(v.nullable(str)),
   missing: v.optional(v.boolean()),
@@ -437,7 +500,10 @@ export const PushResultOkSchema = v.object({
   /**
    * `held.discard`: the held words changed since `base` (another phone's later
    * edit wins), or a legal hold keeps the row. The draft stays on the server
-   * and comes back at the next pull; the phone must not drop its words.
+   * and the phone must not drop its words. The server sends nothing more: the
+   * row comes back only when the phone pulls the held section again from a
+   * null cursor (the app does, merge.ts), and only if it parses. A row the
+   * parser drops (`held.rejected`, PulledHeldSectionSchema) never comes back.
    */
   kept: v.optional(v.boolean()),
   /** `entry.erase` and Erase now on a held draft: the server erased it for good. */
@@ -497,8 +563,12 @@ export interface BookRequest {
 export interface PullSince {
   epoch?: number;
   books: Record<string, BookRequest>;
-  /** WP-F16-17: cursor and digest for the author's own held drafts (same rules as a book). */
-  held?: { cursor?: string | null; have?: Digest; verify?: boolean; ids?: boolean };
+  /**
+   * WP-F16-17 (20261016000000): the cursor for the author's own held drafts,
+   * one for all books (ADR 0025 section 9). Send `held` to get the section;
+   * `sync_pull` reads only `cursor` here. There is no held digest.
+   */
+  held?: { cursor?: string | null };
 }
 
 export interface SyncPullArgs {
@@ -656,6 +726,45 @@ export const PulledHeldGoneSchema = v.object({
 });
 export type PulledHeldGone = v.InferOutput<typeof PulledHeldGoneSchema>;
 
+/** One row of the held section: a draft, or the marker of one that left. */
+export const PulledHeldRowSchema = v.union([PulledHeldGoneSchema, PulledHeldSchema]);
+export type PulledHeldRow = PulledHeld | PulledHeldGone;
+
+/**
+ * The held section, checked row by row (review A 3 on #138). `held_drafts`
+ * has no check on `capture_mode`, `edit_level` or its jsonb columns
+ * (20261016000000, unlike `entries`), and `held.upsert` stores them as sent,
+ * so a row this contract refuses can come from any of the author's phones.
+ * Such a row is dropped and counted in `rejected`; every other row, and the
+ * rest of the pull with its books, still parses.
+ *
+ * What happens to the dropped row: the server keeps it, the cursor moves
+ * past it, and nothing heals it. It is never shown on this phone; a phone
+ * with its own copy keeps that copy, and a phone without one (a new phone,
+ * or after a restore epoch) never shows that draft. It comes again only if
+ * it changes, and then only if it parses. Two things are therefore
+ * required, not optional (the constitution: nothing a person wrote may
+ * vanish silently):
+ *  - WP-F16-01 tells the person when `rejected` is above 0, and logs it as
+ *    a count only, never the row, its id or its words (CLAUDE.md privacy);
+ *  - S02 adds the `entries` checks to `held_drafts` (`capture_mode`,
+ *    `edit_level`, the jsonb types), so the writing phone is refused at
+ *    write time and keeps a copy the person can see. The same checks stop
+ *    a held row's `current` from failing a whole push answer.
+ */
+export const PulledHeldSectionSchema = v.pipe(
+  v.object({ rows: v.array(v.unknown()), cursor: nullableStr, more: v.boolean() }),
+  v.transform(({ rows, cursor, more }) => {
+    const kept: PulledHeldRow[] = [];
+    for (const row of rows) {
+      const r = v.safeParse(PulledHeldRowSchema, row);
+      if (r.success) kept.push(r.output);
+    }
+    return { rows: kept, cursor, more, rejected: rows.length - kept.length };
+  }),
+);
+export type PulledHeldSection = v.InferOutput<typeof PulledHeldSectionSchema>;
+
 export const PullResponseSchema = v.object({
   reset: v.boolean(),
   reason: v.optional(v.picklist(['epoch', 'cursor_ahead'])),
@@ -664,20 +773,38 @@ export const PullResponseSchema = v.object({
   books: v.optional(v.array(PulledBookSchema)),
   gone: v.optional(v.array(GoneBookSchema)),
   /**
-   * WP-F16-17: the author's own held drafts after the held cursor,
-   * with the same cursor rules as a book (F16 6.2 I): removal is the digest
-   * (`visible`, then `ids` on a difference), so a draft purged by a book
-   * purge, the orphan sweep or a restore epoch leaves this phone too.
-   * `gone` rows are an optional fast path for discards and keeps. Never
-   * present in anyone else's pull.
+   * WP-F16-17, as built (20261016000000 `sync_pull`, unchanged by
+   * 20261023010000): present only when the request carried `held`, and
+   * absent even then while the server's held switch is off (`app.held_sync
+   * = 'off'`, ADR 0025 section 9). Read "asked for but absent" as: keep the
+   * local held drafts and the held cursor as they are. The
+   * author's own held drafts after the held cursor, one page across all
+   * books, of every book the author is a parent of now. The server answers
+   * `rows`, `cursor` and `more` only: there is no digest, so a phone cannot
+   * check that it holds exactly the server's set.
+   *
+   * Removal is the `gone` markers alone (`discarded`, `kept`, `erased`),
+   * sent only to a phone that pulled before (a non-null held cursor). Let go,
+   * Keep, Erase now, and leaving the book (`leave_child`,
+   * `remove_child_member`: the leaver's drafts go with a `discarded` marker
+   * unless a legal hold keeps them) each leave one. What leaves no marker:
+   *  - a cascade from the book or the account: the markers go with it. For a
+   *    book the phone asked about, its entry in the top-level `gone` list
+   *    (`deleted` or `not_member`) is the only sign; an account deletion
+   *    ends the session instead;
+   *  - an undone join (`undo_parent_join`, 20261023010000): the removed
+   *    parent's drafts stay on the server, theirs, but are no longer served,
+   *    because this section serves only books the author is a parent of;
+   *  - the same for a kept author's drafts when a book is purged while their
+   *    rows keep it (20261023010000): readable by them through
+   *    `held_drafts_author_read`, never in this section;
+   *  - a restore epoch: the pull answers `reset` instead.
+   * The left-book section (`gone[].rows`) carries the author's letters only,
+   * never held drafts. Never present in anyone else's pull. A malformed held
+   * row is dropped and counted, never the pull, and the person must be told
+   * (`PulledHeldSectionSchema`).
    */
-  held: v.optional(v.object({
-    rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])),
-    cursor: nullableStr,
-    more: v.boolean(),
-    visible: v.optional(v.nullable(DigestSchema)),
-    ids: v.optional(v.array(str)),
-  })),
+  held: v.optional(PulledHeldSectionSchema),
   more: v.optional(v.boolean()),
 });
 export type PullResponse = v.InferOutput<typeof PullResponseSchema>;
@@ -772,7 +899,12 @@ export function parsePushResponse(input: unknown): ParseResult<PushResponse> {
   return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };
 }
 
-/** Validates a `sync_pull` response. Never throws. */
+/**
+ * Validates a `sync_pull` response. Never throws. A held row the contract
+ * refuses is dropped and counted in `held.rejected`; it never makes the
+ * whole pull `invalid`. The caller tells the person when `held.rejected` is
+ * above 0: the server keeps the row and nothing else shows it.
+ */
 export function parsePullResponse(input: unknown): ParseResult<PullResponse> {
   const r = v.safeParse(PullResponseSchema, input);
   return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };
@@ -786,11 +918,15 @@ export function isFieldGroupList(x: unknown): x is FieldGroup[] {
 /**
  * True when a push result is a words refusal the author must resolve (F16
  * 6.2 E step 3): `conflict_groups` contains `text`, whatever `conflict`
- * says. The server sends `conflict_groups` without `conflict` on a
- * duplicate's answer, a refused `held.upsert` and a refused Keep
- * (20261016000000), and those words must never be taken as applied.
- * `conflict: true` without `conflict_groups` is advisory: the op was applied
- * by the later-arrival rule and there is nothing to resolve.
+ * says. As built (20261016000000), a refused Keep onto a new letter, first
+ * answer and repeat, carries `conflict: true` beside it, and a refused
+ * `entry.upsert` or a refused Keep onto a letter that already exists nearly
+ * always does on its first answer; the repeat of either of those two
+ * (`dup_outcome`), a refused `held.upsert` and its repeat carry
+ * `conflict_groups` without `conflict`.
+ * None of those words may be taken as applied. `conflict: true` without
+ * `conflict_groups` is advisory: the op was applied by the later-arrival
+ * rule and there is nothing to resolve.
  */
 export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict_groups: FieldGroup[] } {
   return r.ok === true && Array.isArray(r.conflict_groups) && r.conflict_groups.includes(WORDS_GROUP);

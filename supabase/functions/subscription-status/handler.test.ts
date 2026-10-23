@@ -122,6 +122,8 @@ Deno.test('SQL errors map to the envelope: SCRAT, SCANO, 22023 idempotency confl
     [401, { code: 'PGRST301' }, 401, { code: 'unauthorized', retryable: false }],
     [500, { code: 'XX000' }, 503, { code: 'unavailable', retryable: true }],
     [400, { code: 'SCKIL', details: 'statusReport' }, 503, { code: 'paused', retryable: true, detail: 'statusReport' }],
+    // A full account was confirmed, so 42501 is a missing grant (a deploy fault): retryable, the phone keeps the report (review B N3).
+    [403, { code: '42501', message: 'permission denied for function status_report_store' }, 503, { code: 'unavailable', retryable: true }],
   ];
   for (const [rpcStatus, rpcBody, status, error] of cases) {
     const res = await world({ rpcStatus, rpcBody }).handler(post(report));
@@ -129,6 +131,9 @@ Deno.test('SQL errors map to the envelope: SCRAT, SCANO, 22023 idempotency confl
     assert.deepEqual((await res.json()).error, error);
   }
   assert.equal((await world({ rpcBody: { stored: 'maybe', consent: 'none' } }).handler(post(report))).status, 503);
+  const salt = await world({ rpcStatus: 403, rpcBody: { code: '42501' } }).handler(new Request(`${BASE}/salt`, { headers: { Authorization: 'Bearer x' } }));
+  assert.equal(salt.status, 503);
+  assert.deepEqual((await salt.json()).error, { code: 'unavailable', retryable: true });
 });
 
 Deno.test('the salt route returns the per-account salt and refuses a malformed one', async () => {
@@ -149,19 +154,39 @@ Deno.test('routes, methods and a missing session are refused before any call', a
   assert.equal(w.calls.length, 0);
 });
 
-Deno.test('[LEGAL-REQ-014] canary: nothing from the body, the salt or the session reaches a log line', async () => {
+Deno.test('[LEGAL-REQ-014] canary: nothing from the body, the salt, the session or an upstream error reaches a log line or an answer', async () => {
   const lines: string[] = [];
-  for (const o of [{}, { rpcStatus: 400, rpcBody: { code: 'SCRAT' } }, { rpcStatus: 500, rpcBody: { message: CANARY.parentEmail } }]) {
+  const bodies: string[] = [];
+  // Upstream error bodies carry the Asha canaries in message, details and hint (review B N4 on #138).
+  const loud = { message: CANARY.letterText, details: CANARY.childName, hint: CANARY.parentEmail };
+  const worlds = [
+    {}, { rpcStatus: 400, rpcBody: { code: 'SCRAT' } }, { rpcStatus: 500, rpcBody: { message: CANARY.parentEmail } },
+    { rpcStatus: 400, rpcBody: { code: 'P0001', ...loud } }, { rpcStatus: 500, rpcBody: { code: 'XX000', ...loud } },
+    { rpcStatus: 404, rpcBody: { code: 'PGRST202', ...loud } }, { rpcStatus: 403, rpcBody: { code: '42501', ...loud } },
+    { rpcStatus: 400, rpcBody: { code: 'SCKIL', ...loud } }, { rpcStatus: 400, rpcBody: { code: '22023', ...loud } },
+    // PostgREST's own text for a missing grant, so the 'permission denied' check below can fail (review B note 3 on #253).
+    { rpcStatus: 403, rpcBody: { code: '42501', message: 'permission denied for function status_report_store', details: CANARY.childName } },
+    { userStatus: 500 },
+  ];
+  for (const o of worlds) {
     const w = world(o);
-    await w.handler(post({ ...report, sub_ref: 'f'.repeat(64) }, { 'Idempotency-Key': KEY, 'x-request-id': CANARY.requestId }));
-    await w.handler(post({ ...report, note: CANARY.letterText }));
-    await w.handler(new Request(`${BASE}/salt`, { headers: { Authorization: `Bearer ${CANARY.sessionJwt}` } }));
+    for (const r of [
+      post({ ...report, sub_ref: 'f'.repeat(64) }, { 'Idempotency-Key': KEY, 'x-request-id': CANARY.requestId }),
+      post({ ...report, note: CANARY.letterText }),
+      new Request(`${BASE}/salt`, { headers: { Authorization: `Bearer ${CANARY.sessionJwt}` } }),
+    ]) bodies.push(await (await w.handler(r)).text());
     lines.push(...w.lines);
   }
   const text = lines.join('\n');
-  assert.ok(lines.length >= 9);
+  assert.ok(lines.length >= 20);
   assert.deepEqual(findCanaries(text), []);
   for (const s of ['f'.repeat(64), SALT, 'plus.annual', KEY]) assert.equal(text.includes(s), false, s);
+  // The answers carry only the envelope: no canary, no upstream message, detail or hint. (The salt route's own
+  // success answer carries the salt; that is its job, so the salt is checked in the logs only.)
+  const answers = bodies.join('\n');
+  assert.equal(bodies.length, worlds.length * 3);
+  assert.deepEqual(findCanaries(answers), []);
+  for (const s of ['permission denied', 'f'.repeat(64), KEY]) assert.equal(answers.includes(s), false, s);
 });
 
 Deno.test('[RA-07-06] GET /subscription-status/health: 200 ready with its settings, no Auth call, no RPC, no session needed', async () => {
