@@ -7,7 +7,7 @@ Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-04
 - Every row marked **v1.1** below (sign-in setup, database migrations, Edge Functions, the demo account, the co-parent exit) **applies to the v1.0 store release**.
 - Rows that say v1.0 has no sign-in, no account or no server (5.2 step 4, 5.3 step 3, 6.4, 6.8, section 10's opening line) are superseded for the store release.
 - The alpha runs on the preview lane; this train's store lane starts once the submission date is set.
-- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4).
+- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4, Proposed).
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
@@ -133,9 +133,16 @@ Store text: `apps/mobile/store.config.json` is generated from `packages/content`
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
 The repository is public, so GitHub Free includes environments with required reviewers, environment secrets, deployment tag and branch rules, and rulesets (V: GitHub "Deployments and environments" and "About rulesets", per the 15 Oct review; `deploy-db.yml` already uses an environment).
-- Environment `app-store`: the approver account (a second account only the founder holds, ADR 0026 decision 1) is the only required reviewer, with prevent self-review on and admin bypass off; deployment rules allow tag `ios-v*` and branch `release/*` only. Create it with `scripts/release/github-settings.ts` (FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SECRETS_REVIEW SR-11). The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
-- Rulesets, for immutability only (SECRETS_REVIEW SR-3): `ios-v*` and `db-v*` tags cannot be moved or deleted, and `release/*` cannot be force-pushed or deleted; no bypass list. They do not decide who may create a tag, because every session uses the same account; the approver's click is the control.
-- Limit: the founder's account still owns the repository and can change these settings back; `github-settings.ts --verify` reads them back, and ADR 0026 AF-27 is the durable fix.
+
+What stands (ADR 0022 decision 8, founder, 15 Oct):
+- Environment `app-store`: the founder is the required reviewer; deployment rules allow tag `ios-v*` and branch `release/*` only. The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
+- Rulesets: tag `ios-v*` and branch `release/*`, restricting creations, updates and deletions, with repository admins as the only bypass. The coordinator pushes tags from a founder-credential session; the agent harness's App cannot.
+- Limit: every Claude session runs on the founder's GitHub account, which is an admin. The rulesets and the approval stop the harness App and anyone without admin rights. A session on the founder's credentials is held by the written rule (COORDINATION.md) and by the founder seeing each approval request.
+
+Proposed (17 Oct, not decided; ADR 0026 decision 1, Proposed; SR-3 and SR-11 in `docs/security/SECRETS_REVIEW.md`, on #206). It takes effect when the founder accepts ADR 0026 decision 1; until then the 15 Oct gate above stands:
+- Environment `app-store`: the approver account (a second account only the founder holds) is the only required reviewer, with prevent self-review on and admin bypass off; the same deployment rules. Create it with `scripts/release/github-settings.ts` (on #236; FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SR-11).
+- Rulesets, for immutability only (SR-3): `ios-v*` and `db-v*` tags cannot be moved or deleted, and `release/*` cannot be force-pushed or deleted; no bypass list. They do not decide who may create a tag, because every session uses the same account; the approver's click is the control.
+- Limit: the founder's account still owns the repository and can change these settings back; `github-settings.ts --verify` (on #236) reads them back, and the durable fix is a founder decision after the alpha (AF-27 in `docs/release/AUTOMATION.md`).
 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
