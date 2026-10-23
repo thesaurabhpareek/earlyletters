@@ -548,7 +548,7 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
 /* ---------- the property ---------- */
 
 describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property', () => {
-  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each, zero meaning changes`, () => {
+  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each, zero meaning changes`, async () => {
     const rnd = mulberry32(SEED);
     const langs = makeLangs();
     const tally = new Map<string, number>();
@@ -562,6 +562,9 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     };
 
     for (let run = 0; run < RUNS; run++) {
+      // Hand the worker back to vitest now and then: one synchronous call longer than 60 s fails the run with
+      // "Timeout calling onTaskUpdate" although every case passed (80,000 runs, about 100 s, 23 Oct).
+      if (run % 2000 === 1999) await new Promise<void>((resolve) => setImmediate(resolve));
       const lang = langs[Math.floor(rnd() * langs.length)];
       perLang.set(lang.id, (perLang.get(lang.id) ?? 0) + 1);
       const dict = lang.code === 'en' ? enDict(rnd) : lang.dict();
