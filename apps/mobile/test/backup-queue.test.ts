@@ -793,7 +793,7 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
     expect(seen).toEqual([`POST ${EP}`, `PATCH ${EP}/u1`]);
   });
 
-  it('[review follow-up on #150] an endpoint that is not https matches no saved URL, not even an http one on its own host', async () => {
+  it('[review A N2 on #252] an endpoint that is not https gets no request at all, not even with a saved http URL on its host', async () => {
     const dev = 'http://127.0.0.1:54321/storage/v1/upload/resumable';
     const seen: string[] = [];
     const http: HttpLike = async (url, init) => {
@@ -801,7 +801,7 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
       return init.method === 'POST' ? created(1) : { status: 200, header: (h: string) => (h === 'Upload-Offset' ? '0' : null) };
     };
     const e = await tusUpload({ ...input(http, `${dev}/u0`), target: { endpoint: dev, headers: { Authorization: `Bearer ${MAMA}` } } }).catch((x: unknown) => x);
-    expect(seen).toEqual([`POST ${dev}`]); // the saved http URL is never asked with the token
+    expect(seen).toEqual([]); // neither the endpoint nor the saved http URL is asked with the token
     expect(e).toBeInstanceOf(BackupServerError);
     expect((e as BackupServerError).code).toBe('location');
     expect((e as BackupServerError).retryable).toBe(false);

@@ -12,9 +12,10 @@
  *   same bytes. A wrong offset (409) asks the server again. Both are capped per
  *   call (TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS): past that the call fails
  *   retryable, so the job waits out the queue's backoff (review B m1 on #150).
- * - The upload URL must be https on the endpoint's own origin: every HEAD and
- *   PATCH carries the user's access token, so a `Location` anywhere else is
- *   refused, not followed (review A note 2 on #150).
+ * - The endpoint and the upload URL must be https, the upload URL on the
+ *   endpoint's own origin: every request carries the user's access token, so an
+ *   endpoint that is not https is refused before any request, and a `Location`
+ *   anywhere else is refused, not followed (review A note 2 on #150).
  * - `x-upsert: true`: a pending object may be replaced (a job reset after its
  *   ciphertext changed). The Storage policy allows that only while the
  *   caller's `audio_blobs` row is `pending` (request to the S05 server).
@@ -101,10 +102,12 @@ export async function tusUpload(x: TusUploadInput): Promise<'done' | 'stopped'> 
   const part = x.partBytes ?? TUS_PART_BYTES;
   const base = { ...x.target.headers, 'Tus-Resumable': TUS_VERSION };
   let { url, offset } = x.progress;
-  // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead. An
-  // endpoint that is not https (a non-https dev server) has no such origin, so no saved URL matches it.
+  // Only https: an endpoint that is not (a non-https dev server) gets no request at all, so the token
+  // never goes in clear text and no unfinished upload is left behind (review A N2 on #252).
   const origin = httpsOrigin(x.target.endpoint);
-  if (url && (origin === null || httpsOrigin(url) !== origin)) url = null;
+  if (!origin) throw new BackupServerError('location', false);
+  // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead.
+  if (url && httpsOrigin(url) !== origin) url = null;
   let creates = 0;
   let asks = 0;
 
