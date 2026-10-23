@@ -12,7 +12,8 @@
  *  1. Pending request. Asking for an email from this phone writes a small
  *     record (only a time, never the address) to the Keychain. A link opened
  *     while no unexpired record exists is never verified: the person is
- *     offered the code from the email instead. The record lives for the
+ *     offered the code from the email instead, or a new email when this
+ *     phone's own record is over an hour old. The record lives for the
  *     longest code life a Supabase project can set (1 hour).
  *  2. PKCE. The client runs Supabase Auth with `flowType: 'pkce'`, so the
  *     email request stores a code verifier on this phone and sends only its
@@ -46,13 +47,18 @@ export function encodePendingRequest(p: PendingEmailRequest): string {
   return JSON.stringify({ at: p.at });
 }
 
-/** Null when absent, damaged, expired, or from the future (clock moved back by more than a minute). */
-export function decodePendingRequest(raw: string | null | undefined, now: number): PendingEmailRequest | null {
+/**
+ * Null when absent, damaged, or from the future (clock moved back by more than a minute).
+ * 'expired' when this phone did ask, more than an hour ago: never verified either, but the
+ * person is told the link expired rather than that it came from another phone.
+ */
+export function decodePendingRequest(raw: string | null | undefined, now: number): PendingEmailRequest | 'expired' | null {
   if (!raw) return null;
   try {
     const v = JSON.parse(raw) as { at?: unknown };
     if (typeof v.at !== 'number' || !Number.isFinite(v.at)) return null;
-    if (now - v.at > PENDING_REQUEST_TTL_MS || v.at - now > FUTURE_TOLERANCE_MS) return null;
+    if (v.at - now > FUTURE_TOLERANCE_MS) return null;
+    if (now - v.at > PENDING_REQUEST_TTL_MS) return 'expired';
     return { at: v.at };
   } catch {
     return null;
@@ -64,12 +70,15 @@ export type LinkDecision =
   | 'verify'
   /** No request from this phone: never verify; offer the code instead. */
   | 'not_this_phone'
+  /** This phone's request is over an hour old, so is any link it got: never verify; offer a new email. */
+  | 'expired'
   /** Someone is already signed in here: a link never replaces the session. */
   | 'signed_in';
 
 /** Layer 1 (and the signed-in refusal). The signed-in check wins: it holds whatever the pending record says. */
-export function decideEmailLink(input: { pending: PendingEmailRequest | null; signedIn: boolean }): LinkDecision {
+export function decideEmailLink(input: { pending: PendingEmailRequest | 'expired' | null; signedIn: boolean }): LinkDecision {
   if (input.signedIn) return 'signed_in';
+  if (input.pending === 'expired') return 'expired';
   return input.pending ? 'verify' : 'not_this_phone';
 }
 
@@ -96,11 +105,11 @@ export function verifyUrl(supabaseUrl: string, tokenHash: string, type: 'magicli
 
 export type OpenLinkOutcome =
   | { ok: true; userId: string }
-  | { ok: false; error: 'other_phone' | 'already_signed_in' };
+  | { ok: false; error: 'other_phone' | 'already_signed_in' | 'expired' };
 
 export interface OpenLinkDeps {
   /** The Keychain note this phone wrote when it asked for an email (pending.ts). */
-  readPending(): Promise<PendingEmailRequest | null>;
+  readPending(): Promise<PendingEmailRequest | 'expired' | null>;
   /** A session exists on this phone right now. */
   signedIn(): boolean;
   /** Layer 2: GET /verify and the PKCE exchange (email.ts verifyEmailLinkPkce). Throws on failure. */
@@ -119,6 +128,7 @@ export async function openEmailLink(link: { tokenHash: string; type: EmailLinkTy
   const decision = decideEmailLink({ pending: await deps.readPending(), signedIn: deps.signedIn() });
   if (decision === 'signed_in') return { ok: false, error: 'already_signed_in' };
   if (decision === 'not_this_phone') return { ok: false, error: 'other_phone' };
+  if (decision === 'expired') return { ok: false, error: 'expired' };
   const userId = await deps.exchange(link.tokenHash, link.type);
   await deps.clearPending();
   return { ok: true, userId };
