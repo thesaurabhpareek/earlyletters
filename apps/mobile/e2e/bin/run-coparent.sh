@@ -19,7 +19,7 @@ B="${2:?usage: $0 <UDID_A> <UDID_B> [--app App.app]}"
 shift 2
 APP=""
 if [[ "${1:-}" == "--app" ]]; then APP="$2"; fi
-APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
+APP_ID="${APP_ID:-com.earlyletters.scribe.dev}"
 OUT="${OUT:-$HOME/.maestro/scribe-e2e/coparent-$(date -u +%Y%m%dT%H%M%SZ)}"
 RUN="${RUN_ID:-$(date -u +%H%M%S)}"
 MAMA_EMAIL="${MAMA_EMAIL:-delivered+e2e13-mama-$RUN@resend.dev}"

@@ -257,6 +257,35 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    name: 'draft kind, occurred date and precision, letter language and base direction (WP-F04-03, G-26)',
+    up(db) {
+      // PRD V2 F04 section 11.3, number fixed by 08-delivery.md section 4. Columns only: every
+      // existing row keeps its values and gains the defaults below (a letter, dated by its day,
+      // left to right, language unknown). Nothing is queued: no letter changes.
+      //   drafts.kind                note | letter (L2). Speak and Type start a letter; the widget a note.
+      //   drafts.occurred_on         YYYY-MM-DD the parent chose (L3); null means the local date of created_at.
+      //   drafts.occurred_precision  day | month (L2); entries.occurred_precision the same once saved.
+      //   drafts.language            BCP-47 tag of the take (L4, a person's language); null is the author's default.
+      //   entries.language           the letter's language (L4, G-26). Syncs as field group `language`, own
+      //                              letters only, mapped to the server's seven codes (sync/outbox.ts wireLanguage).
+      //   drafts/entries.base_direction  ltr | rtl (L2, layout only; never changes the words).
+      // drafts.state gains the value 'discarding' (Let it go confirmed, F04-REQ-009): a text value, no DDL.
+      addColumns(db, 'drafts', [
+        ['kind', "TEXT NOT NULL DEFAULT 'letter'"],
+        ['occurred_on', 'TEXT'],
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+      addColumns(db, 'entries', [
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

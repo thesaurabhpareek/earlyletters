@@ -24,6 +24,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
+import { removeWholeFrameCopies } from '../capture/adts-file';
 import {
   deleteSetting,
   dictionaryFor,
@@ -147,6 +148,13 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   if (started) return stopTranscriptionQueue;
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
+  // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
+  // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
+  try {
+    removeWholeFrameCopies(0);
+  } catch {
+    // the launch sweep removes it once it is an hour old
+  }
 
   const onApp = (s: AppStateStatus) => {
     if (s === 'active') {

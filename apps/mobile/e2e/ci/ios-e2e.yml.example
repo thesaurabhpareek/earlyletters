@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 60
     environment: e2e   # holds the secrets below; never production values
     env:
-      APP_ID: com.earlyletters.scribe.preview
+      APP_ID: com.earlyletters.scribe.dev
       MAESTRO_VERSION: "2.11.0"
       MAESTRO_CLI_NO_ANALYTICS: "true"
       MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true"
