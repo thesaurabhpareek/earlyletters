@@ -22,6 +22,7 @@ import {
 import {
   SYNC_SETTING,
   backoff,
+  conflictCount,
   headOp,
   markSent,
   pendingCount,
@@ -54,6 +55,13 @@ export interface SyncEngineDeps {
   clearTimer?: (handle: unknown) => void;
   /** Delay between a save and its push, so a burst of edits goes in one batch. */
   saveDebounceMs?: number;
+  /**
+   * The remote kill switch (`killSwitches.sync` in the signed remote config, F16-REQ-018;
+   * ADR 0016). While it returns true no request leaves; the outbox keeps every op and
+   * local use is unchanged. Read before every push round and pull page, so a cycle
+   * already running stops at the next boundary. A reader that throws counts as on.
+   */
+  paused?: () => boolean;
 }
 
 export interface SyncEngine {
@@ -79,7 +87,7 @@ const FOREGROUND_MIN_GAP_MS = 5_000;
 const MAX_PUSH_ROUNDS = 40;
 const MAX_PULL_PAGES = 100;
 
-const EMPTY: SyncReport = { pushed: 0, rejected: 0, pulled: 0, reset: false, phase: 'idle' };
+const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, reset: false, phase: 'idle' };
 
 export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const { db, supabase, userId } = deps;
@@ -89,6 +97,15 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const setTimer = deps.setTimer ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
   const clearTimer = deps.clearTimer ?? ((h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>));
   const isActive = deps.isActive ?? (() => true);
+  /** The remote kill switch. A reader that throws pauses sync (fail closed); the outbox keeps every op. */
+  const killed = (): boolean => {
+    if (!deps.paused) return false;
+    try {
+      return deps.paused() === true;
+    } catch {
+      return true;
+    }
+  };
   const iso = () => new Date(now()).toISOString();
   const ctx = (): EnqueueContext => ({ now: iso(), newId: deps.newId });
   const tx = <T>(fn: () => T): T => {
@@ -113,6 +130,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
 
   const phase = (): SyncPhase => {
     if (mismatch) return 'account_mismatch';
+    if (killed()) return 'paused_server';
     if (running) return 'syncing';
     if (lastFailure === 'auth' || lastFailure === 'anonymous') return 'auth';
     if (lastFailure) return 'offline';
@@ -123,6 +141,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     phase: phase(),
     pending: pendingCount(db),
     rejected: rejectedUnseenCount(db),
+    conflicts: conflictCount(db),
     lastSyncedAt: readSetting(db, SYNC_SETTING.lastSyncedAt),
     consent: readSetting(db, SYNC_SETTING.pausedFor),
   });
@@ -148,6 +167,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let single = false;
     let contentAccepted = false;
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
+      if (killed()) return 'stop';
       const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50 });
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));
@@ -174,6 +194,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       const out = tx(() => applyPushResponse(db, batch.rows, res.data, ctx()));
       report.pushed += out.pushed;
       report.rejected += out.rejected;
+      report.conflicts += out.conflicts;
       if (out.pushed + out.rejected > 0) changed();
       if (!onlyDeletes && !out.paused) contentAccepted = true;
       if (out.paused) {
@@ -200,6 +221,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let resetDone = false;
     let idsRounds = 0;
     for (let page = 0; page < MAX_PULL_PAGES; page++) {
+      if (killed()) return;
       const since = buildPullRequest(db, { verify });
       const res = await call<PullResponse>('sync_pull', { p_since: since, p_limit: pageSize });
       if ('failure' in res) {
@@ -236,7 +258,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   }
 
   async function cycle(verifyAsked: boolean): Promise<SyncReport> {
-    if (stopped || mismatch) return { ...EMPTY, phase: phase() };
+    if (stopped || mismatch || killed()) {
+      emit();
+      return { ...EMPTY, phase: phase() };
+    }
     running = true;
     emit();
     const report: SyncReport = { ...EMPTY };
