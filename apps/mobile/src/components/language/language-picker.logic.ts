@@ -35,3 +35,12 @@ const ENGLISH_ONLY: LanguagePickerView = {
 export function languagePickerView(englishOnly: boolean): LanguagePickerView {
   return englishOnly ? ENGLISH_ONLY : EVERY_LANGUAGE;
 }
+
+/**
+ * Settings, Spoken language, "Also spoken". English only: no Add row and no "Add up to two more" line, since
+ * nothing could be added (VOICE.md: promise only what the build does). Languages already listed there stay,
+ * each with Remove; with none, the section is not shown.
+ */
+export function alsoSpokenView(englishOnly: boolean, listed: number): { section: boolean; add: boolean; footer: boolean } {
+  return { section: !englishOnly || listed > 0, add: !englishOnly, footer: !englishOnly };
+}

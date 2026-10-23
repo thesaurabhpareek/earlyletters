@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { features, languageCopy } from '@scribe/content';
 import { LANGUAGES, searchLanguages } from '@scribe/core';
-import { languagePickerView } from '../src/components/language/language-picker.logic';
+import { alsoSpokenView, languagePickerView } from '../src/components/language/language-picker.logic';
 import { capabilities, setEnglishOnlyForTests } from '../src/lib/capabilities';
 import { DEFAULT_SPOKEN, parseSpoken, primaryOf, serializeSpoken, setPrimary } from '../src/lib/language/spoken-language.logic';
 
@@ -118,7 +118,7 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
     expect(src('app/onboarding.tsx')).toMatch(/<LanguagePicker\b/);
   });
 
-  it('only capabilities.ts and the picker mention the switch: no store, sync, rules, pack or speech code reads it', () => {
+  it('only capabilities.ts, the picker and the Spoken language screen mention the switch: no store, sync, rules, pack or speech code reads it', () => {
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const n of readdirSync(dir)) {
@@ -129,7 +129,31 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
     };
     walk(SRC);
     const readers = files.filter((f) => /englishOnly|ENGLISH_ONLY/.test(readFileSync(f, 'utf8'))).map((f) => relative(SRC, f).split('\\').join('/'));
-    expect(readers.sort()).toEqual(['components/language/language-picker.logic.ts', 'components/language/language-picker.tsx', 'lib/capabilities.ts']);
+    expect(readers.sort()).toEqual(['app/settings/language.tsx', 'components/language/language-picker.logic.ts', 'components/language/language-picker.tsx', 'lib/capabilities.ts']);
+  });
+});
+
+describe('[D-111 item 4] Settings, Spoken language: nothing to add means no Add row and no "two more" line', () => {
+  it('off: the section, the Add row and the footer line, as before, whatever is listed', () => {
+    for (const listed of [0, 1, 2]) expect(alsoSpokenView(false, listed), String(listed)).toEqual({ section: true, add: true, footer: true });
+  });
+
+  it('on: no Add row and no footer line; languages already listed stay (with Remove); none listed, no section', () => {
+    expect(alsoSpokenView(true, 0)).toEqual({ section: false, add: false, footer: false });
+    for (const listed of [1, 2]) expect(alsoSpokenView(true, listed), String(listed)).toEqual({ section: true, add: false, footer: false });
+  });
+
+  it('settings/language.tsx follows it, and the chosen language row stays outside it', () => {
+    const screen = src('app/settings/language.tsx');
+    expect(screen).toMatch(/const also = alsoSpokenView\(capabilities\.englishOnly, spoken\.others\.length\);/);
+    expect(screen).toMatch(/\{also\.section \? \(\s*<ListSection title=\{t\.othersTitle\} footer=\{also\.footer \? t\.othersFooter : undefined\}>/);
+    expect(screen).toMatch(/\{also\.add \? \(\s*<ListRow title=\{full \? t\.addLanguageFull : t\.addLanguage\}/);
+    expect(screen.match(/t\.othersFooter/g)?.length).toBe(1);
+    expect(screen.match(/setPicker\('add'\)/g)?.length).toBe(1);
+    // The primary row is not behind the switch.
+    const primary = screen.slice(screen.indexOf('<ListSection title={t.primaryTitle}'), screen.indexOf('{also.section'));
+    expect(primary).toMatch(/<LanguageRow\s+first\s+code=\{primary\.code\}/);
+    expect(primary).not.toMatch(/also\.|englishOnly/);
   });
 });
 
