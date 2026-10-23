@@ -404,6 +404,15 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     expect(verdictIn(rules, raw, edit(raw, 'punctuation', pair, '..'))).toBe('changes_sentence_type');
   });
 
+  it('a filler removal may not take the first mark of a run either (#249 review B, N2 for removals)', () => {
+    const opening = 'Um.. Asha slept.';
+    expect(v7(opening, edit(opening, 'filler', 'Um.', ''))).toBe('changes_sentence_type');
+    const later = 'Asha slept. Um.. ok';
+    expect(v7(later, edit(later, 'filler', ' Um.', ''))).toBe('changes_sentence_type');
+    const single = 'Asha slept. Um. ok';
+    expect(v7(single, edit(single, 'filler', ' Um.', ''))).toBeNull(); // one mark, no run: the filler goes with it
+  });
+
   it('the later mark may not become a copy of the first: one mark twice stays refused, as in engine 6 (#249 single-edit differential)', () => {
     const hi = 'आशा हँसी।.';
     expect(verdictIn(HI, hi, at(hi.length - 1, '।', '.'))).toBe('changes_sentence_type'); // "।।"
@@ -423,6 +432,15 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
 });
 
 describe("[F06-REQ-006] engine 7: the verifier's windows at the edges of a letter (#179 follow-up, wordWindow)", () => {
+  it('a deleted space between two different marks is refused by the count without spaces alone (#249 review B, N3)', () => {
+    for (const raw of ['Was there more? .', 'You did it! .']) {
+      const i = raw.length - 2;
+      for (const type of ['punctuation', 'paragraph'] as const) {
+        expect(v7(raw, { type, start: i, end: i + 1, original: ' ', replacement: '', source: 'model' }), `${raw} ${type}`).toBe('changes_sentence_type');
+      }
+    }
+  });
+
   it('a space or line break deleted between two end marks makes a new pair and is refused, as in engine 6 (#249 review N3)', () => {
     const del = (raw: string, gap: string, type: Edit['type']): Edit => {
       const i = raw.indexOf(`.${gap}.`) + 1;
