@@ -119,6 +119,53 @@ export async function revokeInvite(sb: FamilyClient, inviteId: string): Promise<
   if (error) throw error;
 }
 
+/**
+ * How "Share again" on the Family tab ended (F11-REQ-019):
+ *  - `shared`: the new link went out and the old invite is cancelled, so a forwarded copy of the
+ *    old link is never revived;
+ *  - `dismissed`: the share sheet was closed without sending, so the old link still works and the
+ *    new invite, which nobody has, is cancelled again;
+ *  - `old_still_open`: the new link went out but cancelling the old invite failed, so both links
+ *    work until the parent cancels one (the screen says so);
+ *  - `not_sent`: the share sheet failed, so nothing is known to be sent and nothing is cancelled
+ *    (the screen says so).
+ * Making the new invite can fail too; that error is thrown, as createCoParentInvite throws it.
+ */
+export type ShareAgainOutcome = 'shared' | 'dismissed' | 'old_still_open' | 'not_sent';
+
+/**
+ * Share again: a new link for the same co-parent, then the old invite is cancelled only once the
+ * share sheet says the new one was sent. `share` is lib/family/share.ts shareInviteLink on the
+ * phone; it gets the link and nothing keeps it.
+ */
+export async function shareInviteAgain(
+  sb: FamilyClient,
+  childId: string,
+  old: Pick<PendingInviteRow, 'id' | 'signsAs'>,
+  draft: InviteDraft,
+  share: (url: string) => Promise<'shared' | 'dismissed'>,
+): Promise<ShareAgainOutcome> {
+  const fresh = await createCoParentInvite(sb, childId, old.signsAs, draft);
+  let sent: 'shared' | 'dismissed';
+  try {
+    sent = await share(fresh.url);
+  } catch {
+    return 'not_sent';
+  }
+  if (sent === 'dismissed') {
+    // The new link was never sent and is not kept anywhere, so nobody can use it. If cancelling it
+    // fails it is one more open invite in the list, which the parent can cancel there.
+    if (fresh.id) await revokeInvite(sb, fresh.id).catch(() => undefined);
+    return 'dismissed';
+  }
+  try {
+    await revokeInvite(sb, old.id);
+  } catch {
+    return 'old_still_open';
+  }
+  return 'shared';
+}
+
 /** Exactly these columns, never `*` and never the hash columns (S07 family contract). */
 const PENDING_COLUMNS = 'id, role, signs_as, created_at, expires_at, accepted_at, revoked_at';
 

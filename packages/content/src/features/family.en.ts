@@ -37,6 +37,10 @@ export const familyCopy = {
     cancelBody: 'The link will stop working.',
     keep: 'Keep it',
     cancelled: 'Invite cancelled.',
+    /** Share again sent the new link, but the earlier invite could not be cancelled (F11-REQ-019). */
+    oldStillOpen: 'The new link is shared, but the earlier link still works. You can cancel it in the list.',
+    /** Share again: the share sheet did not open, so nothing was sent and neither invite was cancelled. */
+    notSent: "The share sheet didn't open, so nothing was sent. Both invites stay open, and you can cancel either in the list.",
   },
 
   create: {

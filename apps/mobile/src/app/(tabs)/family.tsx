@@ -39,7 +39,7 @@ import { dateLocale } from '@/lib/dates';
 import { familyCopy } from '@/lib/family/copy';
 import { makeInviteDraft } from '@/lib/family/device-invite';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
-import { createCoParentInvite, listPendingInvites, revokeInvite, type PendingInviteRow } from '@/lib/family/invites';
+import { listPendingInvites, revokeInvite, shareInviteAgain, type PendingInviteRow } from '@/lib/family/invites';
 import { decodeSeen, encodeSeen, familyTabState, leftSince, seenCoParentsKey, type SeenCoParent } from '@/lib/family/members.logic';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
@@ -92,6 +92,8 @@ function FamilyShared() {
   const [pending, setPending] = useState<PendingInviteRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<InviteErrorKind | null>(null);
+  // What Share again left open, when it did not end cleanly (lib/family/invites.ts ShareAgainOutcome).
+  const [shareNote, setShareNote] = useState<string | null>(null);
   // Notes belong to the book they were found in; switching books never carries one over.
   const [leftNotes, setLeftNotes] = useState<{ childId: string; list: SeenCoParent[] } | null>(null);
   const f = familyCopy;
@@ -145,11 +147,12 @@ function FamilyShared() {
     if (!client) return;
     setBusyId(row.id);
     setError(null);
+    setShareNote(null);
     try {
-      // A new link, then the old one stops working: a forwarded copy of the old link is never revived.
-      const fresh = await createCoParentInvite(client, active.id, row.signsAs, await makeInviteDraft());
-      await shareInviteLink(fresh.url, child, row.signsAs);
-      await revokeInvite(client, row.id).catch(() => {});
+      // A new link; the old one stops working only once the share sheet says the new one was sent.
+      const outcome = await shareInviteAgain(client, active.id, row, await makeInviteDraft(), (url) => shareInviteLink(url, child, row.signsAs));
+      if (outcome === 'old_still_open') setShareNote(f.pending.oldStillOpen);
+      if (outcome === 'not_sent') setShareNote(f.pending.notSent);
     } catch (e) {
       setError(inviteErrorKind(e));
     } finally {
@@ -168,6 +171,7 @@ function FamilyShared() {
         onPress: async () => {
           setBusyId(row.id);
           setError(null);
+          setShareNote(null);
           try {
             await revokeInvite(client, row.id);
             haptic('soft');
@@ -247,7 +251,7 @@ function FamilyShared() {
             </View>
           )}
           {/* F11-U10: the inviter's line for a full book is create.full; errors.book_full is the invitee's. */}
-          <ErrorLine message={error ? fill(error === 'book_full' ? f.create.full : f.errors[error], { child }) : null} />
+          <ErrorLine message={shareNote ?? (error ? fill(error === 'book_full' ? f.create.full : f.errors[error], { child }) : null)} />
         </View>
 
         {state.showInviteCard && (

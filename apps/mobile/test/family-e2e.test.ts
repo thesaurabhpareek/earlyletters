@@ -29,7 +29,7 @@ import type { SqlDb } from '../src/lib/db/sql';
 import { inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { newInviteDraft, type InviteDraft } from '../src/lib/family/invite-draft.logic';
 import { parseInviteInput, parseInviteUrl } from '../src/lib/family/invite-link.logic';
-import { acceptInvite, createCoParentInvite, leaveBook, listPendingInvites, peekInvite, revokeInvite, type FamilyClient } from '../src/lib/family/invites';
+import { acceptInvite, createCoParentInvite, leaveBook, listPendingInvites, peekInvite, revokeInvite, shareInviteAgain, type FamilyClient } from '../src/lib/family/invites';
 import { joinPlan } from '../src/lib/family/join-flow.logic';
 import { familyTabState, leftSince, type MemberLike } from '../src/lib/family/members.logic';
 import { createSyncEngine } from '../src/lib/sync/engine';
@@ -387,6 +387,67 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     // A second invite, made while the book has one parent: it is forwarded to a stranger later.
     const second = await createCoParentInvite(mama, ASHA, null, await newInviteDraft(draftDeps));
     spare = parseInviteUrl(second.url, 'https://earlyletters.com')!;
+  }, 60_000);
+
+  it('[F11-REQ-019] Share again, then the sheet is closed or fails: nothing was sent, so the first link keeps working', async (t) => {
+    if (!gate) {
+      t.skip(); // reads the links with peek_invite and needs device-made invite ids (S02's v1 gate files)
+      return;
+    }
+    const mama = familyClient(A);
+    const papa = familyClient(B);
+    const row = (await listPendingInvites(mama, ASHA, new Date(clock.t))).find((r) => r.signsAs === 'Papa')!;
+    expect(row).toBeDefined();
+    // Closed without sending: the first link still works, and the new invite, which nobody has, is cancelled again.
+    const closed = await newInviteDraft(draftDeps);
+    expect(await shareInviteAgain(mama, ASHA, row, closed, async () => 'dismissed')).toBe('dismissed');
+    expect(await peekInvite(papa, token)).toEqual({ inviter: 'Mama', role: 'parent', joined: false, known: true });
+    expect(await kindOf(peekInvite(papa, closed.token))).toBe('revoked');
+    // The sheet itself fails: nothing is known to be sent, so nothing is cancelled, and the screen says so.
+    const failed = await newInviteDraft(draftDeps);
+    const unavailable = async (): Promise<'shared'> => {
+      throw new Error('share_unavailable');
+    };
+    expect(await shareInviteAgain(mama, ASHA, row, failed, unavailable)).toBe('not_sent');
+    expect(await peekInvite(papa, token)).toMatchObject({ inviter: 'Mama', known: true });
+    expect((await listPendingInvites(mama, ASHA, new Date(clock.t))).map((r) => r.id)).toEqual(expect.arrayContaining([row.id, failed.id]));
+    await revokeInvite(mama, failed.id); // back to the two open invites of the story
+    expect(await listPendingInvites(mama, ASHA, new Date(clock.t))).toHaveLength(2);
+  }, 60_000);
+
+  it('[F11-REQ-019] Share again, sent: the first link stops working; when cancelling it fails, both work and Mama is told', async (t) => {
+    if (!gate) {
+      t.skip(); // as above
+      return;
+    }
+    const mama = familyClient(A);
+    const papa = familyClient(B);
+    const row = (await listPendingInvites(mama, ASHA, new Date(clock.t))).find((r) => r.signsAs === 'Papa')!;
+    let sent = '';
+    const share = async (url: string): Promise<'shared'> => {
+      sent = url;
+      return 'shared';
+    };
+    // Sent, but the cancel of the first invite does not reach the server (offline, say).
+    const offline = {
+      from: mama.from,
+      rpc: (fn: string, args?: Record<string, unknown>) =>
+        fn === 'revoke_invite' ? Promise.resolve({ data: null, error: { code: '', message: 'TypeError: Network request failed' } }) : mama.rpc(fn, args),
+    } as unknown as FamilyClient;
+    const kept = await newInviteDraft(draftDeps);
+    expect(await shareInviteAgain(offline, ASHA, row, kept, share)).toBe('old_still_open');
+    expect(parseInviteUrl(sent, 'https://earlyletters.com')).toBe(kept.token);
+    expect(await peekInvite(papa, token)).toMatchObject({ inviter: 'Mama', known: true });
+    expect(await peekInvite(papa, kept.token)).toMatchObject({ inviter: 'Mama', known: true });
+    await revokeInvite(mama, kept.id); // Mama cancels the extra one from the list
+    // Sent, and the cancel works: the first link now reads as cancelled, and the new one is Papa's invite.
+    const fresh = await newInviteDraft(draftDeps);
+    expect(await shareInviteAgain(mama, ASHA, row, fresh, share)).toBe('shared');
+    expect(await kindOf(peekInvite(papa, token))).toBe('revoked');
+    expect(await peekInvite(papa, fresh.token)).toEqual({ inviter: 'Mama', role: 'parent', joined: false, known: true });
+    link = sent;
+    token = fresh.token;
+    expect(await listPendingInvites(mama, ASHA, new Date(clock.t))).toHaveLength(2);
   }, 60_000);
 
   it('[BL-322] before sign-in nothing about the invite can be learned', async () => {
