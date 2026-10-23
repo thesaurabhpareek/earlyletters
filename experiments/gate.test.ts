@@ -279,7 +279,8 @@ describe('[F05-REQ-006] fingerprint and stale gates', () => {
     const evidence = mergeEvidence(null, 'en', renderTierSection(report), 'full');
     expect(recordedFingerprints(evidence).full?.engineVersion).toBe(report.fingerprint.engineVersion);
     expect(staleness('en', evidence, packText('en'))).toEqual([{ language: 'en', tier: 'full', status: 'current', changed: [] }]);
-    const editedPack = packText('en').replace('"version": "1.0.0"', '"version": "1.0.1"');
+    // Bump the pack's patch version, whatever it is today (1.0.0 became 1.1.0 with meaning.commonWords, engine 6).
+    const editedPack = packText('en').replace(/"version": "(\d+)\.(\d+)\.(\d+)"/, (_m, a, b, c) => `"version": "${a}.${b}.${Number(c) + 1}"`);
     expect(editedPack).not.toBe(packText('en'));
     expect(staleness('en', evidence, editedPack)[0]).toMatchObject({ status: 'stale', changed: ['pack'] });
     const oldEngine = evidence.replace(/"engineVersion":\d+/, '"engineVersion":4');

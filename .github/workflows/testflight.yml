@@ -80,6 +80,16 @@ jobs:
           case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
           npm run preflight:testflight -w @scribe/mobile -- --profile "$PROFILE"
 
+      # Release check B-8 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): this profile's bundle, exported
+      # here with EXPO_PUBLIC_E2E=1 forced on, must carry no e2e seam code. It needs no secrets, and it runs
+      # before EAS so a leaking gate never reaches TestFlight. The job "no e2e seam in store bundles (B-8)" in
+      # ci.yml runs the same check for every store profile, production included, on pull requests, under
+      # the `required` aggregator.
+      - name: Release check B-8, no e2e seam in the bundle
+        run: |
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          node .github/scripts/seam-guard.mjs --profile "$PROFILE"
+
       - name: Build on EAS
         working-directory: apps/mobile
         env:

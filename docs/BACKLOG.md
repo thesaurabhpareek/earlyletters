@@ -47,7 +47,7 @@ Severity tags: **[Critical]** blocks launch or makes a published statement false
 | Needs the founder | BL-005, BL-015, BL-030, BL-043, BL-044, BL-053, BL-101 to BL-104, BL-106 to BL-109, BL-122, BL-135, BL-177, BL-222, BL-245, BL-247, BL-280, BL-284, BL-286, BL-335 to BL-337, BL-339, BL-346 |
 | Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-272, BL-273, BL-278; v1.0.1: BL-343, BL-344 |
 | Blocked | BL-221 (BL-275), BL-243 (website thread), BL-269 (BL-278), BL-340 (first preview build) |
-| Needs a decision | BL-338 (Q-009), BL-348 (invite link format, FT-04), BL-345 (counsel, FT-47) |
+| Needs a decision | BL-338 (Q-009), BL-345 (counsel, FT-47) |
 | Superseded or deferred | Everything in M6 and M7, most of M8's server half, BL-016, BL-022, BL-041, BL-105, BL-118 (rest), BL-144 to BL-147, BL-175, BL-178, BL-231, BL-232, BL-248, BL-249, BL-271, BL-282, BL-288, the v1.1 table |
 
 ### Critical path to submission, in order
@@ -372,7 +372,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: done (9be06db, `20261004300000_insights_aggregates.sql`, k = 10). Plus totals: superseded (D-053; App Store Connect reports only).
 
 #### BL-330 Apple refresh-token capture at sign-in (new) [Critical]
-- Status: ready. Mode: agent (deploy needs FT-11 secrets). Owner: security engineer. Size: S to M.
+- Status: in review (PR #139, stream S01; deploy needs FT-11 secrets and migration 20261004200000 applied). Mode: agent (deploy needs FT-11 secrets). Owner: security engineer. Size: S to M.
 - Satisfies: A-NFR-011, DATA-REQ-019, Apple guideline 5.1.1(v) (revoke Sign in with Apple tokens on account deletion); `docs/ops/SECURITY.md` section 5.
 - Scope: an `apple-token` Edge Function that takes the one-time authorization code after native Apple sign-in, exchanges it at `https://appleid.apple.com/auth/token` with a 10-minute ES256 client secret, wraps the refresh token with `wrapAppleToken()` (`supabase/functions/purge-worker/lib/apple.ts`) under `TOKEN_KEK_V1`, and stores it through `ops_apple_token_put`; the app calls it once after sign-in; ADR 0017 envelope, request id, rate limit, content-free log; Deno tests with fake keys. Until it ships, deletions of Apple users finish with `apple: no_token` and an `apple_no_token` alert.
 - Needed before Sign in with Apple reaches anyone outside the founding family (C1, Mon 19 Oct).
@@ -392,7 +392,7 @@ All database files below are **written and tested but not applied** to any remot
 The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L2 are in BL-331 and BL-332; H3 is BL-330. The rest:
 
 #### BL-347 Email sign-in link cannot sign a phone into someone else's account (review H1) [Critical]
-- Status: ready. Mode: agent (auth code: independent review run and `approve-migration` label once BL-005 is on). Owner: auth owner, sync owner. Size: M.
+- Status: in review (PR #139, stream S01; ADR 0023 proposed; device check AUTH_SETUP 11.10 open). Mode: agent (auth code: independent review run and `approve-migration` label once BL-005 is on). Owner: auth owner, sync owner. Size: M.
 - Satisfies: A-REQ-023, LEGAL-REQ-024, LEGAL-REQ-026; TDD 04 3.1.
 - Scope: accept an opened link only while this phone has a pending request from this session (`getPendingEmail()` or a persisted request nonce), otherwise route to "type the code"; refuse a link while a different account is signed in; never run `takeOwnership` on `SIGNED_IN`: run it only after consent, behind a screen that shows the masked account email and needs a tap; then move to Supabase PKCE for email links (`flowType: 'pkce'`, template change in `supabase/templates/magic_link.html` and FT-12). Tests for the attack in H1's five steps.
 - Needed before C1 (Mon 19 Oct): a phishing link would otherwise upload a family's letters to an attacker's account.
@@ -402,11 +402,12 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Scope: `src/app/invite/index.tsx` shows "Join {child}'s book as a parent? Invited by {signsAs}" and waits for a tap; `peek_invite` returns only the child's first name and the inviter's signature; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
 
 #### BL-348 Invite token in the URL fragment (review M2; FAM-04 parts 1 and 2 pulled forward)
-- Status: needs-decision (founder chose `/i/<token>`, AUTH_SETUP 5.3; FT-04 item 7 asks again). Mode: agent plus website thread.
+- Status: decided, in review (founder, 15 Oct 2026, FT-04 item 7: yes, the token moves into the fragment). Mode: agent plus website thread.
+- Decision: links are `https://earlyletters.com/j#t=<token>` (the `/j` path of PRD V2 F11 and B-NFR-002, not `/i#t=`), and `/i/<token>` is neither written nor accepted, with no 7-day overlap: no build has shipped, so no `/i` link exists. App: `fix/invite-link-fragment`. Website (`/j` page, AASA `/j` without `/i/*`): PR #144. Release gate (build 2 preflight fails while the app writes `/i/`): PR #145. Privacy Policy 1.4.0 already dropped the "servers don't log it" claim (privacy-policy.md CN-23); restoring it once this ships is counsel's call (COUNSEL_PACKET Q23).
 - Scope if yes: links become `https://earlyletters.com/i#t=<token>`; the parser reads the fragment and still accepts `/i/<token>` for 7 days; AASA pattern `/i`; generic preview tags. If no: legal-alignment rewrites Privacy Policy line 195 (it says tokens travel where servers do not log) and the website disables logging and analytics on `/i/*` with `Referrer-Policy: no-referrer` (FT-31).
 
 #### BL-349 App-level privacy manifest (review L7) [High]
-- Status: ready. Mode: agent. Owner: mobile engineer.
+- Status: in review (PR #211, founder merge: `app.config.ts`; #145 merged 23 Oct). Mode: agent. Owner: mobile engineer. Built: `src/lib/privacy-manifest.ts` (required reasons for every build; collected data types follow `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` as S17's label 1.4.0 answers them), `test/privacy-manifest.test.ts`, preflight checks of the generated file. Left: Apple's upload email (go/no-go B1-10), the archived `.ipa` check, and the S17 and counsel calls listed in the PR.
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)

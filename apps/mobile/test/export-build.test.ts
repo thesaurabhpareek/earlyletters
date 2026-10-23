@@ -177,7 +177,7 @@ describe('recordings', () => {
         entry({ id: 'gone', occurredOn: '2026-10-04', audioOnPhone: false, audioSizeOnPhone: null }),
       ]),
     );
-    expect(plan.audio).toEqual([{ entryId: 'own', uri: 'file:///doc/audio/own.m4a', path: 'audio/own.m4a', recordedSha256: 'a'.repeat(64), durationMs: 12_000, sizeHint: 4096 }]);
+    expect(plan.audio).toEqual([{ entryId: 'own', uri: 'file:///doc/audio/own.m4a', path: 'audio/own.m4a', mediaType: 'audio/mp4', recordedSha256: 'a'.repeat(64), durationMs: 12_000, sizeHint: 4096 }]);
   });
 });
 

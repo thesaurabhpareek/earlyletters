@@ -70,7 +70,7 @@ describe('scribe://listen never records by itself (J19, J20)', () => {
     for (const u of ['scribe://listen', 'scribe://listen?go=1', '/listen', 'scribe://review?draftId=1', 'scribe://read-together', 'https://earlyletters.com/listen']) {
       expect(isCaptureRoute(u), u).toBe(true);
     }
-    for (const u of ['scribe://auth/callback', 'https://earlyletters.com/i/abc', '/settings', '/letter/1', '/listening-tips', '/']) {
+    for (const u of ['scribe://auth/callback', 'https://earlyletters.com/j#t=abc', '/settings', '/letter/1', '/listening-tips', '/']) {
       expect(isCaptureRoute(u), u).toBe(false);
     }
     expect(TONIGHT_HREF).toBe('/');

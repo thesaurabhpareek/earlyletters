@@ -1,6 +1,6 @@
 # Experience pass, October 2026
 
-v1.1, 2026-10-16 (v1.0 was 2026-10-15). Status: **spec for build, not merged**. Branch `docs/experience-pass-oct`, into `develop`.
+v1.3, 2026-10-18 (v1.2 merged as #217; v1.1 merged as #170 on 2026-10-16; v1.0 was 2026-10-15). On `develop`. v1.2 matches P1 as built (#192, merged as `db258b5`, and #218 for the Reduce Motion timing): card to page and its Reduce Motion hand-off (S26, 5.5, 5.8 row 7, P5), the light-paper grain and the faint grain on night paper, and the dusk paper tone (5.1, 5.3, 5.7). v1.3 follows P2-V's measurements on #220: the S05 cover hides under 480 pt of free height, so the name field stays in view, and the S04 promise body is the sanctioned promise word for word, with the S04 word count at about 70 (D-111 item 11).
 Scope: v1.0 with server features on (option B, D-100, confirmed 15 Oct). v1.0 ships sign-in, sync between a person's phones, co-parent sharing with at most two parents per book (D-069), and encrypted backup of the owner's recordings in Supabase Storage, free for everyone as the proposed default (D-104 item 2: "Proposed; awaits founder confirmation" in `docs/DECISIONS.md`, founder item F10), with a recovery key we hold under strict, logged access (D-102, D-108). Those surfaces (sign-in and the email code, Account, the Family tab and invite, joining a book, backup settings, restore on a new phone, erase across devices) are specified in chapter 7 of section 4 and built in package P8. P0 to P7 do not edit P8's files (section 6).
 
 **What changed in v1.1.** Option B replaces every on-device-only assumption; package P8 and chapter 7 are new; `story.private.v2`, `book.monthRange` and `wordsCopy.pack.mobileDataButton` match PR #181 as built; the Recordings and Erase now lines cover our backup and the synced letter; transitions after first run are specified (section 5.8); every package boundary is a file list, with requests between packages (section 6); the strings that read as machine-written are replaced (review B6); PR #181 is the source of truth for strings, and the keys section 6 listed for it are applied in #181 at `de2b916`, plus final notes; the before contact sheets are out of git; the founder's and the coordinator's calls are recorded in section 7 (D-109).
@@ -35,7 +35,7 @@ The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8
 
 1. The line "We ask everyone the same question." is gone. The age question stays the first screen on v1.0 (the law and PRD-REQ-019 say so), but it now opens in the launch screen's room: the opening quotation pair, the lamp light, one question, two equal answers. Moving it behind the welcome is specified and held for the founder and counsel.
 2. First run becomes one lit room and one object. The lamp arrives at the gate and stays lit across first run. A paper **book cover** appears when the child is named, is signed on the next step, and opens on "The book is open."
-3. The promise screen shows a small fix instead of describing three: a sample sentence with two marks you can tap and put back. It goes from about 110 words to about 60.
+3. The promise screen shows a small fix instead of describing three: a sample sentence with two marks you can tap and put back. It goes from about 110 words to about 70.
 4. "We", explaining why we ask, and repeated reassurance come out of more than 40 strings. The three sanctioned promises ("We never rewrite your words.", the trust promise, the voice promise) and counsel-registered disclosure text stay word for word.
 5. Tonight leads with one question. The second question, the subtitle, goes. The prompt becomes the one big literary line on lamp-lit paper, and the lamp's colour follows the time of day (gold in the morning, amber in the evening, a rose and dusk tail late at night), as the website's light follows the scroll.
 6. Every unfinished letter shows on Tonight as its own card with the person's first words, not one generic "A letter is waiting" line.
@@ -255,7 +255,7 @@ Copy:
 | Key | After | Mark |
 |---|---|---|
 | `onboarding.promise.title` | Exactly as you said it. | KEEP |
-| `onboarding.promise.body2` | We never rewrite, shorten or write for you. Every sentence is one you said. | KEEP, now directly under the title |
+| `onboarding.promise.body2` | We never rewrite your words, shorten them or write for you. | CHG (v1.3), directly under the title: the sanctioned promise word for word, then the two other claims. "Every sentence is one you said." is not repeated; the title says it. |
 | `onboarding.promise.sampleLabel` | For example | NEW (as #181) |
 | `onboarding.promise.sampleRaw` | Today, um, you you held the spoon all by yourself. | NEW. The sample's raw words, cleaned at runtime by the real engine (see Visual). |
 | `onboarding.promise.sampleHint` | Word for word marks every small fix. Tap one to put it back. | NEW. Names the feature here, which VOICE allows on the promise. |
@@ -275,7 +275,7 @@ Motion: on arrival the two strikes draw across their words (strokeDashoffset, 40
 States: none.
 
 Acceptance:
-- [ ] At most about 60 words on the screen at the default text size.
+- [ ] At most about 70 words on the screen at the default text size (71 as built). Not about 60: the recording and privacy rows are at their floor (27 words, meaning fixed), and the sample, label and button are fixed by this acceptance and the engine test, so the body line was cut to its floor (11 words). The one cut left that needs no counsel diff, a hint without the name "Word for word", is not taken, because D-074 and D-086 chose that name (D-111 item 11, #229).
 - [ ] The sample is set in Mukta, labelled "For example", unsigned, with no `{child}` name in it.
 - [ ] The unit test in P2 proves the two fixes come from the engine, pass `verifyEdits` and are fully reversible.
 - [ ] Tapping either mark puts the word back; Undo reverses it.
@@ -308,7 +308,7 @@ Copy:
 | `childrenExtra.edit.dueDateRange` | Choose a due date from today up to ten months ahead. | KEEP |
 | `onboarding.child.cta` | Continue | KEEP |
 
-Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph. Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 640 pt of free height (iPhone SE), the cover hides, so the form never scrolls. The name field uses the letter face (Literata 22 pt), because it is the book's title; labels stay Mukta. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
+Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph. Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 480 pt of free height, the cover hides, so the name field stays in view. Free height with the keyboard and its QuickType bar up, measured by P2-V on #220 on a web export, unverified on a phone: 407 pt on an iPhone SE, 538 on a 17 Pro, 610 on a Pro Max; so the SE hides the cover and the Pro and Pro Max keep it while the name is typed. The form itself may scroll once the date block is in (it does on all three under this rule: by 176 pt on the SE, 145 pt on the 17 Pro and 73 pt on the Pro Max). The name field uses the letter face (Literata 22 pt), because it is the book's title; labels stay Mukta. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
 
 The reason line stays in words and is never only a greyed button. It sits directly above Continue in `footnote` `textMuted` until the person taps the disabled Continue. Then it turns `caution` with a WarningCircle icon, is announced politely, and focus moves to the empty field. HIG Entering data: "make the button available only after people enter the data you require" (*verified*).
 
@@ -320,7 +320,7 @@ Acceptance:
 - [ ] No help line justifies a field; no "we" on the screen.
 - [ ] The date row starts empty ("Choose a date"); there is no default date (the J01-07 fix holds).
 - [ ] The reason line is muted until the disabled Continue is tapped, then caution with an icon, and focus moves to the field.
-- [ ] The cover shows the typed name exactly as typed (trimmed only for display), and hides when the keyboard leaves less than 640 pt.
+- [ ] The cover shows the typed name exactly as typed (trimmed only for display), and hides when the keyboard leaves less than 480 pt of free height, so the name field stays in view on an SE, a 17 Pro and a Pro Max.
 - [ ] A 60-character name fits the cover in three lines with a fade.
 
 #### S06 What does {child} call you (signature and spoken language)
@@ -806,7 +806,7 @@ Visual:
 - **A new phone, recordings coming back** (S62): P8's `components/backup/restore-line.tsx` sits above the first opener while a restore runs: one line and a thin determinate bar, no count. P5 places it; P8 owns it.
 - Lamp `book` scene (top, 0.6, still) behind the header, with `persistKey="tabs"`; cards are opaque.
 
-Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f, built by P1 as `CardToPage`): the tapped card's rect grows to full screen by translate and scale, radius `md` to 0, on `standard`; the card's dateline and opening lines are carried whole into the page (P1's contract, section 6, P5) and only the rest of the letter fades in from 60 percent progress; the list behind dims to 0.96 with no blur. Back reverses it if the card is still visible, otherwise a 200 ms fade. Reduce Motion: 200 ms cross-fades. Fallback (no measured card, a page column that differs from the card's, or Reduce Motion): a 200 ms cross-fade of the whole page inside the modal, paper and words together, as P1 built it (#192); the native push stays only until P5 mounts `CardToPage` and asks P1 to switch the route (section 6, P5).
+Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f, built by P1 as `CardToPage`). The Book goes under a veil of the page's paper over 160 ms (`lamp.leaveMs`, on a straight line, the way its lamp leaves a lit room) while the tapped card holds for 136 ms (`cardToPage.holdMs`), keeping its press feedback; then one paper surface grows from the card's rect to the whole screen on `standard`, radius `md` to 0, its colour from the card's `surfaceRaised` to the page's `bg`. The card's dateline and opening lines are carried whole into the page (P1's contract, section 6, P5), and only the rest of the letter fades in from 60 percent progress. There is no dim and no blur on the Book: the veil is the dim. Back carries the words into the card while it is still visible, and the veil lifts over 280 ms (`lamp.returnMs`) once the paper is within 24 pt (`cardToPage.clearPt`) of the card; otherwise the page leaves by the 200 ms hand-off below. Reduce Motion, no measured card, or a page column or type size that differs from the card's: nothing moves; the move is one 200 ms fade (`fadeMs`) each way, shaped as a hand-off (`CARD_TO_PAGE.handOff`, #218): the leaving screen (the Book under the same veil, or on the way back the page, paper and words) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms. Both are straight lines, so nothing loses more than half its strength in 50 ms (the planned worst is 36 percent), and the two screens' words are never on screen together at more than a quarter of their strength (0.23 planned; at most 0.18 measured on the web build). Measured on the web build, it is done 224 to 240 ms after the tap, both ways. As P1 built it (#192, with the Reduce Motion timing from #218; `CARD_TO_PAGE` in `lib/transitions.logic.ts`, stepped ms by ms in `transitions.test.ts`). The native push stays only until P5 mounts `CardToPage` and asks P1 to switch the route (section 6, P5).
 
 States: one letter (J09-02); many months (J09-04); a recording waiting (J09-03); no words (J09-05); quiet days and removing a mark with Undo (J08-03, J08-05, J08-06); dark (J18-03); a letter from the other parent; a month both parents wrote in (`book.fromTwo`); a letter deleted on another phone (its card collapses out of its row on the next pull, `exitMs`, with no toast, because nobody tapped anything here); recordings coming back on a new phone (the restore line).
 
@@ -815,7 +815,8 @@ Acceptance:
 - [ ] Month openers show the numeral, the letter count and the date range; VoiceOver reads "2 letters, from Mama", never the "·" separator.
 - [ ] No ellipsis glyph in any excerpt; the stored letter is never cut.
 - [ ] A quiet-day mark is never counted or shown in the letter face.
-- [ ] The card-to-page transition reverses on Back, and under Reduce Motion or on failure falls back to a 200 ms cross-fade of the whole page.
+- [ ] The card-to-page transition reverses on Back, and under Reduce Motion or on failure falls back to the 200 ms hand-off: the Book (under the veil) fades over the first 140 ms and the whole page fades in over the last 120 ms, from 80 ms, done within 250 ms of the tap; the same shape back.
+- [ ] The letter card keeps its press feedback (cards at 0.98 on `snappy`, `motion.press.cardScale`) through the 136 ms hold, until the paper starts to grow.
 - [ ] When a card opens into its page, VoiceOver focus lands on the page's opening once the move or the fade settles, and the list behind cannot be reached by swiping (check on a device that the presenting screen is hidden; hide the list explicitly if not).
 - [ ] Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium, font scale 0.823, 0.882 and 0.941): two lines clip at exactly two rendered lines, and the fade sits on the last of them.
 - [ ] After a save, the Book shows the new card in view and washed, once; the other parent's letter is signed with their name and carries no badge.
@@ -1637,13 +1638,25 @@ const atmosphere = {
    * the reading colours (text, textMuted, accent, focus) keep 4.5:1 everywhere on screen at the peak;
    * the status colours (success, caution, recording, destructive) keep 4.5:1 where text actually
    * sits, and never sit on the gate's or Read together's lit paper. `onLitPaper` records where.
-   * Light values as P1 built them (#192 at 3d7c7fd); v1.0 of this spec capped light mode by
+   * Light values as P1 built them (#192, merged as db258b5); v1.0 of this spec capped light mode by
    * `caution` at the core (0.12, 0.24, 0.05, 0.04), which read as plain paper. Dark is unchanged.
    */
   peak: {
-    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.12 },
+    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.14 },
     dark: { amber: 0.18, gold: 0.16, rose: 0.24, dusk: 0.3 },
   },
+  /**
+   * On paper (the light scheme) the dusk is drawn in a warm mauve, the website's dusk and rose half and half:
+   * the website's dusk blue mixed into amber over cream read grey. Late night and Read together use it.
+   */
+  paperTone: { dusk: '#B881AF' },
+  /** Which text colours may sit where on lit paper (D-110). */
+  onLitPaper: { reading: ['text', 'textMuted', 'accent', 'focus'], status: ['success', 'caution', 'recording', 'destructive'] },
+  /**
+   * The website's film grain over the pool, so an 8-bit display shows no rings: a 128 px tile drawn at 3 pixels
+   * per point (textures/grain.png, 11 KB). On night paper it is drawn at `darkOpacity`: a dither, not a texture.
+   */
+  grain: { tile: 128, scale: 3, blackMax: 4, whiteMax: 12, seed: 20261016, darkOpacity: 0.18 },
   /** Tonight's light by greetingKey(): core and tail tone, and intensity (0 to 1). */
   daypart: {
     earlyMorning: { core: 'gold', tail: 'gold', intensity: 0.7 },
@@ -1700,13 +1713,15 @@ Also in `tokens.ts`:
 | Increase Contrast, Reduce Transparency | Nothing (plain paper). |
 | Accessibility | `pointerEvents="none"`, hidden from VoiceOver. |
 
+As built, the light scheme draws a larger, round, softer pool on paper (21 eased stops, its core above or beside the text block, the dusk in its paper tone, the grain inside the layer); dark mode keeps #99's ellipse, with its four stops above drawn as one smooth curve through them (a monotone cubic, `lamp.logic.ts`). MOTION 5k is the as-built reference for the geometry.
+
 Where it never appears: Listen, Review, the saved moment, the letter page, the Plus gate sheet and the Plus store screen, Settings (Account, Back up my recordings and Delete account included), every error and state screen, the struggling page, and every utility sheet (pickers, confirms, sign-in, invite, join, leave, the restore approval). Write is the one sheet that is a room, with its own `write` scene. In Read together it appears only as the still dusk pool at night, behind the controls.
 
 D-110 sets where contrast is proven. v1.0 of this spec capped every tone so even `caution` kept 4.5:1 at the pool's core, and light mode read as plain paper in P1's screenshots. Now the reading colours are proven everywhere and the status colours only where text sits, so light mode carries a visible pool of gold and amber while every line stays readable; dark mode, where evenings mostly happen, carries the website's full amber, rose and dusk, unchanged.
 
-### 5.3 Paper texture: not in v1.0
+### 5.3 Paper texture and grain
 
-The Visual lens proposed `apps/web/public/textures/paper-v1.webp` (34.7 KB) at 4 percent behind the letter in light mode. Rejected for v1.0: #99 measured and recorded why textures are not ported (a decode on every cold start, memory against D-065, and the small pool needs no dithering), and the letter page's strength is plain paper. Revisit only if a device shows banding in the pool. Revisited in P1 (#192, coordinator's screenshot review, 16 Oct): the larger light-mode pool under D-110 showed rings, so P1 ports the website's film grain for light mode only (`packages/design-tokens/textures/grain.png`, 128 px, 11 KB, built deterministically and checked byte for byte), drawn inside the lamp's layer so it comes and goes with the light. The letter page stays plain paper.
+The Visual lens proposed `apps/web/public/textures/paper-v1.webp` (34.7 KB) at 4 percent behind the letter in light mode. Rejected for v1.0: #99 measured and recorded why textures are not ported (a decode on every cold start, memory against D-065, and the small pool needs no dithering), and the letter page's strength is plain paper. Revisit only if a device shows banding in the pool. Revisited in P1 (#192, coordinator's screenshot review, 16 Oct): the larger light-mode pool under D-110 showed rings, so P1 ports the website's film grain as one 11 KB paper grain tile (`packages/design-tokens/textures/grain.png`, 128 px drawn at 3 pixels per point, signed specks of a few levels, built deterministically by `src/build-grain.ts` and checked byte for byte). It is drawn inside the lamp's layer, so it comes and goes with the light: on light paper at full strength, and on night paper as a faint grain (`grain.darkOpacity` 0.18, under two levels at its brightest speck: a dither that does not read as texture). The same pass gives the dusk tone its paper colour: on light paper, late night on Tonight and the Read together pool draw the dusk as `paperTone.dusk` (#B881AF, the website's dusk and rose half and half), so they stay dim but warm instead of grey; night paper keeps the website's dusk (#8076E2). The paper texture itself and the vignette are still not ported, and the letter page stays plain paper.
 
 ### 5.4 Illustration and assets
 
@@ -1742,7 +1757,7 @@ No asset in this pass carries an attribution duty beyond what the Licenses scree
 | empty breath | one element, opacity 0.85 to 1 over 8 s, only while focused | none |
 | put back | out 120 ms, in 160 ms, reflow on `standard`, 1.6 s `accentSoft` wash | 200 ms fades, static wash then fade |
 | file into month | MOTION 5e with `motion.file` | chip and line fade, dismiss |
-| card to page | MOTION 5f measured-rect, `standard`, radius md to 0 | 200 ms cross-fade |
+| card to page | MOTION 5f: the Book under the page's paper veil over 160 ms while the card holds 136 ms, then the paper grows on `standard`, radius md to 0, carrying the card's words; back, the veil lifts over 280 ms; no dim | one 200 ms hand-off each way: the leaving screen fades over the first 140 ms, the arriving one over the last 120 ms from 80 ms, straight lines (done 224 to 240 ms after the tap, measured) |
 | page turn | out 24 pt left with 160 ms fade; in from 24 pt right on `standard`; follows a swipe | 200 ms cross-fade |
 | row collapse | height to 0 and fade, 160 ms, `LinearTransition` `standard` | fade |
 | cover open | front holds 300 ms, then cross-fades to the flyleaf with an 8 pt shift on `standard` (S08, and S59 for the second parent) | open state at once |
@@ -1764,7 +1779,7 @@ Every sequence is under `sequenceMaxMs` (900 ms), any tap skips it, and controls
 
 ### 5.7 Size budget
 
-D-065: App Store download under 40 MB; JS assets sub-budget 3 MB, 1.4 MB used (`docs/ops/APP_SIZE.md`). This pass adds no fonts and no native code, and one image: P1's 11 KB light-mode grain (5.3). The three ported drawings are about 7 KB of path source (the website's eight total about 19 KB). The book cover, the lamp extensions, the page turn and the card transition are code. New Phosphor glyphs are a few KB each, imported one at a time. Estimated total: under 0.1 MB of JS. The app still ships no photographs; nothing may import `apps/mobile/assets/photos` (that folder is not bundled because nothing requires it, and it must stay that way). P1 states the measured bundle delta in its PR (#192, as reviewer C re-measured: assets +11,493 B, the grain; bytecode +30,796 B; gzip +15,251 B).
+D-065: App Store download under 40 MB; JS assets sub-budget 3 MB, 1.4 MB used (`docs/ops/APP_SIZE.md`). This pass adds no fonts and no native code, and one image: P1's 11 KB paper grain tile, drawn on light paper and faintly on night paper (5.3). The dusk paper tone (#B881AF) is a token, with no asset. The three ported drawings are about 7 KB of path source (the website's eight total about 19 KB). The book cover, the lamp extensions, the page turn and the card transition are code. New Phosphor glyphs are a few KB each, imported one at a time. Estimated total: under 0.1 MB of JS. The app still ships no photographs; nothing may import `apps/mobile/assets/photos` (that folder is not bundled because nothing requires it, and it must stay that way). P1 states the measured bundle delta in its PR (#192, as reviewer C re-measured: assets +11,493 B, the grain; bytecode +30,796 B; gzip +15,251 B).
 
 ### 5.8 Transitions after first run
 
@@ -1775,7 +1790,7 @@ First run is one lit room (chapter 1). After it, the app is a small house: three
 3. **Controls are there from the first frame** of every transition (MOTION principle 2): Speak, Type, the red circle, Finish, Add to the book, Next letter, every sheet's primary.
 4. **Native first.** Tabs swap with no animation and no haptic (MOTION 5i, 6); pushes, sheets and alerts are the platform's. We add opacity on top (the lamp, a dissolve, content entering) and the three custom moves already specified: file into month (5e), card to page (5f) and the page turn.
 5. **Short and interruptible.** Every sequence stays under `sequenceMaxMs` (900 ms) except the save-to-Book hand-off below (about 1.2 s, under the 2 s `hardCeilingMs`); a tap lands on the end state at once.
-6. **Reduce Motion.** Every custom move becomes one 200 ms cross-fade (`fadeMs`); the lamp jumps to its final level; native pushes and sheets follow the system's own reduced transition; nothing we control slides. Increase Contrast and Reduce Transparency: no lamp anywhere, the same transitions otherwise.
+6. **Reduce Motion.** Every custom move becomes one 200 ms fade (`fadeMs`); card to page shapes its 200 ms as a hand-off (row 7: the leaving screen over the first 140 ms, the arriving one over the last 120 ms, so two screens' words never pile up); the lamp jumps to its final level; native pushes and sheets follow the system's own reduced transition; nothing we control slides. Increase Contrast and Reduce Transparency: no lamp anywhere, the same transitions otherwise.
 
 Presentation and animation per route live in one table in `lib/motion.ts` (`routeTransitions`), which `_layout.tsx` reads for its `Stack.Screen` options (P1 owns both; section 6). The rows below are that table.
 
@@ -1792,7 +1807,7 @@ Presentation and animation per route live in one table in `lib/motion.ts` (`rout
 | 5b | The first kept letter, signed out | after row 5 settles, 600 ms after the Book appears, the sign-in sheet (S52, `first_letter`) rises over the Book, once | the person sees the letter in its month before the ask | the Book's lamp holds under the sheet | none | the sheet as the system presents it |
 | 5c | Keep, when the gate opens (S22) | the Plus gate sheet rises over Review; no saved moment | the held letter card `enter`s; "Keep it here for now" closes the sheet and Review, back to Tonight, where the held card `enter`s | Tonight's returns over 280 ms | none | fades |
 | 6 | Tab switches (Tonight, Book, Family) | native tab swap, no animation | nothing; the Book's header settle (MOTION 5a) only on its first view this session | `persistKey="tabs"`: the arriving tab's lamp starts at the tone and intensity the last one left and eases to its own over 280 ms (Tonight's daypart light settles to the Book's still 0.6 and the Family tab's 0.4); it never re-arrives | none | the lamp jumps; the swap is unchanged |
-| 7 | Book to a letter, and back | measured-rect card to page (MOTION 5f; `presentation: 'transparentModal'`, `animation: 'none'`); also from Tonight's "A month ago" card | the card grows to the page, radius `md` to 0, `standard`; the list behind dims to 0.96; Back shrinks it into its card if visible, else a 200 ms fade | the Book's leaves over 160 ms as the card grows (a voice plays on the page) and returns over 280 ms on Back | none | 200 ms cross-fade both ways; the lamp jumps |
+| 7 | Book to a letter, and back | measured-rect card to page (MOTION 5f; `presentation: 'transparentModal'`, `animation: 'none'`) once P5 mounts `CardToPage`, the platform push until then; also from Tonight's "A month ago" card | the Book goes under the page's paper veil over 160 ms while the tapped card holds for 136 ms, keeping its press feedback; then the paper grows to the page, radius `md` to 0, on `standard`, carrying the card's words; no dim (the veil is the dim). Back carries the words into the card if it is visible, and the veil lifts over 280 ms once the paper is within 24 pt of the card; else the 200 ms hand-off | the Book's leaves over 160 ms with the veil (a voice plays on the page) and returns over 280 ms as the veil lifts | none | one 200 ms hand-off each way (#218): the leaving screen (the Book under the veil, or back, the page) fades over the first 140 ms and the arriving one over the last 120 ms, from 80 ms; straight lines; done 224 to 240 ms after the tap (measured on the web build); the lamp jumps |
 | 8 | The Book or a letter to Read together, and back | `read-together`: `fullScreenModal`, `animation: 'fade'` | the room dissolves into the chrome-free reader; inside it, the page turn | at night the still dusk pool arrives over `arriveMs` (1200 ms), once per opening: Read together is its own room; it dims as S31 says | none | cross-fade; the pool at its level at once |
 | 9 | Tonight, the Book or the Family tab to Settings, and back | native push (the gear in the header); Settings' own pages push | the platform's push | none: the lit screen slides away and back with its light as it was | none | the system's |
 | 10 | Any sheet: Whose book, Reading size, Choose a language, Erase this letter, Keep needs Plus, sign-in, invite, join, leave, the restore approval | native sheet (formSheet with detents, or a page sheet), MOTION 5i | sheet content adds no entrance, except the held letter on the Plus gate (rises with `enter`) and the cover opening on Joined (S59); steps inside one sheet cross-fade (200 ms) | the room behind keeps its light and pauses its breath while the sheet is up | per screen (a confirm that cannot be undone: `warning`) | the system's |
@@ -1806,7 +1821,7 @@ Acceptance (checked in P7's journey re-run and in each package's flows):
 - [ ] No transition shows a frame of unlit paper between two lit rooms, and no lamp re-arrives within a session except rows 8 and 12.
 - [ ] Listen to Review is one dissolve with no sheet shape appearing.
 - [ ] After a save, the Book is on screen with the new card in view within about 1.2 s, and a tap gets there at once.
-- [ ] With Reduce Motion on, every row is a 200 ms cross-fade or the system's own transition, and the lamp never animates.
+- [ ] With Reduce Motion on, every row is one 200 ms fade (row 7's shaped as a hand-off and done within 250 ms of the tap) or the system's own transition, and the lamp never animates.
 
 ---
 
@@ -1953,7 +1968,7 @@ Depends on: P0, P1.
 
 Files: `apps/mobile/src/app/(tabs)/book.tsx`; every file in `apps/mobile/src/components/book/` except P1's `book-cover.tsx` and `book-cover.logic.ts` (that is `letter-card.tsx`, `chapters.ts`, `app-note.tsx`, `quiet-day-row.tsx`, `undo-toast.tsx`, `confirm-sheet.tsx`, `reading-size-sheet.tsx`, `shelf.logic.ts`, `letter-words.logic.ts`, `quiet-day.logic.ts`, `copy.ts` and their tests); `apps/mobile/src/app/letter/[id].tsx`; `apps/mobile/src/app/read-together.tsx`; `apps/mobile/src/components/player/audio-player.tsx`; `apps/mobile/src/components/child/whose-book-sheet.tsx`, `child-switcher.tsx`; `apps/mobile/src/app/settings/recently-deleted.tsx`; e2e `j09-book.flow.ts`, `j10-letter.flow.ts`, `j11-read-together.flow.ts`.
 
-Card to page, P1's contract (#192 at `3d7c7fd`): P5 wraps each card's dateline and excerpt in `CardText` (with its `fade`), passes the page's dateline and the whole letter to `CardToPage` as `opening`, and places that opening on the letter page with `PageOpening`. The letter page opens in the card's text column, with the same width, type and gaps, so its first lines wrap exactly as they did on the card and the words travel without reflowing. Without a measured card, without a shared column, or under Reduce Motion, the transition falls back to a 200 ms cross-fade of the whole page. The letter route stays a native push until the page mounts `CardToPage`; then P5 asks P1 to switch `ROUTES['letter/[id]']` to `cardToPage` (one line and its test).
+Card to page, P1's contract (#192, merged as `db258b5`): P5 wraps each letter card in `CardSource` (`id`), and the card's dateline and excerpt (an `ExcerptFade`, which draws the fade) in `CardText`, giving `lineHeight` (the line height its body renders at, from `lineHeightFor`) and `rtl` when the excerpt runs right to left. The letter page wraps itself in `CardToPage` with the same `id`, `onClosed` and `opening`, a function `(focus) => ...` that returns the page's dateline and whole letter and attaches `focus` to the dateline, the element VoiceOver lands on once the page has arrived. The page places that opening with `PageOpening` and its `lineHeight`, which must equal the card's for the words to be carried, and closes with `useCardToPageClose()`. The Book spreads `useHiddenBehindCardPage()` on its root, so screen readers cannot reach it under the page. The letter page opens in the card's text column, with the same width, type and gaps, so its first lines wrap exactly as they did on the card and the words travel without reflowing. Without a measured card, without a shared column, or under Reduce Motion, the transition falls back to one 200 ms hand-off each way (#218, 5.8 row 7): the leaving screen (the Book under the page's paper veil, or back, the page) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms, on straight lines, done within 250 ms of the tap. The tapped card holds for 136 ms before the paper grows, and P5's `LetterCard` keeps its press feedback through that hold. The letter route stays a native push until the page mounts `CardToPage`; then P5 asks P1 to switch `ROUTES['letter/[id]']` to `cardToPage` (one line and its test).
 
 Requests in: P4 (`arrived`); P8 (the restore line in the Book, the letter page's backup and restore lines, the synced erase states of S63).
 
@@ -1961,7 +1976,7 @@ Switches (held in #181; the content owner changes the lines, merged with this pa
 
 Tests: chapters logic (the month range filled as `{a} to {b}`, the current month, newborn and Before You openers, `book.fromTwo` order); shelf logic (the joined date line, no countdown, no Erase now in a sync build without the server erase); j10 covers delete returning to the Book with Undo, and Erase now showing "Letter erased."; j11 covers the page turn's button path and the dateline.
 
-Acceptance: every checkbox under S24 to S32 and S35 to S39, the P5 parts of S62 and S63, and rows 5, 7 and 8 of 5.8. Rows that use "·" as a separator carry an accessibility label without it ("To Asha, Month 4", "Month 4, from Mama"); VoiceOver never reads the separator. In P5 that is the opener's line ("2 letters, from Mama"), the letter cards' datelines and Read together's dateline (`readTogether.nowReading*`). When a card opens into a page, VoiceOver focus lands on the page and the list behind cannot be reached. Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium). In P5: every letter card opening into its page (`CardToPage`), and every excerpt on the Book and Recently deleted.
+Acceptance: every checkbox under S24 to S32 and S35 to S39, the P5 parts of S62 and S63, and rows 5, 7 and 8 of 5.8. Rows that use "·" as a separator carry an accessibility label without it ("To Asha, Month 4", "Month 4, from Mama"); VoiceOver never reads the separator. In P5 that is the opener's line ("2 letters, from Mama"), the letter cards' datelines and Read together's dateline (`readTogether.nowReading*`). When a card opens into a page, VoiceOver focus lands on the page and the list behind cannot be reached. Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium). In P5: every letter card opening into its page (`CardToPage`), and every excerpt on the Book and Recently deleted. The letter card keeps its press feedback (cards at 0.98 on `snappy`) through the 136 ms hold before the paper grows.
 
 ### P6 Settings, Plus and errors
 

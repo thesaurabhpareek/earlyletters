@@ -64,7 +64,7 @@ describe('deep links with server features off', () => {
   const on = { serverFeatures: true, gateStopped: false };
 
   it('an invite link opens coming soon and keeps no token', () => {
-    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
     expect(link.kind).toBe('invite');
     expect(planIncomingLink(link, { ...off, path })).toEqual({ route: '/invite', keepInviteToken: false, keepAuthLink: false });
@@ -72,7 +72,7 @@ describe('deep links with server features off', () => {
   });
 
   it('the 18+ stop still wins', () => {
-    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
     expect(planIncomingLink(link, { serverFeatures: false, gateStopped: true, path }).route).toBe('/');
   });
