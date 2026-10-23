@@ -1,7 +1,19 @@
 # Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Manual only: run it from the
-# Actions tab, on `develop` or an `ios-v*` tag. NOTHING here has been run: it needs the founder's Expo and
-# Apple accounts, so every assumption below is UNVERIFIED until the first real run. The same thing from a
-# Mac or any computer is the two eas commands in docs/release/TESTFLIGHT.md.
+# Actions tab, on `develop` or an `ios-v*` tag, for one of the two alpha profiles (D-106):
+#   testflight  alpha build 1, server features off
+#   preview     alpha build 2, server features on against staging (its Supabase values come from the
+#               EAS "preview" environment, never from this repository or this workflow)
+# NOTHING here has been run: it needs the founder's Expo and
+# Apple accounts, so every assumption below is UNVERIFIED until the first real run. Builds, submits and store
+# actions run here or on the founder's own computer, never in an agent sandbox (it cannot reach expo.dev or
+# App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
+#
+# What it expects, by name (nothing else; no value is ever in this repository):
+#   GitHub repository secret  EXPO_TOKEN (read only by the build step)
+#   EAS, environment preview   EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (build 2), optional
+#                              EXPO_PUBLIC_EMAIL_OTP_LENGTH; EAS reads them on its own servers, this job never sees them
+#   EAS, credentials           the iOS distribution certificate and profile for the .preview id, and for submit an
+#                              App Store Connect API key; app.config.ts extra.eas.projectId; eas.json submit ascAppId
 #
 # One-time setup the founder does first (docs/release/TESTFLIGHT.md):
 #   1. EXPO_TOKEN repository secret (Expo account, Access tokens). It is read only by the last step.
@@ -15,6 +27,11 @@ name: testflight
 on:
   workflow_dispatch:
     inputs:
+      profile:
+        description: Which alpha build (testflight is build 1, servers off; preview is build 2, servers on)
+        type: choice
+        options: [testflight, preview]
+        default: testflight
       submit:
         description: Upload to TestFlight after the build finishes
         type: boolean
@@ -29,8 +46,11 @@ concurrency:
 
 env:
   CI: true
-  # The input goes through the environment, never into the script text.
+  # Pinned, the same version as release-ios.yml (PR #110); bump both together.
+  EAS_CLI_VERSION: 24.10.0
+  # The inputs go through the environment, never into the script text.
   SUBMIT: ${{ inputs.submit }}
+  PROFILE: ${{ inputs.profile }}
 
 jobs:
   build:
@@ -56,7 +76,19 @@ jobs:
 
       # Configuration only; needs no secrets. Fails the run on any FAIL, passes on WARN (read the log).
       - name: Preflight
-        run: npm run preflight:testflight -w @scribe/mobile
+        run: |
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          npm run preflight:testflight -w @scribe/mobile -- --profile "$PROFILE"
+
+      # Release check B-8 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): this profile's bundle, exported
+      # here with EXPO_PUBLIC_E2E=1 forced on, must carry no e2e seam code. It needs no secrets, and it runs
+      # before EAS so a leaking gate never reaches TestFlight. The job "no e2e seam in store bundles (B-8)" in
+      # ci.yml runs the same check for every store profile, production included, on pull requests, under
+      # the `required` aggregator.
+      - name: Release check B-8, no e2e seam in the bundle
+        run: |
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          node .github/scripts/seam-guard.mjs --profile "$PROFILE"
 
       - name: Build on EAS
         working-directory: apps/mobile
@@ -65,7 +97,10 @@ jobs:
         run: |
           # Fail without printing the token, a command line that contains it, or the environment.
           if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN repository secret is not set"; exit 1; fi
-          args=(build --platform ios --profile testflight --non-interactive --wait)
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          args=(build --platform ios --profile "$PROFILE" --non-interactive --wait)
           if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
           # UNVERIFIED: eas-cli's current flags (--auto-submit uses the submit profile with the same name).
-          npx --yes eas-cli@latest "${args[@]}"
+          # Pinned (EAS_CLI_VERSION above, the release #110's release-ios.yml uses too): this step holds EXPO_TOKEN,
+          # so it never runs whatever `latest` happens to be today. Raise it deliberately, in its own PR.
+          npx --yes "eas-cli@${EAS_CLI_VERSION}" "${args[@]}"
