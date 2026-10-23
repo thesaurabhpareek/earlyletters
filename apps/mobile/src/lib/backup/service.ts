@@ -133,12 +133,20 @@ export function createBackupService(deps: BackupServiceDeps) {
     let askedEscrow = false;
     // A restore pass asks the server for its list, so it runs only while a spoken letter of mine
     // has no recording on this phone (a new phone, or one restored from a device backup) that a
-    // listing in this run has not already left out (restore.ts worthListing).
-    if (restore.worthListing()) {
+    // listing in this run has not already left out (restore.ts worthListing). When the only ones
+    // left wait on keys from escrow, escrow alone is asked, and the list once their keys are here.
+    const listing = restore.worthListing();
+    if (listing || restore.waitsForKeys()) {
       try {
-        const r = await restore.run();
-        askedEscrow = r.escrow;
-        lastRestore = r.keys.kind === 'ready' ? (r.remaining > 0 ? { kind: 'restoring' } : null) : r.keys;
+        const keys = listing ? null : await restore.escrowStep();
+        if (keys && keys.kind !== 'ready') {
+          askedEscrow = true;
+          lastRestore = keys;
+        } else {
+          const r = await restore.run();
+          askedEscrow = r.escrow || keys !== null;
+          lastRestore = r.keys.kind === 'ready' ? (r.remaining > 0 ? { kind: 'restoring' } : null) : r.keys;
+        }
       } catch {
         // the next tick tries again; restore never blocks the app
         if (lastRestore?.kind === 'restoring') lastRestore = null;

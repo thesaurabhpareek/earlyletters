@@ -6,7 +6,7 @@
  * The rule that matters most: a file already on the phone is never
  * overwritten. Fictional family Asha only.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { planRestore, type LocalLetter } from '../src/lib/backup/restore';
@@ -435,6 +435,23 @@ describe('[review B n2 on #150] a recording that is not in the backup is listed 
     await b.service.tick();
     expect(audioOf(b, late.id).sha256).toBe(sha256Hex(late.plain));
     expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+  });
+
+  it('[review A N5 on #252] a letter whose restore is done but whose file went missing makes no more listings', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const lists = countLists(backend);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)?.state).toBe('done');
+    expect(lists.n).toBe(1);
+    // Its path goes stale (an older container, until the launch sweep rebases it): missing again, settled already.
+    unlinkSync(fileURLToPath(audioOf(b, recs[0].id).uri!));
+    for (let i = 0; i < 5; i++) await b.service.tick();
+    expect(lists.n).toBe(1);
   });
 
   it('a download that failed for good (F08-U20) makes no more listings either', async () => {

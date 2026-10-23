@@ -184,6 +184,18 @@ export function createRestore(d: RestoreDeps) {
    * asks once again, and a later listing that names one takes it off.
    */
   const unlisted = new Set<string>();
+  /**
+   * Missing letters whose recording a listing named but no key here opens, while their keys wait on
+   * escrow (a hold) or escrow was stopped (review B N4 on #252): no more listings for them in this
+   * run either. Escrow is asked on its own meanwhile (`waitsForKeys`, at its own pace), and the set
+   * is cleared once keys are stored or the person taps Try again, so they are listed again then.
+   */
+  const unopenable = new Set<string>();
+  /** A missing letter's restore has something left to do (nothing has settled it: done, kept here or failed). */
+  const open = (id: string) => {
+    const st = d.db.restoreItem(id)?.state;
+    return st === undefined || st === 'pending';
+  };
   let attempt = 0;
   /**
    * This session's copy of the last release, beside the saved one in backup.db: a save that
@@ -403,6 +415,7 @@ export function createRestore(d: RestoreDeps) {
     heldRelease = null;
     d.db.deleteMeta(RELEASED_META);
     d.db.deleteMeta(REQUEST_META);
+    unopenable.clear();
     return { kind: 'ready' };
   }
 
@@ -471,11 +484,17 @@ export function createRestore(d: RestoreDeps) {
 
     /**
      * Whether a restore pass is worth a listing: a missing letter of mine that no listing in this run
-     * left out, and whose download has not failed for good (F08-U20). Otherwise a recording that was
-     * never backed up would list `audio_blobs` on every pass, for as long as the app runs.
+     * left out or found waiting on escrow, and whose restore is not settled (done, kept here, or
+     * failed for good, F08-U20). Otherwise such a letter would list `audio_blobs` on every pass, for
+     * as long as the app runs.
      */
     worthListing(): boolean {
-      return d.local.missing().some((id) => !unlisted.has(id) && d.db.restoreItem(id)?.state !== 'failed');
+      return d.local.missing().some((id) => open(id) && !unlisted.has(id) && !unopenable.has(id));
+    },
+
+    /** Missing letters wait only on keys from escrow (a hold, or a stopped request): ask escrow, not the list. */
+    waitsForKeys(): boolean {
+      return d.local.missing().some((id) => open(id) && unopenable.has(id));
     },
 
     /**
@@ -489,6 +508,7 @@ export function createRestore(d: RestoreDeps) {
         let remaining = 0;
         let waitingUntil: number | null = null;
         let needEscrow = false;
+        const keyless: string[] = [];
         const all = [...(await listBlobs(true))].sort((a, b) => (a.entryId < b.entryId ? -1 : 1));
         const named = new Set(all.map((b) => b.entryId));
         for (const id of d.local.missing()) {
@@ -508,6 +528,7 @@ export function createRestore(d: RestoreDeps) {
             remaining += all.length - i;
             break;
           } else if (r.kind === 'key') {
+            keyless.push(blob.entryId);
             if (r.state === 'needs_escrow') needEscrow = true;
             else if (r.state === 'waiting') {
               const st = await d.keys.keyFor(blob.childId, { create: false });
@@ -515,11 +536,12 @@ export function createRestore(d: RestoreDeps) {
             }
           }
         }
-        return { restored, remaining, waitingUntil, needEscrow };
+        return { restored, remaining, waitingUntil, needEscrow, keyless };
       };
       const first = await pass();
       if (first.needEscrow) {
         const keys = await escrowStep();
+        if (keys.kind === 'waiting_hold' || keys.kind === 'stopped') for (const id of first.keyless) unopenable.add(id);
         if (keys.kind !== 'ready') return { restored: first.restored, keys, remaining: first.remaining, escrow: true };
         const second = await pass();
         return { restored: first.restored + second.restored, keys: second.needEscrow ? { kind: 'unavailable' } : { kind: 'ready' }, remaining: second.remaining, escrow: true };
@@ -551,6 +573,7 @@ export function createRestore(d: RestoreDeps) {
         d.db.deleteMeta(RELEASED_META);
       }
       d.db.deleteMeta(STOPPED_META);
+      unopenable.clear();
     },
 
     escrowStep,

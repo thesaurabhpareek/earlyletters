@@ -489,6 +489,50 @@ describe('what Settings says, and the recovery service is asked only when it mus
     for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
   });
 
+  it('[review B N4 on #252] during an escrow hold the list is not asked again: escrow alone is, and the list once the keys come', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, c, letters, clock } = await heldRestore({ live, elapse: false });
+    let lists = 0;
+    live.onSend = (name, phase) => {
+      if (name === 'listBlobs' && phase === 'before') lists += 1;
+    };
+    for (let i = 0; i < 5; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(lists).toBe(0);
+    expect(backend.releaseCalls).toBe(0); // polled at most every 5 minutes, as before
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    clock.t += 72 * HOUR;
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1);
+    expect(lists).toBe(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
+  it('[review B N4 on #252] after a Stop the list is not asked again in this run; Try again lists and asks once more', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, c, clock } = await heldRestore({ live, elapse: false });
+    let lists = 0;
+    live.onSend = (name, phase) => {
+      if (name === 'listBlobs' && phase === 'before') lists += 1;
+    };
+    for (const r of backend.restores.values()) r.state = 'cancelled'; // the Stop link
+    clock.t += 5 * 60 * 1000;
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    for (let i = 0; i < 5; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(lists).toBe(0);
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    await c.service.tryAgain();
+    await c.service.tick();
+    expect(lists).toBe(1);
+    expect(backend.requests.filter((r) => r.kind === 'escrow.request')).toHaveLength(2);
+  });
+
   it('[review B N3 on #252] a release that lands as another account signs in is kept: stored from the saved copy later, one release, one email', async () => {
     const live: LiveSession = { uid: MAMA };
     const { backend, c, letters, clock } = await heldRestore({ live });
