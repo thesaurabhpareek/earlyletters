@@ -781,19 +781,23 @@ select to_regclass('public.subscription_status') is not null and to_regclass('pu
 select has_function_privilege('authenticated', 'public.status_report_store(jsonb)', 'execute')
    and not has_function_privilege('anon', 'public.status_report_store(jsonb)', 'execute');
 ```
-Then repeat step 21's `search_path` query (expect 0 rows). Advisors: expect 0029 "authenticated can execute security definer function" for `status_salt` and `status_report_store`; both start with `require_user()`. Anything else new: stop and ask.
+Then repeat step 21's `search_path` query (expect 0 rows). Advisors, expected and accepted: **0029** "authenticated can execute security definer function" for `status_salt` and `status_report_store` (both start with `require_user()`); **0008** `rls_enabled_no_policy` for `subscription_salts`, `subscription_status`, `subscription_consents` and `subscription_report_rates` (RLS on and no policy on purpose: functions only). Anything else new: stop and ask.
 
-**Rollback** (before any real purchase only; consent records are legal records), tested in PGlite:
+**Rollback** (before any real purchase only; consent records are legal records), tested in PGlite. One transaction. Resetting the switch means that if file 18 is applied again later, the report stays paused until you turn it on again; a database setting reaches new connections only:
 ```sql
+begin;
+alter database postgres reset app.status_report_enabled;
 drop trigger if exists profiles_pseudonymise_subscription_consents on public.profiles;
 drop function if exists public.status_report_store(jsonb), public.status_salt(), public.subscription_retention_purge(timestamptz);
 drop trigger if exists subscription_consents_guard on public.subscription_consents;
-drop function if exists public.subscription_consents_pseudonymise(), public.subscription_consents_guard(),
+drop trigger if exists subscription_consents_no_truncate on public.subscription_consents;
+drop function if exists public.subscription_consents_pseudonymise(), public.subscription_consents_guard(), public.subscription_consents_no_truncate(),
   public.subscription_instant(jsonb, boolean), public.subscription_report_switch(), public.subscription_rate_hit(uuid, text);
 drop table if exists public.subscription_report_rates, public.subscription_consents, public.subscription_status, public.subscription_salts;
 delete from public.idempotency_keys where fn = 'status_report_store';
 alter table public.idempotency_keys drop constraint if exists idempotency_keys_fn_check;
 alter table public.idempotency_keys add constraint idempotency_keys_fn_check check (fn in ('create_child_invite', 'record_policy_act'));
+commit;
 ```
 
 ## File `<timestamp>_backup_server.sql` (S05, PR #151: encrypted recording backup and the recovery key)
