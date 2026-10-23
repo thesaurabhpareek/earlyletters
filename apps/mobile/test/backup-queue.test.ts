@@ -17,13 +17,13 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { hexToBytes } from '../src/lib/backup/bytes';
-import type { BackupServer } from '../src/lib/backup/contract';
+import { BackupServerError, type BackupServer } from '../src/lib/backup/contract';
 import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../src/lib/backup/format';
 import { createKeyManager } from '../src/lib/backup/keys';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { Aead, Conditions, FileIO, NetworkKind } from '../src/lib/backup/ports';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
-import type { HttpLike } from '../src/lib/backup/tus';
+import { resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
 import { nodeDb } from './helpers/node-db';
 
@@ -686,5 +686,42 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
     await r.settle();
     expect(r.db().job(item.entryId)!.state).toBe('confirmed');
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
+  const EP = 'https://fake.storage/storage/v1/upload/resumable';
+  const input = (http: HttpLike, url: string | null = null) => ({
+    http, target: { endpoint: EP, headers: { Authorization: `Bearer ${MAMA}` } }, bucket: 'entry-audio', objectPath: `${ASHA}/${MAMA}/x.m4a.enc`,
+    length: 10, readPart: () => new Uint8Array(10), progress: { url, offset: 0 }, onProgress: () => {}, keepGoing: () => true,
+  });
+  const created = (n: number) => ({ status: 201, header: (h: string) => (h === 'Location' ? `/storage/v1/upload/resumable/u${n}` : null) });
+
+  it('[review A note 2] the upload URL must be https on the endpoint origin, so the token never goes anywhere else', () => {
+    expect(resolveLocation('/storage/v1/upload/resumable/abc', EP)).toBe('https://fake.storage/storage/v1/upload/resumable/abc');
+    expect(resolveLocation('abc', EP)).toBe(`${EP}/abc`);
+    expect(resolveLocation('https://FAKE.storage/storage/v1/upload/resumable/abc', EP)).toBe('https://FAKE.storage/storage/v1/upload/resumable/abc');
+    for (const bad of ['https://evil.example/x', 'http://fake.storage/x', '//evil.example/x', 'https://fake.storage@evil.example/x',
+      'https://fake.storage:8443/x', 'javascript:alert(1)', 'https:\\\\evil.example\\x', 'https://fake.storage/x y']) {
+      const e = (() => {
+        try {
+          resolveLocation(bad, EP);
+          return null;
+        } catch (x) {
+          return x;
+        }
+      })();
+      expect(e, bad).toBeInstanceOf(BackupServerError);
+      expect((e as BackupServerError).retryable, bad).toBe(false);
+    }
+    expect(() => resolveLocation('/x', 'http://fake.storage/storage/v1/upload/resumable')).toThrow(BackupServerError);
+  });
+
+  it('[review A note 2] a saved upload URL on another origin is never asked: a fresh upload starts on the endpoint', async () => {
+    const seen: string[] = [];
+    const http: HttpLike = async (url, init) => {
+      seen.push(`${init.method} ${url}`);
+      return init.method === 'POST' ? created(1) : { status: 204, header: (h: string) => (h === 'Upload-Offset' ? '10' : null) };
+    };
+    expect(await tusUpload(input(http, 'https://evil.example/storage/v1/upload/resumable/u0'))).toBe('done');
+    expect(seen).toEqual([`POST ${EP}`, `PATCH ${EP}/u1`]);
   });
 });

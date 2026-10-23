@@ -10,6 +10,9 @@
  * - Parts are 6 MiB, the size Supabase requires for every part but the last.
  * - An expired or unknown upload URL (404, 410) starts a fresh upload of the
  *   same bytes. A wrong offset (409) asks the server again.
+ * - The upload URL must be https on the endpoint's own origin: every HEAD and
+ *   PATCH carries the user's access token, so a `Location` anywhere else is
+ *   refused, not followed (review A note 2 on #150).
  * - `x-upsert: true`: a pending object may be replaced (a job reset after its
  *   ciphertext changed). The Storage policy allows that only while the
  *   caller's `audio_blobs` row is `pending` (request to the S05 server).
@@ -52,11 +55,26 @@ const meta = (pairs: Record<string, string>) =>
     .map(([k, v]) => `${k} ${bytesToBase64(utf8ToBytes(v))}`)
     .join(',');
 
-/** An absolute `Location`, or one relative to the endpoint's origin. No URL global needed (Hermes). */
+/** The origin of an https URL with its host in lower case, or null (anything not https, or no host). No URL global needed (Hermes). */
+export function httpsOrigin(u: string): string | null {
+  const m = /^https:\/\/([^/?#\\]+)/i.exec(u);
+  return m ? `https://${m[1].toLowerCase()}` : null;
+}
+
+/**
+ * The upload URL a `Location` names: absolute, protocol-relative, or relative to the endpoint. Only
+ * https on the endpoint's own origin is accepted; anything else throws a BackupServerError that is not
+ * retried (`location`), so the user's token never goes to another host or in clear text.
+ */
 export function resolveLocation(location: string, endpoint: string): string {
-  if (/^https?:\/\//i.test(location)) return location;
-  const origin = /^(https?:\/\/[^/]+)/i.exec(endpoint)?.[1] ?? '';
-  return location.startsWith('/') ? `${origin}${location}` : `${endpoint.replace(/\/+$/, '')}/${location}`;
+  const origin = httpsOrigin(endpoint);
+  if (!origin) throw new BackupServerError('location', false);
+  const url = location.startsWith('//') ? `https:${location}`
+    : /^[a-z][a-z0-9+.-]*:/i.test(location) ? location
+    : location.startsWith('/') ? `${origin}${location}`
+    : `${endpoint.replace(/\/+$/, '')}/${location}`;
+  if (httpsOrigin(url) !== origin || /[\s\\]/.test(url)) throw new BackupServerError('location', false);
+  return url;
 }
 
 function fail(status: number): never {
@@ -77,6 +95,8 @@ export async function tusUpload(x: TusUploadInput): Promise<'done' | 'stopped'> 
   const part = x.partBytes ?? TUS_PART_BYTES;
   const base = { ...x.target.headers, 'Tus-Resumable': TUS_VERSION };
   let { url, offset } = x.progress;
+  // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead.
+  if (url && httpsOrigin(url) !== httpsOrigin(x.target.endpoint)) url = null;
 
   const create = async () => {
     const r = await call(x.http, x.target.endpoint, {
