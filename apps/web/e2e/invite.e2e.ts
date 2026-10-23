@@ -63,6 +63,13 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${origin}${LINK}`);
   });
 
+  test('takes a query a chat app added out of the address bar, so copying the address by hand works too', async ({ page, baseURL }) => {
+    const origin = new URL(baseURL!).origin;
+    await page.goto(`/j?fbclid=e2e_click_id#t=${TOKEN}`);
+    await expect(page).toHaveURL(`${origin}${LINK}`);
+    await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+  });
+
   for (const fragment of [`#t=${TOKEN}&utm_source=chat`, `#x=1&t=${TOKEN}`]) {
     test(`copies only /j#t=<token> from /j${fragment.replace(TOKEN, '<token>')}`, async ({ page, context, baseURL }) => {
       const origin = new URL(baseURL!).origin;

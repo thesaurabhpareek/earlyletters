@@ -7,6 +7,9 @@
  * The copy is exactly `<origin>/j#t=<token>`, the form the app writes, whatever else the address carries: a query a
  * chat app added (`?fbclid=...`) or other fragment parameters. The app's "I was invited" reads only that form
  * (apps/mobile src/lib/family/invite-link.logic.ts parseInviteInput).
+ *
+ * On load, a query in the address is dropped from the address bar (history.replaceState, no request), so the
+ * fallback "copy the address of this page" (site.invite.copyFailed) also gives the app a link it can read.
  */
 import { useEffect, useState } from 'react';
 import styles from '../auth/confirm/confirm.module.css';
@@ -22,7 +25,11 @@ export function CopyInvite({ label, copied, failed, missing }: Props) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   // Read after hydration: the server never sees the fragment, so the first render always shows the button.
   const [complete, setComplete] = useState(true);
-  useEffect(() => setComplete(inviteToken(window.location.hash) !== null), []);
+  useEffect(() => {
+    const { pathname, search, hash } = window.location;
+    if (search) window.history.replaceState(null, '', `${pathname}${hash}`);
+    setComplete(inviteToken(hash) !== null);
+  }, []);
 
   async function copyLink() {
     const token = inviteToken(window.location.hash);
