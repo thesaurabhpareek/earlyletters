@@ -46,7 +46,7 @@ export const backupCopy = {
   writeToUs: 'Write to us',
   needsConsent: 'Backup is off. Turn it on again to keep backing up new recordings.',
 
-  cellularTitle: 'Use mobile data',
+  cellularTitle: 'Use cellular data',
   cellularHelp: 'When this is off, recordings back up on Wi-Fi.',
 
   /** Turning off (F08 6.5 D3). "Delete the backup" arrives with WP-F08-B5d. */

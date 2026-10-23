@@ -69,7 +69,7 @@ Staging queries for the steps below (run as the dashboard's SQL editor; Mama's i
 - **Record:** B6-02 row: the search terms and zero counts. The capture file stays on the Mac, never in git.
 
 ### B6-03 Kill, airplane and leaving Wi-Fi during an upload (F08-U17)
-- **Steps:** Record the 15-minute letter again as a new letter. When the state reads "Backing up", swipe the app away. Reopen. Then turn on airplane mode mid-upload for 30 s and off again. Then, with Use mobile data off, turn Wi-Fi off mid-upload (mobile data on) for a minute, then on again. Then start a recording while it uploads.
+- **Steps:** Record the 15-minute letter again as a new letter. When the state reads "Backing up", swipe the app away. Reopen. Then turn on airplane mode mid-upload for 30 s and off again. Then, with Use cellular data off, turn Wi-Fi off mid-upload (mobile data on) for a minute, then on again. Then start a recording while it uploads.
 - **Expected:** After each, the upload continues from where it was. It does not start again: the proxy shows a `HEAD` and then only the missing parts. With Wi-Fi off, at most one more part goes and the state reads "Backs up on Wi-Fi". Nothing uploads while the recording runs, and it carries on after Review closes. Exactly one confirmed row for that letter; no file left in `Application Support/backup-tmp` (Xcode > Devices > the app's container) once it is backed up.
 - **Note:** iOS reports a Personal Hotspot as Wi-Fi, so on a hotspot backup uploads as on Wi-Fi [A]. Record which network was used.
 - **Record:** B6-03 row.
@@ -136,5 +136,5 @@ Round 1 passes when B6-P0 and B6-01 to B6-09 pass on the SE 3 and the current iP
 | CryptoKit HPKE (X25519, HKDF-SHA256, AES-256-GCM) exists on iOS 17 | A (F08 A5) | B6-01 (backup turns on) |
 | The Node HPKE in the tests matches RFC 9180's test vector A.1.1 | F | `test/backup-keys.test.ts` |
 | Supabase Storage's resumable endpoint accepts 6 MiB parts from React Native and answers `HEAD` with the offset | A (F08 A3) | B6-03 |
-| The app never uploads in the background, and stops at the next part when Wi-Fi goes with Use mobile data off | F (`lib/backup/queue.ts`, `test/backup-queue.test.ts`) | B6-03 |
+| The app never uploads in the background, and stops at the next part when Wi-Fi goes with Use cellular data off | F (`lib/backup/queue.ts`, `test/backup-queue.test.ts`) | B6-03 |
 | Keychain items survive deleting the app; turning iCloud Keychain off can keep them on the phone | A (observed iOS behaviour, not a documented promise) | Round B, B6-06 check |

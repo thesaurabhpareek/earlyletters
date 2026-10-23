@@ -17,7 +17,7 @@ import { dayDate, isoOf } from '@/lib/dates';
  * Off: the one turn-on sheet (`backup.sheet*`) with one button. Tapping it
  * records the `backup` consent act first (F08-REQ-039); nothing is encrypted
  * or uploaded before the server has it. On: a quiet state line, never a count
- * of what is left; Use mobile data (off by default); Turn off, which keeps what
+ * of what is left; Use cellular data (off by default); Turn off, which keeps what
  * is backed up (Delete the backup is WP-F08-B5d). "Backed up" shows only when
  * every recording of mine is; consent withdrawn reads Off, with the sheet.
  */

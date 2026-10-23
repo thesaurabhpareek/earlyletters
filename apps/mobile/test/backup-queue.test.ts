@@ -327,7 +327,7 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     expect(bodyBytes).toBe(r.db().job(item.entryId)!.cipherBytes);
   });
 
-  it('with Use mobile data on, leaving Wi-Fi does not stop the upload', async () => {
+  it('with Use cellular data on, leaving Wi-Fi does not stop the upload', async () => {
     const r = rig();
     const { item } = await r.addRecording(5 * SEGMENT_SIZE);
     r.cond.cell = true;
