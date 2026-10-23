@@ -24,6 +24,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { canDo } from '@scribe/core/src/family-rules';
 import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { upsertPrefs } from '../src/lib/db/repos/children';
 import type { SqlDb } from '../src/lib/db/sql';
 import { inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { newInviteDraft, type InviteDraft } from '../src/lib/family/invite-draft.logic';
@@ -332,6 +333,9 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     ASHA = uuid7();
     A1.transaction(() => {
       A1.run('INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, NULL, ?, ?, ?)', ASHA, 'Asha', '2025-04-12', 'Mama', iso(), iso());
+      // The sign-off lives in child_member_prefs since local schema v7, and sync sends it from there
+      // (lib/sync/outbox.ts). The app's create path writes both places (db/repos/children.ts insert).
+      upsertPrefs(A1, ASHA, { signsAs: 'Mama', remindersOn: true }, iso());
       enqueueBookCreate(A1, ASHA, ctx());
     });
     expect(takeOwnership(A1, A, ctx()).outcome).toBe('claimed');
