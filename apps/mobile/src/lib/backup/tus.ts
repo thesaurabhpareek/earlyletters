@@ -101,8 +101,10 @@ export async function tusUpload(x: TusUploadInput): Promise<'done' | 'stopped'> 
   const part = x.partBytes ?? TUS_PART_BYTES;
   const base = { ...x.target.headers, 'Tus-Resumable': TUS_VERSION };
   let { url, offset } = x.progress;
-  // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead.
-  if (url && httpsOrigin(url) !== httpsOrigin(x.target.endpoint)) url = null;
+  // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead. An
+  // endpoint that is not https (a non-https dev server) has no such origin, so no saved URL matches it.
+  const origin = httpsOrigin(x.target.endpoint);
+  if (url && (origin === null || httpsOrigin(url) !== origin)) url = null;
   let creates = 0;
   let asks = 0;
 
