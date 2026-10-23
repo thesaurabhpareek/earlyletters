@@ -97,7 +97,47 @@ export type PushOpType =
   | 'book.first_run'
   | 'book.create'
   | 'book.update'
-  | 'prefs.upsert';
+  | 'prefs.upsert'
+  /** v1 (WP-F16-17, F16 6.2 I): an author-only held or waiting draft, whole row. */
+  | 'held.upsert'
+  /** v1 (WP-F16-17): the author let a held draft go; the server deletes its row (and, F08, its backup). */
+  | 'held.discard'
+  /** v1 (WP-F16-13, F16-REQ-024): Erase now for a letter the server holds; the server purges it for good. */
+  | 'entry.erase';
+
+/** What a held_drafts row is (F16 6.2 I; S07 HELD_KINDS). */
+export type HeldKind = 'held_letter' | 'waiting_letter' | 'held_words';
+
+/**
+ * A held or waiting draft as its author sends it (S07 HeldDraftData). Only an
+ * explicit hold at the Keep gate, or a voice-only letter waiting for its words,
+ * ever becomes one: a draft that was never held never leaves the phone.
+ */
+export interface HeldDraftData {
+  id: string;
+  child_id: string;
+  kind: HeldKind;
+  capture_mode: string;
+  /** Device capture time. */
+  created_at: string;
+  occurred_on: string;
+  occurred_precision: string;
+  language: string | null;
+  base_direction: string;
+  prompt_key: string | null;
+  in_book_choice: boolean | null;
+  /** Null until words exist; immutable once non-empty. */
+  raw_transcript: string | null;
+  final_text: string | null;
+  machine_edits: unknown[] | null;
+  edit_level: string | null;
+  author_edits: null;
+  locked_spans: null;
+  typed_text: string | null;
+  engine_version: number | null;
+  pack_ref: null;
+  audio_kept_on_device: boolean;
+}
 
 export interface PushOp {
   /** Device-made UUIDv7; the server applies an op id at most once. */
@@ -117,6 +157,12 @@ export interface PushOp {
    * when it first applies the op and a duplicate ignores it.
    */
   base?: string | null;
+  /**
+   * v1, entry.upsert that makes the letter from a held draft or a waiting letter (the Keep): the held
+   * row's last `v` this phone knew, or null when it knew none. The server refuses the Keep as a words
+   * conflict when the held words moved past it (review K blocking 1, ADR 0025 section 9).
+   */
+  held_base?: string | null;
   /** entry.reupload: the server's updated_at this phone last saw for the letter. */
   known_at?: string;
 }
@@ -135,6 +181,8 @@ export interface EntryState {
 export interface CurrentWords extends WordsGroup {
   /** Server version of these words. */
   v: string;
+  /** A refused Keep: the held draft's typed words (its words when it has no final_text). */
+  typed_text?: string | null;
 }
 
 export interface PushResultOk {
@@ -159,6 +207,13 @@ export interface PushResultOk {
   applied_v?: string | null;
   missing?: boolean;
   entry?: EntryState | null;
+  /** v1 (WP-F16-17): server state of a held draft after held.upsert. */
+  held?: { id: string; v: string; updated_at: string } | null;
+  /**
+   * v1 (ADR 0025 section 9, the switch): held-draft sync is off on the server (`app.held_sync = 'off'`). The held
+   * op changed nothing and was not claimed; the phone keeps it queued, unsent, and the same op id applies later.
+   */
+  held_off?: boolean;
   book?: { id: string };
   books?: string[];
   prefs?: { child_id: string };
@@ -205,6 +260,26 @@ export interface BookRequest {
 export interface PullRequest {
   epoch?: number;
   books: Record<string, BookRequest>;
+  /** v1 (WP-F16-17): cursor for this author's own held drafts. An older server ignores the key. */
+  held?: { cursor?: string | null };
+}
+
+/** A held draft as its author pulls it (S07 PulledHeldSchema). Never in anyone else's pull. */
+export interface PulledHeld extends Omit<HeldDraftData, 'author_edits' | 'locked_spans' | 'pack_ref'> {
+  author_edits?: unknown[] | null;
+  locked_spans?: unknown[] | null;
+  pack_ref?: string | null;
+  updated_at: string;
+  v: string;
+}
+
+/** A held draft that left the server: let go on another phone, or kept (its letter took the same id). */
+export interface PulledHeldGone {
+  id: string;
+  /** v1: 'erased' when the author used Erase now (every phone erases its copy; it is never restorable). */
+  gone: 'discarded' | 'kept' | 'erased';
+  updated_at: string;
+  v: string;
 }
 
 /** A letter row from the server. Others' rows never carry raw_transcript or machine_edits. */
@@ -290,13 +365,16 @@ export interface PullResponse {
   epoch_started_at: string;
   books?: PulledBook[];
   gone?: GoneBook[];
+  /** v1 (WP-F16-17): this author's own held drafts after the held cursor. */
+  held?: { rows: (PulledHeld | PulledHeldGone)[]; cursor: string | null; more: boolean };
   more?: boolean;
 }
 
 // ── Engine state ───────────────────────────────────────────────────────────
 
 /** Per-letter sync state, stored in entries.sync_state. */
-export type EntrySyncState = 'local' | 'pending' | 'synced' | 'rejected' | 'held' | 'gone';
+/** 'erased': the server erased this deleted letter for good; the phone finishes erasing it (file, then row). */
+export type EntrySyncState = 'local' | 'pending' | 'synced' | 'rejected' | 'held' | 'gone' | 'erased';
 
 /** Per-book state, stored in children.server_state. */
 export type BookServerState = 'local' | 'pending' | 'synced' | 'refused' | 'left' | 'deleted';
