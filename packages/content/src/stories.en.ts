@@ -57,3 +57,22 @@ export const onboardingStories: readonly StoryCard[] = [
     visual: 'two-hands',
   },
 ];
+
+/**
+ * New wording for a slot that already has a packaged card (docs/design/EXPERIENCE_PASS_2026-10.md, P0 rule 4).
+ * Not part of the fallback deck above, so the deck never shows two cards for one slot. Which card is served
+ * is a server-side decision (D-066) and a counsel item (claims registry, LEGAL-REQ-044).
+ *
+ * story.private.v2 fits v1.0 with server features on (D-100): sharing reaches the other parent only when they are
+ * invited (D-069), so it says who it is shared with and makes no claim about who can read or where letters are stored.
+ */
+export const alternateStories: readonly StoryCard[] = [
+  {
+    type: 'story',
+    id: 'story.private.v2',
+    order: 4,
+    headline: "Private by default.",
+    line: "Shared only with the other parent, if you invite them. Never sold, never used for ads.",
+    visual: 'two-hands',
+  },
+];
