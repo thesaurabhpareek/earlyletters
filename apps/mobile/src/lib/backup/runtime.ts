@@ -92,7 +92,17 @@ function nativeVault(): KeyVault {
     deleteBookKeys: (r) => need().deleteBookKeys(KEYCHAIN_SERVICE, account(r)),
     bookKeyCheck: (r, v, label) => need().bookKeyCheck(KEYCHAIN_SERVICE, account(r), v, label),
     wrapFileKey: (r, v, key, aad) => need().wrapFileKey(KEYCHAIN_SERVICE, account(r), v, key, aad),
-    unwrapFileKey: (r, v, wrapped, aad) => need().unwrapFileKey(KEYCHAIN_SERVICE, account(r), v, wrapped, aad),
+    unwrapFileKey: async (r, v, wrapped, aad) => {
+      try {
+        return await need().unwrapFileKey(KEYCHAIN_SERVICE, account(r), v, wrapped, aad);
+      } catch (e) {
+        // Portable codes for restore.ts: the file key does not open (a failed try), or the Keychain is not reading now (a retry).
+        const code = scribeKeysErrorCode(e);
+        if (code === 'ERR_SCRIBE_KEYS_OPEN') throw Object.assign(new Error('key_open_failed'), { code: 'key_open_failed' });
+        if (code === 'ERR_SCRIBE_KEYS_KEYCHAIN') throw Object.assign(new Error('keychain_unavailable'), { code: 'keychain_unavailable' });
+        throw e;
+      }
+    },
     sealBookKey: (r, v, recipient, info, aad) => need().sealBookKey(KEYCHAIN_SERVICE, account(r), v, recipient, info, aad),
     openBookKey: async (r, v, s, info, aad, check) => {
       try {

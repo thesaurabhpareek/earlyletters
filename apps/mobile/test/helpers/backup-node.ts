@@ -187,7 +187,13 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       return new Uint8Array(Buffer.concat([buf(nonce), buf(gcmSeal('aes-256-gcm', bookSubkey(key(r, version), BOOK_SUBKEY_INFO.fileKeyWrap), nonce, fileKey, aad))]));
     },
     async unwrapFileKey(r: BookKeyRef, version: number, wrapped: Uint8Array, aad: Uint8Array) {
-      return gcmOpen('aes-256-gcm', bookSubkey(key(r, version), BOOK_SUBKEY_INFO.fileKeyWrap), wrapped.subarray(0, 12), wrapped.subarray(12), aad);
+      const sub = bookSubkey(key(r, version), BOOK_SUBKEY_INFO.fileKeyWrap);
+      try {
+        return gcmOpen('aes-256-gcm', sub, wrapped.subarray(0, 12), wrapped.subarray(12), aad);
+      } catch {
+        // As runtime.ts maps ScribeKeys' ERR_SCRIBE_KEYS_OPEN.
+        throw Object.assign(new Error('key_open_failed'), { code: 'key_open_failed' });
+      }
     },
     async sealBookKey(r: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array) {
       const s = hpkeSeal(recipient, info, aad, key(r, version));
