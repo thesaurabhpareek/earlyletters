@@ -58,12 +58,18 @@ export interface PrivacyManifest {
 /**
  * Required-reason API categories and the reasons this app declares. Evidence read on 16 Oct 2026 from
  * node_modules (Expo SDK 57.0.26, react-native 0.86.3, whisper.rn 0.7.4, expo-sqlite 57.0.3) and, for the
- * CocoaPods-only SDKs, from each SDK's own repository at the version GoogleSignIn ~> 9.0 resolves to.
+ * CocoaPods-only SDKs, from each SDK's own repository on 23 Oct 2026, at the newest versions on CocoaPods
+ * trunk that GoogleSignIn ~> 9.0 allowed that day: GoogleSignIn 9.2.0 (its manifest is byte-identical to
+ * 9.0.0's), GTMSessionFetcher/Core 3.5.0, GoogleUtilities 8.1.5, AppAuth 2.1.0, GTMAppAuth 5.0.0,
+ * PromisesObjC 2.4.1, PromisesSwift 2.4.1, AppCheckCore 11.3.2 and RecaptchaInterop 101.0.0. No Podfile.lock
+ * is committed, so a later pod install can resolve newer versions; those are unverified until read again.
  * Pods that ship a manifest: react-native (React, cxxreact, react/timing), RCT-Folly, boost, glog,
  * expo-application, expo-constants, expo-device, expo-file-system, expo-notifications, expo-system-ui,
- * GoogleSignIn, GTMSessionFetcher, GoogleUtilities, AppAuth, GTMAppAuth, PromisesObjC. Apple does not read
- * every static pod's manifest (Expo, "Privacy manifests" guide), so each category any linked code uses is
- * declared here too, with the reason that matches this app's own use.
+ * GoogleSignIn, GTMSessionFetcher, GoogleUtilities, AppAuth, GTMAppAuth, PromisesObjC, PromisesSwift.
+ * AppCheckCore and RecaptchaInterop ship none, and neither is on Apple's list of SDKs that must ship
+ * one (developer.apple.com/support/third-party-SDK-requirements, read 23 Oct 2026). Apple does not read every
+ * static pod's manifest (Expo, "Privacy manifests" guide), so each category any linked code uses is declared
+ * here too, with the reason that matches this app's own use.
  */
 export const REQUIRED_REASON_APIS: readonly AccessedApiType[] = [
   {
@@ -89,7 +95,11 @@ export const REQUIRED_REASON_APIS: readonly AccessedApiType[] = [
   },
   {
     // 35F9.1: elapsed time between in-app events. react-native (ReactCommon/react/timing), boost and
-    // expo-device declare it; all three are linked statically into the app binary. App code does not read
+    // expo-device declare it. expo-device has no prebuilt framework, so it builds from source as a static
+    // library (the generated Podfile uses frameworks only when ios.useFrameworks or USE_FRAMEWORKS asks, and
+    // neither does; prebuild of 23 Oct 2026). React Native core and boost come from the prebuilt React and
+    // ReactNativeDependencies frameworks by default in SDK 57 (its Podfile sets RCT_USE_PREBUILT_RNCORE and
+    // RCT_USE_RN_DEP to 1), and whether those are linked statically is unverified. App code does not read
     // boot time. whisper.rn calls clock_gettime only, which is not on Apple's list.
     NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
     NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
