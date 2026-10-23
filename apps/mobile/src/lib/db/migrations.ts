@@ -301,6 +301,12 @@ export const MIGRATIONS: Migration[] = [
       //   children.created_by       L3  the account that started the book, when known
       //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
       // Values move in this one transaction; nothing is queued (nothing changed for the server).
+      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (build 1)
+      // reads them by name, and the "update the app" screen (MOB-09) does not exist yet, so dropping them would
+      // leave a tester who rolls back with a Book that cannot list its books. The app reads them from
+      // child_member_prefs only, and writes the prefs value into them as a mirror (db/repos/children.ts
+      // upsertPrefs), so the older build sees the current signature and reminder choice. The columns go in
+      // the first schema version after MOB-09 ships.
       db.exec(`
         CREATE TABLE IF NOT EXISTS child_member_prefs (
           child_id TEXT PRIMARY KEY NOT NULL,
@@ -323,9 +329,7 @@ export const MIGRATIONS: Migration[] = [
           ctx.now,
         );
         db.run('UPDATE children SET hidden_at = NULL WHERE hidden_at IS NOT NULL');
-        db.exec('ALTER TABLE children DROP COLUMN signs_as');
       }
-      if (have.has('reminders_on')) db.exec('ALTER TABLE children DROP COLUMN reminders_on');
       // Books started here belong to the account that owns this phone's letters (set at the first sign-in).
       const owner = db.get<{ value: string }>("SELECT value FROM settings WHERE key = 'sync.ownerId'")?.value ?? null;
       if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);

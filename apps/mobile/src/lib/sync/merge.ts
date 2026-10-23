@@ -685,10 +685,11 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
     if (!m) return false;
     db.run(
       `INSERT INTO children (id, name, birthday, due_date, family_can_read, created_at, updated_at,
-         role, created_by_me, created_by, nickname, server_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+         role, created_by_me, created_by, nickname, server_state, signs_as)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
       b.id, m.name, m.date_of_birth, m.due_date, m.family_can_read ? 1 : 0,
       now, now, m.role, m.created_by_me ? 1 : 0, m.created_by_me ? syncOwner(db) : null, m.nickname,
+      m.my_signs_as ?? '', // NOT NULL since v1; v7 keeps the column for a v6 build (upsertPrefs mirrors it)
     );
     upsertPrefs(db, b.id, { signsAs: m.my_signs_as ?? '', remindersOn: m.include_in_reminders }, now);
     return true;

@@ -297,42 +297,54 @@ describe('Lamp gradient', () => {
         ...DAYPARTS.map((d) => resolveLamp({ scene: 'tonight', daypart: d })!),
         resolveLamp({ scene: 'tonight', daypart: 'evening', intensity: tokens.motion.lamp.dimTo })!,
       ],
+      // Tonight as P3 built it (S09, S33), measured on 17 Oct 2026: the greeting in two tones, the prompt on the paper
+      // (three lines, the tallest a prompt runs at the default size; "Another thought" sits below a two- or a three-line
+      // prompt), Speak and Type pinned, and the quiet line in text. Cards sit on their own surface and are not listed.
       text: [
-        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 115, h: 23 },
-        { what: 'greeting', token: 'text', x: 20, y: 45, w: 354, h: 50 },
-        { what: 'subtitle', token: 'textMuted', x: 20, y: 96, w: 346, h: 30 },
-        { what: 'Not much today', token: 'accent', x: 139, y: 745, w: 123, h: 30 },
-        { what: 'A quiet day, kept.', token: 'success', x: 116, y: 746, w: 121, h: 28 },
-        { what: 'Undo', token: 'accent', x: 261, y: 746, w: 37, h: 27 },
+        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 116, h: 23 },
+        // Both tones over the widest greeting of any daypart (P1's re-measure on #221: x 20 to 354), since where the
+        // name starts depends on the greeting before it.
+        { what: 'greeting', token: 'text', x: 20, y: 47, w: 334, h: 33 },
+        { what: 'greeting name', token: 'textMuted', x: 20, y: 47, w: 334, h: 33 },
+        { what: 'prompt', token: 'text', x: 20, y: 99, w: 362, h: 114 },
+        { what: 'Another thought', token: 'accent', x: 46, y: 194, w: 116, h: 63 },
+        { what: 'Not much today', token: 'accent', x: 139, y: 757, w: 124, h: 30 },
+        { what: 'A quiet day, kept.', token: 'text', x: 116, y: 756, w: 121, h: 28 },
+        { what: 'Undo', token: 'accent', x: 261, y: 756, w: 37, h: 27 },
       ],
     },
     {
       room: 'the age question',
       box: { width: 402, height: 874 },
       lights: [...shown('components/gate/age-gate-screen.tsx'), resolveLamp({ scene: 'gate' })!],
+      // the age question (P2, measured on e652c4a)
       text: [
-        { what: 'question', token: 'text', x: 20, y: 59, w: 334, h: 53 },
-        { what: 'body', token: 'textMuted', x: 20, y: 127, w: 274, h: 30 },
-        { what: 'Continue (not yet chosen)', token: 'textMuted', x: 166, y: 807, w: 69, h: 30 },
+        { what: 'question', token: 'text', x: 42, y: 195, w: 318, h: 50 },
+        { what: 'Yes', token: 'text', x: 92, y: 286, w: 27, h: 30 },
+        { what: 'No', token: 'text', x: 285, y: 286, w: 23, h: 30 },
+        { what: 'Continue (not yet chosen)', token: 'textMuted', x: 166, y: 807, w: 70, h: 30 },
       ],
     },
     {
       room: 'the welcome',
       box: { width: 402, height: 874 },
       lights: [...shown('app/onboarding.tsx'), resolveLamp({ scene: 'welcome' })!, resolveLamp({ scene: 'form' })!, resolveLamp({ scene: 'finish' })!],
+      // the welcome (P2, measured on e652c4a): the lockup is a drawing, not text; Begin the book sits on its own fill
       text: [
-        { what: 'title', token: 'text', x: 24, y: 336, w: 266, h: 66 },
-        { what: 'promise', token: 'textMuted', x: 24, y: 404, w: 328, h: 57 },
-        { what: 'voice line', token: 'text', x: 24, y: 481, w: 347, h: 54 },
-        { what: 'free line', token: 'textMuted', x: 24, y: 553, w: 208, h: 28 },
+        { what: 'title', token: 'text', x: 55, y: 216, w: 301, h: 216 },
+        { what: 'promise', token: 'textMuted', x: 29, y: 437, w: 348, h: 54 },
+        { what: 'free line', token: 'textMuted', x: 113, y: 498, w: 176, h: 23 },
       ],
     },
   ];
 
-  it('each room is checked under the lamp its screen mounts today (the welcome: a centred pool)', () => {
-    expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ anchor: 'center' })]);
+  it('each room is checked under the lamp its screen mounts today (first run: the gate, welcome, form and finish scenes, P2)', () => {
+    // P2 (EXPERIENCE_PASS S01 to S08): the gate and onboarding moved from #99's anchor-only pool to their scenes.
+    expect(shown('components/gate/age-gate-screen.tsx')).toEqual([resolveLamp({ scene: 'gate' })]);
+    expect(shown('app/onboarding.tsx')).toEqual([resolveLamp({ scene: 'welcome' }), resolveLamp({ scene: 'finish' }), resolveLamp({ scene: 'form' })]);
     expect(shown('app/(tabs)/index.tsx')).toEqual([resolveLamp({ anchor: 'top' })]);
-    expect(ROOMS.find((r) => r.room === 'the welcome')!.lights).toContainEqual(resolveLamp({ anchor: 'center' }));
+    // ROOMS spreads shown() into each room's lights, so the boxes are checked under exactly what the screens mount; the
+    // exact pins above fail on any change to a screen's lamp (a "ROOMS contains" check here could not fail, review B2).
   });
 
   it('where text actually sits, each text keeps 4.5:1 in its own colour over its whole box (Tonight, the age question, the welcome)', () => {
@@ -367,17 +379,15 @@ describe('Lamp gradient', () => {
    * in a component two imports away or behind a lazy import) fails here.
    */
   type StatusUse = { use: string; box?: string; room?: string; after?: string; surface?: string };
-  const QUIET_FOOT = '<View className="min-h-8 flex-1" />';
+  // Tonight allows none: since P3 (S33) "A quiet day, kept." is in `text` with the Moon in textMuted, so Tonight and
+  // every file it renders (the draft cards, "A month ago", the quiet line) must use no status colour at all.
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
-    // "A quiet day, kept." and its check mark sit in the group the spacer pushes to the foot of Tonight.
-    'app/(tabs)/index.tsx': [
-      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-    ],
     // "We'll tell you" on the Family tab: a check mark on its own chip.
     'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
     'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
+    // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.
+    'app/onboarding.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
   const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];

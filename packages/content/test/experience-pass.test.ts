@@ -45,8 +45,10 @@ function leaves(value: unknown, path = ''): Leaf[] {
 // speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
 
-/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below). */
+/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below), and the held keys switched since. */
 const CHANGED = [
+  // Switched by P2 with the stop screen that shows it alone (S02).
+  'en.ageGate.stopTitle',
   'en.onboarding.child.nameLabel',
   'en.onboarding.child.expectingHelp',
   'en.onboarding.child.addAnotherHelp',
@@ -123,6 +125,10 @@ const CHANGED = [
   'en.errors.launch.exportFailed',
   // Not in section 4: changed in review on #181 (the old line named four licences; #175 lists every one).
   'features.licences.libraries',
+  // Switched by P3 with Tonight's card for every draft (section 6, P3 switches; counsel C10 for the keepGate lines).
+  'en.tonight.draftWaiting.title',
+  'features.billing.keepGate.heldNote',
+  'features.billing.keepGate.offline',
 ];
 
 /** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
@@ -197,6 +203,8 @@ const ADDED = [
   'en.tabs.tonight',
   'en.tabs.book',
   'en.tabs.family',
+  // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
+  'features.billing.keepGate.heldNoteSynced',
 ];
 
 /**
@@ -215,10 +223,6 @@ const WE_ALLOWED = new Set([
  * billingCopy.plan.* is registered text (in-app-disclosures.md section 3), so its new words wait for counsel.
  */
 const HELD: Record<string, string> = {
-  'en.ageGate.stopTitle': 'P2', // the stop screen also shows stopBody, so the new title would repeat it
-  'en.tonight.draftWaiting.title': 'P3', // the one waiting card is also shown for typed drafts
-  'features.billing.keepGate.heldNote': 'P3', // "waits on Tonight" needs Tonight to list every draft
-  'features.billing.keepGate.offline': 'P3', // the same promise
   'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
   'en.errors.micDenied.body': 'P4',
   'en.readTogether.nowReading': 'P5', // the newborn and Before You datelines are built another way until P5
