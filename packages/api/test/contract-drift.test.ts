@@ -34,6 +34,7 @@ import {
   PushResultErrSchema,
   PushResultOkSchema,
   PUSH_OP_TYPES,
+  WORDS_VERSION_COLUMNS,
 } from '../server';
 import { KILL_SWITCH_KEYS } from '../src/kill-switches';
 
@@ -313,6 +314,39 @@ describe('[F16-REQ-028] every key sync_push answers with is in the push result c
       expect(keys.has(k), `${k} is no longer built by the SQL`).toBe(true);
       expect(Object.keys(PushResultOkSchema.entries)).toContain(k);
     }
+  });
+});
+
+describe('[F16 6.2 E] the words version and current equal the SQL (review A 6 on #138)', () => {
+  /** The columns of the `(new.a, new.b, ...) is distinct from` tuple in a trigger body. */
+  const versionTuple = (body: string) => {
+    const m = /\(((?:\s*new\.[a-z_]+\s*,?)+)\)\s*is distinct from/.exec(body);
+    return m ? [...m[1].matchAll(/new\.([a-z_]+)/g)].map((x) => x[1]) : [];
+  };
+
+  it('a letter\'s text_xid moves on final_text, machine_edits and edit_level only (entries_set_sync_xid)', () => {
+    expect(versionTuple(newestDefinition('entries_set_sync_xid'))).toEqual([...WORDS_VERSION_COLUMNS.entry]);
+  });
+
+  it('a held draft\'s text_xid moves on the five group columns and typed_text (held_drafts_stamp)', () => {
+    expect(versionTuple(newestDefinition('held_drafts_stamp'))).toEqual([...WORDS_VERSION_COLUMNS.held]);
+  });
+
+  it('every current the SQL builds has exactly the ConflictCurrentSchema keys: never the author layer', () => {
+    const bodies = [newestDefinition('sync_push'), ...['held_state', 'dup_outcome'].map((f) => newestDefinition(f, 'sync_private'))];
+    const keys = new Set<string>();
+    let builders = 0;
+    for (const body of bodies) {
+      for (let at = body.indexOf("'current',"); at >= 0; at = body.indexOf("'current',", at + 1)) {
+        const value = body.slice(at + "'current',".length).trimStart();
+        const start = body.length - value.length;
+        for (const k of builtKeys(callAt(body, start))) keys.add(k);
+        builders++;
+      }
+    }
+    expect(builders).toBeGreaterThanOrEqual(3);
+    expect([...keys].sort()).toEqual(Object.keys(ConflictCurrentSchema.entries).sort());
+    for (const c of ['author_edits', 'locked_spans']) expect(keys.has(c)).toBe(false);
   });
 });
 

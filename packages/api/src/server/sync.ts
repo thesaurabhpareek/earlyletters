@@ -107,6 +107,28 @@ export const FIELD_GROUP_COLUMNS: Readonly<Record<FieldGroup, readonly string[]>
 export const WORDS_GROUP: FieldGroup = 'text';
 
 /**
+ * What moves the words version (`text_xid`) that the compare reads, exactly
+ * as built (20261016000000; review A 6 on #138). The whole `text` group
+ * travels and applies together (FIELD_GROUP_COLUMNS), but the version is
+ * narrower than the group for a letter:
+ *  - a letter (`entries_set_sync_xid`): only `final_text`, `machine_edits`
+ *    and `edit_level`. A change to `author_edits` or `locked_spans` alone is
+ *    not newer words: another phone's `text` op whose `base` predates that
+ *    change replaces it with no words conflict, at most the advisory
+ *    `conflict: true` (left to S02 with the M17 follow-up);
+ *  - a held draft (`held_drafts_stamp`): all five group columns and
+ *    `typed_text`, and a refused `held.upsert` compares all six;
+ *  - a Keep (`keep_check`): the held row's words (`final_text`, or
+ *    `typed_text` when it has none) against the keep's `final_text`.
+ * `current` never carries the author layer (ConflictCurrentSchema). The
+ * drift test reads both lists from the triggers.
+ */
+export const WORDS_VERSION_COLUMNS = {
+  entry: ['final_text', 'machine_edits', 'edit_level'],
+  held: ['final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans', 'typed_text'],
+} as const;
+
+/**
  * Columns that belong to no single group: the server applies them when any
  * of the listed groups is in `changed` (S02's 20261015030000). The letter's
  * direction follows its words and its language (F04 11.3).
@@ -399,13 +421,15 @@ export type EntryState = v.InferOutput<typeof EntryStateSchema>;
  * For a held draft (a refused `held.upsert` or Keep) they are the held row's,
  * which may still have no words (`null`), with `typed_text` beside them
  * (ADR 0025 section 9; S03's request in ADR 0025 "Requests", item 1).
+ * As built (20261016000000) no `current` carries `author_edits` or
+ * `locked_spans`, for a letter or a held draft: the keys are exactly these
+ * (the drift test reads every builder). `v` is the words version
+ * (`text_xid`), see WORDS_VERSION_COLUMNS.
  */
 export const ConflictCurrentSchema = v.object({
   final_text: nullableStr,
   machine_edits: v.nullable(v.array(v.unknown())),
   edit_level: v.nullable(v.picklist(EDIT_LEVELS)),
-  author_edits: v.nullish(v.array(v.unknown())),
-  locked_spans: v.nullish(v.array(v.unknown())),
   typed_text: v.optional(nullableStr),
   v: str,
 });

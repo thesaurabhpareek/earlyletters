@@ -51,6 +51,7 @@ import {
   SYNC_API_VERSION,
   UnwrapNoticeSchema,
   WORDS_GROUP,
+  WORDS_VERSION_COLUMNS,
   type EntryUpsertOp,
   type StatusReport,
 } from '../server';
@@ -73,6 +74,20 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(Object.keys(FIELD_GROUP_COLUMNS).sort()).toEqual([...FIELD_GROUPS].sort());
     expect(WORDS_GROUP).toBe('text');
     expect(FIELD_GROUP_COLUMNS.text).toEqual(['final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans']);
+  });
+
+  it('[F16 6.2 E] current is the words only, never the author layer: an extra author_edits key is dropped (review A 6 on #138)', () => {
+    const r = parsePushResponse({
+      results: [{ op: OP, ok: true, applied: true, conflict: true, conflict_groups: ['text'],
+        current: { final_text: 'Asha laughed.', machine_edits: [], edit_level: 'clean', author_edits: [{ start: 0, end: 4, replacement: 'Asha' }], v: '900' } }],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok && r.value.results[0].ok) expect(r.value.results[0].current).toEqual({ final_text: 'Asha laughed.', machine_edits: [], edit_level: 'clean', v: '900' });
+    // A letter's words version is narrower than its words group (the author layer travels with it but does not move it).
+    expect(WORDS_VERSION_COLUMNS.entry.every((c) => FIELD_GROUP_COLUMNS.text.includes(c))).toBe(true);
+    expect(WORDS_VERSION_COLUMNS.entry).not.toContain('author_edits');
+    expect(WORDS_VERSION_COLUMNS.held).toEqual([...FIELD_GROUP_COLUMNS.text, 'typed_text']);
   });
 
   it('[F11-REQ-085] author-only columns include the v1.0 author layer and the language', () => {
