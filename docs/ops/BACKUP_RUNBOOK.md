@@ -83,8 +83,8 @@ Download the main project's database CA: main project > Database settings > SSL 
 
 | Name | Value | Secret? |
 |---|---|---|
-| `ESCROW_PRIVATE_KEY_V1` | from the key ceremony (section 3); staging uses the drill key | yes, the key |
-| `ESCROW_SWITCH` | `on` (anything else pauses the function) | no, a switch |
+| `ESCROW_PRIVATE_KEY_V<n>` | from the key ceremony (section 3): production `ESCROW_PRIVATE_KEY_V1`, staging only the drill key as `ESCROW_PRIVATE_KEY_V9` | yes, the key |
+| `ESCROW_SWITCH` | `on` (every route); `rotation` (only the rotate route, so restores stay paused while a rotation runs, section 5); anything else pauses the function | no, a switch |
 | `ESCROW_DB_URL` | `postgresql://escrow_svc.<main-ref>:<password>@aws-0-us-west-1.pooler.supabase.com:5432/postgres` (session pooler) | yes |
 | `ESCROW_DB_CA` | the PEM from step B4 (required: without it the function answers 503 and opens nothing) | no |
 | `MAIN_SUPABASE_URL` | `https://<main-ref>.supabase.co` | no |
@@ -95,6 +95,8 @@ Download the main project's database CA: main project > Database settings > SSL 
 
 Only during a rotation (section 5): `ESCROW_PRIVATE_KEY_V2`, `ESCROW_TASK_SECRET`, `ESCROW_ROTATE_FROM`, `ESCROW_ROTATE_TO`. Remove them when it ends.
 
+Each private key must derive the public key pinned for its version in `supabase/functions/escrow/public-keys.ts` (K6). That file is code in the repository, not a tenth setting. A key whose version is not pinned refuses every route (503). A key that does not derive its pinned key, for example one character wrong when typed from paper, opens nothing: release and rotate answer 503 and you get `Escrow alert: keys` (section 6).
+
 These nine settings (F08-REQ-034 as amended by the founder on 15 Oct 2026) are longer than F08 6.5 G2's three secrets: the function also needs the Resend key (it emails the owner itself, before any key leaves) and the CA (to verify the database it talks to). The release check (B9) must use this list.
 
 ### B6. Deploy the function (escrow project only)
@@ -102,7 +104,7 @@ For the alpha, from your Mac (later only from CI on a release tag, through a Git
 ```bash
 npx supabase functions deploy escrow --project-ref <scribe-escrow-ref> --no-verify-jwt
 ```
-`--no-verify-jwt` because the caller's token is from the main project; the function checks it against the main project's JWKS itself. Never run this command against the main project.
+`--no-verify-jwt` because the caller's token is from the main project; the function checks it against the main project's JWKS itself. Never run this command against the main project. Deploy from a commit whose `public-keys.ts` pins the key this project holds (K6); the drill's first release proves the secret matches it.
 
 Checks (from your Mac):
 ```bash
@@ -116,7 +118,7 @@ Then the real one on staging with a test account of the Asha family: sign in on 
 ```sql
 alter database postgres set app.backup_enabled = 'on';
 alter database postgres set app.escrow_enabled = 'on';
-alter database postgres set app.escrow_key_versions = '1';
+alter database postgres set app.escrow_key_versions = '1';   -- staging: '9', the drill key's version
 ```
 `app.consent_pepper` must already be set (APPLY.md step 6; account deletion stops with 55000 without it, by design).
 
@@ -134,14 +136,14 @@ Write the result and the date in `ops.audit_log` (`ops_audit_write`, runbook `re
 
 ## 3. The key ceremony (WP-F08-B8; F08 6.5 G1)
 
-Two key pairs: production (version 1) and a drill pair for staging (also version 1, in the staging escrow project only; the production key never touches staging).
+Two key pairs: production (version 1) and a drill pair for staging (version 9, in the staging escrow project only; the production key never touches staging). They need different versions because both public keys are pinned in the same file, `public-keys.ts`. A version production's `app.escrow_key_versions` never lists also means production refuses a drill wrap. For the drill, run K2 with `keygen.ts 9`.
 
 - K1. Use a computer you can take off every network (Wi-Fi off, cable out, Bluetooth off) for the whole ceremony. Have Deno installed and this repository checked out beforehand.
 - K2. Networking off. Run `deno run --no-prompt supabase/functions/escrow/tools/keygen.ts 1`. It runs with no permissions: it cannot read files, the environment or the network, and writes nothing to disk.
 - K3. Write the PRIVATE line by hand on two sheets (or print to a printer that is not networked), check each against the screen character by character, and seal each in a numbered tamper-evident bag. Store the bags in two different places.
-- K4. Copy the PUBLIC line (base64 and hex) to paper too; it is safe to share.
+- K4. Copy the PUBLIC lines (the `public-keys.ts` line, the `EXPO_PUBLIC_ESCROW_KEYS` entry and the hex) to paper too; they are safe to share.
 - K5. Quit the terminal and reboot the computer before networking comes back.
-- K6. Open one bag, type the private key once into the escrow project's `ESCROW_PRIVATE_KEY_V1` secret, and reseal it in a new numbered bag. Send the public key to S07 for `packages/api/src/escrow-keys.ts`.
+- K6. Open one bag, type the private key once into the escrow project's `ESCROW_PRIVATE_KEY_V1` secret (staging: `ESCROW_PRIVATE_KEY_V9`), and reseal it in a new numbered bag. Pin the public key: add keygen's `<version>: '<base64>',` line to `supabase/functions/escrow/public-keys.ts` in a pull request, and deploy the function from that commit (B6). The function refuses a private key that does not derive the pinned key, so a slip while typing shows as `Escrow alert: keys` at the drill's first release, not at a family's restore months later. Give the same public key to S20 for `EXPO_PUBLIC_ESCROW_KEYS` in the build profiles of its environment (`packages/api/src/server/escrow-keys.ts`: production keys in testflight and production, the drill key in development and preview).
 - K7. Record in `ops.audit_log` (runbook `escrow_ceremony`): date, the bag numbers, where each bag is, and every later opening.
 
 Quarterly: check both seals and the bag numbers against the log (F17 8.2 item 6 c).
@@ -149,24 +151,29 @@ Quarterly: check both seals and the bag numbers against the log (F17 8.2 item 6 
 ## 4. Custody rules
 - The private key is never typed anywhere except the escrow project's secret, never photographed, never pasted into a password manager, chat, email, ticket or terminal on a networked machine.
 - Staff have no tool that calls the function. A `legal` use needs a written runbook entry with the legal order and your sign-off, and an `ops.audit_log` row; it is not built in this release.
-- If you suspect the key has been seen by anyone: switch escrow off (B7), rotate (section 5), and treat it as an incident (docs/ops/runbooks).
+- If you suspect the key has been seen by anyone:
+  1. Stop restores at once: set `ESCROW_SWITCH` to `rotation` (only the rotate route answers) or `off`.
+  2. Rotate (section 5). A rotation needs `app.escrow_enabled = 'on'` and `ESCROW_SWITCH` `on` or `rotation`: with escrow off (B7), no batch runs. Your choice is whether restores stay paused while it runs (`rotation`: phones keep waiting and nothing opens for a restore) or stay open (`on`: holds and owner emails still protect each restore).
+  3. Treat it as an incident (docs/ops/runbooks).
+- The honest limit of a rotation: it re-wraps the same book keys under a new escrow key. That protects against someone who has the old private key but not the wraps. It does not protect against someone who already copied the old private key and the wraps, from the `child_keys` table or from a database backup (kept 7 days, longer with PITR). They can open those book keys offline, and with them the recordings they can reach. Nothing today gives phones new book keys and re-uploads the recordings; that would be a later feature. Say so in the incident record, and counsel decides what owners are told.
 
 ## 5. Rotation (F08 6.5 G4, F08-REQ-030)
 - R1. Ceremony for version 2 (section 3, `keygen.ts 2`).
-- R2. S07 adds the v2 public key to `escrow-keys.ts` and the app release makes new wraps with it.
+- R2. Pin the v2 public key in `public-keys.ts` (K6) and redeploy the function from that commit. S20 adds the v2 key to `EXPO_PUBLIC_ESCROW_KEYS` beside v1 (`current: false`), then makes it current in an app release so new wraps use it.
 - R3. Main project: `alter database postgres set app.escrow_key_versions = '1,2';` and, to start the rotation, `alter database postgres set app.escrow_rotation = '1:2';`. Without that exact pair the escrow role cannot list or rewrap any wrap, or read any address for the rotation emails (SCBKO `rotation`), so outside a rotation it reads wraps only for a released restore.
-- R4. Escrow project: add `ESCROW_PRIVATE_KEY_V2`, `ESCROW_TASK_SECRET` (`openssl rand -hex 32`), `ESCROW_ROTATE_FROM=1`, `ESCROW_ROTATE_TO=2`.
-- R5. Call until `remaining` is false and `notices_pending` is 0: `curl -s -X POST https://<scribe-escrow-ref>.supabase.co/functions/v1/escrow/v1/rotate -H "authorization: Bearer $ESCROW_TASK_SECRET"`. Each call walks up to 200 keys in batches of 50, one commit each, writes a `rotation` log row per key, then sends every account whose key moved its one email (a failed send stays due and goes on the next call). A non-zero `failed` means a wrap did not open: it is passed over (the rest still move) and tried again on the next call; if it stays failed, stop and read section 6. A `paused` answer (SCBKO) means `app.escrow_rotation` in the main project does not name exactly `ESCROW_ROTATE_FROM:ESCROW_ROTATE_TO` (or escrow is switched off).
-- R6. Check `select count(*) from child_keys where escrow_key_version = 1;` is 0 and `select count(*) from escrow_rotation_notices where to_version = 2 and sent_at is null;` is 0. Then `alter database postgres reset app.escrow_rotation;`, remove `ESCROW_PRIVATE_KEY_V1`, `ESCROW_TASK_SECRET` and the two `ESCROW_ROTATE_*` secrets, set `app.escrow_key_versions = '2'`, and destroy the v1 paper copies, recording it in `ops.audit_log`.
+- R4. Escrow project: add `ESCROW_PRIVATE_KEY_V2`, `ESCROW_TASK_SECRET` (`openssl rand -hex 32`), `ESCROW_ROTATE_FROM=1`, `ESCROW_ROTATE_TO=2`. Choose `ESCROW_SWITCH`: `on` keeps restores open while the rotation runs; `rotation` pauses them until R6 (section 4). The rotation refuses to start unless both keys derive their pinned public keys, so a v2 key typed with a slip moves nothing.
+- R5. Call until `remaining` is false and `notices_pending` is 0: `curl -s -X POST https://<scribe-escrow-ref>.supabase.co/functions/v1/escrow/v1/rotate -H "authorization: Bearer $ESCROW_TASK_SECRET"`. Each call walks up to 200 keys in batches of 50, one commit each, writes a `rotation` log row per key, then sends every account whose key moved its one email (a failed send stays due and goes on the next call). A non-zero `failed` means a wrap did not open: it is passed over (the rest still move) and tried again on the next call; if it stays failed, stop and read section 6. A `paused` answer (SCBKO) means `app.escrow_rotation` in the main project does not name exactly `ESCROW_ROTATE_FROM:ESCROW_ROTATE_TO`, or `app.escrow_enabled` is off. A `paused` answer without a SQLSTATE means `ESCROW_SWITCH` is neither `on` nor `rotation`.
+- R6. Check `select count(*) from child_keys where escrow_key_version = 1;` is 0 and `select count(*) from escrow_rotation_notices where to_version = 2 and sent_at is null;` is 0. Then `alter database postgres reset app.escrow_rotation;`, remove `ESCROW_PRIVATE_KEY_V1`, `ESCROW_TASK_SECRET` and the two `ESCROW_ROTATE_*` secrets, set `app.escrow_key_versions = '2'`, and set `ESCROW_SWITCH` back to `on` if you chose `rotation`. **Keep the v1 paper copies sealed** until no main-project database backup older than this step remains: 7 days on Pro, or the whole PITR window if PITR is on. A database restore inside that window brings back v1 wraps, which only v1 opens; if one happens, open a v1 bag, add `ESCROW_PRIVATE_KEY_V1` again and run R3 to R6 once more. Only after the window: destroy the v1 paper copies, take the v1 line out of `public-keys.ts`, and record both in `ops.audit_log`.
 
 ## 6. What an access-log alert means
 
-The function emails `ALERT_EMAIL` with a subject `Escrow alert: <kind>` and no ids (kinds: `limit_restores`, `limit_keys`, `decrypt_failed`, `unknown_key_version`). Look anything up only through an audited runbook query (`ops_audit_write` first).
+The function emails `ALERT_EMAIL` with a subject `Escrow alert: <kind>` and no ids (kinds: `limit_restores`, `limit_keys`, `decrypt_failed`, `unknown_key_version`, `keys`). Look anything up only through an audited runbook query (`ops_audit_write` first).
 
 | Alert or sign | What it means | What to do |
 |---|---|---|
 | `limit_restores` or `limit_keys` | An account asked for a 4th new-device restore in 30 days, or more than 20 keys in a day (F08 6.5 C8). Either a person struggling with phones, or someone trying to get recordings | Look at that account's `restore_requests` (state, cancel_source, times). If the owner did not ask, keep escrow on (holds still protect them) and write to the owner from support |
 | `decrypt_failed` | A wrap did not open with the key for its version. Data corruption, a phone bug, or someone writing wraps into the table | Count `escrow_unwraps` rows with `outcome = 'failed'` in the last day. One account: open a support case. More than one: switch escrow off (B7) and treat as an incident |
+| `keys` | A release or rotation found a private key that is not set, is malformed, or does not derive its pinned public key (`public-keys.ts`). Nothing was opened | Usually a slip typing the key from paper (K6). Check the secret against a paper copy and the pinned line, fix the secret, and call again. If the secret matches the paper and still fails, the pinned line or the paper is wrong: incident |
 | `unknown_key_version` | A wrap targets an escrow key version this project does not hold | A rotation in progress lost a secret, or a phone used a public key that was never live. Check secrets against `app.escrow_key_versions` |
 | A `restore` row whose request was never released | The function opened keys but the email or release failed; nothing was delivered | Normal after a Resend outage; the phone retries. Many in a day: check Resend |
 | A row with reason `legal` | Only from the legal runbook | It must match an `ops.audit_log` legal entry with your sign-off. If not: incident |
