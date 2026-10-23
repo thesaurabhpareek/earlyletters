@@ -40,6 +40,8 @@ export const EVENTS = [
   'retention.done', 'retention.failed',
   'forget.accepted', 'forget.refused', 'forget.failed',
   'script.start', 'script.done', 'script.failed',
+  'redeem.peeked', 'redeem.accepted', 'redeem.refused', 'redeem.failed', 'redeem.brake', 'redeem.degraded',
+  'status.stored', 'status.refused', 'status.failed', 'status.degraded', 'salt.served',
 ] as const;
 export type EventName = (typeof EVENTS)[number];
 
@@ -50,7 +52,7 @@ export const ERROR_CODES = [
   'no_token', 'no_user', 'no_address', 'already_invalid', 'invalid_client', 'invalid_grant', 'decrypt_failed',
   'quota', 'missed', 'unknown_step', 'not_executing', 'sqlstate', 'postgrest_error', 'storage_error',
   'auth_error', 'apple_error', 'posthog_error', 'resend_error', 'type_error', 'syntax_error', 'abort_error',
-  'range_error',
+  'range_error', 'killed', 'idempotency', 'anonymous', 'brake', 'invite_unusable', 'parents_full', 'consent',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number] | `http_${number}`;
 
@@ -58,7 +60,7 @@ export type ErrorCode = (typeof ERROR_CODES)[number] | `http_${number}`;
 export const COUNT_KEYS = [
   'rows', 'objects', 'requests', 'steps', 'retries', 'ids', 'batches', 'calls', 'books', 'letters',
   'notices', 'alerts', 'failed', 'skipped', 'held', 'more', 'buckets', 'emails', 'files', 'residue',
-  'profiles', 'rehomed', 'conditions',
+  'profiles', 'rehomed', 'conditions', 'failures',
 ] as const;
 export type CountKey = (typeof COUNT_KEYS)[number];
 
@@ -77,7 +79,7 @@ export type LoggableBucket = (typeof LOGGABLE_BUCKETS)[number];
 export const PROVIDERS = ['apple', 'posthog', 'resend', 'storage', 'auth', 'postgrest'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
-export const TASKS = ['run', 'purge', 'queue', 'accounts', 'emails', 'sla', 'ledger', 'retention', 'forget', 'script'] as const;
+export const TASKS = ['run', 'purge', 'queue', 'accounts', 'emails', 'sla', 'ledger', 'retention', 'forget', 'script', 'peek', 'accept', 'report', 'salt'] as const;
 export type Task = (typeof TASKS)[number];
 
 /** Conditions the worker can alert on (docs/ops/runbooks). */
@@ -91,7 +93,7 @@ export const REASONS = ['account_deletion', 'device_after_deletion'] as const;
 export type Reason = (typeof REASONS)[number];
 
 /** Every function or script that logs. `config` and `content` are the platform owner's document functions. */
-export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content'] as const;
+export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content', 'invite-redeem', 'subscription-status', 'apple-token'] as const;
 export type FunctionName = (typeof FUNCTIONS)[number];
 
 export interface LogFields {
