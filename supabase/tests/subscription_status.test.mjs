@@ -191,6 +191,8 @@ check('[F14 section 9] the 31st salt request in an hour is SCRAT', rateCodes.sli
 check('the rate counters are other accounts\' business only through the functions', (await codeOf(() => as(B, `update subscription_report_rates set hits = 0`))) === '42501');
 
 // ── 8. Account deletion (D-080: status deleted with the account; D-081: consent pseudonymised) ──
+// The harness sets a test pepper for every file (since #140, BL-334), so "no pepper" is made here.
+await sys(`select set_config('app.consent_pepper', '', false)`);
 check('[D-081] deleting an account with consent records and no pepper is refused (fails closed, 55000)',
   (await codeOf(() => sys(`delete from auth.users where id = $1`, [A]))) === '55000');
 check('nothing was deleted by the refused attempt', (await statusRows(A)).length === 3);
