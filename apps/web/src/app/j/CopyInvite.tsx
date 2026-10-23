@@ -4,6 +4,10 @@
  * sent anywhere: the clipboard is the only place the link goes, and only when the person asks. When the address
  * has no `t` in its fragment (an in-app browser dropped it, F11-U02), there is nothing worth copying, so the button
  * is replaced by a line asking for the link again.
+ *
+ * The copy leaves out any query string. Some chat apps add one on the way (`?fbclid=...`), and the app's
+ * "I was invited" reads only `/j#t=<token>` with nothing between the path and the fragment
+ * (apps/mobile src/lib/family/invite-link.logic.ts parseInviteInput).
  */
 import { useEffect, useState } from 'react';
 import styles from '../auth/confirm/confirm.module.css';
@@ -15,6 +19,11 @@ function hasInvite(hash: string): boolean {
   return /(?:^#|&)t=[^&]+/.test(hash);
 }
 
+/** The invite link as the app writes it: this page's address with its fragment, without any query. */
+function inviteLinkFrom(loc: Pick<Location, 'origin' | 'pathname' | 'hash'>): string {
+  return `${loc.origin}${loc.pathname}${loc.hash}`;
+}
+
 export function CopyInvite({ label, copied, failed, missing }: Props) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   // Read after hydration: the server never sees the fragment, so the first render always shows the button.
@@ -23,7 +32,7 @@ export function CopyInvite({ label, copied, failed, missing }: Props) {
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(inviteLinkFrom(window.location));
       setState('copied');
     } catch {
       setState('failed');
