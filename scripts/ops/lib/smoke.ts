@@ -77,7 +77,7 @@ export const FUNCTIONS: readonly FunctionSpec[] = [
   { name: 'apple-token', owner: 'S01', health: 'requested', gateway: 'jwt' },
   { name: 'analytics-forget', owner: 'S07', health: 'route', gateway: 'jwt' },
   { name: 'invite-redeem', owner: 'S07', health: 'requested', gateway: 'jwt' },
-  { name: 'subscription-status', owner: 'S06', health: 'requested', gateway: 'jwt' },
+  { name: 'subscription-status', owner: 'S06', health: 'route', gateway: 'jwt' },
 ];
 /** AF-13 deploys these four to staging. `escrow` lives in its own project (D-102) and is never checked here. */
 export const DEFAULT_FUNCTIONS = ['config', 'content', 'purge-worker', 'apple-token'] as const;

@@ -16,6 +16,15 @@
  *   GET /functions/v1/subscription-status/v1/salt
  *   200 {ok: true, data: {salt}, requestId}   (the per-account salt for sub_ref)
  *
+ *   GET or HEAD /functions/v1/subscription-status/health   (RA-07-06, _shared/health)
+ *   200 {ok: true, data: {status: "ready"}} when SUPABASE_URL and SUPABASE_ANON_KEY
+ *   are set, 503 `unavailable` otherwise. Anonymous at this layer and starts no
+ *   work: no Auth call, no RPC, no body read, nothing about the caller logged.
+ *   Gateway JWT verification stays on (S06, #178): with it the gateway answers
+ *   401 before this runs, and the staging smoke lists the function as not
+ *   checked. Turning verify_jwt off is a separate decision, never made for a
+ *   health check; the report and salt routes check the session themselves.
+ *
  * Least privilege: no service key. The function checks the session against
  * Supabase Auth (only a full account; anonymous refused here, not left to
  * the SQL), then forwards the caller's JWT, the idempotency key and the
@@ -47,6 +56,7 @@ import { classifySqlstate, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID, httpStatus
 import {
   parseStatusReport, SALT_RE, STATUS_REPORT_MAX_BYTES, STORED_OUTCOMES, CONSENT_OUTCOMES, type StatusReportResult,
 } from '../../../packages/api/src/server/subscription-status.ts';
+import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
   bearerOf, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
@@ -86,6 +96,12 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
     };
 
     try {
+      // GET or HEAD /subscription-status/health (RA-07-06): settings present or not, nothing else.
+      if (isHealthRequest(req, 'subscription-status')) {
+        const configured = Boolean((env('SUPABASE_URL') ?? '').trim() && (env('SUPABASE_ANON_KEY') ?? '').trim());
+        log.info('request.done', { status: configured ? 200 : 503, outcome: configured ? 'ok' : 'server_error' });
+        return healthResponse(req, configured, id);
+      }
       const path = new URL(req.url).pathname;
       task = REPORT_RE.test(path) ? 'report' : SALT_ROUTE_RE.test(path) ? 'salt' : undefined;
       if (!task) return refuse('not_found', false);
