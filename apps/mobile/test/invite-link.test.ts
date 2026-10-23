@@ -79,6 +79,29 @@ describe('invite links (PRD A F7, B F5; PRD V2 F11 /j#t=)', () => {
     expect(parseInviteUrl(`https://earlyletters.com/j#t=${TOKEN}%00`, ORIGIN)).toBeNull();
     expect(parseInviteUrl('not a url', ORIGIN)).toBeNull();
   });
+
+  it('refuses /J, an encoded /j, a double slash and a second #, from the system or pasted', () => {
+    for (const url of [
+      `https://earlyletters.com/J#t=${TOKEN}`,
+      `https://earlyletters.com/%6A#t=${TOKEN}`,
+      `https://earlyletters.com/%6a#t=${TOKEN}`,
+      `https://earlyletters.com//j#t=${TOKEN}`,
+      `https://earlyletters.com/j#t=${TOKEN}#x`,
+      `https://earlyletters.com/j#x#t=${TOKEN}`,
+    ]) {
+      expect(parseInviteUrl(url, ORIGIN), url).toBeNull();
+      expect(parseInviteInput(url, ORIGIN), url).toBeNull();
+    }
+  });
+
+  it('never reads the query: /j?t=<a>#t=<b> gives <b>, and /j?t=<a> alone is refused', () => {
+    const OTHER = 'b'.repeat(64);
+    expect(parseInviteUrl(`https://earlyletters.com/j?t=${TOKEN}#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://earlyletters.com/j?t=${OTHER}#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(`https://earlyletters.com/j?t=${OTHER}#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteInput(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
+  });
 });
 
 describe('"I was invited": pasted text (A-REQ-029)', () => {
