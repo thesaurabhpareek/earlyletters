@@ -102,6 +102,20 @@ export function createBackupService(deps: BackupServiceDeps) {
   /** True until the queue has compared itself with the server's list once in this run (launch, and after Turn on). */
   let checkServer = true;
 
+  /**
+   * Whether a recording waiting to upload still needs its book key from escrow. The queue clears its
+   * flag only when it reaches that recording, so while uploads are paused (mobile data with that
+   * setting off, offline, a switch) a key that came another way (iCloud Keychain) leaves the flag set.
+   * For 7 days after a hold ends, any release call opens every key and emails the owner at once, so
+   * this phone's keys are read first, as restore does (`keysArrived`), and escrow is asked only for a
+   * book they do not open.
+   */
+  async function uploadsNeedEscrow(): Promise<boolean> {
+    const books = new Set(d.db.jobs().filter((j) => j.state === 'queued').map((j) => j.childId));
+    for (const childId of books) if ((await keys.keyFor(childId, { create: false })).kind === 'needs_escrow') return true;
+    return false;
+  }
+
   async function uploads(): Promise<void> {
     queue.reconcile();
     if (checkServer) {
@@ -158,9 +172,10 @@ export function createBackupService(deps: BackupServiceDeps) {
     try {
       await uploads();
       // New recordings wait for a key that only escrow can bring (iCloud Keychain did not), and
-      // no restore asked for it in this pass: ask here, with the same Stop and sign-in rules.
+      // no restore asked for it in this pass: ask here, with the same Stop and sign-in rules. A key
+      // that arrived here meanwhile ends the wait and asks escrow nothing (the open request lapses).
       if (d.db.getMeta(META.keyState) === 'needs_escrow' && !askedEscrow && !stopped) {
-        const k = await restore.escrowStep();
+        const k: RestoreKeyStatus = (await uploadsNeedEscrow()) ? await restore.escrowStep() : { kind: 'ready' };
         keyWait = k.kind === 'ready' ? null : k;
         if (k.kind === 'ready') {
           d.db.deleteMeta(META.keyState);

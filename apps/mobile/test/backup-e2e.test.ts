@@ -607,6 +607,63 @@ describe('what Settings says, and the recovery service is asked only when it mus
     expect(backend.unwraps).toHaveLength(0);
   });
 
+  /** Phone B has Mama's own new letter and no book key (no iCloud Keychain): the upload side asked escrow and waits on the hold. */
+  async function heldUpload() {
+    const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    recordLetter(a, ASHA, 10_000);
+    await a.service.turnOn();
+    await a.service.tick();
+    const b = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-b' });
+    addChild(b, ASHA);
+    const own = recordLetter(b, ASHA, 10_000);
+    await b.service.turnOn();
+    await b.service.tick();
+    clock.t += ICLOUD_WAIT_MS;
+    await b.service.tick();
+    expect(b.service.view().status.kind).toBe('waiting_key');
+    // Backup on mobile data is off and the phone is on it: uploads pause before the queue reads the key again.
+    b.cond.net = 'cellular';
+    return { clock, backend, a, b, own };
+  }
+
+  it('[escrow window] a key iCloud Keychain brings while uploads are paused: after the hold no release, no email', async () => {
+    const { clock, backend, a, b, own } = await heldUpload();
+    iCloudBrings(a, b);
+    clock.t += 72 * HOUR; // the hold is over: for 7 days a release call would open every key at once
+    for (let i = 0; i < 3; i++) {
+      await b.service.tick();
+      clock.t += 5 * 60 * 1000;
+    }
+    expect(backend.releaseCalls).toBe(0);
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+    expect(b.service.view().status).toEqual({ kind: 'waiting_wifi' });
+    b.cond.net = 'wifi';
+    await b.service.tick();
+    expect(backend.blobs.get(own.id)?.state).toBe('confirmed');
+    expect(b.service.view().status).toMatchObject({ kind: 'current' });
+    expect(backend.releaseCalls).toBe(0);
+  });
+
+  it('[escrow window] with uploads paused and still no key here, escrow is asked after the hold and releases exactly once', async () => {
+    const { clock, backend, b, own } = await heldUpload();
+    clock.t += 72 * HOUR;
+    for (let i = 0; i < 3; i++) {
+      await b.service.tick();
+      clock.t += 5 * 60 * 1000;
+    }
+    expect(backend.releaseCalls).toBe(1);
+    expect(backend.unwraps).toHaveLength(1);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
+    b.cond.net = 'wifi';
+    await b.service.tick();
+    expect(backend.blobs.get(own.id)?.state).toBe('confirmed');
+    expect(backend.releaseCalls).toBe(1);
+  });
+
   it('[review B N3 on #252] a release that lands as another account signs in is kept: stored from the saved copy later, one release, one email', async () => {
     const live: LiveSession = { uid: MAMA };
     const { backend, c, letters, clock } = await heldRestore({ live });
