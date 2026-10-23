@@ -19,7 +19,9 @@ const P5 = '95555555-5555-4555-8555-555555555555';
 const P6 = '96666666-6666-4666-8666-666666666666';
 const P7 = '97777777-7777-4777-8777-777777777777';
 const P8 = '98888888-8888-4888-8888-888888888888';
-const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8];
+const P9 = '99999999-9999-4999-8999-999999999999';
+const Q1 = 'a1111111-1111-4111-8111-111111111111';
+const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1];
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
   ct: Buffer.from(b.repeat(48), 'hex').toString('base64') });
@@ -58,7 +60,14 @@ const orphanBackup = async (author, child) => {
     values ($1, $2, $3, $4, 1, $5::bytea, 10, now() - interval '2 days')`, [id, child, author, `${child}/${author}/${id}.m4a.enc`, hex('dd', 60)]);
   return id;
 };
+const heldDraft = async (author, child, words = 'You smiled at the rain.') => {
+  const id = uuid7();
+  await as(author, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
+    values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', $4)`, [id, author, child, words]);
+  return id;
+};
 const storeKey = (u, child, b) => as(u, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [child, boxOf(b)]);
+const queuedUnder = async (prefix) => (await sys(`select count(*)::int n from storage_purge_queue where object_path like $1 || '%'`, [prefix])).rows[0].n;
 const n = async (sql, params) => (await sys(`select count(*)::int n from ${sql}`, params)).rows[0].n;
 const hold = (scope, id, ref) => sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by)
   values ($1, $2, 'litigation', $3, 'ops', '2027-01-01')`, [scope, id, ref]);
@@ -193,6 +202,36 @@ check('[DATA-REQ-035] step 2b keeps an emptied kept book while its former member
 await release(P2);
 res = await purgeDue(32);
 check('released: the next run removes it, as #248 does', res.kept_removed === 1 && !(await book(K)));
+
+// ── 4b. A kept book: a hold on the former member's rows does not hold the account purge (review A N2 on #251) ──
+// purge_book_keep_authors never deletes them, so only a hold on the book or on a current member's row holds it.
+const K2 = await newChild(P9, 'Asha', '2025-09-15');
+await join(Q1, 'parent', K2, P9);
+await join(N, 'contributor', K2, P9);
+await storeKey(Q1, K2, 'ff');
+const q1 = await letter(Q1, K2, 'Asha counted to five.');
+const q1Held = await heldDraft(Q1, K2);
+const q1Blob = await orphanBackup(Q1, K2);
+const qn = await letter(N, K2, 'Asha hugged Nani.');
+// Holds on the former co-parent (their account: letter, draft, backup, key and folder) and on their letter.
+await hold('profile', Q1, 'T-Q1');
+await hold('entry', q1.id, 'T-Q1L');
+check('the co-parent leaves, keeping their letter, held draft and backup', (await one(Q1, `select public.leave_child($1, true) r`, [K2])).r === 'left'
+  && await n(`held_drafts where id = $1`, [q1Held]) === 1);
+await hold('entry', qn.id, 'T-K2N');
+const r7 = await requestFor(P9);
+await executing(r7);
+check('[DATA-REQ-035] a hold on a current family member\'s letter in a kept book holds the account purge', await heldPrepare(r7));
+await release(qn.id);
+await executing(r7);
+const p7 = await prepare(r7);
+check('[review A N2] holds on the former co-parent and their letter alone do not: the purge proceeds and the book is kept for them, as on develop',
+  p7.held !== true && p7.books === 1 && p7.books_kept === 1 && (await book(K2))?.kept === true && await n(`entries where id = $1`, [qn.id]) === 0);
+check('[DATA-REQ-035] and every held row of theirs stays: letter, photo, held draft, backup and book key',
+  await n(`entries where id = $1 and author_id = $2`, [q1.id, Q1]) === 1 && await n(`storage.objects where name = $1`, [q1.photo]) === 1
+  && await n(`held_drafts where id = $1`, [q1Held]) === 1 && await n(`audio_blobs where entry_id = $1`, [q1Blob]) === 1
+  && await n(`child_keys where child_id = $1 and profile_id = $2`, [K2, Q1]) === 1 && await queuedUnder(`${K2}/${Q1}/`) === 0);
+for (const id of [Q1, q1.id]) await release(id);
 
 // ── 5. The person's own rows in a book that survives them ──
 // A co-parent with no letter in a held book: their book key, an object in their folder there, and the

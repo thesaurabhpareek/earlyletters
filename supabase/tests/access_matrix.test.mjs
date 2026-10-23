@@ -394,7 +394,7 @@ for (const sql of SERVICE_ONLY) {
 }
 // 20261023010000: those are not the service role's either (hosted Supabase grants it every new function);
 // 20261023020000 adds book_purge_held.
-for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid)']) {
+for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid, uuid[])']) {
   check(`internal ${sig}: not executable by service_role`,
     !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
 }

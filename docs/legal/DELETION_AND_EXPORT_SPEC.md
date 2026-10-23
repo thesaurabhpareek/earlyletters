@@ -295,7 +295,7 @@ Facts: Supabase Pro keeps 7 days of daily backups; Team 14; Enterprise up to 30;
 
 **DATA-REQ-035 (P0) Legal holds.**
 - Given a hold on a letter, a book or an account, When `purge_due()` runs after day 30, Then the held scope is not purged and an account request moves to `held` (draft test for letters).
-- Given a hold on any row an account purge would delete (a book deleted with the account, anyone's letter, held draft, recording backup or book key in it, or the person's own rows and Storage objects in a held book), When `prepare_account_purge()` runs, Then nothing changes and the request moves to `held` (20261023020000; `purge_legal_holds.test.mjs`).
+- Given a hold on any row an account purge would delete (a book deleted with the account, anyone's letter, held draft, recording backup or book key in it except a former member's rows the purge keeps, or the person's own rows and Storage objects in a held book), When `prepare_account_purge()` runs, Then nothing changes and the request moves to `held` (20261023020000; `purge_legal_holds.test.mjs`).
 - Given the hold is released, Then the next run purges or executes normally.
 - Given any user, Then `legal_holds` is unreadable (draft test).
 
