@@ -36,6 +36,7 @@ import {
   documentObjects,
   documentUploadCommands,
   contentModule,
+  killSwitchSteps,
   publishedVersion,
   readPublished,
   readSigningKey,
@@ -112,6 +113,7 @@ if (what === 'config' || what === 'all') {
   const config = buildRemoteConfig(source, publishedVersion(remoteConfigDoc) + 1, now);
   remoteConfigDoc = sign('remote-config', config, key, TRUSTED_SIGNING_KEYS).text;
   out(`remote config v${config.version}`);
+  steps.push(...killSwitchSteps(config.killSwitches));
 }
 
 if (what === 'packs' || what === 'config' || what === 'all') {
