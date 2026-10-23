@@ -132,7 +132,10 @@ const REMOVALS: Refusal[] = [
   { what: 'puts words in under a filler label', raw: 'um "bau" she said', type: 'filler', original: 'um ', replacement: 'Proudly ', reason: 'removal_only' },
   { what: 'puts words in under a repeat label', raw: 'um "bau" she said', type: 'repeat', original: 'um ', replacement: 'the ', reason: 'removal_only' },
   { what: 'adds a full stop while removing a filler', raw: 'she said um twice', type: 'filler', original: ' um', replacement: '.', reason: 'removal_adds_punctuation' },
-  { what: 'removes a quotation mark with a filler', raw: 'um "bau" she said', type: 'filler', original: 'um "', replacement: '', reason: 'changes_quotes' },
+  // Engine 6 (R-01 D7) protects every paired quote first, so a filler that eats a paired mark is overlaps_protected;
+  // a stray mark the transcriber left unpaired is still a quotation mark, and taking it is changes_quotes.
+  { what: 'removes a paired quotation mark with a filler', raw: 'um "bau" she said', type: 'filler', original: 'um "', replacement: '', reason: 'overlaps_protected' },
+  { what: 'removes an unpaired quotation mark with a filler', raw: 'um " she said bau', type: 'filler', original: 'um "', replacement: '', reason: 'changes_quotes' },
   { what: 'removes a real word as a filler', raw: 'um she was happy, honestly', type: 'filler', original: 'happy, ', replacement: '', reason: 'not_a_filler' },
   { what: 'removes an adverb as a filler', raw: 'um she was happy, honestly', type: 'filler', original: 'honestly', replacement: '', reason: 'not_a_filler' },
   { what: 'removes a word that is not said twice, as a repeat', raw: 'she was happy', type: 'repeat', original: 'was ', replacement: '', reason: 'not_a_repeat' },
@@ -232,10 +235,13 @@ describe('substitutions: stt_fix, agreement, punctuation', () => {
 
 describe('verifyEdits: the checks that need the other edits', () => {
   it('overlaps_other_edit: an overlapping edit, or one at the same start, loses to the earlier accepted one', () => {
-    const raw = 'um um so we went';
+    // "um um" with only a space between is a spoken answer and no filler under engine 6 (R-01 D6),
+    // so the fillers sit apart; the overlapping edit is a comma the model wants after the first one.
+    const raw = 'um so um we went';
     const first = at(raw, 'filler', 'um ', '', 0, 'rule');
     const same = { ...at(raw, 'filler', 'um ', '', 0) };
-    const overlapping: Edit = { type: 'filler', start: 0, end: 6, original: 'um um ', replacement: '', source: 'model' };
+    const overlapping: Edit = { type: 'punctuation', start: 2, end: 3, original: ' ', replacement: ', ', source: 'model' };
+    expect(checkEdit(overlapping, ctx(raw))).toBeNull(); // alone it is a fair edit; only the overlap refuses it
     const r = verifyEdits([first, same, overlapping], ctx(raw));
     expect(r.accepted).toEqual([first]);
     expect(r.rejected.map((x) => x.reason)).toEqual(['overlaps_other_edit', 'overlaps_other_edit']);
@@ -261,10 +267,12 @@ describe('verifyEdits: the checks that need the other edits', () => {
   });
 
   it('change_ceiling_exceeded: a model that touches too much loses every one of its edits, the rules keep theirs', () => {
-    // One repair per sentence is allowed, so each sits in its own sentence; six of thirteen words is past the ceiling.
-    const raw = 'um she walk. she talk. she run. she eat. she sing. she jump.';
+    // One repair per sentence is allowed, so each sits in its own sentence; six of nineteen words is past the ceiling.
+    // Each repair is a pair from the closed agreement table (engine 6, R-01 D9), so only the ceiling can refuse it.
+    const raw = 'um she have one. she have two. she have three. she have four. she have five. she have six.';
     const rule = at(raw, 'filler', 'um ', '', 0, 'rule');
-    const model = ['walk', 'talk', 'run', 'eat', 'sing', 'jump'].map((w) => at(raw, 'agreement', w, `${w}s`));
+    const model = [0, 1, 2, 3, 4, 5].map((n) => at(raw, 'agreement', 'have', 'has', n));
+    for (const e of model) expect(checkEdit(e, ctx(raw))).toBeNull(); // alone each is a fair repair
     const r = verifyEdits([rule, ...model], ctx(raw));
     expect(r.accepted).toEqual([rule]);
     expect(r.rejected).toHaveLength(6);

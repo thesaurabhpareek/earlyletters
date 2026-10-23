@@ -15,7 +15,9 @@
  * The wipes still to be built, "Erase everything on this phone"
  * (DATA-REQ-024) and the wipe after an account is deleted (DATA-REQ-023),
  * must remove recordings through recordingFolders() and keep
- * `Documents/models`.
+ * `Documents/models`. They must also remove the temporary whole-frame copies
+ * a transcription run makes in Caches (adts-file.ts
+ * `removeWholeFrameCopies(0)`), which this listing leaves out.
  *
  * Not recursive, on purpose: Documents also holds the database (`SQLite/`)
  * and the speech models (`models/`), and on Android the packs and remote
