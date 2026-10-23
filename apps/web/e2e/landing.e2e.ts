@@ -80,11 +80,13 @@ test.describe('landing (coming soon)', () => {
     for (const headline of [site.scenes.s02.headline, site.scenes.s05.headline, site.scenes.s06.headline, site.scenes.s08.headline, site.scenes.s09.headline, site.scenes.s10.headline, site.scenes.s11.headline]) {
       await expect(page.getByRole('heading', { level: 2, name: headline })).toBeAttached();
     }
+    // The footer: Privacy, Terms, Contact. Nothing else.
     const legal = page.getByRole('navigation', { name: 'Legal' });
+    await expect(legal.getByRole('link')).toHaveCount(site.footer.links.length);
     for (const link of site.footer.links) {
       await expect(legal.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
     }
-    await expect(page.getByRole('link', { name: site.footer.contact }).last()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
+    await expect(legal.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', `mailto:${site.footer.contact}`);
   });
 
   test('the share button copies the plain site address when there is no share sheet', async ({ page, context, browserName }) => {

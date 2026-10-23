@@ -7,7 +7,7 @@
  *
  * v1.0 truth only (docs/agents/BRIEF-2026-10-03.md; claims audit in docs/web/copy/BR1-audit.md):
  * no grandparents writing, no mixing two languages in one letter, no word highlighting, no print,
- * no Android, no backup promise. The child in the film is Meera (founder's choice). Papa writes;
+ * no Android, no backup promise. The child in the film is Asha, the fictional family every test and fixture uses (CLAUDE.md). Papa writes;
  * Mama is the co-parent. The public name comes from packages/brand (CLAUDE.md).
  *
  * In-app strings shown inside the phone are the app's own words, copied from
@@ -25,15 +25,15 @@ const NAME = brand.name;
  * dictionary (stt_fix, the type's own example), a filler, a false start. Nothing is added.
  */
 export const sampleLetter = {
-  to: 'Meera',
+  to: 'Asha',
   from: 'Papa',
   month: 9,
   dateline: 'Month 9, Tuesday night',
   duration: '1:12',
   text:
-    'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
+    'Asha, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
   heard: [
-    { text: 'Mirror', becomes: 'Meera', kind: 'name' },
+    { text: 'Usher', becomes: 'Asha', kind: 'name' },
     { text: ', ' },
     { text: 'um, ', becomes: '', kind: 'filler' },
     {
@@ -91,20 +91,20 @@ export const site = {
     s01: {
       label: 'Evening',
       dateline: '9:41 pm',
-      headline: 'Meera is asleep.',
+      headline: 'Asha is asleep.',
       support: 'The house is quiet for the first time today.',
     },
     s02: {
       label: 'A minute',
       headline: 'A minute is plenty.',
-      support: `Open ${NAME} and tell Meera about today. One sentence counts.`,
+      support: `Open ${NAME} and tell Asha about today. One sentence counts.`,
       /** strings.en.ts tonight.greeting.night with {name} = Papa */
       appGreeting: 'The house is quiet, Papa.',
       /** tonight.subtitle */
-      appSubtitle: 'What do you want Meera to know about today?',
+      appSubtitle: 'What do you want Asha to know about today?',
       /** tonight.promptLabel */
       appPromptLabel: 'A thought to start with',
-      appPrompt: 'What made Meera laugh today?',
+      appPrompt: 'What made Asha laugh today?',
       /** tonight.newPromptButton */
       appAnother: 'Another thought',
       appDateline: 'Month 9, Week 2, Tuesday',
@@ -118,8 +118,8 @@ export const site = {
     s03: {
       label: 'Just talk',
       headline: 'Just talk.',
-      support: 'Say it the way you would say it to Meera. Pauses are fine.',
-      appTo: 'To Meera',
+      support: 'Say it the way you would say it to Asha. Pauses are fine.',
+      appTo: 'To Asha',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
       appHint: 'Say it however it comes.',
@@ -141,15 +141,15 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice stays with it.',
-      support: 'The recording is kept with every letter you speak. One day Meera can hear how you sounded tonight.',
+      support: 'The recording is kept with every letter you speak. One day Asha can hear how you sounded tonight.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
     s06: {
       label: 'The book',
       headline: 'A book that grows by month.',
-      support: "Each letter is filed under Meera's age that month and signed with your name. Both parents write in the same book.",
-      appTitle: "Meera's Book",
+      support: "Each letter is filed under Asha's age that month and signed with your name. Both parents write in the same book.",
+      appTitle: "Asha's Book",
       chapters: [
         { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
         { month: 'Month 8', meta: '11 letters, from Papa and Mama' },
@@ -202,7 +202,7 @@ export const site = {
     },
     s11: {
       label: 'Start tonight',
-      headline: 'Tell Meera about today.',
+      headline: 'Tell Asha about today.',
       supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write once, when it is ready.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
@@ -212,7 +212,7 @@ export const site = {
     label: 'Your email',
     placeholder: 'you@example.com',
     hint: 'Just your email address, nothing else.',
-    note: `One email when ${NAME} is ready. We never share your address, and every email has an unsubscribe link.`,
+    note: `A welcome email now, and one more when ${NAME} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
     button: "Keep me informed",
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
@@ -236,11 +236,11 @@ export const site = {
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US, and we will write once more, when it is ready.`,
     letterLabel: 'What a letter looks like',
-    letterTo: 'To Meera',
+    letterTo: 'To Asha',
     letterMeta: 'Month 9, Tuesday night',
     letterFrom: 'From Papa',
     /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
-    letterExcerpt: 'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
+    letterExcerpt: 'Asha, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
     letterNote: 'A minute of talking. Every word kept exactly as it was said.',
     promisesTitle: 'What we are building',
     promises: [
@@ -309,9 +309,7 @@ export const site = {
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
-      { href: '/health-privacy', label: 'Consumer health data' },
-      { href: '/subprocessors', label: 'Subprocessors' },
-      { href: '/delete-account', label: 'Delete your account' },
+      { href: 'mailto:hello@earlyletters.com', label: 'Contact' },
     ],
   },
 } as const;

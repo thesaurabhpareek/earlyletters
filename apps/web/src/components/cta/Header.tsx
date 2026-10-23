@@ -1,13 +1,13 @@
 'use client';
 /**
- * The persistent header: wordmark left, the one action right. It reads the tone of the scene beneath
- * it (night, paper, dusk) and keeps AA contrast on each. The wordmark joins once the hero's own
- * wordmark has gone. On phones the action moves to a bottom pill in the thumb zone (CtaPill).
+ * The persistent header: the brand lockup left (the approved mark, in the header's ink colour), the one action
+ * right. It reads the tone of the scene beneath it (night, paper, dusk) and keeps AA contrast on each. The lockup
+ * joins once the hero's own wordmark has gone. On phones the action moves to a bottom pill in the thumb zone (CtaPill).
  */
 import { site } from '@/content/site';
 import { launch } from '@/lib/launch';
 import { track } from '@/lib/analytics';
-import { Wordmark } from '@/components/brand/Wordmark';
+import { Lockup } from '@/components/brand/Lockup';
 import { AppStoreBadge } from './AppStoreBadge';
 import { goToStart } from './goToStart';
 import { useInView, useToneAt } from './useTone';
@@ -20,7 +20,7 @@ export function Header() {
   return (
     <header className={styles.header} data-tone={tone} data-hero={hero || undefined}>
       <a href="#evening" className={styles.mark} aria-label={site.brand.name} tabIndex={hero ? -1 : 0}>
-        <Wordmark />
+        <Lockup />
       </a>
       <div className={styles.action} data-hidden={end || undefined}>
         {launch.mode === 'live' ? (

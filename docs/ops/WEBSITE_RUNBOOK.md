@@ -34,7 +34,7 @@ Set these when creating the project (Add New > Project > import the repo), or in
 |---|---|---|
 | Framework Preset | Next.js | Also pinned in `apps/web/vercel.json`. |
 | Root Directory | `apps/web` | The site lives there. |
-| Include source files outside of the Root Directory | **ON** (Settings > Build and Deployment > Root Directory) | The build needs `packages/brand`, `packages/design-tokens` and the legal Markdown in `docs/legal` (`src/lib/legal/load.ts` reads it at build). With this OFF the build fails or the legal pages are empty. Verified (repo). It is on by default for new projects in the dashboard flow; confirm it. Inferred. |
+| Include source files outside of the Root Directory | **ON** (Settings > Build and Deployment > Root Directory) | The build needs `packages/brand` and `packages/design-tokens`. With this OFF the build fails. Verified (repo). It is on by default for new projects in the dashboard flow; confirm it. Inferred. |
 | Install Command | leave default; `apps/web/vercel.json` sets `npm ci --workspace=@scribe/web --no-audit --no-fund` | Installs the site and the two packages it uses, not the Expo app. Measured: 10 s and 575 MB, against 27 s and 1.4 GB for the whole workspace. Verified (measured in a clean worktree). |
 | Build Command | leave default (`next build`, the `build` script of `@scribe/web`) | Measured: 28 s cold, 23 routes. Verified. |
 | Output Directory | leave default | Next.js preset. |
@@ -64,14 +64,14 @@ changing any variable below means **Redeploy**, never "it will pick it up".
 |---|---|---|---|---|
 | `NEXT_PUBLIC_APP_STORE_URL` | Production only | Plain | build | Empty: prelaunch (notify form). Set to an App Store product link: live (badge). Must be `https://apps.apple.com/.../id<digits>`. Anything else is ignored, the site stays prelaunch and the build log says `[launch] NEXT_PUBLIC_APP_STORE_URL is set but ignored`. Verified (`src/lib/launch.ts`, 13 tests). |
 | `NEXT_PUBLIC_APPLE_PROVIDER_TOKEN` | Production only | Plain | build | Optional. Apple's provider token `pt` (digits). With it, App Store links carry `pt` and `ct=web-<placement>` so App Store Connect can count clicks by button. Without it (and without a `pt` already in the URL) links carry no campaign parameters. Not in the original list; the code reads it. |
-| `NEXT_PUBLIC_ANALYTICS` | Production only | Plain | build | `vercel` turns Vercel Web Analytics on. Unset (the v1 default) means off: no script, no request, no storage. See section 3.1. |
+| `NEXT_PUBLIC_ANALYTICS` | Production only | Plain | build | `vercel` turns Vercel Web Analytics on. Unset (the v1 default) means off: no script, no request, no storage. See section 3.1. The Privacy page says the site has no analytics: change it (`src/lib/legal/privacy-copy.ts`) before turning this on. |
 | `RESEND_API_KEY` | Production (and Preview only if you want previews to subscribe people) | **Sensitive** | runtime | "Tell me when it is ready" form. Missing in production makes `/api/notify` answer `server`, and the form shows its error state. Use a key limited to sending/contacts for this domain. Opinion. |
 | `RESEND_SEGMENT_ID` | same as the key | Plain | runtime | Resend segment (audience) that receives the sign-ups. Needed together with the key. |
 | `APPLE_TEAM_ID` | Production | Plain | build | 10 characters, A-Z and 0-9. For the apple-app-site-association file. Both this and `IOS_BUNDLE_ID` must be set or the file answers 404. Verified (route code). |
 | `IOS_BUNDLE_ID` | Production | Plain | build | The app's real bundle id, exactly as in App Store Connect. Set it explicitly: `packages/brand` still has the placeholder domain `example.com`, so the brand default is wrong. The bundle id cannot change after the first upload to App Store Connect. Verified (repo). |
 | `SITE_MODE` | Optional | Plain | build | `coming-soon` shows the organised home page (`components/landing`), `film` shows the scroll film. Unset: the organised home page on Production, film on previews and locally (`src/lib/site-mode.ts`, 4 tests). To publish the film on Production set `SITE_MODE=film` and Redeploy. Verified (repo, production-like and preview-like builds). |
+| `PUBLISHER_LEGAL_NAME` | Production | Plain | build | The legal name of the individual who runs the site (D-004), printed in "Who we are" on `/privacy` and `/terms`. It is set only here so the name never goes in git. Unset (or not a plain name), the pages say the site "is run by its founder as an individual, not a company" and "we" means "the founder" (never a placeholder; the build does not fail), and the build log says `[legal] PUBLISHER_LEGAL_NAME is not set`. To name the publisher, set it and Redeploy. Verified (`src/lib/legal/publisher.ts`, unit tests). |
 | `ENABLE_LAB` | **Preview only**, `1` | Plain | build | Publishes the `/lab/*` scene test pages. Leave unset in Production: they answer 404 there. Verified (`next.config.ts`). |
-| `LEGAL_DOCS_DIR` | not set | | build | Test override for the legal loader. Do not set. |
 
 Mark `RESEND_API_KEY` as Sensitive so its value cannot be read back from the dashboard after saving. Inferred (Vercel's
 Sensitive environment variable type; availability on your plan and the exact dashboard wording were not checked).
@@ -85,8 +85,9 @@ No variable holds entry text, a child name or a person's address. Logs and analy
 - Consistent with `docs/analytics/TRACKING_PLAN.md`, which has no website analytics at launch.
 - What Vercel Web Analytics collects: timestamp, path, referrer, query string (filtered by our code), country/region, OS,
   browser, device type. No cookies; the visitor id is a hash of the request, discarded after 24 hours. Verified (Vercel docs).
-  So no cookie banner is needed for it. Whether the wording in `docs/legal/privacy-policy.md` ("no tracking SDKs") still reads
-  true is a counsel question: before enabling, have the privacy policy and `claims-registry.yaml` reviewed. Opinion.
+  So no cookie banner is needed for it. The published Privacy page says the site uses no analytics, so before enabling,
+  change that page (`src/lib/legal/privacy-copy.ts`) and have it and `claims-registry.yaml` reviewed. `test/legal.test.ts`
+  fails if `WebAnalytics` is mounted while the page still says so. Opinion.
 - Custom events (`cta_click`, `notify_submit`, `scene_reached`) need Pro or Enterprise; on Pro each event may carry 2 properties.
   Ours carry at most 2. Hobby gets page views only. Verified (Vercel docs). Without Pro, page views are still counted.
 - Our code (`src/lib/analytics`) adds guards beyond Vercel's: off unless `NEXT_PUBLIC_ANALYTICS=vercel`; silent when the browser
@@ -170,7 +171,7 @@ link in Messages or WhatsApp, or paste it into a card validator (opengraph.xyz, 
 so test with a fresh link such as `https://earlyletters.com/?v=2`.
 
 **Scroll motion.** The home page uses scroll-linked ("scrubbed") motion built on `motion` (MIT), in `apps/web/src/components/landing/scrub.tsx`:
-the hero recedes, "Meera is asleep." and the proof letter are pinned scenes your scroll plays (and reverses) and that fade into one another,
+the hero recedes, "Asha is asleep." and the proof letter are pinned scenes your scroll plays (and reverses) and that fade into one another,
 paragraphs fill from dim to bright as you read them, and the other blocks lift into place the same way (opacity and a short lift only: no
 blur, bounce or sideways slides). The server renders every scene finished, so the page reads without JavaScript; visitors who prefer reduced motion get no pinning or
 scrubbing; a scene that does not fit a short screen is not pinned. Verified (headless Chromium, desktop, laptop, phone, short phone).
@@ -321,7 +322,7 @@ browser signed in to Vercel, or just run A to H after DNS)
 
 ```bash
 HOST=https://earlyletters.com
-for p in / /privacy /terms /health-privacy /subprocessors /delete-account /robots.txt /sitemap.xml; do
+for p in / /privacy /terms /robots.txt /sitemap.xml; do
   printf '%s  ' "$p"; curl -s -o /dev/null -w '%{http_code}\n' "$HOST$p"
 done                                                    # expect 200 for each
 curl -s -o /dev/null -w '/lab/s01 %{http_code}\n' $HOST/lab/s01     # expect 404 in Production
@@ -394,8 +395,10 @@ the rule is Inferred; the Firewall page shows it. Check afterwards with six quic
 - **Preview deployments** build for every pull request that touches the site, using the same install and build. They have no
   App Store link and no `RESEND_*` keys unless you set them for Preview. To look at the `/lab` pages, set `ENABLE_LAB=1` for
   Preview and Redeploy that preview.
-- **Legal text changes** (`docs/legal/*.md`) rebuild the site, because the pages are generated from those files at build.
-  `docs/legal` is in the CI path filter for that reason. Verified (repo).
+- **Legal pages.** The site publishes two short pages, `/privacy` and `/terms`, about the website and its launch-notice
+  list only. Their words are in `src/lib/legal/privacy-copy.ts` and `terms-copy.ts`; change the date there with the words.
+  Nothing is read from `docs/legal` (those are the drafts for the app). `/health-privacy`, `/subprocessors` and
+  `/delete-account` are off the site until a shipped build has accounts. Verified (repo, e2e).
 - **Before merging anything that changes `apps/web/vercel.json`:** run in a clean checkout
   `npm ci --workspace=@scribe/web && npm run build -w @scribe/web`. Do not rely on a machine that already has `node_modules`.
 - **Dependencies:** `@vercel/analytics` ^2.0.1 (MIT) is a dependency of `@scribe/web`. Updating it is a normal pull request.
@@ -403,8 +406,7 @@ the rule is Inferred; the Firewall page shows it. Check afterwards with six quic
 ## 11. Open items (as of 2026-10-03)
 
 1. Vercel's own build was not run from here; the install and build were run in a clean local worktree (Node 22.22, npm 10.9).
-2. The legal loader (`src/lib/legal/load.ts`, E1) makes Turbopack print "Dynamic filesystem access causes tracing of the whole
-   project". Harmless so far (notify function trace stays small); worth a look by E1.
+2. Closed: the legal loader that read `docs/legal` at build (and made Turbopack warn about dynamic filesystem access) is gone.
 3. `IOS_BUNDLE_ID` has no safe default until `packages/brand` gets the real domain (BL-100).
 4. Hobby is non-commercial: move to Pro before launch, and before enabling custom analytics events.
 5. Privacy policy wording and claims registry need a counsel check before analytics is switched on.

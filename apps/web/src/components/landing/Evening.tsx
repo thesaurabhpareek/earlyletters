@@ -1,6 +1,6 @@
 'use client';
 /**
- * Scene one, pinned: "Meera is asleep." The screen holds while the line is read word by word, each filling from
+ * Scene one, pinned: "Asha is asleep." The screen holds while the line is read word by word, each filling from
  * dim to bright as you scroll, the whole line settling a little closer, and the quiet sentence follows. The scene
  * fades in from the hero and out into the next. Without scrubbing (server, no JavaScript, reduced motion) it is a
  * normal section with the finished text.
