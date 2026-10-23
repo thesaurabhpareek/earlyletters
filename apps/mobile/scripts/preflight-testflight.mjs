@@ -34,10 +34,14 @@ const SKIP_PREBUILD = process.argv.includes('--skip-prebuild');
 const profileArg = process.argv.indexOf('--profile');
 const PROFILE = profileArg > -1 ? String(process.argv[profileArg + 1] ?? '') : 'testflight';
 
-/** The two alpha builds (D-106). `server` is what the profile must say today; the R-17 flip changes testflight. */
+/**
+ * The two alpha builds (D-106). `server` is what the profile must say today; the R-17 flip changes testflight.
+ * `google` is whether the build offers Google sign-in: neither does (docs/release/ENVIRONMENTS.md, "Not in the
+ * alpha: Apple and email only"), and neither the privacy manifest nor S17's worksheet has Google's rows (4c).
+ */
 const ALPHA = {
-  testflight: { build: 'alpha build 1', server: false },
-  preview: { build: 'alpha build 2', server: true },
+  testflight: { build: 'alpha build 1', server: false, google: false },
+  preview: { build: 'alpha build 2', server: true, google: false },
 };
 if (!Object.hasOwn(ALPHA, PROFILE)) {
   console.error(`--profile must be testflight (alpha build 1) or preview (alpha build 2); got ${JSON.stringify(PROFILE)}.`);
@@ -107,6 +111,56 @@ function parseJsonOut(r) {
 /** Every `<key>NAME</key>` in a plist, in order (enough for the checks below; not a plist parser). */
 const plistKeys = (text) => [...text.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
 const plistValue = (text, key) => new RegExp(`<key>${key}</key>\\s*<(true|false)\\s*/>`).exec(text)?.[1] ?? null;
+
+/** Expo's own plist parser, the one its PrivacyInfo mod writes the file with (expo, then @expo/config-plugins). */
+function expoPlist() {
+  const fromExpo = createRequire(require.resolve('expo/config-plugins'));
+  const plist = createRequire(fromExpo.resolve('@expo/config-plugins'))('@expo/plist');
+  return plist.default ?? plist;
+}
+
+/** A privacy manifest in a fixed order (entries by key, reasons and purposes sorted), so two compare as JSON. */
+function canonicalManifest(m) {
+  const sorted = (a) => (Array.isArray(a) ? a.map(String).sort() : null);
+  const byKey = (a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+  return {
+    tracking: m?.NSPrivacyTracking ?? null,
+    domains: sorted(m?.NSPrivacyTrackingDomains ?? []),
+    reasons: (m?.NSPrivacyAccessedAPITypes ?? [])
+      .map((t) => ({ key: String(t?.NSPrivacyAccessedAPIType), reasons: sorted(t?.NSPrivacyAccessedAPITypeReasons) }))
+      .sort(byKey),
+    collected: (m?.NSPrivacyCollectedDataTypes ?? [])
+      .map((c) => ({
+        key: String(c?.NSPrivacyCollectedDataType),
+        linked: c?.NSPrivacyCollectedDataTypeLinked ?? null,
+        tracking: c?.NSPrivacyCollectedDataTypeTracking ?? null,
+        purposes: sorted(c?.NSPrivacyCollectedDataTypePurposes),
+      }))
+      .sort(byKey),
+  };
+}
+
+/** Each way the generated manifest differs from the config, as a short phrase; empty when they are the same. */
+function manifestDifferences(generated, config) {
+  const g = canonicalManifest(generated);
+  const c = canonicalManifest(config);
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const out = [];
+  if (!same(g.tracking, c.tracking)) out.push(`NSPrivacyTracking is ${g.tracking} (config: ${c.tracking})`);
+  if (!same(g.domains, c.domains)) out.push(`NSPrivacyTrackingDomains is ${JSON.stringify(g.domains)} (config: ${JSON.stringify(c.domains)})`);
+  for (const [part, label] of [['reasons', 'required-reason category'], ['collected', 'collected type']]) {
+    for (const key of [...new Set([...g[part], ...c[part]].map((e) => e.key))].sort()) {
+      const fields = (list) => list.filter((e) => e.key === key).map(({ key: _, ...rest }) => rest);
+      const [ge, ce] = [fields(g[part]), fields(c[part])];
+      const name = key.replace(/^NSPrivacy(AccessedAPICategory|CollectedDataType)/, '');
+      if (same(ge, ce)) continue;
+      if (!ge.length) out.push(`${label} ${name} is missing`);
+      else if (!ce.length) out.push(`${label} ${name} is not in the config`);
+      else out.push(`${label} ${name} is ${JSON.stringify(ge)} (config: ${JSON.stringify(ce)})`);
+    }
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------- 1. eas.json: the profile
 const easText = read(join(MOBILE, 'eas.json'));
@@ -385,6 +439,27 @@ if (SERVER_ON) {
   );
 }
 
+// ---------------------------------------------------------------- 4c. Google sign-in: offered by neither alpha build
+// A build offers Google once it has the client ids: with EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID app.config.ts adds the
+// plugin and its URL scheme, and with EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID as well the sign-in sheet shows the button
+// (src/lib/auth/google.ts). The GoogleSignIn pod is autolinked into every build either way, so its own
+// PrivacyInfo.xcprivacy (Google's data types, some for Analytics) is in the app even though nothing calls it.
+// A build that offers Google needs those types in this app's manifest and in S17's worksheet first; neither has
+// them, so a client id in a profile that does not offer Google fails (BL-349 review B on #211, G1).
+if (!SPEC.google) {
+  const isSet = (v) => String(v ?? '').trim() !== '';
+  const found = ['EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'].flatMap((k) => [
+    ...(isSet(profEnv[k]) ? [`${k} in the eas.json ${PROFILE} profile`] : []),
+    ...(isSet(process.env[k]) ? [`${k} in this shell (a local build reads it)`] : []),
+  ]);
+  check(
+    found.length === 0,
+    `no Google client id in the ${PROFILE} profile or this shell (${SPEC.build} does not offer Google sign-in)`,
+    `${found.join('; ')}. ${SPEC.build} does not offer Google sign-in, and the privacy manifest (src/lib/privacy-manifest.ts) and S17's App Privacy worksheet have none of Google's data types. Remove it: Google's types go into the manifest and the worksheet first, and offering Google is the founder's call after S17 signs off.`,
+  );
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID or EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (this script cannot read it); if it does, the EAS build carries Google sign-in that the privacy manifest does not declare`);
+}
+
 // ---------------------------------------------------------------- 5. language packs and the speech model host
 {
   const fromEas = String(profEnv.EXPO_PUBLIC_DOCS_BASE_URL ?? '').trim();
@@ -489,9 +564,25 @@ if (ios) {
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
   if (ios.privacy !== null) {
-    const generated = [...ios.privacy.matchAll(/<key>NSPrivacyCollectedDataType<\/key>\s*<string>([^<]+)<\/string>/g)].map((m) => m[1]).sort();
-    const wanted = (cfg?.ios?.privacyManifests?.NSPrivacyCollectedDataTypes ?? []).map((c) => c.NSPrivacyCollectedDataType).sort();
-    check(JSON.stringify(generated) === JSON.stringify(wanted), `generated PrivacyInfo.xcprivacy declares the config's collected data, no more (${generated.length} types)`, `Generated PrivacyInfo.xcprivacy declares ${generated.join(', ') || 'no'} collected types; the config says ${wanted.join(', ') || 'none'}.`);
+    // Prebuild ran with --no-install, so this is the file Expo's PrivacyInfo mod wrote from the config, before pod
+    // install adds the pods' reasons (apple.privacyManifestAggregationEnabled). It must equal ios.privacyManifests
+    // as a whole: each required-reason category and its reasons, tracking, and each collected type with its
+    // Linked, Tracking and Purposes. The file after pod install is checked only by Apple's processing email.
+    let generated = null;
+    try {
+      generated = expoPlist().parse(ios.privacy);
+    } catch {
+      generated = null;
+    }
+    const wanted = cfg?.ios?.privacyManifests;
+    const diff = generated ? manifestDifferences(generated, wanted) : ['it does not parse as a plist'];
+    const c = canonicalManifest(wanted);
+    const reasons = c.reasons.map((t) => `${t.key.replace('NSPrivacyAccessedAPICategory', '')} ${(t.reasons ?? []).join(' ')}`).join(', ');
+    check(
+      diff.length === 0,
+      `generated PrivacyInfo.xcprivacy equals the config: ${c.reasons.length} required-reason categories (${reasons}), ${c.collected.length ? `${c.collected.length} collected types, each with the config's Linked, Tracking and Purposes` : 'no collected types'}`,
+      `Generated PrivacyInfo.xcprivacy differs from the config (ios.privacyManifests): ${diff.join('; ')}.`,
+    );
   }
   {
     let target = null;
@@ -537,7 +628,7 @@ if (cfg) {
   if (cfg.ios?.usesAppleSignIn && !notes.some((n) => /Sign in with Apple/.test(n))) notes.push(`Config sets ios.usesAppleSignIn (Sign in with Apple entitlement) and the expo-apple-authentication plugin; ${dormant}.`);
   if (cfg.ios?.associatedDomains?.length && !notes.some((n) => /Associated Domains/.test(n))) notes.push(`Config sets ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')}); ${SERVER_ON ? 'needs the website association file (step 10)' : 'dormant in this build'}.`);
   const google = (cfg.plugins ?? []).some((p) => (Array.isArray(p) ? p[0] : p) === '@react-native-google-signin/google-signin');
-  if (!google) notes.push('Google sign-in is not in this build (it needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, which the profile does not set). Apple and email are enough for the alpha.');
+  if (!google) notes.push('Google sign-in is not offered in this build (no Google client id in the profile or this shell). The GoogleSignIn pod is still autolinked, so its own privacy manifest, with Google\'s data types, is inside the app although nothing calls it. If App Review asks: "Google sign-in is not offered in this build." Apple and email are enough for the alpha.');
   if (SERVER_ON) {
     notes.push('Server features are ON: sign-in (Apple, email link and code), sync and co-parent sharing talk to the staging Supabase project named by the EAS "preview" environment. Recording backup and the status report stay off (build flags). Analytics is off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no PostHog client. Kill path: rebuild with EXPO_PUBLIC_SERVER_FEATURES=off and expire this build in App Store Connect (TESTFLIGHT.md "If something goes wrong").');
     notes.push('Not for anyone outside the family until the R-17 security gate passes (D-100): put this build in the family internal group only, with automatic distribution off for every other group.');
