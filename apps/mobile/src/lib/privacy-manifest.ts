@@ -79,9 +79,11 @@ export const REQUIRED_REASON_APIS: readonly AccessedApiType[] = [
     // C617.1: timestamps, size or other metadata of files inside the app container. React Native core,
     // RCT-Folly, boost, glog, expo-application and GoogleUtilities declare C617.1. expo-file-system declares
     // only 0A2A.1 (a wrapper; SDKs only) and 3B52.1, so the app owns the reason for its own calls:
-    // src/lib/capture/sweep.ts reads creationTime/modificationTime of recordings in Documents, and
-    // src/lib/packs/expo-adapter.ts reads Paths.info of pack files. expo-sqlite ships no manifest; its
-    // vendored sqlite3.c (3.50.3) calls stat, fstat and lstat on the database files in the container.
+    // src/lib/capture/sweep.ts reads creationTime/modificationTime of recordings in Documents,
+    // src/lib/capture/adts-file.ts reads them for its whole-frame copies in Paths.cache (re-checked
+    // 23 Oct 2026), and src/lib/packs/expo-adapter.ts reads Paths.info of pack files. expo-sqlite ships
+    // no manifest; its vendored sqlite3.c (3.50.3) calls stat, fstat and lstat on the database files in
+    // the container.
     NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
     NSPrivacyAccessedAPITypeReasons: ['C617.1'],
   },

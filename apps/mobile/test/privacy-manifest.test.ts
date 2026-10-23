@@ -23,7 +23,11 @@ import { REQUIRED_REASON_APIS, collectedDataTypes, privacyManifest, type Collect
 const ROOT = path.resolve(__dirname, '..');
 const REPO = path.resolve(ROOT, '..', '..');
 
-/** Every variable that can change the manifest; cleared before each evaluation so the shell cannot leak in. */
+/**
+ * Every variable that can change the manifest, plus the two B-9 reads that make app.config.ts refuse a build
+ * (EXPO_PUBLIC_E2E, EAS_BUILD_PROFILE; src/lib/build-env.ts). Cleared before each evaluation and restored
+ * after it, so neither the shell nor the e2e profile's EXPO_PUBLIC_E2E=1 leaks into the next profile.
+ */
 const VARIABLES = [
   'EXPO_PUBLIC_APP_ENV',
   'EXPO_PUBLIC_SERVER_FEATURES',
@@ -31,6 +35,8 @@ const VARIABLES = [
   'EXPO_PUBLIC_STATUS_REPORT',
   'EXPO_PUBLIC_ANALYTICS',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  'EXPO_PUBLIC_E2E',
+  'EAS_BUILD_PROFILE',
 ] as const;
 
 function configWith(env: Record<string, string>): ExpoConfig {
