@@ -63,8 +63,25 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${origin}${LINK}`);
   });
 
+  for (const fragment of [`#t=${TOKEN}&utm_source=chat`, `#x=1&t=${TOKEN}`]) {
+    test(`copies only /j#t=<token> from /j${fragment.replace(TOKEN, '<token>')}`, async ({ page, context, baseURL }) => {
+      const origin = new URL(baseURL!).origin;
+      await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
+      await page.goto(`/j${fragment}`);
+      await page.getByRole('button', { name: copy.copy }).click();
+      await expect(page.getByRole('status')).toHaveText(copy.copied);
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${origin}${LINK}`);
+    });
+  }
+
   test('a link whose fragment was dropped asks for the link again instead of copying', async ({ page }) => {
     await page.goto('/j');
+    await expect(page.getByRole('status')).toHaveText(copy.missing);
+    await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
+  });
+
+  test('a fragment whose t is not shaped like an invite token gets the same line, not a copy', async ({ page }) => {
+    await page.goto('/j#t=too-short');
     await expect(page.getByRole('status')).toHaveText(copy.missing);
     await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
   });
