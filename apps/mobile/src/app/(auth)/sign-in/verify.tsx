@@ -7,8 +7,10 @@
  *
  * BL-347 (security review H1): a link opens only when this phone asked for
  * the email, and then only through PKCE; never while someone is signed in.
- * Otherwise the screen says so calmly: the code from the same email
- * (F02-U11), or sign out first (F02-U27).
+ * Otherwise the screen says so calmly under its own heading: the code from
+ * the same email (F02-U11), or, when someone is already signed in here, sign
+ * out and type the code (F02-U27; sign-out drops this phone's pending request,
+ * so the same link never works after it).
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -26,6 +28,7 @@ export default function VerifyLink() {
   const v = authCopy.verify;
   const [error, setError] = useState<AuthErrorKind | null>(null);
   const started = useRef(false);
+  const refused = error === 'other_phone' || error === 'already_signed_in';
 
   useEffect(() => {
     if (started.current) return;
@@ -45,7 +48,7 @@ export default function VerifyLink() {
 
   return (
     <SheetFrame>
-      <SheetTitle>{v.title}</SheetTitle>
+      <SheetTitle>{refused ? v.refusedTitle : v.title}</SheetTitle>
       {error ? (
         <View className="gap-3">
           <ErrorLine message={authErrorMessage(error)} />

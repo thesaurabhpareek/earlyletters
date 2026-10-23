@@ -23,8 +23,8 @@ export async function notePendingEmailRequest(now = Date.now()): Promise<void> {
   await secureStorage.setItem(PENDING_REQUEST_KEY, encodePendingRequest({ at: now })).catch(() => {});
 }
 
-/** Null when this phone has no unexpired request (or the Keychain cannot be read: refuse, never guess). */
-export async function readPendingEmailRequest(now = Date.now()): Promise<PendingEmailRequest | null> {
+/** Null when this phone has no request (or the Keychain cannot be read: refuse, never guess); 'expired' past an hour. */
+export async function readPendingEmailRequest(now = Date.now()): Promise<PendingEmailRequest | 'expired' | null> {
   if (!serverFeaturesEnabled()) return null;
   try {
     return decodePendingRequest(await secureStorage.getItem(PENDING_REQUEST_KEY), now);
