@@ -57,13 +57,15 @@ export function parseInviteUrl(url: string, origin: string): string | null {
  * Token from whatever the person pasted into "I was invited": the bare link,
  * a whole message with the link inside it, or the token alone. The first
  * brand invite link wins. Returns null when nothing usable is there.
+ * Each candidate goes through parseInviteUrl, so the two agree: a stray query
+ * on /j is tolerated, and the token is read from the fragment only.
  */
 export function parseInviteInput(text: string, origin: string): string | null {
   const t = text.trim();
   if (!t) return null;
   if (isInviteToken(t)) return t;
   const host = originHost(origin).replace(/\./g, '\\.');
-  const re = new RegExp(`https://(?:www\\.)?${host}/j/?#t=[A-Za-z0-9_-]+`, 'gi');
+  const re = new RegExp(`https://(?:www\\.)?${host}/j/?(?:\\?[^#\\s]*)?#t=[A-Za-z0-9_-]+`, 'gi');
   for (const m of t.matchAll(re)) {
     const token = parseInviteUrl(m[0], origin);
     if (token) return token;

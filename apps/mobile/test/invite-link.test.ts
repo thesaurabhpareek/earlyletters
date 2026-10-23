@@ -97,6 +97,15 @@ describe('"I was invited": pasted text (A-REQ-029)', () => {
     expect(parseInviteInput(msg, ORIGIN)).toBe(TOKEN);
   });
 
+  it('accepts a stray query before the fragment, as parseInviteUrl does; the token still comes only from the fragment', () => {
+    const withQuery = `https://earlyletters.com/j?x=1#t=${TOKEN}`;
+    expect(parseInviteUrl(withQuery, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(withQuery, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(`Join me here: https://www.earlyletters.com/j/?utm_source=x&y=2#t=${TOKEN} see you`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteInput(`https://earlyletters.com/j?t=${TOKEN}`, ORIGIN)).toBeNull();
+  });
+
   it('returns null when nothing usable is there', () => {
     expect(parseInviteInput('', ORIGIN)).toBeNull();
     expect(parseInviteInput('hello', ORIGIN)).toBeNull();
