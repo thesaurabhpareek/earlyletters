@@ -1,8 +1,8 @@
 ---
 title: TestFlight testers, who sees their feedback, and what they are told
-version: 1.0.0
+version: 1.0.1
 status: draft-for-counsel
-last_updated: 2026-10-16
+last_updated: 2026-10-23
 owner: founder
 prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 package: RA-17-04 (docs/release/AUTOMATION.md section 5), with S16's RA-16-01; due Mon 19 Oct 2026 for AF-09 and AF-11
@@ -10,7 +10,7 @@ package: RA-17-04 (docs/release/AUTOMATION.md section 5), with S16's RA-16-01; d
 
 # TestFlight testers: who sees their feedback, and what they are told
 
-Version 1.0.0. Drafting support, not legal advice. This file covers the alpha on TestFlight (D-106; builds 1 and 2 of `docs/release/ALPHA_PLAN.md` on #152) and stays valid for C1. It does three things:
+Version 1.0.1. Drafting support, not legal advice. This file covers the alpha on TestFlight (D-106; builds 1 and 2 of `docs/release/ALPHA_PLAN.md` on #152) and stays valid for C1. It does three things:
 - states, from Apple's own pages, who can see a tester's identity and feedback;
 - sets out the founder's choices for the "Family" and "Friends" groups (AF-09, AF-11), with a recommendation;
 - lists what the tester notice must say. The words are S16's (`packages/content/src/release/testflight.en.ts`, RA-16-01); section 5 gives a draft for S16 to adopt or rewrite.
@@ -113,9 +113,9 @@ Where it appears: the beta app description (required for Friends, shown in the T
 | Build | Also say | Never say |
 |---|---|---|
 | Build 1 (`testflight`, servers off) | There is no account in this build; your letters stay on this phone | "Everything stays on your phone" (feedback and crash reports leave it); anything about sync or backup |
-| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recording backup is off until you turn it on; what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); delete your account and its letters in Settings, Your data | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
+| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recordings are not uploaded in this test (recording backup is not in build 2: the build flag `EXPO_PUBLIC_BACKUP` is off in `apps/mobile/eas.json`, #145); what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); delete your account and its letters in Settings, Delete account (its own row, below Your data) | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
 
-Founder facts the build 2 text needs: what happens to the test server's letters at the end of the alpha (default for the draft: we tell testers before the test server is closed, and Export keeps a copy); and the recovery key used by build 2's backup (the alpha plan names a drill escrow key on Mon 26). If that key is not held the way Privacy Policy section 4 describes, the build 2 text says the test uses a test recovery key.
+Founder fact the build 2 text needs: what happens to the test server's letters at the end of the alpha (default for the draft: we tell testers before the test server is closed, and Export keeps a copy). The recovery key question (the alpha plan names a drill escrow key on Mon 26) applies only to a build with backup on; build 2 has none today. If a later test build turns backup on and its key is not held the way Privacy Policy section 4 describes, that build's text says the test uses a test recovery key.
 
 ### 5.3 Who can see it, by group
 
@@ -137,7 +137,7 @@ Founder facts the build 2 text needs: what happens to the test server's letters 
 > Thank you for testing. This build has no account: your letters stay on this phone.
 
 **Build 2 opening (What to Test):**
-> Thank you for testing. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your co-parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recording backup is off until you turn it on. Please export a copy of your book now and then in Settings, Your data.
+> Thank you for testing. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your co-parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recordings are not uploaded in this test. Please export a copy of your book now and then in Settings, Your data.
 
 Each text then adds the group line from 5.3 and S16's list of what to try.
 
@@ -145,7 +145,7 @@ Each text then adds the group line from 5.3 and S16's list of what to try.
 
 - **S16 (RA-16-01):** the strings in section 5, with the group lines of 5.3 in place of the single line "other testers on the team can see feedback you send through TestFlight". #145's What to Test copy ("Everything stays on your phone: there are no accounts and no sync") is replaced by the build 1 opening.
 - **S20 (`docs/release/AUTOMATION.md` 2.4 and 2.7, `docs/release/TESTFLIGHT.md`):** the internal-tester role is Developer, limited to the Preview app (4.1); internal testers also see every tester's name and email and external testers' feedback (A3, A4); feedback can be turned off per group (A7). For the alpha builds, consider pointing Help at the feedback mailbox (section 3).
-- **Founder (AF-09, AF-11):** the choices in 4.1 to 4.3; the record in 4.4, outside the repository; the Feedback Email set to the dedicated mailbox; the two founder facts in 5.2.
+- **Founder (AF-09, AF-11):** the choices in 4.1 to 4.3; the record in 4.4, outside the repository; the Feedback Email set to the dedicated mailbox; the founder fact in 5.2 (and the recovery key, only for a build with backup on).
 - **S19 (B1-11, B2-20 in `docs/qa/ALPHA_GO_NO_GO.md` on #176):** evidence is the adopted strings plus the founder's statement of each group's feedback setting.
 - **S17 (after #163 merges):** fold the questions in section 7 into COUNSEL_PACKET as Q57 to Q59, and add a line to the App Privacy answers that TestFlight feedback is Apple's collection, not the app's (A13 open).
 
@@ -169,4 +169,5 @@ Read on 16 Oct 2026 unless marked:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.0.1 | 2026-10-23 | Matched to develop 8d2d3dc before merge: build 2 has no recording backup (`EXPO_PUBLIC_BACKUP` off in the `preview` profile, #145), so 5.2 and the 5.4 build 2 opening say recordings are not uploaded, and the recovery key fact applies only to a build with backup on; Delete account is its own Settings row, not inside Your data (`apps/mobile/src/app/settings/index.tsx`). No change to Apple's facts, the recommendations or the counsel questions. |
 | 1.0.0 | 2026-10-16 | First version (RA-17-04): Apple's facts on tester identity and feedback visibility, the alpha's who-sees-what table, the founder's choices for Family and Friends with recommendations, the tester notice requirements and draft text for S16, and three counsel questions. |
