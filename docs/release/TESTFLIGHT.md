@@ -113,7 +113,7 @@ Add the build to the **Family** internal group only (below).
 | | Needs | Optional |
 |---|---|---|
 | Build 1 | Steps 1, 2 (with 2.4 and 2.6 for GitHub Actions), 3, 5, and iOS credentials in EAS | Step 4 (words from speech); Plus products (step 2.5) |
-| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11, and `fix/invite-link-fragment` on `develop` (invites as `/j#t=`; the build 2 preflight fails without it) | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), step 4, Plus products |
+| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), step 4, Plus products |
 
 Your hands-on time [A]: about 2.5 hours for build 1 (without step 4) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. Started by Mon 19 Oct, both builds fit before Thu 29 Oct if Apple enrolment is Active by Fri 23 Oct (T04).
 
@@ -187,7 +187,7 @@ If a build goes out without step 4, add: "Recording works, but the words will no
 - **Config:** the `.preview` bundle id, URL scheme, microphone string, no background audio, no other permission, privacy manifest, export compliance, version, icons, and `extra` recording the switch and the build flags.
 - **Both builds:** a FAIL if any `EXPO_PUBLIC_` variable exported in the shell holds a Supabase secret (`sb_secret_...`) or `service_role` key. Both profiles read the EAS "preview" environment, so export its values before either preflight to have them checked.
 - **Submit:** a WARN until the submit profile names `ios.ascAppId` (step 2.4); only the GitHub workflow needs it.
-- **Build 2 only:** a FAIL while the app still writes invite links as `/i/<token>` (token in the path); it clears once `fix/invite-link-fragment` (`/j#t=<token>`, B-NFR-002) is on `develop` and merged here. Step 6 is MISSING until `.github/workflows/deploy-db.yml` can deploy `develop` to staging by hand; if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
+- **Build 2 only:** the invite link check, which PASSes on `develop` since #165 (`/j#t=<token>`, the token in the fragment, B-NFR-002) and would FAIL only if the app wrote `/i/<token>` again. Step 6 is a CHECK: confirm staging has every migration on `develop` (step 6 item 3); if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
 - **Packs:** the docs base, the signing key and a published manifest (step 4).
 - **No real family data** in the tree; the native project generates in a temporary copy.
 - **At the end:** the founder steps above that are missing, or that it cannot see, by number and name.

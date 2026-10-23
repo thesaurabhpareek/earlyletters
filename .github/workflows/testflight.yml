@@ -1,5 +1,7 @@
 # Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Manual only: run it from the
-# Actions tab, on `develop` or an `ios-v*` tag, for one of the two alpha profiles (D-106):
+# Actions tab, on `develop`, for one of the two alpha profiles below (D-106). A run on an `ios-v*` tag passes
+# the job's if but is refused by the testflight environment's deployment refs (develop only) until the founder
+# decides where release-candidate builds run (AUTOMATION.md 2.0 says app-store).
 #   testflight  alpha build 1, server features off
 #   preview     alpha build 2, server features on against staging (its Supabase values come from the
 #               EAS "preview" environment, never from this repository or this workflow)
@@ -72,6 +74,8 @@ jobs:
     environment: testflight
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
