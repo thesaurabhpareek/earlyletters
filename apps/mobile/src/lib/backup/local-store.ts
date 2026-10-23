@@ -50,6 +50,10 @@ export interface SourceOptions {
   heldOnServer?: (draftId: string) => boolean;
 }
 
+/** Which rows `list` and `has` read: one rule, so the two never disagree. The letter rule takes the profile id. */
+const LETTER_WHERE = 'deleted_at IS NULL AND audio_uri IS NOT NULL AND child_id IS NOT NULL AND (author_id IS NULL OR author_id = ?)';
+const DRAFT_WHERE = "state = 'ready' AND audio_uri IS NOT NULL";
+
 /** Saved letters and held drafts of mine with a recording on this phone, oldest first. */
 export function backupSource(o: SourceOptions): BackupSource {
   return {
@@ -57,13 +61,13 @@ export function backupSource(o: SourceOptions): BackupSource {
       const db = o.db();
       const letters = db.all<LetterRow>(
         `SELECT id, child_id, audio_uri, audio_sha256, audio_bytes, captured_at, server_version FROM entries
-         WHERE deleted_at IS NULL AND audio_uri IS NOT NULL AND child_id IS NOT NULL AND (author_id IS NULL OR author_id = ?)
+         WHERE ${LETTER_WHERE}
          ORDER BY captured_at, id`,
         o.profileId,
       );
       const drafts = db.all<DraftRow>(
         `SELECT id, child_id, audio_uri, audio_sha256, audio_bytes, created_at FROM drafts
-         WHERE state = 'ready' AND audio_uri IS NOT NULL ORDER BY created_at, id`,
+         WHERE ${DRAFT_WHERE} ORDER BY created_at, id`,
       );
       const out: BackupSourceItem[] = letters.map((r) => ({
         entryId: r.id,
@@ -93,6 +97,13 @@ export function backupSource(o: SourceOptions): BackupSource {
       }
       return out;
     },
+
+    /** One row by its id (the queue asks between segments and parts): an erased or deleted letter is not listed. */
+    has(entryId: string): boolean {
+      const db = o.db();
+      if (db.get(`SELECT 1 AS x FROM entries WHERE id = ? AND ${LETTER_WHERE}`, entryId, o.profileId)) return true;
+      return !!o.heldOnServer && !!db.get(`SELECT 1 AS x FROM drafts WHERE id = ? AND ${DRAFT_WHERE}`, entryId);
+    },
   };
 }
 
@@ -121,13 +132,13 @@ export function restoreLocal(o: RestoreLocalOptions): RestoreLocal {
     clearRestoredHash(entryId, sha256): void {
       o.db().run('UPDATE entries SET audio_sha256 = NULL, audio_bytes = NULL WHERE id = ? AND audio_sha256 = ?', entryId, sha256);
     },
-    anyMissing(): boolean {
-      const rows = o.db().all<{ audio_uri: string | null }>(
-        `SELECT audio_uri FROM entries WHERE deleted_at IS NULL AND kind = 'letter' AND capture_mode IN ('spoken', 'mixed')
+    missing(): string[] {
+      const rows = o.db().all<{ id: string; audio_uri: string | null }>(
+        `SELECT id, audio_uri FROM entries WHERE deleted_at IS NULL AND kind = 'letter' AND capture_mode IN ('spoken', 'mixed')
          AND (author_id IS NULL OR author_id = ?)`,
         o.profileId,
       );
-      return rows.some((r) => r.audio_uri === null || !o.fileExists(r.audio_uri));
+      return rows.filter((r) => r.audio_uri === null || !o.fileExists(r.audio_uri)).map((r) => r.id);
     },
   };
 }

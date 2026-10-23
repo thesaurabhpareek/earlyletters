@@ -6,9 +6,11 @@
  * nothing unless every configured ESCROW_PRIVATE_KEY_V<n> derives exactly the public key pinned here
  * for <n> (config.ts readKeys), and a rotation moves wraps only to a key pinned here (rotate.ts).
  *
- * Public keys are not secrets: the same bytes go to the app builds as EXPO_PUBLIC_ESCROW_KEYS
- * (packages/api/src/server/escrow-keys.ts). The production key and the staging drill key are
- * different versions, so each escrow project's one private key matches one line here.
+ * Public keys are not secrets: the same bytes go to the app, a production key in
+ * BUNDLED_ESCROW_KEYS (apps/mobile/src/lib/backup/escrow-keys.ts, the only keys preview, TestFlight
+ * and production builds trust), the drill key in EXPO_PUBLIC_ESCROW_KEYS, which only a development
+ * build reads. The production key and the staging drill key are different versions, so each escrow
+ * project's one private key matches one line here.
  *
  * Empty until the key ceremony (docs/ops/BACKUP_RUNBOOK.md, K6 adds the line keygen.ts prints, in
  * the pull request before the deploy). Until a version is pinned, the function refuses its private

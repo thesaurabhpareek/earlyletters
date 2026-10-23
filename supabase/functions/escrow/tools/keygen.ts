@@ -7,8 +7,9 @@
  * escrow project's ESCROW_PRIVATE_KEY_V<version> secret) and the public key, the only part that
  * leaves the ceremony: pinned in supabase/functions/escrow/public-keys.ts (the function refuses a
  * private key that does not derive it, so a slip typing the paper copy opens nothing) and given
- * to the app builds as EXPO_PUBLIC_ESCROW_KEYS (packages/api/src/server/escrow-keys.ts). It
- * writes nothing to disk.
+ * to the app: a production key in BUNDLED_ESCROW_KEYS (apps/mobile/src/lib/backup/escrow-keys.ts,
+ * the only keys preview, TestFlight and production builds trust), the drill key in
+ * EXPO_PUBLIC_ESCROW_KEYS, which only a development build reads. It writes nothing to disk.
  * Not deployed: the function's entry point (index.ts) does not import it.
  */
 import { encodeBase64, toHex } from '../bytes.ts';
@@ -31,7 +32,8 @@ out(`  ${encodeBase64(kp.sk)}`);
 out('');
 out('PUBLIC (safe to share). Pin it in supabase/functions/escrow/public-keys.ts, this line:');
 out(`  ${version}: '${encodeBase64(kp.pk)}',`);
-out('and add it to EXPO_PUBLIC_ESCROW_KEYS for the builds of its environment (packages/api/src/server/escrow-keys.ts):');
+out('and give it to the app (apps/mobile/src/lib/backup/escrow-keys.ts): a production key in BUNDLED_ESCROW_KEYS, the drill key');
+out('in EXPO_PUBLIC_ESCROW_KEYS for a development build (the only build that reads it), this line inside [ ]:');
 out(`  {"version": ${version}, "publicKey": "${encodeBase64(kp.pk)}", "environment": "<production or drill>", "current": true}`);
 out('  ("current": false while it is the next key of a rotation, R1)');
 out(`The same public key in hex: ${toHex(kp.pk)}`);

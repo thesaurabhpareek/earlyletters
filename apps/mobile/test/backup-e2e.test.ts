@@ -18,7 +18,7 @@ import { BackupServerError } from '../src/lib/backup/contract';
 import { ICLOUD_WAIT_MS } from '../src/lib/backup/keys';
 import { backupSource } from '../src/lib/backup/local-store';
 import { FakeBackend, FakeICloud, sha256Hex } from './helpers/backup-node';
-import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText } from './helpers/backup-phone';
+import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText, type LiveSession, type Phone } from './helpers/backup-phone';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
 const PAPA = '22222222-2222-4222-8222-222222222222';
@@ -310,7 +310,8 @@ describe('backup end to end against a fake bucket', () => {
 });
 
 /** Phone A backs up three letters with iCloud Keychain on; phone C (no iCloud Keychain) has their text and asks escrow. */
-async function heldRestore() {
+/** `live`: phone C's live session (for the tests that switch accounts). `elapse`: false stops inside the 72-hour hold. */
+async function heldRestore(o: { live?: LiveSession; elapse?: boolean } = {}) {
   const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
   const backend = new FakeBackend(() => clock.t);
   const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
@@ -318,13 +319,13 @@ async function heldRestore() {
   const letters = [recordLetter(a, ASHA, 20_000), recordLetter(a, ASHA, 90_000), recordLetter(a, ASHA, 5_000)];
   await a.service.turnOn();
   await a.service.tick();
-  const c = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-c' });
+  const c = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-c', live: o.live });
   syncText(a, c);
   await c.service.tick();
   clock.t += ICLOUD_WAIT_MS;
   await c.service.tick();
   expect(c.service.view().restore?.kind).toBe('waiting_hold');
-  clock.t += 72 * HOUR;
+  if (o.elapse ?? true) clock.t += 72 * HOUR;
   return { clock, backend, a, c, letters };
 }
 
@@ -356,6 +357,27 @@ describe('what Settings says, and the recovery service is asked only when it mus
     expect(app.list().map((i) => i.entryId)).toEqual([letter.id]);
     const later = backupSource({ db: () => a.local, profileId: MAMA, heldOnServer: () => true }); // once S03's op exists
     expect(later.list().map((i) => i.entryId).sort()).toEqual([letter.id, held.id].sort());
+  });
+
+  it('[review B m3] the per-id check the queue reads between parts agrees with the list: deleted, erased and others\' letters are out', () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    const kept = recordLetter(a, ASHA, 10_000);
+    const deleted = recordLetter(a, ASHA, 10_000);
+    const erased = recordLetter(a, ASHA, 10_000);
+    const held = holdDraft(a, ASHA, 10_000, { onServer: true });
+    a.local.run("UPDATE entries SET deleted_at = '2026-10-29T00:00:00Z' WHERE id = ?", deleted.id); // Recently deleted
+    a.local.run('DELETE FROM entries WHERE id = ?', erased.id); // erased for good
+    for (const src of [backupSource({ db: () => a.local, profileId: MAMA }), backupSource({ db: () => a.local, profileId: MAMA, heldOnServer: () => true })]) {
+      const listed = new Set(src.list().map((i) => i.entryId));
+      for (const id of [kept.id, deleted.id, erased.id, held.id]) expect(src.has(id), id).toBe(listed.has(id));
+    }
+    expect(backupSource({ db: () => a.local, profileId: MAMA }).has(kept.id)).toBe(true);
+    expect(backupSource({ db: () => a.local, profileId: MAMA }).has(deleted.id)).toBe(false);
+    expect(backupSource({ db: () => a.local, profileId: MAMA, heldOnServer: () => true }).has(held.id)).toBe(true);
+    expect(backupSource({ db: () => a.local, profileId: PAPA }).has(kept.id)).toBe(false);
   });
 
   it('[M1] a quota pause lifts at the next launch: one backup_begin asks again', async () => {
@@ -463,6 +485,148 @@ describe('what Settings says, and the recovery service is asked only when it mus
     clock.t += 1000;
     await c.service.tick();
     expect(backend.releaseCalls).toBe(1);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
+  it('[review B N4 on #252] during an escrow hold the list is not asked again: escrow alone is, and the list once the keys come', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, c, letters, clock } = await heldRestore({ live, elapse: false });
+    let lists = 0;
+    live.onSend = (name, phase) => {
+      if (name === 'listBlobs' && phase === 'before') lists += 1;
+    };
+    for (let i = 0; i < 5; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(lists).toBe(0);
+    expect(backend.releaseCalls).toBe(0); // polled at most every 5 minutes, as before
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    clock.t += 72 * HOUR;
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1);
+    expect(lists).toBe(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
+  it('[review B N4 on #252] after a Stop the list is not asked again in this run; Try again lists and asks once more', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, c, clock } = await heldRestore({ live, elapse: false });
+    let lists = 0;
+    live.onSend = (name, phase) => {
+      if (name === 'listBlobs' && phase === 'before') lists += 1;
+    };
+    for (const r of backend.restores.values()) r.state = 'cancelled'; // the Stop link
+    clock.t += 5 * 60 * 1000;
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    for (let i = 0; i < 5; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(lists).toBe(0);
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    await c.service.tryAgain();
+    await c.service.tick();
+    expect(lists).toBe(1);
+    expect(backend.requests.filter((r) => r.kind === 'escrow.request')).toHaveLength(2);
+  });
+
+  /** iCloud Keychain brings phone A's book keys to phone C at last (it was off, or slow, until now). */
+  const iCloudBrings = (a: Phone, c: Phone) => {
+    for (const [acc, versions] of a.icloud!.items) c.vault.local.set(acc, new Map(versions));
+  };
+  /** Counts the server reads phone C makes from now on. */
+  const reads = (live: LiveSession) => {
+    const n = { listBlobs: 0, listKeys: 0 };
+    live.onSend = (name, phase) => {
+      if (phase === 'before' && (name === 'listBlobs' || name === 'listKeys')) n[name] += 1;
+    };
+    return n;
+  };
+
+  it('[re-check B on #252] a key iCloud Keychain brings during the hold restores on the next pass: no release, no email', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    const n = reads(live);
+    clock.t += 1000;
+    await c.service.tick();
+    expect(n).toEqual({ listBlobs: 0, listKeys: 0 }); // no key yet: the list is not asked again, nor the key rows
+    iCloudBrings(a, c);
+    clock.t += 1000;
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toBeNull();
+    clock.t += 72 * HOUR; // the hold ends: nothing asks escrow for a key this phone has
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(0);
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+  });
+
+  it('[re-check B on #252] a key iCloud Keychain brings after a Stop restores in the same run, with nothing opened by escrow', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    for (const r of backend.restores.values()) r.state = 'cancelled'; // the Stop link
+    clock.t += 5 * 60 * 1000;
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    iCloudBrings(a, c);
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(c.service.view().restore).toBeNull();
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+  });
+
+  it('[re-check B on #252] a recording that still has no key keeps its once-a-run listing while another one comes back by iCloud', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    // A second child's book key, never on iCloud Keychain for phone C: its recording waits on escrow.
+    const twin = 'a5a5a5a5-0000-4000-8000-000000000002';
+    addChild(a, twin, 'Asha twin');
+    const late = recordLetter(a, twin, 30_000);
+    await a.service.tick();
+    syncText(a, c, [late.id]);
+    clock.t += 1000;
+    await c.service.tick(); // the new letter is listed once; its key is not here
+    const n = reads(live);
+    for (const [acc, versions] of a.icloud!.items) if (acc.endsWith(ASHA)) c.vault.local.set(acc, new Map(versions)); // only Asha's key arrives
+    clock.t += 1000;
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(audioOf(c, late.id).uri).toBeNull();
+    expect(n.listBlobs).toBe(1); // the listing that restored Asha's
+    for (let i = 0; i < 4; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(n.listBlobs).toBe(1); // the twin's recording, still without a key, is not listed again in this run
+    expect(backend.unwraps).toHaveLength(0);
+  });
+
+  it('[review B N3 on #252] a release that lands as another account signs in is kept: stored from the saved copy later, one release, one email', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, c, letters, clock } = await heldRestore({ live });
+    // The release answers, then Papa's sign-in lands before the keys are stored (their rows are read first).
+    live.onSend = (name, phase) => {
+      if (name === 'release' && phase === 'after') live.uid = PAPA;
+    };
+    await c.service.tick();
+    live.onSend = undefined;
+    expect(backend.releaseCalls).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'unavailable' }); // not stopped: nothing for anyone to do
+    expect(c.backupDb.getMeta('restoreStopped')).toBeNull();
+    expect(c.backupDb.getMeta('restoreReleased')).not.toBeNull(); // the saved copy, still sealed to this phone
+    clock.t += 1000;
+    await c.service.tick(); // still Papa's session: nothing is asked in Mama's name
+    expect(backend.releaseCalls).toBe(1);
+    live.uid = MAMA;
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(1);
+    expect(backend.unwraps).toHaveLength(1);
     expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
     for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
   });

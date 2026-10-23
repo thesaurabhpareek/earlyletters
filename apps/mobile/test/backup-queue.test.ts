@@ -65,7 +65,9 @@ function rig() {
   };
   const items: BackupSourceItem[] = [];
   const kill = { dead: false, at: null as string | null, countdown: 0 };
+  const pointHooks: ((name: string) => void)[] = [];
   const point = (name: string) => {
+    for (const h of pointHooks) h(name);
     if (kill.at === name && --kill.countdown <= 0) {
       kill.dead = true;
       kill.at = null;
@@ -147,7 +149,7 @@ function rig() {
       conditions,
       clock: { now: () => clock.t, sleep: async () => {} },
       profileId: MAMA,
-      source: { list: () => items },
+      source: { list: () => items, has: (id) => items.some((i) => i.entryId === id) },
       random: () => 0.5,
       partBytes: PART,
     });
@@ -220,6 +222,8 @@ function rig() {
     tmpFiles: () => readdirSync(files.tmpDir),
     /** Runs after every resumable-upload call returns (before the queue sees the answer). */
     onHttp: (h: (method: string) => void) => void httpHooks.push(h),
+    /** Runs at every kill point by name (`seal` per segment, `before:<call>`, `after:<call>`), before any kill. */
+    onPoint: (h: (name: string) => void) => void pointHooks.push(h),
   };
 }
 
@@ -787,5 +791,68 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
     };
     expect(await tusUpload(input(http, 'https://evil.example/storage/v1/upload/resumable/u0'))).toBe('done');
     expect(seen).toEqual([`POST ${EP}`, `PATCH ${EP}/u1`]);
+  });
+
+  it('[review A N2 on #252] an endpoint that is not https gets no request at all, not even with a saved http URL on its host', async () => {
+    const dev = 'http://127.0.0.1:54321/storage/v1/upload/resumable';
+    const seen: string[] = [];
+    const http: HttpLike = async (url, init) => {
+      seen.push(`${init.method} ${url}`);
+      return init.method === 'POST' ? created(1) : { status: 200, header: (h: string) => (h === 'Upload-Offset' ? '0' : null) };
+    };
+    const e = await tusUpload({ ...input(http, `${dev}/u0`), target: { endpoint: dev, headers: { Authorization: `Bearer ${MAMA}` } } }).catch((x: unknown) => x);
+    expect(seen).toEqual([]); // neither the endpoint nor the saved http URL is asked with the token
+    expect(e).toBeInstanceOf(BackupServerError);
+    expect((e as BackupServerError).code).toBe('location');
+    expect((e as BackupServerError).retryable).toBe(false);
+  });
+});
+
+describe('[review B m3 on #150] an erased letter stops sending at the next segment or part', () => {
+  const erase = (r: ReturnType<typeof rig>, entryId: string) => {
+    const i = r.items.findIndex((x) => x.entryId === entryId);
+    if (i >= 0) r.items.splice(i, 1);
+  };
+  const parts = (r: ReturnType<typeof rig>) => r.backend.requests.filter((x) => x.kind === 'tus').length;
+
+  it('erased mid-upload: no part after the one in flight, its job and ciphertext go, and the next recording uploads in the same pass', async () => {
+    const r = rig();
+    const { item: a } = await r.addRecording(5 * PART + 100); // six parts
+    const { item: b, plain: bPlain } = await r.addRecording(1000); // one part
+    r.onHttp((m) => {
+      if (m === 'PATCH' && r.items.some((x) => x.entryId === a.entryId)) erase(r, a.entryId);
+    });
+    await r.make().drain();
+    expect(parts(r)).toBe(1 + 1); // a's first part only, then b's one
+    expect(r.db().job(a.entryId)).toBeNull();
+    expect(r.backend.blobs.get(a.entryId)?.state).not.toBe('confirmed');
+    expect(r.db().job(b.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(b.entryId))!)).toBe(sha256Hex(bPlain));
+    expect(r.tmpFiles()).toEqual([]);
+  });
+
+  it('erased while it is encrypted: it stops at the next segment and nothing is sent for it', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(20 * SEGMENT_SIZE);
+    r.onPoint((name) => {
+      if (name === 'seal' && r.seals() === 3) erase(r, item.entryId);
+    });
+    await r.make().drain();
+    expect(r.seals()).toBe(3);
+    expect(r.db().job(item.entryId)).toBeNull();
+    expect(r.backend.requests.filter((x) => x.kind === 'begin')).toHaveLength(0);
+    expect(parts(r)).toBe(0);
+    expect(r.tmpFiles()).toEqual([]);
+  });
+
+  it('erased between steps (while backup_begin answered): the upload never starts', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(2 * PART);
+    r.onPoint((name) => {
+      if (name === 'after:begin') erase(r, item.entryId);
+    });
+    await r.make().drain();
+    expect(r.db().job(item.entryId)).toBeNull();
+    expect(parts(r)).toBe(0);
   });
 });

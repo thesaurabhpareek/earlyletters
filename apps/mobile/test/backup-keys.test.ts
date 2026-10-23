@@ -14,7 +14,7 @@ import { bytesToBase64, equalBytes } from '../src/lib/backup/bytes';
 import { BOOK_SUBKEY_INFO, BackupServerError, escrowAad, escrowInfo, keyCheckLabel, packEscrowWrap, releaseAad, releaseInfo, unpackEscrowWrap, type BackupServer } from '../src/lib/backup/contract';
 import { wrapAad } from '../src/lib/backup/format';
 import { DeviceRevoked, ICLOUD_WAIT_MS, createKeyManager, type MetaStore } from '../src/lib/backup/keys';
-import { escrowKeysFor } from '../src/lib/backup/escrow-keys';
+import { MAX_ENV_ESCROW_KEY_VERSION, escrowKeysFor } from '../src/lib/backup/escrow-keys';
 import { FakeBackend, FakeICloud, hpkeOpen, hpkeSeal, nodeVault, x25519PublicOf } from './helpers/backup-node';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -376,19 +376,45 @@ describe('[F08-REQ-027] a device key pair per install and account', () => {
 });
 
 describe('[security 4] the drill escrow key is trusted only in a development-profile build', () => {
-  const drill = `v9:${Buffer.alloc(32, 9).toString('base64')}`;
-  const bundled = [{ version: 1, publicKey: Buffer.alloc(32, 1).toString('base64') }];
+  const pk = (n: number, len = 32) => Buffer.alloc(len, n).toString('base64');
+  /** EXPO_PUBLIC_ESCROW_KEYS as keygen prints it (#151) and packages/api parses it (#138). */
+  const list = (...keys: { version: number; publicKey?: string; environment?: string; current?: boolean }[]) =>
+    JSON.stringify(keys.map((k) => ({ version: k.version, publicKey: k.publicKey ?? pk(k.version), environment: k.environment ?? 'drill', current: k.current ?? true })));
+  const drill = list({ version: 9 });
+  const bundled = [{ version: 1, publicKey: pk(1) }];
 
   it('preview, TestFlight (preview) and production builds ignore it', () => {
     for (const env of ['preview', 'production']) expect(escrowKeysFor(env, drill, bundled)).toEqual(bundled);
   });
 
-  it('a development build adds it, never in place of a bundled version, and ignores anything malformed', () => {
-    expect(escrowKeysFor('development', drill, bundled)).toEqual([...bundled, { version: 9, publicKey: Buffer.alloc(32, 9).toString('base64') }]);
-    expect(escrowKeysFor('development', `v1:${Buffer.alloc(32, 9).toString('base64')}`, bundled)).toEqual(bundled);
-    for (const bad of ['', 'v0:abc', `9:${Buffer.alloc(32).toString('base64')}`, `v9:${Buffer.alloc(31).toString('base64')}`]) {
+  it('a development build adds its current key, never in place of a bundled version, and ignores anything malformed', () => {
+    expect(escrowKeysFor('development', drill, bundled)).toEqual([...bundled, { version: 9, publicKey: pk(9) }]);
+    expect(escrowKeysFor('development', ` ${drill}\n`, [])).toEqual([{ version: 9, publicKey: pk(9) }]);
+    expect(escrowKeysFor('development', list({ version: 1, publicKey: pk(7) }), bundled)).toEqual(bundled);
+    for (const bad of [
+      '',
+      'not json',
+      `v9:${pk(9)}`, // the singular variable's old format
+      list({ version: 0 }),
+      list({ version: 9, publicKey: pk(9, 31) }),
+      list({ version: 9, current: false }), // no current key
+      list({ version: 8 }, { version: 9 }), // two current keys
+      list({ version: 8, environment: 'production', current: false }, { version: 9 }), // two environments
+      list({ version: 9 }, { version: 9, current: false }), // one version twice
+    ]) {
       expect(escrowKeysFor('development', bad, bundled), bad).toEqual(bundled);
     }
+    expect(escrowKeysFor('development', undefined, bundled)).toEqual(bundled);
+  });
+
+  it('only the current key is taken: a next key listed beside it waits for its release (runbook R2)', () => {
+    const rotating = list({ version: 8 }, { version: 9, current: false });
+    expect(escrowKeysFor('development', rotating, [])).toEqual([{ version: 8, publicKey: pk(8) }]);
+  });
+
+  it('versions stay capped as #150 read them (one to three digits)', () => {
+    expect(escrowKeysFor('development', list({ version: MAX_ENV_ESCROW_KEY_VERSION }), [])).toEqual([{ version: 999, publicKey: pk(999 % 256) }]);
+    expect(escrowKeysFor('development', list({ version: MAX_ENV_ESCROW_KEY_VERSION + 1 }), [])).toEqual([]);
   });
 });
 
