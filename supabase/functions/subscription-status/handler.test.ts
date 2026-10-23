@@ -164,6 +164,8 @@ Deno.test('[LEGAL-REQ-014] canary: nothing from the body, the salt, the session 
     { rpcStatus: 400, rpcBody: { code: 'P0001', ...loud } }, { rpcStatus: 500, rpcBody: { code: 'XX000', ...loud } },
     { rpcStatus: 404, rpcBody: { code: 'PGRST202', ...loud } }, { rpcStatus: 403, rpcBody: { code: '42501', ...loud } },
     { rpcStatus: 400, rpcBody: { code: 'SCKIL', ...loud } }, { rpcStatus: 400, rpcBody: { code: '22023', ...loud } },
+    // PostgREST's own text for a missing grant, so the 'permission denied' check below can fail (review B note 3 on #253).
+    { rpcStatus: 403, rpcBody: { code: '42501', message: 'permission denied for function status_report_store', details: CANARY.childName } },
     { userStatus: 500 },
   ];
   for (const o of worlds) {
