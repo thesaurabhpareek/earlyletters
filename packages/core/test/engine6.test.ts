@@ -338,12 +338,18 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     expect(v7(raw, edit(raw, 'punctuation', 'more?', 'more?.'))).toBe('changes_sentence_type');
   });
 
-  it('a mark behind spaces, closing quotes, brackets or an invisible character still touches', () => {
-    for (const raw of ['She said "no?"', 'She said (no!)', 'She said \u201Cno.\u201D', 'She said no.\u200B', 'Was there more? ']) {
+  it('a mark behind spaces, closing quotes or an invisible character still touches', () => {
+    for (const raw of ['She said "no?"', 'She said \u201Cno.\u201D', 'She said no.\u200B', 'Was there more? ']) {
       expect(v7(raw, atEnd(raw, '.')), raw).toBe('changes_sentence_type');
     }
     const hi = 'आशा ने कहा "हाँ।"';
     expect(verdictIn(HI, hi, atEnd(hi, '।'))).toBe('changes_sentence_type');
+  });
+
+  it('a mark inside brackets ends the bracketed words only: the sentence around them takes its own (#249 review F1, N1)', () => {
+    for (const raw of ['She said (no!)', 'We went home (it rained!)', 'We went home (it was late.)']) {
+      expect(v7(raw, atEnd(raw, '.')), raw).toBeNull();
+    }
   });
 
   it('negative cases: one end mark where none was, after a word, is still accepted', () => {
@@ -378,9 +384,9 @@ describe("[F06-REQ-006] engine 7: the verifier's windows at the edges of a lette
   });
 
   it('at the end of a letter: the mark two closers away is seen, beyond the old two-character window', () => {
-    const raw = 'She said "no.")';
+    const raw = 'Asha said "Mumma said \'no.\'"';
     expect(v7(raw, atEnd(raw, '.'))).toBe('changes_sentence_type');
-    const open = 'She said "no")';
+    const open = 'Asha said "Mumma said \'no\'"';
     expect(v7(open, atEnd(open, '.'))).toBeNull();
   });
 
@@ -474,14 +480,10 @@ describe('[F06-REQ-015] engine 7: the engine never puts an end mark next to one 
   });
 
   it.each([
-    ['She said "no?" um.', 'She said "no?"'],
-    ['She said (no!) um.', 'She said (no!)'],
-    ['She said \u201Cno.\u201D um.', 'She said "no."'],
     ['Asha waited\u2026 um.', 'Asha waited...'],
     ['She said no.\u200B um.', 'She said no.\u200B'],
-    ['आशा ने कहा "हाँ।" um.', 'आशा ने कहा "हाँ।"'],
-  ])('the app path: a filler said as its own sentence after a closer, an invisible or an ellipsis goes with its own end mark: "%s"', (raw, want) => {
-    // Engine 6 removed "um" alone and left its "." next to the speaker's mark ('"no?".', "waited....").
+  ])('the app path: a filler said as its own sentence after an ellipsis character or an invisible goes with its own end mark: "%s"', (raw, want) => {
+    // Engine 6 removed "um" alone and left its "." next to the speaker's mark ("waited....").
     const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' });
     expect(r.text).toBe(want);
     expect(r.applied.map((e) => [e.type, e.original])).toEqual([['filler', ' um.']]);
@@ -493,5 +495,66 @@ describe('[F06-REQ-015] engine 7: the engine never puts an end mark next to one 
     expect(app('She said "no" um.')).toBe('She said "no".'); // no end mark before the quote closes
     expect(app('Asha waited\u2026 um, then slept.')).toBe('Asha waited... then slept.');
     expect(app('She slept. Um. Then she woke.')).toBe('She slept. Then she woke.'); // as in engine 6
+  });
+});
+
+describe('[F06-REQ-004] engine 7: a removal never changes how a sentence ends (#249 review F1)', () => {
+  const app = (raw: string) => faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' }).text;
+
+  it.each([
+    // A mark inside quotes or brackets belongs to those words; the sentence around them is still open.
+    ['Did she say "no." um?', 'Did she say "no." um?'],
+    ['Did she say "no!" um?', 'Did she say "no!" um?'],
+    ['Did you see it (it was huge!) um?', 'Did you see it (it was huge!)?'],
+    ['Did you wait\u2026 um?', 'Did you wait... um?'],
+    ['We went home (it rained!) um.', 'We went home (it rained!).'],
+    ['We went home (it was late.) um.', 'We went home (it was late.).'],
+    ['She said (no!) um.', 'She said (no!).'], // engine 6's output, restored
+    ['Asha looked up and asked "more?" um. Then she laughed.', 'Asha looked up and asked "more?" um. Then she laughed.'],
+    ['She said "no?" um.', 'She said "no?" um.'],
+    ['She said \u201Cno.\u201D um.', 'She said "no." um.'],
+    ['आशा ने कहा "हाँ।" um.', 'आशा ने कहा "हाँ।" um.'],
+    // Already on develop, the same class: the "?" went with the filler.
+    ['Did you wait... um?', 'Did you wait... um?'],
+    ['Did she say no. um?', 'Did she say no. um?'],
+  ])('the app path keeps every "?" and "!" and the end of the sentence around: "%s"', (raw, want) => {
+    const text = app(raw);
+    expect(text).toBe(want);
+    expect(ENGLISH_RULES.moodMarks(text)).toBe(ENGLISH_RULES.moodMarks(raw));
+  });
+
+  it('the rules-only clean keeps the "." the sentence around a bracket takes (#249 review N1)', async () => {
+    const r = await cleanRulesOnly({ raw: 'We went home (it rained!) um', dictionary: [], level: 'clean' }, { language: 'en' });
+    expect(r.text).toBe('We went home (it rained!).');
+  });
+
+  it('the verifier backstop: no filler, repeat or false start takes a "?" or "!" in any script, from a rule or a model', () => {
+    const cases: Array<[string, Edit['type'], string]> = [
+      ['Did she say "no." um?', 'filler', ' um?'],
+      ['Did you wait... um?', 'filler', ' um?'],
+      ['Did she sleep? Hmm? She did.', 'filler', ' Hmm?'], // a filler question of its own keeps its "?" too
+      ['Asha asked \u300Cmore\uFF1F\u300D um\uFF1F', 'filler', ' um\uFF1F'],
+      ['Did she say no\u061F um\u061F', 'filler', ' um\u061F'],
+    ];
+    for (const [raw, type, original] of cases) {
+      for (const source of ['rule', 'model'] as const) {
+        expect(v7(raw, { ...edit(raw, type, original, ''), source }), `${raw} ${source}`).toBe('changes_sentence_type');
+      }
+    }
+  });
+
+  it('the verifier backstop: an end mark goes with a removal only in a sentence of its own after a finished one', () => {
+    // Refused: the mark ends a sentence the removal leaves behind.
+    expect(v7('We went home (it rained!) um.', edit('We went home (it rained!) um.', 'filler', ' um.', ''))).toBe('changes_sentence_type');
+    expect(v7('आशा (हँसी!) um।', edit('आशा (हँसी!) um।', 'filler', ' um।', ''))).toBe('changes_sentence_type');
+    expect(v7('We went home the the.', edit('We went home the the.', 'repeat', ' the.', ''))).toBe('changes_sentence_type'); // engine 6 accepted it
+    expect(v7('Then she was. she was so happy', edit('Then she was. she was so happy', 'false_start', ' she was.', ''))).toBe('changes_sentence_type');
+    // Accepted: a whole sentence of its own goes with its mark, and the sentence before keeps its own (F06 section 4.1).
+    expect(v7('We went home (it rained!) um.', edit('We went home (it rained!) um.', 'filler', ' um', ''))).toBeNull();
+    expect(v7('She walked to the door. Hmm.', edit('She walked to the door. Hmm.', 'filler', ' Hmm.', ''))).toBeNull();
+    expect(v7('आशा हँसी। um।', edit('आशा हँसी। um।', 'filler', ' um।', ''))).toBeNull();
+    expect(v7('she was. she was so happy', edit('she was. she was so happy', 'false_start', 'she was. ', ''))).toBeNull();
+    expect(app('So um, she uh walked to the door. Hmm.')).toBe('So she walked to the door.');
+    expect(app('Um. She slept.')).toBe('She slept.');
   });
 });

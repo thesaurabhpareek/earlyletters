@@ -110,11 +110,20 @@ export const ENGINE_VERSION = 7;
 //     a final "." after it gave "She said no.." in the rules-only clean
 //     (cleanRulesOnly); the "." is refused, the removal stands. Any edit,
 //     not only punctuation, is refused if it brings two marks together.
-//   - The filler rule: a filler said as its own sentence after a closing
-//     quote, bracket, invisible character or ellipsis ('She said "no?" um.',
-//     "waited... um.") goes with its own end mark, as after a bare mark.
-//     Engine 6 removed the word alone and left its "." next to the speaker's
-//     mark ('"no?".'). The wider removal is one engine 6's verifier accepts.
+//   - The filler rule: a filler said as its own sentence after an invisible
+//     character or an ellipsis character ("waited[U+2026] um.") goes with its
+//     own end mark, as after a bare mark; engine 6 left "waited....". The
+//     wider removal is one engine 6's verifier accepts. After a closing quote
+//     or bracket the filler is not a sentence of its own: the mark before
+//     belongs to the quoted or bracketed words (#249 review F1).
+//   - No removal labelled filler, repeat or false start changes how a
+//     sentence ends: it takes no "?" or "!" in any script, and an end mark
+//     only with a sentence of its own after a finished one ("door. Hmm.").
+//     'Did she say "no." um?' and "Did you wait... um?" keep their "?" (the
+//     second lost it in engine 6), and a filler question of its own ("Hmm?")
+//     now stays as said (#249 review F1).
+//   - A mark inside brackets does not touch the one after them: "We went
+//     home (it rained!)." keeps the sentence's own "." (#249 review F1, N1).
 //   - The word window steps a code point at a time, so punctuation can no
 //     longer split a word written outside the Basic Multilingual Plane
 //     (Adlam).

@@ -12,10 +12,12 @@ function escapeClass(chars: string): string {
 
 /**
  * What may follow a sentence's end mark before a filler that is a sentence of
- * its own: closing quotes and brackets, and invisible characters. The
- * ellipsis character ends a sentence here as "..." does.
+ * its own: invisible characters only. The ellipsis character ends a sentence
+ * here as "..." does. A closing quote or bracket does not: the mark before it
+ * belongs to the quoted or bracketed words, and the sentence around them may
+ * still be open ('Did she say "no." um?' keeps its "?"; #249 review F1).
  */
-const AFTER_END = `"'\\u201D\\u2019)\\]»›」』）\\p{Default_Ignorable_Code_Point}\\p{Bidi_Control}`;
+const AFTER_END = `\\p{Default_Ignorable_Code_Point}\\p{Bidi_Control}`;
 
 /**
  * "So um she, uh, walked" -> "So she walked".
@@ -29,9 +31,8 @@ export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, s
   const ends = escapeClass(R.sentenceEndChars);
   const commas = escapeClass(R.commaChars);
   const openers = escapeClass(R.openers);
-  // 'She said "no?" um.', and "um." after an ellipsis character, end a sentence before the filler too, so it goes with
-  // its own end mark; engine 6 took "um" alone and left its "." next to the speaker's mark
-  // ('"no?".', "waited...."; found by the #179 follow-up's differential, engine 7).
+  // "um." after an invisible character or an ellipsis character that ends a sentence is a sentence of its
+  // own and goes with its end mark; engine 6 took "um" alone and left "waited...." (engine 7).
   const sentenceStartRe = new RegExp(`(^|[${ends}\\u2026][${AFTER_END}]*\\s*)$`, 'u');
   const terminalRe = new RegExp(`^[${ends}]+`);
   const afterRe = new RegExp(`^[${commas}]?\\s*`);

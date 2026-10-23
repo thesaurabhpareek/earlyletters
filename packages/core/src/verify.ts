@@ -46,8 +46,13 @@ export const CEILING_MIN_WORDS = 3;
  * "?.", "!.", "।.", "？." as much as ".." (#179 re-check Note E, 23 Oct 2026).
  */
 const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
-/** What may sit between two end marks that still touch: spaces, closing quotes and brackets ("no.")."), invisible characters. */
-const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』)\]）】〉》]$/u;
+/**
+ * What may sit between two end marks that still touch: spaces, closing quotes
+ * and invisible characters. Not a closing bracket: a mark inside brackets ends
+ * the bracketed words only, and the sentence around them still takes its own
+ * ("We went home (it rained!)."; #249 review F1 and N1).
+ */
+const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』]$/u;
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
@@ -279,6 +284,22 @@ function markRunPairs(text: string, start: number, end: number, other: string, R
   while (s > 0 && nearMark(text[s - 1], R)) s--;
   while (t < text.length && nearMark(text[t], R)) t++;
   return { asIs: endMarkPairs(text.slice(s, t), R), swapped: endMarkPairs(text.slice(s, start) + other + text.slice(end, t), R) };
+}
+
+/**
+ * A removal labelled filler, repeat or false start never changes how a
+ * sentence ends (#249 review F1). It takes no "?" or "!", in any script. It
+ * takes an end mark only with a sentence of its own that follows a finished
+ * one or opens the letter: "door. Hmm." loses " Hmm." (F06 section 4.1), but
+ * 'Did she say "no." um?' keeps its "?" and "We went home (it rained!) um."
+ * keeps the "." that ends the sentence around the bracket.
+ */
+function removalChangesSentenceEnd(raw: string, e: Edit, R: LanguageRules): boolean {
+  if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return true;
+  if (endMarkCount(e.replacement, R) >= endMarkCount(e.original, R)) return false;
+  let i = e.start;
+  while (i > 0 && (/\s/u.test(raw[i - 1]) || isInvisible(raw[i - 1]))) i--;
+  return i > 0 && !isEndMark(raw[i - 1], R);
 }
 
 /** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks)? */
@@ -682,6 +703,7 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       break;
   }
   if (reason) return reason;
+  if (REMOVAL_TYPES.has(e.type) && removalChangesSentenceEnd(raw, e, R)) return 'changes_sentence_type';
   // Whatever its label, no edit leaves two end marks touching that the raw kept apart: a filler
   // removal of " um" alone out of "She said no. um." would ("no.."); the rules take " um." with its
   // own mark. Punctuation is checked in checkPunctuation, where the reason is the same.
