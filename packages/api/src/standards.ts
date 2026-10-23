@@ -76,7 +76,13 @@ export interface EndpointSpec {
   idempotency: 'safe_method' | 'natural_id' | 'idempotency_key';
   rateLimit: RateLimit;
   status: 'live' | 'this_change' | 'planned';
-  /** The kill switch that stops it (ADR 0016), when one does. Every server-feature endpoint names one (08 section 8.3 item 2). */
+  /**
+   * The kill switch that stops it (ADR 0016), when one does. Every server-feature endpoint names one (08 section 8.3 item 2).
+   * Naming it means the app checks it before the call; whether the server also stops the call differs per switch
+   * (README "Kill switches"). `invites` today: the app pauses create, Share again, peek and join (S04, #243,
+   * apps/mobile/src/lib/family/invites-switch.ts); on the server only invite-redeem honours it (code redemption),
+   * and create_child_invite, peek_invite and accept_child_invite have no stop until S02 adds SCKIL (request 4).
+   */
   killSwitch?: 'sync' | 'invites' | 'photos' | 'packDownloads' | 'serverContent' | 'backupUploads' | 'escrow' | 'statusReport';
   /** Which build flag must be on for the app to call it (capabilities.ts). Public documents need none. */
   capability?: 'signIn' | 'sync' | 'coParent' | 'backup' | 'statusReport';
@@ -130,7 +136,7 @@ export const ENDPOINTS = {
     method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'idempotency_key', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   
-    killSwitch: 'invites', capability: 'coParent',
+    killSwitch: 'invites', capability: 'coParent', // the app pauses it (S04, #243); no SQL stop yet (S02 request 4)
   },
   recordPolicyAct: {
     method: 'POST', path: '/rest/v1/rpc/record_policy_act', class: 'write_rpc', auth: 'user_jwt',
@@ -161,18 +167,18 @@ export const ENDPOINTS = {
   peekInvite: {
     method: 'POST', path: '/rest/v1/rpc/peek_invite', class: 'read_rpc', auth: 'user_jwt',
     idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'live',
-    killSwitch: 'invites', capability: 'coParent',
+    killSwitch: 'invites', capability: 'coParent', // the app pauses it (S04, #243); no SQL stop yet (S02 request 4)
   },
   acceptInvite: {
     method: 'POST', path: '/rest/v1/rpc/accept_child_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'live',
-    killSwitch: 'invites', capability: 'coParent',
+    killSwitch: 'invites', capability: 'coParent', // the app pauses it (S04, #243); no SQL stop yet (S02 request 4)
   },
   // The device-made overload in S02's 20261015020000 (F11 D5): idempotent on the invite id and hashes.
   createInviteV2: {
     method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
-    killSwitch: 'invites', capability: 'coParent',
+    killSwitch: 'invites', capability: 'coParent', // the app pauses it (S04, #243); no SQL stop yet (S02 request 4)
   },
   revokeInvite: {
     method: 'POST', path: '/rest/v1/rpc/revoke_invite', class: 'write_rpc', auth: 'user_jwt',
