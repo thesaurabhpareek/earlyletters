@@ -209,6 +209,11 @@ export interface PushResultOk {
   entry?: EntryState | null;
   /** v1 (WP-F16-17): server state of a held draft after held.upsert. */
   held?: { id: string; v: string; updated_at: string } | null;
+  /**
+   * v1 (ADR 0025 section 9, the switch): held-draft sync is off on the server (`app.held_sync = 'off'`). The held
+   * op changed nothing and was not claimed; the phone keeps it queued, unsent, and the same op id applies later.
+   */
+  held_off?: boolean;
   book?: { id: string };
   books?: string[];
   prefs?: { child_id: string };

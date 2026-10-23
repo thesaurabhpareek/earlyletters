@@ -1918,6 +1918,11 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
       expect(queued(P, 'held.upsert', id)?.opId).toBe(upOp);
       expect(await receipt(upOp)).toBe(false); // not claimed on the server
       expect(await held(id)).toBeUndefined();
+      // Edits while it is off rewrite that one queued upload in place: the op is as if never sent (review L N1).
+      P.store.setDraftTyped(id, 'You read to your bear, twice.');
+      P.store.setDraftTyped(id, 'You read to your bear, then to me.');
+      expect(outbox(P)).toEqual(['held.upsert']);
+      expect(queued(P, 'held.upsert', id)?.op.data).toMatchObject({ typed_text: 'You read to your bear, then to me.' });
 
       // While it is off nothing held is sent again, and the pull carries no held section.
       letGo(P, before);
@@ -1930,35 +1935,35 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
 
       // Letters, Keep and Erase now keep working.
       const words = writeLetter(P, BOOK, 'You said moon for the first time.');
-      keep(P, id); // its held upload waits; the Keep goes
+      keep(P, id); // the Keep carries the words; the never-sent upload goes with the draft
       const gone = writeLetter(P, BOOK, 'You sneezed at the pepper.');
       await P.sync(w.s);
       eraseNow(P, gone);
       await P.sync(w.s);
       expect((await letter(words))?.final_text).toBe('You said moon for the first time.');
-      expect((await letter(id))?.final_text).toBe('You read to your bear.');
+      expect((await letter(id))?.final_text).toBe('You read to your bear, then to me.');
       expect(await letter(gone)).toBeUndefined();
       expect(w.answers('entry.erase', gone)).toEqual([expect.objectContaining({ ok: true, erased: true })]);
-      expect(outbox(P)).toEqual(['held.upsert', 'held.discard']); // only the held ops wait
+      expect(outbox(P)).toEqual(['held.discard']); // only the let-go waits
       expect((await held(before))?.typed_text).toBe('You drummed on the pot.');
       await Q.sync();
       expect(draft(Q, before)?.typedText).toBe('You drummed on the pot.'); // the other phone keeps its held drafts
-      expect(local(Q, id)?.final_text).toBe('You read to your bear.');
+      expect(local(Q, id)?.final_text).toBe('You read to your bear, then to me.');
     } finally {
       await server.sys("select set_config('app.held_sync', '', false)");
     }
 
-    // On again: the first pull carries the held section; then the same ops go and apply.
+    // On again: the first pull carries the held section; then the same let-go op goes and applies.
     await P.sync(w.s);
     await P.sync(w.s);
     expect(outbox(P)).toEqual([]);
-    expect([await receipt(upOp), await receipt(goOp)]).toEqual([true, true]);
-    expect(w.answers('held.upsert', id).at(-1)).toMatchObject({ ok: true, held: null }); // kept meanwhile: the letter is the row
+    expect([await receipt(upOp), await receipt(goOp)]).toEqual([false, true]); // the upload never went again: the Keep carried its words
+    expect(w.answers('held.upsert', id)).toHaveLength(1);
     expect(w.answers('held.discard', before).at(-1)).toMatchObject({ ok: true });
     expect(await held(before)).toBeUndefined();
     expect(await marker(before)).toBe('discarded');
     await Q.sync();
     expect(draft(Q, before)).toBeUndefined();
-    expect(local(Q, id)?.final_text).toBe('You read to your bear.');
+    expect(local(Q, id)?.final_text).toBe('You read to your bear, then to me.');
   }, 60_000);
 });

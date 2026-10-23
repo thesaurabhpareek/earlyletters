@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { drafts, type RepoContext } from '../src/lib/db/repos';
 import type { SqlDb } from '../src/lib/db/sql';
-import { applyPullPage, buildPullRequest } from '../src/lib/sync/merge';
+import { applyPullPage, applyPushResponse, buildPullRequest } from '../src/lib/sync/merge';
 import {
   SYNC_SETTING,
   dropHeldConflictCopies,
@@ -20,12 +20,13 @@ import {
   enqueueHeldDiscard,
   enqueueHeldDraft,
   listConflictCopies,
+  markSent,
   settleHeldAnswer,
   takeBatch,
   writeSetting,
 } from '../src/lib/sync/outbox';
 import { takeOwnership } from '../src/lib/sync/ownership';
-import type { PullResponse, PushOp } from '../src/lib/sync/types';
+import type { PullResponse, PushOp, PushResponse } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
 import { fixture, insertBook } from './helpers/store-fixture';
 
@@ -54,7 +55,7 @@ describe('[F14-REQ-039] migration 8: held drafts can sync as author-only rows', 
   it('adds the held columns; existing drafts were never held, so nothing is queued for them', () => {
     const { db } = nodeDb();
     migrate(db, qctx, MIGRATIONS.filter((m) => m.version <= 7));
-    db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c1', 'Asha', '2025-04-12', NULL, ?, ?)", NOW, NOW);
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2025-04-12', NULL, 'Mama', ?, ?)", NOW, NOW);
     db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at, typed_text, state) VALUES ('d1', 'c1', 'typed', ?, 'A typed draft', 'ready')", NOW);
     db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", ME);
     expect(migrate(db, qctx)).toMatchObject({ from: 7, to: LATEST_VERSION });
@@ -67,7 +68,7 @@ describe('[F14-REQ-039] migration 8: held drafts can sync as author-only rows', 
   it('a signed-in phone queues its voice-only letters waiting for words as waiting_letter rows', () => {
     const { db } = nodeDb();
     migrate(db, qctx, MIGRATIONS.filter((m) => m.version <= 7));
-    db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c1', 'Asha', '2025-04-12', NULL, ?, ?)", NOW, NOW);
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2025-04-12', NULL, 'Mama', ?, ?)", NOW, NOW);
     db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", ME);
     db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text,
@@ -174,6 +175,30 @@ describe('an older server', () => {
     expect(takeBatch(db, { now: NOW }).ops.map((o) => o.type)).toEqual(['held.upsert', 'entry.upsert']);
     applyPullPage(db, page(false), NOW); // the server went back to a build without held drafts
     expect(takeBatch(db, { now: NOW }).ops.map((o) => o.type)).toEqual(['entry.upsert']);
+  });
+
+  it('[review L N1] a held_off answer leaves the op as never sent: two edits after it rewrite the one queued upload in place, and a let-go of it sends nothing', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Held while the switch is off.');
+    drafts.markHeld(repo, d, true);
+    enqueueHeldDraft(db, d, qctx);
+    const batch = takeBatch(db, { now: NOW });
+    expect(batch.ops.map((o) => o.type)).toEqual(['held.upsert']);
+    markSent(db, batch.rows, NOW);
+    applyPushResponse(db, batch.rows, { results: [{ op: batch.ops[0].op, ok: true, applied: false, held_off: true }] } as PushResponse, qctx);
+    // Queued, not done, and as if never sent; not taken again until a pull carries a held section.
+    expect(db.all('SELECT type, sent_at, attempts, next_attempt_at FROM sync_outbox')).toEqual([{ type: 'held.upsert', sent_at: null, attempts: 0, next_attempt_at: null }]);
+    expect(takeBatch(db, { now: NOW }).ops).toEqual([]);
+    drafts.setTyped(repo, d, 'Held while the switch is off, one.');
+    enqueueHeldDraft(db, d, qctx);
+    drafts.setTyped(repo, d, 'Held while the switch is off, two.');
+    enqueueHeldDraft(db, d, qctx);
+    const queued = ops(db);
+    expect(queued.map((o) => o.type)).toEqual(['held.upsert']); // one op, rewritten in place, not one snapshot per edit
+    expect((JSON.parse(queued[0].payload) as PushOp).data.typed_text).toBe('Held while the switch is off, two.');
+    // The server never had the row: letting it go drops the upload and sends nothing.
+    enqueueHeldDiscard(db, d, qctx);
+    expect(ops(db)).toEqual([]);
   });
 });
 

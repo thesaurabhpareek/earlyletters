@@ -288,8 +288,8 @@ describe('[WP-F04-03] every earlier schema migrates to head with row counts and 
     }
     if (version >= 7) {
       // v7 holds a person's choices for a book in child_member_prefs.
-      db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, ?, ?)", NOW, NOW);
-      db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Amma', ?, ?)", NOW, NOW);
       db.run("INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at) VALUES ('c1', 'Mama', 1, NULL, ?), ('c2', 'Amma', 0, ?, ?)", NOW, NOW, NOW);
     } else {
       db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);

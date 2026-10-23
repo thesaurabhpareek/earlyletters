@@ -294,9 +294,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     const row = byOp.get(r.op);
     if (!row) continue;
     answered.add(row.op_id);
-    if (r.ok && row.type.startsWith('held.') && (r as { held_off?: boolean }).held_off) {
+    if (r.ok && row.type.startsWith('held.') && r.held_off) {
       // Held-draft sync is switched off on the server (app.held_sync = 'off'): the op is not claimed there and
-      // stays queued here, unsent, until a pull carries a held section again (the same op id applies then).
+      // stays queued here until a pull carries a held section again (the same op id applies then). It is as if
+      // never sent (as for SCCON): a later edit rewrites it in place instead of queueing another whole row, and
+      // a let-go of a draft the server never had sends nothing (review L N1).
+      db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', row.seq);
       writeSetting(db, SYNC_SETTING.heldServer, null);
       continue;
     }
