@@ -486,7 +486,10 @@ export const PushResultOkSchema = v.object({
   /**
    * `held.discard`: the held words changed since `base` (another phone's later
    * edit wins), or a legal hold keeps the row. The draft stays on the server
-   * and comes back at the next pull; the phone must not drop its words.
+   * and the phone must not drop its words. The server sends nothing more: the
+   * row comes back only when the phone pulls the held section again from a
+   * null cursor (the app does, merge.ts), and only if it parses. A row the
+   * parser drops (`held.rejected`, PulledHeldSectionSchema) never comes back.
    */
   kept: v.optional(v.boolean()),
   /** `entry.erase` and Erase now on a held draft: the server erased it for good. */
@@ -719,10 +722,21 @@ export type PulledHeldRow = PulledHeld | PulledHeldGone;
  * (20261016000000, unlike `entries`), and `held.upsert` stores them as sent,
  * so a row this contract refuses can come from any of the author's phones.
  * Such a row is dropped and counted in `rejected`; every other row, and the
- * rest of the pull with its books, still parses. The cursor still moves
- * past it: this phone keeps whatever copy it has, and the row comes again
- * when it changes. Log `rejected` as a count only, never the row, its id or
- * its words (CLAUDE.md privacy rules).
+ * rest of the pull with its books, still parses.
+ *
+ * What happens to the dropped row: the server keeps it, the cursor moves
+ * past it, and nothing heals it. It is never shown on this phone; a phone
+ * with its own copy keeps that copy, and a phone without one (a new phone,
+ * or after a restore epoch) never shows that draft. It comes again only if
+ * it changes, and then only if it parses. Two things are therefore
+ * required, not optional (the constitution: nothing a person wrote may
+ * vanish silently):
+ *  - WP-F16-01 tells the person when `rejected` is above 0, and logs it as
+ *    a count only, never the row, its id or its words (CLAUDE.md privacy);
+ *  - S02 adds the `entries` checks to `held_drafts` (`capture_mode`,
+ *    `edit_level`, the jsonb types), so the writing phone is refused at
+ *    write time and keeps a copy the person can see. The same checks stop
+ *    a held row's `current` from failing a whole push answer.
  */
 export const PulledHeldSectionSchema = v.pipe(
   v.object({ rows: v.array(v.unknown()), cursor: nullableStr, more: v.boolean() }),
@@ -770,7 +784,8 @@ export const PullResponseSchema = v.object({
    *  - a restore epoch: the pull answers `reset` instead.
    * The left-book section (`gone[].rows`) carries the author's letters only,
    * never held drafts. Never present in anyone else's pull. A malformed held
-   * row is dropped and counted (`PulledHeldSectionSchema`), never the pull.
+   * row is dropped and counted, never the pull, and the person must be told
+   * (`PulledHeldSectionSchema`).
    */
   held: v.optional(PulledHeldSectionSchema),
   more: v.optional(v.boolean()),
@@ -870,7 +885,8 @@ export function parsePushResponse(input: unknown): ParseResult<PushResponse> {
 /**
  * Validates a `sync_pull` response. Never throws. A held row the contract
  * refuses is dropped and counted in `held.rejected`; it never makes the
- * whole pull `invalid`.
+ * whole pull `invalid`. The caller tells the person when `held.rejected` is
+ * above 0: the server keeps the row and nothing else shows it.
  */
 export function parsePullResponse(input: unknown): ParseResult<PullResponse> {
   const r = v.safeParse(PullResponseSchema, input);
