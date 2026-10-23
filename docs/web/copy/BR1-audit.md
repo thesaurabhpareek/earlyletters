@@ -109,7 +109,7 @@ Status: **Supported**, **Qualify** (true, wording gap), **Overstated**, **Unsupp
 | 3 | s04: "We never rewrite your words." | BRIEF decision 7 (line 18); CLAUDE.md constitution | Supported |
 | 4 | meta: "keeps every word exactly as you said it" | VOICE.md (approved line "Kept exactly as you said it"); CLAUDE.md (raw transcript immutable, every edit stored and reversible); BRIEF decision 7 (um and stumbles are removed) | Supported (brand-approved). Strictly, fillers are removed and punctuation added, which s04 says. Low risk |
 | 5 | s05: "The recording is kept with every letter." | PRD C-habits:85 (play original audio, free); privacy-policy.md:166; BRIEF decision 8 (line 19, original never altered); `site.en.ts` FAQ ("attached to its letter") | **Qualify.** Spoken letters only (typed letters have none). Kept on the phone that made it; without backup, a lost phone loses it (terms-of-service.md:207, C-habits:98). D-033 (iCloud device backup) is still "Recommended (needs founder OK)". See fix C |
-| 6 | s06: filed "under Meera's age that month and signed with your name" | PRD.md:22 ("files the letter by the child's month of age") | Supported |
+| 6 | s06: filed "under Asha's age that month and signed with your name" | PRD.md:22 ("files the letter by the child's month of age") | Supported |
 | 7 | s06: "Both parents write in the same book." | BRIEF decision 5 (line 11, co-parent only); DECISIONS.md:115 (D-008) | Supported. Each parent needs the app and an account |
 | 8 | s07: "Open any letter and hear it in the voice that said it" | See section 4 | **Partly unsupported** at v1.0 |
 | 9 | s08: the seven languages, "each written in its own script" | BRIEF decision 6 (lines 12-15) | Supported. Qualify: Hindi script default is open (D-031); "Mandarin" does not say Simplified or Traditional. Availability is promised, not accuracy: on-device model quality for Hindi and Arabic is unproven (ADR 0001 WER figures; BL-043 experiment) |
@@ -132,12 +132,12 @@ Status: **Supported**, **Qualify** (true, wording gap), **Overstated**, **Unsupp
 ### Proposed exact fixes to `site.ts` (coordinator applies; none are required for the tests to pass)
 
 **A. s04 support and the demo slip.** Choose one:
-- Preferred, so the film shows only what the engine does. Text: `support: 'Transcription happens on your phone by default and only fixes slips, like a misheard name or a stray um. We never rewrite your words.'` Demo slip: a name from the words list, for example `slip: { heard: 'Mira', fixed: 'Meera' }`, placed where the engine accepts it (a mishearing the parent taught, or a capitalised near-sounding name that does not start a sentence), and run through `verifyEdits` before it goes in the film.
+- Preferred, so the film shows only what the engine does. Text: `support: 'Transcription happens on your phone by default and only fixes slips, like a misheard name or a stray um. We never rewrite your words.'` Demo slip: a name from the words list, for example `slip: { heard: 'Usher', fixed: 'Asha' }`, placed where the engine accepts it (a mishearing the parent taught, or a capitalised near-sounding name that does not start a sentence), and run through `verifyEdits` before it goes in the film.
 - Or keep "light snitch" and change what the scene shows: the app flags "snitch" and the parent taps it and types "switch" (`appFixHint` already says "Tap a word to check it"). Then the support line should end "...and lets you fix a word with a tap." and `sampleLetter.slip`'s comment should say the parent makes the change.
 
 **B. s10 support.** Remove the recording backup until audio upload is confirmed for v1.0: `support: 'Writing, reading, playing your recordings and export are free, always. Plus is optional, $3.99 a month or $29.99 a year, and adds books for more children.'` This also fixes the "from" wording in row 16. Do not add themes (ROADMAP.md:131 puts them in v1.2 or later) or Read together (word highlighting is v1.1, BRIEF decision 9). The founder or PM should send the final v1.0 Plus list and update subscription-terms.md:23-26, which must match the in-app sheet (Apple 3.1.2(c)).
 
-**C. s05 support.** `support: 'Every letter you speak keeps its recording. One day Meera can hear how you sounded tonight.'`
+**C. s05 support.** `support: 'Every letter you speak keeps its recording. One day Asha can hear how you sounded tonight.'`
 
 **D. s09 first point and s03 `appAudience`.** `'Your letters are shared only with the people you invite.'` and `appAudience: 'Shared only with people you invite'`. Same warmth, and it is the claim the Privacy Policy makes.
 
@@ -164,7 +164,7 @@ Proposed s07 support, true as written and still warm: `support: 'Open a spoken l
 ## 5. Other observations (not failures)
 
 - **Brand name is hardcoded eight times in `site.ts`** (lines 30, 32, 36, 49, 63, 148, 157, 158). CLAUDE.md says the public name lives only in `packages/brand/index.ts`; E1's copy files already interpolate `brand.name`. The test guards the spelling, not the hardcoding, so it passes. Suggest template literals from `brand.name` (coordinator).
-- **The child's name is the founder's real daughter's** (TEAM.md decision, founder's choice) and appears in public copy. CLAUDE.md says real family details never go in code, tests or fixtures. The founder's decision stands for the site; flagged so the exception is recorded. My test file contains no real name.
+- **The child's name in the public copy did not follow the CLAUDE.md privacy rule** (fictional family only in code, tests and fixtures). Resolved on main: the site uses the fictional family, Asha, and main's CI carries the name guard. My test file contains no real name.
 - **Mock app strings that do not exist in `packages/content/src/strings.en.ts`:** "Save letter" (app: "Save"), "Tap a word to check it", "Filed in Month 9", "Hear this letter", "Only people you invite can read this", the dateline "Month 9, Week 2, Tuesday" (D-028 says dates follow the device locale). "Speak", "Type", "Done" and "Pause" match. If the film is meant to show the real app, move these into `packages/content` or match the app.
 - **Button length:** "Tell me when it's ready" is 23 characters; the product rule for buttons is 22 (`rules.test.ts:129-131`). Fits the header only if the layout allows it.
 - **Meta description** is 163 characters; most results truncate near 160. Opinion.

@@ -8,7 +8,7 @@ Token discipline (the plan has a usage limit that stopped wave 1): read only wha
 - One page that feels like a film; primary action: get the iPhone app.
 - **Before the App Store link exists, the action is a one-field "tell me when it's ready" email form.** After approval it becomes the official App Store badge. `src/lib/launch.ts` switches on `NEXT_PUBLIC_APP_STORE_URL`.
 - **Visuals are code-driven:** type, paper, light, line drawings, real app UI. No footage, stock, faces, children or AI imagery.
-- **The child is Meera** in all site copy (founder's choice). Repo tests and fixtures keep the fictional "Asha" (CLAUDE.md privacy rule).
+- **The child is Asha** in all site copy, the same fictional family the repo's tests and fixtures use (CLAUDE.md privacy rule). No real family details on the site; the web tests guard this.
 - Stack: Next.js 16.3.8 (App Router, Turbopack) on Vercel, React 19.2.3, Motion 14 (`motion/react`, MIT) with CSS `position: sticky` scenes and native scroll. No GSAP (non-OSI licence; founder rule prefers permissive licences), no smooth-scroll library unless the stack review proves it is needed.
 - Fonts: Literata (variable) and Mukta from `@fontsource` (OFL, self-hosted). Scripts beyond Latin and Devanagari (Chinese, Arabic) are added by the scene owner with OFL fonts, subset to the characters used.
 
