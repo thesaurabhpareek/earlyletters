@@ -184,6 +184,7 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `book_look` | L2 | theme enum |
 | `family_can_read` | L2 | sharing setting |
 | `hidden_at` | L2 | hide-book time |
+| `purged_at` | L2 | when the book was purged for its members while a former member's letters keep the row (20261023010000) |
 
 ##### `deletion_request_steps`
 
