@@ -16,6 +16,7 @@ import {
   ROUTES,
   SWIPE,
   canCarry,
+  carriedHome,
   cardBackMove,
   cardToPageFrame,
   cardWasCut,
@@ -28,17 +29,23 @@ import {
   type Rect,
   fileIntoMonthPlan,
   moveOptions,
+  openedAtRoot,
   pageTurnPlan,
+  paperTone,
+  holdDip,
+  pressTransform,
+  pressedRect,
   routeTransitions,
   sheetMotion,
   stepMotion,
   swipeOutcome,
+  tabsInStack,
   type Move,
   type RootRoute,
 } from '../src/lib/transitions.logic';
 
 const M = tokens.motion;
-const MOVES: Move[] = ['none', 'dissolve', 'sheet', 'push', 'cardToPage'];
+const MOVES: Move[] = ['none', 'dissolve', 'sheet', 'push', 'cardToPage', 'cut'];
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
 const ROUTE_NAMES = Object.keys(ROUTES) as RootRoute[];
@@ -66,7 +73,12 @@ describe('routeTransitions: one table for every route (EXPERIENCE_PASS 5.8)', ()
     for (const route of ['write', '(auth)', 'invite', 'plus/confirmed'] as const) expect(t[route], route).toEqual({ presentation: 'modal' });
     expect(t.settings).toEqual({});
     expect(t['(tabs)']).toEqual({});
-    expect(t.onboarding).toEqual({});
+  });
+
+  it('R1: first run cuts in under both settings, so it never slides in from a tab on iOS', () => {
+    expect(ROUTES.onboarding.move).toBe('cut');
+    expect(routeTransitions(false).onboarding).toEqual({ animation: 'none' });
+    expect(routeTransitions(true).onboarding).toEqual({ animation: 'none' });
   });
 
   it('row 7: the letter keeps the platform push until its page mounts CardToPage (P5), so nothing appears without motion', () => {
@@ -115,6 +127,50 @@ describe('routeTransitions: one table for every route (EXPERIENCE_PASS 5.8)', ()
     const s = M.standard;
     expect(sheetMotion(false)).toEqual({ kind: 'spring', stiffness: s.stiffness, damping: s.damping, mass: s.mass });
     expect(read('components/ui/sheet.tsx')).toMatch(/useSheetMotion\(\)/);
+  });
+});
+
+describe('first run opens directly (R1)', () => {
+  it('a launch with no address, at "/" on the web, on the bare scheme or through a development launcher is at the root', () => {
+    for (const url of [null, undefined, '', 'http://localhost:8081/', 'http://localhost:8081/?seed=asha', 'https://example.org', 'scribe://', 'scribe:///', 'exp+scribe://expo-development-client/?url=http%3A%2F%2F192.168.1.2%3A8081']) {
+      expect(openedAtRoot(url), String(url)).toBe(true);
+    }
+  });
+
+  it('any other launch is a link, whatever +native-intent makes of it', () => {
+    for (const url of ['https://example.org/i/abc', 'http://localhost:8081/onboarding', 'http://localhost:8081/invite', 'scribe://listen', 'scribe://auth/callback', 'scribe:///book', 'not a url']) {
+      expect(openedAtRoot(url), url).toBe(false);
+    }
+  });
+
+  it('with no book at the root, the tabs are not in the stack; a book, a link or an earlier book puts them in', () => {
+    expect(tabsInStack({ hasBook: false, openedAtRoot: true, hadTabs: false })).toBe(false);
+    expect(tabsInStack({ hasBook: true, openedAtRoot: true, hadTabs: false })).toBe(true);
+    expect(tabsInStack({ hasBook: false, openedAtRoot: false, hadTabs: false })).toBe(true);
+    expect(tabsInStack({ hasBook: false, openedAtRoot: true, hadTabs: true })).toBe(true);
+  });
+
+  it('over one session the tabs join once and then stay, so no later route loses the room under it', () => {
+    let hadTabs = false;
+    const seen: boolean[] = [];
+    for (const hasBook of [false, false, true, true, false, false]) {
+      const tabs = tabsInStack({ hasBook, openedAtRoot: true, hadTabs });
+      hadTabs ||= tabs;
+      seen.push(tabs);
+    }
+    expect(seen).toEqual([false, false, true, true, true, true]);
+  });
+
+  it('the root layout guards only the tabs, by that rule, read from the store as it changes', () => {
+    const layout = read('app/_layout.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const guarded = [...layout.matchAll(/<Stack\.Protected guard=\{(\w+)\}>([\s\S]*?)<\/Stack\.Protected>/g)];
+    expect(guarded).toHaveLength(1);
+    expect(guarded[0][1]).toBe('tabs');
+    expect([...guarded[0][2].matchAll(/name="([^"]+)"/g)].map((m) => m[1])).toEqual(['(tabs)']);
+    expect(layout).toMatch(/const tabs = useTabsInStack\(\)/);
+    expect(layout).toMatch(/openedAtRoot\(getLinkingURL\(\)\)/);
+    expect(layout).toMatch(/useSyncExternalStore\(subscribeToBook, hasBookNow, hasBookNow\)/);
+    expect(layout).toMatch(/tabsInStack\(\{ hasBook, openedAtRoot: atRoot, hadTabs \}\)/);
   });
 });
 
@@ -216,10 +272,59 @@ describe('card to page (MOTION 5f)', () => {
       expect(k.y).toBeGreaterThanOrEqual(f.y - 1e-9);
       expect(k.x + pageText.width).toBeLessThanOrEqual(f.x + f.width + 1e-9);
       expect(k.y + k.excerpt + k.extra).toBeLessThanOrEqual(f.y + f.height + 1e-9);
-      // The rest of the words arrive with the rest of the page, and the card's fade gives way to them.
+      // The rest of the words arrive with the rest of the page, and the card's fade gives way as they begin to.
       expect(k.extraOpacity).toBeCloseTo(f.contentOpacity);
-      expect(k.cardFade + k.extraOpacity).toBeCloseTo(1);
+      expect(k.cardFade).toBe(t <= M.cardToPage.contentFrom ? 1 : t >= CARD_TO_PAGE.toneFrom ? 0 : k.cardFade);
     }
+  });
+
+  it("the card's fade over its last line is gone before the paper turns to the page's colour, so it is never a pale patch (P5)", () => {
+    expect(CARD_TO_PAGE.toneFrom).toBeCloseTo(M.cardToPage.contentFrom + (1 - M.cardToPage.contentFrom) / 2);
+    let last = 1;
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      const k = carryFrame(card, cardText, pageText, screen, t);
+      // Drawn in the card's surface: only ever over paper of that same surface.
+      if (paperTone(t) > 0) expect(k.cardFade, `at ${t}`).toBe(0);
+      if (k.cardFade > 0) expect(paperTone(t), `at ${t}`).toBe(0);
+      // It gives way steadily as the rest begins to arrive (and comes back the same way on the way back).
+      expect(k.cardFade).toBeLessThanOrEqual(last + 1e-12);
+      last = k.cardFade;
+    }
+    expect(paperTone(0)).toBe(0);
+    expect(paperTone(CARD_TO_PAGE.toneFrom)).toBe(0);
+    expect(paperTone(1)).toBe(1);
+    expect(paperTone(1.08)).toBe(1); // a spring's overshoot is clamped
+    expect(carryFrame(card, cardText, pageText, screen, (M.cardToPage.contentFrom + CARD_TO_PAGE.toneFrom) / 2).cardFade).toBeCloseTo(0.5);
+  });
+
+  it("while the veil and the paper are partway, the card's fade takes the same share of the page's paper as the card under it", () => {
+    // Composite one channel, the card's surface S = 1 and the page's paper B = 0: the card, the veil of B at v over it,
+    // then the paper of S at v over that. What is left of B is exactly the share laid over the card's fade.
+    const over = (under: number, colour: number, alpha: number) => under * (1 - alpha) + colour * alpha;
+    for (let i = 0; i <= 20; i++) {
+      const v = i / 20;
+      const card = over(over(1, 0, v), 1, v);
+      expect(1 - card).toBeCloseTo(holdDip(v));
+      // The fade's opaque end, S with that share of B over it, matches the card beside it.
+      expect(over(1, 0, holdDip(v))).toBeCloseTo(card);
+    }
+    expect(holdDip(0)).toBe(0);
+    expect(holdDip(1)).toBe(0);
+    expect(holdDip(0.5)).toBe(0.25);
+    expect(holdDip(1.2)).toBe(0);
+  });
+
+  it('the carried words are home once within homePt of their place on the page, for the rest of the page to come in (useCardToPagePhase)', () => {
+    expect(CARD_TO_PAGE.homePt).toBe(4);
+    const travel = Math.hypot(pageText.x - cardText.x, pageText.y - cardText.y);
+    expect(carriedHome(cardText, pageText, 0)).toBe(false);
+    expect(carriedHome(cardText, pageText, 1 - (CARD_TO_PAGE.homePt + 0.5) / travel)).toBe(false);
+    expect(carriedHome(cardText, pageText, 1 - (CARD_TO_PAGE.homePt - 0.5) / travel)).toBe(true);
+    expect(carriedHome(cardText, pageText, 1)).toBe(true);
+    expect(carriedHome(cardText, pageText, 1.08)).toBe(true);
+    // Words that open where the card had them are home from the start.
+    expect(carriedHome(cardText, cardText, 0)).toBe(true);
   });
 
   it("carries only when the page opens in the card's column and type, so the lines wrap the same; otherwise the page fades in whole", () => {
@@ -415,7 +520,11 @@ describe('card to page (MOTION 5f)', () => {
     expect(src).toContain('const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));');
     // No edges, corners or boxes: nothing that could leave a joint.
     expect(src).not.toMatch(/FadeCorner|veilBox|needsOffscreenAlphaCompositing/);
-    expect(src.match(/<FadeEdge /g)).toHaveLength(1); // the card's own fade over its last line
+    // The card's own fade over its last line, in the card's surface, and the page's paper laid over it by holdDip.
+    expect(src.match(/<FadeEdge /g)).toHaveLength(2);
+    expect(src).toContain('<FadeEdge color={c.surfaceRaised} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
+    expect(src).toContain('<FadeEdge color={c.bg} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
+    expect(src).toContain('const cardFadeDip = useAnimatedStyle(() => ({ opacity: carrying.value ? holdDip(veil.value) : 0 }));');
     // To the page: the veil on the lamp's leaving line, the card holding, then the spring.
     expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
     expect(src).toContain("p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard')");
@@ -465,6 +574,81 @@ describe('card to page (MOTION 5f)', () => {
     expect(heard).toBe(2);
     expect(hiddenBehind(true)).toEqual({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants', 'aria-hidden': true });
     expect(hiddenBehind(false)).toEqual({ accessibilityElementsHidden: false, importantForAccessibility: 'auto', 'aria-hidden': false });
+  });
+
+  it('the move starts from the card as its press shows it: the pressed rect, and the words scaled with the card about its centre', () => {
+    const k = M.press.cardScale;
+    expect(k).toBe(0.98);
+    const r = pressedRect(card, k);
+    expect(r.width).toBeCloseTo(card.width * k);
+    expect(r.height).toBeCloseTo(card.height * k);
+    // About the card's centre, as the press scales the card.
+    expect(r.x + r.width / 2).toBeCloseTo(card.x + card.width / 2);
+    expect(r.y + r.height / 2).toBeCloseTo(card.y + card.height / 2);
+    expect(pressedRect(card, 1)).toEqual(card);
+    // The paper's first frame is the pressed card, not the card at rest (no snap from 0.98 back to 1 at release).
+    expect(cardToPageFrame(r, screen, 0)).toMatchObject({ x: r.x, y: r.y, width: r.width, height: r.height });
+    // The carried words: every corner lands where scaling about the card's centre puts it (the card's own words, pressed).
+    const [{ translateX }, { translateY }, { scale }] = pressTransform(cardText.x, cardText.y, cardText.width, cardText.height, card, k);
+    const cx = card.x + card.width / 2;
+    const cy = card.y + card.height / 2;
+    const bx = cardText.x + cardText.width / 2;
+    const by = cardText.y + cardText.height / 2;
+    for (const [qx, qy] of [[cardText.x, cardText.y], [cardText.x + cardText.width, cardText.y + cardText.height]] as const) {
+      expect(bx + translateX + scale * (qx - bx)).toBeCloseTo(cx + k * (qx - cx));
+      expect(by + translateY + scale * (qy - by)).toBeCloseTo(cy + k * (qy - cy));
+    }
+    // Let go, nothing is moved or scaled.
+    expect(pressTransform(cardText.x, cardText.y, cardText.width, cardText.height, card, 1)).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
+  });
+
+  it('the card keeps its press through the hold and the page lets it go as the paper starts to grow (S26, source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    // CardSource takes the press of the card inside it; the page holds it from its first frame.
+    expect(src).toMatch(/<PressHoldContext\.Provider value=\{registerPress\}>/);
+    expect(src).toContain('const press = useRef(presses.get(id)).current;');
+    expect(src).toMatch(/useEffect\(\(\) => \{\s*press\?\.hold\(\);\s*return \(\) => press\?\.release\(\);/);
+    expect(src).toContain('() => p.value > 0,');
+    expect(src).toMatch(/if \(moving && !was\) runOnJS\(letGo\)\(\);/);
+    // The paper and the carried words read the press as it is, every frame.
+    expect(src).toContain('cardToPageFrame(pressedRect(from.value, 1 - (1 - pressScale) * pressed.value), screen, p.value)');
+    expect(src).toContain('transform: pressTransform(k.x, k.y, pt.value.width, ct.value.height, from.value, scale)');
+    const press = read('components/motion/press.ts');
+    // A held press ignores the finger's release; a press already gone is not brought back.
+    expect(press).toMatch(/if \(to === 0 && held\.current\) return;/);
+    expect(press).toMatch(/held\.current = true;\s*if \(p\.value > 0\) animate\(1\);/);
+    expect(press).toMatch(/if \(kind !== 'card' \|\| !enabled \|\| !register\) return;/);
+    expect(press).toContain('scale: reduced ? 1 : target,');
+    // Every pressable card uses it (Card), so the Book's letter cards hand their press over with no change of their own.
+    expect(read('components/ui/card.tsx')).toContain("usePressScale('card', !!onPress)");
+  });
+
+  it('carried, the paper over the card comes and goes with the veil, so the rest of the card leaves and returns with the Book (P5, source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toContain('opacity: carrying.value ? veil.value : fade.value, backgroundColor');
+    expect(src).toContain('const backgroundColor = interpolateColor(paperTone(p.value), [0, 1], [c.surfaceRaised, c.bg]);');
+    // The way back still ends only when the paper is home and the veil has lifted: the paper is gone by then.
+    expect(src).toContain('closeLeft.current = 2;');
+  });
+
+  it('the page knows where the move is: measuring, moving, settled or closing; carried; the words home (P5, source)', () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toMatch(/export function useCardToPagePhase\(\): CardToPagePhase \{\s*return useContext\(CardPageContext\)\.phase;/);
+    expect(src).toContain("export type CardToPagePhase = { phase: 'measuring' | 'moving' | 'settled' | 'closing'; carried: boolean; home: boolean };");
+    expect(src).toContain('() => carrying.value === 1 && carriedHome(ct.value, pt.value, p.value),');
+    expect(src).toMatch(/if \(now && !was\) runOnJS\(setHome\)\(true\);/);
+    expect(src).toMatch(/closing\.current = true;\s*setLeaving\(true\);/);
+    expect(src).toContain("phase: leaving ? 'closing' : phase,");
+    expect(src).toContain("carried: carry && phase !== 'measuring',");
+    expect(src).toContain("home: phase !== 'measuring' && (!carry || home),");
+  });
+
+  it('a page being turned away leaves the accessibility tree on every platform, the web included (P5, source)', () => {
+    const src = read('components/motion/page-turn.tsx');
+    expect(src).toContain("importantForAccessibility={leaving ? 'no-hide-descendants' : 'auto'}");
+    expect(src).toContain('accessibilityElementsHidden={leaving}');
+    expect(src).toContain('aria-hidden={leaving}');
+    expect(src).toContain("pointerEvents={leaving ? 'none' : 'auto'}");
   });
 
   it('the card names its words and the page its opening; the fallback fades paper and words together (source)', () => {

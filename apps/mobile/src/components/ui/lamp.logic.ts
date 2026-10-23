@@ -290,9 +290,14 @@ export function shouldBreathe(s: { reduced: boolean; appActive: boolean; focused
  *   firstRun  the gate and onboarding: the light never goes out between them, and each step rises or dims to its
  *             scene slowly (arriveMs), as first run is one lit room.
  *   tabs      Tonight, the Book and the Family tab: the arriving tab starts at the tone and level the last one left
- *             and settles to its own over returnMs.
+ *             and settles to its own over returnMs. It follows firstRun: the first tab lit after first run ("The
+ *             book is open." to Tonight) starts at first run's last light the same way, so the light never goes out
+ *             on the way out of first run.
  */
-export const LAMP_KEYS = { firstRun: { settle: 'arrive' }, tabs: { settle: 'return' } } as const;
+export const LAMP_KEYS: { readonly firstRun: { readonly settle: 'arrive' }; readonly tabs: { readonly settle: 'return'; readonly follows: 'firstRun' } } = {
+  firstRun: { settle: 'arrive' },
+  tabs: { settle: 'return', follows: 'firstRun' },
+};
 export type LampKey = keyof typeof LAMP_KEYS;
 
 /** What a lamp remembers between screens: the light it showed and the level it was at (or heading to). */
@@ -343,6 +348,12 @@ let litThisSession = false;
 
 export const lampMemory = {
   get: (key: string | undefined): LampMemory | undefined => (key ? remembered.get(key) : undefined),
+  /** What a lamp with this key mounts from: its own memory, or else the light of the key it follows (LAMP_KEYS). */
+  atMount: (key: LampKey | undefined): LampMemory | undefined => {
+    if (!key) return undefined;
+    const follows: LampKey | undefined = 'follows' in LAMP_KEYS[key] ? (LAMP_KEYS[key] as { follows: LampKey }).follows : undefined;
+    return remembered.get(key) ?? (follows ? remembered.get(follows) : undefined);
+  },
   set: (key: string | undefined, light: LampLight | null, fallback?: LampMemory): void => {
     if (light && light.intensity > 0) litThisSession = true;
     if (!key) return;

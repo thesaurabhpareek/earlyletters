@@ -141,7 +141,7 @@ describe('design tokens: type', () => {
     }
   });
   it('reading and body text is never capped at accessibility sizes (DESIGN_LANGUAGE 3, TDD 09 C1)', () => {
-    for (const name of ['body', 'callout', 'label', 'labelSmall', 'letterBody', 'signature', 'prompt'] as const) {
+    for (const name of ['body', 'callout', 'label', 'labelSmall', 'letterBody', 'nameField', 'signature', 'prompt'] as const) {
       expect(tokens.type[name].maxScale, name).toBeNull();
     }
   });

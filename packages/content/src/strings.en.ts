@@ -549,9 +549,9 @@ export const en = {
     previousButton: "Back one",
     replayButton: "Hear it again",
     autoplayLabel: "Keep playing",
-    // The dateline (S30): the month first, then who signed it. nowReading is held until P5: today's screen
-    // builds the first-weeks and Before You datelines its own way, so the new words would mix two formats.
-    nowReading: "{signsAs}, Month {month}",
+    // The dateline (S30): the month first, then who signed it, in the same shape for all three chapters. VoiceOver
+    // hears it without the separator ("Month 4, from Mama").
+    nowReading: "Month {month} · From {signsAs}",
     nowReadingNewborn: "The first weeks · From {signsAs}",
     nowReadingBefore: "Before You · From {signsAs}",
     // VoiceOver only; the screen shows a hairline progress line, never "1 / 5".
@@ -800,8 +800,8 @@ export const en = {
       // Option B (D-100): a synced letter is not only on this phone, so the erase lines name no place.
       // Counsel claims review (listed in the P0 pull request).
       eraseNowBody: "The letter and its recording are erased for good.",
-      // Held until P5: the shelf shows this toast without filling {child} (spec S38 has the new words).
-      restoredToast: "Letter restored.",
+      // After Restore (S38), with "Open"; {child} is the restored letter's book.
+      restoredToast: "Back in {child}'s book.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.

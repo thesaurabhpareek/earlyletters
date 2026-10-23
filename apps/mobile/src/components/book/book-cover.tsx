@@ -15,9 +15,11 @@
  * Literata Italic on the foot line. Open: the flyleaf, with the name small at the top, one hairline
  * across the middle where the first letter will go, and "From Mama" at the foot.
  *
- * Motion: a new name cross-fades (fadeMs). Opening: the front holds tokens.motion.cover.holdMs, then
- * cross-fades to the flyleaf with a cover.dx shift on `standard` (no 3D flip). Reduce Motion: no
- * cross-fade, and the open state at once. `animate={false}` jumps to the end (a tap that skips).
+ * Motion: a new name cross-fades (fadeMs). A new signature cross-fades on the front's foot line on
+ * `snappy` (S06: a chip fills the field and the foot line together); the caller passes a typed one after
+ * a pause, as it does the name. Opening: the front holds tokens.motion.cover.holdMs, then cross-fades to
+ * the flyleaf with a cover.dx shift on `standard` (no 3D flip). Reduce Motion: no cross-fade, and the
+ * open state at once. `animate={false}` jumps to the end (a tap that skips).
  *
  * Type on the cover does not grow with Dynamic Type: it is artwork with a measured layout, like the
  * app icon. The same name is always real, scalable text on the screen around it (the name field, the
@@ -27,7 +29,7 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
-import { tokens } from '@scribe/design-tokens';
+import { tokens, type MotionToken } from '@scribe/design-tokens';
 import { FadeEdge } from '@/components/motion/excerpt-fade';
 import { fadeBox, isRtl } from '@/components/motion/excerpt-fade.logic';
 import { Text } from '@/components/ui/text';
@@ -68,6 +70,12 @@ export type BookCoverProps = {
 };
 
 const M = tokens.motion;
+
+/** How a line of the cover changes: no motion, a fadeMs cross-fade (the name), or one on a spring (the signature). */
+type CrossFade = false | 'fade' | MotionToken;
+
+/** No lines: what the foot line holds while there is no signature, so the last one can fade out. */
+const NO_LINES: FittedText = { lines: [], fontSize: 0, truncated: false, full: '', broken: false };
 
 export function BookCover({ name, signsAs, size = 'sm', state = 'closed', openOnMount = false, behindName, animate = true, accessibilityLabel, style }: BookCoverProps) {
   const m = coverMetrics(size);
@@ -140,9 +148,9 @@ function Cover({ name, signsAs, size, state, openOnMount = false, animate }: { n
             <Path d={SMALL_SYMBOL_PATH} fill={mark.fill ?? c.text} />
           </Svg>
           <View style={{ marginTop: m.gap, width: m.textWidth, height: m.name.lines * m.name.lineHeight }}>
-            <NameLines key={name} set={coverName(name, size, 'closed')} surface={c.surfaceRaised} crossFade={mounted && !still} />
+            <NameLines key={name} set={coverName(name, size, 'closed')} surface={c.surfaceRaised} crossFade={mounted && !still && 'fade'} />
           </View>
-          {signature ? <FootLine set={signature} size={size} surface={c.surfaceRaised} /> : null}
+          <FootLine set={signature ?? NO_LINES} size={size} surface={c.surfaceRaised} crossFade={mounted && !still && 'snappy'} />
         </Animated.View>
         {/* The flyleaf: the name small at the top, a hairline where the first letter will go, the signature at the foot. */}
         <Animated.View style={[StyleSheet.absoluteFill, { padding: m.pad, alignItems: 'center' }, flyleaf]}>
@@ -150,35 +158,47 @@ function Cover({ name, signsAs, size, state, openOnMount = false, animate }: { n
             <NameLines set={coverName(name, size, 'open')} surface={c.surfaceRaised} crossFade={false} />
           </View>
           <View style={{ position: 'absolute', left: m.pad * 1.5, right: m.pad * 1.5, top: m.height / 2, height: StyleSheet.hairlineWidth * 2, backgroundColor: c.line }} />
-          {signature ? <FootLine set={signature} size={size} surface={c.surfaceRaised} /> : null}
+          {signature ? <FootLine set={signature} size={size} surface={c.surfaceRaised} crossFade={false} /> : null}
         </Animated.View>
       </View>
     </View>
   );
 }
 
-/** "From Mama" on the foot line, at the size coverSignature fitted. */
-function FootLine({ set, size, surface }: { set: FittedText; size: CoverSize; surface: string }) {
+/**
+ * "From Mama" on the foot line, at the size coverSignature fitted. The lines are keyed by the words, so a new
+ * signature fades in over the old one fading out (and a removed one fades out) when `crossFade` is set.
+ */
+function FootLine({ set, size, surface, crossFade }: { set: FittedText; size: CoverSize; surface: string; crossFade: CrossFade }) {
   const m = coverMetrics(size);
   return (
     <View style={{ position: 'absolute', left: m.signature.inset, right: m.signature.inset, bottom: m.pad, height: m.signature.lineHeight }}>
-      <NameLines set={set} italic surface={surface} crossFade={false} />
+      <NameLines key={set.full} set={set} italic surface={surface} crossFade={crossFade} />
     </View>
   );
 }
 
+/** The entering and exiting fades for a cross-fade: fadeMs, or the spring token's own settle. */
+function crossFades(kind: Exclude<CrossFade, false>) {
+  if (kind === 'fade') {
+    return { entering: FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never), exiting: FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never) };
+  }
+  const s = springConfig(kind);
+  return {
+    entering: FadeIn.springify().stiffness(s.stiffness).damping(s.damping).mass(s.mass).reduceMotion(ReduceMotion.Never),
+    exiting: FadeOut.springify().stiffness(s.stiffness).damping(s.damping).mass(s.mass).reduceMotion(ReduceMotion.Never),
+  };
+}
+
 /** Lines set by book-cover.logic, centred, with the fade on the last one when the text did not fit. */
-function NameLines({ set, italic = false, surface, crossFade }: { set: FittedText; italic?: boolean; surface: string; crossFade: boolean }) {
+function NameLines({ set, italic = false, surface, crossFade }: { set: FittedText; italic?: boolean; surface: string; crossFade: CrossFade }) {
   const fontSize = set.fontSize;
   const lineHeight = coverLineHeight(fontSize, italic);
   if (set.lines.length === 0) return null;
   const box = fadeBox(set.lines.length, lineHeight, isRtl(set.full));
-  const fade = { duration: M.fadeMs, reduceMotion: ReduceMotion.Never } as const;
+  const fades = crossFade ? crossFades(crossFade) : undefined;
   return (
-    <Animated.View
-      entering={crossFade ? FadeIn.duration(fade.duration).reduceMotion(fade.reduceMotion) : undefined}
-      exiting={crossFade ? FadeOut.duration(fade.duration).reduceMotion(fade.reduceMotion) : undefined}
-      style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
+    <Animated.View entering={fades?.entering} exiting={fades?.exiting} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
       <Text
         variant={italic ? 'signature' : 'title2'}
         maxFontSizeMultiplier={1}
