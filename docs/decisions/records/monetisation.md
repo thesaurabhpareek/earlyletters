@@ -205,7 +205,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: code plus a Subscription Terms change and counsel review
 - **Revisit when:** law: counsel answers COUNSEL_PACKET C-1 to C-3 and Q37; platform: a server release brings back the D-080 reminder emails
 - **Review by:** on trigger
-- **Status:** in force: needs counsel; the Subscription Terms wording is requested on open PR #81, whose 3.0.0 text does not yet call reminders a courtesy (per the source); device test row S2-17 is in open PR #123
+- **Status:** in force: needs counsel; the Subscription Terms wording is requested on open PR #81, whose 3.0.0 text does not yet call reminders a courtesy (per the source); device test row S2-17 is in `docs/qa/DEVICE_TEST_PLAN.md` (PR #123, merged 16 Oct 2026)
 - **As built:** `apps/mobile/src/lib/billing/plan-reminders.ts`, `apps/mobile/src/app/plus/confirmed.tsx`
 - **Also:** stands in for the D-080 server reminder emails while v1.0 has no server
 

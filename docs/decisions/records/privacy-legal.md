@@ -12,7 +12,7 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Revisit when:** scale: events per family per month push PostHog past its free tier (the ADR plans about 50 per family at 100k families); law: counsel changes the consent reading
 - **Review by:** on trigger
 - **Status:** in force
-- **As built:** `packages/analytics/src/catalog.ts`, `packages/analytics/src/posthog.ts`, `apps/mobile/src/lib/analytics/posthog-sdk.ts`
+- **As built:** `packages/analytics/src/catalog.ts`, `packages/analytics/src/posthog.ts`; the app's PostHog SDK file and the `posthog-react-native` dependency were removed for v1.0 by PR #125 (merged 18 Oct 2026, under D-095), and `apps/mobile/src/lib/analytics/index.ts` keeps the adapter behind a factory that is null in v1.0
 
 ### D-003 Full opt-in product analytics and opt-in crash reports at launch
 - **Source:** `docs/DECISIONS.md` D-003 (Decided, founder, 2026-10-03; restates 2 Oct)
@@ -185,7 +185,7 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Revisit when:** platform: v1.1 planning starts (the source returns analytics with consent in v1.1); law: counsel changes the consent reading
 - **Review by:** on trigger
 - **Status:** amended by D-100: the log says the on-device-only assumption behind D-095 is superseded where they conflict; the analytics switch itself is not named as changed
-- **As built:** `apps/mobile/src/lib/capabilities.ts` (`ANALYTICS`), `apps/mobile/eas.json` (`EXPO_PUBLIC_ANALYTICS` off in every profile), `apps/mobile/src/lib/analytics/index.ts`
+- **As built:** `apps/mobile/src/lib/capabilities.ts` (`ANALYTICS`), `apps/mobile/eas.json` (`EXPO_PUBLIC_ANALYTICS` off in every profile), `apps/mobile/src/lib/analytics/index.ts`; PR #125 (merged 18 Oct 2026) takes `posthog-react-native` out of the v1.0 bundle
 - **Also:** amends D-003 and D-062 for v1.0
 
 ### D-096 The export carries the consent choices on this phone
@@ -196,5 +196,5 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** low before launch: code; medium after: a new export schema version
 - **Revisit when:** platform: a server release adds a consent history (the source says it becomes its own field)
 - **Review by:** on trigger
-- **Status:** in force: the code is in open PR #120, not merged
-- **As built:** not built: `apps/mobile/src/lib/export/build.logic.ts` has no `consent_on_this_phone` on `develop`; open PR #120 adds it
+- **Status:** in force: PR #120 merged 16 Oct 2026. The stated reason for no server consent history ("there is no server") no longer holds after D-100; the log does not say whether D-096 changes
+- **As built:** `apps/mobile/src/lib/export/build.logic.ts`, `apps/mobile/src/lib/export/schema.ts` (`consent_on_this_phone`)

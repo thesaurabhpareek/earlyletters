@@ -95,7 +95,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Reversal cost:** low
 - **Revisit when:** customer: golden-corpus results per language (names 95%, zero phantom words, script compliance 95%); law: counsel on training-data terms for the two built models
 - **Review by:** 2026-12-01
-- **Status:** proposed: the ADR header says Proposed
+- **Status:** proposed: the ADR header says Proposed; since PR #126 (merged 18 Oct 2026) its host line names `packs.earlyletters.app` (D-097). D-111 item 4: the alpha transcribes English only
 - **As built:** `apps/mobile/src/lib/models/catalog.ts`, `apps/mobile/src/lib/audio-enhance/index.ts`, `apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift`
 
 ### ADR-0101 UI component library and styling model
@@ -199,7 +199,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Revisit when:** platform: the minimum iOS can become 26 (ADR 0016 revisits Apple-hosted packs then)
 - **Review by:** on trigger
 - **Status:** in force
-- **As built:** not built: no deployment target is set in `apps/mobile/app.config.ts`; open PR #126 sets 17.0 under D-098
+- **As built:** `apps/mobile/app.config.ts` (`IOS_DEPLOYMENT_TARGET = '17.0'`, passed to `expo-build-properties`; PR #126, merged 18 Oct 2026)
 - **Also:** D-098
 
 ### D-044 Sign-in methods at v1.0: Apple and email link plus code; Google in v1.1
@@ -221,7 +221,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Reversal cost:** low: a manifest and catalog change
 - **Revisit when:** cost: the pack host leaves its free tier (R2: 10 GB-month storage, 10M Class B requests a month, per ADR 0016); platform: Apple-hosted Background Assets become usable (minimum iOS 26)
 - **Review by:** on trigger
-- **Status:** in force: the host is chosen by D-097 (`packs.earlyletters.app` on Cloudflare R2); the move is a follow-up in open PR #126
+- **Status:** in force: the host is chosen by D-097 (`packs.earlyletters.app` on Cloudflare R2); the catalog moved there in PR #126 (merged 18 Oct 2026)
 - **As built:** `apps/mobile/src/lib/models/catalog.ts`
 
 ### D-051 Standard over custom
@@ -316,9 +316,9 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Reversal cost:** low before launch; medium after: installed builds keep fetching from the old host until families update
 - **Revisit when:** cost: the R2 free tier is exceeded (see D-046); platform: Apple-hosted Background Assets become usable (minimum iOS 26)
 - **Review by:** on trigger
-- **Status:** in force: follow-ups not yet done (source): set `EXPO_PUBLIC_DOCS_BASE_URL` for the build profiles, move `SELF_HOST_BASE` in the model catalog, update ADR 0016 and the model hosting doc (PR #35), and the founder creates the R2 bucket and DNS record. The code change is in open PR #126
-- **As built:** not built: `apps/mobile/src/lib/models/catalog.ts` still names `models.earlyletters.com` (`SELF_HOST_BASE`)
-- **Also:** answers the host question left open by D-046 and ADR-0016
+- **Status:** in force: PR #126 (merged 18 Oct 2026) moved the catalog and set `EXPO_PUBLIC_DOCS_BASE_URL`, and ADR 0015 and ADR 0016 now name the host. D-111 item 3 (17 Oct 2026) confirms D-097 for `earlyletters.app` and D-063 for everything else. The R2 bucket and DNS record are founder steps; no source in the repo says they are done
+- **As built:** `apps/mobile/src/lib/models/catalog.ts` (`PACKS_ORIGIN = 'https://packs.earlyletters.app'`, `SELF_HOST_BASE`), `apps/mobile/eas.json` (`EXPO_PUBLIC_DOCS_BASE_URL` in every profile)
+- **Also:** answers the host question left open by D-046 and ADR-0016; confirmed by D-111 item 3
 
 ### D-110 Lamp contrast: reading colours everywhere, status colours where text sits
 - **Source:** `docs/DECISIONS.md` D-110 (Delegated call by the coordinator, 2026-10-16; founder may reverse); PR #170 (P1 acceptance line 2); PR #192 (merged 17 Oct 2026)
@@ -333,13 +333,13 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **As built:** `packages/design-tokens/src/tokens.ts` (`atmosphere.onLitPaper`), `packages/design-tokens/test/atmosphere.test.ts`
 
 ### ADR-0027 A recording container that survives a kill (ADTS on iOS)
-- **Source:** `docs/adr/0027-kill-safe-recording-container.md` (Accepted pending V1, V2 and V3, 17 Oct 2026, for build 2, iOS only; decided by the coordinator under delegation; the founder may reverse); PR #213 (merged 17 Oct 2026); PR #219 (merged 18 Oct 2026, the tail-safeguard follow-up)
-- **Decided:** on iOS, record AAC-LC as ADTS (`.aac`) and keep the file exactly as recorded, with no remux; codec, rate, channels and bitrate stay ADR 0005's. Both platforms record M4A until V1 (iOS writes real ADTS, and a finished take ends on a whole frame), V2 (DL-01 passes on a simulator) and V3 (decode parity, including how a damaged file reads) pass; then the flip is one line. Android stays M4A in build 2. A tail safeguard refuses a transcription run rather than lose the end of a take, because `raw_transcript` is immutable: since #219 only a tail exactly as a kill leaves it is read from the whole-frame copy, any other tail is a break, and a break is refused only when the decoder cannot read the file as it is. Left open by the ADR: damage inside the last 8 kB that the decoder stops at silently; the coordinator decides on it before the flip if V3 shows it is real.
+- **Source:** `docs/adr/0027-kill-safe-recording-container.md` (Accepted pending V1, V2 and V3, 17 Oct 2026, for build 2, iOS only; decided by the coordinator under delegation; the founder may reverse); PR #213 (merged 17 Oct 2026); PR #219 (merged 18 Oct 2026, the tail-safeguard follow-up); PR #226 (merged 18 Oct 2026, damage residuals)
+- **Decided:** on iOS, record AAC-LC as ADTS (`.aac`) and keep the file exactly as recorded, with no remux; codec, rate, channels and bitrate stay ADR 0005's. Both platforms record M4A until V1 (iOS writes real ADTS, and a finished take ends on a whole frame), V2 (DL-01 passes on a simulator) and V3 (decode parity, including how a damaged file reads) pass; then the flip is one line. Android stays M4A in build 2. A tail safeguard refuses a transcription run rather than lose the end of a take, because `raw_transcript` is immutable: since #219 only a tail exactly as a kill leaves it is read from the whole-frame copy, any other tail is a break, and a break is refused only when the decoder cannot read the file as it is. Since #226 a kill-cut header must also claim a possible length (at most 7 + 768 bytes for a mono frame, allowed up to 779; the ADR marks its ISO citation unverified), and a run of 2 or more of the stream's whole frames found after damage makes the tail a break and counts toward the length. Left open by the ADR, both needing real damage, not a kill: a decoder whose length is right but whose read stops silently at damage (V3 measures it; if real, a native early-stop check goes in before the flip), and a damaged length that lands exactly on a later frame's header (up to 1.41 s at the smallest frames; a further check is not built, and the coordinator decides before the flip whether it is needed).
 - **Why:** a take recorded as `.m4a` and killed mid-recording most likely has no index, so it will not open, and the kill harness (DL-01) needs 49 of 50 killed takes to play to within 5 s of the kill point; ADTS frames each carry a sync word and length, so a reader stops at the last whole frame (the ADR's Context and options table; the finding is labelled "unverified, likely").
 - **Alternatives:** A2 remux to M4A on a normal stop; A3 set the file type explicitly (the first fallback if V1 fails); CAF; WAV; repairing truncated M4A at launch; 60 s segments; fragmented MP4 through a new native recorder.
 - **Door:** one-way after launch: once families keep ADTS recordings, those files stay as recorded (no remux), so Export, backup and playback must handle them for good
 - **Reversal cost:** medium after the flip: new takes can return to M4A with one line, but kept `.aac` recordings stay `.aac`; low before the flip
-- **Revisit when:** technology: V1, V2 or V3 fails (try A3, then the founder decides on the ADTS fallback per 06-nfr row 188); platform: Android ADTS checks pass (post-alpha)
+- **Revisit when:** technology: V1, V2 or V3 fails (try A3, then the founder decides on the ADTS fallback per 06-nfr row 188); technology: V1 finds a frame longer than 7 + 768 bytes, or V3 shows Core Audio stops silently at damage; platform: Android ADTS checks pass (post-alpha)
 - **Review by:** on trigger
 - **Status:** proposed: accepted pending V1, V2 and V3; both platforms record M4A on `develop`
 - **As built:** `apps/mobile/src/lib/capture/recording-file.ts` (`RECORDING_CONTAINERS`, both `'m4a'`), `apps/mobile/src/lib/capture/adts.ts`, `apps/mobile/src/lib/transcribe-run.ts`

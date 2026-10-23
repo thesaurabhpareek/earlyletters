@@ -47,7 +47,7 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Reversal cost:** medium: changing the signing key needs a release; changing the host is a manifest change
 - **Revisit when:** platform: the minimum iOS becomes 26 (Apple-hosted packs); cost: Edge Function invocations for documents pass about $60 a month (the ADR's estimate at 220k MAU; no budget is set in any source)
 - **Review by:** on trigger
-- **Status:** proposed: the ADR header says Proposed; D-065, D-066 and D-068 adopt its pack, content and config parts; the host (F-1, F-2) is decided as D-097 (merged PR #122), though the ADR header still says Proposed
+- **Status:** proposed: the ADR header says Proposed; D-065, D-066 and D-068 adopt its pack, content and config parts; the host (F-1, F-2) is decided as D-097 (merged PR #122) and the ADR's F-2 row says so since PR #126 (merged 18 Oct 2026), though the ADR header still says Proposed
 - **As built:** `apps/mobile/src/lib/packs/engine.ts`, `packages/api/src/pack-manifest.ts`, `scripts/packs/publish.ts`
 
 ### ADR-0017 API and service standards
@@ -70,9 +70,22 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Reversal cost:** high after launch: a device data migration and a server protocol change
 - **Revisit when:** scale: 10,000 families; technology: photo and audio sync outgrow the simple queue (both from the source)
 - **Review by:** on trigger
-- **Status:** parked: v1.0 has no sync (PR #54, D-085)
-- **As built:** `apps/mobile/src/lib/sync/outbox.ts`, `apps/mobile/src/lib/sync/engine.ts`, `supabase/migrations/20261004100000_sync_engine.sql`
-- **Also:** the D-023 entry appears twice in the source; the later "Decided (founder)" entry is the one recorded
+- **Status:** in force: D-100 (founder, 13 Oct, merged 16 Oct) puts sync in v1.0 and supersedes the on-device-only assumption behind D-085 where they conflict, which was the reason this record was parked (PR #54). How it is built for v1.0 is ADR-0025 (proposed)
+- **As built:** `apps/mobile/src/lib/sync/outbox.ts`, `apps/mobile/src/lib/sync/engine.ts`, `apps/mobile/src/lib/sync/merge.ts` (the phone side of protocol v1, PR #146, merged 18 Oct 2026), `supabase/migrations/20261004100000_sync_engine.sql`, `supabase/migrations/20261005000000_family_cap_language_idempotency.sql`
+- **Also:** the D-023 entry appears twice in the source; the later "Decided (founder)" entry is the one recorded; ADR-0025
+
+### ADR-0025 Sync protocol v1: outbox push, cursor pull, compare and set on words
+- **Source:** `docs/adr/0025-sync-protocol-v1.md` (Proposed, 15 Oct 2026, revised the same day; numbered 0025 by the coordinator on 16 Oct; deciders: founder, since D-023 is decided and this records how it is built; decided at T15, or the spec default in PRD V2 F16 stands); PR #146 (merged 18 Oct 2026)
+- **Decided:** not decided. Proposed: keep D-023's transport (`sync_push` as security invoker, `sync_pull` as security definer, rate and payload caps, `child_members` authorisation, results with ids, versions and the caller's own words only). v1 adds a compare and set on words: an `entry.upsert` with a `base` whose words changed since `base` is not applied for the `text` group and answers `conflict_groups` and `current`, and a duplicate answers `applied_v`. A words version `entries.text_xid` stamped by trigger is proposed instead of `sync_xid` (S02 may choose otherwise). On the phone: one op per letter per batch, later queued upserts rebased only on the version this phone's words wrote, and a refused edit kept as a conflict copy. Held drafts become author-only server rows (`held.upsert`, `held.discard`), and an API version is added.
+- **Why:** last writer wins on words loses the earlier of two offline edits to `entry_versions`, which the author never sees (F16's P0 gap); the wire contract lives only in the app with no API version; held letters live only on one phone and are lost with it. The alpha on Thu 29 Oct 2026 is the first time two phones sync through staging (the ADR's Context).
+- **Alternatives:** keep last writer wins (breaks F16-REQ-010; rejected by R2 AR-02); compare on `sync_xid` as F16 6.2 E words it (raises false conflicts from book and date changes; kept as the fallback); a new local `sync_conflicts` table (needs a new local schema number; `rejected_writes` already has the life cycle); merging words (never: TDD 02 3.6, F16 section 4).
+- **Door:** one-way after launch: once families sync, the wire fields, the `base` meaning and the receipts live on their phones and in the server's history; the new result fields are optional, so older and newer apps and servers still talk
+- **Reversal cost:** high after launch: a server migration plus an app release that every phone must take; low before the alpha, because the server half is not on `develop`
+- **Revisit when:** customer: authors see words-conflict notes often (the ADR expects them to be rare, F16 A1); scale: 10,000 families (D-023's PowerSync revisit); team: S02 chooses a per-row words counter or `sync_xid` instead of `text_xid`
+- **Review by:** on trigger
+- **Status:** proposed: the ADR header says Proposed. The phone side is merged (PR #146); the server half (WP-F16-14 compare and set, WP-F16-17 `held_drafts`) is in open PRs #140 and #208 and not on `develop`. Open questions in the ADR: book-setting conflicts stay later arrival plus F12's note; whether `held.upsert` needs compare and set in v1.0; when to refuse API version 0. D-111 item 9 ships held-draft sync on in build 2 unless the held-draft table is not green in `sync-two-phone` by Fri 23 Oct 2026, and item 10 says the first keep's raw transcript stands
+- **As built:** `apps/mobile/src/lib/sync/outbox.ts`, `apps/mobile/src/lib/sync/merge.ts`, `apps/mobile/src/lib/sync/types.ts`, `apps/mobile/src/lib/db/migrations.ts` (local schema v6); server half not built on `develop`
+- **Also:** D-023; supersedes ADR-0004 for v1.0 once accepted (the ADR's header); D-111 items 9 and 10
 
 ### D-024 One visibility predicate: trigger-maintained `book_access` table
 - **Source:** `docs/DECISIONS.md` D-024 (Recommended, proceed: yes, 2026-10-03)

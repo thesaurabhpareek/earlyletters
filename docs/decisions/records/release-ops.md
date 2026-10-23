@@ -127,7 +127,7 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Revisit when:** team: a second engineer joins; platform: OTA updates are adopted (see D-091)
 - **Review by:** on trigger
 - **Status:** in force
-- **As built:** `.github/workflows/testflight.yml`, `docs/release/TESTFLIGHT.md`; the version file and store workflow are in open PRs #109 and #110; the release runbook is in open PR #111
+- **As built:** `.github/workflows/testflight.yml`, `docs/release/TESTFLIGHT.md`; `docs/ops/RELEASE.md` (the release runbook, PR #111, merged 16 Oct 2026); the version file and store workflow are in open PRs #109 and #110
 - **Also:** R-012; ADR-0022 (decisions 1 to 8 and 10; decision 9 is D-091)
 
 ### D-091 No OTA updates in v1.0
@@ -157,14 +157,14 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 
 ### D-093 The 13 Oct integration branch is never merged
 - **Source:** `docs/DECISIONS.md` D-093 (Decided, delegated by founder, 2026-10-15; the founder can reverse it); PR #122 (merged 15 Oct 2026)
-- **Decided:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in the port map (open PR #117). The release runbook lands through PR #111 and the device test plan rows through PR #123. The branch is kept, not deleted, so parked code can be reused.
+- **Decided:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in the port map (PR #117). The release runbook lands through PR #111 and the device test plan rows through PR #123. The branch is kept, not deleted, so parked code can be reused.
 - **Why:** not recorded in the source
 - **Door:** two-way: the branch is kept, so any fix on it can still be ported
 - **Reversal cost:** low: porting is per concern and nothing is deleted
 - **Revisit when:** team: a fix needed for v1.0 exists only on the integration branch and is not in the port map
 - **Review by:** on trigger
-- **Status:** in force: the port map (#117), runbook (#111) and test plan rows (#123) are open PRs, not merged
-- **As built:** not built: a branch rule; the branch is still on the remote
+- **Status:** in force: the port map (#117), runbook (#111) and test plan rows (#123) all merged on 16 Oct 2026
+- **As built:** `docs/agents/PORT_MAP_2026-10-13.md`, `docs/ops/RELEASE.md`, `docs/qa/DEVICE_TEST_PLAN.md`; the branch itself is a rule, not code
 
 ### D-106 Alpha in two weeks: option B as a TestFlight alpha against staging
 - **Source:** `docs/DECISIONS.md` D-106 (Decided, founder, build thread, 2026-10-15); PR #128 (merged 16 Oct 2026)
@@ -177,6 +177,30 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Status:** in force
 - **As built:** not built on `develop`: `apps/mobile/eas.json` has `EXPO_PUBLIC_SERVER_FEATURES` off in every profile; the alpha profiles are in open PR #145; the alpha plan is in open PR #152
 - **Also:** R-016 (part); the delegation part is D-107
+
+### D-111 Alpha calls resolved, 17 Oct 2026
+- **Source:** `docs/DECISIONS.md` D-111 (Decided, founder, Sat 17 Oct 2026, 11:00 PM PT, by accepting the coordinator's recommendations as they stood; counsel items open); PR #229 (merged 18 Oct 2026); the founder questions on #140 and #208; #220's visual review
+- **Decided:** thirteen items for the alpha. (1) Website copy on `main` uses the fictional family only, with the real-family-name guard in `main`'s CI; no history purge. (2) Vercel preview deployments off; only `main` builds. (3) Domains: D-097 for `earlyletters.app`, D-063 for everything else. (4) The alpha transcribes English only. (5) The 500-kill test runs on the hosted macOS runner, with the founder's Mac and a silent virtual microphone as fallback. (6) D-104 item 2 confirmed: backup is free for everyone in v1.0. (7) The server keeps the record that a letter was erased, and held-draft markers (ids and times, never words), until the book or the author's account is deleted (counsel reviews the policy line; open). (8) The R-17 gate on #140: limits as built and measured in the alpha, `peek_invite` returns only the inviter's sign-off and role before consent, the pull-timing residual accepted for C1, S02's option for question 1, `pack_ref` classed L4, purged ids dropped at 60 days. (9) Held-draft sync between one author's two phones ships on in build 2, unless the held-draft table is not green in `sync-two-phone` by Fri 23 Oct 2026; `app.held_sync = 'off'` turns it off without a build. (10) When a letter is kept on both phones, the first keep's raw transcript stands and the second phone's words become a conflict copy. (11) The first-run promise screen goes to 71 words and its acceptance line to about 70. (12) The name step hides the cover below 480 pt of free height (was 640 pt). (13) Which legal pages build 2 needs is counsel's call (open).
+- **Why:** item 2: it stops PRs into `develop` hitting the free plan's daily deploy cap; item 4: another language needs a native reviewer first; item 7: so an offline phone cannot bring an erased letter back after the 60-day forget; item 10: the raw transcript is immutable (DATA-REQ-040) and no words are lost; item 11: #220 counted 74 words, and the recording and privacy rows are at their floor without wording counsel would need to see; item 12: measured with the keyboard up, only the iPhone SE (407 pt) hides the cover. Other items: not recorded in the source
+- **Alternatives:** item 11: a 3-word hint cut without the feature name, not taken because D-074 and D-086 chose the name "Word for word"; item 8: closing the pull-timing residual, left to the sync ADR
+- **Door:** one-way after launch: item 6 becomes a pricing promise once backup ships and is advertised, and item 7 a retention promise once it is in the privacy policy; the other items are two-way (settings, copy, tests and switches)
+- **Reversal cost:** medium: items 6 and 7 need copy, policy and counsel changes once published; the rest are code, copy or project settings
+- **Revisit when:** technology: the held-draft table is not green in `sync-two-phone` by Fri 23 Oct 2026 (item 9: build 2 ships with held sync off); law: counsel answers items 7 and 13; scale: the R-17 limits measured in the alpha (item 8)
+- **Review by:** 2026-10-29
+- **Status:** in force, except items 7 and 13 (counsel, open); item 3 of D-104 is not changed here. Follow-up PRs named in the source and still open on 23 Oct: #238 (item 12), #184 (the BL-322 copy in item 8), #182 and #208 (items 9 and 10), #140 (item 8)
+- **As built:** item 12 not built: `apps/mobile/src/app/onboarding.tsx` still has `COVER_MIN_FREE_HEIGHT = 640`; item 2 is a Vercel project setting, applied Sat 17 Oct per the source; items 9 and 10 are in open PRs #182 and #208
+- **Also:** amends D-104 (item 2) and R-007; confirms D-097 and D-063; D-106
+
+### R-019 Staging follows `develop` only
+- **Source:** PR #205 (merged by the founder 18 Oct 2026; S20 comment of 17 Oct: "implements the coordinator's decision that staging follows develop only"); `docs/ops/DEPLOY.md` ("Staging follows `develop` only (decided 17 Oct 2026)"); `docs/release/AUTOMATION.md` sections 2.0 and 2.2
+- **Decided:** a push to `main` deploys nothing to a database. Staging takes `develop`'s migrations and functions (`deploy-db.yml` on `develop` and `db-v*` tags only; `deploy-functions.yml` on `develop`); production takes migrations only from a `db-v*` tag on `main`, through the `production` environment, once AF-42 sets that project up after the alpha. The `staging` environment's deployment-branch rule becomes `develop` only (a founder step).
+- **Why:** before this, a push to `main` also deployed staging; with staging ahead of `main` that run could only fail `db push`, because the remote holds versions `main` lacks (`docs/ops/DEPLOY.md`)
+- **Door:** two-way: workflow triggers and an environment rule
+- **Reversal cost:** low: workflow and settings changes
+- **Revisit when:** team: AF-42 sets up production after the alpha; team: `main` and `develop` become one lineage after the alpha (ADR 0026, proposed)
+- **Review by:** on trigger
+- **Status:** in force: decided by the coordinator and merged by the founder; not in `docs/DECISIONS.md`
+- **As built:** `.github/workflows/deploy-db.yml`, `.github/workflows/deploy-functions.yml`, `docs/ops/DEPLOY.md`
 
 ### ADR-0026 Release automation pipeline (proposed)
 - **Source:** `docs/adr/0026-release-automation-pipeline.md` (Proposed, 16 Oct 2026, revision 2; each numbered decision takes effect when the founder accepts it); PR #185 (merged 16 Oct 2026); plan in `docs/release/AUTOMATION.md`

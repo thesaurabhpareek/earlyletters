@@ -12,7 +12,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Revisit when:** scale: more than about 60 open tasks; team: a second engineer joins (both from the ADR; its third trigger, more than one agent in parallel, has fired and led to ADR 0018)
 - **Review by:** on trigger
 - **Status:** proposed (the ADR header says Proposed); its run protocol is superseded by ADR-0018, which keeps the backlog format and traceability rules in force
-- **As built:** `docs/BACKLOG.md`; the trace script (BL-002) is in open PR #143
+- **As built:** `docs/BACKLOG.md`, `scripts/trace.mjs`, `docs/TRACE.md` (the trace script, BL-002, landed in PR #176, merged 16 Oct 2026; PR #143 closed unmerged)
 
 ### ADR-0018 Agent operating system: roster of identities, a code dispatcher, Claude Code on GitHub Actions
 - **Source:** `docs/adr/0018-agent-operating-system.md` (Accepted, 2026-10-03; deciders: founder; amended the same day by ADR 0019); PR #4 (merged 15 Oct)
@@ -90,7 +90,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Reversal cost:** low today; medium after backup ships free
 - **Revisit when:** cost: no backup storage budget is set (the founder should set one before backup ships); team: review agents pass a PR that later breaks main
 - **Review by:** on trigger
-- **Status:** amended by D-107: D-107 (founder, 15 Oct, merged 16 Oct) replaces the merge rule. The log records the same three defaults as D-104 with status "Proposed; awaits founder confirmation", while issue #127 item 6 records them as accepted: the founder has to say which stands.
+- **Status:** amended by D-107 and D-111: D-107 (founder, 15 Oct, merged 16 Oct) replaces the merge rule; D-111 item 6 (founder, 17 Oct, merged 18 Oct) confirms that backup is free for everyone in v1.0. The voice-only counting default is still "proposed" in the log as D-104 item 3, while issue #127 item 6 records it as accepted: the founder has to say which stands.
 - **As built:** not built (process rule; backup not in v1.0)
 
 ### D-090 Release team: a `release` agent; `ops` as Platform and Reliability
@@ -106,16 +106,16 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Also:** R-013
 
 ### D-104 Three delivery defaults (proposed)
-- **Source:** `docs/DECISIONS.md` D-104 (Proposed by the coordinator, 2026-10-14; awaits founder confirmation); PR #128 (merged 16 Oct 2026)
+- **Source:** `docs/DECISIONS.md` D-104 (Proposed by the coordinator, 2026-10-14; update 17 Oct 2026: item 1 replaced by D-107, item 2 decided by D-111, item 3 proposed); PR #128 (merged 16 Oct 2026); PR #229 (merged 18 Oct 2026)
 - **Decided:** not decided. Proposed: (1) the coordinator may merge docs, evidence and test-only PRs after two independent review agents pass them; (2) encrypted recording backup is free for everyone, and Plus does not gate it; (3) voice-only letters follow D-103. Until confirmed, the founder merges every PR, and items 2 and 3 are the spec defaults PRD V2 is written against.
 - **Why:** not recorded in the source
 - **Door:** one-way after launch: item 2 becomes a pricing promise once backup ships free and is advertised; items 1 and 3 are two-way
 - **Reversal cost:** low today; medium once backup ships free
 - **Revisit when:** cost: no backup storage budget is set before backup ships; team: the founder confirms or rejects each item
 - **Review by:** on trigger
-- **Status:** proposed: item 1 is replaced by D-107; items 2 and 3 await the founder's confirmation (issue #127 item 6, recorded as R-007, says they were accepted)
+- **Status:** proposed: item 1 is replaced by D-107; item 2 is decided by D-111 item 6 (backup free for everyone in v1.0); item 3 awaits the founder's confirmation (issue #127 item 6, recorded as R-007, says it was accepted)
 - **As built:** not applicable (a proposal)
-- **Also:** related to R-007
+- **Also:** related to R-007; D-111 item 6
 
 ### D-107 Merge delegation widened to app code
 - **Source:** `docs/DECISIONS.md` D-107 (Decided, founder, 2026-10-15, about 17:00 UTC: "Widen."); PR #128 (merged 16 Oct 2026)
