@@ -2,8 +2,8 @@
 title: Plus and billing
 owner: reference-docs
 covers: [apps/mobile/src/lib/billing/**, apps/mobile/modules/scribe-store/**, apps/mobile/storekit/**, apps/mobile/src/app/settings/plus.tsx, apps/mobile/src/app/plus/**, packages/core/src/plan.ts, packages/content/src/pricing.ts]
-verified_at: d74e860
-verified_on: 2026-10-16
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Plus and billing
@@ -19,7 +19,7 @@ Plus is a membership sold only through the App Store, with StoreKit 2, and check
 | Capturing, typing, drafts, reading, playing, Read together, exporting and deleting are never gated; starting a book is free | `gates.ts` header, `app/read-together.tsx` header |
 | The gate runs at Keep, after the recording is on disk and hashed; on "offer" the draft stays where it is | `gates.ts` `keepLetterGate` |
 
-`decideKeepLetter` returns `allow` (`via: 'plus_own'` or `'free_letters'`) or `offer` with trigger `keep_letter`. `packages/core/src/plan.ts` also has `decide()` for other gated features (`backup_upload`, `theme_extra`); neither is offered while server features are off.
+`decideKeepLetter` returns `allow` (`via: 'plus_own'` or `'free_letters'`) or `offer` with trigger `keep_letter`. `packages/core/src/plan.ts` also has `decide()` for other gated features (`backup_upload`, `theme_extra`); neither is offered while server features are off. `backup_upload` still answers `offer` with trigger `backup` for a user tap without Plus, while D-111 item 6 (founder, 17 Oct 2026) makes backup free for everyone in v1.0; the backup client is in open PR #150 ([register](../decisions/INDEX.md)).
 
 ## How Plus is read on the phone
 
@@ -30,7 +30,7 @@ StoreKit 2 (Transaction.currentEntitlements, Transaction.updates)
   -> usePlan() / hasPlus() / keepLetterGate()
 ```
 
-- **`modules/scribe-store`** (iOS Swift; Android stub answering "unavailable"; absent in Expo Go and on web): `startTransactionListener`, `currentEntitlements`, `presentSubscriptionStore` (Apple's SubscriptionStoreView, iOS 17+), `showManageSubscriptions`, `sync` (restore), `presentOfferCodeRedeemSheet`, `beginRefundRequest`, `storeViewSupport`.
+- **`modules/scribe-store`** (iOS Swift, where `Transaction` always means StoreKit's, a type alias added in #201 so the module compiles with Xcode 26.6; Android stub answering "unavailable"; absent in Expo Go and on web): `startTransactionListener`, `currentEntitlements`, `presentSubscriptionStore` (Apple's SubscriptionStoreView, iOS 17+), `showManageSubscriptions`, `sync` (restore), `presentOfferCodeRedeemSheet`, `beginRefundRequest`, `storeViewSupport`.
 - **`lib/billing/plan-store.ts`**: the source of truth is StoreKit on this phone. The last good snapshot is cached in device settings under `plus.cache` (`config.ts` `PLAN_CACHE_KEY`) so Plus shows at once on launch and offline, and a payer is never locked out by a missing network. `startPlus()` at boot starts the listener and re-reads on foreground.
 - **`lib/billing/actions.ts`**: `presentPlusStore`, `restorePurchases`, `manageSubscription`, `requestRefund`, `redeemOfferCode`. When a native sheet cannot open, it opens Apple's pages (`APPLE_MANAGE_SUBSCRIPTIONS_URL`, `APPLE_REPORT_A_PROBLEM_URL` in `config.ts`).
 - **Server**: none. The server entitlement tables and functions were dropped by `supabase/migrations/20261004000000_plus_on_device_only.sql` (pending, like every server migration after the first two).
@@ -43,9 +43,9 @@ How "letters kept" is counted so a reinstall cannot reset it (`lib/billing/lette
 |---|---|---|
 | Keychain | `earlyletters.letters.keptEver` | Through `lib/supabase/secure-storage.ts`, `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` |
 | Database mirror | `settings` row `letters.keptEver` | Counted in the same transaction as the save (`saveLetterFromDraft` in `lib/store.ts`) |
-| Letters present | `entries` | The third witness |
+| Letters present | `entries` | The third witness. Only letters that count by D-103 (M17, since #146): this phone's account's own (or made before any sign-in), with words, kept from Review with the words on screen (`COUNTED_LETTERS_SQL` in `lib/db/repos/ledger.ts`). The other parent's synced letters never count |
 
-`lettersKept` is the largest of the three. `startLetterLedger()` at boot and `keepLetterGate()` heal it after a reinstall or a backup restore. It holds a number only: no id, hash, timestamp or content. A deleted letter still counts (D-083). `eraseLetterLedger()` exists for "Erase everything"; no screen calls it on `develop`.
+`lettersKept` is the largest of the three. `startLetterLedger()` at boot and `keepLetterGate()` heal it after a reinstall or a backup restore. It holds a number only: no id, hash, timestamp or content. A deleted letter still counts (D-083), and a save that does not count by the rule above changes nothing (`recordKept` in `ledger.ts`). `eraseLetterLedger()` exists for "Erase everything"; no screen calls it on `develop`.
 
 ## Products and prices
 

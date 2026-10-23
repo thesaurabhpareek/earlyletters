@@ -20,7 +20,9 @@ How code is checked, how builds and database changes are released, which secrets
 | `.github/workflows/ci.yml` | CI | pull_request, push |
 | `.github/workflows/claude.yml` | Claude | issue_comment, pull_request_review_comment, pull_request_review, issues |
 | `.github/workflows/db-cli.yml` | DB CLI | pull_request, workflow_call |
-| `.github/workflows/deploy-db.yml` | Deploy database | push |
+| `.github/workflows/deploy-db.yml` | Deploy database | push, workflow_dispatch |
+| `.github/workflows/deploy-functions.yml` | Deploy functions | push, workflow_dispatch |
+| `.github/workflows/deploy-scripts.yml` | deploy scripts | pull_request |
 | `.github/workflows/migration-guard.yml` | Migration guard | pull_request, push |
 | `.github/workflows/nightly.yml` | Nightly | schedule, workflow_dispatch |
 | `.github/workflows/testflight.yml` | testflight | workflow_dispatch |

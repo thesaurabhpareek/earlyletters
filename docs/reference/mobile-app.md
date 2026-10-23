@@ -2,13 +2,13 @@
 title: Mobile app
 owner: reference-docs
 covers: [apps/mobile/src/**, apps/mobile/app.config.ts, apps/mobile/eas.json, apps/mobile/modules/**, apps/mobile/package.json, apps/mobile/.env.development]
-verified_at: f524ca1
-verified_on: 2026-10-18
+verified_at: 2cbea6d
+verified_on: 2026-10-23
 ---
 
 # Mobile app (`apps/mobile`)
 
-The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). Calm brand atmosphere (#99, then the experience pass P1, #192): Tonight and Book draw `Lamp` (`components/ui/lamp.tsx`), a decorative light pool whose scenes, tones and peaks are `tokens.atmosphere` in `packages/design-tokens`. `useUnlitRoom()` (for rooms where the lamp should fade out rather than cut) exists, but no screen calls it on `develop` yet. Contrast rules for the lamp: [D-110](../decisions/INDEX.md). The welcome step of onboarding shows `Lamp` and the `QuotePair` brand device (`components/ui/quote-pair.tsx`; registry context `app.brand-device` in `packages/brand/registry.ts`); the Book empty state uses the device instead of a line drawing (`components/ui/empty-state.tsx`). The whole system: [system.md](system.md).
+The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). Calm brand atmosphere (#99, then the experience pass P1, #192): Tonight and Book draw `Lamp` (`components/ui/lamp.tsx`), a decorative light pool whose scenes, tones and peaks are `tokens.atmosphere` in `packages/design-tokens`. `useUnlitRoom()` (for rooms where the lamp should fade out rather than cut) exists, but no screen calls it on `develop` yet. Contrast rules for the lamp: [D-110](../decisions/INDEX.md). The `QuotePair` brand device (`components/ui/quote-pair.tsx`; registry context `app.brand-device` in `packages/brand/registry.ts`) sits on the 18+ gate (`components/gate/age-gate-screen.tsx`) and the Book empty state (`components/ui/empty-state.tsx`). Since the experience pass P2 (#220) the welcome step shows the stacked lockup instead (`components/onboarding/welcome-lockup.tsx`, registry context `app.welcome`, D-109 F3). The whole system: [system.md](system.md).
 
 ## Screens
 
@@ -62,7 +62,7 @@ How they are presented. The root `Stack` in `src/app/_layout.tsx` types no prese
 | Route | Presentation | What it is |
 |---|---|---|
 | `(tabs)`: `/`, `/book`, `/family` | Tabs | Tonight, Book, Family (`(tabs)/_layout.tsx`) |
-| `/onboarding` | Card, no swipe back | First run: promise, child or children, birthday or due date, signature |
+| `/onboarding` | Card, no swipe back | First run, one step per screen (`ORDER` in `onboarding.tsx`): `welcome`, `promise` (a cleaned sample sentence, `components/onboarding/promise-sample.tsx`), `child` (name or names, birthday or due date), `signsAs`, `finish` ("The book is open."). One `Lamp` with `persistKey` `firstRun` carries the light from the gate through every step; the `BookCover` takes the child's name as it is typed |
 | `/write` | Modal | Typing a letter, autosaved to a draft |
 | `/listen` | Full screen, no swipe, cross-dissolve | Recording; starts only from a tap (`lib/resilience/start-intent.ts`) |
 | `/review` | Full screen, no swipe, cross-dissolve | Review fixes, choose "Exactly as said", Keep. Full screen (it was a page sheet) so Listen dissolves into Review with no change of shape |
@@ -91,7 +91,7 @@ With server features off, Settings does not offer Account or Delete account (`se
 | 2 | `startPacks` | `lib/packs` | Installs pack updates when a newer manifest arrives |
 | 3 | `startTranscriptionQueue` | `lib/transcription-queue` | Registers the speech plan as a pack language resolver and runs queued jobs |
 | 4 | `startListeningCopies` | `lib/audio-enhance` | Registers the listening-copy lookup; sweeps stale copies |
-| 5 | `startSync` | `lib/sync` | Returns at once with server features off |
+| 5 | `startSync` | `lib/sync` | Returns at once with server features off. With them on, `killSwitches.sync` in the signed remote config pauses every push and pull (phase `paused_server`); if the switch cannot be read, sync stays paused (fails closed) |
 | 6 | `startPlus` | `lib/billing` | StoreKit 2 listener and foreground re-read |
 | 7 | `startLetterLedger` | `lib/billing` | Heals the free-letter count after a reinstall or restore |
 | 8 | `startReminders` | `lib/reminders` | Local notification schedule |
@@ -129,7 +129,7 @@ Screens call these; the API for the store is in `apps/mobile/src/lib/README.md`.
 | `transitions.logic.ts` | The screen-transition table and its rules (see Routes above) |
 | `licences.ts` | Licence notices for every bundled library, read from `src/generated/licences.json`, which `npm run licences:generate -w @scribe/mobile` makes (`scripts/licences/generate.mjs`); a test fails when the file is stale. For the Licenses page, which is not on `develop` yet (experience pass P6) |
 | `navigation.logic.ts`, `review-layout.logic.ts`, `shelf-days.ts`, `model-files.ts`, `utils.ts` | Back and close idioms, Review layout rules, the 30-day shelf, dev model folder, class name helper |
-| `analytics/` | Opt-in analytics glue; inert while `ANALYTICS=off` |
+| `analytics/` | Opt-in analytics glue; inert while `ANALYTICS=off`. No PostHog SDK is bundled in v1.0: `createClient` in `index.ts` is `null` and `posthog-react-native` is not a dependency (#125, D-095) |
 | `auth/`, `supabase/`, `sync/`, `family/`, `account-deletion/` | Server features, off in every build profile on `develop`; D-100 ships them in v1.0 ([register](../decisions/INDEX.md)). Sign-in, the Supabase client, outbox and cursor sync, invites, account deletion. `lib/supabase/secure-storage.ts` is also used, with server features off, by the letter ledger |
 
 Pure logic files end in `.logic.ts` and are tested in Node (`apps/mobile/test`, vitest). `npm run test:coverage -w @scribe/mobile` runs them with coverage (`vitest.coverage.config.ts`).
@@ -143,18 +143,19 @@ Built in P1 (#192, #218); most are not used by a screen on `develop` yet, so lat
 | Component | Path | What it is | Used by a screen on `develop` |
 |---|---|---|---|
 | `Lamp`, `LampView`, `useUnlitRoom` | `components/ui/lamp.tsx`, `lamp.logic.ts` | The light pool behind a screen, by scene and time of day | `Lamp`: Tonight, Book, onboarding; `useUnlitRoom`: none |
-| `BookCover` | `components/book/book-cover.tsx` | A paper book with the child's name; no images | None |
+| `BookCover` | `components/book/book-cover.tsx` | A paper book with the child's name; no images | Onboarding (from P2, #220) |
 | `Toast` | `components/ui/toast.tsx`, `toast.logic.ts` | One quiet confirmation at a time, usually with Undo | The letter page, through `components/ui/provider.tsx` |
 | `PageTurn` | `components/motion/page-turn.tsx` | A sideways page turn for Read together; a 200 ms cross-fade under Reduce Motion | None |
 | `CardToPage` | `components/motion/card-transition.tsx` | A letter card grows into its page, its words staying in place | None |
 | `ExcerptFade` | `components/motion/excerpt-fade.tsx` | A few lines of a person's words ending in a fade, never an ellipsis; the whole text stays readable to VoiceOver | None |
+| `WelcomeLockup`, `PromiseSample` | `components/onboarding/welcome-lockup.tsx`, `promise-sample.tsx` (and their `.logic.ts`) | The welcome's stacked lockup from the brand registry; the promise step's sample sentence the real engine cleaned, each fix struck through and tappable to put back | Onboarding |
 | `LineArt`, `DrawOn` | `components/ui/line-art.tsx`, `components/motion/draw-on.tsx` | Line drawings, drawn on | `LineArt`: onboarding, empty and state screens, content blocks, the co-parent card |
 
 Specs: `docs/design/MOTION.md`, `docs/design/COMPONENTS.md` and `docs/design/EXPERIENCE_PASS_2026-10.md`.
 
 ## Device database
 
-SQLite file `scribe.db` (`store.ts` `DB_FILE_NAME`), opened with `PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL` (`db/expo-adapter.ts`). Schema version lives in `PRAGMA user_version`; migrations 1 to 5 are in `db/migrations.ts`, each in its own transaction. Tables:
+SQLite file `scribe.db` (`store.ts` `DB_FILE_NAME`), opened with `PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL` (`db/expo-adapter.ts`). Schema version lives in `PRAGMA user_version`; migrations 1 to 6 are in `db/migrations.ts`, each in its own transaction. Version 6 (#146, WP-F04-03) adds columns only: `drafts.kind` (`note` or `letter`), `occurred_on` and `occurred_precision`, `language` and `base_direction` on drafts and letters; `drafts.state` gains the value `discarding`. Tables:
 
 <!-- facts:device-tables -->
 - `settings`
@@ -170,11 +171,11 @@ SQLite file `scribe.db` (`store.ts` `DB_FILE_NAME`), opened with `PRAGMA journal
 | Table | Holds |
 |---|---|
 | `settings` | Key and value pairs: active child, appearance, reading size, reminders, age gate, ledger mirror, plan cache, pack and speech choices |
-| `entries` | Letters: raw transcript, machine edits, final text, engine version, audio path, hash and size, kind, capture mode, edit level, in book, tombstone, transcript status, sync columns (unused while server features are off) |
+| `entries` | Letters: raw transcript, machine edits, final text, engine version, audio path, hash and size, kind, capture mode, edit level, in book, tombstone, transcript status, occurred precision, language, base direction, sync columns (unused while server features are off) |
 | `children` | Books: name, birthday or due date, signature, reminders, hidden, server columns (unused while server features are off) |
-| `drafts` | Takes and typed drafts before Keep: state `recording`, `ready` or `unrecoverable`, audio path and hash, raw transcript, typed text |
+| `drafts` | Takes and typed drafts before Keep: kind, state `recording`, `ready`, `unrecoverable` or `discarding`, audio path and hash, raw transcript, typed text, occurred date and precision, language, base direction |
 | `orphan_audio` | Recordings found with no row and no book to attach them to; listed in Settings, Recordings, never deleted |
-| `sync_outbox`, `rejected_writes`, `sync_books` | Sync queue, refused writes, per-book cursors. Stay empty while `SERVER_FEATURES=off` |
+| `sync_outbox`, `rejected_writes`, `sync_books` | Sync queue, refused writes (including words conflicts kept as conflict copies the author picks between, `store.ts` `listConflicts`, `resolveConflict`), per-book cursors. Stay empty while `SERVER_FEATURES=off`. The protocol: ADR 0025 (proposed) |
 
 Storage, deletion and export: [data-and-storage.md](data-and-storage.md).
 
@@ -195,10 +196,10 @@ Third-party native code includes `whisper.rn`, `expo-sqlite`, `expo-audio`, `exp
 <!-- facts:eas-profiles -->
 | Profile | Channel | App environment | Extends | Other public switches |
 |---|---|---|---|---|
-| `development` | development | development |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
-| `preview` | preview | preview |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
-| `production` | production | production |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
-| `testflight` | preview | preview |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `development` | development | development |  | `DOCS_BASE_URL=https://packs.earlyletters.app`, `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `preview` | preview | preview |  | `DOCS_BASE_URL=https://packs.earlyletters.app`, `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `production` | production | production |  | `DOCS_BASE_URL=https://packs.earlyletters.app`, `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `testflight` | preview | preview |  | `DOCS_BASE_URL=https://packs.earlyletters.app`, `SERVER_FEATURES=off`, `ANALYTICS=off` |
 <!-- /facts:eas-profiles -->
 
 Distribution, from `apps/mobile/eas.json`: `development` is an internal dev-client build, `preview` internal, `testflight` store distribution, and `production` sets none; `production` and `testflight` auto-increment the build number.
@@ -206,9 +207,9 @@ Distribution, from `apps/mobile/eas.json`: `development` is an internal dev-clie
 - **`APP_ENV`** (`lib/build-env.ts`): unset means development, never production. `app.config.ts` refuses an unknown value and adds a bundle id suffix: `.dev` for development, `.preview` for preview, none for production. The base id comes from `packages/brand` (`bundleId()`).
 - **`devShortcutsAllowed`**: true only when the bundle is a dev bundle and `APP_ENV` is development. Every dev bypass checks it, never `__DEV__` alone.
 - **Server features and analytics**: see [system.md](system.md#build-switches-server-features-and-analytics-are-off). `app.config.ts` records `extra.serverFeatures` and `extra.appEnv` so a build shows which it is.
-- **Other `EXPO_PUBLIC_*` names read by the code**: `EXPO_PUBLIC_DOCS_BASE_URL` (signed documents host, `lib/remote`), `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (adds the Google sign-in plugin only when set, `app.config.ts`), `EXPO_PUBLIC_POSTHOG_KEY` (ignored while analytics is off), `EXPO_PUBLIC_SUPABASE_URL` (`lib/supabase`, server features). None is set in `eas.json`. Local runs read `apps/mobile/.env.development`.
+- **Other `EXPO_PUBLIC_*` names read by the code**: `EXPO_PUBLIC_DOCS_BASE_URL` (signed documents host, `lib/remote`; set to `https://packs.earlyletters.app` in every `eas.json` profile since #126, D-097), `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (adds the Google sign-in plugin only when set, `app.config.ts`), `EXPO_PUBLIC_POSTHOG_KEY` (ignored while analytics is off), `EXPO_PUBLIC_SUPABASE_URL` (`lib/supabase`, server features). Of these, only the documents host is set in `eas.json`. Local runs read `apps/mobile/.env.development`.
 
-`app.config.ts` also sets the iOS data-protection class to "complete until first user authentication", the privacy manifest with no collected data types, no background audio, and the universal-link domain from `packages/brand`.
+`app.config.ts` sets the iOS deployment target to 17.0 (`IOS_DEPLOYMENT_TARGET`, through `expo-build-properties`; D-098) and the iOS data-protection class to "complete until first user authentication", the privacy manifest with no collected data types, no background audio, and the universal-link domain from `packages/brand`.
 
 ## Where to look next
 
