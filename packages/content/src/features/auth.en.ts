@@ -64,6 +64,8 @@ export const authCopy = {
 
   verify: {
     title: 'Signing you in',
+    // Heading over the two refusals (F02-U11 `errors.other_phone`, F02-U27 `errors.already_signed_in`): nothing is signing in.
+    refusedTitle: "This link can't be used here",
     typeCode: 'Type the code instead',
     newEmail: 'Send a new email',
     close: 'Close',
@@ -98,7 +100,9 @@ export const authCopy = {
     unknown: 'Something went wrong. Your letters are safe on this phone. Please try again.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
-    already_signed_in: "You're signed in as another account. Sign out first to use this link.",
+    // Any account, this one included. Sign-out drops this phone's pending request, so the same link
+    // never works after it; the code from the email does.
+    already_signed_in: "You're already signed in on this phone. To use another account, sign out, then type the code from the email.",
   },
 
   consent: {

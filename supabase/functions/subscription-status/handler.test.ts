@@ -163,3 +163,50 @@ Deno.test('[LEGAL-REQ-014] canary: nothing from the body, the salt or the sessio
   assert.deepEqual(findCanaries(text), []);
   for (const s of ['f'.repeat(64), SALT, 'plus.annual', KEY]) assert.equal(text.includes(s), false, s);
 });
+
+Deno.test('[RA-07-06] GET /subscription-status/health: 200 ready with its settings, no Auth call, no RPC, no session needed', async () => {
+  const w = world();
+  for (const url of ['https://fn.local/subscription-status/health', 'https://fn.local/functions/v1/subscription-status/health']) {
+    const res = await w.handler(new Request(url));
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.deepEqual(body.data, { status: 'ready' });
+  }
+  const head = await w.handler(new Request('https://fn.local/subscription-status/health', { method: 'HEAD' }));
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), '');
+  assert.equal(w.calls.length, 0);
+});
+
+Deno.test('[RA-07-06] health is 503 until SUPABASE_URL and SUPABASE_ANON_KEY are set, and never names which one is missing', async () => {
+  const envs: Record<string, string>[] = [{}, { SUPABASE_URL: SUPA }, { SUPABASE_ANON_KEY: 'anon-key' }, { SUPABASE_URL: ' ', SUPABASE_ANON_KEY: 'anon-key' }];
+  for (const env of envs) {
+    const w = world({ env });
+    const res = await w.handler(new Request('https://fn.local/subscription-status/health'));
+    assert.equal(res.status, 503);
+    const text = await res.text();
+    assert.deepEqual(JSON.parse(text).error, { code: 'unavailable', retryable: true });
+    assert.equal(/SUPABASE|anon/i.test(text), false);
+    assert.equal(w.calls.length, 0);
+  }
+});
+
+Deno.test('[RA-07-06] only GET or HEAD on exactly /health is the health route; the report and salt routes are unchanged', async () => {
+  const w = world();
+  assert.equal((await w.handler(new Request('https://fn.local/subscription-status/health', { method: 'POST' }))).status, 404);
+  assert.equal((await w.handler(new Request('https://fn.local/subscription-status/health/x'))).status, 404);
+  assert.equal((await w.handler(new Request('https://fn.local/subscription-status/v1/health'))).status, 404);
+  assert.equal((await w.handler(new Request(`${BASE}/salt`))).status, 401);
+  assert.equal(w.calls.length, 0);
+});
+
+Deno.test('[LEGAL-REQ-014] canary: the health route logs a status only', async () => {
+  const w = world();
+  await w.handler(new Request('https://fn.local/subscription-status/health', {
+    headers: { Authorization: `Bearer ${CANARY.sessionJwt}`, 'x-request-id': CANARY.requestId },
+  }));
+  assert.ok(w.lines.length >= 1);
+  assert.deepEqual(findCanaries(w.lines.join('\n')), []);
+});

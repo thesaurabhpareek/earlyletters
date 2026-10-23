@@ -38,9 +38,10 @@ describe('[F02-REQ-018] the pending-request note: a time, nothing else, for at m
     expect(decodePendingRequest(raw, NOW + 1000)).toEqual({ at: NOW });
   });
 
-  it('expires after the longest code life a project can set', () => {
+  it('expires after the longest code life a project can set, and then reads as expired (not as "no request")', () => {
     expect(decodePendingRequest(encodePendingRequest({ at: NOW }), NOW + PENDING_REQUEST_TTL_MS)).toEqual({ at: NOW });
-    expect(decodePendingRequest(encodePendingRequest({ at: NOW }), NOW + PENDING_REQUEST_TTL_MS + 1)).toBeNull();
+    expect(decodePendingRequest(encodePendingRequest({ at: NOW }), NOW + PENDING_REQUEST_TTL_MS + 1)).toBe('expired');
+    expect(decodePendingRequest(encodePendingRequest({ at: NOW }), NOW + 30 * PENDING_REQUEST_TTL_MS)).toBe('expired');
   });
 
   it('refuses damaged, empty and future notes (a clock moved back by more than a minute)', () => {
@@ -59,13 +60,21 @@ describe('[F02-REQ-018] [F02-REQ-020] when an opened link may be used', () => {
     expect(decideEmailLink({ pending: { at: NOW }, signedIn: false })).toBe('verify');
   });
 
+  it('a note over an hour old: never verified; it reads as an expired link, and the signed-in refusal still wins', () => {
+    expect(decideEmailLink({ pending: 'expired', signedIn: false })).toBe('expired');
+    expect(decideEmailLink({ pending: 'expired', signedIn: true })).toBe('signed_in');
+  });
+
   it('openEmailLink: a refusal makes no request; a use spends the note; a failed exchange keeps it', async () => {
     const exchange = vi.fn(async () => U);
     const clearPending = vi.fn(async () => {});
-    const deps = (pending: { at: number } | null, signedIn = false) => ({ readPending: async () => pending, signedIn: () => signedIn, exchange, clearPending });
+    const deps = (pending: { at: number } | 'expired' | null, signedIn = false) => ({ readPending: async () => pending, signedIn: () => signedIn, exchange, clearPending });
 
     expect(await openEmailLink({ tokenHash: HASH, type: 'email' }, deps(null))).toEqual({ ok: false, error: 'other_phone' });
     expect(await openEmailLink({ tokenHash: HASH, type: 'email' }, deps({ at: NOW }, true))).toEqual({ ok: false, error: 'already_signed_in' });
+    // This phone asked, over an hour ago: the expired words (with Send a new email), not the other-phone words.
+    expect(await openEmailLink({ tokenHash: HASH, type: 'email' }, deps('expired'))).toEqual({ ok: false, error: 'expired' });
+    expect(await openEmailLink({ tokenHash: HASH, type: 'email' }, deps('expired', true))).toEqual({ ok: false, error: 'already_signed_in' });
     expect(exchange).not.toHaveBeenCalled();
     expect(clearPending).not.toHaveBeenCalled();
 

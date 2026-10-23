@@ -3,10 +3,8 @@
  * SQL: supabase/migrations/20261002020000_data_governance.sql (prepare and
  * finalize), 20261003020000_purge_batching.sql (purge_due, backoff) and
  * 20261004200000_ops_deletion_worker.sql (everything named ops_*),
- * 20261023000000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between), and
- * S06's subscription_status migration (subscription_retention_purge, PR #178;
- * not on develop yet, and its file needs a timestamp after the newest one on
- * develop: 20261016000000 today, 20261023000000 once #151 merges).
+ * 20261016001000_subscription_status.sql (subscription_retention_purge, #178) and
+ * 20261023000000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between).
  * Every id travels in an RPC body, never in a URL.
  */
 import type { ServiceClient } from './lib/service.ts';
