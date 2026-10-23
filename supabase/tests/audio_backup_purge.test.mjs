@@ -133,6 +133,17 @@ const swLifted = await sweep();
 check('once the hold lifts, the next sweep takes both', swLifted.orphans === 1 && swLifted.stale_pending === 1
   && await blobs('entry_id = any($1::uuid[])', [[orphanHeld, l6]]) === 0);
 
+// ── The restore replay (RB-8; 20261016000000 ops_replay_ledger) ──────────
+// After a database restore, a backup row deleted after the restore point is back; replaying its
+// audio_blob ledger row deletes it again, and the trigger queues the exact path again.
+const rp = await backedUp(A, SHARED);
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio' and object_path = $1`, [rp.path]);
+const replayed = (await sys(`select public.ops_replay_ledger($1::jsonb) r`, [JSON.stringify([{ t: 'audio_blob', id: rp.id }])])).rows[0].r;
+check('[RB-8] the restore replay deletes a backup row again by its audio_blob ledger row, and its exact path is queued again',
+  replayed.audio_blobs === 1 && await blobs('entry_id = $1', [rp.id]) === 0 && await queued(rp.path) && await ledgered(rp.id, rp.path));
+check('[RB-8] the replay leaves the letter itself alone (only its entry ledger row would take it)',
+  (await sys(`select 1 from entries where id = $1`, [rp.id])).rows.length === 1);
+
 // ── Account deletion from request to finalize (F17 8.4, F08-REQ-040 server part) ──
 const keepB = await backedUp(B, SHARED);
 const a1 = await backedUp(A, SHARED);
