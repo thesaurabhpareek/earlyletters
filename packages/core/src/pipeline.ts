@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 6;
+export const ENGINE_VERSION = 7;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -92,6 +92,33 @@ export const ENGINE_VERSION = 6;
 //   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
 //   development build keeps its text (no saved letter is ever re-cleaned);
 //   WP-F06-12 audits their stored edits once it ships.
+// 7 (2026-10-23): end marks, the follow-up to the #179 reviews. Every change
+//   refuses more: engine 7 accepts no edit that engine 6 refused.
+//   - No edit puts an end mark next to one already said, the same mark or
+//     another, in any script: "." after "?", "!", a danda, 。 ？ ！ or ؟
+//     ("more?.", "it!.") is refused as changes_sentence_type (#179 re-check
+//     Note E), and so is a run that grows ("no..." to "no...."). A mark
+//     behind spaces, closing quotes, brackets or invisible characters still
+//     touches. Removing the extra mark of a doubled pair is still a fair
+//     punctuation edit while the mark that stands is the one said (a "?"
+//     stays a "?").
+//   - The check reads the run of marks around the edit, up to the first
+//     letter or the text's edge, instead of a fixed two-character window: a
+//     run said elsewhere ("Yes..no.") no longer excuses a new pair, and a
+//     mark two closers away is seen.
+//   - Accepted edits are checked together too: a removed trailing filler and
+//     a final "." after it gave "She said no.." in the rules-only clean
+//     (cleanRulesOnly); the "." is refused, the removal stands. Any edit,
+//     not only punctuation, is refused if it brings two marks together.
+//   - The filler rule: a filler said as its own sentence after a closing
+//     quote, bracket, invisible character or ellipsis ('She said "no?" um.',
+//     "waited... um.") goes with its own end mark, as after a bare mark.
+//     Engine 6 removed the word alone and left its "." next to the speaker's
+//     mark ('"no?".'). The wider removal is one engine 6's verifier accepts.
+//   - The word window steps a code point at a time, so punctuation can no
+//     longer split a word written outside the Basic Multilingual Plane
+//     (Adlam).
+//   Golden corpus: every engine 6 case reads the same; two cases added.
 
 export interface CleanOptions {
   level: EditLevel;

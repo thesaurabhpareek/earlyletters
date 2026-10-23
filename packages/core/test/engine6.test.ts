@@ -2,7 +2,8 @@
  * Engine 6 building blocks (WP-F06-02, WP-F06-03): the version rule, the
  * commonWords pack table, the F07 save check, and the helpers the R-01
  * guards rest on. The end-to-end R-01 cases live in test/regression/ and the
- * property in verify.r01.fuzz.test.ts.
+ * property in verify.r01.fuzz.test.ts. Engine 7 (the #179 follow-up on end
+ * marks and the verifier's windows) is pinned at the end of this file.
  *
  * The constitution: the machine may remove and repair. It may never add meaning.
  * Fictional family only.
@@ -11,7 +12,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  checkEdit,
   checkHeardAs,
+  cleanRulesOnly,
   compileRules,
   ENGINE_VERSION,
   ENGLISH_PACK,
@@ -21,12 +24,14 @@ import {
   hyphenJoined,
   LANG_ENGINE_VERSION,
   normalizeChars,
+  punctuationEdits,
   quotedSpans,
   replaceKeepingNumbers,
   validatePack,
   verifyEdits,
   type DictionaryTerm,
   type Edit,
+  type LanguageRules,
   type TextRulesPack,
 } from '../src';
 
@@ -44,8 +49,8 @@ const verdict = (raw: string, e: Edit, dictionary: DictionaryTerm[] = []) => {
 };
 
 describe('[F06-REQ-018] the engine version moves with every behaviour change', () => {
-  it('ENGINE_VERSION is 6 and pipeline.ts has a dated changelog line for it', () => {
-    expect(ENGINE_VERSION).toBe(6);
+  it('ENGINE_VERSION is 7 and pipeline.ts has a dated changelog line for it', () => {
+    expect(ENGINE_VERSION).toBe(7);
     const src = readFileSync(join(__dirname, '../src/pipeline.ts'), 'utf8');
     expect(src).toMatch(new RegExp(`^// ${ENGINE_VERSION} \\(\\d{4}-\\d{2}-\\d{2}\\):`, 'm'));
     expect(src).not.toMatch(/Pending \d/);
@@ -129,7 +134,9 @@ describe('[F06-REQ-006] quotation marks are compared in order, and an end mark i
     const said = 'She said no';
     expect(verdict(said, edit(said, 'punctuation', 'no', 'no.'))).toBeNull(); // one end mark where there was none
     const dots = 'She said no...';
-    expect(verdict(dots, edit(dots, 'punctuation', 'no...', 'no....'))).toBeNull(); // a run already said may stay
+    // A run already said stays as said and never grows (engine 7, #179 follow-up); an edit beside it that adds no mark is fine.
+    expect(verdict(dots, edit(dots, 'punctuation', 'no...', 'no....'))).toBe('changes_sentence_type');
+    expect(verdict(dots, edit(dots, 'punctuation', 'said', 'said,'))).toBeNull();
   });
 });
 
@@ -185,7 +192,8 @@ describe('[F06-REQ-006] an end mark put next to one already said (#179 re-check,
     expect(verdict(open, period)).toBeNull(); // the honest repair: one end mark where there was none
     const dots = 'She said no...';
     const more: Edit = { type: 'punctuation', start: dots.length, end: dots.length, original: '', replacement: '.', source: 'model' };
-    expect(verdict(dots, more)).toBeNull(); // a run already said may stay
+    expect(verdict(dots, more)).toBe('changes_sentence_type'); // a run already said never grows (engine 7, #179 follow-up)
+    expect(faithfulClean(dots, { level: 'clean', dictionary: [], language: 'en', modelEdits: [more] }).text).toBe(dots);
   });
 });
 
@@ -272,5 +280,218 @@ describe('[F06-REQ-016] the house character rule never changes a number or drops
     const raw = 'Asha said ‘um, up\uFEFF’ and laughed.';
     const at = raw.indexOf('‘');
     expect(quotedSpans(raw)).toContainEqual({ start: at, end: raw.indexOf('’') + 1 });
+  });
+});
+
+/* ---------- engine 7: the #179 follow-up (23 Oct 2026) ---------- */
+
+const HI = compileRules('hi', loadPack('hi'));
+const ZH = compileRules('zh', loadPack('zh'));
+const AR = compileRules('ar', loadPack('ar'));
+const at = (pos: number, replacement: string, original = ''): Edit => ({
+  type: 'punctuation',
+  start: pos,
+  end: pos + original.length,
+  original,
+  replacement,
+  source: 'model',
+});
+const atEnd = (raw: string, replacement: string) => at(raw.length, replacement);
+/** One edit's verdict from verifyEdits, which checks it in context too; checkEdit alone (used for Review's offers) must agree. */
+const verdictIn = (rules: LanguageRules, raw: string, e: Edit) => {
+  const ctx = { raw, level: 'clean' as const, dictionary: [], protectedSpans: [], rules };
+  const r = verifyEdits([e], ctx);
+  const reason = r.accepted.length ? null : r.rejected[0].reason;
+  expect(checkEdit(e, ctx), 'checkEdit agrees with verifyEdits on one edit').toBe(reason);
+  return reason;
+};
+const v7 = (raw: string, e: Edit) => verdictIn(ENGLISH_RULES, raw, e);
+
+describe('[F06-REQ-004] engine 7: no end mark next to one already said, whichever mark it is (#179 re-check Note E)', () => {
+  it.each([
+    ['en', 'Asha slept. Was there more?', '.'],
+    ['en', 'Asha laughed. You did it!', '.'],
+    ['en', 'Did she sleep?', '?'],
+    ['en', 'She said no.', '!'],
+    ['en', 'Wow!!', '.'],
+    ['en', 'Asha waited\u2026', '.'],
+    ['hi', 'आशा आज बहुत हँसी।', '.'],
+    ['hi', 'आशा आज बहुत हँसी।', '।'],
+    ['hi', 'आशा आज बहुत हँसी॥', '.'],
+    ['zh', '她睡了。', '.'],
+    ['zh', '她睡了？', '.'],
+    ['zh', '她睡了！', '.'],
+    ['zh', '她睡了。', '。'],
+    ['ar', 'آشا نامت؟', '.'],
+  ] as const)('%s "%s" plus "%s" is refused; the text keeps the mark that was said', (lang, raw, mark) => {
+    const rules = lang === 'hi' ? HI : lang === 'zh' ? ZH : lang === 'ar' ? AR : ENGLISH_RULES;
+    const e = atEnd(raw, mark);
+    expect(verdictIn(rules, raw, e)).toBe('changes_sentence_type');
+    expect(faithfulClean(raw, { level: 'clean', dictionary: [], rules, modelEdits: [e] }).text).toBe(rules.normalizeFinal(raw));
+  });
+
+  it('a "." put before the mark, or the mark replaced by itself plus another, is the same pair and is refused', () => {
+    const raw = 'Was there more?';
+    const q = raw.indexOf('?');
+    expect(v7(raw, at(q, '.'))).toBe('changes_sentence_type'); // "more.?"
+    expect(v7(raw, at(q, '?.', '?'))).toBe('changes_sentence_type'); // "more?."
+    expect(v7(raw, edit(raw, 'punctuation', 'more?', 'more?.'))).toBe('changes_sentence_type');
+  });
+
+  it('a mark behind spaces, closing quotes, brackets or an invisible character still touches', () => {
+    for (const raw of ['She said "no?"', 'She said (no!)', 'She said \u201Cno.\u201D', 'She said no.\u200B', 'Was there more? ']) {
+      expect(v7(raw, atEnd(raw, '.')), raw).toBe('changes_sentence_type');
+    }
+    const hi = 'आशा ने कहा "हाँ।"';
+    expect(verdictIn(HI, hi, atEnd(hi, '।'))).toBe('changes_sentence_type');
+  });
+
+  it('negative cases: one end mark where none was, after a word, is still accepted', () => {
+    expect(v7('Was there more', atEnd('Was there more', '.'))).toBeNull();
+    expect(verdictIn(HI, 'आशा आज बहुत हँसी', atEnd('आशा आज बहुत हँसी', '।'))).toBeNull();
+    expect(verdictIn(ZH, '她睡了', atEnd('她睡了', '。'))).toBeNull();
+    expect(v7('Was there more? Asha slept', atEnd('Was there more? Asha slept', '.'))).toBeNull(); // a word stands between
+    const raw = 'Asha slept. was there more?';
+    expect(v7(raw, edit(raw, 'punctuation', 'w', 'W'))).toBeNull(); // a capital after a mark adds none
+  });
+
+  it("removing the extra mark of a doubled pair is a fair punctuation edit; the mark that stands is the speaker's", () => {
+    // The recogniser wrote both marks here; the "?" (or ？, ।) the speaker said is what survives.
+    const en = 'Was there more?.';
+    expect(v7(en, edit(en, 'punctuation', '?.', '?'))).toBeNull();
+    expect(faithfulClean(en, { level: 'clean', dictionary: [], language: 'en', modelEdits: [edit(en, 'punctuation', '?.', '?')] }).text).toBe('Was there more?');
+    expect(v7(en, edit(en, 'punctuation', '?.', '.'))).toBe('changes_sentence_type'); // the "?" may never go
+    const zh = '她睡了？.';
+    expect(verdictIn(ZH, zh, edit(zh, 'punctuation', '？.', '？'))).toBeNull();
+    expect(verdictIn(ZH, zh, edit(zh, 'punctuation', '？.', '.'))).toBe('changes_sentence_type');
+    const hi = 'आशा हँसी।.';
+    expect(verdictIn(HI, hi, edit(hi, 'punctuation', '।.', '।'))).toBeNull();
+  });
+});
+
+describe("[F06-REQ-006] engine 7: the verifier's windows at the edges of a letter (#179 follow-up, wordWindow)", () => {
+  it('at the start of a letter: a mark put before a run that opens it is refused; a capital there is fine', () => {
+    const raw = '...and then Asha slept.';
+    expect(v7(raw, at(0, '.'))).toBe('changes_sentence_type');
+    expect(v7(raw, edit(raw, 'punctuation', 'a', 'A'))).toBeNull();
+    expect(v7('asha slept.', at(0, 'A', 'a'))).toBeNull();
+  });
+
+  it('at the end of a letter: the mark two closers away is seen, beyond the old two-character window', () => {
+    const raw = 'She said "no.")';
+    expect(v7(raw, atEnd(raw, '.'))).toBe('changes_sentence_type');
+    const open = 'She said "no")';
+    expect(v7(open, atEnd(open, '.'))).toBeNull();
+  });
+
+  it('a run said elsewhere in the sentence never excuses a new pair: "Yes..no." stays, "no." may not become "no.."', () => {
+    const raw = 'Yes..no.';
+    expect(v7(raw, edit(raw, 'punctuation', 'no.', 'no..'))).toBe('changes_sentence_type');
+    expect(v7(raw, atEnd(raw, '.'))).toBe('changes_sentence_type');
+    const open = 'Yes..no';
+    expect(v7(open, atEnd(open, '.'))).toBeNull(); // one mark where none was; the run before "no" is apart from it
+  });
+
+  it.each([
+    ['Yes', '.', null],
+    ['Yes?', '.', 'changes_sentence_type'],
+    ['Yes!', '!', 'changes_sentence_type'],
+    ['Yes.', '.', 'changes_sentence_type'],
+    ['Yes...', '.', 'changes_sentence_type'],
+    ['?', '.', 'changes_sentence_type'],
+  ] as const)('a one-word letter "%s" plus "%s": %s', (raw, mark, want) => {
+    expect(v7(raw, atEnd(raw, mark))).toBe(want);
+  });
+
+  it('a one-word letter keeps its other fair repairs: sentence case, and a filler said as its own sentence', () => {
+    expect(v7('yes', at(0, 'Y', 'y'))).toBeNull();
+    expect(faithfulClean('Um.', { level: 'clean', dictionary: [], language: 'en' }).text).toBe('');
+  });
+
+  it('the word window steps by code point: punctuation cannot split a word written outside the BMP (Adlam)', () => {
+    const raw = 'We saw \u{1E900}\u{1E901}\u{1E902} today.';
+    expect(v7(raw, at(raw.indexOf('\u{1E901}'), ' '))).toBe('changes_word');
+    expect(v7('We saw abc today.', at(8, ' '))).toBe('changes_word'); // the same edit in Latin, refused before and after
+    expect(v7(raw, at(raw.indexOf(' today'), ','))).toBeNull(); // a comma after the word is still fine
+  });
+});
+
+describe('[F06-REQ-015] engine 7: the engine never puts an end mark next to one already said (#179 follow-up)', () => {
+  const rulesOnly = (raw: string) => cleanRulesOnly({ raw, dictionary: [], level: 'clean' }, { language: 'en' });
+
+  it.each([
+    ['She said no. um', 'She said no.'],
+    ['Was there more? um', 'Was there more?'],
+    ['You did it! uh', 'You did it!'],
+    ['She said "no." um', 'She said "no."'],
+    ['Asha waited... um', 'Asha waited...'],
+  ])('the rules-only clean of "%s" removes the filler and adds no mark: "%s"', async (raw, want) => {
+    const r = await rulesOnly(raw);
+    expect(r.text).toBe(want);
+    expect(r.applied.map((e) => e.type)).toEqual(['filler']);
+    expect(r.rejected.map((x) => `${x.edit.type}:${x.reason}`)).toEqual(['punctuation:changes_sentence_type']);
+  });
+
+  it.each([
+    ['She said no, um', 'She said no.'],
+    ['Asha slept um', 'Asha slept.'],
+    ['Was there more? Asha slept', 'Was there more? Asha slept.'],
+  ])('negative cases: "%s" still gets its one final mark: "%s"', async (raw, want) => {
+    const r = await rulesOnly(raw);
+    expect(r.text).toBe(want);
+    expect(r.rejected).toEqual([]);
+  });
+
+  it("the English provider's edits go the same way through faithfulClean: the removal stands, the \".\" is refused", () => {
+    const raw = 'Asha slept. Was there more? um';
+    const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en', ruleEdits: punctuationEdits({ raw, dictionary: [], level: 'clean' }) });
+    expect(r.text).toBe('Asha slept. Was there more?');
+    expect(r.applied.map((e) => [e.type, e.original, e.replacement])).toEqual([['filler', ' um', '']]);
+  });
+
+  it('verifyEdits checks the edits together, from a rule or a model: each is fair alone, the pair is not', () => {
+    const raw = 'Was there more? um';
+    const filler: Edit = { type: 'filler', start: 15, end: 18, original: ' um', replacement: '', source: 'rule' };
+    expect(v7(raw, filler)).toBeNull();
+    for (const source of ['rule', 'model'] as const) {
+      const period: Edit = { ...atEnd(raw, '.'), source };
+      expect(v7(raw, period)).toBeNull(); // alone, "um." is a fair final mark
+      const r = verifyEdits([filler, period], { raw, level: 'clean', dictionary: [], protectedSpans: [] });
+      expect(r.accepted).toEqual([filler]);
+      expect(r.rejected).toEqual([{ edit: period, reason: 'changes_sentence_type' }]);
+    }
+    // Order does not matter: the edit that adds the mark is the one refused.
+    const r = verifyEdits([atEnd(raw, '.'), filler], { raw, level: 'clean', dictionary: [], protectedSpans: [] });
+    expect(r.accepted).toEqual([filler]);
+  });
+
+  it('a removal that would bring two said marks together is refused, whatever its label; the rules take the mark with the filler', () => {
+    const raw = 'She said no. um.';
+    expect(v7(raw, edit(raw, 'filler', ' um', ''))).toBe('changes_sentence_type'); // "no.."
+    expect(v7(raw, edit(raw, 'filler', 'um', ''))).toBe('changes_sentence_type'); // "no. ."
+    expect(v7(raw, edit(raw, 'filler', ' um.', ''))).toBeNull();
+    expect(faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' }).text).toBe('She said no.');
+  });
+
+  it.each([
+    ['She said "no?" um.', 'She said "no?"'],
+    ['She said (no!) um.', 'She said (no!)'],
+    ['She said \u201Cno.\u201D um.', 'She said "no."'],
+    ['Asha waited\u2026 um.', 'Asha waited...'],
+    ['She said no.\u200B um.', 'She said no.\u200B'],
+    ['आशा ने कहा "हाँ।" um.', 'आशा ने कहा "हाँ।"'],
+  ])('the app path: a filler said as its own sentence after a closer, an invisible or an ellipsis goes with its own end mark: "%s"', (raw, want) => {
+    // Engine 6 removed "um" alone and left its "." next to the speaker's mark ('"no?".', "waited....").
+    const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' });
+    expect(r.text).toBe(want);
+    expect(r.applied.map((e) => [e.type, e.original])).toEqual([['filler', ' um.']]);
+  });
+
+  it('negative cases: a filler that is not its own sentence leaves the end mark where it was', () => {
+    const app = (raw: string) => faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' }).text;
+    expect(app('She said no, um.')).toBe('She said no.'); // the "." ends the speaker's sentence
+    expect(app('She said "no" um.')).toBe('She said "no".'); // no end mark before the quote closes
+    expect(app('Asha waited\u2026 um, then slept.')).toBe('Asha waited... then slept.');
+    expect(app('She slept. Um. Then she woke.')).toBe('She slept. Then she woke.'); // as in engine 6
   });
 });

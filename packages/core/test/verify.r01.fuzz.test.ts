@@ -26,6 +26,7 @@
  * rules); every negation, number, mood mark, quotation mark, invisible
  * character, hyphenated word and quoted word that was said is still there;
  * no letter lost its mark; no everyday word gained a capital mid-sentence;
+ * no end mark was put next to another that was said apart from it (engine 7);
  * and the final character pass (normalizeFinal) changes no letter, number,
  * negation, mood mark or quotation count (R-01 D14 is about traceability).
  */
@@ -251,6 +252,24 @@ const digits = (s: string) => [...s.matchAll(DIGITS)].map((m) => m[0]).join('|')
 const HYPHENATED = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\p{N}]+)+/gu;
 const hyphenated = (s: string) => [...s.matchAll(HYPHENATED)].map((m) => lw(m[0]));
 const lettersOnly = (s: string) => s.normalize('NFC').replace(/[^\p{L}\p{M}\p{N}]/gu, '').toLowerCase();
+/**
+ * End marks that touch the end mark before them, counted ("?." is 1, "..." is 2): only spaces, closing quotes
+ * or brackets and invisible characters may sit between. Written out here, apart from verify.ts (engine 7,
+ * #179 re-check Note E: "more?." and "她睡了？." were accepted).
+ */
+const END_MARK = /[.!?。！？؟।॥\u2026‽‼⁇⁈⁉]/u;
+const BETWEEN_ENDS = /[\s"'\u201D\u2019»」』)\]）]/u;
+function touchingEnds(s: string): number {
+  let n = 0;
+  let open = false;
+  for (const c of s) {
+    if (END_MARK.test(c)) {
+      if (open) n++;
+      open = true;
+    } else if (!BETWEEN_ENDS.test(c) && !INVISIBLE.test(c)) open = false;
+  }
+  return n;
+}
 
 const OPEN_CLOSE: Record<string, string> = { '“': '”', '‘': '’', '„': '“”', '«': '»', '「': '」', '『': '』', '"': '"' };
 /** Quoted speech: an opening mark that is not inside a word, to the next mark that may close it. */
@@ -349,6 +368,7 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
     if (!(e.type === 'filler' && e.replacement === '' && ws.length > 0 && ws.every((t) => lang.fillers.has(t.lw)))) return 'mood_changed';
   }
   if (quoteMarks(text) !== quoteMarks(raw)) return 'quotes_changed';
+  if (touchingEnds(text) > touchingEnds(raw)) return 'end_mark_doubled';
   const q = quoted(raw);
   for (const e of accepted) {
     if (e.type !== 'punctuation' && e.type !== 'paragraph' && q.some((s) => s.start < e.end && e.start < s.end)) return 'quoted_words_edited';
@@ -589,5 +609,12 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     expect(brokenFinal("We're here.", 'Were here.', en)).toBe('final_changed_words');
     expect(brokenFinal('We’re here, “up”.', 'We\'re here, "up".', en)).toBeNull(); // the house rule's straight quotes are allowed
     expect(brokenFinal('She said “bau”.', 'She said «bau».', en)).toBe('final_changed_quotes');
+    // Engine 7 (#179 re-check Note E): no end mark next to one already said, whichever mark; the speaker's mark may lose a stray partner.
+    const put = (raw: string, mark: string): Edit => ({ type: 'punctuation', start: raw.length, end: raw.length, original: '', replacement: mark, source: 'model' });
+    expect(b('Was there more?', [put('Was there more?', '.')])).toBe('end_mark_doubled');
+    expect(bz('她睡了？', [put('她睡了？', '.')])).toBe('end_mark_doubled');
+    expect(b('Was there more? um', [...at('Was there more? um', ' um', '', 'filler'), put('Was there more? um', '.')])).toBe('end_mark_doubled');
+    expect(b('Was there more', [put('Was there more', '.')])).toBeNull();
+    expect(b('Was there more?.', at('Was there more?.', '?.', '?'))).toBeNull();
   });
 });

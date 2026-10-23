@@ -11,6 +11,9 @@
  *  - a word through a contraction or a joined/split word (were -> we're),
  *  - a name or pronoun, except a dictionary-backed stt_fix,
  *  - sentence type (. -> ?, ! removed), quotation marks, or any number,
+ *  - how a sentence ends, by putting an end mark next to one already said,
+ *    alone or together with the other accepted edits ("more?.", "no..",
+ *    in any script; engine 7),
  *  - or when a removal labelled filler, repeat or false start deletes
  *    anything that is not a filler, an accidental repeat or a real restart,
  *  - or any letter, combining mark (vowel sign, virama, nukta, accent) or
@@ -28,15 +31,23 @@
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
 import { frozenSet, hyphenCompounds, hyphenJoined, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
 import { overlaps, quotedSpans } from './protect';
-import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarks } from './meaning';
+import { invisibleSignature, invisiblesOf, isClosedAgreementPair, isInvisible, MOOD_CANON, quotationMarks } from './meaning';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
 import { heardAsCarriesMeaning, isEverydayTerm, targetsOtherTerm } from './lang/dictionary';
 
 /** Starting values. Tune on real recordings (PRD v2 section 24, experiment 2). */
 export const CEILING_RATIO = 0.15;
 export const CEILING_MIN_WORDS = 3;
-/** The same end mark twice in a row, in any script the engine knows ("..", "!!", "？？", "।।"). */
-const DOUBLED_END_MARK = /([.!?。！？؟।॥])\1/u;
+/**
+ * End marks in every script the engine knows: ASCII, full-width, the Arabic
+ * question mark, the Devanagari danda, the combined marks ("‽", "‼") and the
+ * ellipsis character. With the language's own sentence ends (R.isSentenceEnd),
+ * two of them touching are a doubled end mark, whichever marks they are:
+ * "?.", "!.", "।.", "？." as much as ".." (#179 re-check Note E, 23 Oct 2026).
+ */
+const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
+/** What may sit between two end marks that still touch: spaces, closing quotes and brackets ("no.")."), invisible characters. */
+const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』)\]）】〉》]$/u;
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
@@ -154,12 +165,37 @@ function splitsHyphenated(raw: string, e: Edit): boolean {
   return hyphenCompounds(before).join('|') !== hyphenCompounds(after).join('|');
 }
 
+/** The code point that ends just before index `i`, or ''. */
+function codePointBefore(text: string, i: number): string {
+  if (i <= 0) return '';
+  const lo = text.charCodeAt(i - 1);
+  const hi = i >= 2 ? text.charCodeAt(i - 2) : 0;
+  return lo >= 0xdc00 && lo <= 0xdfff && hi >= 0xd800 && hi <= 0xdbff ? text.slice(i - 2, i) : text[i - 1];
+}
+
+/** The code point that starts at index `i`, or ''. */
+function codePointAt(text: string, i: number): string {
+  return i < text.length ? String.fromCodePoint(text.codePointAt(i)!) : '';
+}
+
+/**
+ * [start, end) of `text` widened to whole words. It steps a code point at a
+ * time, so a letter outside the Basic Multilingual Plane (Adlam, a Han
+ * extension) is one character, not two halves that stop the window inside
+ * the word (#179 follow-up: "wordWindow grows over word characters only").
+ * At the start or end of the text it stops at the edge.
+ */
+function wordBounds(text: string, start: number, end: number): { s: number; t: number } {
+  let s = start;
+  let t = end;
+  for (let ch = codePointBefore(text, s); ch && WORD_CHAR.test(ch); ch = codePointBefore(text, s)) s -= ch.length;
+  for (let ch = codePointAt(text, t); ch && WORD_CHAR.test(ch); ch = codePointAt(text, t)) t += ch.length;
+  return { s, t };
+}
+
 /** The edit's span widened to whole words, before and after the edit. */
 function wordWindow(raw: string, e: Edit): { before: string; after: string } {
-  let s = e.start;
-  let t = e.end;
-  while (s > 0 && WORD_CHAR.test(raw[s - 1])) s--;
-  while (t < raw.length && WORD_CHAR.test(raw[t])) t++;
+  const { s, t } = wordBounds(raw, e.start, e.end);
   return { before: raw.slice(s, t), after: raw.slice(s, e.start) + e.replacement + raw.slice(e.end, t) };
 }
 
@@ -195,19 +231,92 @@ function startsSentenceSkippingFillers(prefix: string, level: EditLevel, R: Lang
   }
 }
 
+/* ---------- end marks next to each other (#179 follow-up, 23 Oct 2026) ---------- */
+
+function isEndMark(ch: string, R: LanguageRules): boolean {
+  return ch !== '' && (END_MARK.test(ch) || R.isSentenceEnd(ch));
+}
+
+/** An end mark, or a character that may sit between two end marks that touch. */
+function nearMark(ch: string, R: LanguageRules): boolean {
+  return ch !== '' && (isEndMark(ch, R) || BETWEEN_MARKS.test(ch) || isInvisible(ch) || R.quoteMarkCount(ch) > 0);
+}
+
+/** How many end marks in `text` touch the end mark before them: "?." and ".." are 1, "..." is 2, "no. Yes." is 0. */
+function endMarkPairs(text: string, R: LanguageRules): number {
+  let pairs = 0;
+  let touching = false;
+  for (const ch of text) {
+    if (isEndMark(ch, R)) {
+      if (touching) pairs++;
+      touching = true;
+    } else if (!nearMark(ch, R)) {
+      touching = false;
+    }
+  }
+  return pairs;
+}
+
+function endMarkCount(text: string, R: LanguageRules): number {
+  let n = 0;
+  for (const ch of text) if (isEndMark(ch, R)) n++;
+  return n;
+}
+
 /**
- * The word window widened by two characters each side, so an end mark put
- * next to one already there is seen with it: an insertion of "." after
- * "She said no." has a word window of just "." (#179 re-check, Note D).
+ * End mark pairs around [start, end) of `text`, as it stands and with `other`
+ * in place of that span. The window is the run of end marks, spaces, closers
+ * and invisible characters on each side of the span, so every mark the span
+ * could touch is in it and nothing beyond the first letter is: a run said
+ * elsewhere in the sentence ("Yes..no.") never excuses a new one, and at the
+ * start or end of the text the window stops at the edge. This replaces the
+ * fixed two-character mark window of #179, which missed a mark behind two
+ * closers ("no.")" plus ".") and saw an unrelated run (engine-lens re-check).
  */
-function markWindow(raw: string, e: Edit): { before: string; after: string } {
-  let s = e.start;
-  let t = e.end;
-  while (s > 0 && WORD_CHAR.test(raw[s - 1])) s--;
-  while (t < raw.length && WORD_CHAR.test(raw[t])) t++;
-  s = Math.max(0, s - 2);
-  t = Math.min(raw.length, t + 2);
-  return { before: raw.slice(s, t), after: raw.slice(s, e.start) + e.replacement + raw.slice(e.end, t) };
+function markRunPairs(text: string, start: number, end: number, other: string, R: LanguageRules): { asIs: number; swapped: number } {
+  let s = start;
+  let t = end;
+  while (s > 0 && nearMark(text[s - 1], R)) s--;
+  while (t < text.length && nearMark(text[t], R)) t++;
+  return { asIs: endMarkPairs(text.slice(s, t), R), swapped: endMarkPairs(text.slice(s, start) + other + text.slice(end, t), R) };
+}
+
+/** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks)? */
+function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
+  const p = markRunPairs(raw, e.start, e.end, e.replacement, R);
+  return p.swapped > p.asIs;
+}
+
+/**
+ * Two fair edits can double an end mark together: a trailing filler removed
+ * and a final "." put after the word before it ("She said no. um" became
+ * "She said no.." through the rules-only clean, #179 follow-up). Each accepted
+ * edit is checked in the text all accepted edits make, against the same text
+ * without it. Returns the edit to refuse: one that adds an end mark before
+ * one that only removes, so the removal stands and the speaker's mark is the
+ * one left. Null when no accepted edit makes a new pair.
+ */
+function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules): Edit | null {
+  const sorted = [...accepted].sort(byStart);
+  const at = new Map<Edit, number>();
+  let text = '';
+  let pos = 0;
+  for (const e of sorted) {
+    text += raw.slice(pos, e.start);
+    at.set(e, text.length);
+    text += e.replacement;
+    pos = e.end;
+  }
+  text += raw.slice(pos);
+  let blamed: Edit | null = null;
+  for (const e of sorted) {
+    const f = at.get(e)!;
+    const p = markRunPairs(text, f, f + e.replacement.length, e.original, R);
+    if (p.asIs <= p.swapped) continue;
+    if (endMarkCount(e.replacement, R) > endMarkCount(e.original, R)) return e;
+    blamed ??= e;
+  }
+  return blamed;
 }
 
 interface CaseChange {
@@ -252,10 +361,7 @@ function caseChanges(e: Edit, R: LanguageRules): CaseChange[] | null {
 
 /** The whole word around offset `pos` in `text`. */
 function wordAt(text: string, pos: number): { start: number; word: string } {
-  let s = pos;
-  let t = pos;
-  while (s > 0 && WORD_CHAR.test(text[s - 1])) s--;
-  while (t < text.length && WORD_CHAR.test(text[t])) t++;
+  const { s, t } = wordBounds(text, pos, pos);
   return { start: s, word: text.slice(s, t) };
 }
 
@@ -465,10 +571,11 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Sentence type is the speaker's: a period may be added where there was no
   // end mark, but ? and ! are never added, removed or swapped (in any script: ？ ؟ count as ?).
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
-  // Nor may a repair leave a doubled end mark the raw did not have ("She said no." to "no..", or
-  // a "." put after it; tests-lens review of #179, 23 Oct 2026). A run already said ("...") may stay.
-  const marks = markWindow(ctx.raw, e);
-  if (DOUBLED_END_MARK.test(marks.after) && !DOUBLED_END_MARK.test(marks.before)) return 'changes_sentence_type';
+  // Nor may a repair put an end mark next to one already said, the same mark or another ("She
+  // said no." to "no..", "more?" to "more?.", "हँसी।" to "हँसी।.", "她睡了？" to "她睡了？."; #179
+  // tests-lens review and its re-check Note E, 23 Oct 2026). A run already said ("...") stays as
+  // said: it may lose a mark, never gain one, and the mark that stands is the speaker's.
+  if (addsEndMarkPair(ctx.raw, e, R)) return 'changes_sentence_type';
   if (R.pairOpeners) {
     const opener = checkOpeners(e, ctx, R);
     if (opener) return opener;
@@ -575,6 +682,10 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       break;
   }
   if (reason) return reason;
+  // Whatever its label, no edit leaves two end marks touching that the raw kept apart: a filler
+  // removal of " um" alone out of "She said no. um." would ("no.."); the rules take " um." with its
+  // own mark. Punctuation is checked in checkPunctuation, where the reason is the same.
+  if (e.type !== 'punctuation' && addsEndMarkPair(raw, e, R)) return 'changes_sentence_type';
 
   // Every Unicode quotation style, counted on the whole text so an apostrophe
   // inside a word is told apart from a closing quote (F06-REQ-006).
@@ -689,10 +800,19 @@ export function verifyEdits(edits: Edit[], ctx: VerifyContext): VerifyResult {
     ratio = 0;
   }
 
-  // Capitals must sit on sentence starts of the final text. Dropping one
-  // edit can move a sentence start, so repeat until nothing changes.
+  // No two edits together may put an end mark next to one already said
+  // (doublesEndMarkInContext), and capitals must sit on sentence starts of the
+  // final text. Dropping one edit can move a sentence start, so repeat until
+  // nothing changes.
   for (let changed = true; changed; ) {
     changed = false;
+    const doubled = doublesEndMarkInContext(ctx.raw, accepted, R);
+    if (doubled) {
+      rejected.push({ edit: doubled, reason: 'changes_sentence_type' });
+      accepted = accepted.filter((a) => a !== doubled);
+      changed = true;
+      continue;
+    }
     for (const e of accepted) {
       if (raisedOffSentenceStart(ctx.raw, accepted, e, ctx.level, R)) {
         rejected.push({ edit: e, reason: 'case_change_not_sentence_start' });

@@ -211,4 +211,18 @@ export const GOLDEN_CASES: GoldenCase[] = [
     raw: 'We saw the dogs with Asha.',
     model: [{ type: 'agreement', original: 'dogs', replacement: 'dog' }],
   },
+
+  // Engine 7: no end mark next to one already said (#179 re-check Note E). Every case above is unchanged from engine 6.
+  {
+    id: 'e7-model-period-after-question',
+    lang: 'en',
+    raw: 'Asha slept. Was there more?',
+    model: [{ type: 'punctuation', original: 'more?', replacement: 'more?.' }],
+  },
+  {
+    id: 'e7-model-period-after-danda',
+    lang: 'hi',
+    raw: 'आशा आज बहुत हँसी।',
+    model: [{ type: 'punctuation', original: 'हँसी।', replacement: 'हँसी।.' }],
+  },
 ];
