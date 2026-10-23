@@ -11,8 +11,11 @@
  * is wrapped, nothing uploads.
  *
  * Exactly one key per build is `current`: new wraps use it, and it must be
- * listed in the server's `app.escrow_key_versions`. The next key ships
- * beside it (not current) so a rotation needs no release first (G4).
+ * listed in the server's `app.escrow_key_versions`. A rotation needs an app
+ * release first (G4, runbook R2): the next key is added to
+ * `BUNDLED_ESCROW_KEYS` beside the current one in that release, and new
+ * wraps use it once the release is out, since the phone wraps to the highest
+ * version it trusts.
  */
 import * as v from 'valibot';
 
