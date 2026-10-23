@@ -15,8 +15,9 @@
 # --originals (E2E-17a, E2E-17b; F15-REQ-001, F15-REQ-002) also checks:
 #   - at least MIN_AUDIO (default 1) letters carry audio, so the check cannot
 #     pass on an export with no recordings;
-#   - every audio/<id>.m4a exists, its SHA-256 equals the hash recorded at
-#     capture (data/entries.json `audio.recorded_sha256`) and `integrity` is ok;
+#   - every audio/<id>.m4a (audio/mp4) or audio/<id>.aac (audio/aac, ADR 0027)
+#     exists, its path and media type agree, its SHA-256 equals the hash recorded
+#     at capture (data/entries.json `audio.recorded_sha256`) and `integrity` is ok;
 #   - no path in the ZIP names the listening folder, and no file in the ZIP has
 #     the bytes of any listening copy in the app's Application Support/listening;
 #   - with REQUIRE_LISTENING=1, that folder holds at least one copy (the seed
@@ -103,7 +104,9 @@ if [[ $ORIGINALS -eq 1 ]]; then
     const lines = [];
     for (const e of withAudio) {
       const a = e.audio;
-      if (!/^audio\/[^/]+\.m4a$/.test(a.path)) no(`audio path not under audio/: ${a.path}`);
+      if (!/^audio\/[^/]+\.(m4a|aac)$/.test(a.path)) no(`audio path not under audio/ as .m4a or .aac: ${a.path}`);
+      const label = a.path.endsWith(".aac") ? "audio/aac" : "audio/mp4";
+      if (a.media_type !== label) no(`${a.path} is labelled ${a.media_type}; expected ${label}`);
       if (!fs.existsSync(a.path)) { no(`missing ${a.path}`); continue; }
       const h = sha(a.path);
       if (!a.recorded_sha256) no(`no recorded hash for ${a.path}: cannot prove the original is unaltered`);

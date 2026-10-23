@@ -75,7 +75,9 @@ export const en = {
     promise: {
       title: "Exactly as you said it.",
       body: "This is Word for word. We take out a stray \"um\", fix a misheard name, add a missing comma, and mark every small fix so you can undo it.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the sample shows it)
-      body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
+      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
+      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
+      body2: "We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -237,8 +239,8 @@ export const en = {
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
     draftWaiting: {
-      // Held until P3: today's single waiting card shows this for typed drafts too (spec S09 has the new words).
-      title: "A letter is waiting to be read back.",
+      // The first row of a draft card on Tonight: a spoken draft whose words are ready but not shown (S09, P3).
+      title: "A recording is ready to read back.",
     },
     // One card per unfinished letter on Tonight, newest first, never a total (S09). A card shows the person's own
     // first words when it has them; these are the state lines and actions. Spoken and waiting for its words reuses
@@ -1265,9 +1267,9 @@ export const en = {
     body: "We ask everyone the same question.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     yesButton: "Yes",
     noButton: "No",
-    // Held until P2: today's stop screen also shows stopBody, so the new title would repeat its sentence
-    // (spec S02 has the new words).
-    stopTitle: "Thank you for telling us.",
+    // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop. Switched with P2's stop screen,
+    // which no longer shows stopBody or stopNote.
+    stopTitle: "{app} is currently for adults 18 and over",
     stopBody: "{app} is currently for adults 18 and over.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (its sentence became the title)
     // Only partly true (the time of the No is stored, D-026), and it refers to nothing.
     stopNote: "Nothing you entered has been kept.", // retired by EXPERIENCE_PASS_2026-10; delete in P7

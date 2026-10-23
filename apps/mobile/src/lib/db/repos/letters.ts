@@ -22,18 +22,42 @@ export class AudioMissingError extends Error {
 export function saveFromDraft(
   ctx: RepoContext,
   draftId: string,
-  e: Entry,
+  entry: Entry,
   defaults: entries.InsertDefaults,
   audioExists = true,
   /** Runs inside the same transaction, after the letter is written (the facade queues the upload here). */
   inTransaction?: () => void,
 ): void {
-  if (e.audioUri && !audioExists) throw new AudioMissingError();
+  if (entry.audioUri && !audioExists) throw new AudioMissingError();
+  // Review's choices on the draft are read before the transaction (the store is synchronous: nothing runs in
+  // between), so the transaction is exactly the letter, then the draft's removal, the crash point the kill
+  // harness watches (qa-kill-harness, DATA-REQ-048).
+  const d = drafts.get(ctx, draftId);
+  const e = d ? withDraftChoices(entry, d) : entry;
   ctx.db.transaction(() => {
     entries.upsert(ctx, { ...e, id: draftId }, defaults);
     drafts.remove(ctx, draftId);
     inTransaction?.();
   });
+}
+
+/**
+ * Review's choices live on the draft (setDraftKind, setDraftOccurred,
+ * setDraftLanguage; F04 11.3 "saveLetterFromDraft writes kind, occurred_on,
+ * occurred_precision and language from the draft"). A choice the parent made
+ * on the draft wins over the caller's default; an unset one leaves the caller's
+ * value. A quiet-day mark never comes from a draft and is never relabelled.
+ */
+export function withDraftChoices(e: Entry, d: Draft): Entry {
+  const chosenDay = d.occurredOn ?? null;
+  return {
+    ...e,
+    kind: e.kind !== 'not_much' && d.kind === 'note' ? 'note' : e.kind,
+    occurredOn: chosenDay ?? e.occurredOn,
+    occurredPrecision: chosenDay ? (d.occurredPrecision ?? 'day') : (e.occurredPrecision ?? 'day'),
+    language: d.language ?? e.language ?? null,
+    baseDirection: e.baseDirection ?? d.baseDirection ?? 'ltr',
+  };
 }
 
 /**
