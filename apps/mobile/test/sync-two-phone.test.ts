@@ -2069,9 +2069,10 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
    * The re-check's case on the real SQL. P edits a letter offline (op B) that Q has erased with Erase now, so
    * B is refused SCDEL purged: its block rolls back, and its claim with it. `queue` puts ops that apply behind
    * B in the same batch. The answer is lost. Consent is then withdrawn, so the retry runs B again, B meets
-   * SCCON before anything else, and the server answers paused with no results.
+   * SCCON before anything else, and the server answers paused with no results. With `losePull`, the pull of
+   * that paused cycle is lost too, so P learns nothing from it about the ops that applied.
    */
-  const refusedThenPaused = async (queue: () => void) => {
+  const refusedThenPaused = async (queue: () => void, opts: { losePull?: boolean } = {}) => {
     const erased = writeLetter(P, BOOK, 'You ate a whole pear.');
     await P.sync();
     await Q.sync();
@@ -2094,7 +2095,8 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
 
     await server.sensitiveConsent(MAMA, 'withdraw');
     tick(2_000);
-    expect((await P.sync(w.s)).phase).toBe('paused_consent');
+    const retry = opts.losePull ? flaky(w.s, { failBefore: 1, only: 'sync_pull' }) : w.s;
+    expect((await P.sync(retry)).phase).toBe(opts.losePull ? 'offline' : 'paused_consent');
     expect(w.pushes[1]).toMatchObject({ ops: first.ops, res: { paused: true, results: [] } }); // the same batch; B met SCCON
     return { erased, opB, w };
   };
@@ -2180,7 +2182,6 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     await server.sensitiveConsent(MAMA, 'accept');
     tick(2_000);
     await P.sync(w.s);
-    await P.sync(w.s);
     expect(outbox(P)).toEqual([]);
     expect(await heldText(hum)).toBe(latest);
     expect((await serverEntry(step))?.deleted_at).not.toBeNull(); // the upload that waited never brought it back
@@ -2194,5 +2195,28 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     expect(Q.store.listHeldDrafts(BOOK).filter((d) => d.id === hum)).toHaveLength(1);
     expect(row(papa, step)).toBeNull();
     expect(row(Q, step)?.deleted_at).not.toBeNull();
+  }, 60_000);
+  it('[LEGAL-REQ-009] a new letter behind it, deleted while the retry waits for consent after the pull of that cycle was lost: the delete still reaches the server, it leaves Papa\'s phone, and it stays in P\'s Recently deleted', async () => {
+    let stairs = '';
+    const { w } = await refusedThenPaused(() => {
+      stairs = writeLetter(P, BOOK, 'You climbed the stairs on your own.'); // a first upload behind B
+    }, { losePull: true });
+    expect((await serverEntry(stairs))?.deleted_at).toBeNull(); // applied on the first run
+    await papa.sync();
+    expect(row(papa, stairs)).not.toBeNull();
+
+    // No pull has told P that the letter is on the server. Before the fix its upload was reset to never sent,
+    // so this delete dropped it and sent nothing: the letter stayed in the book on the server and on Papa's phone.
+    tick();
+    P.store.deleteEntry(stairs);
+    await P.sync(w.s); // deletions still go during the pause
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect((await serverEntry(stairs))?.deleted_at).not.toBeNull();
+    expect(P.store.listDeleted().map((e) => e.id)).toContain(stairs);
+    await papa.sync();
+    expect(row(papa, stairs)).toBeNull();
   }, 60_000);
 });

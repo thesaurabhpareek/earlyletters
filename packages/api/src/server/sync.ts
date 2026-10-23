@@ -467,7 +467,7 @@ export const CONSENT_KINDS = ['terms', 'age', 'sensitive-data', 'family-share', 
 
 export const PushResponseSchema = v.object({
   results: v.array(v.union([PushResultOkSchema, PushResultErrSchema])),
-  /** SCCON: consent is missing. Ops after the last result were not applied and stay queued. */
+  /** SCCON: consent is missing. Ops after the last result were not applied in this push (one may have applied on an earlier send whose answer was lost) and stay queued. */
   paused: v.boolean(),
   /** A transient error or SCRAT at the op after the last result: back off and retry from there. */
   stopped: v.boolean(),
