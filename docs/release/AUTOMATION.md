@@ -66,7 +66,7 @@ promote -> Family (internal), Friends (external) + Beta App Review -- testers en
 release PR -> release/x.y -> RC tag -> production build -- app-store env --------- approver: 1 click per RC
 store text, screenshots, submit for review, phased release -- app-store env ------ approver: 1 click each
 founder signs packs on own computer -> PR -> R2 upload -- packs env -------------- approver: 1 click
-db-v tag -> production DB -------------------------- production env ------------- approver: 1 click
+db-v tag -> production DB -------------------------- db-production env ---------- approver: 1 click
 website: PR into main ------------------------------ branch protection on main --- approver review, then merge
 health, advisors, drift, reminders, feedback pointers -- health env, private repo -- no click
 ```
@@ -179,11 +179,11 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 **`deploy-db.yml`** (exists; RA-20-04)
 | | |
 |---|---|
-| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database until the production job's first `db-v*` tag (AF-42, after the alpha; decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of tag `db-v*` for production |
-| Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
+| Trigger | push to `develop` with a `changes` job for `supabase/migrations/**`, which deploys `develop`'s tip (#205). Staging follows `develop` only: a push to `main` deploys nothing to a database (decided 17 Oct). `workflow_dispatch` on `develop` as the catch-up (fails on any other ref, never reaches production; carried into #205 from #158); push of a tag `db-v*` on a commit on `main` for production, first used with AF-42 after the alpha |
+| Does | waits in `staging`; dry run; `supabase db push`; lists unrecorded files in the summary. Production: tag on `main`, waits in `db-production`, dry run, push. **It seeds nothing** (`[db.seed] enabled = false` [R]); APPLY steps 6, 7, 8 and 15 stay founder steps (AF-13) |
 | Then | RA-07-06's content-free smoke: anonymous read of `policy_versions` lists `terms` and `sensitive-data`; no table contents are printed |
 | Permissions | `contents: read` |
-| Environment | `staging`, `production` (approver; DEPLOY.md's "no reviewer for staging" changes because staging holds family letters) |
+| Environment | `staging`, `db-production` (approver; `production` would resolve to Vercel's `Production`, SR-2; DEPLOY.md's "no reviewer for staging" changes because staging holds family letters) |
 | Owner | S20; S02 for migrations |
 | Proof | 2.12; do the first staging run before staging holds letters (before Thu 22). "`test:db` against staging" means R-17 checklist 1.4 on #140 (PGlite plus `db-cli.yml` at the reviewed commit), not a run that writes to a database holding letters [V-QA]; checklist rows 1.2, 1.3 and 8.8 (advisor export) stay manual for the alpha |
 
@@ -198,7 +198,7 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 
 ### 2.3 `develop` to TestFlight internal
 
-**For the alpha**: build 1 and build 2 come from #145's `testflight.yml` (or the founder's computer) with the founder adding each build to a group by hand. Request RA-20-06a to #145, before it merges if possible: name `environment: testflight` on the build job and pin actions by SHA. The founder keeps the repository `EXPO_TOKEN` until the workflow that reads the environment secret has merged and one dispatch with it is green, and deletes it in that same window (AF-22).
+**For the alpha**: build 1 and build 2 come from #145's `testflight.yml` (or the founder's computer) with the founder adding each build to a group by hand. RA-20-06a, a follow-up after #145 merged without it: the build job runs in `environment: testflight` and every action is pinned by SHA. The founder keeps the repository `EXPO_TOKEN` until that workflow is on `develop` and one dispatch with the environment secret is green, and deletes it in that same window (AF-22).
 
 **`testflight.yml` v2** (RA-20-06, after Thu 29)
 | | |
@@ -243,7 +243,7 @@ Apple facts [V17, V24]: an internal group must exist first; up to 10,000 externa
 | Secrets | `EXPO_TOKEN`, `ASC_REVIEW_CONTACT_JSON`, `gha-release` |
 | Permissions | `contents: read`; `contents: write` only on the GitHub Release job |
 | Environment | `app-store` |
-| Tags | the coordinator pushes `ios-v<x.y.z>-rc.<n>` and `db-v*` tags (ADR 0022, DEPLOY.md): the one exception to "agents never push tags" in 2.11. A tag alone does nothing: its build waits in `app-store` or `production` for the approver |
+| Tags | the coordinator pushes `ios-v<x.y.z>-rc.<n>` and `db-v*` tags (ADR 0022, DEPLOY.md): the one exception to "agents never push tags" in 2.11. A tag alone does nothing: its build waits in `app-store` or `db-production` for the approver |
 | Owner | S20; S16 listing text; S17 privacy answers |
 
 ### 2.6 Speech packs and signed documents to R2
@@ -267,12 +267,12 @@ A leaked bucket token alone cannot make phones accept anything (signatures, hash
 
 Apple supports it [V12, V19]: crash submissions (with a crash log) and screenshot submissions per app, and webhooks for both, signed with HMAC-SHA256 in `x-apple-signature` [V12]. A crash submission's attributes include `comment`, `email`, `deviceModel`, `osVersion`, `locale` and `timeZone` [V12]. `diagnosticSignatures` per build gives anonymised crash, hang and disk-write backtraces [V12]; TestFlight coverage [U].
 
-The rule: **no tester text, email, screenshot, locale or time zone ever reaches a public issue, a public log, or a prompt sent to a model provider.** Other routes for tester text, closed the same way:
+The rule: **no tester text, email, screenshot, locale, time zone or device detail (device model, OS version or any other attribute of a submission) ever reaches a public issue, a public log, or a prompt sent to a model provider.** Device details never reach the public repository (`docs/legal/TESTFLIGHT_TESTERS.md` section 2, the row for A6): a public issue here is a content-free pointer, never the feedback itself. Other routes for tester text, closed the same way:
 - **Inside App Store Connect**: internal testers can read each other's feedback [V-QA, V-S01]. Friends are external; family members get the lowest role the add-tester screen accepts with access to the `.preview` app only [U: which role that is]; the founder records in writing that family members can see each other's feedback; the invitation texts (B1-11, B2-20) add "other testers on the team can see feedback you send through TestFlight" (S16).
 - **Email**: testers can always email feedback from the TestFlight app [V-S01]; the external group's feedback address is a dedicated mailbox that no connector in any agent session reads, not `hello@`, which forwards to the founder's inbox (`docs/ops/DOMAINS.md`).
 - **GitHub Apps**: the Claude and agents GitHub Apps are installed on selected repositories only, never on the private feedback repository [V-S01].
 
-**Private route [Rec]:** a private repository (AF-26) runs `testflight-feedback.yml` hourly at :41, polling both app records with key `gha-feedback` (Developer, the narrowest role that reads feedback; Marketing also edits App Store details [V-S01]). In that repository: one issue per submission with build, OS, device model, date, the crash log and a link to the item in App Store Connect. By default comments and screenshots stay in App Store Connect; copying comments in is a founder opt-in after S17's check (AF-26). In this repository: one content-free pointer issue per crash signature (build, profile, OS, device model, exception type, our own frames after an allowlist parser, the private issue number), label `testflight-crash`. Screenshot submissions make no public issue. Note: on GitHub Free a private repository owned by a user gets neither environment secrets with reviewers nor secret scanning [V-S01], so its secrets are repository secrets readable by any branch there; only the founder pushes to it.
+**Private route [Rec]:** a private repository (AF-26) runs `testflight-feedback.yml` hourly at :41, polling both app records with key `gha-feedback` (Developer, the narrowest role that reads feedback; Marketing also edits App Store details [V-S01]). In that repository: one issue per submission with build, OS, device model, date, the crash log and a link to the item in App Store Connect. By default comments and screenshots stay in App Store Connect; copying comments in is a founder opt-in after S17's check (AF-26). In this repository: one content-free pointer issue per crash signature (build, profile, exception type, our own frames after an allowlist parser, the private issue number; never the OS or the device model, which stay in the private issue), label `testflight-crash`. Screenshot submissions make no public issue. Note: on GitHub Free a private repository owned by a user gets neither environment secrets with reviewers nor secret scanning [V-S01], so its secrets are repository secrets readable by any branch there; only the founder pushes to it.
 
 | | |
 |---|---|
@@ -407,7 +407,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 | AF-04 | = #152 F02: Expo account, `eas init`, send the project id | 20 | every EAS build | #145 step 3 |
 | AF-05 | After RA-20-02a (`claude.yml` hardened) merges: in Vercel confirm the Production Branch is `main`, **then** set GitHub's default branch to `develop`. `web-e2e.yml` loses its Run button until RA-20-01 [V-S01] | 15 | dispatch, the nightly (B2-22), the kill-harness schedule (B2-11), the fence, `@claude` | [V1]; whether Vercel follows the default branch [U] |
 | AF-06 | = #152 F04, with three changes: create `scribe-staging` in a **Supabase organization the agents' connector is not authorized for** (the grant is per organization [V-S01]), or reconnect the connector read-only and scoped to a development project [V-S01]; give build 2 a **named publishable key**; deactivate the legacy keys on staging [V36] | 90 + 10 | staging, build 2, the staging stop (2.10) | DEPLOY.md; [V36] |
-| AF-07 | Environments `staging` (approver, refs `develop` and `main`) with `SUPABASE_DB_URL_STAGING`, and `testflight` (refs `develop` only; the approver as reviewer until AF-21) with `EXPO_TOKEN` from an Expo **robot user** with the Developer role (never a personal token [V37]). **Keep the repository `EXPO_TOKEN`** until the workflow that reads the environment secret has merged and one dispatch with it is green | 20 | RA-20-04; RA-20-06a | [V2]; [V37] |
+| AF-07 | Environments `staging` (approver, ref `develop` only: staging follows `develop`, decided 17 Oct) with `SUPABASE_DB_URL_STAGING`, and `testflight` (refs `develop` only; the approver as reviewer until AF-21) with `EXPO_TOKEN` from an Expo **robot user** with the Developer role (never a personal token [V37]). **Keep the repository `EXPO_TOKEN`** until the workflow that reads the environment secret has merged and one dispatch with it is green | 20 | RA-20-04; RA-20-06a | [V2]; [V37] |
 | AF-08 | = #152 F09, after deciding D-063 (both domains at Porkbun) against D-097 (`earlyletters.app` as a Cloudflare zone for R2) | 150 + DNS | keys PR, words in both builds | #162 runbook |
 | AF-09 | = #152 F08, changed: internal groups "Founder" and "Family", **external group "Friends"**, automatic distribution off on each [V18]; family as internal testers with the lowest role the screen accepts and access to the `.preview` app only; record in writing that internal testers can read each other's feedback | 45 | builds 1 and 2; Friends safely | [V18]; roles [V-S01, U] |
 | AF-10 | = #152 F12, plus: when `eas credentials` creates the App Store Connect key, choose **App Manager**, never the Admin default [V28] | 45 | build 1, every later submit | [V23], [V28] |
@@ -423,7 +423,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 |---|---|---|---|---|
 | AF-20 | Actions settings: default workflow permissions read-only; Actions may not create or approve PRs; "Require approval for all external contributors"; an event policy allowing `pull_request_target` for `fence.yml` only, **before Mon 2 Nov or before #30 merges, whichever is first**; "Require actions to be pinned to a full-length commit SHA" once `agents.yml` and `claude.yml` are pinned | 20 | the fence after 2 Nov | [V34], [V-S01] |
 | AF-21 | Merge RA-20-17 (CODEOWNERS names the approver for D-107's founder-only paths), then turn on "Require review from Code Owners" on `develop` | 10 | D-107 enforced, not only written | [V7] |
-| AF-22 | The remaining environments (`testers`, `app-store`, `packs`, `health`, `agents`) as each package lands, with the secrets of 2.0; delete the repository `EXPO_TOKEN` in the window RA-20-06 merges, after one green dispatch | 30 | RA-20-06, -07, -08, -11, -12 | [V2] |
+| AF-22 | The remaining environments (`testers`, `app-store`, `packs`, `health`, `agents`) as each package lands, with the secrets of 2.0; delete the repository `EXPO_TOKEN` after one green dispatch of `testflight.yml` with the environment secret (RA-20-06a, #241), as AF-07 and 2.3 say; or now, since nothing on `develop` or `main` reads it and `testflight.yml` has never run, putting the robot token straight into `testflight`, so that the first green run proves the environment secret was read | 30 | RA-20-06, -07, -08, -11, -12 | [V2] |
 | AF-23 | Rulesets for tags `ios-v*`, `db-v*` and branch `release/*` | 10 | store lane | [V7] |
 | AF-24 | Code security: Dependabot alerts and updates, CodeQL default setup; confirm push protection is on | 10 | 2.9 | [V11], [V-S01] |
 | AF-25 | App Store Connect API access (Account Holder), then team keys `gha-testers` (App Manager, `testers`), `gha-release` (App Manager, `app-store`), `gha-feedback` (Developer, private repository); or the stronger option in 2.0 | 30 | RA-20-07, -08, RA-07-04 | [V13], [V14] |
@@ -433,7 +433,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 
 ### Production (after the post-alpha re-plan, D-106)
 
-AF-40 the production record `com.earlyletters.scribe` (permanent from the first upload) and `submit.production.ascAppId`; AF-41 App Privacy answers by hand from S17's worksheet [V16]; AF-42 production Supabase in the same separate organization as staging, `SUPABASE_DB_URL_PROD` in `production`, the first `db-v*` tag; AF-43 review the external test information once.
+AF-40 the production record `com.earlyletters.scribe` (permanent from the first upload) and `submit.production.ascAppId`; AF-41 App Privacy answers by hand from S17's worksheet [V16]; AF-42 production Supabase in the same separate organization as staging, `SUPABASE_DB_URL_PROD` in `db-production` (never `production`, SR-2), the first `db-v*` tag; AF-43 review the external test information once.
 
 ## 5. Work packages, by owner stream
 
@@ -448,7 +448,7 @@ Globs: `.github/**` except the harness workflows while the "harness landing" cla
 | RA-20-00 | Land `ios-compile.yml` (`ci/ios-compile-check`); run it on #145 and #150 | none | green on `develop` and on #150 | **yes, first** |
 | RA-20-02a | Harden `claude.yml`: also require `performed_via_github_app == null` on comments, reviews and issues; skip PRs whose head is a fork; drop `id-token: write` unless the action needs it [U]; pin by SHA [V-S01] | the harness claim's release of `claude.yml` (coordinator) | the planted agent comment does not start it. Founder merge | **yes, before AF-05** |
 | RA-20-04 | `deploy-db.yml`: `chore/staging-from-develop` plus the push trigger on `develop` behind `staging`; DEPLOY.md | AF-07 | 2.12 plants pass. Founder merge | **yes, window 4** |
-| RA-20-06a | Request to #145: `environment: testflight` on the build job, SHA-pinned actions, `npm ci` without the restored cache | #145 | one green dispatch with the environment secret | **yes** |
+| RA-20-06a | Done in #241, a follow-up after #145 merged without it: `environment: testflight` on the build job, SHA-pinned actions, `npm ci` without the restored cache | #241 | one green dispatch with the environment secret | **yes** |
 | RA-20-10a | Minimal macOS kill-harness workflow: DL-01 and DL-02 only, dispatch and a nightly schedule, the Simulator app built on the runner | RA-19-04, RA-20-18, AF-05 | a nightly run on `develop` from Thu 22; the gate run Tue 27 | **yes** |
 | RA-20-18 | The `_layout.tsx` seam line S19 asked for (#176 request 3) | #176 | the harness drives the app | **yes** |
 | RA-20-19 | `nightly.yml`: a red run opens one `nightly` issue | AF-05 | 2.12 plant | **yes** |

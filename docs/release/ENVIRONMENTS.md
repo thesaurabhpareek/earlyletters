@@ -7,7 +7,7 @@ Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the a
 - Neither hosted project exists yet: `scribe-staging` and `scribe-prod` in the "Early Letters" organisation are founder steps (DEPLOY.md, TESTFLIGHT.md step 6). The old project `early-letters` is slated for retirement and nothing points at it.
 - **The alpha runs against staging** (D-106): alpha build 2 (`preview` profile) signs the founder's family in on `scribe-staging`. Staging therefore holds **real family letters** for the length of the alpha. See "Staging during the alpha".
 - Production stays unbuilt until the store submission is re-planned after the alpha (D-106). The `production` profile keeps server features off.
-- Migrations reach staging only from `main` today (`.github/workflows/deploy-db.yml`). Staging from `develop`, by manual run with the `approve-migration` label (PRD V2 08 section 5.2, R2 AR-21), is the next S20 PR; until it merges, build 2 has no schema to talk to.
+- Updated 23 Oct: migrations reach staging from `develop` only (`.github/workflows/deploy-db.yml`, since #205 on 18 Oct): a push to `develop` that changes migrations, or the manual catch-up run on `develop`, after the `staging` reviewer approves. A push to `main` deploys nothing to a database. Build 2 has a schema to talk to once the first such run is approved and has pushed (TESTFLIGHT.md step 6).
 
 ## Build profiles and switches
 
@@ -37,12 +37,12 @@ Nothing secret is in the repository. The app's project values are public by desi
 | `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_SENTRY_DSN` | not set | none | Analytics is off in every profile; nothing reads them |
 | `extra.eas.projectId`, `owner` | `apps/mobile/app.config.ts` | PR after `eas init` (BL-339) | Not secret |
 | Supabase service role or secret key | Supabase only; CI through a protected GitHub Environment | Founder | Never in the app, EAS, a script or a chat |
-| `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | GitHub Environment secrets `staging`, `production` | Founder, DEPLOY.md step 2 | Session pooler URLs |
+| `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | GitHub Environment secrets `staging`, `db-production` (never `production`, which resolves to Vercel's `Production`, SR-2) | Founder, DEPLOY.md step 2 | Session pooler URLs |
 | Auth SMTP key (`supabase-auth-smtp`), function key `RESEND_API_KEY` | Supabase Auth SMTP settings; staging function secrets | Founder, FT-12, FT-11, FT-13 | Two different sending-only Resend keys |
 | Sign in with Apple `.p8`, Key ID, Team ID | Password manager; later the `apple-token` function's secrets | Founder, FT-07 | Downloadable once |
 | `APPLE_TEAM_ID`, `IOS_BUNDLE_ID` | Vercel project, Production environment (website) | Founder, TESTFLIGHT.md step 10 | `IOS_BUNDLE_ID` is the production id; the site adds `.preview` |
 | Pack signing keys (secret halves) | Password manager only | Founder, FT-16 | Public halves in `packages/api/src/keys.ts` |
-| `EXPO_TOKEN` | GitHub repository secret | Founder, TESTFLIGHT.md step 3 | Read only by the build step of `.github/workflows/testflight.yml` |
+| `EXPO_TOKEN` | GitHub Environment secret `testflight` (branch `develop` only; FT-20) | Founder, TESTFLIGHT.md step 3 | From an Expo robot user. Read only by the build step of `.github/workflows/testflight.yml`, whose build job runs in that environment (RA-20-06a). The interim repository secret of the same name is deleted after the first green run with this one (AF-22) |
 | iOS distribution certificate and profile, App Store Connect API key | EAS credentials for the project | Founder, TESTFLIGHT.md steps 2.6 and 5 | Builds and submits run in GitHub Actions or on the founder's computer, never in an agent sandbox |
 | `submit.<profile>.ios.ascAppId` | `apps/mobile/eas.json` | PR after step 2.4 | The app record's Apple ID; not secret |
 
@@ -53,7 +53,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Purpose | Developing on one machine | The alpha (D-106), integration, release rehearsal | Real families after the store release |
 | Data | Fictional "Asha" fixtures only | **During the alpha: the founder's family's real letters.** Otherwise synthetic "Asha" families only | Real families |
 | Supabase | `supabase start` or PGlite for `npm run test:db` | `scribe-staging` (not created yet) | `scribe-prod` (not created yet) |
-| Schema changes | The developer | CI only (D-041): today from `main`; from `develop` by manual run once the S20 PR merges | CI on a `db-v*` tag through the GitHub Environment `production` |
+| Schema changes | The developer | CI only (D-041), from `develop` only: a push to `develop` that changes migrations, or the manual catch-up run on `develop`, through the GitHub Environment `staging`; a push to `main` deploys nothing | CI on a `db-v*` tag on a commit on `main`, through the GitHub Environment `db-production` |
 | App builds | `expo start`, `development` | `testflight` (build 1, switch off), `preview` (build 2, switch on) | `production` |
 | Distribution | Simulator or dev client | TestFlight internal groups: "Family" (build 2), "Friends" (build 1 until the R-17 gate) | TestFlight external, then the App Store |
 | Universal links | none | `https://earlyletters.com` serves the `.preview` id too | `https://earlyletters.com` |
@@ -78,6 +78,6 @@ The website serves `/.well-known/apple-app-site-association` from `apps/web/src/
 ## Promotion path
 
 1. Pull request: CI runs the unit, database (PGlite) and typecheck jobs.
-2. Merge to `develop`. Staging gets the migrations by the manual `develop` run (planned) and the founder builds `preview` for the family.
+2. Merge to `develop`. Staging gets the migrations from that push, after the `staging` reviewer approves (`deploy-db.yml`), and the founder builds `preview` for the family.
 3. After the R-17 gate: the one-line `testflight` flip, and friends get servers-on builds.
 4. Production: re-planned after the alpha (D-106). A migration always reaches production before the app build that needs it, and stays compatible with the previous build (expand, then contract).
