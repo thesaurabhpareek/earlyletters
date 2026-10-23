@@ -364,7 +364,7 @@ function conditions(db: () => BackupDb | null): Conditions {
     busy: () => getAudioMode() !== 'idle' || activeTakeId() !== null,
     cellularAllowed: () => db()?.getMeta('cellular') === 'on',
     // mayRun (lib/capabilities, #145): the build flag, then the `backupUploads` or `escrow` kill switch
-    // (F19 6.5). Those keys join packages/api's schema in WP-F19-16; until then they read as not paused.
+    // (F19 6.5), in packages/api's remote config schema since #138 (off by default).
     uploadsKilled: () => !mayRun('backupUploads', getRemoteConfig()),
     escrowKilled: () => !mayRun('escrow', getRemoteConfig()),
   };
