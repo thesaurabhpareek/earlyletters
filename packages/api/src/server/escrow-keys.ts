@@ -1,13 +1,14 @@
 /**
  * Escrow public keys the app seals book keys to (F08 6.5 G, WP-F08-B8).
  *
- * No key lives in source. Each build gets only its own environment's keys
- * from the EAS profile, as `EXPO_PUBLIC_ESCROW_KEYS` (JSON, S20 sets it per
- * profile: production keys in testflight and production, the drill key in
- * development and preview), so a preview bundle can never carry the
- * production key (F16-REQ-030; S20's CI check reads the bundle). Until the
- * founder's offline ceremony (runbook K1 to K7, S05) the variable is unset
- * and backup fails closed: no book key is wrapped, nothing uploads.
+ * How keys reach a build (apps/mobile/src/lib/backup/escrow-keys.ts, ADR
+ * 0024 rule 4): preview, TestFlight and production builds trust only the
+ * keys bundled in the app's source, `BUNDLED_ESCROW_KEYS` (public keys are
+ * not secrets), and ignore `EXPO_PUBLIC_ESCROW_KEYS`. Only a
+ * development-profile build reads that variable (JSON, parsed here), for
+ * the staging drill key. Until the founder's offline ceremony (runbook K1 to
+ * K7, S05) the bundled list is empty and backup fails closed: no book key
+ * is wrapped, nothing uploads.
  *
  * Exactly one key per build is `current`: new wraps use it, and it must be
  * listed in the server's `app.escrow_key_versions`. The next key ships

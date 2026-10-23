@@ -41,7 +41,7 @@ The development profile is a development client (`developmentClient: true` in `a
    EXPO_PUBLIC_ESCROW_URL=<staging escrow project URL>
    EXPO_PUBLIC_ESCROW_KEYS='[{"version": <n>, "publicKey": "<base64 of the drill public key>", "environment": "drill", "current": true}]'
    ```
-   (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also works in place of the publishable key.) The escrow key is the **drill-only** public key from the WP-F08-B8 ceremony, never the production key: the JSON line keygen prints for it, in single quotes. Delete `.env.local` after the drill.
+   (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also works in place of the publishable key.) The escrow key is the **drill-only** public key from the WP-F08-B8 ceremony, never the production key: the JSON line keygen prints for it, pasted inside `[ ]` (keygen prints one object, and the variable is a list), the whole value in single quotes. Delete `.env.local` after the drill.
 2. Start the dev server: `cd apps/mobile && npx expo start --dev-client --clear`. `--clear` drops Metro's cache, so the values in step 1 are inlined, not old ones. (Not `npm run mobile -- ...` from the root: npm does not pass those flags through to Expo.)
 3. Put the Mac and every drill phone on the **same Wi-Fi network**, and keep the Mac awake (System Settings > Battery or Energy: prevent sleep while the display is off) and the dev server running for the whole drill.
 4. Open the app on each phone and pick the Mac's server in the development menu (or scan the QR code the dev server prints). Check Settings shows "Back up my recordings".
