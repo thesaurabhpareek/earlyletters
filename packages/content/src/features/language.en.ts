@@ -56,5 +56,7 @@ export const languageCopy = {
     chosenA11y: 'Already chosen',
     selectedA11y: 'Selected',
     rowHint: 'Chooses this language',
+    // D-111 item 4: builds that offer English only show this under the list. No date is promised.
+    englishOnly: 'Other languages are coming in a later update.',
   },
 } as const;

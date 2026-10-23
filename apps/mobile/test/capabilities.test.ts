@@ -8,7 +8,8 @@
  * `backup` and `statusReport` (F19-REQ-025) need the switch and their own variable, are
  * off in every profile, and a remote kill switch can only pause them. The sign-in and
  * sync wrappers are exercised here with the switch on as well, through the test-only
- * override.
+ * override. The English-only switch (D-111 item 4) is its own flag: on in the two alpha
+ * profiles, off in development and e2e.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,11 +18,13 @@ import { parseRemoteConfig } from '@scribe/api';
 import {
   buildFlagEnabled,
   capabilities,
+  englishOnlyEnabled,
   KILL_SWITCH_FLAG,
   mayRun,
   parseServerFeatures,
   serverFeaturesEnabled,
   setBuildFlagForTests,
+  setEnglishOnlyForTests,
   setServerFeaturesForTests,
   type BuildFlag,
   type PausableFeature,
@@ -42,7 +45,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false, englishOnly: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
@@ -80,8 +83,8 @@ describe('server features switch: off unless a build says on', () => {
 
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
-    // Analytics and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, analytics: false });
+    // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -151,6 +154,111 @@ describe('[F19-REQ-025] build flags backup and statusReport: off unless the buil
       process.env.VITEST = saved;
     }
     expect(buildFlagEnabled('backup')).toBe(false);
+  });
+});
+
+describe('[D-111 item 4] English only: on in the two alpha profiles, off in development and e2e', () => {
+  type Eas = { build: Record<string, { env?: Record<string, string> }> };
+  const eas = () => JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as Eas;
+  afterEach(() => {
+    setEnglishOnlyForTests(null);
+    setServerFeaturesForTests(null);
+  });
+
+  it('is off in this process (no EXPO_PUBLIC_ENGLISH_ONLY), so the tests see the picker as before', () => {
+    expect(process.env.EXPO_PUBLIC_ENGLISH_ONLY ?? '').not.toBe('on');
+    expect(englishOnlyEnabled()).toBe(false);
+    expect(capabilities.englishOnly).toBe(false);
+  });
+
+  it('is written out as "on" in both alpha profiles, testflight (build 1) and preview (build 2)', () => {
+    const { build } = eas();
+    expect(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
+    expect(build.preview.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
+    expect(parseServerFeatures(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY)).toBe(true);
+    expect(parseServerFeatures(build.preview.env?.EXPO_PUBLIC_ENGLISH_ONLY)).toBe(true);
+  });
+
+  it('is off in development and e2e: not set there, and unset reads as off', () => {
+    const { build } = eas();
+    for (const name of ['development', 'e2e']) {
+      expect(build[name], name).toBeDefined();
+      expect(build[name].env?.EXPO_PUBLIC_ENGLISH_ONLY, name).toBeUndefined();
+      expect(parseServerFeatures(build[name].env?.EXPO_PUBLIC_ENGLISH_ONLY), name).toBe(false);
+    }
+    // Nor in the local .env files a development build reads.
+    for (const f of readdirSync(APP).filter((n) => n.startsWith('.env'))) {
+      expect(readFileSync(join(APP, f), 'utf8'), f).not.toMatch(/EXPO_PUBLIC_ENGLISH_ONLY/);
+    }
+  });
+
+  it('is on only in the two alpha profiles; every other profile is as before', () => {
+    const { build } = eas();
+    const on = Object.keys(build).filter((name) => parseServerFeatures(build[name].env?.EXPO_PUBLIC_ENGLISH_ONLY));
+    expect(on.sort()).toEqual(['preview', 'testflight']);
+  });
+
+  it('does not follow the server switch: on with servers off (testflight) and with servers on (preview)', () => {
+    for (const server of [false, true]) {
+      setServerFeaturesForTests(server);
+      setEnglishOnlyForTests(true);
+      expect(capabilities.englishOnly, String(server)).toBe(true);
+      setEnglishOnlyForTests(false);
+      expect(capabilities.englishOnly, String(server)).toBe(false);
+    }
+    // And turning it on changes no other capability.
+    setServerFeaturesForTests(null);
+    setEnglishOnlyForTests(true);
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false, englishOnly: true });
+  });
+
+  it('the override is for tests only, and goes back to the build value', () => {
+    setEnglishOnlyForTests(true);
+    setEnglishOnlyForTests(null);
+    expect(englishOnlyEnabled()).toBe(false);
+    const saved = process.env.VITEST;
+    delete process.env.VITEST;
+    try {
+      expect(() => setEnglishOnlyForTests(true)).toThrow(/tests only/);
+    } finally {
+      process.env.VITEST = saved;
+    }
+    expect(englishOnlyEnabled()).toBe(false);
+  });
+
+  it('capabilities.ts reads process.env.EXPO_PUBLIC_ENGLISH_ONLY written out in full, once, so Expo inlines it (a misspelt or dynamic read fails here)', () => {
+    const code = readFileSync(join(APP, 'src/lib/capabilities.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    // Every build variable is a literal member read; none is computed, so none can escape inlining.
+    expect(code).not.toMatch(/process\.env\s*\[/);
+    expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
+    const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);
+    expect(code).toMatch(/return englishOnlyTestOverride \?\? ENGLISH_ONLY_BUILD_VALUE;/);
+    expect(code).toMatch(/get englishOnly\(\): boolean \{\s*return englishOnlyEnabled\(\);/);
+    // No other spelling of the name anywhere in the file, comments included.
+    const spellings = readFileSync(join(APP, 'src/lib/capabilities.ts'), 'utf8').match(/EXPO_PUBLIC_\w*ENGLISH\w*/gi) ?? [];
+    expect([...new Set(spellings)]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
+  });
+
+  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight and preview and names it nowhere else, in no other spelling', () => {
+    const text = readFileSync(join(APP, 'eas.json'), 'utf8');
+    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(2);
+    expect([...new Set(text.match(/\w*ENGLISH\w*/gi) ?? [])]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
+    const { build } = eas();
+    const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_ENGLISH_ONLY' in p.env);
+    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'testflight']);
+    for (const [n, p] of naming) expect(p.env?.EXPO_PUBLIC_ENGLISH_ONLY, n).toBe('on');
+  });
+
+  it('the preflight FAILs either alpha build whose profile does not say EXPO_PUBLIC_ENGLISH_ONLY=on', () => {
+    const preflight = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
+    // Inside the per-profile block, so it runs for testflight (build 1) and preview (build 2) alike.
+    const block = preflight.slice(preflight.indexOf('if (prof) {'), preflight.indexOf("check(prof.autoIncrement === true"));
+    expect(block).toMatch(/check\(\s*profEnv\.EXPO_PUBLIC_ENGLISH_ONLY === 'on',/);
+    expect(block).toMatch(/D-111 item 4/);
   });
 });
 
@@ -262,7 +370,7 @@ describe('remote config cannot turn server features on (BRIEF decision 16)', () 
     };
     walk(join(APP, 'src'));
     const callers = files.filter(
-      (f) => !f.endsWith('capabilities.ts') && /set(ServerFeatures|BuildFlag|Analytics)ForTests/.test(readFileSync(f, 'utf8')),
+      (f) => !f.endsWith('capabilities.ts') && /set(ServerFeatures|BuildFlag|Analytics|EnglishOnly)ForTests/.test(readFileSync(f, 'utf8')),
     );
     expect(callers).toEqual([]);
   });

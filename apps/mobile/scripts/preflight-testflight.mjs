@@ -182,6 +182,12 @@ if (prof) {
   } else {
     fail(`testflight profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; write "off" (or "on" after the R-17 gate), never leave it to a default.`);
   }
+  // D-111 item 4: the alpha transcribes English only, so both alpha builds offer English alone in the picker.
+  check(
+    profEnv.EXPO_PUBLIC_ENGLISH_ONLY === 'on',
+    `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the language picker offers English only, D-111 item 4)`,
+    `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(profEnv.EXPO_PUBLIC_ENGLISH_ONLY)}; both alpha builds must say "on" (D-111 item 4: the alpha transcribes English only), or the picker offers all seven languages.`,
+  );
   for (const [flag, what] of [
     ['EXPO_PUBLIC_BACKUP', 'recording backup (T27, after the restore drill)'],
     ['EXPO_PUBLIC_STATUS_REPORT', 'the subscription status report (when WP-F14-15 ships)'],

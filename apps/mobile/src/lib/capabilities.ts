@@ -48,6 +48,20 @@
  *                     switch, no PostHog client even when `EXPO_PUBLIC_POSTHOG_KEY` is set,
  *                     and startAnalytics() does nothing. Analytics returns with consent later.
  *
+ *   ENGLISH_ONLY      `EXPO_PUBLIC_ENGLISH_ONLY=on` in the build's env. Anything else, or
+ *                     nothing, is OFF. D-111 item 4 (founder, 17 Oct 2026): the alpha
+ *                     transcribes English only, and another language needs a native
+ *                     reviewer first. On, the language picker offers English alone, with
+ *                     one line that other languages come in a later update
+ *                     (components/language/language-picker.logic.ts).
+ *                     Its own switch, not tied to server features: on in both alpha
+ *                     profiles (`testflight` with servers off, `preview` with them on);
+ *                     development and e2e leave it unset, so it is off there and the picker
+ *                     is as before. It changes what the picker offers and nothing else: a
+ *                     language already stored on the phone is left as it is, and the text
+ *                     rules, packs and speech catalog are untouched. Remote config has no key
+ *                     for it.
+ *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */
 
@@ -66,6 +80,11 @@ const ANALYTICS_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBL
 
 let analyticsTestOverride: boolean | null = null;
 
+/** Inlined at bundle time, like the server switch. Same rule: only `on` is on (D-111 item 4). */
+const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ENGLISH_ONLY);
+
+let englishOnlyTestOverride: boolean | null = null;
+
 /** Per-feature build flags (F19-REQ-025). Inlined at bundle time; only `on` is on. */
 const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_BACKUP);
 const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_STATUS_REPORT);
@@ -78,6 +97,11 @@ let buildFlagTestOverride: Partial<Record<BuildFlag, boolean>> = {};
 /** True only in a build made with `EXPO_PUBLIC_ANALYTICS=on` (later, with consent). */
 export function analyticsEnabled(): boolean {
   return analyticsTestOverride ?? ANALYTICS_BUILD_VALUE;
+}
+
+/** True only in a build made with `EXPO_PUBLIC_ENGLISH_ONLY=on` (the two alpha profiles, D-111 item 4). */
+export function englishOnlyEnabled(): boolean {
+  return englishOnlyTestOverride ?? ENGLISH_ONLY_BUILD_VALUE;
 }
 
 /** The PostHog key the app may use: none at all unless the analytics switch is on. */
@@ -125,6 +149,10 @@ export const capabilities = {
   /** Opt-in product analytics: consent sheet, Settings switch, PostHog. Its own switch, off in every profile. */
   get analytics(): boolean {
     return analyticsEnabled();
+  },
+  /** The language picker offers English only (D-111 item 4). Its own switch, on in the two alpha profiles. */
+  get englishOnly(): boolean {
+    return englishOnlyEnabled();
   },
 } as const;
 
@@ -176,6 +204,13 @@ export function setAnalyticsForTests(value: boolean | null): void {
   const env = typeof process !== 'undefined' ? process.env : undefined;
   if (!env?.VITEST) throw new Error('setAnalyticsForTests is for tests only');
   analyticsTestOverride = value;
+}
+
+/** Tests only, like setServerFeaturesForTests: run the picker tests with the English-only switch on or off. */
+export function setEnglishOnlyForTests(value: boolean | null): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setEnglishOnlyForTests is for tests only');
+  englishOnlyTestOverride = value;
 }
 
 /**
