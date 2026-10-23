@@ -12,8 +12,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { classifySqlstate, ENDPOINTS, ERROR_DETAILS, SQLSTATE_RULES, type EndpointSpec } from '../src';
+import { classifySqlstate, ENDPOINTS, ERROR_DETAILS, SQLSTATE_RULES, type EndpointName, type EndpointSpec } from '../src';
 import {
+  AUTHOR_ONLY_COLUMNS,
+  BookInviteSchema,
+  BookMemberSchema,
   BOOK_UPDATE_KEYS,
   ConflictCurrentSchema,
   CONSENT_KINDS,
@@ -26,6 +29,7 @@ import {
   PLANNED_PREFS_KEYS,
   PLANNED_PUSH_OP_TYPES,
   ENTRY_DATA_KEYS,
+  GoneBookSchema,
   PREFS_KEYS,
   PulledHeldSchema,
   PulledRowSchema,
@@ -34,7 +38,19 @@ import {
   PushResultErrSchema,
   PushResultOkSchema,
   PUSH_OP_TYPES,
+  SyncBookSchema,
+  SyncBooksResponseSchema,
   WORDS_VERSION_COLUMNS,
+  type AcceptInviteArgs,
+  type CreateInviteArgs,
+  type CreateInviteArgsV0,
+  type LeaveChildArgs,
+  type PeekInviteArgs,
+  type RemoveMemberArgs,
+  type RevokeInviteArgs,
+  type SyncPullArgs,
+  type SyncPushArgs,
+  type UndoJoinArgs,
 } from '../server';
 import { KILL_SWITCH_KEYS } from '../src/kill-switches';
 
@@ -154,6 +170,17 @@ describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, fi
   it('every key in PulledRowSchema is sent by the SQL, or is a pending S02 column', () => {
     for (const k of schemaKeys) expect(sqlKeys.has(k) || PENDING_PULL_COLUMNS.includes(k), `${k} is in the contract but sync_pull never sends it`).toBe(true);
   });
+
+  it('the left-book section sends the same own-row keys, and its book entry equals GoneBookSchema (review A 7 on #138)', () => {
+    const start = pull.indexOf('where key::uuid <> all(v_live)');
+    const goneAt = pull.indexOf('v_gone := v_gone ||', start);
+    expect(start > 0 && goneAt > start, 'the gone-books builder not found in the newest sync_pull').toBe(true);
+    const goneKeys = new Set([...pull.slice(start, goneAt).matchAll(/'([a-z_]+)',\s*p\.[a-z_]+/g)].map((m) => m[1]));
+    goneKeys.add('own');
+    expect([...goneKeys].sort()).toEqual([...sqlKeys].sort());
+    const entry = builtKeys(callAt(pull, pull.indexOf('jsonb_build_object(', goneAt)));
+    expect([...entry].sort()).toEqual(Object.keys(GoneBookSchema.entries).sort());
+  });
 });
 
 describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; others\' rows equal book_entries', () => {
@@ -181,6 +208,26 @@ describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; other
     expect(cols.length).toBeGreaterThan(10);
     const keys = Object.keys(PulledRowSchema.entries);
     for (const c of cols) expect(keys, `book_entries sends ${c}`).toContain(c);
+  });
+
+  it('[F11-REQ-085] book_entries carries no author-only column (review A 7 on #138)', () => {
+    const view = [...all.matchAll(/create or replace view public\.book_entries[^]*?\bselect\b([^]*?)\bfrom public\.entries\b/g)].pop();
+    expect(view![1], 'book_entries must name its columns, never e.*').not.toMatch(/\be\.\*/);
+    const cols = [...view![1].matchAll(/\be\.([a-z_]+)/g)].map((m) => m[1]);
+    for (const c of AUTHOR_ONLY_COLUMNS) expect(cols, `book_entries sends the author-only ${c} to other members`).not.toContain(c);
+  });
+});
+
+describe('[F16 6.2 D] sync_books equals SyncBooksResponseSchema (review A 7 on #138)', () => {
+  const built = builtKeys(newestDefinition('sync_books'));
+  /** In the contract, not built in sync_books: requested from S02 (BookMemberSchema, shared with the pull meta). */
+  const PENDING_BOOK_KEYS = ['undo_until'];
+  const known = new Set([SyncBooksResponseSchema, SyncBookSchema, BookMemberSchema, BookInviteSchema].flatMap(schemaKeys));
+
+  it('every key sync_books builds is in the contract, and every contract key is built or pending', () => {
+    expect(built.size).toBeGreaterThan(15);
+    for (const k of built) expect(known.has(k), `sync_books sends ${k}, which the contract would drop`).toBe(true);
+    for (const k of known) expect(built.has(k) || PENDING_BOOK_KEYS.includes(k), `${k} is in the contract but sync_books never sends it`).toBe(true);
   });
 });
 
@@ -253,9 +300,18 @@ describe('[F16 6.2 I] held drafts: the contract equals 20261016000000', () => {
 
   it('a pulled held row carries every held_drafts column except author_id, sync_xid and text_xid, plus v', () => {
     expect(table, 'held_drafts table not found').not.toBeNull();
-    const cols = [...table![1].matchAll(/^\s{2}([a-z_]+)\s+(?:uuid|text|timestamptz|date|boolean|jsonb|int|xid8)\b/gm)].map((m) => m[1]);
-    expect(cols.length).toBeGreaterThan(15);
-    const sent = [...cols.filter((c) => !['author_id', 'sync_xid', 'text_xid'].includes(c)), 'v'].sort();
+    // Any type (review A 7 on #138: integer, bigint and numeric were skipped); table constraints are not columns.
+    const cols = new Set([...table![1].matchAll(/^ {2}([a-z_]+) +[a-z]/gm)].map((m) => m[1])
+      .filter((c) => !['constraint', 'primary', 'unique', 'check', 'foreign', 'exclude'].includes(c)));
+    // And every later file's alter table, in file order: sync_pull sends the row whole (to_jsonb).
+    for (const { text } of sql) {
+      for (const m of text.matchAll(/alter table (?:if exists )?(?:only )?public\.held_drafts\s+([^;]+);/g)) {
+        for (const a of m[1].matchAll(/\badd column (?:if not exists )?([a-z_]+)/g)) cols.add(a[1]);
+        for (const d of m[1].matchAll(/\bdrop column (?:if exists )?([a-z_]+)/g)) cols.delete(d[1]);
+      }
+    }
+    expect(cols.size).toBeGreaterThan(15);
+    const sent = [...[...cols].filter((c) => !['author_id', 'sync_xid', 'text_xid'].includes(c)), 'v'].sort();
     expect(Object.keys(PulledHeldSchema.entries).sort()).toEqual(sent);
   });
 
@@ -357,5 +413,103 @@ describe('[ADR-0017] every live RPC in ENDPOINTS exists in the migrations', () =
     const fn = e.path.slice('/rest/v1/rpc/'.length);
     const defined = new RegExp(`create or replace function public\\.${fn}\\s*\\(`).test(all);
     if (e.status === 'live') expect(defined, `${fn} is live in ENDPOINTS but no migration defines it`).toBe(true);
+  });
+});
+
+/** Splits a parameter list on top-level commas, quote-aware. */
+function splitArgs(list: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quoted = false;
+  let cur = '';
+  for (const c of list) {
+    if (quoted) {
+      cur += c;
+      if (c === "'") quoted = false;
+      continue;
+    }
+    if (c === "'") quoted = true;
+    if (c === '(') depth++;
+    if (c === ')') depth--;
+    if (c === ',' && depth === 0) {
+      out.push(cur.trim());
+      cur = '';
+      continue;
+    }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+const TYPE_ALIASES: Record<string, string> = { integer: 'int', int4: 'int', bool: 'boolean', 'timestamp with time zone': 'timestamptz' };
+const normType = (t: string) => {
+  const s = t.trim().toLowerCase().replace(/\s+/g, ' ');
+  return TYPE_ALIASES[s] ?? s;
+};
+
+/** Each public function's live overloads (argument types to parameter names), after every create and drop in file order. */
+function liveOverloads(): Map<string, Map<string, string[]>> {
+  const fns = new Map<string, Map<string, string[]>>();
+  for (const { text } of sql) {
+    const re = /\b(create or replace function|drop function(?: if exists)?) public\.([a-z_][a-z0-9_]*)\s*\(/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text))) {
+      const call = callAt(text, m.index + m[0].length - 1);
+      const args = splitArgs(call.slice(1, -1));
+      const overloads = fns.get(m[2]) ?? new Map<string, string[]>();
+      fns.set(m[2], overloads);
+      if (m[1].startsWith('create')) {
+        const parsed = args.map((a) => /^([a-z_][a-z0-9_]*)\s+(.+?)(?:\s+default\b.*|\s*=.*)?$/is.exec(a)!);
+        overloads.set(parsed.map((p) => normType(p[2])).join(','), parsed.map((p) => p[1]));
+      } else {
+        overloads.delete(args.map(normType).join(','));
+      }
+    }
+  }
+  return fns;
+}
+
+/** The keys of an argument interface, all of them (a missing key fails the type check). */
+const argsOf = <T,>() => <const K extends readonly (keyof T & string)[]>(
+  keys: K & ([Exclude<keyof T, K[number]>] extends [never] ? unknown : { missing: Exclude<keyof T, K[number]> }),
+): readonly string[] => keys;
+
+describe('[ADR-0017] every live RPC is called with a parameter list one of its live overloads has (review A 7 and B on #138)', () => {
+  /** The argument names the contract sends to each live RPC, and those S02 has not added yet (planned). */
+  const RPC_ARGS: Partial<Record<EndpointName, { args: readonly string[]; planned?: readonly string[] }>> = {
+    syncPush: { args: argsOf<SyncPushArgs>()(['p_ops', 'p_api_version']), planned: ['p_api_version'] },
+    syncPull: { args: argsOf<SyncPullArgs>()(['p_since', 'p_limit', 'p_api_version']), planned: ['p_api_version'] },
+    syncBooks: { args: [] },
+    policyActionsNeeded: { args: [] },
+    createInvite: { args: argsOf<CreateInviteArgsV0>()(['p_child', 'p_role', 'p_signs_as']) },
+    createInviteV2: { args: argsOf<CreateInviteArgs>()(['p_invite_id', 'p_child', 'p_role', 'p_token_hash', 'p_code_hash', 'p_signs_as']) },
+    peekInvite: { args: argsOf<PeekInviteArgs>()(['p_token']) },
+    acceptInvite: { args: argsOf<AcceptInviteArgs>()(['p_token']) },
+    revokeInvite: { args: argsOf<RevokeInviteArgs>()(['p_invite']) },
+    leaveChild: { args: argsOf<LeaveChildArgs>()(['p_child', 'p_keep_in_book']) },
+    removeChildMember: { args: argsOf<RemoveMemberArgs>()(['p_child', 'p_member', 'p_set_aside']) },
+    undoParentJoin: { args: argsOf<UndoJoinArgs>()(['p_child', 'p_member']) },
+  };
+  /** Live RPCs whose arguments this package does not type (the app types them where it calls). */
+  const UNTYPED: EndpointName[] = ['createChild', 'recordPolicyAct'];
+  const overloads = liveOverloads();
+  const live = (Object.entries(ENDPOINTS) as [EndpointName, EndpointSpec][])
+    .filter(([, e]) => e.status === 'live' && e.path.startsWith('/rest/v1/rpc/'));
+
+  it('reads the overloads, drops included', () => {
+    expect(overloads.get('create_child_invite')?.size).toBe(2);
+    expect(overloads.get('sync_pull')?.size).toBe(1);
+  });
+
+  it.each(live)('%s', (name, e) => {
+    const spec = RPC_ARGS[name];
+    if (UNTYPED.includes(name)) return;
+    expect(spec, `${name} is a live RPC: list its arguments in RPC_ARGS (or UNTYPED)`).toBeDefined();
+    const fn = e.path.slice('/rest/v1/rpc/'.length);
+    const have = [...(overloads.get(fn)?.values() ?? [])].map((n) => [...n].sort().join(','));
+    const built = spec!.args.filter((a) => !(spec!.planned ?? []).includes(a));
+    const wanted = [[...built].sort().join(','), [...spec!.args].sort().join(',')];
+    expect(have.some((h) => wanted.includes(h)), `${fn}(${built.join(', ')}) is not a live overload; it has ${have.map((h) => `(${h})`).join(' ')}`).toBe(true);
   });
 });
