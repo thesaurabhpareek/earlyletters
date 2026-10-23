@@ -466,4 +466,23 @@ describe('review fixes (PR #184)', () => {
     expect(familyCopy.leave.takeOutHelp).toBe('Your letters leave the book and stay yours.');
     expect(familyCopy.leave.done).not.toMatch(/read|export|on this phone/i);
   });
+
+  it('[F11-REQ-023] a co-parent with no sign-off is "Your co-parent", in the note and in the member list', () => {
+    const tab = screen('(tabs)/family.tsx');
+    expect(tab).toMatch(/m\.signsAs\.trim\(\) \? fill\(f\.left\.note, \{ signsAs: m\.signsAs\.trim\(\), child \}\) : fill\(f\.left\.noteUnsigned, \{ child \}\)/);
+    expect(familyCopy.left.noteUnsigned).toBe("Your co-parent has left {child}'s book.");
+    expect(tab).toMatch(/<MemberRow signsAs=\{m\.signsAs\.trim\(\) \|\| f\.members\.invitedName\} role=\{f\.members\.coParent\} \/>/);
+  });
+
+  it('Cancel invite is announced to VoiceOver, and the row actions wrap at the largest text sizes', () => {
+    const tab = screen('(tabs)/family.tsx');
+    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*haptic\('soft'\);\s*announce\(f\.pending\.cancelled\);/);
+    expect(tab).toMatch(/className="min-h-11 shrink flex-row/);
+    expect(tab).toMatch(/<Text className="shrink text-base font-medium text-primary">\{label\}<\/Text>/);
+  });
+
+  it('the family copy has no keys the screens no longer use', () => {
+    expect(Object.keys(familyCopy.accept)).not.toEqual(expect.arrayContaining(['consentBody']));
+    expect(Object.keys(familyCopy.accept)).not.toEqual(expect.arrayContaining(['consentButton']));
+  });
 });

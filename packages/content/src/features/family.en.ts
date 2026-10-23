@@ -36,6 +36,7 @@ export const familyCopy = {
     cancelTitle: 'Cancel this invite?',
     cancelBody: 'The link will stop working.',
     keep: 'Keep it',
+    /** Announced to VoiceOver when Cancel invite has worked (the row goes away). */
     cancelled: 'Invite cancelled.',
     /** Share again sent the new link, but the earlier invite could not be cancelled (F11-REQ-019). */
     oldStillOpen: 'The new link is shared, but the earlier link still works. You can cancel it in the list.',
@@ -87,8 +88,6 @@ export const familyCopy = {
     notRecognised: "That doesn't look like an invite link. Check the message and try again.",
     signInBody: 'Sign in so you can write together, each from your own phone.',
     signIn: 'Sign in',
-    consentBody: 'One step left before you join.',
-    consentButton: 'Continue',
     joining: 'Joining the book',
     joinedTitle: "You're in {child}'s book",
     joinedBody: 'Your letters and your co-parent\'s will be together in one book.',
@@ -121,6 +120,8 @@ export const familyCopy = {
   /** F11-REQ-023: the one neutral note the remaining parent sees. */
   left: {
     note: "{signsAs} has left {child}'s book.",
+    /** The same note for a co-parent who never set a sign-off. */
+    noteUnsigned: "Your co-parent has left {child}'s book.",
   },
 
   /**

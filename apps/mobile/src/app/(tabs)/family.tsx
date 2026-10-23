@@ -31,6 +31,7 @@ import { MemberRow } from '@/components/family/member-row';
 import { Button } from '@/components/ui/button';
 import { ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
+import { announce } from '@/lib/a11y';
 import { capabilities } from '@/lib/capabilities';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
@@ -55,9 +56,10 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
-      className="min-h-11 flex-row items-center gap-2 rounded-full px-3 active:bg-secondary">
+      className="min-h-11 shrink flex-row items-center gap-2 rounded-full px-3 active:bg-secondary">
       {icon}
-      <Text className="text-base font-medium text-primary">{label}</Text>
+      {/* shrink: at the largest text sizes the label wraps inside the row instead of running off the edge. */}
+      <Text className="shrink text-base font-medium text-primary">{label}</Text>
     </Pressable>
   );
 }
@@ -175,6 +177,7 @@ function FamilyShared() {
           try {
             await revokeInvite(client, row.id);
             haptic('soft');
+            announce(f.pending.cancelled);
           } catch (e) {
             setError(inviteErrorKind(e));
           } finally {
@@ -206,7 +209,7 @@ function FamilyShared() {
 
         {(leftNotes?.childId === active.id ? leftNotes.list : []).map((m) => (
           <View key={m.id} testID="family.leftNote" accessible accessibilityLiveRegion="polite" className="rounded-2xl bg-secondary px-4 py-3">
-            <Text className="text-base leading-6 text-foreground">{fill(f.left.note, { signsAs: m.signsAs.trim() || f.members.coParent, child })}</Text>
+            <Text className="text-base leading-6 text-foreground">{m.signsAs.trim() ? fill(f.left.note, { signsAs: m.signsAs.trim(), child }) : fill(f.left.noteUnsigned, { child })}</Text>
           </View>
         ))}
 
@@ -217,7 +220,7 @@ function FamilyShared() {
             </View>
             {state.coParents.map((m) => (
               <View key={m.id} testID="family.member" className="px-4">
-                <MemberRow signsAs={m.signsAs.trim() || f.members.coParent} role={f.members.coParent} />
+                <MemberRow signsAs={m.signsAs.trim() || f.members.invitedName} role={f.members.coParent} />
               </View>
             ))}
             {pending.map((p) => (
