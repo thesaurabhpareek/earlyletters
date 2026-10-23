@@ -44,16 +44,18 @@ export const billingCopy = {
   keepGate: {
     title: "Keep adding to {child}'s book",
     body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
-    // heldNote and offline are held until P3: they promise the letter "waits on Tonight", and today Tonight shows
-    // only the first draft, so a held letter can be out of sight (spec S22 has the new words; P3 lists every draft).
-    heldNote: 'This letter is safe on your phone. Come back to it once Plus is on.',
+    // heldNote, heldNoteSynced and offline promise the letter "waits on Tonight": P3 shows a card on Tonight for every
+    // draft (spec S09, S22). Written to the register row "Keep step and held letter" (#163, 3.1.0); counsel reads them
+    // (C10). heldNoteSynced is the signed-in line; P6's Keep sheet shows it once sign-in is on.
+    heldNote: 'This one waits on this phone, on Tonight, exactly as it is, for as long as you like.',
+    heldNoteSynced: 'This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.',
     // The chip on the held letter's own card at the top of the sheet.
     heldChip: 'Waiting',
     seePlus: 'See Plus',
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
     lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
-    offline: 'Plus needs the internet to start. Your letter stays safe on your phone until then.',
+    offline: 'Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
   },

@@ -1,6 +1,6 @@
 # Experience pass, October 2026
 
-v1.2, 2026-10-17 (v1.1 merged as #170 on 2026-10-16; v1.0 was 2026-10-15). On `develop`. v1.2 matches P1 as built (#192, merged as `db258b5`, and #218 for the Reduce Motion timing): card to page and its Reduce Motion hand-off (S26, 5.5, 5.8 row 7, P5), the light-paper grain and the faint grain on night paper, and the dusk paper tone (5.1, 5.3, 5.7).
+v1.3, 2026-10-18 (v1.2 merged as #217; v1.1 merged as #170 on 2026-10-16; v1.0 was 2026-10-15). On `develop`. v1.2 matches P1 as built (#192, merged as `db258b5`, and #218 for the Reduce Motion timing): card to page and its Reduce Motion hand-off (S26, 5.5, 5.8 row 7, P5), the light-paper grain and the faint grain on night paper, and the dusk paper tone (5.1, 5.3, 5.7). v1.3 follows P2-V's measurements on #220: the S05 cover hides under 480 pt of free height, so the name field stays in view, and the S04 promise body is the sanctioned promise word for word, with the S04 word count at about 70 (D-111 item 11).
 Scope: v1.0 with server features on (option B, D-100, confirmed 15 Oct). v1.0 ships sign-in, sync between a person's phones, co-parent sharing with at most two parents per book (D-069), and encrypted backup of the owner's recordings in Supabase Storage, free for everyone as the proposed default (D-104 item 2: "Proposed; awaits founder confirmation" in `docs/DECISIONS.md`, founder item F10), with a recovery key we hold under strict, logged access (D-102, D-108). Those surfaces (sign-in and the email code, Account, the Family tab and invite, joining a book, backup settings, restore on a new phone, erase across devices) are specified in chapter 7 of section 4 and built in package P8. P0 to P7 do not edit P8's files (section 6).
 
 **What changed in v1.1.** Option B replaces every on-device-only assumption; package P8 and chapter 7 are new; `story.private.v2`, `book.monthRange` and `wordsCopy.pack.mobileDataButton` match PR #181 as built; the Recordings and Erase now lines cover our backup and the synced letter; transitions after first run are specified (section 5.8); every package boundary is a file list, with requests between packages (section 6); the strings that read as machine-written are replaced (review B6); PR #181 is the source of truth for strings, and the keys section 6 listed for it are applied in #181 at `de2b916`, plus final notes; the before contact sheets are out of git; the founder's and the coordinator's calls are recorded in section 7 (D-109).
@@ -35,7 +35,7 @@ The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8
 
 1. The line "We ask everyone the same question." is gone. The age question stays the first screen on v1.0 (the law and PRD-REQ-019 say so), but it now opens in the launch screen's room: the opening quotation pair, the lamp light, one question, two equal answers. Moving it behind the welcome is specified and held for the founder and counsel.
 2. First run becomes one lit room and one object. The lamp arrives at the gate and stays lit across first run. A paper **book cover** appears when the child is named, is signed on the next step, and opens on "The book is open."
-3. The promise screen shows a small fix instead of describing three: a sample sentence with two marks you can tap and put back. It goes from about 110 words to about 60.
+3. The promise screen shows a small fix instead of describing three: a sample sentence with two marks you can tap and put back. It goes from about 110 words to about 70.
 4. "We", explaining why we ask, and repeated reassurance come out of more than 40 strings. The three sanctioned promises ("We never rewrite your words.", the trust promise, the voice promise) and counsel-registered disclosure text stay word for word.
 5. Tonight leads with one question. The second question, the subtitle, goes. The prompt becomes the one big literary line on lamp-lit paper, and the lamp's colour follows the time of day (gold in the morning, amber in the evening, a rose and dusk tail late at night), as the website's light follows the scroll.
 6. Every unfinished letter shows on Tonight as its own card with the person's first words, not one generic "A letter is waiting" line.
@@ -255,7 +255,7 @@ Copy:
 | Key | After | Mark |
 |---|---|---|
 | `onboarding.promise.title` | Exactly as you said it. | KEEP |
-| `onboarding.promise.body2` | We never rewrite, shorten or write for you. Every sentence is one you said. | KEEP, now directly under the title |
+| `onboarding.promise.body2` | We never rewrite your words, shorten them or write for you. | CHG (v1.3), directly under the title: the sanctioned promise word for word, then the two other claims. "Every sentence is one you said." is not repeated; the title says it. |
 | `onboarding.promise.sampleLabel` | For example | NEW (as #181) |
 | `onboarding.promise.sampleRaw` | Today, um, you you held the spoon all by yourself. | NEW. The sample's raw words, cleaned at runtime by the real engine (see Visual). |
 | `onboarding.promise.sampleHint` | Word for word marks every small fix. Tap one to put it back. | NEW. Names the feature here, which VOICE allows on the promise. |
@@ -275,7 +275,7 @@ Motion: on arrival the two strikes draw across their words (strokeDashoffset, 40
 States: none.
 
 Acceptance:
-- [ ] At most about 60 words on the screen at the default text size.
+- [ ] At most about 70 words on the screen at the default text size (71 as built). Not about 60: the recording and privacy rows are at their floor (27 words, meaning fixed), and the sample, label and button are fixed by this acceptance and the engine test, so the body line was cut to its floor (11 words). The one cut left that needs no counsel diff, a hint without the name "Word for word", is not taken, because D-074 and D-086 chose that name (D-111 item 11, #229).
 - [ ] The sample is set in Mukta, labelled "For example", unsigned, with no `{child}` name in it.
 - [ ] The unit test in P2 proves the two fixes come from the engine, pass `verifyEdits` and are fully reversible.
 - [ ] Tapping either mark puts the word back; Undo reverses it.
@@ -308,7 +308,7 @@ Copy:
 | `childrenExtra.edit.dueDateRange` | Choose a due date from today up to ten months ahead. | KEEP |
 | `onboarding.child.cta` | Continue | KEEP |
 
-Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph. Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 640 pt of free height (iPhone SE), the cover hides, so the form never scrolls. The name field uses the letter face (Literata 22 pt), because it is the book's title; labels stay Mukta. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
+Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph. Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 480 pt of free height, the cover hides, so the name field stays in view. Free height with the keyboard and its QuickType bar up, measured by P2-V on #220 on a web export, unverified on a phone: 407 pt on an iPhone SE, 538 on a 17 Pro, 610 on a Pro Max; so the SE hides the cover and the Pro and Pro Max keep it while the name is typed. The form itself may scroll once the date block is in (it does on all three under this rule: by 176 pt on the SE, 145 pt on the 17 Pro and 73 pt on the Pro Max). The name field uses the letter face (Literata 22 pt), because it is the book's title; labels stay Mukta. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
 
 The reason line stays in words and is never only a greyed button. It sits directly above Continue in `footnote` `textMuted` until the person taps the disabled Continue. Then it turns `caution` with a WarningCircle icon, is announced politely, and focus moves to the empty field. HIG Entering data: "make the button available only after people enter the data you require" (*verified*).
 
@@ -320,7 +320,7 @@ Acceptance:
 - [ ] No help line justifies a field; no "we" on the screen.
 - [ ] The date row starts empty ("Choose a date"); there is no default date (the J01-07 fix holds).
 - [ ] The reason line is muted until the disabled Continue is tapped, then caution with an icon, and focus moves to the field.
-- [ ] The cover shows the typed name exactly as typed (trimmed only for display), and hides when the keyboard leaves less than 640 pt.
+- [ ] The cover shows the typed name exactly as typed (trimmed only for display), and hides when the keyboard leaves less than 480 pt of free height, so the name field stays in view on an SE, a 17 Pro and a Pro Max.
 - [ ] A 60-character name fits the cover in three lines with a fade.
 
 #### S06 What does {child} call you (signature and spoken language)
