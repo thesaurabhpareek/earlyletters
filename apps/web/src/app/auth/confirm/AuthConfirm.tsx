@@ -17,7 +17,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { brand } from '@scribe/brand';
 import { site } from '@/content/site';
-import { pageOpenGraph } from '@/lib/brand/share-card';
+import { pageShareCard } from '@/lib/brand/share-card';
 import styles from './confirm.module.css';
 import { ForgetAddress } from './ForgetAddress';
 
@@ -29,7 +29,7 @@ export const authConfirmMetadata: Metadata = {
   robots: { index: false, follow: false },
   // Its own address and share card, not the home page's from layout.tsx. /auth/callback shares both.
   alternates: { canonical: '/auth/confirm' },
-  openGraph: pageOpenGraph('/auth/confirm', site.authConfirm.title),
+  ...pageShareCard('/auth/confirm', site.authConfirm.title),
 };
 
 export function AuthConfirm() {

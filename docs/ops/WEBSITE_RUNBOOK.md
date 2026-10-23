@@ -253,6 +253,19 @@ Before: the app is released on the App Store (not only approved), and the link o
 7. Click the badge on an iPhone. It opens the App Store product page.
 8. If analytics is on, click each badge once and look for `cta_click` with `mode=live` in Vercel Analytics (Pro).
 9. The sign-up segment in Resend keeps everyone who asked to be told; send the launch message from Resend, not from this site.
+10. The link pages: `/auth/confirm` (and `/auth/callback`, the path the alpha's sign-in emails use) and `/j` (invites). The
+    flip above does not change them: `NEXT_PUBLIC_APP_STORE_URL` only changes the home page (its header, badge and closing
+    scene), and these pages have no App Store link. Verified (repo, 2026-10-23). Most people will open these links with the
+    released build, so check them on the day:
+    - `for p in /j /auth/confirm /auth/callback; do printf '%s  ' "$p"; curl -s -o /dev/null -w '%{http_code}\n' "https://earlyletters.com$p"; done`
+      prints 200 for each (a redirect would print 3xx).
+    - The universal-link file still matches the released app: run the section 8 checks (200 JSON with no redirect, both
+      app ids, only the three paths, bare and with a trailing slash) and compare Apple's CDN copy, which can lag up to 24
+      hours.
+    - On an iPhone with the App Store build, long press `https://earlyletters.com/j` and
+      `https://earlyletters.com/auth/callback` in Notes: both offer to open in the app. Inferred (not run here).
+    - Not built: the F11 PRD wants the `/j` button to copy the invite and then open the App Store. Whether and when to add
+      that is the founder's decision once the listing is live; until then the pages stay as they are.
 
 Revert the same day if needed: unset `NEXT_PUBLIC_APP_STORE_URL` and Redeploy, or use Rollback (section 7) to the last
 prelaunch deployment.

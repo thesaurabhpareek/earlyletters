@@ -28,6 +28,7 @@ for (const path of ['/auth/confirm', '/auth/callback']) {
       await page.goto(`${path}#token_hash=${TOKEN}&type=email`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
       await expect(page.getByText(copy.body)).toBeVisible();
+      await expect(page.getByText(copy.onPhone), 'the line for someone already on the iPhone').toBeVisible();
       await expect(page.getByText(copy.expired)).toBeVisible();
       await expect(page.getByText(copy.notYou)).toBeVisible();
       const open = page.getByRole('link', { name: copy.open });
@@ -99,6 +100,11 @@ for (const path of ['/auth/confirm', '/auth/callback']) {
       expect(html).toContain('<link rel="canonical" href="https://earlyletters.com/auth/confirm"');
       expect(html).toContain('<meta property="og:url" content="https://earlyletters.com/auth/confirm"');
       expect(html).toMatch(/<meta property="og:image" content="https:\/\/earlyletters\.com\//);
+      // The Twitter tags, which some previews read first, carry the page's own title too, and the same picture.
+      expect(html).toContain(`<meta property="og:title" content="${copy.title}"`);
+      expect(html).toContain(`<meta name="twitter:title" content="${copy.title}"`);
+      expect(html).toContain('<meta name="twitter:card" content="summary_large_image"');
+      expect(html).toMatch(/<meta name="twitter:image" content="https:\/\/earlyletters\.com\/og\//);
       expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
     });
   });

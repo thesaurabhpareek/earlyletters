@@ -169,6 +169,18 @@ export async function notifyApi(request: APIRequestContext, clientIp: string, em
   }
 }
 
+/**
+ * Makes the page's clipboard refuse a copy, before any of the page's own script runs: `reject` answers writeText with
+ * the error a browser gives when it denies the write, and `missing` takes the clipboard API away, as in a browser
+ * that does not offer it.
+ */
+export async function refuseClipboard(page: Page, how: 'reject' | 'missing' = 'reject'): Promise<void> {
+  await page.addInitScript((mode) => {
+    const refusing = { writeText: () => Promise.reject(new DOMException('Write permission denied.', 'NotAllowedError')) };
+    Object.defineProperty(navigator, 'clipboard', { value: mode === 'missing' ? undefined : refusing, configurable: true });
+  }, how);
+}
+
 /** Fills the sign-up form like a person (after the time-on-page check) and presses the button. */
 export async function signUp(page: Page, address: string): Promise<void> {
   await waitLikeAPerson(page);

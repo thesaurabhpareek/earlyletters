@@ -19,6 +19,12 @@ import { plusPricing } from './pricing';
 const NAME = brand.name;
 
 /**
+ * How to get an invite into the app when the /j page cannot copy it: from the message, where the whole link still is
+ * (F11-U02). One wording for every such case, so they never drift apart.
+ */
+const INVITE_BY_HAND = `Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`;
+
+/**
  * The film's one letter. `heard` is what the microphone caught; joining every segment's
  * `becomes` (or its text when there is none) gives `text`. Each change is an edit the app's
  * constitution allows (packages/core/src/types.ts EditType): a misheard name from the family
@@ -292,7 +298,8 @@ export const site = {
    * app's own browser. It joins nothing; the person copies the link and pastes it into the app's "I was invited".
    * No child or inviter name, because the page knows neither. When the copy cannot work (the browser refused, or a
    * chat or mail app's own browser dropped the fragment), the words send the person back to the message, where the
-   * whole link still is (F11-U02).
+   * whole link still is (F11-U02). The steps show only beside a working Copy button; `noScript` is all a browser with
+   * JavaScript off shows in their place, since that page can neither read the invite nor copy it.
    */
   invite: {
     title: 'An invite to share a book',
@@ -302,8 +309,9 @@ export const site = {
     onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     copy: 'Copy the invite',
     copied: `Copied. Now open ${NAME} and tap "I was invited".`,
-    copyFailed: `This browser would not copy it. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
-    missing: `This page opened without its invite. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
+    copyFailed: `This browser would not copy it. ${INVITE_BY_HAND}`,
+    missing: `This page opened without its invite. ${INVITE_BY_HAND}`,
+    noScript: INVITE_BY_HAND,
     notYou: 'If you were not expecting an invite, you can ignore it. Nothing changes.',
     home: `Back to ${NAME}`,
   },
