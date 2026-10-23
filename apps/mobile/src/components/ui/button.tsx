@@ -13,7 +13,8 @@
  * Accessibility contract
  * - role button; disabled and busy in accessibilityState; label = visible text (2.5.3).
  * - Heights are minimums: at AX sizes the label wraps and the button grows, never clips.
- * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity.
+ * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity. A disabled
+ *   primary or secondary drops its fill for a 1 pt controlBorder outline (EXPERIENCE_PASS S01).
  * Motion: press scale 0.97 on `snappy`, from press-in (motion/press.ts). Controls never
  * animate in (MOTION principle 2): no entering prop here, ever.
  * Haptics: none by default. Pass `haptic` only where the press is an outcome (Speak,
@@ -73,6 +74,12 @@ const labelClass: Record<Variant, string> = {
 
 const labelToken = (size: Exclude<Size, 'default'>): TypeToken => (size === 'sm' ? 'labelSmall' : 'label');
 
+/**
+ * A filled button that is not ready yet (EXPERIENCE_PASS S01, S05, S19): a 1 pt controlBorder outline (3:1) with
+ * no fill and the label in textMuted (AA), so it reads as "waiting", not as a broken pale button.
+ */
+const DISABLED_FILLED = 'border border-input bg-transparent';
+
 export type ButtonProps = Omit<PressableProps, 'children' | 'style'> &
   React.RefAttributes<View> & {
     variant?: Variant | LegacyVariant | null;
@@ -127,7 +134,7 @@ function Button({
     <TextClassContext.Provider value={cn(labelClass[variant], disabled && 'text-muted-foreground', 'text-center')}>
       <TextVariantContext.Provider value={labelToken(size)}>
         <AnimatedPressable
-          className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && 'bg-muted', className)}
+          className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && DISABLED_FILLED, className)}
           style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, press.animatedStyle, style]}
           role="button"
           disabled={inactive}

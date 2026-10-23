@@ -3,6 +3,9 @@
 #         count (TDD 03 7.2). packages/core/test/verify.fuzz.test.ts reads
 #         SCRIBE_FUZZ_SEED and SCRIBE_FUZZ_RUNS; PR CI pins the seed.
 #   db    the same real-stack checks as db-cli.yml (start, reset, lint, test:db).
+#   perf  the database plan checks and p95 budgets at launch scale (1,000 families
+#         x 400 letters). Pull requests run the plan checks at 250 x 400 and do not
+#         check budgets, so a slow runner cannot turn `required` red (S02, after #214).
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Nightly
 
@@ -64,3 +67,19 @@ jobs:
   db:
     name: database (real stack)
     uses: ./.github/workflows/db-cli.yml
+
+  perf:
+    name: database performance budgets (launch scale)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # PERF_BUDGETS=1 seeds 1,000 x 400 and checks every p95 budget as well as every plan
+      # (supabase/tests/perf.test.mjs, sync_perf.test.mjs). About 1.5 minutes locally.
+      - name: Plans and p95 budgets, 400,000 letters (PGlite)
+        env:
+          PERF_BUDGETS: '1'
+        run: npm run test:db:perf

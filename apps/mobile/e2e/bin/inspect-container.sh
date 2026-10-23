@@ -5,7 +5,7 @@
 #   bin/inspect-container.sh gate-stopped   # after E2E-01a: a No and nothing else
 #   bin/inspect-container.sh gate-passed    # after E2E-01b: a Yes boolean, no age, no date
 #
-# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.preview).
+# Env: UDID (default "booted"), APP_ID (default com.earlyletters.scribe.dev).
 # Proves PRD-REQ-019 and D-026 on the device side: after No there is no child,
 # letter, draft, recording or queued upload, and the only setting is the time of
 # the No; after Yes the only gate value is a boolean.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 MODE="${1:-}"
 UDID="${UDID:-booted}"
-APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
+APP_ID="${APP_ID:-com.earlyletters.scribe.dev}"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 [[ "$MODE" == "gate-stopped" || "$MODE" == "gate-passed" ]] || fail "usage: $0 gate-stopped|gate-passed"
 
@@ -33,7 +33,8 @@ for t in children entries drafts orphan_audio sync_outbox; do
   echo "rows in $t: $n"
 done
 
-AUDIO="$(find "$DATA" \( -name '*.m4a' -o -name '*.caf' -o -name '*.wav' \) -type f 2>/dev/null | wc -l | tr -d ' ')"
+# Every extension the app counts as a recording (src/lib/capture/sweep.logic.ts AUDIO_EXT), any case: .aac is ADR 0027's ADTS.
+AUDIO="$(find "$DATA" \( -iname '*.m4a' -o -iname '*.mp4' -o -iname '*.aac' -o -iname '*.caf' -o -iname '*.wav' -o -iname '*.3gp' -o -iname '*.webm' \) -type f 2>/dev/null | wc -l | tr -d ' ')"
 echo "audio files: $AUDIO"
 [[ "$AUDIO" == "0" ]] || fail "audio files exist in the container"
 

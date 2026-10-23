@@ -1,16 +1,31 @@
 /// <reference types="node" />
 /**
- * The server-features switch (lib/capabilities.ts; founder decision, 3 Oct 2026:
- * v1.0 ships on this phone only). Off by default in every build profile; remote
- * config cannot turn it on; with it off no Supabase client is ever made and sync
- * never starts. The sign-in and sync wrappers are exercised here with the switch
- * on as well, through the test-only override.
+ * The server-features switch and the build flags on top of it (lib/capabilities.ts).
+ * Server features are on in v1.0 (D-100) and on in exactly one eas.json profile today,
+ * `preview`, the alpha against staging (D-106); every other profile is off until the
+ * R-17 gate passes. Remote config cannot turn anything on; with the switch off no
+ * Supabase client is ever made and sync never starts (the kill path). The build flags
+ * `backup` and `statusReport` (F19-REQ-025) need the switch and their own variable, are
+ * off in every profile, and a remote kill switch can only pause them. The sign-in and
+ * sync wrappers are exercised here with the switch on as well, through the test-only
+ * override.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseRemoteConfig } from '@scribe/api';
-import { capabilities, parseServerFeatures, serverFeaturesEnabled, setServerFeaturesForTests } from '../src/lib/capabilities';
+import {
+  buildFlagEnabled,
+  capabilities,
+  KILL_SWITCH_FLAG,
+  mayRun,
+  parseServerFeatures,
+  serverFeaturesEnabled,
+  setBuildFlagForTests,
+  setServerFeaturesForTests,
+  type BuildFlag,
+  type PausableFeature,
+} from '../src/lib/capabilities';
 import { docsBaseFor } from '../src/lib/remote/base.logic';
 
 const APP = join(__dirname, '..');
@@ -27,18 +42,24 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, analytics: false, backup: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false });
   });
 
-  it('is off in every EAS build profile (eas.json)', () => {
+  it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
     const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
     const profiles = Object.keys(eas.build);
-    expect(profiles).toEqual(expect.arrayContaining(['development', 'preview', 'production']));
+    expect(profiles).toEqual(expect.arrayContaining(['development', 'preview', 'production', 'testflight']));
+    // The R-17 flip is the testflight line alone (docs/release/TESTFLIGHT.md); this test passes either side of it.
+    const flipped = eas.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on';
+    const expected = flipped ? ['preview', 'testflight'] : ['preview'];
+    const on = profiles.filter((name) => parseServerFeatures(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES));
+    expect(on).toEqual(expected);
     for (const name of profiles) {
-      const env = eas.build[name].env ?? {};
-      expect(env.EXPO_PUBLIC_SERVER_FEATURES, name).toBe('off');
-      expect(parseServerFeatures(env.EXPO_PUBLIC_SERVER_FEATURES), name).toBe(false);
+      // Written out as on or off in every profile, never left to a default.
+      expect(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe(expected.includes(name) ? 'on' : 'off');
     }
+    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(eas.build.development.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
   });
 
   it('is off for local development (.env.development)', () => {
@@ -48,16 +69,19 @@ describe('server features switch: off unless a build says on', () => {
     expect(line).toBe('EXPO_PUBLIC_SERVER_FEATURES=off');
   });
 
-  it('app.config.ts records the same rule in extra.serverFeatures (off unless "on")', () => {
+  it('app.config.ts records the same rules in extra (off unless "on"; a build flag needs the switch)', () => {
     const src = readFileSync(join(APP, 'app.config.ts'), 'utf8');
-    expect(src).toMatch(/const serverFeatures = \(process\.env\.EXPO_PUBLIC_SERVER_FEATURES \?\? ''\)\.trim\(\)\.toLowerCase\(\) === 'on';/);
-    expect(src).toMatch(/extra: \{[^}]*serverFeatures,/);
+    expect(src).toMatch(/const isOn = \(raw: string \| undefined\) => \(raw \?\? ''\)\.trim\(\)\.toLowerCase\(\) === 'on';/);
+    expect(src).toMatch(/const serverFeatures = isOn\(process\.env\.EXPO_PUBLIC_SERVER_FEATURES\);/);
+    expect(src).toMatch(/backup: serverFeatures && isOn\(process\.env\.EXPO_PUBLIC_BACKUP\)/);
+    expect(src).toMatch(/statusReport: serverFeatures && isOn\(process\.env\.EXPO_PUBLIC_STATUS_REPORT\)/);
+    expect(src).toMatch(/extra: \{[^}]*\.\.\.capabilityFlags\(\),/);
   });
 
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
-    // Analytics and backup have their own switches: turning server features on turns neither on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, analytics: false, backup: false });
+    // Analytics and the two build flags have their own switches: server features on does not turn them on.
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, analytics: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -71,6 +95,137 @@ describe('server features switch: off unless a build says on', () => {
   });
 });
 
+describe('[F19-REQ-025] build flags backup and statusReport: off unless the build says on, and only with the server switch', () => {
+  const FLAGS: BuildFlag[] = ['backup', 'statusReport'];
+  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT' };
+  afterEach(() => {
+    setServerFeaturesForTests(null);
+    for (const f of FLAGS) setBuildFlagForTests(f, null);
+  });
+
+  it('are off in this process (neither variable is set)', () => {
+    for (const f of FLAGS) {
+      expect(process.env[VARIABLE[f]] ?? '', f).not.toBe('on');
+      expect(buildFlagEnabled(f), f).toBe(false);
+      expect(capabilities[f], f).toBe(false);
+    }
+  });
+
+  it('are written out as off in every EAS profile, the preview alpha included (on only where flipped: nowhere yet)', () => {
+    const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
+    for (const [name, p] of Object.entries(eas.build)) {
+      for (const f of FLAGS) expect(p.env?.[VARIABLE[f]], `${name} ${VARIABLE[f]}`).toBe('off');
+    }
+  });
+
+  it('a flag alone never brings the server back: with the switch off the flag is ignored', () => {
+    setServerFeaturesForTests(false);
+    for (const f of FLAGS) {
+      setBuildFlagForTests(f, true);
+      expect(capabilities[f], f).toBe(false);
+      expect(capabilities.signIn).toBe(false);
+    }
+  });
+
+  it('each flag is on only with the switch on and its own variable on, and one flag never turns on the other', () => {
+    setServerFeaturesForTests(true);
+    expect(capabilities.backup).toBe(false);
+    expect(capabilities.statusReport).toBe(false);
+    setBuildFlagForTests('backup', true);
+    expect(capabilities.backup).toBe(true);
+    expect(capabilities.statusReport).toBe(false);
+    setBuildFlagForTests('backup', null);
+    setBuildFlagForTests('statusReport', true);
+    expect(capabilities.backup).toBe(false);
+    expect(capabilities.statusReport).toBe(true);
+    // Sign-in, sync and co-parent work with either flag off (F19-REQ-025).
+    expect(capabilities.signIn && capabilities.sync && capabilities.coParent).toBe(true);
+  });
+
+  it('the flag override is for tests only', () => {
+    const saved = process.env.VITEST;
+    delete process.env.VITEST;
+    try {
+      expect(() => setBuildFlagForTests('backup', true)).toThrow(/tests only/);
+    } finally {
+      process.env.VITEST = saved;
+    }
+    expect(buildFlagEnabled('backup')).toBe(false);
+  });
+});
+
+describe('[F19-REQ-011] remote kill switches can pause a build flag, never start one', () => {
+  const FEATURES = Object.keys(KILL_SWITCH_FLAG) as PausableFeature[];
+  afterEach(() => {
+    setServerFeaturesForTests(null);
+    setBuildFlagForTests('backup', null);
+    setBuildFlagForTests('statusReport', null);
+  });
+
+  it('names the three switches of F19 6.5 and the flag each one pauses', () => {
+    expect(KILL_SWITCH_FLAG).toEqual({ backupUploads: 'backup', escrow: 'backup', statusReport: 'statusReport' });
+  });
+
+  it('with the build flag off, no config of any shape makes a feature run', () => {
+    const configs = [
+      null,
+      undefined,
+      {},
+      { killSwitches: null },
+      { killSwitches: {} },
+      { killSwitches: { backupUploads: false, escrow: false, statusReport: false } },
+      { killSwitches: { backupUploads: 'off', escrow: 0, statusReport: 'false' } },
+      { killSwitches: { backup: true, statusReport: true }, flags: { backup: true, statusReport: true } },
+    ];
+    for (const server of [false, true]) {
+      setServerFeaturesForTests(server);
+      for (const f of FEATURES) for (const c of configs) expect(mayRun(f, c), `${server} ${f} ${JSON.stringify(c)}`).toBe(false);
+    }
+  });
+
+  it('with the build flag on, the feature runs unless its own switch is exactly true', () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('backup', true);
+    setBuildFlagForTests('statusReport', true);
+    for (const f of FEATURES) {
+      expect(mayRun(f, null), f).toBe(true);
+      expect(mayRun(f, { killSwitches: {} }), f).toBe(true);
+      expect(mayRun(f, { killSwitches: { [f]: false } }), f).toBe(true);
+      expect(mayRun(f, { killSwitches: { [f]: true } }), f).toBe(false);
+    }
+    // One switch pauses only its own feature.
+    expect(mayRun('backupUploads', { killSwitches: { statusReport: true } })).toBe(true);
+    expect(mayRun('statusReport', { killSwitches: { backupUploads: true, escrow: true } })).toBe(true);
+    expect(mayRun('escrow', { killSwitches: { backupUploads: true } })).toBe(true);
+  });
+
+  it('pausing never changes the build flag itself', () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('backup', true);
+    expect(mayRun('backupUploads', { killSwitches: { backupUploads: true } })).toBe(false);
+    expect(capabilities.backup).toBe(true);
+  });
+
+  it('a served config cannot add a backup or status report capability (no such key in the schema)', () => {
+    const r = parseRemoteConfig({
+      schemaVersion: 1,
+      version: 10,
+      generatedAt: '2026-10-15T12:00:00.000Z',
+      backup: true,
+      statusReport: true,
+      flags: { backup: true, statusReport: true },
+      killSwitches: { backupUploads: false, escrow: false, statusReport: false },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(Object.keys(r.value.flags)).not.toContain('backup');
+    expect(Object.keys(r.value.flags)).not.toContain('statusReport');
+    for (const f of FEATURES) expect(mayRun(f, r.value), f).toBe(false);
+    expect(capabilities.backup).toBe(false);
+    expect(capabilities.statusReport).toBe(false);
+  });
+});
+
 describe('remote config cannot turn server features on (BRIEF decision 16)', () => {
   it('capabilities.ts imports nothing: the value comes from the bundle only', () => {
     const src = readFileSync(join(APP, 'src/lib/capabilities.ts'), 'utf8');
@@ -78,7 +233,7 @@ describe('remote config cannot turn server features on (BRIEF decision 16)', () 
     expect(src).not.toMatch(/require\(/);
   });
 
-  it('no app code calls the test override', () => {
+  it('no app code calls a test override', () => {
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const n of readdirSync(dir)) {
@@ -88,7 +243,9 @@ describe('remote config cannot turn server features on (BRIEF decision 16)', () 
       }
     };
     walk(join(APP, 'src'));
-    const callers = files.filter((f) => !f.endsWith('capabilities.ts') && readFileSync(f, 'utf8').includes('setServerFeaturesForTests'));
+    const callers = files.filter(
+      (f) => !f.endsWith('capabilities.ts') && /set(ServerFeatures|BuildFlag|Analytics)ForTests/.test(readFileSync(f, 'utf8')),
+    );
     expect(callers).toEqual([]);
   });
 
