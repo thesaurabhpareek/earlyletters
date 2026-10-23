@@ -39,12 +39,32 @@ export interface SharedPhone {
 /** The app's one Supabase client: whoever signed in last is the live session, and every call goes under it. */
 export interface LiveSession {
   uid: string | null;
+  /**
+   * Runs as a call is sent (`before`: after the service's check read the session, before the send
+   * reads it again, as supabase-js does) and as it answers (`after`), so a test can land a sign-in there.
+   */
+  onSend?: (name: string, phase: 'before' | 'after') => void;
 }
 
-/** An API whose every call is made as `live.uid` at the moment of the call, as the shared client does. */
+/**
+ * An API whose every call is made as `live.uid` at the moment it is sent, read again there, as the
+ * shared client does for a request whose token is not set on the request itself (the worst case).
+ */
 function underLive<T extends object>(forUid: (uid: string) => T, live: LiveSession): T {
-  const names = Object.keys(forUid(live.uid ?? '')) as (keyof T)[];
-  return Object.fromEntries(names.map((n) => [n, (...a: unknown[]) => (forUid(live.uid ?? '')[n] as (...x: unknown[]) => unknown)(...a)])) as T;
+  const names = Object.keys(forUid(live.uid ?? '')) as (keyof T & string)[];
+  return Object.fromEntries(
+    names.map((n) => [
+      n,
+      async (...a: unknown[]) => {
+        live.onSend?.(n, 'before');
+        try {
+          return await (forUid(live.uid ?? '')[n] as (...x: unknown[]) => Promise<unknown>)(...a);
+        } finally {
+          live.onSend?.(n, 'after');
+        }
+      },
+    ]),
+  ) as T;
 }
 
 /**

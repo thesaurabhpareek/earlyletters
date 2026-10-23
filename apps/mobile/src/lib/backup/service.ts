@@ -74,7 +74,7 @@ export function createBackupService(deps: BackupServiceDeps) {
   // A call while the live session is another account's is never made: it stops the pass instead (account.ts).
   const d: BackupServiceDeps = {
     ...deps,
-    server: sameAccountOnly(deps.server, deps.sessionUid, deps.profileId),
+    server: sameAccountOnly(deps.server, deps.sessionUid, deps.profileId, { recheck: true }),
     escrow: sameAccountOnly(deps.escrow, deps.sessionUid, deps.profileId),
   };
   d.db.resetForProfile(d.profileId);

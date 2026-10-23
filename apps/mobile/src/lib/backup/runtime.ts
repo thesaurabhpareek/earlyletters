@@ -203,16 +203,21 @@ function serverError(e: unknown, status?: number | null): BackupServerError {
 const PAGE_ROWS = 500;
 
 /**
- * The main project through the app's one Supabase client. The service checks before each call that the
- * client's live session is still `profileId`'s (service.ts, account.ts `sameAccountOnly`); `sameAccount`
- * checks again before each page of a list, which is several requests.
+ * The main project through the app's one Supabase client. The service checks before and after each call
+ * that the client's live session is still `profileId`'s (service.ts, account.ts `sameAccountOnly`). Each
+ * request also carries that account's own token (`accessToken`, which checks the account again), set on
+ * the request itself: supabase-js keeps an Authorization header that is already set, so it never reads
+ * the live session a second time for it, and a sign-in landing in between cannot change whose call it is
+ * (review A N1 on #252). A paged list takes the token again for each page.
  */
-function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>, profileId: string, sameAccount: () => Promise<unknown>): BackupServer {
+function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string>, profileId: string): BackupServer {
   const env = readSupabaseEnv();
+  const bearer = async () => `Bearer ${await accessToken()}`;
   async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
+    const auth = await bearer();
     let r;
     try {
-      r = await sb.rpc(fn, args);
+      r = await sb.rpc(fn, args).setHeader('Authorization', auth);
     } catch (e) {
       throw serverError(e, 0);
     }
@@ -233,13 +238,13 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
   ): Promise<T[]> {
     const out: T[] = [];
     for (let from = 0; ; from += PAGE_ROWS) {
-      if (from > 0) await sameAccount();
+      const auth = await bearer();
       let q = sb.from(table).select(columns);
       if (opts.profileColumn) q = q.eq(opts.profileColumn, profileId);
       if (opts.confirmedOnly) q = q.eq('state', 'confirmed');
       let ordered = q.order('created_at');
       for (const c of opts.unique) ordered = ordered.order(c);
-      const { data, error, status } = await ordered.range(from, from + PAGE_ROWS - 1);
+      const { data, error, status } = await ordered.range(from, from + PAGE_ROWS - 1).setHeader('Authorization', auth);
       if (error) throw serverError(error, status);
       const page = (data ?? []) as unknown as T[];
       out.push(...page);
@@ -270,6 +275,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
         .map((r) => blobRow(r, profileId))
         .filter((r): r is NonNullable<typeof r> => r !== null),
     recordConsent: async (action) => {
+      const auth = await bearer();
       const { data, error } = await sb
         .from('policy_versions')
         .select('version, major, minor, patch')
@@ -278,7 +284,8 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
         .order('major', { ascending: false })
         .order('minor', { ascending: false })
         .order('patch', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .setHeader('Authorization', auth);
       if (error) throw serverError(error);
       const version = (data?.[0] as { version?: string } | undefined)?.version;
       if (!version) throw new BackupServerError('policy_version_missing', false);
@@ -295,7 +302,8 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
           p_client_recorded_at: new Date().toISOString(),
           p_context: {},
         })
-        .setHeader(HEADER_IDEMPOTENCY_KEY, uuidv7());
+        .setHeader(HEADER_IDEMPOTENCY_KEY, uuidv7())
+        .setHeader('Authorization', await bearer());
       if (r.error) throw serverError(r.error, r.status);
     },
     uploadTarget: async (_objectPath, uploadToken) => {
@@ -310,7 +318,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
       return { endpoint: `${env.url}/storage/v1/upload/resumable`, headers };
     },
     downloadUrl: async (objectPath) => {
-      const { data, error } = await sb.storage.from(BACKUP_BUCKET).createSignedUrl(objectPath, 120);
+      const { data, error } = await sb.storage.from(BACKUP_BUCKET).setHeader('Authorization', await bearer()).createSignedUrl(objectPath, 120);
       if (error || !data?.signedUrl) throw serverError(error ?? {}, errorStatus(error));
       return data.signedUrl;
     },
@@ -322,7 +330,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
 /** [R] `EXPO_PUBLIC_ESCROW_URL`: the `scribe-escrow` project's URL (routes in wire.ts). Unset: escrow is unavailable. */
 const ESCROW_URL = process.env.EXPO_PUBLIC_ESCROW_URL ?? '';
 
-function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
+function escrowClient(accessToken: () => Promise<string>): EscrowClient {
   return createEscrowClient({
     baseUrl: ESCROW_URL,
     accessToken,
@@ -427,7 +435,7 @@ const host = createAccountHost<BackupService>((uid) => {
     vault,
     aead: nativeAead,
     files: nativeFiles,
-    server: supabaseServer(sb, token, uid, mine),
+    server: supabaseServer(sb, token, uid),
     escrow: escrowClient(token),
     http,
     downloader,

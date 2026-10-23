@@ -7,7 +7,6 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { AccountChanged, backupAccountFor, backupDbFileFor, createAccountHost, sameAccountOnly } from '../src/lib/backup/account';
-import type { BackupServer } from '../src/lib/backup/contract';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { BackupService } from '../src/lib/backup/service';
 import { FakeBackend, FakeICloud } from './helpers/backup-node';
@@ -98,24 +97,13 @@ describe('[review B M2] another account on this phone never turns this one off',
   });
 });
 
-/** Runs `then` right after the backend answers the first `name` call (Papa's sign-in landing mid-pass). */
-function after(backend: FakeBackend, name: keyof BackupServer, then: () => void): void {
-  const serverFor = backend.serverFor.bind(backend);
+/** Papa's sign-in lands once, as the first `name` call is sent (`before`) or answers (`after`). */
+function landsAt(live: LiveSession, name: string, phase: 'before' | 'after', uid: string | null = PAPA): void {
   let done = false;
-  backend.serverFor = (uid) => {
-    const s = serverFor(uid);
-    const fn = s[name] as (...a: unknown[]) => Promise<unknown>;
-    return {
-      ...s,
-      [name]: async (...a: unknown[]) => {
-        const r = await fn(...a);
-        if (!done) {
-          done = true;
-          then();
-        }
-        return r;
-      },
-    };
+  live.onSend = (n, p) => {
+    if (done || n !== name || p !== phase) return;
+    done = true;
+    live.uid = uid;
   };
 }
 
@@ -134,19 +122,63 @@ describe('[follow-up on #150] a pass never calls the server under the next accou
     expect(calls).toEqual(['listBlobs']);
   });
 
+  it('[review A N1 on #252] with recheck, an answer or a refusal that came back after the session changed is never acted on', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const api = {
+      listKeys: async () => {
+        live.uid = PAPA; // a sign-in lands while the request is out
+        return [];
+      },
+      storeKey: async () => {
+        live.uid = PAPA;
+        throw new Error('42501');
+      },
+    };
+    const checked = sameAccountOnly(api, async () => live.uid, MAMA, { recheck: true });
+    await expect(checked.listKeys()).rejects.toBeInstanceOf(AccountChanged);
+    live.uid = MAMA;
+    await expect(checked.storeKey()).rejects.toBeInstanceOf(AccountChanged);
+    live.uid = MAMA;
+    expect(await sameAccountOnly(api, async () => live.uid, MAMA).listKeys()).toEqual([]); // escrow's wrapper: no recheck
+  });
+
+  it('[review A N1 on #252] a sign-in landing between the check and the send: the answer under it is dropped, so no book key is made from it', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    // Mama's first phone backed up Asha's recordings: the server holds her book key for Asha.
+    const first = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-first' });
+    addChild(first, ASHA);
+    recordLetter(first, ASHA, 10_000);
+    expect(await first.service.turnOn()).toBe('on');
+    await first.service.tick();
+    expect(backend.childKeys).toHaveLength(1);
+    // Her new phone, without iCloud Keychain, records a letter of its own.
+    const live: LiveSession = { uid: MAMA };
+    const fresh = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-new', live });
+    addChild(fresh, ASHA);
+    const rec = recordLetter(fresh, ASHA, 10_000);
+    expect(await fresh.service.turnOn()).toBe('on');
+    // The key rows are asked for under Mama's checked session, and Papa's lands before the request goes:
+    // the answer is Papa's view (no key for Asha), which would make a second book key here.
+    landsAt(live, 'listKeys', 'before');
+    await fresh.service.tick();
+    expect(await fresh.vault.bookKeyVersions({ profileId: MAMA, childId: ASHA })).toEqual([]);
+    expect(backend.childKeys).toHaveLength(1);
+    expect(fresh.backupDb.job(rec.id)).toMatchObject({ state: 'queued', attempts: 0, lastError: null });
+  });
+
   it('Papa signs in while Mama\'s upload runs: her next call is not made, nothing is counted, and her upload goes on', async () => {
     const live: LiveSession = { uid: MAMA };
     const { backend, phone, host, dbOf } = setup({ live });
     const rec = recordLetter(phone, ASHA, 70_000);
-    // Papa's sign-in lands just after Mama's backup_begin, before her service retires (about 500 ms in the app).
-    after(backend, 'begin', () => {
-      live.uid = PAPA;
-    });
+    // Papa's sign-in lands as Mama's backup_begin answers, before her service retires (about 500 ms in the app).
+    landsAt(live, 'begin', 'after');
     const mama = await host.forAccount(MAMA, MAMA);
     expect(await mama!.turnOn()).toBe('on');
     await mama!.tick();
-    // Under Papa's session the upload would be refused (403) and counted. It was never made.
-    expect(dbOf(MAMA).job(rec.id)).toMatchObject({ state: 'begun', attempts: 0, lastError: null });
+    // The answer is not acted on (begin is idempotent, so it is asked again), and the upload under Papa's
+    // session, which would be refused (403) and counted, is never made.
+    expect(dbOf(MAMA).job(rec.id)).toMatchObject({ state: 'sealed', attempts: 0, lastError: null });
     expect(backend.uploads.size).toBe(0);
     expect(backend.objects.size).toBe(0);
     expect(mama!.view().status.kind).toBe('paused');
@@ -171,10 +203,8 @@ describe('[follow-up on #150] a pass never calls the server under the next accou
     // Mama's new phone, on the same iCloud Keychain: her letter's words came by sync, its recording did not.
     const fresh = makePhone({ backend, uid: MAMA, icloud, clock, name: 'mama-new', live });
     syncText(old, fresh);
-    // Papa's session lands after the key rows are read, before the download link is asked for.
-    after(backend, 'listKeys', () => {
-      live.uid = PAPA;
-    });
+    // Papa's session lands between the check and the send of the download link: the answer under it is a refusal.
+    landsAt(live, 'downloadUrl', 'before');
     await fresh.service.tick();
     expect(audioOf(fresh, rec.id).uri).toBeNull();
     expect(fresh.backupDb.restoreItem(rec.id)?.attempts ?? 0).toBe(0);

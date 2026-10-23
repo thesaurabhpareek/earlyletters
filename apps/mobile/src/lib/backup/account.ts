@@ -77,16 +77,33 @@ export class AccountChanged extends BackupStopped {}
  * one Supabase client, and its session is whoever signed in last; in the moment between another
  * account signing in and this account's service retiring (`createAccountHost`, about 500 ms in the
  * app), a running pass would otherwise call the server under that account's token.
+ *
+ * `recheck`: the session is read again once the call answers, or fails, and a change turns the
+ * outcome into `AccountChanged`, so an answer that may have come under another account is never
+ * acted on (review A N1 on #252; the main project, whose requests also carry the checked token).
+ * Not for escrow: a request or a release is never repeated on its own, and dropping one that was
+ * made under this account's own token would ask escrow again (another email, another unwrap).
  */
-export function sameAccountOnly<T extends object>(api: T, sessionUid: () => Promise<string | null>, profileId: string): T {
+export function sameAccountOnly<T extends object>(api: T, sessionUid: () => Promise<string | null>, profileId: string, o: { recheck?: boolean } = {}): T {
+  const same = async () => (await sessionUid().catch(() => null)) === profileId;
   const out: Record<string, unknown> = {};
   for (const [name, fn] of Object.entries(api)) {
     out[name] =
       typeof fn !== 'function'
         ? fn
         : async (...args: unknown[]) => {
-            if ((await sessionUid().catch(() => null)) !== profileId) throw new AccountChanged();
-            return (fn as (...a: unknown[]) => unknown).apply(api, args);
+            if (!(await same())) throw new AccountChanged();
+            const call = (fn as (...a: unknown[]) => Promise<unknown>).apply(api, args);
+            if (!o.recheck) return call;
+            let result: unknown;
+            try {
+              result = await call;
+            } catch (e) {
+              if (!(await same())) throw new AccountChanged();
+              throw e;
+            }
+            if (!(await same())) throw new AccountChanged();
+            return result;
           };
   }
   return out as T;
