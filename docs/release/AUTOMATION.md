@@ -506,7 +506,7 @@ RA-17-01 the App Privacy worksheet per build that changes data collection; RA-17
 
 ### S01: secrets and permissions (`docs/security/**`)
 
-RA-01-01, before any secret is added: the approver account and environment settings (read back), branch protection, every workflow's `permissions:`, token scopes (Expo robots, App Store Connect roles, R2, Supabase, fine-grained GitHub token), the `agents` environment, the cache rule, the fence label check, the lint role, and the **connectors as production credentials** (Supabase, Vercel, mail); `docs/security/RELEASE_SECRETS_REVIEW.md` signed.
+RA-01-01, before any secret is added: the approver account and environment settings (read back), branch protection, every workflow's `permissions:`, token scopes (Expo robots, App Store Connect roles, R2, Supabase, fine-grained GitHub token), the `agents` environment, the cache rule, the fence label check, the lint role, and the **connectors as production credentials** (Supabase, Vercel, mail); `docs/security/SECRETS_REVIEW.md` signed.
 
 ## 6. Order and dependencies
 
