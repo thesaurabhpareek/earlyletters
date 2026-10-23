@@ -78,11 +78,16 @@ export const ENGINE_VERSION = 6;
 //   F06-REQ-010 amendment pending); commonWords drops mason, carter, cooper,
 //   hunter and rowan; the house rule keeps a soft hyphen (U+00AD) as it
 //   keeps U+FEFF; the name-signal test in checkSttFix skips a kept filler
-//   pair too (startsSentenceSkippingFillers), so the claim above holds: the
-//   review's differential found that one shape and no other. From the
-//   tests-lens review, same day: quotation marks are compared in order, so a
-//   swap of one mark for another (U+201C to U+00AB) is changes_quotes; and no
-//   punctuation edit leaves a doubled end mark the raw did not have ("no..").
+//   pair too (startsSentenceSkippingFillers). The claim above holds on the
+//   reviewer's differentials, not on a proof: 37 letters gave 0 of 271,598
+//   after that fix; 9 more letters then gave 52 cases, all one shape, "mm"
+//   leaving the auto list (a name fix after "mm"; a repeat or false start
+//   taking one "mm" of a pair). Closed the same day: the skip covers offered
+//   fillers too, and a repeat or false start made only of filler sounds is
+//   refused. No other shape is known. From the tests-lens review, same day:
+//   quotation marks are compared in order, so a swap of one mark for another
+//   (U+201C to U+00AB) is changes_quotes; and no punctuation edit leaves a
+//   doubled end mark the raw did not have, by replacement or insertion ("no..").
 //   Golden corpus: every engine 5 case is unchanged; R-01 cases added and
 //   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
 //   development build keeps its text (no saved letter is ever re-cleaned);

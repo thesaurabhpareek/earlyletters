@@ -150,6 +150,43 @@ describe('[F06-REQ-014] a kept filler pair leaves a capital positional for the n
     const raw = 'Then Asho came over today.';
     expect(verdict(raw, edit(raw, 'stt_fix', 'Asho', 'Asha'), dict)).toBeNull();
   });
+
+  it('[F06-REQ-014] "mm Asho came over today.": a name fix after an offered filler is positional too (#179 re-check N5)', () => {
+    const raw = 'mm Asho came over today.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Asho', 'Asha'), dict)).toBe('stt_fix_not_heard_as');
+    const comma = 'Mm, Asho came over today.';
+    expect(verdict(comma, edit(comma, 'stt_fix', 'Asho', 'Asha'), dict)).toBe('stt_fix_not_heard_as');
+  });
+});
+
+describe('[F06-REQ-010] a repeat or false start made only of filler sounds is refused (#179 re-check N6)', () => {
+  it('[F06-REQ-010] "mm mm Asho said no." keeps both sounds: a repeat or false start may not take one "mm" (#179 re-check N6)', () => {
+    const raw = 'mm mm Asho said no.';
+    expect(verdict(raw, edit(raw, 'repeat', 'mm ', ''))).toBe('repeat_is_emphasis');
+    expect(verdict(raw, edit(raw, 'false_start', 'mm ', ''))).toBe('false_start_complete_phrase');
+    expect(verdict(raw, edit(raw, 'filler', 'mm ', ''))).toBe('not_a_filler'); // the filler label refuses it already
+    const um = 'um um so we went';
+    expect(verdict(um, edit(um, 'repeat', 'um ', ''))).toBe('repeat_is_emphasis'); // auto fillers too
+    const restart = 'she was, um, she was so happy';
+    expect(verdict(restart, edit(restart, 'false_start', 'she was, um, ', ''))).toBeNull(); // a filler inside a real restart goes with it
+    const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en', modelEdits: [edit(raw, 'repeat', 'mm ', ''), edit(raw, 'false_start', 'mm ', '')] });
+    expect(r.text).toBe(raw);
+  });
+});
+
+describe('[F06-REQ-006] an end mark put next to one already said (#179 re-check, Note D)', () => {
+  it('[F06-REQ-006] "She said no." plus an inserted "." is refused like "no." to "no.." (#179 re-check Note D)', () => {
+    const raw = 'She said no.';
+    const insert: Edit = { type: 'punctuation', start: raw.length, end: raw.length, original: '', replacement: '.', source: 'model' };
+    expect(verdict(raw, insert)).toBe('changes_sentence_type');
+    expect(faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en', modelEdits: [insert] }).text).toBe(raw);
+    const open = 'She said no';
+    const period: Edit = { type: 'punctuation', start: open.length, end: open.length, original: '', replacement: '.', source: 'model' };
+    expect(verdict(open, period)).toBeNull(); // the honest repair: one end mark where there was none
+    const dots = 'She said no...';
+    const more: Edit = { type: 'punctuation', start: dots.length, end: dots.length, original: '', replacement: '.', source: 'model' };
+    expect(verdict(dots, more)).toBeNull(); // a run already said may stay
+  });
 });
 
 describe('[F06-REQ-014] F07 save check for a taught heard-as (F07-REQ-012, F07 7.2 rule 5)', () => {

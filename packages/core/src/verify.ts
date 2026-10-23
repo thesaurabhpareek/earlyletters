@@ -189,9 +189,25 @@ function startsSentenceSkippingFillers(prefix: string, level: EditLevel, R: Lang
     if (level !== 'clean') return false;
     const toks = R.tokens(p);
     const last = toks[toks.length - 1];
-    if (!last || !R.isFiller(last.word) || !/^[\s,]*$/.test(p.slice(last.end))) return false;
+    // Offered fillers too ("mm", D-112): the recogniser's capital after one is as positional as after "um" (#179 re-check N5).
+    if (!last || !R.isFiller(last.word, true) || !/^[\s,]*$/.test(p.slice(last.end))) return false;
     p = p.slice(0, last.start);
   }
+}
+
+/**
+ * The word window widened by two characters each side, so an end mark put
+ * next to one already there is seen with it: an insertion of "." after
+ * "She said no." has a word window of just "." (#179 re-check, Note D).
+ */
+function markWindow(raw: string, e: Edit): { before: string; after: string } {
+  let s = e.start;
+  let t = e.end;
+  while (s > 0 && WORD_CHAR.test(raw[s - 1])) s--;
+  while (t < raw.length && WORD_CHAR.test(raw[t])) t++;
+  s = Math.max(0, s - 2);
+  t = Math.min(raw.length, t + 2);
+  return { before: raw.slice(s, t), after: raw.slice(s, e.start) + e.replacement + raw.slice(e.end, t) };
 }
 
 interface CaseChange {
@@ -449,9 +465,10 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Sentence type is the speaker's: a period may be added where there was no
   // end mark, but ? and ! are never added, removed or swapped (in any script: ？ ؟ count as ?).
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
-  // Nor may a repair leave a doubled end mark the raw did not have ("She said no." to "no..";
-  // tests-lens review of #179, 23 Oct 2026). A run already said ("...") may stay.
-  if (DOUBLED_END_MARK.test(after) && !DOUBLED_END_MARK.test(before)) return 'changes_sentence_type';
+  // Nor may a repair leave a doubled end mark the raw did not have ("She said no." to "no..", or
+  // a "." put after it; tests-lens review of #179, 23 Oct 2026). A run already said ("...") may stay.
+  const marks = markWindow(ctx.raw, e);
+  if (DOUBLED_END_MARK.test(marks.after) && !DOUBLED_END_MARK.test(marks.before)) return 'changes_sentence_type';
   if (R.pairOpeners) {
     const opener = checkOpeners(e, ctx, R);
     if (opener) return opener;
@@ -499,8 +516,16 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   // A hyphenated word is one word: no removal takes part or all of "uh-uh"
   // (no), "mm-hmm" (yes), "uh-oh", "so-so" or "bye-bye" (F06-REQ-005, R-01 D6).
   if (REMOVAL_TYPES.has(e.type)) {
-    for (const t of R.tokens(e.original)) {
+    const removed = R.tokens(e.original);
+    for (const t of removed) {
       if (hyphenJoined(raw, e.start + t.start, e.start + t.end)) return e.type === 'filler' ? 'not_a_filler' : 'splits_word';
+    }
+    // Filler sounds are the filler label's business, where the offered-only and spoken-pair rules
+    // apply. A repeat or false start made only of them ("mm " out of "mm mm Asho said no.", which
+    // would leave a lone "mm", a no that reads as yes) is refused; a real restart that carries a
+    // filler inside it ("she was, um, she was") is still a false start (#179 re-check N6, 23 Oct 2026).
+    if (e.type !== 'filler' && e.replacement === '' && removed.length > 0 && removed.every((t) => R.isFiller(t.word, true))) {
+      return e.type === 'repeat' ? 'repeat_is_emphasis' : 'false_start_complete_phrase';
     }
   } else if ((e.type === 'punctuation' || e.type === 'paragraph') && splitsHyphenated(raw, e)) {
     // Nor may punctuation or whitespace split one ("uh-oh" -> "uh -oh", "so-so" -> "so so"): found by the F06-REQ-021 property test.
