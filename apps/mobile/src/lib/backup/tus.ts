@@ -9,7 +9,9 @@
  *   and sends only what is missing.
  * - Parts are 6 MiB, the size Supabase requires for every part but the last.
  * - An expired or unknown upload URL (404, 410) starts a fresh upload of the
- *   same bytes. A wrong offset (409) asks the server again.
+ *   same bytes. A wrong offset (409) asks the server again. Both are capped per
+ *   call (TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS): past that the call fails
+ *   retryable, so the job waits out the queue's backoff (review B m1 on #150).
  * - The upload URL must be https on the endpoint's own origin: every HEAD and
  *   PATCH carries the user's access token, so a `Location` anywhere else is
  *   refused, not followed (review A note 2 on #150).
@@ -22,6 +24,10 @@ import { bytesToBase64, utf8ToBytes } from './bytes';
 
 export const TUS_VERSION = '1.0.0';
 export const TUS_PART_BYTES = 6 * 1024 * 1024;
+/** Uploads created in one call: the first, and two fresh starts after a 404 or 410. */
+export const TUS_MAX_CREATES = 3;
+/** Offset reads in one call: the resume, and three after a 409. */
+export const TUS_MAX_OFFSET_ASKS = 4;
 
 export interface HttpResponse {
   status: number;
@@ -97,8 +103,11 @@ export async function tusUpload(x: TusUploadInput): Promise<'done' | 'stopped'> 
   let { url, offset } = x.progress;
   // A saved URL off the endpoint's https origin is never asked: start a fresh upload instead.
   if (url && httpsOrigin(url) !== httpsOrigin(x.target.endpoint)) url = null;
+  let creates = 0;
+  let asks = 0;
 
   const create = async () => {
+    if (++creates > TUS_MAX_CREATES) throw new BackupServerError('tus_restarts', true);
     const r = await call(x.http, x.target.endpoint, {
       method: 'POST',
       headers: {
@@ -116,6 +125,7 @@ export async function tusUpload(x: TusUploadInput): Promise<'done' | 'stopped'> 
   };
 
   const askOffset = async (): Promise<boolean> => {
+    if (++asks > TUS_MAX_OFFSET_ASKS) throw new BackupServerError('tus_restarts', true);
     const r = await call(x.http, url!, { method: 'HEAD', headers: base });
     if (r.status === 404 || r.status === 410) return false;
     const o = Number(r.header('Upload-Offset'));

@@ -23,7 +23,7 @@ import { createKeyManager } from '../src/lib/backup/keys';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { Aead, Conditions, FileIO, NetworkKind } from '../src/lib/backup/ports';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
-import { resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
+import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
 import { nodeDb } from './helpers/node-db';
 
@@ -694,6 +694,43 @@ describe('review fixes on #150: a swept reservation, the tus loop, the upload UR
     length: 10, readPart: () => new Uint8Array(10), progress: { url, offset: 0 }, onProgress: () => {}, keepGoing: () => true,
   });
   const created = (n: number) => ({ status: 201, header: (h: string) => (h === 'Location' ? `/storage/v1/upload/resumable/u${n}` : null) });
+
+  it('[review B m1] a bucket that answers 404 to every PATCH: at most TUS_MAX_CREATES uploads in a call, then a retryable error', async () => {
+    let posts = 0;
+    let patches = 0;
+    const http: HttpLike = async (_u, init) => (init.method === 'POST' ? created(++posts) : (patches++, { status: 404, header: () => null }));
+    const e = await tusUpload(input(http)).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(BackupServerError);
+    expect((e as BackupServerError).retryable).toBe(true);
+    expect(posts).toBe(TUS_MAX_CREATES);
+    expect(patches).toBe(TUS_MAX_CREATES);
+  });
+
+  it('[review B m1] a bucket that answers 409 to every PATCH: at most TUS_MAX_OFFSET_ASKS offset reads in a call, then a retryable error', async () => {
+    let heads = 0;
+    const http: HttpLike = async (_u, init) =>
+      init.method === 'POST' ? created(1) : init.method === 'HEAD' ? (heads++, { status: 200, header: (h: string) => (h === 'Upload-Offset' ? '0' : null) }) : { status: 409, header: () => null };
+    const e = await tusUpload(input(http)).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(BackupServerError);
+    expect((e as BackupServerError).retryable).toBe(true);
+    expect(heads).toBe(TUS_MAX_OFFSET_ASKS);
+  });
+
+  it('[review B m1] past the cap the job waits out the queue backoff, and finishes once the bucket answers', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(2 * SEGMENT_SIZE + 9);
+    const real = r.backend.http;
+    let broken = true;
+    (r.backend as { http: HttpLike }).http = async (url, init) => (broken && init.method === 'PATCH' ? { status: 404, header: () => null } : real(url, init));
+    await r.make().drain();
+    const job = r.db().job(item.entryId)!;
+    expect(job.state).not.toBe('confirmed');
+    expect(job.nextAttemptAt ?? 0).toBeGreaterThan(r.clock.t);
+    broken = false;
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
 
   it('[review A note 2] the upload URL must be https on the endpoint origin, so the token never goes anywhere else', () => {
     expect(resolveLocation('/storage/v1/upload/resumable/abc', EP)).toBe('https://fake.storage/storage/v1/upload/resumable/abc');
