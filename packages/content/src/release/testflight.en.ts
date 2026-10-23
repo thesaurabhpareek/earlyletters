@@ -7,8 +7,9 @@
 // The alpha (D-106, D-100; ALPHA_PLAN on #152):
 // - Build 1, the `testflight` profile: servers off. For "Family" (internal) and "Friends" (external, after Beta App
 //   Review). No account.
-// - Build 2, the `preview` profile: servers on, against staging, backup available and off until the person turns it
-//   on. For "Family" only until the R-17 sign-off.
+// - Build 2, the `preview` profile: servers on, against staging. Recording backup is not in the build (the build flag
+//   EXPO_PUBLIC_BACKUP is off in eas.json, #145), so recordings are not uploaded. For "Family" only until the R-17
+//   sign-off.
 // Both builds use the `.preview` app record, separate from the App Store app, so letters do not move across.
 //
 // "What to Test" is set per build, not per group, and build 1 goes to both groups. So no What to Test offers in-app
@@ -52,8 +53,10 @@ const feedbackBlock = [
 
 const plusLine = 'After the first two letters, keeping another one asks for Plus. Purchases in this test cost nothing.';
 
+// The ask comes at the end of first run, and again in Review while words are waiting if the person chose "Not now"
+// (speechConsentCopy, features/speech.en.ts).
 const speechLine =
-  'The first time you speak a letter, the app offers a one-time download on Wi-Fi so it can write down your words. Until it finishes, your recordings are kept and the words follow.';
+  'At the end of setting up, the app offers a one-time download on Wi-Fi so it can write down your words. If you tap "Not now", it asks again when words are waiting. Until the download finishes, your recordings are kept and the words follow.';
 
 const pleaseTryCore = [
   "- Setting up the book: your child's name, a birthday or due date, and how you sign your letters.",
@@ -98,7 +101,7 @@ export const testflightCopy = {
     ].join('\n\n'),
 
     build2: [
-      `Thank you for testing ${brand.name}. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your child's other parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recording backup is off until you turn it on.`,
+      `Thank you for testing ${brand.name}. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your child's other parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recordings are not uploaded in this test.`,
       [
         'Please try:',
         '- Signing in with Apple, or with your email and a sign-in link or code.',

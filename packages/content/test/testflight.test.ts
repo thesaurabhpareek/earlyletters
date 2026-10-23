@@ -150,7 +150,9 @@ describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on 
   it('build 2 (servers on) says what reaches the test server, that the policies apply, and claims no on-device-only letters', () => {
     expect(whatToTest.build2).toMatch(/stored on our test server/);
     expect(whatToTest.build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
-    expect(whatToTest.build2).toMatch(/Recording backup is off until you turn it on/);
+    // Backup is not in build 2 (EXPO_PUBLIC_BACKUP off in eas.json), so no text may offer to turn it on.
+    expect(whatToTest.build2).toMatch(/Recordings are not uploaded in this test/);
+    expect(whatToTest.build2).not.toMatch(/\bbackup\b|turn it on/i);
     expect(whatToTest.build2).toMatch(/Export your book/);
     expect(whatToTest.build2).toMatch(/Delete account/);
     for (const t of [whatToTest.build2, invitation.friendsServersOn]) {
