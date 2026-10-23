@@ -1966,4 +1966,43 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     expect(draft(Q, before)).toBeUndefined();
     expect(local(Q, id)?.final_text).toBe('You read to your bear, then to me.');
   }, 60_000);
+
+  it('[switch off, after a lost answer] a retried held op answered held_off stays sent: an edit while off goes as a new op and reaches the other phone, and a let-go while off sticks on both (confirmation review)', async () => {
+    const w = watch();
+    const edited = typed(P, 'You found the red leaf.');
+    const letGone = typed(P, 'You named every duck.');
+    expect(P.store.holdDraft(edited, { inBookChoice: true })).toBe(true);
+    expect(P.store.holdDraft(letGone, { inBookChoice: true })).toBe(true);
+    await P.sync(lost(w.s)); // both applied and claimed; the one answer lost
+    expect((await held(edited))?.typed_text).toBe('You found the red leaf.');
+    expect((await held(letGone))?.typed_text).toBe('You named every duck.');
+    const upOp = queued(P, 'held.upsert', edited)!.opId;
+    await server.sys("select set_config('app.held_sync', 'off', false)");
+    try {
+      tick(2_000);
+      await P.sync(w.s); // the retries are answered held_off, before the server looks at its receipts
+      expect(w.answers('held.upsert', edited).at(-1)).toMatchObject({ held_off: true });
+      P.store.setDraftTyped(edited, 'You found the red leaf and kept it.');
+      const ups = P.db.all<{ op_id: string }>("SELECT op_id FROM sync_outbox WHERE entity_id = ? AND type = 'held.upsert' ORDER BY seq", edited).map((r) => r.op_id);
+      expect(ups).toHaveLength(2); // the claimed op is left as sent; the edit is a new op
+      expect(ups[0]).toBe(upOp);
+      letGo(P, letGone);
+      expect(outbox(P)).toEqual(['held.upsert', 'held.upsert', 'held.upsert', 'held.discard']); // the let-go goes; the upload before it stays
+    } finally {
+      await server.sys("select set_config('app.held_sync', '', false)");
+    }
+    // On again: the first ops answer dup; the edit applies; the let-go, rebased on the version the upload wrote, applies.
+    await P.sync(w.s);
+    await P.sync(w.s);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect(w.answers('held.upsert', edited).filter((a) => a.dup)).toHaveLength(1);
+    expect((await held(edited))?.typed_text).toBe('You found the red leaf and kept it.');
+    expect(await held(letGone)).toBeUndefined();
+    expect(await marker(letGone)).toBe('discarded');
+    await Q.sync();
+    expect(draft(Q, edited)?.typedText).toBe('You found the red leaf and kept it.');
+    expect(draft(Q, letGone)).toBeUndefined();
+    expect(draft(P, letGone)).toBeUndefined();
+  }, 60_000);
 });

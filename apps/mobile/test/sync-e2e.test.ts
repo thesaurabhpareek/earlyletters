@@ -369,8 +369,8 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
       db.all<{ payload: string }>("SELECT payload FROM rejected_writes WHERE code = 'conflict' AND entity_id = ?", ids.first)
         .map((r) => (JSON.parse(r.payload) as { data: { final_text: string } }).data.final_text);
     if (protocolV1) {
-      // v1 (ADR 0025 section 5): the first arrival's words stand; the second phone's words are refused,
-      // kept on that phone as a conflict copy for the author to choose, and never re-sent by themselves.
+      // v1 (ADR 0025 section 5; D-111 item 10): the first arrival's words stand; the second phone's words are
+      // refused, kept on that phone as a conflict copy for the author to choose, and never re-sent by themselves.
       expect(second.conflicts).toBe(1);
       expect((await server(ids.first))?.final_text).toBe('She walked to me from the sofa.');
       expect(local(A1, ids.first)?.final_text).toBe('She walked to me from the sofa.');

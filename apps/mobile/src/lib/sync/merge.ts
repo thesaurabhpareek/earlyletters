@@ -295,11 +295,14 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     if (!row) continue;
     answered.add(row.op_id);
     if (r.ok && row.type.startsWith('held.') && r.held_off) {
-      // Held-draft sync is switched off on the server (app.held_sync = 'off'): the op is not claimed there and
-      // stays queued here until a pull carries a held section again (the same op id applies then). It is as if
-      // never sent (as for SCCON): a later edit rewrites it in place instead of queueing another whole row, and
-      // a let-go of a draft the server never had sends nothing (review L N1).
-      db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', row.seq);
+      // Held-draft sync is switched off on the server (app.held_sync = 'off'): the op was not claimed there and
+      // stays queued here until a pull carries a held section again (the same op id applies then). On its first
+      // send it is as if never sent (as for SCCON): a later edit rewrites it in place instead of queueing another
+      // whole row, and a let-go of a draft the server never had sends nothing (review L N1). A retry is left as
+      // sent: the server answers held_off before it reads the receipt, so an op whose first answer was lost may
+      // already have applied under this op id. An edit then queues a new op, and a let-go sends its discard
+      // (confirmation review on #182). `row` is the batch as taken, before markSent, so sent_at null is a first send.
+      if (row.sent_at === null) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', row.seq);
       writeSetting(db, SYNC_SETTING.heldServer, null);
       continue;
     }
@@ -421,7 +424,10 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
   if (res.paused) {
     // SCCON: the op that met it and every op after it did not apply (the server rolled that op back and
     // stopped). They are as if never sent, so a delete made during the pause drops them instead of
-    // overtaking them, and nothing waits to bring the letter back when consent returns.
+    // overtaking them, and nothing waits to bring the letter back when consent returns. Unlike held_off, this
+    // needs no retry guard: SCCON is raised inside the op's own block, after the idempotency claim, so a retry
+    // of an op that had applied answers dup and never SCCON, and the ops after the one that met it are newer
+    // ops this server never ran (an erase in lane 2 is the one exception, and a re-sent erase is a dup no-op).
     for (const u of unanswered) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', u.seq);
   }
   return {

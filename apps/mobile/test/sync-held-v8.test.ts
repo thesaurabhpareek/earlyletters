@@ -200,6 +200,28 @@ describe('an older server', () => {
     enqueueHeldDiscard(db, d, qctx);
     expect(ops(db)).toEqual([]);
   });
+
+  it('[confirmation review] a held_off answer to a retry leaves the op sent: it may have applied under that id, so an edit queues a new op and a let-go sends its discard', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('Held, answer lost, then the switch went off.');
+    drafts.markHeld(repo, d, true);
+    enqueueHeldDraft(db, d, qctx);
+    const first = takeBatch(db, { now: NOW });
+    markSent(db, first.rows, NOW); // sent once; the answer never came (the server may have applied and claimed it)
+    writeSetting(db, SYNC_SETTING.heldServer, '1');
+    const retry = takeBatch(db, { now: NOW });
+    expect(retry.rows[0].sent_at).toBe(NOW);
+    applyPushResponse(db, retry.rows, { results: [{ op: retry.ops[0].op, ok: true, applied: false, held_off: true }] } as PushResponse, qctx);
+    expect(db.all('SELECT type, sent_at FROM sync_outbox')).toEqual([{ type: 'held.upsert', sent_at: NOW }]); // still sent
+    drafts.setTyped(repo, d, 'Held, answer lost, then edited while off.');
+    enqueueHeldDraft(db, d, qctx);
+    const queued = ops(db);
+    expect(queued.map((o) => o.type)).toEqual(['held.upsert', 'held.upsert']); // a new op, never the claimed id rewritten
+    expect(queued.map((o) => (JSON.parse(o.payload) as PushOp).op)).toEqual([retry.ops[0].op, expect.not.stringMatching(retry.ops[0].op)]);
+    expect((JSON.parse(queued[1].payload) as PushOp).data.typed_text).toBe('Held, answer lost, then edited while off.');
+    enqueueHeldDiscard(db, d, qctx);
+    expect(ops(db).map((o) => o.type)).toEqual(['held.upsert', 'held.discard']); // the let-go goes; the unsent edit went with the draft
+  });
 });
 
 describe('[F16 6.2 E] held answers after the final review', () => {
