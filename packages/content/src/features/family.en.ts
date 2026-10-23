@@ -115,6 +115,8 @@ export const familyCopy = {
     leaving: 'Leaving the book',
     done: "You left {child}'s book. Your own letters stay yours.",
     coParentFallback: 'your co-parent',
+    /** /invite/leave in a build with sharing on, while D-113 holds Leave back. */
+    later: 'Leaving a shared book is coming in a later update.',
   },
 
   /** F11-REQ-023: the one neutral note the remaining parent sees. */

@@ -47,7 +47,7 @@ describe('every invite entry point leads to coming soon when server features are
     expect(src('app/(tabs)/family.tsx')).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
     expect(src('app/invite/index.tsx')).toMatch(/inviteDestination\('invite_join', serverFeaturesEnabled\(\)\) === 'flow' \? <JoinBook \/> : <InviteComingSoon \/>/);
     expect(src('app/invite/new.tsx')).toMatch(/inviteDestination\('invite_new', serverFeaturesEnabled\(\)\) === 'flow' \? <InviteCoParent \/> : <InviteComingSoon \/>/);
-    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : <InviteComingSoon \/>/);
+    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) \? <LeaveLater \/> : <InviteComingSoon \/>/);
     expect(src('app/settings/children/[id].tsx')).toMatch(/inviteHref\('settings_child', serverFeaturesEnabled\(\), child\.id\)/);
     expect(src('app/onboarding.tsx')).toMatch(/inviteHref\('onboarding_join', capabilities\.coParent\)/);
   });
@@ -256,8 +256,13 @@ describe('server features on: the shared flows are live (D-100; option B for the
       expect(code, screen).not.toMatch(/\/invite\/leave|testID="family\.leave"|state\.canLeave|leave\.row/);
     }
     // The route stays, behind the same switch as every invite route, so the sheet returns with left books.
-    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : <InviteComingSoon \/>/);
-    expect(src('app/invite/leave.tsx')).toMatch(/D-113/);
+    // With sharing on it says only that leaving comes later: the co-parent teaser's "letters stay on this
+    // phone" would not be true once a book is shared.
+    const leave = src('app/invite/leave.tsx');
+    expect(leave).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) \? <LeaveLater \/> : <InviteComingSoon \/>/);
+    expect(leave).toMatch(/familyCopy\.leave\.later/);
+    expect(familyCopy.leave.later).toBe('Leaving a shared book is coming in a later update.');
+    expect(leave).toMatch(/D-113/);
   });
 
   it('a child\'s settings row opens the invite itself, not a sign-in sheet or coming soon', () => {

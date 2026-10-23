@@ -5,8 +5,9 @@
  * cannot leave (SCLPG) and deletes the book instead.
  *
  * Not offered in build 2 (D-113, lib/family/entry.logic.ts LEAVE_BOOK_OFFERED): no screen links
- * here, and the route shows coming soon, because a book this phone leaves is not listed anywhere
- * yet. The sheet below stays as it is for when left books are listed (before build 3).
+ * here, and the route shows a plain coming-soon line (LeaveLater), because a book this phone
+ * leaves is not listed anywhere yet. The sheet below stays as it is for when left books are
+ * listed (before build 3).
  *
  * One sheet, two equal choices, nothing preselected (R4 PT-14): leave my letters in the book, or
  * take them out. Each says what follows, and both say what cannot be taken back (R4 PT-15). Leave
@@ -40,7 +41,23 @@ type Choice = 'keep' | 'take_out';
 
 /** Fixed per build (lib/capabilities.ts, and D-113 for build 2). Off: there is no shared book to leave. */
 export default function LeaveBookRoute() {
-  return inviteDestination('invite_leave', serverFeaturesEnabled()) === 'flow' ? <LeaveBook /> : <InviteComingSoon />;
+  return inviteDestination('invite_leave', serverFeaturesEnabled()) === 'flow' ? <LeaveBook /> : serverFeaturesEnabled() ? <LeaveLater /> : <InviteComingSoon />;
+}
+
+/**
+ * Sharing is on but Leave waits for D-113 to lift: one plain coming-soon line. The co-parent
+ * teaser (InviteComingSoon) is for builds without sharing; here it would say letters stay on
+ * this phone, which is not true once a book is shared.
+ */
+function LeaveLater() {
+  return (
+    <SheetFrame closeLabel={familyCopy.accept.close}>
+      <View testID="leave.later" className="gap-5">
+        <SheetTitle>{familyCopy.soon.status}</SheetTitle>
+        <SheetBody>{familyCopy.leave.later}</SheetBody>
+      </View>
+    </SheetFrame>
+  );
 }
 
 function LeaveBook() {
