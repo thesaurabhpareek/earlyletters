@@ -34,7 +34,7 @@ import { readSupabaseEnv } from '../supabase/env';
 import { APP_ENV } from '../build-env';
 import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
-import { backupDbFileFor, createAccountHost } from './account';
+import { AccountChanged, backupDbFileFor, createAccountHost } from './account';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -202,7 +202,12 @@ function serverError(e: unknown, status?: number | null): BackupServerError {
 /** PostgREST page size for the table reads below. */
 const PAGE_ROWS = 500;
 
-function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>, profileId: string): BackupServer {
+/**
+ * The main project through the app's one Supabase client. The service checks before each call that the
+ * client's live session is still `profileId`'s (service.ts, account.ts `sameAccountOnly`); `sameAccount`
+ * checks again before each page of a list, which is several requests.
+ */
+function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>, profileId: string, sameAccount: () => Promise<unknown>): BackupServer {
   const env = readSupabaseEnv();
   async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
     let r;
@@ -228,6 +233,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
   ): Promise<T[]> {
     const out: T[] = [];
     for (let from = 0; ; from += PAGE_ROWS) {
+      if (from > 0) await sameAccount();
       let q = sb.from(table).select(columns);
       if (opts.profileColumn) q = q.eq(opts.profileColumn, profileId);
       if (opts.confirmedOnly) q = q.eq('state', 'confirmed');
@@ -408,20 +414,27 @@ async function session(sb: SupabaseClient): Promise<{ uid: string; token: string
 let client: SupabaseClient | null = null;
 const host = createAccountHost<BackupService>((uid) => {
   const sb = client!;
-  const token = async () => (await session(sb).catch(() => null))?.token ?? null;
+  // Only this account's session, never the next one's: a token read after another account signed in stops the call (account.ts).
+  const mine = async () => {
+    const s = await session(sb).catch(() => null);
+    if (s?.uid !== uid) throw new AccountChanged();
+    return s;
+  };
+  const token = async () => (await mine()).token;
   const vault = nativeVault();
   return createBackupService({
     db: dbFor(uid),
     vault,
     aead: nativeAead,
     files: nativeFiles,
-    server: supabaseServer(sb, token, uid),
+    server: supabaseServer(sb, token, uid, mine),
     escrow: escrowClient(token),
     http,
     downloader,
     conditions: conditions(() => dbFor(uid)),
     clock: { now: () => Date.now(), sleep: (ms) => new Promise((r) => setTimeout(r, ms)) },
     profileId: uid,
+    sessionUid: async () => (await session(sb).catch(() => null))?.uid ?? null,
     // No `heldOnServer`, so held drafts are not listed at all. S03's held-draft op is on develop (#182), but the
     // server backs up letters only until a held draft's backup survives an undone join (#151, backup_entry_exists).
     source: backupSource({ db: localSqlDb, profileId: uid }),

@@ -4,6 +4,7 @@
  * B5c). Pure composition over the ports, so the Node end-to-end test drives
  * exactly this with a fake bucket, a fake escrow and two phones.
  */
+import { sameAccountOnly } from './account';
 import type { BackupServer, EscrowClient, EscrowPublicKey } from './contract';
 import { createKeyManager } from './keys';
 import type { BackupDb, UploadJob } from './local-db';
@@ -24,6 +25,8 @@ export interface BackupServiceDeps {
   conditions: Conditions;
   clock: Clock;
   profileId: string;
+  /** The account the phone's live session belongs to now, or null: every server and escrow call checks it is `profileId` first. */
+  sessionUid: () => Promise<string | null>;
   source: BackupSource;
   local: RestoreLocal;
   escrowKeys: () => readonly EscrowPublicKey[];
@@ -67,7 +70,13 @@ export interface BackupView {
 const KEPT_HERE = new Set(['hash_mismatch', 'too_large', 'not_parent']);
 const isOpen = (j: UploadJob) => j.state !== 'confirmed' && j.state !== 'blocked';
 
-export function createBackupService(d: BackupServiceDeps) {
+export function createBackupService(deps: BackupServiceDeps) {
+  // A call while the live session is another account's is never made: it stops the pass instead (account.ts).
+  const d: BackupServiceDeps = {
+    ...deps,
+    server: sameAccountOnly(deps.server, deps.sessionUid, deps.profileId),
+    escrow: sameAccountOnly(deps.escrow, deps.sessionUid, deps.profileId),
+  };
   d.db.resetForProfile(d.profileId);
   const keys = createKeyManager({ vault: d.vault, server: d.server, meta: d.db, clock: d.clock, profileId: d.profileId, escrowKeys: d.escrowKeys });
   let stopped = false;

@@ -273,6 +273,8 @@ export function createRestore(d: RestoreDeps) {
       await d.downloader.download(await d.server.downloadUrl(blob.objectPath), dl);
     } catch (e) {
       cleanup();
+      // The live session is another account's now (account.ts): a stop, not a failed try.
+      if (e instanceof BackupStopped) return { kind: 'gate', reason: 'stopped' };
       if (e instanceof BackupServerError && e.retryable) return { kind: 'retry' };
       return failOnce(blob.entryId);
     }
@@ -379,7 +381,8 @@ export function createRestore(d: RestoreDeps) {
     } catch (e) {
       // A network blip while checking the rows, or the Keychain refusing a write as the phone locks:
       // the release is fine, so the next pass stores it from the kept copy, asking escrow nothing.
-      if ((e instanceof BackupServerError && e.retryable) || keychainBusy(e)) return { kind: 'unavailable' };
+      // So does a check that found the live session is another account's (account.ts).
+      if ((e instanceof BackupServerError && e.retryable) || keychainBusy(e) || e instanceof BackupStopped) return { kind: 'unavailable' };
       if (needsSignIn(e)) return { kind: 'sign_in_again' };
       // The release does not open here or fails its row's check: only a new release can help, and
       // escrow is never asked for one on its own. Try again asks once more.

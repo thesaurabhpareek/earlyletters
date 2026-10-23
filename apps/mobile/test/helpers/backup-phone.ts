@@ -36,11 +36,23 @@ export interface SharedPhone {
   vault: ReturnType<typeof nodeVault>;
 }
 
+/** The app's one Supabase client: whoever signed in last is the live session, and every call goes under it. */
+export interface LiveSession {
+  uid: string | null;
+}
+
+/** An API whose every call is made as `live.uid` at the moment of the call, as the shared client does. */
+function underLive<T extends object>(forUid: (uid: string) => T, live: LiveSession): T {
+  const names = Object.keys(forUid(live.uid ?? '')) as (keyof T)[];
+  return Object.fromEntries(names.map((n) => [n, (...a: unknown[]) => (forUid(live.uid ?? '')[n] as (...x: unknown[]) => unknown)(...a)])) as T;
+}
+
 /**
  * `share`: another account on the same phone (its files, its letters and its Keychain), for the tests
- * that switch accounts; `backupDb`: that account's own backup state (lib/backup/account.ts).
+ * that switch accounts; `backupDb`: that account's own backup state (lib/backup/account.ts); `live`:
+ * the phone's live session, which server and escrow calls go under (otherwise always `uid`'s).
  */
-export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeICloud | null; clock: Clock; name: string; backupDb?: BackupDb; share?: SharedPhone }) {
+export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeICloud | null; clock: Clock; name: string; backupDb?: BackupDb; share?: SharedPhone; live?: LiveSession }) {
   const iso = () => new Date(o.clock.t).toISOString();
   let root: string;
   let local: SqlDb;
@@ -73,13 +85,14 @@ export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeIC
     vault,
     aead: nodeAead,
     files,
-    server: o.backend.serverFor(o.uid),
-    escrow: o.backend.escrowFor(o.uid),
+    server: o.live ? underLive((u) => o.backend.serverFor(u), o.live) : o.backend.serverFor(o.uid),
+    escrow: o.live ? underLive((u) => o.backend.escrowFor(u), o.live) : o.backend.escrowFor(o.uid),
     http: o.backend.http,
     downloader: o.backend.downloader,
     conditions,
     clock: { now: () => o.clock.t, sleep: async () => {} },
     profileId: o.uid,
+    sessionUid: async () => (o.live ? o.live.uid : o.uid),
     source: backupSource({ db: () => local, profileId: o.uid, heldOnServer: (id) => o.backend.rows.get(o.uid)?.has(id) ?? false }),
     local: restoreLocal({ db: () => local, profileId: o.uid, fileExists: files.exists }),
     escrowKeys: () => o.backend.escrowKeys(),

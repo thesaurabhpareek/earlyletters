@@ -9,8 +9,12 @@
  * - Each account keeps its own backup state, one `backup-<profile id>.db` per account, so another
  *   account signing in never turns this one's backup off or drops its queue.
  *
+ * - Every server and escrow call a service makes goes only while the phone's live session is still
+ *   that service's account (`sameAccountOnly`), so a pass never calls under the next account's token.
+ *
  * Pure: no React Native, so tests drive it with the Node phone.
  */
+import { BackupStopped } from './format';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -59,4 +63,31 @@ export function createAccountHost<S extends { stop(): Promise<void> }>(make: (pr
     retire,
     current: (): S | null => service,
   };
+}
+
+/**
+ * The phone's live session belongs to another account, or to none: the call was not made. A stop, like
+ * a recording starting: the pass ends, no attempt is counted and nothing is shown, and the next pass
+ * for this account goes on.
+ */
+export class AccountChanged extends BackupStopped {}
+
+/**
+ * `api` with every call made only while `sessionUid()` is `profileId` (follow-up on #150). The app has
+ * one Supabase client, and its session is whoever signed in last; in the moment between another
+ * account signing in and this account's service retiring (`createAccountHost`, about 500 ms in the
+ * app), a running pass would otherwise call the server under that account's token.
+ */
+export function sameAccountOnly<T extends object>(api: T, sessionUid: () => Promise<string | null>, profileId: string): T {
+  const out: Record<string, unknown> = {};
+  for (const [name, fn] of Object.entries(api)) {
+    out[name] =
+      typeof fn !== 'function'
+        ? fn
+        : async (...args: unknown[]) => {
+            if ((await sessionUid().catch(() => null)) !== profileId) throw new AccountChanged();
+            return (fn as (...a: unknown[]) => unknown).apply(api, args);
+          };
+  }
+  return out as T;
 }
