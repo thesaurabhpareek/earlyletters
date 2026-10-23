@@ -199,7 +199,7 @@ async function main(): Promise<void> {
     try {
       cfg = s3ConfigFromEnv(process.env);
     } catch (e) {
-      return fail(`${(e as Error).message}\nSet ${Object.values(S3_ENV).join(', ')} (docs/ops/PACKS_HOSTING.md, "Upload").`);
+      return fail(`${(e as Error).message}\nSet ${Object.values(S3_ENV).join(', ')} (docs/ops/PACKS_HOSTING.md, steps 5 and 7).`);
     }
     out(`Uploading ${dir} (manifest v${index.manifestVersion}, ${index.files.length} files) to ${cfg.endpoint}/${cfg.bucket}${flag('dry-run') ? ' [dry run]' : ''}`);
     const s = await uploadRelease(dir, index, cfg, { trusted: TRUSTED_SIGNING_KEYS, dryRun: flag('dry-run'), log: out });
@@ -264,7 +264,7 @@ async function main(): Promise<void> {
     out('  2. git add supabase/functions/config/published.ts supabase/functions/content/published.ts scripts/packs/remote-config.json && git commit');
     // The release signs a remote config too, so the server must hold the same kill-switch state (#138, F19-REQ-008).
     const signedConfig = JSON.parse(built.documents['remote-config']) as { payload: { killSwitches: Record<string, boolean> } };
-    out('  3. Make the server match the kill switches this release signed:');
+    out('  3. Make the server match the kill switches this release signed (skip this during the alpha: docs/ops/PACKS_HOSTING.md step 6):');
     for (const s of killSwitchSteps(signedConfig.payload.killSwitches)) out(`     ${s}`);
     return;
   }

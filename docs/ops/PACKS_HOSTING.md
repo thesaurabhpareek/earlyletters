@@ -13,7 +13,7 @@ You need two things, both done below:
 
 ## Before you start
 
-- Node 22 or later, and `npm ci` done at the repo root.
+- The repo on `develop`, where these commands are (`main`, the default branch, does not have them yet): `git clone https://github.com/thesaurabhpareek/earlyletters.git && cd earlyletters && git switch develop && git pull`, then `npm ci` at the repo root, with Node 22.5 or later (`node --version`).
 - A password manager.
 - A Cloudflare account with two-factor, with **`earlyletters.app` already an active zone in it** (D-097, `docs/ops/DOMAINS.md` section 6). If it is not active yet, start that first (see "If earlyletters.app is not on Cloudflare yet"): it is the only slow part.
 
@@ -66,7 +66,7 @@ Keep the `keys.ts` change in your working tree for step 6, and commit it in step
 
 ### 2. Bucket
 
-Cloudflare dashboard > Storage and databases > R2 > Create bucket (Read; menu names may differ in today's dashboard): name **`early-letters-packs`**, location Automatic, default storage class **Standard** (the free tier covers Standard only: Read, R2 pricing). Leave public access through `r2.dev` **off**: it is rate-limited and for development only (Read, R2 public buckets).
+R2 must be enabled on the account first; Cloudflare asks for a payment method even for the free tier (Assumption: not checked here). Then Cloudflare dashboard > Storage and databases > R2 > Create bucket (Read; menu names may differ in today's dashboard): name **`early-letters-packs`**, location Automatic, default storage class **Standard** (the free tier covers Standard only: Read, R2 pricing). Leave public access through `r2.dev` **off**: it is rate-limited and for development only (Read, R2 public buckets).
 
 ### 3. Custom domain
 
@@ -110,6 +110,8 @@ npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/sign
 
 This writes `dist/release/` (git-ignored), checks every signature the way a phone does, and bumps the document versions in `supabase/functions/config/published.ts` and `supabase/functions/content/published.ts` (git is the version counter: see step 8).
 
+**During the alpha, skip item 3 of the printed next steps** (the server kill-switch commands): with every switch off they would turn backup and escrow on, which `supabase/APPLY.md` keeps off until backup is applied and neither alpha build has (`docs/release/TESTFLIGHT.md`).
+
 **Languages: English only unless named** (`--languages`, D-111 item 4). With no flag the release carries no text pack (English is bundled in the app), and its manifest lists only the multilingual speech models; `--languages en,hi` adds Hindi. `upload` takes the same flag and refuses a release that offers a language it does not name.
 
 Measured here, `--models upstream --languages en,hi,es,zh,fr,ar,pt` (an English-only release holds just the three documents):
@@ -135,7 +137,10 @@ Other options: `--base-url`, `--min-app 1.0.0`, `--out`, `--models-dir <folder>`
 
 ### 7. Upload and check
 
+In one terminal, with both public keys still in `packages/api/src/keys.ts` in your working tree (`upload`, and `--dry-run` too, refuses documents that do not verify against it) and the four `PACKS_S3_*` values from step 5 loaded:
+
 ```bash
+set -a; . ~/.config/early-letters/r2.env; set +a
 npx tsx scripts/packs/publish.ts upload
 ```
 
@@ -169,14 +174,14 @@ gh pr create --base develop --fill
 
 (`remote-config.json` is listed even when unchanged: adding an unchanged file is harmless, and a kill switch you set must be in git, which is the audit log of what was served.)
 
-`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **You merge this PR yourself**, before `eas build`: it changes the app's trust root and release configuration, which D-107 keeps as founder merges.
+`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **You merge this PR yourself**, before `eas build`: it changes the app's trust root and release configuration, which D-107 keeps as founder merges. No `gh`? `brew install gh && gh auth login`, or open the PR on github.com. After merging, start the build from `develop`: Actions > TestFlight > Run workflow, branch `develop`.
 
 ### 9. Verify
 
 ```bash
 curl -sI https://packs.earlyletters.app/functions/v1/config/v1/packs              # 200, content-type application/json, cache-control no-cache
 curl -s  https://packs.earlyletters.app/functions/v1/config/v1/packs | head -c 200 # {"kind":"pack-manifest","keyId":"el-YYYY-MM",...
-curl -sI -H 'Range: bytes=0-15' https://packs.earlyletters.app/text-rules.es/1000000/es.rules.json   # 206
+curl -sI -H 'Range: bytes=0-15' https://packs.earlyletters.app/speech-model.silero-vad-v6.2.0/1/ggml-silero-v6.2.0.bin   # 206 when the models are on our host (--models download); verify checks Range upstream otherwise
 npx tsx scripts/packs/publish.ts verify                                             # every line "ok"
 npm run preflight:testflight -w @scribe/mobile -- --skip-prebuild                   # signing key PASS
 ```
@@ -305,8 +310,11 @@ Not proven here (needs the founder's accounts or a real iPhone):
 | `WARN ... ignores Range` | downloads work but cannot resume | expected only on some static hosts; R2 supports Range |
 | `FAIL remote-config: the payload does not match ...` or `FAIL content-bundle: ...` | signed, but the app would drop it and keep its defaults (kill switches included) | fix `scripts/packs/remote-config.json` or the content source, build and upload a new release |
 | `WARN remote-config: the app ignores or replaces ...` | the app keeps its default for those values | fix the named keys; `release` refuses them, so this means the hosted copy came from elsewhere |
-| `WARN ...: the host serves vN, but published.ts says vM` | the live copy is older than what was published (phones that have vM refuse vN) | upload the latest release |
-| `WARN ...: the host serves vN, newer than published.ts` | a release was uploaded but `published.ts` not committed | commit step 8 now |
+| `FAIL ...: the host serves vN, but published.ts says vM` | the live copy is older than what was published (phones that have vM refuse vN) | upload the latest release |
+| `FAIL ...: the host serves vN, newer than published.ts` | a release was uploaded but `published.ts` not committed | commit step 8 now |
+| `FAIL <document>: Cache-Control is ...` | the document is cached, which delays kill switches | upload it with `publish.ts upload` (it sets `no-cache`); no Cache Everything rule on documents |
+| `upload`: `does not verify against packages/api/src/keys.ts` | this working tree's `keys.ts` does not hold the key the release was signed with | keep both public lines in `keys.ts` (step 1), build the release again |
+| `upload`: `missing PACKS_S3_...` | the upload values are not in this terminal | `set -a; . ~/.config/early-letters/r2.env; set +a` (step 7) |
 | `upload`: `same_version_conflict` | `published.ts` was not committed after an earlier release | pull, commit, build the release again |
 
 ## Files

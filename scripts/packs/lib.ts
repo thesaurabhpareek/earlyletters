@@ -232,7 +232,7 @@ export function killSwitchSteps(killSwitches: Record<string, boolean>): string[]
     `  npx supabase secrets set ESCROW_SWITCH=${onOff('escrow')} --project-ref <scribe-escrow ref>`,
   ];
   steps.push(on.length ? `Switches on: ${on.join(', ')}.` : 'No switch is on.');
-  steps.push('If this publish clears a switch: a config more than 7 days old cannot clear a switch on a phone that first sees it late (F19-REQ-008), so run "publish.ts config" again each week for 4 weeks.');
+  steps.push('If this publish clears a switch: a config more than 7 days old cannot clear a switch on a phone that first sees it late (F19-REQ-008), so run "publish.ts release" and "upload" again each week for 4 weeks.');
   return steps;
 }
 

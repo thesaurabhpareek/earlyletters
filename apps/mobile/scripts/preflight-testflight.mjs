@@ -410,9 +410,9 @@ if (SERVER_ON) {
   else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the ${PROFILE} profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence} ${runbook}`);
   if (!keySet) {
     warn(
-      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\` twice, with two key ids, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
+      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\`, then \`node scripts/packs/keygen.mjs --backup\`, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
     );
-    step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs` twice, with two key ids, and paste both public lines)');
+    step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`, and paste both public lines)');
   } else {
     // The app and publish.ts take the first key with a given id, so a second key under the same id is never used (F19-REQ-002: two keys).
     const repeated = [...new Set(keyIds.filter((id, i) => keyIds.indexOf(id) !== i))];

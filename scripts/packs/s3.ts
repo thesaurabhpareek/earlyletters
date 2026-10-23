@@ -61,7 +61,7 @@ export const S3_ENV = {
 export function s3ConfigFromEnv(env: Record<string, string | undefined>): S3Config {
   const get = (k: keyof typeof S3_ENV) => (env[S3_ENV[k]] ?? '').trim();
   const missing = (['endpoint', 'bucket', 'accessKeyId', 'secretAccessKey'] as const).filter((k) => !get(k)).map((k) => S3_ENV[k]);
-  if (missing.length) throw new Error(`missing ${missing.join(', ')} (docs/ops/PACKS_HOSTING.md, "Upload")`);
+  if (missing.length) throw new Error(`missing ${missing.join(', ')} (docs/ops/PACKS_HOSTING.md, steps 5 and 7)`);
   const endpoint = get('endpoint').replace(/\/+$/, '');
   if (!/^https?:\/\/[^/\s]+$/.test(endpoint)) throw new Error(`${S3_ENV.endpoint} must be an origin such as https://<account-id>.r2.cloudflarestorage.com (no bucket, no path)`);
   // Signed requests and bodies never travel in clear; plain http only to this computer (the tests' fake bucket).
