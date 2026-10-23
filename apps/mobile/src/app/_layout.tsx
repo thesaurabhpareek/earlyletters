@@ -2,9 +2,10 @@ import '@/global.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { getLinkingURL } from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
@@ -27,8 +28,10 @@ import { startPacks } from '@/lib/packs';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
-import { getSetting, subscribe } from '@/lib/store';
+import { useRouteTransitions } from '@/lib/motion';
+import { getFamily, getSetting, subscribe, subscribeTo } from '@/lib/store';
 import { startSync } from '@/lib/sync';
+import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
 import { useStoreReady } from '@/dev/store-ready';
 
@@ -48,6 +51,26 @@ function useAppearance(): void {
   useEffect(() => {
     Uniwind.setTheme(appearance);
   }, [appearance]);
+}
+
+/** Whether a book is on this phone: the same test Tonight uses before it sends a person to first run. */
+const hasBookNow = (): boolean => getFamily() !== null;
+const subscribeToBook = (onChange: () => void) => subscribeTo(['children', 'settings'], onChange);
+
+/**
+ * R1: a phone with no book that opened at the root shows first run as the stack's first route, so the tabs never
+ * mount first (no tab bar and no unlit page between the age question and the welcome). The rule, and why the tabs
+ * then stay for the session, is tabsInStack in lib/transitions.logic.ts. The store is read through
+ * useSyncExternalStore, so a book made on first run's last step adds the tabs in the same render that dispatches
+ * first run's replace to "/".
+ */
+function useTabsInStack(): boolean {
+  const [atRoot] = useState(() => openedAtRoot(getLinkingURL()));
+  const hasBook = useSyncExternalStore(subscribeToBook, hasBookNow, hasBookNow);
+  const [hadTabs, setHadTabs] = useState(false);
+  const tabs = tabsInStack({ hasBook, openedAtRoot: atRoot, hadTabs });
+  if (tabs && !hadTabs) setHadTabs(true);
+  return tabs;
 }
 
 /** One service failing to start never stops the others or the app (each one also works offline). */
@@ -113,6 +136,9 @@ function Root() {
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
+  // How each route is presented and how it moves (EXPERIENCE_PASS 5.8): one table, read here, no duration typed.
+  const routes = useRouteTransitions();
+  const tabs = useTabsInStack();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
@@ -165,17 +191,21 @@ function Root() {
           <SessionProvider onUnder18={closeGate}>
             <ScreenViews />
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="write" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="listen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-              <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
-              <Stack.Screen name="read-together" options={{ presentation: 'fullScreenModal' }} />
-              <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
-              <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
+              {/* R1: with no book, first run is the first route and the tabs are not mounted behind it (useTabsInStack). */}
+              <Stack.Protected guard={tabs}>
+                <Stack.Screen name="(tabs)" options={routes['(tabs)']} />
+              </Stack.Protected>
+              <Stack.Screen name="onboarding" options={{ gestureEnabled: false, ...routes.onboarding }} />
+              <Stack.Screen name="write" options={routes.write} />
+              <Stack.Screen name="listen" options={{ gestureEnabled: false, ...routes.listen }} />
+              <Stack.Screen name="review" options={{ gestureEnabled: false, ...routes.review }} />
+              <Stack.Screen name="read-together" options={routes['read-together']} />
+              <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent, ...routes['letter/[id]'] }} />
+              <Stack.Screen name="settings" options={routes.settings} />
+              <Stack.Screen name="(auth)" options={routes['(auth)']} />
+              <Stack.Screen name="invite" options={routes.invite} />
               {/* After a new purchase of Plus, over the Keep gate or Settings, Plan (G-15). */}
-              <Stack.Screen name="plus/confirmed" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="plus/confirmed" options={routes['plus/confirmed']} />
             </Stack>
             <PendingInviteWatcher />
             {/* A plan reminder inside the app, once per reminder, on a calm tab root (G-15). */}

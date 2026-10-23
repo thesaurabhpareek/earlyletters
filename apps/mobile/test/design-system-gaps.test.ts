@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
 import { HEADER_TARGET, IDIOM, ROOT_ROUTE_CONTEXT, presentationFor, type NavContext } from '../src/lib/navigation.logic';
+import { routeTransitions, type RootRoute } from '../src/lib/transitions.logic';
 import { TRUST_COPY_MIN_PT, footerPlacement, pinnedFooterHeight } from '../src/lib/review-layout.logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -29,13 +30,18 @@ describe('(3) one back/close idiom per context', () => {
   });
 
   it('the root stack presents exactly the routes the table calls modal as modals', () => {
-    const layout = read('app/_layout.tsx');
-    for (const [route, ctx] of Object.entries(ROOT_ROUTE_CONTEXT)) {
-      const m = layout.match(new RegExp(`<Stack\\.Screen name="${route.replace(/[[\]()]/g, '\\$&')}"([^>]*)/>`));
-      if (!m) continue; // settings and onboarding mount without options
-      const presented = /presentation: '(modal|fullScreenModal)'/.test(m[1]);
-      expect(presented, route).toBe(presentationFor(ctx) === 'modal');
+    // Presentation lives in one table (lib/transitions.logic.ts routeTransitions, EXPERIENCE_PASS 5.8), which the
+    // root layout spreads into every Stack.Screen; the layout types none itself.
+    const layout = code(read('app/_layout.tsx'));
+    for (const r of [false, true]) {
+      const table = routeTransitions(r);
+      for (const [route, ctx] of Object.entries(ROOT_ROUTE_CONTEXT)) {
+        const presented = table[route as RootRoute].presentation === 'modal' || table[route as RootRoute].presentation === 'fullScreenModal';
+        expect(presented, route).toBe(presentationFor(ctx) === 'modal');
+        expect(layout, route).toMatch(new RegExp(`<Stack\\.Screen name="${route.replace(/[[\]()]/g, '\\$&')}"[^>]*routes(\\.|\\[')`));
+      }
     }
+    expect(layout).not.toMatch(/presentation:/);
   });
 
   it('every modal screen draws Close with ModalHeader (top right) and none draws it top-left or at the bottom', () => {
