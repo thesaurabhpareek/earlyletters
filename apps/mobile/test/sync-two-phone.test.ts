@@ -13,6 +13,8 @@
  * letter's words), so the conflict is between Mama's two phones while Papa reads.
  * The second describe is the held draft state table of ADR 0025 section 9, one case
  * per cell, on its own server with two phones of Mama's (P sends, Q is the other).
+ * The third, on its own server too, is the #182 re-check: a refused op that runs again
+ * after a lost answer and meets SCCON, with ops behind it that had applied.
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { randomBytes } from 'node:crypto';
@@ -2004,5 +2006,193 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     expect(draft(Q, edited)?.typedText).toBe('You found the red leaf and kept it.');
     expect(draft(Q, letGone)).toBeUndefined();
     expect(draft(P, letGone)).toBeUndefined();
+  }, 60_000);
+});
+
+describe('a refused op that runs again after a lost answer and meets SCCON: the ops behind it stay sent (#182 re-check)', () => {
+  let P: Phone; // its push answer is lost
+  let Q: Phone; // Mama's other phone, which erases
+  let papa: Phone; // reads the book
+  let BOOK = '';
+
+  beforeEach(async () => {
+    if (!server) return;
+    await server.sys('delete from sync_rate_windows');
+    // A case that failed midway never leaves consent withdrawn for the next one.
+    const g = (await server.sys('select sensitive_data from public.content_gate_state($1)', [MAMA])).rows[0];
+    if (g && !g.sensitive_data) await server.sensitiveConsent(MAMA, 'accept');
+  });
+
+  beforeAll(async () => {
+    server = await startSyncServer({ users: [MAMA, PAPA], protocol: 'v1' });
+    await server.consent(MAMA, PAPA);
+    P = await phone('P', MAMA);
+    Q = await phone('Q', MAMA);
+    papa = await phone('papa', PAPA);
+    BOOK = P.store.addChild({ name: 'Asha', birthday: '2025-04-12', dueDate: null, signsAs: 'Mama' }).id;
+    await P.signIn();
+    await Q.signIn();
+    const token = (await server.userSql(MAMA, `select public.create_child_invite($1, 'parent') t`, [BOOK])).rows[0].t;
+    await server.userSql(PAPA, 'select public.accept_child_invite($1)', [token]);
+    await papa.signIn();
+  }, 120_000);
+
+  interface Push {
+    ops: { op: string; type: string; id: string }[];
+    res: { paused?: boolean; results?: { op: string; ok: boolean; code?: string; dup?: boolean }[] } | null;
+  }
+  /** Every push P sends with the server's answer, recorded before a lost answer is dropped. */
+  const watch = () => {
+    const pushes: Push[] = [];
+    const s: SupabaseLike = {
+      rpc(fn, args) {
+        return Promise.resolve(server.serverFor(MAMA).rpc(fn, args)).then((res) => {
+          if (fn === 'sync_push') {
+            const ops = (args as { p_ops: Push['ops'] }).p_ops.map(({ op, type, id }) => ({ op, type, id }));
+            pushes.push({ ops, res: res.data as Push['res'] });
+          }
+          return res;
+        });
+      },
+    };
+    return { s, pushes };
+  };
+  const receipt = async (op: string) => (await server.sys('select 1 from sync_op_receipts where op_id = $1', [op])).rows.length === 1;
+  /** The queued ops of one letter or held draft, oldest first. */
+  const queuedFor = (p: Phone, id: string) =>
+    p.db.all<{ op_id: string; type: string; sent_at: string | null }>('SELECT op_id, type, sent_at FROM sync_outbox WHERE entity_id = ? ORDER BY seq', id);
+  const words = (p: Phone, id: string) => p.db.get<{ final_text: string; sync_state: string }>('SELECT final_text, sync_state FROM entries WHERE id = ?', id);
+  const heldText = async (id: string) => (await server.sys('select typed_text from held_drafts where id = $1', [id])).rows[0]?.typed_text as string | undefined;
+  const draftText = (p: Phone, id: string) => p.store.listHeldDrafts(BOOK).find((d) => d.id === id)?.typedText;
+
+  /**
+   * The re-check's case on the real SQL. P edits a letter offline (op B) that Q has erased with Erase now, so
+   * B is refused SCDEL purged: its block rolls back, and its claim with it. `queue` puts ops that apply behind
+   * B in the same batch. The answer is lost. Consent is then withdrawn, so the retry runs B again, B meets
+   * SCCON before anything else, and the server answers paused with no results.
+   */
+  const refusedThenPaused = async (queue: () => void) => {
+    const erased = writeLetter(P, BOOK, 'You ate a whole pear.');
+    await P.sync();
+    await Q.sync();
+    editWords(P, erased, 'You ate a whole pear, and the core.'); // offline: op B
+    const opB = queuedFor(P, erased)[0].op_id;
+    queue();
+    tick();
+    Q.store.deleteEntry(erased);
+    expect(Q.store.eraseEntry(erased, () => {})).toBe(true);
+    await Q.sync();
+
+    const w = watch();
+    expect((await P.sync(flaky(w.s, { loseAnswer: 1, only: 'sync_push' }))).phase).toBe('offline');
+    const [first] = w.pushes;
+    expect(first.ops[0].op).toBe(opB);
+    expect(first.res?.results).toHaveLength(first.ops.length);
+    expect(first.res?.results?.[0]).toMatchObject({ op: opB, ok: false, code: 'SCDEL', gone: true });
+    expect(first.res?.results?.slice(1).every((r) => r.ok)).toBe(true); // the ops behind B applied
+    expect(await receipt(opB)).toBe(false); // refused, so not claimed
+
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    tick(2_000);
+    expect((await P.sync(w.s)).phase).toBe('paused_consent');
+    expect(w.pushes[1]).toMatchObject({ ops: first.ops, res: { paused: true, results: [] } }); // the same batch; B met SCCON
+    return { erased, opB, w };
+  };
+
+  it('[F16-REQ-025] [LEGAL-REQ-009] an edit of the letter behind it, made while the retry waits for consent, reaches the server, the author\'s other phone and the co-parent', async () => {
+    const bus = writeLetter(P, BOOK, 'You waved at the bus.');
+    await P.sync();
+    await Q.sync();
+    await papa.sync();
+    let opA = '';
+    const { erased, opB, w } = await refusedThenPaused(() => {
+      editWords(P, bus, 'You waved at the bus, and the driver waved back.'); // op A, behind B
+      opA = queuedFor(P, bus)[0].op_id;
+    });
+    expect(await receipt(opA)).toBe(true);
+    expect((await serverEntry(bus))?.final_text).toBe('You waved at the bus, and the driver waved back.'); // A applied on the first run
+
+    // A may have applied under its op id (it did), so the paused answer leaves it as sent: never rewritten.
+    // Before the fix it was reset to never sent, the edit below rewrote it in place under the same op id,
+    // the server answered that op dup, and the newer words stayed on P alone, marked synced.
+    expect(queuedFor(P, bus)).toEqual([{ op_id: opA, type: 'entry.upsert', sent_at: expect.any(String) }]);
+    const latest = 'You waved at the bus, the driver waved back, and you laughed.';
+    editWords(P, bus, latest);
+    const ops = queuedFor(P, bus);
+    expect(ops).toHaveLength(2);
+    expect(ops[0]).toMatchObject({ op_id: opA, sent_at: expect.any(String) });
+    expect(ops[1]).toMatchObject({ type: 'entry.upsert', sent_at: null });
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    expect(await P.sync(w.s)).toMatchObject({ rejected: 1, conflicts: 0, phase: 'idle' });
+    const [retry, edit] = w.pushes.slice(-2);
+    expect(retry.res?.results).toEqual([
+      expect.objectContaining({ op: opB, ok: false, code: 'SCDEL' }), // refused for good this time
+      expect.objectContaining({ op: opA, ok: true, dup: true }),
+    ]);
+    expect(edit).toMatchObject({ ops: [{ op: ops[1].op_id }], res: { results: [{ ok: true, applied: true }] } });
+    expect(outbox(P)).toEqual([]);
+
+    expect((await serverEntry(bus))?.final_text).toBe(latest);
+    expect(words(P, bus)).toEqual({ final_text: latest, sync_state: 'synced' });
+    expect(P.store.listConflicts(bus)).toEqual([]);
+    expect(P.db.all('SELECT code FROM rejected_writes WHERE entity_id = ?', bus)).toEqual([]);
+    // B's words are never lost either: refused as gone, its letter stays on P in Recently deleted.
+    expect(P.db.all('SELECT op_id, code FROM rejected_writes WHERE entity_id = ?', erased)).toEqual([{ op_id: opB, code: 'SCDEL' }]);
+    expect(P.store.listDeleted().map((e) => e.id)).toContain(erased);
+    expect(await serverEntry(erased)).toBeUndefined();
+
+    await Q.sync();
+    await papa.sync();
+    expect(words(Q, bus)?.final_text).toBe(latest);
+    expect(words(papa, bus)?.final_text).toBe(latest);
+    expect(Q.store.listConflicts(bus)).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-029] [LEGAL-REQ-009] a held draft edited and a new letter deleted behind it while the retry waits for consent: the edit reaches the other phone, and the letter stays deleted everywhere', async () => {
+    tick(5_000);
+    const hum = P.store.createDraft({ childId: BOOK, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'You hummed at the rain.' }).id;
+    expect(P.store.holdDraft(hum, { inBookChoice: true })).toBe(true);
+    await P.sync();
+    await Q.sync();
+    expect(draftText(Q, hum)).toBe('You hummed at the rain.');
+    let step = '';
+    const { w } = await refusedThenPaused(() => {
+      P.store.setDraftTyped(hum, 'You hummed at the rain, then at me.'); // a held.upsert behind B
+      step = writeLetter(P, BOOK, 'You climbed the step.'); // a first upload behind B
+    });
+    expect(await heldText(hum)).toBe('You hummed at the rain, then at me.'); // both applied on the first run
+    expect((await serverEntry(step))?.deleted_at).toBeNull();
+    await papa.sync();
+    expect(row(papa, step)).not.toBeNull();
+
+    const latest = 'You hummed at the rain, then at me, then at the cat.';
+    P.store.setDraftTyped(hum, latest);
+    expect(queuedFor(P, hum).map((o) => [o.type, o.sent_at === null])).toEqual([['held.upsert', false], ['held.upsert', true]]); // a new op
+    tick();
+    P.store.deleteEntry(step);
+    expect(queuedFor(P, step).map((o) => o.type)).toEqual(['entry.upsert', 'entry.delete']); // the upload may be on the server: the delete goes
+    expect((await P.sync(w.s)).phase).toBe('paused_consent'); // deletions still go during the pause
+    expect((await serverEntry(step))?.deleted_at).not.toBeNull();
+    expect(queuedFor(P, step)).toEqual([]); // the delete the server took dropped the upload queued before it
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    await P.sync(w.s);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect(await heldText(hum)).toBe(latest);
+    expect((await serverEntry(step))?.deleted_at).not.toBeNull(); // the upload that waited never brought it back
+    expect(draftText(P, hum)).toBe(latest);
+    expect(P.store.listConflicts(hum)).toEqual([]);
+    expect(P.store.listDeleted().map((e) => e.id)).toContain(step);
+
+    await Q.sync();
+    await papa.sync();
+    expect(draftText(Q, hum)).toBe(latest);
+    expect(Q.store.listHeldDrafts(BOOK).filter((d) => d.id === hum)).toHaveLength(1);
+    expect(row(papa, step)).toBeNull();
+    expect(row(Q, step)?.deleted_at).not.toBeNull();
   }, 60_000);
 });
