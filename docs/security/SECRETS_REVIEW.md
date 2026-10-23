@@ -1,6 +1,6 @@
 # Release secrets and permissions review (RA-01-01)
 
-Status: S01 review of the release automation plan (`docs/release/AUTOMATION.md` revision 2 and ADR 0026, on `develop` at c9a192d), Fri 16 Oct 2026. Package RA-01-01 (AUTOMATION.md section 5): done before any secret is added. File owner: S01 (`docs/security/**`).
+Status: S01 review of the release automation plan (`docs/release/AUTOMATION.md` revision 2 and ADR 0026, on `develop` at c9a192d), Fri 16 Oct 2026. Package RA-01-01 (AUTOMATION.md section 5): done before any secret is added. File owner: S01 (`docs/security/**`). Revised Fri 23 Oct 2026 on #206: an owner and a "By" for every fix, from the content review (comment 6247630897), and the staging rows moved to the 17 Oct rule, from the correctness review (comment 6247806622).
 
 This file is a review and a checklist. Nothing here sets, reads or changes a secret, a variable, an environment or a setting; agents never do (AUTOMATION.md 2.11). Every value named below is a name only.
 
@@ -12,6 +12,8 @@ Labels, as in AUTOMATION.md:
 - **[R]** read from this repository, its 175 remote branches or the public GitHub API on 16 Oct.
 - **[U]** unverified, with what would confirm it. **[A]** an assumption we act on. **[Rec]** a recommendation.
 
+**Dates.** Each "By" is a day in Pacific time from the alpha calendar: AUTOMATION.md 0.2 and section 6, and #152 section 2.2 (`docs/release/ALPHA_PLAN.md`, open). Where a gate exists, the "By" names it, because the calendar can move. A planned day that has passed is marked overdue; its gate still holds. The calendar is itself under review: build 2 freeze is planned for Tue 27 Oct, 5:00 AM PT, and a proposal, not decided, moves it to Tue 3 Nov, 5:00 AM PT; the founder decides by Sat 24 Oct, 5:00 PM PT. "After the alpha" means after the go/no-go (planned Thu 29 Oct); those items get a day in the post-alpha re-plan (D-106). Facts marked [R, 23 Oct] were read on Fri 23 Oct.
+
 ## 1. Do this now: reissue the repository `EXPO_TOKEN` from a robot user
 
 This is the security reviewer's note on #185 (comment 6223027884): reissue the kept repository `EXPO_TOKEN` from an Expo robot user now, and revoke the original.
@@ -20,6 +22,8 @@ Why now:
 - **Every writer can read a repository secret.** "Any user with write access to your repository has read access to all secrets configured in your repository" [V2b]. A workflow pushed on any branch runs [V1] and reads it, and so does any pull request from a branch of this repository; only runs from forks are refused [V2d]. Branch protection does not change this. Every agent session has write access.
 - **The original may be personal.** It was made for TESTFLIGHT.md step 1 ("Expo account, Access tokens") [R: `.github/workflows/testflight.yml` header]. A personal access token "applies to all content on your Personal Account, as well as any Personal Accounts or Organizations that you have been granted access to" [V37].
 - **A robot is contained.** A robot user "cannot sign in to any Expo products, cannot own any projects themselves, and can only authenticate via an access token", and it takes a role [V37]. Revoking its token touches nothing else.
+
+**Owner:** founder. **By:** overdue (asked for on Fri 16 Oct; section 11 still shows it pending). At the latest before AF-07 creates `testflight` (planned Wed 21 Oct, AUTOMATION 0.2 row 11), which takes a token from the same robot.
 
 Steps (founder, about 10 minutes):
 1. In the Expo account that owns the project, create a robot user, for example `gha-testflight`, with the **Developer** role. Then create one access token for it.
@@ -30,7 +34,7 @@ Steps (founder, about 10 minutes):
 4. On your own computer, run `EXPO_TOKEN=<new token> npx eas-cli@24.10.0 whoami`. It should name the robot, not you [U: exact output].
 5. Add a line to the log in section 11: the date and the robot's name, never the value.
 
-When AF-07 creates the `testflight` environment, give it a **new** token for the same robot. When AF-22 deletes the repository secret, revoke the interim token as well. The value that was readable from every branch then stops working.
+When AF-07 creates the `testflight` environment (planned Wed 21 Oct), give it a **new** token for the same robot. When AF-22 deletes the repository secret (after the alpha), revoke the interim token as well. The value that was readable from every branch then stops working.
 
 ## 2. What the settings show today [R]
 
@@ -54,19 +58,19 @@ So none of AF-02 (approver), AF-03 (branch protection), AF-07 (first environment
 
 ## 3. Findings this review adds to the plan
 
-AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. These findings are new, and each names the owner of the file it changes.
+AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. These findings are new. Each fix names its owner (for a file, the file's owner) and a "By".
 
 **SR-1. `claude.yml` reads secrets on pull request events today.** Severity: High, if the secrets exist.
 - **What it does.** `claude.yml` triggers on `pull_request_review` and `pull_request_review_comment` as well as `issue_comment` and `issues` [R]. Review events run the workflow file from the pull request's merge commit, with `GITHUB_REF` set to `refs/pull/<n>/merge` [V1, V34]. The job reads `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN` [R] with `contents: write` and `id-token: write`.
 - **Who can reach it.** Any branch of this repository can change `claude.yml` in its own pull request and trigger it with a review. It ran on #112 on 15 Oct [R].
 - **The plan is wrong on this.** AUTOMATION.md 1.1 and ADR 0026 context item 3 say `claude.yml` "goes live when the default branch changes". That holds for `issue_comment` and `issues` only.
-- **Fix, S20 in RA-20-02a:**
+- **Fix, S20 in RA-20-02a.** By: overdue (planned Mon 19 Oct, AUTOMATION section 6, window 2; both review triggers are still in `claude.yml` on `develop` [R, 23 Oct]). It must land before AF-05 makes `develop` the default branch (AUTOMATION 0.2 row 9, planned by Wed 21 Oct; the default branch is still `main` [R, 23 Oct]). The fix:
   - remove the two review triggers;
   - replace `./.github/actions/setup` with no install, or with `npm ci` (SR-9);
   - correct 1.1 and the ADR's context item.
 
   Once the secrets live in the `agents` environment, review-triggered runs are refused by its `develop` ref rule anyway [V2]. Removing the triggers keeps them from failing red on every review.
-- **Fix, founder.** Do not add either Anthropic secret as a repository secret. If one exists, delete it now (section 8 shows whether it does).
+- **Fix, founder.** Do not add either Anthropic secret as a repository secret. If one exists, delete it now (section 8 shows whether it does). By: at the section 8.2 read-back, overdue (planned Mon 19 Oct with AF-02 and AF-03, AUTOMATION 0.2 row 5).
 
 **SR-2. The plan's `production` environment already exists as Vercel's `Production`.** Severity: Medium. It blocks `SUPABASE_DB_URL_PROD`.
 - **What exists.** The Vercel integration records its deployments in GitHub environments `Production` and `Preview`. Querying deployments for `production` returns the `Production` ones [R], so the API matches environment names without regard to case.
@@ -77,15 +81,15 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
   - AUTOMATION.md 2.0;
   - ADR 0026 decision 5.
 
-  Do it before AF-42. `staging` does not clash. The drift job's expected file (RA-20-12) lists `Production` and `Preview` too, so that a secret added to either one shows up.
+  By: before AF-42 and before `SUPABASE_DB_URL_PROD` is added (both after the alpha). #236 carries the `deploy-db.yml` and AUTOMATION.md 2.0 parts. `staging` does not clash. The drift job's expected file (RA-20-12) lists `Production` and `Preview` too, so that a secret added to either one shows up.
 
 **SR-3. A tag runs its own workflow file, and the approver cannot push tags.** Severity: Medium.
 - **How a tag run works.** A push of `db-v*` or `ios-v*`, or a push to `release/*`, runs the workflow file at that commit. Every agent session can create those refs today: there are no rulesets [R]. So the job's own "tag must point at a commit on main" step [R: `deploy-db.yml`] is not a control, because a modified workflow drops it. For `production` (`db-production`) and `app-store`, the approver's click is the only control.
 - **Why a ruleset does not help.**
   - The approver cannot push the tags themselves. With "Prevent self-review" on, "users who initiate a deployment cannot approve the deployment job" [V2], so they could never approve their own run.
   - A ruleset cannot tell the coordinator from other agent sessions, because they use the same account.
-- **Fix, founder.** The approver runs the check in section 5 before every click. AF-23 still makes sense for immutability: restrict updates and deletions of `db-v*` and `ios-v*` tags [Rec].
-- **Fix, S20.** `docs/ops/DEPLOY.md` section 3 puts "repository admin (you)" on the tag ruleset's bypass list. That is the account agents use, so it should not be presented as a gate.
+- **Fix, founder.** The approver runs the check in section 5 before every click. AF-23 still makes sense for immutability: restrict updates and deletions of `db-v*` and `ios-v*` tags [Rec]. By: the check from the first approval in any environment (the first `staging` run after AF-07, planned Wed 21 Oct, AUTOMATION 0.2 row 11); AF-23 after the alpha (AUTOMATION section 4).
+- **Fix, S20.** `docs/ops/DEPLOY.md` section 3 puts "repository admin (you)" on the tag ruleset's bypass list. That is the account agents use, so it should not be presented as a gate. By: before any tag ruleset is created (DEPLOY.md section 3, or AF-23 after the alpha); the line is still there [R, 23 Oct].
 
 **SR-4. `docs/ops/DEPLOY.md` section 2 contradicts AF-02 and AF-07.** Severity: Medium.
 - It says:
@@ -93,12 +97,12 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
   - staging's branch rule is `main` only;
   - for production, "Leave 'Prevent self-review' off while you are the only reviewer".
 - A founder who follows DEPLOY.md gets the weaker setup.
-- **Fix, S20.** Point DEPLOY.md section 2 at AUTOMATION.md AF-02 and AF-07 (approver only, prevent self-review on, admin bypass off, staging refs `develop` and `main`) before AF-07.
+- **Fix, S20.** Point DEPLOY.md section 2 at AUTOMATION.md AF-02 and AF-07 (approver only, prevent self-review on, admin bypass off, staging ref `develop` only, as DEPLOY.md and AUTOMATION.md 2.0 have said since 17 Oct). By: before AF-07 (planned Wed 21 Oct, AUTOMATION 0.2 row 11), so overdue. DEPLOY.md section 2 now names a reviewer and `develop` only, but still says to leave "Prevent self-review" off; AF-07's own row in AUTOMATION.md section 4 still says `develop` and `main` [R, 23 Oct].
 
 **SR-5. Variables that secret-holding jobs read can be changed without review.** Severity: Medium.
 - Repository and environment variables are changed in Settings, which the owner credential in every agent session can reach [V-S01]. A variable change also leaves no pull request.
 - `EAS_CLI_VERSION` decides which package runs next to `EXPO_TOKEN`.
-- **Fix, S20 in RA-20-06:**
+- **Fix, S20 in RA-20-06.** By: with RA-20-06 (after the alpha), and before a secret-holding job reads any of these variables. The fix:
   - keep the eas-cli pin in a reviewed file (the workflow's `env:` or a file under `.github/`);
   - if it stays a variable, pass it through `env:` and refuse anything but `^[0-9]+\.[0-9]+\.[0-9]+$`;
   - give `EAS_IOS_BUILD_CAP` (digits only) and `NIGHTLY_PROFILE` (`testflight` or `preview` only) the same treatment.
@@ -106,16 +110,16 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
 
 **SR-6. `ASC_REVIEW_CONTACT_JSON` is structured data.** Severity: Low.
 - GitHub's guidance: "do not use a blob of JSON, XML, or YAML ... to encapsulate a secret value, as this significantly reduces the probability the secrets will be properly redacted" [V2b]. The value is the founder's own contact details, which would land in a public log.
-- **Fix, S20 on #110.** Either split the value into one secret per field, or write `::add-mask::` for each field right after parsing and before any step prints.
+- **Fix, S20 on #110.** Either split the value into one secret per field, or write `::add-mask::` for each field right after parsing and before any step prints. By: before #110 merges and before `ASC_REVIEW_CONTACT_JSON` is added (store lane, after the alpha).
 
 **SR-7. Database URLs: mask the decoded password too.** Severity: Low.
 - The URL is percent-encoded (DEPLOY.md step 5) [R]. GitHub masks only exact matches, and a transformed value must be registered separately [V2b]. A CLI error that prints the decoded password would not be masked.
-- **Fix, S20 in RA-20-04.** Before the CLI runs, a step decodes the password and writes it with `::add-mask::`. The same applies to `SUPABASE_LINT_DB_URL_STAGING` in `advisors.yml`.
+- **Fix, S20 in RA-20-04.** Before the CLI runs, a step decodes the password and writes it with `::add-mask::`. The same applies to `SUPABASE_LINT_DB_URL_STAGING` in `advisors.yml`. By: before `SUPABASE_DB_URL_STAGING` is added (AF-07, planned Wed 21 Oct, AUTOMATION 0.2 row 11), so overdue. RA-20-04 merged in #205 on Sun 18 Oct without it, and neither `deploy-db.yml` nor `deploy-functions.yml` masks the decoded password [R, 23 Oct]. For `advisors.yml`, with RA-20-12 (after the alpha).
 
 **SR-8. A function-deploy token is worth the whole staging backend.** Severity: Medium.
 - Code deployed with `SUPABASE_ACCESS_TOKEN_STAGING` runs with every function secret and the service role [A: Edge Functions read their secrets from the environment, `docs/ops/SECURITY.md` section 1]. That covers `TOKEN_KEK_V<n>`, the Apple keys and the Resend key.
-- **Fix.**
-  - Put the token only in `staging`, which has an approver, never in `health` or `agents`.
+- **Fix, founder** (who issues and adds every value, section 4). By: before `SUPABASE_ACCESS_TOKEN_STAGING` is added to any environment. The first function deploys it could serve are AF-13's (planned Thu 22 Oct, AUTOMATION 0.2 row 12).
+  - Put the token only in `staging`, which has an approver, never in `health` or `agents`. S20's `deploy-functions.yml` reads it only in its `staging` job [R, 23 Oct].
   - Use a scoped token with an expiry.
   - For the alpha, prefer the "NOT DEPLOYED" path: functions deploy from the founder's computer (AUTOMATION.md 2.2) [Rec].
 
@@ -126,7 +130,7 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
   - `testflight.yml` on `develop` and on #145: setup-node's download cache, then `npm ci`;
   - `release-ios.yml` on #110, jobs `build` and `metadata`: "Install from the lockfile, no cache";
   - `deploy-db.yml`: no install at all [R].
-- **Fix, S20.** RA-20-02a for `claude.yml`; the `agents` move for `agents.yml`.
+- **Fix, S20.** RA-20-02a for `claude.yml`; the `agents` move for `agents.yml`. By: `claude.yml` with RA-20-02a (overdue, planned Mon 19 Oct); `agents.yml` with the `agents` move (AF-22, after the alpha) and before `AGENTS_ENABLED` is turned on.
 
 **SR-10. Unpinned actions in secret-holding jobs.** Severity: Medium.
 - Each of these actions either receives a secret or runs before a step that does, in the same job [R]:
@@ -135,31 +139,31 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
   - `actions/checkout@v4` and `actions/setup-node@v4`, in `testflight.yml` on `develop` and on #145;
   - `actions/setup-node@v4` and `actions/cache/restore@v4`, inside `.github/actions/setup`.
 - `release-ios.yml` on #110 and `deploy-db.yml` pin by SHA [R].
-- **Fix, S20.** RA-20-06a for `testflight.yml` before its environment secret; RA-20-02a for `claude.yml`; RA-20-03c for the rest.
+- **Fix, S20.** RA-20-06a for `testflight.yml` before its environment secret; RA-20-02a for `claude.yml`; RA-20-03c for the rest. By: RA-20-06a before the `testflight` `EXPO_TOKEN` is added (AF-07, planned Wed 21 Oct; #145 is still open [R, 23 Oct]); RA-20-02a overdue (planned Mon 19 Oct); RA-20-03c after the alpha.
 
 **SR-11. Any branch can create an environment.** Severity: Low.
 - "Running a workflow that references an environment that does not exist will create an environment with the referenced name ... the newly created environment will not have any protection rules or secrets configured. Anyone that can edit workflows in the repository can create environments via a workflow file" [V2c].
-- **Fix, founder.** Create each environment with its rules before any secret, and before the first workflow that names it runs. Then read it back (section 8).
-- **Fix, S20 in RA-20-12.** The drift job raises an issue for any environment that is not in the expected file.
+- **Fix, founder.** Create each environment with its rules before any secret, and before the first workflow that names it runs. Then read it back (section 8). By: `staging` and `testflight` with AF-07 (planned Wed 21 Oct, AUTOMATION 0.2 row 11); the others with AF-22 (after the alpha). For `staging` this is already late: a job that names it ran on Sun 18 Oct (section 8.1).
+- **Fix, S20 in RA-20-12.** The drift job raises an issue for any environment that is not in the expected file. By: with RA-20-12 (after the alpha).
 
 **SR-12. More connectors reach production systems than the plan lists.** Severity: High for Resend if it is the product's sending account [U], Medium otherwise. Section 7 has the table.
 - **Resend.** The connector in this session can list and read sent emails [R: tool names `list-emails`, `get-email`]. If it is the account that sends the app's emails, it can read the sign-in links sent to families.
 - **Gmail.** It reads the founder's inbox, where `hello@` forwards [R: `docs/ops/DOMAINS.md`]. That inbox gets account-recovery and verification mail for GitHub, Expo, Apple and Supabase. So the approver account (AF-02) needs an email address that no connector reads.
-- **Fix, founder.** Check both connectors and apply section 7.
+- **Fix, founder.** Check both connectors and apply section 7. By: Gmail when AF-02 picks the approver's email (overdue, planned Mon 19 Oct, AUTOMATION 0.2 row 5); Resend before staging sends its first sign-in email (rehearsal R1, planned Fri 23 Oct, #152 section 2.1).
 
 **SR-13. The harness keys may already be repository secrets, serving nothing.** Severity: Medium.
 - `docs/release/HARNESS_SETUP.md` sections 2 and 3 store `OPENROUTER_API_KEY` and `AGENTS_APP_PRIVATE_KEY` as repository secrets [R]. Whether the founder did so is [U] (section 8).
 - While `AGENTS_ENABLED` is off, they do nothing, yet every branch can read them.
-- **Fix, founder.** Delete them now, and add them to `agents` when RA-20-02a and the `agents` move land.
-- **Fix, S20.** Update HARNESS_SETUP.md to the `agents` environment.
+- **Fix, founder.** Delete them now, and add them to `agents` when RA-20-02a and the `agents` move land. By: the deletion at the section 8.2 read-back (overdue, planned Mon 19 Oct); the move with AF-22 (after the alpha).
+- **Fix, S20.** Update HARNESS_SETUP.md to the `agents` environment. By: with the `agents` move (AF-22, after the alpha).
 
 **SR-14. The lint role's password stays out of the repository.** Severity: Medium.
 - The repository is public, so S02's migration must not carry the password. It creates the role `nologin` or without a password. The founder sets `login password` on staging by hand, and S01 signs off on the read-back in section 8.4.
-- **Fix, S02.** Build the lint-role migration that way.
+- **Fix, S02.** Build the lint-role migration that way. By: when S02 opens the lint-role migration (RA-07-03's request, after the alpha).
 
 **SR-15. The file name differs from the plan.** Severity: Low.
-- AUTOMATION.md section 5 names `docs/security/RELEASE_SECRETS_REVIEW.md`. The coordinator assigned `docs/security/SECRETS_REVIEW.md`, which is this file.
-- **Fix, S20.** Update the link in AUTOMATION.md section 5.
+- AUTOMATION.md section 5 named `docs/security/RELEASE_SECRETS_REVIEW.md`. The coordinator assigned `docs/security/SECRETS_REVIEW.md`, which is this file.
+- **Fix.** Update the link in AUTOMATION.md section 5 (S20's file). Done on #206, Fri 23 Oct, as its content review suggested: a one-line change.
 
 ## 4. Every secret and variable the plan names
 
@@ -172,7 +176,7 @@ Who owns what:
 
 ### 4.1 `staging`
 
-Approver; refs `develop` and `main`. Workflows: S20.
+Approver; ref `develop` only (staging follows `develop`, and a push to `main` deploys nothing to a database: the 17 Oct rule in `docs/ops/DEPLOY.md` and AUTOMATION.md 2.0). Workflows: S20.
 
 | Name | Read by | Scope it must have | Rotate | A leak shows as | Revoke and replace |
 |---|---|---|---|---|---|
@@ -213,7 +217,7 @@ Approver; tags `ios-v*`, branches `release/*`. Workflow: S20 (#110, RA-20-08).
 
 | Name | Read by | Scope | Rotate | A leak shows as | Revoke and replace |
 |---|---|---|---|---|---|
-| `EXPO_TOKEN` (store-lane robot) | `release-ios.yml`, jobs `build` and `metadata` | Developer, as 4.3, but **a second robot user**, so that each revokes alone [Rec] | 90 days | As 4.3 | As 4.3 |
+| `EXPO_TOKEN` (store-lane robot) | `release-ios.yml`, jobs `build` and `metadata` | Developer, as 4.3, but **a second robot user**, so that each revokes alone [Rec; owner: founder; by: before this secret is added (section 9), store lane, after the alpha] | 90 days | As 4.3 | As 4.3 |
 | `ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`, `ASC_API_KEY_P8` (key `gha-release`) | the jobs RA-20-08 adds: `screenshots`, `submit-review`, `phased` | App Manager team key, separate from `gha-testers` | yearly | As 4.4 | As 4.4 |
 | `ASC_REVIEW_CONTACT_JSON` | `release-ios.yml`, job `metadata`, step "Add the App Review contact and copyright from the secret" | Personal data (the founder's contact details), not a credential. JSON defeats log redaction (SR-6) | when it changes | It appears in a public run log | Delete the run's logs [V2b], then change the secret |
 
@@ -280,7 +284,7 @@ User-owned private repositories on GitHub Free get no environment reviewers and 
 | Distribution certificate, provisioning profile, the App Store Connect key EAS holds | EAS credentials | A Developer token "can manage credentials" [V37], so an `EXPO_TOKEN` leak is also a credentials incident. Revoke the key EAS holds (App Manager, AF-10) and check the certificate [U: whether a Developer can download it] |
 | Function secrets (`TOKEN_KEK_V<n>`, Apple keys, `PURGE_WORKER_SECRET`, Resend, PostHog) | Supabase function secrets | Governed by `docs/ops/SECURITY.md`; never in GitHub |
 | The packs signing key | The founder's computer and password manager | Never in CI (ADR 0026 decision 8) |
-| The accounts behind every token (Apple, Expo, Supabase, Cloudflare, Vercel, GitHub, App Store Connect) | | Two-factor sign-in without SMS where it is offered [Rec] |
+| The accounts behind every token (Apple, Expo, Supabase, Cloudflare, Vercel, GitHub, App Store Connect) | | Two-factor sign-in without SMS where it is offered [Rec]. Owner: founder. By: GitHub and Expo before the section 1 reissue (overdue); the others before the first environment secret (AF-07, planned Wed 21 Oct, AUTOMATION 0.2 row 11) |
 
 ## 5. Environment protection rules
 
@@ -288,7 +292,7 @@ All of these are required before the environment's first secret. "Read back" is 
 
 | Environment | Required reviewer | Prevent self-review | Admin bypass | Deployment refs | Read back |
 |---|---|---|---|---|---|
-| `staging` | the approver only | on | off | branches `develop`, `main` | not readable by agents; no deployments recorded |
+| `staging` | the approver only | on | off | branch `develop` only (the 17 Oct rule) | not readable by agents; no deployments recorded on 16 Oct, one on Sun 18 Oct (section 8.1) |
 | `db-production` (SR-2) | the approver only | on | off | tag `db-v*` only, no branch rule | `production` exists as Vercel's `Production`; its rules are unknown |
 | `testflight` | the approver until AF-21, then none | on | off | branch `develop` only | not readable |
 | `testers` | the approver only | on | off | branch `develop` | not readable |
@@ -336,7 +340,7 @@ All 175 remote branches were scanned on 16 Oct [R]. They hold 23 distinct workfl
 | `agents-check.yml` | `develop` | `pull_request` (paths); push | none | none | `contents: read` | no |
 | `agents.yml` | `develop` | `schedule`; dispatch | `AGENTS_APP_PRIVATE_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` (repository) | none; `agents` after the move | `plan`: contents read, issues write, pull requests read, checks read, actions read. `run`: contents write, pull requests write, issues write, checks read, actions read, id-token write | no trigger, but repository secrets reach any branch |
 | `claude.yml` | `develop` and every branch cut from it | `issue_comment`, `issues`; **`pull_request_review`, `pull_request_review_comment`** | `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` (repository) | none | `claude`: contents write, pull requests write, issues write, actions read, id-token write | **yes (SR-1)** |
-| `deploy-db.yml` | `develop`; `chore/staging-from-develop` adds dispatch | push to `main`; tags `db-v*` | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `staging`, `production` | `contents: read` | no |
+| `deploy-db.yml` | `develop` (#205, merged Sun 18 Oct, replaced the push to `main` [R, 23 Oct]) | push to `develop`; dispatch on `develop` as the catch-up; tags `db-v*` | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `staging`, `production` | `contents: read` | no |
 | `testflight.yml` | `develop`; #145 | dispatch | `EXPO_TOKEN` (repository) | none; RA-20-06a adds `testflight` | `contents: read` | no trigger, but the repository secret reaches any branch |
 | `web.yml`, `web-e2e.yml` | `main` | `pull_request` (paths); push | none | none | `contents: read` | no |
 | `fence.yml` | #30 | `pull_request_target` | none; `GITHUB_TOKEN` only | none | `contents: read`, `pull-requests: read` | no: it checks out nothing and runs only the base commit's rules [R] |
@@ -367,21 +371,25 @@ The five rules that keep the answer "no":
 
 AUTOMATION.md 2.11 names the Supabase, Vercel and mail connectors. This session also has the others below [R: this session's tool list]. Agents do not use them against staging, production or the founder's inbox (2.11). These are the settings that turn that rule into a limit.
 
-| Connector | What it reaches | Rule |
-|---|---|---|
-| GitHub | The founder's own account (the owner): merges, tag pushes, dispatches, and until AF-02, approvals | AF-02, AF-03; the durable fix is AF-27 |
-| Supabase | Every project in the authorized organization: SQL, migrations, function deploys, function secrets [V-S01; R: tool names include `execute_sql`, `apply_migration`, `create_edge_function_secret`] | AF-06: staging and production in an organization the connector is not authorized for, or the connector read-only and scoped to a development project |
-| Vercel | Promotions, rollbacks and project environment variables [R: tools `request_promote`, `request_rollback`, `get_project_env`, `edit_project_env`]. Sensitive variables "are non-readable once created" [V-Vercel] | Production changes are founder actions. Mark every server-side website variable Sensitive [Rec]; which variables the project holds is [U] |
-| Gmail | The founder's inbox: `hello@` forwards there [R: DOMAINS.md], and so do recovery and verification mail for GitHub, Expo, Apple and Supabase | The approver account's email is one no connector reads. The TestFlight feedback mailbox is not connected (AUTOMATION.md 2.7) |
-| Resend | Lists and reads sent emails, sends email, creates API keys [R: tool names] | Check which Resend account it is [U]. If it is the account that sends the app's sign-in emails, disconnect it from agent sessions: it can read sign-in links (SR-12) |
-| PayPal | Invoices and payment links [R: tool names] | Not a release credential; disconnect it if unused [Rec] |
-| Google Drive, Docs, Sheets, Calendar; Notion; Figma; Wispr Flow | Documents and notes | Never paste a secret value into them, a pull request, an issue or an agent chat |
+| Connector | What it reaches | Rule | Owner and by |
+|---|---|---|---|
+| GitHub | The founder's own account (the owner): merges, tag pushes, dispatches, and until AF-02, approvals | AF-02, AF-03; the durable fix is AF-27 | Founder. AF-02 and AF-03 overdue (planned Mon 19 Oct, AUTOMATION 0.2 row 5); AF-27 after the alpha |
+| Supabase | Every project in the authorized organization: SQL, migrations, function deploys, function secrets [V-S01; R: tool names include `execute_sql`, `apply_migration`, `create_edge_function_secret`] | AF-06: staging and production in an organization the connector is not authorized for, or the connector read-only and scoped to a development project | Founder. AF-06 (planned Fri 16 Oct as #152 F04), before `SUPABASE_DB_URL_STAGING` is added |
+| Vercel | Promotions, rollbacks and project environment variables [R: tools `request_promote`, `request_rollback`, `get_project_env`, `edit_project_env`]. Sensitive variables "are non-readable once created" [V-Vercel] | Production changes are founder actions. Mark every server-side website variable Sensitive [Rec]; which variables the project holds is [U] | Founder. With AF-15 (Vercel Pro), before Thu 29 Oct |
+| Gmail | The founder's inbox: `hello@` forwards there [R: DOMAINS.md], and so do recovery and verification mail for GitHub, Expo, Apple and Supabase | The approver account's email is one no connector reads. The TestFlight feedback mailbox is not connected (AUTOMATION.md 2.7) | Founder. The approver's email when AF-02 creates it (overdue, planned Mon 19 Oct); the feedback mailbox with AF-11 (planned Tue 20 or Wed 21 Oct, AUTOMATION 0.2 row 16) |
+| Resend | Lists and reads sent emails, sends email, creates API keys [R: tool names] | Check which Resend account it is [U]. If it is the account that sends the app's sign-in emails, disconnect it from agent sessions: it can read sign-in links (SR-12) | Founder. Before staging sends its first sign-in email (rehearsal R1, planned Fri 23 Oct, #152 section 2.1) |
+| PayPal | Invoices and payment links [R: tool names] | Not a release credential; disconnect it if unused [Rec] | Founder. By the go/no-go (planned Thu 29 Oct); no gate waits on it |
+| Google Drive, Docs, Sheets, Calendar; Notion; Figma; Wispr Flow | Documents and notes | Never paste a secret value into them, a pull request, an issue or an agent chat | Everyone, always |
 
 ## 8. The founder's read-back
 
-Run these from your own computer, signed in as the approver (read access suffices for environments [V-S01]) or as yourself. They print names and settings, never secret values.
+Run these from your own computer, signed in as the approver (read access suffices for environments [V-S01]) or as yourself. They print names and settings, never secret values. Owner: the founder runs them; S01 marks each section 5 row read back (section 11). Each part has its own "By".
 
 ### 8.1 Environments and their refs
+
+By: `staging` and `testflight` right after AF-07 creates them and before their first secret (planned Wed 21 Oct, AUTOMATION 0.2 row 11); the others with AF-22 (after the alpha).
+
+Read on 23 Oct [R]: `staging` already has one deployment. `deploy-functions.yml` run 39111226137 (the push of #205 to `develop`, Sun 18 Oct, 1:23 AM PT) ran its `deploy to staging` job without waiting for an approval (none is recorded), and its deploy steps were skipped. So that day `staging` had no required reviewer, or that run created it with no rules (SR-11) [U: which]. Check `staging` first. GitHub now lists 13 workflows (`deploy-db`, `deploy-functions`, `deploy-scripts` and `seam-guard` are new since section 2); `deploy-db.yml` has run 10 times on `develop` pushes, each with its staging job skipped.
 
 ```bash
 R=thesaurabhpareek/earlyletters
@@ -399,6 +407,8 @@ Expected: section 5, row by row.
 
 ### 8.2 Secret and variable names
 
+By: now, overdue (planned Mon 19 Oct with AF-02 and AF-03, AUTOMATION 0.2 row 5, whose proof is this read-back). The repository part settles SR-1 and SR-13.
+
 ```bash
 gh api repos/$R/actions/secrets --jq '.secrets[].name'
 for e in staging db-production testflight testers app-store packs health agents; do
@@ -410,6 +420,8 @@ gh api repos/$R/actions/variables --jq '.variables[].name'
 Expected at repository level: `EXPO_TOKEN` alone, the reissued robot token (section 1). If `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `OPENROUTER_API_KEY` or `AGENTS_APP_PRIVATE_KEY` is listed, delete it (SR-1, SR-13). Expected variables: `AGENTS_ENABLED` and the agents' own (4.9). If `R17_PASSED` exists at repository level, delete it: it belongs in `testers` (AUTOMATION.md 2.0).
 
 ### 8.3 Branches and Actions settings
+
+By: right after AF-03 (overdue, planned Mon 19 Oct, AUTOMATION 0.2 row 5; `develop` and `main` are still unprotected [R, 23 Oct]); the Actions settings with AF-20 (before Mon 2 Nov).
 
 ```bash
 gh api repos/$R/branches/develop/protection --jq '{checks: .required_status_checks.contexts, admins: .enforce_admins.enabled, force: .allow_force_pushes.enabled, del: .allow_deletions.enabled}'
@@ -424,6 +436,8 @@ Expected:
 - In Settings, Actions, General, "Require approval for all external contributors" is set (AF-20).
 
 ### 8.4 The lint role (before `SUPABASE_LINT_DB_URL_STAGING`)
+
+By: before `SUPABASE_LINT_DB_URL_STAGING` is added (after the alpha).
 
 In the staging SQL editor, with the role name S02 chose:
 
@@ -447,24 +461,24 @@ Paste the output (names and settings only) into this file's pull request or the 
 
 ## 9. The hold list: what must not be added until something else changes
 
-| Secret or variable | Not before | Why |
-|---|---|---|
-| **Any environment secret** | AF-02 in force: the approver is the only reviewer, with prevent self-review on and admin bypass off. AF-03 in force: `develop` and `main` protected, no bypass. The environment created with its rules and read back (section 8) | Before that, an agent session can approve, push to the allowed branch, or create the environment unprotected (SR-11) |
-| Repository `EXPO_TOKEN` | **Now:** reissue it from the robot (section 1) | It is readable from every branch until AF-22 |
-| `testflight` `EXPO_TOKEN` | RA-20-06a merged: `testflight.yml` names `environment: testflight`, actions pinned, `npm ci` without the restored cache. Then a new robot token; the approver stays a reviewer until AF-21 | Until the workflow names the environment, the secret is never read, and the repository copy stays in use |
-| `SUPABASE_DB_URL_STAGING` | AF-06 (connector cannot reach staging), AF-07, and DEPLOY.md section 2 aligned or ignored in favour of AF-07 (SR-4). The first deploy before staging holds letters (AUTOMATION.md 2.2) | Staging holds family letters during the alpha |
-| `SUPABASE_STAGING_PROJECT_REF` | With `SUPABASE_ACCESS_TOKEN_STAGING` | Only `deploy-functions.yml` reads it |
-| `SUPABASE_ACCESS_TOKEN_STAGING` | A **scoped** token with an expiry is offered, AF-06 is done, and RA-20-05 is merged. If only classic tokens exist, never add it: functions deploy from the founder's computer (POPS-04) | A classic token carries the whole account [V32]. A deploy token is worth every function secret (SR-8) |
-| `SUPABASE_DB_URL_PROD` | SR-2 fixed (`db-production`), AF-42, and post-alpha | The environment's name currently resolves to Vercel's `Production` |
-| `ASC_API_KEY_*` (`gha-testers`), the Viewer `EXPO_TOKEN`, `R17_PASSED` | AF-25 (App Manager key) and RA-20-07 merged. `R17_PASSED` only on the day the R-17 entry is recorded (AF-28), and never set by an agent | Nothing reads them before RA-20-07. The variable gates servers-on builds for friends (D-100) |
-| `app-store` `EXPO_TOKEN`, `ASC_API_KEY_*` (`gha-release`), `ASC_REVIEW_CONTACT_JSON` | #110 merged with SR-6 fixed; RA-20-08; AF-40; the approver's tag check in place (SR-3) | Tags and `release/*` are creatable by every agent session |
-| `PACKS_S3_*` | #162, RA-07-01 and RA-20-11 merged; the scratch-bucket plants of AUTOMATION.md 2.12 passed; the token is Object Read & Write on the one bucket, with an expiry | Before `assemble` exists, nothing checks the files against the signatures before upload |
-| `HEALTH_STAGING_API_URL` | AF-03, and the `health` environment created | Low value; masked only |
-| `SUPABASE_LINT_DB_URL_STAGING` | S02's lint-role migration and its `supabase/tests` case merged; the password set by hand (SR-14); section 8.4 read back and signed by S01 | `health` has no reviewer, and staging holds letters |
-| `AGENTS_APP_PRIVATE_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` | RA-20-02a merged, and `agents.yml` and `claude.yml` name `environment: agents`. Delete any repository copies **now** (SR-13) | Repository secrets reach any branch, and while `AGENTS_ENABLED` is off they serve nothing |
-| `CLAUDE_CODE_OAUTH_TOKEN` | AF-21 (CODEOWNERS on `.github/**`), or never: prefer `ANTHROPIC_API_KEY` with a spend limit [Rec] | It is the founder's personal subscription, in an environment with no reviewer |
-| `ASC_FEEDBACK_*`, `PUBLIC_REPO_ISSUES_TOKEN` | AF-26: the private repository exists, the Apps are not installed on it, and only the founder pushes. RA-07-04 merged | That repository's secrets are readable by any branch there |
-| `EAS_CLI_VERSION`, `EAS_IOS_BUILD_CAP`, `NIGHTLY_PROFILE` | RA-20-06 validates them, or the pin moves into a reviewed file (SR-5) | They steer secret-holding jobs and can change without review |
+| Secret or variable | Not before | Why | Planned |
+|---|---|---|---|
+| **Any environment secret** | AF-02 in force: the approver is the only reviewer, with prevent self-review on and admin bypass off. AF-03 in force: `develop` and `main` protected, no bypass. The environment created with its rules and read back (section 8) | Before that, an agent session can approve, push to the allowed branch, or create the environment unprotected (SR-11) | first with AF-07, planned Wed 21 Oct (AUTOMATION 0.2 row 11), after AF-02 and AF-03 (planned Mon 19 Oct, row 5) |
+| Repository `EXPO_TOKEN` | **Now:** reissue it from the robot (section 1) | It is readable from every branch until AF-22 | now (section 1) |
+| `testflight` `EXPO_TOKEN` | RA-20-06a merged: `testflight.yml` names `environment: testflight`, actions pinned, `npm ci` without the restored cache. Then a new robot token; the approver stays a reviewer until AF-21 | Until the workflow names the environment, the secret is never read, and the repository copy stays in use | AF-07, planned Wed 21 Oct (row 11) |
+| `SUPABASE_DB_URL_STAGING` | AF-06 (connector cannot reach staging), AF-07, and DEPLOY.md section 2 aligned or ignored in favour of AF-07 (SR-4). The first deploy before staging holds letters (AUTOMATION.md 2.2) | Staging holds family letters during the alpha | AF-07, planned Wed 21 Oct (row 11) |
+| `SUPABASE_STAGING_PROJECT_REF` | With `SUPABASE_ACCESS_TOKEN_STAGING` | Only `deploy-functions.yml` reads it | with the access token |
+| `SUPABASE_ACCESS_TOKEN_STAGING` | A **scoped** token with an expiry is offered, AF-06 is done, and RA-20-05 is merged. If only classic tokens exist, never add it: functions deploy from the founder's computer (POPS-04) | A classic token carries the whole account [V32]. A deploy token is worth every function secret (SR-8) | not planned; AF-13's deploys (planned Thu 22 Oct, row 12) can run from the founder's computer |
+| `SUPABASE_DB_URL_PROD` | SR-2 fixed (`db-production`), AF-42, and post-alpha | The environment's name currently resolves to Vercel's `Production` | after the alpha (AF-42) |
+| `ASC_API_KEY_*` (`gha-testers`), the Viewer `EXPO_TOKEN`, `R17_PASSED` | AF-25 (App Manager key) and RA-20-07 merged. `R17_PASSED` only on the day the R-17 entry is recorded (AF-28), and never set by an agent | Nothing reads them before RA-20-07. The variable gates servers-on builds for friends (D-100) | after the alpha (AF-25, AF-28) |
+| `app-store` `EXPO_TOKEN`, `ASC_API_KEY_*` (`gha-release`), `ASC_REVIEW_CONTACT_JSON` | #110 merged with SR-6 fixed; RA-20-08; AF-40; the approver's tag check in place (SR-3) | Tags and `release/*` are creatable by every agent session | after the alpha (store lane) |
+| `PACKS_S3_*` | #162, RA-07-01 and RA-20-11 merged; the scratch-bucket plants of AUTOMATION.md 2.12 passed; the token is Object Read & Write on the one bucket, with an expiry | Before `assemble` exists, nothing checks the files against the signatures before upload | after the alpha (RA-20-11) |
+| `HEALTH_STAGING_API_URL` | AF-03, and the `health` environment created | Low value; masked only | after the alpha (AF-22) |
+| `SUPABASE_LINT_DB_URL_STAGING` | S02's lint-role migration and its `supabase/tests` case merged; the password set by hand (SR-14); section 8.4 read back and signed by S01 | `health` has no reviewer, and staging holds letters | after the alpha (RA-07-03) |
+| `AGENTS_APP_PRIVATE_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` | RA-20-02a merged, and `agents.yml` and `claude.yml` name `environment: agents`. Delete any repository copies **now** (SR-13) | Repository secrets reach any branch, and while `AGENTS_ENABLED` is off they serve nothing | after the alpha (AF-22); the deletion now (section 8.2) |
+| `CLAUDE_CODE_OAUTH_TOKEN` | AF-21 (CODEOWNERS on `.github/**`), or never: prefer `ANTHROPIC_API_KEY` with a spend limit [Rec] | It is the founder's personal subscription, in an environment with no reviewer | after AF-21 (after the alpha), or never |
+| `ASC_FEEDBACK_*`, `PUBLIC_REPO_ISSUES_TOKEN` | AF-26: the private repository exists, the Apps are not installed on it, and only the founder pushes. RA-07-04 merged | That repository's secrets are readable by any branch there | after the alpha (AF-26) |
+| `EAS_CLI_VERSION`, `EAS_IOS_BUILD_CAP`, `NIGHTLY_PROFILE` | RA-20-06 validates them, or the pin moves into a reviewed file (SR-5) | They steer secret-holding jobs and can change without review | after the alpha (RA-20-06) |
 
 ## 10. When a secret may have leaked
 
@@ -481,12 +495,14 @@ Paste the output (names and settings only) into this file's pull request or the 
 | Settings read back (section 8) | **pending the founder** |
 | Section 1 reissue | **pending the founder** |
 | S01 sign-off of each environment before its first secret | pending, per row of section 9 |
+| Owners and dates for every fix (content review on #206) | done, Fri 23 Oct |
 
 Log (dates, names and settings only, never a value):
 
 | Date | Change | By |
 |---|---|---|
 | 16 Oct 2026 | Review written; settings read back as in section 2 | S01 |
+| 23 Oct 2026 | Owners and dates added; staging rows set to `develop` only; settings re-read (sections 3 and 8.1) | coordinator's fix agent, for S01 |
 
 ## 12. Sources
 

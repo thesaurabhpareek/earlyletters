@@ -1,0 +1,1 @@
+14:39 (23 Oct) release-docs-fix | done: #206 owners and a By for every SR fix, sections 1, 7, 8 and the hold list; staging rows to develop only; SR-15 link fixed in AUTOMATION.md 5 | next: #236 (B1 to B4, test move), then #227 | blocked/needs: founder: section 8 read-back; staging had a deployment on 18 Oct with no approval (8.1)
