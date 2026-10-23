@@ -206,14 +206,16 @@ describe('JsonModelEditProvider: parses strict JSON and keeps only verified edit
       source: 'model',
       async propose(r) {
         const raw = r.raw;
-        const edits = ['walk', 'talk', 'run', 'eat', 'sing', 'jump'].map((w) => {
+        // Closed-table pairs (F06-REQ-007): each passes alone, so only the ceiling refuses them.
+        const pairs: Array<[string, string]> = [['have', 'has'], ['go', 'goes'], ['do', 'does'], ['is', 'are'], ['were', 'was'], ["don't", "doesn't"]];
+        const edits = pairs.map(([w, rep]) => {
           const start = raw.indexOf(w);
-          return { type: 'agreement' as const, start, end: start + w.length, original: w, replacement: `${w}s`, source: 'rule' as const };
+          return { type: 'agreement' as const, start, end: start + w.length, original: w, replacement: rep, source: 'rule' as const };
         });
         return { edits, flags: [], rejected: [], invalid: [] };
       },
     };
-    const raw = 'I walk. You talk. We run. They eat. She sing. He jump.';
+    const raw = "She have. She go. She do. They is. She were. She don't.";
     const out = await cleanWithProviders(req(raw), [liar]);
     // stamped as model, so the change ceiling throws them all out
     expect(out.applied).toEqual([]);
