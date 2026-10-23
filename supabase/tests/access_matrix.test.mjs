@@ -339,6 +339,8 @@ const SERVICE_ONLY = [
   // Subscription status internals and the retention purge (20261016001000, S06).
   `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_report_switch()`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
   `select public.subscription_retention_purge(now())`,
+  // 20261023010000: the book purge that keeps a former member's rows, and its author list (definer code only).
+  `select public.book_kept_authors('${CHILD}')`, `select public.purge_book_keep_authors('${CHILD}', array['${B}']::uuid[], 'child_purge', null)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -388,6 +390,93 @@ for (const sql of SERVICE_ONLY) {
   cells += 3;
   check(`service-only ${name}: refused for users, anonymous and anon`, got.every((g) => g === '42501') || console.log(`      got ${got}`));
 }
+// 20261023010000: those two are not the service role's either (hosted Supabase grants it every new function).
+for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)']) {
+  check(`internal ${sig}: not executable by service_role`,
+    !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
+}
+
+// ── The service role (20261023010000, review A re-check on #178) ─────────
+// The consent records are append-only for the service role too. The row guards let a delete through
+// while app.retention_purge is on, which any session can set, and service_role bypasses RLS; so it
+// reads the records and every write is 42501, also with the setting on. Only the definer functions
+// (record_policy_act, the pseudonymisation triggers, the two retention purges, status_report_store) write.
+await sys(`insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_shown, shown_at)
+  values ($1, $2, 'plus.annual', 'introductory', '1.0.0', now())`, [A, 'a'.repeat(64)]);
+async function asService(sql, purge) {
+  await db.exec('begin');
+  try {
+    await db.exec('set local role service_role');
+    if (purge) await db.query(`select set_config('app.retention_purge', 'on', true)`);
+    const r = await db.query(sql);
+    return /^\s*(insert|update|delete)/i.test(sql) ? (r.affectedRows > 0 ? 'ok' : 'none') : /^\s*select\s+1\b/i.test(sql) ? r.rows.length : 'ok';
+  } catch (e) {
+    return e.code ?? 'error';
+  } finally {
+    await db.exec('rollback');
+  }
+}
+const SERVICE_ROLE = [
+  // label, sql, expected, with app.retention_purge on
+  ['policy_acceptances: read', 'select 1 from policy_acceptances limit 1', 1],
+  ['policy_acceptances: insert', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform)
+    values ('${A}', 'terms', '1.0.0', 'accept', 'support_assisted', 'matrix', '1', 'ios')`, '42501'],
+  ['policy_acceptances: update', `update policy_acceptances set action = 'decline'`, '42501'],
+  ['policy_acceptances: delete', 'delete from policy_acceptances', '42501'],
+  ['policy_acceptances: delete with app.retention_purge on', 'delete from policy_acceptances', '42501', true],
+  ['policy_acceptances: truncate', 'truncate policy_acceptances', '42501'],
+  ['subscription_consents: read', 'select 1 from subscription_consents limit 1', 1],
+  ['subscription_consents: insert', `insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_shown, shown_at)
+    values ('${A}', '${'b'.repeat(64)}', 'plus.annual', 'none', '1.0.0', now())`, '42501'],
+  ['subscription_consents: update', `update subscription_consents set terms_shown = '9.9.9'`, '42501'],
+  ['subscription_consents: delete', 'delete from subscription_consents', '42501'],
+  ['subscription_consents: delete with app.retention_purge on', 'delete from subscription_consents', '42501', true],
+  ['subscription_consents: truncate', 'truncate subscription_consents', '42501'],
+];
+for (const [label, sql, expect, purge] of SERVICE_ROLE) {
+  const got = await asService(sql, purge);
+  cells++;
+  check(`service_role ${label}: expected ${fmt(expect)}`, fmt(got) === fmt(expect) || console.log(`      got ${fmt(got)}`));
+}
+const consentPrivs = (await sys(`select t || ' ' || p v from unnest(array['policy_acceptances', 'subscription_consents']) t
+  cross join unnest(array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p
+  where has_table_privilege('service_role', 'public.' || t, p) order by 1`)).rows.map((r) => r.v);
+for (const v of consentPrivs) console.log(`      service_role still holds: ${v}`);
+check('[#178 re-check] service_role holds no write, truncate, references or trigger privilege on either consent table',
+  consentPrivs.length === 0);
+check('[#178 re-check] the records are still there after every refused write', (await sys(`select
+  (select count(*) from policy_acceptances)::int > 0 and (select count(*) from subscription_consents)::int = 1 x`)).rows[0].x);
+
+// ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
+// The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the
+// invite-redeem function, as service_role, may run it. It is not built yet. When a migration adds it,
+// every overload must be closed to PUBLIC, anon and authenticated and open to service_role, and it is
+// never an RPC or helper of the matrix above. The two probes show the rule is not empty: Postgres's
+// default grant (PUBLIC) fails it, and the grants the migration must make pass it.
+const redeemFacts = async () => (await sys(`select coalesce(array_to_string(p.proacl, ','), '') acl,
+    has_function_privilege('anon', p.oid, 'execute') anon_x, has_function_privilege('authenticated', p.oid, 'execute') auth_x,
+    has_function_privilege('service_role', p.oid, 'execute') svc_x
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'invite_redeem_by_code'`)).rows;
+const redeemClosed = (rows) => rows.every((f) => !f.anon_x && !f.auth_x && f.svc_x && !/(^|,)=X/.test(f.acl));
+const redeemNow = await redeemFacts();
+if (!redeemNow.length) console.log('      invite_redeem_by_code is not defined yet; the rule holds for it once a migration adds it');
+check('[review B N8] invite_redeem_by_code: executable by service_role only, and not a client RPC or helper',
+  redeemClosed(redeemNow) && !RPCS.some((r) => r[0].split(' ')[0] === 'invite_redeem_by_code') && !Object.keys(HELPERS).some((s) => s.startsWith('invite_redeem_by_code(')));
+const redeemProbe = async (grants) => {
+  await db.exec('begin');
+  try {
+    await db.exec(`create function public.invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea, p_user_subjects text[],
+      p_device_subjects text[], p_ip_subjects text[]) returns jsonb language sql set search_path = pg_catalog, public, pg_temp as $$ select '{}'::jsonb $$`);
+    if (grants) await db.exec(grants);
+    return redeemClosed(await redeemFacts());
+  } finally {
+    await db.exec('rollback');
+  }
+};
+const SIG = 'public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[])';
+check('[review B N8] the rule refuses a version left with the default grant (PUBLIC can execute it)', (await redeemProbe(null)) === false);
+check('[review B N8] the rule passes a version revoked from public, anon and authenticated and granted to service_role',
+  (await redeemProbe(`revoke execute on function ${SIG} from public, anon, authenticated; grant execute on function ${SIG} to service_role;`)) === true);
 
 // "Family can read the book" on: contributors read in-book letters (B-REQ-011).
 await sys(`update children set family_can_read = true where id=$1`, [CHILD]);

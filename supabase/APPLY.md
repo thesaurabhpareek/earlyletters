@@ -847,3 +847,36 @@ revoke usage on schema public from escrow_svc; drop role if exists escrow_svc;
 commit;
 ```
 `purge_ledger_entity_type_check` keeps `audio_blob` (harmless; removing it would fail on any ledger row of that kind). With file 17 applied nothing else is needed: `backup_entry_exists` goes with #151's functions, and file 17's trigger stops calling `backup_forget_entry` once it is gone.
+
+## File 20: purge and consent guards (23 Oct 2026, stream S02)
+
+`20261023010000_s02_purge_and_consent_guards.sql`. Three follow-ups from reviews: review A's re-check on #178 (the consent records), review A's N1 on #151 (a former co-parent's letters and the book purge) and review B's N8 on #138 (`invite_redeem_by_code`). Apply it after `20261023000000_backup_server.sql`. It adds one column, two internal functions and one index, and redefines `purge_due`, `prepare_account_purge`, `ops_deletion_sla`, `child_members_drop_held` and the `held_drafts_author_read` policy; it drops nothing. Tests: `former_member_purge` and `consent_service_role` (new), and new rows in `access_matrix`.
+
+What it changes:
+- **Consent records.** `service_role` loses INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on `policy_acceptances` and `subscription_consents`, and keeps SELECT. The row guards let a delete through while `app.retention_purge` is on, which any session can set, so before this file the service key could delete every consent record. Every writer is a definer function and keeps working. Support-assisted acts (step 8.3) are recorded from the SQL Editor, as before.
+- **A former member's letters stay theirs.** When a book is purged (day 30 after the remaining parent deletes it, or with that parent's account), the letters, held drafts and recording backups of anyone who is no longer a member (they left, their join was undone, or they were removed) stay, with their book key, per-book terms and Storage objects. Everything of the current members goes as before. The `children` row stays, tombstoned, with `purged_at` set and only the name and dates kept, until nothing of theirs is left; then `purge_due` removes it as it removes any book. A book with no former member's rows is purged exactly as before. `purge_due` answers two more keys (`books_kept`, `kept_removed`) and `prepare_account_purge` one (`books_kept`); the purge worker reads only the keys it already knew.
+- **Undo** (`undo_parent_join`) no longer deletes the removed parent's held drafts on the server, and an author reads their own held drafts in any book.
+- **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`.
+
+**After a database restore** (RB-8, `docs/ops/runbooks/restore-drill.md` Part 2): if the restore point is before an account purge that kept a book for a former member, the replay brings the book back live with the deleted person still its only parent, so deleting their Auth user again fails with `SCLPG` (Auth reports a database error). Nothing is lost and it heals once the restored account request runs: it is `executing` again (or, with a restore point before it started, a past-due `scheduled` request that `purge_due` hands to the worker the same way), and the worker's next run keeps the book for the former member and then deletes the user (`former_member_purge` section 5; during a restore the jobs are paused, so the runbook has the operator start that run).
+
+**Before.** Every earlier file. Read only (expect null, then true):
+```sql
+select (select attname from pg_attribute where attrelid = 'public.children'::regclass and attname = 'purged_at' and not attisdropped);
+select to_regclass('public.audio_blobs') is not null and to_regclass('public.held_drafts') is not null;
+```
+
+**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project"). The file refuses a second run (`55000`).
+
+**Check** (expect 0, then true, then 0):
+```sql
+select count(*) from information_schema.role_table_grants
+ where grantee = 'service_role' and table_name in ('policy_acceptances', 'subscription_consents') and privilege_type <> 'SELECT';
+select has_table_privilege('service_role', 'public.policy_acceptances', 'select') and has_table_privilege('service_role', 'public.subscription_consents', 'select');
+select count(*) from pg_proc p where p.proname in ('book_kept_authors', 'purge_book_keep_authors')
+   and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute')
+        or has_function_privilege('service_role', p.oid, 'execute'));
+```
+Then repeat step 21's `search_path` query (expect 0 rows). Advisors: none new expected. Afterwards, `select count(*) from children where purged_at is not null;` counts the books kept for a former member (0 until one is purged).
+
+**Rollback.** Prefer fixing forward. Before any book has been kept (`purged_at` null everywhere), as one transaction (test it in PGlite first): re-run `purge_due` and `prepare_account_purge` from file 17, `ops_deletion_sla` from file 14 (`20261015010000`) and `child_members_drop_held` from file 17; `alter policy held_drafts_author_read on public.held_drafts using (author_id = (select auth.uid()) and public.is_child_parent(child_id));`; `drop function public.purge_book_keep_authors(uuid, uuid[], text, uuid), public.book_kept_authors(uuid);`; `alter table public.children drop column purged_at;`. Do not grant the consent tables back to `service_role`. Once a book has been kept, do not roll back: the old `purge_due` would delete the kept letters with the book row.
