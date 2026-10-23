@@ -300,10 +300,11 @@ function endMarkCount(text: string, R: LanguageRules): number {
  * closers ("no.")" plus ".") and saw an unrelated run (engine-lens re-check).
  */
 function markRunPairs(text: string, start: number, end: number, other: string, R: LanguageRules): { asIs: MarkPairs; swapped: MarkPairs } {
+  // A code point at a time: an invisible character outside the BMP (U+E0100, U+E0001) is one character (#249 review B-N1).
   let s = start;
   let t = end;
-  while (s > 0 && nearMark(text[s - 1], R)) s--;
-  while (t < text.length && nearMark(text[t], R)) t++;
+  for (let ch = codePointBefore(text, s); nearMark(ch, R); ch = codePointBefore(text, s)) s -= ch.length;
+  for (let ch = codePointAt(text, t); nearMark(ch, R); ch = codePointAt(text, t)) t += ch.length;
   return { asIs: endMarkPairs(text.slice(s, t), R), swapped: endMarkPairs(text.slice(s, start) + other + text.slice(end, t), R) };
 }
 
@@ -319,8 +320,8 @@ function removalChangesSentenceEnd(raw: string, e: Edit, R: LanguageRules): bool
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return true;
   if (endMarkCount(e.replacement, R) >= endMarkCount(e.original, R)) return false;
   let i = e.start;
-  while (i > 0 && (/\s/u.test(raw[i - 1]) || isInvisible(raw[i - 1]))) i--;
-  return i > 0 && !isEndMark(raw[i - 1], R);
+  for (let ch = codePointBefore(raw, i); ch && (/\s/u.test(ch) || isInvisible(ch)); ch = codePointBefore(raw, i)) i -= ch.length;
+  return i > 0 && !isEndMark(codePointBefore(raw, i), R);
 }
 
 /**
@@ -339,16 +340,16 @@ function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
   while (kept < o.length && kept < r.length && same(o[kept], r[kept])) kept++;
   let s = e.start;
   let t = e.end;
-  while (s > 0 && nearMark(raw[s - 1], R)) s--;
-  while (t < raw.length && nearMark(raw[t], R)) t++;
+  for (let ch = codePointBefore(raw, s); nearMark(ch, R); ch = codePointBefore(raw, s)) s -= ch.length;
+  for (let ch = codePointAt(raw, t); nearMark(ch, R); ch = codePointAt(raw, t)) t += ch.length;
   let first = -1;
   let marks = 0;
   const moved = () => marks >= 2 && first >= e.start && first < e.end && first - e.start >= kept;
-  for (let i = s; i < t; i++) {
-    if (isEndMark(raw[i], R)) {
+  for (let i = s, ch = codePointAt(raw, i); i < t; i += ch.length, ch = codePointAt(raw, i)) {
+    if (isEndMark(ch, R)) {
       if (first < 0) first = i;
       marks++;
-    } else if (!nearMark(raw[i], R)) {
+    } else if (!nearMark(ch, R)) {
       if (moved()) return true;
       first = -1;
       marks = 0;

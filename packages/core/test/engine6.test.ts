@@ -563,6 +563,16 @@ describe('[F06-REQ-004] engine 7: a removal never changes how a sentence ends (#
     expect(ENGLISH_RULES.moodMarks(text)).toBe(ENGLISH_RULES.moodMarks(raw));
   });
 
+  it.each([
+    ['U+E0100 (a variation selector)', '\u{E0100}'],
+    ['U+E0001 (a language tag)', '\u{E0001}'],
+  ])('an invisible character outside the BMP between two marks still touches: %s (#249 review B-N1)', async (_name, invisible) => {
+    const raw = `She said no.${invisible} um`;
+    const r = await cleanRulesOnly({ raw, dictionary: [], level: 'clean' }, { language: 'en' });
+    expect(r.text).toBe(`She said no.${invisible}`); // the filler goes; no "." is put after the invisible
+    expect(v7(`She said no.${invisible}`, atEnd(`She said no.${invisible}`, '.'))).toBe('changes_sentence_type');
+  });
+
   it('the rules-only clean keeps the "." the sentence around a bracket takes (#249 review N1)', async () => {
     const r = await cleanRulesOnly({ raw: 'We went home (it rained!) um', dictionary: [], level: 'clean' }, { language: 'en' });
     expect(r.text).toBe('We went home (it rained!).');
