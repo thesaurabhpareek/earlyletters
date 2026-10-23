@@ -49,7 +49,7 @@ export type InviteErrorKind =
    * general consent screen.
    */
   | 'family_share_consent'
-  /** SCKIL: `killSwitches.invites` is on (server or phone). Nothing was sent or changed; never final. */
+  /** SCKIL: a kill switch is on (`invites`, or `sync` for the list; server or phone). Nothing was sent or changed; never final. */
   | 'paused'
   | 'book_deleted'
   | 'signed_out'

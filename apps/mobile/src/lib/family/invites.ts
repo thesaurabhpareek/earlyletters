@@ -23,9 +23,11 @@
  * Members come from the pull (store `listMembers`, sync_books.members), not from here.
  * Shapes match the S07 family contract (`@scribe/api/server` family.ts), typed by hand.
  *
- * `killSwitches.invites` (invites-switch.ts): while it is on, create, peek, accept and revoke throw
- * the paused error before they send anything, and so does Share again (it creates first). Listing
- * and leaving are not invite calls and are not paused.
+ * `killSwitches.invites` (invites-switch.ts; its scope is creating and redeeming): while it is on,
+ * create, peek and accept throw the paused error before they send anything, and so does Share again
+ * (it creates first). Cancel invite (revoke) is never paused: closing a link is the safe direction.
+ * The pending list is a sync_books read and waits while `killSwitches.sync` is on. Leaving is not
+ * an invite call and is not paused.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { brand } from '@scribe/brand';
@@ -36,7 +38,7 @@ import { isMissingFunction } from './invite-errors.logic';
 import { inviteUrl } from './invite-link.logic';
 import { readPendingInvites, type PendingInviteRow } from './invite-list.logic';
 import { readInvitePreview, UNKNOWN_PREVIEW, type InvitePreview } from './invite-preview.logic';
-import { stopIfInvitesPaused } from './invites-switch';
+import { stopIfInviteListPaused, stopIfInvitesPaused } from './invites-switch';
 
 export type { InviteDraft } from './invite-draft.logic';
 export type { PendingInviteRow } from './invite-list.logic';
@@ -119,9 +121,13 @@ export async function acceptInvite(sb: FamilyClient, token: string): Promise<str
   return data;
 }
 
-/** Cancel invite. Paused (nothing sent, the invite stays open) while `killSwitches.invites` is on. */
+/**
+ * Cancel invite. Never paused by `killSwitches.invites`: the switch stops creating and redeeming
+ * (F19-REQ-011, `ENDPOINTS.revokeInvite` names no switch), and closing a link is what a parent may
+ * most want while invites misbehave. It also lets Share again cancel the unsent new invite when the
+ * switch turned on between making it and the share sheet closing.
+ */
 export async function revokeInvite(sb: FamilyClient, inviteId: string): Promise<void> {
-  stopIfInvitesPaused();
   const { error } = await sb.rpc('revoke_invite', { p_invite: inviteId });
   if (error) throw error;
 }
@@ -138,6 +144,8 @@ export async function revokeInvite(sb: FamilyClient, inviteId: string): Promise<
  *    (the screen says so).
  * Making the new invite can fail too; that error is thrown, as createCoParentInvite throws it. While
  * `killSwitches.invites` is on that is the paused error, before any draft is sent or any sheet opens.
+ * The cancels after the sheet are not paused (revokeInvite), so a switch that turns on in between
+ * still leaves no unsent invite open.
  */
 export type ShareAgainOutcome = 'shared' | 'dismissed' | 'old_still_open' | 'not_sent';
 
@@ -179,8 +187,12 @@ export async function shareInviteAgain(
  * call, then `books[].invites` (invite-list.logic.ts). The server's clock marks each `open` or
  * `expired`, and it keeps an expired invite for 14 days; nothing here filters on the phone's clock.
  * Not paused by `killSwitches.invites`: a paused invite is still an invite, and the list keeps it.
+ * `sync_books` is sync's (`ENDPOINTS.syncBooks` names the sync switch, and each call counts in the
+ * pull bucket), so while `killSwitches.sync` is on this throws the paused error before any request
+ * and the Family tab keeps the rows it shows.
  */
 export async function listPendingInvites(sb: FamilyClient, childId: string): Promise<PendingInviteRow[]> {
+  stopIfInviteListPaused();
   const { data, error } = await sb.rpc('sync_books');
   if (error) throw error;
   return readPendingInvites(data, childId);

@@ -2,12 +2,14 @@
 /**
  * Co-parent invites follow the server (S04 follow-up to #138 and #184):
  *  - `killSwitches.invites` (F19-REQ-011, WP-F19-12f; review B N1 on #138, comment 6370599543). On:
- *    creating an invite, Share again, peek, accept and Cancel invite send nothing and read as
- *    `paused`, one neutral line. Off: the same calls reach the server. Stale: a config signed more
+ *    creating an invite, Share again, peek and accept send nothing and read as `paused`, one neutral
+ *    line; Cancel invite still goes out (the switch's scope is creating and redeeming; review of
+ *    #243 N1, comment 6372901228). Off: the same calls reach the server. Stale: a config signed more
  *    than 7 days before the server's clock cannot clear the switch (F19-REQ-008), so the reader still
  *    sees it on. A pause never loses an invite or a held link.
  *  - The pending list is `sync_books().books[].invites` (review A on #138, comment 6370591557), read
- *    defensively; the real SQL is in test/family-e2e.test.ts.
+ *    defensively, and waits while `killSwitches.sync` is on (#243 N2); in a full book expired rows
+ *    are hidden (#243 N3). The real SQL is in test/family-e2e.test.ts.
  *  - The error kinds the family contract names (packages/api/src/server/family.ts) where #184 used
  *    other names: SCKIL `paused`, SCCID `id_taken`, SCCON family-share `family_share_consent`.
  * Fictional family Asha only.
@@ -30,9 +32,9 @@ import { familyCopy } from '@scribe/content';
 import { renderTemplate } from '@scribe/core';
 import { FINAL_INVITE_ERRORS, inviteErrorKind, NEW_DRAFT_ERRORS, type InviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { newInviteDraft } from '../src/lib/family/invite-draft.logic';
-import { openInvites, readPendingInvites } from '../src/lib/family/invite-list.logic';
+import { openInvites, readPendingInvites, visiblePendingRows } from '../src/lib/family/invite-list.logic';
 import { acceptInvite, createCoParentInvite, listPendingInvites, peekInvite, revokeInvite, shareInviteAgain, type FamilyClient } from '../src/lib/family/invites';
-import { invitesPaused, remoteInvitesKillSource, setInvitesKillSourceForTests, type InvitesKillSource } from '../src/lib/family/invites-switch';
+import { inviteListPaused, invitesPaused, remoteFamilyKillSource, setFamilyKillSourceForTests, type FamilyKillSource } from '../src/lib/family/invites-switch';
 import { joinErrorLine, joinPlan } from '../src/lib/family/join-flow.logic';
 import { familyTabState } from '../src/lib/family/members.logic';
 import { SignedDocumentClient, type DocHttp, type DocHttpResponse } from '../src/lib/remote/documents';
@@ -67,6 +69,7 @@ const SYNC_BOOKS = {
 /** A PostgREST stand-in that records every call and answers as the server would. */
 function fakeServer() {
   const calls: string[] = [];
+  const args: Record<string, unknown>[] = [];
   const answer = (fn: string, args: Record<string, unknown>) => {
     if (fn === 'create_child_invite') return { data: args.p_invite_id, error: null };
     if (fn === 'peek_invite') return { data: { inviter: 'Mama', role: 'parent' }, error: null };
@@ -76,11 +79,12 @@ function fakeServer() {
     return { data: null, error: { code: 'PGRST202', message: 'no such function' } };
   };
   const client = {
-    rpc: (fn: string, args: Record<string, unknown> = {}) => {
+    rpc: (fn: string, a: Record<string, unknown> = {}) => {
       calls.push(fn);
+      args.push(a);
       const call = {
         setHeader: () => call,
-        then: <T1, T2>(ok?: (r: unknown) => T1 | PromiseLike<T1>, bad?: (e: unknown) => T2 | PromiseLike<T2>) => Promise.resolve(answer(fn, args)).then(ok, bad),
+        then: <T1, T2>(ok?: (r: unknown) => T1 | PromiseLike<T1>, bad?: (e: unknown) => T2 | PromiseLike<T2>) => Promise.resolve(answer(fn, a)).then(ok, bad),
       };
       return call;
     },
@@ -89,7 +93,7 @@ function fakeServer() {
       throw new Error('no table reads in these flows');
     },
   } as unknown as FamilyClient;
-  return { client, calls };
+  return { client, calls, args };
 }
 
 async function kindOf(p: Promise<unknown>): Promise<InviteErrorKind | 'ok'> {
@@ -114,58 +118,91 @@ async function everyInviteCall(client: FamilyClient, share: (url: string) => Pro
 }
 
 let switchOn = false;
-const switchSource: InvitesKillSource = { paused: () => switchOn };
+let syncOn = false;
+const switchSource: FamilyKillSource = { on: (key) => (key === 'invites' ? switchOn : syncOn) };
 
 afterEach(() => {
   switchOn = false;
-  setInvitesKillSourceForTests(null);
+  syncOn = false;
+  setFamilyKillSourceForTests(null);
 });
 
-describe('[F19-REQ-011] the real reader of killSwitches.invites', () => {
-  it('reads killSwitches.invites and no other switch', () => {
+describe('[F19-REQ-011] the real reader of killSwitches.invites and killSwitches.sync', () => {
+  it('reads each switch for itself: sync never pauses invites, and invites never pause the list', () => {
     let config = { killSwitches: { ...DEFAULT_REMOTE_CONFIG.killSwitches, sync: true, serverContent: true } };
-    const reader = remoteInvitesKillSource(() => ({ getRemoteConfig: () => config }));
-    expect(reader.paused()).toBe(false); // another switch never pauses invites
+    setFamilyKillSourceForTests(remoteFamilyKillSource(() => ({ getRemoteConfig: () => config })));
+    expect(invitesPaused()).toBe(false);
+    expect(inviteListPaused()).toBe(true);
     config = { killSwitches: { ...DEFAULT_REMOTE_CONFIG.killSwitches, invites: true } };
-    expect(reader.paused()).toBe(true);
+    expect(invitesPaused()).toBe(true); // read on every call: no relaunch needed
+    expect(inviteListPaused()).toBe(false);
     // Only the boolean true pauses; the bundled defaults never do.
-    expect(remoteInvitesKillSource(() => ({ getRemoteConfig: () => DEFAULT_REMOTE_CONFIG })).paused()).toBe(false);
+    const defaults = remoteFamilyKillSource(() => ({ getRemoteConfig: () => DEFAULT_REMOTE_CONFIG }));
+    expect([defaults.on('invites'), defaults.on('sync')]).toEqual([false, false]);
   });
 
   it('fails closed, like sync: a reader that throws reads as paused', () => {
-    setInvitesKillSourceForTests({
-      paused: () => {
+    setFamilyKillSourceForTests({
+      on: () => {
         throw new Error('remote config could not be read');
       },
     });
     expect(invitesPaused()).toBe(true);
+    expect(inviteListPaused()).toBe(true);
   });
 
   it('is loaded on first use, from inside a call, as sync loads its switch (nothing at import time)', () => {
     const reader = src('lib/family/invites-switch.ts');
     expect(reader).toMatch(/require\('\.\.\/remote'\)/);
     expect(reader).not.toMatch(/^import (?!type )/m);
-    expect(reader).toMatch(/killSwitches\.invites === true/);
+    expect(reader).toMatch(/killSwitches\[key\] === true/);
   });
 });
 
 describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites are paused', () => {
-  it('create, Share again, peek, accept and cancel each read as paused before any request', async () => {
-    setInvitesKillSourceForTests(switchSource);
+  it('create, Share again, peek and accept each read as paused before any request; Cancel invite still goes out', async () => {
+    setFamilyKillSourceForTests(switchSource);
     switchOn = true;
-    const { client, calls } = fakeServer();
+    const { client, calls, args } = fakeServer();
     let sheets = 0;
     const result = await everyInviteCall(client, async () => {
       sheets++;
       return 'shared';
     });
-    expect(result).toEqual({ create: 'paused', shareAgain: 'paused', peek: 'paused', accept: 'paused', cancel: 'paused' });
-    expect(calls).toEqual([]);
+    expect(result).toEqual({ create: 'paused', shareAgain: 'paused', peek: 'paused', accept: 'paused', cancel: 'ok' });
+    // The only request is the cancel: closing a link is the safe direction (the switch stops creating and redeeming).
+    expect(calls).toEqual(['revoke_invite']);
+    expect(args).toEqual([{ p_invite: 'i-3' }]);
     expect(sheets).toBe(0); // Share again never opened the share sheet
   });
 
+  it('[F11-REQ-019] the switch turns on while the share sheet is open: the unsent new invite is still cancelled, and a sent one still closes the old', async () => {
+    setFamilyKillSourceForTests(switchSource);
+    const old = { id: 'i-3', signsAs: 'Papa' };
+    // Dismissed: nobody has the new link, so it is cancelled again even though invites are paused now.
+    const dismissed = fakeServer();
+    const draft = await newInviteDraft(draftDeps);
+    const closed = async (): Promise<'dismissed'> => {
+      switchOn = true;
+      return 'dismissed';
+    };
+    expect(await shareInviteAgain(dismissed.client, ASHA, old, draft, closed)).toBe('dismissed');
+    expect(dismissed.calls).toEqual(['create_child_invite', 'revoke_invite']);
+    expect(dismissed.args[1]).toEqual({ p_invite: draft.id });
+    // Shared: the old link is closed, so a forwarded copy is never revived.
+    switchOn = false;
+    const sent = fakeServer();
+    const shared = async (): Promise<'shared'> => {
+      switchOn = true;
+      return 'shared';
+    };
+    expect(await shareInviteAgain(sent.client, ASHA, old, await newInviteDraft(draftDeps), shared)).toBe('shared');
+    expect(sent.calls).toEqual(['create_child_invite', 'revoke_invite']);
+    expect(sent.args[1]).toEqual({ p_invite: 'i-3' });
+  });
+
   it('the pending list still reads (a paused invite is still an invite), and only through sync_books', async () => {
-    setInvitesKillSourceForTests(switchSource);
+    setFamilyKillSourceForTests(switchSource);
     switchOn = true;
     const { client, calls } = fakeServer();
     const rows = await listPendingInvites(client, ASHA);
@@ -180,10 +217,11 @@ describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites 
     const failed = { loaded: true, token: TOKEN, signedIn: true, canSync: true, preview: null, busy: null, wantsJoin: false, joinedChildId: null, error: 'paused' as const };
     expect(joinPlan(failed)).toEqual({ view: 'failed', next: 'none' });
     expect(joinPlan({ ...failed, error: null })).toEqual({ view: 'peeking', next: 'peek' });
-    // The Family tab keeps listing while paused, and Cancel invite says so before asking to confirm.
+    // The Family tab keeps listing while invites are paused, and Cancel invite is never held back there.
     const tab = src('app/(tabs)/family.tsx');
     expect(tab).toMatch(/setPending\(await listPendingInvites\(client, childId\)\)/);
-    expect(tab).toMatch(/if \(invitesPaused\(\)\) \{\s*setShareNote\(null\);\s*setError\('paused'\);\s*return;\s*\}\s*Alert\.alert/);
+    expect(tab).not.toMatch(/invitesPaused/);
+    expect(src('lib/family/invites.ts')).toMatch(/export async function revokeInvite\(sb: FamilyClient, inviteId: string\): Promise<void> \{\s*const \{ error \} = await sb\.rpc\('revoke_invite'/);
   });
 
   it('a pause is not counted as a failed invite (nothing was attempted)', () => {
@@ -200,9 +238,30 @@ describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites 
   });
 });
 
+describe('[F19-REQ-011] killSwitches.sync on: the pending list waits and the tab keeps its rows', () => {
+  it('no sync_books request while sync is paused; the list reads again once it is lifted', async () => {
+    setFamilyKillSourceForTests(switchSource);
+    syncOn = true;
+    const { client, calls } = fakeServer();
+    expect(await kindOf(listPendingInvites(client, ASHA))).toBe('paused');
+    expect(calls).toEqual([]);
+    // Inviting is not sync: with only sync paused, the invite calls still go out.
+    expect(await kindOf(peekInvite(client, TOKEN))).toBe('ok');
+    syncOn = false;
+    expect((await listPendingInvites(client, ASHA)).map((r) => r.id)).toEqual(['i-3', 'i-2', 'i-1']);
+    expect(calls).toEqual(['peek_invite', 'sync_books']);
+  });
+
+  it('the Family tab keeps what it shows when the list is not read, and drops a cancelled row itself', () => {
+    const tab = src('app/(tabs)/family.tsx');
+    expect(tab).toMatch(/try \{\s*setPending\(await listPendingInvites\(client, childId\)\);\s*\} catch \{\s*\/\/ Keep what is shown/);
+    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);[\s\S]{0,120}setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);/);
+  });
+});
+
 describe('[F19-REQ-011] switch off: the same calls reach the server', () => {
   it('create, Share again, peek, accept and cancel each send their request', async () => {
-    setInvitesKillSourceForTests(switchSource);
+    setFamilyKillSourceForTests(switchSource);
     const { client, calls } = fakeServer();
     const result = await everyInviteCall(client, async () => 'shared');
     expect(result).toEqual({ create: 'ok', shareAgain: 'ok', peek: 'ok', accept: 'ok', cancel: 'ok' });
@@ -247,19 +306,19 @@ describe('[F19-REQ-008] stale: an old copy of the config cannot clear the switch
 
   it('the switch set by a fresh copy stays on through a stale clearing copy, and only a fresh publish lifts it', async () => {
     const { client, queue } = phoneConfig();
-    const reader = remoteInvitesKillSource(() => ({ getRemoteConfig: () => client.current() }));
-    setInvitesKillSourceForTests(reader);
+    const reader = remoteFamilyKillSource(() => ({ getRemoteConfig: () => client.current() }));
+    setFamilyKillSourceForTests(reader);
     const { client: server, calls } = fakeServer();
 
     queue.push({ status: 200, etag: '"v3"', body: signedConfig(3, '2026-10-22T00:00:00.000Z', true), date: 'Thu, 22 Oct 2026 00:05:00 GMT' });
     expect(await client.refresh(true)).toBe('updated');
-    expect(reader.paused()).toBe(true);
+    expect(reader.on('invites')).toBe(true);
 
     // A cache replays version 4, signed on 1 Oct with the switch cleared, while the server clock says 23 Oct.
     queue.push({ status: 200, etag: '"v4"', body: signedConfig(4, '2026-10-01T00:00:00.000Z', false), date: 'Fri, 23 Oct 2026 13:00:00 GMT' });
     expect(await client.refresh(true)).toBe('updated');
     expect(client.current().version).toBe(4);
-    expect(reader.paused()).toBe(true);
+    expect(reader.on('invites')).toBe(true);
     expect(await kindOf(createCoParentInvite(server, ASHA, null, await newInviteDraft(draftDeps)))).toBe('paused');
     expect(await kindOf(peekInvite(server, TOKEN))).toBe('paused');
     expect(calls).toEqual([]);
@@ -267,17 +326,17 @@ describe('[F19-REQ-008] stale: an old copy of the config cannot clear the switch
     // A fresh publish that clears it: invites go out again.
     queue.push({ status: 200, etag: '"v5"', body: signedConfig(5, '2026-10-23T12:00:00.000Z', false), date: 'Fri, 23 Oct 2026 13:30:00 GMT' });
     expect(await client.refresh(true)).toBe('updated');
-    expect(reader.paused()).toBe(false);
+    expect(reader.on('invites')).toBe(false);
     expect(await kindOf(peekInvite(server, TOKEN))).toBe('ok');
     expect(calls).toEqual(['peek_invite']);
   });
 
   it('a stale copy that sets the switch is honoured (stopping is the safe direction)', async () => {
     const { client, queue } = phoneConfig();
-    const reader = remoteInvitesKillSource(() => ({ getRemoteConfig: () => client.current() }));
+    const reader = remoteFamilyKillSource(() => ({ getRemoteConfig: () => client.current() }));
     queue.push({ status: 200, etag: '"v5"', body: signedConfig(5, '2026-09-01T00:00:00.000Z', true), date: 'Fri, 23 Oct 2026 13:00:00 GMT' });
     expect(await client.refresh(true)).toBe('updated');
-    expect(reader.paused()).toBe(true);
+    expect(reader.on('invites')).toBe(true);
   });
 });
 
@@ -292,6 +351,13 @@ describe('[F11-REQ-019] the pending list from sync_books', () => {
     // Only open invites hold back the invite card; an expired one is listed, not counted.
     expect(openInvites(rows).map((r) => r.id)).toEqual(['i-3', 'i-2']);
     expect(familyTabState({ role: 'parent', members: [], openInvites: openInvites(rows.slice(2)).length }).showInviteCard).toBe(true);
+  });
+
+  it('[F11-REQ-004] in a full book expired rows are hidden, so a co-parent who joined is never listed twice', () => {
+    const rows = readPendingInvites(SYNC_BOOKS, ASHA);
+    expect(visiblePendingRows(rows, true).map((r) => r.id)).toEqual(['i-3', 'i-2']);
+    expect(visiblePendingRows(rows, false).map((r) => r.id)).toEqual(['i-3', 'i-2', 'i-1']);
+    expect(src('app/(tabs)/family.tsx')).toMatch(/\{visiblePendingRows\(pending, state\.full\)\.map\(\(p\) => \(/);
   });
 
   it('a book not listed, or listed without invites (not a parent), has none; an answer without books is not a list', () => {

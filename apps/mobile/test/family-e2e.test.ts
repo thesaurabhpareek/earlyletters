@@ -16,8 +16,9 @@
  *
  * The pending list is the server's own (`sync_books().books[].invites`, never a select on
  * child_invites): the server's clock marks an invite expired and keeps it 14 days. The remote kill
- * switch `killSwitches.invites` is driven through the app's own reader seam (lib/family/
- * invites-switch.ts): paused, nothing is sent and nothing is lost.
+ * switches `killSwitches.invites` and `killSwitches.sync` are driven through the app's own reader
+ * seam (lib/family/invites-switch.ts): invites paused, nothing is sent and nothing is lost, and Cancel
+ * invite still closes a link; sync paused, the list is not asked for.
  *
  * Fictional family "Asha" only (CLAUDE.md): Mama (A) starts the book, Papa (B) joins, C is a
  * stranger holding a forwarded link, and D is the co-parent Mama invites after Papa leaves.
@@ -37,7 +38,7 @@ import { newInviteDraft, type InviteDraft } from '../src/lib/family/invite-draft
 import { parseInviteInput, parseInviteUrl } from '../src/lib/family/invite-link.logic';
 import { openInvites } from '../src/lib/family/invite-list.logic';
 import { acceptInvite, createCoParentInvite, leaveBook, listPendingInvites, peekInvite, revokeInvite, shareInviteAgain, type FamilyClient } from '../src/lib/family/invites';
-import { setInvitesKillSourceForTests } from '../src/lib/family/invites-switch';
+import { setFamilyKillSourceForTests } from '../src/lib/family/invites-switch';
 import { joinedView, joinPlan } from '../src/lib/family/join-flow.logic';
 import { familyTabState, leftSince, type MemberLike } from '../src/lib/family/members.logic';
 import { createSyncEngine } from '../src/lib/sync/engine';
@@ -69,9 +70,10 @@ const C = '33333333-3333-3333-3333-333333333333'; // a stranger with a forwarded
 const D = '44444444-4444-4444-4444-444444444444'; // a later co-parent, invited with no suggested sign-off
 
 let pg: PGlite;
-/** `killSwitches.invites` as the phones read it (the signed remote config in the app). */
+/** `killSwitches.invites` and `killSwitches.sync` as the phones read them (the signed remote config in the app). */
 let invitesSwitchOn = false;
-setInvitesKillSourceForTests({ paused: () => invitesSwitchOn });
+let syncSwitchOn = false;
+setFamilyKillSourceForTests({ on: (key) => (key === 'invites' ? invitesSwitchOn : syncSwitchOn) });
 let lock: Promise<unknown> = Promise.resolve();
 /** PGlite has one connection: role switches and the call must not interleave. */
 function serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -513,14 +515,17 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     expect(await listPendingInvites(familyClient(C), ASHA)).toEqual([]);
   }, 60_000);
 
-  it('[F19-REQ-011] killSwitches.invites on: create, Share again, peek, join and cancel send nothing, and no invite or link is lost', async () => {
+  it('[F19-REQ-011] killSwitches.invites on: create, Share again, peek and join send nothing, Cancel invite still closes a link, and no invite or link is lost', async () => {
     const log: { fn: string; args: Record<string, unknown> }[] = [];
     const mama = familyClient(A, log);
     const papa = familyClient(B, log);
+    // A link Mama will want to close during the pause (made before it).
+    const stray = await createCoParentInvite(mama, ASHA, null, await newInviteDraft(draftDeps));
+    const strayId = stray.id ?? String((await sys('select id from child_invites where child_id = $1 order by created_at desc limit 1', [ASHA])).rows[0].id);
     const listed = await listPendingInvites(mama, ASHA);
     const row = listed.find((r) => r.signsAs === 'Papa')!;
     expect(row).toBeDefined();
-    const onServer = async () => (await sys('select id, accepted_at, revoked_at, expires_at from child_invites where child_id = $1 order by id', [ASHA])).rows;
+    const onServer = async () => (await sys('select id, accepted_at, revoked_at, expires_at from child_invites where child_id = $1 and id <> $2 order by id', [ASHA, strayId])).rows;
     const stored = await onServer();
     log.length = 0;
     invitesSwitchOn = true;
@@ -532,14 +537,17 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
       };
       expect(await kindOf(createCoParentInvite(mama, ASHA, 'Papa', await newInviteDraft(draftDeps)))).toBe('paused');
       expect(await kindOf(shareInviteAgain(mama, ASHA, row, await newInviteDraft(draftDeps), share))).toBe('paused');
-      expect(await kindOf(revokeInvite(mama, row.id))).toBe('paused');
       expect(await kindOf(peekInvite(papa, token))).toBe('paused');
       expect(await kindOf(acceptInvite(papa, token))).toBe('paused');
       expect(sheets).toBe(0);
-      expect(log).toEqual([]); // not one request reached the server
-      // Nothing changed there, the list still shows every invite, and Papa's phone keeps the link (paused is never final).
+      expect(log).toEqual([]); // not one invite request reached the server
+      // Cancel invite is not paused: the switch stops creating and redeeming, and closing a link is the safe direction.
+      expect(await kindOf(revokeInvite(mama, strayId))).toBe('ok');
+      expect(log.map((c) => c.fn)).toEqual(['revoke_invite']);
+      expect((await sys('select revoked_at is not null as closed from child_invites where id = $1', [strayId])).rows[0].closed).toBe(true);
+      // Nothing else changed there, the list still shows every other invite, and Papa's phone keeps the link (paused is never final).
       expect(await onServer()).toEqual(stored);
-      expect(await listPendingInvites(mama, ASHA)).toEqual(listed);
+      expect(await listPendingInvites(mama, ASHA)).toEqual(listed.filter((r) => r.id !== strayId));
       expect(FINAL_INVITE_ERRORS).not.toContain('paused');
       expect((await sys('select count(*)::int n from child_members where child_id = $1 and profile_id = $2', [ASHA, B])).rows[0].n).toBe(0);
     } finally {
@@ -547,6 +555,27 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     }
     // Lifted: the same link works as before.
     if (gate) expect(await peekInvite(papa, token)).toMatchObject({ inviter: 'Mama', known: true });
+  }, 60_000);
+
+  it('[F19-REQ-011] killSwitches.sync on: the pending list is not asked for (sync_books is sync\'s), and reads again once lifted', async () => {
+    const log: { fn: string; args: Record<string, unknown> }[] = [];
+    const mama = familyClient(A, log);
+    const before = await listPendingInvites(mama, ASHA);
+    // Mama's pull counter (sync_books counts in it): a list nobody asked for counts nothing.
+    const pulls = async () => (await sys(`select hits, window_start from sync_rate_windows where profile_id = $1 and bucket = 'pull'`, [A])).rows;
+    const counted = await pulls();
+    expect(counted).toHaveLength(1);
+    log.length = 0;
+    syncSwitchOn = true;
+    try {
+      expect(await kindOf(listPendingInvites(mama, ASHA))).toBe('paused');
+      expect(log).toEqual([]);
+      expect(await pulls()).toEqual(counted);
+    } finally {
+      syncSwitchOn = false;
+    }
+    expect(await listPendingInvites(mama, ASHA)).toEqual(before);
+    expect(log.map((c) => c.fn)).toEqual(['sync_books']);
   }, 60_000);
 
   it('[BL-322] before sign-in nothing about the invite can be learned', async () => {

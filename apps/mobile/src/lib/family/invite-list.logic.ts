@@ -60,3 +60,12 @@ export function readPendingInvites(data: unknown, childId: string): PendingInvit
 export function openInvites(rows: readonly PendingInviteRow[]): PendingInviteRow[] {
   return rows.filter((r) => r.status === 'open');
 }
+
+/**
+ * The rows the member list shows. An expired row is there to send again from (F11-U04), so in a book
+ * that already has two parents (D-069) it has no use: it is hidden, and a co-parent who joined through
+ * a later link is never listed twice, once as a member and once as "Invite expired".
+ */
+export function visiblePendingRows(rows: readonly PendingInviteRow[], bookFull: boolean): PendingInviteRow[] {
+  return bookFull ? openInvites(rows) : [...rows];
+}

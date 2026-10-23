@@ -483,7 +483,7 @@ describe('review fixes (PR #184)', () => {
 
   it('Cancel invite is announced to VoiceOver, and the row actions wrap at the largest text sizes', () => {
     const tab = screen('(tabs)/family.tsx');
-    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*haptic\('soft'\);\s*announce\(f\.pending\.cancelled\);/);
+    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*\/\/[^\n]*\n\s*setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);\s*haptic\('soft'\);\s*announce\(f\.pending\.cancelled\);/);
     expect(tab).toMatch(/className="min-h-11 shrink flex-row/);
     expect(tab).toMatch(/<Text className="shrink text-base font-medium text-primary">\{label\}<\/Text>/);
   });

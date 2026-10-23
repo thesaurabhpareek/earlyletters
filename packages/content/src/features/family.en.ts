@@ -198,9 +198,9 @@ export const familyCopy = {
      */
     family_share_consent: 'Sharing a book now asks for one more agreement. Update the app to see it, then try again.',
     /**
-     * killSwitches.invites (SCKIL): create, Share again, peek, join and Cancel invite are paused and
-     * nothing was sent. Open invites and a link already on this phone stay as they are. Shown to the
-     * inviter and to the invitee, so it never names the child.
+     * killSwitches.invites (SCKIL): creating an invite, Share again, peek and join are paused and
+     * nothing was sent; Cancel invite still works. Open invites and a link already on this phone stay
+     * as they are. Shown to the inviter and to the invitee, so it never names the child.
      */
     paused: 'Invites are paused for now. Please try again a little later.',
   },
