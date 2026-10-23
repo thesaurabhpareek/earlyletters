@@ -62,7 +62,26 @@ select public.ops_storage_owned_by('<former profile id>', 100);
 ```sql
 select scope, reason_code, matter_ref, placed_at, review_by from legal_holds where released_at is null;
 ```
-A held request waits on purpose (DATA-REQ-035). When counsel releases the hold: `update legal_holds set released_at = now(), released_by = '<handle>' where id = '<hold>';` and the next hourly purge moves the request on. `holds_review` means a hold passed its `review_by` date: ask counsel, then extend `review_by` or release.
+Which holds block one held request: holds on the person, on a book deleted with the request, on their own letters, held drafts and backups and the books those are in, and on anyone's letter in a book deleted with the request or its author (20261023020000). A hold on a former member's own row in a kept book is listed but does not block. If it lists nothing, the hold is on the book or owner of a Storage object, or on a book that became theirs alone during the grace period.
+```sql
+with r as (select id, profile_id p from deletion_requests where id = '<request>'),
+     b as (select c.id from children c, r where c.deletion_request_id = r.id and c.purged_at is null),
+     named (why, id) as (
+       select 'the person', p from r
+       union all select 'a book deleted with the request', id from b
+       union all select 'their letter', e.id from entries e, r where e.author_id = r.p
+       union all select 'a book with their letter', e.child_id from entries e, r where e.author_id = r.p
+       union all select 'their held draft', h.id from held_drafts h, r where h.author_id = r.p
+       union all select 'a book with their held draft', h.child_id from held_drafts h, r where h.author_id = r.p
+       union all select 'their backup', a.entry_id from audio_blobs a, r where a.author_id = r.p
+       union all select 'a book with their book key', k.child_id from child_keys k, r where k.profile_id = r.p
+       union all select 'a letter in a book deleted with the request', e.id from entries e join b on b.id = e.child_id
+       union all select 'an author in a book deleted with the request', e.author_id from entries e join b on b.id = e.child_id)
+select distinct h.id, h.scope, h.matter_ref, h.review_by, n.why
+  from legal_holds h join named n on n.id = h.scope_id
+ where h.released_at is null;
+```
+A held request waits on purpose (DATA-REQ-035). When counsel releases the hold: `update legal_holds set released_at = now(), released_by = '<handle>' where id = '<hold>';` and the next purge run (the worker runs every 15 minutes) moves the request on. `holds_review` means a hold passed its `review_by` date: ask counsel, then extend `review_by` or release.
 
 ## 6. `residue`: verification found something
 

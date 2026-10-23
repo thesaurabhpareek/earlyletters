@@ -215,7 +215,7 @@ Order matters: Supabase refuses to delete a user who owns Storage objects [D6], 
 | # | Step (`deletion_request_steps.step`) | Action | Success test |
 |---|---|---|---|
 | 0 | | `purge_due()` moves the request to `executing` (or `held` under legal hold) | status |
-| 1 | | `prepare_account_purge(request)`: re-checks holds; tombstones books where the user became sole parent; enqueues all `{child}/{user}/` prefixes and whole prefixes of books deleted with the account; hard-deletes the user's letters and those books; writes the ledger | function returns counts |
+| 1 | | `prepare_account_purge(request)`: re-checks holds on every row it would delete (DATA-REQ-035); tombstones books where the user became sole parent; enqueues all `{child}/{user}/` prefixes and whole prefixes of books deleted with the account; hard-deletes the user's letters and those books; writes the ledger | function returns counts |
 | 2 | `storage_objects` | Drain the queue via Storage API (list prefix, delete in batches). In v1.0 no audio or photos are stored, so this is usually empty | listing each prefix returns 0 objects |
 | 3 | `apple_token_revoke` | Unwrap the stored refresh token and `POST https://appleid.apple.com/auth/revoke` [D2]; `not_applicable` if no Apple identity; `apple: no_token` plus an alert if an Apple user has no stored token (capture not built yet, security review H3) | HTTP 200 (also returned if already revoked) |
 | 4 | `posthog` | `not_applicable` at execution: events were deleted at request time by `analytics-forget` with the ids the phone kept | receipt `posthog: at_request` |
@@ -295,6 +295,7 @@ Facts: Supabase Pro keeps 7 days of daily backups; Team 14; Enterprise up to 30;
 
 **DATA-REQ-035 (P0) Legal holds.**
 - Given a hold on a letter, a book or an account, When `purge_due()` runs after day 30, Then the held scope is not purged and an account request moves to `held` (draft test for letters).
+- Given a hold on any row an account purge would delete (a book deleted with the account, anyone's letter, held draft, recording backup or book key in it except a former member's rows the purge keeps, or the person's own rows and Storage objects in a held book), When `prepare_account_purge()` runs, Then nothing changes and the request moves to `held` (20261023020000; `purge_legal_holds.test.mjs`).
 - Given the hold is released, Then the next run purges or executes normally.
 - Given any user, Then `legal_holds` is unreadable (draft test).
 
