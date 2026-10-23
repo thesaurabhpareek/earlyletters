@@ -221,7 +221,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Time: 15 minutes, plus the release gate below.
   - Cost: US $0.
   - Steps: protect `develop` and `main` requiring the CI `required` job (step 2 of the proposed path below does this too); labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
-  - Release gate (ADR 0022 decision 8, founder, 15 Oct; free because the repository is public; about 15 more minutes, needed before the first RC on Mon 26 Oct). This is what stands:
+  - Release gate (ADR 0022 decision 8, founder, 15 Oct; free because the repository is public; about 15 more minutes, needed before the first RC, whose date moves with the freeze). This is what stands:
     - Settings, Environments: create `app-store`. Add yourself as required reviewer. Under deployment branches and tags, choose selected ones and add tag `ios-v*` and branch `release/*`.
     - In `app-store`, add the environment secrets `EXPO_TOKEN` (a token used only for the store lane) and `ASC_REVIEW_CONTACT_JSON` (shape in `docs/ops/RELEASE.md` 3.5). Delete any repository secret of the same name.
     - Settings, Rules, Rulesets: a tag ruleset for `ios-v*` and a branch ruleset for `release/*`, each restricting creations, updates and deletions, with Repository admin as the only bypass.
@@ -233,7 +233,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
     5. From then on, every pull request into `main` (the website too) needs the approver's review, and nobody, you included, can push to `develop` or `main` directly.
     - Your call, before `--apply` in step 2: the branch `release/ios-v1.0` exists (at 1494d35) and #76 (open) targets it. After `--apply`, the `release/*` ruleset keeps it from being deleted or force-pushed, and `--verify` flags it because it is not `release/<major>.<minor>`. Either move #76 to another base or close it, then delete the branch, before `--apply`; or keep the branch and expect that line in `--verify`. Agents leave the branch as it is.
     - By: overdue (planned Mon 19 Oct, AUTOMATION 0.2 row 5); before any environment secret is added.
-  - By: Fri 9 Oct (release gate: Fri 23 Oct).
+  - By: overdue (planned Fri 9 Oct; release gate: Fri 23 Oct).
   - Blocks: BL-005, BL-122; lets scheduled agents take more of the backlog safely.
 
 ---
