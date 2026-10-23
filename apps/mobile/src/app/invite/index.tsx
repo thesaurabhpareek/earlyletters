@@ -36,7 +36,7 @@ import { FINAL_INVITE_ERRORS, inviteErrorKind, trackedInviteReason, type InviteE
 import { parseInviteInput } from '@/lib/family/invite-link.logic';
 import type { InvitePreview } from '@/lib/family/invite-preview.logic';
 import { acceptInvite, bookName, peekInvite } from '@/lib/family/invites';
-import { joinPlan } from '@/lib/family/join-flow.logic';
+import { joinedView, joinErrorLine, joinPlan } from '@/lib/family/join-flow.logic';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
 import { haptic } from '@/lib/haptics';
@@ -277,9 +277,9 @@ function JoinBook() {
         ) : null}
         {plan.view === 'failed' && error ? (
           <View testID="invite.error" className="gap-3">
-            <ErrorLine message={error === 'consent_needed' ? a.needsSync : fill(familyCopy.errors[error], { child: '' })} />
+            <ErrorLine message={errorLine(error)} />
             {FINAL_INVITE_ERRORS.includes(error) ? (
-              <QuietButton label={a.continue} onPress={pasteAnother} />
+              <QuietButton label={a.pasteAnother} onPress={pasteAnother} />
             ) : (
               <Button size="lg" onPress={retry}>
                 <Text>{a.tryAgain}</Text>
@@ -292,9 +292,20 @@ function JoinBook() {
   );
 }
 
+/** The join sheet's line for an error (lib/family/join-flow.logic.ts joinErrorLine). */
+function errorLine(kind: InviteErrorKind): string {
+  const a = familyCopy.accept;
+  const line = joinErrorLine(kind);
+  if (line === 'needsSync') return a.needsSync;
+  if (line === 'tryLater') return a.tryLater;
+  return fill(familyCopy.errors[line], { child: '' });
+}
+
 /**
  * Joined. Waits for sync to bring the book, then asks what the child calls this parent in it
- * (prefilled with the inviter's suggestion) and offers to open it. Nothing switches by itself.
+ * (prefilled with the inviter's suggestion) and offers to open it. Open needs a sign-off, and a
+ * line says so while the field is empty (lib/family/join-flow.logic.ts joinedView). Nothing
+ * switches by itself.
  */
 function Joined({ childId, fallbackName }: { childId: string; fallbackName: string | null }) {
   const c = useColors();
@@ -316,6 +327,7 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
   );
 
   const child = book?.name ?? fallbackName ?? '';
+  const view = joinedView(book, signsAs);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, 30);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
@@ -332,7 +344,7 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
       footer={
         book ? (
           <>
-            <Button testID="invite.open" size="lg" onPress={open} disabled={signsAs.trim().length === 0}>
+            <Button testID="invite.open" size="lg" onPress={open} disabled={!view.canOpen}>
               <Text>{a.open}</Text>
             </Button>
             <QuietButton
@@ -374,6 +386,11 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
               accessibilityHint={a.signsAsHelp}
             />
             <Text className="text-sm text-muted-foreground">{a.signsAsHelp}</Text>
+            {view.needsSignsAs ? (
+              <Text testID="invite.signsAs.needed" accessibilityLiveRegion="polite" className="text-sm text-foreground">
+                {fill(a.signsAsNeeded, { child })}
+              </Text>
+            ) : null}
           </View>
         ) : null}
       </View>

@@ -78,6 +78,8 @@ export const familyCopy = {
     signsAsLabel: 'What does {child} call you?',
     signsAsHelp: 'It signs your letters in this book.',
     signsAsPlaceholder: 'Mama, Papa, Amma, Baba',
+    /** Under the field while it is empty: why "Open the book" is waiting (F11-REQ-024). */
+    signsAsNeeded: 'Add what {child} calls you to open the book.',
     pasteLabel: 'Invite link',
     pasteHelp: 'Open the message with the invite, copy the link and paste it here.',
     pastePlaceholder: 'Paste the link here',
@@ -94,6 +96,10 @@ export const familyCopy = {
     open: 'Open the book',
     close: 'Close',
     tryAgain: 'Try again',
+    /** After an invite that can no longer work: back to the paste field. */
+    pasteAnother: 'Paste another link',
+    /** The membership limit, as the invitee meets it while looking or joining. */
+    tryLater: 'Please wait a little while, then try again.',
   },
 
   /** Leaving a shared book (F11 6.2 D; F11-REQ-011, F11-REQ-027, F11-REQ-028; R4 PT-14, PT-15). Nothing is preselected. */

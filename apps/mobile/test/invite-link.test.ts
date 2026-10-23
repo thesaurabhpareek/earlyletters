@@ -18,7 +18,7 @@ import {
 import { errorDetail, FINAL_INVITE_ERRORS, inviteErrorKind, isMissingFunction, trackedInviteReason, type InviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { byteaArg, newInviteDraft } from '../src/lib/family/invite-draft.logic';
 import { readInvitePreview, UNKNOWN_PREVIEW } from '../src/lib/family/invite-preview.logic';
-import { joinPlan, type JoinInputs } from '../src/lib/family/join-flow.logic';
+import { joinedView, joinErrorLine, joinPlan, type JoinInputs } from '../src/lib/family/join-flow.logic';
 import { decodeSeen, encodeSeen, familyTabState, leftSince, seenCoParentsKey } from '../src/lib/family/members.logic';
 
 const ORIGIN = brand.web.origin; // https://earlyletters.com
@@ -367,6 +367,29 @@ describe('the join sheet asks before it joins (BL-322, F11-REQ-006)', () => {
     expect(screen).toMatch(/const open = \(\) => \{[\s\S]*?setActiveChildId\(childId\)/);
     expect(screen.match(/acceptInvite\(/g)).toHaveLength(1);
     expect(screen).toMatch(/plan\.next === 'peek' \? peek\(token\) : accept\(token\)/);
+  });
+
+  it('[F11-REQ-024] joined: "Open the book" waits for a sign-off, and a line says why while the field is empty', () => {
+    expect(joinedView(null, '')).toEqual({ waiting: true, canOpen: false, needsSignsAs: false });
+    expect(joinedView({ signsAs: 'Papa' }, 'Papa')).toEqual({ waiting: false, canOpen: true, needsSignsAs: false });
+    expect(joinedView({ signsAs: '' }, '')).toEqual({ waiting: false, canOpen: false, needsSignsAs: true });
+    expect(joinedView({ signsAs: '' }, '   ')).toEqual({ waiting: false, canOpen: false, needsSignsAs: true });
+    expect(joinedView({ signsAs: '' }, 'Baba')).toEqual({ waiting: false, canOpen: true, needsSignsAs: false });
+    expect(familyCopy.accept.signsAsNeeded).toBe('Add what {child} calls you to open the book.');
+    const screen = readFileSync(join(__dirname, '..', 'src', 'app', 'invite', 'index.tsx'), 'utf8');
+    expect(screen).toMatch(/testID="invite\.open" size="lg" onPress=\{open\} disabled=\{!view\.canOpen\}/);
+    expect(screen).toMatch(/view\.needsSignsAs \?/);
+  });
+
+  it('after an invite that can no longer work, the button says where it goes; the invitee never reads the inviter\'s limit line', () => {
+    expect(familyCopy.accept.pasteAnother).toBe('Paste another link');
+    const screen = readFileSync(join(__dirname, '..', 'src', 'app', 'invite', 'index.tsx'), 'utf8');
+    expect(screen).toMatch(/<QuietButton label=\{a\.pasteAnother\} onPress=\{pasteAnother\} \/>/);
+    expect(joinErrorLine('rate_limited')).toBe('tryLater');
+    expect(joinErrorLine('consent_needed')).toBe('needsSync');
+    expect(joinErrorLine('expired')).toBe('expired');
+    expect(familyCopy.accept.tryLater).toBe('Please wait a little while, then try again.');
+    expect(familyCopy.accept.tryLater).not.toMatch(/tomorrow|invites/i);
   });
 });
 

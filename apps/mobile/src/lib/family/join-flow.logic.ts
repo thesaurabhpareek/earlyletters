@@ -48,3 +48,35 @@ export function joinPlan(i: JoinInputs): { view: JoinView; next: JoinAction } {
   if (!i.canSync) return { view: 'account', next: 'none' };
   return { view: 'joining', next: 'accept' };
 }
+
+/**
+ * The joined view (F11-REQ-024): while sync brings the book it waits; once the book is on this
+ * phone it asks what the child calls this parent in it, prefilled with the inviter's suggestion.
+ * "Open the book" needs a sign-off, because letters are signed with it; when the field is empty
+ * the sheet says why Open is waiting.
+ */
+export interface JoinedView {
+  /** The book is not on this phone yet: only Close, and the line that it is on its way. */
+  waiting: boolean;
+  /** "Open the book" may be tapped. */
+  canOpen: boolean;
+  /** Show the line that says a sign-off is needed before the book opens. */
+  needsSignsAs: boolean;
+}
+
+export function joinedView(book: { signsAs: string } | null, typed: string): JoinedView {
+  if (!book) return { waiting: true, canOpen: false, needsSignsAs: false };
+  const signed = typed.trim().length > 0;
+  return { waiting: false, canOpen: signed, needsSignsAs: !signed };
+}
+
+/**
+ * The line an error shows on the join sheet. The rate limit there is the membership limit an
+ * invitee can hit while looking or joining, so it gets the neutral try-again line, not the
+ * inviter's "send more tomorrow".
+ */
+export function joinErrorLine(kind: InviteErrorKind): 'needsSync' | 'tryLater' | InviteErrorKind {
+  if (kind === 'consent_needed') return 'needsSync';
+  if (kind === 'rate_limited') return 'tryLater';
+  return kind;
+}
