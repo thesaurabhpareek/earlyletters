@@ -132,8 +132,9 @@ export function createBackupService(deps: BackupServiceDeps) {
     if (!d.vault.supported() || stopped) return;
     let askedEscrow = false;
     // A restore pass asks the server for its list, so it runs only while a spoken letter of mine
-    // has no recording on this phone (a new phone, or one restored from a device backup).
-    if (d.local.anyMissing()) {
+    // has no recording on this phone (a new phone, or one restored from a device backup) that a
+    // listing in this run has not already left out (restore.ts worthListing).
+    if (restore.worthListing()) {
       try {
         const r = await restore.run();
         askedEscrow = r.escrow;

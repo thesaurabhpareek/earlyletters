@@ -376,3 +376,80 @@ describe('review fixes on #150: the upload switch and the transfer check', () =>
     expect(sha256Hex(readFileSync(fileURLToPath(audio.uri!)))).toBe(sha256Hex(recs[0].plain));
   });
 });
+
+describe('[review B n2 on #150] a recording that is not in the backup is listed for once a run, not on every pass', () => {
+  /** Counts the blob listings phones made after this call. */
+  function countLists(backend: FakeBackend): { n: number } {
+    const c = { n: 0 };
+    const serverFor = backend.serverFor.bind(backend);
+    backend.serverFor = (uid) => {
+      const s = serverFor(uid);
+      return {
+        ...s,
+        listBlobs: async () => {
+          c.n += 1;
+          return s.listBlobs();
+        },
+      };
+    };
+    return c;
+  }
+
+  it('never uploaded: one listing leaves it out, later passes ask nothing, and the next launch asks once more', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const lost = recordLetter(a, ASHA, 70_000); // phone A is lost before this one backs up
+    const lists = countLists(backend);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+    expect(audioOf(b, lost.id).uri).toBeNull();
+    expect(lists.n).toBe(1);
+    for (let i = 0; i < 5; i++) await b.service.tick(); // saves, foregrounds, network changes
+    expect(lists.n).toBe(1);
+    expect(b.service.view().restore).toBeNull();
+    // The next launch: one more listing, which still does not name it.
+    const relaunch = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b', share: b, backupDb: b.backupDb });
+    await relaunch.service.start();
+    await relaunch.service.tick();
+    expect(lists.n).toBe(2);
+  });
+
+  it('a later listing that names it brings it back in the same run', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const late = recordLetter(a, ASHA, 70_000); // not backed up yet when phone B first lists
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    expect(audioOf(b, late.id).uri).toBeNull();
+    await a.service.tick(); // phone A backs it up
+    expect(backend.blobs.get(late.id)?.state).toBe('confirmed');
+    const another = recordLetter(a, ASHA, 70_000);
+    syncText(a, b, [another.id]); // a new letter's words reach phone B: a missing letter not listed yet
+    await b.service.tick();
+    expect(audioOf(b, late.id).sha256).toBe(sha256Hex(late.plain));
+    expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+  });
+
+  it('a download that failed for good (F08-U20) makes no more listings either', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const row = backend.blobs.get(recs[0].id)!;
+    const obj = backend.objects.get(row.objectPath)!;
+    obj[obj.length - 1] ^= 1; // the stored object no longer authenticates
+    const lists = countLists(backend);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    for (let i = 0; i < 6; i++) await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)?.state).toBe('failed');
+    expect(lists.n).toBe(2); // the try and the one retry
+  });
+});

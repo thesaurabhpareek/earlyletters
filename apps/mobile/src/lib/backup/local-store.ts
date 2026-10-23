@@ -132,13 +132,13 @@ export function restoreLocal(o: RestoreLocalOptions): RestoreLocal {
     clearRestoredHash(entryId, sha256): void {
       o.db().run('UPDATE entries SET audio_sha256 = NULL, audio_bytes = NULL WHERE id = ? AND audio_sha256 = ?', entryId, sha256);
     },
-    anyMissing(): boolean {
-      const rows = o.db().all<{ audio_uri: string | null }>(
-        `SELECT audio_uri FROM entries WHERE deleted_at IS NULL AND kind = 'letter' AND capture_mode IN ('spoken', 'mixed')
+    missing(): string[] {
+      const rows = o.db().all<{ id: string; audio_uri: string | null }>(
+        `SELECT id, audio_uri FROM entries WHERE deleted_at IS NULL AND kind = 'letter' AND capture_mode IN ('spoken', 'mixed')
          AND (author_id IS NULL OR author_id = ?)`,
         o.profileId,
       );
-      return rows.some((r) => r.audio_uri === null || !o.fileExists(r.audio_uri));
+      return rows.filter((r) => r.audio_uri === null || !o.fileExists(r.audio_uri)).map((r) => r.id);
     },
   };
 }

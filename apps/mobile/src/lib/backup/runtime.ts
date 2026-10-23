@@ -559,16 +559,6 @@ export function setBackupCellular(on: boolean): void {
   if (on) kick(500);
 }
 
-/** A letter was opened: bring its recording back now if it is backed up and not on this phone. */
-export function restoreForLetter(entryId: string): void {
-  void current()
-    .then((s) => s?.restore.restoreEntry(entryId))
-    .then((r) => {
-      if (r?.kind === 'done') notifyStoreChanged();
-    })
-    .catch(() => undefined);
-}
-
 export function tryRestoreAgain(): void {
   void (host.current()?.tryAgain() ?? Promise.resolve())
     .catch(() => undefined)

@@ -53,8 +53,8 @@ export interface RestoreLocal {
   attachAudio(entryId: string, uri: string, sha256: string, bytes: number): boolean;
   /** Undoes a hash `attachAudio` filled in, when the move then lost to a file already at that path. */
   clearRestoredHash(entryId: string, sha256: string): void;
-  /** Whether any live spoken letter of mine has no recording on this phone (so a restore pass is worth a request). */
-  anyMissing(): boolean;
+  /** Live spoken letters of mine with no recording on this phone, by id (a restore pass may be worth a request). */
+  missing(): string[];
 }
 
 export interface BlobDownloader {
@@ -178,6 +178,12 @@ export function createRestore(d: RestoreDeps) {
   let blobs: BlobRow[] | null = null;
   /** One restore per letter at a time: a pass and an opened letter join the same attempt. */
   const inflight = new Map<string, Promise<RestoreOutcome>>();
+  /**
+   * Missing letters a listing in this run did not name: never backed up (lost before an upload),
+   * or not yet. They make no more listings in this run (review B n2 on #150); the next launch
+   * asks once again, and a later listing that names one takes it off.
+   */
+  const unlisted = new Set<string>();
   let attempt = 0;
   /**
    * This session's copy of the last release, beside the saved one in backup.db: a save that
@@ -464,6 +470,15 @@ export function createRestore(d: RestoreDeps) {
     restoreOne,
 
     /**
+     * Whether a restore pass is worth a listing: a missing letter of mine that no listing in this run
+     * left out, and whose download has not failed for good (F08-U20). Otherwise a recording that was
+     * never backed up would list `audio_blobs` on every pass, for as long as the app runs.
+     */
+    worthListing(): boolean {
+      return d.local.missing().some((id) => !unlisted.has(id) && d.db.restoreItem(id)?.state !== 'failed');
+    },
+
+    /**
      * Brings back every backed-up recording it can, oldest letter first. When
      * escrow releases keys during this pass, the recordings they open come back
      * in the same pass. Returns what is still waiting on keys.
@@ -475,6 +490,11 @@ export function createRestore(d: RestoreDeps) {
         let waitingUntil: number | null = null;
         let needEscrow = false;
         const all = [...(await listBlobs(true))].sort((a, b) => (a.entryId < b.entryId ? -1 : 1));
+        const named = new Set(all.map((b) => b.entryId));
+        for (const id of d.local.missing()) {
+          if (named.has(id)) unlisted.delete(id);
+          else unlisted.add(id);
+        }
         for (let i = 0; i < all.length; i++) {
           const blob = all[i];
           if (stopped()) {
@@ -508,7 +528,10 @@ export function createRestore(d: RestoreDeps) {
       return { restored: first.restored, keys: { kind: 'ready' }, remaining: first.remaining, escrow: false };
     },
 
-    /** One letter, when it is opened: may use mobile data for a small recording. */
+    /**
+     * One letter, when it is opened: may use mobile data for a small recording. No screen calls it
+     * yet (F08 6.5 B step 4 is not wired to the letter page); passes restore every letter meanwhile.
+     */
     async restoreEntry(entryId: string): Promise<RestoreOutcome | null> {
       const blob = (await listBlobs()).find((b) => b.entryId === entryId);
       return blob ? restoreOne(blob, true) : null;
