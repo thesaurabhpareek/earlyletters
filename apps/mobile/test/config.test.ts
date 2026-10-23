@@ -157,6 +157,13 @@ const PROFILE_VARIABLES = [
   'EXPO_PUBLIC_ANALYTICS',
 ] as const;
 
+/**
+ * Named only in the two alpha profiles (D-111 item 4: the alpha offers English only). Every other profile
+ * leaves it unset, which reads as off (lib/capabilities.ts; pinned per profile in capabilities.test.ts).
+ */
+const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY'] as const;
+const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
+
 /** Project values that come only from EAS environment variables (docs/release/TESTFLIGHT.md step 7). */
 const FROM_EAS_ONLY = [
   'EXPO_PUBLIC_SUPABASE_URL',
@@ -175,7 +182,7 @@ const FROM_EAS_ONLY = [
  */
 function configForProfile(name: string, opts: { easBuild?: boolean; extra?: Record<string, string> } = {}): ExpoConfig {
   const env = { ...(easFile.build[name]?.env ?? {}), ...(opts.extra ?? {}), ...(opts.easBuild ? { EAS_BUILD_PROFILE: name } : {}) };
-  const names = [...PROFILE_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
@@ -211,7 +218,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     for (const name of [...APP_ENVS, 'testflight']) {
       it(`${name}: names only the build switches, writes each one out, and keeps project values in EAS`, () => {
         const env = eas.build[name].env ?? {};
-        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES].sort());
+        const alpha = ALPHA_PROFILES.includes(name);
+        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(alpha ? ALPHA_ONLY_VARIABLES : [])].sort());
+        expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(alpha ? 'on' : undefined);
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();
         expect(env.EXPO_PUBLIC_DOCS_BASE_URL).toBe('https://packs.earlyletters.app');
         expect(env.EXPO_PUBLIC_ANALYTICS).toBe('off');
