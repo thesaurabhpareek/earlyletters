@@ -65,6 +65,8 @@ export interface BackupSourceItem {
 
 export interface BackupSource {
   list(): BackupSourceItem[];
+  /** Whether `list()` would include this recording now, by its id alone (read between segments and parts). */
+  has(entryId: string): boolean;
 }
 
 export type GateReason = 'off' | 'consent' | 'quota' | 'killed' | 'background' | 'busy' | 'offline' | 'wifi' | 'sign_in';
@@ -144,6 +146,20 @@ export function createUploadQueue(d: QueueDeps) {
 
   function discardTmp(job: Pick<UploadJob, 'tmpUri'>): void {
     if (job.tmpUri) d.files.remove(job.tmpUri);
+  }
+
+  /**
+   * The letter was erased or deleted (it is no longer listed): its job and ciphertext go now, as
+   * `reconcile` would drop them at the next pass, and the queue moves on (review B m3 on #150).
+   */
+  function goneNow(entryId: string): boolean {
+    if (d.source.has(entryId)) return false;
+    const job = d.db.job(entryId);
+    if (job) {
+      discardTmp(job);
+      d.db.deleteJob(entryId);
+    }
+    return true;
   }
 
   /** Back to the start: a new key and new ciphertext, and a fresh upload (the server replaces a pending row). */
@@ -246,7 +262,8 @@ export function createUploadQueue(d: QueueDeps) {
         source,
         sink,
         aead: d.aead,
-        keepGoing,
+        // Between segments: as keepGoing, and only while the letter is still listed (not erased).
+        keepGoing: () => keepGoing() && d.source.has(job.entryId),
       });
     } catch (e) {
       source.close();
@@ -295,7 +312,7 @@ export function createUploadQueue(d: QueueDeps) {
     }
     d.db.updateJob(job.entryId, { keyVersion: key.version });
     const r = await sealInto({ ...job, keyVersion: key.version }, false);
-    if (r === 'stopped') return { kind: 'gate', reason: await stopReason() };
+    if (r === 'stopped') return goneNow(job.entryId) ? { kind: 'progressed' } : { kind: 'gate', reason: await stopReason() };
     if (r === 'missing') return later(job, 'missing');
     if (r === 'mismatch') {
       d.db.updateJob(job.entryId, { state: 'blocked', lastError: 'hash_mismatch' });
@@ -343,7 +360,7 @@ export function createUploadQueue(d: QueueDeps) {
 
   async function stepUpload(job: UploadJob): Promise<StepOutcome> {
     const tmp = await ensureTmp(job);
-    if (tmp === 'stopped') return { kind: 'gate', reason: await stopReason() };
+    if (tmp === 'stopped') return goneNow(job.entryId) ? { kind: 'progressed' } : { kind: 'gate', reason: await stopReason() };
     if (tmp === 'reset') return { kind: 'progressed' };
     const fresh = d.db.job(job.entryId)!;
     const target = await d.server.uploadTarget(fresh.objectPath!, fresh.uploadToken);
@@ -356,10 +373,11 @@ export function createUploadQueue(d: QueueDeps) {
       readPart: (offset, length) => d.files.readSlice(fresh.tmpUri!, offset, length),
       progress: { url: fresh.uploadUrl, offset: fresh.uploadOffset },
       onProgress: (p) => d.db.updateJob(job.entryId, { state: 'uploading', uploadUrl: p.url, uploadOffset: p.offset }),
-      keepGoing: keepSending,
+      // Before every part: as keepSending, and only while the letter is still listed (not erased).
+      keepGoing: () => keepSending() && d.source.has(job.entryId),
       partBytes: d.partBytes,
     });
-    if (result === 'stopped') return { kind: 'gate', reason: await stopReason() };
+    if (result === 'stopped') return goneNow(job.entryId) ? { kind: 'progressed' } : { kind: 'gate', reason: await stopReason() };
     d.db.updateJob(job.entryId, { state: 'uploaded' });
     return { kind: 'progressed' };
   }
@@ -394,6 +412,8 @@ export function createUploadQueue(d: QueueDeps) {
   }
 
   async function step(job: UploadJob): Promise<StepOutcome> {
+    // Erased since the pass began (reconcile runs once, at its start): nothing more is sent for it.
+    if (goneNow(job.entryId)) return { kind: 'progressed' };
     try {
       switch (job.state) {
         case 'queued':

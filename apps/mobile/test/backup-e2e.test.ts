@@ -358,6 +358,27 @@ describe('what Settings says, and the recovery service is asked only when it mus
     expect(later.list().map((i) => i.entryId).sort()).toEqual([letter.id, held.id].sort());
   });
 
+  it('[review B m3] the per-id check the queue reads between parts agrees with the list: deleted, erased and others\' letters are out', () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    const kept = recordLetter(a, ASHA, 10_000);
+    const deleted = recordLetter(a, ASHA, 10_000);
+    const erased = recordLetter(a, ASHA, 10_000);
+    const held = holdDraft(a, ASHA, 10_000, { onServer: true });
+    a.local.run("UPDATE entries SET deleted_at = '2026-10-29T00:00:00Z' WHERE id = ?", deleted.id); // Recently deleted
+    a.local.run('DELETE FROM entries WHERE id = ?', erased.id); // erased for good
+    for (const src of [backupSource({ db: () => a.local, profileId: MAMA }), backupSource({ db: () => a.local, profileId: MAMA, heldOnServer: () => true })]) {
+      const listed = new Set(src.list().map((i) => i.entryId));
+      for (const id of [kept.id, deleted.id, erased.id, held.id]) expect(src.has(id), id).toBe(listed.has(id));
+    }
+    expect(backupSource({ db: () => a.local, profileId: MAMA }).has(kept.id)).toBe(true);
+    expect(backupSource({ db: () => a.local, profileId: MAMA }).has(deleted.id)).toBe(false);
+    expect(backupSource({ db: () => a.local, profileId: MAMA, heldOnServer: () => true }).has(held.id)).toBe(true);
+    expect(backupSource({ db: () => a.local, profileId: PAPA }).has(kept.id)).toBe(false);
+  });
+
   it('[M1] a quota pause lifts at the next launch: one backup_begin asks again', async () => {
     const clock = { t: 0 };
     const backend = new FakeBackend(() => clock.t);
