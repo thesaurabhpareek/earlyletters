@@ -68,7 +68,7 @@ const { permissionCopy } = loadTs<PermissionCopyModule>('./src/lib/permission-co
 
 type BuildEnvModule = typeof import('./src/lib/build-env');
 type AppEnv = import('./src/lib/build-env').AppEnv;
-const { resolveAppEnv } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
+const { resolveAppEnv, e2eRefusal } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
 
 /** Reads EXPO_PUBLIC_APP_ENV at evaluation time. Unset means development; an unknown value is refused. */
 function appEnvFromProcess(): AppEnv {
@@ -135,6 +135,9 @@ function capabilityFlags() {
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const APP_ENV = appEnvFromProcess();
+  // B-9: EXPO_PUBLIC_E2E=1 only in a development build, and on EAS only in the e2e profile (build-env.ts).
+  const e2eStop = e2eRefusal({ e2e: process.env.EXPO_PUBLIC_E2E, appEnv: APP_ENV, easBuildProfile: process.env.EAS_BUILD_PROFILE });
+  if (e2eStop !== null) throw new Error(e2eStop);
   const appId = `${bundleId()}${ID_SUFFIX[APP_ENV]}`;
   return {
   ...config,

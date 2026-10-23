@@ -145,6 +145,15 @@ if (prof) {
   const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
+{
+  // B-9 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): the e2e seams belong to the e2e simulator profile only.
+  const store = Object.entries(eas.build ?? {}).filter(([, p]) => (p.distribution ?? 'store') === 'store' && p.ios?.simulator !== true).map(([n]) => n);
+  const carrying = store.filter((n) => eas.build[n].env?.EXPO_PUBLIC_E2E !== undefined);
+  check(carrying.length === 0, `no store profile sets EXPO_PUBLIC_E2E (store profiles: ${store.join(', ')})`, `EXPO_PUBLIC_E2E is set in store profile(s) ${carrying.join(', ')}: e2e seams never go in a build that can be uploaded (B-9). Remove it there; only the e2e simulator profile carries it.`);
+  const shell = process.env.EXPO_PUBLIC_E2E;
+  check(shell === undefined || shell.trim() === '', 'EXPO_PUBLIC_E2E is not set in this shell', `EXPO_PUBLIC_E2E is set in this shell (${JSON.stringify(shell)}), and a local build reads the shell: unset it before building ${PROFILE} (B-9; apps/mobile/e2e/README.md section 9 sets it only for the simulator build).`);
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_E2E (this script cannot read it); if it does, app.config.ts refuses the EAS build (B-9)`);
+}
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
 {
   const ascAppId = eas.submit?.[PROFILE]?.ios?.ascAppId;

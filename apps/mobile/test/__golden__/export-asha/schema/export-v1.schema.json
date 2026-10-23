@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://earlyletters.com/export-format/v1.schema.json",
   "title": "Early Letters export, format 1",
-  "description": "Schema for data/entries.json, data/children.json, data/account.json and manifest.json in an export.",
+  "description": "Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json (when present) and manifest.json in an export.",
   "$defs": {
     "audio": {
       "type": "object",
@@ -20,7 +20,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "pattern": "^audio/[^/]+\\.m4a$"
+          "pattern": "^audio/[^/]+\\.(m4a|aac)$"
         },
         "sha256": {
           "type": "string",
@@ -41,7 +41,10 @@
           "const": "aac-lc"
         },
         "media_type": {
-          "const": "audio/mp4"
+          "enum": [
+            "audio/mp4",
+            "audio/aac"
+          ]
         },
         "integrity": {
           "enum": [
@@ -60,6 +63,32 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "media_type": {
+            "const": "audio/aac"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.aac$"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.m4a$"
+          }
         }
       }
     },
@@ -433,6 +462,66 @@
                   "null"
                 ],
                 "pattern": "^book/.+\\.pdf$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "otherVersionsFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "versions"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry_id",
+              "reason",
+              "final_text",
+              "edit_level",
+              "machine_edits",
+              "kept_at"
+            ],
+            "properties": {
+              "entry_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "enum": [
+                  "conflict_copy"
+                ]
+              },
+              "final_text": {
+                "type": "string"
+              },
+              "edit_level": {
+                "type": "string"
+              },
+              "machine_edits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/edit"
+                }
+              },
+              "kept_at": {
+                "type": "string",
+                "minLength": 10
               }
             }
           }
