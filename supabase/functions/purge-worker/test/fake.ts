@@ -55,7 +55,7 @@ export class FakeWorld {
   alertState = new Map<string, number | null>();
   ledger: { t: string; id: string; at: string }[] = [];
   retentionCalls = 0;
-  /** escrow_unwraps rows as backup_svc_unwraps_between returns them (20261015230000). */
+  /** escrow_unwraps rows as backup_svc_unwraps_between returns them (20261023000000). */
   escrowLog: Record<string, unknown>[] = [];
   backupSweepCalls = 0;
   finalized = new Map<string, Record<string, unknown>>();

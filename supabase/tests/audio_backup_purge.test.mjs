@@ -1,4 +1,4 @@
-// Backup deletion paths (20261015230000_backup_server.sql; PRD V2 F08 6.5 D, F17 8.4,
+// Backup deletion paths (20261023000000_backup_server.sql; PRD V2 F08 6.5 D, F17 8.4,
 // WP-F08-B3p): a purged letter, a purged book, the orphan and stale sweeps, and account deletion
 // from request to finalize, each by exact object path with its ledger rows. The worker side
 // (draining the queue, the daily log copy) is in supabase/functions/purge-worker/test.

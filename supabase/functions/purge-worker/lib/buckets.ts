@@ -8,7 +8,7 @@
  * folders for an account. A bucket listed here but not created yet is skipped,
  * so adding audio, inbox or avatars later needs no worker change.
  *
- * v1.0 (D-102, M16; 20261015230000_backup_server.sql): `entry-audio` holds the
+ * v1.0 (D-102, M16; 20261023000000_backup_server.sql): `entry-audio` holds the
  * owner's encrypted recording backups. Whole books and whole people reach it by
  * prefix through mirrorPrefixes, as built; a single erased letter, a discarded held
  * draft or a swept orphan is queued by its exact `audio_blobs.object_path` in

@@ -1,5 +1,5 @@
 /**
- * The escrow_* functions in the main project (20261015230000_backup_server.sql, section 8),
+ * The escrow_* functions in the main project (20261023000000_backup_server.sql, section 8),
  * called as escrow_svc. Every call is one `select public.escrow_x($1, ...)::text` with bound
  * parameters; bytes travel as Postgres bytea text ('\x' and hex).
  */

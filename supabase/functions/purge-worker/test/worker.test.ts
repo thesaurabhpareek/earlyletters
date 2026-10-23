@@ -370,7 +370,7 @@ Deno.test('the run stops starting new work at its time budget', async () => {
   assert.equal(w.finalized.size, 0);
 });
 
-// ── Recording backup (20261015230000_backup_server.sql; PRD V2 F08 6.5 D, F08-REQ-024, -042) ──
+// ── Recording backup (20261023000000_backup_server.sql; PRD V2 F08 6.5 D, F08-REQ-024, -042) ──
 
 const escrowRow = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
   device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });

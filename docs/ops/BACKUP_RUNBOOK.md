@@ -2,7 +2,7 @@
 
 For the founder. Stream S05, server half. Written 15 Oct 2026 for the alpha (TestFlight with server features on, against staging, for the founding family, Thu 29 Oct 2026).
 
-What this covers: the `entry-audio` bucket and the backup tables (migration `<timestamp>_backup_server.sql`), the separate escrow project and its one function (`supabase/functions/escrow`), the escrow key ceremony, custody, rotation, and what each alert means. Spec: PRD V2 F08 section 6.5 (C, D, G) and F17 section 8.4. Decision: D-102 (formerly D-091, PR #128): keep server escrow, say so plainly, the key runs only in a separate project and one function, every use is logged and emailed.
+What this covers: the `entry-audio` bucket and the backup tables (migration `20261023000000_backup_server.sql`), the separate escrow project and its one function (`supabase/functions/escrow`), the escrow key ceremony, custody, rotation, and what each alert means. Spec: PRD V2 F08 section 6.5 (C, D, G) and F17 section 8.4. Decision: D-102 (formerly D-091, PR #128): keep server escrow, say so plainly, the key runs only in a separate project and one function, every use is logged and emailed.
 
 Nothing here has been run against a hosted project. Agents never apply migrations, set secrets or deploy functions (COORDINATION section 6); every step below is yours.
 
@@ -179,12 +179,12 @@ A main-project database restore does not touch the escrow project or its secret.
 
 ## Appendix A. APPLY section for S02 (supabase/APPLY.md)
 
-S02 owns `supabase/APPLY.md`; this is the text for the section of this file, to paste with the real timestamp.
+S02 owns `supabase/APPLY.md`; this is the text for the section of this file, to paste as it stands (renamed again only if develop gains a later file before merge).
 
-> ### File `<timestamp>_backup_server.sql` (S05: encrypted recording backup and the recovery key)
+> ### File `20261023000000_backup_server.sql` (S05: encrypted recording backup and the recovery key)
 > What it does: the private `entry-audio` bucket and its owner-only policies; tables `backup_devices`, `child_keys`, `audio_blobs`, `backup_usage`, `restore_requests`, `restore_approvals`, `escrow_unwraps` (append-only), `escrow_rotation_notices`, none of them granted to `service_role`; the `backup` policy document; client RPCs `backup_*`; the `escrow_svc` role (created NOLOGIN) with EXECUTE on ten `escrow_*` functions only; service functions `backup_svc_sweep`, `backup_svc_unwraps_between`, `backup_svc_stop`; triggers on `entries`, `profiles` and `deletion_requests` so every deletion path removes backups by exact path; `purge_ledger.entity_type` gains `audio_blob` (no value removed).
 > Depends on: every earlier file. Needs `app.consent_pepper` set before any account deletion (step 6).
-> Apply: through `deploy-db.yml` (staging by `workflow_dispatch` with `approve-migration`; production on a `db-v*` tag).
+> Apply: through `deploy-db.yml` (docs/ops/DEPLOY.md: staging on the push to `develop` that carries this file, after the `staging` reviewer approves; production on a `db-v*` tag). Approve Deploy database before the functions run that redeploys `purge-worker`, which calls `backup_svc_sweep`.
 > Check (expect each):
 > ```sql
 > select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace

@@ -3,7 +3,7 @@
  * SQL: supabase/migrations/20261002020000_data_governance.sql (prepare and
  * finalize), 20261003020000_purge_batching.sql (purge_due, backoff) and
  * 20261004200000_ops_deletion_worker.sql (everything named ops_*), and
- * 20261015230000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between).
+ * 20261023000000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between).
  * Every id travels in an RPC body, never in a URL.
  */
 import type { ServiceClient } from './lib/service.ts';

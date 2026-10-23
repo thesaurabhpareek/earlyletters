@@ -1,10 +1,12 @@
 -- S05 server: encrypted recording backup and the recovery key (PRD V2 F08 section 6.5,
 -- WP-F08-B3 and the SQL half of WP-F08-B4 and WP-F08-B3p; F17 section 8.4 rows).
 --
--- PENDING: not yet applied. The coordinator gives this file the next free timestamp
--- after S02's newest file at merge (08-delivery.md section 4). Apply following
--- supabase/APPLY.md, section "File <timestamp>_backup_server.sql" (text sent to S02 in
--- the PR; also in docs/ops/BACKUP_RUNBOOK.md appendix A). Never edits an earlier file
+-- PENDING: not yet applied. Drafted as 20261015230000; renamed on 23 Oct 2026 to the next
+-- free timestamp after develop's newest file, 20261016000000_sync_v1_server.sql (08-delivery.md
+-- section 4), because staging follows develop and `supabase db push` refuses a file that sorts
+-- before one the target already has. Rename it again at merge if develop gains a later file.
+-- Apply after 20261016000000 following supabase/APPLY.md, section "File 20261023000000_backup_server.sql"
+-- (text sent to S02 in the PR; also in docs/ops/BACKUP_RUNBOOK.md appendix A). Never edits an earlier file
 -- and redefines no function first defined in another file. It adds triggers to three
 -- existing tables (entries, profiles, deletion_requests) whose functions live here, and
 -- widens purge_ledger's entity_type check by one value without dropping any value a

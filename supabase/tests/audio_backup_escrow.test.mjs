@@ -1,4 +1,4 @@
-// The recovery key's database side (20261015230000_backup_server.sql; PRD V2 F08 6.5 C and G,
+// The recovery key's database side (20261023000000_backup_server.sql; PRD V2 F08 6.5 C and G,
 // WP-F08-B4): the escrow_svc role, restore requests and holds, approvals that prove the enrolled
 // device holds its key (and was enrolled 7 days before the request), sessions that end with the
 // stop link, limits, the release invariant, the append-only access log, key rotation and its

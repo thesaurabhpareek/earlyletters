@@ -1,4 +1,4 @@
-// Encrypted recording backup, owner side (20261015230000_backup_server.sql; PRD V2 F08 6.5,
+// Encrypted recording backup, owner side (20261023000000_backup_server.sql; PRD V2 F08 6.5,
 // WP-F08-B3). Devices, book key wraps, upload reservations, quota, consent, switches and the
 // entry-audio Storage policies. Escrow rules: audio_backup_escrow.test.mjs. Deletion and the
 // purge paths: audio_backup_purge.test.mjs. Fictional family "Asha" only (CLAUDE.md).
