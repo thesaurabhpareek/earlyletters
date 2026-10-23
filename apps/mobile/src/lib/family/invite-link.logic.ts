@@ -2,7 +2,12 @@
  * Co-parent invite links (PRD A F7, B F5; TDD 04 3.4). Pure, tested in
  * test/invite-link.test.ts.
  *
- * Format: `https://earlyletters.com/i/<token>` (origin from packages/brand).
+ * Format: `https://earlyletters.com/j#t=<token>` (origin from packages/brand;
+ * PRD V2 F11). The token sits in the fragment, which a browser never sends to
+ * a server, so a link opened without the app (a laptop, a mail app's own
+ * browser) does not put the token in the website's request logs. The earlier
+ * `/i/<token>` form put it in the path; no build ever shipped with it, and it
+ * is no longer written or accepted.
  * The token is the raw value `create_child_invite` returns once; the server
  * keeps only its SHA-256. Today it is 64 hex characters (two v4 UUIDs);
  * base64url tokens of 32 to 128 characters are accepted so a later server
@@ -15,7 +20,7 @@
  */
 import { originHost, splitUrl } from '../auth/url.logic';
 
-export const INVITE_PATH_PREFIX = '/i/';
+export const INVITE_PATH = '/j';
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 
 export function isInviteToken(s: string): boolean {
@@ -25,7 +30,7 @@ export function isInviteToken(s: string): boolean {
 /** The link the inviter shares. */
 export function inviteUrl(token: string, origin: string): string {
   if (!isInviteToken(token)) throw new Error('invite_token_invalid');
-  return `${origin.replace(/\/+$/, '')}${INVITE_PATH_PREFIX}${token}`;
+  return `${origin.replace(/\/+$/, '')}${INVITE_PATH}#t=${token}`;
 }
 
 /** Hosts an invite link may use: the brand origin and its www alias (people retype links). */
@@ -36,14 +41,16 @@ function inviteHosts(origin: string): Set<string> {
 
 /**
  * Token from a system link (universal link). https on the brand host only,
- * path exactly /i/<token> (one trailing slash tolerated). Anything else: null.
+ * path exactly /j (one trailing slash tolerated), token in the fragment as
+ * `t`. A token in the query is refused: it would have reached a server.
+ * Anything else: null.
  */
 export function parseInviteUrl(url: string, origin: string): string | null {
   const u = splitUrl(url);
   if (!u || u.scheme !== 'https' || !inviteHosts(origin).has(u.host)) return null;
-  const m = /^\/i\/([^/]+)\/?$/.exec(u.path);
-  if (!m) return null;
-  return isInviteToken(m[1]) ? m[1] : null;
+  if (u.path.replace(/\/$/, '') !== INVITE_PATH) return null;
+  const token = u.fragment.t ?? '';
+  return isInviteToken(token) ? token : null;
 }
 
 /**
@@ -56,7 +63,7 @@ export function parseInviteInput(text: string, origin: string): string | null {
   if (!t) return null;
   if (isInviteToken(t)) return t;
   const host = originHost(origin).replace(/\./g, '\\.');
-  const re = new RegExp(`https://(?:www\\.)?${host}/i/[A-Za-z0-9_-]+/?`, 'gi');
+  const re = new RegExp(`https://(?:www\\.)?${host}/j/?#t=[A-Za-z0-9_-]+`, 'gi');
   for (const m of t.matchAll(re)) {
     const token = parseInviteUrl(m[0], origin);
     if (token) return token;

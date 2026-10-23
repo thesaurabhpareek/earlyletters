@@ -219,7 +219,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
     usesAppleSignIn: true,
-    // Universal links for email sign-in and invites (/auth/callback, /i/*); the website serves the AASA
+    // Universal links for email sign-in and invites (/auth/callback, /j); the website serves the AASA
     // file (docs/ops/AUTH_SETUP.md section 5). Domain from packages/brand, never typed here.
     associatedDomains: [`applinks:${brand.publisher.domain}`],
     entitlements: {
