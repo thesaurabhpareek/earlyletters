@@ -277,7 +277,11 @@ Everything else in the migration is additive (new tables, columns, functions, tr
 
 ## Performance budgets
 
-`npm run test:db` includes `supabase/tests/perf.test.mjs`: 1,000 families x 400 letters (400,000 entries, 354 MB with indexes), queried as a signed-in co-parent through RLS and `book_entries`. It fails if any plan sequentially scans `entries`, `children` or `child_members`, or if a p95 exceeds its budget. Times are server-side execution in PGlite (single-threaded WASM Postgres), 200 samples after 20 warm-up queries; native Postgres on Supabase is faster, and the client-side budget including the network is PRD 7.2 (read p95 300 ms).
+`supabase/tests/perf.test.mjs` queries the book as a signed-in co-parent through RLS and `book_entries`; `sync_perf.test.mjs` does the same for the sync RPCs. Both run in two modes (17 Oct 2026, after S20's #214: a slow CI runner had turned `required` red on a docs-only PR):
+- **Every pull request** (`npm run test:db`): 250 families x 400 letters (100,000 entries). Every plan check runs: no plan may sequentially scan `entries`, `children` or `child_members`, and each plan must name its index (`entries_book_page_idx` for the book and search reads, `entries_pkey` for one letter, `child_members_profile_idx` for membership, `entries_sync_cursor_idx` for the pull page). The plans are the same as at 1,000 families (compared line by line, costs aside); 100 x 100 is too small (the planner switches to sequential scans). p95 times are printed, not checked.
+- **Nightly** (`PERF_BUDGETS=1 npm run test:db:perf`, the `perf` job in `.github/workflows/nightly.yml`, which runs once the default branch is `develop`, AF-05): 1,000 families x 400 letters (400,000 entries, about 390 MB with indexes), every plan check and every p95 budget below. About 1.5 minutes locally.
+
+Times are server-side execution in PGlite (single-threaded WASM Postgres), 200 samples after 20 warm-up queries; native Postgres on Supabase is faster, and the client-side budget including the network is PRD 7.2 (read p95 300 ms). No budget value changed with the split.
 
 | Query | What | Measured p95 (2 Oct 2026) | After file 5 (3 Oct 2026) | Budget p95 |
 |---|---|---|---|---|
@@ -290,7 +294,7 @@ Everything else in the migration is additive (new tables, columns, functions, tr
 
 File 5's `book_entries` keeps the same plan shape (bitmap scan of `entries_book_page_idx`, membership resolved once from `child_members_profile_idx`). A first draft that OR-ed two membership subqueries measured 21 ms p95 on `book_page`; the shipped predicate uses one membership subquery plus a parents-only clause for pending letters. On a busy machine all six numbers move together by up to about 1.5x.
 
-Plans: book and search queries use the new partial index `entries_book_page_idx (child_id, occurred_on desc, captured_at desc) where in_book and deleted_at is null`; membership is resolved once per query from `child_members_profile_idx`, so cost follows the reader's own books, not the number of families. Synthetic letters are about 24 words; real letters are longer, which mainly affects search recheck time. Scale knobs: `PERF_FAMILIES`, `PERF_ENTRIES`, `PERF_SAMPLES`; `npm run test:db:perf` runs only this test.
+Plans: book and search queries use the new partial index `entries_book_page_idx (child_id, occurred_on desc, captured_at desc) where in_book and deleted_at is null`; membership is resolved once per query from `child_members_profile_idx`, so cost follows the reader's own books, not the number of families. Synthetic letters are about 24 words; real letters are longer, which mainly affects search recheck time. Scale knobs: `PERF_FAMILIES` (default 250, or 1,000 with `PERF_BUDGETS=1`), `PERF_ENTRIES` (400; the sync first page needs at least 200), `PERF_SAMPLES`; `npm run test:db:perf` runs only the two perf tests.
 
 ## File 20261004000000_plus_on_device_only.sql (Plus checked on the device, 3 Oct 2026)
 

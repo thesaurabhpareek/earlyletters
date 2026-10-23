@@ -1,7 +1,8 @@
 # Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
 # end to end. Every job has a timeout; the longest path is install (4) plus
-# one check job (5), or plus the seam guard (15) when a change can reach the
-# app bundle. Branch protection requires only the `required` job.
+# the database rules (15, room for a slow runner's perf seed), or plus the
+# seam guard (15) when a change can reach the app bundle; the other check
+# jobs have 5. Branch protection requires only the `required` job.
 name: CI
 
 on:
@@ -61,8 +62,8 @@ jobs:
   db:
     name: database rules
     needs: install
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15 # perf.test.mjs seeds 100,000 entries on pull requests (the nightly seeds 400,000 with the budgets); a slow runner took 139 s for a 400,000 seed alone (run 39018739219)
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup

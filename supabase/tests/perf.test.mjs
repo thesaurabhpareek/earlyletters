@@ -1,22 +1,34 @@
-// Read-path performance at launch scale: 1,000 families x 400 letters (400,000
-// entries), queried as signed-in users through RLS and the book_entries view.
-// Asserts (1) EXPLAIN plans use indexes, never a sequential scan of entries, and
-// (2) p95 server-side execution time per query class stays inside the budgets
-// documented in supabase/APPLY.md (Performance budgets).
+// Read-path performance, queried as signed-in users through RLS and the
+// book_entries view. Asserts (1) EXPLAIN plans use indexes, never a sequential
+// scan of entries, and (2) p95 server-side execution time per query class stays
+// inside the budgets documented in supabase/APPLY.md (Performance budgets).
+//
+// Two modes, so a slow CI runner cannot turn `required` red on code that changed
+// no SQL (S20, #214):
+//   default (every pull request): 250 families x 400 letters (100,000 entries).
+//     Every plan check and every row check runs; p95 times are printed, not checked.
+//     250 x 400 is the smallest seed S20 measured where the planner still picks the
+//     indexes it picks at launch scale (100 x 100 turns 5 of the 6 plans into
+//     sequential scans); keep the seed at least this size.
+//   PERF_BUDGETS=1 (the nightly, .github/workflows/nightly.yml): 1,000 x 400
+//     (launch scale, 400,000 entries), and every p95 budget is checked as well.
 //
 // Budgets are for PGlite (single-threaded WASM Postgres) on a CI-class machine;
 // native Postgres on Supabase is faster. They guard against plan regressions
 // (a lost index turns 2 ms into 200+ ms), not against network latency, which
 // PRD 7.2 budgets separately (read RPC p95 300 ms at the client).
 //
-// Scale knobs: PERF_FAMILIES (default 1000), PERF_ENTRIES (default 400), PERF_SAMPLES (default 200).
+// Scale knobs: PERF_FAMILIES (default 250, or 1000 with PERF_BUDGETS=1), PERF_ENTRIES (default 400),
+// PERF_SAMPLES (default 200).
+// Locally, the nightly run is: PERF_BUDGETS=1 npm run test:db:perf
 // Fictional family "Asha" only (CLAUDE.md).
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDb } from './harness.mjs';
 
-const FAMILIES = Number(process.env.PERF_FAMILIES ?? 1000);
+const BUDGETS = process.env.PERF_BUDGETS === '1';
+const FAMILIES = Number(process.env.PERF_FAMILIES ?? (BUDGETS ? 1000 : 250));
 const PER_FAMILY = Number(process.env.PERF_ENTRIES ?? 400);
 const SAMPLES = Number(process.env.PERF_SAMPLES ?? 200);
 // Measured 2 Oct 2026 at 1,000 x 400 (p95 ms): book_page 6.1, book_full 8.8, search_common 4.0,
@@ -94,6 +106,16 @@ const Q = {
   letter_member: { sql: `select * from book_entries where id = $1`, args: (f, k) => [entry(f, k)] },
   letter_author: { sql: `select * from entries where id = $1`, args: (f, k) => [entry(f, k)], as: 'author' },
 };
+// The index each plan must name: book and search reads go through the partial book index, single
+// letters through the primary key, and every book_entries read resolves membership once by profile.
+const PLAN_INDEXES = {
+  book_page: ['entries_book_page_idx', 'child_members_profile_idx'],
+  book_full: ['entries_book_page_idx', 'child_members_profile_idx'],
+  search_common: ['entries_book_page_idx', 'child_members_profile_idx'],
+  search_rare: ['entries_book_page_idx', 'child_members_profile_idx'],
+  letter_member: ['entries_pkey', 'child_members_profile_idx'],
+  letter_author: ['entries_pkey'],
+};
 const hex = (f) => f.toString(16).padStart(12, '0');
 const child = (f) => `00000000-0000-4000-d000-${hex(f)}`;
 const parentB = (f) => `00000000-0000-4000-b000-${hex(f)}`;
@@ -125,6 +147,13 @@ for (const [name, q] of Object.entries(Q)) {
   const seq = /Seq Scan on (entries|children|child_members)/.test(text);
   if (seq || process.env.PERF_VERBOSE) console.log(`      plan ${name}:\n${text.replace(/^/gm, '        ')}`);
   check(`${name}: plan uses indexes (no seq scan of entries, children or members)`, !seq && /Index|Bitmap/.test(text));
+  // The named indexes too (APPLY.md "Performance budgets", Plans), so a lost index is caught on every
+  // pull request even when another index stands in; the p95 budgets, now nightly only, used to be the
+  // only check for that. The plan shapes are the same at 250 and 1,000 families.
+  const want = PLAN_INDEXES[name];
+  const missing = want.filter((i) => !new RegExp(`(on|using) ${i}\\b`).test(text));
+  if (missing.length && !seq && !process.env.PERF_VERBOSE) console.log(`      plan ${name}:\n${text.replace(/^/gm, '        ')}`);
+  check(`${name}: plan uses ${want.join(' and ')}`, missing.length === 0);
 }
 
 // ── Timing ─────────────────────────────────────────────────────────────────
@@ -148,8 +177,12 @@ console.log(`      ${'query'.padEnd(14)} ${'p50 ms'.padStart(8)} ${'p95 ms'.padS
 for (const [name, r] of Object.entries(results)) {
   console.log(`      ${name.padEnd(14)} ${r.p50.toFixed(2).padStart(8)} ${r.p95.toFixed(2).padStart(8)} ${r.p99.toFixed(2).padStart(8)} ${String(BUDGET_MS[name]).padStart(7)} ${r.rows.toFixed(0).padStart(6)}`);
 }
-for (const [name, r] of Object.entries(results)) {
-  check(`${name}: p95 ${r.p95.toFixed(2)} ms within ${BUDGET_MS[name]} ms (${SAMPLES} samples)`, r.p95 <= BUDGET_MS[name]);
+if (BUDGETS) {
+  for (const [name, r] of Object.entries(results)) {
+    check(`${name}: p95 ${r.p95.toFixed(2)} ms within ${BUDGET_MS[name]} ms (${SAMPLES} samples)`, r.p95 <= BUDGET_MS[name]);
+  }
+} else {
+  console.log(`      p95 budgets not checked at ${FAMILIES} x ${PER_FAMILY} (PERF_BUDGETS=1 checks them at launch scale; the nightly does)`);
 }
 check('member single-letter read returns the letter', results.letter_member.rows === 1 && results.letter_author.rows === 1);
 check('a book page returns a full chapter', results.book_page.rows === 60);
