@@ -10,8 +10,8 @@
  * with two (D-069) it offers nothing more to invite. Build 2 has no Leave row (D-113): a book this
  * phone leaves is not listed anywhere yet, so the leaver's own letters would have no screen
  * (lib/family/entry.logic.ts LEAVE_BOOK_OFFERED). When the other parent leaves, one neutral note
- * shows once (F11-REQ-023). Before sign-in the tab shows you alone and the invite card starts
- * sign-in (PRD A F3.3a).
+ * shows once (F11-REQ-023). Before sign-in the tab shows you alone, and the invite card opens the
+ * invite sheet, which asks for sign-in first and comes back to the invite (PRD A F3.3a).
  *
  * With them off (the kill path) the tab keeps its place and shows the co-parent "coming soon"
  * presentation instead (components/family/coparent-soon.tsx).
@@ -141,8 +141,8 @@ function FamilyShared() {
 
   const invite = () => {
     haptic('tap');
-    if (!auth.signedIn) router.push({ pathname: '/sign-in', params: { trigger: 'invite_create' } });
-    else router.push({ pathname: '/invite/new', params: { childId: active.id } });
+    // Signed in or not: the invite sheet's AccountGate signs in and comes back to the sheet, as from a child's settings.
+    router.push({ pathname: '/invite/new', params: { childId: active.id } });
   };
 
   const shareAgain = async (row: PendingInviteRow) => {

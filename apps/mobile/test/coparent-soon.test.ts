@@ -248,6 +248,13 @@ describe('server features on: the shared flows are live (D-100; option B for the
     expect(tab).toMatch(/state\.showInviteCard &&/);
   });
 
+  it('the invite card opens the invite sheet signed in or not, like a child\'s settings row: one flow, its AccountGate signs in', () => {
+    const tab = src('app/(tabs)/family.tsx');
+    expect(tab).toMatch(/const invite = \(\) => \{[\s\S]*?router\.push\(\{ pathname: '\/invite\/new', params: \{ childId: active\.id \} \}\);\s*\};/);
+    expect(tab).not.toMatch(/pathname: '\/sign-in'/);
+    expect(src('app/invite/new.tsx')).toMatch(/<AccountGate trigger="invite_create"/);
+  });
+
   it('[D-113] build 2 offers no Leave: no row on the Family tab or in a child\'s settings, and /invite/leave shows coming soon', () => {
     expect(LEAVE_BOOK_OFFERED).toBe(false);
     for (const serverFeatures of [false, true]) expect(inviteDestination('invite_leave', serverFeatures)).toBe('coming_soon');

@@ -108,12 +108,15 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await app.getByText('Family', { exact: true }).last().click();
   await expect(app.getByText('Write this book together')).toBeVisible();
   await expect(app.getByText('Coming soon')).toHaveCount(0);
-  await step('happy', 'Family tab, one parent', 'The live tab: who writes to the book (you), and "Write this book together" while the book has one parent. Before sign-in, inviting starts sign-in.');
+  await step('happy', 'Family tab, one parent', 'The live tab: who writes to the book (you), and "Write this book together" while the book has one parent. Before sign-in, the invite sheet asks for sign-in first and comes back to the invite.');
 
   await btn(app, 'Invite a co-parent').click();
-  await signInWithEmail(app, 'mama@example.invalid');
-  await btn(app, 'Invite a co-parent').click();
   await expect(app.getByText(`Invite ${CHILD}'s co-parent`)).toBeVisible();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app, 'mama@example.invalid');
+  // This phone already holds letters, so the claim screen asks whose they are (BL-347, #139).
+  await btn(app, 'Keep them here').click();
+  await expect(app.getByLabel(`What does ${CHILD} call them?`)).toBeVisible();
   await app.getByLabel(`What does ${CHILD} call them?`).fill('Papa');
   await step('happy', 'Invite a co-parent', 'What the child calls them signs their letters. The invite is for this book only; the link works once, for 7 days.');
 
@@ -132,6 +135,7 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await btn(app, 'Close').click();
   await expect(app.getByText(/Invited, open until/)).toBeVisible();
   await expect(btn(app, 'Cancel invite')).toBeVisible();
+  await expect(btn(app, 'Invite a co-parent')).toHaveCount(0);
   await step('happy', 'Invite open', 'The member list shows the open invite with the day it stops working, Share again and Cancel invite (F11-REQ-019). The invite card steps aside while an invite is open.');
 });
 
