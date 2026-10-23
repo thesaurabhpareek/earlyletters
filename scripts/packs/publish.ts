@@ -170,7 +170,11 @@ async function main(): Promise<void> {
     }
     out(`Uploading ${dir} (manifest v${index.manifestVersion}, ${index.files.length} files) to ${cfg.endpoint}/${cfg.bucket}${flag('dry-run') ? ' [dry run]' : ''}`);
     const s = await uploadRelease(dir, index, cfg, { dryRun: flag('dry-run'), log: out });
-    out(`\n${s.uploaded.length} uploaded (${humanBytes(s.bytesSent)}), ${s.skipped.length} already there.`);
+    out(
+      flag('dry-run')
+        ? `\nDry run: nothing was sent. ${s.uploaded.length} files (${humanBytes(s.bytesSent)}) would be checked against the bucket and put if missing.`
+        : `\n${s.uploaded.length} uploaded (${humanBytes(s.bytesSent)}), ${s.skipped.length} already there.`,
+    );
     for (const n of index.notIncluded) out(`not uploaded: ${n.id} v${n.version} stays on ${n.url} (${n.reason})`);
     if (flag('dry-run') || flag('no-verify')) return;
     out(`\nChecking ${index.baseUrl} as a phone would:`);
