@@ -14,15 +14,18 @@
  *  - this account already owns the phone's letters (signed in here before), or
  *  - another account owns them: nothing can move (sync stops with an account
  *    mismatch and the letters stay), so there is nothing to ask, or
- *  - the phone holds no books and no letters: there is nothing to claim.
+ *  - the phone holds no books, no letters and no held drafts: there is
+ *    nothing to claim.
  * Otherwise the person confirms once per session. "Unknown" (the store could
  * not be read) counts as "letters present": asking once more is always safe,
  * claiming without asking is not.
  *
- * "Holds a book or a letter" means any row at all in `children` or `entries`,
- * hidden, refused or deleted ones included (`phoneHoldsAnyRow`). That is a
- * superset of what takeOwnership claims, so the answer can only err towards
- * asking (review 2 of PR #139: a hidden-only book must still ask).
+ * "Holds a book or a letter" (`phoneHoldsAnyRow`) means any row at all in
+ * `children` or `entries`, hidden, refused or deleted ones included, and any
+ * draft held at the Keep gate (`drafts.held_kind` set), which takeOwnership
+ * also queues since #182. That is a superset of what takeOwnership claims, so
+ * the answer can only err towards asking (review 2 of PR #139: a hidden-only
+ * book must still ask; a held draft must too).
  */
 import type { SqlDb } from '../db/sql';
 
@@ -31,15 +34,17 @@ export interface ClaimInput {
   userId: string | null;
   /** Who owns this phone's letters (sync.owner setting); null before the first claim. */
   owner: string | null;
-  /** Whether this phone holds any book or letter; null when the store could not be read. */
+  /** Whether this phone holds any book, letter or held draft; null when the store could not be read. */
   hasLocalData: boolean | null;
   /** Users the person confirmed in this process. */
   confirmed: ReadonlySet<string>;
 }
 
-/** Any book or letter row on this phone, in any state. */
+/** Any book or letter row on this phone, in any state, or any held draft. */
 export function phoneHoldsAnyRow(db: Pick<SqlDb, 'get'>): boolean {
-  const r = db.get<{ any_rows: number }>('SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries)) AS any_rows');
+  const r = db.get<{ any_rows: number }>(
+    'SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries) OR EXISTS (SELECT 1 FROM drafts WHERE held_kind IS NOT NULL)) AS any_rows',
+  );
   return !!r && Number(r.any_rows) === 1;
 }
 
