@@ -76,8 +76,10 @@ jobs:
 
       # Privacy guard (CLAUDE.md): no real family name or birth date in any tracked file, on the site or
       # elsewhere in the repo. It already runs inside `npm test` above; naming it here makes a failure
-      # obvious at a glance. The matching copy on develop lives in packages/content/test.
+      # obvious at a glance, and it runs even when Test is red so a leak is never hidden behind another
+      # failure. The matching copy on develop lives in packages/content/test.
       - name: Privacy guard (fictional family only)
+        if: ${{ !cancelled() }}
         run: npx vitest run test/no-real-family-data.test.ts
         working-directory: apps/web
 

@@ -164,7 +164,7 @@ Proposed s07 support, true as written and still warm: `support: 'Open a spoken l
 ## 5. Other observations (not failures)
 
 - **Brand name is hardcoded eight times in `site.ts`** (lines 30, 32, 36, 49, 63, 148, 157, 158). CLAUDE.md says the public name lives only in `packages/brand/index.ts`; E1's copy files already interpolate `brand.name`. The test guards the spelling, not the hardcoding, so it passes. Suggest template literals from `brand.name` (coordinator).
-- **The child's name is the founder's real daughter's** (TEAM.md decision, founder's choice) and appears in public copy. CLAUDE.md says real family details never go in code, tests or fixtures. The founder's decision stands for the site; flagged so the exception is recorded. My test file contains no real name.
+- **The child's name in the public copy did not follow the CLAUDE.md privacy rule** (fictional family only in code, tests and fixtures). Resolved on main: the site uses the fictional family, Asha, and main's CI carries the name guard. My test file contains no real name.
 - **Mock app strings that do not exist in `packages/content/src/strings.en.ts`:** "Save letter" (app: "Save"), "Tap a word to check it", "Filed in Month 9", "Hear this letter", "Only people you invite can read this", the dateline "Month 9, Week 2, Tuesday" (D-028 says dates follow the device locale). "Speak", "Type", "Done" and "Pause" match. If the film is meant to show the real app, move these into `packages/content` or match the app.
 - **Button length:** "Tell me when it's ready" is 23 characters; the product rule for buttons is 22 (`rules.test.ts:129-131`). Fits the header only if the layout allows it.
 - **Meta description** is 163 characters; most results truncate near 160. Opinion.

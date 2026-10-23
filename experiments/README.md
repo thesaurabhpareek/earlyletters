@@ -26,7 +26,7 @@ Each of you, in your normal voice, the way you'd talk at bedtime:
 | 1 to 5 | Five short sentences with your child's name and nicknames, e.g. "Ashu walked to Mumma today." | Name accuracy |
 | 6 to 10 | Five sentences mixing Hindi and English the way you really talk | Code-switching accuracy |
 | 11 to 13 | Three 30 to 60 second "letters" to your child about today, unscripted, then type what you said into the config | Real-life accuracy and the cleaning |
-| 14 | 30 seconds in her room with the white-noise machine on and **nobody talking** | Checks it never invents words |
+| 14 | 30 seconds in the child's room with the white-noise machine on and **nobody talking** | Checks it never invents words |
 
 Name files `01.m4a`, `02.m4a` and so on. AirDrop them to your Mac and put them in `experiments/recordings/`.
 
