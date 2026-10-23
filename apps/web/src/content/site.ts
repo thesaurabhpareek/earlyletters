@@ -269,6 +269,45 @@ export const site = {
     home: `Back to ${NAME}`,
   },
 
+  /**
+   * The page behind the link in a sign-in or confirm-your-email message (app/auth/confirm/page.tsx; PRD V2 F02 6.3
+   * step 3b). It shows only when the app did not open the link: on a laptop, in a mail app's own browser, or to a
+   * mail scanner. It signs nobody in and confirms nothing; the person types the code from the same email into the
+   * app. The product says "sign-in link", never anything else (F02 6.3).
+   */
+  authConfirm: {
+    title: 'Finish signing in',
+    line: 'Finish on your iPhone.',
+    body: `Open ${NAME} on your iPhone and type the code from the same email. That signs you in, or confirms your email if you are new.`,
+    onPhone: 'Already on your iPhone? Tap below, then type the code.',
+    open: `Open ${NAME}`,
+    expired: 'If the app says the code has expired, tap "Send a new email".',
+    notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
+    home: `Back to ${NAME}`,
+  },
+
+  /**
+   * The page behind a co-parent invite link, https://earlyletters.com/j#t=<token> (app/j/page.tsx; PRD V2 F11 6.3
+   * step 1). It shows only when the app did not open the link: no app on this phone, a laptop, or a mail or chat
+   * app's own browser. It joins nothing; the person copies the link and pastes it into the app's "I was invited".
+   * No child or inviter name, because the page knows neither. When the copy cannot work (the browser refused, or a
+   * chat or mail app's own browser dropped the fragment), the words send the person back to the message, where the
+   * whole link still is (F11-U02).
+   */
+  invite: {
+    title: 'An invite to share a book',
+    line: 'Someone invited you to share a book.',
+    body: `This invite opens in ${NAME} on an iPhone.`,
+    steps: ['Tap "Copy the invite".', `Open ${NAME} and tap "I was invited".`, 'Paste the invite.'],
+    onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
+    copy: 'Copy the invite',
+    copied: `Copied. Now open ${NAME} and tap "I was invited".`,
+    copyFailed: `This browser would not copy it. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
+    missing: `This page opened without its invite. Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap "I was invited" and paste it.`,
+    notYou: 'If you were not expecting an invite, you can ignore it. Nothing changes.',
+    home: `Back to ${NAME}`,
+  },
+
   footer: {
     contact: 'hello@earlyletters.com',
     links: [

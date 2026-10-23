@@ -68,7 +68,7 @@ changing any variable below means **Redeploy**, never "it will pick it up".
 | `RESEND_API_KEY` | Production (and Preview only if you want previews to subscribe people) | **Sensitive** | runtime | "Tell me when it is ready" form. Missing in production makes `/api/notify` answer `server`, and the form shows its error state. Use a key limited to sending/contacts for this domain. Opinion. |
 | `RESEND_SEGMENT_ID` | same as the key | Plain | runtime | Resend segment (audience) that receives the sign-ups. Needed together with the key. |
 | `APPLE_TEAM_ID` | Production | Plain | build | 10 characters, A-Z and 0-9. For the apple-app-site-association file. Both this and `IOS_BUNDLE_ID` must be set or the file answers 404. Verified (route code). |
-| `IOS_BUNDLE_ID` | Production | Plain | build | The app's real bundle id, exactly as in App Store Connect. Set it explicitly: `packages/brand` still has the placeholder domain `example.com`, so the brand default is wrong. The bundle id cannot change after the first upload to App Store Connect. Verified (repo). |
+| `IOS_BUNDLE_ID` | Production | Plain | build | The app's real production bundle id, exactly as in App Store Connect, never the `.preview` or `.dev` id: the file adds `.preview` itself, and a suffixed value answers 404. Set it explicitly: `packages/brand` still has the placeholder domain `example.com`, so the brand default is wrong. The bundle id cannot change after the first upload to App Store Connect. Verified (repo). |
 | `SITE_MODE` | Optional | Plain | build | `coming-soon` shows the organised home page (`components/landing`), `film` shows the scroll film. Unset: the organised home page on Production, film on previews and locally (`src/lib/site-mode.ts`, 4 tests). To publish the film on Production set `SITE_MODE=film` and Redeploy. Verified (repo, production-like and preview-like builds). |
 | `PUBLISHER_LEGAL_NAME` | Production | Plain | build | The legal name of the individual who runs the site (D-004), printed in "Who we are" on `/privacy` and `/terms`. It is set only here so the name never goes in git. Unset (or not a plain name), the pages say the site "is run by its founder as an individual, not a company" and "we" means "the founder" (never a placeholder; the build does not fail), and the build log says `[legal] PUBLISHER_LEGAL_NAME is not set`. To name the publisher, set it and Redeploy. Verified (`src/lib/legal/publisher.ts`, unit tests). |
 | `ENABLE_LAB` | **Preview only**, `1` | Plain | build | Publishes the `/lab/*` scene test pages. Leave unset in Production: they answer 404 there. Verified (`next.config.ts`). |
@@ -284,8 +284,14 @@ The file is served at `https://earlyletters.com/.well-known/apple-app-site-assoc
 `src/app/.well-known/apple-app-site-association/route.ts` (E1). Verified (repo).
 
 - Built at `next build` from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`. Set both **before** the production build, or Redeploy after
-  setting them. With either missing or malformed it answers 404 and logs a warning.
-- Content: `appIDs: ["<TEAMID>.<bundle id>"]`; paths `/a`, `/i`, `/j`, `/r`, each bare and with sub-paths. Verified (repo).
+  setting them. It answers 404 when either is missing or malformed, or when `IOS_BUNDLE_ID` ends in `.preview` or `.dev`, and
+  logs a warning. With both unset it warns only in a production build (`VERCEL_ENV=production`), so previews stay quiet.
+- The Team ID is in the Apple Developer account, under Membership details.
+- Content: `appIDs: ["<TEAMID>.<bundle id>", "<TEAMID>.<bundle id>.preview"]` (the production app and the TestFlight builds);
+  paths `/auth/confirm`, `/auth/callback` and `/j`, each bare and with a trailing slash, and nothing else. The email sign-in
+  link is `/auth/callback#token_hash=...` (moving to `/auth/confirm`) and invites are `/j#t=<token>`: every token is in the
+  fragment, which path matching ignores and no server receives. `/a`, `/i` and `/r` are no longer listed. Verified (repo,
+  `route.test.ts` and `e2e/auth-confirm.e2e.ts`).
 - Apple's requirements: HTTPS with a valid certificate, no file extension, JSON content type, **no redirects**. Apple's CDN
   fetches the file and may take up to 24 hours to show a change; devices re-check about weekly. Verified (Apple documentation).
 - Every host needs its own entitlement and its own file. Verified (Apple). So the app's Associated Domains entitlement lists
@@ -300,7 +306,7 @@ Verify:
 # 1. Direct: 200, JSON, no redirect (look for "HTTP/2 200", content-type application/json, and no "location" header)
 curl -sSI https://earlyletters.com/.well-known/apple-app-site-association
 
-# 2. Content: the app id must read TEAMID.bundle.id exactly as in the Apple Developer account
+# 2. Content: two app ids, TEAMID.bundle.id and TEAMID.bundle.id.preview, exactly as in the Apple Developer account
 curl -sS https://earlyletters.com/.well-known/apple-app-site-association | python3 -m json.tool
 
 # 3. What Apple's CDN holds (can lag up to 24 h behind step 2)
@@ -311,7 +317,8 @@ curl -sSI https://www.earlyletters.com/.well-known/apple-app-site-association | 
 ```
 
 On an iPhone with the app installed: Notes > type `https://earlyletters.com/j` > long press shows "Open in Early Letters"
-(wording depends on the app name) when the link is associated. Inferred.
+(wording depends on the app name) when the link is associated. Do the same with `https://earlyletters.com/auth/callback`, the
+path the alpha's sign-in emails use, on the production app and on a TestFlight (`.preview`) build. Inferred.
 
 ## 9. Production checks
 
