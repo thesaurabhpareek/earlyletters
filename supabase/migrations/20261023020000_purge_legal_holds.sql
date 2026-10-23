@@ -26,16 +26,16 @@
 --     person's alone during the grace period is not even tombstoned while the request is held.
 --
 -- What is checked now, beyond the person's own letters and held drafts:
---   - book_purge_held(child, keep), new: the book, every letter, held draft and recording backup in it
---     (by id and author), every book key in it (by holder), and every object in a person's folder of it
---     (by that person), leaving out the rows of the authors in keep, and every object in the book's own
---     photo folder (by the person Storage records as its owner). It was the book, letters and held
---     drafts in purge_due step 1. Every caller passes the book's kept authors (book_kept_authors), whose
---     rows purge_book_keep_authors never deletes, so a hold covers exactly what the purge touches: a hold
---     on a former member's own row holds neither the deleting parent's account nor the day-30 book purge
---     (review A N2 on #251; 20261023010000 held the whole book for it), while a hold on the book or on
---     anyone else's row does. In step 2b nothing of a kept author's letters is left, so the list is
---     empty and their book keys and folders count.
+--   - book_purge_held(child), new: the book, every letter, held draft and recording backup in it (by id
+--     and author), every book key in it (by holder), and every object in a person's folder of it (by that
+--     person), leaving out the rows and folders of the book's kept authors (book_kept_authors), whose rows
+--     purge_book_keep_authors never deletes; and every object in the book's own photo folder (by the
+--     person Storage records as its owner). It was the book, letters and held drafts in purge_due step 1.
+--     So a hold covers exactly what the purge touches: a hold on a former member's own row holds neither
+--     the deleting parent's account nor the day-30 book purge (review A N2 on #251; 20261023010000 held
+--     the whole book for it), while a hold on the book or on anyone else's row does. In step 2b nothing
+--     of a kept author's letters is left, so the list is empty and their book keys and folders count.
+--     With no unreleased hold at all, the usual state, it answers at once (review B on #251).
 --   - The person's own recording backups (backup_row_held) and book keys in a held book, the rule
 --     backup_delete_all already uses for "Delete the backup"; and their Storage objects in a held book:
 --     in their folders ({child}/{them}/, which this function queues and the worker mirrors into every
@@ -48,7 +48,7 @@
 -- Unchanged: the kept-author behaviour of 20261023010000 (book_kept_authors, purge_book_keep_authors,
 -- the answers' keys), every hold check that was there, and every function signature.
 --
--- New SQLSTATEs: none. New internal function (callable by no API role): book_purge_held(uuid, uuid[]). Tests:
+-- New SQLSTATEs: none. New internal function (callable by no API role): book_purge_held(uuid). Tests:
 -- supabase/tests/purge_legal_holds.test.mjs (new) and rows in access_matrix.test.mjs. Fictional family
 -- "Asha" only (CLAUDE.md).
 
@@ -67,22 +67,30 @@ $$;
 
 -- --- 1. One rule for a book's rows ----------------------------------------
 -- Whether a legal hold covers anything a purge of this book deletes, leaving out the rows and folders
--- of the authors in p_keep (a kept book's former members: the purge does not touch them, and the book
--- row it keeps is tombstoned, not deleted). The person-folder branch reads the folders the worker clears
+-- of its kept authors (book_kept_authors: a kept book's former members; the purge does not touch them,
+-- and the book row it keeps is tombstoned, not deleted). The person-folder branch reads the folders the worker clears
 -- for a book ({child}/{person}/... in entry-photos, entry-audio and any bucket keyed the same way). The
 -- book's own folder (child-photos/{child}/) goes whole, kept book or not, so an object there is held by
 -- the book ('child') and by the person Storage records as its owner (review A re-check on #251, probe
 -- PF: a former co-parent under a hold who uploaded the book photo). storage.objects has owner (uuid,
 -- deprecated) and owner_id (text) on current projects, either may be absent (as in
--- ops_storage_owned_by), so that branch is dynamic SQL.
-create or replace function public.book_purge_held(p_child uuid, p_keep uuid[] default '{}'::uuid[])
+-- ops_storage_owned_by), so that branch is dynamic SQL. It runs for every candidate book of every
+-- purge run (every 15 minutes) and every overdue tombstone of the SLA report, so with no unreleased hold
+-- at all, the usual state, it answers from one probe of legal_holds_active_idx (review B on #251).
+create or replace function public.book_purge_held(p_child uuid)
 returns boolean language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
-  v_keep uuid[] := coalesce(p_keep, '{}'::uuid[]);
+  v_keep uuid[];
   v_held boolean := false;
 begin
-  if public.is_held('child', p_child)
-     or exists (select 1 from public.entries e where e.child_id = p_child and e.author_id <> all (v_keep)
+  if not exists (select 1 from public.legal_holds where released_at is null) then
+    return false;
+  end if;
+  if public.is_held('child', p_child) then
+    return true;
+  end if;
+  v_keep := public.book_kept_authors(p_child);
+  if exists (select 1 from public.entries e where e.child_id = p_child and e.author_id <> all (v_keep)
                  and (public.is_held('entry', e.id) or public.is_held('profile', e.author_id)))
      or exists (select 1 from public.held_drafts h where h.child_id = p_child and h.author_id <> all (v_keep)
                  and (public.is_held('entry', h.id) or public.is_held('profile', h.author_id)))
@@ -112,11 +120,12 @@ end;
 $$;
 
 -- From 20261023010000. Change (20261023020000): steps 1 and 2b skip a book under any hold that covers
--- a row they delete (book_purge_held with the book's kept authors). Step 1 checked the book, its letters
+-- a row they delete (book_purge_held, which leaves out the book's kept authors). Step 1 checked the book, its letters
 -- and its held drafts, a former member's included; it now also checks its recording backups, book keys
 -- and its people's Storage folders, and leaves out a former member's rows, which a kept book keeps.
 -- Step 2b checked the book only; nothing of the kept authors' letters, drafts or backups is left by
--- then, so it now also checks their book keys and folders. Nothing else changes.
+-- then, so it now also checks their book keys and folders, in the loop, for a book it would remove.
+-- Nothing else changes.
 create or replace function public.purge_due(p_now timestamptz default now(), p_limit int default 500)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -135,7 +144,7 @@ begin
     select c.id from children c
     where c.deleted_at is not null and c.deleted_at < v_cutoff
       and c.purged_at is null                                   -- 20261023010000: not a kept book
-      and not public.book_purge_held(c.id, public.book_kept_authors(c.id))   -- 20261023020000: every row the purge deletes
+      and not public.book_purge_held(c.id)                      -- 20261023020000: every row the purge deletes
     order by c.deleted_at
     limit v_limit
     for update skip locked
@@ -180,7 +189,6 @@ begin
   for r in
     select c.id from children c
     where c.purged_at is not null
-      and not public.book_purge_held(c.id, public.book_kept_authors(c.id))   -- 20261023020000: was is_held('child') only
       and not exists (select 1 from entries e where e.child_id = c.id)
       and not exists (select 1 from held_drafts h where h.child_id = c.id)
       and not exists (select 1 from audio_blobs b where b.child_id = c.id)
@@ -188,6 +196,9 @@ begin
     limit v_limit
     for update skip locked
   loop
+    -- 20261023020000: the hold check (it was is_held('child') only, in the query) runs here, for a book
+    -- this step would remove, not for every kept book that still has letters (review B on #251).
+    continue when public.book_purge_held(r.id);
     perform public.enqueue_storage_purge('entry-photos', r.id::text || '/', true, 'child_purge');
     insert into purge_ledger (entity_type, entity_id) values ('child', r.id::text) on conflict do nothing;
     delete from children where id = r.id;   -- cascades the kept authors' book keys, terms, markers and erasure records
@@ -247,38 +258,42 @@ declare
 begin
   select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
   if not found then raise exception 'request not executing' using errcode = 'SCDEL'; end if;
-  if public.is_held('profile', v_uid)
-     or exists (select 1 from entries e where e.author_id = v_uid
-                and (public.is_held('entry', e.id) or public.is_held('child', e.child_id)))
-     -- 20261016000000 (review L N2): the person's held drafts count like their letters.
-     or exists (select 1 from held_drafts h where h.author_id = v_uid
-                and (public.is_held('entry', h.id) or public.is_held('child', h.child_id)))
-     -- 20261023020000: their recording backups, and their book keys in a held book (the rule
-     -- backup_delete_all uses; the key's delete cascades over the backups it opens).
-     or exists (select 1 from audio_blobs b where b.author_id = v_uid and public.backup_row_held(b.entry_id, b.author_id, b.child_id))
-     or exists (select 1 from child_keys k where k.profile_id = v_uid and public.is_held('child', k.child_id))
-     -- 20261023020000: their Storage objects in a held book. Their folders {child}/{them}/ are queued
-     -- below and mirrored into every bucket keyed that way; the worker's ownership sweep then deletes or
-     -- moves anything else Storage records as theirs (a book photo they uploaded).
-     or exists (select 1 from storage.objects o
-                 where o.bucket_id <> 'ops-ledger' and lower(split_part(o.name, '/', 2)) = v_uid::text
-                   and public.is_held('child', case when split_part(o.name, '/', 1) ~* v_uuid then split_part(o.name, '/', 1)::uuid end))
-     or exists (select 1 from jsonb_array_elements(public.ops_storage_owned_by(v_uid, 5000)) x
-                 where public.is_held('child', case when split_part(x ->> 'name', '/', 1) ~* v_uuid
-                                                    then split_part(x ->> 'name', '/', 1)::uuid end))
-     -- 20261023020000 (review A N5 on #248): every book deleted with the account and everyone's rows in
-     -- it, also a book that became theirs alone during the grace period (tombstoned just below, so it is
-     -- found by the same test). A kept book's former members' rows are left out: purge_book_keep_authors
-     -- never deletes them (review A N2 on #251).
-     or exists (select 1 from children c
-                 where c.purged_at is null
-                   and (c.deletion_request_id = p_request
-                        or (c.deleted_at is null
-                            and exists (select 1 from child_members m where m.child_id = c.id and m.profile_id = v_uid and m.role = 'parent')
-                            and not exists (select 1 from child_members m where m.child_id = c.id and m.role = 'parent' and m.profile_id <> v_uid)))
-                   and public.book_purge_held(c.id, public.book_kept_authors(c.id))) then
-    update deletion_requests set status = 'held' where id = p_request;
-    return jsonb_build_object('held', true);
+  -- 20261023020000 (review B on #251): the checks run only while some hold is unreleased, the rare state;
+  -- they scan Storage for the person, and run again on every pass of a held request.
+  if exists (select 1 from legal_holds where released_at is null) then
+    if public.is_held('profile', v_uid)
+       or exists (select 1 from entries e where e.author_id = v_uid
+                  and (public.is_held('entry', e.id) or public.is_held('child', e.child_id)))
+       -- 20261016000000 (review L N2): the person's held drafts count like their letters.
+       or exists (select 1 from held_drafts h where h.author_id = v_uid
+                  and (public.is_held('entry', h.id) or public.is_held('child', h.child_id)))
+       -- 20261023020000: their recording backups, and their book keys in a held book (the rule
+       -- backup_delete_all uses; the key's delete cascades over the backups it opens).
+       or exists (select 1 from audio_blobs b where b.author_id = v_uid and public.backup_row_held(b.entry_id, b.author_id, b.child_id))
+       or exists (select 1 from child_keys k where k.profile_id = v_uid and public.is_held('child', k.child_id))
+       -- 20261023020000: their Storage objects in a held book. Their folders {child}/{them}/ are queued
+       -- below and mirrored into every bucket keyed that way; the worker's ownership sweep then deletes or
+       -- moves anything else Storage records as theirs (a book photo they uploaded).
+       or exists (select 1 from storage.objects o
+                   where o.bucket_id <> 'ops-ledger' and lower(split_part(o.name, '/', 2)) = v_uid::text
+                     and public.is_held('child', case when split_part(o.name, '/', 1) ~* v_uuid then split_part(o.name, '/', 1)::uuid end))
+       or exists (select 1 from jsonb_array_elements(public.ops_storage_owned_by(v_uid, 5000)) x
+                   where public.is_held('child', case when split_part(x ->> 'name', '/', 1) ~* v_uuid
+                                                      then split_part(x ->> 'name', '/', 1)::uuid end))
+       -- 20261023020000 (review A N5 on #248): every book deleted with the account and everyone's rows in
+       -- it, also a book that became theirs alone during the grace period (tombstoned just below, so it is
+       -- found by the same test). A kept book's former members' rows are left out: purge_book_keep_authors
+       -- never deletes them (review A N2 on #251).
+       or exists (select 1 from children c
+                   where c.purged_at is null
+                     and (c.deletion_request_id = p_request
+                          or (c.deleted_at is null
+                              and exists (select 1 from child_members m where m.child_id = c.id and m.profile_id = v_uid and m.role = 'parent')
+                              and not exists (select 1 from child_members m where m.child_id = c.id and m.role = 'parent' and m.profile_id <> v_uid)))
+                     and public.book_purge_held(c.id)) then
+      update deletion_requests set status = 'held' where id = p_request;
+      return jsonb_build_object('held', true);
+    end if;
   end if;
 
   -- Books where the caller became sole parent during the grace period.
@@ -333,7 +348,7 @@ returns jsonb language sql stable security definer set search_path = pg_catalog,
     'tombstones_overdue',
       (select count(*) from entries e where e.deleted_at < p_now - interval '31 days' and not public.entry_is_held(e.id))
       + (select count(*) from children c where c.deleted_at < p_now - interval '31 days' and c.purged_at is null
-           and not public.book_purge_held(c.id, public.book_kept_authors(c.id))),
+           and not public.book_purge_held(c.id)),
     'requests_executing_over_24h',
       (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '24 hours'),
     'requests_executing_over_7d',
@@ -365,11 +380,11 @@ $$;
 -- Internal: called only from the definer purge functions above. Revoked from every API role and from
 -- the service role (hosted Supabase grants new functions to all three by default), as file 20 does for
 -- book_kept_authors.
-revoke execute on function public.book_purge_held(uuid, uuid[]) from public, anon, authenticated;
+revoke execute on function public.book_purge_held(uuid) from public, anon, authenticated;
 do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
-    execute 'revoke execute on function public.book_purge_held(uuid, uuid[]) from service_role';
+    execute 'revoke execute on function public.book_purge_held(uuid) from service_role';
   end if;
 end;
 $$;
@@ -385,5 +400,5 @@ begin
 end;
 $$;
 
-comment on function public.book_purge_held(uuid, uuid[]) is
-  'Whether a legal hold covers anything a purge of this book deletes: the book, its letters, held drafts, recording backups, book keys and people''s folders, leaving out the authors in p_keep (20261023020000).';
+comment on function public.book_purge_held(uuid) is
+  'Whether a legal hold covers anything a purge of this book deletes: the book, its letters, held drafts, recording backups, book keys and people''s folders, leaving out its kept authors (20261023020000).';

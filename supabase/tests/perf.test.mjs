@@ -156,6 +156,15 @@ for (const [name, q] of Object.entries(Q)) {
   check(`${name}: plan uses ${want.join(' and ')}`, missing.length === 0);
 }
 
+// ── Purge hold check (20261023020000, review B on #251): a plan check, no timing budget ──
+// While a hold is active, book_purge_held reads each candidate book's letters by child_id on every purge
+// run and SLA report; that read must use an index, or each book costs a scan of every letter.
+const purgeText = (await db.query(`explain select 1 from entries e where e.child_id = $1
+    and (public.is_held('entry', e.id) or public.is_held('profile', e.author_id))`, [child(pf)])).rows.map((r) => r['QUERY PLAN']).join('\n');
+const purgeSeq = /Seq Scan on entries/.test(purgeText);
+if (purgeSeq || process.env.PERF_VERBOSE) console.log(`      plan purge_hold_letters:\n${purgeText.replace(/^/gm, '        ')}`);
+check('purge_hold_letters: a book\'s letters are read by index (no seq scan of entries)', !purgeSeq && /Index|Bitmap/.test(purgeText));
+
 // ── Timing ─────────────────────────────────────────────────────────────────
 const pct = (xs, p) => { const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.ceil((p / 100) * s.length) - 1)]; };
 const results = {};
