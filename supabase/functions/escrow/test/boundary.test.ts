@@ -13,7 +13,33 @@ const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
   return statSync(p).isDirectory() ? files(p) : /\.(ts|json)$/.test(f) ? [p] : [];
 });
 const sources = files(root).filter((f) => f.endsWith('.ts') && !relative(root, f).startsWith('test'));
-const specifiers = (src: string) => [...src.matchAll(/(?:import|export)[^'"]*?from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g)].map((m) => m[1] ?? m[2]);
+// Every module specifier a file names (review B S5 on PR #151): static imports and re-exports,
+// side-effect imports (a bare quoted specifier after the keyword), and dynamic imports with a
+// quoted or template-literal argument. A dynamic import whose argument is anything else (a
+// variable, or a template with a placeholder) cannot be checked, so it is refused outright.
+const STATIC = /\b(?:import|export)\b[^'"`;]*?\bfrom\s*(['"`])([^'"`]+)\1/g;
+const SIDE_EFFECT = /\bimport\s*(['"`])([^'"`]+)\1/g;
+const DYNAMIC = /\bimport\s*\(\s*(['"`])([^'"`$]*)\1\s*\)/g;
+const NON_LITERAL_DYNAMIC = /\bimport\s*\(\s*(?!(['"`])[^'"`$]*\1\s*\))/;
+const specifiers = (src: string) => [STATIC, SIDE_EFFECT, DYNAMIC].flatMap((re) => [...src.matchAll(re)].map((m) => m[2]));
+
+Deno.test('[review B S5] the specifier check sees side-effect, re-export and template-literal dynamic imports', () => {
+  // Built from pieces so this file's own source never holds the import statements it checks for.
+  const I = 'imp' + 'ort';
+  const E = 'exp' + 'ort';
+  const tick = String.fromCharCode(96);
+  assert.deepEqual(specifiers(`${I} 'npm:left-pad';`), ['npm:left-pad']);
+  assert.deepEqual(specifiers(`const m = await ${I}(${tick}jsr:@std/x${tick});`), ['jsr:@std/x']);
+  assert.deepEqual(specifiers(`${E} * from "https://esm.sh/x";`), ['https://esm.sh/x']);
+  assert.deepEqual(specifiers(`${I} { a } from './a.ts';\n${I} type { B } from "./b.ts";`), ['./a.ts', './b.ts']);
+  assert.ok(NON_LITERAL_DYNAMIC.test(`await ${I}(name)`));
+  assert.ok(NON_LITERAL_DYNAMIC.test(`await ${I}(${tick}./\${x}.ts${tick})`));
+  assert.ok(!NON_LITERAL_DYNAMIC.test(`await ${I}('./hpke.ts')`));
+});
+
+Deno.test('[review B S5] no dynamic import with an argument that cannot be checked', () => {
+  for (const f of files(root)) assert.ok(!NON_LITERAL_DYNAMIC.test(readFileSync(f, 'utf8')), `${relative(root, f)} has a dynamic import that is not a plain literal`);
+});
 
 Deno.test('[F08-REQ-034] no remote import specifier anywhere in supabase/functions/escrow', () => {
   for (const f of files(root)) {
