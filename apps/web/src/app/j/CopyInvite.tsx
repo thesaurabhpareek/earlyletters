@@ -28,7 +28,8 @@ export function CopyInvite({ label, copied, failed, missing }: Props) {
   const [complete, setComplete] = useState<boolean | null>(null);
   useEffect(() => {
     const { pathname, search, hash } = window.location;
-    if (search) window.history.replaceState(null, '', `${pathname}${hash}`);
+    // Keep the entry's history state (Next's router data), so Back and Forward still show this page.
+    if (search) window.history.replaceState(window.history.state, '', `${pathname}${hash}`);
     setComplete(inviteToken(hash) !== null);
   }, []);
 

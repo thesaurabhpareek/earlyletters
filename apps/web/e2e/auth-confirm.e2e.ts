@@ -66,9 +66,28 @@ for (const path of ['/auth/confirm', '/auth/callback']) {
       await expect(page).toHaveURL(new URL(path, baseURL).href);
       expect(page.url()).not.toContain('token_hash');
       expect(await page.evaluate(() => window.location.hash)).toBe('');
+      // The entry keeps the router's own history state, and that state does not carry the token either.
+      expect(JSON.stringify(await page.evaluate(() => window.history.state)) ?? '').not.toContain(TOKEN);
       await expect(page.getByText(copy.body)).toBeVisible();
       await expect(page.getByText(copy.expired)).toBeVisible();
       await expect(page.getByRole('link', { name: copy.open })).toHaveAttribute('href', `${brand.scheme}://auth/callback`);
+    });
+
+    test('takes a token hash in a query out of the address bar too', async ({ page, baseURL }) => {
+      await page.goto(`${path}?token_hash=${TOKEN}&type=email`);
+      await expect(page).toHaveURL(new URL(path, baseURL).href);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
+    });
+
+    test('Back to the home page, then the browser back button, shows this page again under its own address', async ({ page, baseURL }) => {
+      await page.goto(`${path}#token_hash=${TOKEN}&type=email`);
+      await expect(page).toHaveURL(new URL(path, baseURL).href);
+      await page.getByRole('link', { name: copy.home }).click();
+      await expect(page).toHaveURL(new URL('/', baseURL).href);
+      await page.goBack();
+      await expect(page).toHaveURL(new URL(path, baseURL).href);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
+      await expect(page.getByRole('link', { name: copy.open })).toBeVisible();
     });
 
     test('is not indexed, is static, and sends no Referer from the page', async ({ request }) => {

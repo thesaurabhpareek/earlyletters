@@ -83,6 +83,27 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     });
   }
 
+  test('Back to the home page, then the browser back button, shows the invite page again with its invite', async ({ page, baseURL }) => {
+    const origin = new URL(baseURL!).origin;
+    await page.goto(`/j?fbclid=e2e_click_id#t=${TOKEN}`);
+    await expect(page).toHaveURL(`${origin}${LINK}`);
+    await page.getByRole('link', { name: copy.home }).click();
+    await expect(page).toHaveURL(`${origin}/`);
+    await page.goBack();
+    await expect(page).toHaveURL(`${origin}${LINK}`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
+    await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+  });
+
+  test('takes a token of up to 128 characters, and not one of 129', async ({ page }) => {
+    await page.goto(`/j#t=${'a'.repeat(128)}`);
+    await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+    await page.goto('/');
+    await page.goto(`/j#t=${'a'.repeat(129)}`);
+    await expect(page.getByRole('status')).toHaveText(copy.missing);
+    await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
+  });
+
   test('a link whose fragment was dropped asks for the link again instead of copying', async ({ page }) => {
     await page.goto('/j');
     await expect(page.getByRole('status')).toHaveText(copy.missing);
