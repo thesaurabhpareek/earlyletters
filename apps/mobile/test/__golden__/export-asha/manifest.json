@@ -26,8 +26,8 @@
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 15182,
-      "sha256": "5162ea8e2996ff160e451d8ba64c28b1a417c0cf44bfdaed7f547ad166bb01f6",
+      "bytes": 16699,
+      "sha256": "d6668e1e73be716824d4127f4ce54482db1b892230fb1e1cf69df1a3ab8666e9",
       "media_type": "application/json"
     },
     {

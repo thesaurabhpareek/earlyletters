@@ -2,10 +2,15 @@
  * Applying server answers to the phone's SQLite. Pure (SqlDb only); the engine
  * runs each function inside one local transaction.
  *
- * Merge rules (D-023):
- * - Last writer wins by server arrival, per field group. A letter with ops still
- *   queued keeps its local words (the queued op is the later writer and will
- *   win); only a server tombstone is applied to it (delete wins).
+ * Merge rules (D-023; protocol v1 in docs/adr/0025-sync-protocol-v1.md):
+ * - Words (`text` group) are compare and set: the server takes this phone's words
+ *   only if nobody changed them since the op's base. On a conflict the phone
+ *   follows the server's words and keeps its own as a conflict copy for the
+ *   author (F16 6.2 E). Nothing ever merges two versions of words.
+ * - Every other group: later arrival wins. A letter with ops still queued keeps
+ *   those groups locally (the queued op is the later writer); it takes the
+ *   server's words when none of its queued ops changes words. Only a server
+ *   tombstone is applied over queued ops (delete wins).
  * - Deletes are tombstones: an own letter deleted on another phone arrives with
  *   deleted_at and stays in Recently deleted. Another person's letter that is no
  *   longer readable is removed from this phone (found through the digest).
@@ -24,20 +29,29 @@ import {
   type PullResponse,
   type PushOp,
   type PushResponse,
+  type PushResultOk,
+  type WordsGroup,
 } from './types';
 import {
   SYNC_SETTING,
+  addConflictCopy,
   appendOp,
   enqueueEntryUpsert,
   entrySnapshot,
   getChildRow,
   getEntryRow,
   hasPendingOps,
+  listConflictCopies,
+  queuedWordOps,
   readSetting,
+  rebaseQueued,
   refreshEntryState,
   rejectOp,
   removeOp,
+  sameWords,
   syncOwner,
+  wireLanguage,
+  wordsOf,
   writeSetting,
   type EnqueueContext,
   type LocalEntryRow,
@@ -91,9 +105,107 @@ export function applyEntryState(db: SqlDb, s: EntryState, epoch: number | null, 
   );
 }
 
+/** Writes the server's words into the local row (raw_transcript is never touched). */
+function takeWords(db: SqlDb, id: string, w: WordsGroup): void {
+  db.run(
+    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ? WHERE id = ?',
+    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, id,
+  );
+}
+
+const untouchedOp = (o: OutboxRow) => o.sent_at === null && o.attempts === 0 && o.lane === 1;
+
+/**
+ * Protocol v1, after an entry op answered ok (F16 6.2 A step 7, E step 3):
+ * - `current` came back: the server's words changed since this op's base. If this
+ *   op's words were refused (`conflict_groups` has `text`) or this phone still has
+ *   its own words queued, this phone's latest words become a conflict copy, the
+ *   queued ops stop carrying words, and the letter follows the server's words.
+ *   With nothing of its own queued, the phone simply takes the server's words.
+ * - otherwise, every later queued upsert of the letter is rebased on the version
+ *   this op wrote (F16-REQ-025): a duplicate only on `applied_v`, never on the
+ *   current version, which may hold another phone's words.
+ * Returns true when a conflict copy was made.
+ */
+function settleWords(db: SqlDb, row: OutboxRow, r: PushResultOk, ctx: EnqueueContext): boolean {
+  if (row.type !== 'entry.upsert') return false;
+  const local = getEntryRow(db, row.entity_id);
+  if (!local) return false;
+  const current = r.current ?? null;
+  if (!current) {
+    const v = r.applied_v ?? (r.dup ? null : (r.entry?.v ?? null));
+    if (v) rebaseQueued(db, row.entity_id, v);
+    return false;
+  }
+  const refused = (r.conflict_groups ?? []).includes('text');
+  const later = queuedWordOps(db, row.entity_id);
+  let copied = false;
+  if ((refused || later.length > 0) && !sameWords(wordsOf(local), current)) {
+    const snap = entrySnapshot(local);
+    const already = listConflictCopies(db, row.entity_id).some((c) => sameWords(c.words, wordsOf(local)));
+    if (snap && !already) {
+      addConflictCopy(db, row.op_id, snap, current.v, ctx.now);
+      copied = true;
+    }
+    for (const o of later) {
+      if (!untouchedOp(o) || o.type !== 'entry.upsert') continue;
+      const p = JSON.parse(o.payload) as PushOp;
+      const groups = (p.changed ?? ALL_GROUPS).filter((g) => g !== 'text');
+      if (groups.length === 0) {
+        removeOp(db, o.seq);
+        continue;
+      }
+      p.changed = groups;
+      p.data = { ...p.data, final_text: current.final_text, machine_edits: current.machine_edits, edit_level: current.edit_level };
+      db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
+    }
+  }
+  // Words still queued from an earlier, possibly applied send are left to the server to judge:
+  // the letter keeps its words and those ops keep their base, so the server can still refuse them.
+  const pendingWords = queuedWordOps(db, row.entity_id).length > 0;
+  if (!pendingWords) takeWords(db, row.entity_id, current);
+  rebaseQueued(db, row.entity_id, laterV(r.entry?.v ?? null, current.v), { exceptWords: true });
+  return copied;
+}
+
+/** The later of two server versions (decimal xid8 text). */
+function laterV(a: string | null, b: string): string {
+  if (a === null) return b;
+  return /^\d+$/.test(a) && /^\d+$/.test(b) && BigInt(b) > BigInt(a) ? b : a;
+}
+
+function isWordsOp(row: OutboxRow): boolean {
+  if (row.type === 'entry.reupload') return true;
+  if (row.type !== 'entry.upsert') return false;
+  return ((JSON.parse(row.payload) as PushOp).changed ?? ALL_GROUPS).includes('text');
+}
+
+/**
+ * The version this phone records for a letter after an op's answer: the next words
+ * edit is compared against it, so it must never name a state whose words this phone
+ * has not seen (ADR 0025 section 5).
+ * - A duplicate reports the letter as it is now, which may hold another phone's words:
+ *   its own write's version (`applied_v`) is used. A duplicate of a words op with no
+ *   `applied_v` and no `current` (a receipt written before protocol v1) says nothing
+ *   about the words, so the version this phone had is kept; with none, '0', so the
+ *   next words edit is compared, never applied unseen.
+ * - After a words conflict the phone has the server's words (`current`): the later of
+ *   the row's version and the words version, so "Use this phone's version" is not
+ *   refused again for a version the phone already holds.
+ */
+function stateVersion(db: SqlDb, row: OutboxRow, r: PushResultOk, v: string): string {
+  if (r.dup) {
+    if (r.applied_v) return r.applied_v;
+    if (!r.current && isWordsOp(row)) return getEntryRow(db, row.entity_id)?.server_version ?? '0';
+  }
+  return r.current ? laterV(v, r.current.v) : v;
+}
+
 export interface PushOutcome {
   pushed: number;
   rejected: number;
+  /** Word conflicts found in this batch (a conflict copy was kept for each). */
+  conflicts: number;
   /** SCCON: the rest of the batch was not applied. */
   paused: boolean;
   consent: string | null;
@@ -112,6 +224,7 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
   );
   let pushed = 0;
   let rejected = 0;
+  let conflicts = 0;
   for (const r of res.results ?? []) {
     const row = byOp.get(r.op);
     if (!row) continue;
@@ -119,13 +232,20 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     if (r.ok) {
       pushed++;
       removeOp(db, row.seq);
+      // A delete the server took: every upload of the letter queued before it is moot, and one that
+      // waited (a consent pause sends deletions first) must never bring the letter back.
+      if (row.type === 'entry.delete') {
+        db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type IN ('entry.upsert', 'entry.reupload') AND seq < ?", row.entity_id, row.seq);
+      }
       if (row.type.startsWith('entry.')) {
         if (r.missing) {
           // The server does not have this letter: a restore sends it whole; a delete has nothing to do.
           if (row.type === 'entry.restore') enqueueEntryUpsert(db, row.entity_id, ALL_GROUPS, ctx);
           if (row.type === 'entry.delete') db.run('UPDATE entries SET server_version = NULL, server_epoch = NULL WHERE id = ?', row.entity_id);
-        } else if (r.entry) {
-          applyEntryState(db, r.entry, epoch, ctx.now);
+        } else {
+          if (settleWords(db, row, r, ctx)) conflicts++;
+          const s = r.entry ? { ...r.entry, v: stateVersion(db, row, r, r.entry.v) } : r.entry;
+          if (s) applyEntryState(db, s, epoch, ctx.now);
         }
         refreshEntryState(db, row.entity_id);
       } else if (row.type === 'book.create') {
@@ -166,9 +286,16 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     }
   }
   const unanswered = rows.filter((r) => !answered.has(r.op_id));
+  if (res.paused) {
+    // SCCON: the op that met it and every op after it did not apply (the server rolled that op back and
+    // stopped). They are as if never sent, so a delete made during the pause drops them instead of
+    // overtaking them, and nothing waits to bring the letter back when consent returns.
+    for (const u of unanswered) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', u.seq);
+  }
   return {
     pushed,
     rejected,
+    conflicts,
     paused: !!res.paused,
     consent: res.paused ? (res.consent ?? null) : null,
     stoppedAt: res.stopped ? (unanswered[0] ?? null) : null,
@@ -179,6 +306,9 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
 
 const bool = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? 1 : 0);
 
+/** A text value the server sent, or null when the server does not have that column yet. */
+const opt = (v: string | null | undefined): string | null => (typeof v === 'string' && v !== '' ? v : null);
+
 function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   const edits = JSON.stringify(row.machine_edits ?? []);
@@ -186,11 +316,13 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
          raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
-         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
+         language, occurred_precision, base_direction)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, COALESCE(?, 'day'), COALESCE(?, 'ltr'))`,
       row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
       row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
+      opt(row.language), opt(row.occurred_precision), opt(row.base_direction),
     );
     return;
   }
@@ -200,41 +332,73 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     row.v, row.updated_at, epoch, now, row.author_id, row.id,
   );
   if (hasPendingOps(db, row.id)) {
-    // Our queued op is the later writer; only a delete from elsewhere wins over it.
+    // Our queued ops are the later writer for the groups they change; only a delete from elsewhere wins over them.
     if (row.deleted_at && !local.deleted_at) db.run('UPDATE entries SET deleted_at = ? WHERE id = ?', row.deleted_at, row.id);
+    // Words: compare and set, never last writer. With no words of ours queued, the server's words are the
+    // letter's words now, and the queued ops descend from them (their base moves to this version).
+    if (queuedWordOps(db, row.id).length === 0 && row.final_text !== undefined) {
+      takeWords(db, row.id, { final_text: row.final_text, machine_edits: row.machine_edits ?? [], edit_level: row.edit_level });
+      rebaseQueued(db, row.id, row.v);
+    }
     return;
   }
   db.run(
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
        raw_transcript = CASE WHEN raw_transcript = '' THEN ? ELSE raw_transcript END,
+       language = ?,
+       occurred_precision = COALESCE(?, occurred_precision),
+       base_direction = COALESCE(?, base_direction),
        sync_state = 'synced'
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
-    row.raw_transcript ?? '', row.id,
+    row.raw_transcript ?? '',
+    mergedLanguage(local.language, row.language),
+    opt(row.occurred_precision), opt(row.base_direction),
+    row.id,
   );
 }
 
-/** Another person's letter: words and metadata only, never their raw transcript or edit list. */
+/**
+ * The server holds one of seven codes; this phone may hold a finer tag (`en-GB`).
+ * Keep the phone's tag while it names the same language; take the server's code
+ * when another phone chose a different one. A server with no value changes nothing
+ * (this phone never sends a value the server cannot hold, so null is not a clear).
+ */
+function mergedLanguage(local: string | null, server: string | null | undefined): string | null {
+  const s = opt(server);
+  if (!s) return local;
+  return wireLanguage(local) === s ? local : s;
+}
+
+/**
+ * Another person's letter: words and metadata only, never their raw transcript,
+ * edit list or language. The date precision and direction are shared with members
+ * (book_entries, S02 20261015030000); a server without them leaves the defaults.
+ */
 function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   if (local && (local.author_id === null || local.author_id === owner)) return;
   db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
        raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
-       child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+       child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
+       occurred_precision, base_direction)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced',
+       COALESCE(?, 'day'), COALESCE(?, 'ltr'))
      ON CONFLICT(id) DO UPDATE SET
        kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
        prompt_key = excluded.prompt_key, final_text = excluded.final_text, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me, updated_at = excluded.updated_at, deleted_at = NULL,
        synced_at = excluded.synced_at, author_signs_as = excluded.author_signs_as, approval = excluded.approval,
        server_version = excluded.server_version, server_updated_at = excluded.server_updated_at,
-       server_epoch = excluded.server_epoch, sync_state = 'synced'`,
+       server_epoch = excluded.server_epoch, sync_state = 'synced',
+       occurred_precision = excluded.occurred_precision, base_direction = excluded.base_direction`,
     row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
     row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, now,
     row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
+    opt(row.occurred_precision), opt(row.base_direction),
   );
 }
 

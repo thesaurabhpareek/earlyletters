@@ -14,9 +14,17 @@
  *   (sync.ownerId), and other people's letters are never uploaded.
  * - A letter waiting for its words (transcript_status 'waiting') is held: its
  *   raw transcript is set once, later, and the server would refuse a change.
+ * - Protocol v1 (docs/adr/0025-sync-protocol-v1.md): an op's `base` is the
+ *   server version its words descend from. A new op behind other queued ops of
+ *   the same letter inherits their base and is rebased when they apply
+ *   (F16-REQ-025); a batch carries at most one op per letter, so the rebase
+ *   always lands before the next op leaves.
+ * - A words conflict keeps this phone's version as a conflict copy in
+ *   rejected_writes (code 'conflict'), never on the server, until the author picks.
  */
+import { LANGUAGE_CODES } from '@scribe/core';
 import type { SqlDb } from '../db/sql';
-import { ALL_GROUPS, type EntryData, type FieldGroup, type PushOp, type PushOpType } from './types';
+import { ALL_GROUPS, type EntryData, type FieldGroup, type PushOp, type PushOpType, type WordsGroup } from './types';
 
 export const SYNC_SETTING = {
   owner: 'sync.ownerId',
@@ -77,6 +85,10 @@ export interface LocalEntryRow {
   server_epoch: number | null;
   sync_state: string;
   approval: string | null;
+  /** v6 (WP-F04-03, G-26). */
+  language: string | null;
+  occurred_precision: string;
+  base_direction: string;
 }
 
 export interface LocalChildRow {
@@ -120,9 +132,21 @@ function parseEdits(json: string): unknown[] {
   }
 }
 
+/**
+ * The code the server's `language` check accepts for a stored language, or null.
+ * The phone may hold a BCP-47 tag (F04 11.3: `en-US`, `zh-Hant`); the server takes
+ * the seven primary codes only, so anything else is not sent rather than refused.
+ */
+export function wireLanguage(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  const primary = stored.trim().toLowerCase().split(/[-_]/)[0];
+  return (LANGUAGE_CODES as readonly string[]).includes(primary) ? primary : null;
+}
+
 /** The letter as the server stores it, or null when it cannot upload (no book, or waiting for words). */
 export function entrySnapshot(r: LocalEntryRow): EntryData | null {
   if (!r.child_id || r.transcript_status === 'waiting') return null;
+  const language = wireLanguage(r.language);
   return {
     id: r.id,
     child_id: r.child_id,
@@ -140,7 +164,29 @@ export function entrySnapshot(r: LocalEntryRow): EntryData | null {
     sounds_like_me: r.sounds_like_me === null ? null : r.sounds_like_me === 1,
     author_signs_as: r.author_signs_as,
     audio_kept_on_device: r.audio_uri !== null,
+    ...(language ? { language } : {}),
+    occurred_precision: r.occurred_precision ?? 'day',
+    base_direction: r.base_direction ?? 'ltr',
   };
+}
+
+/** The words group of a local row, as the server compares it. */
+export function wordsOf(r: Pick<LocalEntryRow, 'final_text' | 'machine_edits' | 'edit_level'>): WordsGroup {
+  return { final_text: r.final_text, machine_edits: parseEdits(r.machine_edits), edit_level: r.edit_level };
+}
+
+/** Two words groups are the same words (key order inside edits does not matter). */
+export function sameWords(a: WordsGroup, b: WordsGroup): boolean {
+  return a.final_text === b.final_text && a.edit_level === b.edit_level && canonical(a.machine_edits) === canonical(b.machine_edits);
+}
+
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v ?? null);
 }
 
 export function getEntryRow(db: SqlDb, id: string): LocalEntryRow | null {
@@ -215,12 +261,59 @@ export function enqueueEntryUpsert(db: SqlDb, id: string, groups: readonly Field
   } else {
     appendOp(
       db,
-      { type: 'entry.upsert', id, data: data as unknown as Record<string, unknown>, changed: [...groups], base: r.server_version },
+      { type: 'entry.upsert', id, data: data as unknown as Record<string, unknown>, changed: [...groups], base: baseFor(db, r, ops) },
       ctx,
       { bookId: data.child_id },
     );
   }
   setEntryState(db, id, 'pending');
+}
+
+/**
+ * The base of a new op. Behind another queued upsert of the same letter, it
+ * inherits that op's base: this phone's words descend from what that op sends,
+ * whose server version is not known yet; the rebase after it applies sets the
+ * real one. Otherwise the server version this phone holds. A pull may move
+ * `server_version` forward while ops wait (merge.ts keeps the local words then),
+ * so the queued op's base, not the row, is the truth for a letter with ops.
+ */
+function baseFor(db: SqlDb, r: LocalEntryRow, ops: OutboxRow[]): string | null {
+  for (let i = ops.length - 1; i >= 0; i--) {
+    if (ops[i].type !== 'entry.upsert') continue;
+    const p = JSON.parse(ops[i].payload) as PushOp;
+    return p.base ?? null;
+  }
+  // Only a restore-time re-upload is queued: a pull may have moved server_version past words this phone
+  // keeps for the server to judge, so the version proves nothing; '0' means the edit is compared.
+  if (r.server_version !== null && ops.some((o) => o.type === 'entry.reupload')) return '0';
+  return r.server_version;
+}
+
+/** Ops of a letter still waiting, in queue order, that change its words. */
+export function queuedWordOps(db: SqlDb, id: string): OutboxRow[] {
+  return opsFor(db, id).filter((o) => {
+    if (o.type !== 'entry.upsert') return o.type === 'entry.reupload';
+    const p = JSON.parse(o.payload) as PushOp;
+    return (p.changed ?? ALL_GROUPS).includes('text');
+  });
+}
+
+/**
+ * F16-REQ-025: after an op of this letter applied at `v`, every later queued
+ * upsert of it descends from that version.
+ */
+export function rebaseQueued(db: SqlDb, id: string, v: string, opts: { exceptWords?: boolean } = {}): void {
+  for (const o of opsFor(db, id)) {
+    if (o.type !== 'entry.upsert') continue;
+    const p = JSON.parse(o.payload) as PushOp;
+    if (opts.exceptWords && (p.changed ?? ALL_GROUPS).includes('text')) continue;
+    if (p.base === v) continue;
+    // Only forward: a base names words this phone has seen, and an older answer arriving
+    // late (a duplicate's applied_v) must not move it back (a false conflict).
+    if (p.base && /^\d+$/.test(p.base) && /^\d+$/.test(v) && BigInt(p.base) > BigInt(v)) continue;
+    p.base = v;
+    db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
+  }
 }
 
 /**
@@ -264,10 +357,11 @@ export function enqueueEntryRestore(db: SqlDb, id: string, ctx: EnqueueContext):
   const everSent = ops.some((o) => !untouched(o));
   if (!r.server_version && !everSent) return enqueueEntryUpsert(db, id, ALL_GROUPS, ctx);
   appendOp(db, { type: 'entry.restore', id, data: {} }, ctx, { bookId: r.child_id });
-  // The words travel again in case the server's copy is older (a no-op when equal).
+  // The words travel again in case the server's copy is older (a no-op when equal). Its base is
+  // the version this phone's words came from: a restore is not a words write, so it never rebases this.
   appendOp(
     db,
-    { type: 'entry.upsert', id, data: (entrySnapshot(r) ?? {}) as unknown as Record<string, unknown>, changed: [...ALL_GROUPS], base: r.server_version },
+    { type: 'entry.upsert', id, data: (entrySnapshot(r) ?? {}) as unknown as Record<string, unknown>, changed: [...ALL_GROUPS], base: baseFor(db, r, ops) },
     ctx,
     { bookId: r.child_id },
   );
@@ -326,7 +420,86 @@ export function pendingCount(db: SqlDb): number {
 }
 
 export function rejectedUnseenCount(db: SqlDb): number {
-  return db.get<{ n: number }>('SELECT COUNT(*) AS n FROM rejected_writes WHERE seen_at IS NULL')!.n;
+  return db.get<{ n: number }>('SELECT COUNT(*) AS n FROM rejected_writes WHERE seen_at IS NULL AND code <> ?', CONFLICT_CODE)!.n;
+}
+
+// ── Word conflicts (F16 6.2 E step 3, WP-F16-15) ──────────────────────────
+/**
+ * A conflict copy is a row in rejected_writes with this code: this phone's
+ * version of a letter's words that the server did not take, kept on the phone
+ * (L4, never uploaded unless the author picks it) and in export until the author
+ * chooses (F16-REQ-023). rejected_writes already has exactly that life cycle, so
+ * no new local table is needed (local schema numbers are fixed, 08 section 4).
+ * payload is an entry.upsert op with this phone's whole snapshot and
+ * `conflict: { server_v }`, the version the letter was rebased on.
+ */
+export const CONFLICT_CODE = 'conflict';
+
+export interface ConflictCopy {
+  /** The op id of the push that met the conflict (the row key). */
+  opId: string;
+  entryId: string;
+  /** This phone's words. */
+  words: WordsGroup;
+  /** Server version the letter now follows. */
+  serverV: string | null;
+  /** Device time the conflict was found. */
+  at: string;
+  seenAt: string | null;
+}
+
+interface ConflictPayload extends PushOp {
+  conflict?: { server_v: string | null };
+}
+
+export function addConflictCopy(db: SqlDb, opId: string, data: EntryData, serverV: string | null, now: string): void {
+  const payload: ConflictPayload = {
+    op: opId,
+    type: 'entry.upsert',
+    id: data.id,
+    data: data as unknown as Record<string, unknown>,
+    changed: ['text'],
+    conflict: { server_v: serverV },
+  };
+  db.run(
+    'INSERT OR REPLACE INTO rejected_writes (op_id, type, entity_id, payload, code, rejected_at) VALUES (?, ?, ?, ?, ?, ?)',
+    opId, 'entry.upsert', data.id, JSON.stringify(payload), CONFLICT_CODE, now,
+  );
+}
+
+function toConflict(r: { op_id: string; entity_id: string; payload: string; rejected_at: string; seen_at: string | null }): ConflictCopy {
+  const p = JSON.parse(r.payload) as ConflictPayload;
+  const d = p.data as Partial<EntryData>;
+  return {
+    opId: r.op_id,
+    entryId: r.entity_id,
+    words: { final_text: String(d.final_text ?? ''), machine_edits: Array.isArray(d.machine_edits) ? d.machine_edits : [], edit_level: String(d.edit_level ?? 'clean') },
+    serverV: p.conflict?.server_v ?? null,
+    at: r.rejected_at,
+    seenAt: r.seen_at,
+  };
+}
+
+/** Conflict copies, newest first; for one letter when `entryId` is given. */
+export function listConflictCopies(db: SqlDb, entryId?: string): ConflictCopy[] {
+  const rows = entryId === undefined
+    ? db.all<{ op_id: string; entity_id: string; payload: string; rejected_at: string; seen_at: string | null }>(
+      'SELECT op_id, entity_id, payload, rejected_at, seen_at FROM rejected_writes WHERE code = ? ORDER BY rejected_at DESC, op_id DESC', CONFLICT_CODE)
+    : db.all<{ op_id: string; entity_id: string; payload: string; rejected_at: string; seen_at: string | null }>(
+      'SELECT op_id, entity_id, payload, rejected_at, seen_at FROM rejected_writes WHERE code = ? AND entity_id = ? ORDER BY rejected_at DESC, op_id DESC',
+      CONFLICT_CODE, entryId);
+  return rows.map(toConflict);
+}
+
+/** Letters with a conflict copy waiting for the author. */
+export function conflictCount(db: SqlDb): number {
+  return db.get<{ n: number }>('SELECT COUNT(DISTINCT entity_id) AS n FROM rejected_writes WHERE code = ?', CONFLICT_CODE)!.n;
+}
+
+export function removeConflictCopy(db: SqlDb, opId: string): boolean {
+  const had = db.get<{ n: number }>('SELECT COUNT(*) AS n FROM rejected_writes WHERE op_id = ? AND code = ?', opId, CONFLICT_CODE)!.n;
+  db.run('DELETE FROM rejected_writes WHERE op_id = ? AND code = ?', opId, CONFLICT_CODE);
+  return had > 0;
 }
 
 export interface Batch {
@@ -353,9 +526,14 @@ export function takeBatch(db: SqlDb, opts: { now: string; onlyDeletes?: boolean;
   if (rows.length === 0) return { rows: [], ops: [], waitUntil: null };
   if (rows[0].next_attempt_at && rows[0].next_attempt_at > opts.now) return { rows: [], ops: [], waitUntil: rows[0].next_attempt_at };
   const out: OutboxRow[] = [];
+  const letters = new Set<string>();
   let bytes = 0;
   for (const r of rows) {
     if (out.length > 0 && bytes + r.payload.length > maxBytes) break;
+    // One op per letter per batch: the next op of a letter leaves only after this one's answer
+    // rebased it (F16-REQ-025). The batch ends here, so queue order is kept exactly.
+    if (r.type.startsWith('entry.') && letters.has(r.entity_id)) break;
+    if (r.type.startsWith('entry.')) letters.add(r.entity_id);
     out.push(r);
     bytes += r.payload.length;
   }

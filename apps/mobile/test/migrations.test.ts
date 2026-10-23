@@ -208,3 +208,108 @@ describe('[D-084] migration 5: quiet-day marks carry no sentence', () => {
     expect(fresh.all('SELECT * FROM sync_outbox')).toEqual([]);
   });
 });
+
+describe('[WP-F04-03] migration 6: draft kind, occurred date and precision, letter language and direction (G-26)', () => {
+  const upTo = (version: number) => MIGRATIONS.filter((m) => m.version <= version);
+
+  it('adds the columns with their defaults, and existing rows read as a letter, dated by its day, left to right', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx, upTo(5));
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', 'Mama', ?, ?)", NOW, NOW);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms) VALUES ('d1', 'c1', 'spoken', NULL, ?, 'file:///Documents/r.m4a', 1000)", NOW);
+    db.run(
+      `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+         final_text, in_book, updated_at, child_id) VALUES ('e1', 'letter', '2026-09-29', ?, 'typed', 'verbatim', 2, 'Hi Asha.', '[]', 'Hi Asha.', 1, ?, 'c1')`,
+      NOW, NOW,
+    );
+    expect(migrate(db, ctx)).toMatchObject({ from: 5, to: 6 });
+    expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['kind', 'occurred_on', 'occurred_precision', 'language', 'base_direction']));
+    expect(cols(db, 'entries')).toEqual(expect.arrayContaining(['occurred_precision', 'language', 'base_direction']));
+    expect(db.get("SELECT kind, occurred_on, occurred_precision, language, base_direction FROM drafts WHERE id = 'd1'"))
+      .toEqual({ kind: 'letter', occurred_on: null, occurred_precision: 'day', language: null, base_direction: 'ltr' });
+    expect(db.get("SELECT occurred_precision, language, base_direction FROM entries WHERE id = 'e1'"))
+      .toEqual({ occurred_precision: 'day', language: null, base_direction: 'ltr' });
+    expect(db.all('SELECT * FROM sync_outbox')).toEqual([]); // no letter changed, so nothing is queued
+  });
+
+  it('is safe on a database that already has some of the columns (an interrupted or hand-patched install)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx, upTo(5));
+    db.exec("ALTER TABLE entries ADD COLUMN language TEXT");
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', 'Mama', ?, ?)", NOW, NOW);
+    expect(() => migrate(db, ctx)).not.toThrow();
+    expect(userVersion(db)).toBe(LATEST_VERSION);
+  });
+});
+
+describe('[WP-F04-03] every earlier schema migrates to head with row counts and content hashes unchanged', () => {
+  const upTo = (version: number) => MIGRATIONS.filter((m) => m.version <= version);
+  const TABLES = ['settings', 'entries', 'children', 'drafts', 'orphan_audio', 'sync_outbox', 'rejected_writes', 'sync_books'];
+  const exists = (db: SqlDb, t: string) => db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name = ?", t)!.n === 1;
+
+  /** For each table: row count and a hash of every column that exists now, in primary-key order. */
+  function snapshot(db: SqlDb, columnsOf: Record<string, string[]>) {
+    const out: Record<string, { n: number; sha: string }> = {};
+    for (const t of Object.keys(columnsOf)) {
+      const c = columnsOf[t];
+      const rows = db.all<Record<string, unknown>>(`SELECT ${c.join(', ')} FROM ${t} ORDER BY 1`);
+      out[t] = { n: rows.length, sha: sha(JSON.stringify(rows)) };
+    }
+    return out;
+  }
+
+  /** The fictional Asha family as each schema could hold it. */
+  function seed(db: SqlDb, version: number) {
+    db.run("INSERT INTO settings (key, value) VALUES ('activeChildId', 'c1'), ('review.firstNoteSeen', '1')");
+    if (version < 2) {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+           final_text, in_book, updated_at) VALUES ('e1', 'letter', '2026-09-01', ?, 'spoken', 'clean', 2, 'um Asha you laughed', '[]', 'Asha, you laughed.', 1, ?)`,
+        NOW, NOW,
+      );
+      return;
+    }
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Mama', ?, ?)", NOW, NOW);
+    const audio = version >= 3 ? ", audio_sha256, audio_bytes, transcript_status" : '';
+    const audioVals = version >= 3 ? ", ?, 48000, NULL" : '';
+    for (const [id, child, text] of [['e1', 'c1', 'Asha, you laughed at the rain today.'], ['e2', 'c1', 'Two teeth.'], ['e3', 'c2', 'Hello, little one.']]) {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+           final_text, in_book, updated_at, child_id, author_signs_as, audio_uri, audio_duration_ms${audio})
+         VALUES (?, 'letter', '2026-09-29', ?, 'spoken', 'clean', 2, ?, '[{"type":"filler","from":0,"to":3}]', ?, 1, ?, ?, 'Mama', 'file:///Documents/r.m4a', 31000${audioVals})`,
+        ...(version >= 3 ? [id, NOW, `um ${text}`, text, NOW, child, 'a'.repeat(64)] : [id, NOW, `um ${text}`, text, NOW, child]),
+      );
+    }
+    db.run(
+      `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+         final_text, in_book, updated_at, child_id, deleted_at) VALUES ('e4', 'not_much', '2026-09-30', ?, 'typed', 'verbatim', 2, '', '[]', '', 0, ?, 'c1', ?)`,
+      NOW, NOW, NOW,
+    );
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, typed_text) VALUES ('d1', 'c1', 'typed', NULL, ?, NULL, NULL, 'Half a thought')", NOW);
+    if (version >= 3) {
+      db.run("INSERT INTO orphan_audio (file_name, bytes, found_at) VALUES ('recording-9.m4a', 1200, ?)", NOW);
+    }
+  }
+
+  for (let from = 0; from < LATEST_VERSION; from++) {
+    it(`from v${from}`, () => {
+      const { db } = nodeDb();
+      if (from === 0) {
+        // The pre-migrator multi-child install: tables and columns from the old ad hoc code, user_version 0.
+        MIGRATIONS[0].up(db, ctx);
+        MIGRATIONS[1].up(db, ctx);
+        expect(userVersion(db)).toBe(0);
+      } else {
+        migrate(db, ctx, upTo(from));
+      }
+      seed(db, from === 0 ? 2 : from);
+      const columnsOf: Record<string, string[]> = {};
+      for (const t of TABLES) if (exists(db, t)) columnsOf[t] = cols(db, t);
+      const before = snapshot(db, columnsOf);
+      expect(migrate(db, ctx)).toMatchObject({ from, to: LATEST_VERSION, newer: false });
+      expect(snapshot(db, columnsOf)).toEqual(before);
+      expect(userVersion(db)).toBe(LATEST_VERSION);
+    });
+  }
+});
