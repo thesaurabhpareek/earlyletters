@@ -233,7 +233,14 @@ const pairs = (lang: Lang) => lang.pack?.punctuation.pairOpeners === true && lan
 const mood = (s: string, lang?: Lang) => (lang && pairs(lang) ? moodOf(s).replace(/[¿¡]/g, '') : moodOf(s));
 const openers = (s: string) => [...s].filter((c) => c === '¿' || c === '¡').length;
 const QUOTE = /\p{Quotation_Mark}/u;
-const quoteCount = (s: string) => [...s].filter((c, i, a) => QUOTE.test(c) && !(WORDISH.test(a[i - 1] ?? '') && WORDISH.test(a[i + 1] ?? ''))).length;
+/**
+ * Marks that double as an apostrophe: between two word characters ("don’t",
+ * "Asha's") they quote nothing. Every other quotation mark counts wherever it
+ * stands: 「 between two characters (说「呃) is still a quotation mark, so a
+ * space put before it moves no mark (seed 20261003 run 8161, 18 Oct).
+ */
+const APOSTROPHE_LIKE = new Set(["'", '’', '‛', '＇']);
+const quoteCount = (s: string) => [...s].filter((c, i, a) => QUOTE.test(c) && !(APOSTROPHE_LIKE.has(c) && WORDISH.test(a[i - 1] ?? '') && WORDISH.test(a[i + 1] ?? ''))).length;
 const INVISIBLE = /[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]/u;
 const invisibles = (s: string) => [...s].filter((c) => INVISIBLE.test(c)).join('');
 const DIGITS = /\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu;
@@ -561,5 +568,14 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     expect(brokenFinal('She slept 2 – 3 hours.', 'She slept 2, 3 hours.', en)).toBeNull(); // letters and digit groups alike: the range rule is checked in regression/en
     expect(b('Um, Asha slept.', at('Um, Asha slept.', 'Um, ', '', 'filler'))).toBeNull(); // honest
     expect(b('asha slept.', at('asha slept.', 'a', 'A'))).toBeNull(); // honest sentence case
+    // Quotation marks between two characters: an apostrophe inside a word is not a quote, 「 always is
+    // (seed 20261003 run 8161: a space before 「 was reported as a changed quote).
+    const zh = makeLangs().find((l) => l.code === 'zh')!;
+    const bz = (raw: string, e: Edit[]) => broken(raw, e, zh, []);
+    const said = '阿莎说「呃，不要」。';
+    expect(bz(said, [{ type: 'paragraph', start: 3, end: 3, original: '', replacement: ' ', source: 'model' }])).toBeNull(); // whitespace moves no mark
+    expect(bz(said, at(said, '「', ''))).toBe('quotes_changed'); // D7: the mark itself may not go
+    expect(b("Asha's duck.", at("Asha's duck.", "Asha's", 'Asha’s', 'punctuation'))).toBeNull(); // an apostrophe swap quotes nothing
+    expect(b('She said ’up’.', at('She said ’up’.', '’up’', 'up'))).toBe('quotes_changed'); // paired marks around a word are quotes
   });
 });
