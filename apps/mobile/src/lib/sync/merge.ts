@@ -422,13 +422,17 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
   }
   const unanswered = rows.filter((r) => !answered.has(r.op_id));
   if (res.paused) {
-    // SCCON: the op that met it and every op after it did not apply (the server rolled that op back and
-    // stopped). They are as if never sent, so a delete made during the pause drops them instead of
-    // overtaking them, and nothing waits to bring the letter back when consent returns. Unlike held_off, this
-    // needs no retry guard: SCCON is raised inside the op's own block, after the idempotency claim, so a retry
-    // of an op that had applied answers dup and never SCCON, and the ops after the one that met it are newer
-    // ops this server never ran (an erase in lane 2 is the one exception, and a re-sent erase is a dup no-op).
-    for (const u of unanswered) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', u.seq);
+    // SCCON: the op that met it and every op after it did not apply in this push (the server rolled that op
+    // back and stopped). On a first send they are as if never sent, so a delete made during the pause drops
+    // them instead of overtaking them, and nothing waits to bring the letter back when consent returns. A
+    // retry is left as sent, as for held_off: a refused op is not claimed (its block rolls back), so after a
+    // lost answer it runs again and can meet SCCON, while an op behind it may already have applied under its
+    // op id on the first run. An edit then queues a new op (the retry answers dup, the edit applies), and a
+    // delete sends its delete (#182 re-check). `rows` is the batch as taken, before markSent, so sent_at null
+    // is a first send.
+    for (const u of unanswered) {
+      if (u.sent_at === null) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', u.seq);
+    }
   }
   return {
     pushed,
