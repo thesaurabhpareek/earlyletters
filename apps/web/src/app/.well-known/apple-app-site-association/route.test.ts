@@ -25,6 +25,22 @@ describe('apple-app-site-association', () => {
     expect(GET().status).toBe(404);
   });
 
+  it('warns in a production build with both ids unset, naming the variables, and still answers 404', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.stubEnv('APPLE_TEAM_ID', '');
+    vi.stubEnv('IOS_BUNDLE_ID', '');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    expect(GET().status).toBe(404);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('APPLE_TEAM_ID');
+    expect(warn.mock.calls[0][0]).toContain('IOS_BUNDLE_ID');
+    // Previews and local builds stay quiet: the ids are set only in the Production environment.
+    warn.mockClear();
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    expect(GET().status).toBe(404);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('answers 404 when only one id is set, or one is malformed', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.stubEnv('APPLE_TEAM_ID', 'ABCDE12345');

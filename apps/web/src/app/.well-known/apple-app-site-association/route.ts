@@ -40,6 +40,11 @@ export function GET() {
   if (!teamId || !bundleId) {
     if (teamId || bundleId) {
       console.warn('[aasa] Set both APPLE_TEAM_ID and IOS_BUNDLE_ID. Serving 404 until then.');
+    } else if (process.env.VERCEL_ENV === 'production') {
+      // A production build that forgot both would otherwise ship a silent 404: links then never open the app.
+      console.warn(
+        '[aasa] APPLE_TEAM_ID and IOS_BUNDLE_ID are both unset in this production build. Serving 404, so links will not open the app.',
+      );
     }
     return new Response(null, { status: 404 });
   }
