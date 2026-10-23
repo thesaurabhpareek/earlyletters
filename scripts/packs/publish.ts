@@ -222,6 +222,10 @@ async function main(): Promise<void> {
     out(`  1. npx tsx scripts/packs/publish.ts upload --from ${outDir}      # PACKS_S3_* set; packs first, manifest last; then checks the public host`);
     out(`     (or serve the directory as is from any static host, for example: npx vercel deploy ${outDir} --prod; then: npx tsx scripts/packs/publish.ts verify)`);
     out('  2. git add supabase/functions/config/published.ts supabase/functions/content/published.ts scripts/packs/remote-config.json && git commit');
+    // The release signs a remote config too, so the server must hold the same kill-switch state (#138, F19-REQ-008).
+    const signedConfig = JSON.parse(built.documents['remote-config']) as { payload: { killSwitches: Record<string, boolean> } };
+    out('  3. Make the server match the kill switches this release signed:');
+    for (const s of killSwitchSteps(signedConfig.payload.killSwitches)) out(`     ${s}`);
     return;
   }
 
