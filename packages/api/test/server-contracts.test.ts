@@ -257,7 +257,7 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(JSON.stringify(ops).length).toBe(391);
   });
 
-  it('parses a pull response with the planned held section', () => {
+  it('parses a pull response with the held section as built: rows, cursor and more, no digest', () => {
     const r = parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [], gone: [],
       held: { rows: [], cursor: null, more: false },

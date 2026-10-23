@@ -502,8 +502,12 @@ export interface BookRequest {
 export interface PullSince {
   epoch?: number;
   books: Record<string, BookRequest>;
-  /** WP-F16-17: cursor and digest for the author's own held drafts (same rules as a book). */
-  held?: { cursor?: string | null; have?: Digest; verify?: boolean; ids?: boolean };
+  /**
+   * WP-F16-17 (20261016000000): the cursor for the author's own held drafts,
+   * one for all books (ADR 0025 section 9). Send `held` to get the section;
+   * `sync_pull` reads only `cursor` here. There is no held digest.
+   */
+  held?: { cursor?: string | null };
 }
 
 export interface SyncPullArgs {
@@ -669,19 +673,36 @@ export const PullResponseSchema = v.object({
   books: v.optional(v.array(PulledBookSchema)),
   gone: v.optional(v.array(GoneBookSchema)),
   /**
-   * WP-F16-17: the author's own held drafts after the held cursor,
-   * with the same cursor rules as a book (F16 6.2 I): removal is the digest
-   * (`visible`, then `ids` on a difference), so a draft purged by a book
-   * purge, the orphan sweep or a restore epoch leaves this phone too.
-   * `gone` rows are an optional fast path for discards and keeps. Never
-   * present in anyone else's pull.
+   * WP-F16-17, as built (20261016000000 `sync_pull`, unchanged by
+   * 20261023010000): present only when the request carried `held`. The
+   * author's own held drafts after the held cursor, one page across all
+   * books, of every book the author is a parent of now. The server answers
+   * `rows`, `cursor` and `more` only: there is no digest, so a phone cannot
+   * check that it holds exactly the server's set.
+   *
+   * Removal is the `gone` markers alone (`discarded`, `kept`, `erased`),
+   * sent only to a phone that pulled before (a non-null held cursor). Let go,
+   * Keep, Erase now, and leaving the book (`leave_child`,
+   * `remove_child_member`: the leaver's drafts go with a `discarded` marker
+   * unless a legal hold keeps them) each leave one. What leaves no marker:
+   *  - a cascade from the book or the account: the markers go with it. For a
+   *    book the phone asked about, its entry in the top-level `gone` list
+   *    (`deleted` or `not_member`) is the only sign; an account deletion
+   *    ends the session instead;
+   *  - an undone join (`undo_parent_join`, 20261023010000): the removed
+   *    parent's drafts stay on the server, theirs, but are no longer served,
+   *    because this section serves only books the author is a parent of;
+   *  - the same for a kept author's drafts when a book is purged while their
+   *    rows keep it (20261023010000): readable by them through
+   *    `held_drafts_author_read`, never in this section;
+   *  - a restore epoch: the pull answers `reset` instead.
+   * The left-book section (`gone[].rows`) carries the author's letters only,
+   * never held drafts. Never present in anyone else's pull.
    */
   held: v.optional(v.object({
     rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])),
     cursor: nullableStr,
     more: v.boolean(),
-    visible: v.optional(v.nullable(DigestSchema)),
-    ids: v.optional(v.array(str)),
   })),
   more: v.optional(v.boolean()),
 });

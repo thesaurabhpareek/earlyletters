@@ -29,6 +29,7 @@ import {
   PREFS_KEYS,
   PulledHeldSchema,
   PulledRowSchema,
+  PullResponseSchema,
   PushResponseSchema,
   PushResultErrSchema,
   PushResultOkSchema,
@@ -182,6 +183,31 @@ describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; other
   });
 });
 
+/** The text of the call that opens at `at` (`name(` ... `)`), quote-aware. */
+function callAt(body: string, at: number): string {
+  const open = body.indexOf('(', at);
+  let depth = 0;
+  let quoted = false;
+  for (let i = open; i < body.length; i++) {
+    const c = body[i];
+    if (quoted) {
+      if (c === "'") quoted = false;
+      continue;
+    }
+    if (c === "'") quoted = true;
+    else if (c === '(') depth++;
+    else if (c === ')' && --depth === 0) return body.slice(at, i + 1);
+  }
+  return '';
+}
+
+/** An object schema's keys, through optional, nullable and pipe wrappers. */
+function schemaKeys(schema: unknown): string[] {
+  let s = schema as { entries?: Record<string, unknown>; wrapped?: unknown; pipe?: unknown[] } | undefined;
+  while (s && !s.entries && (s.wrapped || s.pipe)) s = (s.wrapped ?? s.pipe![0]) as typeof s;
+  return s?.entries ? Object.keys(s.entries) : [];
+}
+
 /** The literal keys of every `jsonb_build_object(...)` call in a body: the even arguments that are string literals. */
 function builtKeys(body: string): Set<string> {
   const keys = new Set<string>();
@@ -236,6 +262,17 @@ describe('[F16 6.2 I] held drafts: the contract equals 20261016000000', () => {
     expect(gone, 'held_drafts_gone table not found').not.toBeNull();
     const m = /gone in \(([^)]+)\)/.exec(gone![1]);
     expect([...m![1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort()).toEqual([...HELD_GONE_KINDS].sort());
+  });
+
+  it('the held request reads only its cursor and the held section answers rows, cursor and more: no digest (review A 2 on #138)', () => {
+    const pull = newestDefinition('sync_pull');
+    const read = new Set([...pull.matchAll(/\bv_held\s*(?:->>|->|\?)\s*'([a-z_]+)'/g)].map((m) => m[1]));
+    expect([...read], 'sync_pull reads a new key of the held request: add it to PullSince.held').toEqual(['cursor']);
+    const at = pull.indexOf("'held', jsonb_build_object(");
+    expect(at, 'the held section builder not found in the newest sync_pull').toBeGreaterThan(0);
+    const answered = [...builtKeys(callAt(pull, at + "'held', ".length))].sort();
+    expect(answered, 'the held section changed shape: update PullResponseSchema.held').toEqual(['cursor', 'more', 'rows']);
+    expect(schemaKeys((PullResponseSchema.entries as Record<string, unknown>).held).sort()).toEqual(answered);
   });
 
   it('held.upsert reads exactly the HeldDraftData keys', () => {
