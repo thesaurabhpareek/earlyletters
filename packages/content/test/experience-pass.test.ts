@@ -45,7 +45,7 @@ function leaves(value: unknown, path = ''): Leaf[] {
 // speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
 
-/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below), and the held keys switched since. */
+/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held in P0), and the held keys switched since. */
 const CHANGED = [
   // Switched by P2 with the stop screen that shows it alone (S02).
   'en.ageGate.stopTitle',
@@ -58,6 +58,8 @@ const CHANGED = [
   'features.language.picker.none',
   'features.speechConsent.body',
   'features.speechConsent.chosenLater',
+  // Changed after P2 landed (#220 review R5, spec v1.3): the promise body is the sanctioned promise word for word (S04).
+  'en.onboarding.promise.body2',
   'features.words.pack.stoppedInBackground',
   'en.review.waiting.body',
   'features.words.pack.mobileDataButton',
@@ -125,6 +127,9 @@ const CHANGED = [
   'en.errors.launch.exportFailed',
   // Not in section 4: changed in review on #181 (the old line named four licences; #175 lists every one).
   'features.licences.libraries',
+  // Held in #181, switched by P5 with the screens that build all three datelines and fill {child} (spec section 6).
+  'en.readTogether.nowReading',
+  'en.settings.delete.restoredToast',
   // Switched by P3 with Tonight's card for every draft (section 6, P3 switches; counsel C10 for the keepGate lines).
   'en.tonight.draftWaiting.title',
   'features.billing.keepGate.heldNote',
@@ -225,8 +230,6 @@ const WE_ALLOWED = new Set([
 const HELD: Record<string, string> = {
   'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
   'en.errors.micDenied.body': 'P4',
-  'en.readTogether.nowReading': 'P5', // the newborn and Before You datelines are built another way until P5
-  'en.settings.delete.restoredToast': 'P5', // the shelf does not fill {child} yet
   'features.billing.plan.monthly': 'P6, after counsel', // shown beside plan.yearly; registered group
   'features.billing.plan.payment': 'counsel, then P6',
   'features.billing.plan.grace': 'counsel, then P6',

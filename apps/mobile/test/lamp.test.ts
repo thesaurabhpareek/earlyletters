@@ -635,8 +635,36 @@ describe('persistKey: one light across screens', () => {
     ]);
   });
 
+  it('"The book is open." to Tonight: the first tab lit after first run starts at first run\'s last light, never from unlit', () => {
+    // First run ends on the finish scene; the tabs have no light of their own yet.
+    lampMemory.set('firstRun', resolveLamp({ scene: 'finish' }));
+    expect(lampMemory.get('tabs')).toBeUndefined();
+    const from = lampMemory.atMount('tabs');
+    expect(from).toEqual(lampMemory.get('firstRun'));
+    const tonight = resolveLamp({ scene: 'tonight', daypart: 'evening' })!;
+    const plan = planLampMount(from, tonight, false, { key: 'tabs', firstOfSession: false });
+    // The finish light hands over to Tonight's as a cross-fade on the tabs' settle: some light at every moment.
+    expect(plan[0]).toMatchObject({ from: from!.level, ms: L.returnMs });
+    expect(plan[0].from).toBeGreaterThan(0);
+    expect(plan.every((l) => l.ms === L.returnMs)).toBe(true);
+    // Without the hand-off it would come up from unlit (the five dark frames P2-V measured on #220).
+    expect(planLampMount(undefined, tonight, false, { key: 'tabs', firstOfSession: false })[0].from).toBe(0);
+    // Once the tabs have a light of their own, they keep to it; first run never takes the tabs' light.
+    lampMemory.set('tabs', resolveLamp({ scene: 'book' }));
+    expect(lampMemory.atMount('tabs')).toEqual(lampMemory.get('tabs'));
+    lampMemory.clear();
+    lampMemory.set('tabs', resolveLamp({ scene: 'book' }));
+    expect(lampMemory.atMount('firstRun')).toBeUndefined();
+    expect(lampMemory.atMount(undefined)).toBeUndefined();
+  });
+
+  it('a lamp reads its starting light through atMount (source)', () => {
+    const src = readFileSync(join(SRC, 'components', 'ui', 'lamp.tsx'), 'utf8');
+    expect(src).toContain('planLampMount(lampMemory.atMount(persistKey), light, reduced,');
+  });
+
   it('tabs: the arriving tab starts at the light the last one left and settles to its own over returnMs', () => {
-    expect(LAMP_KEYS).toEqual({ firstRun: { settle: 'arrive' }, tabs: { settle: 'return' } });
+    expect(LAMP_KEYS).toEqual({ firstRun: { settle: 'arrive' }, tabs: { settle: 'return', follows: 'firstRun' } });
     // Tonight late at night (amber into dusk) to the Book (gold into amber, still 0.6): a cross-fade, quick.
     lampMemory.set('tabs', resolveLamp({ scene: 'tonight', daypart: 'lateNight' }));
     const book = planLampMount(lampMemory.get('tabs'), resolveLamp({ scene: 'book' })!, false, { key: 'tabs', firstOfSession: false });
@@ -746,7 +774,10 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
     for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
-    // The empty Book leads with it too, through the empty state's device.
-    expect(readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8')).toMatch(/<EmptyState\s+device/);
+    // The empty Book leads with the book cover instead (S24): the closed cover at 160 x 214, with the child's name and
+    // "From {signsAs}", and no quotation pair through the empty state's device.
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/<BookCover name=\{child\} signsAs=\{active\.signsAs\} size="lg"/);
+    expect(book).not.toMatch(/<EmptyState\s+device/);
   });
 });
