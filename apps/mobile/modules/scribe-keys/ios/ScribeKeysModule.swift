@@ -57,6 +57,16 @@ public class ScribeKeysModule: Module {
   private static let lock = NSLock()
 
   @available(iOS 17.0, *)
+  /// One purpose per key (review A note 3 on #150): the file-key wrap and the key check each use a
+  /// subkey of the book key, HKDF-SHA256 with no salt and one of these labels as info. The same
+  /// strings are BOOK_SUBKEY_INFO in lib/backup/contract.ts. Fixed from the first stored key.
+  private static let fileKeyWrapInfo = "scribe/backup/v1/subkey/file-key-wrap"
+  private static let keyCheckInfo = "scribe/backup/v1/subkey/key-check"
+
+  private static func subkey(_ key: SymmetricKey, _ info: String) -> SymmetricKey {
+    HKDF<SHA256>.deriveKey(inputKeyMaterial: key, info: Data(info.utf8), outputByteCount: 32)
+  }
+
   private static func suite() -> HPKE.Ciphersuite {
     HPKE.Ciphersuite(kem: .Curve25519_HKDF_SHA256, kdf: .HKDF_SHA256, aead: .AES_GCM_256)
   }
@@ -147,16 +157,16 @@ public class ScribeKeysModule: Module {
       }
     }
 
-    /// HMAC-SHA256 under the book key, first 16 bytes: proves which key a server row escrowed.
+    /// HMAC-SHA256 under the book key's key-check subkey, first 16 bytes: proves which key a server row escrowed.
     AsyncFunction("bookKeyCheck") { (service: String, account: String, version: Int, label: Data) throws -> Data in
       let key = try Self.lockedBookKey(service, account, version)
-      return Data(HMAC<SHA256>.authenticationCode(for: label, using: key)).prefix(16)
+      return Data(HMAC<SHA256>.authenticationCode(for: label, using: Self.subkey(key, Self.keyCheckInfo))).prefix(16)
     }
 
     /// AES-256-GCM of a 32-byte file key: nonce (12) || ciphertext (32) || tag (16).
     AsyncFunction("wrapFileKey") { (service: String, account: String, version: Int, fileKey: Data, aad: Data) throws -> Data in
       guard fileKey.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "A file key is 32 bytes") }
-      let key = try Self.lockedBookKey(service, account, version)
+      let key = Self.subkey(try Self.lockedBookKey(service, account, version), Self.fileKeyWrapInfo)
       guard let combined = try AES.GCM.seal(fileKey, using: key, nonce: AES.GCM.Nonce(), authenticating: aad).combined else {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_SEAL", "The key could not be wrapped")
       }
@@ -164,7 +174,7 @@ public class ScribeKeysModule: Module {
     }
 
     AsyncFunction("unwrapFileKey") { (service: String, account: String, version: Int, wrapped: Data, aad: Data) throws -> Data in
-      let key = try Self.lockedBookKey(service, account, version)
+      let key = Self.subkey(try Self.lockedBookKey(service, account, version), Self.fileKeyWrapInfo)
       do {
         let opened = try AES.GCM.open(try AES.GCM.SealedBox(combined: wrapped), using: key, authenticating: aad)
         guard opened.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open") }
@@ -221,7 +231,7 @@ public class ScribeKeysModule: Module {
       defer { bookKey.resetBytes(in: 0..<bookKey.count) }
       guard bookKey.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open") }
       if let expected = expectedCheck {
-        let check = Data(HMAC<SHA256>.authenticationCode(for: checkLabel, using: SymmetricKey(data: bookKey)).prefix(16))
+        let check = Data(HMAC<SHA256>.authenticationCode(for: checkLabel, using: Self.subkey(SymmetricKey(data: bookKey), Self.keyCheckInfo)).prefix(16))
         guard Self.constantTimeEqual(check, expected) else {
           throw ScribeKeysException("ERR_SCRIBE_KEYS_CHECK", "The key is not the one the server recorded")
         }

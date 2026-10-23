@@ -48,9 +48,9 @@ export interface KeyVault {
   /** Adds a random 256-bit key under `version`. Throws `key_exists` when that version is already there. */
   createBookKey(ref: BookKeyRef, version: number): Promise<void>;
   deleteBookKeys(ref: BookKeyRef): Promise<void>;
-  /** HMAC-SHA256(BK, label) truncated to 16 bytes: lets the server row prove which key it escrowed, without the key. */
+  /** HMAC-SHA256(HKDF(BK, BOOK_SUBKEY_INFO.keyCheck), label) truncated to 16 bytes: lets the server row prove which key it escrowed, without the key. */
   bookKeyCheck(ref: BookKeyRef, version: number, label: Uint8Array): Promise<Uint8Array>;
-  /** AES-256-GCM of a 32-byte file key under the book key: 12-byte nonce, then ciphertext and tag (60 bytes). */
+  /** AES-256-GCM of a 32-byte file key under HKDF(BK, BOOK_SUBKEY_INFO.fileKeyWrap): 12-byte nonce, then ciphertext and tag (60 bytes). */
   wrapFileKey(ref: BookKeyRef, version: number, fileKey: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   unwrapFileKey(ref: BookKeyRef, version: number, wrapped: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   /** Seals the book key to a recipient X25519 public key (the escrow key) with HPKE base mode. */

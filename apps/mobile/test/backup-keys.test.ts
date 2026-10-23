@@ -6,10 +6,12 @@
  * escrow seal tested here is the standard one CryptoKit and Deno implement.
  * Fictional family Asha: Mama and Papa are her parents.
  */
-import { randomBytes } from 'node:crypto';
+import { createDecipheriv, createHmac, randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bytesToBase64, equalBytes } from '../src/lib/backup/bytes';
-import { BackupServerError, escrowAad, escrowInfo, keyCheckLabel, packEscrowWrap, releaseAad, releaseInfo, unpackEscrowWrap, type BackupServer } from '../src/lib/backup/contract';
+import { BOOK_SUBKEY_INFO, BackupServerError, escrowAad, escrowInfo, keyCheckLabel, packEscrowWrap, releaseAad, releaseInfo, unpackEscrowWrap, type BackupServer } from '../src/lib/backup/contract';
 import { wrapAad } from '../src/lib/backup/format';
 import { DeviceRevoked, ICLOUD_WAIT_MS, createKeyManager, type MetaStore } from '../src/lib/backup/keys';
 import { escrowKeysFor } from '../src/lib/backup/escrow-keys';
@@ -387,5 +389,48 @@ describe('[security 4] the drill escrow key is trusted only in a development-pro
     for (const bad of ['', 'v0:abc', `9:${Buffer.alloc(32).toString('base64')}`, `v9:${Buffer.alloc(31).toString('base64')}`]) {
       expect(escrowKeysFor('development', bad, bundled), bad).toEqual(bundled);
     }
+  });
+});
+
+describe('[review A note 3 on #150] one key, one purpose: the wrap and the key check use HKDF subkeys of the book key', () => {
+  // An independent HKDF-SHA256 (RFC 5869) with HMAC only: no salt means 32 zero bytes, one output block.
+  const hkdf32 = (ikm: Uint8Array, info: string) => {
+    const prk = createHmac('sha256', Buffer.alloc(32)).update(Buffer.from(ikm)).digest();
+    return createHmac('sha256', prk).update(Buffer.concat([Buffer.from(info, 'utf8'), Buffer.from([1])])).digest();
+  };
+
+  it('the key check is HMAC under the key-check subkey, and a file key wraps under the wrap subkey; the raw book key does neither', async () => {
+    const vault = nodeVault({ icloud: null });
+    const ref = { profileId: MAMA, childId: ASHA };
+    await vault.createBookKey(ref, 1);
+    const bk = vault.local.get(`${MAMA}:${ASHA}`)!.get(1)!;
+    const label = keyCheckLabel(MAMA, ASHA, 1);
+    const check = Buffer.from(await vault.bookKeyCheck(ref, 1, label));
+    expect(check.toString('hex')).toBe(createHmac('sha256', hkdf32(bk, BOOK_SUBKEY_INFO.keyCheck)).update(label).digest().subarray(0, 16).toString('hex'));
+    expect(check.equals(createHmac('sha256', Buffer.from(bk)).update(label).digest().subarray(0, 16))).toBe(false);
+    const fileKey = new Uint8Array(32).fill(7);
+    const aad = wrapAad(LETTER, MAMA, 1);
+    const wrapped = await vault.wrapFileKey(ref, 1, fileKey, aad);
+    expect(wrapped.length).toBe(60);
+    const openWith = (key: Uint8Array) => {
+      const d = createDecipheriv('aes-256-gcm', Buffer.from(key), Buffer.from(wrapped.subarray(0, 12)));
+      d.setAAD(Buffer.from(aad));
+      d.setAuthTag(Buffer.from(wrapped.subarray(44)));
+      return Buffer.concat([d.update(Buffer.from(wrapped.subarray(12, 44))), d.final()]);
+    };
+    expect(openWith(hkdf32(bk, BOOK_SUBKEY_INFO.fileKeyWrap)).equals(Buffer.from(fileKey))).toBe(true);
+    expect(() => openWith(bk)).toThrow();
+    expect(() => openWith(hkdf32(bk, BOOK_SUBKEY_INFO.keyCheck))).toThrow();
+    expect(equalBytes(await vault.unwrapFileKey(ref, 1, wrapped, aad), fileKey)).toBe(true);
+  });
+
+  it('the Swift module (not compiled yet) uses the same two labels and HKDF for the wrap, the unwrap and both key checks', () => {
+    const swift = readFileSync(join(__dirname, '..', 'modules', 'scribe-keys', 'ios', 'ScribeKeysModule.swift'), 'utf8');
+    expect(swift).toContain(`"${BOOK_SUBKEY_INFO.fileKeyWrap}"`);
+    expect(swift).toContain(`"${BOOK_SUBKEY_INFO.keyCheck}"`);
+    expect(swift).toMatch(/HKDF<SHA256>\.deriveKey\(inputKeyMaterial: key, info: Data\(info\.utf8\), outputByteCount: 32\)/);
+    // bookKeyCheck, wrapFileKey, unwrapFileKey and openBookKey's check: every use of the book key but the HPKE seal.
+    expect(swift.match(/Self\.subkey\(/g)?.length).toBe(4);
+    expect(swift).not.toMatch(/authenticationCode\(for: \w+, using: (key|SymmetricKey\(data: bookKey\))\)/);
   });
 });

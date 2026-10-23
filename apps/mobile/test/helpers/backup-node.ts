@@ -8,13 +8,14 @@
  * bucket (resumable uploads) and the escrow project's function, with every
  * request body kept for the plaintext scan. Fictional family "Asha" only.
  */
-import { createCipheriv, createDecipheriv, createHash, createHmac, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync, openSync, readSync, closeSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   BACKUP_BUCKET,
   BACKUP_ERRORS,
+  BOOK_SUBKEY_INFO,
   BackupServerError,
   escrowAad,
   escrowInfo,
@@ -135,6 +136,11 @@ export interface NodeVaultOptions {
   supported?: boolean;
 }
 
+/** As ScribeKeys: a 32-byte subkey of the book key, HKDF-SHA256 with no salt and the label as info (contract.ts BOOK_SUBKEY_INFO). */
+export function bookSubkey(bk: Uint8Array, info: string): Uint8Array {
+  return new Uint8Array(hkdfSync('sha256', buf(bk), Buffer.alloc(0), Buffer.from(info, 'utf8'), 32));
+}
+
 export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, Map<number, Uint8Array>>; devices: Map<string, { id: string; sk: Uint8Array }> } {
   const local = new Map<string, Map<number, Uint8Array>>();
   const store = () => o.icloud?.items ?? local;
@@ -174,14 +180,14 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       store().delete(acc(r));
     },
     async bookKeyCheck(r: BookKeyRef, version: number, label: Uint8Array) {
-      return new Uint8Array(createHmac('sha256', buf(key(r, version))).update(buf(label)).digest().subarray(0, 16));
+      return new Uint8Array(createHmac('sha256', buf(bookSubkey(key(r, version), BOOK_SUBKEY_INFO.keyCheck))).update(buf(label)).digest().subarray(0, 16));
     },
     async wrapFileKey(r: BookKeyRef, version: number, fileKey: Uint8Array, aad: Uint8Array) {
       const nonce = new Uint8Array(randomBytes(12));
-      return new Uint8Array(Buffer.concat([buf(nonce), buf(gcmSeal('aes-256-gcm', key(r, version), nonce, fileKey, aad))]));
+      return new Uint8Array(Buffer.concat([buf(nonce), buf(gcmSeal('aes-256-gcm', bookSubkey(key(r, version), BOOK_SUBKEY_INFO.fileKeyWrap), nonce, fileKey, aad))]));
     },
     async unwrapFileKey(r: BookKeyRef, version: number, wrapped: Uint8Array, aad: Uint8Array) {
-      return gcmOpen('aes-256-gcm', key(r, version), wrapped.subarray(0, 12), wrapped.subarray(12), aad);
+      return gcmOpen('aes-256-gcm', bookSubkey(key(r, version), BOOK_SUBKEY_INFO.fileKeyWrap), wrapped.subarray(0, 12), wrapped.subarray(12), aad);
     },
     async sealBookKey(r: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array) {
       const s = hpkeSeal(recipient, info, aad, key(r, version));
@@ -197,7 +203,7 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
         throw Object.assign(new Error('key_open_failed'), { code: 'key_open_failed' });
       }
       // As ScribeKeys: a key that fails the row's check is never written.
-      if (check && !createHmac('sha256', buf(bk)).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
+      if (check && !createHmac('sha256', buf(bookSubkey(bk, BOOK_SUBKEY_INFO.keyCheck))).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
         throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
       }
       const m = store().get(acc(r)) ?? new Map<number, Uint8Array>();

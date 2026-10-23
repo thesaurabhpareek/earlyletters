@@ -260,7 +260,19 @@ export function unpackEscrowWrap(b: Uint8Array): { enc: Uint8Array; ct: Uint8Arr
   return { enc: b.slice(1, 33), ct: b.slice(33) };
 }
 
-/** Label for the key check (HMAC-SHA256 under the book key; ours, [R] to both drafts). */
+/**
+ * The book key is never used directly for the file-key wrap or the key check (review A note 3 on
+ * #150): each uses its own 32-byte subkey, HKDF-SHA256 (RFC 5869, no salt) of the book key with one
+ * of these labels as `info`. The book key itself is only ever sealed whole, to the escrow key and by
+ * the escrow function to a device. Changing a label changes every wrap and every key check, so they
+ * are fixed from the first stored key (ScribeKeysModule.swift holds the same strings).
+ */
+export const BOOK_SUBKEY_INFO = {
+  fileKeyWrap: 'scribe/backup/v1/subkey/file-key-wrap',
+  keyCheck: 'scribe/backup/v1/subkey/key-check',
+} as const;
+
+/** Label for the key check (HMAC-SHA256 under the key-check subkey of the book key; ours, [R] to both drafts). */
 export function keyCheckLabel(profileId: string, childId: string, keyVersion: number): Uint8Array {
   return concat(utf8ToBytes('scribe/backup/key-check/v1|'), ids(profileId, childId, keyVersion));
 }
