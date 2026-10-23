@@ -37,10 +37,10 @@
  *                     consumers call (S05 backup queue and restore, S06 status sender;
  *                     WP-F19-12b, WP-F19-12r): build flag first, then the switch named in
  *                     F19 6.5 (`backupUploads`, `escrow`, `statusReport`). With the build
- *                     flag off it is false whatever the config says. The three keys join
- *                     packages/api's schema in WP-F19-16 (S07); until then a served config
- *                     cannot carry them, so nothing is paused remotely and the build flags
- *                     (off) are the only lever.
+ *                     flag off it is false whatever the config says. The three keys are in
+ *                     packages/api's remote config schema (WP-F19-16, S07), off by default,
+ *                     and an older signed config without them parses as off. The build flags
+ *                     are off in every profile today, so they stay the lever for build 1.
  *
  *   ANALYTICS         `EXPO_PUBLIC_ANALYTICS=on` in the build's env. Anything else, or
  *                     nothing, is OFF. Off in every profile (decision of 15 Oct 2026,
