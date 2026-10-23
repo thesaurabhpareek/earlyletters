@@ -21,6 +21,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 12 | `20261005000000_family_cap_language_idempotency.sql` | **Pending** | Two parents per book, leave and remove, letter language, idempotency keys, server rate limits (section "File 20261005000000") |
 | 13 to 16 | `20261015000000` to `20261015030000` | **Pending** | The R-17 gate: BL-331 with BL-332, `peek_invite` with BL-334, WP-F11-01, the v1.0 wire-contract columns (section "Files 13 to 16") |
 | 17 | `20261016000000_sync_v1_server.sql` | **Pending** | Sync protocol v1, the server half: words compare and set, held drafts, Erase now, the erasure record, the review mark; schema `sync_private` (never exposed) (section "File 17") |
+| 18 | `20261016001000_subscription_status.sql` | **Pending** | The D-080 subscription status report and the D-081 purchase consent record: four tables no client can read, `status_salt()` and `status_report_store(jsonb)`, fail closed on `app.status_report_enabled` (section "File 18") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -763,6 +764,37 @@ Prefer fixing forward. Partial switches, each on its own and each safe:
 - The words compare and set, Erase now and the erasure record have no partial switch: fix forward with a migration.
 
 A full rollback, as one reverse migration, in this order: re-run `sync_push` and `sync_pull` from file 16 (the phones then answer every new op with `22023` and wait); re-run `entries_set_sync_xid` and `entries_not_purged` from file 9, `entries_guard_immutable` from file 16, `prepare_account_purge` from file 4, `purge_due` from file 8, and `ops_replay_ledger`, `ops_incident_scope` and `ops_deletion_residue` from file 10; drop the triggers `entries_note_erasure`, `entries_drop_held`, `child_members_drop_held` and the `held_drafts` triggers with their functions; `drop table public.held_drafts, public.held_drafts_gone;` (this deletes held drafts: export them first, or the authors lose them); `drop schema sync_private cascade;` (the erasure record goes, so an erased letter older than 60 days could come back); drop `entries.text_xid`, `entries.words_reviewed_at` and the four receipt columns. If #151 is applied, redefine `backup_entry_exists` with its `entries` check only (drop the `held_drafts` branch, whichever file added it); after the drop every backup check would otherwise fail with `42P01`. Last, re-run file 13 section 7 (the `search_path` block), since the functions re-run from older files come back with their old `search_path`. `purge_ledger_entity_type_check` keeps `held_draft` (removing it would fail on any ledger row of that kind). Test the reverse migration in PGlite first.
+
+## File 18: the subscription status report (S06, PR #178)
+
+`20261016001000_subscription_status.sql` (WP-F14-15b; D-080, D-081). S06's text from PR #178, at the timestamp it took at the merge with develop af53d7c (its placeholder, `20261016000000`, is file 17's version). What it adds: `subscription_salts` (one random 32-byte salt per account), `subscription_status` (one row per account and `sub_ref`, the last report received wins), `subscription_consents` (one per original purchase, append-only, pseudonymised at account deletion with the same pepper and hash as `policy_acceptances`, deleted 3 years later by `subscription_retention_purge`, which the purge worker's daily run calls) and `subscription_report_rates` (30 per person per hour for each RPC). No client can read or write any of them; the two RPCs answer only `{stored, consent}`, never whether a person has Plus (D-080 rule 4). No receipt, transaction id, price, letter, transcript, recording or child name is stored. It re-creates `idempotency_keys_fn_check` with `'status_report_store'` added. Tests: `subscription_status` (new), rows in `access_matrix`, and the `v1_gate_search_path` sweep covers its functions.
+
+**Before.** Every earlier pending file, file 17 included. `app.consent_pepper` set (step 6): an account with consent records cannot be deleted without it (`55000`, like G-12).
+
+**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project").
+
+**Turn on** (it fails closed until then, and the phone keeps its report for later): `alter database postgres set app.status_report_enabled = 'on';` Anything else pauses both RPCs again (`SCKIL`, detail `statusReport`, which the `subscription-status` function answers as 503 paused).
+
+**Check** (expect true, true):
+```sql
+select to_regclass('public.subscription_status') is not null and to_regclass('public.subscription_consents') is not null;
+select has_function_privilege('authenticated', 'public.status_report_store(jsonb)', 'execute')
+   and not has_function_privilege('anon', 'public.status_report_store(jsonb)', 'execute');
+```
+Then repeat step 21's `search_path` query (expect 0 rows). Advisors: expect 0029 "authenticated can execute security definer function" for `status_salt` and `status_report_store`; both start with `require_user()`. Anything else new: stop and ask.
+
+**Rollback** (before any real purchase only; consent records are legal records), tested in PGlite:
+```sql
+drop trigger if exists profiles_pseudonymise_subscription_consents on public.profiles;
+drop function if exists public.status_report_store(jsonb), public.status_salt(), public.subscription_retention_purge(timestamptz);
+drop trigger if exists subscription_consents_guard on public.subscription_consents;
+drop function if exists public.subscription_consents_pseudonymise(), public.subscription_consents_guard(),
+  public.subscription_instant(jsonb, boolean), public.subscription_report_switch(), public.subscription_rate_hit(uuid, text);
+drop table if exists public.subscription_report_rates, public.subscription_consents, public.subscription_status, public.subscription_salts;
+delete from public.idempotency_keys where fn = 'status_report_store';
+alter table public.idempotency_keys drop constraint if exists idempotency_keys_fn_check;
+alter table public.idempotency_keys add constraint idempotency_keys_fn_check check (fn in ('create_child_invite', 'record_policy_act'));
+```
 
 ## File `<timestamp>_backup_server.sql` (S05, PR #151: encrypted recording backup and the recovery key)
 

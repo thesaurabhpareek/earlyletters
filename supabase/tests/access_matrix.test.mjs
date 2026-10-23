@@ -123,7 +123,7 @@ const READS = [
   ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, 0]],
   // Idempotency keys (20261005000000): no client access at all; create_child_invite and record_policy_act use them.
   ['idempotency_keys', 'select 1 from idempotency_keys', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
-  // Subscription status report (20261016000000, S06; behaviour in subscription_status.test.mjs): functions only, never read by the app (D-080 rule 4).
+  // Subscription status report (20261016001000, S06; behaviour in subscription_status.test.mjs): functions only, never read by the app (D-080 rule 4).
   ['subscription_salts', 'select 1 from subscription_salts', [],                      ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_status', 'select 1 from subscription_status', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_consents', 'select 1 from subscription_consents', [],                ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -233,7 +233,7 @@ const RPCS = [
   ['create_child_invite (device id)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(convert_to('matrix-token', 'UTF8')))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   // 72-hour undo: only the parent whose invite was used (A invited N).
   ['undo_parent_join', `select public.undo_parent_join('${CHILD}', '${N}')`,             ['ok', 'SCPAR', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  // Subscription status report (20261016000000, S06): any full account may report its own purchase; anonymous sessions never. The server switch app.status_report_enabled is unset here, so it fails closed (SCKIL); behaviour with it on is in subscription_status.test.mjs.
+  // Subscription status report (20261016001000, S06): any full account may report its own purchase; anonymous sessions never. The server switch app.status_report_enabled is unset here, so it fails closed (SCKIL); behaviour with it on is in subscription_status.test.mjs.
   ['status_salt', `select public.status_salt()`,                                        ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
   ['status_report_store', `select public.status_report_store('{"schema_version": 1, "sub_ref": "${'a'.repeat(64)}", "environment": "sandbox", "plan": "annual", "trial_end": null, "renewal_date": "2027-03-01T10:00:00Z", "cancelled": false, "reported_at": "2026-10-15T10:00:00Z"}'::jsonb)`, ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
 ];
@@ -273,7 +273,7 @@ const SERVICE_ONLY = [
   `select public.contributors_enabled()`, `select public.family_share_consent_required()`,
   `select public.invite_policy_checks('${A}', 'parent')`,
   `select public.accept_child_invite_by_code('${C}', sha256(convert_to('x', 'UTF8')))`,
-  // Subscription status internals and the retention purge (20261016000000, S06).
+  // Subscription status internals and the retention purge (20261016001000, S06).
   `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_report_switch()`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
   `select public.subscription_retention_purge(now())`,
 ];

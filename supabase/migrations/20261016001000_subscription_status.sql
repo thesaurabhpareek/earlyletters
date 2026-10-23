@@ -2,11 +2,11 @@
 -- (D-080, D-081; PRD V2 F14 section 6.6 "Rules for the status report", section 8;
 -- F14-REQ-014, -032, -043, -044; LEGAL-REQ-049; R2 AR-13). Stream S06.
 --
--- PENDING: not yet applied. Placeholder timestamp in S06's claimed range
--- 20261016000000 to 20261016009999 (docs/agents/BOARD.md), next free after
--- S05's 20261015230000; the coordinator renames it to the next free timestamp
--- at merge (08-delivery.md section 4). Apply after every earlier file, following
--- supabase/APPLY.md (section "File 20261016000000", sent to S02 in the PR).
+-- PENDING: not yet applied. Timestamp in S06's claimed range 20261016000000 to
+-- 20261016009999 (docs/agents/BOARD.md). It was 20261016000000 until the merge
+-- with develop af53d7c, where S02's 20261016000000_sync_v1_server.sql (#208)
+-- holds that version; 20261016001000 sorts after every file on develop. Apply
+-- after every earlier file, following supabase/APPLY.md (section "File 18").
 -- Never edits an earlier file and redefines no function first defined in one.
 --
 -- What the phone tells us, and nothing more (D-080): which plan, when a free
