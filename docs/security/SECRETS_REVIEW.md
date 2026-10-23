@@ -139,11 +139,11 @@ AUTOMATION.md revision 2 already carries the fixes from #185's two reviews. Thes
   - `actions/checkout@v4` and `actions/setup-node@v4`, in `testflight.yml` on `develop` and on #145;
   - `actions/setup-node@v4` and `actions/cache/restore@v4`, inside `.github/actions/setup`.
 - `release-ios.yml` on #110 and `deploy-db.yml` pin by SHA [R].
-- **Fix, S20.** RA-20-06a for `testflight.yml` before its environment secret; RA-20-02a for `claude.yml`; RA-20-03c for the rest. By: RA-20-06a before the `testflight` `EXPO_TOKEN` is added (AF-07, planned Wed 21 Oct; #145 is still open [R, 23 Oct]); RA-20-02a overdue (planned Mon 19 Oct); RA-20-03c after the alpha.
+- **Fix, S20.** RA-20-06a for `testflight.yml` before its environment secret; RA-20-02a for `claude.yml`; RA-20-03c for the rest. By: RA-20-06a before the `testflight` `EXPO_TOKEN` is added (AF-07, planned Wed 21 Oct); #145 merged on Fri 23 Oct, 7:37 AM PT, without it, so it is now a follow-up to `testflight.yml` on `develop` [R, 23 Oct]. RA-20-02a overdue (planned Mon 19 Oct); RA-20-03c after the alpha.
 
 **SR-11. Any branch can create an environment.** Severity: Low.
 - "Running a workflow that references an environment that does not exist will create an environment with the referenced name ... the newly created environment will not have any protection rules or secrets configured. Anyone that can edit workflows in the repository can create environments via a workflow file" [V2c].
-- **Fix, founder.** Create each environment with its rules before any secret, and before the first workflow that names it runs. Then read it back (section 8). By: `staging` and `testflight` with AF-07 (planned Wed 21 Oct, AUTOMATION 0.2 row 11); the others with AF-22 (after the alpha). For `staging` this is already late: a job that names it ran on Sun 18 Oct (section 8.1).
+- **Fix, founder.** Create each environment with its rules before any secret, and before the first workflow that names it runs. Then read it back (section 8). By: `staging` and `testflight` with AF-07 (planned Wed 21 Oct, AUTOMATION 0.2 row 11); the others with AF-22 (after the alpha). For `staging` this is already late: jobs that name it ran on Sun 18 Oct and Fri 23 Oct with no approval (section 8.1).
 - **Fix, S20 in RA-20-12.** The drift job raises an issue for any environment that is not in the expected file. By: with RA-20-12 (after the alpha).
 
 **SR-12. More connectors reach production systems than the plan lists.** Severity: High for Resend if it is the product's sending account [U], Medium otherwise. Section 7 has the table.
@@ -292,7 +292,7 @@ All of these are required before the environment's first secret. "Read back" is 
 
 | Environment | Required reviewer | Prevent self-review | Admin bypass | Deployment refs | Read back |
 |---|---|---|---|---|---|
-| `staging` | the approver only | on | off | branch `develop` only (the 17 Oct rule) | not readable by agents; no deployments recorded on 16 Oct, one on Sun 18 Oct (section 8.1) |
+| `staging` | the approver only | on | off | branch `develop` only (the 17 Oct rule) | not readable by agents; no deployments on 16 Oct; four by Fri 23 Oct, none approved (section 8.1) |
 | `db-production` (SR-2) | the approver only | on | off | tag `db-v*` only, no branch rule | `production` exists as Vercel's `Production`; its rules are unknown |
 | `testflight` | the approver until AF-21, then none | on | off | branch `develop` only | not readable |
 | `testers` | the approver only | on | off | branch `develop` | not readable |
@@ -389,7 +389,12 @@ Run these from your own computer, signed in as the approver (read access suffice
 
 By: `staging` and `testflight` right after AF-07 creates them and before their first secret (planned Wed 21 Oct, AUTOMATION 0.2 row 11); the others with AF-22 (after the alpha).
 
-Read on 23 Oct [R]: `staging` already has one deployment. `deploy-functions.yml` run 39111226137 (the push of #205 to `develop`, Sun 18 Oct, 1:23 AM PT) ran its `deploy to staging` job without waiting for an approval (none is recorded), and its deploy steps were skipped. So that day `staging` had no required reviewer, or that run created it with no rules (SR-11) [U: which]. Check `staging` first. GitHub now lists 13 workflows (`deploy-db`, `deploy-functions`, `deploy-scripts` and `seam-guard` are new since section 2); `deploy-db.yml` has run 10 times on `develop` pushes, each with its staging job skipped.
+Read on 23 Oct [R]: `staging` already exists, with no required reviewer (SR-11). It has four deployments, and none waited for an approval (none is recorded):
+- `deploy-functions.yml` run 39111226137, the push of #205 to `develop`, Sun 18 Oct, 1:23 AM PT: its deploy steps were skipped.
+- `deploy-db.yml` runs 39970965877 and 39972543440, migrations reaching `develop` on Fri 23 Oct at 7:35 AM and 7:46 AM PT: each `deploy to staging` job started at once and stopped at "Check the secret exists", so `SUPABASE_DB_URL_STAGING` is not set.
+- `deploy-functions.yml` run 39970965988, Fri 23 Oct, 7:35 AM PT: it deployed nothing.
+
+So every migration that reaches `develop` now starts a staging deploy with no approval; only the missing secret stops it. Set `staging`'s rules (section 5) and read them back before its first secret. GitHub now lists 13 workflows (`deploy-db`, `deploy-functions`, `deploy-scripts` and `seam-guard` are new since section 2).
 
 ```bash
 R=thesaurabhpareek/earlyletters
