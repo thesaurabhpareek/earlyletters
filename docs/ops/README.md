@@ -15,6 +15,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [runbooks/purge-failing.md](runbooks/purge-failing.md) | The purge or the worker is not running, or Storage deletes fail; installing the schedule |
 | [runbooks/incident-notification.md](runbooks/incident-notification.md) | Who was affected, notification clocks and email templates (LEGAL-REQ-039) |
 | [runbooks/restore-drill.md](runbooks/restore-drill.md) | Quarterly restore drill, and what to do after a real restore (DATA-REQ-030, -031) |
+| [runbooks/staging-smoke.md](runbooks/staging-smoke.md) | The content-free check after every staging deploy (RA-07-06): policy versions, pepper, statement logging, cron, function health routes, sign-up |
 | [runbooks/suspected-data-leak.md](runbooks/suspected-data-leak.md) | First hour of a suspected exposure |
 | AUTH_SETUP.md, APP_STORE_CONNECT_SUBSCRIPTIONS.md, APP_SIZE.md | Other owners (sign-in, subscriptions, app size) |
 | [RELEASE.md](RELEASE.md) | The release train: lanes, branches, tags, builds, TestFlight, submission checklist, rollback (qa-e2e for the coordinator; D-089) |
@@ -58,7 +59,8 @@ Do these on staging first, then production. Each step's checks are in the linked
    `--no-verify-jwt` on the worker only: its caller presents a shared secret, not a JWT. analytics-forget keeps the gateway check and also checks the session itself.
 5. **Schedule the worker**: run `supabase/cron/purge-worker.sql` in the SQL editor with the three placeholders filled. Keep the hourly `scribe-purge-due` job from APPLY.md step 7 as a backstop.
 6. **Check after 20 minutes** (runbooks/purge-failing.md "Healthy looks like").
-7. **Staging only, before the first build to anyone outside the family (G2 gate, TDD 05 9.4):** delete a fixture account end to end and run `scripts/ops/verify-deletion.ts` (runbooks/stuck-deletion.md section 5).
+7. **Run the smoke check** (runbooks/staging-smoke.md): `node scripts/ops/staging-smoke.ts --project-ref <ref>` must exit 0. CI runs it after each staging deploy once RA-20-04 wires it.
+8. **Staging only, before the first build to anyone outside the family (G2 gate, TDD 05 9.4):** delete a fixture account end to end and run `scripts/ops/verify-deletion.ts` (runbooks/stuck-deletion.md section 5).
 
 ## Tests
 

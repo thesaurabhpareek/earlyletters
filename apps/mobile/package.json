@@ -47,7 +47,6 @@
     "expo-web-browser": "~57.0.3",
     "fflate": "^0.8.3",
     "phosphor-react-native": "^3.0.6",
-    "posthog-react-native": "^4.78.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -83,7 +82,10 @@
     "e2e:web": "playwright test -c e2e-web/playwright.config.ts",
     "e2e:web:journey": "JOURNEY_SHOTS=1 playwright test -c e2e-web/playwright.config.ts",
     "preflight:testflight": "node scripts/preflight-testflight.mjs",
+    "preflight:alpha": "node scripts/preflight-testflight.mjs --profile preview",
+    "licences:generate": "node ../../scripts/licences/generate.mjs",
     "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "e2e:web:index": "node e2e-web/support/build-index.mjs",
     "e2e:web:pack": "bash e2e-web/support/pack-journey.sh"
   },

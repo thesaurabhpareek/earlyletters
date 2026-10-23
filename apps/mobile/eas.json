@@ -13,17 +13,39 @@
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "development",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off"
+      }
+    },
+    "e2e": {
+      "distribution": "internal",
+      "withoutCredentials": true,
+      "environment": "development",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_E2E": "1",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
     "preview": {
-      "distribution": "internal",
+      "distribution": "store",
+      "autoIncrement": true,
       "channel": "preview",
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_SERVER_FEATURES": "on",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
@@ -35,6 +57,8 @@
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
@@ -47,12 +71,15 @@
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
         "EXPO_PUBLIC_APP_ENV": "preview",
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off"
       }
     }
   },
   "submit": {
     "production": {},
+    "preview": {},
     "testflight": {}
   }
 }

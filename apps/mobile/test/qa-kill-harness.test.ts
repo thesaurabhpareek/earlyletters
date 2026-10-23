@@ -1,0 +1,814 @@
+/// <reference types="node" />
+/**
+ * The kill harness (RA-19-04; DEVICE_TEST_PLAN DL-01, DL-02; B2-11, never waived), tested in Node without a Mac.
+ *
+ * The harness loop, the oracle and the snapshot reader in `apps/mobile/e2e/kill/` run here for real against a
+ * fake app: a container laid out like the simulator's (Documents/SQLite/scribe.db, Documents/ExpoAudio,
+ * Library/Caches/kill-drill), written through the app's own migrator and repositories. Each fake launch runs
+ * the app's own launch sweep, `runLaunchSweep` from `src/lib/capture/sweep.ts`, unchanged, over a stand-in for
+ * expo-file-system backed by the container, so the fake cannot drift from the app's listing rule: when the
+ * sweep changes, these tests see it. Killing a fake process stops its timers, as SIGKILL stops the app.
+ *
+ * Fictional family only: the drill child is Asha.
+ */
+import { createHash, randomBytes } from 'node:crypto';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import { migrate } from '../src/lib/db/migrations';
+import { children, drafts, entries, letters, settings, uuidv7From, type Entry, type RepoContext } from '../src/lib/db/repos';
+import * as logic from '../src/dev/kill-drill.logic';
+import { EXIT, countsOf, meetsGate, mergeReports, planRuns, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
+import { auditStore, classifyDl01, classifyDl02 } from '../e2e/kill/oracle.mjs';
+import * as protocol from '../e2e/kill/protocol.mjs';
+import { readSnapshot, sha256OfFile } from '../e2e/kill/snapshot.mjs';
+import { nodeDb } from './helpers/node-db';
+
+/**
+ * The app's launch sweep sees takes in Documents/ExpoAudio, where expo-audio 57 writes them, since #207
+ * (`src/lib/capture/recordings.ts`). Before it, the sweep listed only the top of Documents and a killed take
+ * lost its draft (DEVICE_TEST_PLAN DL-01). Two tests below pin this: the real sweep on ExpoAudio takes keeps
+ * every take (it goes red if the sweep goes back to the top of Documents), and a listing that shows only the
+ * top of Documents is a fail the harness reports (exit 1).
+ */
+
+/** Shared with the module stand-ins below (vi.mock factories run before the imports). */
+const env = vi.hoisted(() => ({
+  docs: '',
+  ctx: null as unknown,
+  playable: true as boolean | null,
+  /** The stand-in shows only the top of Documents: the rule the sweep had on develop, pinned whatever it becomes. */
+  topLevelOnly: false,
+}));
+
+vi.mock('expo-file-system', async () => {
+  const fs = await import('node:fs');
+  const p = await import('node:path');
+  const toPath = (u: string) => decodeURIComponent(u.replace(/^file:\/\//, ''));
+  const joined = (parts: unknown[]) => {
+    const segs = parts.map((x) => (typeof x === 'string' ? x : (x as { uri: string }).uri));
+    return `file://${p.join(toPath(segs[0]), ...segs.slice(1).map(toPath))}`;
+  };
+  class File {
+    uri: string;
+    constructor(...parts: unknown[]) {
+      this.uri = joined(parts);
+    }
+    get exists() {
+      return fs.existsSync(toPath(this.uri)) && fs.statSync(toPath(this.uri)).isFile();
+    }
+    get size() {
+      return fs.statSync(toPath(this.uri)).size;
+    }
+    get creationTime() {
+      return fs.statSync(toPath(this.uri)).birthtimeMs;
+    }
+    get modificationTime() {
+      return fs.statSync(toPath(this.uri)).mtimeMs;
+    }
+  }
+  class Directory {
+    uri: string;
+    constructor(...parts: unknown[]) {
+      this.uri = joined(parts);
+    }
+    get exists() {
+      return fs.existsSync(toPath(this.uri));
+    }
+    list(): (File | Directory)[] {
+      const dir = toPath(this.uri);
+      if (env.topLevelOnly && p.resolve(dir) !== p.resolve(env.docs)) return [];
+      if (!fs.existsSync(dir)) return [];
+      return fs
+        .readdirSync(dir, { withFileTypes: true })
+        .filter((d) => !(env.topLevelOnly && d.isDirectory()))
+        .map((d) => (d.isDirectory() ? new Directory(`file://${p.join(dir, d.name)}`) : new File(`file://${p.join(dir, d.name)}`)));
+    }
+  }
+  return { File, Directory, Paths: { get document() { return new Directory(`file://${env.docs}`); } } };
+});
+
+vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+
+/** The store facade the sweep calls, delegating to the repositories exactly as `src/lib/store.ts` does. */
+vi.mock('../src/lib/store', async () => {
+  const r = await import('../src/lib/db/repos');
+  const c = () => env.ctx as RepoContext;
+  return {
+    audioRows: () => ({ drafts: r.drafts.audioRows(c()), entries: r.entries.audioRows(c()) }),
+    deleteDraft: (id: string) => r.drafts.remove(c(), id),
+    finalizeDraftAudio: (id: string, f: Parameters<typeof r.drafts.finalizeAudio>[2]) => r.drafts.finalizeAudio(c(), id, f),
+    getActiveChildId: () => {
+      const id = r.settings.getSetting(c(), 'activeChildId');
+      const all = r.children.listVisible(c());
+      return all.find((x) => x.id === id)?.id ?? all[0]?.id ?? null;
+    },
+    getDraft: (id: string) => r.drafts.get(c(), id),
+    listOrphanAudio: () => r.orphans.list(c()),
+    reattachOrphanAudio: (name: string, input: Parameters<typeof r.orphans.reattach>[2]) => r.orphans.reattach(c(), name, input),
+    rebaseAudioUri: (table: 'drafts' | 'entries', id: string, uri: string) =>
+      table === 'drafts' ? r.drafts.rebaseAudioUri(c(), id, uri) : r.entries.rebaseAudioUri(c(), id, uri),
+    reportOrphanAudio: (name: string, bytes: number | null) => r.orphans.report(c(), name, bytes),
+  };
+});
+vi.mock('../src/lib/capture/recorder', async () => {
+  const fs = await import('node:fs');
+  const { createHash: hash } = await import('node:crypto');
+  return {
+    activeTakeId: () => null,
+    hashAudioFile: async (uri: string | null) => {
+      const path = uri ? decodeURIComponent(uri.replace(/^file:\/\//, '')) : '';
+      if (!path || !fs.existsSync(path)) return null;
+      const data = fs.readFileSync(path);
+      return { sha256: hash('sha256').update(data).digest('hex'), bytes: data.byteLength };
+    },
+  };
+});
+vi.mock('../src/lib/capture/probe', () => ({ probePlayable: async () => env.playable }));
+vi.mock('../src/lib/capture/erase', () => ({ purgeShelfAtLaunch: () => {} }));
+
+const ROOT = mkdtempSync(join(tmpdir(), 'qa-kill-harness-'));
+afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
+
+type Behaviour = 'atomic' | 'non-atomic' | 'ignores-plants' | 'never-arms' | 'record-fails' | 'dies-after-kill-2' | 'hangs-after-run-2' | 'damages-run-2' | 'launch-throws';
+interface FakeOptions {
+  /** Where the fake's recorder writes takes: expo-audio 57's `ExpoAudio`, or '' for the top of Documents. */
+  takeDir?: string;
+  topLevelOnly?: boolean;
+  playable?: boolean;
+}
+interface LaunchArgs {
+  mode: string;
+  run: number;
+  kind?: string;
+  plant?: string;
+  point?: string | null;
+}
+interface Proc {
+  alive: boolean;
+  timers: ReturnType<typeof setTimeout>[];
+  close: () => void;
+  ctx: RepoContext;
+  /** Kills this process ignores before one takes (a launch hung where SIGKILL has not landed yet). */
+  ignoreKills?: number;
+}
+
+const sha = (p: string) => createHash('sha256').update(readFileSync(p)).digest('hex');
+
+/** A container laid out like the simulator app's data container. */
+function container(name: string) {
+  const data = join(ROOT, name, 'data');
+  const docs = join(data, 'Documents');
+  const marks = join(data, 'Library', 'Caches', logic.MARKER_DIR);
+  const dbPath = join(docs, 'SQLite', 'scribe.db');
+  return { data, docs, marks, dbPath };
+}
+
+function openCtx(dbPath: string): { ctx: RepoContext; close: () => void } {
+  const { db, close } = nodeDb(dbPath);
+  const ctx: RepoContext = {
+    db,
+    now: () => new Date().toISOString(),
+    newId: (atMs?: number) => uuidv7From(randomBytes(16), atMs ?? Date.now()),
+  };
+  migrate(db, { now: ctx.now(), newId: () => ctx.newId() });
+  return { ctx, close };
+}
+
+const drillEntry = (id: string, text: string, childId: string, audio: { uri: string | null; sha256: string | null; bytes: number | null }): Entry => ({
+  id,
+  kind: 'letter',
+  occurredOn: '2026-10-16',
+  capturedAt: new Date().toISOString(),
+  captureMode: audio.uri ? 'spoken' : 'typed',
+  editLevel: 'verbatim',
+  promptKey: null,
+  engineVersion: 1,
+  rawTranscript: text,
+  machineEdits: [],
+  finalText: text,
+  inBook: true,
+  soundsLikeMe: null,
+  childId,
+  authorSignsAs: 'Mama',
+  audioUri: audio.uri,
+  audioDurationMs: null,
+  audioSha256: audio.sha256,
+  audioBytes: audio.bytes,
+});
+
+/** A fake of the e2e app with the kill drill seam, for the harness's driver interface. */
+function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptions = {}) {
+  const c = container(name);
+  const takeDir = fo.takeDir ?? '';
+  const takes = takeDir ? join(c.docs, takeDir) : c.docs;
+  const procs = new Map<number, Proc>();
+  let nextPid = 100;
+  let launches = 0;
+  let killsSoFar = 0;
+  const later = (p: Proc, ms: number, fn: () => void | Promise<void>) => {
+    p.timers.push(
+      setTimeout(() => {
+        if (p.alive) void fn();
+      }, ms),
+    );
+  };
+  const mark = (kind: logic.MarkerKind, run: number, body: object) => writeFileSync(join(c.marks, logic.markerName(kind, run)), JSON.stringify(body));
+  const waitGo = (p: Proc, run: number, then: () => void) => {
+    const tick = () => (existsSync(join(c.marks, logic.markerName('go', run))) ? then() : later(p, 5, tick));
+    tick();
+  };
+
+  const boot = async (p: Proc, a: LaunchArgs) => {
+    const { ctx } = p;
+    settings.setSetting(ctx, 'ageGate.passed', '1');
+    if (children.listVisible(ctx).length === 0) {
+      const id = ctx.newId();
+      children.insert(ctx, id, { name: 'Asha', birthday: '2026-06-01', dueDate: null, signsAs: 'Mama' });
+      settings.setSetting(ctx, 'activeChildId', id);
+    }
+    const childId = children.listVisible(ctx)[0].id;
+    if (behaviour === 'damages-run-2' && a.run === 4) {
+      // A later launch damages an earlier letter's recording.
+      const f = join(takes, logic.drillAudioName(2));
+      if (existsSync(f)) writeFileSync(f, randomBytes(4096));
+    }
+    // The app's own launch sweep, fresh for this process (it runs once per process in the app too).
+    env.ctx = ctx;
+    env.docs = c.docs;
+    env.playable = fo.playable ?? true;
+    env.topLevelOnly = Boolean(fo.topLevelOnly);
+    vi.resetModules();
+    const { runLaunchSweep } = await import('../src/lib/capture/sweep');
+    const report = await runLaunchSweep();
+    if (!p.alive) return;
+    mark('boot', a.run, { run: a.run, mode: a.mode, swept: report !== null, sweep: report ?? {} });
+    if (behaviour === 'never-arms' || (a.mode !== 'dl01' && a.mode !== 'dl02')) return;
+    waitGo(p, a.run, () => drill(p, a, childId));
+  };
+
+  const drill = (p: Proc, a: LaunchArgs, childId: string) => {
+    const { ctx } = p;
+    const plant = behaviour === 'ignores-plants' ? 'none' : (a.plant ?? 'none');
+    const defaults = { childId, authorSignsAs: 'Mama' };
+    const holdAt = (point: string) => mark('point', a.run, { run: a.run, point });
+    if (a.mode === 'dl02') {
+      const text = logic.drillText(a.run);
+      const draftId = ctx.newId();
+      let audio = { uri: null as string | null, sha256: null as string | null, bytes: null as number | null };
+      const spoken = a.kind !== 'typed';
+      const path = join(takes, logic.drillAudioName(a.run));
+      if (!spoken) {
+        drafts.insert(ctx, draftId, { childId, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text });
+      } else if (a.point) {
+        // As Listen: the draft row exists before the file.
+        mkdirSync(takes, { recursive: true });
+        drafts.insert(ctx, draftId, { childId, captureMode: 'spoken', promptKey: null, audioUri: `file://${path}`, audioDurationMs: 0, state: 'recording' });
+        drafts.setTranscriptOnce(ctx, draftId, text);
+      } else {
+        mkdirSync(takes, { recursive: true });
+        copyFileSync(join(c.marks, logic.FIXTURE_FILE), path);
+        audio = { uri: `file://${path}`, sha256: sha(path), bytes: statSync(path).size };
+        const hashed = a.kind === 'spoken';
+        drafts.insert(ctx, draftId, { childId, captureMode: 'spoken', promptKey: null, audioUri: audio.uri, audioDurationMs: null, state: 'ready', audioSha256: hashed ? audio.sha256 : null, audioBytes: hashed ? audio.bytes : null });
+        drafts.setTranscriptOnce(ctx, draftId, text);
+      }
+      const armed = { run: a.run, mode: 'dl02', kind: a.kind, plant, point: a.point ?? null, draftId, audioFile: spoken ? logic.drillAudioName(a.run) : null, text, sha256: audio.sha256, recordedMs: null };
+      if (a.point) {
+        mark('armed', a.run, armed);
+        if (spoken) {
+          copyFileSync(join(c.marks, logic.FIXTURE_FILE), path);
+          if (a.point === 'after-file-write') return holdAt(a.point);
+          drafts.finalizeAudio(ctx, draftId, { audioUri: `file://${path}`, sha256: sha(path), bytes: statSync(path).size, state: 'ready' });
+          audio = { uri: `file://${path}`, sha256: sha(path), bytes: statSync(path).size };
+        }
+        // before-row and inside-transaction: nothing committed when the kill comes (node:sqlite cannot be killed mid-transaction).
+        if (a.point === 'before-row' || a.point === 'inside-transaction') return holdAt(a.point);
+        letters.saveFromDraft(ctx, draftId, drillEntry(draftId, text, childId, audio), defaults, true);
+        return holdAt(a.point);
+      }
+      const entry = drillEntry(draftId, text, childId, audio);
+      // Plants are in place before the drill arms, as in src/dev/kill-drill.ts; so is this fake's bug.
+      if (plant === 'double') {
+        entries.upsert(ctx, entry, defaults);
+        return mark('armed', a.run, armed);
+      }
+      if (plant === 'damage') {
+        letters.saveFromDraft(ctx, draftId, entry, defaults, true);
+        const bytes = readFileSync(path);
+        bytes[bytes.length >> 1] ^= 0xff;
+        writeFileSync(path, bytes);
+        return mark('armed', a.run, armed);
+      }
+      if (plant === 'loss' || behaviour === 'non-atomic') {
+        drafts.remove(ctx, draftId);
+        later(p, 1000, () => entries.upsert(ctx, entry, defaults));
+        return mark('armed', a.run, armed);
+      }
+      mark('armed', a.run, armed);
+      // The save lands a little after Save, so some kills come before the commit and some after.
+      later(p, (a.run * 7) % 25, () => {
+        letters.saveFromDraft(ctx, draftId, entry, defaults, true);
+        mark('done', a.run, { run: a.run });
+      });
+      return;
+    }
+    if (behaviour === 'record-fails') return mark('error', a.run, { run: a.run, code: 'record_failed' });
+    // DL-01: a take that grows while it records (one byte a millisecond; the fake's player reads its length from that).
+    mkdirSync(takes, { recursive: true });
+    const path = join(takes, `recording-${a.run}.m4a`);
+    writeFileSync(path, randomBytes(250));
+    const draftId = ctx.newId();
+    drafts.insert(ctx, draftId, { childId, captureMode: 'spoken', promptKey: null, audioUri: `file://${path}`, audioDurationMs: 0, state: 'recording' });
+    if (plant === 'loss') rmSync(path, { force: true });
+    if (plant === 'double') {
+      for (let i = 0; i < 2; i += 1) entries.upsert(ctx, drillEntry(ctx.newId(), logic.drillText(a.run), childId, { uri: `file://${path}`, sha256: null, bytes: null }), defaults);
+    }
+    mark('armed', a.run, { run: a.run, mode: 'dl01', kind: null, plant, point: null, draftId, audioFile: `recording-${a.run}.m4a`, text: null, sha256: null, recordedMs: 250 });
+    const grow = () => {
+      if (existsSync(path)) appendFileSync(path, randomBytes(10));
+      later(p, 10, grow);
+    };
+    if (plant !== 'loss') later(p, 10, grow);
+  };
+
+  const stop = (pid: number) => {
+    const p = procs.get(pid);
+    if (!p || !p.alive) return false;
+    p.alive = false;
+    for (const t of p.timers) clearTimeout(t);
+    p.close();
+    return true;
+  };
+
+  return {
+    name: 'fake',
+    container: c,
+    async info() {
+      return { simulator: 'fake', version: '1.0.0', build: '1', commit: 'test', bundleId: 'com.example.dev' };
+    },
+    async reset() {
+      rmSync(c.data, { recursive: true, force: true });
+      mkdirSync(c.marks, { recursive: true });
+      mkdirSync(join(c.docs, 'SQLite'), { recursive: true });
+      writeFileSync(join(c.marks, logic.FIXTURE_FILE), randomBytes(4096));
+    },
+    fixtureSha256: () => sha(join(c.marks, logic.FIXTURE_FILE)),
+    writeGo: (run: number) => writeFileSync(join(c.marks, logic.markerName('go', run)), JSON.stringify({ run })),
+    async launch(a: LaunchArgs) {
+      launches += 1;
+      if (behaviour === 'launch-throws' && a.run === 3) throw new Error('xcrun simctl launch failed');
+      const pid = (nextPid += 1);
+      const { ctx, close } = openCtx(c.dbPath);
+      const p: Proc = { alive: true, timers: [], close, ctx };
+      procs.set(pid, p);
+      if (behaviour === 'dies-after-kill-2' && killsSoFar === 2 && a.mode !== 'setup') {
+        // The app cannot start again after run 2's kill.
+        later(p, 5, () => {
+          stop(pid);
+        });
+        return pid;
+      }
+      if (behaviour === 'hangs-after-run-2' && a.run === 3) {
+        // The launch after run 2's kill hangs before its sweep, and the first SIGKILL has not landed when the harness looks.
+        p.ignoreKills = 1;
+        return pid;
+      }
+      later(p, 5, () => boot(p, a));
+      return pid;
+    },
+    readMarker(kind: logic.MarkerKind, run: number) {
+      const path = join(c.marks, logic.markerName(kind, run));
+      return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+    },
+    alive: (pid: number) => procs.get(pid)?.alive ?? false,
+    kill: async (pid: number) => {
+      const p = procs.get(pid);
+      if (p?.alive && p.ignoreKills) {
+        p.ignoreKills -= 1;
+        return true;
+      }
+      const was = stop(pid);
+      if (was && launches > 1) killsSoFar += 1;
+      return was;
+    },
+    terminate: async (pid: number) => {
+      stop(pid);
+    },
+    snapshot: () => readSnapshot({ dataDir: c.data }),
+    sha256: sha256OfFile,
+    playable: (path: string) => (fo.playable === false ? { ok: false, durationS: null } : { ok: true, durationS: statSync(path).size / 1000 }),
+    cleanup: async () => {},
+  };
+}
+
+const fast = { bootMs: 4000, armMs: 4000, pointMs: 4000 };
+
+describe('[DATA-REQ-048] [F04-REQ-024] the kill drill protocol is one protocol on both sides', () => {
+  it('app and host agree on every name, folder and constant', () => {
+    expect(protocol.DRILL_MODES).toEqual([...logic.DRILL_MODES]);
+    expect(protocol.DRILL_KINDS).toEqual([...logic.DRILL_KINDS]);
+    expect(protocol.DRILL_PLANTS).toEqual([...logic.DRILL_PLANTS]);
+    expect(protocol.CRASH_POINTS).toEqual([...logic.CRASH_POINTS]);
+    expect(protocol.POINT_EXPECTS).toEqual(logic.POINT_EXPECTS);
+    expect(protocol.DRILL_ARG).toEqual(logic.DRILL_ARG);
+    expect([protocol.MARKER_DIR, protocol.FIXTURE_FILE, protocol.TAKE_DIR, protocol.PLANT_LOSS_GAP_MS, protocol.POINT_HOLD_MS, protocol.DRILL_BUNDLE_SUFFIX]).toEqual([
+      logic.MARKER_DIR,
+      logic.FIXTURE_FILE,
+      logic.TAKE_DIR,
+      logic.PLANT_LOSS_GAP_MS,
+      logic.POINT_HOLD_MS,
+      logic.DRILL_BUNDLE_SUFFIX,
+    ]);
+    for (const run of [0, 7, 500, 9001]) {
+      expect(protocol.drillText(run)).toBe(logic.drillText(run));
+      expect(protocol.drillAudioName(run)).toBe(logic.drillAudioName(run));
+      for (const k of ['boot', 'go', 'armed', 'point', 'done', 'error'] as const) expect(protocol.markerName(k, run)).toBe(logic.markerName(k, run));
+    }
+    expect(logic.drillText(3)).toBe('Asha kill drill 3');
+  });
+
+  it('the launch arguments the host passes are the ones the app reads, and anything else runs no drill', () => {
+    const asDefaults = (argv: string[]) => {
+      const m = new Map<string, string>();
+      for (let i = 0; i < argv.length; i += 2) m.set(argv[i].replace(/^-/, ''), argv[i + 1]);
+      return (k: string) => m.get(k);
+    };
+    for (const a of [
+      { mode: 'dl02', run: 12, kind: 'spoken-unhashed', plant: 'none', point: null },
+      { mode: 'dl02', run: 13, kind: 'spoken', plant: 'none', point: 'after-file-write' },
+      { mode: 'dl02', run: 14, kind: 'typed', plant: 'none', point: 'inside-transaction' },
+      { mode: 'dl02', run: 15, kind: 'spoken', plant: 'damage', point: null },
+      { mode: 'dl01', run: 1, kind: 'typed', plant: 'loss', point: null },
+      { mode: 'verify', run: 501, kind: 'typed', plant: 'none', point: null },
+    ]) {
+      expect(logic.parseDrillArgs(asDefaults(protocol.launchArgs(a)))).toEqual(a);
+    }
+    const no = (argv: string[]) => expect(logic.parseDrillArgs(asDefaults(argv))).toBeNull();
+    expect(logic.parseDrillArgs(() => undefined)).toBeNull();
+    no(['-e2eKillDrill', 'dl03', '-e2eKillRun', '1']);
+    no(['-e2eKillDrill', 'dl02', '-e2eKillRun', '-1']);
+    no(['-e2eKillDrill', 'dl02', '-e2eKillRun', '1x']);
+    no(['-e2eKillDrill', 'dl02', '-e2eKillRun', '1', '-e2eKillPlant', 'lose']);
+    no(['-e2eKillDrill', 'dl02', '-e2eKillRun', '1', '-e2eKillPoint', 'after-file-write']); // typed has no file
+    no(['-e2eKillDrill', 'dl01', '-e2eKillRun', '1', '-e2eKillPoint', 'before-row']);
+    no(['-e2eKillDrill', 'dl02', '-e2eKillRun', '1', '-e2eKillPlant', 'damage']); // typed has no recording to damage
+    expect(logic.parseDrillArgs(asDefaults(['-e2eKillDrill', 'dl02', '-e2eKillRun', '4']))).toEqual({ mode: 'dl02', run: 4, kind: 'typed', plant: 'none', point: null });
+  });
+});
+
+describe('the drill stays out of every build and every phone that is not a drill simulator (reviewer S, #203)', () => {
+  const SRC = join(__dirname, '..', 'src');
+
+  it('the seam is compiled in only with EXPO_PUBLIC_E2E=1 and an app env that is neither preview nor production', () => {
+    const seams = readFileSync(join(SRC, 'dev', 'e2e-seams.ts'), 'utf8');
+    expect(seams).toMatch(
+      /process\.env\.EXPO_PUBLIC_E2E === '1' && process\.env\.EXPO_PUBLIC_APP_ENV !== 'preview' && process\.env\.EXPO_PUBLIC_APP_ENV !== 'production'\s*\?\s*\(require\('\.\/kill-drill'\)/,
+    );
+    expect(seams).not.toMatch(/^import .*kill-drill/m);
+    const loaders: string[] = [];
+    const walk = (d: string) => {
+      for (const n of readdirSync(d)) {
+        const p = join(d, n);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(ts|tsx)$/.test(n) && !p.endsWith(join('dev', 'e2e-seams.ts')) && !p.includes(join('dev', 'kill-drill')) && /['/]kill-drill['.]/.test(readFileSync(p, 'utf8'))) loaders.push(p);
+      }
+    };
+    walk(SRC);
+    expect(loaders).toEqual([]);
+  }, 30_000);
+
+  it('no store profile in eas.json and no .env file sets EXPO_PUBLIC_E2E', () => {
+    const app = join(__dirname, '..');
+    const eas = JSON.parse(readFileSync(join(app, 'eas.json'), 'utf8')) as { build: Record<string, { extends?: string; distribution?: string; env?: Record<string, string> }> };
+    const resolve = (name: string, seen = new Set<string>()): { distribution?: string; env: Record<string, string> } => {
+      const p = eas.build[name];
+      if (!p || seen.has(name)) return { env: {} };
+      seen.add(name);
+      const base = p.extends ? resolve(p.extends, seen) : { env: {} };
+      return { distribution: p.distribution ?? base.distribution, env: { ...base.env, ...(p.env ?? {}) } };
+    };
+    const offenders: string[] = [];
+    for (const name of Object.keys(eas.build)) {
+      const r = resolve(name);
+      const store = ['preview', 'testflight', 'production'].includes(name) || r.distribution === 'store' || ['preview', 'production'].includes(r.env.EXPO_PUBLIC_APP_ENV);
+      if (store && 'EXPO_PUBLIC_E2E' in r.env) offenders.push(`eas.json build.${name}`);
+    }
+    for (const f of readdirSync(app).filter((n) => n.startsWith('.env'))) {
+      if (/EXPO_PUBLIC_E2E/.test(readFileSync(join(app, f), 'utf8'))) offenders.push(f);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('even compiled in, the drill arms only on a simulator, in the development bundle, on an install it made', () => {
+    const base = { mode: 'dl02' as const, isDevice: false, bundleId: 'com.earlyletters.scribe.dev', drillBundleId: 'com.earlyletters.scribe.dev', hasChild: true, owned: true };
+    expect(logic.decideDrillGuard(base)).toEqual({ ok: true });
+    expect(logic.decideDrillGuard({ ...base, isDevice: true })).toEqual({ ok: false, code: 'refused_not_simulator' });
+    expect(logic.decideDrillGuard({ ...base, isDevice: null })).toEqual({ ok: false, code: 'refused_not_simulator' });
+    expect(logic.decideDrillGuard({ ...base, bundleId: 'com.earlyletters.scribe.preview' })).toEqual({ ok: false, code: 'refused_bundle_id' });
+    expect(logic.decideDrillGuard({ ...base, bundleId: 'com.earlyletters.scribe' })).toEqual({ ok: false, code: 'refused_bundle_id' });
+    expect(logic.decideDrillGuard({ ...base, owned: false })).toEqual({ ok: false, code: 'refused_not_drill_install' });
+    // Setup claims only a fresh install: an install that already has a child and was not the drill's is refused.
+    expect(logic.decideDrillGuard({ ...base, mode: 'setup', owned: false, hasChild: true })).toEqual({ ok: false, code: 'refused_not_drill_install' });
+    expect(logic.decideDrillGuard({ ...base, mode: 'setup', owned: false, hasChild: false })).toEqual({ ok: true });
+    const drill = readFileSync(join(SRC, 'dev', 'kill-drill.ts'), 'utf8');
+    // The guard runs before the gate boolean, the child and the recorder.
+    const guard = drill.indexOf('decideDrillGuard({');
+    expect(guard).toBeGreaterThan(0);
+    expect(guard).toBeLessThan(drill.indexOf("setSetting('ageGate.passed'"));
+    expect(guard).toBeLessThan(drill.indexOf('addChild({'));
+    expect(drill).toMatch(/const useDrillRecorder = ARGS\?\.mode === 'dl01' && PLACE_OK \? useRecorderForDrill : useNoRecorder;/);
+  });
+
+  it('the inside-transaction crash point still holds inside the save: the store removes the draft with the statement it watches', () => {
+    const draftsSrc = readFileSync(join(SRC, 'lib', 'db', 'repos', 'drafts.ts'), 'utf8');
+    const removeSql = /export function remove\([^)]*\): void \{\s*db\.run\('([^']+)'/.exec(draftsSrc)?.[1];
+    expect(removeSql && logic.DRAFT_REMOVE.test(removeSql)).toBe(true);
+    // And it runs inside the save's transaction, after the letter is written.
+    const lettersSrc = readFileSync(join(SRC, 'lib', 'db', 'repos', 'letters.ts'), 'utf8');
+    expect(lettersSrc).toMatch(/ctx\.db\.transaction\(\(\) => \{\s*entries\.upsert\(ctx, \{ \.\.\.e, id: draftId \}, defaults\);\s*drafts\.remove\(ctx, draftId\);/);
+    // Behaviour, on a real engine: the statement is issued with the draft id while the letter row already exists.
+    const c = container('point-statement');
+    mkdirSync(join(c.docs, 'SQLite'), { recursive: true });
+    const { ctx, close } = openCtx(c.dbPath);
+    const childId = ctx.newId();
+    children.insert(ctx, childId, { name: 'Asha', birthday: '2026-06-01', dueDate: null, signsAs: 'Mama' });
+    const id = ctx.newId();
+    drafts.insert(ctx, id, { childId, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'x' });
+    const seen: boolean[] = [];
+    const run = ctx.db.run;
+    ctx.db.run = (sql, ...params) => {
+      run(sql, ...params);
+      if (logic.DRAFT_REMOVE.test(sql) && params[0] === id) seen.push(ctx.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entries WHERE id = ?', id)?.n === 1);
+    };
+    letters.saveFromDraft(ctx, id, drillEntry(id, 'x', childId, { uri: null, sha256: null, bytes: null }), { childId, authorSignsAs: 'Mama' });
+    ctx.db.run = run;
+    expect(seen).toEqual([true]);
+    close();
+  }, 30_000);
+});
+
+describe('[DATA-REQ-048] the oracle judges a run from the database and files alone', () => {
+  const setup = (name: string) => {
+    const c = container(name);
+    const takes = join(c.docs, logic.TAKE_DIR);
+    mkdirSync(join(c.docs, 'SQLite'), { recursive: true });
+    mkdirSync(takes, { recursive: true });
+    const { ctx, close } = openCtx(c.dbPath);
+    const childId = ctx.newId();
+    children.insert(ctx, childId, { name: 'Asha', birthday: '2026-06-01', dueDate: null, signsAs: 'Mama' });
+    const defaults = { childId, authorSignsAs: 'Mama' };
+    const io = { sha256: sha256OfFile, playable: (p: string) => ({ ok: true as boolean | null, durationS: statSync(p).size / 1000 }) };
+    return { c, takes, ctx, close, childId, defaults, io };
+  };
+
+  it('DL-02 typed: once as a letter, intact as a draft, both, or neither; a crash point expects one of the two', () => {
+    const { c, ctx, close, childId, defaults, io } = setup('oracle-typed');
+    const armedFor = (run: number, draftId: string) => ({ draftId, kind: 'typed', text: logic.drillText(run), audioFile: null, sha256: null });
+    const ids = [1, 2, 3, 4].map(() => ctx.newId());
+    for (const [i, id] of ids.entries()) {
+      drafts.insert(ctx, id, { childId, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: logic.drillText(i + 1) });
+    }
+    letters.saveFromDraft(ctx, ids[0], drillEntry(ids[0], logic.drillText(1), childId, { uri: null, sha256: null, bytes: null }), defaults);
+    entries.upsert(ctx, drillEntry(ids[2], logic.drillText(3), childId, { uri: null, sha256: null, bytes: null }), defaults);
+    drafts.remove(ctx, ids[3]);
+    const snap = readSnapshot({ dataDir: c.data });
+    expect(snap.integrity).toBe('ok');
+    expect(classifyDl02(snap, armedFor(1, ids[0]), io).outcome).toBe('letter');
+    expect(classifyDl02(snap, armedFor(2, ids[1]), io).outcome).toBe('draft');
+    expect(classifyDl02(snap, armedFor(3, ids[2]), io).outcome).toBe('doubled');
+    expect(classifyDl02(snap, armedFor(4, ids[3]), io).outcome).toBe('lost');
+    expect(classifyDl02(snap, armedFor(1, ids[0]), io, { outcome: 'letter', point: 'after-commit' }).outcome).toBe('letter');
+    expect(classifyDl02(snap, armedFor(2, ids[1]), io, { outcome: 'letter', point: 'after-commit' })).toMatchObject({ outcome: 'fail', reasons: [expect.stringContaining('after-commit')] });
+    close();
+  }, 30_000);
+
+  it('DL-02 spoken: a changed or missing recording is never a pass, judged against the host fixture hash', () => {
+    const { c, takes, ctx, close, childId, defaults, io } = setup('oracle-spoken');
+    const fixture = randomBytes(1024);
+    const fixtureSha = createHash('sha256').update(fixture).digest('hex');
+    const make = (run: number) => {
+      const path = join(takes, logic.drillAudioName(run));
+      writeFileSync(path, fixture);
+      const audio = { uri: `file://${path}`, sha256: sha(path), bytes: 1024 };
+      const id = ctx.newId();
+      drafts.insert(ctx, id, { childId, captureMode: 'spoken', promptKey: null, audioUri: audio.uri, audioDurationMs: null, state: 'ready', audioSha256: audio.sha256, audioBytes: 1024 });
+      drafts.setTranscriptOnce(ctx, id, logic.drillText(run));
+      letters.saveFromDraft(ctx, id, drillEntry(id, logic.drillText(run), childId, audio), defaults);
+      // The app's own hash claim is ignored: the host's fixture hash is the reference.
+      return { id, path, armed: { draftId: id, kind: 'spoken', text: logic.drillText(run), audioFile: logic.drillAudioName(run), sha256: 'the app said so' } };
+    };
+    const ok = make(1);
+    const changed = make(2);
+    const gone = make(3);
+    writeFileSync(changed.path, randomBytes(1024));
+    rmSync(gone.path);
+    const snap = readSnapshot({ dataDir: c.data });
+    expect(classifyDl02(snap, ok.armed, io, { fixtureSha }).outcome).toBe('letter');
+    expect(classifyDl02(snap, changed.armed, io, { fixtureSha })).toMatchObject({ outcome: 'fail', reasons: expect.arrayContaining(['the recording changed']) });
+    expect(classifyDl02(snap, gone.armed, io, { fixtureSha }).outcome).toBe('lost');
+    close();
+  }, 30_000);
+
+  it('DL-01: kept means one row, a file with bytes, and a take that plays', () => {
+    const { c, takes, ctx, close, childId, defaults, io } = setup('oracle-take');
+    const take = (n: number, state: 'recording' | 'ready' | 'unrecoverable', withHash = true) => {
+      const path = join(takes, `recording-${n}.m4a`);
+      writeFileSync(path, randomBytes(30000));
+      const id = ctx.newId();
+      drafts.insert(ctx, id, { childId, captureMode: 'spoken', promptKey: null, audioUri: `file://${path}`, audioDurationMs: 0, state, audioSha256: withHash ? sha(path) : null, audioBytes: 30000 });
+      return { id, path, armed: { draftId: id, audioFile: `recording-${n}.m4a` } };
+    };
+    const ready = take(1, 'ready');
+    const unplayable = take(2, 'unrecoverable', false);
+    const stuck = take(3, 'recording');
+    const dropped = take(4, 'recording');
+    drafts.remove(ctx, dropped.id);
+    const twice = take(5, 'ready');
+    entries.upsert(ctx, drillEntry(ctx.newId(), 'x', childId, { uri: `file://${twice.path}`, sha256: null, bytes: null }), defaults);
+    const silent = take(6, 'ready');
+    const noHash = take(7, 'ready', false);
+    const snap = readSnapshot({ dataDir: c.data });
+    expect(classifyDl01(snap, ready.armed, io, { expectedMs: 29000 })).toMatchObject({ outcome: 'kept-playable', within5s: true });
+    expect(classifyDl01(snap, ready.armed, io, { expectedMs: 40000 })).toMatchObject({ outcome: 'kept-playable', within5s: false });
+    expect(classifyDl01(snap, unplayable.armed, io).outcome).toBe('kept-unplayable');
+    expect(classifyDl01(snap, stuck.armed, io).outcome).toBe('fail');
+    expect(classifyDl01(snap, dropped.armed, io)).toMatchObject({ outcome: 'lost', reasons: [expect.stringContaining('not on Tonight')] });
+    expect(classifyDl01(snap, twice.armed, io).outcome).toBe('doubled');
+    expect(classifyDl01(snap, silent.armed, { ...io, playable: () => ({ ok: false, durationS: null }) })).toMatchObject({ outcome: 'fail', reasons: [expect.stringContaining('F08-REQ-019')] });
+    expect(classifyDl01(snap, noHash.armed, io)).toMatchObject({ outcome: 'fail', reasons: ['marked ready with no hash'] });
+    close();
+  }, 30_000);
+
+  it('the whole-database audit: integrity, rows pointing at missing files, stored hashes, and earlier letters judged again', () => {
+    const { c, takes, ctx, close, childId, defaults, io } = setup('oracle-audit');
+    const path = join(takes, logic.drillAudioName(1));
+    writeFileSync(path, randomBytes(512));
+    const id = ctx.newId();
+    const audio = { uri: `file://${path}`, sha256: sha(path), bytes: 512 };
+    drafts.insert(ctx, id, { childId, captureMode: 'spoken', promptKey: null, audioUri: audio.uri, audioDurationMs: null, state: 'ready', audioSha256: audio.sha256, audioBytes: 512 });
+    drafts.setTranscriptOnce(ctx, id, logic.drillText(1));
+    letters.saveFromDraft(ctx, id, drillEntry(id, logic.drillText(1), childId, audio), defaults);
+    const armed = { draftId: id, kind: 'spoken', text: logic.drillText(1), audioFile: logic.drillAudioName(1), sha256: audio.sha256 };
+    const kept = [{ run: 1, outcome: 'letter', armed, expect: {} }];
+    const none = { mode: 'dl02' as const, kept, badIds: new Set<string>(), badFiles: new Set<string>() };
+    expect(auditStore(readSnapshot({ dataDir: c.data }), io, none)).toEqual([]);
+    expect(auditStore({ ...readSnapshot({ dataDir: c.data }), integrity: '*** in database main *** Page 3: btree error' }, io, none)).toEqual([
+      { run: null, reason: 'PRAGMA integrity_check: *** in database main *** Page 3: btree error' },
+    ]);
+    writeFileSync(path, randomBytes(512));
+    const after = auditStore(readSnapshot({ dataDir: c.data }), io, none);
+    expect(after.map((p) => p.reason)).toEqual(['a stored hash differs from its file', expect.stringMatching(/^run 1, judged letter earlier, is now fail/)]);
+    rmSync(path);
+    expect(auditStore(readSnapshot({ dataDir: c.data }), io, { ...none, kept: [] })).toEqual([{ run: null, reason: 'a letter points at a missing file' }]);
+    close();
+  }, 30_000);
+});
+
+describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and never loses a failure', () => {
+  it('DL-02 on a correct app: random and crash-point kills all kept once, every planted failure caught', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-ok'), mode: 'dl02', runs: 6, pointRuns: 1, delayMs: [0, 30], selfCheck: 1, seed: 7, timeouts: fast });
+    expect(report.selfCheck).toMatchObject({ asked: 3, caught: 3, missed: [] });
+    const c = countsOf(report);
+    expect(c.completed).toBe(10);
+    expect(c.bad).toBe(0);
+    expect(c.points).toEqual({ 'after-file-write': { runs: 1, bad: 0 }, 'before-row': { runs: 1, bad: 0 }, 'inside-transaction': { runs: 1, bad: 0 }, 'after-commit': { runs: 1, bad: 0 } });
+    for (const r of report.runs.filter((x: { point: string | null }) => x.point)) expect(r.outcome).toBe((protocol.POINT_EXPECTS as Record<string, string>)[r.point]);
+    expect(report.audits).toEqual([]);
+    expect(report.exit).toBe(EXIT.pass);
+    const md = renderMarkdown(report);
+    expect(md).toContain('PASS');
+    expect(md).toContain('at inside-transaction: 1 clean');
+    expect(md).not.toMatch(/Asha kill drill|[0-9a-f]{8}-[0-9a-f]{4}-7/);
+  }, 60_000);
+
+  it('DL-02 on an app whose save is not atomic: the harness fails it', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-broken', 'non-atomic'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 8, timeouts: fast });
+    expect(report.selfCheck.caught).toBe(report.selfCheck.asked);
+    expect(countsOf(report).lost).toBe(4);
+    expect(report.exit).toBe(EXIT.fail);
+  }, 60_000);
+
+  it('an app that ignores the plants makes the harness stop as blind, before any real run', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-blind', 'ignores-plants'), mode: 'dl02', runs: 4, delayMs: [0, 30], selfCheck: 1, seed: 9, timeouts: fast });
+    expect(report.selfCheck.missed.length).toBe(3);
+    expect(report.runs).toEqual([]);
+    expect(report.exit).toBe(EXIT.blind);
+  }, 60_000);
+
+  it('a drill that never arms is incomplete, never green', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-stuck', 'never-arms'), mode: 'dl02', runs: 3, delayMs: [0, 30], selfCheck: 1, seed: 10, timeouts: { ...fast, armMs: 300 } });
+    expect(report.errors[0]).toMatchObject({ code: 'no_armed_marker' });
+    expect(report.exit).toBe(EXIT.incomplete);
+  }, 60_000);
+
+  it('a relaunch that fails after a kill is a fail that names the run, the seed and the kill time', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-dies', 'dies-after-kill-2'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 11, timeouts: fast });
+    expect(report.exit).toBe(EXIT.fail);
+    const failed = report.runs.find((r: { outcome: string }) => r.outcome === 'fail');
+    expect(failed?.reasons[0]).toMatch(/^the app did not start again after this kill \(app_exited\); seed 11, killed \d+ ms after it armed$/);
+    // Reviewer H: whether the database survived, read once the failed launch is gone.
+    expect(failed?.database).toMatchObject({ read: true, integrity: 'ok', problems: [] });
+    expect(failed?.reasons[1]).toMatch(/^the database after the failed launch: integrity_check ok; this run is \w+ in it/);
+  }, 60_000);
+
+  it('a launch that hangs after a kill is a fail, and its database is not read while that launch may still be writing', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-hangs', 'hangs-after-run-2'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 19, timeouts: { ...fast, bootMs: 2500 } });
+    expect(report.exit).toBe(EXIT.fail);
+    const failed = report.runs.find((r: { run: number }) => r.run === 2);
+    expect(failed).toMatchObject({ outcome: 'fail', database: { read: false } });
+    expect(failed?.reasons[0]).toMatch(/^the app did not start again after this kill \(no_boot_marker\); seed 19, killed \d+ ms after it armed$/);
+    expect(failed?.reasons[1]).toBe('the database after the failed launch: not read: the failed launch was still running after SIGKILL, and a database another process may still be writing would not show what the kill left');
+    expect(renderMarkdown(report)).toContain('not read: the failed launch was still running');
+  }, 60_000);
+
+  it('damage a later launch does to an earlier letter is caught at the next relaunch', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-damage', 'damages-run-2'), mode: 'dl02', runs: 5, pointRuns: 0, kinds: ['spoken'], delayMs: [0, 30], selfCheck: 1, seed: 12, timeouts: fast });
+    expect(report.exit).toBe(EXIT.fail);
+    expect(report.audits.length).toBeGreaterThan(0);
+    expect(report.runs.find((r: { run: number }) => r.run === 3)).toMatchObject({ outcome: 'fail', reasons: expect.arrayContaining([expect.stringMatching(/^after this kill: run 2, judged (letter|draft) earlier, is now fail: the recording changed/)]) });
+  }, 60_000);
+
+  it('a harness error mid-run still returns the report so far, with the stage named', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl02-throws', 'launch-throws'), mode: 'dl02', runs: 4, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 13, timeouts: fast });
+    expect(report.crashed).toMatchObject({ stage: 'run: run 3, launch', message: 'xcrun simctl launch failed' });
+    expect(report.runs.length).toBe(0); // run 2 was killed, then run 3 could not launch: incomplete, not a pass
+    expect(report.exit).toBe(EXIT.incomplete);
+  }, 60_000);
+
+  it('DL-01 on a correct app (takes where its sweep looks) keeps every take, playing to within 5 s; no microphone is incomplete', async () => {
+    const ok = await runHarness({ driver: fakeDriver('dl01-ok'), mode: 'dl01', runs: 4, delayMs: [20, 60], plantDelayMs: [10, 30], selfCheck: 1, seed: 14, timeouts: fast });
+    expect(ok.selfCheck).toMatchObject({ asked: 2, caught: 2 });
+    expect(countsOf(ok)).toMatchObject({ completed: 4, kept: 4, within5s: 4, bad: 0 });
+    expect(ok.exit).toBe(EXIT.pass);
+    const noMic = await runHarness({ driver: fakeDriver('dl01-nomic', 'record-fails'), mode: 'dl01', runs: 4, plantDelayMs: [10, 30], selfCheck: 1, seed: 15, timeouts: fast });
+    expect(noMic.errors[0]).toMatchObject({ code: 'record_failed' });
+    expect(noMic.exit).toBe(EXIT.incomplete);
+  }, 60_000);
+
+  it('DL-01 takes that are kept but do not play fail 07 "49 of 50 playable to within 5 s"', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl01-silent', 'atomic', { playable: false }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 16, timeouts: fast });
+    expect(countsOf(report)).toMatchObject({ kept: 3, 'kept-unplayable': 3, within5s: 0, bad: 0 });
+    expect(report.exit).toBe(EXIT.fail);
+  }, 60_000);
+
+  it('regression: a listing that shows only the top of Documents never finishes a DL-01 take kept in Documents/ExpoAudio, and the harness fails it', async () => {
+    // The stand-in hides every folder below Documents from the sweep's listing, as the sweep before #207 did.
+    // The sweep plans to drop each draft as empty; since #207 it re-checks the disk first and keeps the draft,
+    // so the take is not lost, but it stays "recording" and never reaches Tonight. Before #207 every one was
+    // lost. Either way it is not kept, and the harness must say so.
+    const report = await runHarness({ driver: fakeDriver('dl01-top-only', 'atomic', { takeDir: logic.TAKE_DIR, topLevelOnly: true }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 17, timeouts: fast });
+    expect(report.selfCheck.caught).toBe(2);
+    expect(countsOf(report)).toMatchObject({ completed: 3, bad: 3, kept: 0 });
+    for (const r of report.runs) expect(r).toMatchObject({ outcome: 'fail', reasons: ['still marked recording after the sweep'] });
+    expect(report.sweep['drop-empty-recording']).toBeGreaterThan(0);
+    expect(report.exit).toBe(EXIT.fail);
+  }, 60_000);
+
+  it("the app's real sweep on takes where expo-audio 57 writes them (Documents/ExpoAudio) keeps every take; it fails if the sweep goes back to the top of Documents", async () => {
+    const report = await runHarness({ driver: fakeDriver('dl01-expoaudio', 'atomic', { takeDir: logic.TAKE_DIR }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 18, timeouts: fast });
+    expect(report.selfCheck.caught).toBe(2);
+    expect(countsOf(report)).toMatchObject({ completed: 3, kept: 3, within5s: 3, bad: 0 });
+    // Summed over every launch, the self-check's included: the one drop is its loss plant, whose file is gone.
+    expect(report.sweep['drop-empty-recording']).toBe(1);
+    expect(report.sweep['finalize-recording']).toBeGreaterThanOrEqual(3);
+    expect(report.audits).toEqual([]);
+    expect(report.exit).toBe(EXIT.pass);
+  }, 60_000);
+});
+
+describe('settings, shards and what a clean result proves', () => {
+  it('refuses settings that would let a plant slip past or replay wrongly', async () => {
+    expect((await runHarness({ driver: fakeDriver('u1'), mode: 'dl02', runs: 1, plantDelayMs: [0, logic.PLANT_LOSS_GAP_MS], timeouts: fast })).exit).toBe(EXIT.usage);
+    expect((await runHarness({ driver: fakeDriver('u2'), mode: 'dl02', runs: 1, selfCheck: 0, timeouts: fast })).exit).toBe(EXIT.usage);
+    expect((await runHarness({ driver: fakeDriver('u3'), mode: 'dl01', runs: 1, pointRuns: 1, timeouts: fast })).exit).toBe(EXIT.usage);
+    expect((await runHarness({ driver: fakeDriver('u4'), mode: 'dl02', runs: 1, seed: -1, timeouts: fast })).exit).toBe(EXIT.usage);
+  }, 30_000);
+
+  it('crash-point runs are spread evenly among the random ones, one fixed share per point', () => {
+    const plan = planRuns({ mode: 'dl02', runs: 500, pointRuns: 50, kinds: ['typed', 'spoken', 'spoken-unhashed'] });
+    expect(plan.length).toBe(700);
+    for (const pt of protocol.CRASH_POINTS) expect(plan.filter((r) => r.point === pt).length).toBe(50);
+    expect(plan.filter((r) => r.point === 'after-file-write').every((r) => r.kind === 'spoken')).toBe(true);
+    expect(plan.slice(0, 70).filter((r) => r.point).length).toBe(20);
+    expect(plan.map((r) => r.run)).toEqual(Array.from({ length: 700 }, (_, i) => i + 1));
+  });
+
+  it('shards merge into one judged report, and a duplicate shard or a mismatched shard is refused', async () => {
+    const a = await runHarness({ driver: fakeDriver('s-a'), mode: 'dl02', runs: 3, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 1, timeouts: fast });
+    const b = await runHarness({ driver: fakeDriver('s-b'), mode: 'dl02', runs: 3, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 2, timeouts: fast });
+    expect(mergeReports([a, b])).toMatchObject({ runsAsked: 6, exit: EXIT.pass });
+    expect(() => mergeReports([a, a])).toThrow(/given twice/);
+    expect(() => mergeReports([a, { ...b, delayMs: [399, 400] }])).toThrow(/different settings/);
+    expect(() => mergeReports([a, { ...b, device: { ...b.device, commit: 'other' } }])).toThrow(/different builds/);
+    const broken = await runHarness({ driver: fakeDriver('s-c', 'non-atomic'), mode: 'dl02', runs: 2, pointRuns: 0, delayMs: [0, 30], selfCheck: 1, seed: 3, timeouts: fast });
+    expect(mergeReports([a, broken]).exit).toBe(EXIT.fail);
+  }, 90_000);
+
+  it('the rule of three: what zero failures in 500 and in 50 runs rule out', () => {
+    expect(upperBound95(500)).toBeCloseTo(0.006, 3);
+    expect(upperBound95(50)).toBeCloseTo(0.058, 3);
+    expect(meetsGate({ mode: 'dl02', runs: Array.from({ length: 500 }, (_, i) => ({ run: i, outcome: 'letter', point: null })) })).toBe(false);
+  });
+});

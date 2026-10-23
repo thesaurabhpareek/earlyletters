@@ -12,6 +12,9 @@
     "invites": false,
     "photos": false,
     "packDownloads": false,
-    "serverContent": false
+    "serverContent": false,
+    "backupUploads": false,
+    "escrow": false,
+    "statusReport": false
   }
 }
