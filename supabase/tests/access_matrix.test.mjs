@@ -89,7 +89,12 @@ async function attempt(persona, sql, params) {
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
   ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
+  // 20261015000000 (G-08, review M1): column privileges; the anon role reads no column of children at all.
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, '42501']],
+  ['children: name and nickname', 'select 1, name, nickname from children where id=$1', [CHILD], [1, 1, 1, 0, 0, '42501']],
+  // D-039: nobody reads the birth date or due date from the table; sync_pull / sync_books serve them by role.
+  ['children: date of birth', 'select 1, date_of_birth from children where id=$1', [CHILD], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: due date', 'select 1, due_date from children where id=$1', [CHILD],     ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
   ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
   ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
@@ -116,6 +121,9 @@ const READS = [
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
+  // 20261015030000 (F16-REQ-028): members read the date precision and direction; never the author layer.
+  ['book_entries: date precision and direction', 'select 1, occurred_precision, base_direction from book_entries where child_id=$1', [CHILD], [4, 3, 2, 0, 0, '42501']],
+  ['entries: author layer (own rows only)', 'select 1, author_edits, locked_spans, pack_ref from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -126,10 +134,22 @@ const WRITES = [
   ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
+  // G-08: parents still write the dates directly (no read of the old value needed).
+  ['children: set due date', `update children set due_date='2025-05-01' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
+  // G-10 (review L1): receipts are written only by sync_op_claim(); clients cannot insert or delete them.
+  ['sync_op_receipts: insert own', `insert into sync_op_receipts (op_id, profile_id) values ('${uuid7()}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_op_receipts: delete own', `delete from sync_op_receipts where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // PR #32 DB-01: the reading views are read-only (a write through book_entries would run as its owner).
+  ['book_entries: update a letter', `update book_entries set final_text='x' where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: delete a letter', `delete from book_entries where id='${aBook}'`,    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // my_policy_state is not an updatable view at all (55000, before any privilege check); writes are revoked anyway.
+  ['my_policy_state: delete', `delete from my_policy_state`,                          ['55000', '55000', '55000', '55000', '55000', '55000']],
   ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
+  // F11-REQ-011 (20261015020000): leave_child, remove_child_member and undo_parent_join are the only paths.
+  ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_members: change own role', `update child_members set role='parent' where child_id='${CHILD}' and profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['dictionary_terms: insert own', `insert into dictionary_terms (owner_id, term, kind) values (auth.uid(), 'Ashu', 'nickname')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
@@ -174,6 +194,16 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261015000000 (behaviour in v1_gate_hardening.test.mjs). book_update: sync_push's book.update (G-08).
+  ['book_update', `select public.book_update('${CHILD}', '{"nickname": "Ashu"}')`,      ['ok', 'ok', 'SCPAR', 'P0002', 'SCANO', '42501']],
+  // sync_op_claim: the caller's own op ids only (G-10).
+  ['sync_op_claim', `select public.sync_op_claim('${uuid7()}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261015010000: the same answers as accept_child_invite, before consent and without joining (G-13).
+  ['peek_invite', `select public.peek_invite('${token}')`,                              ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
+  // 20261015020000 (behaviour in v1_gate_coparent.test.mjs). Device-made invite id and hashes (F11-REQ-002).
+  ['create_child_invite (device id)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(convert_to('matrix-token', 'UTF8')))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  // 72-hour undo: only the parent whose invite was used (A invited N).
+  ['undo_parent_join', `select public.undo_parent_join('${CHILD}', '${N}')`,             ['ok', 'SCPAR', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -188,6 +218,8 @@ const HELPERS = {
   'can_write_content()': [`select public.can_write_content() v`, [true, true, true, true, false, '42501']],
   'require_content_consent()': [`select public.require_content_consent()::text = '' v`, [true, true, true, true, 'SCANO', '42501']],
   'is_valid_client_uuid7(uuid)': [`select public.is_valid_client_uuid7('${uuid7()}') v`, [true, true, true, true, true, '42501']],
+  // 20261015030000: backs the dictionary_terms.forms check, which runs as the writer; pure.
+  'dictionary_forms_valid(jsonb)': [`select public.dictionary_forms_valid(null) v`, [true, true, true, true, true, '42501']],
 };
 // Service role only (Edge Functions, cron, runbooks).
 const SERVICE_ONLY = [
@@ -201,6 +233,14 @@ const SERVICE_ONLY = [
   // Internal helpers (20261005000000): called only from security-definer functions.
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
+  // 20261015010000 (BL-334): pepper readiness for APPLY.md and ops checks.
+  `select public.consent_pepper_ready()`,
+  // The invite token shape check, used inside peek_invite and accept_child_invite.
+  `select public.invite_token_well_formed('x')`,
+  // 20261015020000: server config readers, the invite policy check, and code redemption (invite-redeem only).
+  `select public.contributors_enabled()`, `select public.family_share_consent_required()`,
+  `select public.invite_policy_checks('${A}', 'parent')`,
+  `select public.accept_child_invite_by_code('${C}', sha256(convert_to('x', 'UTF8')))`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -264,6 +304,20 @@ const covered = new Set(READS.map((r) => r[0]));
 const missing = tables.filter((t) => !covered.has(t));
 for (const t of missing) console.log(`      no matrix row: public.${t}`);
 check('[LEGAL-REQ-024] every public table and view has a row in the access matrix', missing.length === 0);
+// PR #32 DB-01, R-17 review finding 4: Supabase's default privileges grant writes on every new
+// relation, and a view that runs as its owner would skip the base table's policies. No view in
+// any schema the migrations make is writable by an API role, at table or column level.
+const writableViews = (await sys(`
+  select n.nspname || '.' || c.relname || ' (' || r.rolname || ' ' || p.priv || ')' v
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('anon'::text), ('authenticated')) r(rolname)
+    cross join (values ('INSERT'::text), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
+   where c.relkind in ('v', 'm') and n.nspname in ('public', 'ops', 'insights')
+     and (has_table_privilege(r.rolname, c.oid, p.priv)
+          or (p.priv in ('INSERT', 'UPDATE') and has_any_column_privilege(r.rolname, c.oid, p.priv)))
+   order by 1`)).rows.map((x) => x.v);
+for (const v of writableViews) console.log(`      writable view: ${v}`);
+check('[DB-01] no view is writable by anon or authenticated', writableViews.length === 0);
 
 const fns = (await sys(`select p.oid, p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, p.proname name,
     p.prosecdef secdef, p.prosrc src, coalesce(array_to_string(p.proconfig, ','), '') cfg,
