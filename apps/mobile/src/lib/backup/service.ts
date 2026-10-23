@@ -134,10 +134,12 @@ export function createBackupService(deps: BackupServiceDeps) {
     // A restore pass asks the server for its list, so it runs only while a spoken letter of mine
     // has no recording on this phone (a new phone, or one restored from a device backup) that a
     // listing in this run has not already left out (restore.ts worthListing). When the only ones
-    // left wait on keys from escrow, escrow alone is asked, and the list once their keys are here.
-    const listing = restore.worthListing();
+    // left wait on keys from escrow, escrow alone is asked, and the list once their keys are here;
+    // a key that came another way first (iCloud Keychain) restores at once, asking escrow nothing.
+    let listing = restore.worthListing();
     if (listing || restore.waitsForKeys()) {
       try {
+        if (!listing) listing = await restore.keysArrived();
         const keys = listing ? null : await restore.escrowStep();
         if (keys && keys.kind !== 'ready') {
           askedEscrow = true;

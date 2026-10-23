@@ -498,6 +498,29 @@ export function createRestore(d: RestoreDeps) {
     },
 
     /**
+     * Whether a key came another way since the last listing (iCloud Keychain, during an escrow hold or
+     * after a Stop): a waiting recording of that listing now opens with the keys on this phone. Those
+     * leave the waiting set, so the next listing restores them and escrow is asked nothing for them:
+     * no key opened, no email (re-check B on #252). Reads this phone's keys and the key rows already
+     * read; the open request is left to lapse. Recordings that still cannot open keep waiting.
+     */
+    async keysArrived(): Promise<boolean> {
+      if (!blobs || unopenable.size === 0) return false;
+      const opens = new Map<string, boolean>();
+      let any = false;
+      for (const b of blobs) {
+        if (!unopenable.has(b.entryId)) continue;
+        const k = `${b.childId}:${b.keyVersion}`;
+        if (!opens.has(k)) opens.set(k, await d.keys.canOpen(b.childId, b.keyVersion));
+        if (opens.get(k)) {
+          unopenable.delete(b.entryId);
+          any = true;
+        }
+      }
+      return any;
+    },
+
+    /**
      * Brings back every backed-up recording it can, oldest letter first. When
      * escrow releases keys during this pass, the recordings they open come back
      * in the same pass. Returns what is still waiting on keys.

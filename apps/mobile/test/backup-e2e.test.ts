@@ -18,7 +18,7 @@ import { BackupServerError } from '../src/lib/backup/contract';
 import { ICLOUD_WAIT_MS } from '../src/lib/backup/keys';
 import { backupSource } from '../src/lib/backup/local-store';
 import { FakeBackend, FakeICloud, sha256Hex } from './helpers/backup-node';
-import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText, type LiveSession } from './helpers/backup-phone';
+import { addChild, audioOf, cleanupPhones, holdDraft, makePhone, recordLetter, syncText, type LiveSession, type Phone } from './helpers/backup-phone';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
 const PAPA = '22222222-2222-4222-8222-222222222222';
@@ -531,6 +531,80 @@ describe('what Settings says, and the recovery service is asked only when it mus
     await c.service.tick();
     expect(lists).toBe(1);
     expect(backend.requests.filter((r) => r.kind === 'escrow.request')).toHaveLength(2);
+  });
+
+  /** iCloud Keychain brings phone A's book keys to phone C at last (it was off, or slow, until now). */
+  const iCloudBrings = (a: Phone, c: Phone) => {
+    for (const [acc, versions] of a.icloud!.items) c.vault.local.set(acc, new Map(versions));
+  };
+  /** Counts the server reads phone C makes from now on. */
+  const reads = (live: LiveSession) => {
+    const n = { listBlobs: 0, listKeys: 0 };
+    live.onSend = (name, phase) => {
+      if (phase === 'before' && (name === 'listBlobs' || name === 'listKeys')) n[name] += 1;
+    };
+    return n;
+  };
+
+  it('[re-check B on #252] a key iCloud Keychain brings during the hold restores on the next pass: no release, no email', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    const n = reads(live);
+    clock.t += 1000;
+    await c.service.tick();
+    expect(n).toEqual({ listBlobs: 0, listKeys: 0 }); // no key yet: the list is not asked again, nor the key rows
+    iCloudBrings(a, c);
+    clock.t += 1000;
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toBeNull();
+    clock.t += 72 * HOUR; // the hold ends: nothing asks escrow for a key this phone has
+    await c.service.tick();
+    expect(backend.releaseCalls).toBe(0);
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+  });
+
+  it('[re-check B on #252] a key iCloud Keychain brings after a Stop restores in the same run, with nothing opened by escrow', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    for (const r of backend.restores.values()) r.state = 'cancelled'; // the Stop link
+    clock.t += 5 * 60 * 1000;
+    await c.service.tick();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    iCloudBrings(a, c);
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(c.service.view().restore).toBeNull();
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+  });
+
+  it('[re-check B on #252] a recording that still has no key keeps its once-a-run listing while another one comes back by iCloud', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const { backend, a, c, letters, clock } = await heldRestore({ live, elapse: false });
+    // A second child's book key, never on iCloud Keychain for phone C: its recording waits on escrow.
+    const twin = 'a5a5a5a5-0000-4000-8000-000000000002';
+    addChild(a, twin, 'Asha twin');
+    const late = recordLetter(a, twin, 30_000);
+    await a.service.tick();
+    syncText(a, c, [late.id]);
+    clock.t += 1000;
+    await c.service.tick(); // the new letter is listed once; its key is not here
+    const n = reads(live);
+    for (const [acc, versions] of a.icloud!.items) if (acc.endsWith(ASHA)) c.vault.local.set(acc, new Map(versions)); // only Asha's key arrives
+    clock.t += 1000;
+    await c.service.tick();
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+    expect(audioOf(c, late.id).uri).toBeNull();
+    expect(n.listBlobs).toBe(1); // the listing that restored Asha's
+    for (let i = 0; i < 4; i++) {
+      clock.t += 1000;
+      await c.service.tick();
+    }
+    expect(n.listBlobs).toBe(1); // the twin's recording, still without a key, is not listed again in this run
+    expect(backend.unwraps).toHaveLength(0);
   });
 
   it('[review B N3 on #252] a release that lands as another account signs in is kept: stored from the saved copy later, one release, one email', async () => {
