@@ -2,13 +2,10 @@
  * The one pattern for loading, empty, error and not-found states (QA journey critique "_journey":
  * six treatments). The rules live in state-screen.logic.ts; state-screen.tsx draws them.
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { STATE_SPEC, actionLayout, stateA11y, type StateKind } from './state-screen.logic';
-
-/** line-art.tsx draws with react-native-svg, which Node cannot load: read the names from its source. */
-const ART_NAMES = [...readFileSync(join(__dirname, 'line-art.tsx'), 'utf8').matchAll(/^  (\w+): \{\n    d: /gm)].map((m) => m[1]);
+import { LINE_ART_NAMES as ART_NAMES } from './line-art.data';
+import { tokens } from '@scribe/design-tokens';
+import { STATE_LAYOUT, STATE_SPEC, actionLayout, stateA11y, stateVisual, type StateKind } from './state-screen.logic';
 
 const KINDS: StateKind[] = ['empty', 'error', 'notFound', 'loading'];
 const go = { label: 'Go', onPress: () => {} };
@@ -49,5 +46,39 @@ describe('actionLayout: one primary, the rest quiet', () => {
   });
   it('there is never more than one primary', () => {
     for (const k of KINDS) expect(actionLayout(k, go, [other, other]).primary === null || actionLayout(k, go, [other, other]).primary === go).toBe(true);
+  });
+});
+
+describe('one layout for every whole-screen state (EXPERIENCE_PASS S13, S23, S37, S49)', () => {
+  it('a centred block with 20 pt gutters, the title in title2 and the sentence in body', () => {
+    expect(STATE_LAYOUT.gutter).toBe(20);
+    expect(STATE_LAYOUT.gutter).toBe(tokens.space[5]);
+    expect(STATE_LAYOUT.align).toBe('center');
+    expect(STATE_LAYOUT.title).toBe('title2');
+    expect(STATE_LAYOUT.body).toBe('body');
+  });
+
+  it('the glyph slot is a 72 pt soft circle holding a 40 pt Light glyph', () => {
+    expect(STATE_LAYOUT.glyph).toEqual({ circle: 72, size: 40, weight: 'light' });
+    expect(STATE_LAYOUT.glyph.circle).toBeGreaterThanOrEqual(tokens.target.min);
+  });
+
+  it("the screen's own drawing wins, then a glyph, then a line drawing (the kind's default when none is named)", () => {
+    expect(stateVisual('error', { drawing: {}, glyph: {}, art: 'page' }).slot).toBe('drawing');
+    expect(stateVisual('error', { glyph: {}, art: 'page' }).slot).toBe('glyph');
+    expect(stateVisual('notFound', { art: 'window' })).toMatchObject({ slot: 'art', art: 'window' });
+    for (const k of KINDS) expect(stateVisual(k).art).toBe(STATE_SPEC[k].art);
+  });
+
+  it('in the hard moments nothing moves: only a loading drawing breathes, and no state draws its line on', () => {
+    for (const k of KINDS) {
+      expect(stateVisual(k).drawsOn, k).toBe(false);
+      expect(stateVisual(k).breathes, k).toBe(k === 'loading');
+      expect(stateVisual(k, { glyph: {} }).breathes, k).toBe(false);
+    }
+  });
+
+  it('every drawing a state can name exists, including the ported window and moon', () => {
+    for (const name of ['window', 'moon', 'page', 'envelope'] as const) expect(ART_NAMES).toContain(name);
   });
 });

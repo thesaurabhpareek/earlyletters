@@ -1,5 +1,6 @@
 // Builds docs/release/journey/INDEX.md from the step files the flows wrote. Run after `npm run e2e:web:journey -w @scribe/mobile`:
-//   node apps/mobile/e2e-web/support/build-index.mjs
+//   npm run e2e:web:index -w @scribe/mobile   (node apps/mobile/e2e-web/support/build-index.mjs)
+// Reads steps/*.json only, so it works on a fresh clone: the screenshots it links to are generated output (gitignored).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,8 +53,8 @@ Generated from the web end-to-end flows (\`apps/mobile/e2e-web/*.flow.ts\`), run
 visible text read from the page.
 
 - Journeys: **${order.length}**, steps: **${steps.length}** (happy ${steps.filter((s) => s.kind === 'happy').length}, unhappy ${steps.filter((s) => s.kind === 'unhappy').length}), screenshots: **${shots}**, plus **${fulls}** full-length captures of scrolling screens (\`<id>-full.png\`).
-- Files: \`steps/<id>.json\` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), \`screens/<id>.png\`, \`screens/<id>-full.png\`.
-- Regenerate: \`npm run e2e:web:journey -w @scribe/mobile\` then \`node apps/mobile/e2e-web/support/build-index.mjs\`.
+- Files: \`steps/<id>.json\` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines) and this index are tracked. \`screens/<id>.png\`, \`screens/<id>-full.png\` and the PDF are generated output and are not committed: the Screen links below resolve after a local run or inside the packed zip (\`apps/mobile/e2e-web/support/pack-journey.sh\`), not on GitHub. See \`README.md\` next to this file.
+- Regenerate: \`npm run e2e:web:journey -w @scribe/mobile\` then \`npm run e2e:web:index -w @scribe/mobile\`; \`npm run e2e:web:pack -w @scribe/mobile\` zips the record, screens and PDF into one artifact.
 - Seeded steps use the fictional family Asha (the web preview switch \`EXPO_PUBLIC_WEB_PREVIEW=1\`, \`?seed=asha\`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
 - Safe areas: a browser applies 0 to the top and bottom insets. Each step records \`safeArea.appliedOnWeb\` and the iPhone 17 Pro nominal insets (top 62, bottom 34) the device frame should keep clear.
 

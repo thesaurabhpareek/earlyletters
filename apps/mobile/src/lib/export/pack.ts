@@ -185,7 +185,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
       continue;
     }
     const sha256 = await deps.sha256(data);
-    await add(job.path, data, MEDIA.m4a, sha256);
+    await add(job.path, data, job.mediaType, sha256); // `audio/mp4` or `audio/aac`, as the recording is (ADR 0027)
     audioResults.set(job.entryId, { sha256, bytes: data.length });
     if (job.recordedSha256 && job.recordedSha256 !== sha256) mismatched.push(job.entryId);
     report('recordings', job.sizeHint ?? data.length);

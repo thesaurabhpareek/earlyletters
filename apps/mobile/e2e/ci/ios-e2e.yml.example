@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 60
     environment: e2e   # holds the secrets below; never production values
     env:
-      APP_ID: com.earlyletters.scribe.preview
+      APP_ID: com.earlyletters.scribe.dev
       MAESTRO_VERSION: "2.11.0"
       MAESTRO_CLI_NO_ANALYTICS: "true"
       MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true"
@@ -58,6 +58,7 @@ jobs:
       MAESTRO_E2E_PROJECT_REF: ${{ secrets.MAESTRO_E2E_PROJECT_REF }}
       MAESTRO_E2E_SERVICE_KEY: ${{ secrets.MAESTRO_E2E_SERVICE_KEY }}
       MAESTRO_PROD_PROJECT_REF: ${{ secrets.MAESTRO_PROD_PROJECT_REF }}
+      MAESTRO_STAGING_PROJECT_REF: ${{ secrets.MAESTRO_STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
 
@@ -121,3 +122,9 @@ jobs:
   #   A=$(xcrun simctl create mama "iPhone 16"); B=$(xcrun simctl create papa "iPhone 16")
   #   boot both, then apps/mobile/e2e/bin/run-coparent.sh "$A" "$B" --app "$APP_PATH"
   # Left out of the sketch until the single-simulator job is green for a week.
+  #
+  # The P0 nightly (PRD V2 08 section 3.3 S19): the same setup with two simulators, then one step
+  #   apps/mobile/e2e/bin/run-p0-nightly.sh --udid-a "$A" --udid-b "$B" --app "$APP_PATH" --junit
+  # It runs E2E-01, -03, -12, -13 and -17. Exit 1 is a failed flow; exit 3 means a P0 flow was
+  # skipped (no backend or no second simulator) and must not count as a green nightly.
+  # A scheduled run fires only from the default branch (`main`), so this file must be on `main`.

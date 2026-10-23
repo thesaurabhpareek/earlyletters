@@ -208,10 +208,16 @@ const type = {
   letterBody: ts(fontFamily.serif, 20, 32, '400', 0, 'body', null),
   /** "Month 4 · Tuesday night · Papa" line above each letter. Small caps feel via tracking. */
   letterDateline: ts(fontFamily.sansMedium, 14, 18, '500', 0.6, 'footnote', 2.4),
+  /** The child's name as it is typed on first run (S05): it is the book's title, so the letter face, at title2's size. Uncapped. */
+  nameField: ts(fontFamily.serif, 22, 28, '400', 0, 'title2', null),
   /** "From Mama" at the end of a letter. Scales with letterBody and Reading Size. */
   signature: ts(fontFamily.serifItalic, 20, 32, '400', 0, 'body', null),
-  /** Prompt on Tonight: the one serif line that is a question, not a letter. */
+  /** Prompt on Listen and Write: the one serif line that is a question, not a letter. */
   prompt: ts(fontFamily.serif, 24, 32, '400', 0, 'title3', null),
+  /** Tonight's prompt as the screen's one literary line, on the lit paper with no card (EXPERIENCE_PASS S09). */
+  promptHero: ts(fontFamily.serif, 28, 36, '400', 0, 'title1', 1.8),
+  /** A month opener's numeral in the Book (S26). Capped lower than display: at 1.4x it is already 90 pt. */
+  numeral: ts(fontFamily.serifMedium, 64, 64, '500', -0.5, 'largeTitle', 1.4),
 } as const;
 
 /** Smallest type size anywhere, at the default Dynamic Type setting (DESIGN_LANGUAGE 3). */
@@ -268,8 +274,11 @@ const motion = {
   /** Breathing glow, page settle, chapter reveal. ~0.7s, soft. */
   gentle: { stiffness: 90, damping: 18, mass: 1, response: 0.66, dampingFraction: 0.95 },
   reduceMotion: { type: 'fade', durationMs: 200 },
-  /** Breathing glow when idle (no voice): one inhale+exhale cycle. */
-  breathIdleMs: 4000,
+  /**
+   * Listening glow when idle (no voice): one inhale and exhale. 7.5 s is 8 breaths a minute, Calm's slowest
+   * pace (MOTION M10), and 0.13 Hz keeps the loop under HIG Motion's 0.2 Hz caution (was 4000, MOTION open question 1).
+   */
+  breathIdleMs: 7500,
   /** Reduce Motion cross-fade, and the fade that pairs with any movement (MOTION 4). */
   fadeMs: 200,
   /** Exit of transient UI (toast, inline card). Exits are quicker than entries. */
@@ -285,12 +294,46 @@ const motion = {
   hardCeilingMs: 2000,
   /** accentSoft wash on a newly saved letter. */
   newMarkMs: 1600,
+  /**
+   * The saved moment (MOTION 5e, EXPERIENCE_PASS S21): commit first, then the Review sheet scales to `scale`; the
+   * "Filed in Month N" chip fades in at `chipAtMs`; at `moveAtMs` the card moves down `dy` and leaves; the modal
+   * closes by `sequenceMaxMs`.
+   */
+  file: { chipAtMs: 250, moveAtMs: 550, dy: 24, scale: 0.9 },
+  /** Read together (S30): the page leaves `dx` to one side over exitMs while the next enters from `dx` on the other, on `standard`. */
+  pageTurn: { dx: 24 },
+  /** The book cover opening in first run (S08): the front holds `holdMs`, then cross-fades to the flyleaf with a `dx` shift, on `standard`. */
+  cover: { holdMs: 300, dx: 8 },
+  /**
+   * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way.
+   * The Book goes under a veil of the page's paper over lamp.leaveMs, and the card holds `holdMs` before it grows, so
+   * by the time the paper's edge is `clearPt` past the card (short of the next card's words, 28 pt on) the Book is 95
+   * percent gone and no edge ever cuts a legible line; on the way back the veil lifts over lamp.returnMs once the
+   * paper is within `clearPt` of the card.
+   */
+  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24 },
   /** Press feedback (COMPONENTS 0.3): controls scale to 0.97, cards to 0.98, on `snappy`. */
   press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
   /** Empty-state illustration breath (MOTION 5j, Calm's slowest pace). */
   emptyBreathMs: 8000,
   /** Line drawings draw once (MOTION 5h). */
   drawMs: 1200,
+  /**
+   * Lamp light (MOTION 5k). The pool arrives once, slowly, then drifts by a breath of
+   * opacity on a very slow loop. Decorative; off under Reduce Motion; never
+   * on a screen that records or plays a voice (principle 1). 9 s per full cycle, like
+   * the website's 8.6 s lamp swell; the swing is small enough never to read as flicker.
+   * Opacity only: scaling a full-screen layer cost dropped frames in measurement (MOTION 5k).
+   * `arriveMs` is the first lit room after a cold launch, and every change of light inside a room (rise, dim, a
+   * new scene). `dimTo` is "Not much today" in the evening: the lights go down to 70 percent (EXPERIENCE_PASS S33).
+   * Between rooms the lamp never cuts (EXPERIENCE_PASS 5.8): it leaves over `leaveMs` (= exitMs) as an unlit room
+   * covers it, and comes back, or settles from one tab's light to the next, over `returnMs` (= enter.durationMs).
+   */
+  lamp: { arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88, dimTo: 0.7, leaveMs: 160, returnMs: 280 },
+  /** Routes (EXPERIENCE_PASS 5.8): the cross-dissolve into and out of Listen, Review and Read together. */
+  route: { dissolveMs: 280 },
+  /** Words replaced in place (a toast taking the place of another, Reading Size): a cross-fade this long. */
+  swapMs: 150,
   /** Listening glow (MOTION 5b). */
   breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400, scaleMax: 0.18, opacityMin: 0.18, opacityMax: 0.4, idleAfterMs: 600, idleScale: 0.05 },
   /** Read together word highlight (MOTION 5g). */
@@ -310,10 +353,84 @@ const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1
 /** Focus ring for Full Keyboard Access, Switch Control and web (WCAG 2.4.7 / 2.4.13). */
 const focusRing = { width: 2, offset: 2 } as const;
 
+/**
+ * Atmosphere: the website's lamp light on the app's paper (BRAND_SYSTEM 4, MOTION 5k, EXPERIENCE_PASS 5.1).
+ * Decorative only: never text, never the only signal, never inside, behind or around the mark.
+ * One palette: these names replace the older lampGold, lampRose and lampDusk drafts.
+ */
+const atmosphere = {
+  /** The website's lamp colours (apps/web Aurora.module.css on main). Decorative only. */
+  tone: { amber: '#F3C98B', gold: '#FFE2A8', rose: '#F08C7C', dusk: '#8076E2' },
+  /**
+   * The tones the light-scheme lamp draws on paper, where they differ from `tone`. The website's dusk blue mixed into
+   * amber over cream reads grey; on paper the dusk is the website's dusk and rose half and half, a warm mauve, so
+   * late night and Read together stay dim but warm.
+   */
+  paperTone: { dusk: '#B881AF' },
+  /**
+   * Peak opacity of each tone at the core of the pool, by scheme (WCAG 2.x formula; the limits, in
+   * brackets, are recomputed by test/atmosphere.test.ts).
+   * - Dark: every text colour (onLitPaper.reading and .status) keeps 4.5:1 at the peak:
+   *   amber 0.18 (0.220), gold 0.16 (0.197), rose 0.24 (0.283), dusk 0.30 (0.372).
+   * - Light (with paperTone): the reading colours keep 4.5:1 at the peak, so anywhere on the screen:
+   *   amber 0.35 (0.400), gold 0.78 (0.872), rose 0.17 (0.193), dusk 0.14 (0.161); the margin covers the
+   *   blend of two tones along the radius and the grain. The status colours
+   *   keep 4.5:1 outside the pool's core, which sits above or beside the text block (the light
+   *   geometry in apps/mobile lamp.logic.ts; proven where text actually sits, in apps/mobile
+   *   test/lamp.test.ts). At the old whole-pool cap (amber 0.14, set by `caution`) the paper read
+   *   as plain white.
+   */
+  peak: {
+    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.14 },
+    dark: { amber: 0.18, gold: 0.16, rose: 0.24, dusk: 0.3 },
+  },
+  /**
+   * The colours text takes on lit paper, by how close to the light they may sit. Reading colours may
+   * sit anywhere, including at the core. Status colours sit outside the core: in the lower 30 percent
+   * of a room lit from the top (Tonight's "A quiet day, kept." line), never on the gate or behind Read
+   * together's controls; in a card or an inline state they are on their own surface.
+   */
+  onLitPaper: {
+    reading: ['text', 'textMuted', 'accent', 'focus'],
+    status: ['success', 'caution', 'recording', 'destructive'],
+  },
+  /**
+   * Film grain over the pool, so an 8-bit display shows no rings in the soft tail (website: atmosphere
+   * Grain). Signed specks: black or white, half each, each with an alpha up to its max (out of 255).
+   * Tile: `tile` pixels drawn at 1/`scale` points per pixel. On night paper it is drawn at
+   * `darkOpacity`: its brightest speck lifts a pixel by under two levels, a dither that does not read as texture.
+   * The texture is packages/design-tokens/textures/grain.png, made by src/build-grain.ts.
+   */
+  grain: { tile: 128, scale: 3, blackMax: 4, whiteMax: 12, seed: 20261016, darkOpacity: 0.18 },
+  /** Tonight's light by greetingKey() (apps/mobile lib/copy.ts): core and tail tone, and intensity (0 to 1). */
+  daypart: {
+    earlyMorning: { core: 'gold', tail: 'gold', intensity: 0.7 },
+    morning: { core: 'gold', tail: 'gold', intensity: 0.7 },
+    midday: { core: 'gold', tail: 'amber', intensity: 0.6 },
+    afternoon: { core: 'gold', tail: 'amber', intensity: 0.6 },
+    evening: { core: 'gold', tail: 'amber', intensity: 1 },
+    night: { core: 'amber', tail: 'rose', intensity: 0.9 },
+    lateNight: { core: 'amber', tail: 'dusk', intensity: 0.8 },
+  },
+  /** Where the light appears. Anything not listed has no lamp (Listen, Review, the letter page, sheets, errors). */
+  scene: {
+    gate: { anchor: 'center', core: 'gold', tail: 'amber', intensity: 0.6, breathe: false },
+    welcome: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 1, breathe: true },
+    form: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 0.5, breathe: false },
+    finish: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 1, breathe: true },
+    tonight: { anchor: 'top', daypart: true, breathe: true },
+    write: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 0.5, breathe: false },
+    book: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 0.6, breathe: false },
+    family: { anchor: 'top', core: 'gold', tail: 'amber', intensity: 0.4, breathe: false },
+    readTogether: { anchor: 'bottom', core: 'dusk', tail: 'dusk', intensity: 1, breathe: false, nightOnly: true },
+  },
+} as const;
+
 export const tokens = {
   light,
   dark,
   highContrast,
+  atmosphere,
   icon,
   space,
   radius,
@@ -334,6 +451,13 @@ export type SpaceToken = keyof typeof space;
 export type RadiusToken = keyof typeof radius;
 export type TypeToken = keyof typeof type;
 export type ElevationToken = keyof typeof elevation;
+export type AtmosphereToken = keyof typeof atmosphere;
+/** A lamp colour (amber, gold, rose, dusk). */
+export type LampTone = keyof typeof atmosphere.tone;
+/** A room the lamp lights (gate, welcome, form, finish, tonight, write, book, readTogether). */
+export type LampScene = keyof typeof atmosphere.scene;
+/** Tonight's time of day, the same keys as the greeting (earlyMorning to lateNight). */
+export type Daypart = keyof typeof atmosphere.daypart;
 export type MotionToken = 'snappy' | 'standard' | 'gentle';
 export type Colors = { readonly [K in ColorToken]: string };
 export type TypeStyleSpec = TypeStyle;

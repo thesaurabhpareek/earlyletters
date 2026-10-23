@@ -1,6 +1,6 @@
 # Early Letters: Motion System
 
-v0.1, 2026-10-01. Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; contradicts neither. **(opinion)** marks judgement. Apple first, Android later, one codebase (Reanimated 4.5.1, Expo Router 57, RN 0.86.3).
+v0.2, 2026-10-16 (v0.2, the experience pass P1: lamp scenes in 5k, the screen-transition standard in 5l, the page turn in 5m, the `file`, `pageTurn`, `cover` and `cardToPage` tokens, `breathIdleMs` 7500). Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; contradicts neither. **(opinion)** marks judgement. Apple first, Android later, one codebase (Reanimated 4.5.1, Expo Router 57, RN 0.86.3).
 
 ## 1. Benchmark
 
@@ -34,7 +34,7 @@ v0.1, 2026-10-01. Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; co
 
 ## 3. Token additions (in `tokens.ts` since Oct 3 2026)
 
-All of the block below now lives in `tokens.motion` (plus `press`, `exitMs`, `easing`, `hardCeilingMs`, `emptyBreathMs`, `drawMs`), and `packages/design-tokens/test/tokens.test.ts` checks the 2 s ceiling, that the 6-item stagger fits under 900 ms and that every spring has a damping ratio of at least 0.9. `lib/motion.ts` reads them; screens never type a duration or spring. Implemented: `useMotion()` (`spring`, `fade`, `enter`, `exit`, `layout`), `usePressScale()` (`components/motion/press.ts`), `DrawOnPath` (`components/motion/draw-on.tsx`, 5h), `Breathe` (`components/motion/breathe.tsx`, 5j). Still hardcoded and owned elsewhere: the `B` constants in `components/capture/listening-aura.tsx` (equal to `tokens.motion.breath`; its owner should switch to the token).
+All of the block below now lives in `tokens.motion` (plus `press`, `exitMs`, `easing`, `hardCeilingMs`, `emptyBreathMs`, `drawMs`), and `packages/design-tokens/test/tokens.test.ts` checks the 2 s ceiling, that the 6-item stagger fits under 900 ms, that the saved moment and the page turn fit the sequence, and that every spring has a damping ratio of at least 0.9. `lib/motion.ts` reads them; screens never type a duration or spring. Implemented: `useMotion()` (`spring`, `fade`, `enter`, `exit`, `leave`, `layout`), `routeTransitions` / `useRouteTransitions()` and `useSheetMotion()` (5l), `useUnlitRoom()` (5k), `usePressScale()` (`components/motion/press.ts`), `DrawOnPath` and `DrawOnStrokes` (`components/motion/draw-on.tsx`, 5h), `Breathe` (`components/motion/breathe.tsx`, 5j), `PageTurn` (5m), `CardSource` and `CardToPage` (`components/motion/card-transition.tsx`, 5f), `ExcerptFade` (`components/motion/excerpt-fade.tsx`, static). Still hardcoded and owned elsewhere: the `B` constants in `components/capture/listening-aura.tsx` (package P4 switches them to `tokens.motion.breath` and `breathIdleMs`).
 
 ```ts
 motion: { ...existing,
@@ -43,6 +43,14 @@ motion: { ...existing,
   staggerMs: 30, staggerMax: 6,
   sequenceMaxMs: 900,                 // under Live Activities' 2 s
   newMarkMs: 1600,                    // accentSoft wash on a new letter
+  breathIdleMs: 7500,                 // 8 breaths a minute (was 4000; open question 1, answered)
+  file: { chipAtMs: 250, moveAtMs: 550, dy: 24, scale: 0.9 },   // the saved moment (5e)
+  pageTurn: { dx: 24 },               // Read together (5m)
+  cover: { holdMs: 300, dx: 8 },      // the book cover opening in first run (S08)
+  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24 }, // 5f
+  lamp: { arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88, dimTo: 0.7, leaveMs: 160, returnMs: 280 },   // 5k, 5l
+  route: { dissolveMs: 280 },         // the dissolve into and out of Listen, Review and Read together (5l)
+  swapMs: 150,                        // words replaced in place: a toast over a toast, Reading Size
   breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400,
             scaleMax: 1.18, opacityMin: 0.18, opacityMax: 0.40, idleAfterMs: 600, idleScale: 1.05 },
   highlight: { leadMs: 50, minDwellMs: 120, lineAnchor: 0.4, followResumeMs: 4000 },
@@ -72,7 +80,7 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
   1. `a = clamp((db + 55) / 45, 0, 1) ** 0.6` (quiet speech still moves it).
   2. Asymmetric smoothing: `tau = a > s ? 80 : 400`; `s += (a - s) * (1 - exp(-dt / tau))`. Uses `dt`, so 60 and 120 Hz match.
   3. `scale = 1 + 0.18 s`, `opacity = 0.18 + 0.22 s`.
-  4. Idle: when `s < 0.05` for 600 ms, weight `w` ramps to 1 over 600 ms; `b = 0.5 - 0.5 cos(2πt / breathIdleMs)`; `scale = max(1 + 0.18 s, 1 + 0.05 w b)`. Speech always wins; a pause never looks broken.
+  4. Idle: when `s < 0.05` for 600 ms, weight `w` ramps to 1 over 600 ms; `b = 0.5 - 0.5 cos(2πt / breathIdleMs)` with `breathIdleMs` 7500 (8 breaths a minute, 0.13 Hz, under HIG Motion's 0.2 Hz caution); `scale = max(1 + 0.18 s, 1 + 0.05 w b)`. Speech always wins; a pause never looks broken.
 - Visual: pre-rendered 240 pt radial PNG in `recording` colour behind the 120 pt mic disc; no per-frame gradient, no Skia.
 - Haptic: `recordStart` before the audio session activates, `recordStop` after it ends (iOS mutes haptics during recording unless explicitly allowed).
 - RM: static 2 pt ring; opacity steps 0.2/0.3/0.4 at `s` 0.15/0.5, 200 ms fades, max one change per 400 ms; label "Listening".
@@ -90,16 +98,20 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 
 ### (e) Save: settling into the month
 - Tap Save → local commit → `success` haptic → animate. Never gated.
-- In Review (≤ 900 ms): card scales 1→0.9, radius `xl`→`md`, `G`; chip "Filed in Month 4" fades in at 250 ms; at 550 ms card moves down 24 pt and fades (`St`); modal dismisses natively. Tap skips.
+- In Review (≤ 900 ms): card scales 1→0.9 (`motion.file.scale`), radius `xl`→`md`, `G`; chip "Filed in Month 4" fades in at 250 ms (`file.chipAtMs`); at 550 ms (`file.moveAtMs`) card moves down 24 pt (`file.dy`) and fades (`St`); at `sequenceMaxMs` Review fades out (`fadeMs`) and the app lands on the Book, on the new letter (5l row 5; from Write the sheet dismisses natively onto the Book). Tap skips. The timeline is data: `fileIntoMonthPlan()` in `lib/transitions.logic.ts`.
 - Arrival: in the Book, the new card is already in place with an `accentSoft` wash fading over 1.6 s. No tab badge.
 - Reanimated shared elements cannot cross tabs (M17); "fold then arrive" reads as one gesture **(opinion)**.
 - RM: chip, 200 ms fade, dismiss; arrival wash static then fades.
 
 ### (f) Opening a chapter and a letter
-- **v1, both platforms: measured-rect transition.** Measure the tapped card on the UI thread into a shared store; push the route with `presentation: 'transparentModal'`, `animation: 'none'`; its surface animates from the source rect to full screen via translate and scale (not width/height), radius `md`→0, `St`. Content fades in from 60% progress. List behind dims to 0.96; no blur.
-- Dismiss (swipe down, back button, Android back): reverse to the rect if the card is still visible, else 200 ms fade, then `router.back()`.
+- **v1, both platforms: measured-rect transition with the words as the shared element.** Measure the tapped card and its words into a small store (`CardSource` and `CardText`, on touch-down); present the route with `presentation: 'transparentModal'`, `animation: 'none'` (the standard's `cardToPage` move, 5l); `CardToPage` grows one empty paper surface from the source rect to full screen, radius `md`→0, its colour from the card's `surfaceRaised` to the page's `bg` over the last fifth of the way (`CARD_TO_PAGE.toneFrom`, 0.8, `paperTone`), `St`. The card's words never leave: the page's opening block (`opening`, placed by `PageOpening`: the same dateline and the whole letter) is laid out once at the page's column and carried, whole, from where the card's words sat to where the page puts them, on the same curve. Only the rest of the letter, below the card's lines, cross-fades in from 60% progress (`cardToPage.contentFrom`), clipped to the paper so it never draws past its edge; the card's own fade over the end of its last line gives way over the first half of that (0.6 to 0.8), before the paper changes colour, so it never shows as a patch of the card's surface on the page; the rest of the page fades in with it. Nothing is scaled, and no frame shows an empty card or page. **The Book leaves the way its lamp leaves a lit room (5l rule 1):** a veil of the page's paper (`bg`), one full-screen layer with no pieces, comes up on a straight line over `lamp.leaveMs` (160 ms) while the card holds for `cardToPage.holdMs` (136 ms); then the paper grows on `St`. The paper over the card comes up with the veil (and on the way back goes with it), so the rest of the card (its signature, Private, its length) leaves with the Book and comes back with it, never covered at the tap or uncovered at once at the end. So nothing on the Book loses more than a third of its strength in any 50 ms (the rule is at most half), the title and the light take the whole 160 ms, and by the time the paper's edge is `cardToPage.clearPt` (24 pt) past the card, short of the next card's words 28 pt on, the Book is 95 percent gone: no edge ever cuts a legible line, on any phone. No blur, and no dim on top of it (the veil is the dim). On the way back the veil stays until the paper is within `clearPt` of the card again (`clearProgress`), then lifts on a straight line over `lamp.returnMs` (280 ms), the way the lamp comes back; the route leaves when both the paper and the veil are home. Reduce Motion, no measured card, or another column or type size: nothing moves, and the move is one `fadeMs` (200 ms) each way, a hand-off (`CARD_TO_PAGE.handOff`): the leaving screen (the Book under the same veil, or on the way back the page) fades over its first 140 ms, the arriving one over its last 120 ms, from 80 ms. Straight lines, so nothing loses more than half its strength in 50 ms, and the two screens' words are never together at more than a quarter of their strength. The timeline is `CARD_TO_PAGE` in `lib/transitions.logic.ts`, and `transitions.test.ts` steps it ms by ms on three phones, both cards, both ways. Because the growing surface has no children, its frame may move (the same exception as the transitioning card radius in section 7).
+- **The column contract.** The words stay still only if the page opens in the card's text column and type (same width, line height and gaps), so the lines wrap exactly as on the card. `CardText` and `PageOpening` each give the line height their body renders at (`lineHeightFor`: type, Dynamic Type, Reading Size), and the two must match. Without it (a page at a larger Reading Size than the card, say), without a measured card (a deep link, a cold start), or under Reduce Motion, nothing moves: inside one 200 ms fade the Book goes under the veil and the whole page fades in after it: paper and words together, never paper alone.
+- **Screen readers read the letter once.** While the page is up it is modal (`accessibilityViewIsModal`, `aria-modal`) and the Book hides itself (`useHiddenBehindCardPage()` on its root: react-native-screens' transparent modal leaves the presenting screen reachable). The carried copies are hidden, and the page's own opening is hidden while a copy stands in for it. When the page has arrived (carried or faded), focus moves to the element the page gave `focus` (its dateline or heading).
+- **The press is kept through the hold.** The tapped card keeps its press feedback (0.98 on `snappy`, `motion.press.cardScale`) until the paper starts to grow. A `Card` inside a `CardSource` hands its press to the page (`PressHoldContext` in `components/motion/press.ts`, so every pressable card does it with no change of its own): the page holds it from its first frame (a press already gone is not brought back), the finger's release no longer lets it go, and the page lets it go as the paper starts to grow (at once for the plain fade, and when the page goes at the latest). The paper and the carried words read the press as it is, every frame: the paper starts from the card as pressed (`pressedRect`) and the words are scaled with the card about its centre (`pressTransform`), so nothing snaps back to the resting size at the release, and the press is let go during the growth. While the veil and the paper are partway (the hold, and the lift on the way back), the card under the words shows `holdDip` = v(1 - v) of the page's paper (a quarter at most); the same share is laid over the card's fade, so its end matches the card beside it.
+- **The page's own timing.** Inside the page, `useCardToPagePhase()` says where the move is: `phase` (`measuring` for its first frames, `moving`, `settled`, `closing` once Back has begun), `carried` (false: the page fades in whole), and `home` (the carried words are within `CARD_TO_PAGE.homePt`, 4 pt, of their place; true at once when nothing is carried). The page brings in the rest of itself (the signature, the player, the actions) when `home`, so no line of it sits under words still on their way, with no estimate of the spring of its own.
+- Dismiss (swipe down, back button, Android back): the words are carried back into the card while it is still visible (the opening is measured again, as the page may have scrolled), else the same 200 ms hand-off back (the page out, the Book in after it), then `router.back()`.
 - Chapter interior: first 6 cards `enter`, 30 ms stagger.
-- Haptic none. RM: 200 ms cross-fade.
+- Haptic none. RM: the 200 ms hand-off above, both ways.
 
 ### (g) Read together
 - Clock: on each player status update write `{posMs, at, rate}`; per frame `pos = posMs + (now - at) * rate`, re-anchored on update, seek, pause. Speed 0.75x is automatic.
@@ -114,14 +126,79 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - RM: drawing shown complete, 200 ms text fade.
 
 ### (i) Tabs and sheets
-- NativeTabs, no custom transition; Liquid Glass on iOS 26, Material tabs on Android (M20).
-- `formSheet` with detents: native on iOS; Android bottom sheet, max 3 detents, no grabber, title rendered in content (M21). Sheet content adds no entrance.
+- Tabs (JS tabs today; NativeTabs is the recorded next step): the native swap, no custom transition and no haptic. What changes between tabs is the light: the lamps share `persistKey="tabs"`, so the arriving tab starts at the light the last one left and settles to its own over `lamp.returnMs` (5k, 5l row 6).
+- Sheets (`ui/sheet.tsx`, @gorhom/bottom-sheet): rise on the `standard` spring. Reduce Motion: our own sheet, so nothing slides; it and its scrim fade in and out over `fadeMs`. The room behind keeps its lamp and pauses its breath while the sheet is up. Sheet content adds no entrance.
 - Reading Size: font size never animates; text cross-fades 150 ms, scroll anchored to the 40% paragraph; `selection` haptic per step.
 - Push/back: platform default, including Android predictive back.
 
 ### (j) Empty states
 - One element (moon or envelope) breathes opacity 0.85↔1 over 8 s (Calm's slowest pace, M10), only while focused and app active. Text and action static.
 - Off under RM, Low Power Mode (`expo-battery`) and Android animator scale 0.
+
+### (k) Lamp light
+- The website's lamp on the app's paper: one warm radial pool (`Lamp`, `components/ui/lamp.tsx`; `LampView` outside a navigator, for the age gate). Never on a screen that records or plays a voice, sells, or reports a problem (principle 1: continuous motion follows a real signal, and this one does not).
+- **Scenes** (`tokens.atmosphere.scene`, EXPERIENCE_PASS 5.1 and 5.2). `<Lamp scene="..." />` resolves the anchor, tones, intensity and breath:
+
+| Scene | Where | Anchor (dark geometry; light: Shape, light) | Core, tail | Intensity | Breath |
+|---|---|---|---|---|---|
+| `gate` | the age question and the stop screen | centre (0.5, 0.42, r 0.8) | gold, amber | 0.6 | still |
+| `welcome` | welcome | top (0.5, 0, r 0.95) | gold, amber | 1.0 | breathes |
+| `form` | the promise, naming, signing | top | gold, amber | 0.5 | still |
+| `finish` | "The book is open." | top | gold, amber | 1.0 | breathes |
+| `tonight` | Tonight | top | by daypart (below) | by daypart | breathes |
+| `write` | Write | top | gold, amber | 0.5 | still |
+| `book` | the Book, behind the header | top | gold, amber | 0.6 | still |
+| `family` | the Family tab | top | gold, amber | 0.4 | still |
+| `readTogether` | Read together, evening and later only | bottom (0.5, 1, r 0.9) | dusk, dusk | 1.0 | still |
+
+  Tonight's dayparts (`atmosphere.daypart`, the greeting's own keys): early morning and morning gold 0.7; midday and afternoon gold into amber 0.6; evening gold into amber 1.0; night amber into rose 0.9; late night amber into dusk 0.8. Without a scene the lamp is #99's warm pool (gold into amber, breathing), so screens that have not moved to scenes keep their light.
+- **Shape, dark.** #99's stops (offsets 0, 0.38, 0.66, 1; opacities 1, 0.45, 0.12, 0) as one smooth curve (a monotone cubic through them, drawn as 21 even stops plus #99's own, so its values are kept exactly and there is no corner to show as a ring); the core tone at the centre turns into the tail tone by the first stop, each at `falloff x peak.dark[tone]`; an ellipse the shape of the screen, at the anchors in the table. The intensity is the layer's opacity, so only opacity ever moves.
+- **Shape, light (paper).** The website's lamp on paper: a large, soft, round pool (radius a share of the longer side, the site's vmax) whose core sits above or beside the text block, never on it (`PAPER_ANCHORS` in `lamp.logic.ts`: top (0.5, -0.1, r 1.15), centre (0.5, 0.3, r 0.9), bottom (0.5, 1.1, r 0.95)). Falloff `(1 - t^2)^1.8` drawn as 21 evenly spaced stops, so the curve has no corner (the old four stops showed as rings), and the colour moves from the core tone to the tail tone along the radius, warmer and deeper toward the edge. On paper the dusk is drawn in its paper tone (`tokens.atmosphere.paperTone.dusk` #B881AF, the website's dusk and rose half and half), so late night and Read together stay dim but warm: the website's dusk blue mixed into amber over cream read grey. Over the pool, inside the same layer and in both schemes, the website's film grain (`tokens.atmosphere.grain`, a 128 px tile drawn at 3 pixels per point, 11 KB, signed specks of a few levels; on night paper at `darkOpacity` 0.18, under two levels at its brightest, a dither, not a texture): an 8-bit display shows no rings in the soft tail, and the grain comes and goes with the light.
+- **Peaks** (`tokens.atmosphere.peak`): light amber 0.35, gold 0.78, rose 0.17, dusk 0.14 (its paper tone); dark amber 0.18, gold 0.16, rose 0.24, dusk 0.30.
+- **Contrast where text sits** (`tokens.atmosphere.onLitPaper`). Dark: every text colour keeps 4.5:1 everywhere. Light: the reading colours (`text`, `textMuted`, `accent`, `focus`) keep 4.5:1 everywhere, even at the core; the status colours (`success`, `caution`, `recording`, `destructive`) keep 4.5:1 outside the core: in a room lit from the top, from 70 percent of the height down (`STATUS_CLEAR_FROM`), where Tonight's "A quiet day, kept." sits; never on the gate or behind Read together's controls (in a card or an inline state they are on their own surface). `packages/design-tokens/test/atmosphere.test.ts` recomputes each peak's limit with a margin; `apps/mobile/test/lamp.test.ts` samples every scene and daypart over the whole screen of three phones the way SVG interpolates it (grain included), and checks each text box measured on the web build (Tonight, the age question, the welcome) in its own colour, under the lamp each screen mounts today and the scene it will move to. A source scan keeps the rule tied to the screens: in every room the lamp may light, and every feature component it renders, a status colour (a `tone`, a `c.` colour, a class, a destructive button, a field's `error`, which TextField draws in `caution`) is allowed only where a measured box below the core, or a surface of its own, is named; the gate and Read together allow none. The old whole-pool cap (light amber 0.12, set by `caution` at the core) read as plain white.
+- **Arrive, rise, dim.** Only the first lit room after a cold launch arrives over `lamp.arriveMs` (1.2 s, M3 easing); every later lamp in the session comes up as a return (`lamp.returnMs`, 280 ms), unless it asks to `arrive` (Read together's dusk pool, once per opening; the second parent's first Book). Inside one room, a change of intensity (welcome 1.0 to the form steps 0.5, "Not much today" to `lamp.dimTo` 0.7 of the evening) moves over 1.2 s, and a change that moves the pool cross-fades two layers over 1.2 s: the paper is never unlit in between.
+- **persistKey** (two keys, `LAMP_KEYS`). A lamp with the same key that was lit earlier this session mounts at its last level and never arrives again. `firstRun`: the gate and onboarding share one light, and each step rises or dims to its scene over `arriveMs` (the gate's centred pool cross-fades to the welcome's top light). `tabs`: Tonight, the Book and the Family tab; the arriving tab starts at the tone and level the last one left and settles to its own over `returnMs` (Tonight's daypart light to the Book's still 0.6 and the Family tab's 0.4). `tabs` follows `firstRun`: the first tab lit after first run ("The book is open." to Tonight) starts at first run's last light and settles to its own over `returnMs`, so the light never goes out on the way out of first run (`lampMemory.atMount`).
+- **Unlit rooms** (`useUnlitRoom()` in `lamp.tsx`). A screen with no lamp that covers a lit one (Listen, Review, Read together, the letter page) calls it while focused: every lamp underneath eases to 0 over `lamp.leaveMs` (160 ms) and back over `returnMs` when the cover leaves, so the light never cuts. A lamp in the covering room itself (Read together's dusk pool) is not covered. A sheet is not an unlit room: under it the room keeps its light and pauses its breath. A Settings push slides the lit screen away with its light intact.
+- **Breath.** Only where the scene breathes: opacity down 12 % and back over 9 s (`breathMs`; the site's swell is 8.6 s), a Reanimated CSS animation on one wrapper (native, no JS per frame; a real CSS animation on web). Once attached it is paused, not removed, when a still scene follows, so the light never snaps up. No flicker (the site's filament flicker is not ported), no colour drift, no blur. The site's 2 % scale swell is not ported: scaling a full-screen layer dropped frames in a headless-Chromium measurement (12 slow frames in 8 s against none with opacity alone, none under Reduce Motion).
+- **Off:** Reduce Motion (no arrival, no rise, no breath, no leave or return: the final state, still, at once), Increase Contrast and Reduce Transparency (plain paper), a screen that is not focused, a sheet over it or the app in the background (the breath pauses). Low Power Mode is not read: that needs `expo-battery`, a new dependency (D-065); the loop is one native opacity animation.
+- Ported from the website: the grain (above), because the larger, softer pool showed 8-bit rings without it, and #99's four stops showed faint ones in dark. Not ported: the paper texture and the vignette (the paper token stays the paper).
+
+### (l) Moving between rooms after first run (EXPERIENCE_PASS 5.8)
+First run is one lit room (5k, `persistKey="firstRun"`). After it the app is a small house: three rooms you walk between (Tonight, the Book, the Family tab), two rooms you step into where the lights change (Listen, Read together), two pages you hold (Review, full screen, and Write, a sheet), a drawer (Settings) and small asks over a room (sheets). The rules:
+
+1. **The lamp never cuts.** An unlit room covering a lit one fades its lamp over `lamp.leaveMs` (160 ms) and brings it back over `lamp.returnMs` (280 ms) (`useUnlitRoom()`, 5k). Only the first lit room after a cold launch arrives over `arriveMs`; every later entry is a return, except Read together's dusk pool and the second parent's first Book.
+2. **Content never re-enters on a return.** Tonight's stagger plays on a cold launch only; a return from Listen, Review, a letter or Settings, and a tab switch, move no content.
+3. **Controls are there from the first frame** of every transition (principle 2).
+4. **Native first.** Tabs swap with no animation; pushes, sheets and alerts are the platform's. We add opacity on top (the lamp, a dissolve, content entering) and three custom moves: file into month (5e), card to page (5f) and the page turn (5m).
+5. **Short and interruptible.** Under `sequenceMaxMs`, except the save-to-Book hand-off (about 1.1 s, under the 2 s `hardCeilingMs`); a tap lands on the end state.
+6. **Reduce Motion.** Every custom move is one `fadeMs` cross-fade; the lamp jumps to its level; native pushes and sheets follow the system's own reduced transition; nothing we control slides (our Sheet fades with no travel).
+
+Presentation and animation per route live in one table, `routeTransitions` (`lib/transitions.logic.ts`, exported by `lib/motion.ts`; tested in `apps/mobile/test/transitions.test.ts` and `design-system-gaps.test.ts`). `app/_layout.tsx` reads it through `useRouteTransitions()` for every `Stack.Screen` and types no presentation, animation or duration.
+
+| Row | From, to | Route option (the table) | Built by |
+|---|---|---|---|
+| 1, 2 | Tonight to Listen and back | `listen`: `fullScreenModal`, `animation: 'fade'`, `route.dissolveMs` (Reduce Motion `fadeMs`) | P1 (table), P3 and P4 (Speak's press, Listen's `useUnlitRoom()` and its words entering) |
+| 3 | Listen to Write | `write`: `modal` (the platform's rise); Write's own `write` lamp returns | P4 |
+| 4 | Listen to Review, and Tonight's "Read it back" | `review`: `fullScreenModal` (was a page sheet), `animation: 'fade'`, `route.dissolveMs`: a voice room hands to a reading room with no change of shape | P1 (table), P4 |
+| 5, 5a | Review or Write to the saved moment to the Book | `fileIntoMonthPlan()`: 5e in Review until `sequenceMaxMs`, Review fades out over `fadeMs`, the Book comes forward on the new letter (`arrived=<entry id>`), its lamp returning, then the 1.6 s wash | P4 (the sequence, the `arrived` param), P5 (the arrival) |
+| 6 | Tab switches | none: the native swap; the lamps share `persistKey="tabs"` and settle over `returnMs` | P1 (the lamp), P3, P5, P8b (pass the key) |
+| 7 | Book to a letter, and back | `letter/[id]` keeps the platform push until its page mounts `CardToPage`; then the table's `cardToPage` move (`transparentModal`, `animation: 'none'`) and 5f | P5 (asks P1 to flip the row) |
+| 8 | The Book or a letter to Read together | `read-together`: `fullScreenModal`, `animation: 'fade'`, `route.dissolveMs`; the dusk pool `arrive`s at night; inside it, the page turn (5m) | P1 (table), P5 |
+| 9 | To Settings, and back | none: the native push; the lit screen keeps its light | P6 |
+| 10 | Any sheet | sign-in, invites and the purchase confirmation are `modal` in the table; `ui/sheet.tsx` sheets rise on `standard`; the room keeps its light and pauses its breath | P1 (table, Sheet), P8 |
+| 11 | Toasts | a toast enters with `enter`, exits with `exit`; a new toast cross-fades over the one on screen (`swapMs`), never stacked (COMPONENTS 2.14) | P1 |
+| 12 | Joined to the Book (the second parent) | none: the invite sheet dismisses natively; the Book's lamp `arrive`s, from 0 to 0.6 over `arriveMs` | P8 |
+
+- **First run opens directly (R1).** A phone with no book that opened at its front door shows first run as the root stack's first route: the tabs are not mounted behind it (`tabsInStack`, `Stack.Protected` in `app/_layout.tsx`), so no tab bar and no unlit page show between the age question and the welcome. The tabs join the stack as soon as a book exists and stay for the session; a launch on a link keeps them under its sheet. `onboarding` has no move of its own (the table's `cut`: `animation: 'none'` under both settings), so a redirect to it from a tab never slides.
+- **Hand-off, not pile-up.** Two screens of words never sit on top of each other mid-move: the page turn's leaving words are gone by 35 % of the way (`HAND_OFF`) and the next ones start as the old are half gone. A plain cross-fade of two text-heavy screens reads as a mess.
+- Every number is a token (`fadeMs`, `exitMs`, `enter`, `standard`, `route.dissolveMs`, `lamp.leaveMs`, `lamp.returnMs`, `file`, `pageTurn`, `cardToPage`, `newMarkMs`, `swapMs`, `sequenceMaxMs`).
+- On the web preview the native stack does not animate; sheets, the lamp, the page turn and card to page do.
+
+### (m) Read together: the page turn
+- `PageTurn` (`components/motion/page-turn.tsx`): "Next letter" moves the page `pageTurn.dx` (24 pt) left over `exitMs` while its words fade early; the next page arrives from 24 pt right on `standard`, starting as the last is half gone. "Back one" reverses it. No curl.
+- A horizontal swipe does the same and follows the finger; past a quarter of the width, or flung, it turns, otherwise it settles back on `snappy`. At the first or last letter the page meets a soft edge (a quarter of the travel). Interruptible: springs start from where the page is, and a key that comes back mid-turn simply arrives again.
+- The leaving page takes no touches and is hidden from VoiceOver, TalkBack and, on the web, the accessibility tree (`aria-hidden`); the buttons stay the screen's own (every gesture has a button).
+- Reduce Motion: a 200 ms cross-fade; the page does not follow the finger. Haptic: none (playback has none).
 
 ## 6. Haptics map
 
@@ -174,11 +251,13 @@ iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a hapt
 
 ## 9b. Web preview note
 
+react-native-web delays a press-in by 50 ms, so press feedback timings (a card's press within 96 ms of the touch, say) are checked on a phone, not on the web build.
+
 Reanimated 4.5.1 on web pins an element to `position: absolute` after any entering animation that is not a stock preset (custom `withInitialValues` or a `Keyframe`). `useMotion().enter()` therefore uses the stock `FadeInDown` on web and the 8 pt rise on native. Do not use custom entering keyframes in screens until this is fixed upstream (COMPONENT_LIBRARY 0.2 item 5).
 
 ## 10. Open questions
 
-1. `breathIdleMs` 4000 is 15 breaths/min; Calm's slowest is 8/min (M10). Test 6000 with tired parents.
+1. Answered (EXPERIENCE_PASS S11): `breathIdleMs` is 7500, 8 breaths a minute, Calm's slowest pace (M10). Was 4000 (15 a minute).
 2. Confirm expo-audio metering rate and dBFS range on Android.
 3. Tune `leadMs` and 120 ms dwell with grandparents at Large Print.
 

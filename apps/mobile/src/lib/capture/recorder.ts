@@ -14,7 +14,7 @@
  * stop, which hands it to the OS; the hash recorded here is re-checked by the
  * DATA-REQ-046 scrub. Residual risk noted in TDD 01 3.4 rule 4.
  */
-import { AudioQuality, IOSOutputFormat, type AudioRecorder, type RecordingOptions } from 'expo-audio';
+import type { AudioRecorder, RecordingOptions } from 'expo-audio';
 import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -27,10 +27,15 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format';
 
 /**
  * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
- * AAC-LC, mono, 64 kbps, .m4a in Documents (kept in the device backup, D-033).
+ * AAC-LC, mono, 64 kbps, in Documents (kept in the device backup, D-033).
+ * With `directory: 'document'` expo-audio writes each take to
+ * `Documents/ExpoAudio/recording-<UUID>.m4a` (`.aac` once ADR 0027 flips iOS
+ * to ADTS) and the app leaves it there; code that lists or removes
+ * recordings goes through capture/recordings.ts.
  *
  * 48 kHz rather than 44.1 kHz: iPhone microphones run at 48 kHz, so the
  * recording is not resampled on the way in; 48 kHz to Whisper's 16 kHz is
@@ -45,19 +50,13 @@ import {
  * microphone heard it; a clearer copy is made separately
  * (src/lib/audio-enhance).
  *
+ * The container (M4A today; ADTS on iOS once ADR 0027's checks pass) is
+ * chosen per platform by `RECORDING_CONTAINERS` (recording-file.ts); nothing
+ * else differs between them.
+ *
  * listen.tsx uses this object, so these settings have one home.
  */
-export const VOICE_RECORDING_OPTIONS: RecordingOptions = {
-  extension: '.m4a',
-  sampleRate: 48000,
-  numberOfChannels: 1,
-  bitRate: 64000,
-  isMeteringEnabled: true,
-  directory: 'document',
-  ios: { extension: '.m4a', outputFormat: IOSOutputFormat.MPEG4AAC, audioQuality: AudioQuality.HIGH, sampleRate: 48000 },
-  android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac', sampleRate: 48000 },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
-};
+export const VOICE_RECORDING_OPTIONS: RecordingOptions = voiceRecordingOptions(RECORDING_CONTAINERS);
 
 export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 

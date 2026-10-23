@@ -1,0 +1,673 @@
+{
+  "lens": "Content lead and editor: every string on every screen (titles, bodies, buttons, hints, errors, toasts, empty states, sheets), judged for machine-sounding copy (explaining the ask, \"we\" preambles, over-reassurance, repeated promises, help-centre tone), over-long lines, inconsistent terms, VOICE.md and glossary breaks, US spelling, and the 22-character button budget. Each proposal gives exact replacement text and the key in packages/content.",
+  "coverage": "Read all 147 steps' visible text (steps/*.json dumped by script) and INDEX.md on origin/chore/journey-refresh (b7afe42). Looked at 80 screenshots directly with the Read tool: J00-open, J01-03, J01-04, J01-05, J01-13, J01-15, J01-16, J01-18, J02-02, J02-04, J03-04, J03-05, J03-06-full, J03-07, J03-08, J03-31, J04-01, J04-04, J05-01, J05-02, J05-03, J05-04, J06-01-full, J06-03-full, J06-06, J06-08, J06-09, J06-13, J06-14, J07-02, J07-03, J07-08, J08-02, J08-03-full, J09-02, J09-04-full, J09-05, J10-01, J10-02, J10-03, J10-05, J10-06, J10-08, J10-10, J10-11, J10-12, J10-13, J10-14, J11-01, J11-04, J11-07, J12-01, J12-02, J13-01, J13-02-full, J14-01, J15-01, J15-02, J16-02, J16-03, J16-05-full, J16-06-full, J17-01-full, J17-02, J18-02, J18-03, J18-04, J18-05, J18-06, J19-01, J19-02, J20-01, J20-02; the remaining 67 steps are the same screens with different data and were judged from their step text. Read on origin/develop (ed16ca3): CLAUDE.md, packages/content/VOICE.md and BRAND.md, docs/brand/BRAND_SYSTEM.md, docs/design/DESIGN_LANGUAGE.md, BENCHMARK.md, MOTION.md, COMPONENTS.md, packages/design-tokens/src/tokens.ts, every copy file in packages/content/src (strings.en.ts, stories.en.ts, pages.en.ts, permissions.en.ts, book.en.ts, pricing.ts, prompts.ts, features/billing, speech, reminders, export, language, packs, player, words, licences, family), apps/mobile components (age-gate-screen, line-art, state-screen, consent copy, book copy, coparent-soon), docs/legal/ENGINEERING_REQUIREMENTS.md (LEGAL-REQ-002), docs/legal/in-app-disclosures.md, docs/prd/PRD.md K-07 and A-entry-and-auth.md, and the journey critiques (design.md, product.md, quality.md). On origin/main (f30084d): apps/web Landing.tsx, Aurora.tsx and Aurora.module.css, S01Evening.tsx, ProofLetter.tsx, atmosphere/index.tsx, content/site.ts (the bar: lamp aurora amber to rose to dusk, pinned scenes, the proof letter, warm paper, Literata). Primary sources: Apple HIG Onboarding, Writing, Loading, Alerts and Privacy read in full from Apple's documentation JSON (developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json, 15 Oct 2026) and quoted verbatim; dayoneapp.com, qeepsake.com, headspace.com, apple.com/newsroom and culturedcode.com did not resolve through the session proxy, so Day One, Qeepsake, Headspace, Calm, Tinybeans, Huckleberry, Things, Bear, Overcast and Apple's own apps are cited from memory and marked unverified. Held, not redesigned (scope decision pending): sign-in, sync, co-parent sharing, the Family tab, invites, backup (screen 48 and the \"Write this book together\" row in screen 42). Legal anchor correction: the journey record's note \"A-REQ-030\" for the age question is a mis-cite (A-REQ-030 in docs/prd/A-entry-and-auth.md is \"Offline entry\"); the age gate's requirements are PRD-REQ-019 (PRD.md K-07, founder 2 Oct 2026) and LEGAL-REQ-002 (P0) in docs/legal/ENGINEERING_REQUIREMENTS.md, sourced to CR-004 (Texas SB 2420 in force; Apple Declared Age Range). The production audit's scope-neutral copy fixes are placed in the screens: US spelling (screens 16, 41, 44, 47, plus \"cellular data\" replacing \"mobile data\" in packsCopy.cellularTitle, languageCopy.status.downloadNow and wordsCopy.pack.mobileDataButton on the uncaptured Storage screen), one name for the Plus plans (37), the billing subtitle (37), onboarding card 4 (3). Not captured by the web build and therefore not reviewed as screens: Spoken language, Storage, and the add-child form behind the Plus gate.",
+  "principles": [
+    "Say what is true, not why you ask. A line earns its place only when it changes what the person does next; the age question, the birthday field and the download card stand without a justification. Benchmark: Apple HIG Writing (verified from Apple's documentation JSON, 15 Oct 2026): \"Be clear. Choose words that are easily understood and convey the right thing. Check each word to be sure it needs to be there. If you can use fewer words, do so.\"",
+    "No \"we\" outside the three sanctioned promises (We never rewrite your words; the trust promise; We never imitate your voice). Mechanics, hints, errors, help and status lines say what happened with no speaker: \"An um or an uh, taken out.\" not \"You said um or uh. We took it out.\" Benchmark: Apple HIG Writing (verified): \"Avoid using we altogether because it may be unclear who the 'we' in question refers to. This is particularly problematic in error messages like 'We're having trouble loading this content.' Something like 'Unable to load content' is much clearer.\"",
+    "Teach in context, once, where the thing happens. First run states three facts (what Word for word does, the voice is kept, private by default); how fixes work, that a name can be misheard, and the one-time download are explained at the first Review and in Settings, never twice. Benchmark: Apple HIG Onboarding (verified): \"Consider providing a collection of context-specific tips instead of a single onboarding flow\"; \"design a brief, enjoyable experience that doesn't require people to memorize a lot of information\"; \"Don't let large downloads hinder onboarding.\"",
+    "Buttons are verbs with the outcome in them, 22 characters or fewer, never Yes, No or OK; the safe choice is the default and the destructive one is quiet. Benchmark: Apple HIG Alerts (verified): \"Create succinct, logical button titles. Aim for a one- or two-word title that describes the result of selecting the button. Prefer verbs and verb phrases... avoiding 'Yes' and 'No'\"; \"If there's a destructive action, include a Cancel button to give people a clear, safe way to avoid the action.\"",
+    "A state screen names the state, keeps the words safe in one sentence, and offers one way forward; a loading screen says what is happening and, after eight seconds, that it is still happening. Benchmark: Apple HIG Alerts (verified): \"Write a title that clearly and succinctly describes the situation... Avoid writing a title that doesn't convey useful information, like 'Error'\"; Apple HIG Loading (verified): \"Clearly communicate that content is loading and how long it might take to complete.\"",
+    "One name per thing, everywhere: letter (never entry), the book and {child}'s book, Month N (never chapter), small fix (never tidy, correction, edit), Word for word only in the promise and Settings, Exactly as said only when final equals raw, Read together, Plus with Plus Monthly and Plus Annual, this phone (never your phone), message (never note) for anything the app sends. Source: BRAND.md glossary, D-074, D-077, D-086. Benchmark: Day One keeps one vocabulary (entries, journals, On This Day) across app, site and export (memory, unverified).",
+    "One promise per screen, never repeated. trust.short appears once on Settings (the footer), the privacy line once in first run, and no privacy line on a screen where nobody is wondering; saying it twice sounds anxious. Source: VOICE.md \"How we talk about privacy\" (D-061). Benchmark: Apple Journal states privacy once, inside the feature it protects (BENCHMARK.md S5, read by the repo's benchmark; not fetched by me, unverified).",
+    "US English, because the app ships in the US storefront only (D-087, LEGAL-REQ-058): license, period, canceled, cellular data, right away, favorite, Mommy; prompts.ts already uses favorite, so the rest of the copy follows. Benchmark: Apple's own iOS strings (\"Cellular\", \"License Agreement\", \"Recently Deleted\") set the reference for a US launch (memory, unverified)."
+  ],
+  "screens": [
+    {
+      "step_ids": [
+        "J00-open",
+        "J01-01",
+        "J01-02",
+        "J02-01",
+        "J02-05"
+      ],
+      "screen": "Age question (the first screen anyone sees)",
+      "verdict": "redesign",
+      "problem": "\"We ask everyone the same question.\" explains the ask with a \"we\" and reads as a disclaimer a bot adds to cover itself; nobody in the category justifies an age question. Yes and No pills plus a separate Continue turn one decision into three taps, and the disabled Continue sits a full screen away from the choice. The first impression is a bare form with no brand presence on warm paper.",
+      "proposal": "Delete ageGate.body (no replacement line; the question stands alone). Keep ageGate.title \"Are you 18 or older?\" exactly. Replace the radio pills and Continue with two equal, stacked 56 pt buttons that commit on tap: ageGate.yesButton \"I am 18 or older\" (16) and ageGate.noButton \"I am under 18\" (13); remove the Continue button from this screen. Fallback if counsel wants K-07's literal Yes and No: keep \"Yes\" and \"No\", drop the body line, and make the pills commit on tap. Visual: the quote-pair symbol (registry logo.symbol.accent, new context app.gate) at 24 pt above the question, the question in the hero serif, nothing else; no gradient or illustration before the welcome.",
+      "benchmark": "Apple HIG Writing (verified, Apple documentation JSON, 15 Oct 2026): \"Avoid using we altogether because it may be unclear who the 'we' in question refers to\" and \"Check each word to be sure it needs to be there.\" Apple HIG Alerts (verified): \"Create succinct, logical button titles... avoiding 'Yes' and 'No'.\" Regulated-brand age gates (one question, two buttons, no justification line) from memory, unverified.",
+      "legal_or_constitution_note": "The journey record cites A-REQ-030, which in docs/prd/A-entry-and-auth.md is \"Offline entry\"; the real requirements are PRD-REQ-019 (PRD.md K-07, founder 2 Oct 2026) and LEGAL-REQ-002 (P0) in docs/legal/ENGINEERING_REQUIREMENTS.md, from CR-004 (Texas SB 2420 in force; Apple Declared Age Range). LEGAL-REQ-002 requires: the age question first on any first action, nothing preselected, an under-18 stop screen, a 24-hour closed gate, only the gate state stored. The proposal keeps all five: tap-to-commit means nothing is preselected, the question wording is unchanged, the stop screen and 24-hour rule are untouched, nothing new is stored. K-07's decision names \"Yes and No\" as the answers; that is product wording, not a statutory term, so the labelled buttons need a counsel nod, with the Yes/No fallback ready."
+    },
+    {
+      "step_ids": [
+        "J02-02",
+        "J02-03",
+        "J02-04"
+      ],
+      "screen": "Under 18 stop screen",
+      "verdict": "polish",
+      "problem": "\"Thank you for telling us.\" is a we-preamble in disguise; \"Nothing you entered has been kept.\" reassures about nothing (the person entered one tap). Three lines do one job.",
+      "proposal": "ageGate.stopTitle becomes \"{app} is currently for adults 18 and over.\" (the K-07 sentence as the serif title). Delete ageGate.stopBody. ageGate.stopNote becomes \"Nothing was saved.\" Keep ageGate.mistakeButton \"I answered by mistake\" (21), shown only after 24 hours as now.",
+      "benchmark": "Apple HIG Alerts (verified): \"Write a title that clearly and succinctly describes the situation\"; \"Include informative text only if it adds value.\"",
+      "legal_or_constitution_note": "K-07 and LEGAL-REQ-002 require a stop screen explaining the app is currently for adults 18 and over and that nothing but the gate state is stored; both facts stay. Only the time of the No is kept (D-026), so counsel may prefer \"Nothing else was saved.\""
+    },
+    {
+      "step_ids": [
+        "J01-03",
+        "J17-04"
+      ],
+      "screen": "Welcome",
+      "verdict": "keep",
+      "problem": "No copy problem: the one descriptor, \"A few words at a time, in your own voice. Kept for {child} to read and hear for years.\" and \"Your first two letters are free.\" are right. The adjacent, scope-neutral problem is the story deck (stories.en.ts, the server-driven variant of this welcome, D-066): card 4 story.private.v1 says \"Only you and the people you invite can read these letters\", which v1.0 cannot honour because there is no invite.",
+      "proposal": "Keep onboarding.welcome.subtitle, body, freeLine and startButton \"Begin the book\" (14). Visual only: this is the one first-run screen that should carry the website's lamp, a single static warm radial pool (atmosphere.lamp) behind the envelope, never a loop; the typed title can become the wordmark lockup (BRAND_SYSTEM 2a, one logo per screen). Story card 4, new id story.private.v2 (ids are never reused): headline \"Private by default.\", line \"Only you can read these letters. They stay on this phone. Never sold, never used for ads.\" Restore \"and the people you invite\" when co-parent sharing ships.",
+      "benchmark": "Apple HIG Onboarding (verified): \"design a flow that's fast, fun, and optional.\" Hero line plus one button as the first screen: Headspace and Calm (memory, unverified).",
+      "legal_or_constitution_note": "\"Your first two letters are free.\" is D-082; no price or trial on this screen (D-083). VOICE.md lists onboarding story 4 as a registered privacy place (D-061); the new line keeps the trust.short facts (never sold, never for ads) and drops the v1.1 invite claim; counsel to log the change in the claims registry."
+    },
+    {
+      "step_ids": [
+        "J01-04"
+      ],
+      "screen": "The promise (Exactly as you said it)",
+      "verdict": "redesign",
+      "problem": "Four \"we\" sentences, a card titled \"We can mishear\" whose body repeats its own title, and mechanics (how fixes work, that the app can mishear) explained before the person has recorded a word. The same facts return on the first Review, where they are actionable. It reads like a terms summary, not a promise.",
+      "proposal": "One headline, two short lines, one quiet footer. onboarding.promise.title keep \"Exactly as you said it.\" onboarding.promise.body becomes \"Word for word takes out a stray um, fixes a misheard name, adds a missing comma. Every small fix is marked, and you can put it back.\" onboarding.promise.body2 becomes \"We never rewrite your words. Every sentence is one you said.\" onboarding.promise.recordingBody stays \"The recording is kept on this phone, so one day {child} can hear you say it.\" as a plain line; drop the card and recordingTitle. Remove mishearTitle and the settings.help.mistakes card from first run (they stay in Settings and in the first Review note). privateNote keep \"Private by default. You choose what goes in the book.\" cta keep \"That sounds right\" (17).",
+      "benchmark": "Apple HIG Onboarding (verified): \"Consider providing a collection of context-specific tips instead of a single onboarding flow\"; \"design a brief, enjoyable experience that doesn't require people to memorize a lot of information.\" Apple HIG Writing (verified): \"Avoid using we altogether.\"",
+      "legal_or_constitution_note": "\"We never rewrite your words.\" is the one sanctioned we-line (VOICE.md, D-086) and \"Word for word\" may be named here (the promise). The mishear disclosure stays where in-app-disclosures.md section 2 places it (first Review note, Settings); the first-run card is not a registered disclosure, so removing it changes no legal text. The legal-alignment read of onboarding.promise.body flagged in in-app-disclosures.md 1.4.0 applies to the new wording."
+    },
+    {
+      "step_ids": [
+        "J01-05",
+        "J01-06",
+        "J01-07",
+        "J01-08",
+        "J01-09",
+        "J01-10",
+        "J01-11",
+        "J01-12",
+        "J03-01"
+      ],
+      "screen": "Who is this book for (name, birthday or due date, twins)",
+      "verdict": "polish",
+      "problem": "\"Their name\" and \"Their name 1 / Their name 2\" are clunky; \"You can add a nickname later.\" promises a feature v1.0 does not have; \"We sort letters by {child}'s month of age.\" explains the ask with a \"we\" and renders a 60-character name into the sentence (J01-06); \"Letters written before birth go into a part of the book called Before You.\" is a help-centre sentence; \"A birthday is a day that has already come.\" lectures.",
+      "proposal": "onboarding.child.nameLabel becomes \"Name\" (additional rows \"Another name\"); namePlaceholder becomes \"The name you use at home\"; delete nameHelp; birthdayHelp becomes \"Letters are filed by month of age.\"; expectingHelp becomes \"Letters written before the birthday are kept in Before You.\"; childrenExtra.edit.birthdayFuture becomes \"Choose today or an earlier day.\"; addAnotherHelp becomes \"Twins or more? Each child gets their own book.\" Keep needBirthday, needDueDate, needNameMany, nameLimit, dueDateRange, bornToday \"Born today\", expectingLabel \"Not here yet\", cta \"Continue\".",
+      "benchmark": "Apple HIG Writing (verified): \"Use possessive pronouns sparingly... 'Favorites' conveys the same message as 'Your Favorites,' and is more succinct.\" Apple Contacts and Health profile fields are labelled \"Name\" and \"Date of Birth\" with no help text (memory, unverified).",
+      "legal_or_constitution_note": "Validation rules unchanged (no future birthday, due date within 305 days). Glossary: \"chapter\" never appears in copy; Before You is the month section's name."
+    },
+    {
+      "step_ids": [
+        "J01-13",
+        "J01-14",
+        "J03-02"
+      ],
+      "screen": "What does {child} call you (signature and spoken language)",
+      "verdict": "polish",
+      "problem": "\"This is how your letters will be signed.\" explains; \"Your words stay in the language you speak. We never translate them.\" carries a \"we\"; \"Mummy\" in a US-only launch; the twins variant has a grammar bug (\"Add what Asha and Nila calls you\").",
+      "proposal": "onboarding.signsAs.body becomes \"It signs every letter.\" onboarding.signsAs.examples becomes [\"Mama\", \"Papa\", \"Amma\", \"Appa\", \"Mommy\", \"Daddy\", \"Ma\", \"Baba\"]. onboarding.dictionary.languagesBody becomes \"Your words stay in the language you said them.\" Add onboarding.signsAs.needSignsAsMany \"Add what {child} call you to continue.\" for two or more names. Keep title, titleMany, placeholder, examplesLabel \"A few ideas\", notYetHelp \"Not talking yet? Pick the name you hope to hear.\" (the best line in first run), cta \"Sign my letters\" (15).",
+      "benchmark": "Suggestion chips that fill the field: Airbnb category chips (BENCHMARK.md, observed by the repo). Apple HIG Writing (verified) on brevity.",
+      "legal_or_constitution_note": "Multilingual rule: never promise translation; the new line is VOICE.md's own sentence. Seven languages, one per letter (D-056)."
+    },
+    {
+      "step_ids": [
+        "J01-15"
+      ],
+      "screen": "Choose a language sheet",
+      "verdict": "keep",
+      "problem": "Two micro-slips: the search placeholder reads \"Language\" inside a field under the title \"Choose a language\"; the no-match line is two sentences.",
+      "proposal": "languageCopy.picker.searchPlaceholder becomes \"Find a language\"; languageCopy.picker.none becomes \"No match. Letters can be spoken in these seven languages for now.\" Everything else keep: each language in its own name with the English beneath is right.",
+      "benchmark": "iOS Settings language picker: native name first, English beneath (memory, unverified).",
+      "legal_or_constitution_note": "D-056: seven languages; no mixing claim."
+    },
+    {
+      "step_ids": [
+        "J01-16",
+        "J01-17",
+        "J03-03"
+      ],
+      "screen": "The book is open, with the speech download ask",
+      "verdict": "polish",
+      "problem": "The finish line is right. The download card is help-centre: \"Get your words ready\" is vague, the body explains architecture (\"so they stay on it\"), the Wi-Fi and resume note and the \"Settings, Recordings\" path are support text, and \"Not now. Your voice is kept either way.\" repeats the footnote.",
+      "proposal": "Keep onboarding.finish.title \"The book is open.\", body \"Say one thing about {child} today. That is a letter.\", cta \"Write the first one\" (19). speechConsentCopy.title becomes \"Your words, written on this phone\"; body becomes \"Spoken letters are written down here, never sent anywhere. That takes a one-time download of {size}, on Wi-Fi.\"; delete note; downloadButton keep \"Download on Wi-Fi\" (17); laterButton keep \"Not now\" (7); footnote becomes \"Later is fine. Your voice is always kept.\"; chosenLater becomes \"Your voice is kept either way.\"; keep chosenYes and lowSpace.",
+      "benchmark": "Apple HIG Onboarding (verified): \"Don't let large downloads hinder onboarding. People want to start using your app or game immediately after first launching it.\" Apple Translate's Download Languages row states the size and nothing else (memory, unverified).",
+      "legal_or_constitution_note": "D-087: one-time download consent, size from the phone's plan, nothing downloads until tapped; unchanged. Constitution: \"written down\" names transcription, never authorship."
+    },
+    {
+      "step_ids": [
+        "J01-18",
+        "J04-01",
+        "J04-02",
+        "J04-03",
+        "J04-05",
+        "J06-12",
+        "J06-15",
+        "J07-05",
+        "J07-10",
+        "J08-01",
+        "J18-02"
+      ],
+      "screen": "Tonight (home tab, with and without a waiting letter)",
+      "verdict": "keep",
+      "problem": "None. The time-of-day greeting, one serif prompt, \"Another thought\", equal Speak and Type, \"Not much today\" and \"A letter is waiting to be read back.\" are the product's best copy.",
+      "proposal": "Keep every key: tonight.greeting.*, subtitle, promptLabel, newPromptButton \"Another thought\" (15), speakButton, typeButton, notMuchButton, draftWaiting.title, afterSave.reviewButton \"Read it back\" (12). For the journey feel, let the greeting bucket drive the website's lamp colour as one static pool behind the title (amber for evening, dusk for lateNight), never a loop; the dateline middle dot is not a banned character and stays.",
+      "benchmark": "Things 3 \"This Evening\" (BENCHMARK.md S8, read by the repo; not fetched by me, unverified); Apple Journal reflection prompts (S5, same).",
+      "legal_or_constitution_note": "Prompts ask about the child's day, which VOICE.md allows; no counts, no gaps."
+    },
+    {
+      "step_ids": [
+        "J08-02",
+        "J08-04"
+      ],
+      "screen": "Not much today, kept (Tonight toast with Undo)",
+      "verdict": "keep",
+      "problem": "None. \"Kept. Rest well.\" with Undo is the no-guilt rule in five words.",
+      "proposal": "Keep notMuch.savedToast, notMuch.undo, notMuch.confirmBody (the VoiceOver hint).",
+      "benchmark": "Headspace's \"kind, warm and welcoming\" tone (BENCHMARK.md S7); a persistent Undo like Apple Mail's (memory, unverified).",
+      "legal_or_constitution_note": "D-084: a mark with no sentence; the app never writes a line for the person. Compliant."
+    },
+    {
+      "step_ids": [
+        "J04-04"
+      ],
+      "screen": "Usage-sharing ask (analytics consent sheet)",
+      "verdict": "polish",
+      "problem": "\"Help us make it better?\" is the stock SaaS ask; four paragraphs where one does; \"photos\" names a feature v1.0 does not have; \"You can change this any time in Settings, Privacy.\" is help-centre.",
+      "proposal": "analyticsConsent.title becomes \"Share which screens you open?\"; body becomes \"Only that, and when something crashes. Never your letters, recordings or anyone's names.\"; delete detail and changeLater; keep yesButton \"Share usage\" (11) and noButton \"Don't share\" (11) at equal weight. Same cut of \"photos\" in settings.privacy.analyticsHelp: \"Which screens you open and when something breaks. Never your letters, recordings or anyone's names.\"",
+      "benchmark": "Apple HIG Privacy (verified): \"Write copy that clearly describes how your app uses the ability, data, or resource you're requesting... Aim for a brief, complete sentence that's straightforward, specific, and easy to understand.\"",
+      "legal_or_constitution_note": "PRD-REQ-001 and LEGAL-REQ-003 (opt-in analytics, Apple 5.1.1(ii)): the sheet must say what is collected and nothing is sent before a choice; the body names screens and crashes, and equal buttons with no preselection carry the choice. The \"What we never do\" list in Settings, Privacy is a registered claim; dropping \"photos\" there is for counsel."
+    },
+    {
+      "step_ids": [
+        "J05-01",
+        "J05-02",
+        "J05-06",
+        "J05-09",
+        "J18-06"
+      ],
+      "screen": "Listening (recording, paused, over a minute, dark)",
+      "verdict": "keep",
+      "problem": "None. \"To {child}\", \"Only you, until you add it to the book.\", \"Listening.\", \"Say it however it comes.\", \"Still here. Take your time.\", \"Paused.\", \"Keep talking\" (12), \"Finish\" (6), \"Let it go\" (9) are the right register; the discard confirm is specific.",
+      "proposal": "Keep all listen.* and tonight.states.* keys, including discardTitle \"Let this recording go?\", discardBody \"It will be removed from this phone.\", discardConfirm \"Remove it\", keepButton \"Keep it\".",
+      "benchmark": "Apple HIG Alerts (verified): specific verb titles (\"Remove it\") with a safe alternative (\"Keep it\"). Breathing glow pacing from Apple Watch Breathe (BENCHMARK.md M9, repo-read).",
+      "legal_or_constitution_note": "The audience line is DESIGN_LANGUAGE principle 7 (honest about privacy). Nothing is added to the words."
+    },
+    {
+      "step_ids": [
+        "J19-02"
+      ],
+      "screen": "Listen opened without a tap (Ready when you are)",
+      "verdict": "polish",
+      "problem": "\"Tap Start when you want to speak.\" explains the button directly beneath it.",
+      "proposal": "listen.ready.title keep \"Ready when you are\"; listen.ready.body becomes \"Nothing is recording yet.\"; listen.ready.startButton keep \"Start\" (5).",
+      "benchmark": "Apple HIG Alerts (verified): \"Avoid explaining alert buttons. If your alert text and button titles are clear, you don't need to explain what the buttons do.\"",
+      "legal_or_constitution_note": "The microphone is not touched until Start; unchanged."
+    },
+    {
+      "step_ids": [
+        "J05-04"
+      ],
+      "screen": "Microphone is off",
+      "verdict": "polish",
+      "problem": "\"We can't hear you yet\" is a we-line with a contraction and a coy \"yet\"; the body paraphrases the two buttons under it.",
+      "proposal": "errors.micDenied.title becomes \"The microphone is off\"; body becomes \"Turn it on in Settings to speak your letters, or type this one.\"; keep typeButton \"Type instead\" (12) as the primary and settingsButton \"Open Settings\" (13) quiet.",
+      "benchmark": "Apple HIG Writing (verified): \"Avoid using we altogether... Something like 'Unable to load content' is much clearer.\" Apple's post-denial pattern (one line, a Settings door) from memory, unverified.",
+      "legal_or_constitution_note": "NSMicrophoneUsageDescription unchanged (LEGAL-REQ-007: microphone only, never speech recognition)."
+    },
+    {
+      "step_ids": [
+        "J05-03",
+        "J05-07",
+        "J05-08"
+      ],
+      "screen": "Review while words are being written down (loading)",
+      "verdict": "polish",
+      "problem": "\"Writing down what you said.\" is right and honest, but it sits alone on a still card with no sense of time; after a long take it can look stuck.",
+      "proposal": "Keep wordsCopy.preparing \"Writing down what you said.\" and wordsCopy.listening \"Writing down what you said. Part {n} of {count}.\" Add review.waitingLong \"Still writing. A long letter takes a moment longer.\" shown after eight seconds under the same card; keep \"Hear it\" in the header so the recording can play while waiting. Motion: the moon drawing breathes (MOTION 5j); nothing else moves.",
+      "benchmark": "Apple HIG Loading (verified): \"Clearly communicate that content is loading and how long it might take to complete\"; \"If loading takes an unavoidably long time, give people something interesting to view while they wait.\"",
+      "legal_or_constitution_note": "\"Writing down\" names transcription; no implication that software writes."
+    },
+    {
+      "step_ids": [
+        "J06-01",
+        "J06-02",
+        "J06-03",
+        "J06-04",
+        "J06-05",
+        "J06-06",
+        "J06-07",
+        "J18-05"
+      ],
+      "screen": "Review a spoken letter (fixes, put back, exactly as said)",
+      "verdict": "redesign",
+      "problem": "The trust screen is the wordiest: a \"we\" trust line that stays up even in the Exactly as said view (a contradiction), a first-time card whose title \"Please have a read\" is British and whose 163 characters carry three \"we\", eight fix explanations that each run \"You said... We took it out\", \"Nothing needed fixing\" phrasing, and a primary button \"Add to {child}'s book\" that passes 22 characters with a two-word name.",
+      "proposal": "review.subtitle (fixes view) becomes \"Small fixes are marked. Tap one to see what you said.\"; new review.subtitleExact (exact view) \"Exactly as you said it.\"; retire review.trustLine. First note: review.firstNote.title becomes \"Read it before you save\"; body becomes \"Small slips like an um or a repeat are taken out and marked. Tap a mark to put it back. A name can be misheard.\"; dismissButton keep \"Got it\" (6). Fix explanations: filler.explain \"An um or an uh, taken out.\"; falseStart.explain \"A sentence begun twice. The second try is kept.\"; repeat.explain \"A word said twice in a row. One is kept.\"; misheardName.explain \"A misheard name, spelled your way.\"; punctuation.explain \"Commas and periods, where you paused.\"; grammarSlip.explain \"A slip of the tongue, like a apple. Only that word changed.\"; paragraph.explain \"A long pause. A new paragraph starts here.\"; script.explain \"The same word, in the script you chose.\"; labels unchanged. review.noChanges becomes \"No fixes. This is exactly what you said.\"; noChangesAfterUndo becomes \"Every fix put back. This is exactly what you said.\"; destination.privateHelp becomes \"Private letters stay with you. You can add them later.\"; destination.addButton keeps \"Add to {child}'s book\" with a fallback \"Add to the book\" (15) when the filled label passes 22 characters; waiting.body becomes \"The words are not ready on this phone yet. Keep the recording and they can follow, or type it now.\" Keep view.fixes \"With small fixes\", view.exact \"Exactly as said\", changesLabel, undoEditButton \"Put it back\" (11), putBackToast \"Put back.\", editTextButton \"Change words\" (12), privateButton \"Keep private\" (12).",
+      "benchmark": "Apple HIG Writing (verified): \"Avoid using we altogether.\" In-place expansion for \"why was this changed\": Things 3 (BENCHMARK.md M13, repo-read). The website's proof letter (apps/web ProofLetter.tsx on main) shows the same three fixes with a count and one line; this screen should match that weight.",
+      "legal_or_constitution_note": "review.firstNote.* is disclosure text (in-app-disclosures.md section 2; Terms 11.4, 11.5): the three facts stay (slips taken out and marked; put back by tap; a name can be misheard, read before saving), so counsel's legal-alignment read is required but nothing is dropped. \"Exactly as you said it\" shows only when final equals raw (VOICE.md). \"Word for word\" is not named here (D-086). US spelling: periods."
+    },
+    {
+      "step_ids": [
+        "J06-08"
+      ],
+      "screen": "Review, change words (edit mode)",
+      "verdict": "keep",
+      "problem": "The private-letters helper stays visible under the editor where it is noise; the copy itself is fine.",
+      "proposal": "Hide destination.privateHelp while editing; keep common.doneButton \"Done\" (4). No copy change.",
+      "benchmark": "Apple Notes edit mode shows the text and Done, nothing else (memory, unverified).",
+      "legal_or_constitution_note": "The person's own edit; allowed by the constitution."
+    },
+    {
+      "step_ids": [
+        "J06-09",
+        "J06-10",
+        "J06-11",
+        "J07-04",
+        "J07-07",
+        "J07-08"
+      ],
+      "screen": "Saved card (added to the book, kept private, second free letter)",
+      "verdict": "keep",
+      "problem": "None. \"Added to {child}'s book.\", \"Kept just for you.\" and \"That was your second free letter.\" are plain and warm; the settle animation carries the moment.",
+      "proposal": "Keep review.destination.addedToast, privateToast, and billingCopy.keepGate.secondFreeNote. No more words on this card.",
+      "benchmark": "MOTION.md 5e \"Saves are instant; animation is the receipt\"; Things 3 completion (M13, repo-read).",
+      "legal_or_constitution_note": "D-082: the second-free line once, never a count of what is left."
+    },
+    {
+      "step_ids": [
+        "J06-13"
+      ],
+      "screen": "Review opened with no draft (stale link)",
+      "verdict": "polish",
+      "problem": "\"Something went wrong. Your words are safe. Please try again.\" for a stale link: nothing went wrong and there is nothing to try again.",
+      "proposal": "New review.noDraft.title \"Nothing to read back\"; review.noDraft.body \"This letter was already kept, or it is not on this phone.\"; action common.closeButton \"Close\". Reserve errors.generic for real failures.",
+      "benchmark": "Apple HIG Alerts (verified): \"Write a title that clearly and succinctly describes the situation... Avoid writing a title that doesn't convey useful information.\"",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J06-14",
+        "J07-09"
+      ],
+      "screen": "Keep needs Plus (the gate sheet)",
+      "verdict": "polish",
+      "problem": "\"and always will be\" and \"join Plus\" are membership-brochure phrases; \"Come back to it once Plus is on.\" instructs; \"your phone\" where the app says \"this phone\" everywhere else.",
+      "proposal": "billingCopy.keepGate.title keep \"Keep adding to {child}'s book\"; body becomes \"Your first two letters are kept for good. Plus lets you keep adding letters.\"; heldNote becomes \"This one waits on this phone, exactly as it is.\"; seePlus keep \"See Plus\" (8); holdButton keep \"Keep it here for now\" (20); redeemLink keep \"Redeem a code\"; lapsedBody becomes \"Plus has ended. Every letter stays yours to read, play and export. Plus can start again any time.\"; offline becomes \"Plus needs the internet to start. The letter waits on this phone.\"",
+      "benchmark": "Apple's SubscriptionStoreView carries price and trial (ADR 0013, D-053), so the sheet stays one idea; Overcast's single-line premium gate (memory, unverified).",
+      "legal_or_constitution_note": "D-083: no price, trial or \"we will email you\" in app copy; Apple 3.1.2 disclosures live on Apple's sheet. Subscription Terms \"What Plus adds\" must match billingCopy.store.features (see Plan)."
+    },
+    {
+      "step_ids": [
+        "J05-05",
+        "J07-01",
+        "J07-02",
+        "J07-06"
+      ],
+      "screen": "Write (typing a letter)",
+      "verdict": "keep",
+      "problem": "None. The prompt as a quiet line, \"Saved on this phone\", Save in the thumb zone.",
+      "proposal": "Keep write.autosaved, write.label, tonight.typing.placeholder \"Write it the way you would say it.\", common.saveButton \"Save\".",
+      "benchmark": "Day One editor and Apple Notes: no box, the prompt above the text (BENCHMARK.md, observed by the repo).",
+      "legal_or_constitution_note": "Typed words are never changed (D-057)."
+    },
+    {
+      "step_ids": [
+        "J07-03"
+      ],
+      "screen": "Review a typed letter",
+      "verdict": "keep",
+      "problem": "None: no fixes, no note, the same destination choice.",
+      "proposal": "Keep review.title, review.destination.*, review.editTextButton. The privateHelp wording change from the spoken Review applies here too.",
+      "benchmark": "Same as the spoken Review.",
+      "legal_or_constitution_note": "K-14: no \"read it before you save\" note for typed letters. Compliant."
+    },
+    {
+      "step_ids": [
+        "J03-04",
+        "J09-01"
+      ],
+      "screen": "Book, empty",
+      "verdict": "polish",
+      "problem": "\"Say one true thing about {child} today. That is how every book begins.\" sits one screen after \"Say one thing about {child} today. That is a letter.\" (the same sentence with a different adjective). \"Write a letter\" is a third verb after Speak, Type and \"Write the first one\". With one book, the \"FOR ASHA\" switcher above \"Asha's book\" says the name twice.",
+      "proposal": "book.empty.bookTitle keep \"The first page is waiting.\"; book.empty.bookBody becomes \"Tell {child} one thing about today.\"; book.empty.bookCta keep \"Write a letter\" (14); hide the children.switcher.label row when there is one book. Keep book.empty.chapterTitle \"Month {month} is open.\" and chapterBody \"Whatever you add this month lands here.\"",
+      "benchmark": "Apple HIG Writing (verified): \"Provide clear next steps on any blank screens... make sure that the content is useful and fits the context.\"",
+      "legal_or_constitution_note": "No gap counting; compliant."
+    },
+    {
+      "step_ids": [
+        "J03-05"
+      ],
+      "screen": "Whose book sheet (child switcher)",
+      "verdict": "keep",
+      "problem": "None.",
+      "proposal": "Keep children.switcher.title \"Whose book?\", the \"{child}'s book\" rows, addButton \"Add a child\".",
+      "benchmark": "Apple HIG Sheets grabber and title (H3, repo-read).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J08-03",
+        "J08-05",
+        "J08-06",
+        "J09-02",
+        "J09-03",
+        "J09-04",
+        "J09-05",
+        "J11-05",
+        "J11-06",
+        "J18-03"
+      ],
+      "screen": "Book with letters (months, cards, quiet day, waiting for words, no words)",
+      "verdict": "keep",
+      "problem": "None in copy. \"A quiet day\", \"A recording, waiting for its words.\" and \"No words in this one. The recording is kept just as it is.\" are the app's own voice done right: small, unsigned, sans. Month lines count letters only.",
+      "proposal": "Keep book.chapterTitle, chapterNewborn \"The first weeks\", waitingForWords, bookCopy.nobodySpoke, book.quietDay.* (\"A quiet day\", \"Remove this mark\", \"Removed.\"), privateLabel, hearShort. One term note: book.chapterSubtitle \"{count} letters and notes\" and chapterNotes name notes, which v1.0 does not make; the app already picks the letters-only form, so retire the note keys when quickNote is confirmed out of v1.0.",
+      "benchmark": "Day One keeps audio and text in one entry (BENCHMARK.md S6, repo-read); months as typographic headings, Things 3 (S8).",
+      "legal_or_constitution_note": "D-084: a quiet-day mark holds no text and is never counted, printed or read aloud. App notes never sit in the letter face. Compliant."
+    },
+    {
+      "step_ids": [
+        "J10-01",
+        "J10-02",
+        "J10-04",
+        "J10-05",
+        "J10-07",
+        "J10-09",
+        "J18-04"
+      ],
+      "screen": "A letter, as a page (reading, exactly as said, private, large print, dark)",
+      "verdict": "keep",
+      "problem": "None. Dateline, \"From {signsAs}\", \"Hear {signsAs}\", \"Spoken, with small fixes\", \"Recording kept on this phone\", the \"Exactly as said\" and \"With small fixes\" toggle, \"Make private\", \"Add to book\", \"Delete\".",
+      "proposal": "Keep book.provenance.*, book.hearShort, book.recordingOnPhone, review.originalLabel \"Exactly what you said\", book.entryMenu.*. The menu's \"Add to book\" beside Review's \"Add to {child}'s book\" is glossary-safe; keep both.",
+      "benchmark": "Apple Books reading view with the Aa control (BENCHMARK.md S9, repo-read); provenance as visible UI, Apple Journal (S5).",
+      "legal_or_constitution_note": "Raw words appear under \"Exactly what you said\" only when raw differs from final; the signature sits only under a person's words. Compliant."
+    },
+    {
+      "step_ids": [
+        "J10-03"
+      ],
+      "screen": "Reading size sheet",
+      "verdict": "keep",
+      "problem": "None.",
+      "proposal": "Keep reader.readingSizeTitle \"Reading size\", reader.sizes.* (Standard, Large, Large print), reader.readingSizeButton \"Aa\".",
+      "benchmark": "Apple Books Themes & Settings, the large A (BENCHMARK.md S9, repo-read).",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J10-06"
+      ],
+      "screen": "Delete this letter? (confirm sheet)",
+      "verdict": "polish",
+      "problem": "\"You can undo this for 30 days from Recently deleted.\" says the safety net in the second person twice; the sheet itself is right (D-085).",
+      "proposal": "settings.delete.entryTitle keep \"Delete this letter?\"; settings.delete.entryBody becomes \"It waits in Recently deleted for 30 days.\"; keepButton keep \"Keep it\" (7) as the primary; entryConfirm keep \"Delete letter\" (13) quiet red.",
+      "benchmark": "Apple HIG Alerts (verified): \"A specific button title like 'Erase,' 'Convert,' 'Clear,' or 'Delete' helps people understand the action they're taking\"; \"If there's a destructive action, include a Cancel button\" (here \"Keep it\").",
+      "legal_or_constitution_note": "D-085: Recently deleted, 30 days. Compliant."
+    },
+    {
+      "step_ids": [
+        "J10-08"
+      ],
+      "screen": "Letter deleted, with Undo",
+      "verdict": "polish",
+      "problem": "The page body and the toast say the same thing twice, and the body explains the buttons (\"Undo it now, or close to go back to the book\").",
+      "proposal": "Page title stays settings.delete.entryToast \"Letter deleted.\"; reader.deletedBody becomes \"It waits in Recently deleted for 30 days.\"; the toast keeps \"Letter deleted.\" with \"Undo\" (4) and no timer.",
+      "benchmark": "Apple HIG Alerts (verified): \"Avoid explaining alert buttons.\" Persistent Undo as in Apple Mail (memory, unverified).",
+      "legal_or_constitution_note": "TDD 09 A11Y-F03: no timed return. Compliant."
+    },
+    {
+      "step_ids": [
+        "J10-10"
+      ],
+      "screen": "A letter with no words (recording kept)",
+      "verdict": "keep",
+      "problem": "None. The app note, \"Record again\" (12), \"Add to book\", \"Delete\".",
+      "proposal": "Keep bookCopy.nobodySpoke and wordsCopy.noSpeech.recordAgainButton.",
+      "benchmark": "Same app-note pattern as the Book.",
+      "legal_or_constitution_note": "The note never says nobody spoke; the recording is untouched (D-086)."
+    },
+    {
+      "step_ids": [
+        "J10-11"
+      ],
+      "screen": "Letter not found (stale link)",
+      "verdict": "polish",
+      "problem": "\"This letter is not here anymore.\" says loss (\"anymore\" means it was here and is gone), which the no-loss rule forbids, and it is not what happened.",
+      "proposal": "reader.notFoundTitle becomes \"This letter is not on this phone.\"; reader.notFoundCta keep \"Back to the book\" (16).",
+      "benchmark": "Apple HIG Alerts (verified) on describing the situation; the website's 404 in pages.en.ts (\"This page is not in the book.\") sets the house tone.",
+      "legal_or_constitution_note": "No loss language (CLAUDE.md content rules); compliant after the change."
+    },
+    {
+      "step_ids": [
+        "J10-12",
+        "J10-13",
+        "J10-15"
+      ],
+      "screen": "Recently deleted (shelf, restored, empty)",
+      "verdict": "polish",
+      "problem": "The empty state repeats \"here\" twice under a title that already appears in the nav bar; the card is fine.",
+      "proposal": "settings.delete.shelfEmpty becomes \"No deleted letters.\"; keep shelfHelp \"Letters you delete wait here for 30 days.\" as the line under the title; keep deletedOn \"Deleted {date}\", erasesOn \"Erased on {date}\", restoreButton \"Restore\" (7), eraseNow \"Erase now\" (9), restoredToast \"Letter restored.\"",
+      "benchmark": "Photos, Recently Deleted: days shown per item, no totals (memory, unverified).",
+      "legal_or_constitution_note": "D-085 shelf; no countdown, no count. Compliant."
+    },
+    {
+      "step_ids": [
+        "J10-14"
+      ],
+      "screen": "Erase this letter now? (confirm sheet)",
+      "verdict": "keep",
+      "problem": "None. \"The letter and its recording will be erased from this phone, at once.\" with \"Keep it\" as the default and \"Erase now\" quiet.",
+      "proposal": "Keep settings.delete.eraseNowTitle, eraseNowBody, keepButton, eraseNow.",
+      "benchmark": "Apple HIG Alerts (verified): destructive action with a safe default and a specific verb.",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J11-01",
+        "J11-02",
+        "J11-03",
+        "J11-08"
+      ],
+      "screen": "Read together (letter pages, autoplay switch)",
+      "verdict": "polish",
+      "problem": "The dateline \"Mama, The first weeks\" joins a name and a month with a comma and a mid-line capital; \"Play the next one on its own\" is a 28-character switch label that paraphrases autoplay twice.",
+      "proposal": "readTogether.nowReading becomes \"Month {month} · From {signsAs}\" with a newborn variant readTogether.nowReadingNewborn \"The first weeks · From {signsAs}\"; readTogether.autoplayLabel becomes \"Play the next one too\" (21); keep previousButton \"Back one\" (8), nextButton \"Next letter\" (11), hearShort \"Hear {signsAs}\", noRecording \"This one was typed. Read it aloud together.\"",
+      "benchmark": "Apple Books read-aloud and chrome-free page (BENCHMARK.md S9 and M6, repo-read); Readmio voice-first reading (S10).",
+      "legal_or_constitution_note": "No word-highlight claim (D-059); quiet days never read aloud (D-084). Compliant."
+    },
+    {
+      "step_ids": [
+        "J11-04"
+      ],
+      "screen": "Read together, end of the book",
+      "verdict": "polish",
+      "problem": "\"More are still being written.\" assumes on the family's behalf; the first sentence is complete and already implies more. The unused month endings (\"You are so loved.\") have the app addressing the child with sentiment of its own.",
+      "proposal": "readTogether.endOfBook becomes \"That is every letter so far.\"; keep finishButton \"Close the book\" (14) and againButton \"Read it again\" (13). readTogether.endOfMonth and endOfMonthAlt become \"That was Month {month}.\"",
+      "benchmark": "Apple Books end-of-book card: a title and Done, nothing more (memory, unverified).",
+      "legal_or_constitution_note": "VOICE.md \"The app's own words\": small, unsigned, never adding meaning; the letters carry the love."
+    },
+    {
+      "step_ids": [
+        "J11-07"
+      ],
+      "screen": "Read together with no letters",
+      "verdict": "keep",
+      "problem": "Reached only by a stale link; the line is fine.",
+      "proposal": "Keep readTogether.empty \"Letters you add to the book will be here to read together.\" and Close. The Book hiding the button until a letter exists is the real fix, and it already does.",
+      "benchmark": "Apple HIG Writing (verified): empty states guide people to the next action.",
+      "legal_or_constitution_note": "None."
+    },
+    {
+      "step_ids": [
+        "J12-01",
+        "J12-02"
+      ],
+      "screen": "Plan (Plus off, restore failed)",
+      "verdict": "polish",
+      "problem": "\"Your first two letters are free\" appears twice and \"keep adding\" twice on one screen; the status card has no status; \"Monthly\" and \"Yearly\" are not the plan names (D-077: Plus Monthly and Plus Annual; docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md still says \"Plus Yearly\"); \"We never see your card details.\" is reassurance with a \"we\"; billingCopy.store.subtitle \"A few extras for the books you keep.\" promises extras when Plus adds one thing.",
+      "proposal": "billingCopy.plan.off becomes \"Free. Two letters, kept for good.\"; billingCopy.store.promise (the paragraph) becomes \"Plus lets you keep adding letters. Every letter you keep stays yours to read, play and export, with or without Plus.\"; billingCopy.plan.monthly becomes \"Plus Monthly\" and plan.yearly becomes \"Plus Annual\" (rename the key to annual), and the App Store Connect display name in docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md changes to \"Plus Annual\" so all three match; billingCopy.plan.payment becomes \"Apple takes the payment. Card details stay with Apple.\"; billingCopy.store.subtitle becomes \"Two letters free. Then Plus.\" (the website's s10 headline, one line of parity); billingCopy.store.features becomes [\"Keep adding letters to every book.\"]; settingsHome.planHelp becomes \"Your first two letters are free. Plus lets you keep adding letters.\" (the one sentence used on Settings and the gate). Keep manage \"Manage subscription\", manageHelp, restore \"Restore purchases\", restoreHelp, restoreFailed \"The App Store could not be reached. Please try again in a moment.\", seePlans \"See what Plus adds\" (18).",
+      "benchmark": "Apple Settings, Subscriptions lists each plan by its store display name (memory, unverified); Overcast's one-paragraph premium screen (memory, unverified).",
+      "legal_or_constitution_note": "Subscription Terms name the labels \"Settings, Plan, Manage subscription\" (kept exactly). Plan names must equal App Store Connect display names (BRAND.md, D-077), so the ASC document is the one to correct. billingCopy.store.features must match the Subscription Terms \"What Plus adds\" (in-app-disclosures.md section 3), so counsel updates both together. No price or trial in app copy (D-083)."
+    },
+    {
+      "step_ids": [
+        "J13-01",
+        "J13-02",
+        "J13-03"
+      ],
+      "screen": "Reminders (off, notifications denied, cadence)",
+      "verdict": "polish",
+      "problem": "\"Month notes\" uses \"note\" for something the app sends (glossary: a note is only something a person makes); \"Pick the evenings that suit you.\" explains the chips; the denied body says \"your phone's Settings\".",
+      "proposal": "reminderCopy.settings.monthNotesLabel becomes \"Month messages\"; monthNotesHelp becomes \"A message on the day a new month begins in each book, and on birthdays.\"; delete eveningsHelp and eveningHelp; deniedBody becomes \"Turn them on in Settings and reminders start again.\"; keep settings.reminders.help \"A gentle nudge a few evenings a week, at the time you choose. Never late at night.\", quietHelp, namesHelpOff, pauseLabel, openSettingsButton \"Open Settings\" (13).",
+      "benchmark": "Apple HIG Privacy (verified) for the priming sheet: \"Include only one button and make it clear that it opens the system alert... Use a term like 'Continue' or 'Next'\", which reminderCopy.priming already follows. Apple Journal's single opt-in scheduled notification (BENCHMARK.md S5, repo-read).",
+      "legal_or_constitution_note": "No counts or days-since; \"Every evening\" is the person's chosen cadence, not the product describing itself; D-025 keeps names off the lock screen by default."
+    },
+    {
+      "step_ids": [
+        "J14-01"
+      ],
+      "screen": "Recordings (kept on this phone, speech model, Word for word)",
+      "verdict": "polish",
+      "problem": "\"Your voice is saved with each letter, on this phone.\" repeats the card above it; three section headers for one screen (\"Writing down your words\", \"How transcription works\" are help-centre); the Word for word footer plus the mistakes line make five sentences with three \"we\".",
+      "proposal": "Delete settings.recordings.keepHelp from this screen; speechSettingsCopy.title becomes \"Spoken letters\"; speechSettingsCopy.footer becomes \"Removing a language frees space. Recordings and letters stay, and new recordings wait for their words until it is added again.\"; settings.help.mistakesTitle becomes \"Your words\"; merge settings.tidyHelp and settings.help.mistakes into one footer, settings.tidyHelp: \"Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words. A name can be misheard, so read each letter before you save.\"; keep settings.tidyLabel \"Word for word\", tidyOn \"Small fixes, marked\", tidyOff \"Exactly as said\", recordings.onPhoneTitle \"Kept on this phone\", onPhoneBody.",
+      "benchmark": "iOS Settings footers: one sentence per group (memory, unverified). Apple HIG Writing (verified) on brevity.",
+      "legal_or_constitution_note": "help.mistakes is the always-available mistakes note in in-app-disclosures.md section 2; the merged footer keeps its fact (a name can be misheard, read each letter), so counsel signs the merge. \"Word for word\" in Settings is allowed (D-086). D-085: no backup claim."
+    },
+    {
+      "step_ids": [
+        "J15-01",
+        "J15-02",
+        "J15-03"
+      ],
+      "screen": "Export (ready, failed, empty book)",
+      "verdict": "polish",
+      "problem": "\"Download every letter and recording\" for a local export; the failure body says \"free space\" twice.",
+      "proposal": "settings.export.body becomes \"Every letter and recording, as a PDF of the book, plain text and audio files. Free, any time.\"; exportCopy.screen.lowSpaceBody becomes \"This phone needs more free space first.\"; keep offlineNote \"Works without a connection. Nothing is sent anywhere.\", neverExported \"Not exported yet\", exportNudge, the four includes lines, button \"Export everything\" (17), againButton \"Export again\" (12), failedTitle \"The export did not finish\".",
+      "benchmark": "Day One's export list as plain nouns (JSON, PDF, text) (memory, unverified).",
+      "legal_or_constitution_note": "DATA-REQ-056 privacy notice at share time stays (exportCopy.screen.privacyNotice); PRD-REQ-009 closing pledge unchanged."
+    },
+    {
+      "step_ids": [
+        "J03-06",
+        "J03-09",
+        "J16-01"
+      ],
+      "screen": "Settings home",
+      "verdict": "polish",
+      "problem": "The early-version note sits at the top (K-13 and in-app-disclosures.md section 1 put it in About); \"Some things may change.\" is vague; trust.short appears twice on one screen (VOICE.md: never repeat the promise); \"Licences\" is UK spelling for a US-only app; the footer \"We never rewrite your words. We only fix...\" doubles \"we\".",
+      "proposal": "settings.about.beta.body becomes \"{app} is an early version and can make mistakes. Export a copy of your letters now and then.\" and the card moves to About; settingsHome.licencesLabel, licences.title and licences.rowLabel become \"Licenses\"; show trust.short once (footer only); settings.neverRewrite becomes \"We never rewrite your words. Only what the microphone got wrong is fixed, and every fix is marked.\"; settingsHome.planHelp becomes \"Your first two letters are free. Plus lets you keep adding letters.\"; keep helpValue \"Write to us\", exportHelp, storageHelp, languageHelp, shelfHelp.",
+      "benchmark": "iOS Settings: one footnote per group, never the same line twice (memory, unverified). Apple HIG Writing (verified): \"Build language patterns. Consistency builds familiarity.\"",
+      "legal_or_constitution_note": "D-060 and K-13: the early-version label stays (same facts, trimmed). D-087: US storefront only, so US spelling."
+    },
+    {
+      "step_ids": [
+        "J03-07",
+        "J03-20",
+        "J03-21",
+        "J03-22",
+        "J03-23",
+        "J03-24",
+        "J03-25",
+        "J03-26",
+        "J03-27",
+        "J03-30",
+        "J03-31",
+        "J03-32",
+        "J03-33"
+      ],
+      "screen": "A child's settings (name, birthday, signature, reminders, born offer, hide)",
+      "verdict": "polish",
+      "problem": "\"Your reminder time is shared across your children.\" under a single child; \"for everyone in the family\" when v1.0 has no family; \"Tell us the day\" (we); the too-long error strings lecture. The \"Write this book together: Coming soon\" row is held.",
+      "proposal": "children.settings.remindersHelp becomes \"Month and birthday messages for {child} follow this switch.\"; children.settings.hideBody becomes \"Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.\"; childrenExtra.edit.born.offerBody becomes \"The due date has come. Set the birthday and every letter finds its month.\"; born.offer keep \"{child} was born, set the birthday\"; born.confirm keep \"Set the birthday\" (16); edit.signsAsNewOnly becomes \"Letters already written keep their signature.\"; edit.nameTooLong and signsAsTooLong become \"Up to {n} characters.\"; edit.nameEmpty keep \"Add a name to save.\"; edit.birthdayFuture becomes \"Choose today or an earlier day.\"; familyCopy.soon.settingsRow and settingsRowHelp held (co-parent scope).",
+      "benchmark": "Apple Contacts edit rows: value, chevron, no help text (memory, unverified).",
+      "legal_or_constitution_note": "The \"Family can read\" switch stays hidden in v1.0 (D-055). No day counts in the born offer."
+    },
+    {
+      "step_ids": [
+        "J03-08"
+      ],
+      "screen": "Add a child (from Settings)",
+      "verdict": "polish",
+      "problem": "\"with their own months, family and settings\" names family (not in v1.0); the help line renders the placeholder (\"We sort letters by Their name's month of age.\"); the Before You line is the same help-centre sentence as first run.",
+      "proposal": "children.add.body becomes \"Each child gets their own book, with its own months and settings.\"; reuse the nameless onboarding.child.birthdayHelp \"Letters are filed by month of age.\" (which also fixes the placeholder bug); onboarding.child.expectingHelp becomes \"Letters written before the birthday are kept in Before You.\"; keep children.add.title \"Add a child\", cta \"Add {child}'s book\" (22 with names up to 10 characters; fallback \"Add this book\" (13)).",
+      "benchmark": "Same as the first-run child step; Apple HIG Writing (verified) on possessives.",
+      "legal_or_constitution_note": "D-082 and D-083: starting a book is free; no gate here. Compliant."
+    },
+    {
+      "step_ids": [
+        "J16-02"
+      ],
+      "screen": "Privacy (usage switch, what we never do, policies)",
+      "verdict": "polish",
+      "problem": "\"photos\" in the analytics help names a feature v1.0 lacks; \"straight away\" is British; otherwise the screen is right.",
+      "proposal": "settings.privacy.analyticsHelp becomes \"Which screens you open and when something breaks. Never your letters, recordings or anyone's names.\"; settings.privacy.analyticsOffNote becomes \"Turning this off stops sharing right away.\"; keep consentCopy.neverTitle \"What we never do\" and the three never-lines (registered claims), documentsTitle \"Our promises in full\", the four links.",
+      "benchmark": "Apple Journal's privacy as visible UI (BENCHMARK.md S5, repo-read). Apple HIG Privacy (verified): \"Be transparent about how your app collects and uses people's data.\"",
+      "legal_or_constitution_note": "The never-list and trust.* are claims-registry text (D-061); the only edit outside them is the analytics help. Dropping \"photos\" from the never-list is for counsel."
+    },
+    {
+      "step_ids": [
+        "J16-03",
+        "J16-04",
+        "J18-01"
+      ],
+      "screen": "Appearance (theme, reading size)",
+      "verdict": "keep",
+      "problem": "None. \"Match this phone\", \"Light\", \"Dark\", \"Standard\", \"Large\", \"Large print\", one live sample line.",
+      "proposal": "Keep settingsMore.themes.*, reader.sizes.*, reader.preview \"Dear {child}, today you laughed at the rain.\" (\"Match this phone\" is plainer than iOS's \"Automatic\" and matches \"this phone\" everywhere else).",
+      "benchmark": "Apple Books reading sizes (BENCHMARK.md S9, repo-read); iOS Settings, Display and Brightness uses \"Automatic\" (memory, unverified).",
+      "legal_or_constitution_note": "The sample is a labelled sample in Settings, not in the book; VOICE's rule about the book's words is not touched."
+    },
+    {
+      "step_ids": [
+        "J16-05"
+      ],
+      "screen": "If you are struggling (support lines)",
+      "verdict": "keep",
+      "problem": "Nothing an editor should change ahead of the clinician and counsel review already pending (FT-36).",
+      "proposal": "Keep struggling.* as written. One note for that review: \"They are for people in the United States.\" could become \"These are United States lines.\"",
+      "benchmark": "Apple Health's crisis resources: plain names, numbers, hours (memory, unverified).",
+      "legal_or_constitution_note": "D-034 static resources; LEGAL-REQ-058 US storefront; FT-36 primary-source check before adding the 988 Spanish line."
+    },
+    {
+      "step_ids": [
+        "J16-06"
+      ],
+      "screen": "Licenses (open-source notices)",
+      "verdict": "polish",
+      "problem": "UK spelling throughout (\"Licences\", \"licences\"); the list expands inside Settings (a design matter).",
+      "proposal": "licences.title and licences.rowLabel become \"Licenses\"; licences.libraries becomes \"React Native, Expo and the other libraries in this app are open source, under the MIT, Apache 2.0, BSD and ISC licenses.\"; the speech section title \"Writing down your words\" becomes \"Speech\"; keep intro and every attribution line.",
+      "benchmark": "iOS Settings, General, Legal and Regulatory is its own screen (memory, unverified).",
+      "legal_or_constitution_note": "Attributions are copied word for word from each license file (OFL, MIT, Apache) and must not change."
+    },
+    {
+      "step_ids": [
+        "J17-01",
+        "J17-02",
+        "J17-03"
+      ],
+      "screen": "Family tab and invite sheet (co-parent coming soon)",
+      "verdict": "keep",
+      "problem": "Held: scope decision pending (sign-in, sync, co-parent). As copy, \"We're building it now.\" is a contraction with a \"we\", and \"Tell me when it's here\" is exactly 22 characters; both can wait for the decision.",
+      "proposal": "No change until the scope decision. If the tab stays: familyCopy.soon.building becomes \"Coming in a later update. Until then, every letter stays on this phone.\"; everything else held.",
+      "benchmark": "None applied (held).",
+      "legal_or_constitution_note": "D-055: co-parent only; no v1.0 copy promises grandparents. \"Only the people you invite can read {child}'s book.\" inside the held card describes what is coming, not what ships."
+    },
+    {
+      "step_ids": [
+        "J19-01"
+      ],
+      "screen": "Unknown route (404)",
+      "verdict": "polish",
+      "problem": "\"We could not find that page\" is a we-error; the second sentence is right.",
+      "proposal": "errors.notFoundPage.title becomes \"That page is not here\"; body keep \"The link may be old or mistyped. Your book is right where you left it.\"; button keep \"Back to Tonight\" (15).",
+      "benchmark": "Apple HIG Writing (verified): \"Something like 'Unable to load content' is much clearer\" than a we-sentence.",
+      "legal_or_constitution_note": "Never shows the address. Compliant."
+    },
+    {
+      "step_ids": [
+        "J20-01"
+      ],
+      "screen": "A screen crashed (root error boundary)",
+      "verdict": "polish",
+      "problem": "\"Something went wrong on our side\" is a we-line in a coat; the screen also renders in system fonts (Times and Helvetica) because the boundary draws before the faces load, which breaks the brand at the worst moment.",
+      "proposal": "errors.crash.title becomes \"Something went wrong\"; body keep \"Your letters and recordings are safe on this phone. Nothing was removed.\"; tryAgainButton keep \"Try again\" (9); tonightButton keep \"Go to Tonight\" (13). Design: render the boundary in the bundled faces when loaded, otherwise the system serif, never Times for the title.",
+      "benchmark": "Apple HIG Alerts (verified): \"In all alert copy, be direct, and use a neutral, approachable tone... avoid being oblique or accusatory.\"",
+      "legal_or_constitution_note": "No error text, code or stack shown or logged (privacy rule). Compliant."
+    },
+    {
+      "step_ids": [
+        "J20-02"
+      ],
+      "screen": "The book could not be opened at launch (recovery)",
+      "verdict": "polish",
+      "problem": "\"We could not open your book just now\" (we); the hint runs long; the rest is good and honest.",
+      "proposal": "errors.launch.title becomes \"The book could not open\"; body keep \"Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.\"; hint becomes \"Trying again often works. If not, restarting the phone can help.\"; tryAgainButton \"Try again\" (9); exportButton keep \"Export what's readable\" (22, at the limit); exportNothing becomes \"No recordings or files to export were found on this phone.\"; exportFailed becomes \"The export could not be made, and nothing was changed. Your files are still on this phone.\"",
+      "benchmark": "Apple HIG Writing (verified) on \"we\"; Apple HIG Alerts (verified): \"If your app detects a problem at startup... consider alternative ways to let people know\" (the export door does this).",
+      "legal_or_constitution_note": "Never deletes, resets or rebuilds (D-085). The readme's \"write to us\" is fine inside a file."
+    }
+  ]
+}
