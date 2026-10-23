@@ -94,10 +94,11 @@ export const ENGINE_VERSION = 7;
 //   WP-F06-12 audits their stored edits once it ships.
 // 7 (2026-10-23): end marks, the follow-up to the #179 reviews. Every change
 //   is meant to refuse more. The claim that engine 7 accepts no edit engine 6
-//   refused rests on the #249 single-edit differentials, not on a proof; the
-//   one shape the #249 review found (a deleted space in "no. ." giving
-//   "no..") is refused again, as two marks with only a space between still
-//   count as touching apart from the space.
+//   refused rests on a differential, not on a proof: 3,429,419 single edits
+//   at end marks and removals over the test-suite strings, 0 accepted by 7
+//   and refused by 6. The shapes found on the way are refused again: a
+//   deleted space in "no. ." giving "no.." (#249 review N3), and the later
+//   mark turned into a copy of the first ("।." to "।।").
 //   - No edit puts an end mark next to one already said, the same mark or
 //     another, in any script: "." after "?", "!", a danda, 。 ？ ！ or ؟
 //     ("more?.", "it!.") is refused as changes_sentence_type (#179 re-check

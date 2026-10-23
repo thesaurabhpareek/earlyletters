@@ -404,6 +404,16 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     expect(verdictIn(rules, raw, edit(raw, 'punctuation', pair, '..'))).toBe('changes_sentence_type');
   });
 
+  it('the later mark may not become a copy of the first: one mark twice stays refused, as in engine 6 (#249 single-edit differential)', () => {
+    const hi = 'आशा हँसी।.';
+    expect(verdictIn(HI, hi, at(hi.length - 1, '।', '.'))).toBe('changes_sentence_type'); // "।।"
+    const zh = '她睡了。.';
+    expect(verdictIn(ZH, zh, at(zh.length - 1, '。', '.'))).toBe('changes_sentence_type');
+    const en = 'Asha waited\u2026.';
+    expect(v7(en, at(en.length - 1, '\u2026', '.'))).toBe('changes_sentence_type');
+    expect(v7(en, at(en.length - 1, '', '.'))).toBeNull(); // removing it is still fine
+  });
+
   it('a "?" or "!" said first stands too, held by the mood check as well, and so does each "!" of "!!"', () => {
     const raw = 'Was there more?. It was.';
     expect(v7(raw, at(raw.indexOf('.'), '', '.'))).toBeNull();

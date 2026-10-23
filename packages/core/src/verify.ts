@@ -249,38 +249,42 @@ function nearMark(ch: string, R: LanguageRules): boolean {
 
 /**
  * How many end marks in `text` touch the end mark before them: "?." and ".."
- * are 1, "..." is 2, "no. Yes." is 0. Counted twice: `loose` lets spaces sit
- * between ("no. ." is 1), `tight` does not ("no. ." is 0, "no.." is 1), so an
- * edit that only deletes the space between two marks still makes a new pair
- * (#249 review N3).
+ * are 1, "..." is 2, "no. Yes." is 0. Counted three ways: `loose` lets spaces
+ * sit between ("no. ." is 1), `tight` does not ("no. ." is 0, "no.." is 1),
+ * so an edit that only deletes the space between two marks still makes a new
+ * pair (#249 review N3); `same` counts tight pairs of one mark twice, so "।."
+ * may not become "।।" either, which engine 6 refused (#249 single-edit
+ * differential).
  */
 interface MarkPairs {
   loose: number;
   tight: number;
+  same: number;
 }
 function endMarkPairs(text: string, R: LanguageRules): MarkPairs {
-  const pairs: MarkPairs = { loose: 0, tight: 0 };
+  const pairs: MarkPairs = { loose: 0, tight: 0, same: 0 };
   let loose = false;
-  let tight = false;
+  let tight = '';
   for (const ch of text) {
     if (isEndMark(ch, R)) {
       if (loose) pairs.loose++;
       if (tight) pairs.tight++;
+      if (tight === ch) pairs.same++;
       loose = true;
-      tight = true;
+      tight = ch;
     } else if (!nearMark(ch, R)) {
       loose = false;
-      tight = false;
+      tight = '';
     } else if (/\s/u.test(ch)) {
-      tight = false;
+      tight = '';
     }
   }
   return pairs;
 }
 
-/** Does `a` have a pair of touching end marks that `b` lacks, counted either way? */
+/** Does `a` have a pair of touching end marks that `b` lacks, counted any of the three ways? */
 function morePairs(a: MarkPairs, b: MarkPairs): boolean {
-  return a.loose > b.loose || a.tight > b.tight;
+  return a.loose > b.loose || a.tight > b.tight || a.same > b.same;
 }
 
 function endMarkCount(text: string, R: LanguageRules): number {
