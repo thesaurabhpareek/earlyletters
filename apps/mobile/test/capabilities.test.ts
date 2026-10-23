@@ -225,6 +225,41 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     }
     expect(englishOnlyEnabled()).toBe(false);
   });
+
+  it('capabilities.ts reads process.env.EXPO_PUBLIC_ENGLISH_ONLY written out in full, once, so Expo inlines it (a misspelt or dynamic read fails here)', () => {
+    const code = readFileSync(join(APP, 'src/lib/capabilities.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    // Every build variable is a literal member read; none is computed, so none can escape inlining.
+    expect(code).not.toMatch(/process\.env\s*\[/);
+    expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
+    const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);
+    expect(code).toMatch(/return englishOnlyTestOverride \?\? ENGLISH_ONLY_BUILD_VALUE;/);
+    expect(code).toMatch(/get englishOnly\(\): boolean \{\s*return englishOnlyEnabled\(\);/);
+    // No other spelling of the name anywhere in the file, comments included.
+    const spellings = readFileSync(join(APP, 'src/lib/capabilities.ts'), 'utf8').match(/EXPO_PUBLIC_\w*ENGLISH\w*/gi) ?? [];
+    expect([...new Set(spellings)]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
+  });
+
+  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight and preview and names it nowhere else, in no other spelling', () => {
+    const text = readFileSync(join(APP, 'eas.json'), 'utf8');
+    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(2);
+    expect([...new Set(text.match(/\w*ENGLISH\w*/gi) ?? [])]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
+    const { build } = eas();
+    const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_ENGLISH_ONLY' in p.env);
+    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'testflight']);
+    for (const [n, p] of naming) expect(p.env?.EXPO_PUBLIC_ENGLISH_ONLY, n).toBe('on');
+  });
+
+  it('the preflight FAILs either alpha build whose profile does not say EXPO_PUBLIC_ENGLISH_ONLY=on', () => {
+    const preflight = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
+    // Inside the per-profile block, so it runs for testflight (build 1) and preview (build 2) alike.
+    const block = preflight.slice(preflight.indexOf('if (prof) {'), preflight.indexOf("check(prof.autoIncrement === true"));
+    expect(block).toMatch(/check\(\s*profEnv\.EXPO_PUBLIC_ENGLISH_ONLY === 'on',/);
+    expect(block).toMatch(/D-111 item 4/);
+  });
 });
 
 describe('[F19-REQ-011] remote kill switches can pause a build flag, never start one', () => {
