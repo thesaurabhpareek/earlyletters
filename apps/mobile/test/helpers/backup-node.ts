@@ -304,6 +304,8 @@ export class FakeBackend {
   readonly escrow = x25519Pair();
   readonly escrowVersion = 1;
   quotaBytes = 5 * 1024 * 1024 * 1024;
+  /** False: confirm as #151 does, storing the phone's hash without reading the object (review A note 1 on #150). */
+  confirmChecksHash = true;
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
   /** The caller's session has ended (a Stop signed out every session): escrow answers 401 unauthorized, sqlstate 28000, detail session_ended. */
@@ -411,7 +413,7 @@ export class FakeBackend {
         const obj = b.objects.get(row.objectPath);
         if (!obj) throw new BackupServerError('P0002', false, null, 'object');
         if (obj.length !== row.bytes) throw new BackupServerError('22023', false, null, 'size');
-        if (sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
+        if (b.confirmChecksHash && sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
         row.state = 'confirmed';
         row.cipherSha256 = cipherSha256;
       },

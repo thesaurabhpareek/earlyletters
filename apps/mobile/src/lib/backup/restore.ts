@@ -277,10 +277,13 @@ export function createRestore(d: RestoreDeps) {
       return failOnce(blob.entryId);
     }
     try {
-      if ((await d.files.sha256(dl)) !== blob.cipherSha256) {
-        cleanup();
-        return failOnce(blob.entryId);
-      }
+      // The ciphertext hash is a transfer check only (review A note 1 on #150). backup_confirm stores the
+      // phone's hash without reading the object, so two phones of one author that sealed the same letter
+      // can leave the row naming one encryption and the bucket holding the other. A different hash is
+      // therefore not a refusal by itself: the object must still name this entry, author and key version,
+      // authenticate segment by segment under this author's book key, and decrypt to the inner hash, which
+      // must match the letter's own. A server that lies about the hash gains nothing either way. Reading
+      // the header back before confirming is #151's follow-up.
       const header = parseHeader(d.files.readSlice(dl, 0, HEADER_LEN));
       if (header.entryId !== blob.entryId || header.authorId !== d.profileId || header.keyVersion !== blob.keyVersion) {
         cleanup();

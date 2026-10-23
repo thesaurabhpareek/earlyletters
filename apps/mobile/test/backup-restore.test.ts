@@ -359,4 +359,20 @@ describe('review fixes on #150: the upload switch and the transfer check', () =>
     expect(backend.requests.filter((x) => x.kind === 'tus').length).toBe(tus);
     expect(backend.blobs.get(fresh.id)).toBeUndefined();
   });
+
+  it('[review A note 1] a row whose hash names another encryption of the letter still restores, because the object authenticates', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    backend.confirmChecksHash = false; // as #151: backup_confirm stores the phone's hash without reading the object
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    // Two writers of one letter (an author's two phones): the row kept one phone's hash, the bucket holds the other's object.
+    backend.blobs.get(recs[0].id)!.cipherSha256 = 'ab'.repeat(32);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    const audio = audioOf(b, recs[0].id);
+    expect(audio.sha256).toBe(sha256Hex(recs[0].plain));
+    expect(sha256Hex(readFileSync(fileURLToPath(audio.uri!)))).toBe(sha256Hex(recs[0].plain));
+  });
 });

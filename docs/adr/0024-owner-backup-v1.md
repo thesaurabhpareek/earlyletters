@@ -80,7 +80,7 @@ segments 1..n = the original in 64 KiB pieces; n >= 1; only the final one has la
 
 1. No local letter with that id yet: wait for sync. Someone else's or a deleted letter: skip.
 2. A local file is there: **never overwritten**. If it matches the letter's hash, it is the recording; if it differs, it is kept and flagged (F08-U02).
-3. Otherwise download, then check the ciphertext hash, the header (this entry, this author, the row's key version), every segment, and the original's hash against the decrypted file and against the letter's own hash when this phone has one. A failure is discarded and tried once more, then left "not on this phone" (F08-U20).
+3. Otherwise download, then check the header (this entry, this author, the row's key version), every segment, and the original's hash against the decrypted file and against the letter's own hash when this phone has one. The ciphertext hash is a transfer check only (review A note 1 on #150): `backup_confirm` stores the phone's hash without reading the object, so two phones of one author can leave the row and the bucket naming different encryptions of the same letter, and both authenticate under the author's BK. Reading the header back before confirming is #151's follow-up. A failure is discarded and tried once more, then left "not on this phone" (F08-U20).
 4. Point the letter at its final path, then move the file there. A kill between the two leaves a letter whose file is missing, which the next run repairs. The other order would leave a stray file the launch sweep turns into a draft. The move never replaces a file.
 
 **One pass at a time, and a clean stop** (durability review of PR #150). **V-code** (`test/backup-restore.test.ts`, `test/backup-e2e.test.ts`, `test/backup-queue.test.ts`).
