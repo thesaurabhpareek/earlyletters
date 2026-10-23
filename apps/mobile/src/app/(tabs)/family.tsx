@@ -5,8 +5,11 @@
  *
  * With server features on (D-100, drafted as D-089: "the Family tab is live"), the tab shows who
  * writes to the open book: you, the co-parent who joined (from the last pull, signed with what the
- * child calls them), and invites still open ("Invited, open until {date}", with Share again and
- * Cancel invite; F11-REQ-019). While the book has one parent it offers "Write this book together";
+ * child calls them), and pending invites as the server lists them (sync_books, lib/family/
+ * invite-list.logic.ts): open ones as "Invited, open until {date}" with Share again and Cancel invite,
+ * and, for 14 days, expired ones as the server marks them, with Share again (F11-REQ-019, F11-U04).
+ * While `killSwitches.invites` is on, Share again and Cancel invite say invites are paused and send
+ * nothing; the rows stay. While the book has one parent it offers "Write this book together";
  * with two (D-069) it offers nothing more to invite. Build 2 has no Leave row (D-113): a book this
  * phone leaves is not listed anywhere yet, so the leaver's own letters would have no screen
  * (lib/family/entry.logic.ts LEAVE_BOOK_OFFERED). When the other parent leaves, one neutral note
@@ -40,7 +43,9 @@ import { dateLocale } from '@/lib/dates';
 import { familyCopy } from '@/lib/family/copy';
 import { makeInviteDraft } from '@/lib/family/device-invite';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
+import { openInvites } from '@/lib/family/invite-list.logic';
 import { listPendingInvites, revokeInvite, shareInviteAgain, type PendingInviteRow } from '@/lib/family/invites';
+import { invitesPaused } from '@/lib/family/invites-switch';
 import { decodeSeen, encodeSeen, familyTabState, leftSince, seenCoParentsKey, type SeenCoParent } from '@/lib/family/members.logic';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
@@ -103,7 +108,9 @@ function FamilyShared() {
   const client = auth.client;
   const can = auth.canSync;
   const members = useMembers(childId);
-  const state = useMemo(() => familyTabState({ role: active?.role, members, openInvites: pending.length }), [active?.role, members, pending.length]);
+  // Only an invite that still works holds back the invite card; an expired one is listed, not counted.
+  const openCount = openInvites(pending).length;
+  const state = useMemo(() => familyTabState({ role: active?.role, members, openInvites: openCount }), [active?.role, members, openCount]);
 
   const load = useCallback(async () => {
     if (!childId || !client || !can) {
@@ -165,6 +172,12 @@ function FamilyShared() {
 
   const cancel = (row: PendingInviteRow) => {
     if (!client) return;
+    // Paused: say so at once rather than ask to confirm a cancel that would not be sent (revokeInvite checks too).
+    if (invitesPaused()) {
+      setShareNote(null);
+      setError('paused');
+      return;
+    }
     Alert.alert(f.pending.cancelTitle, f.pending.cancelBody, [
       { text: f.pending.keep, style: 'cancel' },
       {
@@ -225,7 +238,7 @@ function FamilyShared() {
             ))}
             {pending.map((p) => (
               <View key={p.id} testID="family.pending" className="px-4 pb-2">
-                <MemberRow signsAs={p.signsAs ?? f.members.invitedName} role={f.members.coParent} status={openUntil(p.expiresAt)} />
+                <MemberRow signsAs={p.signsAs ?? f.members.invitedName} role={f.members.coParent} status={p.status === 'open' ? openUntil(p.expiresAt) : f.members.expired} />
                 <View className="flex-row flex-wrap gap-1 pl-12">
                   {!state.full && (
                     <RowAction
@@ -236,13 +249,16 @@ function FamilyShared() {
                       onPress={() => void shareAgain(p)}
                     />
                   )}
-                  <RowAction
-                    testID="family.pending.cancel"
-                    label={f.pending.cancel}
-                    icon={<XIcon size={18} color={c.accent} />}
-                    disabled={busyId !== null}
-                    onPress={() => cancel(p)}
-                  />
+                  {/* An expired link already stopped working: nothing to cancel, and the server stops listing it after 14 days. */}
+                  {p.status === 'open' && (
+                    <RowAction
+                      testID="family.pending.cancel"
+                      label={f.pending.cancel}
+                      icon={<XIcon size={18} color={c.accent} />}
+                      disabled={busyId !== null}
+                      onPress={() => cancel(p)}
+                    />
+                  )}
                 </View>
               </View>
             ))}

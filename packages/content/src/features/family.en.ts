@@ -19,6 +19,8 @@ export const familyCopy = {
     invitedName: 'Your co-parent',
     /** F11-REQ-019: a pending invite in the member list. */
     openUntil: 'Invited, open until {date}',
+    /** F11-REQ-019: an invite the server marks expired (it lists one for 14 days; Share again makes a new link). */
+    expired: 'Invite expired',
   },
 
   card: {
@@ -186,7 +188,20 @@ export const familyCopy = {
     last_parent: "You're the only parent of {child}'s book now, so it stays with you.",
     /** 42501: a parent tried something only the server's own paths may do. Never offered by the app. */
     not_allowed: "That isn't possible from here.",
-    /** An invite id or token collided twice in a row (SCCID, code_taken, token_taken); the app already retried once. */
+    /** An invite code or token collided twice in a row (code_taken, token_taken, closed); the app already retried once. */
     retry_new_invite: 'Something went wrong. Please try again.',
+    /** SCCID twice in a row: the same action and words as retry_new_invite. */
+    id_taken: 'Something went wrong. Please try again.',
+    /**
+     * SCCON family-share (D-050, F11-REQ-018): only when the server's app.family_share_consent_required
+     * is on, which follows a release with the family-share sheet; this build has no sheet.
+     */
+    family_share_consent: 'Sharing a book now asks for one more agreement. Update the app to see it, then try again.',
+    /**
+     * killSwitches.invites (SCKIL): create, Share again, peek, join and Cancel invite are paused and
+     * nothing was sent. Open invites and a link already on this phone stay as they are. Shown to the
+     * inviter and to the invitee, so it never names the child.
+     */
+    paused: 'Invites are paused for now. Please try again a little later.',
   },
 } as const;

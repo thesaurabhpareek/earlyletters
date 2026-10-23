@@ -17,6 +17,10 @@
  *    when they tap "Open the book".
  *
  * Which step shows, and which call runs next, is lib/family/join-flow.logic.ts (tested in Node).
+ *
+ * While `killSwitches.invites` is on (lib/family/invites-switch.ts), the look and the join say
+ * invites are paused and send nothing. `paused` is not a final error, so the token stays in the
+ * Keychain and Try again goes on once the switch lifts.
  */
 import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
@@ -97,8 +101,8 @@ function JoinBook() {
 
   const fail = async (e: unknown, stage: 'peek' | 'accept', t: string) => {
     const kind = inviteErrorKind(e);
-    // The catalogue knows create and accept; a peek is the first half of accepting.
-    track('invite_failed', { stage: 'accept', reason: trackedInviteReason(kind) });
+    // The catalogue knows create and accept; a peek is the first half of accepting. A pause sent nothing.
+    if (kind !== 'paused') track('invite_failed', { stage: 'accept', reason: trackedInviteReason(kind) });
     if (FINAL_INVITE_ERRORS.includes(kind)) await clearPendingInvite(t);
     setFailedAt(stage);
     setError(kind);

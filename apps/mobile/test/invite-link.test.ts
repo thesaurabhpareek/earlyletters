@@ -230,7 +230,8 @@ describe('invite errors from the v1 gate server (S02 details) and the two-parent
     expect(inviteErrorKind(pg('SCINV', 'family invites are not available in this version', 'role_disabled'))).toBe('unknown');
     expect(inviteErrorKind(pg('SCINV', 'this code is in use; make a new one', 'code_taken'))).toBe('retry_new_invite');
     expect(inviteErrorKind(pg('SCINV', 'this token is in use; make a new one', 'token_taken'))).toBe('retry_new_invite');
-    expect(inviteErrorKind(pg('SCCID', 'invite id already in use'))).toBe('retry_new_invite');
+    // SCCID has its own kind, as in the family contract, with the same action (NEW_DRAFT_ERRORS).
+    expect(inviteErrorKind(pg('SCCID', 'invite id already in use'))).toBe('id_taken');
     // develop's server sends no detail: the fixed phrases still work, an unknown one is "not found".
     expect(inviteErrorKind(pg('SCINV', 'the invite made by this request is closed; make a new one'))).toBe('retry_new_invite');
     expect(inviteErrorKind(pg('SCINV', 'something new', 'a_detail_we_do_not_know'))).toBe('not_found');
@@ -249,7 +250,9 @@ describe('invite errors from the v1 gate server (S02 details) and the two-parent
   it('[DATA-REQ-016] the last parent, a refused direct path, and the family-share consent', () => {
     expect(inviteErrorKind(pg('SCLPG', 'last parent'))).toBe('last_parent');
     expect(inviteErrorKind(pg('42501', 'permission denied for table child_members'))).toBe('not_allowed');
-    expect(inviteErrorKind(pg('SCCON', 'consent required before sharing a book', 'family-share'))).toBe('consent_needed');
+    // D-050: its own kind (the family-share sheet, never the general consent screen); only sent with the setting on.
+    expect(inviteErrorKind(pg('SCCON', 'consent required before sharing a book', 'family-share'))).toBe('family_share_consent');
+    expect(inviteErrorKind(pg('SCKIL', 'invites are paused', 'invites'))).toBe('paused');
   });
 
   it('a server older than the app (no such function) is told apart from a refusal', () => {
@@ -260,9 +263,13 @@ describe('invite errors from the v1 gate server (S02 details) and the two-parent
   });
 
   it('every error kind has a line on screen, and analytics gets only reasons its catalogue knows', () => {
-    const kinds: InviteErrorKind[] = ['expired', 'used', 'revoked', 'already_member', 'not_found', 'not_parent', 'book_full', 'last_parent', 'not_allowed', 'retry_new_invite', 'rate_limited', 'consent_needed', 'book_deleted', 'signed_out', 'network', 'unknown'];
+    const kinds: InviteErrorKind[] = [
+      'expired', 'used', 'revoked', 'already_member', 'not_found', 'not_parent', 'book_full', 'last_parent', 'not_allowed', 'retry_new_invite',
+      'id_taken', 'rate_limited', 'consent_needed', 'family_share_consent', 'paused', 'book_deleted', 'signed_out', 'network', 'unknown',
+    ];
     for (const k of kinds) expect(familyCopy.errors[k], k).toMatch(/\S/);
     expect(trackedInviteReason('book_full')).toBe('unknown');
+    for (const k of ['id_taken', 'family_share_consent', 'paused'] as const) expect(trackedInviteReason(k)).toBe('unknown');
     expect(trackedInviteReason('expired')).toBe('expired');
   });
 });

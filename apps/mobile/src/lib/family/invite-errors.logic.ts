@@ -7,9 +7,14 @@
  *  1. The SQLSTATE detail, when the server sends one (S02's v1 gate files: SCINV `role_disabled`,
  *     `code_taken`, `token_taken`; the S07 family contract lists `expired`, `used`, `revoked`,
  *     `already_member`, `not_found` as details too, requested from S02).
- *  2. SCCAP (the two-parent cap, D-069) is read here before the shared contract, because
- *     `classifySqlstate` in packages/api has no rule for it yet (F11-REQ-026; requested from S07 as
- *     `SCCAP: parents_full`). Either way it becomes `book_full` and is never retried.
+ *  2. The codes the family contract gives their own kind (packages/api/src/server/family.ts
+ *     `inviteErrorKindFor`) are read here, before the shared contract, with the same names:
+ *     SCCAP (the two-parent cap, D-069) is `book_full` and is never retried; SCKIL is `paused`
+ *     (`killSwitches.invites`, from the server or from this phone before it sent anything,
+ *     invites-switch.ts), never final, so a held token is kept; SCCON with the detail
+ *     `family-share` is `family_share_consent` (D-050, F11-REQ-018), which only a server with
+ *     `app.family_share_consent_required` on sends, while SCCON alone stays `consent_needed`;
+ *     SCCID is `id_taken`, which the invite sheet answers as it answers `retry_new_invite`.
  *  3. Everything else goes through `classifySqlstate` (ADR 0017), so the app and the server agree.
  *  4. For SCINV without a detail (develop's 20261005000000, and S02's v1 gate files too for not
  *     found, used, revoked, expired and already a member; details requested from S02), the
@@ -32,17 +37,30 @@ export type InviteErrorKind =
   | 'last_parent'
   /** 42501: a path only the server's own functions may take (a direct delete, removing a parent). */
   | 'not_allowed'
-  /** SCCID, or SCINV code_taken, token_taken or closed: make a fresh invite and try once more. */
+  /** SCINV code_taken, token_taken or closed: make a fresh invite and try once more. */
   | 'retry_new_invite'
+  /** SCCID: this invite id was used by someone else or with other hashes. Same action as retry_new_invite. */
+  | 'id_taken'
   | 'rate_limited'
   | 'consent_needed'
+  /**
+   * SCCON with detail `family-share` (D-050, F11-REQ-018): the second consent before a first share.
+   * Only a server with `app.family_share_consent_required` on sends it (default off); never the
+   * general consent screen.
+   */
+  | 'family_share_consent'
+  /** SCKIL: `killSwitches.invites` is on (server or phone). Nothing was sent or changed; never final. */
+  | 'paused'
   | 'book_deleted'
   | 'signed_out'
   | 'network'
   | 'unknown';
 
-/** Errors after which the same invite can never work: the join flow drops the stored token. */
+/** Errors after which the same invite can never work: the join flow drops the stored token. Never `paused`. */
 export const FINAL_INVITE_ERRORS: readonly InviteErrorKind[] = ['expired', 'used', 'revoked', 'not_found', 'already_member', 'book_deleted', 'book_full'];
+
+/** Errors the invite sheet answers by making a fresh draft and trying once more (an id, code or token collision). */
+export const NEW_DRAFT_ERRORS: readonly InviteErrorKind[] = ['retry_new_invite', 'id_taken'];
 
 /** PostgREST answers PGRST202 when no function matches the arguments (a server older than the app); Postgres itself 42883. */
 export function isMissingFunction(e: unknown): boolean {
@@ -92,7 +110,9 @@ export function inviteErrorKind(e: unknown): InviteErrorKind {
   if (code === 'PGRST301' || code === 'PGRST303') return 'signed_out';
   if (!code || !/^[0-9A-Z]{5}$/.test(code)) return 'unknown';
   if (code === 'SCCAP') return 'book_full';
-  if (code === 'SCCID') return 'retry_new_invite';
+  if (code === 'SCKIL') return 'paused';
+  if (code === 'SCCID') return 'id_taken';
+  if (code === 'SCCON' && errorDetail(e) === 'family-share') return 'family_share_consent';
   const rule: string = classifySqlstate(code).code;
   switch (rule) {
     case 'invite_unusable': {
