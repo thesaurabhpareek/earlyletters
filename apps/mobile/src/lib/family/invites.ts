@@ -3,12 +3,12 @@
  * F5). The role is always `parent` at v1.0 (B1); the server refuses `contributor` unless its
  * setting says otherwise (F11-REQ-003).
  *
- *  create_child_invite   device-made overload first (S02's 20261015020000, F11 D5): the phone
- *                        sends its invite id and sha256(token) and gets the id back; no secret
- *                        is ever in a response. A server without that overload (develop's
- *                        20261005000000) answers PGRST202, and the app falls back to the
- *                        server-made token, with the draft id as the idempotency key, so a
- *                        retry is still one invite (G-07).
+ *  create_child_invite   device-made overload first (20261015020000, F11 D5): the phone sends
+ *                        its invite id and sha256(token) and gets the id back; no secret is
+ *                        ever in a response. A server that has only the older 3-argument
+ *                        overload (20261005000000) answers PGRST202, and the app falls back to
+ *                        the server-made token, with the draft id as the idempotency key, so a
+ *                        retry is still one invite (G-07). develop has both overloads.
  *  peek_invite           what the invite says before joining: the inviter's sign-off and the
  *                        role, never the child's name (BL-322, S02's 20261015010000). A server
  *                        without it gives an unnamed preview: the screen still asks first.

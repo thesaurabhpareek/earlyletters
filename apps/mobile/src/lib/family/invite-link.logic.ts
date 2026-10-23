@@ -8,10 +8,11 @@
  * browser) does not put the token in the website's request logs. The earlier
  * `/i/<token>` form put it in the path; no build ever shipped with it, and it
  * is no longer written or accepted.
- * The token is the raw value `create_child_invite` returns once; the server
- * keeps only its SHA-256. Today it is 64 hex characters (two v4 UUIDs);
- * base64url tokens of 32 to 128 characters are accepted so a later server
- * change (32 random bytes, TDD 04 3.4.1) needs no app release.
+ * The phone makes the token (lib/family/invite-draft.logic.ts, F11 D5): 32
+ * random bytes as 43 base64url characters, and the server keeps only its
+ * SHA-256. A server with only the older `create_child_invite` overload makes
+ * the token itself (64 hex characters) and returns it once. Both fit `TOKEN`
+ * below: base64url, 32 to 128 characters.
  *
  * Tokens are bearer secrets: they travel only in https links and pasted text,
  * are written to the Keychain before any screen shows (A-REQ-028), never go
