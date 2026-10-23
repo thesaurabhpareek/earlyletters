@@ -138,6 +138,13 @@ check('the same reservation again resumes it', (await begin(A, L1)).created === 
 check('a re-encrypted upload replaces a pending reservation', (await begin(A, L1, { fkey: hex('ce', 60), bytes: 1200 })).replaced === true);
 check('the quota counts reserved bytes', (await sys(`select used_bytes::int n from backup_usage where profile_id = $1`, [A])).rows[0].n === 1200);
 check('[F08-REQ-032] a recording whose letter is not on the server yet is refused', await codeOf(() => begin(A, uuid7())) === 'P0002');
+// Held drafts are not backed up yet (backup_entry_exists, letters only): 20261016000000's held-draft
+// delete hook would forget such a backup when another parent undoes a join (request to S02 and S03).
+const HELD = uuid7();
+await as(A, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', 'Asha smiled.')`, [HELD, A, CHILD]);
+const heldBegin = await (async () => { try { await begin(A, HELD); } catch (e) { return `${e.code} ${e.detail}`; } })();
+check('a held draft is refused for backup until the held-draft path keeps its backup (P0002 entry, fail closed)', heldBegin === 'P0002 entry');
 const BL = await letter(B);
 check('a parent cannot back up the other parent\'s letter', await codeOf(() => begin(A, BL)) === 'P0002');
 check('a recording id already reserved by one parent is refused for the other', await codeOf(() => begin(B, L1)) === 'SCIMM');

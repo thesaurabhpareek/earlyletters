@@ -173,8 +173,14 @@ $$;
 -- The one place that says whether a recording id still has its letter on the server: the
 -- author's letter in that book, live or in Recently deleted (purge_due removes a tombstoned
 -- letter, and with it the backup, on day 30; until then the owner can restore both).
--- WP-F14-22 (S02) adds the held_drafts branch here, in its own file, because backup_begin and
--- the orphan sweep must agree (request in the PR body).
+-- Letters only, for now. 20261016000000 section 12 asks this file to carry the held_drafts
+-- branch when it lands later, and its held_drafts_note_gone trigger calls backup_forget_entry
+-- on every held-draft delete but Keep. One of those deletes is child_members_drop_held, which
+-- also runs when the inviting parent undoes a join (undo_parent_join), so a held draft's
+-- backup would go on another person's action, not its author's own delete path. The app does
+-- not back up held drafts yet (S03's heldOnServer is not wired), so the server refuses them
+-- (P0002 entry, fail closed) until a later file adds this branch together with a held-draft
+-- path that keeps the backup on that undo (request to S02 and S03 on PR #151).
 create or replace function public.backup_entry_exists(p_entry uuid, p_author uuid, p_child uuid)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select exists (select 1 from entries e where e.id = p_entry and e.author_id = p_author and e.child_id = p_child);
