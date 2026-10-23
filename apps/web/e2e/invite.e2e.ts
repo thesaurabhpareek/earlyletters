@@ -5,11 +5,12 @@
  *
  * [B-NFR-002] the token lives only in the fragment: no request the browser makes, the page's own included, carries
  * it. [F11-REQ-005] the page loads nothing off this site, sends the token nowhere, and copies the link only on a
- * tap. [F11-U02] a link whose fragment was dropped says so instead of offering a copy.
+ * tap. [F11-U02] a link whose fragment was dropped says so instead of offering a copy, shows no steps that point at a
+ * missing button, and a browser that will not copy, or runs no script, sends the person back to the message.
  */
 import type { Request } from '@playwright/test';
 import { site } from '../src/content/site';
-import { expect, test } from './support/fixtures';
+import { expect, refuseClipboard, test } from './support/fixtures';
 
 const copy = site.invite;
 /** Shaped like the app's invite tokens (apps/mobile src/lib/family/invite-link.logic.ts). */
@@ -28,6 +29,7 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await expect(page.getByText(copy.body)).toBeVisible();
     await expect(page.getByRole('listitem')).toHaveText([...copy.steps]);
     await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+    await expect(page.getByText(copy.noScript, { exact: true }), 'the no-script line stays hidden').toBeHidden();
     await expect(page.getByText(copy.onComputer)).toBeVisible();
     await expect(page.getByText(copy.notYou)).toBeVisible();
     await expect(page).toHaveTitle(new RegExp(copy.title));
@@ -72,6 +74,19 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
   });
 
+  for (const how of ['reject', 'missing'] as const) {
+    const browser = how === 'reject' ? 'refuses the copy' : 'has no clipboard';
+    test(`a browser that ${browser} says so and sends the person back to the message`, async ({ page }) => {
+      await refuseClipboard(page, how);
+      await page.goto(LINK);
+      await page.getByRole('button', { name: copy.copy }).click();
+      await expect(page.getByRole('status')).toHaveText(copy.copyFailed);
+      // The steps and the button stay: trying again costs nothing, and the line says what else to do.
+      await expect(page.getByRole('listitem')).toHaveText([...copy.steps]);
+      await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
+    });
+  }
+
   for (const fragment of [`#t=${TOKEN}&utm_source=chat`, `#x=1&t=${TOKEN}`]) {
     test(`copies only /j#t=<token> from /j${fragment.replace(TOKEN, '<token>')}`, async ({ page, context, baseURL }) => {
       const origin = new URL(baseURL!).origin;
@@ -102,18 +117,37 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await page.goto(`/j#t=${'a'.repeat(129)}`);
     await expect(page.getByRole('status')).toHaveText(copy.missing);
     await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
+    await expect(page.getByRole('listitem')).toHaveCount(0);
   });
 
   test('a link whose fragment was dropped asks for the link again instead of copying', async ({ page }) => {
     await page.goto('/j');
     await expect(page.getByRole('status')).toHaveText(copy.missing);
     await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
+    await expect(page.getByRole('listitem'), 'no step points at a button that is not there').toHaveCount(0);
   });
 
   test('a fragment whose t is not shaped like an invite token gets the same line, not a copy', async ({ page }) => {
     await page.goto('/j#t=too-short');
     await expect(page.getByRole('status')).toHaveText(copy.missing);
     await expect(page.getByRole('button', { name: copy.copy })).toHaveCount(0);
+    await expect(page.getByRole('listitem')).toHaveCount(0);
+  });
+
+  test.describe('with JavaScript off', () => {
+    // Chromium with scripts off refuses the page's script files and reports each as a failed request ("csp"). That is
+    // the point of this case, so those are allowed below; any other problem still fails the test.
+    test.use({ javaScriptEnabled: false, strictConsole: false });
+
+    test('shows only how to copy the link from the message: no steps and no button that could not work', async ({ page, problems }) => {
+      await page.goto(LINK, { waitUntil: 'networkidle' });
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
+      await expect(page.getByText(copy.noScript, { exact: true })).toBeVisible();
+      await expect(page.getByRole('listitem')).toHaveCount(0);
+      await expect(page.getByRole('button')).toHaveCount(0);
+      await expect(page.getByText(copy.onComputer)).toBeVisible();
+      expect(problems.filter((p) => !/^request failed: GET \S+\/_next\/static\/\S+\.js csp$/.test(p))).toEqual([]);
+    });
   });
 
   test('is one static page: not indexed, no redirect, no Referer, no token path', async ({ request }) => {
@@ -126,9 +160,15 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(html).toContain('<link rel="canonical" href="https://earlyletters.com/j"');
     expect(html).toContain('<meta property="og:url" content="https://earlyletters.com/j"');
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/earlyletters\.com\//);
+    // The Twitter tags, which some previews read first, carry the page's own title too, and the same picture.
+    expect(html).toContain(`<meta property="og:title" content="${copy.title}"`);
+    expect(html).toContain(`<meta name="twitter:title" content="${copy.title}"`);
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image"');
+    expect(html).toMatch(/<meta name="twitter:image" content="https:\/\/earlyletters\.com\/og\//);
     expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
-    // Before the fragment is read the page shows neither the button nor the ask-again line, so neither flashes.
+    // Before the fragment is read the page shows no steps, no button and no ask-again line, so none of them flashes.
     expect(html).not.toContain('<button');
+    expect(html).not.toMatch(/<li[\s>]/);
     expect(html).not.toContain('role="status"');
     // The old /i/<token> form is gone: no page answers it, so nothing invites a token into a path.
     expect((await request.get(`/i/${TOKEN}`, { maxRedirects: 0 })).status()).toBe(404);

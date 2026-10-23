@@ -7,11 +7,14 @@
  *  - reduced motion: the finished state of every scene, all rules (WCAG 2.0, 2.1 and 2.2 A and AA, and best practice);
  *  - normal motion: the same, except colour contrast, because text that fills from dim to bright as it is scrolled
  *    is by design below contrast until it is read (motion respects the visitor's reduced-motion setting above).
+ * Then the states a page only reaches after a tap: the sign-up form's error and success, and the invite page with a
+ * good link, after a copy and after a refused copy.
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import type { Page } from '@playwright/test';
-import { expect, test } from './support/fixtures';
+import { site } from '../src/content/site';
+import { expect, refuseClipboard, test } from './support/fixtures';
 import { PAGES } from './support/pages';
 
 const axeSource = readFileSync(createRequire(__filename).resolve('axe-core/axe.min.js'), 'utf8');
@@ -100,4 +103,40 @@ test.describe('axe sees the form states too', () => {
     violations = await runAxe(page, { skipContrast: false });
     expect(violations, describe(violations)).toEqual([]);
   });
+});
+
+test.describe('axe sees the invite page states too', () => {
+  const invite = site.invite;
+  /** Shaped like the app's invite tokens (apps/mobile src/lib/family/invite-link.logic.ts). */
+  const LINK = '/j#t=e2eInviteTok_7a1c9e3b5d2f4a6c8e0b1d3f5a7c9e2b';
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test.describe(scheme, () => {
+      test.use({ colorScheme: scheme });
+
+      test('/j with a good link, then after a copy', async ({ page, context, baseURL }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(baseURL!).origin });
+        await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: scheme });
+        await page.goto(LINK);
+        await expect(page.getByRole('button', { name: invite.copy })).toBeVisible();
+        let violations = await runAxe(page, { skipContrast: false });
+        expect(violations, describe(violations)).toEqual([]);
+
+        await page.getByRole('button', { name: invite.copy }).click();
+        await expect(page.getByRole('status')).toHaveText(invite.copied);
+        violations = await runAxe(page, { skipContrast: false });
+        expect(violations, describe(violations)).toEqual([]);
+      });
+
+      test('/j after a refused copy', async ({ page }) => {
+        await refuseClipboard(page);
+        await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: scheme });
+        await page.goto(LINK);
+        await page.getByRole('button', { name: invite.copy }).click();
+        await expect(page.getByRole('status')).toHaveText(invite.copyFailed);
+        const violations = await runAxe(page, { skipContrast: false });
+        expect(violations, describe(violations)).toEqual([]);
+      });
+    });
+  }
 });
