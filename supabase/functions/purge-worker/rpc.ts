@@ -2,8 +2,11 @@
  * Typed wrappers for the service-only database functions the worker calls.
  * SQL: supabase/migrations/20261002020000_data_governance.sql (prepare and
  * finalize), 20261003020000_purge_batching.sql (purge_due, backoff) and
- * 20261004200000_ops_deletion_worker.sql (everything named ops_*), and
- * 20261023000000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between).
+ * 20261004200000_ops_deletion_worker.sql (everything named ops_*),
+ * 20261023000000_backup_server.sql (backup_svc_sweep, backup_svc_unwraps_between), and
+ * S06's subscription_status migration (subscription_retention_purge, PR #178;
+ * not on develop yet, and its file needs a timestamp after the newest one on
+ * develop: 20261016000000 today, 20261023000000 once #151 merges).
  * Every id travels in an RPC body, never in a URL.
  */
 import type { ServiceClient } from './lib/service.ts';
@@ -148,6 +151,8 @@ export const db = (c: ServiceClient) => ({
   backupSweep: (limit = 500) => c.rpc<BackupSweep>('backup_svc_sweep', { p_limit: limit }),
   escrowLogBetween: (from: string, until: string, limit = 50_000) =>
     c.rpc<EscrowLogRow[]>('backup_svc_unwraps_between', { p_from: from, p_until: until, p_limit: limit }),
+  /** S06's subscription_status migration (PR #178): deletes D-081 consent records 3 years after pseudonymisation. Returns the count. */
+  subscriptionRetention: (now: string) => c.rpc<number>('subscription_retention_purge', { p_now: now }),
 });
 
 export type Db = ReturnType<typeof db>;

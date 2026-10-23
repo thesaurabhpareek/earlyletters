@@ -224,6 +224,24 @@ describe('[F19-REQ-011] remote kill switches can pause a build flag, never start
     expect(capabilities.backup).toBe(false);
     expect(capabilities.statusReport).toBe(false);
   });
+
+  it('[F19-REQ-011] a served config with an M14 switch set pauses that feature through mayRun; an older config without the keys pauses nothing', () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('backup', true);
+    setBuildFlagForTests('statusReport', true);
+    const base = { schemaVersion: 1, version: 11, generatedAt: '2026-10-15T12:00:00.000Z' };
+    for (const f of FEATURES) {
+      const r = parseRemoteConfig({ ...base, killSwitches: { [f]: true } });
+      expect(r.ok, f).toBe(true);
+      if (!r.ok) return;
+      expect(r.value.killSwitches[f], f).toBe(true);
+      expect(mayRun(f, r.value), f).toBe(false);
+    }
+    const older = parseRemoteConfig({ ...base, killSwitches: { sync: false, invites: false, photos: false, packDownloads: false, serverContent: false } });
+    expect(older.ok).toBe(true);
+    if (!older.ok) return;
+    for (const f of FEATURES) expect(mayRun(f, older.value), f).toBe(true);
+  });
 });
 
 describe('remote config cannot turn server features on (BRIEF decision 16)', () => {

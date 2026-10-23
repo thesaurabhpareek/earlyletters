@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BUNDLED_FREE_LETTERS, BUNDLED_READ_TOGETHER_FREE_SESSIONS, effectiveFreeLetters, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled, KILL_SWITCH_KEYS, parseRemoteConfig } from '../src';
+import {
+  BUNDLED_FREE_LETTERS, BUNDLED_READ_TOGETHER_FREE_SESSIONS, effectiveFreeLetters, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled,
+  KILL_SWITCH_KEYS, KILL_SWITCH_MAX_AGE_MS, killSwitchesStale, M14_KILL_SWITCH_KEYS, parseKillSwitchList, parseRemoteConfig, withFreshKillSwitches,
+} from '../src';
 
 const base = { schemaVersion: 1, version: 5, generatedAt: '2026-10-03T12:00:00.000Z' };
 
@@ -87,5 +90,62 @@ describe('effectiveFreeSessions (deprecated: Read together has no limit)', () =>
   it('reads kill switches', () => {
     expect(isKilled(DEFAULT_REMOTE_CONFIG, 'sync')).toBe(false);
     expect(isKilled({ killSwitches: { ...DEFAULT_REMOTE_CONFIG.killSwitches, sync: true } }, 'sync')).toBe(true);
+  });
+});
+
+describe('[WP-F19-16] kill switches for the M14 features', () => {
+  it('[F19-REQ-011] the schema has backupUploads, escrow and statusReport, off by default', () => {
+    expect(M14_KILL_SWITCH_KEYS).toEqual(['backupUploads', 'escrow', 'statusReport']);
+    for (const k of M14_KILL_SWITCH_KEYS) {
+      expect(KILL_SWITCH_KEYS).toContain(k);
+      expect(DEFAULT_REMOTE_CONFIG.killSwitches[k]).toBe(false);
+    }
+  });
+
+  it('an older signed config without them parses with them off; a newer one can set each', () => {
+    const old = parseRemoteConfig({ ...base, killSwitches: { sync: false, invites: true } });
+    expect(old.ok && old.value.killSwitches).toEqual({ ...DEFAULT_REMOTE_CONFIG.killSwitches, invites: true });
+    for (const k of M14_KILL_SWITCH_KEYS) {
+      const r = parseRemoteConfig({ ...base, killSwitches: { [k]: true } });
+      expect(r.ok && isKilled(r.value, k)).toBe(true);
+    }
+  });
+
+  it('[F19-REQ-009] the kill-switch vocabulary is closed and matches the F19 6.5 registry', () => {
+    expect([...KILL_SWITCH_KEYS].sort()).toEqual(['backupUploads', 'escrow', 'invites', 'packDownloads', 'photos', 'serverContent', 'statusReport', 'sync']);
+    expect(Object.keys(DEFAULT_REMOTE_CONFIG.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
+  });
+
+  it('server side: KILL_SWITCHES secret parses to known names only', () => {
+    expect([...parseKillSwitchList(' invites, statusReport ,recording,,')]).toEqual(['invites', 'statusReport']);
+    expect(parseKillSwitchList(undefined).size).toBe(0);
+  });
+});
+
+describe('[F19-REQ-008] a stale config cannot clear a kill switch', () => {
+  const lastGood = { killSwitches: { ...DEFAULT_REMOTE_CONFIG.killSwitches, invites: true } };
+  const next = { ...DEFAULT_REMOTE_CONFIG, version: 10, generatedAt: '2026-10-01T00:00:00.000Z', freeLettersAllowance: 5 };
+
+  it('is stale only when generatedAt is more than 7 days before the server Date', () => {
+    expect(KILL_SWITCH_MAX_AGE_MS).toBe(7 * 24 * 3600_000);
+    expect(killSwitchesStale('2026-10-01T00:00:00.000Z', 'Thu, 08 Oct 2026 00:00:00 GMT')).toBe(false);
+    expect(killSwitchesStale('2026-10-01T00:00:00.000Z', 'Thu, 08 Oct 2026 00:00:01 GMT')).toBe(true);
+    expect(killSwitchesStale('2026-10-01T00:00:00.000Z', null)).toBe(false);
+    expect(killSwitchesStale('2026-10-01T00:00:00.000Z', 'not a date')).toBe(false);
+  });
+
+  it('keeps a set switch from being cleared by a stale copy and applies every other key', () => {
+    const used = withFreshKillSwitches(next, lastGood, 'Fri, 16 Oct 2026 00:00:00 GMT');
+    expect(used.killSwitches.invites).toBe(true);
+    expect(used.freeLettersAllowance).toBe(5);
+    const fresh = withFreshKillSwitches(next, lastGood, 'Fri, 02 Oct 2026 00:00:00 GMT');
+    expect(fresh.killSwitches.invites).toBe(false);
+  });
+
+  it('a stale but newer copy may still set a switch (a new install never misses a switch left on)', () => {
+    const killed = { ...next, killSwitches: { ...next.killSwitches, statusReport: true } };
+    const used = withFreshKillSwitches(killed, DEFAULT_REMOTE_CONFIG, 'Fri, 16 Oct 2026 00:00:00 GMT');
+    expect(used.killSwitches.statusReport).toBe(true);
+    expect(used.killSwitches.invites).toBe(false);
   });
 });

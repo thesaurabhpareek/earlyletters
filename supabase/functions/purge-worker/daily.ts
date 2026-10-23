@@ -111,4 +111,13 @@ export async function runDaily(ctx: Ctx): Promise<void> {
   } catch (e) {
     ctx.log.exception('retention.failed', e, { task: 'retention' });
   }
+  // D-081 consent records: life of the account plus 3 years, then gone (S06 PR #178 asks the worker to call it;
+  // S02 does not, so it runs once). Skipped quietly until S06's migration is applied (PostgREST 404).
+  try {
+    const n = await ctx.d.subscriptionRetention(ctx.now().toISOString());
+    ctx.log.info('retention.done', { task: 'retention', counts: { rows: Number(n) || 0 } });
+  } catch (e) {
+    if ((e as { status?: unknown })?.status === 404) ctx.log.info('retention.done', { task: 'retention', outcome: 'skipped' });
+    else ctx.log.exception('retention.failed', e, { task: 'retention' });
+  }
 }

@@ -129,9 +129,10 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 ### Family and invites (`app/(tabs)/family.tsx`, `app/invite/*`)
 | testID | Element | Flows |
 |---|---|---|
-| `family.screen`, `family.member` (repeated), `family.invite`, `family.pending` (repeated), `family.pending.shareAgain`, `family.pending.cancel`, `family.finishSetup` | Family tab | 13 |
-| `inviteNew.screen`, `inviteNew.share`, `inviteNew.close` | invite a co-parent | 13 |
-| `invite.screen`, `invite.paste.input`, `invite.paste.continue`, `invite.joining`, `invite.joined`, `invite.open`, `invite.error`, `invite.close` | I was invited | 13 |
+| `family.screen`, `family.member` (repeated), `family.invite`, `family.pending` (repeated), `family.pending.shareAgain`, `family.pending.cancel`, `family.finishSetup`, `family.leave` (not rendered in build 2, D-113), `family.leftNote` | Family tab | 13 |
+| `inviteNew.screen`, `inviteNew.signsAs`, `inviteNew.share`, `inviteNew.close` | invite a co-parent | 13 |
+| `invite.screen`, `invite.paste.input`, `invite.paste.continue`, `invite.ask`, `invite.join`, `invite.joining`, `invite.joined`, `invite.signsAs`, `invite.open`, `invite.error`, `invite.close` | I was invited (asks before it joins, BL-322) | 13 |
+| `leave.screen`, `leave.choice.keep`, `leave.choice.take_out`, `leave.confirm`, `leave.close` | leave a shared book (`app/invite/leave.tsx`; shows coming soon in build 2, D-113) | 13 |
 
 ### Settings home (`app/settings/index.tsx`)
 `settings.screen`, `settings.account`, `settings.plan`, `settings.child` (repeated), `settings.addChild`, `settings.language`, `settings.reminders`, `settings.appearance`, `settings.privacy`, `settings.export`, `settings.recordings`, `settings.storage`, `settings.deleteAccount`, `settings.help`, `settings.struggling`, `settings.terms`, `settings.privacyPolicy`, `settings.licences`, `settings.version`. Flows: 05, 07, 09, 10, 11, 12, 14, 15.

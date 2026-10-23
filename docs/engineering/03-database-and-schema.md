@@ -76,7 +76,7 @@ The database holds the letters families keep for their children. This chapter ma
 
 ### Performance and indexes
 
-**DB-R21 (MUST)** Every RLS predicate column and every foreign key has an index, and a new query class gets a row in the perf budget. *Why:* a missing `entries(child_id)` index made cascades scan the table (DB-06). *Enforced by:* `supabase/tests/perf.test.mjs` (fails on sequential scans of `entries`, `children`, `child_members` and on p95 over budget; develop); full index pending PR #32.
+**DB-R21 (MUST)** Every RLS predicate column and every foreign key has an index, and a new query class gets a row in the perf budget. *Why:* a missing `entries(child_id)` index made cascades scan the table (DB-06). *Enforced by:* `supabase/tests/perf.test.mjs` (on every pull request, fails on sequential scans of `entries`, `children`, `child_members` and on a plan that does not name its index; on the nightly only, also fails on p95 over budget, D-114, once AF-05 makes `develop` the default branch); full index pending PR #32.
 
 **DB-R22 (SHOULD NOT)** Add an index without a named access pattern; drop redundant ones (DB-14). *Why:* write cost on a write-heavy offline-sync table.
 
