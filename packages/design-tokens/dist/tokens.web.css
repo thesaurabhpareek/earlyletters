@@ -205,6 +205,9 @@
   --text-letter-dateline: 14px;
   --text-letter-dateline--line-height: 18px;
   --text-letter-dateline--letter-spacing: 0.6px;
+  --text-name-field: 22px;
+  --text-name-field--line-height: 28px;
+  --text-name-field--letter-spacing: 0px;
   --text-signature: 20px;
   --text-signature--line-height: 32px;
   --text-signature--letter-spacing: 0px;

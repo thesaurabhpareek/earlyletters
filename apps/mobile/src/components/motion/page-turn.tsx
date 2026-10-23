@@ -19,7 +19,8 @@
  *   />
  *
  * The buttons stay the screen's own (every gesture has a button, DESIGN_LANGUAGE 11.3). The page that is
- * leaving is hidden from VoiceOver and takes no touches; the new page is the only one a reader can reach.
+ * leaving is hidden from VoiceOver, TalkBack and the web's accessibility tree, and takes no touches; the new page
+ * is the only one a reader can reach.
  * The rules are pure in lib/transitions.logic.ts (pageTurnPlan, swipeOutcome).
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -137,7 +138,9 @@ function Page({ layer, reduced, drag, onGone, children }: { layer: Layer; reduce
       style={[StyleSheet.absoluteFill, style]}
       pointerEvents={leaving ? 'none' : 'auto'}
       importantForAccessibility={leaving ? 'no-hide-descendants' : 'auto'}
-      accessibilityElementsHidden={leaving}>
+      accessibilityElementsHidden={leaving}
+      // The web preview: React Native Web does not turn the two above into aria-hidden, so say it.
+      aria-hidden={leaving}>
       {children}
     </Animated.View>
   );

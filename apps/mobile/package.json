@@ -82,6 +82,7 @@
     "e2e:web": "playwright test -c e2e-web/playwright.config.ts",
     "e2e:web:journey": "JOURNEY_SHOTS=1 playwright test -c e2e-web/playwright.config.ts",
     "preflight:testflight": "node scripts/preflight-testflight.mjs",
+    "preflight:alpha": "node scripts/preflight-testflight.mjs --profile preview",
     "licences:generate": "node ../../scripts/licences/generate.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --config vitest.coverage.config.ts",

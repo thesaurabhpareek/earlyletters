@@ -208,6 +208,8 @@ const type = {
   letterBody: ts(fontFamily.serif, 20, 32, '400', 0, 'body', null),
   /** "Month 4 · Tuesday night · Papa" line above each letter. Small caps feel via tracking. */
   letterDateline: ts(fontFamily.sansMedium, 14, 18, '500', 0.6, 'footnote', 2.4),
+  /** The child's name as it is typed on first run (S05): it is the book's title, so the letter face, at title2's size. Uncapped. */
+  nameField: ts(fontFamily.serif, 22, 28, '400', 0, 'title2', null),
   /** "From Mama" at the end of a letter. Scales with letterBody and Reading Size. */
   signature: ts(fontFamily.serifItalic, 20, 32, '400', 0, 'body', null),
   /** Prompt on Listen and Write: the one serif line that is a question, not a letter. */

@@ -297,13 +297,20 @@ describe('Lamp gradient', () => {
         ...DAYPARTS.map((d) => resolveLamp({ scene: 'tonight', daypart: d })!),
         resolveLamp({ scene: 'tonight', daypart: 'evening', intensity: tokens.motion.lamp.dimTo })!,
       ],
+      // Tonight as P3 built it (S09, S33), measured on 17 Oct 2026: the greeting in two tones, the prompt on the paper
+      // (three lines, the tallest a prompt runs at the default size; "Another thought" sits below a two- or a three-line
+      // prompt), Speak and Type pinned, and the quiet line in text. Cards sit on their own surface and are not listed.
       text: [
-        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 115, h: 23 },
-        { what: 'greeting', token: 'text', x: 20, y: 45, w: 354, h: 50 },
-        { what: 'subtitle', token: 'textMuted', x: 20, y: 96, w: 346, h: 30 },
-        { what: 'Not much today', token: 'accent', x: 139, y: 745, w: 123, h: 30 },
-        { what: 'A quiet day, kept.', token: 'success', x: 116, y: 746, w: 121, h: 28 },
-        { what: 'Undo', token: 'accent', x: 261, y: 746, w: 37, h: 27 },
+        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 116, h: 23 },
+        // Both tones over the widest greeting of any daypart (P1's re-measure on #221: x 20 to 354), since where the
+        // name starts depends on the greeting before it.
+        { what: 'greeting', token: 'text', x: 20, y: 47, w: 334, h: 33 },
+        { what: 'greeting name', token: 'textMuted', x: 20, y: 47, w: 334, h: 33 },
+        { what: 'prompt', token: 'text', x: 20, y: 99, w: 362, h: 114 },
+        { what: 'Another thought', token: 'accent', x: 46, y: 194, w: 116, h: 63 },
+        { what: 'Not much today', token: 'accent', x: 139, y: 757, w: 124, h: 30 },
+        { what: 'A quiet day, kept.', token: 'text', x: 116, y: 756, w: 121, h: 28 },
+        { what: 'Undo', token: 'accent', x: 261, y: 756, w: 37, h: 27 },
       ],
     },
     {
@@ -372,13 +379,9 @@ describe('Lamp gradient', () => {
    * in a component two imports away or behind a lazy import) fails here.
    */
   type StatusUse = { use: string; box?: string; room?: string; after?: string; surface?: string };
-  const QUIET_FOOT = '<View className="min-h-8 flex-1" />';
+  // Tonight allows none: since P3 (S33) "A quiet day, kept." is in `text` with the Moon in textMuted, so Tonight and
+  // every file it renders (the draft cards, "A month ago", the quiet line) must use no status colour at all.
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
-    // "A quiet day, kept." and its check mark sit in the group the spacer pushes to the foot of Tonight.
-    'app/(tabs)/index.tsx': [
-      { use: 'tone="success"', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-      { use: 'c.success', box: 'A quiet day, kept.', room: 'Tonight', after: QUIET_FOOT },
-    ],
     // "We'll tell you" on the Family tab: a check mark on its own chip.
     'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
@@ -632,8 +635,36 @@ describe('persistKey: one light across screens', () => {
     ]);
   });
 
+  it('"The book is open." to Tonight: the first tab lit after first run starts at first run\'s last light, never from unlit', () => {
+    // First run ends on the finish scene; the tabs have no light of their own yet.
+    lampMemory.set('firstRun', resolveLamp({ scene: 'finish' }));
+    expect(lampMemory.get('tabs')).toBeUndefined();
+    const from = lampMemory.atMount('tabs');
+    expect(from).toEqual(lampMemory.get('firstRun'));
+    const tonight = resolveLamp({ scene: 'tonight', daypart: 'evening' })!;
+    const plan = planLampMount(from, tonight, false, { key: 'tabs', firstOfSession: false });
+    // The finish light hands over to Tonight's as a cross-fade on the tabs' settle: some light at every moment.
+    expect(plan[0]).toMatchObject({ from: from!.level, ms: L.returnMs });
+    expect(plan[0].from).toBeGreaterThan(0);
+    expect(plan.every((l) => l.ms === L.returnMs)).toBe(true);
+    // Without the hand-off it would come up from unlit (the five dark frames P2-V measured on #220).
+    expect(planLampMount(undefined, tonight, false, { key: 'tabs', firstOfSession: false })[0].from).toBe(0);
+    // Once the tabs have a light of their own, they keep to it; first run never takes the tabs' light.
+    lampMemory.set('tabs', resolveLamp({ scene: 'book' }));
+    expect(lampMemory.atMount('tabs')).toEqual(lampMemory.get('tabs'));
+    lampMemory.clear();
+    lampMemory.set('tabs', resolveLamp({ scene: 'book' }));
+    expect(lampMemory.atMount('firstRun')).toBeUndefined();
+    expect(lampMemory.atMount(undefined)).toBeUndefined();
+  });
+
+  it('a lamp reads its starting light through atMount (source)', () => {
+    const src = readFileSync(join(SRC, 'components', 'ui', 'lamp.tsx'), 'utf8');
+    expect(src).toContain('planLampMount(lampMemory.atMount(persistKey), light, reduced,');
+  });
+
   it('tabs: the arriving tab starts at the light the last one left and settles to its own over returnMs', () => {
-    expect(LAMP_KEYS).toEqual({ firstRun: { settle: 'arrive' }, tabs: { settle: 'return' } });
+    expect(LAMP_KEYS).toEqual({ firstRun: { settle: 'arrive' }, tabs: { settle: 'return', follows: 'firstRun' } });
     // Tonight late at night (amber into dusk) to the Book (gold into amber, still 0.6): a cross-fade, quick.
     lampMemory.set('tabs', resolveLamp({ scene: 'tonight', daypart: 'lateNight' }));
     const book = planLampMount(lampMemory.get('tabs'), resolveLamp({ scene: 'book' })!, false, { key: 'tabs', firstOfSession: false });
@@ -743,7 +774,10 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
     for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
-    // The empty Book leads with it too, through the empty state's device.
-    expect(readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8')).toMatch(/<EmptyState\s+device/);
+    // The empty Book leads with the book cover instead (S24): the closed cover at 160 x 214, with the child's name and
+    // "From {signsAs}", and no quotation pair through the empty state's device.
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/<BookCover name=\{child\} signsAs=\{active\.signsAs\} size="lg"/);
+    expect(book).not.toMatch(/<EmptyState\s+device/);
   });
 });
