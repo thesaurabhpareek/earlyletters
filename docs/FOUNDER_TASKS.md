@@ -92,7 +92,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
     4. **D-045 beta cohorts**: recommended C0 (your family) then C1 (15 to 25 friendly families) before submission; the public TestFlight link only after.
     5. **Q-009 policy versions for the beta**: recommended option (a): publish today's drafts as version 0.9.0 for testers, then 1.0.0 after counsel with re-consent. Unblocks BL-338 and FT-23.
     6. **Which Supabase project is production** (D-041, BL-107): recommended a **clean new `scribe-prod`** built only from migrations, and turn today's `early-letters` (two files applied, your data only) into staging, or make a fresh `scribe-staging` and keep `early-letters` only as an archive. If you prefer to keep `early-letters` as production, APPLY.md works on it as written.
-    7. **Invite link format** (security review M2, BL-348): recommended moving the token into the fragment (`https://earlyletters.com/i#t=<token>`), so no server log or link-preview service ever sees it; the Privacy Policy already says so. The alternative is to keep `/i/<token>` and change the policy line.
+    7. **Invite link format** (security review M2, BL-348). **Answered 15 Oct 2026: yes, the fragment, as `https://earlyletters.com/j#t=<token>` (PRD V2 F11), with no `/i` overlap because no build has shipped (BL-348).** Original text: recommended moving the token into the fragment (`https://earlyletters.com/i#t=<token>`), so no server log or link-preview service ever sees it; the Privacy Policy already says so. The alternative is to keep `/i/<token>` and change the policy line.
     8. **Email sign-in code** (security review M4): the review recommends 8 digits and a 15-minute life (today 6 digits, one hour, as PRD A and the email template say). If you agree, the dashboard (FT-12), `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (FT-17) and the email template wording change together.
   - By: Wed 7 Oct (ROADMAP asks Q-001 and Q-002 by Fri 9; earlier saves a day on FT-10 and FT-16).
   - Blocks: FT-10, FT-16, FT-23; BL-331, BL-336, BL-337, BL-338, BL-348.
@@ -218,14 +218,22 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Blocks: final legal text (FT-41).
 
 - [ ] **FT-20 GitHub: branch protection and labels**
-  - Time: 15 minutes.
+  - Time: 15 minutes, plus the release gate below.
   - Cost: US $0.
-  - Steps: protect `develop` and `main` requiring the CI `required` job; labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
-  - Release gate (ADR 0022 decision 8; free because the repository is public; about 15 more minutes, needed before the first RC on Mon 26 Oct):
+  - Steps: protect `develop` and `main` requiring the CI `required` job (step 2 of the proposed path below does this too); labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
+  - Release gate (ADR 0022 decision 8, founder, 15 Oct; free because the repository is public; about 15 more minutes, needed before the first RC, whose date moves with the freeze). This is what stands:
     - Settings, Environments: create `app-store`. Add yourself as required reviewer. Under deployment branches and tags, choose selected ones and add tag `ios-v*` and branch `release/*`.
     - In `app-store`, add the environment secrets `EXPO_TOKEN` (a token used only for the store lane) and `ASC_REVIEW_CONTACT_JSON` (shape in `docs/ops/RELEASE.md` 3.5). Delete any repository secret of the same name.
     - Settings, Rules, Rulesets: a tag ruleset for `ios-v*` and a branch ruleset for `release/*`, each restricting creations, updates and deletions, with Repository admin as the only bypass.
-  - By: Fri 9 Oct (release gate: Fri 23 Oct).
+  - If you accept ADR 0026 decision 1 (Proposed): the approver account, not you, is the only reviewer, with prevent self-review on and admin bypass off, and the rulesets have no bypass and only keep `ios-v*`, `db-v*` and `release/*` immutable. The reason given: agent sessions act as your account, so neither your review nor the admin bypass is a gate (SR-3 in `docs/security/SECRETS_REVIEW.md`, on #206 until it merges). Until you accept it, the 15 Oct gate above stands. The steps, in order, about 30 minutes, before any secret is added:
+    1. AUTOMATION AF-02: make a second GitHub account (the approver), passkey only, never connected to claude.ai, a connector, a CLI or an agent machine. Invite it to the repository with Write and accept the invitation from that account.
+    2. From your own computer, signed in to `gh` as yourself, in an up-to-date checkout of `develop`: `npx tsx scripts/release/github-settings.ts --approver <approver login>`. It prints every call: the eight environments with the approver as the only reviewer, prevent self-review on, admin bypass off and selected refs only (`staging`: `develop` only; `app-store`: tag `ios-v*`, branch `release/*`); branch protection on `develop` and `main` (AF-03); and rulesets that stop anyone moving or deleting `ios-v*` and `db-v*` tags or force-pushing or deleting `release/*` (AF-23). Settle the `release/ios-v1.0` question below, read the plan, then run it again with `--apply`.
+    3. Run it with `--verify`. Expect drift until #206 and the `deploy-db.yml` rename to `db-production` (in #236) are both on `develop`: from a checkout without the rename it flags `deploy-db.yml` for naming `production`. It also flags `release/ios-v1.0` for as long as that branch exists. Past those, it must print "Settings match the spec". Then look in Settings, Environments: "Allow administrators to bypass" is off on each (the API may not show it).
+    4. Only then add secrets, in each environment, as `docs/security/SECRETS_REVIEW.md` (on #206 until it merges) section 9 orders them (for `app-store`: `EXPO_TOKEN` from an Expo robot user, `ASC_REVIEW_CONTACT_JSON` in the shape of `docs/ops/RELEASE.md` 3.5). Keep the repository `EXPO_TOKEN` until the workflow that reads the environment one has merged and one run with it is green (AF-07, AF-22); then delete it.
+    5. From then on, every pull request into `main` (the website too) needs the approver's review, and nobody, you included, can push to `develop` or `main` directly.
+    - Your call, before `--apply` in step 2: the branch `release/ios-v1.0` exists (at 1494d35) and #76 (open) targets it. After `--apply`, the `release/*` ruleset keeps it from being deleted or force-pushed, and `--verify` flags it because it is not `release/<major>.<minor>`. Either move #76 to another base or close it, then delete the branch, before `--apply`; or keep the branch and expect that line in `--verify`. Agents leave the branch as it is.
+    - By: overdue (planned Mon 19 Oct, AUTOMATION 0.2 row 5); before any environment secret is added.
+  - By: overdue (planned Fri 9 Oct; release gate: Fri 23 Oct).
   - Blocks: BL-005, BL-122; lets scheduled agents take more of the backlog safely.
 
 ---

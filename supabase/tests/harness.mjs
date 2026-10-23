@@ -9,6 +9,9 @@ import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 
+// The consent pepper fails closed since 20261015010000 (BL-334); tests run with a fixed test value.
+export const TEST_CONSENT_PEPPER = 'test-pepper-0123456789abcdef0123456789abcdef';
+
 export async function createDb(files, options = {}) {
   const db = new PGlite(options);
   await db.exec(`
@@ -31,6 +34,12 @@ export async function createDb(files, options = {}) {
     alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon, service_role;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
+  // Session settings the hosted project sets with `alter database` (supabase/APPLY.md):
+  // the consent pepper (step 6, BL-334), and family invites on, because the dormant
+  // contributor rules keep their tests (B-REQ-009 Rev); in production the setting
+  // is off (F11-REQ-003) and v1_gate_coparent.test.mjs proves the default.
+  await db.query(`select set_config('app.consent_pepper', $1, false), set_config('app.contributors_enabled', 'on', false)`,
+    [TEST_CONSENT_PEPPER]);
 
   let failures = 0;
   let passes = 0;

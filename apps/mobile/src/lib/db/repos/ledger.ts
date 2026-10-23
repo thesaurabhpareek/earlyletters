@@ -13,32 +13,61 @@ import {
   serializeLedger,
   type LedgerState,
 } from '../../billing/letter-ledger.logic';
+import { SYNC_SETTING } from '../../sync/outbox';
 import type { RepoContext } from './context';
 import * as settings from './settings';
+
+/** The account that owns this phone's letters, set at the first sign-in (sync/ownership.ts). */
+const OWNER_SETTING = SYNC_SETTING.owner;
 
 export function readState(ctx: RepoContext): LedgerState {
   return parseLedger(settings.getSetting(ctx, LEDGER_SETTING_KEY));
 }
 
 /**
- * Letters present in the database: every kept letter, spoken or typed, in the
- * Book or private, including ones in the delete window. A quiet-day mark
- * (`not_much`) and drafts are not letters.
+ * The M17 ledger query (D-103, drafted as D-092 in PR #128; F14-REQ-036,
+ * F14-REQ-037): letters present in the database that count toward the free
+ * letters. A row counts only when all three hold:
+ *   own      its author is this phone's account (`sync.ownerId`), or it has no
+ *            author (made on this phone before any sign-in). The other parent's
+ *            synced letters never count, and never raise the mirror or Keychain.
+ *   worded   its words exist: not a voice-only letter still waiting for them,
+ *            and not empty.
+ *   kept     kept from Review with the words on screen: words the machine wrote
+ *            later count only once the author keeps them (transcript_status
+ *            'unreviewed' until then, entries.ts).
+ * Spoken or typed, in the Book or private, including the delete window (the
+ * ledger never decreases). Quiet-day marks (`not_much`) and drafts never count.
  *
- * v1.0 is on-device and single-author, so every row is this person's. When
- * family letters can reach this phone (v1.1), restrict this to the account's
- * own letters.
+ * Known gap (PR body, requests to S02 and S07): the server row carries no
+ * review mark, so on a second phone of the same author a pulled letter whose
+ * machine words are still unreviewed reads as kept.
  */
-export function countPresent({ db }: RepoContext): number {
-  return db.get<{ n: number }>("SELECT COUNT(*) AS n FROM entries WHERE kind = 'letter'")?.n ?? 0;
+export const COUNTED_LETTERS_SQL = `kind = 'letter'
+  AND (author_id IS NULL OR author_id = ?)
+  AND transcript_status IS NULL
+  AND trim(final_text) <> ''`;
+
+export function countPresent(ctx: RepoContext): number {
+  const owner = settings.getSetting(ctx, OWNER_SETTING) ?? '';
+  return ctx.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM entries WHERE ${COUNTED_LETTERS_SQL}`, owner)?.n ?? 0;
+}
+
+/** Whether one letter counts by the rule above (the save path asks before recording it). */
+export function counts(ctx: RepoContext, id: string): boolean {
+  const owner = settings.getSetting(ctx, OWNER_SETTING) ?? '';
+  return ctx.db.get<{ t: number }>(`SELECT 1 AS t FROM entries WHERE id = ? AND ${COUNTED_LETTERS_SQL}`, id, owner) !== null;
 }
 
 /**
  * Counts one kept letter, inside the caller's transaction (the letter is
- * already written, so `present` includes it). Idempotent per id.
+ * already written, so `present` includes it). Idempotent per id. A row that does
+ * not count by the M17 rule (another author's, no words yet, words not yet
+ * reviewed, a quiet-day mark) changes nothing.
  */
 export function recordKept(ctx: RepoContext, id: string, floor: number): LedgerState {
   const before = readState(ctx);
+  if (!counts(ctx, id)) return before;
   const after = applyKept(before, id, { floor, present: countPresent(ctx) });
   if (after !== before) settings.setSetting(ctx, LEDGER_SETTING_KEY, serializeLedger(after));
   return after;

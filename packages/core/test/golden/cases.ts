@@ -35,7 +35,22 @@ export interface GoldenCase {
   level?: EditLevel;
   locked?: string[];
   model?: GoldenEdit[];
+  /** A dictionary for this case only (R-01 D10, D13 need names GOLDEN_DICT does not have). Default GOLDEN_DICT. */
+  dictionary?: DictionaryTerm[];
 }
+
+/** R-01 D10: names that are everyday words. Fictional family only. */
+const NAME_WORD_DICT: DictionaryTerm[] = [
+  { term: 'Hope', kind: 'child', heardAs: [] },
+  { term: 'Will', kind: 'nickname', heardAs: [] },
+];
+/** R-01 D13: a heard-as that is another family member's name. */
+const TWO_NAMES_DICT: DictionaryTerm[] = [
+  { term: 'Asha', kind: 'child', heardAs: ['Usha'] },
+  { term: 'Usha', kind: 'family', heardAs: [] },
+];
+/** Found 15 Oct: a taught heard-as that is a negation. */
+const NEGATION_HEARD_DICT: DictionaryTerm[] = [{ term: 'Noa', kind: 'child', heardAs: ['no'] }];
 
 const NFD_CAFE = 'café';
 const NFD_ZOE = 'Zoë';
@@ -168,5 +183,32 @@ export const GOLDEN_CASES: GoldenCase[] = [
     lang: 'nfd',
     raw: `${NFD_SENOR.toLowerCase()} Ashu waved`,
     model: [{ type: 'punctuation', original: 's', replacement: 'S' }],
+  },
+
+  // R-01 launch gate, engine 6 (F06 section 7.1). Added with engine 6; every case above is unchanged from engine 5.
+  { id: 'r01-d6-uh-uh', lang: 'en', raw: 'Did you want more? Uh-uh, she said.' },
+  { id: 'r01-d6-mm-hmm', lang: 'en', raw: 'Mm-hmm, Asha nodded and um smiled.' },
+  { id: 'r01-d6-uh-uh-spaced', lang: 'en', raw: 'Uh uh, not now, Asha.' },
+  { id: 'r01-d7-single-quotes', lang: 'en', raw: 'Asha said ‘um, up’ twice.' },
+  {
+    id: 'r01-d10-name-words',
+    lang: 'en',
+    raw: 'I hope you sleep well and we will see Hope tomorrow.',
+    dictionary: NAME_WORD_DICT,
+  },
+  { id: 'r01-d13-name-swap', lang: 'en', raw: 'Usha came over today and asha laughed.', dictionary: TWO_NAMES_DICT },
+  { id: 'r01-d13-heard-as-negation', lang: 'en', raw: 'No, she did not cry. I said no.', dictionary: NEGATION_HEARD_DICT },
+  { id: 'r01-number-range', lang: 'en', raw: 'Asha slept 2 – 3 hours.' },
+  {
+    id: 'r01-d4-model-direction-mark',
+    lang: 'en',
+    raw: 'Asha laughed at the duck.',
+    model: [{ type: 'punctuation', original: 'laughed', replacement: 'laughed\u200F' }],
+  },
+  {
+    id: 'r01-d9-model-noun-plural',
+    lang: 'en',
+    raw: 'We saw the dogs with Asha.',
+    model: [{ type: 'agreement', original: 'dogs', replacement: 'dog' }],
   },
 ];
