@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); the next block starts at BL-444.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); the next block starts at BL-445.
 
 ---
 
@@ -42,7 +42,7 @@ Severity tags: **[Critical]** blocks launch or makes a published statement false
 | Status | v1.0 tasks |
 |---|---|
 | Done in code | BL-003, BL-004, BL-010 to BL-014, BL-020, BL-023, BL-024, BL-031, BL-033 to BL-035, BL-036, BL-037, BL-040, BL-050 to BL-052, BL-054, BL-100, BL-111 to BL-114, BL-116, BL-120, BL-121, BL-130, BL-137, BL-140 to BL-143, BL-150, BL-151, BL-154, BL-157 to BL-160, BL-170, BL-172 to BL-174, BL-176, BL-215, BL-216, BL-219, BL-220, BL-233 to BL-235, BL-238, BL-240, BL-250, BL-255 to BL-264, BL-267, BL-289 |
-| Done in part (remainder named in the task) | BL-115 (rest is BL-334), BL-118 (rest is T5-08), BL-122, BL-134, BL-136, BL-156, BL-171 (rest is BL-330), BL-236, BL-237, BL-239, BL-241, BL-242 |
+| Done in part (remainder named in the task) | BL-115 (rest is BL-334), BL-118 (rest is T5-08), BL-122, BL-134, BL-136, BL-156, BL-171 (rest is BL-330), BL-236, BL-237, BL-239, BL-241, BL-242, BL-348 (app done in #165, 23 Oct 2026; rest is the website `/j` page, PR #144) |
 | In progress this wave | BL-021 and BL-266 (mobile-polish), BL-275 to BL-277, BL-279, BL-283 (qa-e2e), BL-331 to BL-333 (db-followup, `20261005000000` builds and applies), legal alignment (`docs/legal/**`, legal-alignment). Done this wave: the security review (`docs/reviews/2026-10-04-security-privacy.md`) |
 | Needs the founder | BL-005, BL-015, BL-030, BL-043, BL-044, BL-053, BL-101 to BL-104, BL-106 to BL-109, BL-122, BL-135, BL-177, BL-222, BL-245, BL-247, BL-280, BL-284, BL-286, BL-335 to BL-337, BL-339, BL-346 |
 | Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-272, BL-273, BL-278; v1.0.1: BL-343, BL-344 |
@@ -362,6 +362,12 @@ All database files below are **written and tested but not applied** to any remot
 #### BL-176 Co-parent invite in the app
 - Status: done (9be06db, `src/app/invite/new.tsx`, `invite/index.tsx`, `src/lib/family/`).
 
+#### BL-444 A book this phone has left stays readable under "Letters to {child}" (D-113) [High]
+- Status: ready, needed before build 3. Mode: agent. Owner: family owner, sync owner.
+- Satisfies: PRD V2 F11 6.2 D step 4, F11-REQ-011, DATA-REQ-016.
+- Scope: after `leave_child`, `src/lib/sync/merge.ts` marks the book `left` and `src/lib/db/repos/children.ts` (`LISTED`) hides it, so the leaver's own letters stay on the phone with no screen. List left books under "Letters to {child}" with read, export and delete. Then set `LEAVE_BOOK_OFFERED` in `src/lib/family/entry.logic.ts` and bring the Leave row back (F11 6.2 D step 1), with a variant the lamp rule allows on that screen.
+- Why: D-113 hides Leave in build 2 until this ships (PR #184).
+
 #### BL-178 Profile settings and shared dictionary terms
 - Status: deferred (v1.2, CVL-03).
 
@@ -398,13 +404,13 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Needed before C1 (Mon 19 Oct): a phishing link would otherwise upload a family's letters to an attacker's account.
 
 #### BL-322 Invite asks before it joins, and never switches the open book by itself (review H2, app part) [High]
-- Status: ready. Mode: agent (needs a `peek_invite(token)` RPC from db-followup or the next migration range). Owner: family owner.
-- Scope: `src/app/invite/index.tsx` shows "Join {child}'s book as a parent? Invited by {signsAs}" and waits for a tap; `peek_invite` returns only the child's first name and the inviter's signature; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
+- Status: in review (#184; `peek_invite` is on develop with #140). Mode: agent. Owner: family owner.
+- Scope: `src/app/invite/index.tsx` shows "Join this book as a parent?" and "Invited by {inviter}" and waits for a tap; `peek_invite` returns only the inviter's sign-off and the role, never the child's name or ids (D-111 item 8), so the child's name appears only after joining; never `setActiveChildId` on join without a tap. Copy in `packages/content`.
 
 #### BL-348 Invite token in the URL fragment (review M2; FAM-04 parts 1 and 2 pulled forward)
-- Status: decided, in review (founder, 15 Oct 2026, FT-04 item 7: yes, the token moves into the fragment). Mode: agent plus website thread.
+- Status: decided (founder, 15 Oct 2026, FT-04 item 7: yes, the token moves into the fragment). App part done (#165, merged 23 Oct 2026); website in review (PR #144). Mode: agent plus website thread.
 - Decision: links are `https://earlyletters.com/j#t=<token>` (the `/j` path of PRD V2 F11 and B-NFR-002, not `/i#t=`), and `/i/<token>` is neither written nor accepted, with no 7-day overlap: no build has shipped, so no `/i` link exists. App: `fix/invite-link-fragment`. Website (`/j` page, AASA `/j` without `/i/*`): PR #144. Release gate (build 2 preflight fails while the app writes `/i/`): PR #145. Privacy Policy 1.4.0 already dropped the "servers don't log it" claim (privacy-policy.md CN-23); restoring it once this ships is counsel's call (COUNSEL_PACKET Q23).
-- Scope if yes: links become `https://earlyletters.com/i#t=<token>`; the parser reads the fragment and still accepts `/i/<token>` for 7 days; AASA pattern `/i`; generic preview tags. If no: legal-alignment rewrites Privacy Policy line 195 (it says tokens travel where servers do not log) and the website disables logging and analytics on `/i/*` with `Referrer-Policy: no-referrer` (FT-31).
+- Scope as shipped in the app (#165): `inviteUrl` writes only `https://earlyletters.com/j#t=<token>`. A system link and a pasted link give a token only from the fragment's `t`, never from the path or the query, and `/i/<token>` is refused everywhere (`apps/mobile/src/lib/family/invite-link.logic.ts`; `test/invite-link.test.ts`, `test/deep-link.allowlist.test.ts`). E2E-13 reads the `/j#t=` link from the pasteboard (`e2e/bin/run-coparent.sh`). Website: the `/j` page and the AASA entry for `/j` without `/i/*` (PR #144).
 
 #### BL-349 App-level privacy manifest (review L7) [High]
 - Status: in review (PR #211, founder merge: `app.config.ts`; #145 merged 23 Oct). Mode: agent. Owner: mobile engineer. Built: `src/lib/privacy-manifest.ts` (required reasons for every build; collected data types follow `EXPO_PUBLIC_SERVER_FEATURES`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` as S17's label 1.4.0 answers them), `test/privacy-manifest.test.ts`, preflight checks of the generated file. Left: Apple's upload email (go/no-go B1-10), the archived `.ipa` check, and the S17 and counsel calls listed in the PR.
