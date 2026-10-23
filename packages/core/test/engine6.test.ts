@@ -401,6 +401,21 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
 });
 
 describe("[F06-REQ-006] engine 7: the verifier's windows at the edges of a letter (#179 follow-up, wordWindow)", () => {
+  it('a space or line break deleted between two end marks makes a new pair and is refused, as in engine 6 (#249 review N3)', () => {
+    const del = (raw: string, gap: string, type: Edit['type']): Edit => {
+      const i = raw.indexOf(`.${gap}.`) + 1;
+      return { type, start: i, end: i + gap.length, original: gap, replacement: '', source: 'model' };
+    };
+    for (const raw of ['She said no. .', 'Asha said no. . Then she slept.']) {
+      for (const type of ['punctuation', 'paragraph'] as const) expect(v7(raw, del(raw, ' ', type)), `${raw} ${type}`).toBe('changes_sentence_type');
+    }
+    const lines = 'She said no.\n\n.';
+    expect(v7(lines, del(lines, '\n\n', 'paragraph'))).toBe('changes_sentence_type'); // engine 6 accepted this one
+    // Negative: whitespace edits that bring no two marks together.
+    expect(v7('She said  no.', { type: 'paragraph', start: 8, end: 10, original: '  ', replacement: ' ', source: 'model' })).toBeNull();
+    expect(v7('She said no..', { type: 'paragraph', start: 12, end: 12, original: '', replacement: ' ', source: 'model' })).toBeNull(); // apart, not together
+  });
+
   it('at the start of a letter: a mark put before a run that opens it is refused; a capital there is fine', () => {
     const raw = '...and then Asha slept.';
     expect(v7(raw, at(0, '.'))).toBe('changes_sentence_type');

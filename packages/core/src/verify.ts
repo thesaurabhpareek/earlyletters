@@ -247,19 +247,40 @@ function nearMark(ch: string, R: LanguageRules): boolean {
   return ch !== '' && (isEndMark(ch, R) || BETWEEN_MARKS.test(ch) || isInvisible(ch) || R.quoteMarkCount(ch) > 0);
 }
 
-/** How many end marks in `text` touch the end mark before them: "?." and ".." are 1, "..." is 2, "no. Yes." is 0. */
-function endMarkPairs(text: string, R: LanguageRules): number {
-  let pairs = 0;
-  let touching = false;
+/**
+ * How many end marks in `text` touch the end mark before them: "?." and ".."
+ * are 1, "..." is 2, "no. Yes." is 0. Counted twice: `loose` lets spaces sit
+ * between ("no. ." is 1), `tight` does not ("no. ." is 0, "no.." is 1), so an
+ * edit that only deletes the space between two marks still makes a new pair
+ * (#249 review N3).
+ */
+interface MarkPairs {
+  loose: number;
+  tight: number;
+}
+function endMarkPairs(text: string, R: LanguageRules): MarkPairs {
+  const pairs: MarkPairs = { loose: 0, tight: 0 };
+  let loose = false;
+  let tight = false;
   for (const ch of text) {
     if (isEndMark(ch, R)) {
-      if (touching) pairs++;
-      touching = true;
+      if (loose) pairs.loose++;
+      if (tight) pairs.tight++;
+      loose = true;
+      tight = true;
     } else if (!nearMark(ch, R)) {
-      touching = false;
+      loose = false;
+      tight = false;
+    } else if (/\s/u.test(ch)) {
+      tight = false;
     }
   }
   return pairs;
+}
+
+/** Does `a` have a pair of touching end marks that `b` lacks, counted either way? */
+function morePairs(a: MarkPairs, b: MarkPairs): boolean {
+  return a.loose > b.loose || a.tight > b.tight;
 }
 
 function endMarkCount(text: string, R: LanguageRules): number {
@@ -278,7 +299,7 @@ function endMarkCount(text: string, R: LanguageRules): number {
  * fixed two-character mark window of #179, which missed a mark behind two
  * closers ("no.")" plus ".") and saw an unrelated run (engine-lens re-check).
  */
-function markRunPairs(text: string, start: number, end: number, other: string, R: LanguageRules): { asIs: number; swapped: number } {
+function markRunPairs(text: string, start: number, end: number, other: string, R: LanguageRules): { asIs: MarkPairs; swapped: MarkPairs } {
   let s = start;
   let t = end;
   while (s > 0 && nearMark(text[s - 1], R)) s--;
@@ -339,7 +360,7 @@ function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
 /** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks)? */
 function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
   const p = markRunPairs(raw, e.start, e.end, e.replacement, R);
-  return p.swapped > p.asIs;
+  return morePairs(p.swapped, p.asIs);
 }
 
 /**
@@ -367,7 +388,7 @@ function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules
   for (const e of sorted) {
     const f = at.get(e)!;
     const p = markRunPairs(text, f, f + e.replacement.length, e.original, R);
-    if (p.asIs <= p.swapped) continue;
+    if (!morePairs(p.asIs, p.swapped)) continue;
     if (endMarkCount(e.replacement, R) > endMarkCount(e.original, R)) return e;
     blamed ??= e;
   }
