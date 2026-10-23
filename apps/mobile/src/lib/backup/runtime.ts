@@ -32,7 +32,9 @@ import { localSqlDb, notifyStoreChanged, subscribe, uuidv7 } from '../store';
 import { errorCode, errorStatus, getSupabaseOrNull, isNetworkError } from '../supabase';
 import { readSupabaseEnv } from '../supabase/env';
 import { APP_ENV } from '../build-env';
+import { currentAuthUserId, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
+import { backupDbFileFor, createAccountHost } from './account';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -42,7 +44,7 @@ import {
   type EscrowClient,
 } from './contract';
 import { BUNDLED_ESCROW_KEYS, escrowKeysFor } from './escrow-keys';
-import { BACKUP_DB_FILE, openBackupDb, type BackupDb } from './local-db';
+import { openBackupDb, type BackupDb } from './local-db';
 import { backupSource, restoreLocal } from './local-store';
 import type { Aead, BookKeyRef, ByteSink, ByteSource, Conditions, FileIO, KeyVault, NetworkKind } from './ports';
 import { createBackupService, type BackupService, type BackupView } from './service';
@@ -372,15 +374,20 @@ function conditions(db: () => BackupDb | null): Conditions {
 
 // ── One service per signed-in person ──────────────────────────────────────
 
-let backupDb: BackupDb | null = null;
-let service: BackupService | null = null;
-let serviceFor: string | null = null;
+// Review B M2 on PR #150 (lib/backup/account.ts): a service only for the account released to sync, so
+// a session that is still consenting or ends with "Not my account" changes nothing here and opens no
+// escrow request; and one backup state file per account, so another account never turns this one off.
+const backupDbs = new Map<string, BackupDb>();
 let lastView: BackupView | null = null;
 const listeners = new Set<() => void>();
 
-function db(): BackupDb {
-  if (!backupDb) backupDb = openBackupDb(openNativeDb(BACKUP_DB_FILE).db, () => new Date().toISOString());
-  return backupDb;
+function dbFor(profileId: string): BackupDb {
+  let d = backupDbs.get(profileId);
+  if (!d) {
+    d = openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, () => new Date().toISOString());
+    backupDbs.set(profileId, d);
+  }
+  return d;
 }
 
 async function session(sb: SupabaseClient): Promise<{ uid: string; token: string } | null> {
@@ -389,51 +396,43 @@ async function session(sb: SupabaseClient): Promise<{ uid: string; token: string
   return s?.user?.id && s.access_token ? { uid: s.user.id, token: s.access_token } : null;
 }
 
-async function current(): Promise<BackupService | null> {
-  const sb = getSupabaseOrNull();
-  if (!sb) return null;
-  const s = await session(sb).catch(() => null);
-  if (!s) {
-    await retire();
-    return null;
-  }
-  if (service && serviceFor === s.uid) return service;
-  // Another account on this phone: the old service stops, its pass ends, and its temp files go first.
-  await retire();
+let client: SupabaseClient | null = null;
+const host = createAccountHost<BackupService>((uid) => {
+  const sb = client!;
   const token = async () => (await session(sb).catch(() => null))?.token ?? null;
   const vault = nativeVault();
-  service = createBackupService({
-    db: db(),
+  return createBackupService({
+    db: dbFor(uid),
     vault,
     aead: nativeAead,
     files: nativeFiles,
-    server: supabaseServer(sb, token, s.uid),
+    server: supabaseServer(sb, token, uid),
     escrow: escrowClient(token),
     http,
     downloader,
-    conditions: conditions(() => backupDb),
+    conditions: conditions(() => dbFor(uid)),
     clock: { now: () => Date.now(), sleep: (ms) => new Promise((r) => setTimeout(r, ms)) },
-    profileId: s.uid,
+    profileId: uid,
     // No `heldOnServer`, so held drafts are not listed at all. S03's held-draft op is on develop (#182), but the
     // server backs up letters only until a held draft's backup survives an undone join (#151, backup_entry_exists).
-    source: backupSource({ db: localSqlDb, profileId: s.uid }),
-    local: restoreLocal({ db: localSqlDb, profileId: s.uid, fileExists: nativeFiles.exists, changed: notifyStoreChanged }),
+    source: backupSource({ db: localSqlDb, profileId: uid }),
+    local: restoreLocal({ db: localSqlDb, profileId: uid, fileExists: nativeFiles.exists, changed: notifyStoreChanged }),
     escrowKeys,
     onChange: () => emit(),
   });
-  serviceFor = s.uid;
-  return service;
-}
+});
 
-async function retire(): Promise<void> {
-  const old = service;
-  service = null;
-  serviceFor = null;
-  if (old) await old.stop();
+async function current(): Promise<BackupService | null> {
+  const sb = getSupabaseOrNull();
+  if (!sb) return null;
+  client = sb;
+  const s = await session(sb).catch(() => null);
+  // Another account, or none released yet: the old service stops, its pass ends, and its temp files go first.
+  return host.forAccount(s?.uid ?? null, currentAuthUserId());
 }
 
 function emit(): void {
-  lastView = service?.view() ?? null;
+  lastView = host.current()?.view() ?? null;
   for (const l of listeners) l();
 }
 
@@ -458,7 +457,7 @@ let wake: ReturnType<typeof setTimeout> | null = null;
 function wakeLater(): void {
   if (wake) clearTimeout(wake);
   wake = null;
-  const at = service?.nextWakeAt() ?? null;
+  const at = host.current()?.nextWakeAt() ?? null;
   if (at === null || AppState.currentState !== 'active') return;
   wake = setTimeout(() => {
     wake = null;
@@ -486,6 +485,8 @@ export function startBackupRuntime(): void {
   });
   subscribe(() => kick());
   getSupabaseOrNull()?.auth.onAuthStateChange(() => kick(500));
+  // The account is released to backup by consent and "Keep them here", not by a Supabase auth event.
+  subscribeAuth(() => kick(500));
 }
 
 // ── What the Settings screen uses ─────────────────────────────────────────
@@ -527,11 +528,11 @@ export async function turnOffBackupKeep(): Promise<void> {
 }
 
 export function backupCellular(): boolean {
-  return service?.cellular() ?? false;
+  return host.current()?.cellular() ?? false;
 }
 
 export function setBackupCellular(on: boolean): void {
-  service?.setCellular(on);
+  host.current()?.setCellular(on);
   emit();
   if (on) kick(500);
 }
@@ -547,7 +548,7 @@ export function restoreForLetter(entryId: string): void {
 }
 
 export function tryRestoreAgain(): void {
-  void (service?.tryAgain() ?? Promise.resolve())
+  void (host.current()?.tryAgain() ?? Promise.resolve())
     .catch(() => undefined)
     .finally(() => kick(0));
 }

@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { migrate } from '../../src/lib/db/migrations';
 import type { SqlDb } from '../../src/lib/db/sql';
-import { openBackupDb } from '../../src/lib/backup/local-db';
+import { openBackupDb, type BackupDb } from '../../src/lib/backup/local-db';
 import { backupSource, restoreLocal } from '../../src/lib/backup/local-store';
 import type { Conditions, NetworkKind } from '../../src/lib/backup/ports';
 import { createBackupService, type BackupView } from '../../src/lib/backup/service';
@@ -28,15 +28,34 @@ export function cleanupPhones(): void {
   for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
 }
 
-export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeICloud | null; clock: Clock; name: string }) {
-  const root = mkdtempSync(join(tmpdir(), `asha-${o.name}-`));
-  roots.push(root);
+/** What two accounts on one phone share: its files, its letters and its Keychain. */
+export interface SharedPhone {
+  root: string;
+  local: SqlDb;
+  files: ReturnType<typeof nodeFiles>;
+  vault: ReturnType<typeof nodeVault>;
+}
+
+/**
+ * `share`: another account on the same phone (its files, its letters and its Keychain), for the tests
+ * that switch accounts; `backupDb`: that account's own backup state (lib/backup/account.ts).
+ */
+export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeICloud | null; clock: Clock; name: string; backupDb?: BackupDb; share?: SharedPhone }) {
   const iso = () => new Date(o.clock.t).toISOString();
-  const files = nodeFiles(root);
-  const local = nodeDb().db;
-  migrate(local, { now: iso(), newId: () => randomUUID() });
-  const backupDb = openBackupDb(nodeDb().db, iso);
-  const vault = nodeVault({ icloud: o.icloud });
+  let root: string;
+  let local: SqlDb;
+  if (o.share) {
+    root = o.share.root;
+    local = o.share.local;
+  } else {
+    root = mkdtempSync(join(tmpdir(), `asha-${o.name}-`));
+    roots.push(root);
+    local = nodeDb().db;
+    migrate(local, { now: iso(), newId: () => randomUUID() });
+  }
+  const files = o.share?.files ?? nodeFiles(root);
+  const backupDb = o.backupDb ?? openBackupDb(nodeDb().db, iso);
+  const vault = o.share?.vault ?? nodeVault({ icloud: o.icloud });
   const cond = { net: 'wifi' as NetworkKind, fg: true, busy: false, cell: false, killed: false, escrowKilled: false };
   const conditions: Conditions = {
     network: async () => cond.net,
