@@ -30,6 +30,8 @@ import {
   buildManifest,
   buildRemoteConfig,
   buildTextRulesPack,
+  checkLanguages,
+  DEFAULT_RELEASE_LANGUAGES,
   DOCUMENT_CONTENT_TYPE,
   IMMUTABLE_CACHE,
   MODEL_CONTENT_TYPE,
@@ -60,6 +62,8 @@ export interface BuildReleaseOptions {
   models: ModelMode;
   /** A folder of model files by catalog file name, copied in (checked against the catalog hash) before anything is downloaded. */
   modelsDir?: string | null;
+  /** Spoken languages to serve (`--languages`); English only when omitted (DEFAULT_RELEASE_LANGUAGES). Another language's text pack and model are carried only when named here. */
+  languages?: readonly string[];
   /** Self-built models (catalog `hosted: false`) to list once their file is in `modelsDir`. Never implied. */
   includeModels?: readonly string[];
   /** The speech catalog; tests pass a small fake. */
@@ -188,14 +192,15 @@ export async function buildRelease(o: BuildReleaseOptions): Promise<BuiltRelease
   const nowIso = (o.now ?? (() => new Date()))().toISOString();
   const baseUrl = o.baseUrl.replace(/\/+$/, '');
   const out = resolve(o.out);
+  const languages = checkLanguages(o.languages ?? DEFAULT_RELEASE_LANGUAGES);
   mkdirSync(out, { recursive: true });
   const files: ReleaseFile[] = [];
   const notIncluded: NotIncluded[] = [];
   const entries: PackEntry[] = [];
 
-  // 1. Text-rules packs: every language source except English (decision 15).
+  // 1. Text-rules packs: every language source the allowlist names, except English (bundled, decision 15).
   const rulesDir = join(o.root, 'packs/text-rules');
-  const sources = existsSync(rulesDir) ? readdirSync(rulesDir).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json') : [];
+  const sources = existsSync(rulesDir) ? readdirSync(rulesDir).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json' && (languages as readonly string[]).includes(f.slice(0, 2))) : [];
   for (const file of sources.sort()) {
     const b = buildTextRulesPack(file.slice(0, 2), readFileSync(join(rulesDir, file), 'utf8'), { baseUrl, minAppVersion: o.minAppVersion });
     writeFile(join(out, b.objectKey), b.bytes);
@@ -205,7 +210,7 @@ export async function buildRelease(o: BuildReleaseOptions): Promise<BuiltRelease
   }
 
   // 2. Speech models: copied from --models-dir, else downloaded from the pinned upstream, else left on upstream.
-  const plans = speechFilePlan(baseUrl, o.catalog, o.includeModels ?? []);
+  const plans = speechFilePlan(baseUrl, o.catalog, o.includeModels ?? [], languages);
   for (const plan of plans) {
     const m = plan.model;
     const dest = join(out, plan.objectKey);
@@ -261,8 +266,9 @@ export async function buildRelease(o: BuildReleaseOptions): Promise<BuiltRelease
     files.push({ path: RELEASE_DOCUMENTS[kind].path, kind: 'document', document: kind, contentType: DOCUMENT_CONTENT_TYPE, cacheControl: RELEASE_DOCUMENTS[kind].cacheControl, bytes: bytes.length, sha256: sha256Hex(bytes), origin: 'built' });
   }
   log(`manifest v${manifest.version}: ${entries.length} packs (${notIncluded.length} on upstream); remote config v${config.version}; content bundle v${bundle.version}`);
+  log(`languages: ${languages.join(', ')} (English is bundled in the app, so it has no text pack; mul speech models serve every language)`);
 
-  const index: ReleaseIndex = { schemaVersion: 1, generatedAt: nowIso, baseUrl, manifestVersion: manifest.version, files, notIncluded };
+  const index: ReleaseIndex = { schemaVersion: 1, generatedAt: nowIso, baseUrl, manifestVersion: manifest.version, languages, files, notIncluded };
   writeFile(join(out, RELEASE_INDEX_FILE), `${JSON.stringify(index, null, 2)}\n`);
   // For the static-host fallback (a Vercel project serving this directory as is); never uploaded to the bucket.
   writeFile(join(out, VERCEL_CONFIG_FILE), `${JSON.stringify(vercelConfig(index), null, 2)}\n`);

@@ -6,9 +6,13 @@
  *     export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...
  *   or a file OUTSIDE the repo holding those two lines, passed as --key-file <path>.
  *
- *   npx tsx scripts/packs/publish.ts release [--out dist/release] [--base-url https://packs.earlyletters.app] [--min-app 1.0.0]
+ *   npx tsx scripts/packs/publish.ts release [--languages en] [--out dist/release] [--base-url https://packs.earlyletters.app] [--min-app 1.0.0]
  *                                            [--models download|upstream] [--models-dir <dir>] [--include-model <id>]... [--strict-models]
- *   npx tsx scripts/packs/publish.ts upload  [--from dist/release] [--dry-run] [--no-verify]      # PACKS_S3_* in the environment
+ *   npx tsx scripts/packs/publish.ts upload  [--languages en] [--from dist/release] [--dry-run] [--no-verify]      # PACKS_S3_* in the environment
+ *
+ *   --languages: the spoken languages a release serves, English only by default (D-111 item 4). English
+ *   is bundled, so it has no text pack; another language's pack and model need it named (--languages en,hi),
+ *   and upload refuses a release whose manifest offers a language the flag does not name.
  *   npx tsx scripts/packs/publish.ts verify  [--base-url https://packs.earlyletters.app]           # what phones will see, no key needed
  *   npx tsx scripts/packs/publish.ts serve   [--dir dist/release] [--port 8787]                    # preview a release locally
  *
@@ -65,7 +69,10 @@ import {
   documentUploadCommands,
   humanBytes,
   killSwitchSteps,
+  languagesNotAllowed,
   parseKeyFile,
+  parseLanguages,
+  RELEASE_DOCUMENTS,
   publishedVersion,
   readPublished,
   readSigningKey,
@@ -111,6 +118,15 @@ const what = (process.argv[2] ?? '') as Command;
 if (!COMMANDS.includes(what)) {
   process.stderr.write(`usage: npx tsx scripts/packs/publish.ts ${COMMANDS.join('|')} [options]  (docs/ops/PACKS_HOSTING.md)\n`);
   process.exit(2);
+}
+
+/** The `--languages` allowlist (English only by default); an unknown code stops the command before anything is read or sent. */
+function languages() {
+  try {
+    return parseLanguages(arg('languages'));
+  } catch (e) {
+    return fail((e as Error).message);
+  }
 }
 
 /** The signing key from the environment or --key-file (a file outside the repo). Refuses a key the app does not trust. */
@@ -162,6 +178,12 @@ async function main(): Promise<void> {
     const dir = resolve(arg('from') ?? RELEASE_OUT);
     if (!existsSync(join(dir, RELEASE_INDEX_FILE))) fail(`${dir} has no ${RELEASE_INDEX_FILE}: run \`publish.ts release\` first.`);
     const index = readReleaseIndex(dir);
+    const allowed = languages();
+    const manifestPath = join(dir, RELEASE_DOCUMENTS['pack-manifest'].path);
+    if (!existsSync(manifestPath)) fail(`${manifestPath} is missing: rebuild the release.`);
+    const extra = languagesNotAllowed(readFileSync(manifestPath, 'utf8'), allowed);
+    if (extra.length) fail(`This release offers ${extra.join(', ')}, which --languages does not name (${allowed.join(',')}). Nothing was sent. To upload it on purpose: --languages ${[...allowed, ...extra].join(',')}`);
+    out(`Languages: ${allowed.join(', ')}`);
     let cfg;
     try {
       cfg = s3ConfigFromEnv(process.env);
@@ -185,6 +207,7 @@ async function main(): Promise<void> {
   }
 
   // ------------------------------------------------------------------ signing commands
+  const langs = languages();
   const key = signingKey();
   const now = new Date().toISOString();
   const configText = readFileSync(CONFIG_MODULE, 'utf8');
@@ -208,6 +231,7 @@ async function main(): Promise<void> {
       key,
       trusted: TRUSTED_SIGNING_KEYS,
       models,
+      languages: langs,
       modelsDir: arg('models-dir'),
       includeModels: args('include-model'),
       strictModels: flag('strict-models'),
@@ -220,6 +244,7 @@ async function main(): Promise<void> {
     writeFileSync(CONTENT_MODULE, contentModule({ ...bundles, en: built.documents['content-bundle'] }));
     const total = built.index.files.reduce((n, f) => n + f.bytes, 0);
     out(`\nRelease written to ${outDir}: ${built.index.files.length} files, ${humanBytes(total)}; index in ${RELEASE_INDEX_FILE}.`);
+    out(`  languages: ${langs.join(', ')} (English is bundled in the app, so it has no text pack; add another with --languages en,<code>)`);
     for (const n of built.index.notIncluded) out(`  not included: ${n.id} v${n.version} (${humanBytes(n.bytes)}): ${n.reason}`);
     if (total > VERCEL_HOBBY_UPLOAD_BYTES) out(`  ${humanBytes(total)} is over the 100 MB a Vercel Hobby deployment accepts: for the Vercel fallback, build with --models upstream.`);
     out('\nNothing was uploaded. Next:');
@@ -237,7 +262,7 @@ async function main(): Promise<void> {
     const baseUrl = arg('base-url') ?? DEFAULT_BASE_URL;
     const minAppVersion = arg('min-app') ?? '1.0.0';
     const built: BuiltFile[] = [];
-    const sources = existsSync(TEXT_RULES_DIR) ? readdirSync(TEXT_RULES_DIR).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json') : [];
+    const sources = existsSync(TEXT_RULES_DIR) ? readdirSync(TEXT_RULES_DIR).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json' && (langs as readonly string[]).includes(f.slice(0, 2))) : [];
     for (const file of sources.sort()) {
       const b = buildTextRulesPack(file.slice(0, 2), readFileSync(join(TEXT_RULES_DIR, file), 'utf8'), { baseUrl, minAppVersion });
       mkdirSync(dirname(join(OUT, b.objectKey)), { recursive: true });

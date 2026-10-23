@@ -36,13 +36,14 @@ import {
   type TrustedKey,
 } from '../../packages/api/src/index';
 import { textRulesPackId } from '../../packages/core/src/lang/languages';
+import { LANGUAGE_CODES } from '../../packages/core/src/lang/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
 import { onboardingStories } from '../../packages/content/src/stories.en';
 import { SPEECH_MODELS, type SpeechModel } from '../../apps/mobile/src/lib/models/catalog';
 import { SignedDocumentClient, type DocHttp } from '../../apps/mobile/src/lib/remote/documents';
 import { PackManager } from '../../apps/mobile/src/lib/packs/engine';
 import { bytesOf, FakeNetwork, LocalHttp, MemoryKv, NodeFs, sha256, tempRoot } from '../../apps/mobile/src/lib/packs/__tests__/node-ports';
-import { documentObjects, parseKeyFile, readSigningKey, RELEASE_DOCUMENTS, speechFilePlan, uploadOrder, type ReleaseIndex } from './lib';
+import { documentObjects, languagesNotAllowed, manifestLanguages, parseKeyFile, parseLanguages, readSigningKey, RELEASE_DOCUMENTS, speechFilePlan, uploadOrder, type ReleaseIndex } from './lib';
 import { buildRelease, fetchVerified, serveRelease, sha256File, type BuildReleaseOptions } from './release';
 
 const REPO = path.resolve(__dirname, '../..');
@@ -151,6 +152,8 @@ describe('release directory', () => {
     key: signing,
     trusted,
     models: 'download',
+    // Every language, so the release below holds every pack; the English-only default has its own tests.
+    languages: LANGUAGE_CODES,
     modelsDir,
     includeModels: ['speech-model.whisper-hindi-small-q5_1'],
     catalog: fakeCatalog(),
@@ -294,6 +297,43 @@ describe('release directory', () => {
     await expect(buildRelease(options({ out: tmp('unknown'), includeModels: ['speech-model.nope'] }))).rejects.toThrow(/not in the catalog/);
   });
 
+  describe('[D-111 item 4] the languages allowlist: English only unless named', () => {
+    it('by default a release carries English only: no text pack, only the multilingual speech models, and a manifest that offers no other language', async () => {
+      const built = await buildRelease(options({ out: tmp('en-only'), languages: undefined, includeModels: [] }));
+      expect(built.index.languages).toEqual(['en']);
+      expect(built.index.files.filter((f) => f.id?.startsWith('text-rules.'))).toEqual([]);
+      expect(built.manifest.packs.map((p) => [p.id, p.language])).toEqual([
+        ['speech-model.silero-vad-v6.2.0', 'mul'],
+        ['speech-model.whisper-small-q5_1', 'mul'],
+      ]);
+      expect(manifestLanguages(built.documents['pack-manifest'])).toEqual([]);
+      expect(languagesNotAllowed(built.documents['pack-manifest'], parseLanguages(null))).toEqual([]);
+      expect(log).toContain('languages: en (English is bundled in the app, so it has no text pack; mul speech models serve every language)');
+    });
+
+    it('an explicit list adds exactly the languages it names, and upload needs the same list', async () => {
+      const built = await buildRelease(options({ out: tmp('en-hi'), languages: parseLanguages('en,hi') }));
+      expect(built.index.languages).toEqual(['en', 'hi']);
+      expect(built.manifest.packs.map((p) => p.id).sort()).toEqual(['speech-model.silero-vad-v6.2.0', 'speech-model.whisper-hindi-small-q5_1', 'speech-model.whisper-small-q5_1', 'text-rules.hi']);
+      expect(manifestLanguages(built.documents['pack-manifest'])).toEqual(['hi']);
+      expect(languagesNotAllowed(built.documents['pack-manifest'], parseLanguages(null))).toEqual(['hi']);
+      expect(languagesNotAllowed(built.documents['pack-manifest'], parseLanguages('en,hi'))).toEqual([]);
+      // The full release above offers all six; the default allowlist refuses every one of them.
+      expect(languagesNotAllowed(manifestText, parseLanguages(null))).toEqual(['ar', 'es', 'fr', 'hi', 'pt', 'zh']);
+    });
+
+    it('refuses an unknown or empty code, and a model for a language the list does not name', async () => {
+      expect(parseLanguages(null)).toEqual(['en']);
+      expect(parseLanguages('hi')).toEqual(['en', 'hi']);
+      expect(parseLanguages(' zh , en ')).toEqual(['en', 'zh']);
+      expect(() => parseLanguages('en,xx')).toThrow(/unknown language code xx; known: en, hi, es, zh, fr, ar, pt/);
+      expect(() => parseLanguages('EN')).toThrow(/unknown language code EN/);
+      expect(() => parseLanguages('')).toThrow(/at least one code/);
+      await expect(buildRelease(options({ out: tmp('bad-lang'), languages: ['en', 'xx'] }))).rejects.toThrow(/unknown language code xx/);
+      await expect(buildRelease(options({ out: tmp('hi-model'), languages: undefined }))).rejects.toThrow(/speech-model.whisper-hindi-small-q5_1: hi.*name it in --languages/);
+    });
+  });
+
   it('uploads packs first and the manifest last', () => {
     const order = uploadOrder(index).map((f) => f.path);
     expect(order.at(-1)).toBe('functions/v1/config/v1/packs');
@@ -420,6 +460,21 @@ describe('release directory', () => {
     const tsx = path.join(REPO, 'node_modules/.bin/tsx');
     const run = (args: string[], env: Record<string, string> = {}) =>
       spawnSync(tsx, [path.join(REPO, 'scripts/packs/publish.ts'), ...args], { cwd: REPO, encoding: 'utf8', env: { ...process.env, EL_SIGNING_KEY: '', EL_SIGNING_KEY_ID: '', ...env } });
+
+    it('upload refuses a release that offers a language --languages does not name, before reading credentials; an unknown code stops release before the key', () => {
+      const refused = run(['upload', '--from', out, '--dry-run'], { PACKS_S3_ENDPOINT: 'http://127.0.0.1:9', PACKS_S3_BUCKET: 'early-letters-packs', PACKS_S3_ACCESS_KEY_ID: 'id', PACKS_S3_SECRET_ACCESS_KEY: 'not-a-secret' });
+      expect(refused.status).toBe(1);
+      expect(refused.stderr).toMatch(/This release offers ar, es, fr, hi, pt, zh, which --languages does not name \(en\)\. Nothing was sent\./);
+      expect(refused.stdout).not.toMatch(/would put/);
+      const named = run(['upload', '--from', out, '--dry-run', '--languages', 'en,ar,es,fr,hi,pt,zh'], { PACKS_S3_ENDPOINT: 'http://127.0.0.1:9', PACKS_S3_BUCKET: 'early-letters-packs', PACKS_S3_ACCESS_KEY_ID: 'id', PACKS_S3_SECRET_ACCESS_KEY: 'not-a-secret' });
+      expect(named.status).toBe(0);
+      expect(named.stdout).toMatch(/Languages: en, hi, es, zh, fr, ar, pt/);
+      expect(named.stdout).toMatch(/Dry run: nothing was sent/);
+      const unknown = run(['release', '--languages', 'en,xx']);
+      expect(unknown.status).toBe(1);
+      expect(unknown.stderr).toMatch(/unknown language code xx/);
+      expect(unknown.stderr).not.toMatch(/EL_SIGNING_KEY/);
+    }, 60_000);
 
     it('refuses a key file inside the repository and a key the shipped keys.ts does not trust', () => {
       const inside = run(['release', '--key-file', 'scripts/packs/remote-config.json']);

@@ -14,6 +14,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { base64ToBytes, generateSigningKey, signDocument, type DocumentKind, type TrustedKey } from '../../packages/api/src/index';
+import { LANGUAGE_CODES } from '../../packages/core/src/lang/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
 import { onboardingStories } from '../../packages/content/src/stories.en';
 import { readSigningKey, uploadOrder, type ReleaseIndex } from './lib';
@@ -123,6 +124,8 @@ describe('upload to an S3-compatible bucket', () => {
       key: signing,
       trusted,
       models: 'upstream',
+      // Every language, so the upload below carries text packs; the English-only default is tested in release.test.ts.
+      languages: LANGUAGE_CODES,
       previous: { manifest: 4, config: 2, content: 1 },
       content: { prompts: PROMPTS, stories: onboardingStories },
       remoteConfigSource: JSON.parse(fs.readFileSync(path.join(REPO, 'scripts/packs/remote-config.json'), 'utf8')),

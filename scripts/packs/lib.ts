@@ -350,6 +350,40 @@ export const RELEASE_DOCUMENTS = Object.fromEntries(
   documentObjects({ remoteConfig: 'remote-config', packManifest: 'pack-manifest', contentEn: 'content-bundle' }).map((o) => [o.text, { path: o.objectKey, cacheControl: DOCUMENT_CACHE }]),
 ) as Readonly<Record<DocumentKind, { path: string; cacheControl: string }>>;
 
+/**
+ * The spoken languages a release serves unless `--languages` names more:
+ * English only (D-111 item 4; the coordinator's call of 23 Oct 2026). English
+ * is bundled in the app, so an English release carries no text pack, only the
+ * multilingual (`mul`) speech models and the three signed documents.
+ */
+export const DEFAULT_RELEASE_LANGUAGES: readonly LanguageCode[] = ['en'];
+
+/** Checks a languages allowlist: every code a v1.0 language, at least one; English always added. Returns them in LANGUAGE_CODES order. */
+export function checkLanguages(codes: readonly string[]): LanguageCode[] {
+  if (!codes.length) throw new Error('--languages needs at least one code, for example --languages en');
+  const unknown = codes.filter((c) => !(LANGUAGE_CODES as readonly string[]).includes(c));
+  if (unknown.length) throw new Error(`--languages: unknown language code ${unknown.join(', ')}; known: ${LANGUAGE_CODES.join(', ')}`);
+  const set = new Set<string>(['en', ...codes]);
+  return LANGUAGE_CODES.filter((c) => set.has(c));
+}
+
+/** `--languages en,hi` to ['en', 'hi']; no flag to English only. */
+export function parseLanguages(value: string | null | undefined): LanguageCode[] {
+  if (value === null || value === undefined) return [...DEFAULT_RELEASE_LANGUAGES];
+  return checkLanguages(value.split(',').map((c) => c.trim()).filter(Boolean));
+}
+
+/** The languages a signed manifest offers phones, besides the multilingual models (`mul`). */
+export function manifestLanguages(manifestText: string): string[] {
+  const packs = (JSON.parse(manifestText) as { payload?: { packs?: { language?: unknown }[] } }).payload?.packs ?? [];
+  return [...new Set(packs.map((p) => String(p.language)).filter((l) => l !== 'mul'))].sort();
+}
+
+/** Upload gate: the languages a release's manifest offers that the allowlist does not name. Empty means it may be uploaded. */
+export function languagesNotAllowed(manifestText: string, allowed: readonly string[]): string[] {
+  return manifestLanguages(manifestText).filter((l) => !allowed.includes(l));
+}
+
 export const DOCUMENT_CONTENT_TYPE = 'application/json; charset=utf-8';
 export const MODEL_CONTENT_TYPE = 'application/octet-stream';
 
@@ -368,12 +402,21 @@ export interface SpeechFilePlan {
  * The speech models a release may carry: every `default` model that is hosted
  * today, plus any self-built one named in `include` (the founder's explicit
  * choice: ADR 0015 asks counsel about those weights before they are uploaded).
+ * A model for one language (not `mul`) is carried only when `languages` names
+ * that language.
  */
-export function speechFilePlan(baseUrl: string, catalog: Record<string, SpeechModel> = SPEECH_MODELS, include: readonly string[] = []): SpeechFilePlan[] {
+export function speechFilePlan(
+  baseUrl: string,
+  catalog: Record<string, SpeechModel> = SPEECH_MODELS,
+  include: readonly string[] = [],
+  languages: readonly string[] = LANGUAGE_CODES,
+): SpeechFilePlan[] {
   const base = baseUrl.replace(/\/+$/, '');
   const out: SpeechFilePlan[] = [];
+  const carried = (m: SpeechModel) => m.language === 'mul' || languages.includes(m.language);
   for (const model of Object.values(catalog)) {
     if (model.status !== 'default') continue;
+    if (!carried(model)) continue;
     const upstream = model.build === 'upstream';
     if (!model.hosted && !include.includes(model.id)) continue;
     if (!upstream && !include.includes(model.id)) continue;
@@ -382,6 +425,8 @@ export function speechFilePlan(baseUrl: string, catalog: Record<string, SpeechMo
   }
   const unknown = include.filter((id) => !catalog[id]);
   if (unknown.length) throw new Error(`--include-model names models that are not in the catalog: ${unknown.join(', ')}`);
+  const outside = include.filter((id) => catalog[id] && !carried(catalog[id]));
+  if (outside.length) throw new Error(`--include-model names models for a language this release does not carry (${outside.map((id) => `${id}: ${catalog[id].language}`).join(', ')}); name it in --languages`);
   return out;
 }
 
@@ -449,6 +494,8 @@ export interface ReleaseIndex {
   generatedAt: string;
   baseUrl: string;
   manifestVersion: number;
+  /** Spoken languages this release serves (`--languages`). English is always one: it is bundled, so it has no text pack. */
+  languages?: string[];
   files: ReleaseFile[];
   /** Manifest entries whose bytes are not in this directory: the app fetches them from the URL listed (upstream). Nothing to upload. */
   notIncluded: NotIncluded[];

@@ -108,7 +108,11 @@ set -a; . ~/.config/early-letters/r2.env; set +a
 npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream
 ```
 
-This writes `dist/release/` (git-ignored), checks every signature the way a phone does, and bumps the document versions in `supabase/functions/config/published.ts` and `supabase/functions/content/published.ts` (git is the version counter: see step 8). Measured here, `--models upstream`:
+This writes `dist/release/` (git-ignored), checks every signature the way a phone does, and bumps the document versions in `supabase/functions/config/published.ts` and `supabase/functions/content/published.ts` (git is the version counter: see step 8).
+
+**Languages: English only unless named** (`--languages`, D-111 item 4). With no flag the release carries no text pack (English is bundled in the app), and its manifest lists only the multilingual speech models; `--languages en,hi` adds Hindi. `upload` takes the same flag and refuses a release that offers a language it does not name.
+
+Measured here, `--models upstream --languages en,hi,es,zh,fr,ar,pt` (an English-only release holds just the three documents):
 
 | Path in the release | Bytes | Cache-Control |
 |---|---|---|
