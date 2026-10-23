@@ -257,6 +257,42 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(op.data.words_reviewed_at).toBe('2026-10-15T19:00:05.000Z');
   });
 
+  it('[F16-REQ-025] held_base is sent only on a Keep, always with a value: its presence alone makes the op a Keep (review A 5 on #138)', () => {
+    const data: EntryUpsertOp['data'] = {
+      id: ASHA_ENTRY, child_id: ASHA_CHILD, kind: 'letter', occurred_on: '2026-10-01', captured_at: '2026-10-15T19:00:00.000Z',
+      capture_mode: 'typed', edit_level: 'verbatim', prompt_key: null, engine_version: 6, raw_transcript: 'Asha found the puddle first.',
+      machine_edits: [], final_text: 'Asha found the puddle first.', in_book: true, sounds_like_me: null, author_signs_as: 'Papa',
+      audio_kept_on_device: false,
+    };
+    const keep: EntryUpsertOp = { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: null, held_base: '41', data };
+    const edit: EntryUpsertOp = { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: '812', data };
+    expect('held_base' in edit).toBe(false);
+    // @ts-expect-error null still makes the op a Keep on the server (counted as 0), so the contract refuses it.
+    const nullKeep: EntryUpsertOp = { ...keep, held_base: null };
+    expect(nullKeep.held_base).toBeNull();
+  });
+
+  it('[F16-REQ-025] applied_v comes only on a duplicate and is a row version; a first answer rebases on entry.v (review A 4 on #138)', () => {
+    const entry = { id: ASHA_ENTRY, v: '905', updated_at: '2026-10-15T19:00:03Z', deleted_at: null, in_book: true, approval: 'not_needed' };
+    const r = parsePushResponse({
+      results: [
+        // First answer (sync_push): applied, entry.v is the row version this op wrote; no applied_v.
+        { op: OP, ok: true, applied: true, conflict: false, entry: { ...entry, v: '900' } },
+        // Its repeat (dup_outcome): the letter as it is now, plus applied_v, the row version the op wrote.
+        { op: OP, ok: true, dup: true, entry, applied_v: '900' },
+        // A held.upsert's repeat (held_dup): the held row now, plus applied_v.
+        { op: OP, ok: true, dup: true, held: { id: ASHA_ENTRY, v: '44', updated_at: '2026-10-15T19:00:04Z' }, applied_v: '41' },
+      ],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const [first, dup, heldDup] = r.value.results;
+    expect(first.ok && [first.applied_v, first.entry?.v]).toEqual([undefined, '900']);
+    expect(dup.ok && [dup.applied_v, dup.entry?.v]).toEqual(['900', '905']);
+    expect(heldDup.ok && heldDup.applied_v).toBe('41');
+  });
+
   it('[F16-REQ-029] a held tombstone carries only id, gone, updated_at and v, and the pull still parses', () => {
     const r = parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z',

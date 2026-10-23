@@ -310,17 +310,31 @@ export interface EntryUpsertOp extends OpBase<'entry.upsert', EntryData> {
    * (`text_xid`, ADR 0025 section 5) above `base`, the server does not apply
    * the words and answers `conflict_groups: ['text']` with `current`
    * (WP-F16-14). After an op applies, the client rebases every later queued
-   * op for that letter to the returned `applied_v` (F16-REQ-025).
+   * op for that letter (F16-REQ-025): on a first answer to `entry.v`, the
+   * row version the answer carries; on a duplicate's answer (`dup`) only to
+   * its `applied_v`, never to `entry.v`, which may hold another phone's
+   * later write. A duplicate without `applied_v` moves no base.
    */
   base: string | null;
   /**
    * The Keep (ADR 0025 section 9, review K 1): the `v` of the held draft this
-   * letter is made from, as this phone last knew it. When the held words moved
-   * past it, the keep is refused as a words conflict (no letter is made, the
-   * held row stays, `current` carries the held words). Absent on an ordinary
-   * upsert; a keep without it is compared as 0.
+   * letter is made from, as this phone last knew it. Sent on a Keep, always
+   * with a value, and on no other op: as built (20261016000000 `sync_push`),
+   * the key's presence alone makes an `entry.upsert` a Keep, even as null,
+   * which counts as 0. So an ordinary edit that carried it would have its
+   * words compared as a Keep and refused when the server's are newer.
+   *  - Onto a new letter (`keep_check`): when the author's held row has
+   *    words newer than it and different from the keep's, the keep is
+   *    refused as a words conflict: no letter is made, the held row stays,
+   *    `current` carries the held words with `typed_text`. A Keep without
+   *    the key is compared as 0 too whenever the author holds a held row
+   *    with that id.
+   *  - Onto the author's existing letter with no `base` (another phone kept
+   *    the draft first): it stands in for `base`, newer words refuse the
+   *    text group with `current`, and the stored `raw_transcript`,
+   *    `captured_at`, `engine_version` and `pack_ref` stand.
    */
-  held_base?: string | null;
+  held_base?: string;
 }
 export interface EntryReuploadOp extends OpBase<'entry.reupload', EntryData> {
   /** The server `updated_at` this phone last saw (restore epoch, F16 6.2 F). */
@@ -422,9 +436,15 @@ export const PushResultOkSchema = v.object({
    */
   current: v.optional(v.nullable(ConflictCurrentSchema)),
   /**
-   * WP-F16-14 (ADR 0025 section 2): the words version this op wrote when it
-   * first applied. A duplicate (`dup`) answers it too, so a lost answer
-   * rebases on it, never on `entry.v`.
+   * WP-F16-14 (ADR 0025 section 2), as built (20261016000000): sent only on
+   * a duplicate's answer (`dup: true`; `dup_outcome`, `held_dup`), never on
+   * a first answer. It is the row version (`sync_xid`, the kind of value
+   * `entry.v` and `held.v` carry, not the words version) that this op wrote
+   * when it first applied, so a lost answer rebases on it and never on
+   * `entry.v`. Absent when the first answer was a words conflict (that
+   * answer's `conflict_groups` and `current` come again instead) or the op
+   * wrote nothing (a re-upload the server did not take). After a first
+   * answer, rebase on `entry.v` (a held draft: `held.v`).
    */
   applied_v: v.optional(v.nullable(str)),
   missing: v.optional(v.boolean()),
