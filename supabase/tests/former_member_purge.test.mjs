@@ -202,4 +202,26 @@ check('a book whose only author is the deleting parent goes whole: row, letter, 
   res.books_kept === 0 && !(await book(W1)) && await n(`entries where id = $1`, [w1.id]) === 0 && await ledger('child', W1)
   && await queued('entry-photos', `${W1}/`, true));
 
+// ── 4. A former parent whose only row is a held draft (review A N1 on #248) ──
+// Two guards protect this case alone: book_kept_authors's held-draft branch (step 1 keeps the book)
+// and step 2b's held-draft check (the kept row is not removed while the draft is there).
+await sys(`delete from sync_rate_windows`);
+const H = await newChild(A, 'Asha', '2025-09-01');
+await join(C, 'parent', H, A);
+const cHeld = await heldDraft(C, H, 'Your first word was hello.');
+await letter(A, H);
+check('undo of a co-parent whose only row in the book is a held draft',
+  (await one(A, `select public.undo_parent_join($1, $2) r`, [H, C])).r === 'undone'
+  && await n(`entries where author_id = $1 and child_id = $2`, [C, H]) === 0 && await n(`held_drafts where id = $1 and author_id = $2`, [cHeld, C]) === 1);
+await as(A, `select public.request_book_deletion($1, 'ios')`, [H]);
+res = (await sys(`select public.purge_due(now() + interval '31 days') r`)).rows[0].r;
+check('[F11-REQ-008] day 30: a held draft alone makes its author a kept author: the draft stays, theirs, and the book is kept',
+  res.books_kept === 1 && await n(`held_drafts where id = $1 and author_id = $2`, [cHeld, C]) === 1 && (await book(H))?.kept === true);
+res = (await sys(`select public.purge_due(now() + interval '35 days') r`)).rows[0].r;
+check('[F11-REQ-008] step 2b keeps the row while that held draft is all that is left (no letter, no backup)',
+  res.kept_removed === 0 && (await book(H))?.kept === true && await n(`held_drafts where id = $1`, [cHeld]) === 1);
+await as(C, `select sync_private.erase_entry($1)`, [cHeld]);
+res = (await sys(`select public.purge_due(now() + interval '36 days') r`)).rows[0].r;
+check('once they erase it (their own ask), the next run removes the row', res.kept_removed === 1 && !(await book(H)));
+
 done();
