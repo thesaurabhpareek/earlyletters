@@ -909,7 +909,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F03-07 | Not built | 1 | Human or device (section 10) |
 | WP-F04-01 | Not run | 0 | 1.0.x: carries no P0 requirement |
 | WP-F04-02 | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F04-03 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F04-03 | Partly built (#146; classification rows not built) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F04-04 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-05 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-06 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
@@ -1068,7 +1068,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F14-17 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S06) |
 | WP-F14-18 | Not built | 4 | In 6.3, round 2 additions (waves 3 and 4, S20) |
 | WP-F14-19 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F14-20 | Not built | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-20 | Partly built (#146: the S03 ledger query `countPresent` in `lib/db/repos/ledger.ts`) | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-22 | Not built | 2 | In 6.3 as: Wave 2: S02 held-draft table, S03 held-draft sync op, S13 export `waiting/` |
 | WP-F15-01 | Partly built | 0 | 1.0.x: carries no P0 requirement |
@@ -1097,7 +1097,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F16-12 | Not run | 0 | Cut (6.4): P1, no P0 requirement |
 | WP-F16-13 | Not built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F16-14 | Not built | 2 | In 6.3 as: S02 wave 2 words-group compare-and-set |
-| WP-F16-15 | Not built | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
+| WP-F16-15 | Partly built (#146; conflict note not built) | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
 | WP-F16-16 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S03+S07) |
 | WP-F16-17 | Not built | 3 | In 6.3 as: Wave 2: S02 held-draft table and S03 held-draft sync op (the same work as WP-F14-22) |
 | WP-F16-18 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S07) |
