@@ -120,7 +120,13 @@ const nativeAead: Aead = {
 // ── Files ─────────────────────────────────────────────────────────────────
 
 let tmpDir: string | null = null;
-const tmpDirectory = () => (tmpDir ??= ScribeKeys!.backupTmpDirectory());
+/** Null without the native module (it makes the folder): backup is unavailable then, and there is nothing to sweep. */
+const tmpDirectory = (): string | null => (ScribeKeys ? (tmpDir ??= ScribeKeys.backupTmpDirectory()) : null);
+const needTmp = (): string => {
+  const dir = tmpDirectory();
+  if (!dir) throw Object.assign(new Error('backup_unsupported'), { code: 'unsupported' });
+  return dir;
+};
 const join = (dir: string, name: string) => `${dir.replace(/\/+$/, '')}/${name}`;
 
 const nativeFiles: FileIO = {
@@ -168,12 +174,15 @@ const nativeFiles: FileIO = {
     if (!ScribeAudio) throw new Error('backup_unsupported');
     return ScribeAudio.sha256File(uri);
   },
-  tmpUri: (name) => join(tmpDirectory(), name),
-  listTmp: () =>
-    new Directory(tmpDirectory())
+  tmpUri: (name) => join(needTmp(), name),
+  listTmp: () => {
+    const dir = tmpDirectory();
+    if (!dir) return [];
+    return new Directory(dir)
       .list()
       .filter((e): e is File => e instanceof File)
-      .map((f) => f.uri),
+      .map((f) => f.uri);
+  },
   documentUri: (name) => join(Paths.document.uri, name),
 };
 
