@@ -373,6 +373,22 @@ describe('the sender', () => {
     expect(h.sent).toHaveLength(2);
   });
 
+  it('a retry of the same report sends the same body under the same idempotency key, so the server can answer a duplicate (review N2)', async () => {
+    const h = harness({ answers: [{ ok: false, code: 'network' }] });
+    h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
+    expect(await h.reporter.flush()).toBe('retry_later');
+    h.tick(RETRY_AFTER_MS + 1);
+    expect(await h.reporter.flush()).toBe('sent');
+    expect(h.sent).toHaveLength(2);
+    expect(h.sent[1].key).toBe(h.sent[0].key);
+    expect(h.sent[1].report).toEqual(h.sent[0].report);
+    // A later, different report gets its own key.
+    h.tick(RETRY_AFTER_MS + 1);
+    (h.deps.nativeRefs as ReturnType<typeof vi.fn>).mockResolvedValue([annualTrial({ willAutoRenew: false })]);
+    expect(await h.reporter.flush()).toBe('sent');
+    expect(h.sent[2].key).not.toBe(h.sent[0].key);
+  });
+
   it('a refused report (bad_request) is never resent for the same status, and consent facts keep waiting', async () => {
     const h = harness({ answers: [{ ok: false, code: 'bad_request' }] });
     h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });

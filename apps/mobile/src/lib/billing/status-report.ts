@@ -16,8 +16,11 @@
  *   3. This account's salt (GET salt, cached in memory for the session, never stored).
  *   4. The native module turns the salt into a `sub_ref` per own purchase.
  *   5. One POST per purchase whose status changed or whose consent facts wait, each with a
- *      fresh idempotency key. A refused report (bad_request) is marked so it never loops;
- *      a retryable failure stops the flush until the next trigger, at most once a minute.
+ *      fresh idempotency key. A retry after a retryable failure sends the same body under the
+ *      same key while this process runs, so the server answers a duplicate from its stored
+ *      result; after a restart the report is planned again under a new key. A refused report
+ *      (bad_request) is marked so its status is not resent; a retryable failure stops the
+ *      flush until the next trigger, at most once a minute.
  *
  * Nothing is logged: no `sub_ref`, salt, date, plan or account id goes to any log,
  * analytics event or crash report (F14-REQ-014, CLAUDE.md privacy rules).
@@ -76,6 +79,8 @@ export function createStatusReporter(deps: ReporterDeps): StatusReporter {
   let inflight: Promise<FlushOutcome> | null = null;
   let salt: { owner: string; value: string } | null = null;
   let notBefore = 0;
+  /** The last attempt per purchase that failed retryably: retried with the same body and key. */
+  const retries = new Map<string, { owner: string; fingerprint: string; consent: string; report: StatusReport; key: string }>();
 
   const read = (): ReportState => {
     try {
@@ -114,8 +119,14 @@ export function createStatusReporter(deps: ReporterDeps): StatusReporter {
       if (state.owner !== owner) write({ ...state, owner, sent: {}, consented: [] });
       return 'nothing';
     }
-    for (const p of planned) {
-      const answer = await deps.sendReport(p.report, deps.newKey()).catch((): StoreAnswer => ({ ok: false, code: 'network' }));
+    for (const planned1 of planned) {
+      const consent = JSON.stringify(planned1.report.consent ?? null);
+      const prev = retries.get(planned1.key);
+      const again = prev && prev.owner === owner && prev.fingerprint === planned1.fingerprint && prev.consent === consent;
+      const p = again ? { ...planned1, report: prev.report } : planned1;
+      const key = again ? prev.key : deps.newKey();
+      retries.delete(planned1.key);
+      const answer = await deps.sendReport(p.report, key).catch((): StoreAnswer => ({ ok: false, code: 'network' }));
       if (answer.ok) {
         state = afterStored(state, owner, p, answer.consent);
         write(state);
@@ -124,6 +135,7 @@ export function createStatusReporter(deps: ReporterDeps): StatusReporter {
         state = afterStored(state, owner, { ...p, report: { ...p.report, consent: undefined } }, 'none');
         write(state);
       } else {
+        retries.set(planned1.key, { owner, fingerprint: p.fingerprint, consent, report: p.report, key });
         notBefore = Date.parse(now) + RETRY_AFTER_MS;
         return 'retry_later';
       }
