@@ -30,12 +30,12 @@ const fns = (await sys(`
 const ok = (sp) => sp === '' || sp === '""' || (sp != null && /^pg_catalog(, [a-z_]+)*, pg_temp$/.test(sp));
 const bad = fns.filter((f) => !ok(f.sp));
 for (const f of bad) console.log(`      search_path not pg_catalog first and pg_temp last: ${f.schema}.${f.sig} (${f.sp ?? 'not set'})`);
-check(`every function in public, ops and insights pins pg_catalog first and pg_temp last (${fns.length} functions)`, fns.length > 100 && bad.length === 0);
+check(`every function in public, ops, insights and sync_private pins pg_catalog first and pg_temp last (${fns.length} functions)`, fns.length > 100 && bad.length === 0);
 const schemas = new Set(fns.map((f) => f.schema));
-check('the sweep covers public, ops and insights', ['public', 'ops', 'insights'].every((s) => schemas.has(s)));
+check('the sweep covers public, ops, insights and sync_private (20261016000000)', ['public', 'ops', 'insights', 'sync_private'].every((s) => schemas.has(s)));
 check('the sweep covers every security definer function (none outside it)',
   (await sys(`select count(*)::int n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-               where p.prosecdef and n.nspname in ('public', 'ops', 'insights')`)).rows[0].n === fns.filter((f) => f.secdef).length);
+               where p.prosecdef and n.nspname in ('public', 'ops', 'insights', 'sync_private')`)).rows[0].n === fns.filter((f) => f.secdef).length);
 
 // Every function an RLS policy calls is in the swept set and pinned.
 const policyFns = (await sys(`
