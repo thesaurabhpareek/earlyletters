@@ -29,12 +29,12 @@
 --   - book_purge_held(child, keep), new: the book, every letter, held draft and recording backup in it
 --     (by id and author), every book key in it (by holder), and every object in a person's folder of it
 --     (by that person), leaving out the rows of the authors in keep. It was the book, letters and held
---     drafts in purge_due step 1. prepare_account_purge passes a book's kept authors (book_kept_authors),
---     whose rows purge_book_keep_authors never deletes, so a hold on a former member's row does not hold
---     the deleting parent's account (review A N2 on #251); a hold on the book or on anyone else's row
---     does. purge_due steps 1 and 2b and ops_deletion_sla pass none: step 1 holds the whole book for a
---     hold on any row in it, as 20261023010000 does (former_member_purge.test.mjs, section 1), and step
---     2b deletes everything left.
+--     drafts in purge_due step 1. Every caller passes the book's kept authors (book_kept_authors), whose
+--     rows purge_book_keep_authors never deletes, so a hold covers exactly what the purge touches: a hold
+--     on a former member's own row holds neither the deleting parent's account nor the day-30 book purge
+--     (review A N2 on #251; 20261023010000 held the whole book for it), while a hold on the book or on
+--     anyone else's row does. In step 2b nothing of a kept author's letters is left, so the list is
+--     empty and their book keys and folders count.
 --   - The person's own recording backups (backup_row_held) and book keys in a held book, the rule
 --     backup_delete_all already uses for "Delete the backup"; and their Storage objects in a held book:
 --     in their folders ({child}/{them}/, which this function queues and the worker mirrors into every
@@ -89,10 +89,11 @@ returns boolean language sql stable security definer set search_path = pg_catalo
 $$;
 
 -- From 20261023010000. Change (20261023020000): steps 1 and 2b skip a book under any hold that covers
--- a row they delete (book_purge_held). Step 1 checked the book, its letters and its held drafts; it now
--- also checks its recording backups, book keys and its people's Storage folders. Step 2b checked the
--- book only; nothing of the kept authors' letters, drafts or backups is left by then, so it now also
--- checks their book keys and folders. Nothing else changes.
+-- a row they delete (book_purge_held with the book's kept authors). Step 1 checked the book, its letters
+-- and its held drafts, a former member's included; it now also checks its recording backups, book keys
+-- and its people's Storage folders, and leaves out a former member's rows, which a kept book keeps.
+-- Step 2b checked the book only; nothing of the kept authors' letters, drafts or backups is left by
+-- then, so it now also checks their book keys and folders. Nothing else changes.
 create or replace function public.purge_due(p_now timestamptz default now(), p_limit int default 500)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -111,7 +112,7 @@ begin
     select c.id from children c
     where c.deleted_at is not null and c.deleted_at < v_cutoff
       and c.purged_at is null                                   -- 20261023010000: not a kept book
-      and not public.book_purge_held(c.id)                      -- 20261023020000: every row the purge deletes
+      and not public.book_purge_held(c.id, public.book_kept_authors(c.id))   -- 20261023020000: every row the purge deletes
     order by c.deleted_at
     limit v_limit
     for update skip locked
@@ -156,7 +157,7 @@ begin
   for r in
     select c.id from children c
     where c.purged_at is not null
-      and not public.book_purge_held(c.id)                      -- 20261023020000: was is_held('child') only
+      and not public.book_purge_held(c.id, public.book_kept_authors(c.id))   -- 20261023020000: was is_held('child') only
       and not exists (select 1 from entries e where e.child_id = c.id)
       and not exists (select 1 from held_drafts h where h.child_id = c.id)
       and not exists (select 1 from audio_blobs b where b.child_id = c.id)
@@ -309,7 +310,7 @@ returns jsonb language sql stable security definer set search_path = pg_catalog,
     'tombstones_overdue',
       (select count(*) from entries e where e.deleted_at < p_now - interval '31 days' and not public.entry_is_held(e.id))
       + (select count(*) from children c where c.deleted_at < p_now - interval '31 days' and c.purged_at is null
-           and not public.book_purge_held(c.id)),
+           and not public.book_purge_held(c.id, public.book_kept_authors(c.id))),
     'requests_executing_over_24h',
       (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '24 hours'),
     'requests_executing_over_7d',

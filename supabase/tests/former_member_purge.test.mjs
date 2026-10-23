@@ -92,14 +92,15 @@ check('writing it still needs a parent of the book: the removed parent\'s update
 
 check('the remaining parent may now delete the book', (await one(A, `select public.request_book_deletion($1, 'ios') r`, [U])).r === 'book_scheduled');
 
-// A legal hold on the former member's letter holds the whole book purge, as any hold in the book does.
+// A legal hold on the former member's letter does not hold the book purge: the purge never deletes that
+// letter (20261023020000, review A N2 on #251; before, any hold in the book held it). A hold on the book or
+// on a current member's row still does (purge_legal_holds.test.mjs).
 await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('entry', $1, 'other', 'T-S02', 'ops', '2027-01-01')`, [b2.id]);
 let res = (await sys(`select public.purge_due(now() + interval '31 days') r`)).rows[0].r;
-check('under a legal hold on a former member\'s letter, day 30 leaves the book as it is', res.books === 0
-  && await n(`entries where id = $1`, [a1.id]) === 1 && await n(`child_members where child_id = $1`, [U]) === 2);
+check('under a legal hold on a former member\'s letter, day 30 still purges the book for everyone else and the held letter stays',
+  res.books === 1 && res.books_kept === 1 && await n(`entries where id = $1 and author_id = $2`, [b2.id, B]) === 1
+  && await n(`entries where id = $1`, [a1.id]) === 0);
 await sys(`update legal_holds set released_at = now(), released_by = 'ops' where scope_id = $1`, [b2.id]);
-
-res = (await sys(`select public.purge_due(now() + interval '31 days') r`)).rows[0].r;
 check('day 30: the book is purged and kept for its former member (books 1, books_kept 1)', res.books === 1 && res.books_kept === 1);
 const kept = await book(U);
 check('[DATA-REQ-015] the book row stays, tombstoned and marked kept', kept?.tombstoned === true && kept.kept === true);

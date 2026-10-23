@@ -25,7 +25,9 @@ const Q2 = 'a2222222-2222-4222-8222-222222222222';
 const Q3 = 'a3333333-3333-4333-8333-333333333333';
 const Q4 = 'a4444444-4444-4444-8444-444444444444';
 const Q5 = 'a5555555-5555-4555-8555-555555555555';
-const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1, Q2, Q3, Q4, Q5];
+const R1 = 'a6666666-6666-4666-8666-666666666666';
+const R2 = 'a7777777-7777-4777-8777-777777777777';
+const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1, Q2, Q3, Q4, Q5, R1, R2];
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
   ct: Buffer.from(b.repeat(48), 'hex').toString('base64') });
@@ -236,6 +238,29 @@ check('[DATA-REQ-035] and every held row of theirs stays: letter, photo, held dr
   && await n(`held_drafts where id = $1`, [q1Held]) === 1 && await n(`audio_blobs where entry_id = $1`, [q1Blob]) === 1
   && await n(`child_keys where child_id = $1 and profile_id = $2`, [K2, Q1]) === 1 && await queuedUnder(`${K2}/${Q1}/`) === 0);
 for (const id of [Q1, q1.id]) await release(id);
+
+// ── 4c. The same rule on day 30 (purge_due step 1) ──
+// A book the sole parent deleted, with a former co-parent's letter and a current family member's letter.
+const K3 = await newChild(R1, 'Asha', '2025-09-20');
+await join(R2, 'parent', K3, R1);
+await join(N, 'contributor', K3, R1);
+const r2l = await letter(R2, K3, 'Asha jumped in a puddle.');
+const rnl = await letter(N, K3, 'Asha painted a sun.');
+check('the co-parent leaves, keeping their letter', (await one(R2, `select public.leave_child($1, true) r`, [K3])).r === 'left');
+check('the remaining parent deletes the book', (await one(R1, `select public.request_book_deletion($1, 'ios') r`, [K3])).r === 'book_scheduled');
+await hold('entry', rnl.id, 'T-K3N');
+res = await purgeDue(31);
+check('[DATA-REQ-035] day 30 skips the book while a current family member\'s letter in it is held', res.books === 0
+  && (await book(K3))?.kept === false && await n(`entries where id = any($1::uuid[])`, [[r2l.id, rnl.id]]) === 2);
+await release(rnl.id);
+const k3Overdue = await overdue();
+await hold('entry', r2l.id, 'T-K3R');
+check('[ops_deletion_sla] by the same rule, that hold does not make the book a held tombstone', await overdue() === k3Overdue);
+res = await purgeDue(31);
+check('[review A N2] a hold on the former co-parent\'s letter alone does not: the book is purged for everyone else and kept, and the held letter stays',
+  res.books === 1 && res.books_kept === 1 && (await book(K3))?.kept === true
+  && await n(`entries where id = $1 and author_id = $2`, [r2l.id, R2]) === 1 && await n(`entries where id = $1`, [rnl.id]) === 0);
+await release(r2l.id);
 
 // ── 5. The person's own rows in a book that survives them ──
 // A co-parent with no letter in a held book: their book key, an object in their folder there, and the
