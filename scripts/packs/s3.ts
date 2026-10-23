@@ -64,6 +64,8 @@ export function s3ConfigFromEnv(env: Record<string, string | undefined>): S3Conf
   if (missing.length) throw new Error(`missing ${missing.join(', ')} (docs/ops/PACKS_HOSTING.md, "Upload")`);
   const endpoint = get('endpoint').replace(/\/+$/, '');
   if (!/^https?:\/\/[^/\s]+$/.test(endpoint)) throw new Error(`${S3_ENV.endpoint} must be an origin such as https://<account-id>.r2.cloudflarestorage.com (no bucket, no path)`);
+  // Signed requests and bodies never travel in clear; plain http only to this computer (the tests' fake bucket).
+  if (endpoint.startsWith('http://') && !/^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(endpoint)) throw new Error(`${S3_ENV.endpoint} must use https (plain http is accepted only for 127.0.0.1 and localhost)`);
   if (!/^[a-z0-9][a-z0-9.-]{1,62}$/.test(get('bucket'))) throw new Error(`${S3_ENV.bucket} is not a valid bucket name`);
   return { endpoint, bucket: get('bucket'), accessKeyId: get('accessKeyId'), secretAccessKey: get('secretAccessKey'), region: get('region') || 'auto' };
 }

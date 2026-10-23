@@ -60,6 +60,10 @@ describe('AWS Signature Version 4', () => {
     expect(s3ConfigFromEnv(env)).toEqual({ endpoint: 'https://abc.r2.cloudflarestorage.com', bucket: 'early-letters-packs', accessKeyId: 'id', secretAccessKey: 'secret', region: 'auto' });
     expect(s3ConfigFromEnv({ ...env, PACKS_S3_REGION: 'eu-west-1' }).region).toBe('eu-west-1');
     expect(() => s3ConfigFromEnv({ ...env, PACKS_S3_ENDPOINT: 'https://abc.r2.cloudflarestorage.com/bucket' })).toThrow(/no bucket, no path/);
+    // Review A of #162, N7: signed requests and bodies never go in clear, except to this computer.
+    expect(() => s3ConfigFromEnv({ ...env, PACKS_S3_ENDPOINT: 'http://abc.r2.cloudflarestorage.com' })).toThrow(/must use https/);
+    expect(() => s3ConfigFromEnv({ ...env, PACKS_S3_ENDPOINT: 'http://127.0.0.1.example.com' })).toThrow(/must use https/);
+    for (const local of ['http://127.0.0.1:9000', 'http://localhost:9000', 'http://[::1]:9000']) expect(s3ConfigFromEnv({ ...env, PACKS_S3_ENDPOINT: local }).endpoint).toBe(local);
   });
 });
 
