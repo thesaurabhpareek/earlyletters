@@ -143,13 +143,13 @@ export const ENDPOINTS = {
   // ── Sign in with Apple refresh token capture (S01, PR #139; deletion revokes it, BL-330) ──
   appleToken: {
     method: 'POST', path: `/functions/v1/apple-token/${API_MAJOR}`, class: 'edge_light', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'live',
     capability: 'signIn',
   },
   // ── Family (packages/api/src/server/family.ts) ──
   peekInvite: {
     method: 'POST', path: '/rest/v1/rpc/peek_invite', class: 'read_rpc', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
     killSwitch: 'invites', capability: 'coParent',
   },
   acceptInvite: {
@@ -160,7 +160,7 @@ export const ENDPOINTS = {
   // The device-made overload in S02's 20261015020000 (F11 D5): idempotent on the invite id and hashes.
   createInviteV2: {
     method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
     killSwitch: 'invites', capability: 'coParent',
   },
   revokeInvite: {
@@ -180,7 +180,7 @@ export const ENDPOINTS = {
   },
   undoParentJoin: {
     method: 'POST', path: '/rest/v1/rpc/undo_parent_join', class: 'write_rpc', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
     capability: 'coParent',
   },
   // Failures, not attempts: 10 per person and per device, 30 per IP, 1,000 global, in one RPC (family.ts RedeemByCodeArgs).

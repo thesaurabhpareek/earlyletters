@@ -44,9 +44,10 @@ export const NO_VERIFY_JWT = ['config', 'content', 'purge-worker'];
  * Functions whose GET /<name>/health answers without a session (RA-07-06, #202),
  * so the content-free smoke checks them after a deploy. Each is also in
  * NO_VERIFY_JWT: behind the gateway's check the route cannot answer anonymously.
- * Every other deployed function (analytics-forget, and apple-token and
- * subscription-status until S01 and S06 decide) is confirmed in the CLI's
- * function list instead. Add a name here when its owner adds an anonymous route.
+ * Every other deployed function (analytics-forget, apple-token, invite-redeem
+ * and subscription-status, all with the gateway JWT check on) is confirmed in
+ * the CLI's function list instead. Add a name here when its owner adds an
+ * anonymous route.
  */
 export const SMOKE_HEALTH = ['config', 'content', 'purge-worker'];
 

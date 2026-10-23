@@ -6,11 +6,12 @@
  * SQL: supabase/migrations/20261005000000_family_cap_language_idempotency.sql
  * (`create_child_invite`, `accept_child_invite`, `leave_child`,
  * `remove_child_member`), 20261003000000 (`revoke_invite`). From S02's v1 gate
- * files (PR #140, pending): `peek_invite` (G-13), the device-made overload of
- * `create_child_invite`, `undo_parent_join` (D3) and
- * `accept_child_invite_by_code` (service role only, called by `invite-redeem`).
- * Still to come (requested from S02): `peek_invite_by_code` and SCINV details
- * for expired, used, revoked and already_member.
+ * files (PR #140, on develop: 20261015010000 and 20261015020000): `peek_invite`
+ * (G-13), the device-made overload of `create_child_invite`, `undo_parent_join`
+ * (D3) and `accept_child_invite_by_code` (service role only). Still to come
+ * (requested from S02): `invite_redeem_by_code` (the gate `invite-redeem`
+ * calls), `peek_invite_by_code` and SCINV details for expired, used, revoked
+ * and already_member.
  *
  * Server-feature contract: imported only through `@scribe/api/server`.
  * Edge Functions import this file directly (Deno), so it stays a leaf module:

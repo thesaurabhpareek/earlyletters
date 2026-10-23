@@ -5,23 +5,23 @@
  * The SQL that implements it: `sync_push(p_ops jsonb)` and
  * `sync_pull(p_since jsonb, p_limit int)` in
  * supabase/migrations/20261004100000_sync_engine.sql, redefined in
- * 20261005000000_family_cap_language_idempotency.sql and in S02's v1 gate file
- * (20261015000000, pending). This file is the one definition the app's sync
- * engine (apps/mobile/src/lib/sync, S03), the SQL (S02) and the tests share;
- * `test/contract-drift.test.ts` reads the migrations and fails when the op
- * types or field groups here and in the SQL parser disagree.
+ * 20261005000000_family_cap_language_idempotency.sql, S02's v1 gate files
+ * (20261015000000 to 20261015030000, PR #140) and the sync protocol v1 server
+ * half (20261016000000_sync_v1_server.sql, PR #208; ADR 0025). This file is
+ * the one definition the app's sync engine (apps/mobile/src/lib/sync, S03),
+ * the SQL (S02) and the tests share; `test/contract-drift.test.ts` reads the
+ * migrations and fails when the op types, keys or field groups here and in
+ * the SQL disagree.
  *
- * Status of each part (15 Oct 2026):
- *  - built in SQL (pending apply): every op type except `held.*`, the field
- *    groups, push results, pull books, digest, `gone`, `reset`;
- *  - in S02's pending PR #140 (20261015030000): `occurred_precision`,
- *    `base_direction`, `author_edits`, `locked_spans`, `pack_ref`, prefs
- *    `notify_letters`;
- *  - planned, S02 after the sync ADR (T15; marked `planned` below):
- *    `p_api_version` and `SCVER` (WP-F16-16), words compare and set with
- *    `conflict_groups` and `current` (WP-F16-14), `held_drafts` with
- *    `held.upsert`, `held.discard` and the `held` pull section (WP-F16-17),
- *    prefs `hidden` and `quiet` (WP-F12-09).
+ * Status of each part (23 Oct 2026, develop at d98961f):
+ *  - built: every op type including `held.upsert`, `held.discard` and
+ *    `entry.erase` (20261016000000), the field groups, words compare and set
+ *    with `conflict_groups`, `current` and `applied_v`, the `held` pull
+ *    section with its `gone` markers, the review mark `words_reviewed_at`,
+ *    `occurred_precision`, `base_direction`, `author_edits`, `locked_spans`,
+ *    `pack_ref` (20261015030000), prefs `notify_letters`;
+ *  - planned (marked `planned` below): `p_api_version` and `SCVER`
+ *    (WP-F16-16), prefs `hidden` and `quiet` (WP-F12-09).
  * A planned entry column is optional on the wire: an older server ignores it
  * (`entry.upsert` reads named keys only) and keeps a column whose key is
  * absent (the rule `language` follows in 20261005000000). Planned op types
@@ -94,7 +94,7 @@ export type MemberRole = (typeof MEMBER_ROLES)[number];
 export const FIELD_GROUPS = ['text', 'in_book', 'sounds_like_me', 'occurred_on', 'language'] as const;
 export type FieldGroup = (typeof FIELD_GROUPS)[number];
 
-/** Columns per group. `author_edits`, `locked_spans` and `occurred_precision` are planned columns (S02). */
+/** Columns per group (as built in 20261015030000 and 20261016000000). */
 export const FIELD_GROUP_COLUMNS: Readonly<Record<FieldGroup, readonly string[]>> = {
   text: ['final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans'],
   in_book: ['in_book'],
@@ -113,6 +113,12 @@ export const WORDS_GROUP: FieldGroup = 'text';
  */
 export const SHARED_GROUP_COLUMNS: Readonly<Record<string, readonly FieldGroup[]>> = {
   base_direction: ['text', 'language'],
+  /**
+   * The review mark (M17, ADR 0025 section 11): applied with the `text`
+   * group, and only when the op carries the key, so an op without it keeps
+   * the server's value (20261016000000). Not part of the words compare.
+   */
+  words_reviewed_at: ['text'],
 };
 
 /**
@@ -131,6 +137,7 @@ export const INSERT_ONLY_COLUMNS = ['id', 'kind', 'capture_mode', 'prompt_key', 
 /** Columns only the author ever receives (F11-REQ-085, PRD-REQ-004 Rev). A pull row for someone else never carries them. */
 export const AUTHOR_ONLY_COLUMNS = [
   'raw_transcript', 'machine_edits', 'author_edits', 'locked_spans', 'pack_ref', 'language', 'stt_meta', 'deleted_reason',
+  'words_reviewed_at',
 ] as const;
 
 export const PUSH_OP_TYPES = [
@@ -142,30 +149,34 @@ export const PUSH_OP_TYPES = [
   'book.create',
   'book.update',
   'prefs.upsert',
-  /** Planned (WP-F16-17): an author-only held or waiting draft, whole row; words by compare and set. */
+  /**
+   * WP-F16-17 (20261016000000): an author-only held or waiting draft, whole
+   * row; words by compare and set. While `app.held_sync` is 'off' the server
+   * answers `held_off` and claims nothing, so the phone keeps the op queued.
+   */
   'held.upsert',
-  /** Planned (WP-F16-17, F08 6.5 D5): delete the held draft, its audio_blobs row and object. */
+  /** WP-F16-17, F08 6.5 D5 (20261016000000): delete the held draft, its audio_blobs row and object. */
   'held.discard',
   /**
-   * Planned (WP-F16-13, F16-REQ-024, F08 6.5 D4): Erase now for a synced
-   * letter. The server purges the row and the backup object at the exact
-   * `audio_blobs.object_path`; every device drops it at its next pull.
+   * WP-F16-13, F16-REQ-024, F08 6.5 D4 (20261016000000): Erase now for a
+   * synced letter. The server purges the row and the backup object at the
+   * exact `audio_blobs.object_path`; every device drops it at its next pull.
    */
   'entry.erase',
 ] as const;
 export type PushOpType = (typeof PUSH_OP_TYPES)[number];
-/** Op types the SQL parser does not have yet. The drift test allows exactly these to be missing. */
-export const PLANNED_PUSH_OP_TYPES: readonly PushOpType[] = ['held.upsert', 'held.discard', 'entry.erase'];
+/** Op types the SQL parser does not have yet. The drift test allows exactly these to be missing. None since 20261016000000. */
+export const PLANNED_PUSH_OP_TYPES: readonly PushOpType[] = [];
 
 /** Keys `book.update` accepts (as built). */
 export const BOOK_UPDATE_KEYS = ['name', 'nickname', 'date_of_birth', 'due_date', 'family_can_read'] as const;
 /**
- * Keys `prefs.upsert` accepts. `notify_letters` is in S02's pending
- * 20261015030000 (PR #140); `hidden` and `quiet` are planned (WP-F12-09).
- * "Planned" means not on develop yet; the drift test accepts both states.
+ * Keys `prefs.upsert` accepts. `notify_letters` is built (20261015030000,
+ * PR #140); `hidden` and `quiet` are planned (WP-F12-09). "Planned" means not
+ * on develop yet; the drift test accepts both states.
  */
 export const PREFS_KEYS = ['signs_as', 'include_in_reminders', 'notify_letters', 'hidden', 'quiet'] as const;
-export const PLANNED_PREFS_KEYS: readonly (typeof PREFS_KEYS)[number][] = ['notify_letters', 'hidden', 'quiet'];
+export const PLANNED_PREFS_KEYS: readonly (typeof PREFS_KEYS)[number][] = ['hidden', 'quiet'];
 
 // ── Push ──────────────────────────────────────────────────────────────────
 
@@ -215,6 +226,13 @@ export interface EntryData {
   language?: string | null;
   /** Column in S02's 20261015030000 (WP-F04-14): applied with the `text` or `language` group. */
   base_direction?: BaseDirection;
+  /**
+   * The review mark (M17, ADR 0025 section 11; 20261016000000): when the
+   * author kept the letter with its words on screen. Applied with the `text`
+   * group, only when the key is present; absent keeps the server's value.
+   * Author-only: never in `book_entries`.
+   */
+  words_reviewed_at?: string | null;
   /** `entry.reupload` only: the phone's copy is a tombstone. */
   deleted?: boolean;
 }
@@ -223,14 +241,14 @@ export interface EntryData {
 export const ENTRY_DATA_KEYS = [
   'id', 'child_id', 'kind', 'occurred_on', 'occurred_precision', 'captured_at', 'capture_mode', 'edit_level', 'prompt_key',
   'engine_version', 'raw_transcript', 'machine_edits', 'final_text', 'author_edits', 'locked_spans', 'pack_ref', 'in_book',
-  'sounds_like_me', 'author_signs_as', 'audio_kept_on_device', 'language', 'base_direction', 'deleted',
+  'sounds_like_me', 'author_signs_as', 'audio_kept_on_device', 'language', 'base_direction', 'words_reviewed_at', 'deleted',
 ] as const satisfies readonly (keyof EntryData)[];
 type MissingEntryKeys = Exclude<keyof EntryData, (typeof ENTRY_DATA_KEYS)[number]>;
 const _entryKeysComplete: MissingEntryKeys extends never ? true : never = true;
 void _entryKeysComplete;
 
 /**
- * A held or waiting draft (F16 6.2 I; planned, WP-F16-17). Author-only; never
+ * A held or waiting draft (F16 6.2 I; WP-F16-17, 20261016000000). Author-only; never
  * in `book_entries` or another member's pull. `entry.upsert` for the same id
  * deletes the held row in the same transaction (a kept letter never exists twice).
  */
@@ -264,6 +282,16 @@ export interface HeldDraftData {
   audio_kept_on_device: boolean;
 }
 
+/** Every key of HeldDraftData, for the drift test against the keys `held.upsert` reads. Kept equal to the interface by a type check. */
+export const HELD_DRAFT_DATA_KEYS = [
+  'id', 'child_id', 'kind', 'capture_mode', 'created_at', 'occurred_on', 'occurred_precision', 'language', 'base_direction',
+  'prompt_key', 'in_book_choice', 'raw_transcript', 'final_text', 'machine_edits', 'edit_level', 'author_edits', 'locked_spans',
+  'typed_text', 'engine_version', 'pack_ref', 'audio_kept_on_device',
+] as const satisfies readonly (keyof HeldDraftData)[];
+type MissingHeldKeys = Exclude<keyof HeldDraftData, (typeof HELD_DRAFT_DATA_KEYS)[number]>;
+const _heldKeysComplete: MissingHeldKeys extends never ? true : never = true;
+void _heldKeysComplete;
+
 interface OpBase<T extends PushOpType, D> {
   /** Device-made UUIDv7; the server applies an op id at most once per person (receipts keyed by person, F16-REQ-003). */
   op: string;
@@ -278,12 +306,21 @@ export interface EntryUpsertOp extends OpBase<'entry.upsert', EntryData> {
   changed: FieldGroup[];
   /**
    * The server version (`v`) this device last saw or wrote for the letter, or
-   * null for a new letter. With `text` in `changed` and the row's `v` above
-   * `base`, the server does not apply the words and answers `conflict`
-   * (planned, WP-F16-14). After an op applies, the client rebases every later
-   * queued op for that letter to the returned `v` (F16-REQ-025).
+   * null for a new letter. With `text` in `changed` and the words version
+   * (`text_xid`, ADR 0025 section 5) above `base`, the server does not apply
+   * the words and answers `conflict_groups: ['text']` with `current`
+   * (WP-F16-14). After an op applies, the client rebases every later queued
+   * op for that letter to the returned `applied_v` (F16-REQ-025).
    */
   base: string | null;
+  /**
+   * The Keep (ADR 0025 section 9, review K 1): the `v` of the held draft this
+   * letter is made from, as this phone last knew it. When the held words moved
+   * past it, the keep is refused as a words conflict (no letter is made, the
+   * held row stays, `current` carries the held words). Absent on an ordinary
+   * upsert; a keep without it is compared as 0.
+   */
+  held_base?: string | null;
 }
 export interface EntryReuploadOp extends OpBase<'entry.reupload', EntryData> {
   /** The server `updated_at` this phone last saw (restore epoch, F16 6.2 F). */
@@ -299,7 +336,14 @@ export interface HeldUpsertOp extends OpBase<'held.upsert', HeldDraftData> {
   changed: FieldGroup[];
   base: string | null;
 }
-export type HeldDiscardOp = OpBase<'held.discard', Record<string, never>>;
+export interface HeldDiscardOp extends OpBase<'held.discard', Record<string, never>> {
+  /**
+   * The held row's `v` this phone last saw (null counts as 0). When the held
+   * words changed since, the later edit wins: the server keeps the row and
+   * answers `kept` (20261016000000, #197).
+   */
+  base?: string | null;
+}
 export type EntryEraseOp = OpBase<'entry.erase', Record<string, never>>;
 
 export type PushOp =
@@ -335,13 +379,20 @@ export const EntryStateSchema = v.object({
 });
 export type EntryState = v.InferOutput<typeof EntryStateSchema>;
 
-/** The server's words when the words group conflicted (the caller's own words, so nothing leaks). Planned, WP-F16-14. */
+/**
+ * The server's words when the words group conflicted (the caller's own words,
+ * so nothing leaks; WP-F16-14). For a letter the words fields are always set.
+ * For a held draft (a refused `held.upsert` or Keep) they are the held row's,
+ * which may still have no words (`null`), with `typed_text` beside them
+ * (ADR 0025 section 9; S03's request in ADR 0025 "Requests", item 1).
+ */
 export const ConflictCurrentSchema = v.object({
-  final_text: str,
-  machine_edits: v.array(v.unknown()),
-  edit_level: v.picklist(EDIT_LEVELS),
+  final_text: nullableStr,
+  machine_edits: v.nullable(v.array(v.unknown())),
+  edit_level: v.nullable(v.picklist(EDIT_LEVELS)),
   author_edits: v.nullish(v.array(v.unknown())),
   locked_spans: v.nullish(v.array(v.unknown())),
+  typed_text: v.optional(nullableStr),
   v: str,
 });
 export type ConflictCurrent = v.InferOutput<typeof ConflictCurrentSchema>;
@@ -352,25 +403,47 @@ export const PushResultOkSchema = v.object({
   dup: v.optional(v.boolean()),
   applied: v.optional(v.boolean()),
   conflict: v.optional(v.boolean()),
-  /** Planned (WP-F16-14): the groups not applied, today only `["text"]`. */
+  /**
+   * WP-F16-14: the groups not applied, today only `["text"]`. This alone
+   * marks a words refusal (`isWordsConflict`): a duplicate's answer, a
+   * refused `held.upsert` and a refused Keep carry it without `conflict`.
+   */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
   /**
-   * Planned (WP-F16-14; S03's ADR 0023): the server's words, sent whenever
-   * they changed since `base` (a words conflict, or an op that carried no
-   * words). The phone takes them unless its own words for that letter are
-   * still queued.
+   * WP-F16-14 (ADR 0025 section 2): the server's words, sent whenever they
+   * changed since `base` (a words conflict, or an op that carried no words).
+   * The phone takes them unless its own words for that letter are still
+   * queued; a refusal keeps the phone's words as a conflict copy.
    */
   current: v.optional(v.nullable(ConflictCurrentSchema)),
   /**
-   * Planned (WP-F16-14; S03's ADR 0023 section 5): the words version this op
-   * wrote when it first applied. A duplicate (`dup`) answers it too, so a
-   * lost answer rebases on it, never on `entry.v`.
+   * WP-F16-14 (ADR 0025 section 2): the words version this op wrote when it
+   * first applied. A duplicate (`dup`) answers it too, so a lost answer
+   * rebases on it, never on `entry.v`.
    */
   applied_v: v.optional(v.nullable(str)),
   missing: v.optional(v.boolean()),
   entry: v.optional(v.nullable(EntryStateSchema)),
-  /** Planned (WP-F16-17): server state of a held draft after `held.upsert`. */
-  held: v.optional(v.object({ id: str, v: str, updated_at: str })),
+  /**
+   * WP-F16-17: server state of a held draft after `held.upsert`; null when
+   * no held row holds the id (kept as a letter already, or let go).
+   */
+  held: v.optional(v.nullable(v.object({ id: str, v: str, updated_at: str }))),
+  /**
+   * `app.held_sync` is 'off' (ADR 0025 section 9): the held op changed
+   * nothing and was not claimed. Keep it queued and send it again later.
+   */
+  held_off: v.optional(v.boolean()),
+  /**
+   * `held.discard`: the held words changed since `base` (another phone's later
+   * edit wins), or a legal hold keeps the row. The draft stays on the server
+   * and comes back at the next pull; the phone must not drop its words.
+   */
+  kept: v.optional(v.boolean()),
+  /** `entry.erase` and Erase now on a held draft: the server erased it for good. */
+  erased: v.optional(v.boolean()),
+  /** `entry.erase`: not erased yet; a legal hold keeps the letter, tombstoned, until the hold lifts. */
+  deferred: v.optional(v.boolean()),
   book: v.optional(v.object({ id: str })),
   books: v.optional(v.array(str)),
   prefs: v.optional(v.object({ child_id: str })),
@@ -424,7 +497,7 @@ export interface BookRequest {
 export interface PullSince {
   epoch?: number;
   books: Record<string, BookRequest>;
-  /** Planned (WP-F16-17): cursor and digest for the author's own held drafts (same rules as a book). */
+  /** WP-F16-17: cursor and digest for the author's own held drafts (same rules as a book). */
   held?: { cursor?: string | null; have?: Digest; verify?: boolean; ids?: boolean };
 }
 
@@ -459,6 +532,8 @@ export const PulledRowSchema = v.object({
   pack_ref: v.nullish(str),
   language: v.nullish(str),
   base_direction: v.optional(v.picklist(BASE_DIRECTIONS)),
+  /** Own rows only (author-only; 20261016000000): the review mark, or null. */
+  words_reviewed_at: v.nullish(str),
   final_text: str,
   in_book: v.boolean(),
   sounds_like_me: v.nullable(v.boolean()),
@@ -536,7 +611,7 @@ export const GoneBookSchema = v.object({
 });
 export type GoneBook = v.InferOutput<typeof GoneBookSchema>;
 
-/** A held draft as its author pulls it (planned, WP-F16-17). */
+/** A held draft as its author pulls it (WP-F16-17, 20261016000000). */
 export const PulledHeldSchema = v.object({
   id: str,
   child_id: str,
@@ -566,13 +641,16 @@ export type PulledHeld = v.InferOutput<typeof PulledHeldSchema>;
 
 /**
  * A held draft that left the server: discarded on another phone of the same
- * author, or kept (its `entries` row took the same id). The row itself is
+ * author, kept (its `entries` row took the same id), or erased (Erase now:
+ * every phone erases its copy and it is never restorable). The row itself is
  * purged, so only these fields exist; the phone drops its local draft, or
- * for `kept` waits for the letter in the book section.
+ * for `kept` waits for the letter in the book section. The values are the
+ * `held_drafts_gone.gone` check in 20261016000000.
  */
+export const HELD_GONE_KINDS = ['discarded', 'kept', 'erased'] as const;
 export const PulledHeldGoneSchema = v.object({
   id: str,
-  gone: v.picklist(['discarded', 'kept']),
+  gone: v.picklist(HELD_GONE_KINDS),
   updated_at: str,
   v: str,
 });
@@ -586,7 +664,7 @@ export const PullResponseSchema = v.object({
   books: v.optional(v.array(PulledBookSchema)),
   gone: v.optional(v.array(GoneBookSchema)),
   /**
-   * Planned (WP-F16-17): the author's own held drafts after the held cursor,
+   * WP-F16-17: the author's own held drafts after the held cursor,
    * with the same cursor rules as a book (F16 6.2 I): removal is the digest
    * (`visible`, then `ids` on a difference), so a draft purged by a book
    * purge, the orphan sweep or a restore epoch leaves this phone too.
@@ -706,13 +784,16 @@ export function isFieldGroupList(x: unknown): x is FieldGroup[] {
 }
 
 /**
- * True when a push result is a words conflict the author must resolve (F16
- * 6.2 E step 3). Only `conflict_groups` containing `text` counts. As built
- * today, `conflict: true` without `conflict_groups` is advisory: the op was
- * applied by the later-arrival rule and there is nothing to resolve.
+ * True when a push result is a words refusal the author must resolve (F16
+ * 6.2 E step 3): `conflict_groups` contains `text`, whatever `conflict`
+ * says. The server sends `conflict_groups` without `conflict` on a
+ * duplicate's answer, a refused `held.upsert` and a refused Keep
+ * (20261016000000), and those words must never be taken as applied.
+ * `conflict: true` without `conflict_groups` is advisory: the op was applied
+ * by the later-arrival rule and there is nothing to resolve.
  */
-export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict: true; conflict_groups: FieldGroup[] } {
-  return r.ok === true && r.conflict === true && Array.isArray(r.conflict_groups) && r.conflict_groups.includes(WORDS_GROUP);
+export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict_groups: FieldGroup[] } {
+  return r.ok === true && Array.isArray(r.conflict_groups) && r.conflict_groups.includes(WORDS_GROUP);
 }
 
 /**
