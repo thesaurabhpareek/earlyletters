@@ -237,8 +237,8 @@ export const en = {
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
     draftWaiting: {
-      // Held until P3: today's single waiting card shows this for typed drafts too (spec S09 has the new words).
-      title: "A letter is waiting to be read back.",
+      // The first row of a draft card on Tonight: a spoken draft whose words are ready but not shown (S09, P3).
+      title: "A recording is ready to read back.",
     },
     // One card per unfinished letter on Tonight, newest first, never a total (S09). A card shows the person's own
     // first words when it has them; these are the state lines and actions. Spoken and waiting for its words reuses
