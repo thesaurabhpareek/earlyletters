@@ -405,8 +405,13 @@ export const PushResultOkSchema = v.object({
   conflict: v.optional(v.boolean()),
   /**
    * WP-F16-14: the groups not applied, today only `["text"]`. This alone
-   * marks a words refusal (`isWordsConflict`): a duplicate's answer, a
-   * refused `held.upsert` and a refused Keep carry it without `conflict`.
+   * marks a words refusal (`isWordsConflict`), whatever `conflict` says. As
+   * built (20261016000000): a refused Keep (`keep_check`) and its repeat
+   * (`dup_answer`) carry it with `conflict: true`; a refused `entry.upsert`
+   * carries `conflict` as its own row compare says (the row's `v` past
+   * `base`, nearly always true there); a duplicate of a refused
+   * `entry.upsert` (`dup_outcome`), a refused `held.upsert` (`held_state`)
+   * and its repeat (`held_dup`) carry it without `conflict`.
    */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
   /**
@@ -786,11 +791,13 @@ export function isFieldGroupList(x: unknown): x is FieldGroup[] {
 /**
  * True when a push result is a words refusal the author must resolve (F16
  * 6.2 E step 3): `conflict_groups` contains `text`, whatever `conflict`
- * says. The server sends `conflict_groups` without `conflict` on a
- * duplicate's answer, a refused `held.upsert` and a refused Keep
- * (20261016000000), and those words must never be taken as applied.
- * `conflict: true` without `conflict_groups` is advisory: the op was applied
- * by the later-arrival rule and there is nothing to resolve.
+ * says. As built (20261016000000), a refused Keep, first answer and repeat,
+ * carries `conflict: true` beside it, and a refused `entry.upsert` nearly
+ * always does; a duplicate of a refused `entry.upsert`, a refused
+ * `held.upsert` and its repeat carry `conflict_groups` without `conflict`.
+ * None of those words may be taken as applied. `conflict: true` without
+ * `conflict_groups` is advisory: the op was applied by the later-arrival
+ * rule and there is nothing to resolve.
  */
 export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict_groups: FieldGroup[] } {
   return r.ok === true && Array.isArray(r.conflict_groups) && r.conflict_groups.includes(WORDS_GROUP);
