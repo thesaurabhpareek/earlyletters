@@ -182,6 +182,11 @@ describe('[WP-F19-16] the remote-config signing path with the M14 kill switches'
     expect(steps).toContain("  alter database postgres set app.escrow_enabled = 'off';");
     expect(steps).toContain("  alter database postgres set app.backup_enabled = 'on';");
     expect(steps).toContain('Switches on: escrow, invites, sync.');
+    // statusReport stops the SQL as well as the function (review B N7 on #138; S06's 20261016001000).
+    expect(steps).toContain("  alter database postgres set app.status_report_enabled = 'on';");
+    const report = killSwitchSteps({ ...source.killSwitches, statusReport: true });
+    expect(report).toContain('  npx supabase secrets set KILL_SWITCHES=statusReport');
+    expect(report).toContain("  alter database postgres set app.status_report_enabled = 'off';");
     const off = killSwitchSteps(source.killSwitches);
     expect(off).toContain('  npx supabase secrets unset KILL_SWITCHES');
     expect(off).toContain('  npx supabase secrets set ESCROW_SWITCH=on --project-ref <scribe-escrow ref>');

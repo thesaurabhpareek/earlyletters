@@ -205,6 +205,9 @@ export interface StorySource {
  *  - `invites`, `statusReport`: the main project's `KILL_SWITCHES` function
  *    secret (same names as remote config), read by invite-redeem and
  *    subscription-status;
+ *  - `statusReport` also: the database setting `app.status_report_enabled`
+ *    (S06's 20261016001000; `status_salt` and `status_report_store` raise
+ *    SCKIL unless it is `on`), so direct PostgREST callers stop too;
  *  - `backupUploads`: the database setting `app.backup_enabled` (S05 PR #151;
  *    uploads and key storage raise SCBKO while it is off);
  *  - `escrow`: the database setting `app.escrow_enabled` and the escrow
@@ -226,6 +229,7 @@ export function killSwitchSteps(killSwitches: Record<string, boolean>): string[]
   const steps = [
     'Server-side switches, main project (function secrets apply to the next invocation):',
     fnSwitches.length ? `  npx supabase secrets set KILL_SWITCHES=${fnSwitches.join(',')}` : '  npx supabase secrets unset KILL_SWITCHES',
+    `  alter database postgres set app.status_report_enabled = '${onOff('statusReport')}';`,
     `  alter database postgres set app.backup_enabled = '${onOff('backupUploads')}';`,
     `  alter database postgres set app.escrow_enabled = '${onOff('escrow')}';`,
     'Escrow project (scribe-escrow):',

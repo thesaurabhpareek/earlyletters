@@ -87,12 +87,13 @@ Deno.test('the canary scanner finds fixtures and generic shapes', () => {
 // everything goes through the logger (the one sink in log.ts) or the ops CLI printer.
 Deno.test('no console.* calls outside the logger sink and the ops CLI printer', async () => {
   const root = new URL('../../../../', import.meta.url);
-  const dirs = [
-    'supabase/functions/purge-worker', 'supabase/functions/analytics-forget', 'supabase/functions/_shared',
-    'supabase/functions/config', 'supabase/functions/content', 'supabase/functions/invite-redeem',
-    'supabase/functions/subscription-status', 'scripts/ops',
-  ];
-  const allowed = new Set(['supabase/functions/_shared/log/log.ts', 'scripts/ops/lib/cli.ts']);
+  // The whole functions folder, so apple-token and every future function are covered (review B N5 on #138).
+  const dirs = ['supabase/functions', 'scripts/ops'];
+  const allowed = new Set([
+    'supabase/functions/_shared/log/log.ts', 'scripts/ops/lib/cli.ts',
+    // The escrow project's one sink (separate project; its own content-free logger in escrow/log.ts).
+    'supabase/functions/escrow/handler.ts',
+  ]);
   const offenders: string[] = [];
   const walk = async (rel: string) => {
     let entries: Deno.DirEntry[] = [];
@@ -112,4 +113,7 @@ Deno.test('no console.* calls outside the logger sink and the ops CLI printer', 
   };
   for (const d of dirs) await walk(d);
   assert.deepEqual(offenders, []);
+  // The walk reached every function folder, apple-token included.
+  const folders = [...Deno.readDirSync(new URL('supabase/functions', root))].filter((e) => e.isDirectory).map((e) => e.name);
+  assert.ok(folders.includes('apple-token') && folders.length >= 8, folders.join(','));
 });

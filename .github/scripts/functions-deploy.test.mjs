@@ -201,7 +201,16 @@ test('this repository: the plan has no errors, and NO_VERIFY_JWT matches every f
 test('this repository: every function that takes a person\'s session keeps the gateway JWT check and is confirmed through the function list', () => {
   const r = plan(REPO, { only: 'all' });
   assert.deepEqual(r.warnings, [], 'every function names its own deploy line');
-  for (const n of ['analytics-forget', 'apple-token', 'invite-redeem', 'subscription-status']) {
+  // The exact sets (review B N6 on #138): a function added with --no-verify-jwt in both its header and
+  // NO_VERIFY_JWT, or given an anonymous smoke, must change this test too, never only those two places.
+  const PUBLIC = ['config', 'content', 'purge-worker'];
+  assert.deepEqual(NO_VERIFY_JWT, PUBLIC);
+  assert.deepEqual([...r.noVerifyJwt].sort(), PUBLIC);
+  assert.deepEqual(SMOKE_HEALTH, PUBLIC);
+  assert.deepEqual([...r.smoke].sort(), PUBLIC);
+  const session = r.deploy.filter((n) => !PUBLIC.includes(n));
+  assert.ok(session.length >= 4, session.join(', '));
+  for (const n of ['analytics-forget', 'apple-token', 'invite-redeem', 'subscription-status', ...session]) {
     assert.ok(r.deploy.includes(n), `${n} is deployed`);
     assert.ok(!r.noVerifyJwt.includes(n), `${n} keeps the gateway JWT check`);
     assert.ok(!r.smoke.includes(n), `${n} has no anonymous health route, so the smoke never calls it`);

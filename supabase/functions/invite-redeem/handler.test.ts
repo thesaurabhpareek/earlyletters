@@ -262,18 +262,47 @@ Deno.test('no session, a bad session, an anonymous one or one without is_anonymo
   assert.equal((await (await world({ rpc: { body: { outcome: 'maybe' } } })).handler(guess(CODE))).status, 503);
 });
 
-Deno.test('[LEGAL-REQ-014] canary: no code, token, device, IP, id, email or text in any log line', async () => {
+Deno.test('[LEGAL-REQ-014] canary: no code, token, device, IP, id, email or text in any log line or answer', async () => {
   const lines: string[] = [];
-  for (const o of [{}, { globalFailures: 1_000 }, { refusal: { sqlstate: 'SCCAP', detail: '2' } }, { userStatus: 500 }, { rpc: 'down' as const }] as WorldOpts[]) {
+  const bodies: string[] = [];
+  // Upstream error bodies and free-text details carrying the Asha canaries (review B N4 on #138).
+  const loud = { message: CANARY.letterText, details: CANARY.childName, hint: CANARY.parentEmail };
+  const worlds: WorldOpts[] = [
+    {}, { globalFailures: 1_000 }, { refusal: { sqlstate: 'SCCAP', detail: '2' } }, { userStatus: 500 }, { rpc: 'down' },
+    { rpc: { status: 400, body: { code: 'SCINV', ...loud } } }, { rpc: { status: 500, body: { code: 'XX000', ...loud } } },
+    { rpc: { status: 404, body: { code: 'PGRST202', ...loud } } }, { rpc: { status: 403, body: { code: '42501', ...loud } } },
+    { rpc: { body: { outcome: 'refused', sqlstate: 'SCDEL', detail: CANARY.letterText } } },
+    { rpc: { body: { outcome: 'refused', sqlstate: 'SCCON', detail: CANARY.letterText } } },
+    { rpc: { body: { outcome: 'unusable', detail: CANARY.letterText } } },
+    { rpc: { body: { outcome: 'peek', inviter: 'Papa', role: 'parent', child_name: CANARY.childName, child_id: CANARY.childId, note: CANARY.letterText } } },
+  ];
+  for (const o of worlds) {
     const w = await world(o);
     for (const mode of ['peek', 'accept']) {
-      await w.handler(req({ code: CODE, mode, device: DEVICE }, { 'x-request-id': CANARY.requestId }));
-      await w.handler(req({ code: 'ZZZZZZZZ', mode, device: DEVICE }));
+      bodies.push(await (await w.handler(req({ code: CODE, mode, device: DEVICE }, { 'x-request-id': CANARY.requestId }))).text());
+      bodies.push(await (await w.handler(req({ code: 'ZZZZZZZZ', mode, device: DEVICE }))).text());
     }
     lines.push(...w.lines);
   }
   const text = lines.join('\n');
-  assert.ok(lines.length >= 20);
+  assert.ok(lines.length >= 40);
   assert.deepEqual(findCanaries(text), []);
   for (const s of [CODE, 'ZZZZZZZZ', DEVICE, '203.0.113.7', 'Papa']) assert.equal(text.includes(s), false, s);
+  // Answers: only an accepted join carries the book id (its job); nothing else of the caller or the upstream does.
+  assert.equal(bodies.length, worlds.length * 4);
+  for (const b of bodies) {
+    if (b.includes(CANARY.childId)) assert.equal(JSON.parse(b).data?.mode, 'accept', b);
+    assert.deepEqual(findCanaries(b.replaceAll(CANARY.childId, '')), [], b);
+    for (const s of [CODE, 'ZZZZZZZZ', DEVICE, '203.0.113.7']) assert.equal(b.includes(s), false, s);
+  }
+});
+
+Deno.test('[D-111 item 8] a peek answer is inviter, role and joined only: any other field the RPC sends is dropped (review B N4 on #138)', async () => {
+  const w = await world({ rpc: { body: {
+    outcome: 'peek', inviter: 'Papa', role: 'parent', joined: true,
+    child_name: CANARY.childName, child_id: CANARY.childId, expires_at: '2026-10-22T00:00:00Z', note: CANARY.letterText,
+  } } });
+  const res = await w.handler(guess(CODE));
+  assert.equal(res.status, 200);
+  assert.deepEqual((await res.json()).data, { mode: 'peek', inviter: 'Papa', role: 'parent', joined: true });
 });
