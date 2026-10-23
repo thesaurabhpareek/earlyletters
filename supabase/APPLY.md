@@ -20,6 +20,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 11 | `20261004300000_insights_aggregates.sql` | **Pending** | Schema `insights` (never exposed): k-anonymised weekly counts, `insights_reader` role, `public.insights_aggregates(p_weeks)` for the service role and that role only (step 16) |
 | 12 | `20261005000000_family_cap_language_idempotency.sql` | **Pending** | Two parents per book, leave and remove, letter language, idempotency keys, server rate limits (section "File 20261005000000") |
 | 13 to 16 | `20261015000000` to `20261015030000` | **Pending** | The R-17 gate: BL-331 with BL-332, `peek_invite` with BL-334, WP-F11-01, the v1.0 wire-contract columns (section "Files 13 to 16") |
+| 17 | `20261016000000_sync_v1_server.sql` | **Pending** | Sync protocol v1, the server half: words compare and set, held drafts, Erase now, the erasure record, the review mark; schema `sync_private` (never exposed) (section "File 17") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -370,7 +371,7 @@ Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two
 
 ## Step 15. Settings for files 8 to 11
 
-- **Exposed schemas: `public` only.** Dashboard > Project Settings > Data API > Exposed schemas. Never add `ops` or `insights` (or `graphql_public` unless GraphQL is wanted; the app does not use it). The private schemas are reached only through service-role functions.
+- **Exposed schemas: `public` only.** Dashboard > Project Settings > Data API > Exposed schemas. Never add `ops`, `insights` or `sync_private` (file 17) (or `graphql_public` unless GraphQL is wanted; the app does not use it). `ops` and `insights` are reached only through service-role functions; `sync_private` only from inside `sync_push`, `sync_pull` and triggers (signed-in people hold usage on it so `sync_push` can run as the caller; exposing it would turn its helpers into RPCs).
 - **Sync housekeeping, hourly** (pg_cron, enabled in step 7). It trims op receipts older than 30 days and rate windows older than a day:
   ```sql
   select cron.schedule('scribe-sync-housekeeping', '43 * * * *', $$ select public.sync_housekeeping(); $$);
@@ -657,3 +658,152 @@ A full rollback reopens the review findings these files close (M1, M3, M5, L1, H
 5. **Last: re-run file 13 section 7** (the `do` block, "search_path: pg_catalog first, pg_temp last"). The `search_path` re-pin is not rolled back: it changes no behaviour and closes a hole. But each function re-run above from an older file comes back with that file's `search_path = public, pg_catalog`: `entries_guard_immutable`, `entries_family_rules`, `sync_pull`, `sync_push`, `sync_books`, `sync_housekeeping`, `rate_hit`, `create_child`, `create_first_run_children`, `delete_entry`, `restore_entry`, `create_child_invite`, `accept_child_invite`, `child_members_audit`, `policy_acceptances_pseudonymise` and `ops_deletion_sla`. The block re-pins them; it changes nothing else and can run any number of times.
 
 After a rollback, some privileges stay tighter than develop's, and that is safe: `anon` has no select on `children` and no writes on `child_members` or `sync_op_receipts`, and `authenticated` has no insert or update on `child_members` (develop's app never uses them; joining and leaving go through the RPCs). `book_entries` and `my_policy_state` stay read-only, on purpose: step 1.4 re-creates `book_entries` without write privileges, and the rollback never re-grants writes on `my_policy_state` (file 13 section 6). On develop a co-parent could rewrite the other parent's letter through `book_entries` (DB-01). The rate-bucket check stays the superset, and file 13's comments stay. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration), and on real PostgreSQL if you can.
+
+## File 17: sync protocol v1, the server half (16 Oct 2026, stream S02)
+
+`20261016000000_sync_v1_server.sql`. The server half of the sync stack (PRs #146, #166, #182; ADR 0025 on that stack), as its handoffs ask: #154 (WP-F16-14 words compare and set, the M17 review mark), #187 (WP-F16-17 held drafts, WP-F16-13 Erase now), #196 (held receipts record `applied_v`; held words compare only when an upload changes them), #197 (`held.discard` with a base, the `erased` marker), #198 (an upload never brings an erased letter back). It builds what the stack's test stand-ins (`apps/mobile/test/helpers/sync-v1-*.sql`) describe, so the stack's tests run against this file instead (they report `standIn`, `heldStandIn` and `eraseStandIn` false). Apply it after file 16. It adds tables, columns, triggers and functions and redefines `sync_push`, `sync_pull`, `entries_set_sync_xid`, `entries_not_purged`, `entries_guard_immutable`, `prepare_account_purge`, `purge_due`, `ops_replay_ledger`, `ops_incident_scope` and `ops_deletion_residue`; it drops nothing that holds data. Reviews K (concurrency) and L (access rules and privacy) on #208 changed it in place before any apply (the fixes are listed in the file's header).
+
+What it adds:
+- `entries.text_xid` (the words version) and `entries.words_reviewed_at` (the review mark, author-only, never in `book_entries`); four outcome columns on `sync_op_receipts` (`answer` keeps the flags a repeat of `held.discard`, `entry.erase` or a refused Keep must say again).
+- `held_drafts` (author-only, while a parent of the book; no client deletes) and `held_drafts_gone` (markers `discarded`, `kept`, `erased`; definer code only).
+- Schema `sync_private`: the receipt, held, Keep and erase helpers, and `entry_erasures`, the record of every letter purged while its book and author exist (ids, the times it left the parents' and the family's view, and times; never trimmed by time, because trimming would let a long-offline phone bring an erased letter back). A pull recomputes a reader's digest for an erasure only when that letter left that reader's view since the cursor.
+- Ordering: one push per person at a time (an advisory lock at the top of `sync_push`), and Keep, `held.upsert` and both erase paths serialise on the letter id.
+- A Keep that names `held_base` (the held row's last `v` the phone knew; a present null counts as 0) is refused as a words conflict when the held words moved on and differ: no letter, the held row stays, `current` carries the held words. Without the key (an older app) the Keep applies and differing held words go to the letter's `entry_versions`.
+- Ids belong to their author: a held draft never takes an id that is a letter or another author's held draft, marker or erasure; erasure refusals read the author's own records; a row's `id` never changes (`SCIMM`).
+- Legal holds: a held draft under a hold survives leaving the book and holds account deletion and the book purge. The deletion residue scan reads `sync_private` too.
+- `purge_ledger.entity_type` gains `held_draft` (no value removed; #151 adds `audio_blob` the same way, in either order).
+- Triggers: on `entries` (the words version, stamped by file 9's row-version trigger, redefined; Keep removes the held row; every purge is recorded), on `held_drafts` (consent gate, the id guard, versions, markers, ledger and the recording's backup), on `child_members` (a leaver's held drafts of that book go, unless under a legal hold).
+
+Tests: `sync_v1_server` (new), new rows in `access_matrix`, the D-023 case in `sync_engine` (words on an older base are now refused; with no base the later arrival still wins), and `sync_private` in the `v1_gate_search_path` sweep; `npm run test:db` now runs 21 files.
+
+### Step 23. Before file 17 (staging first, then production)
+
+**Order for the alpha (D-106; #154 ask 3; your step, through CI as in "How these files reach a project").** `scribe-staging` must hold file 12 (`20261005000000`), files 13 to 16 (PR #140) and file 17, in that order, before the alpha build syncs: the v1 client sends the `language` group, which older servers refuse, and it sends `entry.erase` and the held ops, which an older server answers with `22023` (the phone waits; nothing is lost, but Erase now and held drafts do not reach the server). Production follows only after staging has run them and step 24 is green there.
+
+Read only:
+```sql
+-- a) The names are free (expect five nulls).
+select to_regclass('public.held_drafts'), to_regclass('public.held_drafts_gone'), to_regnamespace('sync_private'),
+       (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'text_xid' and not attisdropped),
+       (select attname from pg_attribute where attrelid = 'public.sync_op_receipts'::regclass and attname = 'applied_v' and not attisdropped);
+-- b) File 16 is applied (expect 1).
+select count(*) from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'pack_ref' and not attisdropped;
+```
+And in the Dashboard: Project Settings > Data API > Exposed schemas is `public` only (step 15). It must stay so after this file: never add `sync_private`.
+
+### Step 24. After each environment: check the result
+
+```sql
+-- sync_private: signed-in people use it, anon cannot; its helpers are not RPCs (expect true, false, 0).
+select has_schema_privilege('authenticated', 'sync_private', 'usage') signed_in, has_schema_privilege('anon', 'sync_private', 'usage') anon,
+       (select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace
+         and p.proname in ('note_applied', 'dup_outcome', 'held_upsert', 'held_discard', 'erase_entry', 'erase_held')) in_public;
+-- The erasure record and the markers: no client reads them (expect false, false).
+select has_table_privilege('authenticated', 'sync_private.entry_erasures', 'select') erasures,
+       has_table_privilege('authenticated', 'public.held_drafts_gone', 'select') markers;
+-- held_drafts: RLS on, four policies, signed in reads and writes but never deletes, anon nothing (expect true, 4, true, false, false).
+select c.relrowsecurity, (select count(*) from pg_policies where tablename = 'held_drafts'),
+       has_table_privilege('authenticated', 'public.held_drafts', 'insert'), has_table_privilege('authenticated', 'public.held_drafts', 'delete'),
+       has_table_privilege('anon', 'public.held_drafts', 'select')
+  from pg_class c where c.oid = 'public.held_drafts'::regclass;
+-- The ledger kind (expect it to list held_draft and every earlier kind).
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'purge_ledger_entity_type_check';
+-- The triggers (expect 8 rows; the words version is stamped by file 9's entries_sync_xid, redefined here).
+select tgname from pg_trigger where not tgisinternal and tgname in ('entries_note_erasure', 'entries_drop_held',
+  'child_members_drop_held', 'held_drafts_consent_gate', 'held_drafts_guard', 'held_drafts_stamp', 'held_drafts_gone_on_delete',
+  'held_drafts_gone_on_insert') order by 1;
+-- sync_push carries protocol v1 (expect true).
+select prosrc like '%conflict_groups%' and prosrc like '%entry.erase%' and prosrc like '%held.upsert%' from pg_proc where proname = 'sync_push';
+```
+Then repeat step 21's `search_path` query with `sync_private` added to the schema list (expect 0 rows), and the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: none new in `public` (the new definer functions are trigger functions, callable by nobody). If an advisor lists a function in `sync_private` as callable by `authenticated`, that schema is exposed: remove it from the exposed schemas and tell S02.
+
+Then run `npm run test:db` locally against the same commit, and the sync stack's tests (`cd apps/mobile && npx vitest run test/sync-two-phone.test.ts`, once #182 is in the tree), and record the file name in `.github/migrations-applied.txt` through a pull request.
+
+### Step 25. Settings for file 17
+
+None is required to apply. One switch exists:
+- **Held-draft sync** (ADR 0025 section 9, the fallback for the alpha): on unless set off. If the held-draft state table is not green in `sync-two-phone` by Fri 23 Oct, build 2 ships with it off: `alter database postgres set app.held_sync = 'off';` (on again: `alter database postgres reset app.held_sync;`). It is read at call time, and a database setting reaches new connections only, so pooled API connections pick it up as they are recycled (Assumption, as step 19). While it is off, the pull sends no `held` section and `held.upsert` and `held.discard` answer `held_off` without changing anything (the phone keeps them queued), so held drafts stay on the phone as in build 1 while letters still sync. Keep and Erase now keep working, including the compare with any held row the server already has. Check with `select current_setting('app.held_sync', true);` (`off`, or empty for on).
+
+No new cron job: receipts are still trimmed by the hourly `scribe-sync-housekeeping` (step 15); `entry_erasures` and the markers are kept on purpose (they go with the book and the person, by foreign key). If you must apply by hand, use the SQL Editor as in step 18; the file refuses a second run (`55000`, "already applied").
+
+### Answers and error codes added or widened by file 17
+
+| Where | Answer | App |
+|---|---|---|
+| `entry.upsert` with a `base` on an existing letter whose words changed since | `conflict_groups: ['text']` and `current` (the words now, with `v`); the other groups apply | Keep this phone's words as a conflict copy; the letter follows `current` (ADR 0025 section 5) |
+| Any `entry.upsert` on words newer than its base | `current` | As above, only when this phone's words are queued |
+| A duplicate (same op id) | `applied_v` (the version it wrote), or the refusal and `current` again | Rebase only on `applied_v` |
+| `entry.erase` | `erased`; `missing` (no letter, or another person's: the same answer, with nothing locked); `deferred` (legal hold); a repeat says the same | As ADR 0025 section 12 |
+| `entry.upsert` that keeps a held draft, onto a letter that already exists (another phone kept it first) | a compare and set against the letter, with `held_base` as `base`: `conflict_groups: ['text']` and `current` (the letter's words); the other groups apply; the first keep's `raw_transcript`, `captured_at`, `engine_version` and `pack_ref` stand (never `SCIMM`); a repeat says the same, with the letter's words now | Keep this phone's words as a conflict copy, the letter follows `current`, and take the letter's `raw_transcript` and `engine_version` from its own pull row (ADR 0025 section 9, table row C) |
+| `entry.upsert` that keeps a held draft and carries `held_base` (no `held_base` counts as 0) | when the held words moved on and differ: `applied: false`, `conflict: true`, `conflict_groups: ['text']`, `current` (the held words with `typed_text` and `v`), `held`, no letter; a repeat says the same, with `current` from whatever holds the words now (the held row, else the letter, else null) | Keep this phone's words as a conflict copy, take `current`, send the Keep again with `held_base = current.v` (ADR 0025 section 9) |
+| `held.upsert` | `held: {id, v, updated_at}`; `held: null` (kept already); a refusal as above with `typed_text` in `current` | As ADR 0025 section 9 |
+| `held.discard` | `{}`; `kept` (newer words since `base`, or a legal hold); `missing`; a repeat says the same | `kept`: the next pull brings it back |
+| `held_off` (`ok: true, applied: false`) on `held.upsert` and `held.discard` | `app.held_sync` is `off` (step 25); nothing changed and the op is not claimed | Keep it queued; it goes again, under the same op id, once a pull carries a `held` section |
+| `SCDEL` detail `purged` (`gone: true`) | now also any upload (letter or held draft) of an id that was erased or purged: purge_ledger, the erasure record, or an `erased` marker. Never "a base and no row" alone, which a server restore also produces | Permanent: the letter stays in this phone's Recently deleted, or is erased |
+| `22023` | a held id that is a letter, or another author's held draft, marker or erasure; a malformed `held` pull request; on an older server, the three new op types | Permanent, except the new op types on an older server: wait and retry |
+| `SCCON`, `SCIMM` | now also on `held_drafts` (consent; a second raw transcript, id, author, book or creation time) and on a change of a letter's `id` | As for letters |
+| `42501` | `held.upsert` or a held insert by anyone not a parent of the book named, or a direct held insert whose `author_id` is not the caller (whatever the id); a direct delete on `held_drafts`; any read of `held_drafts_gone` or `sync_private.entry_erasures` | Use the ops |
+
+### App and contract changes for file 17
+
+- S03 (#182): delete the three stand-ins and `sync-v1-standin.ts` (the server skips them already). The Keep sends `held_base` (agreed 17 Oct; ADR 0025 section 9).
+- S03 (M17): the phone sends `words_reviewed_at` in an `entry.upsert` that changes the words (with `text` in `changed`): the time the author kept the letter with its words on screen, or `null` for machine words still waiting for review. It is stored only with the text group and only when the key is present; own pull rows carry it. Letters written before the phone sends it have none, so `null` means "no mark": the phone's rule for that case is S03's.
+- S03 (#182), from the state table (ADR 0025 section 9): `held_base` and `held_v` move only to the words version this phone's own words produced; `applied: false` with no `entry` is a refusal whatever `current` says; after a Keep onto an existing letter the phone takes the letter's `raw_transcript`, `engine_version` and `captured_at` from its own pull row; a `held_off` answer keeps the op queued.
+- S07 (`packages/api`): `held_off` (optional boolean) on push results for held ops, `applied_v` (optional string) on push results, `typed_text` on `current` for held answers, `words_reviewed_at` (optional, nullable ISO time) on own rows and on `entry.upsert` data, `held_base` (optional, nullable string) on `entry.upsert`, and the refused Keep answer (`applied: false` with `current` and `held`, no `entry`).
+- scripts/ops owner: `parseLedger` (`scripts/ops/lib/drill.ts`) skips every kind but `entry`, `child` and `profile`; `ops_replay_ledger` now replays `held_draft` (and `audio_blob` once #151 is applied).
+
+### Rolling back file 17
+
+Prefer fixing forward. Partial switches, each on its own and each safe:
+- Held drafts off: `alter database postgres set app.held_sync = 'off';` (step 25). Held ops answer `held_off` and stay queued on the phone; letters, Keep and Erase now keep working. Prefer it to revoking the table grants, which would make held uploads fail per op with `42501` and turn them into rejected writes.
+- The words compare and set, Erase now and the erasure record have no partial switch: fix forward with a migration.
+
+A full rollback, as one reverse migration, in this order: re-run `sync_push` and `sync_pull` from file 16 (the phones then answer every new op with `22023` and wait); re-run `entries_set_sync_xid` and `entries_not_purged` from file 9, `entries_guard_immutable` from file 16, `prepare_account_purge` from file 4, `purge_due` from file 8, and `ops_replay_ledger`, `ops_incident_scope` and `ops_deletion_residue` from file 10; drop the triggers `entries_note_erasure`, `entries_drop_held`, `child_members_drop_held` and the `held_drafts` triggers with their functions; `drop table public.held_drafts, public.held_drafts_gone;` (this deletes held drafts: export them first, or the authors lose them); `drop schema sync_private cascade;` (the erasure record goes, so an erased letter older than 60 days could come back); drop `entries.text_xid`, `entries.words_reviewed_at` and the four receipt columns. If #151 is applied, redefine `backup_entry_exists` with its `entries` check only (drop the `held_drafts` branch, whichever file added it); after the drop every backup check would otherwise fail with `42P01`. Last, re-run file 13 section 7 (the `search_path` block), since the functions re-run from older files come back with their old `search_path`. `purge_ledger_entity_type_check` keeps `held_draft` (removing it would fail on any ledger row of that kind). Test the reverse migration in PGlite first.
+
+## File `<timestamp>_backup_server.sql` (S05, PR #151: encrypted recording backup and the recovery key)
+
+S05's text (`docs/ops/BACKUP_RUNBOOK.md` appendix A on `feat/backup-server`), with the real timestamp to be filled in at merge. It is not in this branch; the section is here so the founder has one place for every file.
+
+What it does: the private `entry-audio` bucket and its owner-only policies; tables `backup_devices`, `child_keys`, `audio_blobs`, `backup_usage`, `restore_requests`, `restore_approvals`, `escrow_unwraps` (append-only), `escrow_rotation_notices`, none of them granted to `service_role`; the `backup` policy document; client RPCs `backup_*`; the `escrow_svc` role (created NOLOGIN) with EXECUTE on ten `escrow_*` functions only; service functions `backup_svc_sweep`, `backup_svc_unwraps_between`, `backup_svc_stop`; triggers on `entries`, `profiles` and `deletion_requests` so every deletion path removes backups by exact path; `purge_ledger.entity_type` gains `audio_blob` (no value removed).
+Depends on: every earlier file. Needs `app.consent_pepper` set before any account deletion (step 6).
+With file 17: either order works (both widen the ledger kinds without dropping any). If #151 is applied before file 17, file 17 adds the held-draft branch to `backup_entry_exists`; if after, #151's own file must carry that branch (request on #151). File 17 calls `backup_forget_entry` from the held-draft delete trigger whenever it exists, and `ops_replay_ledger` replays `audio_blob` once `audio_blobs` exists.
+Apply: through `deploy-db.yml` (staging by `workflow_dispatch` with `approve-migration`; production on a `db-v*` tag).
+Check (expect each):
+```sql
+select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = 'public' and c.relname in ('backup_devices','child_keys','audio_blobs','backup_usage','restore_requests','restore_approvals','escrow_unwraps','escrow_rotation_notices')
+   and c.relrowsecurity;                                                        -- 8
+select count(*) from information_schema.role_table_grants
+ where grantee = 'service_role' and table_name in ('backup_devices','child_keys','audio_blobs','backup_usage','restore_requests','restore_approvals','escrow_unwraps','escrow_rotation_notices');  -- 0
+select public, file_size_limit from storage.buckets where id = 'entry-audio';  -- false | 20971520
+select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and has_function_privilege('escrow_svc', p.oid, 'execute');   -- 10
+select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname like 'escrow\_%'
+   and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute')
+        or has_function_privilege('service_role', p.oid, 'execute'));          -- 0
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'purge_ledger_entity_type_check';  -- includes 'audio_blob' and every earlier kind
+select count(*) from information_schema.columns where table_name = 'child_keys' and column_name = 'key_check';  -- 1
+select tgname from pg_trigger where tgname in ('entries_backup_forget','profiles_pseudonymise_escrow_unwraps','deletion_requests_backup_cancel','escrow_unwraps_guard','escrow_unwraps_no_truncate') order by 1;  -- 5 rows
+select prosrc like '%held_drafts%' from pg_proc where proname = 'backup_entry_exists';  -- true once file 17 and #151 are both applied
+```
+Advisors: expect 0029 "authenticated can execute security definer function" for `backup_register_device`, `backup_revoke_device`, `backup_store_key`, `backup_begin`, `backup_confirm`, `backup_discard`, `backup_delete_all`, `backup_pending_requests`, `backup_approve_request`, `backup_cancel_request` and the Storage helpers `backup_object_writable`, `backup_object_readable`. Each starts with `require_user()` or checks `auth.uid()` and `is_anonymous()`. Anything else new: stop and ask.
+Settings after apply (off until then, fail closed): `app.backup_enabled`, `app.escrow_enabled`, `app.escrow_key_versions` (docs/ops/BACKUP_RUNBOOK.md B7); `app.escrow_rotation` only during a rotation (section 5).
+Rollback (only before any real recording is uploaded; after that, switch off with B7 instead and never drop the tables, because the log must stay 24 months):
+```sql
+begin;
+alter database postgres reset app.backup_enabled; alter database postgres reset app.escrow_enabled;
+drop trigger if exists entries_backup_forget on public.entries;
+drop trigger if exists profiles_pseudonymise_escrow_unwraps on public.profiles;
+drop trigger if exists deletion_requests_backup_cancel on public.deletion_requests;
+drop policy if exists entry_audio_owner_insert on storage.objects; drop policy if exists entry_audio_owner_update on storage.objects;
+drop policy if exists entry_audio_owner_read on storage.objects; drop policy if exists entry_audio_no_anonymous on storage.objects;
+drop table if exists public.escrow_unwraps, public.restore_approvals, public.restore_requests, public.backup_usage,
+  public.audio_blobs, public.child_keys, public.backup_devices, public.escrow_rotation_notices cascade;   -- the truncate guard goes with the table
+drop function if exists public.backup_switch_on(text), public.backup_escrow_key_trusted(int) cascade;  -- and the other functions of this file
+delete from storage.buckets where id = 'entry-audio';   -- only if empty
+delete from public.policy_documents where key = 'backup' and not exists (select 1 from public.policy_versions where document = 'backup');
+revoke usage on schema public from escrow_svc; drop role if exists escrow_svc;
+commit;
+```
+`purge_ledger_entity_type_check` keeps `audio_blob` (harmless; removing it would fail on any ledger row of that kind). With file 17 applied nothing else is needed: `backup_entry_exists` goes with #151's functions, and file 17's trigger stops calling `backup_forget_entry` once it is gone.
