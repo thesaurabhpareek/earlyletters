@@ -372,7 +372,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: done (9be06db, `20261004300000_insights_aggregates.sql`, k = 10). Plus totals: superseded (D-053; App Store Connect reports only).
 
 #### BL-330 Apple refresh-token capture at sign-in (new) [Critical]
-- Status: ready. Mode: agent (deploy needs FT-11 secrets). Owner: security engineer. Size: S to M.
+- Status: in review (PR #139, stream S01; deploy needs FT-11 secrets and migration 20261004200000 applied). Mode: agent (deploy needs FT-11 secrets). Owner: security engineer. Size: S to M.
 - Satisfies: A-NFR-011, DATA-REQ-019, Apple guideline 5.1.1(v) (revoke Sign in with Apple tokens on account deletion); `docs/ops/SECURITY.md` section 5.
 - Scope: an `apple-token` Edge Function that takes the one-time authorization code after native Apple sign-in, exchanges it at `https://appleid.apple.com/auth/token` with a 10-minute ES256 client secret, wraps the refresh token with `wrapAppleToken()` (`supabase/functions/purge-worker/lib/apple.ts`) under `TOKEN_KEK_V1`, and stores it through `ops_apple_token_put`; the app calls it once after sign-in; ADR 0017 envelope, request id, rate limit, content-free log; Deno tests with fake keys. Until it ships, deletions of Apple users finish with `apple: no_token` and an `apple_no_token` alert.
 - Needed before Sign in with Apple reaches anyone outside the founding family (C1, Mon 19 Oct).
@@ -392,7 +392,7 @@ All database files below are **written and tested but not applied** to any remot
 The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L2 are in BL-331 and BL-332; H3 is BL-330. The rest:
 
 #### BL-347 Email sign-in link cannot sign a phone into someone else's account (review H1) [Critical]
-- Status: ready. Mode: agent (auth code: independent review run and `approve-migration` label once BL-005 is on). Owner: auth owner, sync owner. Size: M.
+- Status: in review (PR #139, stream S01; ADR 0023 proposed; device check AUTH_SETUP 11.10 open). Mode: agent (auth code: independent review run and `approve-migration` label once BL-005 is on). Owner: auth owner, sync owner. Size: M.
 - Satisfies: A-REQ-023, LEGAL-REQ-024, LEGAL-REQ-026; TDD 04 3.1.
 - Scope: accept an opened link only while this phone has a pending request from this session (`getPendingEmail()` or a persisted request nonce), otherwise route to "type the code"; refuse a link while a different account is signed in; never run `takeOwnership` on `SIGNED_IN`: run it only after consent, behind a screen that shows the masked account email and needs a tap; then move to Supabase PKCE for email links (`flowType: 'pkce'`, template change in `supabase/templates/magic_link.html` and FT-12). Tests for the attack in H1's five steps.
 - Needed before C1 (Mon 19 Oct): a phishing link would otherwise upload a family's letters to an attacker's account.
