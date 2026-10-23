@@ -101,6 +101,10 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(res.headers()['referrer-policy']).toBe('no-referrer');
     const html = await res.text();
     expect(html).toMatch(/<meta name="robots" content="noindex, nofollow"/);
+    // Its own address and share card, not the home page's; the share image stays.
+    expect(html).toContain('<link rel="canonical" href="https://earlyletters.com/j"');
+    expect(html).toContain('<meta property="og:url" content="https://earlyletters.com/j"');
+    expect(html).toMatch(/<meta property="og:image" content="https:\/\/earlyletters\.com\//);
     expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
     // The old /i/<token> form is gone: no page answers it, so nothing invites a token into a path.
     expect((await request.get(`/i/${TOKEN}`, { maxRedirects: 0 })).status()).toBe(404);

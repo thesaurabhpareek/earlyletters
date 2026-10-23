@@ -78,6 +78,8 @@ for (const path of ['/auth/confirm', '/auth/callback']) {
       const html = await res.text();
       expect(html).toMatch(/<meta name="robots" content="noindex, nofollow"/);
       expect(html).toContain('<link rel="canonical" href="https://earlyletters.com/auth/confirm"');
+      expect(html).toContain('<meta property="og:url" content="https://earlyletters.com/auth/confirm"');
+      expect(html).toMatch(/<meta property="og:image" content="https:\/\/earlyletters\.com\//);
       expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
     });
   });

@@ -13,12 +13,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { site } from '@/content/site';
+import { pageOpenGraph } from '@/lib/brand/share-card';
 import styles from '../auth/confirm/confirm.module.css';
 import { CopyInvite } from './CopyInvite';
 
 export const metadata: Metadata = {
   title: site.invite.title,
   robots: { index: false, follow: false },
+  // Its own address and share card, not the home page's from layout.tsx (chats build link previews from these).
+  alternates: { canonical: '/j' },
+  openGraph: pageOpenGraph('/j', site.invite.title),
 };
 
 export default function InvitePage() {
