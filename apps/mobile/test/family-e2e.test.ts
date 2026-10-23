@@ -14,8 +14,8 @@
  * device-made invite, leave only through the RPC, contributors refused) run too. Without them
  * the app's fallbacks are what is tested: the server-made token and the unnamed ask.
  *
- * Fictional family "Asha" only (CLAUDE.md): Mama (A) starts the book, Papa (B) joins, and C is a
- * stranger holding a forwarded link.
+ * Fictional family "Asha" only (CLAUDE.md): Mama (A) starts the book, Papa (B) joins, C is a
+ * stranger holding a forwarded link, and D is the co-parent Mama invites after Papa leaves.
  */
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -24,13 +24,14 @@ import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { canDo } from '@scribe/core/src/family-rules';
 import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
-import { upsertPrefs } from '../src/lib/db/repos/children';
+import { get as getChildRow, insert as insertChild, listVisible, upsertPrefs } from '../src/lib/db/repos/children';
+import { setSetting } from '../src/lib/db/repos/settings';
 import type { SqlDb } from '../src/lib/db/sql';
 import { inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { newInviteDraft, type InviteDraft } from '../src/lib/family/invite-draft.logic';
 import { parseInviteInput, parseInviteUrl } from '../src/lib/family/invite-link.logic';
 import { acceptInvite, createCoParentInvite, leaveBook, listPendingInvites, peekInvite, revokeInvite, shareInviteAgain, type FamilyClient } from '../src/lib/family/invites';
-import { joinPlan } from '../src/lib/family/join-flow.logic';
+import { joinedView, joinPlan } from '../src/lib/family/join-flow.logic';
 import { familyTabState, leftSince, type MemberLike } from '../src/lib/family/members.logic';
 import { createSyncEngine } from '../src/lib/sync/engine';
 import { enqueueBookCreate, enqueueEntryUpsert, readSetting } from '../src/lib/sync/outbox';
@@ -58,6 +59,7 @@ function migrationFiles(): string[] {
 const A = '11111111-1111-1111-1111-111111111111'; // Mama
 const B = '22222222-2222-2222-2222-222222222222'; // Papa
 const C = '33333333-3333-3333-3333-333333333333'; // a stranger with a forwarded link
+const D = '44444444-4444-4444-4444-444444444444'; // a later co-parent, invited with no suggested sign-off
 
 let pg: PGlite;
 let lock: Promise<unknown> = Promise.resolve();
@@ -274,6 +276,14 @@ function membersOn(db: SqlDb, childId: string): MemberLike[] {
   return (JSON.parse(r.members) as { profile_id: string; role: string; is_me: boolean; signs_as: string | null }[])
     .filter((m) => !m.is_me)
     .map((m) => ({ id: m.profile_id, signsAs: m.signs_as ?? '', role: m.role === 'contributor' ? 'contributor' : 'parent' }));
+}
+/** What the repositories are given on a phone (lib/db/repos/context.ts). */
+const repo = (db: SqlDb, now: () => string = iso) => ({ db, now, newId: () => uuid7() });
+/** The open book as the store picks it (lib/store.ts getActiveChildId): the setting while that book is listed, else the first listed. */
+function openBookOn(db: SqlDb): string | null {
+  const id = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', 'activeChildId')?.value;
+  const all = listVisible(repo(db));
+  return all.find((c) => c.id === id)?.id ?? all[0]?.id ?? null;
 }
 const roleOf = (db: SqlDb, childId: string) => db.get<{ role: 'parent' | 'contributor' | null }>('SELECT role FROM children WHERE id = ?', childId)?.role ?? undefined;
 
@@ -492,14 +502,29 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
   }, 60_000);
 
   it('[F11-REQ-009] Papa\'s phone gets the book, signed for Papa, with Mama\'s in-book letter only, never the private one', async () => {
+    // Papa had started a book of his own for Asha on this phone the day before, and it is the open one
+    // (store.addChild makes the first book open). The pulled book must not take its place (BL-322).
+    const papasOwn = uuid7(clock.t - 86_400_000);
+    B1.transaction(() => {
+      insertChild(repo(B1, () => new Date(clock.t - 86_400_000).toISOString()), papasOwn, { name: 'Asha', birthday: '2025-04-12', dueDate: null, signsAs: 'Papa' });
+      setSetting(repo(B1), 'activeChildId', papasOwn);
+    });
+    expect(openBookOn(B1)).toBe(papasOwn);
     expect(takeOwnership(B1, B, ctx()).outcome).toBe('claimed');
     await settle(B1, B);
     const book = B1.get<{ name: string; signs_as: string; role: string; created_by_me: number }>('SELECT * FROM children WHERE id = ?', ASHA);
     expect(book).toMatchObject({ name: 'Asha', signs_as: 'Papa', role: 'parent', created_by_me: 0 }); // the inviter's suggestion (F11-REQ-024)
     expect(letterOn(B1, ids.inBook)).toMatchObject({ final_text: 'You laughed at the rain today.', author_signs_as: 'Mama', author_id: A });
     expect(letterOn(B1, ids.private)).toBeNull();
-    // No setting says which book is open: joining never switched it (BL-322).
-    expect(B1.get('SELECT value FROM settings WHERE key = ?', 'activeChildId')).toBeNull();
+    // Joining and the pull never switched the open book (BL-322): the setting is untouched, and even
+    // without it the first listed book is still Papa's own (a pulled book is dated by the pull).
+    expect(B1.get('SELECT value FROM settings WHERE key = ?', 'activeChildId')).toEqual({ value: papasOwn });
+    expect(openBookOn(B1)).toBe(papasOwn);
+    expect(listVisible(repo(B1)).map((c) => c.id)).toEqual([papasOwn, ASHA]);
+    // The joined view, now that the book is here: the field holds the inviter's suggestion, so Open can be tapped (F11-REQ-024).
+    const arrived = getChildRow(repo(B1), ASHA)!;
+    expect(arrived.signsAs).toBe('Papa');
+    expect(joinedView(arrived, arrived.signsAs)).toEqual({ waiting: false, canOpen: true, needsSignsAs: false });
     // Two parents now, on both phones.
     await settle(A1, A);
     for (const [db, other] of [[B1, 'Mama'], [A1, 'Papa']] as const) {
@@ -567,5 +592,23 @@ describe('co-parent sharing end to end: create, peek, join, leave (phones on nod
     const contributor = await callRpc(A, 'create_child_invite', { p_invite_id: uuid7(), p_child: ASHA, p_role: 'contributor', p_token_hash: `\\x${'ab'.repeat(32)}` }, {});
     expect(contributor.error).toMatchObject({ code: 'SCINV', details: 'role_disabled' });
     expect(inviteErrorKind(contributor.error)).toBe('unknown');
+  }, 60_000);
+
+  it('[F11-REQ-024] a co-parent invited with no suggested sign-off: on their phone, Open waits until they say what Asha calls them', async () => {
+    await sys('insert into auth.users values ($1)', [D]);
+    await consent(D);
+    const made = await createCoParentInvite(familyClient(A), ASHA, null, await newInviteDraft(draftDeps));
+    expect(await acceptInvite(familyClient(D), parseInviteUrl(made.url, 'https://earlyletters.com')!)).toBe(ASHA);
+    const D1 = newPhone();
+    // Before the pull the book is not on this phone: the sheet waits, with only Close.
+    expect(joinedView(getChildRow(repo(D1), ASHA), '')).toEqual({ waiting: true, canOpen: false, needsSignsAs: false });
+    expect(takeOwnership(D1, D, ctx()).outcome).toBe('claimed');
+    await settle(D1, D);
+    const arrived = getChildRow(repo(D1), ASHA);
+    expect(arrived).toMatchObject({ name: 'Asha', signsAs: '' });
+    expect(joinedView(arrived, arrived!.signsAs)).toEqual({ waiting: false, canOpen: false, needsSignsAs: true });
+    expect(joinedView(arrived, 'Baba')).toEqual({ waiting: false, canOpen: true, needsSignsAs: false });
+    // Joining never sets the open book; only "Open the book" does (BL-322).
+    expect(D1.get('SELECT value FROM settings WHERE key = ?', 'activeChildId')).toBeNull();
   }, 60_000);
 });
