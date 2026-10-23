@@ -46,7 +46,8 @@
         "EXPO_PUBLIC_SERVER_FEATURES": "on",
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
-        "EXPO_PUBLIC_ANALYTICS": "off"
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
       }
     },
     "production": {
@@ -73,7 +74,8 @@
         "EXPO_PUBLIC_SERVER_FEATURES": "off",
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
-        "EXPO_PUBLIC_ANALYTICS": "off"
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
       }
     }
   },
