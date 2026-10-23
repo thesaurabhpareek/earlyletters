@@ -7,14 +7,16 @@
  * writes to the open book: you, the co-parent who joined (from the last pull, signed with what the
  * child calls them), and invites still open ("Invited, open until {date}", with Share again and
  * Cancel invite; F11-REQ-019). While the book has one parent it offers "Write this book together";
- * with two (D-069) it offers nothing more to invite and shows "Leave {child}'s book" (F11-REQ-011).
- * When the other parent leaves, one neutral note shows once (F11-REQ-023). Before sign-in the
- * tab shows you alone and the invite card starts sign-in (PRD A F3.3a).
+ * with two (D-069) it offers nothing more to invite. Build 2 has no Leave row (D-113): a book this
+ * phone leaves is not listed anywhere yet, so the leaver's own letters would have no screen
+ * (lib/family/entry.logic.ts LEAVE_BOOK_OFFERED). When the other parent leaves, one neutral note
+ * shows once (F11-REQ-023). Before sign-in the tab shows you alone and the invite card starts
+ * sign-in (PRD A F3.3a).
  *
  * With them off (the kill path) the tab keeps its place and shows the co-parent "coming soon"
  * presentation instead (components/family/coparent-soon.tsx).
  */
-import { router, useFocusEffect, Redirect, type Href } from 'expo-router';
+import { router, useFocusEffect, Redirect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
 import { UserPlusIcon } from 'phosphor-react-native/src/icons/UserPlus';
 import { XIcon } from 'phosphor-react-native/src/icons/X';
@@ -27,7 +29,7 @@ import { useChildren } from '@/components/child/use-children';
 import { CoParentSoon } from '@/components/family/coparent-soon';
 import { MemberRow } from '@/components/family/member-row';
 import { Button } from '@/components/ui/button';
-import { ListRow, ListSection } from '@/components/ui/list-row';
+import { ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { capabilities } from '@/lib/capabilities';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -262,16 +264,7 @@ function FamilyShared() {
           </View>
         )}
 
-        {state.canLeave && (
-          <ListSection>
-            <ListRow
-              testID="family.leave"
-              title={fill(f.leave.row, { child })}
-              variant="destructive"
-              onPress={() => router.push({ pathname: '/invite/leave', params: { childId: active.id } } as unknown as Href)}
-            />
-          </ListSection>
-        )}
+        {/* No Leave row in build 2 (D-113): it returns, with left books listed under "Letters to {child}", before build 3. */}
 
         <Text className="text-sm leading-5 text-muted-foreground">{fill(f.card.privacy, { child })}</Text>
       </ScrollView>

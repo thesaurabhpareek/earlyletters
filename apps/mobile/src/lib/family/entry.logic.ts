@@ -2,7 +2,7 @@
  * Where every co-parent entry point leads. One switch decides (lib/capabilities.ts,
  * `capabilities.coParent`, which follows EXPO_PUBLIC_SERVER_FEATURES):
  *  - on (D-100, drafted as D-089: server features ship in v1.0; the TestFlight alpha of D-106):
- *    each entry opens its real flow: invite, join, leave;
+ *    each entry opens its real flow: invite and join (leave waits for D-113, below);
  *  - off (the kill path, and every build made before the switch flips): sharing a book is
  *    "coming soon", one calm presentation (components/family/coparent-soon.tsx), never a dead
  *    end, an error or a sign-in sheet, and an invite link keeps no token.
@@ -27,15 +27,27 @@ export const INVITE_ENTRIES = [
   'settings_child',
   /** First run, "I was invited". */
   'onboarding_join',
-  /** /invite/leave: leave a shared book (the Family tab, with a co-parent). */
+  /** /invite/leave: leave a shared book. Not offered in build 2 (D-113, LEAVE_BOOK_OFFERED). */
   'invite_leave',
 ] as const;
 export type InviteEntry = (typeof INVITE_ENTRIES)[number];
 
 export type InviteDestination = 'coming_soon' | 'flow';
 
-/** One rule for all of them: no server features, no flow. */
-export function inviteDestination(_entry: InviteEntry, serverFeatures: boolean): InviteDestination {
+/**
+ * D-113 (coordinator's call, 23 Oct 2026; the founder may reverse it): Leave is hidden in build 2.
+ * After leaving, sync marks the book left (lib/sync/merge.ts) and the book list hides it
+ * (db/repos/children.ts), so the leaver's own letters would stay on the phone with no screen that
+ * lists, exports or deletes them. Until left books are listed under "Letters to {child}" with read,
+ * export and delete (docs/BACKLOG.md, before build 3), the Family tab has no Leave row and
+ * /invite/leave answers coming soon, like every co-parent route whose feature is off. The leave
+ * plan (members.logic.ts canLeave, invites.ts leaveBook) and its tests stay.
+ */
+export const LEAVE_BOOK_OFFERED = false;
+
+/** One rule for all of them: no server features, no flow. Leave also waits for D-113 to lift. */
+export function inviteDestination(entry: InviteEntry, serverFeatures: boolean): InviteDestination {
+  if (entry === 'invite_leave' && !LEAVE_BOOK_OFFERED) return 'coming_soon';
   return serverFeatures ? 'flow' : 'coming_soon';
 }
 

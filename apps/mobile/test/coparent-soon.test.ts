@@ -13,7 +13,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { COPARENT_NOTIFY_KEY, coParentNotifyRequestedOn, hasRequestedCoParentNotify, requestCoParentNotify } from '../src/lib/family/coming-soon.logic';
-import { allowedLinkRoute, INVITE_ENTRIES, inviteDestination, inviteHref, LINK_ROUTE_ALLOWLIST, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
+import { allowedLinkRoute, INVITE_ENTRIES, inviteDestination, inviteHref, LEAVE_BOOK_OFFERED, LINK_ROUTE_ALLOWLIST, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');
 const src = (p: string) => readFileSync(join(APP, 'src', p), 'utf8');
@@ -26,10 +26,10 @@ describe('every invite entry point leads to coming soon when server features are
     expect([...INVITE_ENTRIES].sort()).toEqual(['family_tab', 'invite_join', 'invite_leave', 'invite_link', 'invite_new', 'onboarding_join', 'settings_child']);
   });
 
-  it('off: coming soon, every one; on: the real flow', () => {
+  it('off: coming soon, every one; on: the real flow (leave waits for D-113)', () => {
     for (const e of INVITE_ENTRIES) {
       expect(inviteDestination(e, false), e).toBe('coming_soon');
-      expect(inviteDestination(e, true), e).toBe('flow');
+      expect(inviteDestination(e, true), e).toBe(e === 'invite_leave' ? 'coming_soon' : 'flow');
     }
   });
 
@@ -241,13 +241,23 @@ describe('server features on: the shared flows are live (D-100; option B for the
     expect(familyCopy.accept.invitedTitle).toBe('You were invited to a book');
   });
 
-  it('the Family tab is the live view: members, open invites, the invite card and leave', () => {
+  it('the Family tab is the live view: members, open invites and the invite card', () => {
     const tab = src('app/(tabs)/family.tsx');
     expect(tab).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
     expect(tab).toMatch(/familyTabState\(/);
     expect(tab).toMatch(/state\.showInviteCard &&/);
-    expect(tab).toMatch(/state\.canLeave &&/);
-    expect(tab).toMatch(/pathname: '\/invite\/leave'/);
+  });
+
+  it('[D-113] build 2 offers no Leave: no row on the Family tab or in a child\'s settings, and /invite/leave shows coming soon', () => {
+    expect(LEAVE_BOOK_OFFERED).toBe(false);
+    for (const serverFeatures of [false, true]) expect(inviteDestination('invite_leave', serverFeatures)).toBe('coming_soon');
+    for (const screen of ['app/(tabs)/family.tsx', 'app/settings/children/[id].tsx']) {
+      const code = src(screen).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+      expect(code, screen).not.toMatch(/\/invite\/leave|testID="family\.leave"|state\.canLeave|leave\.row/);
+    }
+    // The route stays, behind the same switch as every invite route, so the sheet returns with left books.
+    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : <InviteComingSoon \/>/);
+    expect(src('app/invite/leave.tsx')).toMatch(/D-113/);
   });
 
   it('a child\'s settings row opens the invite itself, not a sign-in sheet or coming soon', () => {
