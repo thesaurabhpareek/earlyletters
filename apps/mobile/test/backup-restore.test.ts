@@ -341,3 +341,22 @@ describe('[F08-REQ-023] restore on a new phone', () => {
     expect(audioOf(b, recs[1].id).sha256).toBe(sha256Hex(recs[1].plain));
   });
 });
+
+describe('review fixes on #150: the upload switch and the transfer check', () => {
+  it('[review B M1] the backupUploads switch stops uploads only: a new phone still restores, and sends nothing', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    b.cond.killed = true;
+    expect(await b.service.turnOn()).toBe('on');
+    const fresh = recordLetter(b, ASHA, 60_000);
+    const tus = backend.requests.filter((x) => x.kind === 'tus').length;
+    await b.service.tick();
+    expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+    expect(backend.requests.filter((x) => x.kind === 'tus').length).toBe(tus);
+    expect(backend.blobs.get(fresh.id)).toBeUndefined();
+  });
+});

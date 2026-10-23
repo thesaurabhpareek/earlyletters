@@ -198,7 +198,9 @@ export function createRestore(d: RestoreDeps) {
     return heldRelease;
   };
   const stopped = () => d.stopped?.() ?? false;
-  const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
+  // `backupUploads` stops new uploads only, never a restore (packages/api standards.ts; review B M1 on #150).
+  // The escrow request has its own switch, `escrow` (escrowKilled).
+  const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground();
 
   async function listBlobs(refresh = false): Promise<BlobRow[]> {
     if (!blobs || refresh) blobs = await d.server.listBlobs();
@@ -213,7 +215,6 @@ export function createRestore(d: RestoreDeps) {
 
   async function networkGate(blob: BlobRow, priority: boolean): Promise<RestoreOutcome | null> {
     if (stopped()) return { kind: 'gate', reason: 'stopped' };
-    if (d.conditions.uploadsKilled()) return { kind: 'gate', reason: 'killed' };
     if (!d.conditions.foreground()) return { kind: 'gate', reason: 'background' };
     // Never while recording, reviewing or playing (F08-REQ-025): the same rule as uploads.
     if (d.conditions.busy()) return { kind: 'gate', reason: 'busy' };
