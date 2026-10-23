@@ -374,18 +374,35 @@ describe('[F16-REQ-028] every key sync_push answers with is in the push result c
 });
 
 describe('[F16 6.2 E] the words version and current equal the SQL (review A 6 on #138)', () => {
-  /** The columns of the `(new.a, new.b, ...) is distinct from` tuple in a trigger body. */
+  /**
+   * Every column a trigger's words-version move depends on (review A N6 on #253): for each assignment
+   * that moves `new.text_xid` (all but the insert branch and the keep-as-is ones), every `new.` and
+   * `old.` column in the condition that guards it, so an extra condition anywhere fails the test.
+   */
   const versionTuple = (body: string) => {
-    const m = /\(((?:\s*new\.[a-z_]+\s*,?)+)\)\s*is distinct from/.exec(body);
-    return m ? [...m[1].matchAll(/new\.([a-z_]+)/g)].map((x) => x[1]) : [];
+    const code = body.replace(/--[^\n]*/g, '');
+    const cols = new Set<string>();
+    let moves = 0;
+    for (const m of code.matchAll(/new\.text_xid\s*:=\s*([^;]+);/g)) {
+      if (/^(?:coalesce\(\s*old\.text_xid|old\.text_xid)/.test(m[1].trim())) continue;
+      const before = code.slice(0, m.index);
+      const guards = [...before.matchAll(/(?<!end )\b(?:elsif|if)\b/g)];
+      const at = guards.length ? guards[guards.length - 1].index! : -1;
+      const cond = at >= 0 ? before.slice(at, before.indexOf(' then', at)) : '';
+      if (/tg_op\s*=\s*'INSERT'/.test(cond)) continue;
+      moves++;
+      for (const c of cond.matchAll(/\b(?:new|old)\.([a-z_]+)/g)) cols.add(c[1]);
+    }
+    expect(moves, 'no words-version move found in the trigger').toBeGreaterThan(0);
+    return [...cols];
   };
 
   it('a letter\'s text_xid moves on final_text, machine_edits and edit_level only (entries_set_sync_xid)', () => {
-    expect(versionTuple(newestDefinition('entries_set_sync_xid'))).toEqual([...WORDS_VERSION_COLUMNS.entry]);
+    expect(versionTuple(newestDefinition('entries_set_sync_xid')).sort()).toEqual([...WORDS_VERSION_COLUMNS.entry].sort());
   });
 
   it('a held draft\'s text_xid moves on the five group columns and typed_text (held_drafts_stamp)', () => {
-    expect(versionTuple(newestDefinition('held_drafts_stamp'))).toEqual([...WORDS_VERSION_COLUMNS.held]);
+    expect(versionTuple(newestDefinition('held_drafts_stamp')).sort()).toEqual([...WORDS_VERSION_COLUMNS.held].sort());
   });
 
   it('every current the SQL builds has exactly the ConflictCurrentSchema keys: never the author layer', () => {
