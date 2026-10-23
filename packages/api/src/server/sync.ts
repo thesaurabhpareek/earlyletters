@@ -665,6 +665,34 @@ export const PulledHeldGoneSchema = v.object({
 });
 export type PulledHeldGone = v.InferOutput<typeof PulledHeldGoneSchema>;
 
+/** One row of the held section: a draft, or the marker of one that left. */
+export const PulledHeldRowSchema = v.union([PulledHeldGoneSchema, PulledHeldSchema]);
+export type PulledHeldRow = PulledHeld | PulledHeldGone;
+
+/**
+ * The held section, checked row by row (review A 3 on #138). `held_drafts`
+ * has no check on `capture_mode`, `edit_level` or its jsonb columns
+ * (20261016000000, unlike `entries`), and `held.upsert` stores them as sent,
+ * so a row this contract refuses can come from any of the author's phones.
+ * Such a row is dropped and counted in `rejected`; every other row, and the
+ * rest of the pull with its books, still parses. The cursor still moves
+ * past it: this phone keeps whatever copy it has, and the row comes again
+ * when it changes. Log `rejected` as a count only, never the row, its id or
+ * its words (CLAUDE.md privacy rules).
+ */
+export const PulledHeldSectionSchema = v.pipe(
+  v.object({ rows: v.array(v.unknown()), cursor: nullableStr, more: v.boolean() }),
+  v.transform(({ rows, cursor, more }) => {
+    const kept: PulledHeldRow[] = [];
+    for (const row of rows) {
+      const r = v.safeParse(PulledHeldRowSchema, row);
+      if (r.success) kept.push(r.output);
+    }
+    return { rows: kept, cursor, more, rejected: rows.length - kept.length };
+  }),
+);
+export type PulledHeldSection = v.InferOutput<typeof PulledHeldSectionSchema>;
+
 export const PullResponseSchema = v.object({
   reset: v.boolean(),
   reason: v.optional(v.picklist(['epoch', 'cursor_ahead'])),
@@ -697,13 +725,10 @@ export const PullResponseSchema = v.object({
    *    `held_drafts_author_read`, never in this section;
    *  - a restore epoch: the pull answers `reset` instead.
    * The left-book section (`gone[].rows`) carries the author's letters only,
-   * never held drafts. Never present in anyone else's pull.
+   * never held drafts. Never present in anyone else's pull. A malformed held
+   * row is dropped and counted (`PulledHeldSectionSchema`), never the pull.
    */
-  held: v.optional(v.object({
-    rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])),
-    cursor: nullableStr,
-    more: v.boolean(),
-  })),
+  held: v.optional(PulledHeldSectionSchema),
   more: v.optional(v.boolean()),
 });
 export type PullResponse = v.InferOutput<typeof PullResponseSchema>;
@@ -798,7 +823,11 @@ export function parsePushResponse(input: unknown): ParseResult<PushResponse> {
   return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };
 }
 
-/** Validates a `sync_pull` response. Never throws. */
+/**
+ * Validates a `sync_pull` response. Never throws. A held row the contract
+ * refuses is dropped and counted in `held.rejected`; it never makes the
+ * whole pull `invalid`.
+ */
 export function parsePullResponse(input: unknown): ParseResult<PullResponse> {
   const r = v.safeParse(PullResponseSchema, input);
   return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };

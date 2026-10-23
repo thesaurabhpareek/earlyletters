@@ -202,13 +202,45 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     for (const x of r.value.results) expect(isWordsConflict(x)).toBe(false);
   });
 
-  it('[F16-REQ-024] an erased held marker parses; an unknown marker is refused', () => {
+  it('[F16-REQ-024] an erased held marker parses; an unknown marker is dropped and counted, never adopted', () => {
     const pull = (gone: string) => parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z',
       held: { rows: [{ id: ASHA_ENTRY, gone, updated_at: '2026-10-15T19:00:00Z', v: '9' }], cursor: '9', more: false },
     });
-    for (const g of ['discarded', 'kept', 'erased']) expect(pull(g).ok, g).toBe(true);
-    expect(pull('vanished').ok).toBe(false);
+    for (const g of ['discarded', 'kept', 'erased']) {
+      const r = pull(g);
+      expect(r.ok && r.value.held, g).toMatchObject({ rows: [{ id: ASHA_ENTRY, gone: g }], rejected: 0 });
+    }
+    const unknown = pull('vanished');
+    expect(unknown.ok && unknown.value.held).toEqual({ rows: [], cursor: '9', more: false, rejected: 1 });
+  });
+
+  it('[F16 6.2 I] one malformed held row is dropped and counted; the good rows and the books still parse (review A 3 on #138)', () => {
+    const book = { id: ASHA_CHILD, access: 'parent', repull: false, meta_hash: 'x', rows: [], cursor: '20:0', more: false };
+    const draft = {
+      id: ASHA_ENTRY, child_id: ASHA_CHILD, kind: 'held_letter', capture_mode: 'typed', created_at: '2026-10-15T19:00:00Z',
+      occurred_on: '2026-10-15', occurred_precision: 'day', language: null, base_direction: 'ltr', prompt_key: null, in_book_choice: true,
+      raw_transcript: null, final_text: null, machine_edits: null, edit_level: null, author_edits: null, locked_spans: null,
+      typed_text: 'Asha found the puddle first', engine_version: null, pack_ref: null, audio_kept_on_device: false,
+      updated_at: '2026-10-15T19:00:01Z', v: '12',
+    };
+    const marker = { id: '0192e000-0000-7000-8000-00000000e002', gone: 'discarded', updated_at: '2026-10-15T19:00:02Z', v: '13' };
+    // held_drafts checks neither column (20261016000000), so a phone can store these through held.upsert.
+    const badMode = { ...draft, id: '0192e000-0000-7000-8000-00000000e0b1', capture_mode: 'dictated', typed_text: 'Asha splashed in the big puddle' };
+    const badEdits = { ...draft, id: '0192e000-0000-7000-8000-00000000e0b2', author_edits: {}, typed_text: 'Asha splashed in the big puddle' };
+    const r = parsePullResponse({
+      reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [book], gone: [],
+      held: { rows: [draft, badMode, marker, badEdits, null], cursor: '14:0', more: false },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.books).toEqual([book]);
+    expect(r.value.held).toEqual({ rows: [draft, marker], cursor: '14:0', more: false, rejected: 3 });
+    // The report is a count: nothing of a dropped row (its id or its words) is in the result.
+    const out = JSON.stringify(r.value);
+    for (const s of ['Asha splashed in the big puddle', 'e0b1', 'e0b2', 'dictated']) expect(out).not.toContain(s);
+    // The envelope is still strict: a held section without its rows array is refused.
+    expect(parsePullResponse({ reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', held: { rows: {}, cursor: null, more: false } }).ok).toBe(false);
   });
 
   it('[M17] the review mark travels on own rows and in entry.upsert, author-only', () => {
