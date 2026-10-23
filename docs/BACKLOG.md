@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); the next block starts at BL-441.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); the next block starts at BL-444.
 
 ---
 
@@ -649,10 +649,10 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Why critical: `keys.ts` ships empty, so the app trusts no remote config, no content and no pack (ADR 0016 4.2). Without it there are no kill switches in C1 (LEGAL-REQ-040) and no non-English language pack can install.
 
 #### BL-336 iOS deployment target 17 (new)
-- Status: needs-founder (FT-04 answers Q-002). Then agent: `expo-build-properties` with `ios.deploymentTarget: '17.0'` (app.config.ts plugin; owner mobile-polish this wave); removes the iOS 16 branch of the Plus gate (ADR 0013).
+- Status: in-review (D-098 answers Q-002, 15 Oct; config PR). Was: needs-founder (FT-04 answers Q-002). Then agent: `expo-build-properties` with `ios.deploymentTarget: '17.0'` (app.config.ts plugin; owner mobile-polish this wave); removes the iOS 16 branch of the Plus gate (ADR 0013).
 
 #### BL-337 Pack and model hostname and uploads (new)
-- Status: needs-founder (FT-04 answers Q-001; FT-16 creates the bucket and domain). Then agent: one hostname in `src/lib/models/catalog.ts` (`SELF_HOST_BASE` is `https://models.earlyletters.com/speech` today, while DOMAINS.md says `packs.earlyletters.com` and Q-001 recommends `packs.earlyletters.app`); the founder uploads the Hindi small model and text packs with the commands `publish.ts` prints, then `hosted: true` (ADR 0015 section 9 item 2).
+- Status: in-review for the hostname (D-097 answers Q-001: `packs.earlyletters.app`, 15 Oct; config PR); the bucket, domain and uploads stay founder steps (FT-16). Was: needs-founder (FT-04 answers Q-001; FT-16 creates the bucket and domain). Then agent: one hostname in `src/lib/models/catalog.ts` (`SELF_HOST_BASE` is `https://models.earlyletters.com/speech` today, while DOMAINS.md says `packs.earlyletters.com` and Q-001 recommends `packs.earlyletters.app`); the founder uploads the Hindi small model and text packs with the commands `publish.ts` prints, then `hosted: true` (ADR 0015 section 9 item 2).
 
 #### BL-338 Policy versions for the beta (new) [Critical]
 - Status: needs-decision (Q-009, founder with counsel). Without published `terms` and `sensitive-data` rows in `policy_versions`, every new account stops at "We couldn't finish setting up your account" (AUTH_SETUP 1.4, APPLY step 8.2), so C1 cannot sign in or sync.
@@ -673,20 +673,20 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Done when: a content rules case rejects invite and write-together promises in `storeListing` while server features are off for v1.0; nothing is pushed to App Store Connect before this lands (guideline 2.3.1).
 
 #### BL-436 Version and store metadata as code (new, D-089)
-- Status: in-review (branch `feat/release-version-metadata`). Mode: agent. Owner: release engineer.
+- Status: in-review (branch `feat/release-version-metadata`). Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: `apps/mobile/version.json` read by `app.config.ts`; `scripts/release/store-config.ts` writes `apps/mobile/store.config.json` (EAS Metadata) from `packages/content`; tests for both and for drift.
 
 #### BL-437 Store-lane release workflow (new, D-089)
-- Status: in-review (branch `ci/release-ios-workflow`, stacked on BL-436). Mode: coordinator and founder (agents never edit `.github/`; the release engineer proposes changes under `docs/ops/proposed/release-*`); founder sets up the `app-store` environment and rulesets (FT-20). Owner: coordinator.
+- Status: in-review (branch `ci/release-ios-workflow`, stacked on BL-436). Mode: coordinator and founder (agents never edit `.github/`; the release engineer proposes changes under `docs/ops/proposed/release-*`); founder sets up the `app-store` environment and rulesets (FT-20). Owner: founder (the coordinator runs it).
 - Scope: `.github/workflows/release-ios.yml`: `ios-v<x.y.z>-rc.<n>` runs checks then an EAS production build with auto-submit to TestFlight; a manual metadata job; `ios-v<x.y.z>` publishes the GitHub Release. Review contact from `ASC_REVIEW_CONTACT_JSON`; review notes from `storeListing.reviewNotes` (BL-341 finishes the text).
 - Needs: production App Store Connect record, `submit.production.ascAppId`, `EXPO_TOKEN`, production signing credentials in EAS, BL-339.
 
 #### BL-438 Release records (new, D-089)
-- Status: ready. Mode: agent. Owner: release engineer.
+- Status: ready. Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: keep `docs/release/1.0.0.md` current twice a week until release; one record per later version; `apple.copyright` once the founder confirms the holder.
 
 #### BL-439 Release health watch (new, D-090)
-- Status: blocked (first release). Mode: agent plus founder numbers. Owner: platform engineer.
+- Status: blocked (first release). Mode: agent plus founder numbers. Owner: platform.
 - Scope: day 1, 3 and 7 health report on the release issue (crash-free sessions and users from App Store Connect, open S0 and S1, pause or hotfix recommendation); `docs/ops/SLO.md` with the G5 thresholds.
 
 ---
@@ -1420,6 +1420,41 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
 - Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
 - Test: `apps/mobile/test/perf.sql.test.ts` (from BL-408); journeys J01 (J01-14) and J09 (J09-03).
+
+## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
+
+#### BL-441 `decide()` honours own Plus on an account-level surface
+- Status: ready. Mode: agent (founder merge: engine file, D-107). Owner: payments engineer (the plan engine, `packages/core/src/plan.ts`). Size: S.
+- Satisfies: D-036 and plan rule R-3 (no offer where Plus is already on).
+- Scope: `packages/core/src/plan.ts:203` allows own Plus only while `roleInBook === 'parent'`. With `roleInBook: null` and `book: null` (the documented account-level shape) a person whose Plus is on is offered Plus. Latent: no screen calls `decide()` with a null role yet.
+- Done when: own Plus is `allow` on an account-level surface; the `it.fails` "[BL-441] [R-3] own Plus on an account-level surface..." in `packages/core/test/plan.edges.test.ts` becomes `it` and passes; the property test "never offers Plus where it is already on" in `plan.test.ts` counts a null role as on.
+
+#### BL-442 Ten tests that assert too little
+- Status: ready. Mode: agent. Owner: qa engineer. Size: S. Each test's owning agent reviews its change.
+- Satisfies: TDD 07 section 9.2 (a test that cannot fail proves nothing).
+- Scope: add the real assertion to each (tests only, nothing deleted):
+  - `apps/mobile/test/capabilities.test.ts` "starts no sync": no `sync_outbox` row after a save.
+  - `apps/mobile/test/resilience.test.ts` "does nothing more if retry itself throws": `timers.setTimeout` never called.
+  - `apps/mobile/test/store.facade.test.ts` "[MOB-05] subscribeTo entries...": the listener receives `['entries']`.
+  - `apps/mobile/test/store.repos.test.ts` "table-scoped listeners..." and "unsubscribing during a notification...": the filtered table list, and the first listener still fires.
+  - `apps/mobile/test/config.test.ts` "has a submit profile": the fields the release needs.
+  - `apps/mobile/test/shelf-strings.test.ts` "screens use only strings that exist": each value is a non-empty string.
+  - `packages/brand/test/registry.test.ts` "npm fonts resolve": the resolved version equals the pinned one.
+  - `packages/content/test/emails.test.ts` "every auth email carries a safety line": a non-empty string.
+  - `packages/emails/test/emails.test.ts` "ports every email develop had": each renders non-empty HTML and text.
+- Done when: each test fails when its subject is broken (checked by hand once per test).
+
+#### BL-443 Slow tests that flake under load
+- Status: ready. Mode: agent. Owner: qa engineer. Size: M. Each test's owning agent reviews its change.
+- Satisfies: TDD 07 section 9.2 (quarantine at most 7 days); CI budget (TDD 07 section 10).
+- Scope, one change per test (coverage runs already work around each one in `vitest.coverage.config.ts`):
+  - `packages/core/test/verify.fuzz.test.ts`, `lang.fuzz.test.ts`: split each property into `it` blocks of 2000 cases, so no single synchronous call blocks a worker (instrumented, 40 to 67 s now; vitest's worker report times out).
+  - `apps/mobile/test/billing-plan-reminders.test.ts` "holds every invariant...": a stride knob like `SCRIBE_FUZZ_RUNS` (every 15th day in PR CI, every day nightly); it takes 69 s of its own 120 s plain.
+  - `apps/mobile/test/decode-uri-component-shim.test.ts`: load `metro.config.js` in a `beforeAll` with its own timeout.
+  - `apps/mobile/test/sync-e2e.test.ts`: reuse a PGlite data-dir dump instead of applying every migration in `beforeAll`.
+  - `apps/mobile/test/config.test.ts`: warm `getConfig` in a `beforeAll` (the first call pays the cold `@expo/config` load).
+  - `packages/content/test/no-real-family-data.test.ts`: skip non-text files with `git ls-files --eol` instead of reading each one.
+- Done when: `npm test` and `npm run test:coverage` each pass three times in a row on a 2-core runner, and the coverage-only skip in `apps/mobile/vitest.coverage.config.ts` is removed.
 
 ## Appendix: TDD proposal to BL mapping
 

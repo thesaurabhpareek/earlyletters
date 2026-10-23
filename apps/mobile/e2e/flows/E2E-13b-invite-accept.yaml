@@ -8,6 +8,7 @@ name: E2E-13b Co-parent invite, accept (simulator B)
 tags:
   - e2e-coparent
   - E2E-13
+  - p0-nightly
   - B-REQ-007
   - A-REQ-028
   - A-REQ-029

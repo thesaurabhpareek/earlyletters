@@ -45,6 +45,9 @@ export function statusText(status: TextRulesStatus | undefined): string {
           return s.needsUpdate;
         case 'downloads_paused':
           return s.paused;
+        case 'no_manifest':
+        case 'not_in_manifest':
+          return s.notReady; // nothing published yet: "Did not finish" would not be true
         default:
           return s.retry;
       }
