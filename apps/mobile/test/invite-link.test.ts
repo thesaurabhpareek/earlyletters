@@ -238,6 +238,14 @@ describe('invite errors from the v1 gate server (S02 details) and the two-parent
     expect(errorDetail({ code: 'SCINV' })).toBeNull();
   });
 
+  it('a detail that names an Object built-in (toString, constructor) is no kind: the message decides, as with no detail', () => {
+    for (const d of ['toString', 'constructor', '__proto__', 'hasOwnProperty', 'valueOf']) {
+      expect(inviteErrorKind(pg('SCINV', 'invite not found', d)), d).toBe('not_found');
+      expect(inviteErrorKind(pg('SCINV', 'invite expired', d)), d).toBe('expired');
+      expect(typeof inviteErrorKind(pg('SCINV', 'x', d)), d).toBe('string');
+    }
+  });
+
   it('[DATA-REQ-016] the last parent, a refused direct path, and the family-share consent', () => {
     expect(inviteErrorKind(pg('SCLPG', 'last parent'))).toBe('last_parent');
     expect(inviteErrorKind(pg('42501', 'permission denied for table child_members'))).toBe('not_allowed');

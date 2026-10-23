@@ -56,18 +56,22 @@ export function errorDetail(e: unknown): string | null {
   return typeof d === 'string' && d.length > 0 ? d : null;
 }
 
-const DETAIL_KINDS: Readonly<Record<string, InviteErrorKind>> = {
-  expired: 'expired',
-  used: 'used',
-  revoked: 'revoked',
-  already_member: 'already_member',
-  not_found: 'not_found',
-  /** The app only ever sends `parent`; a refused role is a client bug, not something to explain. */
-  role_disabled: 'unknown',
-  code_taken: 'retry_new_invite',
-  token_taken: 'retry_new_invite',
-  closed: 'retry_new_invite',
-};
+/**
+ * A Map, not an object literal: a detail is whatever the server sent, and on a plain object
+ * `toString` or `constructor` would find an inherited function instead of a kind.
+ */
+const DETAIL_KINDS: ReadonlyMap<string, InviteErrorKind> = new Map<string, InviteErrorKind>([
+  ['expired', 'expired'],
+  ['used', 'used'],
+  ['revoked', 'revoked'],
+  ['already_member', 'already_member'],
+  ['not_found', 'not_found'],
+  // The app only ever sends `parent`; a refused role is a client bug, not something to explain.
+  ['role_disabled', 'unknown'],
+  ['code_taken', 'retry_new_invite'],
+  ['token_taken', 'retry_new_invite'],
+  ['closed', 'retry_new_invite'],
+]);
 
 /** develop's 20261005000000 raises SCINV with these fixed messages and no detail. */
 function unusableFromMessage(message: string): InviteErrorKind {
@@ -93,7 +97,7 @@ export function inviteErrorKind(e: unknown): InviteErrorKind {
   switch (rule) {
     case 'invite_unusable': {
       const detail = errorDetail(e);
-      return (detail && DETAIL_KINDS[detail]) || unusableFromMessage(errorMessage(e));
+      return (detail && DETAIL_KINDS.get(detail)) || unusableFromMessage(errorMessage(e));
     }
     case 'parents_full':
       return 'book_full';
