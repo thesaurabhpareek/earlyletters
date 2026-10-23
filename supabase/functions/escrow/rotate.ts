@@ -14,12 +14,17 @@
  * Then the emails: every notice not yet sent (one per account per rotation) is sent under the
  * notice id as its idempotency key and marked; a failed send stays due for the next call. Call
  * again until `remaining` is false and `notices_pending` is 0.
+ *
+ * Both keys must derive the public key pinned for their version (public-keys.ts; review B S1 on
+ * PR #151), or nothing moves: a new key typed with one wrong character is still a valid X25519
+ * key, and moving every wrap to it would leave them openable by a key no paper copy holds.
  */
-import { fromHex } from './bytes.ts';
+import { encodeBase64, fromHex } from './bytes.ts';
 import type { EscrowDb, RotationCursor } from './db.ts';
 import { aad, HpkeError, INFO, open, packV1, publicKeyOf, seal, unpackV1 } from './hpke.ts';
 import type { Logger } from './log.ts';
 import { type Mailer, render, when } from './mail.ts';
+import { PINNED_PUBLIC_KEYS } from './public-keys.ts';
 
 export interface RotateDeps {
   db: EscrowDb;
@@ -27,6 +32,8 @@ export interface RotateDeps {
   log: Logger;
   keys: Record<number, Uint8Array>;
   now: () => Date;
+  /** The public keys pinned per version (default public-keys.ts; tests pass their own). */
+  pinned?: Readonly<Record<number, string>>;
 }
 
 export interface RotateResult {
@@ -48,9 +55,14 @@ export async function rotateBatch(deps: RotateDeps, from: number, to: number, re
   const oldKey = deps.keys[from];
   const newKey = deps.keys[to];
   if (!oldKey || !newKey || from === to) throw new Error('rotation keys');
+  const pinned = deps.pinned ?? PINNED_PUBLIC_KEYS;
+  const newPk = await publicKeyOf(newKey);
+  if (typeof pinned[to] !== 'string' || encodeBase64(newPk) !== pinned[to]
+      || typeof pinned[from] !== 'string' || encodeBase64(await publicKeyOf(oldKey)) !== pinned[from]) {
+    throw new Error('rotation keys');
+  }
   const batchSize = opts.batch ?? ROTATE_BATCH;
   const budget = opts.budget ?? ROTATE_BUDGET;
-  const newPk = await publicKeyOf(newKey);
   const res: RotateResult = { rewrapped: 0, failed: 0, emails: 0, emailFailures: 0, remaining: false, notices_pending: 0 };
   let cursor: RotationCursor = null;
   let seen = 0;

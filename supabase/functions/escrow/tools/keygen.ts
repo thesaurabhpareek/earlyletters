@@ -4,8 +4,11 @@
  *   deno run --no-prompt supabase/functions/escrow/tools/keygen.ts <version>
  * No permissions are granted, so this cannot read files, the environment or the network.
  * Prints one X25519 key pair: the private key (for the two paper copies and, typed once, the
- * escrow project's ESCROW_PRIVATE_KEY_V<version> secret) and the public key (the only part that
- * is ever committed, in packages/api/src/escrow-keys.ts). It writes nothing to disk.
+ * escrow project's ESCROW_PRIVATE_KEY_V<version> secret) and the public key, the only part that
+ * leaves the ceremony: pinned in supabase/functions/escrow/public-keys.ts (the function refuses a
+ * private key that does not derive it, so a slip typing the paper copy opens nothing) and given
+ * to the app builds as EXPO_PUBLIC_ESCROW_KEYS (packages/api/src/server/escrow-keys.ts). It
+ * writes nothing to disk.
  * Not deployed: the function's entry point (index.ts) does not import it.
  */
 import { encodeBase64, toHex } from '../bytes.ts';
@@ -26,7 +29,10 @@ out('');
 out(`PRIVATE (paper copies and ESCROW_PRIVATE_KEY_V${version} only; never on a networked device):`);
 out(`  ${encodeBase64(kp.sk)}`);
 out('');
-out('PUBLIC (commit in packages/api/src/escrow-keys.ts; safe to share):');
-out(`  base64 ${encodeBase64(kp.pk)}`);
-out(`  hex    ${toHex(kp.pk)}`);
+out('PUBLIC (safe to share). Pin it in supabase/functions/escrow/public-keys.ts, this line:');
+out(`  ${version}: '${encodeBase64(kp.pk)}',`);
+out('and add it to EXPO_PUBLIC_ESCROW_KEYS for the builds of its environment (packages/api/src/server/escrow-keys.ts):');
+out(`  {"version": ${version}, "publicKey": "${encodeBase64(kp.pk)}", "environment": "<production or drill>", "current": true}`);
+out('  ("current": false while it is the next key of a rotation, R1)');
+out(`The same public key in hex: ${toHex(kp.pk)}`);
 kp.sk.fill(0);

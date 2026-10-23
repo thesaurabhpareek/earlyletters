@@ -4,11 +4,12 @@
 import assert from 'node:assert/strict';
 import { encodeBase64 } from '../bytes.ts';
 import { generateKeyPair } from '../hpke.ts';
+import { readKeys } from '../config.ts';
 import { makeHandler } from '../handler.ts';
 import { PgError } from '../pg.ts';
 import { ASHA, FakeDb, FakeMailer, phone, tokenMinter } from './fakes.ts';
 
-async function setup(over: Record<string, string | undefined> = {}) {
+async function setup(over: Record<string, string | undefined> = {}, opts: { pinned?: Record<number, string>; observeKeys?: (k: Record<number, Uint8Array>) => void } = {}) {
   const escrow = await generateKeyPair();
   const t = await tokenMinter();
   const db = new FakeDb();
@@ -23,7 +24,10 @@ async function setup(over: Record<string, string | undefined> = {}) {
     ESCROW_DB_CA: '-----BEGIN CERTIFICATE-----\nMIIfixture\n-----END CERTIFICATE-----\n',
     ...over,
   };
-  const handler = makeHandler((n) => env[n], { fetch: t.fetchFn, openDb: async () => db, mailer: () => mailer, logSink: (l) => lines.push(l) });
+  // The test key is pinned as the ceremony pins the real one (public-keys.ts; review B S1).
+  const pinned = opts.pinned ?? { 1: encodeBase64(escrow.pk) };
+  const handler = makeHandler((n) => env[n], { fetch: t.fetchFn, openDb: async () => db, mailer: () => mailer, logSink: (l) => lines.push(l),
+    pinnedPublicKeys: pinned, observeKeys: opts.observeKeys });
   const call = async (body: unknown, opts: { token?: string; path?: string; method?: string; rid?: string } = {}) => {
     const r = await handler(new Request(`https://escrow.example${opts.path ?? '/escrow/v1/restore-requests'}`, {
       method: opts.method ?? 'POST',
@@ -111,18 +115,63 @@ Deno.test('a token whose session the stop link ended is 401 unauthorized session
   assert.deepEqual(noSession.json.error, { code: 'unauthorized', retryable: false, detail: 'session_ended' });
 });
 
-Deno.test('the decoded escrow private keys are zeroed when a call ends', async () => {
-  const escrow = await generateKeyPair();
+Deno.test('[review B S2] opening a request decodes no private key; a release decodes them after the token check and zeroes them when the call ends', async () => {
   const seen: Uint8Array[] = [];
-  const env: Record<string, string> = {
-    ESCROW_SWITCH: 'on', MAIN_SUPABASE_URL: ASHA.mainUrl, ESCROW_DB_URL: 'postgresql://escrow_svc.ref:pw-fixture@pooler.example:5432/postgres',
-    RESEND_API_KEY: 're_fixture', ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk), ESCROW_DB_CA: '-----BEGIN CERTIFICATE-----\nx\n-----END CERTIFICATE-----',
-  };
-  const t = await tokenMinter();
-  const handler = makeHandler((n) => env[n], { fetch: t.fetchFn, openDb: async (cfg) => { seen.push(...Object.values(cfg.keys)); return new FakeDb(); }, mailer: () => new FakeMailer(), logSink: () => {} });
-  await handler(new Request('https://escrow.example/escrow/v1/restore-requests', { method: 'POST', headers: { authorization: `Bearer ${await t.mint()}` }, body: JSON.stringify({ device_id: ASHA.newPhone }) }));
+  const s = await setup({}, { observeKeys: (k) => seen.push(...Object.values(k)) });
+  const p = await phone(s.db, s.escrow.pk);
+  const created = await s.call({ device_id: p.device });
+  assert.equal(created.status, 200);
+  assert.equal(seen.length, 0, 'createRequest needs no private key');
+  const rel = `/escrow/v1/restore-requests/${created.json.data.request_id}/release`;
+  assert.equal((await s.call({ device_id: p.device }, { path: rel, token: 'x.y.z' })).status, 401);
+  assert.equal(seen.length, 0, 'a caller whose token fails never gets a key decoded');
+  s.db.requests[0].hold_until = Date.now() - 1000;
+  assert.equal((await s.call({ device_id: p.device }, { path: rel })).json.data.state, 'released');
   assert.equal(seen.length, 1);
-  assert.ok(seen[0].every((b) => b === 0));
+  assert.ok(seen[0].every((b) => b === 0), 'zeroed when the call ended');
+});
+
+Deno.test('[review B S2] readKeys zeroes every decoded byte when it refuses, and names variables only', async () => {
+  const good = await generateKeyPair();
+  const other = await generateKeyPair();
+  for (const [env, pinned, why] of [
+    [{ ESCROW_PRIVATE_KEY_V1: encodeBase64(good.sk), ESCROW_PRIVATE_KEY_V2: encodeBase64(new Uint8Array(31).fill(7)) }, { 1: encodeBase64(good.pk), 2: encodeBase64(other.pk) }, 'a short key next to a good one'],
+    [{ ESCROW_PRIVATE_KEY_V1: encodeBase64(good.sk) }, { 1: encodeBase64(other.pk) }, 'a key that does not derive its pinned public key'],
+    [{ ESCROW_PRIVATE_KEY_V1: encodeBase64(good.sk) }, {}, 'no pinned public key'],
+  ] as const) {
+    const decoded: Uint8Array[] = [];
+    const r = await readKeys((n) => (env as Record<string, string>)[n], Object.keys(env).map((n) => Number(n.slice(-1))), pinned, { onDecoded: (k) => decoded.push(k) });
+    assert.equal(r.keys, null, why);
+    assert.ok(decoded.length >= 1, why);
+    for (const k of decoded) assert.ok(k.every((b) => b === 0), `${why}: decoded bytes zeroed`);
+    assert.ok(!r.problems.join(' ').includes(encodeBase64(good.sk)), `${why}: no value in the problems`);
+  }
+  const ok = await readKeys((n) => ({ ESCROW_PRIVATE_KEY_V1: encodeBase64(good.sk) } as Record<string, string>)[n], [1], { 1: encodeBase64(good.pk) });
+  assert.deepEqual(ok.keys?.[1], good.sk);
+});
+
+Deno.test('[review B S1] a private key that does not derive its pinned public key opens nothing: release is 503 and the founder is alerted', async () => {
+  const typo = await generateKeyPair();
+  const s = await setup({}, { pinned: { 1: encodeBase64(typo.pk) } });
+  const p = await phone(s.db, s.escrow.pk);
+  const created = await s.call({ device_id: p.device });
+  assert.equal(created.status, 200, 'opening a request needs no private key');
+  s.db.requests[0].hold_until = Date.now() - 1000;
+  const r = await s.call({ device_id: p.device }, { path: `/escrow/v1/restore-requests/${created.json.data.request_id}/release` });
+  assert.equal(r.status, 503);
+  assert.deepEqual(r.json.error, { code: 'unavailable', retryable: true });
+  assert.ok(!s.db.calls.some((c) => c.fn === 'recordUnwraps'), 'no key was opened or logged as opened');
+  assert.ok(s.mailer.sent.some((m) => m.subject === 'Escrow alert: keys'), 'one content-free alert to the founder');
+});
+
+Deno.test('[review B S1] a configured key version with no pinned public key refuses every route', async () => {
+  const s = await setup({}, { pinned: {} });
+  const p = await phone(s.db, s.escrow.pk);
+  const before = s.db.calls.length;
+  const r = await s.call({ device_id: p.device });
+  assert.equal(r.status, 503);
+  assert.deepEqual(r.json.error, { code: 'unavailable', retryable: true });
+  assert.equal(s.db.calls.length, before, 'the database is never reached');
 });
 
 Deno.test('[F08-REQ-029] over a limit: 429 rate_limited, and the founder gets one content-free alert', async () => {
@@ -156,8 +205,10 @@ Deno.test('database switch off (SCBKO) is 503 retryable; a pending deletion is 4
 Deno.test('rotation runs only with its task secret, and only while configured', async () => {
   const v2 = await generateKeyPair();
   const secret = 'task-secret-fixture-0123456789abcdef';
-  const s = await setup({ ESCROW_TASK_SECRET: secret, ESCROW_ROTATE_FROM: '1', ESCROW_ROTATE_TO: '2', ESCROW_PRIVATE_KEY_V2: encodeBase64(v2.sk) });
-  await phone(s.db, s.escrow.pk);
+  const escrow = await generateKeyPair();
+  const s = await setup({ ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk), ESCROW_TASK_SECRET: secret, ESCROW_ROTATE_FROM: '1', ESCROW_ROTATE_TO: '2',
+    ESCROW_PRIVATE_KEY_V2: encodeBase64(v2.sk) }, { pinned: { 1: encodeBase64(escrow.pk), 2: encodeBase64(v2.pk) } });
+  await phone(s.db, escrow.pk);
   assert.equal((await s.call({}, { path: '/escrow/v1/rotate', token: 'wrong' })).status, 401);
   const r = await s.call({}, { path: '/escrow/v1/rotate', token: secret });
   assert.equal(r.status, 200);

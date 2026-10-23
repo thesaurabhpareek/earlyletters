@@ -15,10 +15,15 @@
  * Request ids: unlike ADR 0017 point 6, this function never takes the caller's x-request-id. It
  * makes its own for every call and returns it in the header and the envelope, so nothing a client
  * chooses reaches the access log, the request rows or the logs; support correlates by the id the
- * app received. The decoded private keys are zeroed when each call ends.
+ * app received.
+ *
+ * Private keys (review B S1, S2 on PR #151): opening a request needs none, so they are decoded only
+ * for a release, after the token is verified, or a rotation, after the task secret is checked
+ * (config.ts readKeys). Each must derive its pinned public key (public-keys.ts) or nothing opens,
+ * and every decoded byte is zeroed when the call ends.
  */
 import { sameString, UUID } from './bytes.ts';
-import { type EscrowConfig, readConfig, switchOn, type EnvGetter } from './config.ts';
+import { type EscrowConfig, readConfig, readKeys, switchOn, type EnvGetter } from './config.ts';
 import { ESCROW_ERROR_DETAILS, type Envelope, type EscrowErrorCode, type EscrowErrorDetail } from './contract.ts';
 import { escrowDb, type EscrowDb } from './db.ts';
 import { type FetchFn, JwksCache, JwtError, verifyAccessToken } from './jwt.ts';
@@ -37,7 +42,14 @@ export interface HandlerDeps {
   logSink?: (line: string) => void;
   now?: () => Date;
   random?: (n: number) => Uint8Array;
+  /** Tests: the public keys pinned per version (default public-keys.ts). */
+  pinnedPublicKeys?: Readonly<Record<number, string>>;
+  /** Tests: sees the decoded private keys, so a test can check they are zeroed when the call ends. */
+  observeKeys?: (keys: Record<number, Uint8Array>) => void;
 }
+
+/** The private keys were refused (not set, malformed, or not matching their pinned public key). */
+class KeysRefused extends Error {}
 
 const MAX_BODY = 1024;
 
@@ -86,17 +98,28 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
     }
     const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
 
-    // The private keys are decoded here and zeroed in `finally`, whatever the outcome.
-    const { config } = readConfig(env);
+    // No private key is decoded here: loadKeys runs only for a release or a rotation, after the
+    // caller is checked, and `finally` zeroes whatever it decoded, whatever the outcome.
+    const pinned = deps.pinnedPublicKeys;
+    const { config } = readConfig(env, pinned);
     if (!config) return fail(503, 'unavailable', true);
     let db: EscrowDb | null = null;
+    let keys: Record<number, Uint8Array> | null = null;
+    const loadKeys = async (): Promise<Record<number, Uint8Array>> => {
+      const r = await readKeys(env, config.keyVersions, pinned);
+      if (!r.keys) throw new KeysRefused();
+      keys = r.keys;
+      deps.observeKeys?.(r.keys);
+      return r.keys;
+    };
     const mailer = deps.mailer ? deps.mailer(config) : resendMailer(fetchFn, config.resendApiKey, config.mailFrom, config.replyTo);
     try {
       if (route === 'rotate') {
         if (!config.rotation) return fail(404, 'not_found'); // no rotate route unless a rotation is configured
         if (!sameString(bearer, config.rotation.secret)) return fail(401, 'unauthorized');
+        const k = await loadKeys();
         db = await openDatabase(config, deps);
-        const r = await rotateBatch({ db, mailer, log, keys: config.keys, now }, config.rotation.from, config.rotation.to, reqId);
+        const r = await rotateBatch({ db, mailer, log, keys: k, now, pinned }, config.rotation.from, config.rotation.to, reqId);
         return reply(200, { ok: true, data: r, requestId: reqId });
       }
 
@@ -104,13 +127,20 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       if (!UUID.test(deviceId) || Object.keys(body).length !== 1) return fail(400, 'bad_request');
       jwks ??= new JwksCache(config.mainUrl, fetchFn, () => now().getTime());
       const user = await verifyAccessToken(bearer, { mainUrl: config.mainUrl, jwks, nowSec: Math.floor(now().getTime() / 1000) });
+      const k = route === 'release' ? await loadKeys() : {};
       db = await openDatabase(config, deps);
-      const rd = { db, mailer, log, keys: config.keys, stopUrl: config.stopUrl, now, random: deps.random };
+      const rd = { db, mailer, log, keys: k, stopUrl: config.stopUrl, now, random: deps.random };
       const data = route === 'create'
         ? await createRequest(rd, user, deviceId, reqId)
         : await release(rd, user, deviceId, releaseMatch![1], reqId);
       return reply(200, { ok: true, data, requestId: reqId });
     } catch (e) {
+      if (e instanceof KeysRefused) {
+        // A key that does not match its pinned public key (a slip typing it from paper) or is not
+        // set: nothing opens until the founder fixes the setting (runbook K6, section 6).
+        await alert(config, mailer, log, 'keys');
+        return fail(503, 'unavailable', true);
+      }
       if (e instanceof JwtError) return e.code === 'unavailable' ? fail(503, 'unavailable', true) : fail(401, 'unauthorized');
       if (e instanceof Refusal) {
         const code: EscrowErrorCode = e.code === 'reauth_required' ? 'reauth_required' : e.code === 'session' ? 'unauthorized'
@@ -138,7 +168,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       return fail(500, 'internal', true);
     } finally {
       if (db) await db.close().catch(() => {});
-      for (const k of Object.values(config.keys)) k.fill(0);
+      if (keys) for (const k of Object.values(keys as Record<number, Uint8Array>)) k.fill(0);
     }
   };
 }
