@@ -335,6 +335,34 @@ export const MIGRATIONS: Migration[] = [
       if (owner) db.run('UPDATE children SET created_by = ? WHERE created_by_me = 1 AND created_by IS NULL', owner);
     },
   },
+  {
+    version: 8,
+    name: 'held drafts sync as author-only rows: held kind, the destination chosen, the server version (WP-F14-22)',
+    up(db, ctx) {
+      // PRD V2 F16 6.2 I and F14-REQ-039, number fixed by 08-delivery.md section 4. A letter held at
+      // the Keep gate, and a voice-only letter waiting for its words, of a signed-in author sync as
+      // an author-only held_drafts row on the server. A draft that was never held never gets one.
+      //   drafts.held_kind       L2  null (never held: stays on this phone) | held_letter | held_words
+      //   drafts.in_book_choice  L2  where the author chose to put it when held: 1 the book, 0 private, null not chosen
+      //   drafts.held_v          L2  server version of its held_drafts row; null = not on the server
+      //   drafts.held_typed      L4  the typed words as the server last had them (so only a real words change is sent as one)
+      //   entries.held_v         L2  the same for a voice-only letter waiting for its words (sent as waiting_letter)
+      // Existing drafts were never held, so none of them is queued.
+      addColumns(db, 'drafts', [
+        ['held_kind', 'TEXT'],
+        ['in_book_choice', 'INTEGER'],
+        ['held_v', 'TEXT'],
+        ['held_typed', 'TEXT'],
+      ]);
+      addColumns(db, 'entries', [['held_v', 'TEXT']]);
+      // A phone that already signed in: its voice-only letters waiting for words go up now as held rows
+      // (enqueueEntryUpsert sends a waiting letter as held.upsert), in this transaction, like any upload.
+      const waiting = db.all<{ id: string }>(
+        "SELECT id FROM entries WHERE transcript_status = 'waiting' AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
+      );
+      for (const { id } of waiting) enqueueEntryUpsert(db, id, ['text'], ctx);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

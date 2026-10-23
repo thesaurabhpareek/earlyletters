@@ -59,9 +59,19 @@ import {
   enqueueBookCreate,
   enqueueBookUpdate,
   enqueueEntryDelete,
+  enqueueEntryErase,
   enqueueEntryRestore,
+  everSent,
+  heldEverSent,
+  getDraftRow,
+  getEntryRow,
+  syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
+  dropHeldConflictCopies,
+  dropQueuedHeldUpsert,
+  enqueueHeldDiscard,
+  enqueueHeldDraft,
   listConflictCopies,
   removeConflictCopy,
   type ConflictCopy,
@@ -425,12 +435,18 @@ export function saveEntry(e: Entry): void {
  */
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
   const c = ctx();
+  // A held draft (v8): its Keep names the held row's last version this phone knew ('0' when none came back),
+  // so the server compares the Keep with held words this phone never saw (review K blocking 1).
+  const held = drafts.isHeld(c, draftId) ? (getDraftRow(c.db, draftId)?.held_v ?? '0') : null;
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
+    if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
     if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    // A held draft kept at last (Keep after Plus): the letter replaces its held row on the server (same id).
+    dropQueuedHeldUpsert(c.db, draftId);
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
   });
   bus.emit('entries', 'drafts');
@@ -501,8 +517,9 @@ export function setWordsForWaitingEntry(
 }
 
 /**
- * "Write the words" on a letter still waiting for its words (D-086): the parent's typing becomes the words,
- * once. False when the letter already had words, was deleted or the text is empty.
+ * "Write the words" on a letter still waiting for its words (D-086), or on a spoken letter whose words came
+ * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once. False
+ * when the letter already had words, was deleted, is on the server, or the text is empty.
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
@@ -566,7 +583,8 @@ export function listConflicts(entryId?: string): ConflictCopy[] {
  * makes this phone's words the letter's words again and sends them (the server
  * keeps the other words in entry_versions); 'theirs' ("Keep the other one")
  * lets this phone's copy go. One transaction each. False when the copy is gone,
- * or for 'mine' when the letter is deleted (restore it first).
+ * or for 'mine' when the letter is deleted (restore it first). A held draft's copy
+ * (v8, `copy.draft`) works the same way on the draft's typed words.
  */
 export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolean {
   const c = ctx();
@@ -574,14 +592,18 @@ export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolea
   c.db.transaction(() => {
     const copy = listConflictCopies(c.db).find((x) => x.opId === opId);
     if (!copy) return;
-    if (choice === 'mine') {
+    if (choice === 'mine' && copy.draft && drafts.isHeld(c, copy.entryId)) {
+      // A held draft's typed words (v8): they become the draft's again and its held row goes up.
+      drafts.setTyped(c, copy.entryId, copy.words.final_text);
+      enqueueHeldDraft(c.db, copy.entryId, enqueueContext(c));
+    } else if (choice === 'mine') {
       if (!entries.replaceWords(c, copy.entryId, copy.words)) return;
       enqueueEntryUpsert(c.db, copy.entryId, ['text'], enqueueContext(c));
     }
     done = removeConflictCopy(c.db, opId);
   });
   if (done) {
-    bus.emit('entries');
+    bus.emit('entries', 'drafts');
     signalOutbox();
   }
   return done;
@@ -681,26 +703,74 @@ export function erasesAt(deletedAt: string): string {
  * that is gone, and the next erase or purge finishes the job; the other order
  * would leave a file with no row, which the sweep re-attaches as a draft.
  * Only a deleted letter can be erased (a live letter is refused). Returns true
- * when the letter is gone, false when it was not on the shelf, the build syncs
- * (the server owns deletion then), or the file could not be removed.
+ * when the letter is gone, false when it was not on the shelf, it is another
+ * person's letter, or the file could not be removed.
+ *
+ * With sync on (WP-F16-13, F16-REQ-024): when the server may hold the letter,
+ * the row's removal and one `entry.erase` are one transaction; the server then
+ * erases its copy for good, and the author's other phones drop theirs after their
+ * next pull. The erase never carries words.
  */
 export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
-  if (capabilities.sync) return false;
-  return eraseHere(ctx(), id, eraseAudio);
-}
-
-/** The file, then the row: a deleted letter erased on this phone only, nothing sent. */
-function eraseHere(c: RepoContext, id: string, eraseAudio: AudioEraser): boolean {
+  const c = ctx();
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
+  let serverMayHold = false;
+  let heldOnServer = false;
+  let bookId: string | null = null;
+  // Queueing is local, as every other upload is: a phone that signed in under a server-on build keeps
+  // its queue in an off build, so the erase goes when sync returns (final review A-M2).
+  const owner = syncOwner(c.db);
+  if (owner) {
+    const row = getEntryRow(c.db, id);
+    if (!row) return false;
+    if (row.author_id !== null && row.author_id !== owner) return false; // only the author erases
+    bookId = row.child_id;
+    serverMayHold = row.sync_state !== 'gone' && row.sync_state !== 'erased'
+      && (row.server_version !== null || everSent(c.db, id));
+    // A voice-only letter waiting for its words lives on the server as a held row (v8): that row goes too.
+    // Once let go there, only its marker is left, which this phone no longer tracks: a waiting letter always
+    // sends the erase (idempotent: the server answers missing when it holds nothing), so every phone erases it.
+    heldOnServer = row.held_v != null || heldEverSent(c.db, id) || row.transcript_status === 'waiting';
+  }
   try {
     eraseAudio(uri, id);
   } catch {
     return false; // keep the row; the file may still be there
   }
-  const done = entries.eraseRow(c, id);
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.eraseRow(c, id);
+    // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
+    // holds, and the author's other phones erase their copy (never restorable there).
+    if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+  });
   if (done) bus.emit('entries');
+  if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
+}
+
+/**
+ * Letters the server erased for good while they waited in Recently deleted here
+ * (Erase now on another phone of this author, or the purge; `sync_state` 'erased'):
+ * the file first, then the row, with nothing sent. Runs after every pull and at
+ * launch. Returns how many were erased.
+ */
+export function finishServerErased(eraseAudio: AudioEraser): number {
+  const c = ctx();
+  let n = 0;
+  for (const r of c.db.all<{ id: string; audio_uri: string | null }>(
+    "SELECT id, audio_uri FROM entries WHERE sync_state = 'erased' AND deleted_at IS NOT NULL ORDER BY id",
+  )) {
+    try {
+      eraseAudio(r.audio_uri, r.id);
+    } catch {
+      continue; // the next run tries again
+    }
+    if (entries.eraseRow(c, r.id)) n++;
+  }
+  if (n > 0) bus.emit('entries');
+  return n;
 }
 
 /**
@@ -719,7 +789,7 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   const cutoff = new Date(nowMs - SHELF_MS).toISOString();
   let erased = 0;
   for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
-    if (eraseHere(c, id, eraseAudio)) erased += 1;
+    if (eraseEntry(id, eraseAudio)) erased += 1;
   }
   return erased;
 }
@@ -781,24 +851,49 @@ export function listDrafts(childId: string): Draft[] {
   return drafts.listForChild(ctx(), childId);
 }
 
+/**
+ * A change to a draft, in one transaction with its upload when the draft is held
+ * (F16 6.2 I: a held draft of a signed-in author is an author-only row on the
+ * server). A draft that was never held queues nothing.
+ */
+function writeDraft<T>(id: string, write: (c: RepoContext) => T, changed: (out: T) => boolean = (out) => out !== false): T {
+  const c = ctx();
+  let out!: T;
+  let queued = false;
+  c.db.transaction(() => {
+    out = write(c);
+    if (changed(out) && drafts.isHeld(c, id)) {
+      enqueueHeldDraft(c.db, id, enqueueContext(c));
+      queued = true;
+    }
+  });
+  if (changed(out)) bus.emit('drafts');
+  if (queued) signalOutbox();
+  return out;
+}
+
 /** Sets the raw transcript once. Later calls are ignored: raw is immutable. */
 export function setDraftTranscript(id: string, raw: string): void {
-  drafts.setTranscriptOnce(ctx(), id, raw);
+  writeDraft(id, (c) => drafts.setTranscriptOnce(c, id, raw));
 }
 
 export function setDraftTyped(id: string, text: string): void {
-  drafts.setTyped(ctx(), id, text);
+  writeDraft(id, (c) => {
+    drafts.setTyped(c, id, text);
+    return true;
+  });
 }
 
 export function setDraftChild(id: string, childId: string): void {
-  drafts.setChild(ctx(), id, childId);
+  writeDraft(id, (c) => {
+    drafts.setChild(c, id, childId);
+    return true;
+  });
 }
 
 /** Note or letter, chosen in Review (F04-REQ-014). The saved entry takes it. False for a bad value. */
 export function setDraftKind(id: string, kind: DraftKind): boolean {
-  const done = drafts.setKind(ctx(), id, kind);
-  if (done) bus.emit('drafts');
-  return done;
+  return writeDraft(id, (c) => drafts.setKind(c, id, kind));
 }
 
 /**
@@ -806,34 +901,57 @@ export function setDraftKind(id: string, kind: DraftKind): boolean {
  * means the local date of the draft's creation. False for a malformed date.
  */
 export function setDraftOccurred(id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
-  const done = drafts.setOccurred(ctx(), id, occurredOn, precision);
-  if (done) bus.emit('drafts');
-  return done;
+  return writeDraft(id, (c) => drafts.setOccurred(c, id, occurredOn, precision));
 }
 
 /** The take's language as a BCP-47 tag; null for the author's default. False for a malformed tag. */
 export function setDraftLanguage(id: string, language: string | null): boolean {
-  const done = drafts.setLanguage(ctx(), id, language);
-  if (done) bus.emit('drafts');
-  return done;
+  return writeDraft(id, (c) => drafts.setLanguage(c, id, language));
 }
 
 /** Layout direction of the words (F04 11.3 rule for `base_direction`). */
 export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
-  const done = drafts.setBaseDirection(ctx(), id, dir);
-  if (done) bus.emit('drafts');
-  return done;
+  return writeDraft(id, (c) => drafts.setBaseDirection(c, id, dir));
+}
+
+/**
+ * "Leave it waiting" at the Keep gate (F14 6.2 B step 2a; F14-REQ-039): the
+ * draft stays exactly as it is, marked held, with the destination the author
+ * chose. Signed in, the same transaction queues its author-only held row, so the
+ * letter survives a lost phone; signed out it stays on this phone only. The
+ * screen (review.tsx) calls this where the Keep sheet holds a letter. False for a
+ * missing draft or a take still recording.
+ */
+export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): boolean {
+  return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
+}
+
+/** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */
+export function listHeldDrafts(childId?: string): Draft[] {
+  return drafts.listHeld(ctx(), childId);
 }
 
 /**
  * Let it go, confirmed (F04-REQ-009): step 1 marks the draft `discarding`;
  * the caller then deletes the file, then calls finishDiscard. A kill in
  * between leaves the mark, and the launch sweep removes the row without ever
- * re-attaching the file.
+ * re-attaching the file. A held draft queues its `held.discard` in the same
+ * transaction, which on the server removes the row and its backup.
  */
 export function beginDiscard(id: string): boolean {
-  const done = drafts.beginDiscard(ctx(), id);
+  const c = ctx();
+  let done = false;
+  let held = false;
+  c.db.transaction(() => {
+    held = drafts.isHeld(c, id);
+    done = drafts.beginDiscard(c, id);
+    if (done && held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id); // letting it go lets every copy of its words go
+    }
+  });
   if (done) bus.emit('drafts');
+  if (done && held) signalOutbox();
   return done;
 }
 
@@ -844,10 +962,24 @@ export function finishDiscard(id: string): boolean {
   return done;
 }
 
-/** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */
+/**
+ * Removes the row only. Audio files are deleted by the explicit Discard in
+ * Listen, never here. A held draft's server row goes with it (held.discard).
+ */
 export function deleteDraft(id: string): void {
-  drafts.remove(ctx(), id);
+  const c = ctx();
+  let held = false;
+  c.db.transaction(() => {
+    held = drafts.isHeld(c, id);
+    // Before the row goes: the discard reads the server version the draft holds.
+    if (held) {
+      enqueueHeldDiscard(c.db, id, enqueueContext(c));
+      dropHeldConflictCopies(c.db, id);
+    }
+    drafts.remove(c, id);
+  });
   bus.emit('drafts');
+  if (held) signalOutbox();
 }
 
 // ── Launch sweep support (capture/sweep.ts) ──────────────────────────────

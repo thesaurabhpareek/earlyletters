@@ -149,6 +149,13 @@ export interface Draft {
   language?: string | null;
   /** v6: layout direction of the words. */
   baseDirection?: BaseDirection;
+  /**
+   * v8: set when the author held this draft at the Keep gate (F14 6.2 B). Only a held
+   * draft of a signed-in author leaves the phone, as an author-only row (F16 6.2 I).
+   */
+  held?: boolean;
+  /** v8: where the author chose to put it when held: true the book, false private, null not chosen. */
+  inBookChoice?: boolean | null;
 }
 
 export interface OrphanAudio {

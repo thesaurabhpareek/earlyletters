@@ -25,10 +25,13 @@ interface DraftRow {
   occurred_precision: string;
   language: string | null;
   base_direction: string;
+  held_kind: string | null;
+  in_book_choice: number | null;
 }
 
 const COLS = `id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, raw_transcript, typed_text,
-  state, audio_sha256, audio_bytes, recovered_at, kind, occurred_on, occurred_precision, language, base_direction`;
+  state, audio_sha256, audio_bytes, recovered_at, kind, occurred_on, occurred_precision, language, base_direction,
+  held_kind, in_book_choice`;
 
 const draftState = (s: string): DraftState =>
   s === 'recording' || s === 'unrecoverable' || s === 'discarding' ? s : 'ready';
@@ -52,6 +55,8 @@ const fromRow = (r: DraftRow): Draft => ({
   occurredPrecision: r.occurred_precision === 'month' ? 'month' : 'day',
   language: r.language,
   baseDirection: r.base_direction === 'rtl' ? 'rtl' : 'ltr',
+  held: r.held_kind !== null && r.held_kind !== undefined,
+  inBookChoice: r.in_book_choice === null || r.in_book_choice === undefined ? null : r.in_book_choice === 1,
 });
 
 export type NewDraft = Pick<Draft, 'childId' | 'captureMode' | 'promptKey' | 'audioUri' | 'audioDurationMs'> & {
@@ -137,6 +142,35 @@ export function setBaseDirection({ db }: RepoContext, id: string, dir: BaseDirec
 export function beginDiscard({ db }: RepoContext, id: string): boolean {
   db.run("UPDATE drafts SET state = 'discarding' WHERE id = ?", id);
   return changes(db) === 1;
+}
+
+/**
+ * The author held this draft at the Keep gate (F14 6.2 B "Leave it waiting"):
+ * it stays exactly as it is and is marked held. False for a missing draft, or a
+ * take still recording or being let go.
+ */
+export function markHeld({ db }: RepoContext, id: string, inBookChoice: boolean | null): boolean {
+  db.run(
+    "UPDATE drafts SET held_kind = 'held_letter', in_book_choice = ? WHERE id = ? AND state NOT IN ('recording', 'discarding')",
+    inBookChoice === null ? null : inBookChoice ? 1 : 0, id,
+  );
+  return changes(db) === 1;
+}
+
+/** Held drafts, newest first; for one book when `childId` is given (Tonight's one held row, F14-REQ-041). */
+export function listHeld({ db }: RepoContext, childId?: string): Draft[] {
+  const rows = childId === undefined
+    ? db.all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE held_kind IS NOT NULL AND state NOT IN ('recording', 'discarding') ORDER BY created_at DESC, id DESC`)
+    : db.all<DraftRow>(
+      `SELECT ${COLS} FROM drafts WHERE held_kind IS NOT NULL AND child_id = ? AND state NOT IN ('recording', 'discarding') ORDER BY created_at DESC, id DESC`,
+      childId,
+    );
+  return rows.map(fromRow);
+}
+
+/** Whether a draft is held (and so may be on the server as an author-only row). */
+export function isHeld({ db }: RepoContext, id: string): boolean {
+  return db.get<{ t: number }>('SELECT 1 AS t FROM drafts WHERE id = ? AND held_kind IS NOT NULL', id) !== null;
 }
 
 /** Let it go, step 3: removes a row already marked `discarding`, never any other. */

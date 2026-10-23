@@ -12,6 +12,7 @@ import {
   SYNC_SETTING,
   appendOp,
   enqueueEntryUpsert,
+  enqueueHeldDraft,
   enqueuePrefs,
   prefsFields,
   readSetting,
@@ -77,7 +78,11 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
       "SELECT id FROM entries WHERE author_id = ? AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
       userId,
     );
-    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx);
+    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx); // a waiting letter goes as its held row
+    // Letters the author held at the Keep gate before signing in (F14-REQ-039): author-only held rows.
+    for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE held_kind IS NOT NULL ORDER BY created_at, id')) {
+      enqueueHeldDraft(db, d.id, ctx);
+    }
     const queued = db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE type = 'entry.upsert'")!.n;
     result = { outcome: 'claimed', books: ok.length, letters: queued, localOnlyBooks: bad.length };
   });

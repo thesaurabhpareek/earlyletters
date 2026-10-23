@@ -246,7 +246,8 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     const own = takeOwnership(A1, A, ctx());
     expect(own).toMatchObject({ outcome: 'claimed', books: 2, localOnlyBooks: 0 });
     expect(local(A1, ids.first)?.author_id).toBe(A);
-    expect(outboxTypes(A1)).toEqual(['book.first_run', 'prefs.upsert', 'prefs.upsert', 'entry.upsert', 'entry.upsert']);
+    // v8: the letter waiting for its words is queued as its author-only held row (WP-F16-17).
+    expect(outboxTypes(A1)).toEqual(['book.first_run', 'prefs.upsert', 'prefs.upsert', 'entry.upsert', 'entry.upsert', 'held.upsert']);
     expect(takeOwnership(A1, A, ctx()).outcome).toBe('already');
     expect(() => takeOwnership(A1, B, ctx())).toThrow('sync_account_mismatch');
 
@@ -259,14 +260,15 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect(await server(ids.waiting)).toBeUndefined(); // held until its words exist
     expect(await server(ids.gone)).toBeUndefined(); // deleted before it ever left the phone
     expect(local(A1, ids.first)?.sync_state).toBe('synced');
-    expect(pendingCount(A1)).toBe(0);
+    // This server has no held drafts (its pull has no held section): the held row waits on the phone, never refused.
+    expect(outboxTypes(A1)).toEqual(['held.upsert']);
   }, 60_000);
 
   it('ordered and coalesced: three edits before a sync go up as one op, after the letter they edit', async () => {
     ids.edited = saveLetter(A1, ASHA, 'Two teeth.');
     editLetter(A1, ids.edited, 'Two teeth today.');
     editLetter(A1, ids.edited, 'Two teeth today, both at once.');
-    expect(outboxTypes(A1)).toEqual(['entry.upsert']);
+    expect(outboxTypes(A1)).toEqual(['held.upsert', 'entry.upsert']);
     // The waiting letter gets its words: its first upload.
     A1.transaction(() => {
       A1.run("UPDATE entries SET raw_transcript = 'um you sang', final_text = 'You sang.', transcript_status = NULL WHERE id = ?", ids.waiting);
@@ -276,6 +278,7 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect((await server(ids.edited))?.final_text).toBe('Two teeth today, both at once.');
     expect((await sys('select count(*)::int n from entry_versions where entry_id = $1', [ids.edited])).rows[0].n).toBe(0);
     expect((await server(ids.waiting))?.final_text).toBe('You sang.');
+    expect(pendingCount(A1)).toBe(0); // its words exist: the letter went, and its held upload with it
   }, 60_000);
 
   it('the co-parent joins and receives the book, its settings and the in-book letters, never raw transcripts', async () => {
