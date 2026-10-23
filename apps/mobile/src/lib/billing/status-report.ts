@@ -7,8 +7,9 @@
  * One flush:
  *   1. `mayRun()`: the build flag (EXPO_PUBLIC_SERVER_FEATURES and EXPO_PUBLIC_STATUS_REPORT)
  *      and the remote `statusReport` kill switch. Off: nothing at all happens.
- *   2. A signed-in, ready account. Signed out: nothing is sent; consent facts recorded at a
- *      purchase wait on the phone until sign-in (F14-REQ-043).
+ *   2. A signed-in, ready account that may report for this phone (reportingUserOf). Signed
+ *      out: nothing is sent; consent facts recorded at a purchase wait on the phone until
+ *      sign-in (F14-REQ-043).
  *   3. This account's salt (GET salt, cached in memory for the session, never stored).
  *   4. The native module turns the salt into a `sub_ref` per own purchase.
  *   5. One POST per purchase whose status changed or whose consent facts wait, each with a
@@ -40,6 +41,8 @@ export interface ReporterDeps {
   mayRun(): boolean;
   /** The account a report goes to: auth state `ready` with the claim settled (status-report.logic reportingUserOf), or null. */
   userId(): string | null;
+  /** The account that owns this phone's letters (store currentUserId), or null before the first claim. */
+  phoneOwner(): string | null;
   readState(): string | null;
   writeState(value: string): void;
   fetchSalt(): Promise<SaltAnswer>;
@@ -139,12 +142,19 @@ export function createStatusReporter(deps: ReporterDeps): StatusReporter {
     recordPurchase(purchase) {
       if (!deps.mayRun() || !purchase.productId || !purchase.originalPurchasedAt) return;
       const now = deps.now();
+      let owner: string | null = null;
+      try {
+        owner = deps.phoneOwner();
+      } catch {
+        owner = null;
+      }
       write(addPendingConsent(read(), {
         productId: purchase.productId,
         originalPurchasedAt: purchase.originalPurchasedAt,
         termsVersion: deps.termsVersion(),
         shownAt: now,
         queuedAt: now,
+        owner,
       }));
     },
   };

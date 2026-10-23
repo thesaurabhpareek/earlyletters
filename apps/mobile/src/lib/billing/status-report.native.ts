@@ -15,7 +15,7 @@ import { ScribeStore } from '../../../modules/scribe-store';
 import { accountClaimPending, getAuthSnapshot, subscribeAuth } from '../auth/auth-store';
 import { mayRun } from '../capabilities';
 import { getRemoteConfig } from '../remote';
-import { getSetting, setSetting, uuidv7 } from '../store';
+import { currentUserId, getSetting, setSetting, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase';
 import { PLUS_PRODUCT_IDS, SUBSCRIPTION_TERMS_DOC_VERSION } from './config';
 import { billingCopy } from './copy';
@@ -78,13 +78,14 @@ let reporter: StatusReporter | null = null;
 
 /** The released account for a report (reportingUserOf), or null. */
 function reportingUser(): string | null {
-  return reportingUserOf(getAuthSnapshot(), accountClaimPending);
+  return reportingUserOf(getAuthSnapshot(), accountClaimPending, currentUserId);
 }
 
 function reporterNow(): StatusReporter {
   reporter ??= createStatusReporter({
     mayRun: () => mayRun('statusReport', getRemoteConfig()),
     userId: reportingUser,
+    phoneOwner: currentUserId,
     readState: () => getSetting(STATUS_REPORT_STATE_KEY),
     writeState: (v) => setSetting(STATUS_REPORT_STATE_KEY, v),
     fetchSalt,

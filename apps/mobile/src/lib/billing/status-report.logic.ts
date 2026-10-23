@@ -17,7 +17,8 @@
  *
  * Kept on the phone (device settings `plus.statusReport`, L2): the account the sent marks
  * belong to, a fingerprint per purchase (keyed by product and first-purchase date, never by
- * an id or a `sub_ref`), and the waiting consent facts. Never the salt or a `sub_ref`.
+ * an id or a `sub_ref`), and the waiting consent facts with the account that owned the phone
+ * at the purchase. Never the salt or a `sub_ref`.
  *
  * Loaded only behind `capabilities.statusReport` (a dynamic import from plan-store and
  * actions), so a build with the flag off never evaluates the server contract (M14 rule in
@@ -67,6 +68,12 @@ export interface PendingConsent {
   termsVersion: string;
   shownAt: string;
   queuedAt: string;
+  /**
+   * The account that owned this phone's letters at the purchase (store `currentUserId`), or
+   * null before any account did. Only that account's report carries these facts; null facts
+   * go with the first account the phone reports for.
+   */
+  owner: string | null;
 }
 
 export interface ReportState {
@@ -85,15 +92,31 @@ const isIso = (v: unknown): v is string => typeof v === 'string' && v.length <= 
 
 /**
  * The account a report goes to: a `ready` session whose claim on this phone's letters is
- * settled (PR #139, BL-347). While the claim screen waits for "Keep them here", the session
- * may be someone else's account, so this phone's purchase is not reported to it; the report
- * goes once the person confirms, or at once when no claim is needed. The content consent
- * (`sync` on or off) does not gate it: a report carries no letter, as before. `claimPending`
- * is asked only for a ready session.
+ * settled (PR #139, BL-347), on a phone no other account owns. While the claim screen waits
+ * for "Keep them here", the session may be someone else's account, so this phone's purchase
+ * is not reported to it; the report goes once the person confirms, or at once when no claim
+ * is needed. When another account already owns the phone's letters (`phoneOwner`, the store's
+ * `currentUserId`), no claim screen appears and sync refuses that session
+ * (sync/ownership.ts AccountMismatchError); the report is held the same way, so a second
+ * account signing in on this phone never gets its purchase or consent facts. An unreadable
+ * owner holds it too. The content consent (`sync` on or off) does not gate it: a report
+ * carries no letter, as before. The readers are asked only for a ready session.
  */
-export function reportingUserOf(state: AuthState, claimPending: () => boolean): string | null {
+export function reportingUserOf(state: AuthState, claimPending: () => boolean, phoneOwner: () => string | null): string | null {
   if (state.status !== 'ready') return null;
-  return claimPending() ? null : state.userId;
+  if (claimPending()) return null;
+  let owner: string | null;
+  try {
+    owner = phoneOwner();
+  } catch {
+    return null;
+  }
+  return owner && owner !== state.userId ? null : state.userId;
+}
+
+/** Whether waiting consent facts may ride on a report for `account` (see PendingConsent.owner). */
+export function pendingBelongsTo(p: PendingConsent, account: string): boolean {
+  return p.owner === null || p.owner === account;
 }
 
 /** The local key of one purchase: product and first-purchase date. Not an id, and not sent anywhere. */
@@ -112,11 +135,17 @@ export function parseReportState(raw: string | null | undefined): ReportState {
     }
     const consented = Array.isArray(o.consented) ? o.consented.filter((k): k is string => typeof k === 'string').slice(-50) : [];
     const pending = Array.isArray(o.pending)
-      ? o.pending.filter((p): p is PendingConsent => {
-          const x = p as Record<string, unknown>;
-          return !!x && typeof x.productId === 'string' && isPlusProduct(x.productId) && isIso(x.originalPurchasedAt)
-            && typeof x.termsVersion === 'string' && isIso(x.shownAt) && isIso(x.queuedAt);
-        }).slice(-MAX_PENDING)
+      ? o.pending
+          .filter((p): p is Omit<PendingConsent, 'owner'> & { owner?: unknown } => {
+            const x = p as Record<string, unknown>;
+            return !!x && typeof x.productId === 'string' && isPlusProduct(x.productId) && isIso(x.originalPurchasedAt)
+              && typeof x.termsVersion === 'string' && isIso(x.shownAt) && isIso(x.queuedAt);
+          })
+          .map((p): PendingConsent => ({
+            productId: p.productId, originalPurchasedAt: p.originalPurchasedAt, termsVersion: p.termsVersion,
+            shownAt: p.shownAt, queuedAt: p.queuedAt, owner: typeof p.owner === 'string' ? p.owner : null,
+          }))
+          .slice(-MAX_PENDING)
       : [];
     return { owner: typeof o.owner === 'string' ? o.owner : null, sent, consented, pending };
   } catch {
@@ -225,7 +254,7 @@ export function planReports(items: readonly NativeStatusRef[], state: ReportStat
     const fingerprint = statusFingerprint(fields);
     let consent: ConsentFacts | undefined;
     if (!consented.has(key)) {
-      const waiting = state.pending.find((p) => purchaseKey(p.productId, p.originalPurchasedAt) === key);
+      const waiting = state.pending.find((p) => purchaseKey(p.productId, p.originalPurchasedAt) === key && pendingBelongsTo(p, ctx.owner));
       if (waiting) {
         consent = { product_id: item.productId, offer_type: offerTypeOf(item.offerType), terms_shown: waiting.termsVersion, shown_at: waiting.shownAt };
       } else if (item.offerType === 'offer_code') {
@@ -256,7 +285,7 @@ export function afterStored(state: ReportState, owner: string, planned: PlannedR
     owner,
     sent,
     consented: [...base.consented.filter((k) => k !== planned.key), planned.key],
-    pending: base.pending.filter((p) => purchaseKey(p.productId, p.originalPurchasedAt) !== planned.key),
+    pending: base.pending.filter((p) => purchaseKey(p.productId, p.originalPurchasedAt) !== planned.key || !pendingBelongsTo(p, owner)),
   };
 }
 

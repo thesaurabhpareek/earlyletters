@@ -98,7 +98,7 @@ describe('status-report.logic: what a report carries', () => {
     expect(winBack[0].offerType).toBe('win_back');
     let state = addPendingConsent(EMPTY_REPORT_STATE, {
       productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z', termsVersion: '1.4.0+0a1b2c3d',
-      shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z',
+      shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z', owner: null,
     });
     const [p] = planReports(winBack, state, { owner: ASHA_MAMA, now: NOW });
     expect(p.report.consent?.offer_type).toBe('win_back');
@@ -145,7 +145,7 @@ describe('status-report.logic: when to report', () => {
   it('[LEGAL-REQ-049] consent facts from a purchase in the app ride on the first report, then never again', () => {
     let state = addPendingConsent(EMPTY_REPORT_STATE, {
       productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z', termsVersion: '1.4.0+0a1b2c3d',
-      shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z',
+      shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z', owner: null,
     });
     const [p] = planReports([annualTrial()], state, { owner: ASHA_MAMA, now: NOW });
     expect(p.report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0+0a1b2c3d', shown_at: '2026-10-29T17:59:30.000Z' });
@@ -194,13 +194,21 @@ describe('status-report.logic: when to report', () => {
 
 describe('[BL-347] who a report goes to (the claim screen from #139)', () => {
   const never = () => false;
+  const noOwner = () => null;
   it('a ready session with no claim waiting reports, whether or not letters sync', () => {
-    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'on' }, never)).toBe(ASHA_MAMA);
-    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'off' }, never)).toBe(ASHA_MAMA);
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'on' }, never, noOwner)).toBe(ASHA_MAMA);
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'off' }, never, () => ASHA_MAMA)).toBe(ASHA_MAMA);
   });
 
   it('a session waiting for "Keep them here" gets no report, so a purchase on this phone never goes to an account the person has not confirmed', () => {
-    expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, () => true)).toBeNull();
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, () => true, noOwner)).toBeNull();
+  });
+
+  it('a second account on a phone another account owns gets no report: no claim screen appears there, and sync refuses it too (review B1)', () => {
+    // Mama owns this phone's letters; she signs out and Papa signs in. The claim rule says nothing is pending.
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, never, () => ASHA_MAMA)).toBeNull();
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'on' }, never, () => ASHA_MAMA)).toBe(ASHA_MAMA);
+    expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, never, () => { throw new Error('store closed'); })).toBeNull();
   });
 
   it('no report before consent, while signing in or out, or signed out; the claim is not read then', () => {
@@ -210,8 +218,10 @@ describe('[BL-347] who a report goes to (the claim screen from #139)', () => {
       { status: 'needsConsent', userId: ASHA_MAMA, method: null, steps: ['terms'] },
       { status: 'signingOut', userId: ASHA_MAMA, reason: 'user', waitingForUploads: true, sync: 'on' },
     ];
-    for (const s of states) expect(reportingUserOf(s, claim)).toBeNull();
+    const owner = vi.fn(() => null);
+    for (const s of states) expect(reportingUserOf(s, claim, owner)).toBeNull();
     expect(claim).not.toHaveBeenCalled();
+    expect(owner).not.toHaveBeenCalled();
   });
 });
 
@@ -252,10 +262,12 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
   const sent: Array<{ report: StatusReport; key: string }> = [];
   const answers = [...(over.answers ?? [])];
   let user: string | null = ASHA_MAMA;
+  let phoneOwner: string | null = null;
   let on = true;
   const deps: ReporterDeps = {
     mayRun: () => on,
     userId: () => user,
+    phoneOwner: () => phoneOwner,
     readState: () => stored,
     writeState: (v) => {
       stored = v;
@@ -273,7 +285,8 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
   };
   return {
     deps, sent, reporter: createStatusReporter(deps),
-    signOut: () => (user = null), signIn: (u = ASHA_MAMA) => (user = u), off: () => (on = false), tick: (ms: number) => (clock += ms),
+    signOut: () => (user = null), signIn: (u = ASHA_MAMA) => (user = u), off: () => (on = false),
+    ownPhone: (u: string | null) => (phoneOwner = u), tick: (ms: number) => (clock += ms),
     state: () => parseReportState(stored),
   };
 }
@@ -290,6 +303,23 @@ describe('the sender', () => {
     expect(h.deps.nativeRefs).not.toHaveBeenCalled();
     expect(h.sent).toEqual([]);
     expect(h.state()).toEqual(EMPTY_REPORT_STATE);
+  });
+
+  it('[BL-347] consent facts recorded while one account owned the phone never ride on another account\'s report (review B1)', async () => {
+    const h = harness();
+    h.ownPhone(ASHA_MAMA);
+    h.signOut();
+    h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
+    expect(h.state().pending[0]?.owner).toBe(ASHA_MAMA);
+    h.signIn(ASHA_PAPA);
+    await h.reporter.flush();
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0].report.consent).toBeUndefined();
+    expect(h.state().pending).toHaveLength(1);
+    h.signIn(ASHA_MAMA);
+    await h.reporter.flush();
+    expect(h.sent.at(-1)?.report.consent).toBeDefined();
+    expect(h.state().pending).toEqual([]);
   });
 
   it('[F14-REQ-043] a purchase while signed out: 0 requests until sign-in, exactly 1 after, carrying the consent facts', async () => {
