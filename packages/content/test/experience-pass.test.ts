@@ -58,6 +58,8 @@ const CHANGED = [
   'features.language.picker.none',
   'features.speechConsent.body',
   'features.speechConsent.chosenLater',
+  // Changed after P2 landed (#220 review R5, spec v1.3): the promise body is the sanctioned promise word for word (S04).
+  'en.onboarding.promise.body2',
   'features.words.pack.stoppedInBackground',
   'en.review.waiting.body',
   'features.words.pack.mobileDataButton',
@@ -128,6 +130,10 @@ const CHANGED = [
   // Held in #181, switched by P5 with the screens that build all three datelines and fill {child} (spec section 6).
   'en.readTogether.nowReading',
   'en.settings.delete.restoredToast',
+  // Switched by P3 with Tonight's card for every draft (section 6, P3 switches; counsel C10 for the keepGate lines).
+  'en.tonight.draftWaiting.title',
+  'features.billing.keepGate.heldNote',
+  'features.billing.keepGate.offline',
 ];
 
 /** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
@@ -202,6 +208,8 @@ const ADDED = [
   'en.tabs.tonight',
   'en.tabs.book',
   'en.tabs.family',
+  // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
+  'features.billing.keepGate.heldNoteSynced',
 ];
 
 /**
@@ -220,9 +228,6 @@ const WE_ALLOWED = new Set([
  * billingCopy.plan.* is registered text (in-app-disclosures.md section 3), so its new words wait for counsel.
  */
 const HELD: Record<string, string> = {
-  'en.tonight.draftWaiting.title': 'P3', // the one waiting card is also shown for typed drafts
-  'features.billing.keepGate.heldNote': 'P3', // "waits on Tonight" needs Tonight to list every draft
-  'features.billing.keepGate.offline': 'P3', // the same promise
   'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
   'en.errors.micDenied.body': 'P4',
   'features.billing.plan.monthly': 'P6, after counsel', // shown beside plan.yearly; registered group
