@@ -286,7 +286,7 @@ async function main(): Promise<void> {
   }
   if (documents.length) {
     const at = steps.findIndex((s) => s.startsWith('Optional'));
-    steps.splice(at < 0 ? steps.length : at, 0, 'Upload the signed documents the app reads from https://packs.earlyletters.app (after the pack files, so the manifest never points at a missing file):', ...documentUploadCommands(documents, BUCKET).map((c) => `  ${c}`));
+    steps.splice(at < 0 ? steps.length : at, 0, `Upload the signed documents the app reads from ${DEFAULT_BASE_URL} (after the pack files, so the manifest never points at a missing file):`, ...documentUploadCommands(documents, BUCKET).map((c) => `  ${c}`));
   }
 
   out('\nNothing was uploaded or deployed. Next steps (manual; `publish.ts release` then `publish.ts upload` does all of it, models included):');
