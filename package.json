@@ -7,19 +7,21 @@
     "experiments"
   ],
   "scripts": {
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs && node scripts/trace.mjs --no-write",
+    "test:coverage": "node scripts/coverage/run.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
     "test:db": "node supabase/tests/run.mjs",
     "test:db:perf": "node supabase/tests/run.mjs perf",
-    "test:functions": "npx -y deno@2.9.6 test --no-prompt --allow-read --sloppy-imports supabase/functions/purge-worker supabase/functions/analytics-forget supabase/functions/_shared supabase/functions/invite-redeem supabase/functions/subscription-status scripts/ops",
+    "test:functions": "npx -y deno@2.9.6 test --no-prompt --allow-read --sloppy-imports supabase/functions/purge-worker supabase/functions/analytics-forget supabase/functions/apple-token supabase/functions/_shared supabase/functions/invite-redeem supabase/functions/subscription-status scripts/ops",
     "experiment": "npm run experiment -w @scribe/experiments --",
     "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.5"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8"
+    "@electric-sql/pglite": "^0.5.8",
+    "@vitest/coverage-v8": "^3.2.7"
   }
 }

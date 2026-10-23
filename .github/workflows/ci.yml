@@ -1,6 +1,7 @@
 # Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
 # end to end. Every job has a timeout; the longest path is install (4) plus
-# one check job (5). Branch protection requires only the `required` job.
+# one check job (5), or plus the seam guard (15) when a change can reach the
+# app bundle. Branch protection requires only the `required` job.
 name: CI
 
 on:
@@ -93,10 +94,44 @@ jobs:
         working-directory: apps/mobile
         run: npx tsc --noEmit
 
+  seam-guard:
+    # Release check B-8 (apps/mobile/e2e/TESTID_REQUESTS.md section 4): no e2e seam code in a bundle
+    # that can reach TestFlight or the App Store. It lives here, not in a path-filtered workflow, so
+    # that `required` can wait for it: a path-skipped workflow stays Pending and would block every
+    # merge (docs/release/AUTOMATION.md 2.1). The guard's own tests run on every pull request; the
+    # exports (about four minutes) run only when base...head touches a path that can reach the bundle
+    # or change this check (BUNDLE_PATHS in the script). A diff git cannot answer runs them, and a
+    # failing decision step fails the job. No secrets. testflight.yml runs the same script before EAS.
+    name: no e2e seam in store bundles (B-8)
+    needs: install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Guard tests
+        run: node --test .github/scripts/seam-guard.test.mjs
+      - name: Can this change reach a store bundle, or change the check?
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node .github/scripts/seam-guard.mjs --changed-since "$BASE" "$HEAD" | tee decision.txt
+          grep '^run=' decision.txt >> "$GITHUB_OUTPUT"
+      # The positive control exports the e2e profile too and requires the seam once any app file
+      # imports the seams module (RA-20-18); until then it prints that it was skipped, and why.
+      - name: Export each store profile and search it, then the e2e control
+        if: steps.changed.outputs.run == 'true'
+        run: node .github/scripts/seam-guard.mjs --store-profiles --e2e-control
+
   required:
     name: required
     if: always()
-    needs: [install, unit, db, functions, typecheck]
+    needs: [install, unit, db, functions, typecheck, seam-guard]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:

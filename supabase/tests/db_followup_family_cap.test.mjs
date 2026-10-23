@@ -74,11 +74,14 @@ await sys(`update child_invites set revoked_at = null where token_hash = sha256(
 const staleErr = await errOf(() => as(C, `select public.accept_child_invite($1)`, [tStale]));
 check('[H2] an invite whose maker is no longer a parent of the book is refused', staleErr?.code === 'SCINV' && /not found/.test(staleErr?.message));
 check('so the stranger is not a member', (await roleOf(CHILD, C)) === null);
-// The direct own-row delete (child_members_leave policy) revokes too.
+// The direct own-row delete is refused since 20261015020000 (F11-REQ-011); a removal
+// by support (service role, APPLY.md step 19) still revokes the parent's invites.
 await join(B, 'parent', CHILD, A);
 const tB2 = await invite(B, CHILD, 'contributor');
-await as(B, `delete from child_members where child_id=$1 and profile_id=auth.uid()`, [CHILD]);
-check('leaving by the direct own-row delete also revokes that parent\'s invites', (await inviteRow(tB2)).revoked_at !== null);
+check('[F11-REQ-011] the direct own-row delete is refused (42501)',
+  (await codeOf(() => as(B, `delete from child_members where child_id=$1 and profile_id=auth.uid()`, [CHILD]))) === '42501');
+await sys(`delete from child_members where child_id=$1 and profile_id=$2`, [CHILD, B]);
+check('a removal by support also revokes that parent\'s invites', (await inviteRow(tB2)).revoked_at !== null);
 const tA = await invite(A, CHILD, 'contributor');
 check('the remaining parent\'s invites are untouched', (await inviteRow(tA)).revoked_at === null);
 

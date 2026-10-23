@@ -1,6 +1,6 @@
 # Runbook: an account deletion has not finished
 
-Alerts that point here: `request_stuck`, `step_failed`, `step_retrying`, `residue`, `apple_no_token`, `holds_review`. Also use it when someone writes in saying their account still exists after 30 days.
+Alerts that point here: `request_stuck`, `step_failed`, `step_retrying`, `residue`, `apple_no_token`, `holds_review`, `pepper_missing`. Also use it when someone writes in saying their account still exists after 30 days.
 
 Promise being protected (data-policy section 5, DATA-REQ-036): live systems within 31 days of the request, backups within 38, processors within 45. The worker retries every step from 1 minute up to every 6 hours for 7 days, then marks it `failed` and stops that request.
 
@@ -76,6 +76,10 @@ node scripts/ops/verify-deletion.ts --project-ref <ref> --ticket <ticket> --prof
 ## 7. `apple_no_token`
 
 Informational: the person signed in with Apple but we hold no refresh token (the sign-in exchange failed or predates the `apple-token` function). Deletion completed; the receipt says `apple: no_token`. Nothing to revoke from our side. If this appears for new accounts, the capture side is broken (SECURITY.md 5).
+
+## 7a. `pepper_missing`: the consent pepper is not set
+
+An account deletion is waiting or running and `app.consent_pepper` is missing or shorter than 32 characters. Since `20261015010000` (BL-334) deleting a profile that has policy acceptances fails closed with `55000`, so the `auth_user` step retries instead of storing reversible hashes; Supabase Auth reports it only as a database error. Fix: set the pepper once as in `supabase/APPLY.md` step 6 (never change it afterwards), confirm `select public.consent_pepper_ready();` returns true as the service role, then retry as in section 3. The alert clears on the next worker run.
 
 ## 8. When the published deadline will be missed
 

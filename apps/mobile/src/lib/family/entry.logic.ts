@@ -19,7 +19,7 @@ export const INVITE_ENTRIES = [
   'invite_join',
   /** /invite/new: invite a co-parent to a book. */
   'invite_new',
-  /** https://earlyletters.com/i/<token> opened on this phone. */
+  /** https://earlyletters.com/j#t=<token> opened on this phone. */
   'invite_link',
   /** Settings > a child's book > Write this book together. */
   'settings_child',

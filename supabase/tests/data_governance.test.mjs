@@ -76,7 +76,9 @@ check('users cannot read the purge queue or ledger', (await as(A, 'select 1 from
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
 check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
 check('contributor cannot delete the book', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCDEL'));
-check('sole parent cannot simply leave', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), 'SCLPG'));
+// F11-REQ-011 (20261015020000): leaving goes through leave_child only; the direct delete is refused.
+check('sole parent cannot simply leave', await fails(() => as(S, `select public.leave_child(child_id) from child_members where profile_id='${S}'`), 'SCLPG'));
+check('[F11-REQ-011] a direct delete of the membership row is refused', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), '42501'));
 
 // ── K-09 Raw transcripts are author-only ──────────────────────────────────
 const aBook = await newEntry(A);
