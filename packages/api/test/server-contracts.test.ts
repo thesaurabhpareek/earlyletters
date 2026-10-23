@@ -117,14 +117,15 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(parsePushResponse({ results: [{ op: OP, ok: false, code: 'row Asha is bad' }], paused: false, stopped: false }).ok).toBe(false);
   });
 
-  it('parses an own row exactly as S02\'s sync_pull sends it: null author layer, photo_path, prompt_library_version', () => {
+  it('parses an own row exactly as S02\'s sync_pull sends it: null author layer, photo_path, prompt_library_version, the review mark', () => {
     const row = {
       id: ASHA_ENTRY, child_id: ASHA_CHILD, author_id: '11111111-1111-4111-8111-111111111111', author_signs_as: 'Papa', kind: 'letter',
       occurred_on: '2026-10-01', captured_at: '2026-10-15T19:00:00Z', capture_mode: 'spoken', edit_level: 'clean', prompt_key: null,
       prompt_library_version: null, engine_version: 6, raw_transcript: 'Asha laughed', machine_edits: [], final_text: 'Asha laughed.',
       in_book: true, sounds_like_me: null, approval: 'not_needed', photo_path: null, audio_kept_on_device: true, language: null,
       created_at: '2026-10-15T19:00:00Z', updated_at: '2026-10-15T19:00:00Z', deleted_at: null, own: true,
-      occurred_precision: 'day', base_direction: 'ltr', author_edits: null, locked_spans: null, pack_ref: null, v: '812',
+      occurred_precision: 'day', base_direction: 'ltr', author_edits: null, locked_spans: null, pack_ref: null,
+      words_reviewed_at: '2026-10-15T19:00:05Z', v: '812',
     };
     const r = parsePullResponse({ reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [
       { id: ASHA_CHILD, access: 'parent', repull: false, meta_hash: 'x', rows: [row], cursor: null, more: false },
@@ -141,13 +142,84 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
   it('as built, conflict without conflict_groups is advisory, not a words conflict', () => {
     const r = parsePushResponse({ results: [{ op: OP, ok: true, applied: true, conflict: true }], paused: false, stopped: false });
     expect(r.ok && isWordsConflict(r.value.results[0])).toBe(false);
-    expect(sendablePushOpTypes()).not.toContain('held.upsert');
-    expect(sendablePrefsKeys()).toEqual(['signs_as', 'include_in_reminders']);
+    // notify_letters is built (20261015030000); hidden and quiet are still planned, so never sent.
+    expect(sendablePrefsKeys()).toEqual(['signs_as', 'include_in_reminders', 'notify_letters']);
   });
 
-  it('[F16-REQ-024] the erase op is in the frozen list as planned, so no client sends it before the server has it', () => {
+  it('[F16-REQ-024] the erase op and the held ops are built (20261016000000), so they are sendable; the drift test proves sync_push parses each', () => {
     expect(PUSH_OP_TYPES).toContain('entry.erase');
-    expect(sendablePushOpTypes()).not.toContain('entry.erase');
+    for (const t of ['entry.erase', 'held.upsert', 'held.discard'] as const) expect(sendablePushOpTypes()).toContain(t);
+    expect(sendablePushOpTypes()).toEqual([...PUSH_OP_TYPES]);
+  });
+
+  it('[F16-REQ-010] a words refusal is conflict_groups with text, with or without conflict: a duplicate, a refused held.upsert and a refused Keep', () => {
+    const entry = { id: ASHA_ENTRY, v: '900', updated_at: '2026-10-15T19:00:01Z', deleted_at: null, in_book: true, approval: 'not_needed' };
+    const r = parsePushResponse({
+      results: [
+        // A duplicate of a refused entry.upsert (dup_outcome): no conflict key.
+        { op: OP, ok: true, dup: true, entry, conflict_groups: ['text'], current: { final_text: 'Asha laughed.', machine_edits: [], edit_level: 'clean', v: '900' } },
+        // A refused held.upsert (held_state): the held words, which may have none yet, and typed_text.
+        { op: OP, ok: true, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' }, conflict_groups: ['text'],
+          current: { final_text: null, machine_edits: null, edit_level: null, typed_text: 'Asha found the puddle first', v: '41' } },
+        // A refused Keep (keep_check): no letter, the held row stays.
+        { op: OP, ok: true, applied: false, conflict: true, entry: null, held: { id: ASHA_ENTRY, v: '41', updated_at: '2026-10-15T19:00:02Z' },
+          conflict_groups: ['text'], current: { final_text: 'Asha found the puddle first.', machine_edits: [], edit_level: 'clean', typed_text: null, v: '41' } },
+      ],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    for (const x of r.value.results) expect(isWordsConflict(x)).toBe(true);
+    const held = r.value.results[1];
+    expect(held.ok && held.current?.typed_text).toBe('Asha found the puddle first');
+  });
+
+  it('[F16 6.2 I] held and erase answers as built: held null, held_off, kept, erased, deferred, missing', () => {
+    const r = parsePushResponse({
+      results: [
+        { op: OP, ok: true, held: null },
+        { op: OP, ok: true, applied: false, held_off: true },
+        { op: OP, ok: true, kept: true },
+        { op: OP, ok: true, erased: true },
+        { op: OP, ok: true, deferred: true },
+        { op: OP, ok: true, missing: true },
+      ],
+      paused: false, stopped: false,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.results.map((x) => (x.ok ? [x.held, x.held_off, x.kept, x.erased, x.deferred, x.missing] : null))).toEqual([
+      [null, undefined, undefined, undefined, undefined, undefined],
+      [undefined, true, undefined, undefined, undefined, undefined],
+      [undefined, undefined, true, undefined, undefined, undefined],
+      [undefined, undefined, undefined, true, undefined, undefined],
+      [undefined, undefined, undefined, undefined, true, undefined],
+      [undefined, undefined, undefined, undefined, undefined, true],
+    ]);
+    for (const x of r.value.results) expect(isWordsConflict(x)).toBe(false);
+  });
+
+  it('[F16-REQ-024] an erased held marker parses; an unknown marker is refused', () => {
+    const pull = (gone: string) => parsePullResponse({
+      reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z',
+      held: { rows: [{ id: ASHA_ENTRY, gone, updated_at: '2026-10-15T19:00:00Z', v: '9' }], cursor: '9', more: false },
+    });
+    for (const g of ['discarded', 'kept', 'erased']) expect(pull(g).ok, g).toBe(true);
+    expect(pull('vanished').ok).toBe(false);
+  });
+
+  it('[M17] the review mark travels on own rows and in entry.upsert, author-only', () => {
+    expect(AUTHOR_ONLY_COLUMNS as readonly string[]).toContain('words_reviewed_at');
+    const op: EntryUpsertOp = {
+      op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: null, held_base: '41',
+      data: {
+        id: ASHA_ENTRY, child_id: ASHA_CHILD, kind: 'letter', occurred_on: '2026-10-01', captured_at: '2026-10-15T19:00:00.000Z',
+        capture_mode: 'typed', edit_level: 'verbatim', prompt_key: null, engine_version: 6, raw_transcript: 'Asha found the puddle first.',
+        machine_edits: [], final_text: 'Asha found the puddle first.', in_book: true, sounds_like_me: null, author_signs_as: 'Papa',
+        audio_kept_on_device: false, words_reviewed_at: '2026-10-15T19:00:05.000Z',
+      },
+    };
+    expect(op.data.words_reviewed_at).toBe('2026-10-15T19:00:05.000Z');
   });
 
   it('[F16-REQ-029] a held tombstone carries only id, gone, updated_at and v, and the pull still parses', () => {

@@ -15,15 +15,23 @@ import { describe, expect, it } from 'vitest';
 import { classifySqlstate, ENDPOINTS, ERROR_DETAILS, SQLSTATE_RULES, type EndpointSpec } from '../src';
 import {
   BOOK_UPDATE_KEYS,
+  ConflictCurrentSchema,
   CONSENT_KINDS,
+  EntryStateSchema,
   ESCROW_ERROR_DETAILS,
   FIELD_GROUPS,
+  HELD_DRAFT_DATA_KEYS,
+  HELD_GONE_KINDS,
   INVITE_UNUSABLE_DETAILS,
   PLANNED_PREFS_KEYS,
   PLANNED_PUSH_OP_TYPES,
   ENTRY_DATA_KEYS,
   PREFS_KEYS,
+  PulledHeldSchema,
   PulledRowSchema,
+  PushResponseSchema,
+  PushResultErrSchema,
+  PushResultOkSchema,
   PUSH_OP_TYPES,
 } from '../server';
 import { KILL_SWITCH_KEYS } from '../src/kill-switches';
@@ -34,8 +42,8 @@ const sql = files.map((f) => ({ f, text: readFileSync(join(MIGRATIONS, f), 'utf8
 const all = sql.map((s) => s.text).join('\n');
 
 /** The body of the newest definition of a function (files sort by timestamp; last definition wins). */
-function newestDefinition(fn: string): string {
-  const re = new RegExp(`create or replace function public\\.${fn}\\s*\\(`, 'g');
+function newestDefinition(fn: string, schema = 'public'): string {
+  const re = new RegExp(`create or replace function ${schema}\\.${fn}\\s*\\(`, 'g');
   let body = '';
   for (const { text } of sql) {
     let m: RegExpExecArray | null;
@@ -122,8 +130,8 @@ describe('[F16-REQ-028] the sync wire contract equals the SQL parser', () => {
 });
 
 describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, field for field', () => {
-  /** Columns S02's pending 20261015030000 adds to the own row; absent on develop until it merges. */
-  const PENDING_PULL_COLUMNS = ['occurred_precision', 'base_direction', 'author_edits', 'locked_spans', 'pack_ref'];
+  /** Columns in the contract that develop's sync_pull does not send yet. None since 20261015030000 and 20261016000000. */
+  const PENDING_PULL_COLUMNS: string[] = [];
   const pull = newestDefinition('sync_pull');
   const start = pull.indexOf('case when p.author_id = v_uid then');
   const end = pull.indexOf('else', start);
@@ -147,8 +155,8 @@ describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, fi
 });
 
 describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; others\' rows equal book_entries', () => {
-  /** Keys in the contract that develop's SQL does not read yet (S02 PR #140 adds them). */
-  const PENDING_ENTRY_KEYS = ['occurred_precision', 'base_direction', 'author_edits', 'locked_spans', 'pack_ref'];
+  /** Keys in the contract that develop's SQL does not read yet. None since 20261015030000 and 20261016000000. */
+  const PENDING_ENTRY_KEYS: string[] = [];
   const push = newestDefinition('sync_push');
   const start = push.indexOf("when 'entry.upsert', 'entry.reupload' then");
   const end = push.indexOf("when 'entry.delete' then", start);
@@ -171,6 +179,103 @@ describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; other
     expect(cols.length).toBeGreaterThan(10);
     const keys = Object.keys(PulledRowSchema.entries);
     for (const c of cols) expect(keys, `book_entries sends ${c}`).toContain(c);
+  });
+});
+
+/** The literal keys of every `jsonb_build_object(...)` call in a body: the even arguments that are string literals. */
+function builtKeys(body: string): Set<string> {
+  const keys = new Set<string>();
+  const marker = 'jsonb_build_object(';
+  for (let at = body.indexOf(marker); at >= 0; at = body.indexOf(marker, at + 1)) {
+    const args: string[] = [];
+    let depth = 0;
+    let quoted = false;
+    let cur = '';
+    for (let i = at + marker.length; i < body.length; i++) {
+      const c = body[i];
+      if (quoted) {
+        cur += c;
+        if (c === "'") quoted = false;
+        continue;
+      }
+      if (c === "'") quoted = true;
+      if (c === '(') depth++;
+      if (c === ')') {
+        if (depth === 0) break;
+        depth--;
+      }
+      if (c === ',' && depth === 0) {
+        args.push(cur.trim());
+        cur = '';
+        continue;
+      }
+      cur += c;
+    }
+    args.push(cur.trim());
+    args.forEach((a, i) => {
+      const m = /^'([a-z_]+)'$/.exec(a);
+      if (i % 2 === 0 && m) keys.add(m[1]);
+    });
+  }
+  return keys;
+}
+
+describe('[F16 6.2 I] held drafts: the contract equals 20261016000000', () => {
+  const table = /create table public\.held_drafts \(([^]*?)\n\);/.exec(all);
+  const gone = /create table public\.held_drafts_gone \(([^]*?)\n\);/.exec(all);
+
+  it('a pulled held row carries every held_drafts column except author_id, sync_xid and text_xid, plus v', () => {
+    expect(table, 'held_drafts table not found').not.toBeNull();
+    const cols = [...table![1].matchAll(/^\s{2}([a-z_]+)\s+(?:uuid|text|timestamptz|date|boolean|jsonb|int|xid8)\b/gm)].map((m) => m[1]);
+    expect(cols.length).toBeGreaterThan(15);
+    const sent = [...cols.filter((c) => !['author_id', 'sync_xid', 'text_xid'].includes(c)), 'v'].sort();
+    expect(Object.keys(PulledHeldSchema.entries).sort()).toEqual(sent);
+  });
+
+  it('the gone markers equal the held_drafts_gone check', () => {
+    expect(gone, 'held_drafts_gone table not found').not.toBeNull();
+    const m = /gone in \(([^)]+)\)/.exec(gone![1]);
+    expect([...m![1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort()).toEqual([...HELD_GONE_KINDS].sort());
+  });
+
+  it('held.upsert reads exactly the HeldDraftData keys', () => {
+    const body = newestDefinition('held_upsert', 'sync_private');
+    const read = new Set([...body.matchAll(/\bd\s*(?:->>|->|\?)\s*'([a-z_]+)'/g)].map((m) => m[1]));
+    expect(read.size).toBeGreaterThan(10);
+    for (const k of read) expect(HELD_DRAFT_DATA_KEYS as readonly string[], `held_upsert reads ${k}, HeldDraftData lacks it`).toContain(k);
+    // `id` is checked against the op id; every other key is read.
+    for (const k of HELD_DRAFT_DATA_KEYS) expect(read.has(k), `HeldDraftData has ${k}, held_upsert never reads it`).toBe(true);
+  });
+});
+
+describe('[F16-REQ-028] every key sync_push answers with is in the push result contract (nothing is stripped silently)', () => {
+  const bodies = [
+    newestDefinition('sync_push'),
+    ...['held_state', 'held_upsert', 'held_discard', 'held_dup', 'erase_entry', 'erase_held', 'keep_check', 'dup_outcome'].map((f) => newestDefinition(f, 'sync_private')),
+  ];
+  /** An object schema's keys, through optional and nullable wrappers. */
+  const keysOf = (schema: unknown): string[] => {
+    let s = schema as { entries?: Record<string, unknown>; wrapped?: unknown } | undefined;
+    while (s && !s.entries && s.wrapped) s = s.wrapped as typeof s;
+    return s?.entries ? Object.keys(s.entries) : [];
+  };
+  const objects = [PushResponseSchema, PushResultOkSchema, PushResultErrSchema, EntryStateSchema, ConflictCurrentSchema];
+  // Plus the small objects on an op result: held { id, v, updated_at }, book { id }, prefs { child_id }.
+  const nested = ['held', 'book', 'prefs'].map((k) => (PushResultOkSchema.entries as Record<string, unknown>)[k]);
+  const known = new Set([...objects, ...nested].flatMap(keysOf));
+
+  it('finds the push answer builders', () => {
+    for (const b of bodies) expect(b.length).toBeGreaterThan(100);
+  });
+
+  it('each built key is known to the contract, and the v1 answer keys sit on an op result', () => {
+    const keys = new Set(bodies.flatMap((b) => [...builtKeys(b)]));
+    expect(keys.size).toBeGreaterThan(15);
+    for (const k of keys) expect(known.has(k), `sync_push answers with ${k}, which the contract would drop`).toBe(true);
+    for (const k of ['conflict_groups', 'current', 'applied_v', 'held', 'held_off', 'kept', 'erased', 'deferred', 'missing']) {
+      expect(keys.has(k), `${k} is no longer built by the SQL`).toBe(true);
+      expect(Object.keys(PushResultOkSchema.entries)).toContain(k);
+    }
   });
 });
 
