@@ -131,11 +131,25 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     expect(text('r01-d9-model-noun-plural')).toBe('We saw the dogs with Asha.');
   });
 
+  // Both files are frozen, so this holds whatever ENGINE_VERSION is now (it ran only at 6 before engine 7).
   it('[F06-REQ-019] engine 6 changed no engine 5 case: every case recorded for 5 reads the same in 6', () => {
     const v5 = join(DIR, 'engine-v5.json');
-    if (ENGINE_VERSION !== 6 || !existsSync(v5)) return;
+    const v6 = join(DIR, 'engine-v6.json');
+    if (ENGINE_VERSION < 6 || !existsSync(v5)) return;
     const five = JSON.parse(readFileSync(v5, 'utf8')) as GoldenFile;
-    const six = JSON.parse(readFileSync(FILE, 'utf8')) as GoldenFile;
+    const six = JSON.parse(readFileSync(v6, 'utf8')) as GoldenFile;
     for (const id of Object.keys(five.cases)) expect(six.cases[id], id).toEqual(five.cases[id]);
+  });
+
+  it('[F06-REQ-019] engine 7 changed no engine 6 case; its two new cases keep the mark the speaker said', () => {
+    if (ENGINE_VERSION < 7) return;
+    const six = JSON.parse(readFileSync(join(DIR, 'engine-v6.json'), 'utf8')) as GoldenFile;
+    const seven = JSON.parse(readFileSync(join(DIR, 'engine-v7.json'), 'utf8')) as GoldenFile;
+    for (const id of Object.keys(six.cases)) expect(seven.cases[id], id).toEqual(six.cases[id]);
+    expect(seven.cases['e7-model-period-after-question'].text).toBe('Asha slept. Was there more?');
+    expect(seven.cases['e7-model-period-after-danda'].text).toBe('आशा आज बहुत हँसी।');
+    for (const id of ['e7-model-period-after-question', 'e7-model-period-after-danda']) {
+      expect(seven.cases[id].rejected, id).toEqual(['punctuation:changes_sentence_type']);
+    }
   });
 });
