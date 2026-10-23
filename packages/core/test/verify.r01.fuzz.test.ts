@@ -154,7 +154,7 @@ function makeLangs(): Lang[] {
   const L: Lang[] = [];
   const en = (id: string, level: EditLevel): Lang => ({
     id, code: 'en', pack: null, level, rules: ENGLISH_RULES, corpus: EN_CORPUS, dict: () => [], negations: enNeg,
-    fillers: new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']),
+    fillers: new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm']), // "mm" is offered, never removed (D-112)
     hyphenated: ['uh-uh', 'mm-hmm', 'uh-oh', 'so-so', 'bye-bye', 'mm-mm'],
     pool: ['not', "n't", 'never', 'no', 'was', 'were', 'could', 'would', 'Asha', 'Usha', 'Hope', 'Will', 'May', 'two', 'ten', 'happy', 'the', 'and', "we're"],
     cased: true, char: false,
@@ -393,7 +393,8 @@ function brokenFinal(editedRaw: string, final: string, lang: Lang): string | nul
 
 /* ---------- the generator ---------- */
 
-const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF'];
+// U+00AD (soft hyphen) joined on review (#179 N3, 23 Oct): the house rule used to drop it with no stored edit.
+const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF', '\u00AD'];
 const QUOTES: Array<[string, string]> = [['“', '”'], ['‘', '’'], ['„', '“'], ['«', '»'], ['「', '」'], ['"', '"']];
 const MOODS = ['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!'];
 const MARKS = ['́', '̀', '̂', '̈', 'ा', 'ि', 'े', '्', 'ं', 'َ', 'ُ', 'ِ'];

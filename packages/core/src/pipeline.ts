@@ -67,6 +67,19 @@ export const ENGINE_VERSION = 6;
 //     hours" is no longer "2, 3 hours" (found 15 Oct; R-01 D14 remains open
 //     for the untracked character changes themselves, WP-F06-05).
 //   - The English-only punctuation provider adds no "." after 。 ？ ！ ؟ (3 Oct).
+//   - Also in 6, listed on review (23 Oct): the house rule's tidy steps keep
+//     a match that would join, split or change a number (text.ts
+//     replaceKeepingNumbers); a name fix may not change ? or ! (checkSttFix);
+//     a filler the rules keep holds its sentence open for the capitals check
+//     (lang/engine.ts startsSentence); no punctuation or whitespace edit
+//     splits a hyphenated word (verify.ts splitsHyphenated).
+//   Amended 2026-10-23, before any letter is saved under 6 (D-112 and the
+//   #179 review): "mm" is offered in Review, never removed (fillers.suggest;
+//   F06-REQ-010 amendment pending); commonWords drops mason, carter, cooper,
+//   hunter and rowan; the house rule keeps a soft hyphen (U+00AD) as it
+//   keeps U+FEFF; the name-signal test in checkSttFix skips a kept filler
+//   pair too (startsSentenceSkippingFillers), so the claim above holds: the
+//   review's differential found that one shape and no other.
 //   Golden corpus: every engine 5 case is unchanged; R-01 cases added and
 //   recorded in golden/engine-v6.json. Every engine-5 letter saved in a
 //   development build keeps its text (no saved letter is ever re-cleaned);

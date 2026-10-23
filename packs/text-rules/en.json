@@ -83,10 +83,11 @@
       "erm",
       "er",
       "hmm",
-      "hmmm",
-      "mm"
+      "hmmm"
     ],
-    "suggest": []
+    "suggest": [
+      "mm"
+    ]
   },
   "meaning": {
     "review": {
@@ -447,7 +448,6 @@
       "reed",
       "sage",
       "willow",
-      "rowan",
       "lily",
       "daisy",
       "poppy",
@@ -475,10 +475,6 @@
       "frank",
       "drew",
       "chase",
-      "hunter",
-      "carter",
-      "mason",
-      "cooper",
       "page",
       "grant",
       "ray",

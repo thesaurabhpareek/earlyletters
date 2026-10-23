@@ -175,7 +175,9 @@ export function normalizeChars(input: string): string {
   s = s.replace(/[“”″]/g, '"');
   s = s.replace(/…/g, '...');
   s = s.replace(/[  ]/g, ' ');
-  s = s.replace(/­/g, '');
+  // A soft hyphen (U+00AD) stays, like U+FEFF: this pass drops no invisible
+  // character (R-01 D4; the #179 review's N3, 23 Oct 2026, once the property
+  // test put U+00AD into its letters). Dropping it was an engine 5 rule.
   // Tidy artifacts the substitutions can leave behind.
   // None of them may join, split or change a number ("2 ,3" stays, never "2,3").
   s = replaceKeepingNumbers(s, /,[^\S\uFEFF]*,/g, ',');

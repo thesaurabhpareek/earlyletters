@@ -13,6 +13,7 @@ import {
   DANGLING,
   DISCOURSE_AFTER_YOU,
   FILLERS,
+  FILLERS_OFFERED,
   FUNCTION_WORDS,
   KINSHIP,
   MODALS,
@@ -66,7 +67,7 @@ export const ENGLISH_PACK: TextRulesPack = {
     spaceBefore: [],
     spaceInsideGuillemets: false,
   },
-  fillers: { review: SHIPPED, auto: list(FILLERS), suggest: [] },
+  fillers: { review: SHIPPED, auto: list(FILLERS), suggest: list(FILLERS_OFFERED) },
   meaning: {
     review: SHIPPED,
     negations: list(NEGATIONS),

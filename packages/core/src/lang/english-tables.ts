@@ -36,7 +36,14 @@ export const FUNCTION_WORDS = frozenSet([
  * Removed only as standalone disfluencies. "like" and "you know" are
  * excluded on purpose: they are often meaningful, and part of how people talk.
  */
-export const FILLERS = frozenSet(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']);
+export const FILLERS = frozenSet(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm']);
+
+/**
+ * Offered in Review, never removed by the engine: "mm" is often a spoken yes
+ * ("Did she sleep? Mm. She did."), and a removed answer is lost meaning
+ * (D-112, 23 Oct 2026; F06-REQ-010's "equals today's FILLERS" line follows).
+ */
+export const FILLERS_OFFERED = frozenSet(['mm']);
 
 /** Words that negate on their own. Hindi/Hinglish forms included; "na" is excluded (also a tag particle). */
 export const NEGATIONS: ReadonlySet<string> = frozenSet([
@@ -94,12 +101,14 @@ export const COMMON_WORDS: ReadonlySet<string> = frozenSet([
   'haven', 'heaven', 'honor', 'honour', 'true', 'noble', 'royal', 'king', 'prince', 'princess', 'duke', 'earl', 'major',
   // months, seasons, weather, nature
   'april', 'august', 'summer', 'autumn', 'winter', 'dawn', 'eve', 'sky', 'star', 'rain', 'storm', 'sunny', 'river',
-  'brook', 'lake', 'ocean', 'forest', 'stone', 'clay', 'glen', 'dale', 'cliff', 'reed', 'sage', 'willow', 'rowan',
+  'brook', 'lake', 'ocean', 'forest', 'stone', 'clay', 'glen', 'dale', 'cliff', 'reed', 'sage', 'willow',
   // flowers, gems, colours
   'lily', 'daisy', 'poppy', 'holly', 'ivy', 'hazel', 'olive', 'violet', 'iris', 'heather', 'ruby', 'pearl', 'amber',
   'jade', 'coral', 'crystal', 'blue', 'gray', 'grey', 'ginger',
   // names that are everyday words
-  'bill', 'mark', 'pat', 'rob', 'frank', 'drew', 'chase', 'hunter', 'carter', 'mason', 'cooper', 'page', 'grant',
+  // Not listed (D-112, 23 Oct 2026): mason, carter, cooper, hunter, rowan are rarely meant as the everyday word,
+  // so a child with one of these names keeps the recogniser's capital.
+  'bill', 'mark', 'pat', 'rob', 'frank', 'drew', 'chase', 'page', 'grant',
   'ray', 'rich', 'miles', 'jack', 'max', 'penny', 'sandy', 'rusty', 'misty', 'carol', 'ace', 'cash',
   // family nicknames that are everyday words
   'honey', 'angel', 'bear', 'cub', 'bean', 'peanut', 'pumpkin', 'button', 'bug', 'buddy', 'bunny', 'monkey', 'chick',

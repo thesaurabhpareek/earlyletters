@@ -128,7 +128,7 @@ export function normalizeCharsWith(input: string, house: HousePolicy): string {
   }
   if (house.ellipsis === 'dots') s = s.replace(/…/g, '...');
   if (house.spaces === 'plain') s = s.replace(/[  ]/g, ' ');
-  s = s.replace(/­/g, '');
+  // A soft hyphen (U+00AD) stays, like U+FEFF: no house policy drops an invisible character (R-01 D4; #179 review N3, 23 Oct 2026).
   if (house.dashes === 'replace') {
     // None of the tidy steps may join, split or change a number (engine 6).
     s = replaceKeepingNumbers(s, new RegExp(`${c}[^\\S\\uFEFF]*${c}`, 'g'), comma.trim() || ',');

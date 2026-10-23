@@ -170,6 +170,27 @@ export function startsSentence(prefix: string, level: EditLevel, rules: Language
   return rules.startsSentence(prefix, level);
 }
 
+/**
+ * The name-signal test of checkSttFix: a capital counts as a name signal only
+ * when it is not positional. Engine 5 skipped every trailing filler here. Engine
+ * 6 keeps "uh uh" as a word (R-01 D6), which on its own would make a capital
+ * after it read as a signal and accept a fix engine 5 refused ("uh uh Asho came"
+ * to Asha; found by the #179 review's differential, 23 Oct 2026). The recogniser
+ * capitalises after a kept pair just as after a removed filler, so this test
+ * keeps skipping: engine 6 accepts no edit that engine 5 refused.
+ */
+function startsSentenceSkippingFillers(prefix: string, level: EditLevel, R: LanguageRules): boolean {
+  let p = prefix;
+  for (;;) {
+    if (R.startsSentence(p, level)) return true;
+    if (level !== 'clean') return false;
+    const toks = R.tokens(p);
+    const last = toks[toks.length - 1];
+    if (!last || !R.isFiller(last.word) || !/^[\s,]*$/.test(p.slice(last.end))) return false;
+    p = p.slice(0, last.start);
+  }
+}
+
 interface CaseChange {
   /** Offset in e.replacement of the letter whose case changed. */
   at: number;
@@ -350,7 +371,7 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (/[?!"“”]/.test(e.original) || R.moodMarks(e.original) || R.quoteMarkCount(e.original) > 0) return 'changes_sentence_type';
   const lead = e.original.length - e.original.trimStart().length;
   if (!ws.every((t) => /^\p{Lu}/u.test(t.word))) return 'stt_fix_not_heard_as';
-  if (R.startsSentence(ctx.raw.slice(0, e.start + lead), ctx.level)) return 'stt_fix_not_heard_as';
+  if (startsSentenceSkippingFillers(ctx.raw.slice(0, e.start + lead), ctx.level, R)) return 'stt_fix_not_heard_as';
   return R.soundsLike(original, entry.term) ? null : 'stt_fix_not_heard_as';
 }
 

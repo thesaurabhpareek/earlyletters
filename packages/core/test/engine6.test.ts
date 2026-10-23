@@ -16,6 +16,7 @@ import {
   ENGINE_VERSION,
   ENGLISH_PACK,
   ENGLISH_RULES,
+  faithfulClean,
   hyphenCompounds,
   hyphenJoined,
   LANG_ENGINE_VERSION,
@@ -86,6 +87,50 @@ describe('[F06-REQ-008] meaning.commonWords: a protective pack table (LANG_ENGIN
     p.meaning.commonWords = ['luz'];
     expect(p.meaning.review.status).toBe('draft');
     expect(compileRules('es', p).isCommonWord('luz')).toBe(true);
+  });
+});
+
+describe('[F06-REQ-010] "mm" is offered in Review, never removed by the engine (D-112, 23 Oct 2026)', () => {
+  it('the English pack lists "mm" under suggest, not auto', () => {
+    expect(ENGLISH_PACK.fillers.auto).not.toContain('mm');
+    expect(ENGLISH_PACK.fillers.suggest).toEqual(['mm']);
+  });
+
+  it('"Did she sleep? Mm. She did." keeps its answer; the rules offer it; a model may not take it', () => {
+    const raw = 'Did she sleep? Mm. She did.';
+    const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' });
+    expect(r.text).toBe(raw);
+    expect(r.applied).toEqual([]);
+    expect(r.suggestions.filter((s) => s.type === 'filler').map((s) => s.original.trim())).toEqual(['Mm.']);
+    expect(verdict(raw, edit(raw, 'filler', 'Mm. ', ''))).toBe('not_a_filler');
+  });
+});
+
+describe('[F06-REQ-008] commonWords after D-112: names rarely meant as the everyday word are not in the seed', () => {
+  it('mason, carter, cooper, hunter and rowan are out; hope, will and may stay', () => {
+    const words = ENGLISH_PACK.meaning.commonWords ?? [];
+    for (const w of ['mason', 'carter', 'cooper', 'hunter', 'rowan']) expect(words, w).not.toContain(w);
+    for (const w of ['hope', 'will', 'joy']) expect(words, w).toContain(w); // "may" is guarded as a modal, not here
+    expect(words).toHaveLength(135);
+  });
+});
+
+describe('[F06-REQ-014] a kept filler pair leaves a capital positional for the name-signal test (#179 review N1)', () => {
+  const dict: DictionaryTerm[] = [{ term: 'Asha', kind: 'child', heardAs: [] }];
+
+  it('"uh uh Asho came over today.": Asho to Asha is refused, as engine 5 refused it', () => {
+    const raw = 'uh uh Asho came over today.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Asho', 'Asha'), dict)).toBe('stt_fix_not_heard_as');
+  });
+
+  it('after a removed filler the capital is positional too: "um Asho came over today."', () => {
+    const raw = 'um Asho came over today.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Asho', 'Asha'), dict)).toBe('stt_fix_not_heard_as');
+  });
+
+  it('mid-sentence the capital is a signal: "Then Asho came over today." is accepted', () => {
+    const raw = 'Then Asho came over today.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Asho', 'Asha'), dict)).toBeNull();
   });
 });
 
@@ -161,6 +206,11 @@ describe('[F06-REQ-016] the house character rule never changes a number or drops
     expect(normalizeChars('She slept 2 ,3 hours.')).toBe('She slept 2 ,3 hours.');
     expect(normalizeChars('Asha nodded\uFEFF, and smiled')).toBe('Asha nodded\uFEFF, and smiled');
     expect(normalizeChars('I love you — always.')).toBe('I love you, always.'); // unchanged house rule
+  });
+
+  it('normalizeChars keeps a soft hyphen (U+00AD) as it keeps U+FEFF: the house rule drops no invisible character (#179 review N3)', () => {
+    expect(normalizeChars('Asha­s duck, 2 to 3 hours.')).toBe('Asha­s duck, 2 to 3 hours.');
+    expect(normalizeChars('up­—down')).toBe('up­, down');
   });
 
   it('quotedSpans: U+FEFF before a closing quote does not open the quote to edits (property test finding)', () => {
