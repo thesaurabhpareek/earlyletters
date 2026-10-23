@@ -44,8 +44,16 @@ export const REQUIRED_ENV = ['MAIN_SUPABASE_URL', 'ESCROW_DB_URL', 'RESEND_API_K
 
 export type EnvGetter = (name: string) => string | undefined;
 
-/** The escrow project's own off switch (F08 6.5 C9): anything but "on" pauses the function. */
-export const switchOn = (get: EnvGetter): boolean => (get(SWITCH_ENV) ?? '').trim() === 'on';
+/**
+ * The escrow project's own switch (F08 6.5 C9). `on`: every route. `rotation`: only
+ * POST /escrow/v1/rotate, so a key rotation can run while restores stay paused (runbook R2 and
+ * section 6). Anything else, or nothing: every route is paused.
+ */
+export type SwitchMode = 'on' | 'rotation' | 'off';
+export function switchMode(get: EnvGetter): SwitchMode {
+  const s = (get(SWITCH_ENV) ?? '').trim();
+  return s === 'on' ? 'on' : s === 'rotation' ? 'rotation' : 'off';
+}
 
 /** Standard or URL-safe base64 of exactly 32 bytes (keygen.ts prints the standard form). */
 const KEY_TEXT = /^[A-Za-z0-9+/_-]{43}=?$/;

@@ -8,9 +8,10 @@
  *   POST /escrow/v1/rotate                         one rotation batch, only while a rotation is configured (rotate.ts)
  * Routes, bodies and answers follow S07's recovery-key contract v1 (contract.ts).
  *
- * Off when ESCROW_SWITCH is not "on" (this project's switch), when app.escrow_enabled is not on
- * in the main database (SCBKO), or when the app's build flag or remote kill switch keeps the app
- * from calling at all (F08 6.5 C9).
+ * Off when ESCROW_SWITCH is neither "on" nor "rotation" (this project's switch; "rotation" serves
+ * only /rotate, so restores stay paused during a rotation), when app.escrow_enabled is not on in
+ * the main database (SCBKO), or when the app's build flag or remote kill switch keeps the app from
+ * calling at all (F08 6.5 C9).
  *
  * Request ids: unlike ADR 0017 point 6, this function never takes the caller's x-request-id. It
  * makes its own for every call and returns it in the header and the envelope, so nothing a client
@@ -23,7 +24,7 @@
  * and every decoded byte is zeroed when the call ends.
  */
 import { sameString, UUID } from './bytes.ts';
-import { type EscrowConfig, readConfig, readKeys, switchOn, type EnvGetter } from './config.ts';
+import { type EscrowConfig, readConfig, readKeys, switchMode, type EnvGetter } from './config.ts';
 import { ESCROW_ERROR_DETAILS, type Envelope, type EscrowErrorCode, type EscrowErrorDetail } from './contract.ts';
 import { escrowDb, type EscrowDb } from './db.ts';
 import { type FetchFn, JwksCache, JwtError, verifyAccessToken } from './jwt.ts';
@@ -79,13 +80,15 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
 
     log.info('request.start');
     if (req.method !== 'POST') return fail(405, 'bad_request');
-    if (!switchOn(env)) return fail(503, 'paused', true, undefined, 'escrow');
+    const mode = switchMode(env);
+    if (mode === 'off') return fail(503, 'paused', true, undefined, 'escrow');
     const path = new URL(req.url).pathname.replace(/\/+$/, '');
     const releaseMatch = /\/escrow\/v1\/restore-requests\/([0-9a-f-]{36})\/release$/.exec(path);
     const route = path.endsWith('/escrow/v1/restore-requests') ? 'create'
       : releaseMatch && UUID.test(releaseMatch[1]) ? 'release'
       : path.endsWith('/escrow/v1/rotate') ? 'rotate' : null;
     if (!route) return fail(404, 'not_found');
+    if (mode === 'rotation' && route !== 'rotate') return fail(503, 'paused', true, undefined, 'escrow');
 
     const raw = await req.text().catch(() => '');
     if (raw.length > MAX_BODY) return fail(413, 'payload_too_large');

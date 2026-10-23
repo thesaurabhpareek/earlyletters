@@ -174,6 +174,26 @@ Deno.test('[review B S1] a configured key version with no pinned public key refu
   assert.equal(s.db.calls.length, before, 'the database is never reached');
 });
 
+Deno.test('[review B S3] ESCROW_SWITCH=rotation serves only /rotate; restores stay paused', async () => {
+  const v2 = await generateKeyPair();
+  const secret = 'task-secret-fixture-0123456789abcdef';
+  const escrow = await generateKeyPair();
+  const s = await setup({ ESCROW_SWITCH: 'rotation', ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk), ESCROW_TASK_SECRET: secret, ESCROW_ROTATE_FROM: '1',
+    ESCROW_ROTATE_TO: '2', ESCROW_PRIVATE_KEY_V2: encodeBase64(v2.sk) }, { pinned: { 1: encodeBase64(escrow.pk), 2: encodeBase64(v2.pk) } });
+  await phone(s.db, escrow.pk);
+  const create = await s.call({ device_id: ASHA.newPhone });
+  assert.equal(create.status, 503);
+  assert.deepEqual(create.json.error, { code: 'paused', retryable: true, detail: 'escrow' });
+  assert.equal((await s.call({ device_id: ASHA.newPhone }, { path: `/escrow/v1/restore-requests/${ASHA.newPhone}/release` })).status, 503);
+  const r = await s.call({}, { path: '/escrow/v1/rotate', token: secret });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.data.rewrapped, 1);
+  for (const off of ['off', 'ON', 'rotate', 'yes', '']) {
+    const t = await setup({ ESCROW_SWITCH: off });
+    assert.equal((await t.call({ device_id: ASHA.newPhone })).status, 503, `switch "${off}" is off`);
+  }
+});
+
 Deno.test('[F08-REQ-029] over a limit: 429 rate_limited, and the founder gets one content-free alert', async () => {
   const s = await setup();
   const p = await phone(s.db, s.escrow.pk);
