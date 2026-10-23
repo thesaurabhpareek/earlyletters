@@ -84,7 +84,7 @@ import {
 } from './lib';
 import { checkKeyFile } from './key-file';
 import { buildRelease, serveRelease, RELEASE_INDEX_FILE } from './release';
-import { checkHosted, readReleaseIndex, s3ConfigFromEnv, S3_ENV, uploadRelease } from './s3';
+import { checkHosted, planUpload, readReleaseIndex, s3ConfigFromEnv, S3_ENV, uploadRelease } from './s3';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CONFIG_MODULE = join(ROOT, 'supabase/functions/config/published.ts');
@@ -177,13 +177,24 @@ async function main(): Promise<void> {
   if (what === 'upload') {
     const dir = resolve(arg('from') ?? RELEASE_OUT);
     if (!existsSync(join(dir, RELEASE_INDEX_FILE))) fail(`${dir} has no ${RELEASE_INDEX_FILE}: run \`publish.ts release\` first.`);
-    const index = readReleaseIndex(dir);
+    let index;
+    try {
+      index = readReleaseIndex(dir);
+    } catch (e) {
+      return fail(`${(e as Error).message}. Nothing was sent.`);
+    }
     const allowed = languages();
     const manifestPath = join(dir, RELEASE_DOCUMENTS['pack-manifest'].path);
     if (!existsSync(manifestPath)) fail(`${manifestPath} is missing: rebuild the release.`);
     const extra = languagesNotAllowed(readFileSync(manifestPath, 'utf8'), allowed);
     if (extra.length) fail(`This release offers ${extra.join(', ')}, which --languages does not name (${allowed.join(',')}). Nothing was sent. To upload it on purpose: --languages ${[...allowed, ...extra].join(',')}`);
     out(`Languages: ${allowed.join(', ')}`);
+    // Bound to the signed manifest before any credential is read (s3.ts planUpload): documents verified against keys.ts, packs as the manifest lists them.
+    try {
+      planUpload(dir, index, TRUSTED_SIGNING_KEYS);
+    } catch (e) {
+      return fail((e as Error).message);
+    }
     let cfg;
     try {
       cfg = s3ConfigFromEnv(process.env);
@@ -191,7 +202,7 @@ async function main(): Promise<void> {
       return fail(`${(e as Error).message}\nSet ${Object.values(S3_ENV).join(', ')} (docs/ops/PACKS_HOSTING.md, "Upload").`);
     }
     out(`Uploading ${dir} (manifest v${index.manifestVersion}, ${index.files.length} files) to ${cfg.endpoint}/${cfg.bucket}${flag('dry-run') ? ' [dry run]' : ''}`);
-    const s = await uploadRelease(dir, index, cfg, { dryRun: flag('dry-run'), log: out });
+    const s = await uploadRelease(dir, index, cfg, { trusted: TRUSTED_SIGNING_KEYS, dryRun: flag('dry-run'), log: out });
     out(
       flag('dry-run')
         ? `\nDry run: nothing was sent. ${s.uploaded.length} files (${humanBytes(s.bytesSent)}) would be checked against the bucket and put if missing.`

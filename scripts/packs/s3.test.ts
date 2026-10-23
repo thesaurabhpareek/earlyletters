@@ -19,7 +19,7 @@ import { PROMPTS } from '../../packages/content/src/prompts';
 import { onboardingStories } from '../../packages/content/src/stories.en';
 import { readSigningKey, uploadOrder, type ReleaseIndex } from './lib';
 import { buildRelease, serveRelease } from './release';
-import { canonicalUri, checkHosted, decideUpload, documentIdentity, EMPTY_SHA256, s3ConfigFromEnv, signV4, uploadRelease, type S3Config } from './s3';
+import { canonicalUri, checkHosted, decideUpload, documentIdentity, EMPTY_SHA256, planUpload, readReleaseIndex, s3ConfigFromEnv, signV4, uploadRelease, type S3Config } from './s3';
 
 const REPO = path.resolve(__dirname, '../..');
 const BASE = 'https://packs.test';
@@ -139,14 +139,14 @@ describe('upload to an S3-compatible bucket', () => {
 
   it('a dry run sends nothing', async () => {
     const lines: string[] = [];
-    const s = await uploadRelease(out, index, cfg, { dryRun: true, log: (l) => lines.push(l) });
+    const s = await uploadRelease(out, index, cfg, { trusted, dryRun: true, log: (l) => lines.push(l) });
     expect(s3.requests).toEqual([]);
     expect(s.uploaded).toHaveLength(index.files.length);
     expect(lines.every((l) => l.startsWith('would put'))).toBe(true);
   });
 
   it('puts every file with its content type and cache headers, packs first and the manifest last, signed and hashed', async () => {
-    const s = await uploadRelease(out, index, cfg);
+    const s = await uploadRelease(out, index, cfg, { trusted });
     expect(s3.problems).toEqual([]);
     expect(s.uploaded).toEqual(uploadOrder(index).map((f) => f.path));
     expect(s.skipped).toEqual([]);
@@ -164,7 +164,7 @@ describe('upload to an S3-compatible bucket', () => {
 
   it('a second upload of the same release sends nothing: packs are there (HEAD, same size), documents identical (GET, same version and payload)', async () => {
     s3.requests.length = 0;
-    const s = await uploadRelease(out, index, cfg);
+    const s = await uploadRelease(out, index, cfg, { trusted });
     expect(s3.problems).toEqual([]);
     expect(s.uploaded).toEqual([]);
     expect(s.skipped).toHaveLength(index.files.length);
@@ -181,10 +181,10 @@ describe('upload to an S3-compatible bucket', () => {
     try {
       // Same version, different content: what an uncommitted published.ts followed by a rebuild produces.
       put({ ...live.payload, generatedAt: '2026-10-16T00:00:00.000Z' });
-      await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/already serves v5 with different content.*same_version_conflict.*Commit supabase\/functions/);
+      await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/already serves v5 with different content.*same_version_conflict.*Commit supabase\/functions/);
       // The host is ahead of this release.
       put({ ...live.payload, version: 9 });
-      await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/already serves v9, newer than.*rollback/);
+      await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/already serves v9, newer than.*rollback/);
       // Nothing was written: the other documents were unchanged and the manifest was refused before its PUT.
       expect(s3.requests.filter((r) => r.method === 'PUT')).toEqual([]);
     } finally {
@@ -201,30 +201,110 @@ describe('upload to an S3-compatible bucket', () => {
     expect(stored.headers['x-amz-meta-sha256']).toBe(es.sha256);
     // A different size.
     s3.objects.set(es.path, { ...stored, body: Buffer.concat([stored.body, Buffer.from(' ')]) });
-    await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/already on the host with different bytes \(\d+ bytes on the host, \d+ in this release\).*bump the pack version/);
+    await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/already on the host with different bytes \(\d+ bytes on the host, \d+ in this release\).*bump the pack version/);
     // The same size, different bytes: caught by the SHA-256 metadata.
     const flipped = Buffer.from(stored.body);
     flipped[5] ^= 1;
     s3.objects.set(es.path, { ...stored, body: flipped, headers: { ...stored.headers, 'x-amz-meta-sha256': sha256Hex(flipped) } });
-    await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/different bytes \(SHA-256 .* on the host\)/);
+    await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/different bytes \(SHA-256 .* on the host\)/);
     // Uploaded earlier by another tool (no metadata): the MD5 ETag decides, both ways.
     const { 'x-amz-meta-sha256': _meta, ...noMeta } = stored.headers;
     s3.objects.set(es.path, { body: flipped, headers: noMeta });
-    await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/different bytes \(MD5 .* on the host\)/);
+    await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/different bytes \(MD5 .* on the host\)/);
     s3.objects.set(es.path, { body: stored.body, headers: noMeta });
     const lines: string[] = [];
-    await uploadRelease(out, index, cfg, { log: (l) => lines.push(l) });
+    await uploadRelease(out, index, cfg, { trusted, log: (l) => lines.push(l) });
     expect(lines).toContain(`skip   ${es.path} (already on the host, same MD5 (ETag))`);
     s3.objects.set(es.path, stored);
     const file = path.join(out, es.path);
     const original = fs.readFileSync(file);
     fs.writeFileSync(file, Buffer.concat([original, Buffer.from('\n')]));
     try {
-      await expect(uploadRelease(out, index, cfg)).rejects.toThrow(/changed since release.json was written/);
+      await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/changed since release.json was written/);
     } finally {
       fs.writeFileSync(file, original);
     }
     expect(s3.requests.some((r) => r.method === 'DELETE')).toBe(false);
+  });
+
+  it('[G-18] an older release writes nothing at all, not even a pack: every document is checked against the host before the first PUT (review A of #162, N2)', async () => {
+    const manifestKey = 'functions/v1/config/v1/packs';
+    const stored = s3.objects.get(manifestKey)!;
+    const live = JSON.parse(stored.body.toString('utf8')) as { payload: { version: number } };
+    const pack = index.files.find((f) => f.kind === 'pack')!;
+    const packObject = s3.objects.get(pack.path)!;
+    s3.objects.delete(pack.path);
+    s3.objects.set(manifestKey, { ...stored, body: Buffer.from(JSON.stringify({ ...live, payload: { ...live.payload, version: 9 } })) });
+    s3.requests.length = 0;
+    try {
+      await expect(uploadRelease(out, index, cfg, { trusted })).rejects.toThrow(/already serves v9, newer than.*rollback.*Nothing was uploaded\./);
+      expect(s3.requests.filter((r) => r.method !== 'GET')).toEqual([]);
+      expect(s3.objects.has(pack.path)).toBe(false);
+    } finally {
+      s3.objects.set(manifestKey, stored);
+      s3.objects.set(pack.path, packObject);
+    }
+  });
+
+  describe('what is uploaded is bound to the signed manifest, not to the unsigned release.json (review A of #162, N1)', () => {
+    /** A copy of the release with release.json (and files) changed by `edit`. */
+    function tampered(label: string, edit: (dir: string, i: ReleaseIndex) => ReleaseIndex): { dir: string; index: ReleaseIndex } {
+      const dir = path.join(tmp(label), 'release');
+      fs.cpSync(out, dir, { recursive: true });
+      const i = edit(dir, structuredClone(index));
+      fs.writeFileSync(path.join(dir, 'release.json'), JSON.stringify(i));
+      return { dir, index: i };
+    }
+    const fileOf = (p: string, bytes: Buffer) => ({ path: p, kind: 'pack' as const, contentType: 'application/octet-stream', cacheControl: 'public, max-age=31536000, immutable', bytes: bytes.length, sha256: sha256Hex(bytes), origin: 'built' as const });
+    const refused = async (t: { dir: string; index: ReleaseIndex }, why: RegExp) => {
+      s3.requests.length = 0;
+      expect(() => planUpload(t.dir, t.index, trusted)).toThrow(why);
+      await expect(uploadRelease(t.dir, t.index, cfg, { trusted, dryRun: true })).rejects.toThrow(why);
+      await expect(uploadRelease(t.dir, t.index, cfg, { trusted })).rejects.toThrow(why);
+      expect(s3.requests).toEqual([]);
+    };
+
+    it('the real release passes: its three documents and every pack the manifest places on our host', () => {
+      expect(planUpload(out, index, trusted).map((f) => f.path).sort()).toEqual(index.files.map((f) => f.path).sort());
+    });
+
+    it('refuses a path that leaves the release folder, by .. or by a symlink, and readReleaseIndex refuses .. too', async () => {
+      const outside = Buffer.from('bytes from outside the release folder');
+      const up = tampered('dotdot', (dir, i) => {
+        fs.writeFileSync(path.join(dir, '..', 'outside.bin'), outside);
+        return { ...i, files: [...i.files, fileOf('../outside.bin', outside)] };
+      });
+      await refused(up, /refused path "..\/outside.bin"/);
+      expect(() => readReleaseIndex(up.dir)).toThrow(/bad path \.\.\/outside\.bin/);
+      const pack = index.files.find((f) => f.kind === 'pack')!;
+      const link = tampered('symlink', (dir, i) => {
+        const real = path.join(dir, '..', 'copy.bin');
+        fs.copyFileSync(path.join(dir, pack.path), real);
+        fs.rmSync(path.join(dir, pack.path));
+        fs.symlinkSync(real, path.join(dir, pack.path));
+        return i;
+      });
+      await refused(link, /resolves outside the release folder/);
+    });
+
+    it('refuses a file the signed manifest does not list, a listed one that is missing, a changed hash and a document that does not verify', async () => {
+      const extra = Buffer.from('{"not":"in the manifest"}');
+      await refused(
+        tampered('extra', (dir, i) => {
+          fs.mkdirSync(path.join(dir, 'text-rules.xx/1'), { recursive: true });
+          fs.writeFileSync(path.join(dir, 'text-rules.xx/1/xx.rules.json'), extra);
+          return { ...i, files: [...i.files, fileOf('text-rules.xx/1/xx.rules.json', extra)] };
+        }),
+        /lists text-rules.xx\/1\/xx.rules.json, which the signed manifest does not place on/,
+      );
+      const pack = index.files.find((f) => f.kind === 'pack')!;
+      await refused(tampered('missing', (_dir, i) => ({ ...i, files: i.files.filter((f) => f.path !== pack.path) })), /the signed manifest places .* but this release does not hold them/);
+      await refused(tampered('hash', (_dir, i) => ({ ...i, files: i.files.map((f) => (f.path === pack.path ? { ...f, sha256: '0'.repeat(64) } : f)) })), /disagree on its size or SHA-256/);
+      s3.requests.length = 0;
+      expect(() => planUpload(out, index, [])).toThrow(/does not verify against packages\/api\/src\/keys\.ts \(unknown_key\); nothing was sent/);
+      await expect(uploadRelease(out, index, cfg, { trusted: [] })).rejects.toThrow(/unknown_key/);
+      expect(s3.requests).toEqual([]);
+    });
   });
 
   describe('checkHosted (what a phone will see)', () => {

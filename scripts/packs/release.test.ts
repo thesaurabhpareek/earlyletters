@@ -467,9 +467,11 @@ describe('release directory', () => {
       expect(refused.stderr).toMatch(/This release offers ar, es, fr, hi, pt, zh, which --languages does not name \(en\)\. Nothing was sent\./);
       expect(refused.stdout).not.toMatch(/would put/);
       const named = run(['upload', '--from', out, '--dry-run', '--languages', 'en,ar,es,fr,hi,pt,zh'], { PACKS_S3_ENDPOINT: 'http://127.0.0.1:9', PACKS_S3_BUCKET: 'early-letters-packs', PACKS_S3_ACCESS_KEY_ID: 'id', PACKS_S3_SECRET_ACCESS_KEY: 'not-a-secret' });
-      expect(named.status).toBe(0);
+      // Past the language gate, the shipped (empty) keys.ts does not trust the test key, so even a dry run stops before credentials (review A N1).
+      expect(named.status).toBe(1);
       expect(named.stdout).toMatch(/Languages: en, hi, es, zh, fr, ar, pt/);
-      expect(named.stdout).toMatch(/Dry run: nothing was sent/);
+      expect(named.stderr).toMatch(/does not verify against packages\/api\/src\/keys\.ts \(unknown_key\); nothing was sent/);
+      expect(named.stdout).not.toMatch(/would put/);
       const unknown = run(['release', '--languages', 'en,xx']);
       expect(unknown.status).toBe(1);
       expect(unknown.stderr).toMatch(/unknown language code xx/);

@@ -17,10 +17,10 @@
  *    previous versions.
  */
 import { createHash, createHmac } from 'node:crypto';
-import { createReadStream, readFileSync, statSync } from 'node:fs';
+import { createReadStream, readFileSync, realpathSync, statSync } from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import {
   decideDocumentVersion,
   documentPayloadSha256,
@@ -29,10 +29,11 @@ import {
   parseRemoteConfig,
   verifySignedDocument,
   type DocumentKind,
+  type PackEntry,
   type TrustedKey,
   type VersionDecision,
 } from '../../packages/api/src/index';
-import { ignoredPaths, RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
+import { ignoredPaths, parseReleaseIndex, RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
 import { sha256File } from './release';
 
 // ---------------------------------------------------------------------------
@@ -205,6 +206,8 @@ export async function s3Request(cfg: S3Config, method: 'PUT' | 'HEAD' | 'GET', k
 // ---------------------------------------------------------------------------
 
 export interface UploadOptions {
+  /** The keys the app ships (packages/api keys.ts): the three documents must verify against them before anything is sent. */
+  trusted: readonly TrustedKey[];
   dryRun?: boolean;
   log?: (line: string) => void;
   transport?: Transport;
@@ -277,24 +280,112 @@ export function decideUpload(liveText: string | null, localText: string): Versio
 }
 
 /**
- * Uploads every file of a release index that is not already at its path:
- * packs first, documents after, the manifest last. Checks each file against
- * the hash in release.json before sending it. Never overwrites a pack, never
- * deletes anything.
+ * What an upload may send, bound to the signed manifest instead of the
+ * unsigned release.json (review A of #162 at 122d4d8, N1). The three documents
+ * must verify against `trusted`, and the only packs sent are the manifest's
+ * entries on the release's base URL, at the path of their signed URL, with the
+ * signed size and SHA-256. release.json only supplies headers: an entry the
+ * manifest does not list, a manifest entry the release does not hold, a path
+ * with `.` or `..` segments and a file that resolves outside the release
+ * folder are all refused. Reads local files only: no network, no credentials.
  */
-export async function uploadRelease(dir: string, index: ReleaseIndex, cfg: S3Config, o: UploadOptions = {}): Promise<UploadSummary> {
+export function planUpload(dir: string, index: ReleaseIndex, trusted: readonly TrustedKey[]): ReleaseFile[] {
+  const root = realpathSync(resolve(dir));
+  const local = (path: string): string => {
+    if (!path || path.startsWith('/') || path.includes('\\') || path.split('/').some((s) => s === '' || s === '.' || s === '..')) throw new Error(`release.json: refused path ${JSON.stringify(path)}`);
+    const full = resolve(root, path);
+    let real: string;
+    try {
+      real = realpathSync(full);
+    } catch {
+      throw new Error(`${path}: missing from ${dir}`);
+    }
+    if (!real.startsWith(root + sep)) throw new Error(`${path}: resolves outside the release folder; nothing was sent`);
+    return real;
+  };
+  const payloads: Partial<Record<DocumentKind, unknown>> = {};
+  for (const kind of ['pack-manifest', 'remote-config', 'content-bundle'] as const) {
+    const path = RELEASE_DOCUMENTS[kind].path;
+    const f = index.files.find((x) => x.path === path);
+    if (!f || f.kind !== 'document' || f.document !== kind) throw new Error(`release.json does not list the ${kind} at ${path}; rebuild the release`);
+    let raw: unknown;
+    try {
+      raw = JSON.parse(readFileSync(local(path), 'utf8'));
+    } catch (e) {
+      throw new Error(`${path}: ${(e as Error).message.startsWith(path) ? (e as Error).message : 'not JSON'}`);
+    }
+    const v = verifySignedDocument(raw, kind, trusted);
+    if (!v.ok) throw new Error(`${path}: this release's ${kind} does not verify against packages/api/src/keys.ts (${v.reason}); nothing was sent`);
+    payloads[kind] = v.doc.payload;
+  }
+  const manifest = parsePackManifest(payloads['pack-manifest']);
+  if (!manifest.ok) throw new Error('the signed pack manifest does not parse as the app parses it; nothing was sent');
+  const base = index.baseUrl.replace(/\/+$/, '');
+  const onOurHost = new Map<string, PackEntry>();
+  for (const p of manifest.value.packs) if (p.url.startsWith(`${base}/`)) onOurHost.set(p.url.slice(base.length + 1), p);
+  const plan: ReleaseFile[] = [];
+  const seen = new Set<string>();
+  for (const f of index.files) {
+    if (seen.has(f.path)) throw new Error(`release.json lists ${f.path} twice`);
+    seen.add(f.path);
+    local(f.path);
+    if (f.kind === 'document') {
+      if (!f.document || RELEASE_DOCUMENTS[f.document]?.path !== f.path) throw new Error(`release.json: ${f.path} is not where a signed document lives`);
+      plan.push(f);
+      continue;
+    }
+    const entry = onOurHost.get(f.path);
+    if (!entry) throw new Error(`release.json lists ${f.path}, which the signed manifest does not place on ${base}; nothing was sent`);
+    if (entry.bytes !== f.bytes || entry.sha256 !== f.sha256) throw new Error(`${f.path}: release.json and the signed manifest disagree on its size or SHA-256; nothing was sent`);
+    plan.push(f);
+  }
+  const missing = [...onOurHost.keys()].filter((k) => !seen.has(k));
+  if (missing.length) throw new Error(`the signed manifest places ${missing.join(', ')} on ${base}, but this release does not hold them; nothing was sent`);
+  return plan;
+}
+
+/**
+ * Uploads every file of a release that is not already at its path: packs
+ * first, documents after, the manifest last. Before any request, the files
+ * are bound to the signed manifest (`planUpload`) and checked against the
+ * hashes in release.json; before the first PUT, every document is checked
+ * against the live one (G-18), so a refused release writes nothing. Never
+ * overwrites a pack, never deletes anything.
+ */
+export async function uploadRelease(dir: string, index: ReleaseIndex, cfg: S3Config, o: UploadOptions): Promise<UploadSummary> {
   const log = o.log ?? (() => undefined);
   const summary: UploadSummary = { uploaded: [], skipped: [], bytesSent: 0 };
   const req = (method: 'PUT' | 'HEAD' | 'GET', key: string, opts: S3RequestOptions) => s3Request(cfg, method, key, { ...opts, transport: o.transport, now: o.now });
-  for (const f of uploadOrder(index)) {
+  const files = uploadOrder({ ...index, files: planUpload(dir, index, o.trusted) });
+  const sizes = new Map<string, number>();
+  for (const f of files) {
     const local = join(dir, f.path);
-    let size: number;
-    try {
-      size = statSync(local).size;
-    } catch {
-      throw new Error(`${f.path}: missing from ${dir}`);
-    }
+    const size = statSync(local).size;
     if (size !== f.bytes || (await sha256File(local)) !== f.sha256) throw new Error(`${f.path}: changed since release.json was written; rebuild the release`);
+    sizes.set(f.path, size);
+  }
+  // G-18 for all three documents before the first write (review A N2): phones refuse a different
+  // document under a version they already hold, and an older one always.
+  const decisions = new Map<string, VersionDecision>();
+  if (!o.dryRun) {
+    for (const f of files.filter((x) => x.kind === 'document')) {
+      const live = await req('GET', f.path, { payloadSha256: EMPTY_SHA256 });
+      if (live.status !== 200 && live.status !== 404) throw new Error(`${f.path}: GET ${explain(live)}`);
+      const liveText = live.status === 200 ? live.body.toString('utf8') : null;
+      const decision = decideUpload(liveText, readFileSync(join(dir, f.path), 'utf8'));
+      if (decision === 'rollback' || decision === 'same_version_conflict') {
+        const liveVersion = liveText === null ? null : (documentIdentity(liveText)?.version ?? '?');
+        throw new Error(
+          `${f.path}: the host already serves v${liveVersion}${decision === 'rollback' ? ', newer than' : ' with different content than'} this release's copy, so phones that have it would refuse this one (${decision}). ` +
+            'Commit supabase/functions/*/published.ts after every release, then build the release again so its versions are higher. Nothing was uploaded.',
+        );
+      }
+      decisions.set(f.path, decision);
+    }
+  }
+  for (const f of files) {
+    const local = join(dir, f.path);
+    const size = sizes.get(f.path) as number;
     if (f.kind === 'pack') {
       const head = o.dryRun ? null : await req('HEAD', f.path, { payloadSha256: EMPTY_SHA256 });
       if (head && head.status === 200) {
@@ -305,24 +396,10 @@ export async function uploadRelease(dir: string, index: ReleaseIndex, cfg: S3Con
         continue;
       }
       if (head && head.status !== 404) throw new Error(`${f.path}: HEAD ${explain(head)}`);
-    } else if (!o.dryRun) {
-      // G-18: phones refuse a different document under a version they already hold, and an older one always.
-      const live = await req('GET', f.path, { payloadSha256: EMPTY_SHA256 });
-      if (live.status !== 200 && live.status !== 404) throw new Error(`${f.path}: GET ${explain(live)}`);
-      const liveText = live.status === 200 ? live.body.toString('utf8') : null;
-      const decision = decideUpload(liveText, readFileSync(local, 'utf8'));
-      const liveVersion = liveText === null ? null : (documentIdentity(liveText)?.version ?? '?');
-      if (decision === 'unchanged') {
-        summary.skipped.push(f.path);
-        log(`skip   ${f.path} (the host already serves this exact v${liveVersion})`);
-        continue;
-      }
-      if (decision === 'rollback' || decision === 'same_version_conflict') {
-        throw new Error(
-          `${f.path}: the host already serves v${liveVersion}${decision === 'rollback' ? ', newer than' : ' with different content than'} this release's copy, so phones that have it would refuse this one (${decision}). ` +
-            'Commit supabase/functions/*/published.ts after every release, then build the release again so its versions are higher. Nothing from this file on was uploaded.',
-        );
-      }
+    } else if (decisions.get(f.path) === 'unchanged') {
+      summary.skipped.push(f.path);
+      log(`skip   ${f.path} (the host already serves this exact v${documentIdentity(readFileSync(local, 'utf8'))?.version ?? '?'})`);
+      continue;
     }
     log(`${o.dryRun ? 'would put' : 'put   '} ${f.path} (${f.bytes} bytes, ${f.contentType}; ${f.cacheControl})`);
     if (!o.dryRun) {
@@ -507,10 +584,7 @@ export async function checkHosted(
 
 /** The `release.json` next to the files, for the upload step. */
 export function readReleaseIndex(dir: string): ReleaseIndex {
-  const text = readFileSync(join(dir, 'release.json'), 'utf8');
-  const v = JSON.parse(text) as ReleaseIndex;
-  if (v?.schemaVersion !== 1) throw new Error(`${dir}/release.json is not a release index`);
-  return v;
+  return parseReleaseIndex(readFileSync(join(dir, 'release.json'), 'utf8'));
 }
 
 export type { ReleaseFile };
