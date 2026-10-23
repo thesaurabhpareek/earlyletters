@@ -21,7 +21,11 @@ const P7 = '97777777-7777-4777-8777-777777777777';
 const P8 = '98888888-8888-4888-8888-888888888888';
 const P9 = '99999999-9999-4999-8999-999999999999';
 const Q1 = 'a1111111-1111-4111-8111-111111111111';
-const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1];
+const Q2 = 'a2222222-2222-4222-8222-222222222222';
+const Q3 = 'a3333333-3333-4333-8333-333333333333';
+const Q4 = 'a4444444-4444-4444-8444-444444444444';
+const Q5 = 'a5555555-5555-4555-8555-555555555555';
+const everyone = [A, B, C, N, S, P1, P2, P3, P4, P5, P6, P7, P8, P9, Q1, Q2, Q3, Q4, Q5];
 const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
   ct: Buffer.from(b.repeat(48), 'hex').toString('base64') });
@@ -302,5 +306,43 @@ check('[ops_deletion_sla] released, all three are', await overdue() === before6 
 res = await purgeDue(31);
 check('released: the next run purges all three, as any book', res.books === 3 && !(await book(Z1)) && !(await book(Z2)) && !(await book(Z3))
   && await n(`storage_purge_queue where object_path = any($1::text[]) and is_prefix`, [[`${Z1}/`, `${Z2}/`, `${Z3}/`]]) === 3);
+
+// ── 7. A held draft is the only held row (review A N4 on #251) ──
+// purge_due step 1: a book whose only held row is the sole parent's held draft ('entry' hold on its id).
+const Z4 = await newChild(Q2, 'Asha', '2025-12-01');
+const z4Held = await heldDraft(Q2, Z4, 'You waved at the moon.');
+await one(Q2, `select public.request_book_deletion($1, 'ios') r`, [Z4]);
+await hold('entry', z4Held, 'T-Z4');
+res = await purgeDue(31);
+check('[DATA-REQ-035] day 30 skips a book whose only held row is a held draft, and the draft stays', res.books === 0 && !!(await book(Z4))
+  && await n(`held_drafts where id = $1`, [z4Held]) === 1);
+await release(z4Held);
+res = await purgeDue(31);
+check('released: the next run purges it with the draft', res.books === 1 && !(await book(Z4)) && await n(`held_drafts where id = $1`, [z4Held]) === 0);
+// The account purge: the same in the sole parent's book deleted with their account (no letter anywhere).
+const Z5 = await newChild(Q3, 'Asha', '2025-12-02');
+const z5Held = await heldDraft(Q3, Z5, 'You laughed at the dog.');
+await hold('entry', z5Held, 'T-Z5');
+const r8 = await requestFor(Q3);
+res = await purgeDue(31);
+check('[DATA-REQ-035] day 30 skips the account\'s book whose only held row is a held draft', res.books === 0 && !!(await book(Z5))
+  && await status(r8) === 'executing');
+check('[DATA-REQ-035] and prepare_account_purge holds the request: nothing changes, the draft stays', await heldPrepare(r8)
+  && await n(`held_drafts where id = $1`, [z5Held]) === 1);
+await release(z5Held);
+res = await purgeDue(31);
+check('released: the book goes on the next run and prepare runs normally', res.books === 1 && !(await book(Z5))
+  && (await prepare(r8)).held !== true);
+// The person's own held draft in a book that survives them (the check from review L N2).
+const Z6 = await newChild(Q4, 'Asha', '2025-12-03');
+await join(Q5, 'parent', Z6, Q4);
+const z6Held = await heldDraft(Q4, Z6, 'You hummed in the bath.');
+await hold('entry', z6Held, 'T-Z6');
+const r9 = await requestFor(Q4);
+await executing(r9);
+check('[DATA-REQ-035] a co-parent\'s own held draft under a hold holds their account purge', await heldPrepare(r9));
+await release(z6Held);
+await executing(r9);
+check('released, prepare runs normally and the book stays with the other parent', (await prepare(r9)).held !== true && (await book(Z6))?.tombstoned === false);
 
 done();
