@@ -66,7 +66,18 @@ import {
   type ReviewView,
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
-import { lengthA11y, stopLine, waitingHints, wordsActionLabel, wordsCard, type WordsAction, type WordsCard } from '@/components/capture/words-state.logic';
+import {
+  lengthA11y,
+  progressClock,
+  recordingKept,
+  stopLine,
+  takeFile,
+  waitingHints,
+  wordsActionLabel,
+  wordsCard,
+  type WordsAction,
+  type WordsCard,
+} from '@/components/capture/words-state.logic';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { PlusGate } from '@/components/child/plus-gate';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
@@ -133,7 +144,8 @@ function hasAnyLetter(): boolean {
 
 /**
  * transcribing: words for this recording are on their way (queued, being written down, waiting for the
- * language download, failed or nobody spoke: WordsStatus shows which). waiting: the file is empty.
+ * language download, failed or nobody spoke: WordsStatus shows which). waiting: the take is unrecoverable, either
+ * empty (no bytes) or with sound the phone could not open (words-state.logic `takeFile`).
  */
 type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
@@ -233,13 +245,9 @@ export default function Review() {
   // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
   const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
   const shownAt = useRef(Date.now());
-  const progressAt = useRef(Date.now());
   const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}`;
-  const lastProgressKey = useRef(progressKey);
-  if (lastProgressKey.current !== progressKey) {
-    lastProgressKey.current = progressKey;
-    progressAt.current = Date.now();
-  }
+  const progress = useRef({ key: progressKey, at: Date.now() });
+  progress.current = progressClock(progress.current, progressKey, Date.now());
   const laterOffered = useRef(false);
   const [, setWaitTick] = useState(0);
   useEffect(() => {
@@ -528,12 +536,16 @@ export default function Review() {
 
   // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
   const ask = job?.phase === 'waiting_for_pack' ? speechAskFor(language) : null;
-  const hints = waitingHints({ elapsedMs: Date.now() - shownAt.current, sinceProgressMs: Date.now() - progressAt.current, laterOffered: laterOffered.current });
+  const hints = waitingHints({ elapsedMs: Date.now() - shownAt.current, sinceProgressMs: Date.now() - progress.current.at, laterOffered: laterOffered.current });
+  // An unrecoverable take is empty only with no bytes (Tonight's rule); with bytes it is a kept recording the phone
+  // could not open (the launch sweep's unplayable take), never "Nothing was recorded".
+  const file = takeFile(draft);
   if (writingNow && hints.later) laterOffered.current = true;
   const card =
     phase === 'transcribing' || phase === 'waiting'
       ? wordsCard({
-          emptyFile: phase === 'waiting',
+          emptyFile: file === 'empty',
+          unreadable: file === 'unreadable',
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -550,8 +562,9 @@ export default function Review() {
         })
       : null;
   // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
-  const hasSound = spoken && phase !== 'waiting' && !(job?.phase === 'failed' && job.failure === 'file_missing');
-  const stopNote = stopLine({ stopped, recoveredAt: draft.recoveredAt, spoken });
+  const hasSound = spoken && file !== 'empty' && !(job?.phase === 'failed' && job.failure === 'file_missing');
+  // "Everything before that is kept." only above a recording that was kept (S16).
+  const stopNote = stopLine({ stopped, recoveredAt: draft.recoveredAt, spoken, kept: recordingKept(card) });
   const runWordsAction: Record<WordsAction, () => void> = {
     retry: tryAgain,
     keep: () => void keepRecordingOnly(),

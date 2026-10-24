@@ -86,6 +86,13 @@ export default function Listen() {
   if (tapped.current === null) tapped.current = consumeListenStart();
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
 
   // A room with no lamp over a lit one (5.8 rows 1 and 2): Tonight's light leaves, and returns when Listen does.
   useUnlitRoom();
@@ -146,6 +153,12 @@ export default function Listen() {
     haptic('press');
     await setAudioMode('recording');
     const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
+    if (!mounted.current) {
+      // The screen went away while the take was starting: keep what exists, as any other exit does.
+      ended.current = true;
+      void finalizeTake(recorder, draft.id, 'dismiss', 0);
+      return;
+    }
     takeId.current = draft.id;
     setPhase('recording');
     AccessibilityInfo.announceForAccessibility(t.listening);
@@ -253,13 +266,15 @@ export default function Listen() {
         text: p.discardConfirm,
         style: 'destructive',
         onPress: async () => {
-          haptic('warning'); // only once the person has confirmed (MOTION 6, 5.8 row 2)
           const id = takeId.current;
           ended.current = true;
           trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
           const uri = recorder.uri;
           if (id) await abandonTake(recorder, id);
           else await setAudioMode('idle').catch(() => {});
+          // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
+          // haptics while recording.
+          haptic('warning');
           // The one place audio is deleted: the parent confirmed it.
           if (uri) {
             try {

@@ -31,8 +31,13 @@ describe('reading free space', () => {
     expect(freeBytesFrom(() => 123_456_789)).toBe(123_456_789);
   });
 
-  it('treats a missing, zero, negative or non-number reading as unknown (the web preview reports 0)', () => {
-    for (const n of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) expect(freeBytesFrom(() => n), String(n)).toBeNull();
+  it('treats a negative or non-number reading as unknown', () => {
+    for (const n of [-1, Number.NaN, Number.POSITIVE_INFINITY]) expect(freeBytesFrom(() => n), String(n)).toBeNull();
+  });
+
+  it('[review A L3] a phone that reports 0 free bytes is full, not unknown (the web preview is never asked)', () => {
+    expect(freeBytesFrom(() => 0)).toBe(0);
+    expect(roomToRecord(freeBytesFrom(() => 0))).toBe(false);
   });
 
   it('never throws: a reader that throws is unknown', () => {
@@ -50,6 +55,8 @@ describe('where it is used (source)', () => {
   it('Listen reads Paths.availableDiskSpace through it, before beginTake, and never on web', () => {
     const listen = src('app/listen.tsx');
     expect(listen).toMatch(/freeBytesFrom\(\(\) => Paths\.availableDiskSpace\)/);
+    // The reading reaches the blocker (review A L4: a `freeBytes: null` mutant survived).
+    expect(listen).toMatch(/startBlocker\(\{ granted: perm\.granted, freeBytes: freeBytesNow\(\) \}\)/);
     expect(listen).toMatch(/Platform\.OS === 'web' \? null/);
     const start = listen.slice(listen.indexOf('const start = async'), listen.indexOf('const grantedNow'));
     expect(start.indexOf('startBlocker(')).toBeGreaterThan(-1);

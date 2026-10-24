@@ -50,7 +50,7 @@ describe('a take that ended by leaving the app says so', () => {
   });
 
   it('Review shows one plain line for it', () => {
-    expect(src('app/review.tsx')).toMatch(/stopLine\(\{ stopped, recoveredAt: draft\.recoveredAt, spoken \}\)/);
+    expect(src('app/review.tsx')).toMatch(/stopLine\(\{ stopped, recoveredAt: draft\.recoveredAt, spoken, kept: recordingKept\(card\) \}\)/);
     expect(wordsCopy.pack.stoppedInBackground).toBe('The recording stopped when you left the app. Everything before that is kept.');
   });
 });

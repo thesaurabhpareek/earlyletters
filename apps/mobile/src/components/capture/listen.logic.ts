@@ -8,7 +8,8 @@
  *   ready      Listening at rest: "To {child}", the audience line, the prompt if the take started from one, the red
  *              circle at rest with no aura (it is the start control, "Start recording"), "Tap the red circle and
  *              talk.", Close at the top right. No clock. The microphone is not touched until the tap (S12).
- *   asking     the same room while iOS asks for the microphone (after the tap on Speak or on the circle)
+ *   asking     the same room while iOS asks for the microphone and the take starts (after the tap on Speak or on the
+ *              circle); no Close in this short moment
  *   recording  the aura moves with the voice; the clock in `headline`, tabular, textMuted (a recording screen is not a
  *              timer); "Listening." and its hint; Pause and Finish; Let it go
  *   paused     the same, the aura at rest; "Paused."; Keep talking and Finish
@@ -46,7 +47,10 @@ export type AuraLook = 'ready' | 'listening' | 'paused' | 'processing';
 
 /** What the room shows in each moment (S11, S12). */
 export function listenRoom(phase: RoomPhase): {
-  /** Close at the top right: only before a take exists. Leaving then records nothing. */
+  /**
+   * Close at the top right: only at rest, before anything has started. Not while iOS asks or the take is starting,
+   * so no take can begin behind a closed screen (a take that does is still kept: listen.tsx finalizes it).
+   */
   close: boolean;
   /** The red circle is the start control ("Start recording"), and nothing is recording. */
   startControl: boolean;
@@ -62,7 +66,7 @@ export function listenRoom(phase: RoomPhase): {
 } {
   const before = phase === 'ready' || phase === 'asking';
   return {
-    close: before,
+    close: phase === 'ready',
     startControl: phase === 'ready',
     aura: before ? 'ready' : phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : 'processing',
     clock: !before,

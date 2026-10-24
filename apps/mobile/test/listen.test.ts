@@ -115,8 +115,12 @@ describe('one room, five moments (S11, S12)', () => {
     expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', controls: false, discard: false });
   });
 
-  it('asking: the same room while iOS asks, with no second start control', () => {
-    expect(listenRoom('asking')).toMatchObject({ close: true, startControl: false, aura: 'ready', clock: false, controls: false });
+  it('asking: the same room while iOS asks and the take starts, with no second start control and no Close', () => {
+    expect(listenRoom('asking')).toMatchObject({ close: false, startControl: false, aura: 'ready', clock: false, controls: false });
+  });
+
+  it('[review A L2] Close only at rest, so no take can begin behind a closed screen', () => {
+    expect(all.filter((p) => listenRoom(p).close)).toEqual(['ready']);
   });
 
   it('recording, paused and finishing: the aura follows the take, the clock shows, no Close', () => {
@@ -214,9 +218,17 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/<Lamp/);
   });
 
-  it('5.8 row 2: the warning haptic plays only once Let it go is confirmed', () => {
+  it('5.8 row 2: the warning haptic plays only once Let it go is confirmed, after the session stops (iOS mutes it while recording)', () => {
     const discard = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead'));
     expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf("style: 'destructive'"));
+    expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf('await abandonTake(recorder, id)'));
+    expect(discard.indexOf("haptic('warning')")).toBeGreaterThan(discard.indexOf("await setAudioMode('idle')"));
+  });
+
+  it('[review A L2] a take that finishes starting after the screen has gone is kept, as any other exit', () => {
+    const start = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
+    expect(start).toMatch(/if \(!mounted\.current\) \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draft\.id, 'dismiss', 0\);\s*return;\s*\}/);
+    expect(start.indexOf('if (!mounted.current)')).toBeLessThan(start.indexOf('takeId.current = draft.id'));
   });
 
   it('5.8 rule 3: Pause and Finish are on screen in every moment of the room; Let it go keeps its slot', () => {

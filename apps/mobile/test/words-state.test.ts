@@ -13,7 +13,10 @@ import {
   LATER_AFTER_MS,
   WAITING_LONG_MS,
   lengthA11y,
+  progressClock,
+  recordingKept,
   stopLine,
+  takeFile,
   waitingHints,
   wordsActionLabel,
   wordsActions,
@@ -54,6 +57,7 @@ const EVERY: Record<string, Partial<WordsInput>> = {
   unsupported: { job: job({ phase: 'failed', failure: 'unsupported' }) },
   fileMissing: { job: job({ phase: 'failed', failure: 'file_missing' }) },
   emptyTake: { emptyFile: true },
+  unreadable: { unreadable: true },
   noWords: { job: job({ phase: 'done', outcome: 'no_speech' }) },
 };
 
@@ -78,6 +82,13 @@ describe('S14: while the words are being written down', () => {
     expect(later.quiet).toBe('later');
     expect(later.primary).toBeNull();
     expect(wordsActionLabel('later')).toBe('Read it back later');
+  });
+
+  it('the "no progress" clock starts again on a new part or phase, and keeps its time otherwise', () => {
+    const a = progressClock({ key: 'running:0', at: 1000 }, 'running:0', 9000);
+    expect(a).toEqual({ key: 'running:0', at: 1000 });
+    expect(progressClock(a, 'running:1', 9000)).toEqual({ key: 'running:1', at: 9000 });
+    expect(progressClock(a, 'waiting_for_pack:0', 12000)).toEqual({ key: 'waiting_for_pack:0', at: 12000 });
   });
 
   it('the hints follow the clocks, and "Read it back later" never vanishes once offered', () => {
@@ -109,15 +120,28 @@ describe('S14: while the words are being written down', () => {
 
 describe('S14: why a take stopped, one line above the card or the letter', () => {
   it('leaving the app, a call or an alert, and the app closing each have their own line', () => {
-    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true })).toBe(wordsCopy.pack.stoppedInBackground);
-    expect(stopLine({ stopped: 'interruption', recoveredAt: null, spoken: true })).toBe(wordsCopy.pack.stoppedInterruption);
-    expect(stopLine({ stopped: undefined, recoveredAt: '2026-10-20T19:42:00Z', spoken: true })).toBe(wordsCopy.pack.stoppedClosed);
+    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInBackground);
+    expect(stopLine({ stopped: 'interruption', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInterruption);
+    expect(stopLine({ stopped: undefined, recoveredAt: '2026-10-20T19:42:00Z', spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedClosed);
   });
 
   it('Finish needs no line, a typed letter never has one, and an unknown param is ignored', () => {
-    expect(stopLine({ stopped: undefined, recoveredAt: null, spoken: true })).toBeNull();
-    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: false })).toBeNull();
-    expect(stopLine({ stopped: 'banana', recoveredAt: null, spoken: true })).toBeNull();
+    expect(stopLine({ stopped: undefined, recoveredAt: null, spoken: true, kept: true })).toBeNull();
+    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: false, kept: true })).toBeNull();
+    expect(stopLine({ stopped: 'banana', recoveredAt: null, spoken: true, kept: true })).toBeNull();
+  });
+
+  it('[review A M1] never above a card where no recording was kept: an empty take or a missing file', () => {
+    for (const k of ['emptyTake', 'fileMissing']) {
+      const c = card(EVERY[k]);
+      expect(recordingKept(c), k).toBe(false);
+      for (const stopped of ['background', 'interruption', undefined]) {
+        expect(stopLine({ stopped, recoveredAt: '2026-10-20T19:42:00Z', spoken: true, kept: recordingKept(c) }), `${k} ${stopped}`).toBeNull();
+      }
+    }
+    // Every other card stands over a kept recording, so the line shows.
+    for (const k of ['writing', 'unreadable', 'failed', 'noWords', 'language', 'downloading']) expect(recordingKept(card(EVERY[k])), k).toBe(true);
+    expect(recordingKept(null)).toBe(true); // the letter itself, once its words are there
   });
 
   it('every line says everything before the stop is kept', () => {
@@ -199,6 +223,22 @@ describe('S16: when the words do not come', () => {
     expect(wordsActionLabel('write')).toBe('Write the words');
   });
 
+  it('[review A H1] an unrecoverable take is empty only with no bytes; with bytes it is unreadable, never "Nothing was recorded"', () => {
+    // The launch sweep marks a killed take unrecoverable when it has bytes the probe cannot open (an M4A cut off mid-take).
+    expect(takeFile({ state: 'unrecoverable', audioBytes: 900_000 })).toBe('unreadable');
+    expect(takeFile({ state: 'unrecoverable', audioBytes: 0 })).toBe('empty');
+    expect(takeFile({ state: 'unrecoverable', audioBytes: null })).toBe('empty');
+    expect(takeFile({ state: 'ready', audioBytes: 900_000 })).toBeNull();
+    expect(takeFile({ state: 'ready', audioBytes: 0 })).toBeNull();
+  });
+
+  it('[review A H1] a sweep-marked take with sound offers Keep the recording and says it is kept', () => {
+    const c = card({ unreadable: true });
+    expect(c).toMatchObject({ state: 'unreadable', title: en.errors.transcriptionFailed.title, body: 'The recording is kept.', primary: 'keep', quiet: 'type' });
+    expect(c.title).not.toBe(en.review.emptyTake.title);
+    expect(wordsActions(c)).not.toContain('recordAgain');
+  });
+
   it('no state claims a recording is kept when its file is empty or missing', () => {
     for (const k of ['emptyTake', 'fileMissing']) {
       const c = card(EVERY[k]);
@@ -230,7 +270,21 @@ describe('Review uses the card (source)', () => {
 
   it('one card for every state before the words, drawn as InlineState with its drawing and stillness', () => {
     expect(review).toMatch(/<InlineState\s+kind=\{card\.kind\}\s+art=\{card\.art\}\s+still=\{card\.still\}/);
-    expect(review).toMatch(/emptyFile: phase === 'waiting'/);
+    // Empty only with no bytes, the same rule as Tonight's card (review A H1).
+    expect(review).toMatch(/const file = takeFile\(draft\);/);
+    expect(review).toMatch(/emptyFile: file === 'empty',\s*unreadable: file === 'unreadable',/);
+    expect(review).not.toMatch(/emptyFile: phase === 'waiting'/);
+  });
+
+  it('the stop line shows only above a kept recording (review A M1)', () => {
+    expect(review).toMatch(/stopLine\(\{ stopped, recoveredAt: draft\.recoveredAt, spoken, kept: recordingKept\(card\) \}\)/);
+  });
+
+  it('the waiting clocks are wired: the progress clock restarts on progress, and "Read it back later" latches (review A L4)', () => {
+    expect(review).toMatch(/progress\.current = progressClock\(progress\.current, progressKey, Date\.now\(\)\);/);
+    expect(review).toMatch(/sinceProgressMs: Date\.now\(\) - progress\.current\.at/);
+    expect(review).toMatch(/if \(writingNow && hints\.later\) laterOffered\.current = true;/);
+    expect(review).toMatch(/laterOffered: laterOffered\.current \}\)/);
   });
 
   it('the footer never repeats "Keep the recording": only sample words (development) keep it there', () => {
@@ -249,7 +303,7 @@ describe('Review uses the card (source)', () => {
   });
 
   it('"Hear it" is offered only when there is a sound to hear', () => {
-    expect(review).toMatch(/const hasSound = spoken && phase !== 'waiting' && !\(job\?\.phase === 'failed' && job\.failure === 'file_missing'\)/);
+    expect(review).toMatch(/const hasSound = spoken && file !== 'empty' && !\(job\?\.phase === 'failed' && job\.failure === 'file_missing'\)/);
     expect(review).toMatch(/leading=\{\s*hasSound \?/);
   });
 

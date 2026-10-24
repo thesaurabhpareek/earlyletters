@@ -8,9 +8,10 @@
  *
  * 50 MB is about 100 minutes of voice at 0.48 MB a minute (recorder.ts: AAC-LC, mono, 64 kbps), with room for the
  * database and the listening copy. Below it a new take is not started; nothing already on the phone is touched.
- * A reading that is missing, zero or not a number is unknown (the web preview reports 0), and unknown never blocks a
- * take. On a phone the reading is always there; were it ever unknown on a full phone, the recorder's own start would
- * fail and Listen would show its start-failure state with Try again (listen.logic.ts `startFailure`).
+ * A reading that throws, is negative or is not a number is unknown, and unknown never blocks a take; were it ever
+ * unknown on a full phone, the recorder's own start would fail and Listen would show its start-failure state with
+ * Try again (listen.logic.ts `startFailure`). Zero is a reading like any other: a phone that reports 0 free bytes is
+ * full. The web preview, which reports 0 because it has no file system, is never asked (listen.tsx).
  */
 
 /** Below this many free bytes Listen does not start a take (S13). */
@@ -20,7 +21,7 @@ export const MIN_FREE_BYTES_TO_RECORD = 50_000_000;
 export function freeBytesFrom(read: () => number): number | null {
   try {
     const n = read();
-    return Number.isFinite(n) && n > 0 ? n : null;
+    return Number.isFinite(n) && n >= 0 ? n : null;
   } catch {
     return null;
   }
