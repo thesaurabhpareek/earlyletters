@@ -9,6 +9,7 @@
  * A change on either side fails here first. Fictional family Asha only.
  */
 import { randomBytes } from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import { b64, bytesToBase64, equalBytes } from '../src/lib/backup/bytes';
 import { BACKUP_ERRORS, BackupServerError, ESCROW_DETAILS, SEAL_SUITE, keyCheckLabel, needsSignIn, objectPathFor, packEscrowWrap } from '../src/lib/backup/contract';
@@ -24,6 +25,7 @@ import {
   createEscrowClient,
   fromBytea,
   registerDeviceArgs,
+  storageNotFound,
   storeKeyArgs,
   type FetchLike,
 } from '../src/lib/backup/wire';
@@ -269,5 +271,32 @@ describe('end to end through the wire: an escrow release opens on this phone and
     expect(await phone.canOpen(ASHA, 1)).toBe(true);
     const label = keyCheckLabel(MAMA, ASHA, 1);
     expect(bytesToBase64(await first.bookKeyCheck({ profileId: MAMA, childId: ASHA }, 1, label))).toBe(b.childKeys[0].keyCheck);
+  });
+});
+
+describe('Storage refusing to sign a download URL, as storage-js 2.117.2 reports it (review N1 on #255)', () => {
+  /** The error `createSignedUrl` returns when Storage answers the sign request with `status` and `body`. */
+  async function signError(status: number, body: unknown): Promise<unknown> {
+    const sb = createClient('https://asha.fake.test', 'sb_publishable_fake', {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { fetch: async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }) },
+    });
+    const { data, error } = await sb.storage.from('backup').createSignedUrl('11111111-1111-4111-8111-111111111111/a.enc', 120);
+    expect(data).toBeNull();
+    return error;
+  }
+
+  it('an object that is not there is found by the HTTP status or the statusCode in the body, whatever code the body names', async () => {
+    const legacy = await signError(400, { statusCode: '404', code: 'NoSuchKey', error: 'not_found', message: 'Object not found' });
+    expect(legacy).toMatchObject({ status: 400, statusCode: '404', code: 'NoSuchKey' }); // serverError alone takes NoSuchKey
+    expect(storageNotFound(legacy)).toBe(true);
+    expect(storageNotFound(await signError(404, { code: 'NoSuchKey', message: 'Object not found' }))).toBe(true);
+    expect(storageNotFound(await signError(400, { statusCode: '404', error: 'not_found', message: 'Object not found' }))).toBe(true);
+  });
+
+  it('a refused token or a server error is not a missing object', async () => {
+    expect(storageNotFound(await signError(400, { statusCode: '403', code: 'InvalidJWT', error: 'Unauthorized', message: 'jwt expired' }))).toBe(false);
+    expect(storageNotFound(await signError(500, { statusCode: '500', code: 'InternalError', error: 'internal', message: 'Internal Server Error' }))).toBe(false);
+    expect(storageNotFound(null)).toBe(false);
   });
 });

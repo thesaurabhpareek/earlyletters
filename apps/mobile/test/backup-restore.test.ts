@@ -252,17 +252,29 @@ describe('[F08-REQ-023] restore on a new phone', () => {
     expect(audioOf(b, recs[0].id).uri).toBeNull();
   });
 
-  it('[#252 follow-up] a download refused (404, the object is gone) is still a failed try', async () => {
+  it('[review N1 on #255] an object that is gone is refused when its URL is signed (404): tried once more, then failed for good, nothing stored', async () => {
     const clock = { t: 0 };
     const backend = new FakeBackend(() => clock.t);
     const icloud = new FakeICloud();
     const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
     backend.objects.delete(backend.blobs.get(recs[0].id)!.objectPath);
+    let downloads = 0;
+    const download = backend.downloader.download;
+    backend.downloader.download = async (url: string, toUri: string) => {
+      downloads += 1;
+      return download(url, toUri);
+    };
     const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
     syncText(a, b);
     await b.service.tick();
-    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'pending', attempts: 1 });
+    for (let i = 0; i < 3; i++) await b.service.tick();
     expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'failed', attempts: 2 });
+    expect(downloads).toBe(0); // refused when signed, before any download
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+    expect(documents(b)).toEqual([]);
+    expect(readdirSync(b.files.tmpDir)).toEqual([]);
+    expect(b.service.view().restore).toBeNull(); // Settings no longer says recordings are coming back
   });
 
   it('a file that appears while the recording downloads wins; the download is dropped', async () => {

@@ -58,6 +58,7 @@ import {
   confirmArgs,
   createEscrowClient,
   registerDeviceArgs,
+  storageNotFound,
   storeKeyArgs,
   type BlobWire,
   type ChildKeyWire,
@@ -329,6 +330,8 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string>, 
     },
     downloadUrl: async (objectPath) => {
       const { data, error } = await sb.storage.from(BACKUP_BUCKET).setHeader('Authorization', await bearer()).createSignedUrl(objectPath, 120);
+      // An object that is not there is refused here, before any download: the class restore counts (wire.ts).
+      if (error && storageNotFound(error)) throw new BackupServerError('HTTP404', false);
       if (error || !data?.signedUrl) throw serverError(error ?? {}, errorStatus(error));
       return data.signedUrl;
     },

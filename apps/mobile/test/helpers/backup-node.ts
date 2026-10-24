@@ -444,7 +444,9 @@ export class FakeBackend {
       },
       async downloadUrl(objectPath) {
         const row = [...b.blobs.values()].find((r) => r.objectPath === objectPath);
-        if (!row || row.authorId !== uid) throw new BackupServerError('42501', false);
+        // As Storage: an object that is not there, or not this account's to read, is refused before
+        // any URL is signed, and runtime.ts raises that as HTTP404 (wire.ts storageNotFound).
+        if (!row || row.authorId !== uid || !b.objects.has(objectPath)) throw new BackupServerError('HTTP404', false);
         return `https://fake.storage/download/${encodeURIComponent(objectPath)}?for=${uid}`;
       },
     };
