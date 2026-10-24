@@ -27,7 +27,7 @@ export type RecordingMimeType = (typeof RECORDING_FILES)[RecordingContainer]['mi
  * Media3 seeks ADTS only with constant-bitrate seeking, which expo-audio does
  * not enable, so Android ADTS is post-alpha work with its own checks.
  */
-export const RECORDING_CONTAINERS: Readonly<Record<RecordingPlatform, RecordingContainer>> = { ios: 'm4a', android: 'm4a' };
+export const RECORDING_CONTAINERS: Readonly<Record<RecordingPlatform, RecordingContainer>> = { ios: 'adts', android: 'm4a' };
 
 /** The container new takes use on a platform (`Platform.OS`); anything but Android follows iOS. */
 export function recordingContainerFor(os: string): RecordingContainer {
