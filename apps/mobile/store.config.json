@@ -1,0 +1,39 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Early Letters: Memory Book",
+        "subtitle": "Baby journal in your own voice",
+        "description": "Early Letters is a baby memory book you fill by talking.\n\nSay a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.\n\nEXACTLY AS YOU SAID IT\nYour words are written down on your phone. We only fix what a microphone gets wrong: a stray \"um\", a repeated word, a missing full stop. We never rewrite your words. Read each letter back, and put any fix back with one tap.\n\nYOUR VOICE, KEPT\nThe original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. We never imitate your voice. Your original recording is always kept exactly as you made it.\n\nREAD TOGETHER\nOpen the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.\n\nNOTES AND LETTERS\nSome days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap \"Not much today\" and that is enough. There are no counters, no badges and no scores.\n\nWRITE IT TOGETHER\nInvite your co-parent to the same book. You each sign your own letters, like \"From Papa\" or \"From Amma\", and the book holds both your voices.\n\nYOUR LANGUAGE, AS SPOKEN\nSpeak your letters in English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them, in its own script, never translated. A language downloads only when you choose it, so the app stays small.\n\nPRIVATE BY DEFAULT\nYour letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Only you and the people you invite can read your book. You can export everything or delete everything, any time, from Settings.\n\nA BOOK FOR EACH CHILD\nEach child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.\n\nTAKE IT WITH YOU\nExport your memory book any time, for free: your letters, your recordings and a PDF of the book.\n\nHOW IT WORKS\n1. Tap and talk, or type if you prefer.\n2. Read it back. Fix a word if the microphone slipped.\n3. It is saved to this month in your child's memory book.\n\nEarly Letters is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.\n\nYour first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus is an optional subscription that lets you keep adding letters. It renews automatically until you cancel, and works with Family Sharing.\n\nTerms of Use: https://earlyletters.com/terms\nPrivacy Policy: https://earlyletters.com/privacy",
+        "keywords": [
+          "diary",
+          "keepsake",
+          "newborn",
+          "toddler",
+          "parents",
+          "mom",
+          "dad",
+          "family",
+          "audio",
+          "scrapbook",
+          "bilingual",
+          "hindi",
+          "spanish",
+          "arabic"
+        ],
+        "promoText": "Talk to your child for a minute. Every word is kept exactly as you said it, with your voice. Private by default: never sold, never used for ads.",
+        "marketingUrl": "https://earlyletters.com",
+        "supportUrl": "https://earlyletters.com",
+        "privacyPolicyUrl": "https://earlyletters.com/privacy"
+      }
+    },
+    "categories": [
+      "LIFESTYLE"
+    ],
+    "release": {
+      "automaticRelease": false,
+      "phasedRelease": false
+    }
+  }
+}
