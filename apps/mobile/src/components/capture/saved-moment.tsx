@@ -29,7 +29,7 @@ import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/l
 import { useReducedMotion } from '@/lib/motion';
 import { fileIntoMonthPlan } from '@/lib/transitions.logic';
 import { LetterHeaderRow, useSheetSurface, type LetterHeader } from './letter-sheet';
-import { momentAnnouncement, savedMomentDoneMs } from './review-view.logic';
+import { momentAnnouncement, savedMomentLeaveInMs } from './review-view.logic';
 
 /**
  * Lines of the letter shown on the card while it files away: whole lines, then a fade (S21, the excerpt rule). Fewer at
@@ -69,6 +69,8 @@ export function SavedMoment({
   const plan = fileIntoMonthPlan(reduced);
   const said = momentAnnouncement(chip, line);
   const done = useRef(false);
+  // When the save committed: the moment's clock, so a screen-reader answer that arrives later still counts from here.
+  const committedAt = useRef<number | null>(null);
   const finish = () => {
     if (!committed || done.current) return;
     done.current = true;
@@ -83,6 +85,7 @@ export function SavedMoment({
 
   useEffect(() => {
     if (!committed) return;
+    committedAt.current = Date.now();
     // Said once, as it appears (the card itself is hidden from VoiceOver while it files away).
     announce(said);
     const g = M.gentle;
@@ -97,11 +100,19 @@ export function SavedMoment({
       lift.value = withDelay(plan.moveAtMs, withTiming(plan.dy, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
       fade.value = withDelay(plan.moveAtMs, withTiming(0, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
     }
-    // With a screen reader on, the moment holds until its announcement can be heard (about 3 s), then the Book.
-    const t = setTimeout(finish, savedMomentDoneMs({ dismissAtMs: plan.dismissAtMs, screenReader }));
-    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committed]);
+
+  // Then the Book. With a screen reader on, the moment holds until its announcement can be heard (about 3 s from the
+  // commit). Timed again when the screen-reader state arrives: on Review's path the moment mounts at the commit, while
+  // that state is still unknown (it reads off for a moment), so timing it once would leave after 900 ms with VoiceOver on.
+  useEffect(() => {
+    if (!committed || committedAt.current === null) return;
+    const wait = savedMomentLeaveInMs({ dismissAtMs: plan.dismissAtMs, screenReader, elapsedMs: Date.now() - committedAt.current });
+    const t = setTimeout(finish, wait);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committed, screenReader]);
 
   const cardStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
