@@ -19,12 +19,20 @@
  *   2. faithfulClean with those edits as model edits and as rule edits
  *      (a hostile or buggy rule provider, F06-U11);
  *   3. faithfulClean with no extra edits: the app path (rules only).
+ * A fourth path (engine 8) draws from its own PRNG, so paths 1 to 3 replay
+ * exactly as before for a given seed and run: one corpus sentence with an
+ * invisible character put at a word end or a word start, and the space next
+ * to it deleted under every edit type; or a quotation mark put behind a said
+ * end mark, and another end mark put behind it. It is checked through the
+ * verifier alone and through faithfulClean as model edits.
  *
  * The invariant is defined here, independently of src/meaning.ts: after the
  * accepted edits, no word was added or swapped (only removed, kept, agreed in
  * the closed English table, or spelled as a dictionary term under the F07 7.2
  * rules); every negation, number, mood mark, quotation mark, invisible
  * character, hyphenated word and quoted word that was said is still there;
+ * the words read the same with every invisible character left out (engine 8:
+ * an invisible character joins or splits nothing a reader sees);
  * no letter lost its mark; no everyday word gained a capital mid-sentence;
  * no end mark was put next to another that was said apart from it (engine 7);
  * and the final character pass (normalizeFinal) changes no letter, number,
@@ -38,7 +46,7 @@ import {
   BETWEEN_MARKS,
   checkEdit,
   compileRules,
-  END_MARK,
+  END_MARKS,
   ENGLISH_RULES,
   faithfulClean,
   isInvisible,
@@ -252,6 +260,8 @@ const quoteMarks = (s: string) => [...s].filter((c, i, a) => QUOTE.test(c) && !(
 const houseQuotes = (s: string) => s.replace(/[“”„‟″]/g, '"').replace(/[‘’‚‛′]/g, "'");
 const INVISIBLE = /[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]/u;
 const invisibles = (s: string) => [...s].filter((c) => INVISIBLE.test(c)).join('');
+/** The text as a reader sees it: every invisible character left out (engine 8). */
+const seen = (s: string) => [...s].filter((c) => !INVISIBLE.test(c)).join('');
 const DIGITS = /\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu;
 const digits = (s: string) => [...s.matchAll(DIGITS)].map((m) => m[0]).join('|');
 const HYPHENATED = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\p{N}]+)+/gu;
@@ -260,13 +270,16 @@ const lettersOnly = (s: string) => s.normalize('NFC').replace(/[^\p{L}\p{M}\p{N}
 /**
  * End marks that touch the end mark before them, counted ("?." is 1, "..." is 2): only spaces, quotation
  * marks and invisible characters may sit between (engine 7, #179 re-check Note E: "more?."
- * and "她睡了？." were accepted). The sets are the verifier's own, imported (END_MARK, BETWEEN_MARKS, the
+ * and "她睡了？." were accepted). The sets are the verifier's own, imported (END_MARKS, BETWEEN_MARKS, the
  * language's sentence ends and quotation marks), so the oracle is never narrower than the verifier: the
- * copy written out here lacked U+2E2E, U+203A and the opening quotes (#249 review B-N3). A closing bracket
- * is not between, as in the verifier: "We went home (it rained!)." keeps its own "." (#249 review F1, N1).
+ * copy written out here lacked U+2E2E, U+203A and the opening quotes (#249 review B-N3). Every Unicode
+ * quotation mark is between too, by the oracle's own QUOTE (engine 8; #257 review A, section 1: engine 7
+ * accepted a "." behind U+2018 and 14 other marks). A closing bracket is not between, as in the verifier:
+ * "We went home (it rained!)." keeps its own "." (#249 review F1, N1).
  */
-const isEnd = (c: string, R: LanguageRules) => END_MARK.test(c) || R.isSentenceEnd(c);
-const betweenEnds = (c: string, R: LanguageRules) => BETWEEN_MARKS.test(c) || INVISIBLE.test(c) || isInvisible(c) || R.isQuoteChar(c);
+const isEnd = (c: string, R: LanguageRules) => END_MARKS.includes(c) || R.isSentenceEnd(c);
+const betweenEnds = (c: string, R: LanguageRules) =>
+  /\s/u.test(c) || BETWEEN_MARKS.includes(c) || QUOTE.test(c) || INVISIBLE.test(c) || isInvisible(c) || R.isQuoteChar(c);
 function touchingEnds(s: string, R: LanguageRules): number {
   let n = 0;
   let open = false;
@@ -278,16 +291,14 @@ function touchingEnds(s: string, R: LanguageRules): number {
   }
   return n;
 }
-/** Every end mark the verifier knows, read off END_MARK itself: U+203D, U+2E2E, U+061F, the danda, U+3002, U+FF01, U+FF1F, U+2026 among them. */
-const END_MARKS: string[] = [];
-for (let cp = 0; cp <= 0x10ffff; cp++) if ((cp < 0xd800 || cp > 0xdfff) && END_MARK.test(String.fromCodePoint(cp))) END_MARKS.push(String.fromCodePoint(cp));
+/** Every end mark the verifier knows (END_MARKS, imported): U+203D, U+2E2E, U+061F, the danda, U+3002, U+FF01, U+FF1F, U+2026 among them. */
 const cpAt = (s: string, i: number) => (i < s.length ? String.fromCodePoint(s.codePointAt(i)!) : '');
 /** Where the end marks of `s` start, in UTF-16 units. */
 function endsAt(s: string): number[] {
   const out: number[] = [];
   let i = 0;
   for (const c of s) {
-    if (END_MARK.test(c)) out.push(i);
+    if (END_MARKS.includes(c)) out.push(i);
     i += c.length;
   }
   return out;
@@ -376,6 +387,10 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
   const rt = toks(raw, lang.char);
   const ft = toks(text, lang.char);
   if (!faithful(rt, ft, dict, lang.code === 'en', lang.char)) return 'added_or_swapped_word';
+  // The same words as a reader sees them: "Asha" U+200B " slept" may not become "Asha" U+200B "slept" (engine 8;
+  // WORD splits at U+200B, so only U+200C and U+200D joins were seen before, seed 20261015 run 81642).
+  const [sr, st] = [seen(raw), seen(text)];
+  if ((sr !== raw || st !== text) && !faithful(toks(sr, lang.char), toks(st, lang.char), dict, lang.code === 'en', lang.char)) return 'seen_words_changed';
   // Negations: every one said is still there; one said once keeps its count.
   const rn = rt.filter((t) => lang.negations(t.lw)).map((t) => t.lw);
   const fn = ft.filter((t) => lang.negations(t.lw)).map((t) => t.lw);
@@ -444,7 +459,14 @@ function brokenFinal(editedRaw: string, final: string, lang: Lang): string | nul
 // U+00AD (soft hyphen) joined on review (#179 N3, 23 Oct): the house rule used to drop it with no stored edit.
 const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF', '\u00AD'];
 const QUOTES: Array<[string, string]> = [['“', '”'], ['‘', '’'], ['„', '“'], ['«', '»'], ['「', '」'], ['"', '"']];
-const MOODS = [...new Set(['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!', ...END_MARKS])];
+/**
+ * The end marks in code point order, the order develop's oracle listed them in (it read them off the verifier's
+ * RegExp one code point at a time), so a draw picks the same mark as before engine 8 and paths 1 to 3 replay
+ * exactly (round 2, lens B F1: the hand order of END_MARKS changed 5,528 of 14,033 runs on seed 20261003).
+ * All sixteen are in the BMP, so the default sort is code point order.
+ */
+const MARKS_IN_ORDER: readonly string[] = [...END_MARKS].sort();
+const MOODS = [...new Set(['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!', ...MARKS_IN_ORDER])];
 const MARKS = ['́', '̀', '̂', '̈', 'ा', 'ि', 'े', '्', 'ं', 'َ', 'ُ', 'ِ'];
 
 /** A synthetic letter: one to three corpus sentences, mutated. */
@@ -464,7 +486,7 @@ function letter(lang: Lang, rnd: () => number): string {
   const ends = endsAt(raw);
   if (ends.length && rnd() < 0.25) {
     const at = pick(ends); // a said end mark in another script, as a recogniser may write it ("‽", U+2026, U+061F in English)
-    raw = raw.slice(0, at) + pick(END_MARKS) + raw.slice(at + cpAt(raw, at).length);
+    raw = raw.slice(0, at) + pick(MARKS_IN_ORDER) + raw.slice(at + cpAt(raw, at).length);
   }
   return raw;
 }
@@ -531,7 +553,7 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
         const where = Math.floor(rnd() * 3);
         if (where > 0) at += cpAt(raw, at).length;
         if (where > 1) for (let c = cpAt(raw, at); c && betweenEnds(c, lang.rules); c = cpAt(raw, at)) at += c.length;
-        const mark = pick(END_MARKS);
+        const mark = pick(MARKS_IN_ORDER);
         tally.set(`mark ${mark}`, (tally.get(`mark ${mark}`) ?? 0) + 1);
         mk('mark_pair', pick(['punctuation', type]), at, at, mark);
         break;
@@ -545,10 +567,68 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
   return out;
 }
 
+/* ---------- path 4: invisible characters and quotation marks at boundaries (engine 8) ---------- */
+
+/**
+ * The invisible characters path 4 puts at a word edge: the ten the generator writes, U+2060 (the
+ * eleven of #257 review A, section 2), and more of the class: the Mongolian vowel separator, three
+ * invisible operators, a deprecated format character, an embedding and its pop, two isolates, a
+ * musical format character and a language tag outside the BMP.
+ */
+const INVIS_AT_EDGE = [
+  ...INVIS, '\u2060', '\u180E', '\u2061', '\u2062', '\u2063', '\u206F', '\u202A', '\u202C', '\u2067', '\u2069', '\u{1D173}', '\u{E0001}',
+];
+/** Every Unicode quotation mark (all in the BMP), from Unicode itself, not from the verifier. */
+const ALL_QUOTES: string[] = [];
+for (let cp = 0; cp <= 0xffff; cp++) if ((cp < 0xd800 || cp > 0xdfff) && QUOTE.test(String.fromCodePoint(cp))) ALL_QUOTES.push(String.fromCodePoint(cp));
+const hex = (s: string) => `U+${s.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`;
+
+/**
+ * One corpus sentence with an invisible character at a word end ("Asha" U+200B " slept") or a word
+ * start ("Asha " U+200B "slept"), and edits that delete the space beside it: alone, as paragraph or
+ * punctuation, and with the next word, as a removal or a name fix. Or, half the time and always where
+ * no two words have one space between them (Chinese), a quotation mark put right behind a said end
+ * mark, and an end mark put behind that ("no." U+2018 plus ".") or the two swapped.
+ */
+function edgeCase(lang: Lang, dict: DictionaryTerm[], rnd: () => number, tally: Map<string, number>): { raw: string; edits: Edit[] } | null {
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)];
+  const base = pick(lang.corpus);
+  const t = toks(base, lang.char);
+  const gaps = t.slice(0, -1).map((w, i) => i).filter((i) => base.slice(t[i].end, t[i + 1].start) === ' ');
+  const edits: Edit[] = [];
+  const mk = (raw: string, type: EditType, start: number, end: number, replacement: string) =>
+    edits.push({ type, start, end, original: raw.slice(start, end), replacement, source: 'model' });
+  if (gaps.length && rnd() < 0.5) {
+    const i = pick(gaps);
+    const inv = pick(INVIS_AT_EDGE);
+    const side = rnd() < 0.5 ? 'end' : 'start';
+    const raw = side === 'end' ? base.slice(0, t[i].end) + inv + base.slice(t[i].end) : base.slice(0, t[i + 1].start) + inv + base.slice(t[i + 1].start);
+    const space = side === 'end' ? t[i].end + inv.length : t[i].end;
+    const next = t[i + 1].end + inv.length;
+    const type = pick(['paragraph', 'punctuation'] as const);
+    tally.set(`edge ${hex(inv)} ${side} ${type}`, (tally.get(`edge ${hex(inv)} ${side} ${type}`) ?? 0) + 1);
+    mk(raw, type, space, space + 1, '');
+    const other = pick(['filler', 'repeat', 'false_start', 'stt_fix'] as const);
+    if (other === 'stt_fix' && dict.length) mk(raw, other, space, next, pick(dict).term);
+    else if (other !== 'stt_fix') mk(raw, other, space, next, '');
+    return { raw, edits };
+  }
+  const ends = endsAt(base);
+  if (!ends.length) return null;
+  const at = pick(ends) + 1;
+  const q = pick(ALL_QUOTES);
+  const raw = base.slice(0, at) + q + base.slice(at);
+  tally.set(`behind ${hex(q)}`, (tally.get(`behind ${hex(q)}`) ?? 0) + 1);
+  if (rnd() < 0.7) mk(raw, pick(['punctuation', 'punctuation', 'paragraph', 'filler'] as const), at + 1, at + 1, pick(MARKS_IN_ORDER));
+  else if (raw[at + 1] !== undefined && END_MARKS.includes(raw[at + 1])) mk(raw, 'punctuation', at, at + 2, raw[at + 1] + q); // "no." q "." to "no.." q
+  else mk(raw, 'punctuation', at - 1, at + 1, q + raw[at - 1]); // the said mark moved behind the quotation mark
+  return { raw, edits };
+}
+
 /* ---------- the property ---------- */
 
 describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property', () => {
-  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each, zero meaning changes`, async () => {
+  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each and a fourth at word and mark edges, zero meaning changes`, async () => {
     const rnd = mulberry32(SEED);
     const langs = makeLangs();
     const tally = new Map<string, number>();
@@ -557,6 +637,9 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     let proposed = 0;
     let accepted = 0;
     let rulesApplied = 0;
+    // Path 4's own stream: paths 1 to 3 draw exactly what they drew before engine 8, so an old seed and run replay as reported.
+    const rnd4 = mulberry32(SEED ^ 0x5bd1e995);
+    let edgeAccepted = 0;
     const fail = (run: number, path: string, why: string, raw: string, text: string, edits: Edit[]) => {
       throw new Error(`seed ${SEED} run ${run} (${path}): ${why}\nraw:   ${JSON.stringify(raw)}\ntext:  ${JSON.stringify(text)}\nedits: ${JSON.stringify(edits)}`);
     };
@@ -596,6 +679,20 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
       for (const e of a.applied) appliedByType.set(e.type, (appliedByType.get(e.type) ?? 0) + 1);
       const why3 = broken(raw, a.applied, lang, dict) ?? brokenFinal(applyEdits(raw, a.applied), a.text, lang);
       if (why3) fail(run, 'rules', why3, raw, a.text, a.applied);
+
+      // 4. Invisible characters and quotation marks at boundaries (engine 8), from rnd4.
+      const edge = edgeCase(lang, dict, rnd4, tally);
+      if (edge) {
+        const ctx4 = { ...opts, raw: edge.raw, dictionary: dict, protectedSpans: protectedSpansFor(edge.raw, dict, [], R), rules: R };
+        const v4 = verifyEdits(edge.edits, ctx4);
+        edgeAccepted += v4.accepted.length;
+        for (const e of v4.accepted) if (checkEdit(e, ctx4) !== null) fail(run, 'edge verifier', 'accepted_edit_fails_checkEdit', edge.raw, '', [e]);
+        const why4 = broken(edge.raw, v4.accepted, lang, dict);
+        if (why4) fail(run, 'edge verifier', why4, edge.raw, applyEdits(edge.raw, v4.accepted), v4.accepted);
+        const p4 = faithfulClean(edge.raw, { ...opts, modelEdits: edge.edits });
+        const why5 = broken(edge.raw, p4.applied, lang, dict) ?? brokenFinal(applyEdits(edge.raw, p4.applied), p4.text, lang);
+        if (why5) fail(run, 'edge pipeline', why5, edge.raw, p4.text, p4.applied);
+      }
     }
 
     // Not vacuous: every language ran, every attack shape was proposed, and honest edits still get through.
@@ -603,14 +700,31 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     for (const kind of ['swap_word', 'negation', 'mood', 'quote', 'delete', 'to_term', 'invisible', 'hyphen_part', 'name_word_case', 'name_swap', 'mark_swap', 'noun_number', 'heard_as', 'mark_pair']) {
       expect(tally.get(kind) ?? 0, kind).toBeGreaterThan(50);
     }
-    // Every end mark the verifier knows was put next to a said one (#249 review B-N3).
-    expect(END_MARKS).toEqual(expect.arrayContaining(['.', '?', '!', '\u203D', '\u2E2E', '\u061F', '\u0964', '\u3002', '\uFF01', '\uFF1F', '\u2026']));
+    // Every end mark the verifier knows was put next to a said one (#249 review B-N3), and the list is all sixteen,
+    // written out, so a mark dropped from END_MARKS fails here too (#257 review A, section 1, plant P3).
+    expect([...END_MARKS].sort()).toEqual(
+      ['.', '!', '?', '\u3002', '\uFF01', '\uFF1F', '\u061F', '\u0964', '\u0965', '\u203D', '\u2047', '\u2048', '\u2049', '\u203C', '\u2E2E', '\u2026'].sort(),
+    );
     for (const mark of END_MARKS) expect(tally.get(`mark ${mark}`) ?? 0, `mark U+${mark.codePointAt(0)!.toString(16)}`).toBeGreaterThan(RUNS / 1000);
     expect(proposed).toBeGreaterThan(RUNS * 2);
     expect(accepted).toBeGreaterThan(RUNS / 20);
     expect(rulesApplied).toBeGreaterThan(RUNS / 4);
     for (const type of ['filler', 'repeat', 'stt_fix']) expect(appliedByType.get(type) ?? 0, type).toBeGreaterThan(100);
-  }, 600_000);
+    // Path 4 reached every invisible character at both word edges under both whitespace-carrying types,
+    // and every quotation mark behind a said end mark; and it still accepted honest edits.
+    for (const inv of INVIS_AT_EDGE) {
+      for (const side of ['end', 'start']) {
+        for (const type of ['paragraph', 'punctuation']) {
+          expect(tally.get(`edge ${hex(inv)} ${side} ${type}`) ?? 0, `edge ${hex(inv)} ${side} ${type}`).toBeGreaterThan(RUNS / 2000);
+        }
+      }
+    }
+    for (const q of ALL_QUOTES) expect(tally.get(`behind ${hex(q)}`) ?? 0, `behind ${hex(q)}`).toBeGreaterThan(RUNS / 1000);
+    expect(ALL_QUOTES.length).toBe(30);
+    expect(edgeAccepted).toBeGreaterThan(RUNS / 50);
+    // 100,000 runs took 214 s here on 24 Oct with path 4 (verify.fuzz.test.ts beside it). The nightly job stops at
+    // 15 minutes, so this stays under that: a slow runner meets the job's limit, not a shorter one of this test's.
+  }, 840_000);
 
   it('[F06-REQ-021] the oracle itself catches each R-01 meaning change (checker sanity)', () => {
     const en = makeLangs()[0];
@@ -661,5 +775,11 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     expect(b('Was there more? um', [...at('Was there more? um', ' um', '', 'filler'), put('Was there more? um', '.')])).toBe('end_mark_doubled');
     expect(b('Was there more', [put('Was there more', '.')])).toBeNull();
     expect(b('Was there more?.', at('Was there more?.', '?.', '?'))).toBeNull();
+    // Engine 8: words as a reader sees them, and a mark behind any quotation mark (#257 review A, sections 1 and 2).
+    const zw = 'Asha\u200B slept well.';
+    expect(b(zw, [{ type: 'paragraph', start: 5, end: 6, original: ' ', replacement: '', source: 'model' }])).toBe('seen_words_changed');
+    expect(b(zw, at(zw, 'well', 'Well'))).toBe('capital_mid_sentence'); // the seen-words clause adds nothing where no word joins
+    const low = 'She said \u201Ano.\u2018';
+    expect(b(low, [put(low, '.')])).toBe('end_mark_doubled');
   });
 });
