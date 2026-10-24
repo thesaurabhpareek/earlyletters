@@ -467,6 +467,8 @@ if (!SPEC.google) {
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
+/** True when the signing key or the published manifest is missing, so recordings would get no words (D-115). */
+let packMissing = false;
 {
   const fromEas = String(profEnv.EXPO_PUBLIC_DOCS_BASE_URL ?? '').trim();
   const fromShell = String(process.env.EXPO_PUBLIC_DOCS_BASE_URL ?? '').trim();
@@ -524,6 +526,7 @@ if (!SPEC.google) {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
     if (keySet) step(4, 'check', 'a manifest is in the repo; check the R2 bucket serves it');
   }
+  packMissing = !keySet || !manifestPublished;
   if (stepFourMissing.length) step(4, 'open', stepFourMissing.join('; and '));
   // Only when the key check passed: a repeated key id already FAILed above.
   if (keysUsable && manifestPublished) pass('D-115: a trusted signing key and a published pack manifest are in the repo (the signed English pack release is a build 1 prerequisite; whether the host serves it is the UNVERIFIED line)');
@@ -716,7 +719,8 @@ for (const n of open) console.log(`  MISSING   ${STEPS[n]}: ${founder.get(n).why
 for (const n of toCheck) console.log(`  CHECK     ${STEPS[n]}: ${founder.get(n).why}`);
 for (const n of needed.filter((x) => founder.get(x)?.state === 'done')) console.log(`  DONE      ${STEPS[n]}: ${founder.get(n).why}`);
 if (PROFILE === 'testflight') console.log('  (Steps 6 to 12 are for alpha build 2: run `npm run preflight:alpha -w @scribe/mobile`.)');
-if (open.includes(4)) console.log('  Step 4 is required for both alpha builds (D-115): without it the build works for typing, the Book and reading, but recordings get no words.');
+if (open.includes(4) && packMissing) console.log('  Step 4 is required for both alpha builds (D-115): without it the build works for typing, the Book and reading, but recordings get no words.');
+else if (open.includes(4)) console.log('  Step 4 is open: fix the FAIL above. The key and the manifest are in, and the app uses the first key under a repeated id: recordings get their words only if the manifest was signed with that key, and the other key is unusable (F19-REQ-002).');
 
 console.log(`\n${order.map((l) => `${count(l)} ${l.toLowerCase()}`).join(', ')}, ${open.length} founder step(s) missing, ${toCheck.length} to check by hand`);
 console.log(

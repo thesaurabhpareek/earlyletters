@@ -1430,7 +1430,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 ## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
 
 #### BL-441 `decide()` honours own Plus on an account-level surface
-- Status: ready. Mode: agent (founder merge: engine file, D-107). Owner: payments engineer (the plan engine, `packages/core/src/plan.ts`). Size: S.
+- Status: ready. Mode: agent (engine file: a founder merge under D-107; under D-117's operating rule the coordinator merges it after two independent passing reviews on the current head and green CI). Owner: payments engineer (the plan engine, `packages/core/src/plan.ts`). Size: S.
 - Satisfies: D-036 and plan rule R-3 (no offer where Plus is already on).
 - Scope: `packages/core/src/plan.ts:203` allows own Plus only while `roleInBook === 'parent'`. With `roleInBook: null` and `book: null` (the documented account-level shape) a person whose Plus is on is offered Plus. Latent: no screen calls `decide()` with a null role yet.
 - Done when: own Plus is `allow` on an account-level surface; the `it.fails` "[BL-441] [R-3] own Plus on an account-level surface..." in `packages/core/test/plan.edges.test.ts` becomes `it` and passes; the property test "never offers Plus where it is already on" in `plan.test.ts` counts a null role as on.
