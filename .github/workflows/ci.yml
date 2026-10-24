@@ -54,7 +54,9 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Content rules (VOICE.md, BRAND.md)
         run: npm test -w @scribe/content
+      # Runs even when Content rules is red, so the privacy guard (apps/web/test) is not hidden behind it.
       - name: Engine, verifier fuzz, entitlements, analytics, tokens, experiments
+        if: ${{ !cancelled() }}
         run: npm test
 
   db:
