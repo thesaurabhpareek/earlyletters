@@ -199,7 +199,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-17 Expo account, `eas init`, build variables and the first development build**
   - Time: 2 hours, plus build queue time.
   - Cost: free tier to start [U].
-  - Steps: create the Expo account (two-factor); `cd apps/mobile && npx eas-cli login && npx eas-cli init`; send the coordinator the `projectId` (BL-339; `app.config.ts` is dynamic, so it is committed by an agent). Set EAS environment variables per profile (`docs/ops/AUTH_SETUP.md` section 8): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (publishable key only, never the service key), `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the client for that profile's bundle id), `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` (after FT-24), `EXPO_PUBLIC_EMAIL_OTP_LENGTH=6`. Register your phones (`npx eas-cli device:create`), then `npx eas-cli build --profile development --platform ios` with EAS-managed credentials. Install and record one letter.
+  - Steps: create the Expo account (two-factor); `cd apps/mobile && npx eas-cli@24.10.0 login && npx eas-cli@24.10.0 init`; send the coordinator the `projectId` (BL-339; `app.config.ts` is dynamic, so it is committed by an agent). Set EAS environment variables per profile (`docs/ops/AUTH_SETUP.md` section 8): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (publishable key only, never the service key), `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the client for that profile's bundle id), `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` (after FT-24), `EXPO_PUBLIC_EMAIL_OTP_LENGTH=6`. Register your phones (`npx eas-cli device:create`), then `npx eas-cli build --profile development --platform ios` with EAS-managed credentials. Install and record one letter.
   - By: Fri 9 Oct (ROADMAP week 1 exit).
   - Blocks: every device test (FT-22), store screenshots (BL-340), TestFlight (FT-25); BL-030, BL-108.
 
@@ -279,7 +279,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-25 TestFlight C0, then Beta App Review**
   - Time: 2 hours.
   - Cost: US $0.
-  - Steps: upload the first preview or production-profile build (`npx eas-cli build --profile production` then `npx eas-cli submit`); add your family as internal testers (C0; internal testers do not need Beta App Review). Fill TestFlight test information (what to test, feedback email `hello@earlyletters.com`, privacy policy URL [U: ASC asks for it for external testing], a sign-in note for the reviewer). Submit the build for **Beta App Review** for the external C1 group. Never call it "beta" in store text; the in-app "early version" note stays (D-060).
+  - Steps: upload the first preview or production-profile build (`npx eas-cli@24.10.0 build --profile production` then `npx eas-cli@24.10.0 submit`); add your family as internal testers (C0; internal testers do not need Beta App Review). Fill TestFlight test information (what to test, feedback email `hello@earlyletters.com`, privacy policy URL [U: ASC asks for it for external testing], a sign-in note for the reviewer). Submit the build for **Beta App Review** for the external C1 group. Never call it "beta" in store text; the in-app "early version" note stays (D-060).
   - By: C0 Wed 14 Oct; Beta App Review submitted Thu 15 Oct (ROADMAP: C1 invites go out Mon 19 Oct).
   - Blocks: C1 (FT-32); BL-280.
 

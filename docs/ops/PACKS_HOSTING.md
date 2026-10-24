@@ -174,7 +174,7 @@ gh pr create --base develop --fill
 
 (`remote-config.json` is listed even when unchanged: adding an unchanged file is harmless, and a kill switch you set must be in git, which is the audit log of what was served.)
 
-`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **You merge this PR yourself**, before `eas build`: it changes the app's trust root and release configuration, which D-107 keeps as founder merges. No `gh`? `brew install gh && gh auth login`, or open the PR on github.com. After merging, start the build from `develop`: Actions > TestFlight > Run workflow, branch `develop`.
+`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **You merge this PR yourself**, before `eas build`: it changes the app's trust root and release configuration, which D-107 keeps as founder merges. No `gh`? `brew install gh && gh auth login`, or open the PR on github.com. After merging, start the build from `develop`: Actions > TestFlight > Run workflow, branch `develop`, once `develop` is the default branch (AF-05). Until then that button does not exist, so build from your own computer (`docs/release/TESTFLIGHT.md` step 5).
 
 ### 9. Verify
 

@@ -212,7 +212,7 @@ if (prof) {
   check(carrying.length === 0, `no store profile sets EXPO_PUBLIC_E2E (store profiles: ${store.join(', ')})`, `EXPO_PUBLIC_E2E is set in store profile(s) ${carrying.join(', ')}: e2e seams never go in a build that can be uploaded (B-9). Remove it there; only the e2e simulator profile carries it.`);
   const shell = process.env.EXPO_PUBLIC_E2E;
   check(shell === undefined || shell.trim() === '', 'EXPO_PUBLIC_E2E is not set in this shell', `EXPO_PUBLIC_E2E is set in this shell (${JSON.stringify(shell)}), and a local build reads the shell: unset it before building ${PROFILE} (B-9; apps/mobile/e2e/README.md section 9 sets it only for the simulator build).`);
-  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_E2E (this script cannot read it); if it does, app.config.ts refuses the EAS build (B-9)`);
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_E2E (this script cannot read it); if it does, app.config.ts refuses the EAS build (B-9). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs the project id, step 3).`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
 {
@@ -291,7 +291,7 @@ if (cfg) {
     pass(`EAS project id is in the config (${cfg.extra.eas.projectId})`);
     step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
   } else {
-    warn('No extra.eas.projectId in app.config.ts. `eas init` links the Expo project, but app.config.ts is a dynamic config and the CLI may not write to it (unverified): the founder sends the id it prints and it is added to `extra` in a small PR. A non-interactive build (the GitHub workflow) cannot proceed without it.');
+    warn('No extra.eas.projectId in app.config.ts yet: founder step 3, listed as MISSING below. app.config.ts is a dynamic config, so eas-cli cannot write the id into it, and every `eas build`, from GitHub or from your own computer, stops until step 3\'s PR adds it (eas-cli 24.10.0, getProjectIdAsync.js: "the EAS project ID can\'t automatically be added"). The founder sends the id that expo.dev or `eas init` shows; it goes into `extra` in a small PR.');
     step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN as a GitHub secret');
   }
 
@@ -395,7 +395,7 @@ if (SERVER_ON || process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC
   // the same values in your shell first, their shape is checked here; nothing is sent anywhere.
   const url = String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
   const key = String(process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
-  const howToSee = 'Run `npx eas-cli env:list --environment preview` to see them, or export the two values in this shell and run the preflight again.';
+  const howToSee = 'Run `npx eas-cli@24.10.0 env:list --environment preview --include-sensitive` in apps/mobile to see them (it needs the project id, step 3; without --include-sensitive it shows the names only), or export the two values in this shell and run the preflight again.';
   if (!url && !key) {
     unverified(`EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY are not in this shell, so they could not be checked. A preview build without them in the EAS "preview" environment has the switch on but no project: the sign-in sheet says sign-in is not available in this build. ${howToSee}`);
     step(9, 'check', 'the staging URL and anon key must be EAS environment variables in "preview"; not visible here');
@@ -463,7 +463,7 @@ if (!SPEC.google) {
     `no Google client id in the ${PROFILE} profile or this shell (${SPEC.build} does not offer Google sign-in)`,
     `${found.join('; ')}. ${SPEC.build} does not offer Google sign-in, and the privacy manifest (src/lib/privacy-manifest.ts) and S17's App Privacy worksheet have none of Google's data types. Remove it: Google's types go into the manifest and the worksheet first, and offering Google is the founder's call after S17 signs off.`,
   );
-  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID or EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (this script cannot read it); if it does, the EAS build carries Google sign-in that the privacy manifest does not declare`);
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID or EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (this script cannot read it); if it does, the EAS build carries Google sign-in that the privacy manifest does not declare. Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs the project id, step 3).`);
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
@@ -475,6 +475,8 @@ if (!SPEC.google) {
   const valid = /^https:\/\/[^\s/]+$/.test(value.replace(/\/+$/, ''));
   let keySet = false;
   let keysUsable = false;
+  /** Why step 4 is still open: the key, the manifest, or both (the founder-step summary names each one). */
+  const stepFourMissing = [];
   let keyIds = [];
   try {
     const keysSource = read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, '');
@@ -496,13 +498,16 @@ if (!SPEC.google) {
     fail(
       `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\`, then \`node scripts/packs/keygen.mjs --backup\`, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${d115} ${runbook}`,
     );
-    step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`, and paste both public lines)');
+    stepFourMissing.push('packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`, and paste both public lines)');
   } else {
     // The app and publish.ts take the first key with a given id, so a second key under the same id is never used (F19-REQ-002: two keys).
     const repeated = [...new Set(keyIds.filter((id, i) => keyIds.indexOf(id) !== i))];
     keysUsable = repeated.length === 0;
-    if (repeated.length) fail(`packages/api/src/keys.ts lists key id ${repeated.join(', ')} more than once; only the first is ever used, so the other key fails when it is needed. Give the backup its own id: \`node scripts/packs/keygen.mjs --backup\`.`);
-    else if (keyIds.length < 2) warn(`packages/api/src/keys.ts trusts ${keyIds.length || 'one'} signing key; F19-REQ-002 asks for two, a primary and a cold backup (\`node scripts/packs/keygen.mjs --backup\`). With one, losing it stops every new document until an app release.`);
+    if (repeated.length) {
+      fail(`packages/api/src/keys.ts lists key id ${repeated.join(', ')} more than once; only the first is ever used, so the other key fails when it is needed. Give the backup its own id: \`node scripts/packs/keygen.mjs --backup\`.`);
+      // The summary at the end says FAIL as well, not CHECK, even when a manifest is published.
+      stepFourMissing.push(`FAIL above: packages/api/src/keys.ts lists key id ${repeated.join(', ')} more than once (give the backup its own id: \`node scripts/packs/keygen.mjs --backup\`)`);
+    } else if (keyIds.length < 2) warn(`packages/api/src/keys.ts trusts ${keyIds.length || 'one'} signing key; F19-REQ-002 asks for two, a primary and a cold backup (\`node scripts/packs/keygen.mjs --backup\`). With one, losing it stops every new document until an app release.`);
     else pass(`${keyIds.length} pack signing keys in packages/api/src/keys.ts, each with its own id`);
   }
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
@@ -514,11 +519,12 @@ if (!SPEC.google) {
   }
   if (!manifestPublished) {
     fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release\`, then \`upload\` (docs/ops/PACKS_HOSTING.md), or the host answers 404 and nothing downloads. ${d115}`);
-    step(4, 'open', 'no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release` and `upload`)');
+    stepFourMissing.push('no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release` and `upload`)');
   } else {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
-    step(4, keySet ? 'check' : 'open', 'a manifest is in the repo; check the R2 bucket serves it');
+    if (keySet) step(4, 'check', 'a manifest is in the repo; check the R2 bucket serves it');
   }
+  if (stepFourMissing.length) step(4, 'open', stepFourMissing.join('; and '));
   // Only when the key check passed: a repeated key id already FAILed above.
   if (keysUsable && manifestPublished) pass('D-115: a trusted signing key and a published pack manifest are in the repo (the signed English pack release is a build 1 prerequisite; whether the host serves it is the UNVERIFIED line)');
 }
@@ -670,7 +676,7 @@ step(1, 'check', 'Apple Developer Program membership Active (developer.apple.com
 step(2, 'check', 'App Store Connect record for the .preview bundle id, the testers, and the API key stored in EAS for builds from GitHub Actions');
 if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config did not evaluate)');
 if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
-step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1; the build itself runs in GitHub Actions or on your own computer, with iOS credentials in EAS' : 'build 1 is optional before build 2');
+step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1; the build itself runs in GitHub Actions or on your own computer, with iOS credentials in EAS' : 'making build 1 first is optional; the signed pack (step 4) is not, D-115');
 if (SERVER_ON) {
   // D-041: the schema reaches staging only through .github/workflows/deploy-db.yml. Build 2 runs develop's app
   // against staging, so staging needs develop's migrations, which only a manual run from develop can deliver.
