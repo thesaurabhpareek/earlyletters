@@ -15,7 +15,8 @@
     "test:db:perf": "node supabase/tests/run.mjs perf",
     "test:functions": "npx -y deno@2.9.6 test --no-prompt --allow-read --sloppy-imports supabase/functions/purge-worker supabase/functions/analytics-forget supabase/functions/apple-token supabase/functions/_shared supabase/functions/invite-redeem supabase/functions/subscription-status supabase/functions/escrow scripts/ops",
     "experiment": "npm run experiment -w @scribe/experiments --",
-    "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"
+    "experiment:edits": "npm run experiment:edits -w @scribe/experiments --",
+    "check:data-map": "node scripts/check-data-map.mjs"
   },
   "engines": {
     "node": ">=22.5"
