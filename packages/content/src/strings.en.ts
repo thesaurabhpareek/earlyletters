@@ -983,11 +983,11 @@ export const en = {
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
     // Off: "Type instead" first, "Open Settings" quiet. Busy and full: `common.tryAgainButton` and `micDenied.typeButton`.
-    // micDenied title and body are held until P4: today every start failure (a call holding the microphone,
-    // a full phone) lands on this screen, so "The microphone is off" would be untrue there (spec S13).
+    // Switched by P4 with Listen telling the three apart (listen.logic.ts `startBlocker`, `startFailure`): only a
+    // microphone that is really off reaches these words.
     micDenied: {
-      title: "We can't hear you yet",
-      body: "Allow the microphone in Settings to speak your letters. Or type instead.",
+      title: "The microphone is off",
+      body: "Turn it on in Settings, or type this one.",
       settingsButton: "Open Settings",
       typeButton: "Type instead",
     },
