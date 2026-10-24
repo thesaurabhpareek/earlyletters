@@ -21,15 +21,27 @@
  * Binary-ish files (images, PDFs, fonts, media, or any file with a NUL byte)
  * are read as latin1, one character per byte. Dates are looked for in all of
  * it; names only in its text-like runs (BINARY_TEXT), since the rest is noise
- * that spells short words by chance. Not covered inside binaries: UTF-16 text
- * (many audio tags, some PDF strings), compressed text (most PDF streams, zip
- * contents), non-Latin spellings stored as UTF-8, and a name in a short run
- * without a NUL byte on each side. Files over 5 MB are skipped.
+ * that spells short words by chance. Files over 5 MB are skipped.
+ *
+ * Known gaps, recorded here and not fixed:
+ *  - inside binaries: UTF-16 text (many audio tags, some PDF strings),
+ *    compressed text (most PDF streams, zip contents), any non-ASCII spelling
+ *    stored as UTF-8 (accented Latin too), a name in a short run without a
+ *    NUL byte on each side, and a NUL-ended string whose last letter is
+ *    accented;
+ *  - dates (older than the binary scan): an ISO timestamp (YYYY-MM-DDThh:mm),
+ *    a date followed by a letter, digit or underscore (YYYY-MM-DD_notes),
+ *    EXIF dates in photos (YYYY:MM:DD), DD-Mon-YYYY, D/M/YY, YYYYMMDD and
+ *    "YYYY Month D";
+ *  - names glued to other letters or digits, anywhere.
  *
  * The scan fails when the file list lacks the root CLAUDE.md or this file at
  * its root path (an empty list, or the wrong root), and when a listed file
- * cannot be read (for example outside a sparse checkout). A printed path shows
- * <name> for a guarded name, and # for its digits when it holds the date.
+ * cannot be read (for example outside a sparse checkout). A failure prints a
+ * path only as the first 8 hex digits of its SHA-256, plus a common extension,
+ * so it never shows a name or date, even one glued into a file name. To find
+ * the file:
+ *   git ls-files -z | while IFS= read -r -d '' f; do printf '%s %s\n' "$(printf %s "$f" | sha256sum | cut -c1-8)" "$f"; done | grep '^<hex>'
  *
  * Skipped: the contents of package-lock.json (third-party names) and of this
  * file. Every path, theirs included, is still checked.
@@ -71,6 +83,11 @@ const PRINTABLE = '(?:[\\x20-\\x7e]|[\\xc0-\\xd6\\xd8-\\xf6\\xf8-\\xff](?=[\\x20
 const BINARY_TEXT = new RegExp(`${PRINTABLE}{12,}|(?<=\\x00)${PRINTABLE}+(?=\\x00)`, 'g');
 /** The list proves nothing without these: the root CLAUDE.md, and this file at its root path (so ROOT is the root). */
 const LIST_MARKERS = ['CLAUDE.md', SELF];
+/** Extensions a printed path may keep. None is a guarded token (tested below). */
+const SHOWN_EXTS = [
+  ...['md', 'mdx', 'txt', 'ts', 'tsx', 'js', 'mjs', 'cjs', 'json', 'yml', 'yaml', 'sql', 'html', 'css', 'svg', 'sh', 'toml', 'bin'],
+  ...['png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'ttf', 'otf', 'woff', 'woff2', 'm4a', 'wav', 'mp3', 'mp4', 'mov', 'zip', 'ico'],
+];
 const NONE = new Set<string>();
 
 const sha = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
@@ -130,10 +147,14 @@ export function contentFindings(file: string, bytes: Buffer, names = NAME_HASHES
   return hits;
 }
 
-/** A path as it may be printed: a guarded name becomes <name>, and digits become # when it holds the guarded date. */
-function shown(path: string, names: Set<string>, dates: Set<string>): string {
-  const out = path.normalize('NFC').replace(/[\p{L}\p{M}\p{N}]+/gu, (w) => (tokens(w).some((t) => names.has(sha(t))) ? '<name>' : w));
-  return dateCandidates(path).some((d) => dates.has(sha(d))) ? out.replace(/\d/g, '#') : out;
+/**
+ * A path as a failure may print it: the first 8 hex digits of its SHA-256, plus its extension when
+ * that is a common one (SHOWN_EXTS). Masking only what the guard recognises would still
+ * print a name glued into a file name, or a date form the matcher misses; a hash prints neither.
+ */
+export function shown(path: string): string {
+  const ext = /\.([a-z0-9]+)$/i.exec(path)?.[1]?.toLowerCase() ?? '';
+  return sha(path).slice(0, 8) + (SHOWN_EXTS.includes(ext) ? `.${ext}` : '');
 }
 
 /**
@@ -155,11 +176,11 @@ export function scan(files: string[], read: (file: string) => Buffer | null, nam
       try {
         bytes = read(f);
       } catch {
-        unread.push(shown(f, names, dates));
+        unread.push(shown(f));
       }
       if (bytes) hits.push(...contentFindings(f, bytes, names, dates));
     }
-    if (hits.length) bad.push(`${shown(f, names, dates)}: ${hits.join(', ')}`);
+    if (hits.length) bad.push(`${shown(f)}: ${hits.join(', ')}`);
   }
   if (unread.length) {
     const rest = bad.length ? ` Findings in the rest: ${bad.join('; ')}` : '';
@@ -201,18 +222,32 @@ describe('no real family details in tracked files', () => {
     const base = { 'CLAUDE.md': Buffer.from('# CLAUDE.md\n') };
     const list = (...more: string[]) => [...LIST_MARKERS, ...more];
 
-    it('catches a name or a date that is in a path, and prints the path without it', () => {
-      const read = tree({
-        ...base,
+    it('catches a name or a date that is in a path, and prints every path as a hash', () => {
+      const files: Record<string, Buffer> = {
         'docs/plantedname-notes.md': Buffer.from('Asha slept.\n'),
         'docs/plantedname-both.md': Buffer.from('Plantedname\n'),
         'docs/1999-09-09-notes.md': Buffer.from('Asha woke.\n'),
-      });
-      expect(scan(list('docs/plantedname-notes.md', 'docs/plantedname-both.md', 'docs/1999-09-09-notes.md'), read, PLANT, PLANT_DATE)).toEqual([
-        'docs/<name>-notes.md: real family name in the path',
-        'docs/<name>-both.md: real family name in the path, real family name',
-        'docs/####-##-##-notes.md: real birth date in the path',
+        // Forms the matcher does not know, in files whose contents hit, so their paths are printed.
+        'docs/plantedname2-glued.md': Buffer.from('Plantedname\n'),
+        'docs/19990909-compact.md': Buffer.from('Plantedname\n'),
+        'docs/1999-09-09_underscore.md': Buffer.from('Plantedname\n'),
+      };
+      const out = scan(list(...Object.keys(files)), tree({ ...base, ...files }), PLANT, PLANT_DATE);
+      expect(out.map((line) => line.replace(/^[0-9a-f]{8}\.md: /, '<hash>.md: '))).toEqual([
+        '<hash>.md: real family name in the path',
+        '<hash>.md: real family name in the path, real family name',
+        '<hash>.md: real birth date in the path',
+        '<hash>.md: real family name',
+        '<hash>.md: real family name',
+        '<hash>.md: real family name',
       ]);
+      expect(out.join('\n')).not.toMatch(/planted|1999|0909|09-09/i);
+      expect(out[0]).toBe(`${sha('docs/plantedname-notes.md').slice(0, 8)}.md: real family name in the path`);
+    });
+
+    it('keeps only extensions that are not guarded tokens', () => {
+      expect(SHOWN_EXTS.flatMap((ext) => findings(ext))).toEqual([]);
+      expect(shown('docs/notes.plantedname')).toMatch(/^[0-9a-f]{8}$/);
     });
 
     it('catches a name in a text-like run of a binary-ish file, read as latin1', () => {
@@ -226,8 +261,8 @@ describe('no real family details in tracked files', () => {
       const bin = Buffer.from([0x01, 0xff, 0x00, ...Buffer.from('Plantedname'), 0x00, 0x89]);
       const read = tree({ ...base, 'docs/letter.pdf': pdf, 'data/cache.bin': bin });
       expect(scan(list('docs/letter.pdf', 'data/cache.bin'), read, PLANT)).toEqual([
-        'docs/letter.pdf: real family name',
-        'data/cache.bin: real family name',
+        `${shown('docs/letter.pdf')}: real family name`,
+        `${shown('data/cache.bin')}: real family name`,
       ]);
     });
 
@@ -243,12 +278,12 @@ describe('no real family details in tracked files', () => {
       // Listed from a folder that has its own CLAUDE.md: this file's root path is missing.
       expect(() => scan(['CLAUDE.md', 'test/no-real-family-data.test.ts'], tree(base), PLANT)).toThrow(`lacks ${SELF}:`);
       // Outside a sparse checkout, or deleted in the working tree.
-      expect(() => scan(list('docs/outside-the-cone.md'), tree(base), PLANT)).toThrow('1 listed file(s) could not be read');
+      expect(() => scan(list('docs/plantedname-outside.md'), tree(base), PLANT)).toThrow(/1 listed file\(s\) could not be read [^:]*: [0-9a-f]{8}\.md\./);
     });
   });
 
   it('no tracked file has a real family name or the real birth date in its path or contents', () => {
     // The message names the file and the kind of detail, never the value.
-    expect(scan(trackedFiles(), readTracked), 'Replace with the fictional family "Asha" / 2025-04-12 (CLAUDE.md)').toEqual([]);
+    expect(scan(trackedFiles(), readTracked), 'Replace with the fictional family "Asha" / 2025-04-12 (CLAUDE.md); paths are hashed, see the header to find them').toEqual([]);
   }, 60_000);
 });
