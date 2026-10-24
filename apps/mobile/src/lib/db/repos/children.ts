@@ -22,7 +22,13 @@ interface ChildRow {
   quiet_at: string | null;
 }
 
-const COLS = `c.id, c.name, c.birthday, c.due_date, p.signs_as, p.reminders_on, c.family_can_read, c.role, c.created_by_me, p.quiet_at`;
+/**
+ * The signature and reminder switch come from child_member_prefs. A book with no prefs row yet (one added on
+ * build 1 after a rollback, before reconcileKeptColumns has run) reads its kept columns instead, so it never
+ * shows an empty signature and its first edit never writes one.
+ */
+const COLS = `c.id, c.name, c.birthday, c.due_date, COALESCE(p.signs_as, c.signs_as) AS signs_as,
+  COALESCE(p.reminders_on, c.reminders_on) AS reminders_on, c.family_can_read, c.role, c.created_by_me, p.quiet_at`;
 const FROM = 'children c LEFT JOIN child_member_prefs p ON p.child_id = c.id';
 
 /** Books this person left, or that were deleted on the server, are not listed (their own letters stay on the phone). */
@@ -78,8 +84,9 @@ export function prefsRow(
 /**
  * Writes this person's signature and reminder choice for a book, creating the prefs row if needed.
  * The same two values are mirrored into `children.signs_as` and `children.reminders_on`, which v7 keeps
- * (never reads) so that a v6 build opening this file after a rollback still lists its books with the
- * current signature (review L on #166). The mirror goes with the columns once MOB-09 ships.
+ * so that a v6 build opening this file after a rollback still lists its books with the current signature
+ * (review L on #166). They are read only to bring back what that build wrote (reconcileKeptColumns, and
+ * COLS for a book with no prefs row). The mirror goes with the columns once MOB-09 ships.
  */
 export function upsertPrefs(db: RepoContext['db'], id: string, p: { signsAs: string; remindersOn: boolean }, now: string): void {
   db.run(
@@ -137,4 +144,74 @@ export function unhide(ctx: RepoContext, id: string): void {
 /** "Quiet this book" for this person (F12-REQ-011): letters untouched; no reason asked; reversible. */
 export function setQuiet(ctx: RepoContext, id: string, quiet: boolean): void {
   setPrefTime(ctx, id, 'quiet_at', quiet);
+}
+
+/** A book and its prefs row side by side. The kept columns and updated_at are NOT NULL since v1; p_* are null when there is no prefs row. */
+interface KeptRow {
+  id: string;
+  k_signs: string;
+  k_reminders: number;
+  k_hidden: string | null;
+  k_at: string;
+  p_id: string | null;
+  p_signs: string | null;
+  p_reminders: number | null;
+  p_hidden: string | null;
+  p_at: string | null;
+}
+
+/**
+ * After a rollback to build 1 (the kill path, docs/release/AUTOMATION.md 2.10; review of #166): build 1 is a
+ * v6 build. It finds this file newer, leaves the schema alone, and reads and writes a book's kept columns
+ * (`children.signs_as`, `children.reminders_on`, `children.hidden_at`) directly, never `child_member_prefs`.
+ * This brings what the person set there into the prefs row, so nothing set on build 1 is lost or stuck.
+ * store.ts runs it once per open, in one transaction, before anything reads or writes a book.
+ *
+ * Which value is later is told by write order, not by the clock: every write of this build and of v7 sets the
+ * prefs value and its kept column together (upsertPrefs mirrors; nothing here sets `children.hidden_at`, which
+ * migration 7 emptied). So a kept column that differs from its prefs value, or a `children.hidden_at` that is
+ * set, was written after the prefs value, by build 1. The updated_at columns cannot decide it: a hide or quiet
+ * moves the prefs row's time without the signature changing, and a pull or a rename moves the book's.
+ * - No prefs row (a book added on build 1): one is made from the kept columns.
+ * - Signature or reminder switch differs: the kept value goes into the prefs row. An empty signature is not a
+ *   value a person set (the editor refuses one; it is the column default), so it never replaces a set one:
+ *   the prefs value is written back to the kept column instead.
+ * - `children.hidden_at` set (hidden on build 1): the book is hidden for this person (a prefs hide time it
+ *   already had stays) and the column is emptied, as migration 7 did, so "Show this book again" works.
+ * When the prefs row changes, its updated_at becomes the later of its own and the book's (build 1 stamps the
+ * book on every write), so it never goes back. Letters, the book's own columns and the sync queue are not
+ * touched: build 1 queued its own prefs ops when this phone was signed in.
+ * Returns how many books changed (no values leave this function: nothing is logged).
+ */
+export function reconcileKeptColumns(db: RepoContext['db']): number {
+  const rows = db.all<KeptRow>(
+    `SELECT c.id, c.signs_as AS k_signs, c.reminders_on AS k_reminders, c.hidden_at AS k_hidden, c.updated_at AS k_at,
+       p.child_id AS p_id, p.signs_as AS p_signs, p.reminders_on AS p_reminders, p.hidden_at AS p_hidden, p.updated_at AS p_at
+     FROM ${FROM}
+     WHERE p.child_id IS NULL OR c.hidden_at IS NOT NULL OR c.signs_as IS NOT p.signs_as OR c.reminders_on IS NOT p.reminders_on`,
+  );
+  for (const r of rows) {
+    if (r.p_id === null) {
+      db.run(
+        'INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        r.id, r.k_signs, r.k_reminders, r.k_hidden, r.k_at,
+      );
+    } else {
+      const pSigns = r.p_signs ?? '';
+      const signs = r.k_signs.trim() !== '' ? r.k_signs : pSigns;
+      const hidden = r.k_hidden !== null ? r.p_hidden ?? r.k_hidden : r.p_hidden;
+      if (signs !== pSigns || r.k_reminders !== r.p_reminders || hidden !== r.p_hidden) {
+        // ISO text from toISOString() on every build, so the later time is the larger string.
+        const at = r.p_at !== null && r.p_at > r.k_at ? r.p_at : r.k_at;
+        db.run(
+          'UPDATE child_member_prefs SET signs_as = ?, reminders_on = ?, hidden_at = ?, updated_at = ? WHERE child_id = ?',
+          signs, r.k_reminders, hidden, at, r.id,
+        );
+      }
+      // The kept columns mirror the prefs row again (an empty kept signature takes the set one back).
+      if (signs !== r.k_signs) db.run('UPDATE children SET signs_as = ? WHERE id = ?', signs, r.id);
+    }
+    if (r.k_hidden !== null) db.run('UPDATE children SET hidden_at = NULL WHERE id = ?', r.id);
+  }
+  return rows.length;
 }

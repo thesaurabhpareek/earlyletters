@@ -172,9 +172,27 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     }
     return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
   }
-  const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
+  if (!migration.newer) reconcileAfterRollback(opened.db);
+  const result: OpenStoreResult ={ ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   return result;
+}
+
+/**
+ * After a rollback to build 1 (a v6 build, the kill path in docs/release/AUTOMATION.md 2.10), brings the
+ * signature, reminder switch and hide the person set there into child_member_prefs, before anything reads
+ * a book (db/repos/children.ts reconcileKeptColumns). A file from a newer build is not touched. Never
+ * blocks launch: a failure rolls back, books still read their kept signature, and the next open tries
+ * again. Nothing is logged (an SQLite message can quote a signature).
+ */
+function reconcileAfterRollback(db: SqlDb): void {
+  try {
+    db.transaction(() => {
+      children.reconcileKeptColumns(db);
+    });
+  } catch {
+    // rolled back; see above
+  }
 }
 
 /** Closes the connection; the next call opens again. For tests and a future "reset this phone". */

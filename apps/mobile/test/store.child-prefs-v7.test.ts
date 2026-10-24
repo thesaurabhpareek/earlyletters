@@ -72,7 +72,8 @@ describe('[F12-REQ-004] migration 7: per-person choices move to child_member_pre
     children.insert(repo, 'c4', { name: 'Tara', birthday: '2026-08-01', dueDate: null, signsAs: 'Mum' });
     expect(children.update(repo, 'c1', { signsAs: 'Mummy', remindersOn: false })).toBe(true);
     expect(v6()).toEqual([['c1', 'Mummy', 0], ['c2', 'Amma', 0], ['c3', 'Papa', 1], ['c4', 'Mum', 1]]);
-    // And the v7 build reads only child_member_prefs: a stale mirror never reaches a screen.
+    // While the file is open, screens read child_member_prefs. (A kept column that differs at the next open
+    // was written by build 1 after a rollback, and wins then: store.rollback-build1.test.ts.)
     db.run("UPDATE children SET signs_as = 'stale' WHERE id = 'c1'");
     expect(children.get(repo, 'c1')?.signsAs).toBe('Mummy');
   });
