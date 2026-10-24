@@ -226,6 +226,28 @@ describe('[LEGAL-REQ-009] a let-go during a consent pause, behind an upload of t
     expect(base(d)).toBe('700');
   });
 
+  it('a held upload refused 42501 with no let-go of that draft queued is kept as a refused write, never dropped: its words stay (review B S12 on #259)', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('You fed the ducks.');
+    drafts.markHeld(repo, d, true);
+    enqueueHeldDraft(db, d, qctx);
+    const other = draft('You found the remote.');
+    drafts.markHeld(repo, other, true);
+    db.run("UPDATE drafts SET held_v = '650' WHERE id = ?", other);
+    enqueueHeldDiscard(db, other, qctx); // a let-go of another draft, queued behind
+    const batch = takeBatch(db, { now: NOW });
+    expect(batch.ops.map((o) => [o.type, o.id])).toEqual([['held.upsert', d], ['held.discard', other]]);
+    markSent(db, batch.rows, NOW);
+    const out = applyPushResponse(db, batch.rows, {
+      results: [{ op: batch.ops[0].op, ok: false, code: '42501' }, { op: batch.ops[1].op, ok: true, missing: true }], paused: false, stopped: false,
+    } as PushResponse, qctx);
+    expect(out.rejected).toBe(1);
+    const kept = db.all<{ code: string; payload: string }>('SELECT code, payload FROM rejected_writes WHERE entity_id = ?', d);
+    expect(kept.map((r) => r.code)).toEqual(['42501']);
+    expect((JSON.parse(kept[0].payload) as PushOp).data.typed_text).toBe('You fed the ducks.');
+    expect(db.get('SELECT typed_text FROM drafts WHERE id = ?', d)).toEqual({ typed_text: 'You fed the ducks.' });
+  });
+
   it('a held upload with no let-go behind it does not go during a pause', () => {
     const { db, repo, draft } = signedIn();
     const d = draft('You stacked the cups.');
