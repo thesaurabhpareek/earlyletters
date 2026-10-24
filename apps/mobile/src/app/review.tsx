@@ -110,7 +110,7 @@ import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
-import { afterKeep, keepSheetFor } from '@/lib/billing/keep-step';
+import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -467,7 +467,7 @@ export default function Review() {
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
       // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
-      if (await afterKeep(finalText)) setSecondFree(true);
+      if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;

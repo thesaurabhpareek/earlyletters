@@ -2,7 +2,7 @@
 /**
  * The Keep step around one save of words in Review (lib/billing/keep-step.ts; M17, D-103; F14-REQ-037; F14
  * 6.2 B), run for real: the real store on node:sqlite, the real ledger and gate, a fake Keychain, and the
- * analytics calls recorded. Review's Keep and Keep privately call keepSheetFor before the write and afterKeep
+ * analytics calls recorded. Review's Keep and Keep privately call keepSheetFor before the write and countAfterSave
  * after it (pinned in review-keep-m17.test.ts). Fictional Asha family only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +20,7 @@ vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view
 vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
 
 const store = await import('../src/lib/store');
-const { afterKeep, keepSheetFor } = await import('../src/lib/billing/keep-step');
+const { countAfterSave, keepSheetFor } = await import('../src/lib/billing/keep-step');
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 const { LEDGER_KEYCHAIN_KEY, parseLedger } = await import('../src/lib/billing/letter-ledger.logic');
 
@@ -65,7 +65,7 @@ async function keepTyped(text: string): Promise<boolean> {
     id: d.id, kind: 'letter', occurredOn: '2026-10-03', capturedAt: now(), captureMode: 'typed', editLevel: 'verbatim', promptKey: null,
     engineVersion: 5, rawTranscript: text, machineEdits: [], finalText: text, inBook: true, soundsLikeMe: null, childId: asha, authorSignsAs: 'Mama', audioUri: null,
   });
-  return afterKeep(text);
+  return countAfterSave(text);
 }
 
 describe('keepSheetFor: the gate before the write', () => {
@@ -99,7 +99,7 @@ describe('keepSheetFor: the gate before the write', () => {
   });
 });
 
-describe('afterKeep: the count and the allowance note after the write', () => {
+describe('countAfterSave: the count and the allowance note after the write', () => {
   it('the save that reaches the allowance notes it once: free_allowance_reached and the second-free line', async () => {
     expect(await keepTyped('One.')).toBe(false);
     expect(names()).toEqual([]);
@@ -113,7 +113,7 @@ describe('afterKeep: the count and the allowance note after the write', () => {
     await keepTyped('Two.');
     keychain.clear(); // the Keychain lost its copy: the next save must still mirror the count
     h.events.length = 0;
-    expect(await afterKeep('...')).toBe(false);
+    expect(await countAfterSave('...')).toBe(false);
     expect(h.events).toEqual([]);
     expect(keychainCount()).toBe(2);
   });
