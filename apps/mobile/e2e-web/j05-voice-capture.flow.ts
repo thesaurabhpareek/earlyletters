@@ -34,8 +34,10 @@ test('[J05b] microphone permission denied', async ({ app, record }) => {
       (d as { name: string }).name === 'microphone' ? Promise.resolve({ state: 'denied', onchange: null } as unknown as PermissionStatus) : q(d);
   });
   await btn(app, /^Speak/).click();
+  await expect(app.getByRole('heading', { name: 'The microphone is off' })).toBeVisible();
+  await expect(app.getByText('Turn it on in Settings, or type this one.')).toBeVisible();
   await expect(btn(app, /Type/).first()).toBeVisible();
-  await step('unhappy', 'Microphone is off', 'A calm card, not an error: it offers to type the letter instead (first), open iOS Settings, or close. The browser denial is simulated by refusing getUserMedia; on a phone it is iOS\'s permission state, and "Open Settings" is native and does nothing on web.');
+  await step('unhappy', 'Microphone is off', 'One calm state with the microphone glyph: "The microphone is off". Type instead first, Open Settings quiet, Close at the top right. Only a refused permission lands here (S13). The browser denial is simulated by refusing getUserMedia; on a phone it is iOS\'s permission state, and "Open Settings" is native and does nothing on web.');
   await btn(app, /Type/).first().click();
   await expect(btn(app, 'Save')).toBeVisible();
   await step('happy', 'Typing instead', 'The person lands on the Write page for the same prompt.');
@@ -78,4 +80,40 @@ test('[J05e] a long take', async ({ app, record }) => {
   await step('happy', 'Over a minute in', 'The clock keeps counting with no limit (here past a minute). If the level stays below speaking level for 8 seconds the line under the clock becomes a gentle "still here" (on web the fake microphone and the missing level meter make that unreliable, so it is not asserted). On a phone the elapsed time is announced to VoiceOver once a minute.');
   await btn(app, 'Finish').click();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
+});
+
+test('[J05f] the microphone is in use', async ({ app, record }) => {
+  const step = journey(record, 'J05', 'voice-capture', 10, 'J05-01');
+  await firstRun(app);
+  allowConsoleError(app, /NotReadable|in use|Could not start/i);
+  // Permission is granted, but the audio device is held (on a phone: a call, Siri, an alarm or another app).
+  await app.evaluate(() => {
+    const busy = () => Promise.reject(new DOMException('Could not start audio source', 'NotReadableError'));
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { value: busy, configurable: true });
+    const q = navigator.permissions.query.bind(navigator.permissions);
+    navigator.permissions.query = (d: PermissionDescriptor) =>
+      (d as { name: string }).name === 'microphone' ? Promise.resolve({ state: 'granted', onchange: null } as unknown as PermissionStatus) : q(d);
+  });
+  await btn(app, /^Speak/).click();
+  await expect(app.getByRole('heading', { name: 'The microphone is in use' })).toBeVisible();
+  await expect(app.getByText('The microphone is off')).toHaveCount(0);
+  await expect(btn(app, 'Try again')).toBeVisible();
+  await step('unhappy', 'The microphone is in use', 'A start that fails while permission is granted names the real cause: "The microphone is in use. A call or another app has it right now." Try again first, Type instead quiet. It never says the microphone is off, which Settings could not fix (S13).');
+});
+
+test('[J05g] Review while the words are on their way: read it back later', async ({ app, record }) => {
+  test.setTimeout(60_000);
+  const step = journey(record, 'J05', 'voice-capture', 11, 'J05-03');
+  await firstRun(app);
+  await btn(app, /^Speak/).click();
+  await expect(app.getByText('Listening.')).toBeVisible();
+  await app.waitForTimeout(1500);
+  await btn(app, 'Finish').click();
+  await expect(app.getByText('Writing down what you said.')).toBeVisible();
+  await expect(app.getByText('Long recordings take a little more time.')).toBeVisible({ timeout: 12_000 });
+  await expect(btn(app, 'Read it back later')).toBeVisible({ timeout: 12_000 });
+  await step('happy', 'Read it back later', 'The moon breathes over "Writing down what you said." and the recording\'s length. After 8 seconds one line says long recordings take a little more time; after 15 seconds with no progress a quiet "Read it back later" appears (S14). ' + NOTE_WEB);
+  await btn(app, 'Read it back later').click();
+  await expect(app.getByText('A recording, waiting for its words.')).toBeVisible();
+  await step('happy', 'Back on Tonight, waiting for its words', 'Review closes and the queue carries on. Tonight shows the recording as a card waiting for its words, with Open.');
 });
