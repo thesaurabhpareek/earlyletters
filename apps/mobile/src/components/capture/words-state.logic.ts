@@ -15,6 +15,8 @@
  *   unsupported  this phone cannot write words down        No words yet for this one     Keep the recording Type it instead
  *   fileMissing  the recording's file is not there         The recording did not save    Type it instead    none
  *   emptyTake    the file holds no sound (0 bytes)         Nothing was recorded          Record again       Type it instead
+ *   unreadable   the file has sound the phone cannot open  No words yet for this one     Keep the recording Type it instead
+ *                (the launch sweep's unplayable take: an M4A cut off mid-take, D-085)
  *   noWords      written down, and no words in it          No words in this one          Keep the recording Write the words
  *
  * Never a claim that a recording is kept when its file is empty or missing; never a title that says nobody spoke
@@ -38,13 +40,18 @@ export const WAITING_LONG_MS = 8_000;
 /** S14: after this long with no progress the waiting card offers "Read it back later". */
 export const LATER_AFTER_MS = 15_000;
 
-export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'fileMissing' | 'emptyTake' | 'noWords';
+export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'noWords';
 
 export type WordsAction = 'retry' | 'keep' | 'type' | 'write' | 'recordAgain' | 'download' | 'cellular' | 'later';
 
 export type WordsInput = {
-  /** The take's file holds no sound: the recorder or the launch sweep stored 0 bytes (draft state 'unrecoverable'). */
+  /** The take's file holds no sound: the recorder or the launch sweep stored 0 bytes (see `takeFile`). */
   emptyFile: boolean;
+  /**
+   * The take has sound the phone could not open: the launch sweep marked it unrecoverable with bytes (an M4A cut off
+   * mid-take). The recording is kept; its words cannot be written down from it (see `takeFile`).
+   */
+  unreadable?: boolean;
   job: Pick<Job, 'phase' | 'outcome' | 'failure' | 'progress'> | null;
   /** The language download (D-087): whether to ask, its progress (0 to 1) and why it waits. */
   download: {
@@ -164,6 +171,14 @@ function languageDownload(i: WordsInput): WordsCard {
 }
 
 /**
+ * The clock for "no progress" (S14): it starts again whenever the job shows a sign of progress, a new part done or a
+ * change of phase (`key`), and keeps its time otherwise.
+ */
+export function progressClock(prev: { key: string; at: number }, key: string, now: number): { key: string; at: number } {
+  return prev.key === key ? prev : { key, at: now };
+}
+
+/**
  * The waiting card's hints (S14): "Long recordings take a little more time." after 8 s, and "Read it back later"
  * after 15 s with no progress (a new part, or a change of phase). Once offered, "Read it back later" stays, so a
  * control never vanishes from under a finger when the next part arrives.
@@ -185,6 +200,10 @@ export function wordsCard(i: WordsInput): WordsCard {
       primary: 'recordAgain',
       quiet: 'type',
     };
+  }
+  if (i.unreadable) {
+    const t = copy.errors.transcriptionFailed;
+    return { state: 'unreadable', kind: 'error', art: 'envelope', still: true, title: t.title, body: t.body, primary: 'keep', quiet: 'type' };
   }
   const job = i.job;
   if (job?.phase === 'failed') {
@@ -223,11 +242,26 @@ export function wordsActions(card: Pick<WordsCard, 'primary' | 'quiet'>): WordsA
 }
 
 /**
- * Why a take stopped early, one line above the card or the letter (S14): leaving the app, a call or an alert (Listen's
- * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line.
+ * What an `unrecoverable` draft holds, by the same rule as Tonight's card (draft-card.logic.ts `draftState`): empty
+ * when no bytes were stored, unreadable when it has bytes the phone could not open. Any other draft is neither.
  */
-export function stopLine(s: { stopped?: string | null; recoveredAt: string | null; spoken: boolean }): string | null {
-  if (!s.spoken) return null;
+export function takeFile(d: { state: string; audioBytes: number | null }): 'empty' | 'unreadable' | null {
+  if (d.state !== 'unrecoverable') return null;
+  return d.audioBytes ? 'unreadable' : 'empty';
+}
+
+/** Whether the card on screen stands over a kept recording: not when the file is empty or missing (S16). */
+export function recordingKept(card: Pick<WordsCard, 'state'> | null): boolean {
+  return !(card && (card.state === 'emptyTake' || card.state === 'fileMissing'));
+}
+
+/**
+ * Why a take stopped early, one line above the card or the letter (S14): leaving the app, a call or an alert (Listen's
+ * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line. Every
+ * line ends "Everything before that is kept.", so none shows when no recording was kept (S16: `kept` false).
+ */
+export function stopLine(s: { stopped?: string | null; recoveredAt: string | null; spoken: boolean; kept: boolean }): string | null {
+  if (!s.spoken || !s.kept) return null;
   if (s.stopped === 'background') return wordsCopy.pack.stoppedInBackground;
   if (s.stopped === 'interruption') return wordsCopy.pack.stoppedInterruption;
   if (s.recoveredAt) return wordsCopy.pack.stoppedClosed;
