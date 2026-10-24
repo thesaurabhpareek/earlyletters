@@ -119,6 +119,12 @@ describe('one room, five moments (S11, S12)', () => {
     expect(listenRoom('asking')).toMatchObject({ close: false, startControl: false, aura: 'ready', clock: false, controls: false });
   });
 
+  it('[review B L2] the hint "Tap the red circle and talk." shows only when the circle can be tapped', () => {
+    expect(listenRoom('asking').line).toBe('none');
+    expect(all.filter((p) => listenRoom(p).line === 'readyHint')).toEqual(['ready']);
+    for (const p of all) expect(listenRoom(p).line === 'readyHint', p).toBe(listenRoom(p).startControl);
+  });
+
   it('[review A L2] Close only at rest, so no take can begin behind a closed screen', () => {
     expect(all.filter((p) => listenRoom(p).close)).toEqual(['ready']);
   });
@@ -233,7 +239,46 @@ describe('the screen uses them (source)', () => {
 
   it('5.8 rule 3: Pause and Finish are on screen in every moment of the room; Let it go keeps its slot', () => {
     expect(c).toMatch(/disabled=\{!room\.controls\}/);
-    expect(c).toMatch(/height: tokens\.target\.min/);
+  });
+
+  it('[review B L3] the kept slots hold the very control, invisible and inert, so nothing moves at any text size', () => {
+    // Let it go: the same quiet Button (48 pt at the default size, taller at large sizes), not a fixed 44 pt box.
+    expect(c).toMatch(/<View style=\{\{ opacity: 0 \}\} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="listen\.discardSlot">\s*<Button variant="quiet" disabled className="self-center">/);
+    expect(c).not.toMatch(/height: tokens\.target\.min/);
+    // The header: the same ModalHeader, invisible and inert, when Close is not offered.
+    expect(c).toMatch(/testID="listen\.headerSlot">\s*<ModalHeader onClose=\{close\} closeDisabled \/>/);
+  });
+
+  it('[review B B1] at accessibility sizes the room scrolls and Pause, Finish and Let it go stay pinned below it', () => {
+    const room = c.slice(c.indexOf('testID="listen.room"'), c.indexOf('</ScrollView>'));
+    expect(c).toMatch(/<ScrollView className="flex-1" contentContainerStyle=\{\{ flexGrow: 1 \}\}[^>]*testID="listen\.room">/);
+    // Inside the scroll: the audience block, the prompt, the circle, the clock and the lines.
+    for (const part of ['p.toChild', 'testID="listen.prompt"', '<ListeningAura', 'elapsedClock(', 't.listeningHint']) expect(room, part).toContain(part);
+    // After it, outside the scroll: the controls.
+    const after = c.slice(c.indexOf('</ScrollView>'));
+    for (const part of ['onPress={togglePause}', 'onPress={finish}', 'onPress={discard}']) expect(after, part).toContain(part);
+  });
+
+  it('[review B L5] Reduce Motion reaches the aura; the start circle is a 120 pt button; the clock and "Listening." are spoken; the start plays its haptic first', () => {
+    expect(c).toMatch(/<ListeningAura state=\{room\.aura\} db=\{db\} reduced=\{reduced\} size=\{AURA_SIZE\} \/>/);
+    expect(c).toMatch(/const reduced = useReducedMotion\(\);/);
+    expect(c).toMatch(/const AURA_SIZE = 240;/);
+    expect(c).toMatch(/const DISC = AURA_SIZE \/ 2;/);
+    const start = c.slice(c.indexOf('<Pressable\n                onPress={begin}'), c.indexOf('testID="listen.start"') + 200);
+    expect(start).toMatch(/accessibilityRole="button"/);
+    expect(start).toMatch(/style=\{\{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC \/ 2 \}\}/);
+    expect(c).toMatch(/<Text variant="headline" tone="muted" className="text-center" style=\{\{ fontVariant: \['tabular-nums'\] \}\} accessibilityLabel=\{elapsedA11y\}>/);
+    const begin = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
+    expect(begin).toMatch(/AccessibilityInfo\.announceForAccessibility\(t\.listening\)/);
+    expect(begin.indexOf("haptic('press')")).toBeGreaterThan(-1);
+    expect(begin.indexOf("haptic('press')")).toBeLessThan(begin.indexOf("await setAudioMode('recording')"));
+  });
+
+  it('[review B L1] when a take ends the glow releases from where the voice left it, over releaseMs', () => {
+    const aura = code(src('components/capture/listening-aura.tsx'));
+    expect(aura).toMatch(/if \(processing\.value\) \{\s*scale\.value = 1 \+ B\.scaleMax \* s\.value;\s*opacity\.value = B\.opacityMin \+ \(B\.opacityMax - B\.opacityMin\) \* s\.value;/);
+    expect(aura).toMatch(/s\.value \+= \(0 - s\.value\) \* \(1 - Math\.exp\(-dt \/ B\.releaseMs\)\)/);
+    expect(tokens.motion.breath.releaseMs).toBe(400);
   });
 
   it('the screen types no user-facing words (packages/content only)', () => {

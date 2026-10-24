@@ -57,13 +57,15 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
   const listening = useSharedValue(state === 'listening');
   const paused = useSharedValue(state === 'paused');
   const ready = useSharedValue(state === 'ready');
+  const processing = useSharedValue(state === 'processing');
   const reducedSV = useSharedValue(reduced);
   useEffect(() => {
     listening.value = state === 'listening';
     paused.value = state === 'paused';
     ready.value = state === 'ready';
+    processing.value = state === 'processing';
     reducedSV.value = reduced;
-  }, [state, reduced, listening, paused, ready, reducedSV]);
+  }, [state, reduced, listening, paused, ready, processing, reducedSV]);
 
   useFrameCallback((f) => {
     'worklet';
@@ -73,6 +75,13 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
     if (!listening.value) {
       // paused, idle, processing: settle to rest, no decorative loop. Ready (S12): no aura at all.
       s.value += (0 - s.value) * (1 - Math.exp(-dt / B.releaseMs));
+      idleW.value = 0;
+      if (processing.value) {
+        // The take has ended (5.8 row 4): the glow releases from where the voice left it, over releaseMs (400 ms).
+        scale.value = 1 + B.scaleMax * s.value;
+        opacity.value = B.opacityMin + (B.opacityMax - B.opacityMin) * s.value;
+        return;
+      }
       scale.value = 1;
       opacity.value = ready.value ? 0 : paused.value ? 0.12 : B.opacityMin;
       return;

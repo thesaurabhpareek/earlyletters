@@ -9,7 +9,7 @@
  *              circle at rest with no aura (it is the start control, "Start recording"), "Tap the red circle and
  *              talk.", Close at the top right. No clock. The microphone is not touched until the tap (S12).
  *   asking     the same room while iOS asks for the microphone and the take starts (after the tap on Speak or on the
- *              circle); no Close in this short moment
+ *              circle); no Close and no hint in this short moment, since there is nothing to tap
  *   recording  the aura moves with the voice; the clock in `headline`, tabular, textMuted (a recording screen is not a
  *              timer); "Listening." and its hint; Pause and Finish; Let it go
  *   paused     the same, the aura at rest; "Paused."; Keep talking and Finish
@@ -58,7 +58,7 @@ export function listenRoom(phase: RoomPhase): {
   /** The clock: only once a take exists. */
   clock: boolean;
   /** The line under the circle. */
-  line: 'readyHint' | 'listening' | 'paused';
+  line: 'readyHint' | 'listening' | 'paused' | 'none';
   /** Pause and Finish can be pressed (they are on screen in every moment, disabled before a take). */
   controls: boolean;
   /** "Let it go" is offered (its slot is kept either way). */
@@ -70,7 +70,7 @@ export function listenRoom(phase: RoomPhase): {
     startControl: phase === 'ready',
     aura: before ? 'ready' : phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : 'processing',
     clock: !before,
-    line: before ? 'readyHint' : phase === 'paused' ? 'paused' : 'listening',
+    line: phase === 'ready' ? 'readyHint' : phase === 'asking' ? 'none' : phase === 'paused' ? 'paused' : 'listening',
     controls: phase === 'recording' || phase === 'paused',
     discard: phase === 'recording' || phase === 'paused' || phase === 'finishing',
   };
