@@ -12,7 +12,9 @@ import {
   SYNC_SETTING,
   appendOp,
   enqueueEntryUpsert,
+  enqueueHeldDraft,
   enqueuePrefs,
+  prefsFields,
   readSetting,
   writeSetting,
   type EnqueueContext,
@@ -52,28 +54,35 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     const books = db.all<LocalChildRow>("SELECT * FROM children WHERE server_state = 'local' ORDER BY created_at, id");
     const ok = books.filter((c) => UUID7.test(c.id) && (c.birthday || c.due_date));
     const bad = books.filter((c) => !ok.includes(c));
-    for (const c of bad) db.run("UPDATE children SET server_state = 'refused', role = 'parent', created_by_me = 1 WHERE id = ?", c.id);
-    for (const c of ok) db.run("UPDATE children SET server_state = 'pending', role = 'parent', created_by_me = 1 WHERE id = ?", c.id);
+    const mine = "role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?)";
+    for (const c of bad) db.run(`UPDATE children SET server_state = 'refused', ${mine} WHERE id = ?`, userId, c.id);
+    for (const c of ok) db.run(`UPDATE children SET server_state = 'pending', ${mine} WHERE id = ?`, userId, c.id);
 
     const batch = ok.slice(0, FIRST_RUN_MAX);
     if (batch.length > 0) {
+      const batchId = ctx.newId();
       appendOp(db, {
         type: 'book.first_run',
-        id: ctx.newId(),
+        id: batchId,
         data: { children: batch.map((c) => ({ id: c.id, name: c.name, date_of_birth: c.birthday, due_date: c.due_date })) },
       }, ctx);
+      for (const c of batch) db.run('UPDATE children SET first_run_batch = ? WHERE id = ?', batchId, c.id);
     }
     for (const c of ok.slice(FIRST_RUN_MAX)) {
       appendOp(db, { type: 'book.create', id: c.id, data: { name: c.name, date_of_birth: c.birthday, due_date: c.due_date } }, ctx, { bookId: c.id });
     }
-    for (const c of ok) enqueuePrefs(db, c.id, { signs_as: c.signs_as, include_in_reminders: c.reminders_on === 1 }, ctx);
+    for (const c of ok) enqueuePrefs(db, c.id, prefsFields(db, c.id), ctx);
 
     // Letters deleted before they ever left the phone stay local (Recently deleted only).
     const letters = db.all<{ id: string }>(
       "SELECT id FROM entries WHERE author_id = ? AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
       userId,
     );
-    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx);
+    for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx); // a waiting letter goes as its held row
+    // Letters the author held at the Keep gate before signing in (F14-REQ-039): author-only held rows.
+    for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE held_kind IS NOT NULL ORDER BY created_at, id')) {
+      enqueueHeldDraft(db, d.id, ctx);
+    }
     const queued = db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE type = 'entry.upsert'")!.n;
     result = { outcome: 'claimed', books: ok.length, letters: queued, localOnlyBooks: bad.length };
   });

@@ -35,8 +35,11 @@ export const TEXT_RULES_SCHEMA = 1;
  * Interpreter version. A pack names the lowest interpreter it needs in
  * `engine`; an older app refuses the pack (validatePack: engine_too_new)
  * and keeps working in safe mode instead of misreading new fields.
+ *
+ * 2 (2026-10-15): `meaning.commonWords` (F06-REQ-008, F07 7.2 rule 4). A
+ * pack that carries it declares `engine: 2`.
  */
-export const LANG_ENGINE_VERSION = 1;
+export const LANG_ENGINE_VERSION = 2;
 
 /**
  * draft            researched, not signed off: the engine ignores it.
@@ -172,6 +175,16 @@ export interface MeaningTable {
   kinship: string[];
   /** Words always written with a capital wherever they stand (English "I"). */
   alwaysCapitalized: string[];
+  /**
+   * Everyday words that are also given names or nicknames (English: hope,
+   * will, grace, rose). A protective table, so it is read even as a draft:
+   * a dictionary term spelled like one of these gets no automatic case-only
+   * fix, so "I hope" never becomes "I Hope" for a child named Hope
+   * (F06-REQ-008 calls it nameWords, F07 section 7.2 rule 4 commonWords; one
+   * list serves both). Native reviewers extend it per pack (WP-F07-02).
+   * Optional; a pack that has it needs LANG_ENGINE_VERSION 2.
+   */
+  commonWords?: string[];
   /** Same word, different number or person: the only swaps "agreement" may make. Empty = agreement off. */
   agreementGroups: string[][];
   /** Same word, different tense: a swap inside one of these is refused as a tense change. */

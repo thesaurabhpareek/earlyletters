@@ -5,13 +5,14 @@
  */
 import { accountEmails } from './account.en';
 import { authEmails } from './auth.en';
+import { backupEmails } from './backup.en';
 import { billingEmails } from './billing.en';
 import { familyEmails } from './family.en';
 import { lifecycleEmails } from './lifecycle.en';
 import type { EmailCopy } from './types';
 
 export type { EmailCopy } from './types';
-export { authEmails, lifecycleEmails, familyEmails, billingEmails, accountEmails };
+export { authEmails, lifecycleEmails, familyEmails, billingEmails, accountEmails, backupEmails };
 export { emailChrome } from './chrome.en';
 export type { EmailChrome } from './chrome.en';
 export { emailLegal } from './legal.en';
@@ -24,4 +25,5 @@ export const emailsById: Readonly<Record<string, EmailCopy>> = {
   ...familyEmails,
   ...billingEmails,
   ...accountEmails,
+  ...backupEmails,
 };

@@ -79,17 +79,21 @@ describe('[D-088] every analytics entry point follows the switch', () => {
     expect(src).toMatch(/\{capabilities\.analytics \? \(\s*<ListSection title=\{consentCopy\.analyticsSection\}/);
   });
 
-  it('only lib/analytics/posthog-sdk.ts imports the PostHog SDK, and only index.ts loads that file', () => {
+  it('[D-095] the PostHog SDK is not a dependency and nothing in the app imports it', () => {
+    const pkg = JSON.parse(read('package.json')) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    expect(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((d) => d.startsWith('posthog'))).toEqual([]);
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const e of readdirSync(join(APP, dir), { withFileTypes: true })) {
         const rel = `${dir}/${e.name}`;
         if (e.isDirectory()) walk(rel);
-        else if (/\.tsx?$/.test(e.name)) files.push(rel);
+        else if (/\.(tsx?|js)$/.test(e.name)) files.push(rel);
       }
     };
     walk('src');
-    expect(files.filter((f) => /from 'posthog-react-native'|import\('posthog-react-native'\)/.test(read(f)))).toEqual(['src/lib/analytics/posthog-sdk.ts']);
-    expect(files.filter((f) => /\.\/posthog-sdk'/.test(read(f)))).toEqual(['src/lib/analytics/index.ts']);
+    // Only a comment may name it (the v1.1 re-add line in lib/analytics/index.ts).
+    const code = (f: string) => read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    expect(files.filter((f) => /posthog-react-native|posthog-sdk/.test(code(f)))).toEqual([]);
+    expect(read('src/lib/analytics/index.ts')).toMatch(/const createClient: PostHogClientFactory \| null = null;/);
   });
 });

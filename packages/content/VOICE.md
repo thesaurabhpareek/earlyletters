@@ -88,7 +88,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 
 Only promise what the current build does. At v1.0 (docs/DECISIONS.md, 3 Oct 2026):
 - Family is the co-parent only (D-055). Grandparents, aunts and uncles are "coming in a later update", never "now".
-- Recordings stay on the phone that made them, and in that person's own iPhone backup. Nothing uploads them, so there is no backup feature, and a co-parent hears your voice only on your phone until v1.1 (D-059).
+- Recordings stay on the phone that made them, and in that person's own iPhone backup. A backup of your own recordings exists, behind a build flag that is off in the alpha, so nothing in the alpha uploads them and no copy promises it yet. A co-parent hears your voice only on your phone until v1.1 (D-059).
 - Read together plays the recordings on this phone, without a moving word highlight (D-059).
 - Seven spoken languages, one per letter (D-056).
 - The in-app "early version, can make mistakes" note stays; the store listing never says beta (D-060).

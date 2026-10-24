@@ -215,10 +215,12 @@ export function AccountGate({
 
   if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
 
-  if (s.status === 'needsConsent') {
+  // Consent still missing, or (BL-347) the claim screen was never answered: one way back to it.
+  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
+  if (s.status === 'needsConsent' || claiming) {
     return (
       <View className="gap-4">
-        <SheetBody muted>{g.sync.waiting}</SheetBody>
+        <SheetBody muted>{claiming ? authCopy.claim.waiting : g.sync.waiting}</SheetBody>
         <Button size="lg" onPress={() => router.push('/sign-in/consent')}>
           <Text>{g.finishSetup}</Text>
         </Button>

@@ -1,7 +1,7 @@
 # Device test plan: the first real-iPhone session and the TestFlight beta
 
-Owner: qa-e2e. Version 1.0, 3 Oct 2026. For the founder (who runs it) and the coordinator (who files the follow-ups).
-Inputs: TDD 07 (sections 3 to 5, 11), PRD 6 and 7, ROADMAP 2.x (week 2 device spikes, C0 from 14 Oct, C1 from 19 Oct), `docs/ops/AUTH_SETUP.md` 11, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, `docs/ops/APP_SIZE.md`, ADR 0013 to 0017, TDD 03 failure modes, TDD 09, `apps/mobile/src/lib/README.md`, the agents' "needs a real device" notes.
+Owner: qa-e2e (S19 in PRD V2). Version 1.2, 16 Oct 2026. 1.1 on 15 Oct came in two parts, merged here: S2-17, TF-10 and TF-11 (#123; S2-17 and TF-10 ported from `auto/2026-10-05-fixes`, D-093), and the server-on items for M14, the WP-F08-B1 backup spike, the StoreKit rows the ASC doc numbers twice (S2-18 to S2-21), budgets brought to PRD V2 `06-nfr.md`, and run sheets (#143). 1.2 moves the numbers each server-on row must carry into its **Record** line (from `evidence/README.md`). For the founder or the device operator (who runs it) and the coordinator (who files the follow-ups).
+Inputs: PRD V2 `07-quality-bar.md` section 2 and `08-delivery.md` sections 2.1 and 10 (every date is a T id there), TDD 07 (sections 3 to 5, 11), PRD 6 and 7, ROADMAP 2.x (week 2 device spikes, C0 from 14 Oct, C1 from 19 Oct), `docs/ops/AUTH_SETUP.md` 11, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, `docs/ops/APP_SIZE.md`, ADR 0013 to 0017, TDD 03 failure modes, TDD 09, `apps/mobile/src/lib/README.md`, the agents' "needs a real device" notes. The alpha drills (D-106) are in `docs/qa/run-sheets/AL-*.md`.
 
 Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confirm during the session; **F** fact found in the repo.
 
@@ -13,6 +13,20 @@ Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confi
 - Fictional family only (Asha, Avi, Mama, Papa) in letters, names, notes and screenshots. The founder's own family never appears in evidence (CLAUDE.md).
 - Maestro cannot drive a physical iPhone (V: Maestro 2.11.0, "Physical iOS devices are not yet supported"), so everything here is by hand. The simulator suite is `apps/mobile/e2e`.
 - Failures: a GitHub issue with `beta` and a severity `S0` to `S3` (TDD 07 11.3). S0 (a letter lost or changed, data exposed, anything created after an under-18 answer, consent bypassed) stops the session.
+- Scripted sessions follow a run sheet in `docs/qa/run-sheets/` (ordered steps with times). The first is `run-sheets/2026-10-30-T11-session-1.md`.
+
+### Server-on items (M14)
+
+PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14, M16). Every profile in `apps/mobile/eas.json` builds with `EXPO_PUBLIC_SERVER_FEATURES=off` today (F: 15 Oct), and a switch-off build shows "coming soon" for all of these, so they need a build made with the switch on and pointed at staging (S20 owns the per-profile switch, `08-delivery.md` S20 row). Evidence rows for them carry the header fields in `evidence/TEMPLATE.md` and the numbers in each item's **Record** line below; they run only on drill phones and drill accounts (`run-sheets/README.md` "Drill identities").
+
+| Item | Needs | When (`08-delivery.md` 10.2) |
+|---|---|---|
+| S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
+| S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
+| S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
+| S1-09 invite links, push | Switch on; AASA on Apple's CDN; APNs key | W7 |
+| S2-14 sign out and revocation | Switch on | W14 |
 
 ### Devices
 | Tag | Device | Why | Must have |
@@ -79,26 +93,26 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 ### S1-06 Sign in with Apple (AUTH_SETUP 11.1)
 - **Steps:** Signed out, after the first letter: Keep the book > Apple. Once with "Share My Email" and once (second Apple ID) with "Hide My Email". Then Terms sheet (with the 18+ line), sensitive-data sheet, Agree. Sign out and in again.
 - **Expected:** Supabase > Users shows the Apple identity; no Terms sheet on the second sign-in; a receipt or notice email reaches the `privaterelay.appleid.com` address (needs AUTH_SETUP 2.5 relay setup).
-- **Record:** S1-06 row (no email addresses in evidence).
+- **Record:** S1-06 row (no email addresses in evidence; switch on, staging): seconds from the Apple sheet closing to signed in, 3 tries each (a smoke; the gate is 06-nfr's lab run, 50 runs, p90 3 s, A-NFR-004); Terms sheet on the first sign-in (yes, no) and on the second (must be no); relay email arrived (yes, no, minutes); identity "listed" in Supabase Users, never the id.
 - **Update:** AUTH_SETUP 11 (tick 11.1), and 2.1 "Assumption: EAS capability sync" can become Verified (V: Expo "iOS capabilities": `eas build` enables supported entitlements on the App ID).
 
 ### S1-07 Sign in with Google (AUTH_SETUP 11.2)
 - **Steps:** A build with both Google client ids (AUTH_SETUP 3.5). Keep the book > Google. If the button is missing, the build lacks the ids.
 - **Expected:** Signs in; Supabase shows the Google identity; a nonce error means "Skip nonce check" is off.
-- **Record:** S1-07 row.
+- **Record:** S1-07 row (switch on, staging, both Google client ids in the build): seconds to signed in, 3 tries; button present (yes, no); identity listed; no nonce error.
 - **Update:** AUTH_SETUP 11.2. Note: D-054 includes Google at launch; ROADMAP section 4 allows cutting it.
 
 ### S1-08 Email link and code in real mail apps (AUTH_SETUP 11.3, 11.4; A-REQ-018, A-REQ-022, A-REQ-023)
 - **Steps:** Continue with email, with a brand-new address and with a known one. Open the link from: iOS Mail, Gmail app, Outlook app, and a link forwarded in Messages. Type the code by hand once. Open a one-hour-old link. Open the link on a laptop.
 - **Expected:** The link opens the app (not Safari) and signs in; the code also works; the old link says it has expired and offers the code; the laptop page verifies nothing and shows the "Open the app" fallback; one email holds both link and code; no click-tracking redirect in the link (AUTH_SETUP 4.1).
-- **Record:** S1-08 row: one line per mail app.
+- **Record:** S1-08 row (switch on, staging, AASA live): one line per mail app (iOS Mail, Gmail, Outlook, Messages forward) with opened the app (yes, no) and signed in (yes, no); email arrival seconds (06-nfr gate: p90 30 s over 50 sends, A-NFR-004); code typed by hand works; expired-link message seen; laptop page signs nothing in; no click-tracking redirect in the link.
 - **Update:** AUTH_SETUP 11.3, 11.4 and the template assumption in section 6 ("GoTrue verifies a signup token and a magic-link token under `type=email`").
 
 ### S1-09 Universal links for invites (A-REQ-022, A-REQ-028)
 - **Steps:** From the Family tab, invite a co-parent; share the link to yourself in Messages and WhatsApp. On a second phone: (a) app not installed, tap the link; (b) app installed, cold (killed) and warm; (c) long-press the link and choose "Open in Early Letters"; (d) paste it on "I was invited". Then answer No on the 18+ gate on a fresh install opened from the link.
-- **Expected:** (a) the website's `/i/` page with no child name (B-NFR-002); (b) the app opens on "Join the family book" after the 18+ gate, cold and warm; (c) works; (d) works without reading the clipboard on its own (A-REQ-029); after a No the invite is dropped (TDD 01 F-20).
-- **Record:** S1-09 row.
-- **Update:** AUTH_SETUP 11.5; `docs/ops/DOMAINS.md` if the AASA or the `/i/` page misbehaves.
+- **Expected:** (a) the website's `/j` page with no child name (B-NFR-002); (b) the app opens on "Join the family book" after the 18+ gate, cold and warm; (c) works; (d) works without reading the clipboard on its own (A-REQ-029); after a No the invite is dropped (TDD 01 F-20).
+- **Record:** S1-09 row (switch on, staging, AASA on Apple's CDN; Phone A on Account A invites, Phone B on Account B joins): cases (a) to (d) each pass or fail; cold and warm open; the invite page shows no child name (yes, no); after an 18+ No the invite is dropped (yes, no); no clipboard read without a tap.
+- **Update:** AUTH_SETUP 11.5; `docs/ops/DOMAINS.md` if the AASA or the `/j` page misbehaves.
 
 ### S1-10 First recording, save, and the letter waiting for its words
 - **Steps:** Fresh install, airplane mode. Speak: the microphone prompt; record 60 s of a test recording played from another device; Done. With no speech model yet, keep the recording; it is in the book "waiting for its words". Turn airplane mode off on Wi-Fi: the language download starts (S1-15) and the words arrive later.
@@ -125,14 +139,18 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Update:** PRD 7.4 ("zero data loss in a kill-during-save test, 500 iterations, gate": note the device count and that the 500 run is still owed).
 
 ### DL-01 Kill mid-record, 500 runs (D-085, DATA-REQ-048, BL-Q30). Not run: needs the founder's iPhone SE 3
-- **Steps:** Start a recording, kill the app at a random 2 to 60 s, relaunch. 500 runs. Per run record: a draft exists, the file exists, its duration is within 1 s of the elapsed time, a hash is set, it plays (tap play on Tonight or in Settings, Recordings).
+- **Steps:** Start a recording, kill the app at a random 10 to 120 s (07 "Kill while recording"; this row said 2 to 60 s before 16 Oct), relaunch. 500 runs. Per run record: a draft exists, the file exists, its duration is within 1 s of the elapsed time, a hash is set, it plays (tap play on Tonight or in Settings, Recordings).
 - **Expected:** zero lost. Every take that does not play is kept and listed in Settings, Recordings as "This take may not play. Export keeps the file." and is not shown on Tonight as ready (the launch sweep probes a killed take before it marks it ready, `capture/probe.ts`).
 - **Record:** DL-01 row: runs, kept, lost, unplayable rate. An unplayable rate above 0 starts the container work (record to a container that survives a kill, convert on stop); 0 keeps the probe (it is cheap) and drops that work. Also note that the probe waits up to 4 s for a file to open and treats "never loaded" as unplayable: report any playable take it wrongly listed.
+- **Simulator, 500 runs (the B2-11 gate):** `apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01` (RA-19-04, `apps/mobile/e2e/README.md` section 9) does these steps on an iOS simulator from the host, in four shards of 125, and judges each run from the database and files after the relaunch: kept (one row, a file with bytes, and the take plays: `afinfo` on the host reads its header and a length above 0), lost, doubled, fail (a take marked ready that will not open, F08-REQ-019). It needs 49 or more of every 50 to play to within 5 s of the kill (07), and after every relaunch it checks `PRAGMA integrity_check`, rows pointing at missing files and stored hashes, and judges every earlier take again. The device runs here stay: the simulator does not prove the SE 3's file system or a forced reboot (F04-REQ-048).
+- **Defect found by reading the code, 16 Oct; fixed by #207 (S10, merged 17 Oct, 4a71c33), not yet seen on a device:** expo-audio 57.0.5 writes takes to `Documents/ExpoAudio/recording-<uuid>.m4a` (`ios/AudioUtils.swift` `createRecordingUrl`), but the launch sweep listed only the top of Documents. After a kill mid-take it could not see the file, dropped the `recording` draft as empty (`drop-empty-recording`), and the take was on neither Tonight nor Settings > Recordings. Since #207 the sweep lists both folders (`lib/capture/recordings.ts`) and checks the disk again before it drops a draft. `apps/mobile/test/qa-kill-harness.test.ts` pins it: the app's real sweep on ExpoAudio takes must keep every take (that test goes red if the sweep goes back to the top of Documents), and a listing that shows only the top of Documents must come back as a harness fail.
+- **Open dependency for the DL-01 gate (Tue 27): a take that survives a kill.** With the sweep fixed, DL-01 may still fail [U until the first simulator run]: a kept take must play, and an `.m4a` cut off by SIGKILL most likely has no index (the recorder writes it on stop), so `afinfo` will not open it. Every such run is `kept-unplayable`, and the harness exits 1 under 07's 49 in 50 rule, though nothing is lost (the sweep keeps the file and lists it as "may not play"). This is the container work in the Record line above. S10 is proposing a kill-safe recording format, due Wed 21 Oct; the gate needs it in the freeze build, or a recorded decision to amend 07's playable rule. Owners: S10 (format), coordinator (decision).
 - **Update:** PRD 7.4, BL-Q30.
 
 ### DL-02 Kill during save, 500 runs, random 0 to 400 ms (PRD 7.4). Not run: needs the device
 - **Steps:** Save a letter and kill at a random 0 to 400 ms; relaunch. 500 runs.
 - **Expected:** every letter exists exactly once, or is still a draft with its text and recording; zero lost, zero duplicated.
+- **Simulator, 500 runs (the B2-11 gate):** `apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --runs 500 --point-runs 50`: typed letters, spoken letters hashed at Finish and spoken letters Save must hash, in turn; SIGKILL a random 0 to 400 ms after Save; plus 50 kills exactly at each of four crash points inside the save (`after-file-write`, `before-row`, `inside-transaction`, `after-commit`), because a random kill mostly lands after the commit. Each run is judged letter (once), draft (intact), lost, doubled or fail, with the whole-database check after every relaunch (`PRAGMA integrity_check`, no row pointing at a missing file, every audio hash matching: 07 "Kill during save"). The 50-run SE 3 set stays a device run (AL-03).
 - **Record:** DL-02 row. **Update:** PRD 7.4, BL-Q30.
 
 ### DL-03 Restore drill onto a second phone (D-085, FT-39 extended, BL-284). Not run: needs two phones
@@ -188,8 +206,8 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Update:** ADR 0015 section 5 and section 9 item 4.
 
 ### S1-20 Playback and Read together on device
-- **Steps:** Play a letter with the ring/silent switch on silent, then with AirPods. Lock the phone during playback. Read together three times in a Free book; the fourth opens the Plus gate.
-- **Expected:** Playback is audible in silent mode (playback audio session) and stops cleanly on lock, since background playback is off (F: `enableBackgroundPlayback: false`); Read together uses Large Print; the gate appears on the fourth session (D-009).
+- **Steps:** Play a letter with the ring/silent switch on silent, then with AirPods. Lock the phone during playback. Read together four times in a Free book.
+- **Expected:** Playback is audible in silent mode (playback audio session) and stops cleanly on lock, since background playback is off (F: `enableBackgroundPlayback: false`); Read together uses Large Print; the fourth and later sessions open with no gate (Read together is free with no limit: M2, D-082; this replaced the D-009 gate on 4 Oct).
 - **Record:** S1-20 row.
 - **Update:** `src/lib/README.md` (audio-mode) if the session category is wrong.
 
@@ -201,8 +219,9 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 
 ### S1-22 Two phones, one book: co-parent sync (PRD 7.3)
 - **Steps:** Mama's phone invites Papa's phone (S1-09). Mama saves a letter while both are online; time until it appears on Papa's phone. Then Mama offline: save two letters ("Not sent yet"), kill, relaunch offline (still there), go online.
-- **Expected:** p95 5 s online (10 tries); offline letters queue visibly, survive a kill and sync later; Papa never sees Mama's raw transcript (PRD-REQ-004) or her private letters.
-- **Record:** S1-22 row: 10 timings.
+- **Needs:** a switch-on build on both phones and two Apple Accounts (Mama on Account A, Papa on Account B).
+- **Expected:** online, both apps in the foreground with the book open, no try over 30 s (PRD V2 `06-nfr.md` section 4: p95 30 s, p99 60 s, replacing PRD 1.3's 5 s; 10 tries are a smoke, not the p95 gate); offline letters queue visibly, survive a kill and sync later; Papa never sees Mama's raw transcript (PRD-REQ-004) or her private letters.
+- **Record:** S1-22 row: 10 timings in s from the save tap on A to the row on B, with the slowest; offline queue counts (saved offline 2, after the kill 2, after reconnecting on B 2); raw transcript or private letter visible on B (must be no). The budget is the one in the Expected line above; 10 tries are a smoke, not the p95 gate.
 - **Update:** PRD 7.3 measured column; TDD 02.
 
 ### S1-23 VoiceOver walk (script V-01 to V-10; A-NFR-005 to -007, LEGAL-REQ-051)
@@ -234,17 +253,25 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** D-033 copy ("on this phone and in your iPhone's own backup") stays true or goes to the content owner.
 
 ### S1-26 First run, downloads, links and the screen (D-087, debate Q-015; branch feat/mobile-first-run-permissions)
-- **Steps:** (a) Fresh install, first run to the end. On the last step read the "Get your words ready" card: the size, "Download on Wi-Fi", "Not now". Check Settings > Storage shows nothing downloading and, in Settings > Privacy and Security > App Privacy Report, no models host contact yet. Tap Download on Wi-Fi on Wi-Fi; then repeat on a fresh install with Not now and record a letter: Review shows "Get your words ready" with the same button. (b) On a 3 GB phone or the SE 3 compact tier read the size on the card (190 MB model plus 1 MB, not 575 MB); on Hindi read the size (574 MB until our model is hosted). (c) Fill the disk to under size plus 1 GB: the card shows the space line and no button. (d) Start a download, switch to airplane mode, then back: it resumes from where it stopped. Lock the phone and wait: record whether bytes keep arriving in the background (unverified). (e) Off Wi-Fi with the Wi-Fi wait card showing, tap "Use mobile data": only that download uses data; Settings > Storage mobile-data switch stays off. (f) From Notes or Safari open `scribe://listen`, `scribe://review?draftId=x`, `https://earlyletters.com/listen`, `https://earlyletters.com/settings/delete-account`: each opens Tonight and nothing records. `https://earlyletters.com/i/<token>` still opens the coming-soon sheet. (g) Start a letter and let auto-lock run with the screen untouched: it stays on while recording. Pause: the screen may now lock (and the take then ends and is kept). In Read together play a recording: awake while it plays, locks again when paused or finished. (h) Leave the app during a take: Review opens on return with "The recording stopped when you left the app. Everything up to then is kept." (i) First run welcome has no "I was invited"; a child's settings have no "Family can read" switch; the Family tab, the Settings row and "Tell me when it's here" still work.
+- **Steps:** (a) Fresh install, first run to the end. On the last step read the "Get your words ready" card: the size, "Download on Wi-Fi", "Not now". Check Settings > Storage shows nothing downloading and, in Settings > Privacy and Security > App Privacy Report, no models host contact yet. Tap Download on Wi-Fi on Wi-Fi; then repeat on a fresh install with Not now and record a letter: Review shows "Get your words ready" with the same button. (b) On a 3 GB phone or the SE 3 compact tier read the size on the card (190 MB model plus 1 MB, not 575 MB); on Hindi read the size (574 MB until our model is hosted). (c) Fill the disk to under size plus 1 GB: the card shows the space line and no button. (d) Start a download, switch to airplane mode, then back: it resumes from where it stopped. Lock the phone and wait: record whether bytes keep arriving in the background (unverified). (e) Off Wi-Fi with the Wi-Fi wait card showing, tap "Use mobile data": only that download uses data; Settings > Storage mobile-data switch stays off. (f) From Notes or Safari open `scribe://listen`, `scribe://review?draftId=x`, `https://earlyletters.com/listen`, `https://earlyletters.com/settings/delete-account`: each opens Tonight and nothing records. `https://earlyletters.com/j#t=<token>` still opens the coming-soon sheet. (g) Start a letter and let auto-lock run with the screen untouched: it stays on while recording. Pause: the screen may now lock (and the take then ends and is kept). In Read together play a recording: awake while it plays, locks again when paused or finished. (h) Leave the app during a take: Review opens on return with "The recording stopped when you left the app. Everything up to then is kept." (i) First run welcome has no "I was invited"; a child's settings have no "Family can read" switch; the Family tab, the Settings row and "Tell me when it's here" still work.
 - **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
+
+### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
+- **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
+- **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
+- **Expected:** (a) the item appears on B within 2 minutes (F08 assumption A2) and deletion reaches both phones; (b) about 1 s or less per 10 MB on SE 3 (F08 section 9, an assumption); (c) the upload resumes without re-sending finished parts.
+- **Record:** B1-01 row in the session's evidence file (WP-F08-B1): Keychain item made on A at hh:mm and seen on B at hh:mm (minutes); deleted on A and gone from B (yes, no, minutes); 15 MB encrypt time on the SE 3 in s; upload resumed after the kill (yes, no; parts re-sent); HPKE on iOS 17 (yes, no, or "not measured: no iOS 17 phone"). No key material, item names or tokens.
+- **Update:** F08 section 13 A2 and section 9 (through the PM lane), and the owner-backup ADR draft (T13). A failure of (a) is a stop for the per-author key design and goes to the founder and S05 the same day.
 
 ---
 
 ## Part 2. Money, account and notifications (session 2, can follow on the next days)
 
 ### S2-01 to S2-12 StoreKit and Apple's sheets
-Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4).
+Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4). The ASC table uses D-7 to D-10 twice (F: 15 Oct); the first four of those rows get their own ids here: S2-18 = the first D-7 (delete and reinstall, record whether the Keychain count survives), S2-19 = the first D-8 (iCloud restore keeps the free count), S2-20 = the first D-9 (airplane mode at the Keep sheet), S2-21 = the first D-10 (redeem an offer code). (S2-17 is the plan reminders item below.) Request to S06: renumber the ASC table so each check has one id.
+- **Bundle id:** products exist only on the app record they were created on. A TestFlight build from the `testflight` profile is `com.earlyletters.scribe.preview` (F: `docs/release/TESTFLIGHT.md`), so either the products are set up on that record too, or S2-01 to S2-20 run against the StoreKit configuration file in a development build and every row says "StoreKit file, not sandbox".
 - **Record:** the evidence file (S2-01 to S2-12) and the date and build in the ASC doc's table.
 - **Update:** `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (turn its U marks into V where the sheet confirms them); ADR 0013 "verify on device" for C-REQ-022.
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.
@@ -273,7 +300,23 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 
 ---
 
-## Part 3. TestFlight beta (C0 internal from 14 Oct, C1 external from about 19 Oct; D-045)
+### S2-17 Plan reminders and the purchase confirmation with Save a copy (G-15, D-094; BL-342; Q-003 memo section 5; LEGAL-REQ-046 to -049 as amended; PR #121)
+Needs a TestFlight build with PR #121, and a Sandbox Apple Account set to the 1-hour renewal rate (App Store Connect > Users and Access > Sandbox > the account > Subscription Renewal Rate, V). Ported from `auto/2026-10-05-fixes` (`d1cbddb`) and adapted to D-083 (no price in app copy) and D-094 (reminders are a courtesy).
+- **Steps:**
+  1. A sandbox account that never had a trial: keep two letters, then keep a third; at the Keep gate tap See Plus and buy `plus.monthly`.
+  2. On the confirmation screen (it opens over Review): read the plan, the free-until date, the cancel-by date (that date minus 24 hours), how to cancel, Apple's role, Family Sharing and the courtesy line about reminders. Tap "Save a copy": the share sheet; send it to Notes. Tap "Remind me before the free period ends" if shown: the iOS notification prompt follows only on that tap. Tap Done: back on Review; tap Keep.
+  3. Settings, Plan: the note with its date once a window is open; the "Save a copy of the terms" row.
+  4. Move the phone's date to one hour after the trial-week target (`E - 7d`), with the phone locked; then set it back.
+  5. Turn off auto-renew in Apple's Manage subscription sheet; relaunch.
+  6. Repeat 1 to 3 with `plus.annual` (2-month trial) on a second sandbox account.
+  7. A co-parent or family member who has Plus through Family Sharing: open Settings, Plan.
+  8. Turn notifications off for the app in iOS Settings; open Settings, Plan.
+- **Expected:** (2) every line present and correct, **no price and no "free trial" anywhere** (D-083), the copy in Notes reads the same, no child name and no letter text; the held letter is kept only after the Keep tap; (3) the note lists the dates; (4) one notification on the lock screen with no child name and no price, and tapping it opens Settings, Plan; a window that has passed is skipped, never sent late; (5) pending reminders are gone; (6) the annual and long-trial reminders follow the memo table (`E-18d` long trial, `E-4d 12h` trial final; `E-30d 12h` and `E-7d` renewal); (7) no reminders and no "Save a copy" for a family-shared plan; (8) the "Allow notifications" row appears, and the dates are still on the screen.
+- **Record:** S2-17 row: the dates shown versus the memo table, the notification text as seen, and whether any reminder came late or not at all (the courtesy wording in D-094 must stay true).
+- **Update:** BACKLOG BL-342 device check; FT-39 evidence; `docs/legal/memos/q-003-subscription-notices.md` known gaps if behaviour differs.
+- Note: TestFlight sandbox renews every day up to 6 times in a week, and a Sandbox Apple Account's renewal rate compresses a year to at most an hour (V: Apple, "Subscription renewal rate in TestFlight" and "Test in-app purchases"), so real-calendar reminder dates can be checked only by moving the phone's date or in the planner's unit tests (`apps/mobile/test/billing-plan-reminders.test.ts`, on `develop` through PR #121, which walk a synthetic year).
+
+## Part 3. TestFlight beta (C0 internal from T10, C1 external from T22 in `08-delivery.md` 2.1; D-045)
 
 ### TF-01 App size from Apple's numbers (decision 15, D-065)
 - **Steps:** When the first production-profile build finishes processing in App Store Connect, read its download sizes per device variant (TestFlight > the build > Build Metadata, A for the label). Also produce the App Thinning Size Report (`xcodebuild -exportArchive` with `thinning` set to `<thin-for-all-variants>`, APP_SIZE 2) and run `npx tsx scripts/size/measure.ts --thinning-report "App Thinning Size Report.txt"`.
@@ -328,6 +371,19 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - **Record:** TF-09 in the evidence file of the review day. **Update:** ROADMAP and the founder's go or no-go note in DECISIONS (coordinator).
 
 ---
+
+### TF-10 Privacy manifest in the archive (G-23, security review L7, LEGAL-REQ-043; ITMS-91053)
+#100's preflight checks the manifest in the config and in a prebuilt native project; this row checks the real archive.
+- **Steps:** On a Mac, download the first production build's `.ipa` from EAS. (a) Unzip it and open `Payload/*.app/PrivacyInfo.xcprivacy` (plist): compare with `ios.privacyManifests` in `apps/mobile/app.config.ts` and `docs/legal/app-store-privacy-labels.md`. (b) List every bundled manifest: `find Payload -name PrivacyInfo.xcprivacy`. (c) In Xcode, Window > Organizer > the archive > Generate Privacy Report (A: menu location from Apple's WWDC23 session "Get started with privacy manifests"); save the PDF outside the repo. (d) After the upload in TF-02, read App Store Connect's email for any "ITMS-91053: Missing API declaration" warning.
+- **Expected:** `NSPrivacyTracking` false, no tracking domains, every required-reason category declared in `app.config.ts`, and no collected data types (v1.0 is "Data Not Collected", D-088, D-095); every SDK Apple lists as needing a signed manifest has one; no ITMS-91053 email.
+- **Record:** TF-10 row: manifests found (count), any reason missing, the email result.
+- **Update:** `docs/legal/app-store-privacy-labels.md` (legal owner); `app.config.ts` through the mobile owner if a reason is missing.
+
+### TF-11 No analytics in the build (D-095, D-088; PR #118)
+- **Steps:** On a TestFlight build, with a proxy that shows the phone's traffic (or the Xcode network instrument), run first run, keep two letters, and close and reopen the app on three different days (move the date). Open Settings, Privacy.
+- **Expected:** no "Help us make it better?" sheet ever appears; Settings, Privacy has no usage switch; no request to any PostHog host (or any analytics host) in the traffic. The only network destinations are the docs, pack and speech model hosts, and Apple.
+- **Record:** TF-11 row: the hosts seen in the traffic.
+- **Update:** the data map and `docs/legal/app-store-privacy-labels.md` if any other host appears.
 
 ## Facts and assumptions this plan rests on
 

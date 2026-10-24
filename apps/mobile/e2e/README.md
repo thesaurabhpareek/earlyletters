@@ -6,7 +6,7 @@ Labels: **V** verified on a vendor page or in installed source on 3 Oct 2026 (so
 
 ## 1. Status: what must happen before the first run
 
-1. **testIDs and e2e seams in the app.** `apps/mobile/src` has no `testID` on any screen today, and no way to seed data, shift the clock, override remote config or force offline. The full request list is `TESTID_REQUESTS.md` (sections 1 to 3; owner of `apps/mobile/src/**` is mobile-polish this wave). Every flow fails at its first selector until then.
+1. **testIDs and e2e seams in the app.** The shared primitives forward `testID` since #116 (`apps/mobile/test/testid-primitives.test.ts`), but the screens still set almost none: on 15 Oct, `node apps/mobile/e2e/bin/lint-flows.mjs --app` finds 125 of the 134 ids the flows use missing from `apps/mobile/src`. There is still no way to seed data, shift the clock, override remote config or force offline. The full request list is `TESTID_REQUESTS.md` (sections 1 to 3; owner of `apps/mobile/src/**` is mobile-polish this wave). Every flow fails at its first selector until then.
 2. **An `e2e` EAS build profile** (simulator `.app`, release JavaScript, `EXPO_PUBLIC_E2E=1`): request B-1 in `TESTID_REQUESTS.md`.
 3. **An e2e backend** for the flows tagged `needs-backend` (E2E-09, 12, 13): a separate Supabase project, section 5 of `TESTID_REQUESTS.md`. Flows without that tag run fully offline on the simulator.
 
@@ -33,10 +33,21 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-13 | `E2E-13a/b/c-*.yaml` + `bin/run-coparent.sh` | Co-parent invite round trip on two simulators: Mama invites, Papa joins through the 18+ gate and sign-in, Mama sees Papa | backend, 2 simulators |
 | E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |
 | E2E-15 | `E2E-15-voiceover-smoke.yaml` | AX5 in light and dark: every P0 control reachable and enabled, screenshots for a human look; the VoiceOver walk is manual (DEVICE_TEST_PLAN S1-23) | offline |
+| E2E-17 | `E2E-17a-export-listening-copy.yaml`, `E2E-17b-export-original-only.yaml` + `bin/inspect-export.sh --originals` | Added 15 Oct (PRD V2 07 section 2.6). With a listening copy on the phone, export carries only the originals, byte for byte (F15-REQ-001, F15-REQ-002); 17b switches the player to the original and exports again: the same originals with the same hashes. The inspector fails if a listening copy's bytes are in the ZIP, if an original's hash differs from its capture hash, or if the seed made no recordings | offline, seed `asha-recordings` |
+
+### The P0 nightly set
+
+PRD V2 (`08-delivery.md` section 3.3, S19; R5 EQ-10) runs five P0 flows every night: **E2E-01** (01a then 01b, which runs on 01a's install), **E2E-03**, **E2E-12**, **E2E-13** (two simulators) and **E2E-17** (17a then 17b). Each of those files carries the tag `p0-nightly`, and `bin/lint-flows.mjs` fails if one of the five loses it. Run them with:
+```bash
+apps/mobile/e2e/bin/run-p0-nightly.sh --udid-a <se3-udid> --udid-b <second-udid> --app /path/to/EarlyLetters.app --junit
+```
+Exit 0 means all ran and passed, 1 a flow failed, 3 nothing failed but a P0 flow was skipped (no second simulator or no e2e backend): a nightly with a skip is not green. Where it runs (GitHub macOS minutes, a Mac mini or Maestro Cloud) is the founder's call (07 Q6); the workflow line is a request to S20.
+
+`npm test` runs the flow lint on every machine through `apps/mobile/test/qa-e2e-flows.test.ts`, so a broken flow file fails CI on Linux before anyone needs a Mac.
 
 Requirement and decision ids are in each flow's `tags`, so `maestro test --include-tags=PRD-REQ-019 ...` runs everything that proves one requirement, and a trace script can read them (TDD 07 2.1).
 
-Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status), `bin/` (host scripts), `ci/` (a GitHub Actions sketch, not enabled), `config.yaml` (Maestro workspace).
+Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status), `bin/` (host scripts), `kill/` (the DL-01 and DL-02 kill harness, section 9; not Maestro), `ci/` (GitHub Actions sketches, not enabled), `config.yaml` (Maestro workspace).
 
 ## 3. Builds
 
@@ -47,15 +58,14 @@ cd apps/mobile
 npx eas-cli@latest build --platform ios --profile e2e        # EAS builds the simulator .app
 npx eas-cli@latest build:run --platform ios --profile e2e --latest --simulator "iPhone SE (3rd generation)"
 ```
-`build:run` downloads the latest simulator build and installs it (V: eas-cli README). For the runner scripts, download the archive and pass the `.app` with `--app`. Bundle id: `com.earlyletters.scribe.preview` (`app.config.ts` suffix for the preview profile it extends); every flow reads it from `APP_ID`.
+`build:run` downloads the latest simulator build and installs it (V: eas-cli README). For the runner scripts, download the archive and pass the `.app` with `--app`. Bundle id: `com.earlyletters.scribe.dev`. The e2e seams (`src/dev/e2e-seams.ts`) are compiled only into a build with `EXPO_PUBLIC_E2E=1` whose app env is neither `preview` nor `production`, so the e2e profile uses the development app env (request B-1) and its `.dev` suffix (`app.config.ts`), never a store profile's; every flow reads the id from `APP_ID`.
 
-### 3.2 The quick authoring loop with an EAS development build
-For writing or fixing one flow while the app code changes:
+### 3.2 The quick authoring loop with a local development build
+For writing or fixing one flow while the app code changes. Request B-2 (an EAS `development-simulator` profile) is withdrawn: B-9 on #145 refuses `EXPO_PUBLIC_E2E` in an EAS build of any profile but `e2e`, and still allows a local development build with it. Set the flag on the command, never in a shell profile: the TestFlight preflight fails when the shell carries it.
 ```bash
 cd apps/mobile
-npx eas-cli@latest build --platform ios --profile development-simulator   # request B-2; once per native change
-npx eas-cli@latest build:run --platform ios --profile development-simulator --latest
-npx expo start --dev-client                                               # Metro on :8081
+EXPO_PUBLIC_E2E=1 EXPO_PUBLIC_APP_ENV=development npx expo run:ios                 # once per native change; starts Metro on :8081 (A)
+EXPO_PUBLIC_E2E=1 EXPO_PUBLIC_APP_ENV=development npx expo start --dev-client      # later sessions: Metro inlines the flags, so it needs them too
 # in a second terminal, from the repo root:
 maestro test apps/mobile/e2e/flows/E2E-04-type-a-letter.yaml \
   -e APP_ID=com.earlyletters.scribe.dev -e E2E_DEV_CLIENT=1 -e METRO_URL=http://localhost:8081
@@ -77,8 +87,9 @@ export MAESTRO_E2E_SUPABASE_URL=https://<e2e-ref>.supabase.co
 export MAESTRO_E2E_PROJECT_REF=<e2e-ref>
 export MAESTRO_E2E_SERVICE_KEY=<the e2e project's secret key>      # never staging or production
 export MAESTRO_PROD_PROJECT_REF=<production ref>                    # scripts refuse it
+export MAESTRO_STAGING_PROJECT_REF=<staging ref>                    # refused too: staging holds the family's letters (D-106)
 ```
-Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production ref, and any email that is not a test address.
+Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production or staging ref, an e2e ref equal to either, a hosted URL when either ref is unset (it fails closed), and any email that is not a test address. `apps/mobile/test/qa-e2e-guard.test.ts` runs the guard in Node on every `npm test`.
 
 Sign-in codes (`scripts/fetch-otp.js`):
 - `OTP_SOURCE=admin` (default): GoTrue's admin `generate_link` returns the 6-digit `email_otp` without sending mail (V-code: `@supabase/auth-js` 2.117.2). Proves the app's code path; mail delivery is a device check.
@@ -88,14 +99,14 @@ Sign-in codes (`scripts/fetch-otp.js`):
 ### 4.3 Commands
 ```bash
 # One flow
-maestro test apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml -e APP_ID=com.earlyletters.scribe.preview
+maestro test apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml -e APP_ID=com.earlyletters.scribe.dev
 # The single-simulator suite, in order, with host checks between flows
 apps/mobile/e2e/bin/run-suite.sh --udid <se3-udid> --app /path/to/EarlyLetters.app --junit
 apps/mobile/e2e/bin/run-suite.sh --only E2E-05
 # The co-parent round trip on two simulators
 apps/mobile/e2e/bin/run-coparent.sh <udid-a> <udid-b> --app /path/to/EarlyLetters.app
 # All flows proving one requirement
-maestro test apps/mobile/e2e --include-tags=PRD-REQ-019 -e APP_ID=com.earlyletters.scribe.preview
+maestro test apps/mobile/e2e --include-tags=PRD-REQ-019 -e APP_ID=com.earlyletters.scribe.dev
 ```
 Artifacts (screenshots, logs, JUnit) go to `~/.maestro/scribe-e2e/<time>` or `$OUT`, never into the repo (COORDINATION section 8). Screenshots may show only the fictional family (Asha, Avi, Mama, Papa).
 
@@ -119,9 +130,47 @@ To prove "no request to PostHog or Sentry before consent" (PRD-REQ-016, LEGAL-RE
 
 `ci/ios-e2e.yml.example` is a GitHub Actions sketch for a `macos-26` runner (arm64, no Docker: V), triggered by hand, with the nightly schedule commented out. It is not enabled; the coordinator moves it to `.github/workflows/` once section 1 is done. EAS Workflows' built-in `maestro` job is the alternative that needs no runner of ours (V: Expo docs).
 
+`ci/kill-harness.yml.example` is the sketch for the kill harness (section 9): one job builds the e2e simulator app on the runner (no EAS build spent), then DL-02 and DL-01 run as two jobs. S20 turns it into `.github/workflows/kill-harness.yml` (RA-20-10a in `docs/release/AUTOMATION.md`).
+
 ## 8. What these flows do not cover (and where it is)
 
 Real microphone audio and transcription speed, Sign in with Apple and Google sheets, mail clients and universal links from Mail and Messages, StoreKit sandbox and Family Sharing, notifications at their times, VoiceOver itself, export opening on Mac and Windows, app size, haptics, fonts and AUSoundIsolation: all in `docs/qa/DEVICE_TEST_PLAN.md`. Access rules, deletion purge and sync parity: `supabase/tests`. Pure logic: `npm test`.
+
+## 9. The kill harness (DL-01, DL-02; B2-11, never waived)
+
+`kill/run-kill-harness.mjs` (RA-19-04) kills the app during save (DL-02) and while recording (DL-01) on an iOS simulator, and checks after every kill that no letter or recording was lost, doubled or damaged (07 "Kill during save" and "Kill while recording", 06-nfr row 187, DATA-REQ-048, F04-REQ-024, F08-REQ-019; `docs/qa/DEVICE_TEST_PLAN.md` DL-01 and DL-02). It is not a Maestro flow: Maestro cannot time a kill to the millisecond.
+
+**How a run works.**
+1. The harness launches the app with launch arguments (`-e2eKillDrill dl02 -e2eKillRun 17 ...`).
+2. The e2e build's seam (`apps/mobile/src/dev/kill-drill.ts`, loaded by `src/dev/e2e-seams.ts`) checks that it runs on a simulator, in the development bundle, on an install it made itself; otherwise it writes `refused_...` and does nothing. It then waits for the app's own launch sweep and writes a `boot` marker.
+3. The harness judges the previous run from the host while the app waits, then writes `go`. The seam makes the run's draft (DL-02: a typed letter, a spoken one hashed at Finish, or a spoken one Save must hash; DL-01: a live take through `beginTake`, as Listen does), writes `armed`, and starts the save or the recording through the same store and recorder calls Review and Listen use.
+4. The harness sends SIGKILL to the app's process (simulator apps are host processes): a random 0 to 400 ms after `armed` (DL-02) or 10 to 120 s into the take (DL-01, 07's window); or, for DL-02 crash-point runs, the moment the seam writes `point` and holds at one of four named moments: `after-file-write` (the take's file closed, its draft not finalized), `before-row` (the hash check done, no letter row yet), `inside-transaction` (letter row written, draft removed, nothing committed) and `after-commit` (committed, before the Keychain count). A kill before the commit must leave the draft; after it, the letter.
+5. The next launch runs the sweep. The harness reads the app's SQLite file read-only and hashes the files from the host (`kill/snapshot.mjs`), and `kill/oracle.mjs` judges the killed run, then audits the whole database: `PRAGMA integrity_check` is ok, no row points at a missing file, every stored hash matches its file, and every earlier run judged kept is judged again, so damage a later launch does is caught. The app never judges itself. Spoken DL-02 recordings are compared with the host's own hash of the fixture it placed.
+
+Markers live in `Library/Caches/kill-drill`, which the sweep never reads. Letters say only "Asha kill drill <run>", and spoken DL-02 letters use a generated tone (`afconvert` of a sine wave), never a voice.
+
+**It cannot pass vacuously.** Before the real runs, on its own fresh install, the harness runs planted failures through the same seam: `loss` (the draft goes, the letter comes 3 s later), `double` (the letter is written and the draft kept) and, for DL-02, `damage` (one byte of the recording changed after a real save); for DL-01, the take's file removed, or two extra letters pointing at it. Each must come back as lost, doubled or fail; if one does not, the harness stops with exit 4 and runs nothing else. If the app does not start again after a planted kill, that is exit 1, and the plant counts as caught only if the database, read once the failed launch is gone, holds it as planted (for `damage`, with its recording changed). The real runs then start on a second fresh install. `apps/mobile/test/qa-kill-harness.test.ts` runs the loop, the oracle and the snapshot reader on Linux in `npm test`, against a fake app built on the app's own migrator and repositories that runs the app's own `runLaunchSweep` over a stand-in file system, so the fake has the app's listing rule: an app whose save is not one transaction fails (exit 1), an app that ignores the plants is blind (exit 4), a drill that never arms is incomplete (exit 3), an app that does not start after a kill fails (exit 1), and damage a later launch does is caught.
+
+**Exit codes.** 0 every run kept its letter or take exactly once, the database checked clean after every relaunch and the self-check caught every plant; 1 a run lost, doubled or damaged one, the app did not start again after a kill (the report names the run, the seed and the kill time, and says whether the database survived: read once the failed launch is gone, with its integrity check and what it holds for that run, or why it was not read), or, for DL-01, fewer than 49 in 50 takes play to within 5 s (07); 2 usage or a refused setup; 3 incomplete (a timeout, no microphone, fewer runs judged than planned, an error in the harness, with its stage named); 4 the self-check missed a plant. Only 0 is green. Every exit after the arguments are accepted writes the report: `--out` (default `~/.scribe-kill/<mode>-<UTC time>`, never the repo) gets `report.json` and `report.md` (run numbers, outcomes and reasons; no ids, no words), also appended to the GitHub step summary.
+
+**What a clean result proves.** With zero failures in n runs, the 95% upper bound on the loss rate per kill is about 3/n (rule of three; exactly 1 - 0.05^(1/n)). 500 clean random kills rule out a rate above 0.6% on the Simulator, and 50 clean kills above 5.8%; nothing proves "zero". Random DL-02 kills mostly land after the commit (a save takes a few milliseconds), which is why the crash-point runs exist: 50 clean runs at each point rule out above 5.8% at that point. The report prints these bounds for each stratum. Simulator and SE 3 results are different populations and are not pooled.
+
+**What it needs.**
+1. An e2e simulator build: release JavaScript, `EXPO_PUBLIC_E2E=1` and `EXPO_PUBLIC_APP_ENV=development` (the seam is compiled into no build whose app env is `preview` or `production`, so no TestFlight or App Store build carries it), and S20's wiring line in `app/_layout.tsx` (RA-20-18): `useE2eSeams();` as the first line of `Root()`, with `import { useE2eSeams } from '@/dev/e2e-seams';`. Without it the app never arms and every run times out (exit 3). Its bundle id is `com.earlyletters.scribe.dev`; the harness reads it from the `.app` and refuses any other. `ci/kill-harness.yml.example` builds it on the runner with `xcodebuild -configuration Release -sdk iphonesimulator`.
+2. macOS with Xcode 26 and Node 22. A booted simulator: `xcrun simctl create kill-se3 "iPhone SE (3rd generation)"`.
+3. For DL-01, a microphone input the simulator can record from, and one that hears nothing: the simulator records from the Mac's input for up to two minutes a run. **On a Mac, never in a family room:** install a silent virtual input (for example BlackHole), select it in System Settings > Sound > Input, then pass `--mic-silent`. Without the flag DL-01 refuses to start; the report records the name of the input it used. By default the harness uninstalls the app at the end, which deletes every drill recording. On a hosted runner the flag is safe; whether the runner's simulator can record at all is unverified [U]: if it cannot, the drill writes `record_failed` and the harness exits 3, and DL-01 runs on the founder's Mac (AF-14).
+
+```bash
+# DL-02, the gate size: 500 random kills and 50 at each crash point (about 1 h [E])
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <udid> --app /path/to/App.app --runs 500 --point-runs 50
+# DL-01 (about 10 h [E] for 500): four shards of 125 on four simulators or runners, then merge
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-1> --app App.app --runs 125 --mic-silent --out /tmp/k1
+#   ... the same for k2, k3, k4 ...
+node apps/mobile/e2e/kill/run-kill-harness.mjs --merge /tmp/k1/report.json /tmp/k2/report.json /tmp/k3/report.json /tmp/k4/report.json
+```
+Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed), `--point-runs N` (default runs/10), `--delay-ms A-B`, `--seed N`, `--self-check N` (planted runs of each kind, default 2), `--bundle-id` (must match the `.app`), `--keep-app`, `--json`. A bad number exits 2. A report's seed replays its delays only with the same `--self-check` value, because the plants draw from the same random stream first. `--merge` refuses a shard given twice and shards with other settings or another build.
+
+**Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. A pass means kept and checked as above on the Simulator; the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`) is the device half of the gate.
 
 ## Sources (opened 3 Oct 2026)
 

@@ -15,12 +15,19 @@
  * - Enqueueing is idempotent: the same recording is never queued twice, and
  *   a recording whose words were set is never transcribed again (raw is set
  *   once, DATA-REQ-040).
+ * - A language this build does not hear yet (`onHold`: every language but
+ *   English while the English-only switch is on, D-111 item 4) is never
+ *   handed to the recogniser: its jobs wait (`waiting_for_language`), are
+ *   never started, never retried, never failed and ask for no download. The
+ *   recording is kept; in a build that hears the language, the job runs in
+ *   that language as any other.
  */
 import type { SpeechLanguage } from '../models/catalog';
+import { RunInputError } from '../transcribe-run';
 
 export type JobKind = 'draft' | 'entry';
 
-export type JobPhase = 'queued' | 'waiting_for_pack' | 'running' | 'done' | 'failed';
+export type JobPhase = 'queued' | 'waiting_for_pack' | 'waiting_for_language' | 'running' | 'done' | 'failed';
 
 export type JobFailure = 'file_missing' | 'decode_failed' | 'model_load_failed' | 'transcribe_failed' | 'unsupported';
 
@@ -46,12 +53,15 @@ export interface QueueState {
   running: string | null;
   /** Languages whose speech packs are installed on this phone. */
   ready: SpeechLanguage[];
+  /** Languages this build does not hear yet (language-hold.ts): their jobs wait and never run. */
+  onHold: SpeechLanguage[];
   foreground: boolean;
 }
 
 export type QueueEvent =
   | { type: 'enqueue'; id: string; kind: JobKind; language: SpeechLanguage; capturedAt: string }
   | { type: 'packs'; ready: SpeechLanguage[] }
+  | { type: 'onHold'; languages: SpeechLanguage[] }
   | { type: 'start'; id: string }
   | { type: 'progress'; id: string; done: number; total: number }
   | { type: 'finish'; id: string; outcome: 'ok' | 'no_speech' }
@@ -66,11 +76,23 @@ export const RETRY_DELAYS_MS: readonly number[] = [30_000, 5 * 60_000];
 export const MAX_AUTO_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 export function initialQueue(): QueueState {
-  return { jobs: {}, running: null, ready: [], foreground: true };
+  return { jobs: {}, running: null, ready: [], onHold: [], foreground: true };
 }
 
 const isReady = (s: QueueState, lang: SpeechLanguage) => s.ready.includes(lang);
-const waitingPhase = (s: QueueState, lang: SpeechLanguage): JobPhase => (isReady(s, lang) ? 'queued' : 'waiting_for_pack');
+const isOnHold = (s: QueueState, lang: SpeechLanguage) => s.onHold.includes(lang);
+/** Ready and not on hold: the only languages a job may run in. */
+const canRun = (s: QueueState, lang: SpeechLanguage) => isReady(s, lang) && !isOnHold(s, lang);
+const waitingPhase = (s: QueueState, lang: SpeechLanguage): JobPhase =>
+  isOnHold(s, lang) ? 'waiting_for_language' : isReady(s, lang) ? 'queued' : 'waiting_for_pack';
+const isWaiting = (j: Job) => j.phase === 'queued' || j.phase === 'waiting_for_pack' || j.phase === 'waiting_for_language';
+
+/** Waiting jobs take the phase the new state gives their language; running, done and failed jobs keep theirs. */
+function rephase(next: QueueState): QueueState {
+  const jobs: Record<string, Job> = {};
+  for (const [id, j] of Object.entries(next.jobs)) jobs[id] = isWaiting(j) ? { ...j, phase: waitingPhase(next, j.language) } : j;
+  return { ...next, jobs };
+}
 
 function put(s: QueueState, job: Job, running: string | null = s.running): QueueState {
   return { ...s, running, jobs: { ...s.jobs, [job.id]: job } };
@@ -101,17 +123,14 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
         progress: null,
       });
     }
-    case 'packs': {
-      const next: QueueState = { ...s, ready: [...new Set(e.ready)].sort() };
-      const jobs: Record<string, Job> = {};
-      for (const [id, j] of Object.entries(s.jobs)) {
-        jobs[id] = j.phase === 'queued' || j.phase === 'waiting_for_pack' ? { ...j, phase: waitingPhase(next, j.language) } : j;
-      }
-      return { ...next, jobs };
-    }
+    case 'packs':
+      return rephase({ ...s, ready: [...new Set(e.ready)].sort() });
+    case 'onHold':
+      return rephase({ ...s, onHold: [...new Set(e.languages)].sort() });
     case 'start': {
       const j = s.jobs[e.id];
-      if (!j || s.running || j.phase === 'done' || j.phase === 'running') return s;
+      // A language on hold is never handed to the recogniser, whoever asks.
+      if (!j || s.running || j.phase === 'done' || j.phase === 'running' || isOnHold(s, j.language)) return s;
       return put(s, { ...j, phase: 'running', progress: null, failure: undefined }, e.id);
     }
     case 'progress': {
@@ -164,7 +183,7 @@ export function nextJob(s: QueueState, now: number): string | null {
   if (s.running || !s.foreground) return null;
   const runnable = Object.values(s.jobs).filter(
     (j) =>
-      isReady(s, j.language) &&
+      canRun(s, j.language) &&
       (j.phase === 'queued' || (j.phase === 'failed' && j.retryAt !== null && j.retryAt <= now && j.attempts < MAX_AUTO_ATTEMPTS)),
   );
   runnable.sort(
@@ -180,7 +199,7 @@ export function nextJob(s: QueueState, now: number): string | null {
 export function nextRetryAt(s: QueueState): number | null {
   let at: number | null = null;
   for (const j of Object.values(s.jobs)) {
-    if (j.phase === 'failed' && j.retryAt !== null && j.attempts < MAX_AUTO_ATTEMPTS && isReady(s, j.language)) {
+    if (j.phase === 'failed' && j.retryAt !== null && j.attempts < MAX_AUTO_ATTEMPTS && canRun(s, j.language)) {
       at = at === null ? j.retryAt : Math.min(at, j.retryAt);
     }
   }
@@ -190,4 +209,19 @@ export function nextRetryAt(s: QueueState): number | null {
 /** Languages that have jobs waiting for their packs (the runtime starts those downloads). */
 export function languagesWaiting(s: QueueState): SpeechLanguage[] {
   return [...new Set(Object.values(s.jobs).filter((j) => j.phase === 'waiting_for_pack').map((j) => j.language))].sort();
+}
+
+/**
+ * The job failure for an error, by code only (never by its text, LEGAL-REQ-014). ScribeAudio errors carry
+ * `ERR_SCRIBE_AUDIO_*` codes; a recording whose length cannot be trusted (RunInputError, review L9) is a
+ * decode failure: the job shows Try again and Type instead, and a waiting letter keeps waiting.
+ */
+export function jobFailureOf(e: unknown): JobFailure {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (code === 'ERR_SCRIBE_AUDIO_FILE_MISSING') return 'file_missing';
+  if (code === 'ERR_SCRIBE_AUDIO_DECODE') return 'decode_failed';
+  if (code === 'ERR_SCRIBE_AUDIO_UNSUPPORTED') return 'unsupported';
+  if (e instanceof RunInputError) return 'decode_failed';
+  if (e instanceof Error && e.message === 'model_load_failed') return 'model_load_failed';
+  return 'transcribe_failed';
 }
