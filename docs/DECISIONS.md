@@ -555,6 +555,7 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 ### D-084 Quiet-day marks carry no sentence (delegated; debate Q-013 quiet-day-machine-words)
 - **Decision:** "Not much today" stores a mark with no text. The Book shows "A quiet day" with the date, unsigned. The old sentence is removed and blanked in existing rows. Quiet days never count toward the free letters and never appear in the printed book or Read together. "Nobody spoke" keeps an app note that is small, muted and unsigned: "No words in this one. The recording is kept just as it is." A recording with no words counts as a letter when kept. The "Dear {child}," ghost placeholder is removed. "Add a few words" after the tap waits for v1.1.
 - **Why:** the constitution. Every word the Book shows was said by a person.
+- **Update 24 Oct 2026:** superseded on this point by D-103: a recording with no words is kept, but it counts only once its words exist and are kept from Review.
 
 ### D-085 Delete, recovery and backup in v1.0 (delegated; debate Q-014 data-lifecycle-delete-backup)
 - **Decision:** deleting a letter asks first, then moves it to a Recently deleted shelf for 30 days, with Restore and Erase now; the purge removes the file, then the row. Recordings stay in the iPhone backup always. The launch sweep checks that a recovered take plays. Settings shows "Last export" and a plain nudge to save a copy in Files or iCloud Drive.
