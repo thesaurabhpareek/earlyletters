@@ -595,6 +595,13 @@ export const PulledRowSchema = v.object({
   prompt_library_version: v.nullish(v.number()),
   engine_version: v.number(),
   raw_transcript: v.optional(str),
+  /**
+   * Own rows only. A JSON array, checked on entries since 20261023040000
+   * (entries_machine_edits_shape, 23514 on a write), so a letter written
+   * since then parses here. A letter stored before it can still fail (the
+   * check then stays NOT VALID, supabase/APPLY.md File 23), and one such
+   * row makes its author's whole pull answer invalid.
+   */
   machine_edits: v.optional(v.array(v.unknown())),
   /** Null until the author edits by hand (S02 20261015030000: null or an array). */
   author_edits: v.nullish(v.array(v.unknown())),

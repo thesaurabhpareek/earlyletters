@@ -9,7 +9,9 @@ import { createDb, users, uuid7 } from './harness.mjs';
 
 const files = process.argv.slice(2);
 const mine = files.find((f) => f.includes('20261023030000'));
-const before = files.filter((f) => f !== mine);
+// The files before this one (run.mjs passes them in filename order), never a later one: 20261023040000 refuses a
+// run without this file (55000).
+const before = files.slice(0, files.indexOf(mine));
 const h = await createDb(files);
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild } = h;
 const { A, B } = users;
