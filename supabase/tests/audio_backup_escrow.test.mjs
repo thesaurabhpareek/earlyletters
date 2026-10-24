@@ -121,8 +121,10 @@ const again = await open(A, NEW, [approvalFor(OLD, CODE)], hex('3c', 32));
 check('asking again from the same device returns the same request', again.request_id === r1.request_id && again.created === false);
 check('a request whose email never went out takes the new stop token, so a retry can send the email', again.token_replaced === true
   && (await sys(`select stop_token_hash = $2 v from restore_requests where id = $1`, [r1.request_id, hex('3c', 32)])).rows[0].v === true);
-check('the owner sees the request (without its stop token hash)', (await as(A, `select id, state from restore_requests`)).rows.some((r) => r.id === r1.request_id));
-check('nobody else sees it', (await as(B, `select id from restore_requests`)).rows.length === 0);
+// 20261023060000: no client reads restore_requests directly (backup_pending_requests is the path).
+check('the request is stored, and no client reads the table directly (42501)', (await sys(`select 1 from restore_requests where id = $1`, [r1.request_id])).rows.length === 1
+  && (await codeOf(() => as(A, `select id, state from restore_requests`))) === '42501');
+check('nobody else sees it either', (await codeOf(() => as(B, `select id from restore_requests`))) === '42501');
 
 // Waiting: no keys before the hold or an approval.
 const w1 = await load(A, NEW, r1.request_id);
@@ -176,9 +178,10 @@ check('a second opening in that day is its own opening (a second email, never fo
 check('a release poll whose session has ended gets nothing (28000 session_ended)', await errOf(() => load(A, NEW, r1.request_id, uuid7())) === '28000 session_ended');
 await sys(`update restore_requests set released_at = now() - interval '25 hours' where id = $1`, [r1.request_id]);
 check('after a day, a released request is closed', (await load(A, NEW, r1.request_id)).state === 'released' && !('keys' in (await load(A, NEW, r1.request_id))));
-const mine = (await as(A, `select reason, outcome, device_id, restore_request_id from escrow_unwraps`)).rows;
-check('[F08-REQ-042] the owner reads their own log rows', mine.length === 4 && mine.every((r) => r.reason === 'restore' && r.device_id === NEW && r.restore_request_id === r1.request_id));
-check('nobody else reads them', (await as(B, `select 1 from escrow_unwraps`)).rows.length === 0);
+// 20261023060000: no client reads escrow_unwraps directly; the rows are checked as the owner.
+const mine = (await sys(`select reason, outcome, device_id, restore_request_id from escrow_unwraps where profile_id = $1`, [A])).rows;
+check('[F08-REQ-042] the account\'s log rows are written', mine.length === 4 && mine.every((r) => r.reason === 'restore' && r.device_id === NEW && r.restore_request_id === r1.request_id));
+check('no client reads them (42501)', (await codeOf(() => as(A, `select 1 from escrow_unwraps`))) === '42501' && (await codeOf(() => as(B, `select 1 from escrow_unwraps`))) === '42501');
 check('the log holds ids and enums only, no key bytes', (await sys(`select count(*)::int n from information_schema.columns
   where table_name = 'escrow_unwraps' and data_type = 'bytea' and column_name <> 'subject_hash'`)).rows[0].n === 0);
 

@@ -9,8 +9,10 @@
 #   legacy-grants  the database rules (PGlite) with Supabase's old automatic grants
 #         (SCRIBE_DEFAULT_GRANTS=legacy). Pull requests run them without the
 #         automatic grants, the world of every project created since 30 May 2026
-#         (supabase/tests/harness.mjs); this keeps the revokes proven for a project
-#         made with them.
+#         (supabase/tests/harness.mjs), and db-cli.yml runs this legacy pass too on
+#         every pull request that changes supabase/**. GitHub runs this file only
+#         once it is on the default branch (main); until then db-cli.yml is the
+#         proof.
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Nightly
 

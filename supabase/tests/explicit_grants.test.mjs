@@ -7,6 +7,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
+import { grantRows, SERVICE_ROLE_FUNCTIONS } from './grants.mjs';
 
 const all = process.argv.slice(2);
 const name = (f) => f.split('/').pop();
@@ -34,8 +35,13 @@ const snapshot = async (x) => {
       where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p') and has_column_privilege(r, c.oid, a.attnum, 'SELECT')
         and not has_table_privilege(r, c.oid, 'SELECT') order by 1`),
     sequences: await q(`select r || ' ' || c.relname || ' ' || p v from pg_class c
-      cross join unnest(array['anon', 'authenticated', 'service_role']) r cross join unnest(array['USAGE', 'SELECT', 'UPDATE']) p
-      where c.relnamespace = 'public'::regnamespace and c.relkind = 'S' and has_sequence_privilege(r, c.oid, p) order by 1`),
+      cross join unnest(array['public', 'anon', 'authenticated', 'service_role']) r cross join unnest(array['USAGE', 'SELECT', 'UPDATE']) p
+      where c.relnamespace = 'public'::regnamespace and c.relkind = 'S'
+        and (case when r = 'public' then exists (select 1 from aclexplode(coalesce(c.relacl, '{}')) a where a.grantee = 0 and a.privilege_type = p)
+             else has_sequence_privilege(r, c.oid, p) end) order by 1`),
+    functions: await q(`select r || ' ' || p.oid::regprocedure::text v from pg_proc p
+      cross join unnest(array['anon', 'authenticated', 'service_role']) r
+      where p.pronamespace = 'public'::regnamespace and has_function_privilege(r, p.oid, 'execute') order by 1`),
     defaults: await q(`select d.defaclobjtype::text || ' ' || a.grantee::regrole::text || ' ' || a.privilege_type v
       from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
       where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
@@ -51,13 +57,28 @@ for (const k of Object.keys(here)) {
   for (const v of here[k].filter((x) => !there[k].includes(x))) console.log(`      ${k}, only in the ${defaults.mode} world: ${v}`);
   for (const v of there[k].filter((x) => !here[k].includes(x))) console.log(`      ${k}, only in the ${other.defaults.mode} world: ${v}`);
 }
-check('a project made without the automatic grants and one made with them end with the same privileges on every public table, view, column and sequence',
-  ['tables', 'columns', 'sequences'].every((k) => JSON.stringify(here[k]) === JSON.stringify(there[k])) && here.tables.length > 40);
+check('a project made without the automatic grants and one made with them end with the same privileges on every public table, view, column, sequence and function',
+  ['tables', 'columns', 'sequences', 'functions'].every((k) => JSON.stringify(here[k]) === JSON.stringify(there[k])));
+// The exact table and view grants (grants.mjs; the migration header names the path behind each).
+const PRIV = { SELECT: 'S', INSERT: 'I', UPDATE: 'U', DELETE: 'D' };
+const byRel = new Map();
+for (const v of here.tables) {
+  const [role, rel, priv] = v.split(' ');
+  const k = `${role} ${rel}`;
+  byRel.set(k, (byRel.get(k) ?? '') + (PRIV[priv] ?? '?'));
+}
+const heldRows = [...byRel].map(([k, l]) => `${k} ${[...l].sort((a, b) => 'SIUD?'.indexOf(a) - 'SIUD?'.indexOf(b)).join('')}`).sort();
+for (const v of heldRows.filter((x) => !grantRows().includes(x))) console.log(`      held, not in grants.mjs: ${v}`);
+for (const v of grantRows().filter((x) => !heldRows.includes(x))) console.log(`      in grants.mjs, not held: ${v}`);
+check('every public table and view grants exactly the rows in grants.mjs (nothing more, nothing less)', JSON.stringify(heldRows) === JSON.stringify(grantRows()));
+check('service_role executes exactly the 42 functions an earlier file granted it, in both worlds',
+  JSON.stringify(here.functions.filter((v) => v.startsWith('service_role ')).map((v) => v.slice(13)).sort()) === JSON.stringify([...SERVICE_ROLE_FUNCTIONS].sort())
+  || console.log(`      got ${here.functions.filter((v) => v.startsWith('service_role ')).length}`));
 check('and with the same defaults: later tables, sequences and functions in public give anon, authenticated and service_role nothing',
   here.defaults.length === 0 && there.defaults.length === 0);
 check('no role holds TRUNCATE, REFERENCES, TRIGGER or MAINTAIN on any public table or view (lens A F6)',
   !here.tables.some((v) => / (TRUNCATE|REFERENCES|TRIGGER|MAINTAIN)$/.test(v)));
-check('PUBLIC holds nothing on any public table or view, and no API role anything on a sequence',
+check('PUBLIC holds nothing on any public table, view or sequence, and no API role anything on a sequence (lens B N7)',
   !here.tables.some((v) => v.startsWith('public ')) && here.sequences.length === 0);
 await other.db.close();
 
@@ -98,10 +119,10 @@ check('sync_push (runs as the caller) writes a letter', r.results?.[0]?.ok === t
 await sys(`delete from sync_rate_windows where profile_id = $1`, [B]);
 const pulled = (await one(B, `select public.sync_pull('{}'::jsonb, 50) r`)).r;
 check('sync_pull serves it to the co-parent', JSON.stringify(pulled).includes(LETTER));
-check('letters: the author reads it, and the co-parent through book_entries',
+check('letters: the author reads it from entries; nobody reads book_entries directly (sync_pull serves it)',
   (await as(A, `select 1 from entries where id = $1`, [LETTER])).rows.length === 1
-  && (await as(B, `select 1 from book_entries where id = $1`, [LETTER])).rows.length === 1);
-check('family: members read the book, its members and their profiles; a stranger reads none of it',
+  && (await codeOf(() => as(B, `select 1 from book_entries where id = $1`, [LETTER]))) === '42501');
+check('family: members read the book name, its members and their profiles; a stranger reads none of it',
   (await as(B, `select name from children where id = $1`, [CHILD])).rows.length === 1
   && (await as(B, `select 1 from child_members where child_id = $1`, [CHILD])).rows.length === 2
   && (await as(B, `select 1 from profiles`)).rows.length === 2

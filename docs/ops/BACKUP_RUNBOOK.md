@@ -30,7 +30,7 @@ The honest limit (F08 6.5 C, for the Privacy Policy): anyone holding the escrow 
 
 Other honest limits, so nobody reads more into the controls than they give:
 - The access log's append-only trigger binds every role but a superuser. A superuser (the `postgres` role in the SQL editor, or anyone with the database password) can set `session_replication_role = replica`, which skips triggers, and then edit or delete log rows. The daily copy in `ops-ledger/escrow/` (a new file per day per run, never overwritten) is what shows that afterwards; compare it with the table when an alert or a restore makes you doubt the table (section 6).
-- The service role still bypasses RLS on every other table. It has no table privilege on the backup tables (only the `backup_svc_*` functions), but a leaked service key is still an incident.
+- The service role bypasses RLS, but since `20261023060000` it holds no table privilege on any table in `public` (the backup tables included): it reaches data only through the functions granted to it (`backup_svc_*`, the purge and ops RPCs). A leaked service key is still an incident: those functions read and delete people's data.
 - A stolen session that keeps a fresh device registered for 7 days can approve its own later request. The request email with its Stop link still goes to the account address first, and Settings > Devices shows every device; a "new device" email is requested of S01 (PR body).
 - The escrow function zeroes the key bytes it decodes at the end of every call, but the secret itself stays in the function's environment for the life of the worker; that is the custody boundary (section 4).
 

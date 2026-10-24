@@ -103,8 +103,10 @@ check('nobody else can revoke the owner\'s device', await codeOf(() => as(B, `se
 for (let i = 0; i < 9; i++) await reg(C, uuid7(), hex((0x10 + i).toString(16), 32));
 check('at most 10 devices a day per account (SCRAT devices)', await codeOf(() => reg(C, uuid7(), hex('1f', 32))) === 'ok'
   && await codeOf(() => reg(C, uuid7(), hex('20', 32))) === 'SCRAT');
-check('the owner reads their own devices only', (await as(A, `select device_id from backup_devices`)).rows.length === 2
-  && (await as(B, `select device_id from backup_devices`)).rows.length === 0);
+// 20261023060000: no client reads backup_devices directly (the backup_* RPCs are the paths).
+check('the owner\'s two devices are stored, and no client reads the table directly (42501)',
+  (await sys(`select count(*)::int n from backup_devices where profile_id = $1`, [A])).rows[0].n === 2
+  && (await codeOf(() => as(A, `select device_id from backup_devices`))) === '42501' && (await codeOf(() => as(B, `select device_id from backup_devices`))) === '42501');
 
 // ── Book keys ─────────────────────────────────────────────────────────────
 check('[F08-REQ-021] a parent stores the escrow wrap of their book key, version 1', (await storeKey(A)).created === true);

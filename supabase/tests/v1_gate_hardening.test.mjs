@@ -11,6 +11,9 @@ import { createDb, users, uuid7 } from './harness.mjs';
 
 const t = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, publishPolicies, consent, newChild, invite, join, done } = t;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 const { A, B, C, N, S } = users;
 const P2 = '88888888-8888-8888-8888-888888888888';
 for (const u of [...Object.values(users), P2]) await sys(`insert into auth.users (id) values ($1) on conflict do nothing`, [u]);
@@ -53,9 +56,12 @@ await join(N, 'contributor', child, A);
     (await codeOf(() => as(A, `select date_of_birth from public.children`))) === '42501');
   check('the service role (sys) still reads them', (await sys(`select date_of_birth::text d from children where id = $1`, [child])).rows[0].d === '2026-03-05');
 
-  // Writes are unchanged: parents set dates directly and through sync_push book.update.
-  await as(A, `update public.children set due_date = '2026-02-27' where id = $1`, [child]);
-  check('a parent still updates the due date directly', (await sys(`select due_date::text d from children where id = $1`, [child])).rows[0].d === '2026-02-27');
+  // Writes go through book_update (and sync_push book.update, which calls it); since 20261023060000 no client
+  // updates children directly.
+  await as(A, `select public.book_update($1, '{"due_date": "2026-02-27"}'::jsonb)`, [child]);
+  check('a parent still sets the due date (book_update), and a direct update is refused (42501)',
+    (await sys(`select due_date::text d from children where id = $1`, [child])).rows[0].d === '2026-02-27'
+    && (await codeOf(() => as(A, `update public.children set due_date = '2026-02-28' where id = $1`, [child]))) === '42501');
   let res = await push(A, [op('book.update', child, { date_of_birth: '2026-03-06', due_date: '2026-03-02', nickname: 'Ashu' })]);
   const row = (await sys(`select date_of_birth::text dob, due_date::text due, nickname from children where id = $1`, [child])).rows[0];
   check('sync_push book.update still changes the dates and settings (through book_update)',
@@ -66,7 +72,7 @@ await join(N, 'contributor', child, A);
     (await push(N, [op('book.update', child, { name: 'Nani says' })])).results[0].code === 'SCPAR'
     && (await push(C, [op('book.update', child, { name: 'x' })])).results[0].code === 'P0002'
     && (await push(A, [op('book.update', child, { colour: 'red' })])).results[0].code === '22023');
-  check('a direct update by a family member is still SCPAR', (await codeOf(() => as(N, `update public.children set name = 'X' where id = $1`, [child]))) === 'SCPAR');
+  check('a family member\'s book_update is still SCPAR', (await codeOf(() => as(N, `select public.book_update($1, '{"name": "X"}'::jsonb)`, [child]))) === 'SCPAR');
   // Consent gate on book.update (was children_consent_gate; book_update calls it itself).
   const U = users.U;
   await sys(`insert into auth.users (id) values ($1) on conflict do nothing`, [U]);

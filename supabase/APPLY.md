@@ -22,6 +22,13 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 13 to 16 | `20261015000000` to `20261015030000` | **Pending** | The R-17 gate: BL-331 with BL-332, `peek_invite` with BL-334, WP-F11-01, the v1.0 wire-contract columns (section "Files 13 to 16") |
 | 17 | `20261016000000_sync_v1_server.sql` | **Pending** | Sync protocol v1, the server half: words compare and set, held drafts, Erase now, the erasure record, the review mark; schema `sync_private` (never exposed) (section "File 17") |
 | 18 | `20261016001000_subscription_status.sql` | **Pending** | The D-080 subscription status report and the D-081 purchase consent record: four tables no client can read, `status_salt()` and `status_report_store(jsonb)`, fail closed on `app.status_report_enabled` (section "File 18") |
+| 19 | `20261023000000_backup_server.sql` | **Pending** | Encrypted recording backup and the recovery key (section "File `<timestamp>_backup_server.sql`") |
+| 20 | `20261023010000_s02_purge_and_consent_guards.sql` | **Pending** | Consent records append-only for the service role; a former member's letters survive the book purge (section "File 20") |
+| 21 | `20261023020000_purge_legal_holds.sql` | **Pending** | Legal holds stop the account purge for every row it would touch (section "File 21") |
+| 22 | `20261023030000_held_drafts_write_checks.sql` | **Pending** | Held drafts checked at write time like letters (section "File 22") |
+| 23 | `20261023040000_entries_machine_edits_check.sql` | **Pending** | A letter's `machine_edits` must be an array (section "File 23") |
+| 24 | `20261023050000_consent_grants_tightening.sql` | **Pending** | The consent tables' grants match their row security (section "File 24") |
+| 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -29,7 +36,7 @@ Step 4 drops whatever entries SELECT policies exist, so it is correct whether or
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. Every test file must pass (20 files after files 13 to 16; `npm run test:db` lists them). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. Every test file must pass (32 files after file 25; `npm run test:db` lists them). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -1073,20 +1080,24 @@ Then repeat step 21's `search_path` query (expect 0 rows; this file adds no func
 
 ## File 25: every table, view and sequence gets explicit grants (24 Oct 2026, stream S02)
 
-`20261023060000_explicit_grants.sql`. Lens A on #261 (comment 6378839652): Supabase stopped granting new objects in `public` to anon, authenticated and service_role on projects created since 30 May 2026, and does the same on every project from 30 Oct 2026, and every earlier file, 1 and 2 included, relied on those grants (27 tables, 2 views, 2 sequences). Apply it after `20261023050000_consent_grants_tightening.sql`. Privileges only: no function, column or row changes. Tests: `explicit_grants` (new), the grant list and later-object rows in `access_matrix`, and every test file now runs without the automatic grants by default (`SCRIBE_DEFAULT_GRANTS=legacy` runs them with the old ones, nightly).
+`20261023060000_explicit_grants.sql`. Lens A on #261 (comment 6378839652): Supabase stopped granting new objects in `public` to anon, authenticated and service_role on projects created since 30 May 2026, and does the same on every project from 30 Oct 2026, and every earlier file that creates a table, sequence or function, 1 and 2 included, relied on those grants. Apply it after `20261023050000_consent_grants_tightening.sql`. Privileges only: no function body, column or row changes. Tests: `explicit_grants` (new), the grant list (`supabase/tests/grants.mjs`) and later-object rows in `access_matrix`, and every test file now runs without the automatic grants by default; `db-cli.yml` also runs them with the old ones (`SCRIBE_DEFAULT_GRANTS=legacy`).
 
-**On a new project this file is what makes the app work.** Without it every earlier file applies cleanly, and then the consent sheets, sync, letters and family reads all answer `42501`. The deploy job's smoke is the first thing that fails: its anonymous `policy_versions` read is refused.
+**On a new project this file is what makes the app work.** Without it every earlier file applies cleanly, and then the consent sheets, sync, letters and family reads all answer `42501`. The deploy job's smoke is the first thing that fails: its anonymous `policy_versions` read is refused. In the one push that applies files 1 to 25, the objects of files 1 to 24 have no grants until file 25 commits; nothing calls them in that window.
 
 What it changes:
-- **One end state in both worlds.** Every table, view and sequence in `public` loses every privilege anon, authenticated, service_role and PUBLIC hold (column grants with it), then gets back exactly the grant list in the file header, which `access_matrix` checks as `GRANTS`:
-  - anon reads `policy_documents` and `policy_versions`, nothing else;
-  - authenticated reads where a policy shows rows; writes `entries` and `held_drafts` (insert, update; `sync_push` and `held_upsert` run as the caller), `child_member_prefs` and `dictionary_terms` (insert, update, delete), and `children` and `profiles` (update). The column lists on `children`, `child_keys`, `restore_requests` and `restore_approvals` are restated unchanged;
-  - service_role reads `policy_acceptances`, `subscription_consents` and `subscription_status`, and reads and inserts `policy_documents` and `policy_versions` (publishing). Every worker and function calls definer RPCs, which need no table grant.
-- **No TRUNCATE, REFERENCES, TRIGGER or MAINTAIN** for any API role on any table (before, anon and authenticated could truncate 13 tables, `entries` among them, and row security does not see TRUNCATE), and nothing on any sequence.
-- **Later objects start from nothing.** `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions from anon, authenticated, service_role`: a table, sequence or function a later file creates gives those roles nothing, in either world, and that file grants what it needs (the test harness runs in that world). PUBLIC's EXECUTE on new functions stays (Postgres's default; every file revokes it where it matters).
-- A read by a role with no grant now answers `42501` where it used to return no row (anon on everything but the policy texts; anyone's hard delete of a letter). No app path relies on those empty answers.
+- **One rule for every grant: a grant exists only where a code path uses it today** (the file header names the path behind each one, file and line). Every table, view and sequence in `public` loses every privilege anon, authenticated, service_role and PUBLIC hold (column grants with it), then gets back exactly that list, which `supabase/tests/grants.mjs` holds for the tests:
+  - anon reads `policy_versions`, for the deploy smoke's anonymous read (`scripts/ops/lib/smoke.ts:296`); nothing else;
+  - authenticated writes `entries`, `held_drafts` and `child_member_prefs` (select, insert, update; `sync_push` and `held_upsert` run as the caller) and `profiles` (select, update; the sign-off name), and reads `audio_blobs`, `child_members`, `deletion_requests`, `my_policy_state` with `policy_acceptances` behind it, `policy_versions`, `sync_epochs`, `sync_op_receipts`, and the listed columns of `children` and `child_keys`. Book edits go through the definer `book_update()`, so `children` has no UPDATE;
+  - service_role holds nothing on any table: every worker and function calls definer RPCs, and publishing and support-assisted acts run in the SQL Editor as the owner;
+  - every other table and view, `book_entries` (read by `sync_pull`, a definer) and `dictionary_terms` (the dictionary lives on the device) among them, and every sequence: nobody. A later feature that needs more adds its own grant in its own migration.
+- **No TRUNCATE, REFERENCES, TRIGGER or MAINTAIN** for any API role on any table (before, anon and authenticated could truncate 13 tables, `entries` among them, and row security does not see TRUNCATE).
+- **Functions end the same in both worlds:** service_role keeps EXECUTE only on the 42 functions an earlier file granted it; the old automatic grants had also given it 86 others that no path calls with the service key.
+- **Later objects start from nothing.** `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions from anon, authenticated, service_role`. PUBLIC's EXECUTE on new functions stays (Postgres's default; every file revokes it where it matters).
+- A role with no grant now gets `42501` where it used to get no row (anon on everything but `policy_versions`, a member reading `book_entries` or `child_invites` directly, anyone's hard delete of a letter). No app path relies on those empty answers.
 
-**Before.** Every earlier file. Read only (expect false, then a number above 0):
+**Rule for every later migration (since file 25):** a new table, view, sequence or function in `public` gives anon, authenticated and service_role nothing, because file 25 resets the default privileges. The file that creates it grants exactly what a code path uses today, in that same file, revokes EXECUTE from PUBLIC on a function nobody else may call, and adds the grant to `supabase/tests/grants.mjs` (the access matrix fails otherwise).
+
+**Before.** Only on a project that already has files 1 to 24 (on a first push, which applies files 1 to 25 together, skip it: there is no moment between file 24 and file 25, and on an empty project the first query fails with `42P01`; the Check after the push is the evidence). Read only (expect false, then a number above 0):
 ```sql
 select has_table_privilege('anon', 'public.policy_acceptances', 'TRUNCATE');
 select count(*) from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
@@ -1094,7 +1105,7 @@ select count(*) from pg_default_acl d cross join lateral aclexplode(d.defaclacl)
    and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
 ```
 
-**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). On staging and production it must be on `develop` before the first staging run is approved ("Hosted checks before the first apply" a). The file refuses a second run, and a run before file 24 (`55000`).
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). On staging and production it must be on `develop` before the first staging run is approved ("Hosted checks before the first apply" a). The file refuses a run before file 24, and a second run (`55000`); the run-once check reads the file's own end state (new tables give the API roles nothing, authenticated reads `entries`, anon cannot truncate it), so an old-grants project whose table defaults were already removed by hand is not mistaken for one where file 25 ran.
 
 **Check** (expect 0, then 0, then true; on Postgres 15 leave `MAINTAIN` out of the first list):
 ```sql
@@ -1109,8 +1120,10 @@ select has_table_privilege('anon', 'public.policy_versions', 'SELECT')
    and has_table_privilege('authenticated', 'public.held_drafts', 'UPDATE')
    and has_table_privilege('authenticated', 'public.my_policy_state', 'SELECT')
    and not has_table_privilege('anon', 'public.entries', 'SELECT')
+   and not has_table_privilege('authenticated', 'public.children', 'UPDATE')
+   and not has_table_privilege('service_role', 'public.policy_acceptances', 'SELECT')
    and not has_column_privilege('authenticated', 'public.children', 'date_of_birth', 'SELECT');
 ```
-Then the deploy job's smoke must be green (the anonymous `policy_versions` read), "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21's `search_path` query gives 0 rows (this file adds no function). Advisors: none new expected; a table the API cannot reach no longer shows as exposed.
+Then "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21's `search_path` query gives 0 rows (this file adds no function). The deploy job's smoke: before step 8's versions are published it reports `none published`, which is expected; only `anonymous read refused` (401 or 403) means grants are missing, that is, file 25 is not applied. Advisors: none new expected.
 
-**Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. Do not roll back on a project without the automatic grants: the app stops working again.
+**Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. What a rollback would mean: on a project made with the old automatic grants (`early-letters`), granting SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN back on every table to all three roles, the 86 function grants to service_role and the old defaults, which reopens the TRUNCATE gap on 13 tables. On a new project there is nothing to go back to: its defaults never had those grants, and without this file the app cannot read or write at all.

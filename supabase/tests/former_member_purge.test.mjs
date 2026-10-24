@@ -71,10 +71,10 @@ for (const [u, b] of [[A, 'aa'], [B, 'bb']]) await as(u, `select public.backup_s
 const b1 = await backedUp(B, U);
 const b2 = await letter(B, U, 'Asha took three steps.');
 const bHeld = await heldDraft(B, U);
-await as(B, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Ashu', 'nickname')`, [B, U]);
+await sys(`insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Ashu', 'nickname')`, [B, U]);   // no client writes them (20261023060000)
 const a1 = await backedUp(A, U);
 const aHeld = await heldDraft(A, U);
-await as(A, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, U]);
+await sys(`insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, U]);
 const n1 = await letter(N, U, 'Asha sang for Nani.');
 
 check('undo: the inviter removes the co-parent within 72 hours', (await one(A, `select public.undo_parent_join($1, $2) r`, [U, B])).r === 'undone');

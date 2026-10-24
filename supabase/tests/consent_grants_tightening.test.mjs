@@ -103,12 +103,9 @@ for (const [label, role, statement] of [
 // ── Then the files after it (20261023060000): the same end state in both worlds ──
 for (const f of all.filter((f) => name(f) > name(mine))) await db.exec(readFileSync(f, 'utf8'));
 const finalPrivs = await privileges();
-check('with every file: anon reads the published texts, authenticated those and its own acts, service_role the two records and publishes',
+check('with every file (20261023060000: a grant only where a path reads): anon and authenticated read policy_versions, authenticated its own acts; nothing else',
   JSON.stringify(finalPrivs) === JSON.stringify([
-    'anon policy_documents SELECT', 'anon policy_versions SELECT',
-    'authenticated policy_acceptances SELECT', 'authenticated policy_documents SELECT', 'authenticated policy_versions SELECT',
-    'service_role policy_acceptances SELECT', 'service_role policy_documents INSERT', 'service_role policy_documents SELECT',
-    'service_role policy_versions INSERT', 'service_role policy_versions SELECT', 'service_role subscription_consents SELECT',
+    'anon policy_versions SELECT', 'authenticated policy_acceptances SELECT', 'authenticated policy_versions SELECT',
   ]) || console.log(`      holds: ${finalPrivs.join(', ')}`));
 check('with every file, this file refuses to run again (55000) in both worlds', (await codeOf(() => db.exec(sql))) === '55000');
 check('every record is still there', JSON.stringify(await counts()) === JSON.stringify(start));
@@ -121,15 +118,18 @@ check('the app still reads its own state (my_policy_state) and its own acts',
   && (await as(A, `select 1 from policy_acceptances`)).rows.length === aStart + 1);
 check('policy_actions_needed and the sync gate still answer', (await codeOf(() => as(A, `select * from public.policy_actions_needed()`))) === 'ok'
   && (await codeOf(() => as(A, `select * from public.my_sync_gate()`))) === 'ok');
-check('the published versions are still read before sign-in (anon) and after (the consent sheets, the staging smoke)',
+check('the published versions are still read: anonymously by the deploy smoke, and after sign-in by the consent sheets',
   (await asAnon(`select document, version, effective_at from policy_versions`)).rows.length >= 4
-  && (await asAnon(`select key from policy_documents`)).rows.length >= 4
   && (await as(A, `select 1 from policy_versions where document = 'terms'`)).rows.length === 1);
-check('the service role still publishes a version and reads the records', (await asRole('service_role', `insert into policy_versions
-  (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
-  values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`)) === 'ok'
-  && (await asRole('service_role', 'select 1 from policy_acceptances')) === 'ok' && (await asRole('service_role', 'select 1 from subscription_consents')) === 'ok'
-  && (await asRole('service_role', 'lock table policy_acceptances in access share mode')) === 'ok');
+check('policy_documents is read by no client directly (42501)', (await codeOf(() => asAnon(`select key from policy_documents`))) === '42501'
+  && (await codeOf(() => as(A, `select key from policy_documents`))) === '42501');
+await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at,
+  content_sha256, url, summary) values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`);
+check('publishing is the owner\'s (SQL Editor, APPLY.md step 8.2); the service key holds no table privilege at all',
+  (await sys(`select 1 from policy_versions where document = 'privacy' and version = '1.0.1'`)).rows.length === 1
+  && (await asRole('service_role', 'select 1 from policy_acceptances')) === '42501' && (await asRole('service_role', 'select 1 from subscription_consents')) === '42501'
+  && (await asRole('service_role', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at,
+    content_sha256, url, summary) values ('privacy', '1.0.2', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.2', 'x')`)) === '42501');
 await sys(`insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform)
   values ($1, 'terms', '1.0.0', 'accept', 'support_assisted', 'support.desk', '1', 'ios')`, [A]);
 check('the owner still records a support-assisted act (SQL Editor)', (await counts()).p === start.p + 2);

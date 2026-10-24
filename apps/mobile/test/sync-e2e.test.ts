@@ -217,6 +217,9 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     `);
     const dir = migrationsDir();
     for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) await pg.exec(readFileSync(join(dir, f), 'utf8'));
+    // Test-only (20261023060000): the tombstone test compares a phone with what the co-parent sees through
+    // book_entries; on a project only sync_pull reads that view (as its owner), so no client holds SELECT on it.
+    await pg.exec('grant select on public.book_entries to authenticated');
     protocolV1 = (await pg.query<{ v1: boolean }>(
       "select exists (select 1 from pg_proc where proname = 'sync_push' and prosrc like '%conflict_groups%') as v1",
     )).rows[0].v1;

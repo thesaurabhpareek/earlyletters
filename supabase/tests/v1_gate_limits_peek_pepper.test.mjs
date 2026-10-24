@@ -143,7 +143,10 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   const fullTok = await (async () => { await sys(`select set_config('app.max_parents_per_book', '3', false)`); const x = await invite(C, child, 'parent'); await sys(`select set_config('app.max_parents_per_book', '', false)`); return x; })();
   check('[G-13] a parent invite to a full book is SCCAP', (await codeOf(() => as(A, `select public.peek_invite($1)`, [fullTok]))) === 'SCCAP');
   check('a family invite to the same book is fine', (await one(A, `select public.peek_invite($1) r`, [fam])).r.role === 'contributor');
-  await as(C, `select public.revoke_invite(id) from child_invites where child_id = $1 and role = 'contributor' and accepted_at is null`, [child]);
+  // The invite id from the table as the owner (no client reads child_invites directly since 20261023060000).
+  for (const r of (await sys(`select id from child_invites where child_id = $1 and role = 'contributor' and accepted_at is null`, [child])).rows) {
+    await as(C, `select public.revoke_invite($1)`, [r.id]);
+  }
   check('a revoked invite is SCINV', (await codeOf(() => as(A, `select public.peek_invite($1)`, [fam]))) === 'SCINV');
   const exp = await invite(C, child, 'contributor');
   await sys(`update child_invites set expires_at = now() - interval '1 minute' where token_hash = sha256(convert_to($1, 'UTF8'))`, [exp]);

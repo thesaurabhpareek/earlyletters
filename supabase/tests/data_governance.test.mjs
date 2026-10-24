@@ -10,6 +10,9 @@ import { createDb, users } from './harness.mjs';
 
 const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S, U } = users;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 check(`${process.argv.length - 2} migrations apply cleanly`, true);
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
 await publishPolicies();
@@ -76,7 +79,8 @@ check('users cannot read the purge queue or ledger', (await codeOf(() => as(A, '
   && (await codeOf(() => as(A, 'select 1 from purge_ledger'))) === '42501');
 
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
-check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
+// 20261023060000: no client writes children directly (book_update and request_book_deletion are the paths).
+check('member cannot tombstone the book directly (42501)', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), '42501'));
 check('contributor cannot delete the book', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCDEL'));
 // F11-REQ-011 (20261015020000): leaving goes through leave_child only; the direct delete is refused.
 check('sole parent cannot simply leave', await fails(() => as(S, `select public.leave_child(child_id) from child_members where profile_id='${S}'`), 'SCLPG'));
@@ -131,15 +135,16 @@ check('member sets own per-child prefs', (await one(B, `select signs_as from chi
 check('other members cannot read someone\'s prefs', (await as(A, `select 1 from child_member_prefs where profile_id='${B}'`)).rows.length === 0);
 check('cannot write prefs for someone else', await fails(() => as(A, `insert into child_member_prefs (child_id, profile_id) values ('${CHILD}', '${N}')`)));
 check('cannot write prefs for a book you do not belong to', await fails(() => as(B, `insert into child_member_prefs (child_id, profile_id) values ('${SOLO}', '${B}')`)));
-await as(B, `update children set family_can_read=true, nickname='Ashu', due_date=null where id='${CHILD}'`);
+await as(B, `select public.book_update($1, '{"family_can_read": true, "nickname": "Ashu", "due_date": null}'::jsonb)`, [CHILD]);
 check('parent changes shared book settings', (await sys(`select family_can_read from children where id='${CHILD}'`)).rows[0].family_can_read === true);
 check('[B-REQ-011] with "Family can read" on, a contributor reads in-book letters, never others\' private or pending ones',
   (await as(N, `select id from book_entries where child_id='${CHILD}' order by id`)).rows.map((r) => r.id).join() === [aBook, bBook, nBook].sort().join());
-check('contributor cannot change book settings', await fails(() => as(N, `update children set name='X' where id='${CHILD}'`), 'SCPAR'));
+check('contributor cannot change book settings', await fails(() => as(N, `select public.book_update($1, '{"name": "X"}'::jsonb)`, [CHILD]), 'SCPAR'));
 check('parent sets auto-add for a family member', (await one(A, `select public.set_member_auto_add('${CHILD}', '${N}', true) as ok`)).ok === true
   && (await sys(`select auto_add_letters from child_members where profile_id='${N}'`)).rows[0].auto_add_letters === true);
 check('contributor cannot set auto-add', await fails(() => as(N, `select public.set_member_auto_add('${CHILD}', '${N}', false)`), 'SCPAR'));
-check('child photo path must sit in the child folder', await fails(() => as(A, `update children set photo_path='${SOLO}/0192b000-0000-7000-8000-000000000999.jpg' where id='${CHILD}'`)));
+// Only ops_set_child_photo_path writes photo_path (definer); the rule holds for the owner too.
+check('child photo path must sit in the child folder', await fails(() => sys(`update children set photo_path='${SOLO}/0192b000-0000-7000-8000-000000000999.jpg' where id='${CHILD}'`)));
 
 // ── Policy acceptances (POLICY_VERSIONING.md 7.2) ─────────────────────────
 // terms 1.0.0 is published by the publishPolicies() fixture.
@@ -206,7 +211,7 @@ check("contributor's deletion removes only their letters", !(await exists('entri
 
 // ── Sole parent book deletion ─────────────────────────────────────────────
 await join(C, 'contributor', SOLO, S);
-await as(S, `update children set family_can_read=true where id='${SOLO}'`);
+await as(S, `select public.book_update($1, '{"family_can_read": true}'::jsonb)`, [SOLO]);
 check('contributor reads the solo book while live', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 1);
 check('sole parent schedules book deletion', (await one(S, `select public.request_book_deletion('${SOLO}', 'ios') as m`)).m === 'book_scheduled');
 check('a book being deleted leaves members\' view', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 0);

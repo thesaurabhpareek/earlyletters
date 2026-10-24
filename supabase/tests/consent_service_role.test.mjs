@@ -59,7 +59,8 @@ for (const f of all.filter((f) => name(f) >= name(mine))) await db.exec(readFile
 
 // ── After: closed ────────────────────────────────────────────────────────
 for (const t of ['policy_acceptances', 'subscription_consents']) {
-  check(`after: the service role reads ${t}`, (await asService(`select 1 from ${t}`)) === 'ok');
+  // 20261023060000: no path reads a table with the service key, so it reads neither (both worlds).
+  check(`after: the service role does not read ${t} either (42501)`, (await asService(`select 1 from ${t}`)) === '42501');
   check(`after: the service role cannot delete from ${t}, also with app.retention_purge on (42501)`,
     (await asService(`delete from ${t}`, true)) === '42501' && (await asService(`delete from ${t}`)) === '42501');
   check(`after: nor update or truncate ${t} (42501)`,
