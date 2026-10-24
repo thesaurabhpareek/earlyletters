@@ -51,6 +51,7 @@ on:
       - .github/workflows/kill-harness.yml
       - .github/scripts/sim-crash-report.sh
       - apps/mobile/e2e/kill/**
+      - apps/mobile/src/lib/capture/adts.ts
       - apps/mobile/src/dev/e2e-seams.ts
       - apps/mobile/src/dev/kill-drill*.ts
   workflow_dispatch:
@@ -536,6 +537,12 @@ jobs:
             | tee "$RUNNER_TEMP/diag/harness.log" | sed -e 's/::/: :/g' -e 's/##\[/# #[/g'
           code=${PIPESTATUS[0]}
           echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s on runner image ${ImageVersion:-unknown}" >> "$GITHUB_STEP_SUMMARY"
+          REPORT_MD="$RUNNER_TEMP/kill/report.md"
+          # A FINDING in report.md (ADR 0027: a V1 or tail finding, to report before any flip) also becomes a warning.
+          if [ -f "$REPORT_MD" ] && grep -q '^\*\*FINDING' "$REPORT_MD"; then
+            msg="$(awk '/^\*\*FINDING/ { p = 1; print; next } p && /^- / { if (n++ < 10) print; next } p && NF { exit }' "$REPORT_MD" | sed -e 's/\*\*//g' -e 's/%/%25/g' -e 's/::/: :/g' -e 's/##\[/# #[/g' | awk 'BEGIN { ORS = "%0A" } NF { print }')"
+            echo "::warning title=${LABEL} finding (ADR 0027)::${msg}"
+          fi
           case "$code" in
             0) echo "::notice title=${LABEL} PASS::every run kept its letter or take exactly once, and the self-check caught every plant" ;;
             1)
@@ -628,6 +635,12 @@ jobs:
           {
             echo "- dl01-merged is the DL-01 verdict. One 125-run shard is red below 123 kept takes playing to within 5 s (49 in 50, rounded up), while the merged 500 needs 490 in all: a red shard with a green merged verdict is a pass."
           } >> "$GITHUB_STEP_SUMMARY"
+          REPORT_MD="$RUNNER_TEMP/merged/report.md"
+          # A FINDING in report.md (ADR 0027: a V1 or tail finding, to report before any flip) also becomes a warning.
+          if [ -f "$REPORT_MD" ] && grep -q '^\*\*FINDING' "$REPORT_MD"; then
+            msg="$(awk '/^\*\*FINDING/ { p = 1; print; next } p && /^- / { if (n++ < 10) print; next } p && NF { exit }' "$REPORT_MD" | sed -e 's/\*\*//g' -e 's/%/%25/g' -e 's/::/: :/g' -e 's/##\[/# #[/g' | awk 'BEGIN { ORS = "%0A" } NF { print }')"
+            echo "::warning title=DL-01 merged finding (ADR 0027)::${msg}"
+          fi
           case "$code" in
             0) echo "::notice title=DL-01 merged PASS::500 of 500 kept, at least 490 play to within 5 s, and every shard's self-check caught every plant" ;;
             1)
