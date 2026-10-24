@@ -4,10 +4,10 @@
  * and docs use the fictional family "Asha" (nickname "Ashu"), born 2025-04-12.
  *
  * This test reads every tracked file (`git ls-files`) and fails if it finds a
- * real family name or the real birth date. The names are the founder's
- * child's name, in any listed spelling or script, and another family
- * member's first name. The guard must not leak what it guards, so it stores
- * only SHA-256 hashes:
+ * real family name or the real birth date in a file's path or contents. The
+ * names are the founder's child's name, in any listed spelling or script, and
+ * another family member's first name. The guard must not leak what it guards,
+ * so it stores only SHA-256 hashes:
  *  - names: hash of a lowercase NFC word token (letters, marks and digits);
  *  - dates: hash of the canonical YYYY-MM-DD form. ISO dates, slash dates
  *    (Y/M/D, M/D/Y, D/M/Y) and written dates ("12 April 2025",
@@ -18,7 +18,13 @@
  * and add the hex digest below. Never write the plain value in this file, a
  * commit message, a pull request or a comment.
  *
- * Skipped: package-lock.json (third-party names) and this file.
+ * Binary-ish files (images, PDFs, fonts, media, or any file with a NUL byte)
+ * are decoded as latin1, one character per byte, so text inside them (PDF
+ * metadata, audio tags) is still scanned. The scan fails unless the file list
+ * includes CLAUDE.md, so an empty or wrong list cannot pass silently.
+ *
+ * Skipped: the contents of package-lock.json (third-party names) and of this
+ * file. Every path, theirs included, is still checked.
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -44,7 +50,7 @@ const DATE_HASHES = new Set(['6f443d4600db4cc104a04cb56ec4925ab68dc5d3a4b850db32
 
 const SKIP = new Set(['package-lock.json', 'packages/content/test/no-real-family-data.test.ts']);
 const MAX_BYTES = 5 * 1024 * 1024;
-/** Images, PDFs and fonts are binary: skip them without decoding (the journey record holds ~150 of them). */
+/** Images, PDFs, fonts and media: decoded as latin1, not skipped (the journey record holds ~150 of them). */
 const BINARY_EXT = /\.(png|jpe?g|gif|webp|pdf|ttf|otf|woff2?|m4a|wav|mp3|mp4|mov|zip|ico)$/i;
 
 const sha = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
@@ -81,11 +87,39 @@ export function tokens(text: string): string[] {
   return out;
 }
 
-export function findings(text: string): string[] {
+export function findings(text: string, names = NAME_HASHES, dates = DATE_HASHES): string[] {
   const hits = new Set<string>();
-  for (const t of tokens(text)) if (NAME_HASHES.has(sha(t))) hits.add('real family name');
-  for (const d of dateCandidates(text)) if (DATE_HASHES.has(sha(d))) hits.add('real birth date');
+  for (const t of new Set(tokens(text))) if (names.has(sha(t))) hits.add('real family name');
+  for (const d of dateCandidates(text)) if (dates.has(sha(d))) hits.add('real birth date');
   return [...hits];
+}
+
+/** The text to scan: UTF-8, or latin1 (one character per byte) for a binary-ish file. */
+export function decode(file: string, bytes: Buffer): string {
+  if (!BINARY_EXT.test(file)) {
+    const text = bytes.toString('utf8');
+    if (!text.includes('\0')) return text;
+  }
+  return bytes.toString('latin1');
+}
+
+/**
+ * Every finding, as "<path>: <kind>", never the value. `read` returns a file's
+ * bytes, or null when it cannot be read. Throws when the list does not include
+ * CLAUDE.md: an empty or wrong file list proves nothing.
+ */
+export function scan(files: string[], read: (file: string) => Buffer | null, names = NAME_HASHES, dates = DATE_HASHES): string[] {
+  if (!files.includes('CLAUDE.md')) {
+    throw new Error(`The file list (${files.length} files) does not include CLAUDE.md, so the scan would prove nothing.`);
+  }
+  const bad: string[] = [];
+  for (const f of files) {
+    const hits = findings(f, names, dates).map((kind) => `${kind} in the path`);
+    const bytes = SKIP.has(f) ? null : read(f);
+    if (bytes) hits.push(...findings(decode(f, bytes), names, dates));
+    if (hits.length) bad.push(`${f}: ${hits.join(', ')}`);
+  }
+  return bad;
 }
 
 const ROOT = join(__dirname, '../../..');
@@ -93,7 +127,16 @@ const ROOT = join(__dirname, '../../..');
 function trackedFiles(): string[] {
   return execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
     .split('\0')
-    .filter((f) => f && !SKIP.has(f) && !BINARY_EXT.test(f));
+    .filter(Boolean);
+}
+
+function readTracked(file: string): Buffer | null {
+  const path = join(ROOT, file);
+  try {
+    return statSync(path).size > MAX_BYTES ? null : readFileSync(path);
+  } catch {
+    return null; // deleted in the working tree, or a submodule
+  }
 }
 
 describe('no real family details in tracked files', () => {
@@ -102,22 +145,41 @@ describe('no real family details in tracked files', () => {
     expect(findings('आशा, آشا, Nina, Tara, Neela')).toEqual([]);
   });
 
-  it('no tracked file contains a real family name or the real birth date', () => {
-    const bad: string[] = [];
-    for (const f of trackedFiles()) {
-      const path = join(ROOT, f);
-      let text: string;
-      try {
-        if (statSync(path).size > MAX_BYTES) continue;
-        text = readFileSync(path, 'utf8');
-      } catch {
-        continue; // deleted in the working tree, or a submodule
-      }
-      if (text.includes('\0')) continue; // binary
-      const hits = findings(text);
-      if (hits.length) bad.push(`${f}: ${hits.join(', ')}`);
-    }
+  describe('the scan, proved with an invented token hashed the way a real name is', () => {
+    // Not anyone's name: made up for these tests, hashed as the header says.
+    const PLANT = new Set([sha('Plantedname'.toLowerCase().normalize('NFC'))]);
+    const tree = (files: Record<string, Buffer>) => (f: string) => files[f] ?? null;
+    const claude = Buffer.from('# CLAUDE.md\n');
+
+    it('catches a name that is only in a path', () => {
+      const read = tree({ 'CLAUDE.md': claude, 'docs/plantedname-notes.md': Buffer.from('Asha slept.\n') });
+      expect(scan(['CLAUDE.md', 'docs/plantedname-notes.md'], read, PLANT)).toEqual([
+        'docs/plantedname-notes.md: real family name in the path',
+      ]);
+    });
+
+    it('catches a name inside a binary-ish file, decoded as latin1', () => {
+      // PDF metadata is often latin1: the accented byte splits the token under UTF-8, not under latin1.
+      const pdf = Buffer.concat([
+        Buffer.from([0x25, 0x50, 0x44, 0x46, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x00, 0xff]),
+        Buffer.from('\n<< /Author (Plant\u00e9dname) >>\n', 'latin1'),
+      ]);
+      expect(findings(pdf.toString('utf8'), PLANT)).toEqual([]);
+      const read = tree({ 'CLAUDE.md': claude, 'docs/letter.pdf': pdf, 'data/cache.bin': pdf });
+      expect(scan(['CLAUDE.md', 'docs/letter.pdf', 'data/cache.bin'], read, PLANT)).toEqual([
+        'docs/letter.pdf: real family name',
+        'data/cache.bin: real family name',
+      ]);
+    });
+
+    it('fails when the file list is empty or does not include CLAUDE.md', () => {
+      expect(() => scan([], tree({}), PLANT)).toThrow(/does not include CLAUDE\.md/);
+      expect(() => scan(['README.md'], tree({ 'README.md': Buffer.from('Plantedname') }), PLANT)).toThrow(/CLAUDE\.md/);
+    });
+  });
+
+  it('no tracked file has a real family name or the real birth date in its path or contents', () => {
     // The message names the file and the kind of detail, never the value.
-    expect(bad, 'Replace with the fictional family "Asha" / 2025-04-12 (CLAUDE.md)').toEqual([]);
+    expect(scan(trackedFiles(), readTracked), 'Replace with the fictional family "Asha" / 2025-04-12 (CLAUDE.md)').toEqual([]);
   }, 60_000);
 });
