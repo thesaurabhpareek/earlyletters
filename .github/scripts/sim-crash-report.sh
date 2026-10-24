@@ -18,17 +18,21 @@ xcrun simctl spawn "$udid" log show --last 30m --style compact \
   --predicate "process == \"${exe}\" OR eventMessage CONTAINS \"e2eKillDrill\"" > "$out/app-log.txt" 2>&1
 
 echo "::group::${exe}: the first 60 lines of its own log"
-grep -F "${exe}[" "$out/app-log.txt" | head -60
+awk -v tag="${exe}[" 'index($0, tag) && n < 60 { print; n++ }' "$out/app-log.txt"
 echo "::endgroup::"
 
 echo "::group::${exe}: lines that name an error"
-grep -E -i 'exception|fatal|error|abort|crash|terminat' "$out/app-log.txt" | tail -80
+grep -E -i 'exception|fatal|error|abort|crash|terminat' "$out/app-log.txt" | tail -n 80
 echo "::endgroup::"
 
 awk '/Terminating app due to uncaught exception/ { p = 1 } p && n < 200 { print; n++ }' "$out/app-log.txt" > "$out/exception.txt"
-echo "::group::the uncaught exception, whole"
-cat "$out/exception.txt"
-echo "::endgroup::"
+if [ -s "$out/exception.txt" ]; then
+  echo "::group::the uncaught exception, whole"
+  cat "$out/exception.txt"
+  echo "::endgroup::"
+else
+  echo "no uncaught exception in the app's log"
+fi
 
 # Hermes frames read name@1:<bytecode offset>; the composed source map turns each into file:line:name.
 grep -oE '[^ :]+@[0-9]+:[0-9]+' "$out/exception.txt" | head -60 > "$out/frames.txt"

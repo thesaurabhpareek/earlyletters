@@ -144,7 +144,12 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
 
-      - name: Build env from the eas.json e2e profile (B-1)
+      # The pack host is blanked for this build only (eas.json and the Maestro flows keep it): the drill is offline
+      # by design and judges letters, drafts and recordings, so a live fetch of the signed config, manifest or a pack
+      # during the kills would add network timing without testing anything the gate owns. With no host,
+      # lib/remote/base.logic.ts docsBaseFor returns null and the app uses its bundled defaults (the host is not
+      # live before AF-08 anyway; run 40076982108 showed only DNS failures).
+      - name: Build env from the eas.json e2e profile (B-1), with no pack host
         run: |
           set -euo pipefail
           node -e '
@@ -152,6 +157,7 @@ jobs:
             if (env.EXPO_PUBLIC_E2E !== "1" || env.EXPO_PUBLIC_APP_ENV !== "development") {
               console.error("the e2e profile must set EXPO_PUBLIC_E2E=1 and EXPO_PUBLIC_APP_ENV=development (B-1)"); process.exit(1);
             }
+            env.EXPO_PUBLIC_DOCS_BASE_URL = "";
             for (const [k, v] of Object.entries(env)) {
               if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) { console.error("refusing " + k); process.exit(1); }
               console.log(k + "=" + v);
