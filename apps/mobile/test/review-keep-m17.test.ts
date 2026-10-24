@@ -215,6 +215,16 @@ describe('review.tsx is wired to the M17 gate', () => {
     expect(gate).toMatch(/(=== null|!\s*\w+\s*\|\||\?\.decision)[^;]*return false/);
   });
 
+  it('the Keep sheet opens only from keepSheetFor\'s answer, and Review draws it only on an offer (never under the allowance)', () => {
+    expect(review).not.toMatch(/keepGateFor\(/); // the only gate call is keepSheetFor, which answers null on allow
+    const sets = [...review.matchAll(/setGate\(([^)]*)\)/g)].map((m) => m[1].trim());
+    expect(sets.filter((a) => a !== 'null')).toEqual(['g']); // the one non-null setGate is keepNeedsPlus's
+    expect(gate).toMatch(/const g = await keepSheetFor\(\s*wordsOnScreen\s*\);[\s\S]*setGate\(g\)/);
+    const drawn = review.indexOf('<PlusGate');
+    const guard = review.lastIndexOf('if (', drawn);
+    expect(review.slice(guard, review.indexOf('{', guard + 4) + 1)).toMatch(/gate && gate\.decision\.kind === 'offer'/);
+  });
+
   it('Keep and Keep privately ask the gate with finalText before writing the letter', () => {
     const ask = save.search(/(keepNeedsPlus|keepSheetFor|keepGateFor)\(\s*(\{\s*wordsOnScreen:\s*)?finalText\b/);
     expect(ask).toBeGreaterThan(-1);
