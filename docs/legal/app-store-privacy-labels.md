@@ -1,14 +1,14 @@
 ---
 title: Early Letters App Privacy labels, Data safety form, privacy manifest and permission strings
-version: 1.3.0
+version: 1.4.0
 status: draft-for-counsel
-last_updated: 2026-10-03
+last_updated: 2026-10-15
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
 ---
 
-> **Drafting notice.** Drafted by an AI (Claude) acting as privacy counsel and privacy engineer, for review by a licensed attorney and an engineer. Not legal advice. Version 1.3.0 describes the v1.0 app as decided on 3 Oct 2026 (D-051 to D-070, ADR 0013, ROADMAP 2.0 section 5) and as built in the 3 Oct wave (`apps/mobile/package.json`, `app.config.ts`, `packages/analytics`). Re-check every answer against the actual release build before each submission: these labels are legal representations, and they must match the Privacy Policy (`docs/legal/privacy-policy.md` 1.4.0) and the privacy manifest. Open questions are numbered in `COUNSEL_PACKET.md` (Q7 is DEBATES Q-005).
+> **Draft for counsel review, not legal advice.** Drafted by an AI (Claude) as drafting support for counsel and an engineer. **Version 1.4.0 is a draft for the server-on v1.0** (M14, D-089): accounts, sync and co-parent sharing, opt-in encrypted recording backup with a recovery key we hold (D-073, D-091; F08 6.5), the subscription status report and reminder emails (D-080, D-081), and push notifications from our server (F11). It follows PRD V2 F17 section 8.5 and R4 PT-24, and replaces the "Data Not Collected" position of D-088, which D-089 amends. Version 1.3.0 described the on-device build of 3 Oct 2026. Re-check every answer against the actual release build before each submission: these labels are legal representations, and they must match the Privacy Policy (`docs/legal/privacy-policy.md` 1.5.0) and the privacy manifest (BL-349, owned by S20; F17-REQ-028). Open questions are numbered in `COUNSEL_PACKET.md` 1.1.0 (Q7 is DEBATES Q-005; Q32 (d) asks whether Audio Data is collected; Q8 covers Purchases). If the submission build ships with `capabilities.backup` off, the Audio Data row is re-run for that build (section 5).
 
 ## 0. Ground rules we applied
 
@@ -40,7 +40,7 @@ From Google Play's Data safety guidance [R4]: collection is any transmission off
 | Category | Data type | Collected? | Linked? | Tracking? | Purposes | Why |
 |---|---|---|---|---|---|---|
 | Contact Info | Name | **Yes** | Yes | No | App Functionality | Display name, "what {child} calls you", name from Sign in with Apple or Google (first sign-in only). |
-| Contact Info | Email Address | **Yes** | Yes | No | App Functionality | Magic-link sign-in; Apple or Google sign-in returns an email or private relay address; account and deletion emails through Resend. No subscription emails (Q-003). If we ever send marketing email, add Developer's Advertising or Marketing. |
+| Contact Info | Email Address | **Yes** | Yes | No | App Functionality | Magic-link sign-in; Apple or Google sign-in returns an email or private relay address; account, security (new sign-in, restore requests, each recovery-key use) and deletion emails, and **billing notice emails** (acknowledgment and auto-renewal reminders, D-080, D-081; changed in 1.4.0) through Resend. Billing notices are transactional and required by law, so they stay App Functionality. If we ever send marketing email, add Developer's Advertising or Marketing. |
 | Contact Info | Phone Number, Physical Address, Other User Contact Info | No | | | | Not requested. |
 | Health & Fitness | Health | No | | | | We do not ask for health data. Health mentioned inside a letter is free-form content (section 0). The due date is declared under Sensitive Info. |
 | Health & Fitness | Fitness | No | | | | |
@@ -50,15 +50,15 @@ From Google Play's Data safety guidance [R4]: collection is any transmission off
 | Contacts | Contacts | No | | | | Never requested. Invites go through the system share sheet. |
 | User Content | Emails or Text Messages | No | | | | |
 | User Content | Photos or Videos | **No** (changed in 1.3.0) | | | | No photo feature in v1.0 (ROADMAP 2.0 section 5; no photo picker in `apps/mobile/package.json`). The `entry-photos` bucket and `photo_path` column exist in the schema but nothing uploads to them. Re-run when photos ship (BL-320, BL-314). |
-| User Content | Audio Data | **No** (changed in 1.3.0) | | | | No audio leaves the phone in v1.0: no upload, no backup, no cloud transcription (D-059). Transcription runs on the phone (`whisper.rn`). Re-run when audio upload or server transcription ships. |
+| User Content | Audio Data | **Yes** (changed in 1.4.0) | **Yes** | No | App Functionality | Opt-in owner backup uploads recordings, encrypted on the phone, and we hold a recovery key that can open them (D-073, M16; F08 6.5). Data sent off the device and accessible to us beyond real-time servicing is collected; end-to-end encrypted data we cannot read would not be, but escrow means we can (R4 PT-24; F08-REQ-038; F17 8.5). Apple's label has no "optional" flag, so the type is declared although backup is off until the owner turns it on. Transcription still runs on the phone; no cloud transcription. COUNSEL_PACKET Q32 (d) |
 | User Content | Gameplay Content | No | | | | |
 | User Content | Customer Support | No | | | | Support happens by email outside the app. |
-| User Content | Other User Content | **Yes** | Yes | No | App Functionality | Letter text, raw transcripts and edit history, names-and-words dictionary, child profile (name, nickname, birthday), signature, co-parent membership. |
+| User Content | Other User Content | **Yes** | Yes | No | App Functionality | Letter text, raw transcripts and edit history, names-and-words dictionary, child profile (name, nickname, birthday), signature, co-parent membership, and held letters waiting at the Keep step (author-only; F14-REQ-039). Confirm against the synced columns at submission (F17 8.5). |
 | Browsing History | Browsing History | No | | | | |
 | Search History | Search History | No | | | | In-app search runs on the local database. |
 | Identifiers | User ID | **Yes** | Yes | No | App Functionality; **Analytics** (recommended, Q-005) | Supabase account ID for sync and access control. The random analytics ID is an "assigned" ID used for analytics after opt-in; declaring it here under Analytics is the cautious reading (TRACKING_PLAN 10 point 2). |
-| Identifiers | Device ID | No | | | | No IDFA, no IDFV: PostHog RN 4.78.4 reads none (TRACKING_PLAN 10, checked in source). |
-| Purchases | Purchase History | **Yes, Analytics only** (changed in 1.3.0) | **Yes** (recommended, Q-005) | No | Analytics | No server of ours holds purchases (D-053, ADR 0013): the 1.2.0 row ("held per account on our server as entitlements", App Functionality) is gone. The only off-device purchase data is opt-in analytics: `plan_changed` (from and to plan state, period), `plus_offer_closed` (outcome `purchased`) and `restore_result`. Apple's definition ("an account's or individual's purchases or purchase tendencies") fits plan-state events, so declare it under Analytics. If the analytics owner drops plan state from the catalogue, this row becomes No. |
+| Identifiers | Device ID | **Yes (cautious reading; new in 1.4.0)** | Yes | No | App Functionality | No IDFA, no IDFV: PostHog RN 4.78.4 reads none (TRACKING_PLAN 10). New: a random per-install device id in `backup_devices` (F08 6.5) and an APNs push token in `push_tokens` (F11), both tied to the account. Whether these are Apple "device-level IDs" is unclear; over-declaring is not deceptive. Counsel may answer No |
+| Purchases | Purchase History | **Yes** (changed in 1.4.0) | **Yes** | No | **App Functionality**; Analytics | The D-080 status report sends plan, trial end, renewal date and the cancelled flag (and, on the first report, the D-081 consent facts) to our server, linked to the account, to send the reminder emails the law requires: App Functionality, linked whatever the Q-005 answer (F17 8.5; R4 PT-24; F14 Q-C9). Opt-in plan-state analytics events keep the Analytics purpose. No receipts, transaction ids in clear, prices or payment data (F14 section 8). |
 | Usage Data | Product Interaction | **Yes** | **Yes** (recommended, Q-005) | No | Analytics | Allowlisted PostHog events, sent only after opt-in (LEGAL-REQ-003). Children appear only as ordinals and a `child_count_bucket`. One of seven language codes on two events (DEBATES Q-004). Apple's label has no "optional" flag, so the type is declared. |
 | Usage Data | Advertising Data | No | | | | |
 | Usage Data | Other Usage Data | No | | | | |
@@ -92,10 +92,10 @@ Conditions that must hold for either answer (engineering checks before each subm
 ### 1.4 What the label will show (expected, with the recommended Q-005 answer)
 
 - **Data Used to Track You:** none.
-- **Data Linked to You:** Contact Info, User Content, Identifiers, Purchases, Usage Data, Diagnostics, Sensitive Info.
+- **Data Linked to You:** Contact Info, User Content (including Audio Data), Identifiers, Purchases, Usage Data, Diagnostics, Sensitive Info.
 - **Data Not Linked to You:** none.
 
-With option (a): Linked: Contact Info, User Content, Identifiers (App Functionality), Sensitive Info; Not Linked: Usage Data, Diagnostics, Purchases.
+With option (a): Linked: Contact Info, User Content, Identifiers (App Functionality), Sensitive Info; Not Linked: Usage Data, Diagnostics. From 1.4.0 Purchases stay Linked in both cases, because the status report is linked to the account.
 
 ## 2. Google Play Data safety form (Android, later)
 
@@ -131,7 +131,7 @@ Engineering check before first submission: the security review (2026-10-04, L7) 
 
 ### 3.3 Proposed `app.config.ts` entry (Expo `ios.privacyManifests`)
 
-The collected-data section must match section 1.2 exactly (here with the recommended Q-005 answer; with option (a), set `Linked` to false for ProductInteraction, PerformanceData, OtherDiagnosticData and PurchaseHistory, and drop Analytics from UserID). Key names verified against Apple's documentation [R2].
+The collected-data section must match section 1.2 exactly (here with the recommended Q-005 answer; with option (a), set `Linked` to false for ProductInteraction, PerformanceData, OtherDiagnosticData and PurchaseHistory, and drop Analytics from UserID; PurchaseHistory stays linked). Changed in 1.4.0: AudioData, DeviceID and the App Functionality purpose on PurchaseHistory. Verify the AudioData and DeviceID key names against [R2] before merge (not re-opened in this pass). Key names verified against Apple's documentation [R2].
 
 ```json
 {
@@ -150,8 +150,10 @@ The collected-data section must match section 1.2 exactly (here with the recomme
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeEmailAddress", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeSensitiveInfo", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUserContent", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
+        { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeAudioData", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
+        { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeDeviceID", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeUserID", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality", "NSPrivacyCollectedDataTypePurposeAnalytics"] },
-        { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAnalytics"] },
+        { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality", "NSPrivacyCollectedDataTypePurposeAnalytics"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeProductInteraction", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAnalytics"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePerformanceData", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAnalytics"] },
         { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherDiagnosticData", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAnalytics", "NSPrivacyCollectedDataTypePurposeAppFunctionality"] }
@@ -169,13 +171,13 @@ Rules applied: VOICE.md (warm, calm, plain; no naming the technology; never gend
 
 | Key | String | Notes |
 |---|---|---|
-| `NSMicrophoneUsageDescription` | {app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone. | **Changed in 1.3.0** (D-061; `packages/content/src/permissions.en.ts`). Accurate for v1.0: no upload, no backup, no cloud transcription (D-059); "stay on this phone" is about our servers, and the Privacy Policy section 9 discloses the user's own iPhone backup and exports the user shares. It must change in the same release as any audio upload or cloud transcription (claims registry, LEGAL-REQ-044). Asked the first time someone taps record, never at launch. If denied: `Allow the microphone in Settings to speak your letters. Or type instead.` The security review notes `apps/mobile/src/lib/permission-copy.ts` still feeds `app.config.ts`; the content rules test fails if the two differ |
+| `NSMicrophoneUsageDescription` | {app} uses the microphone to record the letters you speak to your child. | **Changed in 1.4.0** (F08-REQ-036; R4 PT-01; M16). 1.3.0's second sentence, "Your recordings stay on this phone.", is false for anyone who turns on backup, and iOS shows the string to every user. Keep only the first sentence. Owners: S16 (`packages/content/src/permissions.en.ts`), S20 (`apps/mobile/src/lib/permission-copy.ts`, `app.config.ts`); counsel approves. Asked the first time someone taps record, never at launch. If denied: `Allow the microphone in Settings to speak your letters. Or type instead.` |
 | `NSPhotoLibraryUsageDescription` | Not used in v1.0 | No photo feature ships. Add only with photos (and prefer the system picker, which needs no library permission) |
 | `NSPhotoLibraryAddUsageDescription` | Not used in v1.0 | Only if "Save to Photos" ships (pm-3 BK-10). Export goes through the share sheet, which does not need it |
 | `NSCameraUsageDescription` | Not used | Omit; an unused permission string invites review questions |
 | `NSFaceIDUsageDescription` | Not used in v1.0 | Only if an app lock ships (T5-14). Re-authentication before deletion uses the device passcode through LocalAuthentication; if Face ID is offered there, this string is required: "{app} uses Face ID to confirm it's you before deleting your account." |
 | `NSSpeechRecognitionUsageDescription` | Not used | `whisper.rn` runs our own model and does not use Apple's Speech framework (LEGAL-REQ-007) |
-| Notifications | No Info.plist string exists | iOS shows its own fixed prompt after our priming card. Plus reminders (Q-003) use the same permission; the one-time "Remind me before the free months end" ask comes first |
+| Notifications | No Info.plist string exists | iOS shows its own fixed prompt after our priming card. Plus reminders (Q-003) use the same permission; the one-time "Remind me before the free months end" ask comes first. New in 1.4.0: our server sends push through APNs (co-parent letter, passive; restore request, time-sensitive; F11-REQ-014, -029); payloads carry no letter text, names or ids |
 
 Android equivalents (later): `RECORD_AUDIO` with an in-app explanation using the microphone string; `POST_NOTIFICATIONS` on Android 13+ after the priming card.
 
@@ -185,7 +187,10 @@ Android equivalents (later): `RECORD_AUDIO` with an in-app explanation using the
 - [ ] The Q-005 answer (Linked or Not linked) is recorded in COUNSEL_PACKET Q7 and applied in 1.2, 1.4 and 3.3 together.
 - [ ] Analytics allowlist (`packages/analytics`) still contains no strings over 40 characters, no names, no emails, no letter text; plan-state events present or absent matches the Purchases row.
 - [ ] PostHog IP discard on, GeoIP off; no `identify` with account data; the SDK not constructed before opt-in.
-- [ ] No audio upload, no backup, no cloud transcription in the build (otherwise Audio Data becomes Yes and the microphone string changes).
+- [ ] Backup (`capabilities.backup`) on or switchable on: Audio Data is Yes. If the submission build has no backup path at all, re-run the row with counsel. The microphone string is the one-sentence version in every case. No cloud transcription.
+- [ ] Status report sends only the D-080 and D-081 fields plus `sub_ref` and `environment` (R4 PT-07; R8 R2A-21); Purchase History carries App Functionality.
+- [ ] Push payloads carry no content or ids; Device ID answered with counsel.
+- [ ] Privacy Policy 1.5.0 sections 3 and 15 list Audio Data, Purchase History and billing emails.
 - [ ] No photo picker or photo upload in the build (otherwise Photos or Videos becomes Yes).
 - [ ] No Sentry or other crash SDK in the build (otherwise Crash Data becomes Yes, and the analytics consent copy must name crash reports).
 - [ ] Server `safety_events` table dropped on the production project (governance migration applied).
@@ -212,6 +217,7 @@ Unverified: the exact CCPA "unique identifier" wording (counsel); which required
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4.0 | 2026-10-15 | Draft for the server-on v1.0 (M14, D-089; F17 8.5; R4 PT-24). Audio Data No to Yes, Linked, App Functionality (D-073, M16; F08-REQ-038). Purchase History to Yes, Linked, App Functionality and Analytics (D-080, D-081; F14 Q-C9). Email Address adds billing and security emails (D-080; F02-REQ-017; F08 6.5 C7). Other User Content adds held letters (F14-REQ-039). Device ID Yes on a cautious reading, for counsel. Microphone string second sentence removed (F08-REQ-036; R4 PT-01). Notifications row: server push via APNs. Manifest (3.3) and checklist (5) updated. Replaces the D-088 "Data Not Collected" position (amended by D-089). Pre-submission draft; counsel signs off before submission (F17-REQ-028). |
 | 1.3.0 | 2026-10-03 | Alignment with the founder decisions of 3 Oct 2026, second round. Purchases: no longer held on our server (D-053, ADR 0013); now "Yes, Analytics only" from opt-in plan-state events. Audio Data, Photos or Videos and Crash Data: No in v1.0 (D-059; no photo feature; no Sentry). Q-005 analysis written (1.3): recommended "Linked" for Usage Data, Diagnostics and Purchases, plus Analytics on User ID; tracking section stays empty; option (a) kept for counsel. Microphone string changed to "Your recordings stay on this phone." (D-061). SDK list updated (no RevenueCat, PowerSync, `expo-iap` or Sentry; Google Sign-In in v1.0, D-054). Download hosts noted. Play section deferred (Android later). Manifest JSON updated; security review L7 check added. Pre-submission draft; nothing published. |
 | 1.2.0 | 2026-10-03 | Alignment with PRD.md 1.3 (ADR 0013, D-001): RevenueCat removed from the SDK list, Purchases source and identifiers; App Store `appAccountToken` described; `expo-iap` added; PowerSync conditional on D-023; Google Sign-In from v1.1. Labels unchanged in substance (Purchases stay Linked). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`): Sensitive Info and Play Health info declared for the due date (PRD K-25); Purchases per account (K-28); analytics child-count note; "not linked" condition for analytics deletion; microphone string adds cloud transcription; stale reminder-string note resolved; checklist adds `safety_events` drop, due-date, biometric and child-input checks. Pre-submission draft; nothing published. |
