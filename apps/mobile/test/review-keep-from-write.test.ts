@@ -27,9 +27,10 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: plan.view, details: {}, checkedAt: null }),
 }));
+vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 
 const store = await import('../src/lib/store');
-const { afterLetterKept, keepGateFor } = await import('../src/lib/billing/gates');
+const { countAfterSave, keepSheetFor } = await import('../src/lib/billing/keep-step');
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 const { armKeep, consumeKeep, peekKeep, resetKeep } = await import('../src/lib/capture/keep-intent');
 const { primaryDestination, typedFinalText } = await import('../src/components/capture/review-view.logic');
@@ -74,21 +75,22 @@ function writeDraft(text: string): string {
 type Outcome = { outcome: 'kept' | 'sheet' | 'nothing'; holding: boolean };
 
 /**
- * Review's one Keep step, in review.tsx's order (`save(inBook)`): the gate with `finalText`, then the letter, then
- * the count. `finalText` is `userText ?? cleanedText`, and a typed letter's `cleanedText` is `typedFinalText(raw)`.
+ * Review's one Keep step, in review.tsx's order (`save(inBook)`): the Keep step rule (lib/billing/keep-step.ts,
+ * #277) with `finalText` (`keepSheetFor`: a gate means the sheet opens and nothing is written), then the letter,
+ * then the count (`countAfterSave`). `finalText` is `userText ?? cleanedText`, and a typed letter's `cleanedText`
+ * is `typedFinalText(raw)`.
  */
 async function save(draftId: string, inBook: boolean, userText: string | null = null): Promise<'kept' | 'sheet'> {
   const d = store.getDraft(draftId)!;
   const raw = d.typedText ?? '';
   const finalText = userText ?? typedFinalText(raw);
-  const gate = await keepGateFor({ wordsOnScreen: finalText });
-  if (gate !== null && gate.decision.kind === 'offer') return 'sheet';
+  if ((await keepSheetFor(finalText)) !== null) return 'sheet';
   store.saveLetterFromDraft(d.id, {
     id: d.id, kind: 'letter', occurredOn: '2026-10-03', capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
     promptKey: null, engineVersion: 5, rawTranscript: raw, machineEdits: [], finalText, inBook, soundsLikeMe: null,
     childId: asha, authorSignsAs: 'Mama', audioUri: null, audioDurationMs: null,
   });
-  await afterLetterKept();
+  await countAfterSave(finalText);
   return 'kept';
 }
 
@@ -175,6 +177,30 @@ describe('[S20, D-103] the one-tap keep asks the M17 gate', () => {
     expect(counted()).toBe(3);
   });
 
+  it('[L1] Review\'s path asks the gate for a typed letter too: past the free letters the Keep sheet opens and nothing is written', async () => {
+    // Two typed letters kept on Review's path (no tap on Write, so no intent): free.
+    for (const words of ['You held my thumb.', 'Two teeth today.']) {
+      const id = writeDraft(words);
+      expect(await reviewMounts(id)).toEqual({ outcome: 'nothing', holding: false });
+      expect(await save(id, true)).toBe('kept');
+    }
+    expect(counted()).toBe(2);
+    // The third, typed, on Review's path: "Add to Asha's book" opens the Keep sheet, for Keep private too.
+    const third = writeDraft(SMART);
+    const before = store.getDraft(third);
+    expect(await reviewMounts(third)).toEqual({ outcome: 'nothing', holding: false });
+    expect(await save(third, true)).toBe('sheet');
+    expect(await save(third, false)).toBe('sheet');
+    expect(store.getEntry(third)).toBeNull();
+    expect(store.getDraft(third)).toEqual(before); // held: the draft is untouched, its words as typed
+    expect(counted()).toBe(2);
+    // With Plus, the same tap keeps it, exactly as typed.
+    plan.view = PLUS;
+    expect(await save(third, true)).toBe('kept');
+    expect(store.getEntry(third)!.finalText).toBe(SMART);
+    expect(counted()).toBe(3);
+  });
+
   it('"Try again" after a save that did not work keeps the letter where the person chose', () => {
     expect(primaryDestination({ saveFailed: true, lastInBook: false })).toBe(false);
     expect(primaryDestination({ saveFailed: true, lastInBook: true })).toBe(true);
@@ -204,6 +230,12 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
     expect(review).toMatch(/const finalText = userText \?\? cleanedText;/);
     expect(save).toMatch(/^\s*finalText,$/m);
     expect(save).not.toMatch(/finalText:\s*cleanedText|cleanedText/);
+  });
+
+  it('[L1] the gate in save is exactly `if (await keepNeedsPlus(finalText)) {`, with nothing in front of it', () => {
+    // The only thing before it is hashing the recording; no condition (typed, keeping, a flag) can skip it.
+    expect(save).toMatch(/try \{\s*const audio = await ensureAudioHash\(draft\);\s*if \(await keepNeedsPlus\(finalText\)\) \{\s*saving\.current = false;\s*return;\s*\}/);
+    expect(save.match(/^.*keepNeedsPlus.*$/gm)?.map((l) => l.trim())).toEqual(['if (await keepNeedsPlus(finalText)) {']);
   });
 
   it('save always asks keepNeedsPlus before writing, and knows nothing of where the keep came from', () => {
