@@ -7,8 +7,9 @@
  * later update. Otherwise it offers every language, with search, as before.
  *
  * This decides only what the sheet shows. Nothing here reads or writes the stored choice: a language
- * already set on the phone (a development build) stays as it is until the person picks another, and the
- * text rules, packs and speech catalog do not read this.
+ * already set on the phone (a `.preview` install made before the switch) stays as it is until the person
+ * picks another, and the text rules, packs and speech catalog do not read this. While the switch is on, the
+ * recogniser hears such a choice in English and says so (lib/transcription-queue/hearing.ts).
  */
 import { languageCopy } from '@scribe/content';
 import { LANGUAGES, type LanguageInfo } from '@scribe/core';

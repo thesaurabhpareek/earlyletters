@@ -66,7 +66,7 @@ import {
 } from '@/lib/store';
 import { useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
-import { languageFor, retryWords, startSpeechDownload } from '@/lib/transcription-queue';
+import { heardInEnglishNoteFor, languageFor, retryWords, startSpeechDownload } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
@@ -308,6 +308,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made.
   const provenance = copy.book.provenance[provenanceOf(entry)];
   const provenanceLine = spoken && own ? `${provenance}. ${copy.book.recordingOnPhone}.` : provenance;
+  // D-111 item 4: words heard in English because this build offers English only, though another language was chosen.
+  const heardNote = spoken && words === 'words' ? heardInEnglishNoteFor(entry.id) : null;
 
   const aa = (
     <Pressable
@@ -404,6 +406,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 {provenanceLine}
               </Text>
             </View>
+            {heardNote ? (
+              <Text variant="footnote" tone="muted" className="pl-6" testID="letter.heardInEnglish">
+                {heardNote}
+              </Text>
+            ) : null}
             {!entry.inBook && (
               <View className="flex-row pt-1">
                 <PrivateChip color={c.text} />

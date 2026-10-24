@@ -101,7 +101,7 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, type Job } from '@/lib/transcription-queue';
+import { heardInEnglishNoteFor, languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, type Job } from '@/lib/transcription-queue';
 import { speechConsentCopy } from '@scribe/content';
 import { showReviewAsk } from '@/lib/models/speech-consent.logic';
 import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
@@ -180,6 +180,11 @@ export default function Review() {
   const [userText, setUserText] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
+  // D-111 item 4: words heard in English because this build offers English only, though another language was chosen.
+  const heardNote = useMemo(
+    () => (draft && !typed && !isSample && phase === 'ready' ? heardInEnglishNoteFor(draft.id) : null),
+    [draft, typed, isSample, phase],
+  );
 
   const dictionary = useMemo(
     () => (child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : []),
@@ -662,6 +667,12 @@ export default function Review() {
         {stopped === 'background' && spoken && (
           <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">
             {wordsCopy.pack.stoppedInBackground}
+          </Text>
+        )}
+
+        {heardNote && (
+          <Text variant="subhead" tone="muted" testID="review.heardInEnglish">
+            {heardNote}
           </Text>
         )}
 
