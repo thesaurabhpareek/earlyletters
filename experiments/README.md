@@ -125,9 +125,58 @@ What you get:
 - Engine safety (F05-REQ-004) is checked live: edits that would change a daughter to a son in Hindi, a feminine "you" to a masculine one in Arabic, or a statement to a question must all be refused.
 - A non-English language also needs a native speaker's sign-off of its pack tables (F05-REQ-005): `docs/qa/evidence/F05-pack-<lang>-<version>.md` with a `Reviewer role:` and a `Date:` line, and the pack's filler, repeat and punctuation tables marked native-reviewed.
 
+## 8. ADTS decode parity and playback (ADR 0027 checks V3 and V4)
+ADR 0027 records iOS takes as ADTS (`.aac`) once checks V1, V2 and V3 pass. V3 asks whether Core Audio decodes an ADTS take exactly as it decodes the same frames in M4A, and what it does with a take a kill cut off or damage broke. V4 asks how the player times and seeks it. This kit runs the Mac half of both. About 5 minutes, no recording needed.
+
+```bash
+brew install ffmpeg        # once: makes the M4A twin of identical frames
+npm run adts-parity -w @scribe/experiments
+```
+With no arguments it generates its takes: chirps at irregular moments, a tone with a known envelope, never a voice. It encodes them with Core Audio's own ADTS writer (`afconvert -f adts -d aac -b 64000`): a 30 s take for V3 and a 10.5 minute take for V4. To run it on a real take, pass it. For example, V1's device take, a killed DL-01 take from a harness run with `--keep-app`, or a take of your voice, which stays in `experiments/recordings/` and on this Mac:
+```bash
+npm run adts-parity -w @scribe/experiments -- --take experiments/recordings/v1-device.aac \
+  --long experiments/recordings/ten-minutes.aac --killed <data container>/Documents/ExpoAudio
+```
+
+**What it runs.** `adts-coreaudio.swift` mirrors the app's `ScribeAudio.probe` and `decodePcm16` line for line on macOS's AVFoundation: the same `AVAudioFile` opening, the same `file.length`, the same converter to 16 kHz, and short reads left as zeros. It also counts any read that returns nothing while more than one frame of Core Audio's own length is unread, which is what the ADR's proposed native check would catch. The run is planned by the app's own code (`openRecordingForRun`, then every 5-minute window `findSpeech` decodes), as `transcribe-whisper.ts` calls it, up to Whisper. Frames are counted by the app's `scanAdts`.
+
+**V3, as the ADR words it.**
+- **Twins.** The take and `ffmpeg -c:a copy` of it as M4A are lined up by cross-correlation. The report gives the start offset apart from the length, and whether Core Audio trims TN2258's 2112 samples of priming on ADTS.
+- **Cut files.** The take is cut mid-frame, mid-header and right after a header, and every killed take you pass is added. Core Audio must open each one (or the run must switch to the whole-frame copy), every window must decode without `ERR_SCRIBE_AUDIO_DECODE`, and the run must plan over the whole frames.
+- **Damaged files, two ways.** First, the sync byte of the frame 20 from the end is zeroed. Second, the `frame_length` 10 frames from the end is set to a possible but wrong value. For each, the report gives:
+  - Core Audio's length before and after the damage, against the counted frames;
+  - whether a window starting before the damage returns audio after it, exact zeros, or an error;
+  - that audio cross-correlated against the undamaged take;
+  - whether the run is refused (`break_inside`) or planned over every counted frame.
+
+  "Full length, zeros past the damage" means Core Audio stops silently, and the native early-stop check (S08) goes in before the flip.
+
+**V4, the player half.**
+- The duration AVFoundation reports, as expo-audio builds the asset (without `AVURLAssetPreferPreciseDurationAndTimingKey`) and with the key, against the counted frames.
+- Where seeks land, with infinite tolerance (expo-audio's `seekTo`) and with none, on the long take and a killed one.
+- How many landings are more than 0.75 s off. Each of those is a seek that would freeze the shown position (`scrubbedTo`, `use-letter-player.ts:144-146`).
+
+**Results.** `experiments/results/adts-parity/report.md` and `report.json` hold numbers only: no file names, no paths, no audio. Every cut, damaged, copied or decoded file is temporary and deleted when the run ends. Exit 0: every V3 condition checked here holds; 2: one does not (the report says which); 1: the run failed.
+
+**What a Mac cannot answer [U].** macOS Core Audio is not the phone's. Every number above is [U] for iOS until the in-app half runs. These parts run only in the app:
+- `ScribeAudio.probe` against the recorder's clock (`durationMillis`) on finished M4A and ADTS takes;
+- `enhance` (the listening copy's length against the original);
+- the real transcription job through Whisper;
+- the `scrubbedTo` freeze in the player itself.
+
+**The in-app half: where it would run, and the gap.** It fits the kill drill without touching a production code path. It would be a `decode` mode in `apps/mobile/src/dev/kill-drill.ts`, with the mode and a `decoded` marker added to `kill-drill.logic.ts` and `e2e/kill/protocol.mjs` (the parity test keeps them one protocol). In that mode the app runs, on each file the host names (the kept DL-01 takes, or V3's files placed in `Library/Caches/kill-drill`):
+- `scanRecordingFile`, `ScribeAudio.probe`;
+- `openRecordingForRun` with the real `wholeFramesCopy`, with the take's stored progress mark;
+- `decodePcm16` over every `findSpeech` window;
+- `ScribeAudio.enhance` into Caches, then a probe of that copy, which it deletes.
+
+It writes numbers only. The harness would run the mode once after the DL-01 runs whenever a kept take is `.aac`, and report it without changing the exit code, so `kill-harness.yml` needs no change. Work: about 120 lines in the drill, 150 on the host, and 100 of tests: about a day with review, then one simulator run. **The gap:** the real transcription job needs an installed speech pack, and the e2e simulator build has none (servers off; the packs are signed and hosted, D-115). So on the simulator the drill reaches the step where a run is refused or planned (`decoder_short`, `break_inside`), which is the step V2's "none is refused" assertion is about, but not Whisper itself. Whisper on killed ADTS takes needs the founder's device, or a seam that installs a pack on the simulator.
+
 ## Verified so far (on Linux)
 Oct 2, 2026: `npm run experiment:edits` ran on the fictional samples, rules only and against a stub model server that returned a mix of valid edits, invented words and non-JSON. Every invented word was rejected and the non-JSON reply fell back to rules only.
 
 Oct 1, 2026: The full pipeline ran end to end on whisper.cpp's sample speech: 0% word error with the `base` model. With voice detection on, 30 seconds of loud white noise produced nothing. With it off, Whisper wrote "(waves crashing)". The app always runs voice detection and strips such tags.
 
 Oct 15, 2026 (Linux, the language gate): `npm run gate` ran end to end with whisper.cpp v1.9.3's real voice detector (the Silero v6.2.0 file, SHA-256 equal to the app catalog) on a public sample speech clip and two generated clips with nobody talking. The voice detector found the speech and found nothing in white noise or silence, so the recogniser was never run on them; the decoder was a stand-in (the model host is not reachable from that machine), so word error there proves the wiring, not the model. The founder's Mac run is the first real one.
+
+Oct 24, 2026 (Linux, the ADTS kit of section 8): only the pure half ran, on a 30 s chirp take that ffmpeg's AAC encoder wrote as ADTS at 64 kbit/s (1,408 frames of 11 to 536 bytes). Each cut scanned as a kill cut (1,378, 1,388 and 1,398 whole frames). The zeroed sync byte scanned as a break with 19 frames after it. The wrong frame_length (16 for a true 11) scanned as a break with all 1,408 frames still counted. ffmpeg decoded the take and its `-c:a copy` M4A twin to the same 480,597 samples, lined up at lag 0 with score 1.0. Core Audio was not run: `adts-coreaudio.swift` and `adts-parity.ts` have not run on a Mac yet [U].
