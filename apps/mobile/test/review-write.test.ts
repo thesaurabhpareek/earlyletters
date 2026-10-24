@@ -11,7 +11,7 @@ import { tokens } from '@scribe/design-tokens';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, peekKeep, resetKeep } from '../src/lib/capture/keep-intent';
 import { arrivalToastDelayMs, secondFreeOnArrival } from '../src/components/book/book.logic';
-import { SCREEN_READER_HOLD_MS, savedMomentLeaveInMs, writeSwipeAllowed } from '../src/components/capture/review-view.logic';
+import { SCREEN_READER_HOLD_MS, savedMomentLeaveInMs } from '../src/components/capture/review-view.logic';
 import { fileIntoMonthPlan } from '../src/lib/transitions.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -99,6 +99,12 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(commit).toMatch(/if \(!committed\) return;\s*committedAt\.current = Date\.now\(\);/);
     expect(commit).toMatch(/useEffect\(\(\) => \{\s*if \(!committed \|\| committedAt\.current === null\) return;\s*const wait = savedMomentLeaveInMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader, elapsedMs: Date\.now\(\) - committedAt\.current \}\);\s*const t = setTimeout\(finish, wait\);\s*return \(\) => clearTimeout\(t\);[\s\S]*?\}, \[committed, screenReader\]\);/);
     expect(moment).not.toMatch(/savedMomentDoneMs/);
+    // The commit effect runs once, at the commit: its deps are exactly [committed]. With screenReader in them, a late
+    // screen-reader answer would restart the clock and say the chip again over the Book (lens A A3).
+    const commitEffect = commit.slice(0, commit.indexOf('}, [') + 30);
+    expect(commitEffect).toMatch(/committedAt\.current = Date\.now\(\);[\s\S]*announce\(said\);[\s\S]*\}, \[committed\]\);/);
+    expect(moment.match(/announce\(/g)).toHaveLength(1);
+    expect(moment.match(/committedAt\.current = /g)).toHaveLength(1);
 
     // The same two effects, run on fake timers: when does the moment leave for the Book?
     vi.useFakeTimers();
@@ -293,7 +299,7 @@ describe('S19: Write', () => {
   });
 
   it('a write that fails says "Not saved yet" in the autosave line\'s place, in text (lit paper: no status colour)', () => {
-    expect(write).toMatch(/setSaveState\('failed'\)/);
+    expect(write).toMatch(/if \(r\.saveState\) setSaveState\(r\.saveState\);\s*if \(r\.saveState === 'failed'\) announce\(copy\.write\.notSaved\);/);
     expect(write).toMatch(/\{copy\.write\.notSaved\}/);
     expect(write).not.toMatch(/tone="caution"|c\.caution/);
     expect(en.write.notSaved).toBe('Not saved yet');
@@ -319,27 +325,23 @@ describe('S19: Write', () => {
     expect(keep).toMatch(/timer\.current = null;/);
   });
 
-  it('after a write that did not go through, a swipe down cannot close Write either, until the next write works (follow-up L3)', () => {
-    expect(write).toMatch(/<Stack\.Screen options=\{\{ gestureEnabled: writeSwipeAllowed\(\{ text, writeFailed: saveState === 'failed' \}\) \}\} \/>/);
-    expect(write).toMatch(/import \{ Stack, router, useLocalSearchParams \} from 'expo-router';/);
-
-    // Write's autosave and its two ways out, on one lasting failure: the swipe and Close agree at every step.
-    let db = true;
-    let state: 'none' | 'saved' | 'failed' = 'none';
-    const autosave = () => (state = db ? 'saved' : 'failed');
-    const closes = (text: string) => !(text.trim() && !db); // close(): persist now; stay open when it fails
-    const swipes = (text: string) => writeSwipeAllowed({ text, writeFailed: state === 'failed' });
-
-    autosave();
-    expect([swipes('Asha, you'), closes('Asha, you')]).toEqual([true, true]);
-    db = false; // a full disk
-    autosave();
-    expect(state).toBe('failed');
-    expect([swipes('Asha, you sang'), closes('Asha, you sang')]).toEqual([false, false]); // the words stay on screen
-    expect(swipes('   ')).toBe(true); // nothing on screen to lose
-    db = true;
-    autosave();
-    expect([swipes('Asha, you sang to me'), closes('Asha, you sang to me')]).toEqual([true, true]);
+  it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {
+    // Every write goes through writeWords; its answer sets the autosave line, which the swipe reads.
+    const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const latest = useRef'));
+    expect(persist).toMatch(/const r = writeWords\(\{ create, update: setDraftTyped \}, draftId\.current, value\);\s*draftId\.current = r\.draftId;/);
+    expect(persist).toMatch(/if \(r\.saveState\) setSaveState\(r\.saveState\);/);
+    expect(persist).toMatch(/if \(!r\.ok\) return false;/);
+    expect(write).not.toMatch(/createDraft\(\{[\s\S]*?\}\)\.id;\s*\} else setDraftTyped/); // no second write path
+    // The swipe: from the last write, one options object per answer (no setOptions on every keystroke).
+    expect(write).toMatch(/const swipeAllowed = writeSwipeAllowed\(\{ text, writeFailed: saveState === 'failed' \}\);\s*const screenOptions = useMemo\(\(\) => \(\{ gestureEnabled: swipeAllowed \}\), \[swipeAllowed\]\);/);
+    expect(write).toMatch(/<Stack\.Screen options=\{screenOptions\} \/>/);
+    // A swipe iOS refused is a Close too, so it retries the write; an ordinary drag let go halfway is not (lens B).
+    expect(write).toMatch(/swipeHeld\.current = !swipeAllowed;/);
+    expect(write).toMatch(/navigation\.addListener\('gestureCancel' as never, \(\) => \{\s*if \(swipeHeld\.current\) closeRef\.current\(\);\s*\}\)/);
+    // Android's back is Close: it writes now and stays on Write when the words cannot be written (lens A, Android).
+    expect(write).toMatch(/closeRef\.current = close;/);
+    expect(write).toMatch(/if \(Platform\.OS !== 'android'\) return;\s*const sub = BackHandler\.addEventListener\('hardwareBackPress', \(\) => \{\s*closeRef\.current\(\);\s*return true;\s*\}\);\s*return \(\) => sub\.remove\(\);/);
+    // Run against the real store, with a lasting failure: test/review-keep-from-write.test.ts.
   });
 });
 

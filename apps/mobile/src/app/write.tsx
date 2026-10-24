@@ -19,16 +19,16 @@
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
  */
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
-import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, spokenSeparator, writeSwipeAllowed } from '@/components/capture/review-view.logic';
+import { addButtonLabel, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -63,24 +63,14 @@ export default function Write() {
   /** Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so. */
   const persist = (value: string): boolean => {
     if (!child) return false;
-    try {
-      if (!draftId.current) {
-        if (!value.trim()) return false;
-        draftId.current = createDraft({
-          childId: child.id,
-          captureMode: 'typed',
-          promptKey,
-          audioUri: null,
-          audioDurationMs: null,
-          typedText: value,
-        }).id;
-      } else setDraftTyped(draftId.current, value);
-    } catch {
-      setSaveState('failed');
-      announce(copy.write.notSaved);
-      return false;
-    }
-    setSaveState('saved');
+    const create = (v: string) => createDraft({ childId: child.id, captureMode: 'typed', promptKey, audioUri: null, audioDurationMs: null, typedText: v }).id;
+    const r = writeWords({ create, update: setDraftTyped }, draftId.current, value);
+    draftId.current = r.draftId;
+    // "Not saved yet" after a write that did not go through; the next good write puts "Saved on this phone" back and
+    // releases Close, Android's back and the swipe.
+    if (r.saveState) setSaveState(r.saveState);
+    if (r.saveState === 'failed') announce(copy.write.notSaved);
+    if (!r.ok) return false;
     const now = Date.now();
     if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
       lastAnnounced.current = now;
@@ -127,6 +117,40 @@ export default function Write() {
     router.back();
   };
 
+  // Android's back is Close (S19): it writes the words now, and stays on Write when they cannot be written to the
+  // phone. (Its native stack turns the swipe off and handles back in JS, so gestureEnabled alone would not hold it.)
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        closeRef.current();
+        return true;
+      });
+      return () => sub.remove();
+    }, []),
+  );
+
+  // The swipe down follows the same rule, from the last write. One options object per answer, so the stack is not
+  // asked to update on every keystroke.
+  const swipeAllowed = writeSwipeAllowed({ text, writeFailed: saveState === 'failed' });
+  const screenOptions = useMemo(() => ({ gestureEnabled: swipeAllowed }), [swipeAllowed]);
+  // A swipe iOS refused (the sheet springs back, `gestureCancel`) is a Close: it writes the words now, leaves when
+  // they go through (the disk came back), and says "Not saved yet" again when they still cannot be written. Only a
+  // refused swipe: a drag let go halfway while the swipe is allowed never closes Write. (`gestureCancel` is a native
+  // stack event that expo-router's navigation type does not list, hence the cast.)
+  const swipeHeld = useRef(false);
+  swipeHeld.current = !swipeAllowed;
+  const navigation = useNavigation();
+  useEffect(
+    () =>
+      navigation.addListener('gestureCancel' as never, () => {
+        if (swipeHeld.current) closeRef.current();
+      }),
+    [navigation],
+  );
+
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
   const keep = (inBook: boolean) => {
     if (timer.current) clearTimeout(timer.current);
@@ -145,7 +169,7 @@ export default function Write() {
     <SafeAreaView className="flex-1 bg-background">
       {/* Words on screen that the last write could not keep: the sheet will not swipe away (iOS holds it in place), so
           they are never lost to a swipe. Close stays open in the same case; both work again after the next good write. */}
-      <Stack.Screen options={{ gestureEnabled: writeSwipeAllowed({ text, writeFailed: saveState === 'failed' }) }} />
+      <Stack.Screen options={screenOptions} />
       <Lamp scene="write" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ModalHeader
