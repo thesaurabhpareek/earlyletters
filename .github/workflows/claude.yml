@@ -15,8 +15,12 @@ on:
   # edit this file, drop every guard below and start it with a review (SR-1).
   issue_comment:
     types: [created]
+  # opened only. On `assigned` the clause below would read how the issue was
+  # created, not who assigned it, so anyone who can assign (an agent acting
+  # through the app included) could re-fire it on a founder's issue. The
+  # founder re-triggers with a comment, which the comment clause guards.
   issues:
-    types: [opened, assigned]
+    types: [opened]
 
 permissions:
   contents: read
