@@ -9,12 +9,23 @@
 //   fail     one row, but something in it is wrong (changed words, a hash that does not match its file, or,
 //            at a crash point, the wrong one of letter and draft)
 // DL-01, kill while recording (07 "Kill while recording", F04-REQ-024, F08-REQ-019, D-085): the take's file
-// exists with bytes and exactly one row points at it, so it is on Tonight or in Settings > Recordings.
-//   kept-playable    the take opens (afinfo reads its header) and has a length above 0
+// exists with bytes and exactly one row points at it, at that very path, so it is on Tonight or in Settings >
+// Recordings.
+//   kept-playable    the take opens (afinfo reads its header) and has a length above 0. An M4A's length is afinfo's
+//                    estimated duration; an ADTS take's (`.aac`, ADR 0027) is its whole frames, counted on the host
+//                    with the app's own scanAdts (adts-evidence.mjs), since afinfo opens a cut-off ADTS stream and
+//                    estimates a duration whatever its frames are
 //   kept-unplayable  kept and listed as one that may not play; counts against 07's "49 of 50 playable"
-//   lost, doubled, fail as above; "fail" includes a take marked ready that will not play.
+//   lost, doubled, fail as above; "fail" includes a take marked ready that will not play, and a row whose stored
+//   path is not the listed take's (another folder or name: the host would be judging a file the app does not use).
+// Every DL-01 verdict records the take's container and where its stored path stands; an ADTS take's also records
+// its whole frames, the bytes after them and the scanAdts tail (`cut` or `none` after a kill; `break` is a finding
+// ADR 0027 asks to report before any flip), with the facts check V1 asks for.
 // auditStore checks the whole database after every relaunch: `PRAGMA integrity_check`, no row pointing at a
 // missing file, no stored hash that differs from its file, and every letter judged kept earlier still kept.
+
+import { adtsFactsOfFile, containerOfName, redactAfinfo } from './adts-evidence.mjs';
+import { normalizePath } from './snapshot.mjs';
 
 export const BAD_OUTCOMES = ['lost', 'doubled', 'fail'];
 
@@ -78,17 +89,49 @@ export function classifyDl02(snap, armed, io, expect = {}) {
 }
 
 /**
+ * Where a row's stored path stands against the take the host lists, after both are normalized (`normalizePath`:
+ * `//`, `./` and `../` resolved; the stored one also loses `file://` or `file://localhost` and its percent-encoding):
+ * - `same`: the very file;
+ * - `other-container`: the same folder and file under Documents, behind another container path (a `/private`
+ *   prefix, another container id, a path relative to Documents). The app and the host spell the container
+ *   differently; the app's sweep found the file at the stored path, or it would have rebased the row;
+ * - `other`: any other folder or file, or no stored path. The row does not point at the file the host judged.
+ * The comparison under Documents is by suffix: the stored path must end in `Documents/` and the listed take's path
+ * inside the listed Documents folder, so a folder named Documents higher up never decides it.
+ * @param {string|null} storedPath  @param {string} listedPath  @param {string|undefined} documentsDir
+ */
+export function storedPathAgainst(storedPath, listedPath, documentsDir) {
+  if (!storedPath) return 'other';
+  const stored = normalizePath(storedPath);
+  const listed = normalizePath(listedPath);
+  if (stored === listed) return 'same';
+  const docs = documentsDir ? normalizePath(documentsDir) : null;
+  const rel = docs && listed.startsWith(`${docs}/`) ? listed.slice(docs.length + 1) : null;
+  if (!rel) return 'other';
+  // In the listed container itself, any other path is another file (a folder named Documents inside it included).
+  if (stored.startsWith(`${docs}/`)) return 'other';
+  const under = `Documents/${rel}`;
+  if (stored === under || stored === rel || stored.endsWith(`/${under}`)) return 'other-container';
+  return 'other';
+}
+
+/**
  * @param {object} snap
  * @param {{ draftId: string, audioFile: string }} armed
- * @param {{ sha256: (path: string) => string, playable: (path: string) => { ok: boolean|null, durationS: number|null } }} io
+ * @param {{ sha256: (path: string) => string, playable: (path: string) => { ok: boolean|null, durationS: number|null, text?: string|null }, adts?: (path: string) => object }} io
+ *   `adts` (default: adts-evidence.mjs adtsFactsOfFile, which reads the file) gives an `.aac` take's frame facts.
  * @param {{ expectedMs?: number|null }} [expect]  the take's length when the kill came (recorded at arm plus the wait)
+ * @returns {{ outcome: string, reasons: string[], playable: boolean|null, durationS: number|null, deviationMs: number|null,
+ *   within5s: boolean, wronglyListed: boolean, container: string, storedPath: string|null, afinfoOpens?: boolean|null,
+ *   afinfoDurationS?: number|null, adts?: import('./adts-evidence.mjs').AdtsFacts, afinfo?: string|null }}
  */
 export function classifyDl01(snap, armed, io, expect = {}) {
   const { draftId, audioFile } = armed;
   const rows = (snap.idx.byFile.get(audioFile) ?? []).filter(live);
-  const f = firstFile(snap, audioFile);
-  const none = { playable: null, durationS: null, deviationMs: null, within5s: false, wronglyListed: false };
-  if (!f) return { outcome: 'lost', reasons: ['the take file is gone'], ...none };
+  const listed = snap.files.get(audioFile) ?? [];
+  const container = containerOfName(audioFile);
+  const none = { playable: null, durationS: null, deviationMs: null, within5s: false, wronglyListed: false, container, storedPath: null };
+  if (!listed.length) return { outcome: 'lost', reasons: ['the take file is gone'], ...none };
   if (rows.length === 0) {
     const why = snap.orphanSet.has(audioFile)
       ? 'the file is listed as a recording without a letter, on no book'
@@ -96,11 +139,29 @@ export function classifyDl01(snap, armed, io, expect = {}) {
     return { outcome: 'lost', reasons: [why], ...none };
   }
   if (rows.length > 1) return { outcome: 'doubled', reasons: [`${rows.length} rows point at the take`], ...none };
-  if (f.bytes === 0) return { outcome: 'lost', reasons: ['the take file is empty'], ...none };
   const row = rows[0];
-  const probe = io.playable(f.path);
+  // The take the row points at: the listed file at its stored path, else the first of that name.
+  const f = listed.find((x) => row.audioPath && normalizePath(x.path) === normalizePath(row.audioPath)) ?? listed[0];
+  if (f.bytes === 0) return { outcome: 'lost', reasons: ['the take file is empty'], ...none };
+  const afinfo = io.playable(f.path);
   const reasons = [];
   const notes = [];
+  let probe = afinfo;
+  /** @type {any} */
+  let adtsFacts = null;
+  if (container === 'adts') {
+    adtsFacts = (io.adts ?? adtsFactsOfFile)(f.path);
+    // Core Audio must open it, and it must hold at least one whole frame; its length is its whole frames, never
+    // afinfo's estimate (ADR 0027, check V2). Frames found after a break are not counted here: they may not play.
+    probe = {
+      ok: afinfo.ok === null ? null : afinfo.ok === true && adtsFacts.adts && adtsFacts.frames > 0,
+      durationS: adtsFacts.adts ? adtsFacts.durationMs / 1000 : null,
+    };
+    if (!adtsFacts.adts) notes.push('named .aac, but its bytes are not an ADTS stream');
+  }
+  const storedPath = storedPathAgainst(row.audioPath ?? null, f.path, snap.documentsDir);
+  if (storedPath === 'other') reasons.push("the row's stored path is not the path of the take on disk (another folder or name)");
+  if (storedPath === 'other-container') notes.push("the row's stored path names the same folder and file under another container path");
   if (row.table === 'drafts' && row.id !== draftId) notes.push('kept as a new draft (reattached by the sweep)');
   if (row.table === 'drafts' && row.state === 'recording') reasons.push('still marked recording after the sweep');
   if (row.audioSha256 && row.audioSha256 !== io.sha256(f.path)) reasons.push('the stored hash differs from its file');
@@ -109,7 +170,22 @@ export function classifyDl01(snap, armed, io, expect = {}) {
   if (shownReady && probe.ok === false) reasons.push('shown as ready but will not play (F08-REQ-019)');
   const plays = probe.ok === true && (probe.durationS ?? 0) > 0;
   const deviationMs = plays && Number.isFinite(expect.expectedMs) ? Math.round(Math.abs(probe.durationS * 1000 - expect.expectedMs)) : null;
-  const facts = { playable: probe.ok, durationS: probe.durationS, deviationMs, within5s: deviationMs !== null && deviationMs <= 5000 };
+  const facts = {
+    playable: probe.ok,
+    durationS: probe.durationS,
+    deviationMs,
+    within5s: deviationMs !== null && deviationMs <= 5000,
+    container,
+    storedPath,
+    ...(adtsFacts
+      ? {
+          afinfoOpens: afinfo.ok,
+          afinfoDurationS: afinfo.durationS,
+          adts: adtsFacts,
+          afinfo: typeof afinfo.text === 'string' ? redactAfinfo(afinfo.text, f.path, '(this take)') : null,
+        }
+      : {}),
+  };
   if (reasons.length) return { outcome: 'fail', reasons, ...facts, wronglyListed: false };
   const listedUnplayable = row.table === 'drafts' && row.state === 'unrecoverable';
   return {

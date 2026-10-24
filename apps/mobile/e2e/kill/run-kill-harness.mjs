@@ -23,11 +23,29 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-// node:sqlite prints an experimental warning on first use; the harness output stays readable without it.
+// node:sqlite prints an experimental warning on first use, and Node notes that it reparses the app's frame scanner
+// (src/lib/capture/adts.ts, which apps/mobile/package.json does not mark as a module) as one; the harness output
+// stays readable without them.
 const emitWarning = process.emitWarning;
-process.emitWarning = (w, ...rest) => (String(w).includes('SQLite') ? undefined : emitWarning.call(process, w, ...rest));
+const quiet = (w) => String(w).includes('SQLite') || (String(w).includes('adts.ts') && String(w).includes('Module type'));
+process.emitWarning = (w, ...rest) => (quiet(w) ? undefined : emitWarning.call(process, w, ...rest));
 
-const { EXIT, mergeReports, renderMarkdown, runHarness } = await import('./harness.mjs');
+// The oracle judges ADTS takes with the app's own scanAdts, imported from TypeScript as it is (adts-evidence.mjs):
+// Node 22.18 or later strips the types by default. On an older Node nothing runs.
+let harness;
+try {
+  harness = await import('./harness.mjs');
+} catch (e) {
+  // Before 22.18 (without --experimental-strip-types) Node cannot load a .ts file at all; any other failure is not the version.
+  const ts = e?.code === 'ERR_UNKNOWN_FILE_EXTENSION' && String(e?.message ?? '').includes('.ts');
+  console.error(
+    ts
+      ? `the kill harness needs Node 22.18 or later, which imports the app's frame scanner (src/lib/capture/adts.ts) as it is; this is Node ${process.versions.node}`
+      : `the kill harness could not load: ${String(e?.message ?? e).slice(0, 300)}`,
+  );
+  process.exit(2);
+}
+const { EXIT, mergeReports, renderMarkdown, runHarness, stepSummary } = harness;
 const { bundleIdOf, simctlDriver } = await import('./simctl-driver.mjs');
 const { DRILL_BUNDLE_SUFFIX } = await import('./protocol.mjs');
 
@@ -83,7 +101,7 @@ function publish(report, outDir, asJson) {
     const md = renderMarkdown(report);
     writeFileSync(join(outDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     writeFileSync(join(outDir, 'report.md'), md);
-    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary(report));
     if (asJson) {
       const { runs: _runs, ...head } = report;
       console.log(JSON.stringify(head));
