@@ -80,7 +80,7 @@ jobs:
       # failure. The matching copy on develop lives in packages/content/test.
       - name: Privacy guard (fictional family only)
         if: ${{ !cancelled() }}
-        run: npx vitest run test/no-real-family-data.test.ts
+        run: npx --no-install vitest run test/no-real-family-data.test.ts
         working-directory: apps/web
 
       - name: Build (prelaunch, as it ships first)
