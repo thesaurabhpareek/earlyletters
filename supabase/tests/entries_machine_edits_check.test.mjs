@@ -230,7 +230,7 @@ check('the other parent\'s pull parses and never carries machine_edits (author-o
 
 // --- 6. Letters stored before the file: one that fails makes the file refuse whole (55000) ------
 {
-  const old = await createDb(before);
+  const old = await createDb(before, { defaultGrants: 'legacy' });   // the old server wrote only with the old automatic grants
   const child = await setUp(old);
   const oldPush = pushOn(old);
   const oldPull = pullOn(old);
@@ -316,7 +316,7 @@ check('the other parent\'s pull parses and never carries machine_edits (author-o
 
 // --- 7. Letters stored before the file that pass: validated at once, untouched ------------
 {
-  const old = await createDb(before);
+  const old = await createDb(before, { defaultGrants: 'legacy' });   // the old server wrote only with the old automatic grants
   const child = await setUp(old);
   const oldPush = pushOn(old);
   const ids = [];

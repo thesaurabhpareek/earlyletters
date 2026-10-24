@@ -8,7 +8,7 @@
 // and sensitive-data consent recorded for every person before they write content.
 import { createDb, users } from './harness.mjs';
 
-const { check, as, sys, one, fails, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
+const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S, U } = users;
 check(`${process.argv.length - 2} migrations apply cleanly`, true);
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
@@ -70,8 +70,10 @@ check('versions purged with the entry', (await sys(`select 1 from entry_versions
 check('photo queued for Storage API deletion', (await sys(`select 1 from storage_purge_queue where object_path='${CHILD}/${A}/${e1}.jpg'`)).rows.length === 1);
 check('purge ledger keeps the id only', (await sys(`select 1 from purge_ledger where entity_type='entry' and entity_id='${e1}'`)).rows.length === 1);
 check('users cannot call purge_due', await fails(() => as(A, `select public.purge_due()`)));
-check('users cannot read legal holds', (await as(A, 'select * from legal_holds')).rows.length === 0);
-check('users cannot read the purge queue or ledger', (await as(A, 'select 1 from storage_purge_queue union all select 1 from purge_ledger')).rows.length === 0);
+// 20261023060000: no grant on these at all, so a read is refused rather than filtered.
+check('users cannot read legal holds', (await codeOf(() => as(A, 'select * from legal_holds'))) === '42501');
+check('users cannot read the purge queue or ledger', (await codeOf(() => as(A, 'select 1 from storage_purge_queue'))) === '42501'
+  && (await codeOf(() => as(A, 'select 1 from purge_ledger'))) === '42501');
 
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
 check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));

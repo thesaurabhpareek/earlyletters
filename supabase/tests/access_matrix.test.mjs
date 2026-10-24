@@ -10,10 +10,13 @@
 //   anon         the `anon` role, no JWT
 // Expected values: a number = rows visible; 'ok' = succeeded (writes changed a
 // row); 'none' = no error but no row changed (RLS filtered it); otherwise the
-// SQLSTATE. Structural checks at the end fail when a table or function is
-// added without a matrix entry, a guard, or a restrictive anonymous policy.
+// SQLSTATE. Since 20261023060000 a role with no grant on a table gets 42501
+// (anon on everything but the published policy texts), in both default-grant
+// worlds (harness.mjs DEFAULT_GRANTS). Structural checks at the end fail when
+// a table or function is added without a matrix entry, a guard, a restrictive
+// anonymous policy, or a row in the grant list.
 // Fictional family "Asha" only (CLAUDE.md).
-import { createDb, users, uuid7 } from './harness.mjs';
+import { createDb, users, uuid7, EXPECTED_PROBE } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { db, check, as, sys, one, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -110,35 +113,35 @@ async function attempt(persona, sql, params) {
 
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
-  ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
+  ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, '42501']],
   // 20261015000000 (G-08, review M1): column privileges; the anon role reads no column of children at all.
   ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, '42501']],
   ['children: name and nickname', 'select 1, name, nickname from children where id=$1', [CHILD], [1, 1, 1, 0, 0, '42501']],
   // D-039: nobody reads the birth date or due date from the table; sync_pull / sync_books serve them by role.
   ['children: date of birth', 'select 1, date_of_birth from children where id=$1', [CHILD], ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['children: due date', 'select 1, due_date from children where id=$1', [CHILD],     ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
-  ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
-  ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
+  ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, '42501']],
+  ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, '42501']],
+  ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, '42501']],
   ['book_entries', 'select 1 from book_entries where child_id=$1', [CHILD],           [4, 3, 2, 0, 0, '42501']],
-  ['entry_versions', 'select 1 from entry_versions', [],                              [1, 0, 1, 0, 0, 0]],
-  ['dictionary_terms', 'select 1 from dictionary_terms', [],                          [1, 0, 0, 0, 0, 0]],
-  ['child_member_prefs', 'select 1 from child_member_prefs', [],                      [1, 1, 1, 0, 0, 0]],
+  ['entry_versions', 'select 1 from entry_versions', [],                              [1, 0, 1, 0, 0, '42501']],
+  ['dictionary_terms', 'select 1 from dictionary_terms', [],                          [1, 0, 0, 0, 0, '42501']],
+  ['child_member_prefs', 'select 1 from child_member_prefs', [],                      [1, 1, 1, 0, 0, '42501']],
   // 20261023050000: anon has no SELECT (row security gave it no row); signed-in people read their own acts.
   ['policy_acceptances', 'select 1 from policy_acceptances', [],                      [2, 2, 2, 2, 0, '42501']],
   ['my_policy_state', 'select 1 from my_policy_state', [],                            [2, 2, 2, 2, 0, '42501']],
   ['policy_documents', 'select 1 from policy_documents limit 1', [],                  [1, 1, 1, 1, 1, 1]],
   ['policy_versions', 'select 1 from policy_versions limit 1', [],                    [1, 1, 1, 1, 1, 1]],
-  ['audit_events', `select 1 from audit_events where action='invite_created'`, [],    [3, 0, 0, 0, 0, 0]],
-  ['deletion_requests', 'select 1 from deletion_requests', [],                        [0, 0, 0, 1, 0, 0]],
-  ['deletion_request_steps', 'select 1 from deletion_request_steps', [],              [0, 0, 0, 0, 0, 0]],
-  ['legal_holds', 'select 1 from legal_holds', [],                                    [0, 0, 0, 0, 0, 0]],
-  ['purge_ledger', 'select 1 from purge_ledger', [],                                  [0, 0, 0, 0, 0, 0]],
-  ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    [0, 0, 0, 0, 0, 0]],
+  ['audit_events', `select 1 from audit_events where action='invite_created'`, [],    [3, 0, 0, 0, 0, '42501']],
+  ['deletion_requests', 'select 1 from deletion_requests', [],                        [0, 0, 0, 1, 0, '42501']],
+  ['deletion_request_steps', 'select 1 from deletion_request_steps', [],              ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['legal_holds', 'select 1 from legal_holds', [],                                    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['purge_ledger', 'select 1 from purge_ledger', [],                                  ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
   // Sync (20261004100000): epochs are the same two values for every signed-in person; receipts and rate windows are own rows only.
-  ['sync_epochs', 'select 1 from sync_epochs', [],                                    [1, 1, 1, 1, 0, 0]],
-  ['sync_op_receipts', 'select 1 from sync_op_receipts', [],                          [1, 0, 0, 0, 0, 0]],
-  ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, 0]],
+  ['sync_epochs', 'select 1 from sync_epochs', [],                                    [1, 1, 1, 1, 0, '42501']],
+  ['sync_op_receipts', 'select 1 from sync_op_receipts', [],                          [1, 0, 0, 0, 0, '42501']],
+  ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, '42501']],
   // Idempotency keys (20261005000000): no client access at all; create_child_invite and record_policy_act use them.
   ['idempotency_keys', 'select 1 from idempotency_keys', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
   // Subscription status report (20261016001000, S06; behaviour in subscription_status.test.mjs): functions only, never read by the app (D-080 rule 4).
@@ -162,12 +165,12 @@ const READS = [
   ['storage: backup object', 'select 1 from storage.objects where name=$1', [BPATH],  [1, 0, 0, 0, 0, 0]],
   // 20261015030000 (F16-REQ-028): members read the date precision and direction; never the author layer.
   ['book_entries: date precision and direction', 'select 1, occurred_precision, base_direction from book_entries where child_id=$1', [CHILD], [4, 3, 2, 0, 0, '42501']],
-  ['entries: author layer (own rows only)', 'select 1, author_edits, locked_spans, pack_ref from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
+  ['entries: author layer (own rows only)', 'select 1, author_edits, locked_spans, pack_ref from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, '42501']],
   // 20261016000000 (WP-F16-17, M17): held drafts are the author's only, while a parent of the book; markers are
   // reached only through sync_pull; the words version and the review mark are own-row columns.
   ['held_drafts', 'select 1 from held_drafts', [],                                    [1, 0, 0, 0, 0, '42501']],
   ['held_drafts_gone', 'select 1 from held_drafts_gone', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['entries: words version and review mark (own rows only)', 'select 1, text_xid, words_reviewed_at from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, 0]],
+  ['entries: words version and review mark (own rows only)', 'select 1, text_xid, words_reviewed_at from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, '42501']],
   ['book_entries: no review mark', 'select 1, words_reviewed_at from book_entries', [], ['42703', '42703', '42703', '42703', '42703', '42703']],
   // The erasure record (review L on #208): definer code only, for every persona.
   ['sync_private.entry_erasures', 'select 1 from sync_private.entry_erasures', [], ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -178,9 +181,10 @@ const insertLetter = (author) => [`insert into entries (id, child_id, author_id,
   values ('${NEW_ID}', '${CHILD}', '${author}', 'letter', '2026-09-29', now(), 'spoken', 1, 'x', 'x')`, []];
 const WRITES = [
   ['entries: insert own letter', null,                                                ['ok', 'ok', 'ok', '42501', 'SCANO', '42501']],
-  ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
-  ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
-  ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
+  ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
+  ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', '42501']],
+  // 20261023060000: no role holds DELETE on entries (no policy allows it; Erase now and the purges are definer code).
+  ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
   // G-08: parents still write the dates directly (no read of the old value needed).
   ['children: set due date', `update children set due_date='2025-05-01' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
@@ -199,8 +203,8 @@ const WRITES = [
   ['child_members: change own role', `update child_members set role='parent' where child_id='${CHILD}' and profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['dictionary_terms: insert own', `insert into dictionary_terms (owner_id, term, kind) values (auth.uid(), 'Ashu', 'nickname')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
-  ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', 'none']],
+  ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', '42501']],
+  ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', '42501']],
   ['policy_acceptances: insert directly', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values (auth.uid(), 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   // 20261023050000 (review B G2 and G3 on #248): the consent tables' writes are revoked from the API roles, so
   // what row security refused ('none') is now refused by privilege, and TRUNCATE and LOCK, which row security
@@ -219,7 +223,7 @@ const WRITES = [
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
   // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
-  ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
+  ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   // Backup (20261023000000): every write goes through a function; the log is never touched by a client.
@@ -407,8 +411,9 @@ for (const sql of SERVICE_ONLY) {
   cells += 3;
   check(`service-only ${name}: refused for users, anonymous and anon`, got.every((g) => g === '42501') || console.log(`      got ${got}`));
 }
-// 20261023010000: those are not the service role's either (hosted Supabase grants it every new function, and so
-// does the harness since #248 review B T1, so these checks can fail); 20261023020000 adds book_purge_held.
+// 20261023010000: those are not the service role's either (Supabase's old automatic grants gave it every new
+// function; with SCRIBE_DEFAULT_GRANTS=legacy, the nightly, these checks can fail; without the automatic grants the
+// revokes change nothing); 20261023020000 adds book_purge_held.
 for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid)']) {
   check(`internal ${sig}: not executable by service_role`,
     !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
@@ -491,25 +496,75 @@ check('[#248 G2] anon and authenticated hold SELECT only, and only where a path 
     'authenticated policy_acceptances SELECT', 'authenticated policy_documents SELECT', 'authenticated policy_versions SELECT'])
   || console.log(`      got ${apiConsentPrivs.join(', ')}`));
 
-// ── The harness grants new objects as hosted Supabase does (review B T1 and T2 on #248) ─────────────────
-// Without this mirror a missing revoke could not fail: a function and a table created now must be open to
-// anon, authenticated and service_role (EXECUTE; ALL, TRUNCATE and MAINTAIN included), as on hosted.
-const mirror = await (async () => {
+// ── The harness models the defaults it says it does (#261 F4; harness.mjs DEFAULT_GRANTS) ──────────────
+// Read before any migration, on a table, a sequence and a function revoked from PUBLIC, so the function half
+// cannot pass through PUBLIC's EXECUTE: 'none' (the default) gives the three roles only TRUNCATE, REFERENCES,
+// TRIGGER and MAINTAIN and sequence UPDATE, 'legacy' gives them everything.
+const probeWant = EXPECTED_PROBE[h.defaults.mode];
+check(`[#261 F4] the harness models the ${h.defaults.mode} default grants (a table, a sequence, a function revoked from PUBLIC)`,
+  ['anon', 'authenticated', 'service_role'].every((r) => JSON.stringify(h.defaults.probe[r]) === JSON.stringify(probeWant))
+  || console.log(`      got ${JSON.stringify(h.defaults.probe)}`));
+
+// ── Explicit grants (20261023060000) ─────────────────────────────────────
+// Every table, view and sequence in public: exactly these privileges for the three roles, in both worlds
+// (S select, I insert, U update, D delete; nothing else, so no TRUNCATE, REFERENCES, TRIGGER or MAINTAIN).
+const GRANTS = {
+  anon: { policy_documents: 'S', policy_versions: 'S' },
+  authenticated: { audio_blobs: 'S', audit_events: 'S', backup_devices: 'S', backup_usage: 'S', book_entries: 'S', child_invites: 'S',
+    child_member_prefs: 'SIUD', child_members: 'S', children: 'U', deletion_requests: 'S', dictionary_terms: 'SIUD', entries: 'SIU',
+    entry_versions: 'S', escrow_unwraps: 'S', held_drafts: 'SIU', my_policy_state: 'S', policy_acceptances: 'S', policy_documents: 'S',
+    policy_versions: 'S', profiles: 'SU', sync_epochs: 'S', sync_op_receipts: 'S', sync_rate_windows: 'S' },
+  service_role: { policy_acceptances: 'S', policy_documents: 'SI', policy_versions: 'SI', subscription_consents: 'S', subscription_status: 'S' },
+};
+const LETTER = { SELECT: 'S', INSERT: 'I', UPDATE: 'U', DELETE: 'D', TRUNCATE: 'T', REFERENCES: 'R', TRIGGER: 'G', MAINTAIN: 'M' };
+const held = (await sys(`select r || ' ' || c.relname || ' ' || string_agg(p, ',' order by p) v
+  from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+  cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p', 'v', 'm') and has_table_privilege(r, c.oid, p)
+  group by r, c.relname order by 1`)).rows.map((x) => {
+  const [role, rel, privs] = x.v.split(' ');
+  return `${role} ${rel} ${privs.split(',').map((q) => LETTER[q]).sort((a, b) => 'SIUDTRGM'.indexOf(a) - 'SIUDTRGM'.indexOf(b)).join('')}`;
+});
+const want = Object.entries(GRANTS).flatMap(([role, m]) => Object.entries(m).map(([rel, l]) => `${role} ${rel} ${l}`)).sort();
+for (const v of held.filter((x) => !want.includes(x))) console.log(`      held, not in the grant list: ${v}`);
+for (const v of want.filter((x) => !held.includes(x))) console.log(`      in the grant list, not held: ${v}`);
+check('[20261023060000] every public table and view grants anon, authenticated and service_role exactly the grant list',
+  JSON.stringify([...held].sort()) === JSON.stringify(want));
+const COLUMNS = {
+  children: 'book_look,created_at,created_by,deleted_at,deletion_request_id,family_can_read,hidden_at,id,name,nickname,photo_path,updated_at',
+  child_keys: 'child_id,created_at,escrow_key_version,key_check,key_version,profile_id,rewrapped_at',
+  restore_approvals: 'created_at,device_id,request_id,sealed_code,used_at',
+  restore_requests: 'approved_at,approved_by_device,cancel_source,cancelled_at,device_id,expired_at,hold_until,id,notified_at,profile_id,released_at,requested_at,state',
+};
+const cols = (await sys(`select c.relname t, string_agg(a.attname, ',' order by a.attname) cs
+  from pg_class c join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p') and has_column_privilege('authenticated', c.oid, a.attnum, 'SELECT')
+    and not has_table_privilege('authenticated', c.oid, 'SELECT') group by 1 order by 1`)).rows;
+check('[20261023060000] authenticated reads only the listed columns of children, child_keys, restore_approvals and restore_requests (no date of birth, due date, escrow wrap or stop token)',
+  JSON.stringify(cols.map((x) => [x.t, x.cs]).sort()) === JSON.stringify(Object.entries(COLUMNS).sort()) || console.log(`      got ${JSON.stringify(cols)}`));
+const seqPrivs = (await sys(`select count(*)::int n from pg_class c cross join unnest(array['public', 'anon', 'authenticated', 'service_role']) r
+  cross join unnest(array['USAGE', 'SELECT', 'UPDATE']) p
+  where c.relnamespace = 'public'::regnamespace and c.relkind = 'S' and r <> 'public' and has_sequence_privilege(r, c.oid, p)`)).rows[0].n;
+check('[20261023060000] no API role holds any privilege on a public sequence', seqPrivs === 0);
+// And later objects: a table, a sequence and a function (revoked from PUBLIC) created after every file give the
+// three roles nothing, whichever defaults the project started with.
+const after = await (async () => {
   await db.exec('begin');
   try {
-    // Revoked from PUBLIC first, so the function half cannot pass through PUBLIC's EXECUTE (lens A F4, lens B N1).
-    await db.exec(`create function public.matrix_mirror_probe() returns int language sql as $$ select 1 $$;
-      revoke execute on function public.matrix_mirror_probe() from public;
-      create table public.matrix_mirror_probe (x int);`);
-    return (await sys(`select bool_and(has_function_privilege(r, 'public.matrix_mirror_probe()', 'execute')
-        and has_table_privilege(r, 'public.matrix_mirror_probe', p)) x
+    await db.exec(`create table public.matrix_later (x int); create sequence public.matrix_later_seq;
+      create function public.matrix_later() returns int language sql as $$ select 1 $$;
+      revoke execute on function public.matrix_later() from public;`);
+    return (await sys(`select bool_or(has_table_privilege(r, 'public.matrix_later', p)) t,
+        bool_or(has_sequence_privilege(r, 'public.matrix_later_seq', 'USAGE') or has_sequence_privilege(r, 'public.matrix_later_seq', 'UPDATE')) q,
+        bool_or(has_function_privilege(r, 'public.matrix_later()', 'execute')) f
       from unnest(array['anon', 'authenticated', 'service_role']) r
-      cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p`)).rows[0].x;
+      cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p`)).rows[0];
   } finally {
     await db.exec('rollback');
   }
 })();
-check('[#248 T1, T2] the harness gives a new function EXECUTE and a new table ALL for anon, authenticated and service_role, as hosted does', mirror === true);
+check('[20261023060000] a table, sequence or function created after every file gives anon, authenticated and service_role nothing',
+  after.t === false && after.q === false && after.f === false || console.log(`      got ${JSON.stringify(after)}`));
 
 // ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
 // The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the

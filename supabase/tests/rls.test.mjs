@@ -7,7 +7,7 @@
 // Requires: npm i @electric-sql/pglite (dev only).
 import { createDb, users, uuid7 } from './harness.mjs';
 
-const { db, check, as, sys, fails, done, publishPolicies, consent, invite } = await createDb(process.argv.slice(2));
+const { db, check, as, sys, fails, codeOf, done, publishPolicies, consent, invite } = await createDb(process.argv.slice(2));
 const { A, B, C } = users;
 check(`${process.argv.length - 2} migration(s) apply cleanly`, true);
 
@@ -56,7 +56,9 @@ check('co-parent cannot read the author\'s rows in the entries table', (await as
 check('book view has no raw transcript column', await fails(() => as(B, 'select raw_transcript from book_entries')));
 check('stranger sees nothing', (await as(C, 'select id from entries')).rows.length === 0 && (await as(C, 'select id from book_entries')).rows.length === 0);
 check('co-parent cannot edit the author\'s entry', (await as(B, `update entries set final_text='x' where id='${BOOK}'`)).affectedRows === 0);
-check('nobody can hard-delete an entry', (await as(A, `delete from entries where id='${BOOK}'`)).affectedRows === 0);
+// 20261023060000: no role holds DELETE on entries (no policy allows it), so the delete is refused outright.
+check('nobody can hard-delete an entry', (await codeOf(() => as(A, `delete from entries where id='${BOOK}'`))) === '42501'
+  && (await sys(`select 1 from entries where id='${BOOK}'`)).rows.length === 1);
 check('stranger cannot write to a child they do not belong to', await fails(() => as(C, insert('0192b000-0000-7000-8000-000000000009', false, C))));
 check('cannot write an entry as someone else', await fails(() => as(B, insert('0192b000-0000-7000-8000-000000000008', false))));
 check('raw transcript is immutable', await fails(() => as(A, `update entries set raw_transcript='changed' where id='${PRIVATE}'`)));

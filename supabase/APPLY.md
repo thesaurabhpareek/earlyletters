@@ -47,8 +47,8 @@ select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELE
  where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
    and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
 ```
-- `3 | 3 | 3`: the old automatic grants. Every pending file applies and works as written.
-- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026; staging and production are both new projects and will both answer this). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). File 25 (the explicit-grants file, `20261023060000`, PR pending) is what makes the app work there: do not approve the first staging run until file 25 is on `develop`, so one push applies files 1 to 25, and open the project to nobody before it is applied.
+- `3 | 3 | 3`: the old automatic grants. Every pending file applies and works as written. After file 25 every project answers `0 | 0 | 0`, whichever defaults it started with.
+- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026; staging and production are both new projects and will both answer this). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). On a new project, file 25 (`20261023060000`, section "File 25") is what makes the app work, and the deploy job's smoke is the first thing that fails without it: do not approve the first staging run until file 25 is on `develop`, so one push applies files 1 to 25, and open the project to nobody before it is applied.
 - Anything else: stop and ask.
 
 b) Whether the role that applies the migrations sees every Storage object. The legal hold checks (file 21), `ops_storage_residue` and `ops_storage_owned_by` read `storage.objects` as that role (it owns the functions); without BYPASSRLS they find nothing and answer "not held" (review B on #251). Run as that role (the SQL Editor's `postgres` is the role `deploy-db.yml` uses):
@@ -1070,3 +1070,47 @@ select count(*) from unnest(array['policy_acceptances', 'subscription_consents']
 Then repeat step 21's `search_path` query (expect 0 rows; this file adds no function). Advisors: none new expected.
 
 **Rollback.** Prefer not to: it gives back privileges no path uses. If a path turns out to need one, grant that one privilege to that one role in a new file (for example `grant select on public.policy_acceptances to anon;`), never the default ALL.
+
+## File 25: every table, view and sequence gets explicit grants (24 Oct 2026, stream S02)
+
+`20261023060000_explicit_grants.sql`. Lens A on #261 (comment 6378839652): Supabase stopped granting new objects in `public` to anon, authenticated and service_role on projects created since 30 May 2026, and does the same on every project from 30 Oct 2026, and every earlier file, 1 and 2 included, relied on those grants (27 tables, 2 views, 2 sequences). Apply it after `20261023050000_consent_grants_tightening.sql`. Privileges only: no function, column or row changes. Tests: `explicit_grants` (new), the grant list and later-object rows in `access_matrix`, and every test file now runs without the automatic grants by default (`SCRIBE_DEFAULT_GRANTS=legacy` runs them with the old ones, nightly).
+
+**On a new project this file is what makes the app work.** Without it every earlier file applies cleanly, and then the consent sheets, sync, letters and family reads all answer `42501`. The deploy job's smoke is the first thing that fails: its anonymous `policy_versions` read is refused.
+
+What it changes:
+- **One end state in both worlds.** Every table, view and sequence in `public` loses every privilege anon, authenticated, service_role and PUBLIC hold (column grants with it), then gets back exactly the grant list in the file header, which `access_matrix` checks as `GRANTS`:
+  - anon reads `policy_documents` and `policy_versions`, nothing else;
+  - authenticated reads where a policy shows rows; writes `entries` and `held_drafts` (insert, update; `sync_push` and `held_upsert` run as the caller), `child_member_prefs` and `dictionary_terms` (insert, update, delete), and `children` and `profiles` (update). The column lists on `children`, `child_keys`, `restore_requests` and `restore_approvals` are restated unchanged;
+  - service_role reads `policy_acceptances`, `subscription_consents` and `subscription_status`, and reads and inserts `policy_documents` and `policy_versions` (publishing). Every worker and function calls definer RPCs, which need no table grant.
+- **No TRUNCATE, REFERENCES, TRIGGER or MAINTAIN** for any API role on any table (before, anon and authenticated could truncate 13 tables, `entries` among them, and row security does not see TRUNCATE), and nothing on any sequence.
+- **Later objects start from nothing.** `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions from anon, authenticated, service_role`: a table, sequence or function a later file creates gives those roles nothing, in either world, and that file grants what it needs (the test harness runs in that world). PUBLIC's EXECUTE on new functions stays (Postgres's default; every file revokes it where it matters).
+- A read by a role with no grant now answers `42501` where it used to return no row (anon on everything but the policy texts; anyone's hard delete of a letter). No app path relies on those empty answers.
+
+**Before.** Every earlier file. Read only (expect false, then a number above 0):
+```sql
+select has_table_privilege('anon', 'public.policy_acceptances', 'TRUNCATE');
+select count(*) from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
+ where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
+   and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
+```
+
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). On staging and production it must be on `develop` before the first staging run is approved ("Hosted checks before the first apply" a). The file refuses a second run, and a run before file 24 (`55000`).
+
+**Check** (expect 0, then 0, then true; on Postgres 15 leave `MAINTAIN` out of the first list):
+```sql
+select count(*) from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+ cross join unnest(array['TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+ where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p', 'v', 'm') and has_table_privilege(r, c.oid, p);
+select count(*) from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
+ where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
+   and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
+select has_table_privilege('anon', 'public.policy_versions', 'SELECT')
+   and has_table_privilege('authenticated', 'public.entries', 'INSERT')
+   and has_table_privilege('authenticated', 'public.held_drafts', 'UPDATE')
+   and has_table_privilege('authenticated', 'public.my_policy_state', 'SELECT')
+   and not has_table_privilege('anon', 'public.entries', 'SELECT')
+   and not has_column_privilege('authenticated', 'public.children', 'date_of_birth', 'SELECT');
+```
+Then the deploy job's smoke must be green (the anonymous `policy_versions` read), "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21's `search_path` query gives 0 rows (this file adds no function). Advisors: none new expected; a table the API cannot reach no longer shows as exposed.
+
+**Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. Do not roll back on a project without the automatic grants: the app stops working again.

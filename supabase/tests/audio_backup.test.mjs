@@ -55,10 +55,10 @@ check('every backup table has a restrictive anonymous-session policy', (await sy
 for (const t of TABLES) {
   check(`${t}: no client can write it directly`, await codeOf(() => as(A, `delete from ${t}`)) === '42501');
 }
-// Hosted Supabase grants every new table to service_role too (the harness mirrors that, so the
-// first check proves the default is in force); the backup tables take it back.
+// The backup tables were never the service role's (20261023000000); since 20261023060000 no table is,
+// beyond the grant list in access_matrix.test.mjs, whichever defaults the project started with.
 const priv = async (t, p) => (await sys(`select has_table_privilege('service_role', $1, $2) v`, [`public.${t}`, p])).rows[0].v;
-check('harness: a table without its own revoke is granted to service_role, as on hosted Supabase', await priv('entries', 'delete') === true);
+check('entries: the service role holds no table privilege either (20261023060000)', await priv('entries', 'delete') === false);
 for (const t of TABLES) {
   check(`${t}: the service role has no table privilege (only the backup_svc_* functions)`,
     !(await priv(t, 'select')) && !(await priv(t, 'insert')) && !(await priv(t, 'update')) && !(await priv(t, 'delete')));
