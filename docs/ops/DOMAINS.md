@@ -9,7 +9,7 @@ Labels: **Verified** (checked on an opened vendor page on 3 Oct 2026), **Assumpt
 
 | Domain | Serves | Mail |
 |---|---|---|
-| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/callback` and `/i/*` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
+| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/confirm`, `/auth/callback` and `/j` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
 | `www.earlyletters.com` | Redirect to the apex | none |
 | `send.earlyletters.com` | Nothing on the web; Resend's return-path (bounce) domain | Resend bounces only |
 | `earlyletters.app` and `www.earlyletters.app` | Permanent redirect to `https://earlyletters.com` | none, and locked against spoofing (section 4) |
@@ -85,7 +85,7 @@ In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website proj
 ## 5. Vercel (website thread)
 
 - Domains on the project: `earlyletters.com` (primary), `www.earlyletters.com` (redirect to apex), `earlyletters.app` and `www.earlyletters.app` (redirect to `https://earlyletters.com`).
-- Serve the files in [well-known/](well-known/) exactly as section 7 and 8 say. Header rule (also in AUTH_SETUP 5.2):
+- Serve the files in [well-known/](well-known/) exactly as section 7 and 8 say. The AASA file is built by a route in `apps/web` that already answers `application/json` (AUTH_SETUP 5.2); the header rule below matters only if a file is ever served from `public/` instead:
   ```json
   { "headers": [
       { "source": "/.well-known/apple-app-site-association", "headers": [ { "key": "Content-Type", "value": "application/json" } ] },
@@ -93,7 +93,7 @@ In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website proj
   ] }
   ```
 - HSTS on every response: `Strict-Transport-Security: max-age=63072000; includeSubDomains`. Add `preload` and submit to hstspreload.org only after every subdomain you will ever use is HTTPS (it is hard to undo).
-- No analytics or log forwarding for paths under `/i/` and `/auth/` (tokens: AUTH_SETUP 5.3), and the website's own analytics follow decision 12 (opt-in, no cross-site tracking).
+- No analytics or log forwarding for paths under `/j`, `/auth/` and any older `/i/` link (tokens: AUTH_SETUP 5.3), and the website's own analytics follow decision 12 (opt-in, no cross-site tracking).
 - Vercel collects telemetry about deployments, not visitors; turn off any "Web Analytics" or "Speed Insights" unless the data map lists them.
 
 ## 6. packs.earlyletters.app (language and model packs CDN)
@@ -112,10 +112,10 @@ Founder: A gives one control panel and DNSSEC with low effort; B keeps everythin
 
 ## 7. Universal links and the AASA file
 
-- File: [well-known/apple-app-site-association](well-known/apple-app-site-association), identical to AUTH_SETUP 5.2. Replace `<TEAMID>` with the 10-character Team ID (Apple Developer > Membership) in all six places before publishing.
+- File: [well-known/apple-app-site-association](well-known/apple-app-site-association) is the reference copy of what the website's route serves (AUTH_SETUP 5.2). The route fills in the Team ID from the Vercel variable `APPLE_TEAM_ID`; nothing is pasted by hand.
 - Served at `https://earlyletters.com/.well-known/apple-app-site-association`, no extension, `application/json`, HTTPS, **no redirects** (Verified in AUTH_SETUP: Apple "Supporting associated domains").
-- Paths: `/auth/callback` (email sign-in; the token hash is in the fragment, never sent to the server) and `/i/*` (co-parent invites). Nothing else opens the app.
-- The app's entitlement is `applinks:earlyletters.com` (and `webcredentials:earlyletters.com` for passkeys, AUTH_SETUP 7). `earlyletters.app` is deliberately not associated.
+- Paths: `/auth/confirm` and `/auth/callback` (email sign-in) and `/j` (co-parent invites, `/j#t=<token>`; BL-348, decided 15 Oct 2026). In each the token is in the fragment, never sent to the server. Nothing else opens the app; the reference file is the list of record.
+- The app's entitlement is `applinks:earlyletters.com` (`webcredentials:earlyletters.com` joins with passkeys, AUTH_SETUP 7). `earlyletters.app` is deliberately not associated.
 - Check what Apple's CDN sees: `curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com` (Apple refreshes within about a day).
 - Android (later): `/.well-known/assetlinks.json` with the release signing certificate's SHA-256. Not at v1.0.
 
