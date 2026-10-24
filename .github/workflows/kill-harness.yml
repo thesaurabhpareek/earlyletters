@@ -64,8 +64,9 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its older smoke run. A nightly never cancels a running gate on the same branch:
-# it waits behind it.
+# A new push to a pull request cancels its older smoke run. Other runs never cancel a run that has started (a nightly
+# waits behind a running gate). GitHub keeps one waiting run per group, so a newer queued run still replaces an older
+# one that is waiting: dispatch the gate when nothing else on the branch is queued.
 concurrency:
   group: kill-harness-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -243,6 +244,9 @@ jobs:
           [ -f "$app/main.jsbundle" ] || { echo "::error::no main.jsbundle in the app (not a Release build?)"; ls "$app"; exit 1; }
           # B-8 in reverse: this build must carry the seam, or every run exits 3 (never armed).
           grep -aq e2eKillDrill "$app/main.jsbundle" || { echo "::error::the e2e seam is not in the bundle: is the RA-20-18 wiring line in apps/mobile/src/app/_layout.tsx?"; exit 1; }
+          # The bundle phase writes the Hermes source map to SOURCEMAP_FILE and keeps no copy in the app; without it a
+          # crash's stack cannot be read back to file and line.
+          [ -s "$RUNNER_TEMP/kill-app/main.jsbundle.map" ] || { echo "::error::no Hermes source map at \$RUNNER_TEMP/kill-app/main.jsbundle.map"; exit 1; }
           mkdir -p "$RUNNER_TEMP/kill-app" && ditto "$app" "$RUNNER_TEMP/kill-app/App.app"
           {
             echo "### e2e simulator app"
@@ -261,7 +265,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: xcodebuild-log
+          name: xcodebuild-log-${{ github.run_attempt }}
           path: ${{ runner.temp }}/xcodebuild.log
           if-no-files-found: ignore
           retention-days: 14
@@ -383,6 +387,7 @@ jobs:
           esac
           [ -f "$app/main.jsbundle" ] || { echo "::error::no main.jsbundle in the app"; exit 1; }
           if grep -aq e2eKillDrill "$app/main.jsbundle"; then echo "::error::the store-profile bundle carries the e2e seam (B-8)"; exit 1; fi
+          [ -s "$RUNNER_TEMP/store-app/main.jsbundle.map" ] || { echo "::error::no Hermes source map at \$RUNNER_TEMP/store-app/main.jsbundle.map"; exit 1; }
           ditto "$app" "$RUNNER_TEMP/store-app/App.app"
           echo "APP_ID=$id" >> "$GITHUB_ENV"
 
@@ -409,7 +414,9 @@ jobs:
           echo "launched ${APP_ID}, pid ${pid}"
           sleep 20
           exe="$(plutil -extract CFBundleExecutable raw "$RUNNER_TEMP/store-app/App.app/Info.plist")"
-          xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate "process == \"${exe}\"" > "$RUNNER_TEMP/launch-log.txt" 2>&1 || true
+          if ! xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate "process == \"${exe}\"" > "$RUNNER_TEMP/launch-log.txt" 2>&1; then
+            echo "::error title=Release launch::could not read the simulator log, so the launch was not checked"; tail -20 "$RUNNER_TEMP/launch-log.txt" | sed -e 's/::/: :/g'; exit 1
+          fi
           if grep -q RCTFatalException "$RUNNER_TEMP/launch-log.txt"; then
             echo "::error title=Release launch::the store-profile app threw an unhandled JavaScript exception at launch"; exit 1
           fi
@@ -423,14 +430,18 @@ jobs:
         if: failure()
         run: |
           mkdir -p "$RUNNER_TEMP/diag"
-          [ -n "${UDID:-}" ] && .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/store-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/store-app/main.jsbundle.map"
+          if [ -n "${UDID:-}" ] && [ -f "$RUNNER_TEMP/store-app/App.app/Info.plist" ]; then
+            .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/store-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/store-app/main.jsbundle.map"
+          else
+            echo "no simulator or no app yet: nothing to report"
+          fi
           exit 0
 
       - name: Upload the diagnostics (on failure)
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kill-diagnostics-store-launch-${{ github.run_id }}
+          name: kill-diagnostics-store-launch-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/diag
           if-no-files-found: ignore
           retention-days: 14
@@ -544,29 +555,29 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/diag"
           cp "$RUNNER_TEMP/bootstatus.log" "$RUNNER_TEMP/diag/" 2>/dev/null || true
-          .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/kill-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/kill-app/main.jsbundle.map"
+          if [ -n "${UDID:-}" ] && [ -f "$RUNNER_TEMP/kill-app/App.app/Info.plist" ]; then
+            .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/kill-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/kill-app/main.jsbundle.map"
+          else
+            echo "no simulator or no app yet: nothing to report"
+          fi
 
       - name: Upload the diagnostics (on failure)
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kill-diagnostics-${{ matrix.mode }}-${{ matrix.n }}-${{ github.run_id }}
+          name: kill-diagnostics-${{ matrix.mode }}-${{ matrix.n }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/diag
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Keep the shard report for the merge (gate, DL-01)
-        if: always() && needs.plan.outputs.size == 'gate' && matrix.mode == 'dl01'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/kill
-          key: kill-report-${{ github.run_id }}-${{ matrix.mode }}-${{ matrix.n }}
-
+      # Also the gate's hand-off to dl01-merged, which downloads each shard's artifact by this name. The run attempt in
+      # the name means a re-run's merge reads only that attempt's shards, never a stale one (after a re-run of some
+      # jobs, use "Re-run all jobs" for the gate).
       - name: Upload the report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kill-${{ matrix.mode }}-${{ matrix.n }}-of-${{ matrix.of }}-${{ github.run_id }}
+          name: kill-${{ matrix.mode }}-${{ matrix.n }}-of-${{ matrix.of }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/kill
           retention-days: 30
 
@@ -583,18 +594,23 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-1', fail-on-cache-miss: true }
-      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s1"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-2', fail-on-cache-miss: true }
-      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s2"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-3', fail-on-cache-miss: true }
-      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s3"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-4', fail-on-cache-miss: true }
-      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s4"
+      # The four shard reports, by the names the harness job's upload step gives them (a missing one fails here).
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: kill-dl01-1-of-4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/s1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: kill-dl01-2-of-4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/s2
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: kill-dl01-3-of-4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/s3
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: kill-dl01-4-of-4-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/s4
       - name: Merge the four shards (refuses a duplicate shard or shards of another build)
         run: |
           set +e
@@ -625,6 +641,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kill-dl01-merged-${{ github.run_id }}
+          name: kill-dl01-merged-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/merged
           retention-days: 30
