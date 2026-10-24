@@ -2,7 +2,7 @@
 
 Status: 15 Oct 2026. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
 
-D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026**. It comes in two builds:
+D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned are proposed until the founder confirms (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct and go/no-go Thu 5 Nov, proposed by the coordinator; build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089). It comes in two builds:
 
 | | Alpha build 1 | Alpha build 2 |
 |---|---|---|
@@ -41,18 +41,19 @@ Each step names what it unblocks. The preflight prints the open ones by these na
 2. An access token for an Expo **robot user** with the Developer role (`docs/security/SECRETS_REVIEW.md` section 1; never a personal token) as the secret `EXPO_TOKEN` of the GitHub **Environment `testflight`**. Create the environment first, with branch `develop` only: FT-20's script `scripts/release/github-settings.ts` does it (`docs/FOUNDER_TASKS.md` FT-20), or by hand with you as required reviewer. `.github/workflows/testflight.yml` runs its build job in that environment (RA-20-06a), reads the token in its build step only and never prints it; with a reviewer on `testflight`, each run waits for that approval before it builds. If a repository secret `EXPO_TOKEN` exists from before, keep it until one run with the environment secret is green, then delete it (AF-07, AF-22).
 *Unblocks:* every EAS build (steps 5 and 11).
 
-**Step 4. Words from speech: two pack signing keys and the R2 bucket `packs.earlyletters.app` (FT-16, D-097).** About 2.5 hours, plus DNS propagation (up to a day [A]). Optional for both builds, but without it no recording ever gets its words. The runbook is **[docs/ops/PACKS_HOSTING.md](../ops/PACKS_HOSTING.md)** (background: FT-16 in `docs/FOUNDER_TASKS.md` and `docs/ops/DOMAINS.md` section 6):
+**Step 4. Words from speech: two pack signing keys and the R2 bucket `packs.earlyletters.app` (FT-16, D-097).** About 2.5 hours, plus DNS propagation (up to a day [A]). Required for build 1, and so for build 2: D-115 makes the signed English pack release a build 1 prerequisite, because the app loads its speech model only from the signed manifest, and the preflight FAILs both builds until the keys and a published manifest are in. The runbook is **[docs/ops/PACKS_HOSTING.md](../ops/PACKS_HOSTING.md)** (background: FT-16 in `docs/FOUNDER_TASKS.md` and `docs/ops/DOMAINS.md` section 6):
 1. Cloudflare account with two-factor; add the `earlyletters.app` zone (Free plan), recreate its records from DOMAINS section 4, switch its nameservers at Porkbun, DNSSEC on. `earlyletters.com` stays at Porkbun.
 2. R2 bucket `early-letters-packs`, public only through the custom domain `packs.earlyletters.app`. Every `eas.json` profile already sets `EXPO_PUBLIC_DOCS_BASE_URL` to `https://packs.earlyletters.app` (D-097): an `https://` origin with no path (`apps/mobile/src/lib/remote/base.logic.ts`), plain text and not a secret; v1.0 never falls back to Supabase. Until the bucket and domain exist, the fetch fails quietly and the app uses its bundled defaults.
 3. `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`, in your own terminal: a primary and a cold backup with the ids `el-YYYY-MM` and `el-YYYY-MM-backup` (R2 AR-28). It writes nothing to disk and refuses to print to a pipe or CI. The secret halves go only in your password manager (the backup's also offline, apart from the primary). Both **public** lines go in `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`, empty today, so the app fails closed and installs no pack); they must be merged before `eas build`, because the keys are compiled into the app.
 4. `npx tsx scripts/packs/publish.ts release`, then `upload` (packs first, manifest last, nothing overwritten or deleted) and `verify` (checks the live host the way a phone does), then commit `keys.ts` and the published versions in one PR (runbook steps 6 to 9). The release can go up before or after the build: the app fetches it after its first frame.
-*Without this, no words.* Speech runs on the phone, but the speech model (about 575 MB) is a downloaded pack, and it installs only from a **signed pack manifest**, which needs the host, a public key and a published manifest. Missing any of them: recordings are kept safely on the phone, but words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting) and no language pack downloads. Typing, the Book, Read together and export work as before. The preflight reports each as WARN with this consequence; a build without them tests typing, the Book, reading and layout, not the spoken path.
+*Without this, no words.* Speech runs on the phone, but the speech model (about 575 MB) is a downloaded pack, and it installs only from a **signed pack manifest**, which needs the host, a public key and a published manifest. Missing any of them: recordings are kept safely on the phone, but words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting) and no language pack downloads. Typing, the Book, Read together and export work as before. The preflight FAILs a build without the key or the published manifest (D-115) and WARNs when the docs base is not set; a build without them tests typing, the Book, reading and layout, not the spoken path.
 *Unblocks:* the speech model and language packs, and every signed remote document (config, kill switches, content).
 
 **Step 5. Build 1: preflight, build, submit, testers.** About 30 minutes of yours; the EAS queue and Apple's processing add an hour or more (*unverified*).
-- **From GitHub (the usual way):** Actions > testflight > Run workflow, branch `develop`, profile `testflight`, upload ticked. It runs typecheck, every test and `preflight:testflight` (read its log: WARN lines and the founder steps at the end), then builds on EAS and submits.
+- **From GitHub, once `develop` is the default branch (AF-05, founder):** Actions > testflight > Run workflow, branch `develop`, profile `testflight`, upload ticked. It runs typecheck, every test and `preflight:testflight` (read its log: WARN lines and the founder steps at the end), then builds on EAS and submits. Until AF-05 the button does not exist: GitHub offers Run workflow only for a workflow on the default branch, which is `main`, and `main` has no `testflight.yml` (`docs/release/AUTOMATION.md` section 0.1 item 3). So build 1 runs from your own computer (below).
 - **Signing, the first time:** the workflow runs `--non-interactive`, so the iOS distribution certificate and profile for `.preview` must already be in EAS. Either let EAS create them from the API key of step 2.6 (*unverified* in non-interactive mode), or run `npx eas-cli@latest credentials --platform ios` once on your own computer (10 minutes). The automation plan may add a one-off credentials job instead.
-- **From your own computer** (same result): `npm ci`, `npm run preflight:testflight -w @scribe/mobile`, then in `apps/mobile`: `npx eas-cli@latest build --platform ios --profile testflight` and `npx eas-cli@latest submit --platform ios --profile testflight --latest`.
+- **From your own computer** (the path for build 1 until AF-05; same result): `npm ci`, `npm run preflight:testflight -w @scribe/mobile`, then in `apps/mobile`: `npx eas-cli@latest build --platform ios --profile testflight` and `npx eas-cli@latest submit --platform ios --profile testflight --latest`.
+- **If `eas build` asks to install expo-updates, answer no.** The profiles set `channel`, but expo-updates is not installed and over-the-air updates are not planned for the alpha (`EXPO_PUBLIC_` values are inlined at build time, `apps/mobile/src/lib/capabilities.ts`).
 
 The build number is the EAS remote counter; the version comes from `app.config.ts`. Then add the build to a TestFlight group (below).
 *Unblocks:* testers on build 1.
@@ -95,14 +96,14 @@ Expo dashboard > the project > Environment variables > Add, environment **previe
 **Never add `EXPO_PUBLIC_E2E` here, or in any EAS environment a store profile uses.** It turns on the e2e test seams, which belong only to the `e2e` simulator profile. `app.config.ts` refuses any EAS build of another profile that carries it, and the preflight fails if your shell has it set (B-9, `apps/mobile/e2e/TESTID_REQUESTS.md` section 4).
 *Unblocks:* build 2 reaching staging. Without them the switch is on but the sign-in sheet says sign-in is not available in this build.
 
-**Step 10. Website: the AASA file and `/auth/confirm` live.** About 15 minutes, then up to a day for Apple's CDN (*unverified*). In the Vercel project, Production environment: `APPLE_TEAM_ID` (step 2) and `IOS_BUNDLE_ID=com.earlyletters.scribe` (the production id; the site adds `.preview` itself and refuses a suffixed id). Merge the website PR `chore/web-auth-wiring` into `main` and let it deploy. Check:
+**Step 10. Website: the AASA file and `/auth/confirm` live.** About 15 minutes, then up to a day for Apple's CDN (*unverified*). In the Vercel project, Production environment: `APPLE_TEAM_ID` (step 2) and `IOS_BUNDLE_ID=com.earlyletters.scribe` (the production id; the site adds `.preview` itself and refuses a suffixed id). The website PR `chore/web-auth-wiring` is merged into `main` (done: #144, 23 Oct); confirm it has deployed. Check:
 ```bash
 curl -sI https://earlyletters.com/.well-known/apple-app-site-association   # 200, application/json, no redirect
 curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com  # what Apple has fetched
 ```
 *Unblocks:* sign-in links and invite links opening the app from Mail and Messages; the calm fallback page when a link opens in a browser. Without it the links open the website, and the code from the same email still signs the person in.
 
-**Step 11. Build 2: preflight, build, submit, the family group only.** About 20 minutes of yours, plus the queue. Actions > testflight > Run workflow, branch `develop`, profile `preview`, upload ticked (it runs `preflight:alpha`). From your own computer instead: `npm run preflight:alpha -w @scribe/mobile`, then `npx eas-cli@latest build --platform ios --profile preview` and `npx eas-cli@latest submit --platform ios --profile preview --latest` in `apps/mobile`.
+**Step 11. Build 2: preflight, build, submit, the family group only.** About 20 minutes of yours, plus the queue. Once `develop` is the default branch (AF-05): Actions > testflight > Run workflow, branch `develop`, profile `preview`, upload ticked (it runs `preflight:alpha`). Until then, from your own computer (answer no to the expo-updates prompt, as in step 5): `npm run preflight:alpha -w @scribe/mobile`, then `npx eas-cli@latest build --platform ios --profile preview` and `npx eas-cli@latest submit --platform ios --profile preview --latest` in `apps/mobile`.
 Add the build to the **Family** internal group only (below).
 *Unblocks:* the alpha with servers.
 
@@ -113,10 +114,10 @@ Add the build to the **Family** internal group only (below).
 
 | | Needs | Optional |
 |---|---|---|
-| Build 1 | Steps 1, 2 (with 2.4 and 2.6 for GitHub Actions), 3, 5, and iOS credentials in EAS | Step 4 (words from speech); Plus products (step 2.5) |
-| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), step 4, Plus products |
+| Build 1 | Steps 1, 2 (with 2.4 and 2.6 for GitHub Actions), 3, 4 (words from speech, D-115), 5, and iOS credentials in EAS | Plus products (step 2.5) |
+| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), Plus products |
 
-Your hands-on time [A]: about 2.5 hours for build 1 (without step 4) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. Started by Mon 19 Oct, both builds fit before Thu 29 Oct if Apple enrolment is Active by Fri 23 Oct (T04).
+Your hands-on time [A]: about 5 hours for build 1 (2.5 without step 4, which D-115 requires) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. The plan to start by Mon 19 Oct and fit both builds before Thu 29 Oct predates the proposed dates at the top of this page.
 
 ## Who may have which build, and the internal-tester flow
 
@@ -142,6 +143,8 @@ When the gate passes and you approve it, the `testflight` profile turns on in **
 +        "EXPO_PUBLIC_SERVER_FEATURES": "on",
 ```
 `apps/mobile/test/config.test.ts` holds `testflight` equal to `preview` in everything but that line, so the flip cannot carry anything else, and the tests (`config.test.ts`, `capabilities.test.ts`) pass on either side of it (one applies the flip to a copy and checks it): the flip PR changes that one line and nothing else. It is a founder merge. After it, friends may get servers-on builds. `production` stays off until the store submission is re-planned (D-106).
+
+Before any store submission: the App Store listing (`packages/content/src/store.en.ts`) must be brought to the shipped feature set; today it claims seven spoken languages and co-parent sharing, which a store build would not deliver (D-115 English only, D-113 Leave hidden). Owner S16. Not needed for TestFlight.
 
 ## If something goes wrong (the kill path)
 
@@ -188,7 +191,7 @@ If a build goes out without step 4, add: "Recording works, but the words will no
 - **Config:** the `.preview` bundle id, URL scheme, microphone string, no background audio, no other permission, privacy manifest, export compliance, version, icons, and `extra` recording the switch and the build flags.
 - **Both builds:** a FAIL if any `EXPO_PUBLIC_` variable exported in the shell holds a Supabase secret (`sb_secret_...`) or `service_role` key. Both profiles read the EAS "preview" environment, so export its values before either preflight to have them checked.
 - **Submit:** a WARN until the submit profile names `ios.ascAppId` (step 2.4); only the GitHub workflow needs it.
-- **Build 2 only:** the invite link check, which PASSes on `develop` since #165 (`/j#t=<token>`, the token in the fragment, B-NFR-002) and would FAIL only if the app wrote `/i/<token>` again. Step 6 is a CHECK: confirm staging has every migration on `develop` (step 6 item 3); if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
-- **Packs:** the docs base, the signing key and a published manifest (step 4).
+- **Build 2 only:** the invite link check, which PASSes on `develop` since #165 (`/j#t=<token>`, the token in the fragment, B-NFR-002) and would FAIL only if the app wrote `/i/<token>` again. Step 6 is a CHECK: confirm staging has every migration on `develop` (step 6 item 3); if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; the privacy manifest PASSes: it declares the five types this build keeps on our servers (Name, EmailAddress, SensitiveInfo, OtherUserContent, UserID; BL-349), the generated `PrivacyInfo.xcprivacy` equals the config, and App Store Connect's App Privacy answers must say the same.
+- **Packs:** the docs base, the signing key and a published manifest (step 4); a FAIL in both builds without the key or the manifest (D-115).
 - **No real family data** in the tree; the native project generates in a temporary copy.
 - **At the end:** the founder steps above that are missing, or that it cannot see, by number and name.

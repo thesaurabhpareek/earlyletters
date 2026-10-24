@@ -11,10 +11,11 @@
  * override. The English-only switch (D-111 item 4) is its own flag: on in the two alpha
  * profiles, off in development and e2e.
  */
+import { execFile } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseRemoteConfig } from '@scribe/api';
+import { parseRemoteConfig, TRUSTED_SIGNING_KEYS } from '@scribe/api';
 import {
   buildFlagEnabled,
   capabilities,
@@ -30,6 +31,7 @@ import {
   type PausableFeature,
 } from '../src/lib/capabilities';
 import { docsBaseFor } from '../src/lib/remote/base.logic';
+import { PACK_MANIFEST } from '../../../supabase/functions/config/published';
 
 const APP = join(__dirname, '..');
 
@@ -405,6 +407,35 @@ describe('remote documents never fall back to Supabase with the switch off', () 
   it('on: the Supabase URL is the fallback (v1.1)', () => {
     expect(docsBaseFor('', true, SB)).toBe(SB);
   });
+});
+
+describe('[D-115] the preflight fails either alpha build without the signed English pack release', () => {
+  // The app loads its speech model only from the signed manifest, so a build without a trusted key and a published
+  // manifest cannot transcribe (DECISIONS.md D-115; TESTFLIGHT.md step 4). The verdict follows the tree as it is.
+  const preflight = (profile: string) =>
+    new Promise<{ code: number; out: string }>((resolve) => {
+      // Nothing from this shell or this vitest run that the preflight would read: build switches, B-9, nested vitest.
+      const env = { ...process.env };
+      for (const k of Object.keys(env)) if (/^(EXPO_PUBLIC_|VITEST)/.test(k) || k === 'EAS_BUILD_PROFILE') delete env[k];
+      const args = [join(APP, 'scripts/preflight-testflight.mjs'), '--profile', profile, '--skip-prebuild'];
+      execFile(process.execPath, args, { cwd: APP, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+        resolve({ code: err ? Number(err.code ?? 1) : 0, out: `${stdout}${stderr}` });
+      });
+    });
+
+  it('FAILs testflight and preview, citing D-115, for each of the key and the manifest that is missing, and PASSes once both are in', async () => {
+    const missing = (TRUSTED_SIGNING_KEYS.length === 0 ? 1 : 0) + (PACK_MANIFEST === null ? 1 : 0);
+    for (const r of await Promise.all([preflight('testflight'), preflight('preview')])) {
+      const lines = r.out.split('\n');
+      expect(lines.filter((l) => l.startsWith('FAIL') && /D-115/.test(l)), r.out).toHaveLength(missing);
+      expect(lines.filter((l) => /^PASS\s+D-115:/.test(l)), r.out).toHaveLength(missing ? 0 : 1);
+      expect(r.out).not.toMatch(/Step 4 is optional/);
+      if (missing) {
+        expect(r.code).toBe(1);
+        expect(r.out).toMatch(/Step 4 is required for both alpha builds \(D-115\)/);
+      }
+    }
+  }, 180_000);
 });
 
 // ---------------------------------------------------------------------------

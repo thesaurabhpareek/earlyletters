@@ -34,7 +34,7 @@ The machine may remove and repair. It may never add meaning.
 npm install            # once, at the repo root
 npm test               # every workspace with a test script: core, mobile, api, analytics, content, brand, emails, design-tokens, experiments; Node 22.5+ (node:sqlite)
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
+npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (32 files)
 npm run test:functions # Edge Functions and ops scripts (Deno via npx)
 npm run typecheck
 npm run mobile         # start the iOS app

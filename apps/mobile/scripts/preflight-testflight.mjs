@@ -485,13 +485,15 @@ if (!SPEC.google) {
   const consequence =
     'The build then has NO pack manifest address, so the speech model and every language pack can never download. Recordings are still kept on the phone, but the words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting). Typed letters are unaffected.';
   const runbook = 'Host and keys, step by step: docs/ops/PACKS_HOSTING.md.';
+  // D-115: the signed English pack release is a build 1 prerequisite, so a missing key or manifest fails both alpha builds.
+  const d115 = 'D-115 (docs/DECISIONS.md) makes the signed English pack release a build 1 prerequisite, and build 2 follows build 1: the app loads its speech model only from the signed pack manifest, so without it this build cannot transcribe.';
   if (value && valid && fromEas) pass(`EXPO_PUBLIC_DOCS_BASE_URL is ${value.replace(/\/+$/, '')} (eas.json ${PROFILE} profile)`);
   else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the ${PROFILE} profile or an EAS "preview" environment variable. ${consequence} ${runbook}`);
   else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence} ${runbook}`);
   else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the ${PROFILE} profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence} ${runbook}`);
   if (!keySet) {
-    warn(
-      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\`, then \`node scripts/packs/keygen.mjs --backup\`, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
+    fail(
+      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\`, then \`node scripts/packs/keygen.mjs --backup\`, and paste both public lines). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${d115} ${runbook}`,
     );
     step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`, and paste both public lines)');
   } else {
@@ -509,12 +511,13 @@ if (!SPEC.google) {
     /* treated as not published */
   }
   if (!manifestPublished) {
-    warn('No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run `npx tsx scripts/packs/publish.ts release`, then `upload` (docs/ops/PACKS_HOSTING.md), or the host answers 404 and nothing downloads.');
+    fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release\`, then \`upload\` (docs/ops/PACKS_HOSTING.md), or the host answers 404 and nothing downloads. ${d115}`);
     step(4, 'open', 'no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release` and `upload`)');
   } else {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
     step(4, keySet ? 'check' : 'open', 'a manifest is in the repo; check the R2 bucket serves it');
   }
+  if (keySet && manifestPublished) pass('D-115: a trusted signing key and a published pack manifest are in the repo (the signed English pack release is a build 1 prerequisite; whether the host serves it is the UNVERIFIED line)');
 }
 
 // ---------------------------------------------------------------- 6. no real family data (CLAUDE.md privacy rule)
@@ -622,6 +625,7 @@ if (ios) {
   check(new RegExp(`<string>${cfg?.scheme ?? 'scribe'}</string>`).test(ios.plist), `generated Info.plist registers the "${cfg?.scheme}" URL scheme`, `Generated Info.plist does not register the "${cfg?.scheme}" URL scheme.`);
   const ent = plistKeys(ios.entitlements);
   check(ent.includes('com.apple.developer.default-data-protection'), 'generated entitlements: data protection (complete until first unlock)', 'Generated entitlements lack the data-protection class.');
+  check(!ent.includes('aps-environment'), 'generated entitlements: no aps-environment (reminders are local notifications; nothing registers for remote push)', 'Generated entitlements carry aps-environment, a push capability the app does not use: app.config.ts removes the key expo-notifications adds (docs/ops/RELEASE.md section 4).');
   if (ent.includes('com.apple.developer.applesignin')) {
     notes.push(
       SERVER_ON
@@ -703,7 +707,7 @@ for (const n of open) console.log(`  MISSING   ${STEPS[n]}: ${founder.get(n).why
 for (const n of toCheck) console.log(`  CHECK     ${STEPS[n]}: ${founder.get(n).why}`);
 for (const n of needed.filter((x) => founder.get(x)?.state === 'done')) console.log(`  DONE      ${STEPS[n]}: ${founder.get(n).why}`);
 if (PROFILE === 'testflight') console.log('  (Steps 6 to 12 are for alpha build 2: run `npm run preflight:alpha -w @scribe/mobile`.)');
-if (open.includes(4)) console.log('  Step 4 is optional: without it the build works for typing, the Book and reading, but recordings get no words.');
+if (open.includes(4)) console.log('  Step 4 is required for both alpha builds (D-115): without it the build works for typing, the Book and reading, but recordings get no words.');
 
 console.log(`\n${order.map((l) => `${count(l)} ${l.toLowerCase()}`).join(', ')}, ${open.length} founder step(s) missing, ${toCheck.length} to check by hand`);
 console.log(
