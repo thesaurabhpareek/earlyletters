@@ -2,11 +2,19 @@
  * Single-edit differential between two engines (#249 follow-up). Not part of `npm test`:
  *
  *   npm run differential -w @scribe/core
- *   SCRIBE_DIFF_BASE=efa71a4 SCRIBE_DIFF_HEAD=HEAD npm run differential -w @scribe/core
+ *   SCRIBE_DIFF_BASE=b734bed SCRIBE_DIFF_HEAD=HEAD npm run differential -w @scribe/core
+ *
+ * The second line compares engine 6 (b734bed, the last develop commit before #249) with this
+ * checkout's HEAD. (efa71a4, the #249 merge, is already engine 7.)
  *
  * Asks verifyEdits of each engine about the same single edits and counts the edits one accepts and
  * the other refuses, by kind, with the first few of each printed. Deterministic: no seed, so the same
- * engines and texts give the same counts on every run.
+ * engines and texts give the same counts on every run. A report, not a gate: it fails only when it
+ * finds too few texts, so read the table.
+ *
+ * The texts and the end marks come from the checkout that runs the script, for both refs: the same two
+ * refs give other counts from a checkout with more test strings or marks. Name the checkout's commit
+ * next to any table you quote.
  *
  * Engines: SCRIBE_DIFF_BASE is a git ref (default origin/develop); SCRIBE_DIFF_HEAD is a git ref, or
  * unset for this working tree's src. A ref's packages/core/src is extracted with git archive into a
@@ -33,7 +41,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as ts from 'typescript';
 import { expect, it } from 'vitest';
-import { END_MARK } from '../src/verify';
+import { END_MARKS } from '../src/verify';
 import type { Edit, EditType, Span } from '../src/types';
 
 interface Engine {
@@ -78,7 +86,7 @@ function literals(file: string): string[] {
   return out;
 }
 
-const isMark = (c: string) => END_MARK.test(c);
+const isMark = (c: string) => END_MARKS.includes(c);
 const english = (s: string) => {
   const letters = [...s].filter((c) => /\p{L}/u.test(c));
   return s.length <= 300 && letters.length >= 2 && letters.every((c) => /[A-Za-z]/.test(c)) && !s.includes('/') && (/\s/.test(s) || [...s].some(isMark));

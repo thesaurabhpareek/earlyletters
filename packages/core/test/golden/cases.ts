@@ -225,4 +225,27 @@ export const GOLDEN_CASES: GoldenCase[] = [
     raw: 'आशा आज बहुत हँसी।',
     model: [{ type: 'punctuation', original: 'हँसी।', replacement: 'हँसी।.' }],
   },
+
+  // Engine 8: refusals only (#257 reviews). Every case above reads the same as in engine 7.
+  {
+    // Seed 20261015 run 81642's shape in English: the space after U+200B deleted would read "Ashaslept".
+    id: 'e8-model-join-through-invisible',
+    lang: 'en',
+    raw: 'Asha\u200B slept well today.',
+    model: [{ type: 'paragraph', original: ' ', replacement: '' }],
+  },
+  {
+    // A "." behind U+2018, which closes on the speaker's own ".": engine 7 read U+2018 as a wall.
+    id: 'e8-model-period-behind-quote',
+    lang: 'en',
+    raw: 'Asha said \u201Ano.\u2018',
+    model: [{ type: 'punctuation', original: 'no.\u2018', replacement: 'no.\u2018.' }],
+  },
+  {
+    // Rules only: a taught heard-as "uh" turned "Uh-uh" (no) into "Usha-Usha" (seed 2 run 84272's shape).
+    id: 'e8-heard-as-inside-uh-uh',
+    lang: 'en',
+    raw: 'Did you want more? Uh-uh, she said.',
+    dictionary: [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }],
+  },
 ];

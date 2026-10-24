@@ -9,13 +9,17 @@
  *  - negation (not, n't, never, no, cannot),
  *  - tense or aspect (is -> was, loves -> loved) or a modal (can -> could),
  *  - a word through a contraction or a joined/split word (were -> we're),
+ *    read as it is seen: an invisible character between two words joins
+ *    nothing and splits nothing (engine 8),
  *  - a name or pronoun, except a dictionary-backed stt_fix,
  *  - sentence type (. -> ?, ! removed), quotation marks, or any number,
  *  - how a sentence ends, by putting an end mark next to one already said,
  *    alone or together with the other accepted edits ("more?.", "no..",
- *    in any script; engine 7),
+ *    in any script; engine 7), behind any quotation mark (engine 8),
  *  - or when a removal labelled filler, repeat or false start deletes
  *    anything that is not a filler, an accidental repeat or a real restart,
+ *  - or when any edit takes or replaces part of a hyphenated word ("uh-uh",
+ *    "mm-hmm"; name fixes and agreement too since engine 8),
  *  - or any letter, combining mark (vowel sign, virama, nukta, accent) or
  *    digit, or a boundary that cuts a letter from its marks (CORE-01).
  * Fillers, accidental repeats, dictionary name fixes, sentence case and a
@@ -40,24 +44,70 @@ export const CEILING_RATIO = 0.15;
 export const CEILING_MIN_WORDS = 3;
 /**
  * End marks in every script the engine knows: ASCII, full-width, the Arabic
- * question mark, the Devanagari danda, the combined marks ("‽", "‼") and the
- * ellipsis character. With the language's own sentence ends (R.isSentenceEnd),
- * two of them touching are a doubled end mark, whichever marks they are:
- * "?.", "!.", "।.", "？." as much as ".." (#179 re-check Note E, 23 Oct 2026).
- * Exported for the R-01 property test, whose oracle reads this set and
- * BETWEEN_MARKS so it can never be narrower than the verifier (#249 review B-N3).
+ * question mark, the Devanagari danda and double danda, the combined marks
+ * (U+203C, U+203D, U+2047 to U+2049), U+2E2E and the ellipsis character. With
+ * the language's own sentence ends (R.isSentenceEnd), two of them touching are
+ * a doubled end mark, whichever marks they are: "?.", "!.", "।.", "？." as
+ * much as ".." (#179 re-check Note E, 23 Oct 2026).
+ *
+ * END_MARKS, BETWEEN_MARKS and QUOTE_BRIDGES are frozen lists of strings, read
+ * through sets private to this module, so an importer can neither widen nor
+ * recompile them, as it could the RegExp objects exported before engine 8
+ * (#257 review A, section 4). The R-01 property test reads the first two, so
+ * its oracle is never narrower than the verifier (#249 review B-N3); the
+ * bridge table in engine8.test.ts lists the marks from Unicode itself, so a
+ * mark dropped here fails it (#257 review A, section 1).
  */
-export const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
+export const END_MARKS: readonly string[] = Object.freeze([
+  '.', '!', '?', '\u3002', '\uFF01', '\uFF1F', '\u061F', '\u0964', '\u0965',
+  '\u203D', '\u2047', '\u2048', '\u2049', '\u203C', '\u2E2E', '\u2026',
+]);
+const END_MARK: ReadonlySet<string> = frozenSet(END_MARKS);
 /**
- * What may sit between two end marks that still touch: spaces, closing quotes
- * and invisible characters. Not a closing bracket: a mark inside brackets ends
- * the bracketed words only, and the sentence around them still takes its own
- * ("We went home (it rained!)."; #249 review F1 and N1). Nor the CJK closing
- * brackets U+3011, U+3009 and U+300B: as bridges they would refuse more, but
- * would also let an edit delete one, or move a mark across it, and join the
- * two marks said on each side (the #249 follow-up's single-edit differential).
+ * What may sit between two end marks that still touch, besides whitespace,
+ * invisible characters and the language's quotation marks
+ * (R.quoteMarkCount): closing quotes. Not a closing bracket: a mark inside
+ * brackets ends the bracketed words only, and the sentence around them still
+ * takes its own ("We went home (it rained!)."; #249 review F1 and N1). Nor
+ * the CJK closing brackets U+3011, U+3009 and U+300B: as bridges they would
+ * refuse more, but would also let an edit delete one, or move a mark across
+ * it, and join the two marks said on each side (the #249 follow-up's
+ * single-edit differential).
  */
-export const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』]$/u;
+export const BETWEEN_MARKS: readonly string[] = Object.freeze(['"', "'", '\u201D', '\u2019', '\u00BB', '\u203A', '\u300D', '\u300F']);
+const BETWEEN: ReadonlySet<string> = frozenSet(BETWEEN_MARKS);
+/**
+ * Engine 8: the other quotation marks Unicode lists (\p{Quotation_Mark}),
+ * which engine 7 read as walls: U+2018, U+201A, U+201B, U+2E42, U+301D to
+ * U+301F, U+FE41 to U+FE44, U+FF02, U+FF07, U+FF62 and U+FF63. So engine 7
+ * accepted a "." put behind one that closes on an end mark (U+201A "no."
+ * U+2018, plus "."; #257 review A, section 1). They are not simply added to
+ * BETWEEN_MARKS: as bridges alone they would also let an edit move a mark
+ * across one ("no." U+2018 "." to "no.." U+2018), which engine 7 refuses, as
+ * the CJK closing brackets would. So every check that reads a run of marks
+ * reads it twice, with these as walls (engine 7) and as bridges, and an edit
+ * that either reading refuses is refused (READINGS): engine 8 refuses more
+ * and accepts no single edit that engine 7 refused.
+ */
+export const QUOTE_BRIDGES: readonly string[] = Object.freeze([
+  '\u2018', '\u201A', '\u201B', '\u2E42', '\u301D', '\u301E', '\u301F',
+  '\uFE41', '\uFE42', '\uFE43', '\uFE44', '\uFF02', '\uFF07', '\uFF62', '\uFF63',
+]);
+const QUOTE_BRIDGE: ReadonlySet<string> = frozenSet(QUOTE_BRIDGES);
+/** How a run of marks is read: false with QUOTE_BRIDGES as walls (engine 7), true with them as bridges. */
+const READINGS: readonly boolean[] = Object.freeze([false, true]);
+const ENGINE7_READING: readonly boolean[] = Object.freeze([false]);
+
+/** True when `text` holds a QUOTE_BRIDGES mark. */
+function hasQuoteBridge(text: string): boolean {
+  for (const ch of text) if (QUOTE_BRIDGE.has(ch)) return true;
+  return false;
+}
+
+/** The readings worth making: without a QUOTE_BRIDGES mark in any of `texts`, both read alike, so engine 7's alone. */
+function readingsFor(...texts: string[]): readonly boolean[] {
+  return texts.some(hasQuoteBridge) ? READINGS : ENGINE7_READING;
+}
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
@@ -152,13 +202,108 @@ const WORD_CHAR = new RegExp(`[${WORD_CHAR_CLASS}'’\\u200C\\u200D]`, 'u');
 /**
  * Would applying `e` leave two words touching ("Today you you" minus " you "
  * -> "Todayyou")? Between Chinese characters nothing glues: each is a word.
+ * Engine 8 also asks it of the words as they are seen (joinsThroughInvisible).
  */
 function joinsWords(raw: string, e: Edit, R: LanguageRules): boolean {
   const left = raw[e.start - 1] ?? '';
   const right = raw[e.end] ?? '';
   const rep = e.replacement;
+  const glues = rep === '' ? R.joins(left, right) : R.joins(left, rep[0]) || R.joins(rep[rep.length - 1], right);
+  return glues || joinsThroughInvisible(raw, e, R);
+}
+
+/**
+ * An invisible character that is not itself a letter, mark or digit: a
+ * direction mark, joiner, zero-width space, word joiner, BOM, soft hyphen or
+ * tag. It changes nothing a reader sees, so the word guards read through it.
+ * (The invisible characters that are letters or marks, a variation selector
+ * or a Hangul filler, already count as part of the word next to them.)
+ */
+function seeThrough(ch: string): boolean {
+  return ch !== '' && isInvisible(ch) && !WORDISH.test(ch);
+}
+const WORDISH = /[\p{L}\p{M}\p{N}]/u;
+
+/** The nearest code point before index `i` that a reader sees, or ''. */
+function seenBefore(text: string, i: number): string {
+  let ch = codePointBefore(text, i);
+  for (; seeThrough(ch); ch = codePointBefore(text, i)) i -= ch.length;
+  return ch;
+}
+
+/** The nearest code point at or after index `i` that a reader sees, or ''. */
+function seenAt(text: string, i: number): string {
+  let ch = codePointAt(text, i);
+  for (; seeThrough(ch); ch = codePointAt(text, i)) i += ch.length;
+  return ch;
+}
+
+/** `text` as a reader sees it: without the characters seeThrough reads through. */
+function seenText(text: string): string {
+  let out = '';
+  for (const ch of text) if (!seeThrough(ch)) out += ch;
+  return out;
+}
+
+/**
+ * Engine 8: joinsWords on the words as they are seen. An invisible character
+ * between a word and the edit hides nothing: "Asha" U+200B " slept" with the
+ * space deleted reads "Ashaslept", and so does "Asha " U+200B "slept" (seed
+ * 20261015 run 81642, Arabic with U+200D; #257 review A, section 2). Engines 6
+ * and 7 read the invisible character, not the letter behind it, and accepted
+ * the join.
+ */
+function joinsThroughInvisible(raw: string, e: Edit, R: LanguageRules): boolean {
+  const left = seenBefore(raw, e.start);
+  const right = seenAt(raw, e.end);
+  const rep = seenText(e.replacement);
   if (rep === '') return R.joins(left, right);
-  return R.joins(left, rep[0]) || R.joins(rep[rep.length - 1], right);
+  return R.joins(left, codePointAt(rep, 0)) || R.joins(codePointBefore(rep, rep.length), right);
+}
+
+/**
+ * Engine 8: is index `i` inside a word as it is seen? "Asha" U+200B "slept"
+ * reads as one word, so an edit may not start or end at the invisible
+ * character: neither a space put there nor "um" taken out of "Asha" U+200B
+ * "um" (the mirror of joinsThroughInvisible).
+ */
+function insideSeenWord(raw: string, i: number, R: LanguageRules): boolean {
+  return R.joins(seenBefore(raw, i), seenAt(raw, i));
+}
+
+/**
+ * Engine 8: does a punctuation edit change the words around it as they are
+ * seen? The window is widened over word characters and the characters
+ * seeThrough reads through, and both sides are compared without the latter:
+ * "Asha" U+200B " slept" with the space deleted gives one word where there
+ * were two, which the word window, stopping at U+200B, cannot see (#257
+ * review A, section 2: 9 of the 11 invisible characters tried).
+ */
+function changesSeenWords(raw: string, e: Edit, R: LanguageRules): boolean {
+  const inWord = (ch: string) => ch !== '' && (WORD_CHAR.test(ch) || seeThrough(ch));
+  let s = e.start;
+  let t = e.end;
+  for (let ch = codePointBefore(raw, s); inWord(ch); ch = codePointBefore(raw, s)) s -= ch.length;
+  for (let ch = codePointAt(raw, t); inWord(ch); ch = codePointAt(raw, t)) t += ch.length;
+  const before = raw.slice(s, t);
+  const after = raw.slice(s, e.start) + e.replacement + raw.slice(e.end, t);
+  // With nothing to read through, this is the word window, which checkPunctuation has compared already.
+  if (seenText(before) === before && seenText(after) === after) return false;
+  const words = (text: string) => R.tokens(seenText(text)).map((w) => R.scriptNorm(w.word)).join(' ');
+  return words(before) !== words(after);
+}
+
+/**
+ * Engine 8: does a name fix or agreement replace part of a hyphenated word?
+ * Its span, without the spaces at its edges, may not touch a hyphen that
+ * joins it to the next part ("Mm" of "Mm-hmm" to "May"; "Uh" and "uh" of
+ * "Uh-uh" each to "Usha"; "A" of "A-ha" to "An"). A whole hyphenated word is
+ * still one word a fix may replace.
+ */
+function cutsHyphenated(raw: string, e: Edit): boolean {
+  const lead = e.original.length - e.original.trimStart().length;
+  const trail = e.original.length - e.original.trimEnd().length;
+  return e.end - trail > e.start + lead && hyphenJoined(raw, e.start + lead, e.end - trail);
 }
 
 /**
@@ -244,12 +389,18 @@ function startsSentenceSkippingFillers(prefix: string, level: EditLevel, R: Lang
 /* ---------- end marks next to each other (#179 follow-up, 23 Oct 2026) ---------- */
 
 function isEndMark(ch: string, R: LanguageRules): boolean {
-  return ch !== '' && (END_MARK.test(ch) || R.isSentenceEnd(ch));
+  return ch !== '' && (END_MARK.has(ch) || R.isSentenceEnd(ch));
 }
 
-/** An end mark, or a character that may sit between two end marks that touch. */
-function nearMark(ch: string, R: LanguageRules): boolean {
-  return ch !== '' && (isEndMark(ch, R) || BETWEEN_MARKS.test(ch) || isInvisible(ch) || R.quoteMarkCount(ch) > 0);
+/**
+ * An end mark, or a character that may sit between two end marks that touch.
+ * `bridges`: the QUOTE_BRIDGES reading (engine 8); without it, engine 7's.
+ */
+function nearMark(ch: string, R: LanguageRules, bridges = false): boolean {
+  return (
+    ch !== '' &&
+    (isEndMark(ch, R) || /\s/u.test(ch) || BETWEEN.has(ch) || isInvisible(ch) || R.quoteMarkCount(ch) > 0 || (bridges && QUOTE_BRIDGE.has(ch)))
+  );
 }
 
 /**
@@ -266,7 +417,7 @@ interface MarkPairs {
   tight: number;
   same: number;
 }
-function endMarkPairs(text: string, R: LanguageRules): MarkPairs {
+function endMarkPairs(text: string, R: LanguageRules, bridges: boolean): MarkPairs {
   const pairs: MarkPairs = { loose: 0, tight: 0, same: 0 };
   let loose = false;
   let tight = '';
@@ -277,7 +428,7 @@ function endMarkPairs(text: string, R: LanguageRules): MarkPairs {
       if (tight === ch) pairs.same++;
       loose = true;
       tight = ch;
-    } else if (!nearMark(ch, R)) {
+    } else if (!nearMark(ch, R, bridges)) {
       loose = false;
       tight = '';
     } else if (/\s/u.test(ch)) {
@@ -308,13 +459,23 @@ function endMarkCount(text: string, R: LanguageRules): number {
  * fixed two-character mark window of #179, which missed a mark behind two
  * closers ("no.")" plus ".") and saw an unrelated run (engine-lens re-check).
  */
-function markRunPairs(text: string, start: number, end: number, other: string, R: LanguageRules): { asIs: MarkPairs; swapped: MarkPairs } {
+function markRunPairs(
+  text: string,
+  start: number,
+  end: number,
+  other: string,
+  R: LanguageRules,
+  bridges: boolean,
+): { asIs: MarkPairs; swapped: MarkPairs } {
   // A code point at a time: an invisible character outside the BMP (U+E0100, U+E0001) is one character (#249 review B-N1).
   let s = start;
   let t = end;
-  for (let ch = codePointBefore(text, s); nearMark(ch, R); ch = codePointBefore(text, s)) s -= ch.length;
-  for (let ch = codePointAt(text, t); nearMark(ch, R); ch = codePointAt(text, t)) t += ch.length;
-  return { asIs: endMarkPairs(text.slice(s, t), R), swapped: endMarkPairs(text.slice(s, start) + other + text.slice(end, t), R) };
+  for (let ch = codePointBefore(text, s); nearMark(ch, R, bridges); ch = codePointBefore(text, s)) s -= ch.length;
+  for (let ch = codePointAt(text, t); nearMark(ch, R, bridges); ch = codePointAt(text, t)) t += ch.length;
+  return {
+    asIs: endMarkPairs(text.slice(s, t), R, bridges),
+    swapped: endMarkPairs(text.slice(s, start) + other + text.slice(end, t), R, bridges),
+  };
 }
 
 /**
@@ -340,8 +501,14 @@ function removalChangesSentenceEnd(raw: string, e: Edit, R: LanguageRules): bool
  * The first mark stands when the replacement keeps the original as it was up
  * to and including it (letters compared without case, so "more?." to "More?"
  * keeps it; a "?" or "!" in its author's script, "？" for "?", counts as kept).
+ * Read both ways (READINGS): a mark behind a QUOTE_BRIDGES mark is a later
+ * mark of the run before it, and also the first of its own (engine 8).
  */
 function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
+  return readingsFor(raw, e.replacement).some((bridges) => movesFirstMarkIn(raw, e, R, bridges));
+}
+
+function movesFirstMarkIn(raw: string, e: Edit, R: LanguageRules, bridges: boolean): boolean {
   const o = e.original;
   const r = e.replacement;
   const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase() || (MOOD_CANON[a] !== undefined && MOOD_CANON[a] === MOOD_CANON[b]);
@@ -349,8 +516,8 @@ function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
   while (kept < o.length && kept < r.length && same(o[kept], r[kept])) kept++;
   let s = e.start;
   let t = e.end;
-  for (let ch = codePointBefore(raw, s); nearMark(ch, R); ch = codePointBefore(raw, s)) s -= ch.length;
-  for (let ch = codePointAt(raw, t); nearMark(ch, R); ch = codePointAt(raw, t)) t += ch.length;
+  for (let ch = codePointBefore(raw, s); nearMark(ch, R, bridges); ch = codePointBefore(raw, s)) s -= ch.length;
+  for (let ch = codePointAt(raw, t); nearMark(ch, R, bridges); ch = codePointAt(raw, t)) t += ch.length;
   let first = -1;
   let marks = 0;
   const moved = () => marks >= 2 && first >= e.start && first < e.end && first - e.start >= kept;
@@ -358,7 +525,7 @@ function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
     if (isEndMark(ch, R)) {
       if (first < 0) first = i;
       marks++;
-    } else if (!nearMark(ch, R)) {
+    } else if (!nearMark(ch, R, bridges)) {
       if (moved()) return true;
       first = -1;
       marks = 0;
@@ -367,10 +534,12 @@ function movesFirstMark(raw: string, e: Edit, R: LanguageRules): boolean {
   return moved();
 }
 
-/** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks)? */
+/** Would `e`, alone on the raw text, put an end mark next to another (a new pair of touching marks), read either way? */
 function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
-  const p = markRunPairs(raw, e.start, e.end, e.replacement, R);
-  return morePairs(p.swapped, p.asIs);
+  return readingsFor(raw, e.replacement).some((bridges) => {
+    const p = markRunPairs(raw, e.start, e.end, e.replacement, R, bridges);
+    return morePairs(p.swapped, p.asIs);
+  });
 }
 
 /**
@@ -380,7 +549,9 @@ function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
  * edit is checked in the text all accepted edits make, against the same text
  * without it. Returns the edit to refuse: one that adds an end mark before
  * one that only removes, so the removal stands and the speaker's mark is the
- * one left. Null when no accepted edit makes a new pair.
+ * one left. Null when no accepted edit makes a new pair. Engine 7's reading
+ * first, so whatever it refuses is refused as before; then the QUOTE_BRIDGES
+ * reading (engine 8).
  */
 function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules): Edit | null {
   const sorted = [...accepted].sort(byStart);
@@ -394,15 +565,18 @@ function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules
     pos = e.end;
   }
   text += raw.slice(pos);
-  let blamed: Edit | null = null;
-  for (const e of sorted) {
-    const f = at.get(e)!;
-    const p = markRunPairs(text, f, f + e.replacement.length, e.original, R);
-    if (!morePairs(p.asIs, p.swapped)) continue;
-    if (endMarkCount(e.replacement, R) > endMarkCount(e.original, R)) return e;
-    blamed ??= e;
+  for (const bridges of readingsFor(raw, text)) {
+    let blamed: Edit | null = null;
+    for (const e of sorted) {
+      const f = at.get(e)!;
+      const p = markRunPairs(text, f, f + e.replacement.length, e.original, R, bridges);
+      if (!morePairs(p.asIs, p.swapped)) continue;
+      if (endMarkCount(e.replacement, R) > endMarkCount(e.original, R)) return e;
+      blamed ??= e;
+    }
+    if (blamed) return blamed;
   }
-  return blamed;
+  return null;
 }
 
 interface CaseChange {
@@ -654,6 +828,7 @@ function checkPunctuation(e: Edit, ctx: VerifyContext): RejectReason | null {
   const tb = R.tokens(before).map((t) => R.scriptNorm(t.word));
   const ta = R.tokens(after).map((t) => R.scriptNorm(t.word));
   if (tb.length !== ta.length || tb.some((w, i) => w !== ta[i])) return 'changes_word';
+  if (changesSeenWords(ctx.raw, e, R)) return 'changes_word'; // engine 8: the same words as they are seen
   // Sentence type is the speaker's: a period may be added where there was no
   // end mark, but ? and ! are never added, removed or swapped (in any script: ？ ؟ count as ?).
   if (R.moodMarks(e.original) !== R.moodMarks(e.replacement)) return 'changes_sentence_type';
@@ -703,6 +878,8 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (e.type !== 'punctuation') {
     const toks = R.tokens(raw);
     if (insideWord(toks, e.start) || insideWord(toks, e.end)) return 'splits_word';
+    // Engine 8: inside a word as it is seen, through an invisible character.
+    if (insideSeenWord(raw, e.start, R) || insideSeenWord(raw, e.end, R)) return 'splits_word';
     if (joinsWords(raw, e, R)) return 'changes_word';
   }
 
@@ -723,6 +900,10 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   } else if ((e.type === 'punctuation' || e.type === 'paragraph') && splitsHyphenated(raw, e)) {
     // Nor may punctuation or whitespace split one ("uh-oh" -> "uh -oh", "so-so" -> "so so"): found by the F06-REQ-021 property test.
     return 'changes_word';
+  } else if ((e.type === 'stt_fix' || e.type === 'agreement') && cutsHyphenated(raw, e)) {
+    // Nor may a name fix or agreement replace part of one: a taught heard-as "uh" turned "Uh-uh" (no)
+    // into "Usha-Usha" on the rules-only path (engine 8; seed 2 run 84272, #257 review A, section 3).
+    return 'splits_word';
   }
 
   let reason: RejectReason | null = null;

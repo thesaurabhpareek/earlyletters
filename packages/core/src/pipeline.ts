@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 7;
+export const ENGINE_VERSION = 8;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -134,6 +134,37 @@ export const ENGINE_VERSION = 7;
 //     longer split a word written outside the Basic Multilingual Plane
 //     (Adlam).
 //   Golden corpus: every engine 6 case reads the same; two cases added.
+// 8 (2026-10-24): refusals only, the follow-up to the #257 reviews. Every
+//   change refuses more. The claim that engine 8 accepts no single edit
+//   engine 7 refused rests on the differential, not on a proof: over the
+//   1,642 test-suite strings, 604,703 single edits, 0 accepted by 8 and
+//   refused by 7 (64 the other way); with each of the 15 quotation marks
+//   below put after every end mark, 4,520,426 edits, 0 (73,230 the other
+//   way). Every engine 7 golden case reads the same.
+//   - Words are read as they are seen. An invisible character that is not
+//     itself a letter or mark (direction marks, joiners, zero-width space,
+//     word joiner, BOM, soft hyphen, tags) joins and splits nothing: no edit
+//     may delete the space beside one so that two words touch ("Asha" U+200B
+//     " slept" to "Asha" U+200B "slept"), as paragraph, punctuation, removal
+//     or name fix (seed 20261015 run 81642, Arabic with U+200D; #257 review
+//     A, section 2). Engines 6 and 7 read the invisible character, not the
+//     letter behind it. Nor may an edit start or end inside a word as it is
+//     seen, or put a space or a mark into one. The same check steps a code
+//     point at a time, so the space between two words written outside the
+//     BMP (Adlam) may not be deleted either.
+//   - An end mark put behind any Unicode quotation mark still touches the
+//     mark said before it. Engine 7 bridged only some of them and accepted a
+//     "." behind U+2018, U+201A and 13 more (QUOTE_BRIDGES in verify.ts).
+//     Those 15 are read both ways, as walls (engine 7) and as bridges, and an
+//     edit that either reading refuses is refused: as bridges alone they
+//     would also have let a mark move across one (#257 review A, section 1).
+//   - A name fix or agreement may not replace part of a hyphenated word: a
+//     taught heard-as "uh" no longer turns "Uh-uh" (no) into "Usha-Usha" on
+//     the rules-only path, nor "mm" turn "Mm-hmm" (yes) into "May-hmm", nor
+//     agreement "A-ha" into "An-ha" (seed 2 run 84272).
+//   - verify.ts exports its end-mark and bridge sets as frozen lists of
+//     strings, no longer as RegExp objects an importer could recompile.
+//   Golden corpus: every engine 7 case reads the same; three cases added.
 
 export interface CleanOptions {
   level: EditLevel;

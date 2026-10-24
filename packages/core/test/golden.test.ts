@@ -74,9 +74,9 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     expect(Math.max(...versions)).toBe(ENGINE_VERSION);
   });
 
-  it('covers 40 to 60 cases across English, Hinglish, Devanagari and NFD, with unique ids', () => {
+  it('covers 40 to 70 cases across English, Hinglish, Devanagari and NFD, with unique ids', () => {
     expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(40);
-    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(60);
+    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(70); // 60 until engine 8 added its three
     expect(new Set(GOLDEN_CASES.map((c) => c.id)).size).toBe(GOLDEN_CASES.length);
     for (const lang of ['en', 'hinglish', 'hi', 'nfd'] as const) {
       expect(GOLDEN_CASES.filter((c) => c.lang === lang).length, lang).toBeGreaterThanOrEqual(5);
@@ -151,5 +151,18 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     for (const id of ['e7-model-period-after-question', 'e7-model-period-after-danda']) {
       expect(seven.cases[id].rejected, id).toEqual(['punctuation:changes_sentence_type']);
     }
+  });
+
+  it('[F06-REQ-019] engine 8 changed no engine 7 case; its three new cases keep the words and marks as said', () => {
+    if (ENGINE_VERSION < 8) return;
+    const seven = JSON.parse(readFileSync(join(DIR, 'engine-v7.json'), 'utf8')) as GoldenFile;
+    const eight = JSON.parse(readFileSync(join(DIR, 'engine-v8.json'), 'utf8')) as GoldenFile;
+    for (const id of Object.keys(seven.cases)) expect(eight.cases[id], id).toEqual(seven.cases[id]);
+    expect(eight.cases['e8-model-join-through-invisible'].text).toBe('Asha\u200B slept well today.');
+    expect(eight.cases['e8-model-join-through-invisible'].rejected).toEqual(['paragraph:changes_word']);
+    expect(eight.cases['e8-model-period-behind-quote'].text).toBe("Asha said \u201Ano.'"); // the house rule straightens U+2018 only
+    expect(eight.cases['e8-model-period-behind-quote'].rejected).toEqual(['punctuation:changes_sentence_type']);
+    expect(eight.cases['e8-heard-as-inside-uh-uh'].text).toBe('Did you want more? Uh-uh, she said.');
+    expect(eight.cases['e8-heard-as-inside-uh-uh'].rejected).toEqual(['stt_fix:splits_word', 'stt_fix:splits_word']);
   });
 });
