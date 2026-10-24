@@ -301,7 +301,7 @@ export const MIGRATIONS: Migration[] = [
       //   children.created_by       L3  the account that started the book, when known
       //   children.first_run_batch  L2  the book.first_run op that sent it (first-run books go as one batch)
       // Values move in this one transaction; nothing is queued (nothing changed for the server).
-      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (build 1)
+      // children.signs_as and children.reminders_on stay in place (review L on #166): a v6 build (one cut before #166; both planned builds are v8)
       // reads them by name, and the "update the app" screen (MOB-09) does not exist yet, so dropping them would
       // leave a tester who rolls back with a Book that cannot list its books. The app reads them from
       // child_member_prefs only, and writes the prefs value into them as a mirror (db/repos/children.ts

@@ -315,7 +315,7 @@ Until RA-20-07 exists, every TestFlight undo is the App Store Connect click it n
 
 | Layer | Undo | Tested by | When |
 |---|---|---|---|
-| Server features in a build | Remove build 2 from "Family" and "Friends", add build 1 (servers off, kept in TestFlight as the fallback), expire build 2; for a new servers-off build, `testflight.yml` with `kill-path: true` skips the cap, and the cap keeps two builds of headroom | AL-08 parts B and C on R1 (B2-14) | Fri 23 |
+| Server features in a build | Remove build 2 from "Family" and "Friends", add build 1 (servers off, kept in TestFlight as the fallback; both planned builds carry local schema v8, so a book's signature, reminders and hide hold across the switch, and only a build cut before #166, a v6 build, would need the kept-column reconcile on branch `fix/mobile-rollback-kept-columns`, #266), expire build 2; for a new servers-off build, `testflight.yml` with `kill-path: true` skips the cap, and the cap keeps two builds of headroom | AL-08 parts B and C on R1 (B2-14) | Fri 23 |
 | Staging server (Pro) | Paid projects **cannot be paused** [V35]. Stop: (1) Auth sign-ups off and sign users out; (2) **revoke the publishable key the alpha builds use**: publishable keys are created, named and revoked independently [V36], so build 2 uses a named `sb_publishable_` key, never the legacy anon key, and staging deactivates the legacy keys [V36]; the API gateway then refuses every request from installed builds [V36], and a new key needs a new build; (3) rotate any secret key exposed. [U] until rehearsed | Rehearsed on a scratch project | before Thu 22 |
 | Edge Functions | Redeploy the previous commit's function | A no-op change deployed and reverted on staging | before Thu 22 |
 | Remote config | In the alpha only `packDownloads` works: `sync` and `invites` have no consumers and no signed config reaches a phone before the keys are in a build (#145 kill path item 5). Set it, upload, set it back | Drill on the live host at a quiet hour: no new download starts on the SE 3; record the measured time in place of #162's "about 5 minutes" [U until measured] | Fri 23 |
@@ -516,16 +516,16 @@ Dates follow #152 section 2.2.
 Fri 16  window 1: #145 (with RA-20-06a if ready), the project-id PR. AF-02, AF-03, AF-04
 Mon 19  window 2: RA-20-00 ios-compile, RA-20-02a claude.yml. AF-01 Active (latest Fri 23), AF-06, AF-08, AF-09;
         RA-16-01 alpha texts, RA-17-04
-Tue 20  window 3: the keys PR. AF-10 build 1; AF-11 Beta App Review for Friends
+Tue 20  window 3: the keys PR. AF-10 build 1 (proposed: Mon 26 Oct, DECISIONS.md D-089, until the founder confirms); AF-11 Beta App Review for Friends
 Wed 21  window 4: RA-20-04 staging, the R-17 batch. AF-05 default branch (latest), AF-07, AF-12, AF-14;
         restore drill on a throwaway project
 Thu 22  window 5: RA-20-10a + RA-19-04 + RA-20-18 kill harness, RA-20-19 nightly report, RA-07-06 smoke.
         AF-13 seeding and functions; first scheduled nightly; staging stop and functions rehearsals done
 Fri 23  R1: kill-path drill (B2-14), packDownloads drill; ios-compile green on #150
 Mon 26  R-17 sign-off (#152 F21)
-Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2
+Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (proposed: freeze Tue 3 Nov 5:00 AM PT, DECISIONS.md D-089, until the founder confirms)
 Wed 28  green nightly within 24 h of build 2 (B2-22); TestFlight expiry check
-Thu 29  go/no-go
+Thu 29  go/no-go (proposed: Thu 5 Nov, until the founder confirms)
 after   RA-20-01, RA-20-03a/b/c, AF-20 (before Mon 2 Nov), RA-20-05/06/07/08/09/10/11/12, RA-07-*, AF-21 to AF-28
 ```
 
