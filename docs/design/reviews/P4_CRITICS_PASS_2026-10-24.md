@@ -4,17 +4,17 @@ Saturday 24 October 2026. The experience critics' pass over package P4 of `docs/
 
 ## 0. Verdict for B2-10 (P4's share)
 
-**Not signed yet. One item must be fixed before build 2; with it fixed, P4 is signed for build 2**, provided the twelve Should items are fixed or ruled by the coordinator and the device items in section 7 go on the build 2 run sheet.
+**Not signed yet. Two items must be cleared before build 2: M1 fixed, and S9's device check run (and its fix made if it reproduces); with both cleared, P4 is signed for build 2**, provided the ten Should items are fixed or ruled by the coordinator and the device items in section 7 go on the build 2 run sheet. Ranks as the coordinator ruled them on 24 Oct (section 9).
 
 P4 is close. The parent at night gets one calm room per moment: Listen is still and honest, the three microphone problems name their real causes, the waiting card never pretends software is writing, Review reads as a letter on a sheet with every mark visible from the first frame, a typed letter keeps with one tap, the save commits before anything moves, and the app lands on the Book in about 1.2 s without a frame of Tonight. The failed save, the failed autosave and the stale link all say the words are safe first and give one way on. Nothing on these screens writes meaning.
 
-The one Must is visual but sits on the trust screen: inside the letter, every mark (a struck "um", a struck repeat, the kept name after a misheard one, a word put back) is drawn in the app's own sans face at 16 pt instead of the letter's serif at 20 pt, so the person's own words read as if the app inserted them.
+M1 is visual but sits on the trust screen: inside the letter, every mark (a struck "um", a struck repeat, the kept name after a misheard one, a word put back) is drawn in the app's own sans face at 16 pt instead of the letter's serif at 20 pt, so the person's own words read as if the app inserted them.
 
 | Rank | Count |
 |---|---|
-| Must before build 2 | 1 |
-| Should before build 2 | 12 |
-| Later | 16 |
+| Must before build 2 | 2 |
+| Should before build 2 | 10 |
+| Later | 17 |
 | Accept as built | 24 |
 
 The three to fix first: **M1** (the marks in the UI face), **S1** (Change words lost on Close while Close says "Saved on this phone"), **S2** (Write's "Add to Asha's book" breaks over two lines at the default text size on every phone).
@@ -39,7 +39,13 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 - Spec: S17 Visual (line 635): "Then the words in `letterBody`. Marks use the website's grammar at full opacity from the first frame"; VOICE "The app's own words": the Book shows what a person said "in the letter's serif".
 - Built: the paragraph is `letterBody` (`apps/mobile/src/components/capture/transcript.tsx:50`), but each mark is a nested `Text` with no variant (`:55`, `:67-77`, `:83-100`, `:122-136`). The ui `Text` gives a nested span with no variant the legacy default (`apps/mobile/src/components/ui/text.tsx:28`, `text-foreground text-base`) and sets its own `fontFamily` from that class (`text.tsx:136-140`, `components/ui/fonts.ts:72-80`), so the span becomes Mukta Regular 16. Measured on the web build: paragraph `Literata-Regular` 20/32, the struck "um," and "you" `Mukta-Regular` 16 px. On iOS a nested Text's own fontFamily and fontSize win over the parent's in the same way. The same spans ignore Reading Size (`scale`).
 - A parent: reads their letter in the book's serif with the struck words, the kept name after "Spelled your way" and any word they put back in a smaller UI face. The word Mama put back, or Asha's name spelled Mama's way, looks like an annotation the app wrote in, on the one screen whose job is to prove nothing was. Visible in light and dark (`critics-p4-shots/default/J06-04.png`, `dark/review-put-back.png`). The struck "um," also runs into "today" with no visible space (`default/J06-01.png`).
-- Fix: render the mark spans with React Native's own `Text` (or pass `variant="letterBody"` and the paragraph's `scale`) so they inherit the letter face, size, line height and Reading Size, and pin it with a test that every span in `Transcript` carries no face of its own.
+- Fix (as ruled, section 9): render every span inside `Transcript` with React Native's own `Text`, the inner ones too (the struck heard word and the kept name at `transcript.tsx:75-76` nest inside the span at `:67`), so each inherits the letter face, size, line height and Reading Size; keep the space outside the strike so "um," no longer joins "today"; and pin it with a test that covers the inner spans.
+
+**S9. VoiceOver speech during a take may be recorded into the letter.** (A blocking device check, ranked Must by the coordinator, section 9; first raised as #271 lens A's note, already on develop.)
+- Spec: the constitution (nothing adds words the person did not say); S11.
+- Built: "Listening." is announced once the microphone is live (`listen.tsx:164`), and the elapsed time once a minute while recording (`listen.tsx:113-119`, "1 min 0 s recorded"); resume announces "Listening." again (`:256`).
+- A parent using VoiceOver through the speaker: their letter may contain "1 min 0 s recorded", and Review would show it as their words, unmarked.
+- Fix: a gate line on the build 2 run sheet, checked on a phone with VoiceOver through the speaker; if it reproduces, announce nothing while the microphone is live (the clock keeps its label, read on demand) before P4 is signed.
 
 ### Should before build 2
 
@@ -79,10 +85,10 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 - A parent using VoiceOver at a slow speech rate: "Kept in Month 7. Added to Asha's book." can still be cut off by the Book's screen change; at a fast rate they wait for nothing.
 - Fix: hold until iOS's `announcementFinished` for that announcement, with 3 s as the floor and about 8 s as the cap, and a tap still skips; the ruling on the ceilings is in section 4.
 
-**S7. "Long recordings take a little more time." shows on a 2-second recording.**
+**S7. "Long recordings take a little more time." shows on a 2-second recording.** (Should only if the first letter on an SE 3 with a cold model waits past 8 s; otherwise Later. Ruled by the coordinator, section 9.)
 - Spec: S14 copy (line 537): `review.waitingLong` "after 8 s".
 - Built: `WAITING_LONG_MS = 8_000` regardless of length (`apps/mobile/src/components/capture/words-state.logic.ts:39`, `:125`).
-- A parent: says one sentence, the first transcription is slow, and the card says long recordings take longer over "0:02" (`default/J05-11.png`). It is not about their letter, so it reads canned (principle 8, honest states).
+- A parent: says one sentence, the first transcription is slow, and the card says long recordings take longer over "0:02" (`default/J05-11.png`). It is not about their letter, so it reads canned (principle 8, honest states). The built line matches S14 as written, and the web build has no speech model, so there every take waits past 8 s; on a phone it shows only when transcription is slow.
 - Fix: show the line only when the recording is longer than a minute or has more than one part, and change S14's row to say so.
 
 **S8. A mark's card opens after the whole letter, not under its line.** (#274 "Not done".)
@@ -90,18 +96,6 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 - Built: the card renders after the transcript, inside the sheet (`review.tsx:832-860`), with no scroll to it.
 - A parent: on a long letter taps a mark in the first lines and the card opens below the last line, off screen behind the pinned footer; nothing seems to happen.
 - Fix: now, scroll the card into view when it opens; later, open it under its own line as specified.
-
-**S9. VoiceOver speech during a take may be recorded into the letter.** (Needs a device; from #271 lens A's note, already on develop.)
-- Spec: the constitution (nothing adds words the person did not say); S11.
-- Built: "Listening." is announced once the microphone is live (`listen.tsx:164`), and the elapsed time once a minute while recording (`listen.tsx:113-119`, "1 min 0 s recorded"); resume announces "Listening." again (`:256`).
-- A parent using VoiceOver through the speaker: their letter may contain "1 min 0 s recorded", and Review would show it as their words.
-- Fix: check on a phone with VoiceOver through the speaker; if it is captured, announce nothing while the microphone is live (the clock keeps its label, read on demand).
-
-**S10. "That was your second free letter." never leaves while a screen reader is on.**
-- Spec: S21 copy (line 692) and acceptance (line 701): the Book's toast after the landing, "no action, 4 s", once.
-- Built: Toast skips its timeout whenever a screen reader is on, action or not (`apps/mobile/src/components/ui/toast.tsx:71-77`); the Book raises it (`app/(tabs)/book.tsx:140-141`). On the web, which always reports a screen reader, it follows the person onto Tonight and sits under the held letter (journey steps J04-08 and J07-10).
-- A parent using VoiceOver: the count of free letters stays above the tab bar on every tab until they swipe it away.
-- Fix: keep the 4 s timeout for a toast with no action (the time-limit rule exists for Undo); owner P1 (`toast.tsx`).
 
 **S11. The arrival wash did not show on the web at all.** (Needs a device.)
 - Spec: S21 (line 694) and acceptance (line 704): the new card "already in place under a 1.6 s `accentSoft` wash"; 5.8 row 5.
@@ -134,6 +128,7 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 | L13 | S12 (#271 lens A note 2) | no Close and no Let it go while Listen is asking (`components/capture/listen.logic.ts:69`, `:75`) | if a start ever hangs, no way out but closing the app | bring Close back after a few seconds of asking |
 | L14 | S19 (#279 "still not held") | a swipe within the 500 ms pause whose unmount write is the first to fail loses those words (`write.tsx:98-107`) | very narrow: a full disk at the moment of a swipe | write synchronously before the sheet can go, when S03 allows |
 | L15 | S18 (652): the 2 pt focus ring for Full Keyboard Access | removed; the system's ring is relied on (#274 decision 6) | unknown until a keyboard test | check with Full Keyboard Access on a phone |
+| S10 (Later, owner P1; section 9) | S21 copy (692): `secondFreeNote` "no action, 4 s"; DESIGN_LANGUAGE 11.5 (toasts persist until dismissed) and COMPONENTS 2.14 (10 s under VoiceOver, paused while focused) govern | Toast never starts its timeout while a screen reader is on and keeps its Close (`apps/mobile/src/components/ui/toast.tsx:71`, `:131`); on the web, which always reports a screen reader, the line followed the person onto Tonight (J04-08, J07-10), a web artefact | on a phone a sighted parent never sees it linger; with VoiceOver on, unknown until seen | P1 checks it with VoiceOver on a phone and, if it changes anything, follows COMPONENTS 2.14 (10 s, paused while focused) |
 | L16 | COMPONENTS 0.1: labels name the thing | the open card's "Close" (`review.tsx:855-857`) has the same name as the header's Close | VoiceOver hears two "Close" buttons | name the card's button for what it closes (a new key) |
 
 ### Accept as built
@@ -224,7 +219,7 @@ Each row changes a line in `docs/design/EXPERIENCE_PASS_2026-10.md` (or MOTION.m
 | S21 Visual and motion, 694 | the chip in "`caption`"; "then Review fades out (200 ms)" | "`subhead` (P1's trust-copy floor)"; "then Review fades out over `motion.route.dissolveMs` (280 ms)" | A10, A7 |
 | S21 Reduce Motion, 696 | "one 200 ms fade, then the modal dismisses" | "one 200 ms fade; the moment holds until `sequenceMaxMs` (900 ms) from the commit, then the modal dismisses" | A14 |
 | S21, new screen-reader line | none | "With a screen reader on, the moment is said once at the commit and holds until that announcement has finished (iOS `announcementFinished`), at least 3 s and at most about 8 s from the commit; a tap still skips." | S6 |
-| S21 copy, 692 | `secondFreeNote` "(no action, 4 s)" | add: "4 s with a screen reader on too: the time-limit rule is for toasts with an action" | S10 |
+| S21 copy, 692 | `secondFreeNote` "(no action, 4 s)" | Withdrawn by the coordinator (section 9): no change proposed; COMPONENTS 2.14 governs | S10 |
 | 5.8 rule 5, 1792 | "about 1.2 s, under the 2 s `hardCeilingMs`" | add: "With a screen reader on, the hand-off waits for the saved moment's announcement (S21); the 1.2 s and 2 s figures are for motion." | S6 |
 | 5.8 row 4, 1803 | "`soft` when the take ends"; "the moon card `enter`s at 80 ms" | "`press` (Light) when the take ends (MOTION 6)"; "at 90 ms (`motion.enter(3)`, the stagger step)" | A3, A4 |
 | 5.8 row 5, 1805 | "Review fades out (200 ms)" | "Review fades out over `motion.route.dissolveMs` (280 ms): about 1.2 s from the commit to the Book" | A7 |
@@ -249,6 +244,7 @@ At AX5 (emulated): Listen's pinned Pause, Finish and Let it go end at 848 pt of 
 
 ## 7. What we could not see on the web
 
+- **Added by the coordinator's rulings (section 9)**: M1 on a phone (every span in `Transcript`, inner ones included, in the letter face, and the space outside the strike); S9, blocking (VoiceOver through the speaker during a take: is "Listening." or "1 min 0 s recorded" in the recording or its words?); S7's cold-start time (the first letter on an SE 3 with a cold model: does the waiting card pass 8 s?); S2 on iOS (a screenshot of Write's pair; the web wraps it at 375, 390, 402 and 440 pt); S10 with VoiceOver on (how the second-free toast behaves on a phone).
 - **Haptics**: every one (Light at record start and stop, `success` at the commit, `warning` after a confirmed Let it go), and whether iOS mutes them during a take.
 - **VoiceOver**: the header read as "To Asha, Month 7" and "From Mama" (react-native-web drops a Text's label, so the web tree shows the dot); struck words inside the paragraph (S3); whether the saved moment is read twice (its Pressable label and the announcement); whether 3 s is enough (S6); where focus lands after Finish; the waiting card announced after the dissolve; whether VoiceOver's own speech is recorded into a take (S9). On the web the invisible header Close and Let it go slot appear in the tree as dimmed buttons, because `accessibilityElementsHidden` is iOS only; check they are hidden on iOS.
 - **Dynamic Type**: only emulated here. The AX5 screenshot #271 put on the device run sheet (a take from Tonight with a 3-line prompt on a 6.1-inch iPhone and an SE) is still owed, now with S5's questions.
@@ -267,3 +263,18 @@ At AX5 (emulated): Listen's pinned Pause, Finish and Let it go end at 848 pt of 
 - Nothing on these screens writes meaning: the header ("To Asha · Month 7", "From Mama"), the chip and the lines are the app's small words in the app's face; the saved card shows the words as kept; Write calls no engine.
 - No entry text, transcript, audio or child name in analytics: only `error_shown` codes, `review_action` actions, counts and edit types.
 - This document uses the fictional family Asha only, and no em dashes, en dashes, curly quotes, ellipsis characters or emoji.
+
+## 9. Coordinator's rulings (24 Oct)
+
+#286 merged as ff97ea4. Its review (comment 6383314742, PASS WITH NOTES) disagreed on four items; the coordinator ruled on each, and on two smaller notes. The ranks in section 2 and the counts in section 0 follow these rulings; nothing else in the pass changed.
+
+| Item | The review's point | Ruling | What changed here |
+|---|---|---|---|
+| M1 | Keep the rank; the changed-word mark nests twice (`transcript.tsx:75-76` inside `:67`), so a fix on the outer spans alone would leave the struck heard word and the kept name in Mukta | Must, confirmed. Every span inside `Transcript` takes the letter face, inner ones included; the space stays outside the strike; the pin test covers the inner spans. "M1 on a phone" joins section 7 | M1's fix line; section 7 |
+| S10 | DESIGN_LANGUAGE 11.5 (toasts persist until dismissed) and COMPONENTS 2.14 (10 s under VoiceOver, paused while focused) govern; the evidence is a web artefact, since the web build always reports a screen reader | Later, owner P1. The section 5 wording "4 s with a screen reader on too" is withdrawn | moved from Should to the Later table; the section 5 row marked withdrawn; "S10 with VoiceOver on" joins section 7 |
+| S7 | The built line matches S14; the web build has no speech model, so every take waits past 8 s there; the case that matters is the first letter with a cold model | The rank depends on a phone: Should only if the first letter on an SE 3 with a cold model waits past 8 s, otherwise Later. "S7's cold-start time" joins section 7 | S7's heading and parent line; section 7 |
+| S9 | If VoiceOver's own speech is picked up, words the person never said enter the letter, shown as theirs and unmarked: the constitution's line | A blocking device check: a gate line on the build 2 run sheet. If confirmed, announcements are suppressed during a take before P4 is signed | moved from Should to Must; its fix line; section 7 |
+| S2 | Measured at 375, 390, 402 and 440 pt: the primary wraps on every width | Unchanged rank; "S2 on iOS" joins section 7 | section 7 |
+| S3 | The proposed screen-reader label is sound only with the fix rows starting open: a VoiceOver user then hears the kept words and can reach every removed word as a row | Keep the two halves together in the spec amendment | none needed: section 5's S17 row already carries both halves in one line, and the spec owner applies them together |
+
+Counts after the rulings: Must 2 (M1, S9), Should 10, Later 17, Accept as built 24. The fix-first three are unchanged: M1, S1, S2.
