@@ -1,0 +1,603 @@
+# The kill harness on a macOS runner (RA-20-10a in docs/release/AUTOMATION.md; B2-11 in docs/qa/ALPHA_GO_NO_GO.md,
+# never waived). Made from S19's sketch apps/mobile/e2e/ci/kill-harness.yml.example. S19 owns the harness it calls
+# (apps/mobile/e2e/kill/, RA-19-04; apps/mobile/e2e/README.md section 9) and the evidence it produces.
+#
+# Jobs, DL-01 and DL-02 only:
+#   plan     the one place the sizes are set, from the event (below).
+#   build    the e2e simulator app on ios-compile.yml's runner (macos-26, Xcode 26.6 pinned, the same prebuild and
+#            CocoaPods cache): the env of the eas.json `e2e` profile (B-1: EXPO_PUBLIC_E2E=1, EXPO_PUBLIC_APP_ENV
+#            development, servers off; never a store profile), Release configuration (release JavaScript, no Metro),
+#            no signing, no secrets. It fails unless the bundle carries the seam (B-8 in reverse: the RA-20-18
+#            wiring line is in) and the bundle id is the `.dev` one. The app never leaves the run.
+#   harness  DL-02 (kill during save) and DL-01 (kill while recording), each on a fresh simulator.
+#            Smoke (pull_request): 5 runs a mode, and DL-02 holds once at each of the four crash points.
+#            Nightly (schedule, or dispatch with `gate` off): 50 runs a mode (DL-02 adds 5 at each crash point).
+#            Gate (dispatch with `gate` on, B2-11): DL-02 500 random kills and 50 at each crash point; DL-01 500 in
+#            four shards of 125, about 2.5 h each [E].
+#            Every size runs the harness's planted-failure self-check first, so even the smoke cannot pass blind.
+#   dl01-merged  gate only: merges the four DL-01 reports into the one DL-01 verdict.
+#   release-launch  the store build's JavaScript (testflight profile env, no seam), Release, launched for 20 s: the
+#            scope check for a launch failure, and B-8 on a real Release bundle.
+# Each harness job uploads its report.json and report.md (run numbers and outcomes; no ids, no words) as an artifact.
+#
+# Exit codes (README section 9), each named in an annotation; any exit but 0 fails the job, so a red run is red:
+#   1 loss: a letter or take lost, doubled or damaged, the app did not start after a kill, or DL-01 under 49 in 50
+#   2 usage or a refused setup; 3 incomplete: a timeout, no microphone, fewer runs judged than planned, or the drill
+#   never armed; 4 the self-check missed a planted failure.
+#   A build that cannot launch exits 3 with "self-check run 0: app_exited" (the app was gone before the drill's
+#   boot marker). Then the step "Why the app stopped" prints the uncaught exception and its stack read back to file
+#   and line (.github/scripts/sim-crash-report.sh), and the release-launch job says whether the store build fails
+#   the same way. Run 40072977424 found this: every Release bundle threw at lib/billing/letter-ledger.native.ts:10.
+#
+# DL-01 microphone: the simulator records from the runner's default input, and the macos-26 arm64 image lists no
+# audio device (actions/runner-images images/macos/macos-26-arm64-Readme.md, image 20261013.0424.1). The job installs
+# BlackHole 2ch (Homebrew cask), a virtual device that hears nothing, and selects it as the input. If the simulator
+# still cannot record, the drill writes record_failed and the harness exits 3; then DL-01 runs on the founder's Mac
+# with a silent virtual input (AF-14; README section 9).
+#
+# When: a pull request that changes this file, the harness or the drill (a smoke run that re-proves the build and the
+# arming; it also registers the workflow, so the API can dispatch it on any branch before AF-05); workflow_dispatch
+# (agents may dispatch it, AUTOMATION.md 2.11); and the nightly schedule, which GitHub fires only once this file is on
+# the default branch (AF-05) (github/docs, events-that-trigger-workflows). No job reads a secret, so a pull request
+# from a fork runs the same way. Standard macOS runners are free for this public repository; the gate holds five.
+name: Kill harness (DL-01, DL-02)
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/kill-harness.yml
+      - .github/scripts/sim-crash-report.sh
+      - apps/mobile/e2e/kill/**
+      - apps/mobile/src/dev/e2e-seams.ts
+      - apps/mobile/src/dev/kill-drill*.ts
+  workflow_dispatch:
+    inputs:
+      gate:
+        description: 'B2-11 gate sizes: DL-02 500 kills plus 50 at each crash point, DL-01 500 in four shards. Off: the nightly 50 a mode'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '41 9 * * *' # 09:41 UTC daily, nightly sizes
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its older smoke run. A nightly never cancels a running gate on the same branch:
+# it waits behind it.
+concurrency:
+  group: kill-harness-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  XCODE_VERSION: '26.6'
+  NODE_VERSION: '22'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    name: sizes for this run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      size: ${{ steps.size.outputs.size }}
+      matrix: ${{ steps.size.outputs.matrix }}
+      minutes: ${{ steps.size.outputs.minutes }}
+    steps:
+      - name: The one place the sizes are set (smoke, nightly or the B2-11 gate)
+        id: size
+        env:
+          EVENT: ${{ github.event_name }}
+          GATE_INPUT: ${{ inputs.gate }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ]; then size=smoke
+          elif [ "$EVENT" = workflow_dispatch ] && [ "$GATE_INPUT" = true ]; then size=gate
+          else size=nightly; fi
+          case "$size" in
+            smoke)
+              minutes=60
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":5,"points":1},{"mode":"dl01","n":1,"of":1,"runs":5,"points":0}]' ;;
+            nightly)
+              minutes=340
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":50,"points":5},{"mode":"dl01","n":1,"of":1,"runs":50,"points":0}]' ;;
+            gate)
+              minutes=340
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":500,"points":50},{"mode":"dl01","n":1,"of":4,"runs":125,"points":0},{"mode":"dl01","n":2,"of":4,"runs":125,"points":0},{"mode":"dl01","n":3,"of":4,"runs":125,"points":0},{"mode":"dl01","n":4,"of":4,"runs":125,"points":0}]' ;;
+          esac
+          { echo "size=$size"; echo "minutes=$minutes"; echo "matrix=$matrix"; } >> "$GITHUB_OUTPUT"
+          {
+            echo "Kill harness sizes: **${size}** (${EVENT})"
+            echo
+            echo "- Head commit: \`${HEAD_SHA:0:12}\`. Commit built and tested: \`${GITHUB_SHA:0:12}\`; on a pull request that is GitHub's merge of the head into the base (refs/pull/N/merge), and it is the \"commit\" a harness report names (simctl-driver.mjs reads GITHUB_SHA)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: e2e simulator app (e2e profile, Release, seam on)
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$app" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not on this image. Installed:"; ls -d /Applications/Xcode*.app; exit 1
+          fi
+          sudo xcode-select -s "$app/Contents/Developer"
+          xcodebuild -version
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build env from the eas.json e2e profile (B-1)
+        run: |
+          set -euo pipefail
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.e2e.env || {};
+            if (env.EXPO_PUBLIC_E2E !== "1" || env.EXPO_PUBLIC_APP_ENV !== "development") {
+              console.error("the e2e profile must set EXPO_PUBLIC_E2E=1 and EXPO_PUBLIC_APP_ENV=development (B-1)"); process.exit(1);
+            }
+            for (const [k, v] of Object.entries(env)) {
+              if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) { console.error("refusing " + k); process.exit(1); }
+              console.log(k + "=" + v);
+            }
+          ' | tee -a "$GITHUB_ENV"
+
+      - name: expo prebuild --platform ios --no-install
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install --clean
+
+      - name: Native project facts
+        id: project
+        working-directory: apps/mobile/ios
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          projects=(*.xcodeproj)
+          if [ "${#projects[@]}" -ne 1 ]; then echo "::error::expected one .xcodeproj in apps/mobile/ios, found: ${projects[*]:-none}"; exit 1; fi
+          name="${projects[0]%.xcodeproj}"
+          echo "workspace=${name}.xcworkspace" >> "$GITHUB_OUTPUT"
+          echo "scheme=${name}" >> "$GITHUB_OUTPUT"
+
+      # The same key as ios-compile.yml: Pods do not depend on the app env, and pod install corrects a near miss.
+      - name: Restore CocoaPods
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**/*.podspec', 'apps/mobile/ios/Podfile.properties.json') }}
+          restore-keys: |
+            pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: pod install
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      # Release, so not ios-compile.yml's Debug DerivedData. The bundle phase declares no outputs, so Xcode runs it on
+      # every build and a restored DerivedData never ships stale JavaScript.
+      - name: Restore DerivedData (Release)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/DerivedData
+          key: dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**') }}
+          restore-keys: |
+            dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)
+        working-directory: apps/mobile/ios
+        env:
+          WORKSPACE: ${{ steps.project.outputs.workspace }}
+          SCHEME: ${{ steps.project.outputs.scheme }}
+        run: |
+          set +e
+          log="$RUNNER_TEMP/xcodebuild.log"
+          # The bundle phase writes the Hermes source map here (react-native-xcode.sh), so a crash's JavaScript stack
+          # can be read back to file and line in the harness job (it travels with the app, never in the app).
+          mkdir -p "$RUNNER_TEMP/kill-app"
+          export SOURCEMAP_FILE="$RUNNER_TEMP/kill-app/main.jsbundle.map"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+            build > "$log" 2>&1
+          status=$?
+          echo "- xcodebuild: exit ${status} after $((SECONDS / 60)) min $((SECONDS % 60)) s" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '(fatal )?error: |\*\* BUILD (SUCCEEDED|FAILED) \*\*' "$log" | grep -v '/Pods/' | head -200
+          if [ "$status" -ne 0 ]; then echo "::error title=xcodebuild failed (exit ${status})::the log is the xcodebuild-log artifact"; tail -150 "$log"; fi
+          exit "$status"
+
+      - name: The app is the e2e build and carries the seam
+        run: |
+          set -euo pipefail
+          app="$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphonesimulator" -maxdepth 1 -name '*.app' | head -n 1)"
+          [ -n "$app" ] || { echo "::error::no .app in the Release-iphonesimulator products"; exit 1; }
+          id="$(plutil -extract CFBundleIdentifier raw "$app/Info.plist")"
+          case "$id" in
+            *.dev) ;;
+            *) echo "::error::bundle id ${id} is not the development one (.dev): the drill refuses any other"; exit 1 ;;
+          esac
+          [ -f "$app/main.jsbundle" ] || { echo "::error::no main.jsbundle in the app (not a Release build?)"; ls "$app"; exit 1; }
+          # B-8 in reverse: this build must carry the seam, or every run exits 3 (never armed).
+          grep -aq e2eKillDrill "$app/main.jsbundle" || { echo "::error::the e2e seam is not in the bundle: is the RA-20-18 wiring line in apps/mobile/src/app/_layout.tsx?"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/kill-app" && ditto "$app" "$RUNNER_TEMP/kill-app/App.app"
+          {
+            echo "### e2e simulator app"
+            echo "- commit \`${GITHUB_SHA:0:12}\`, Xcode ${XCODE_VERSION}, bundle id \`${id}\`"
+            echo "- main.jsbundle sha256 \`$(shasum -a 256 "$app/main.jsbundle" | cut -c1-16)\`, carries the seam"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Passes the app to the harness jobs of this run (tar keeps the executable bits an artifact zip would drop).
+      - name: Keep the app for this run
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/kill-app
+          key: kill-app-${{ github.run_id }}
+
+      - name: Keep the build log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Scope check for the harness and a product check on its own: the store build's JavaScript, built the way the
+  # testflight profile builds it (servers off, no EXPO_PUBLIC_E2E, so no seam), Release, on the same runner, then
+  # launched on a simulator for 20 s. It fails if the bundle carries the seam (B-8 on the real Release bundle), if
+  # the app is gone after 20 s, or if its log has an RCTFatalException. No Release build of the app had been
+  # launched before this job; ios-compile.yml builds Debug and never launches.
+  release-launch:
+    name: store-profile Release launch (testflight env, no seam, 20 s)
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$app" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not on this image. Installed:"; ls -d /Applications/Xcode*.app; exit 1
+          fi
+          sudo xcode-select -s "$app/Contents/Developer"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build env from the eas.json testflight profile (server features off, no e2e)
+        run: |
+          set -euo pipefail
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.testflight.env || {};
+            env.EXPO_PUBLIC_SERVER_FEATURES = "off";
+            if ("EXPO_PUBLIC_E2E" in env) { console.error("the testflight profile must not set EXPO_PUBLIC_E2E (B-9)"); process.exit(1); }
+            for (const [k, v] of Object.entries(env)) {
+              if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) { console.error("refusing " + k); process.exit(1); }
+              console.log(k + "=" + v);
+            }
+          ' | tee -a "$GITHUB_ENV"
+
+      - name: expo prebuild --platform ios --no-install
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install --clean
+
+      - name: Native project facts
+        id: project
+        working-directory: apps/mobile/ios
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          projects=(*.xcodeproj)
+          if [ "${#projects[@]}" -ne 1 ]; then echo "::error::expected one .xcodeproj in apps/mobile/ios, found: ${projects[*]:-none}"; exit 1; fi
+          name="${projects[0]%.xcodeproj}"
+          echo "workspace=${name}.xcworkspace" >> "$GITHUB_OUTPUT"
+          echo "scheme=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore CocoaPods
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**/*.podspec', 'apps/mobile/ios/Podfile.properties.json') }}
+          restore-keys: |
+            pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: pod install
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      # The same Release DerivedData as the e2e build: the native code is the same, so this build is mostly the
+      # JavaScript bundle and the app's own target.
+      - name: Restore DerivedData (Release)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/DerivedData
+          key: dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**') }}
+          restore-keys: |
+            dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)
+        working-directory: apps/mobile/ios
+        env:
+          WORKSPACE: ${{ steps.project.outputs.workspace }}
+          SCHEME: ${{ steps.project.outputs.scheme }}
+        run: |
+          set +e
+          log="$RUNNER_TEMP/xcodebuild.log"
+          mkdir -p "$RUNNER_TEMP/store-app"
+          export SOURCEMAP_FILE="$RUNNER_TEMP/store-app/main.jsbundle.map"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+            build > "$log" 2>&1
+          status=$?
+          echo "- store-profile xcodebuild: exit ${status} after $((SECONDS / 60)) min $((SECONDS % 60)) s" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '(fatal )?error: |\*\* BUILD (SUCCEEDED|FAILED) \*\*' "$log" | grep -v '/Pods/' | head -200
+          if [ "$status" -ne 0 ]; then echo "::error title=xcodebuild failed (exit ${status})::store-profile Release build"; tail -150 "$log"; fi
+          exit "$status"
+
+      - name: The app is the store-profile build and carries no seam
+        run: |
+          set -euo pipefail
+          app="$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphonesimulator" -maxdepth 1 -name '*.app' | head -n 1)"
+          [ -n "$app" ] || { echo "::error::no .app in the Release-iphonesimulator products"; exit 1; }
+          id="$(plutil -extract CFBundleIdentifier raw "$app/Info.plist")"
+          case "$id" in
+            *.preview) ;;
+            *) echo "::error::bundle id ${id} is not the preview one the testflight profile builds"; exit 1 ;;
+          esac
+          [ -f "$app/main.jsbundle" ] || { echo "::error::no main.jsbundle in the app"; exit 1; }
+          if grep -aq e2eKillDrill "$app/main.jsbundle"; then echo "::error::the store-profile bundle carries the e2e seam (B-8)"; exit 1; fi
+          ditto "$app" "$RUNNER_TEMP/store-app/App.app"
+          echo "APP_ID=$id" >> "$GITHUB_ENV"
+
+      - name: Simulator
+        run: |
+          set -euo pipefail
+          udid=""
+          for type in 'iPhone SE (3rd generation)' 'iPhone 17e'; do
+            if udid="$(xcrun simctl create store-sim "$type" 2>/dev/null)"; then break; fi
+            udid=""
+            echo "::warning::no '${type}' simulator on this image"
+          done
+          [ -n "$udid" ] || { echo "::error::could not create a simulator"; exit 1; }
+          xcrun simctl bootstatus "$udid" -b > "$RUNNER_TEMP/bootstatus.log" 2>&1 || { tail -40 "$RUNNER_TEMP/bootstatus.log"; exit 1; }
+          echo "::notice title=Simulator::${type}"
+          echo "UDID=$udid" >> "$GITHUB_ENV"
+
+      - name: Launch and stay up for 20 s
+        run: |
+          set -euo pipefail
+          xcrun simctl install "$UDID" "$RUNNER_TEMP/store-app/App.app"
+          out="$(xcrun simctl launch "$UDID" "$APP_ID")"
+          pid="${out##*: }"
+          echo "launched ${APP_ID}, pid ${pid}"
+          sleep 20
+          exe="$(plutil -extract CFBundleExecutable raw "$RUNNER_TEMP/store-app/App.app/Info.plist")"
+          xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate "process == \"${exe}\"" > "$RUNNER_TEMP/launch-log.txt" 2>&1 || true
+          if grep -q RCTFatalException "$RUNNER_TEMP/launch-log.txt"; then
+            echo "::error title=Release launch::the store-profile app threw an unhandled JavaScript exception at launch"; exit 1
+          fi
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "::error title=Release launch::the store-profile app is gone 20 s after launch"; exit 1
+          fi
+          echo "::notice title=Release launch::the store-profile app is up 20 s after launch, no fatal exception"
+          echo "- store-profile Release app: up 20 s after launch, no fatal exception" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Why the app stopped (on failure)
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/diag"
+          [ -n "${UDID:-}" ] && .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/store-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/store-app/main.jsbundle.map"
+          exit 0
+
+      - name: Upload the diagnostics (on failure)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-diagnostics-store-launch-${{ github.run_id }}
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: ignore
+          retention-days: 14
+
+  harness:
+    name: ${{ matrix.mode }} ${{ matrix.n }} of ${{ matrix.of }} (${{ matrix.runs }} runs)
+    needs: [plan, build]
+    runs-on: macos-26
+    timeout-minutes: ${{ fromJSON(needs.plan.outputs.minutes) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }} (its simulator runs the app)
+        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/kill-app
+          key: kill-app-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      # Before the simulator boots, so it records from this input. Never fails the job: if no silent input can be
+      # selected and the simulator cannot record, the harness exits 3 and says so.
+      - name: Silent virtual microphone (DL-01)
+        if: matrix.mode == 'dl01'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: |
+          set +e
+          brew install --cask blackhole-2ch && brew install switchaudio-osx
+          sudo killall coreaudiod; sleep 5
+          SwitchAudioSource -s 'BlackHole 2ch' -t input
+          input="$(SwitchAudioSource -c -t input 2>/dev/null)"
+          if [ "$input" = 'BlackHole 2ch' ]; then
+            echo "::notice title=DL-01 input::BlackHole 2ch, a virtual device that hears nothing"
+          else
+            echo "::warning title=DL-01 input::no silent virtual input selected (current: ${input:-none}). If the simulator cannot record, the harness exits 3 and DL-01 runs on the founder's Mac (AF-14)."
+          fi
+          echo "- DL-01 input: ${input:-none}" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Simulator
+        run: |
+          set -euo pipefail
+          udid=""
+          for type in 'iPhone SE (3rd generation)' 'iPhone 17e'; do
+            if udid="$(xcrun simctl create kill-sim "$type" 2>/dev/null)"; then break; fi
+            udid=""
+            echo "::warning::no '${type}' simulator on this image"
+          done
+          [ -n "$udid" ] || { echo "::error::could not create a simulator"; xcrun simctl list devicetypes; exit 1; }
+          t0=$SECONDS
+          xcrun simctl bootstatus "$udid" -b > "$RUNNER_TEMP/bootstatus.log" 2>&1 || { tail -40 "$RUNNER_TEMP/bootstatus.log"; exit 1; }
+          echo "::notice title=Simulator::${type}, booted in $((SECONDS - t0)) s"
+          echo "- Simulator: ${type}, booted in $((SECONDS - t0)) s" >> "$GITHUB_STEP_SUMMARY"
+          echo "UDID=$udid" >> "$GITHUB_ENV"
+
+      - name: Kill harness (exit 0 only when every run kept its letter and the self-check caught every plant)
+        env:
+          MODE: ${{ matrix.mode }}
+          RUNS: ${{ matrix.runs }}
+          POINTS: ${{ matrix.points }}
+          LABEL: ${{ matrix.mode }} ${{ matrix.n }} of ${{ matrix.of }}
+        run: |
+          set +e
+          if [ "$MODE" = dl02 ]; then extra=(--point-runs "$POINTS")
+          # --mic-silent: a hosted runner has no room microphone, and the simulator records from the silent input above.
+          # Never pass it on a Mac in a family room (apps/mobile/e2e/README.md section 9).
+          else extra=(--mic-silent); fi
+          mkdir -p "$RUNNER_TEMP/diag"
+          node apps/mobile/e2e/kill/run-kill-harness.mjs --mode "$MODE" --udid "$UDID" \
+            --app "$RUNNER_TEMP/kill-app/App.app" --runs "$RUNS" "${extra[@]}" --out "$RUNNER_TEMP/kill" 2>&1 \
+            | tee "$RUNNER_TEMP/diag/harness.log"
+          code=${PIPESTATUS[0]}
+          echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s" >> "$GITHUB_STEP_SUMMARY"
+          case "$code" in
+            0) echo "::notice title=${LABEL} PASS::every run kept its letter or take exactly once, and the self-check caught every plant" ;;
+            1) echo "::error title=${LABEL} exit 1 (loss)::a letter or take was lost, doubled or damaged, the app did not start after a kill, or DL-01 is under 49 in 50 playable. S0: report.md names the run, seed and kill time" ;;
+            2) echo "::error title=${LABEL} exit 2 (not run)::usage or a refused setup (wrong bundle id, no --mic-silent)" ;;
+            3) echo "::error title=${LABEL} exit 3 (incomplete)::a timeout, no microphone (record_failed), fewer runs judged than planned, or the drill never armed. With app_exited at self-check run 0 the app could not launch: the next step prints why. report.md names the stage" ;;
+            4) echo "::error title=${LABEL} exit 4 (blind)::the self-check missed a planted failure, so this run proves nothing" ;;
+            *) echo "::error title=${LABEL} exit ${code}::not a harness exit code" ;;
+          esac
+          exit "$code"
+
+      # When a run fails, why the app stopped: its crash reports, its own log lines and the drill's in the simulator,
+      # and the harness's output, into the job log and the kill-diagnostics artifact. On CI none of this can hold a
+      # letter's words or audio: the app logs no letter text (CLAUDE.md privacy rules), and the drill's only data is
+      # the fictional Asha's fixtures (a typed line and a generated tone).
+      - name: Why the app stopped (on failure)
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/diag"
+          cp "$RUNNER_TEMP/bootstatus.log" "$RUNNER_TEMP/diag/" 2>/dev/null || true
+          .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/kill-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/kill-app/main.jsbundle.map"
+
+      - name: Upload the diagnostics (on failure)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-diagnostics-${{ matrix.mode }}-${{ matrix.n }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Keep the shard report for the merge (gate, DL-01)
+        if: always() && needs.plan.outputs.size == 'gate' && matrix.mode == 'dl01'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/kill
+          key: kill-report-${{ github.run_id }}-${{ matrix.mode }}-${{ matrix.n }}
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-${{ matrix.mode }}-${{ matrix.n }}-of-${{ matrix.of }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/kill
+          retention-days: 30
+
+  dl01-merged:
+    name: dl01 merged (the DL-01 gate verdict)
+    needs: [plan, harness]
+    if: always() && needs.plan.outputs.size == 'gate' && needs.harness.result != 'skipped'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-1', fail-on-cache-miss: true }
+      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s1"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-2', fail-on-cache-miss: true }
+      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s2"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-3', fail-on-cache-miss: true }
+      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s3"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: { path: '${{ runner.temp }}/kill', key: 'kill-report-${{ github.run_id }}-dl01-4', fail-on-cache-miss: true }
+      - run: mv "$RUNNER_TEMP/kill" "$RUNNER_TEMP/s4"
+      - name: Merge the four shards (refuses a duplicate shard or shards of another build)
+        run: |
+          set +e
+          node apps/mobile/e2e/kill/run-kill-harness.mjs --merge "$RUNNER_TEMP"/s1/report.json "$RUNNER_TEMP"/s2/report.json \
+            "$RUNNER_TEMP"/s3/report.json "$RUNNER_TEMP"/s4/report.json --out "$RUNNER_TEMP/merged"
+          code=$?
+          case "$code" in
+            0) echo "::notice title=DL-01 merged PASS::500 of 500 kept, and every shard's self-check caught every plant" ;;
+            1) echo "::error title=DL-01 merged exit 1 (loss)::a take was lost, doubled or damaged, the app did not start after a kill, or under 49 in 50 playable. S0" ;;
+            2) echo "::error title=DL-01 merged exit 2::the shards could not be merged (a duplicate shard, or another build or settings)" ;;
+            3) echo "::error title=DL-01 merged exit 3 (incomplete)::a shard did not finish every run (never armed, a timeout, no microphone)" ;;
+            4) echo "::error title=DL-01 merged exit 4 (blind)::a shard's self-check missed a planted failure" ;;
+            *) echo "::error title=DL-01 merged exit ${code}::not a harness exit code" ;;
+          esac
+          exit "$code"
+      - name: Upload the merged report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-dl01-merged-${{ github.run_id }}
+          path: ${{ runner.temp }}/merged
+          retention-days: 30
