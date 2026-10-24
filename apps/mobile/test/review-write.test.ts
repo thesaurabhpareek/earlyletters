@@ -92,6 +92,12 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(moment).toMatch(/<ExcerptFade text=\{words\} lines=\{SAVED_CARD_LINES\} variant="letterBody" surface=\{c\.surfaceRaised\} \/>/);
   });
 
+  it('VoiceOver hears the chip and the line once, as they appear, and nothing claims a save before the commit', () => {
+    const effect = moment.slice(moment.indexOf('useEffect(() => {'), moment.indexOf('const cardStyle'));
+    expect(effect.indexOf("announce([chip, line].filter(Boolean).join(' '))")).toBeGreaterThan(effect.indexOf('if (!committed) return;'));
+    expect(moment).toMatch(/accessible=\{committed\}/);
+  });
+
   it('the chip carries the website\'s lit edge, and a plain line under Increase Contrast or Reduce Transparency', () => {
     expect(moment).toMatch(/const LIT_EDGE = `\$\{tokens\.atmosphere\.tone\.amber\}66`/);
     expect(moment).toMatch(/borderColor: highContrast \|\| reduceTransparency \? c\.line : LIT_EDGE/);

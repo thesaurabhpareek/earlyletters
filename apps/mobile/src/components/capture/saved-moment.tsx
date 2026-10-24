@@ -25,7 +25,7 @@ import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withD
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Text } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { useReducedMotion } from '@/lib/motion';
 import { fileIntoMonthPlan } from '@/lib/transitions.logic';
 import { LetterHeaderRow, useSheetSurface, type LetterHeader } from './letter-sheet';
@@ -75,6 +75,8 @@ export function SavedMoment({
 
   useEffect(() => {
     if (!committed) return;
+    // Said once, as it appears (the card itself is hidden from VoiceOver while it files away).
+    announce([chip, line].filter(Boolean).join(' '));
     const g = M.gentle;
     const spring = { stiffness: g.stiffness, damping: g.damping, mass: g.mass, reduceMotion: ReduceMotion.Never };
     if (plan.scaleTo !== 1) {
@@ -104,6 +106,7 @@ export function SavedMoment({
     <Pressable
       onPress={finish}
       className="flex-1 justify-center px-4"
+      accessible={committed}
       accessibilityRole="button"
       accessibilityLabel={[chip, line].filter(Boolean).join(' ')}
       testID="review.saved">
