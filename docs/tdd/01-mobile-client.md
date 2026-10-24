@@ -394,7 +394,7 @@ Rules:
    - Channels: `preview` and `production`; a staged rollout percentage for production OTA where supported (**Unverified**), and an immediate rollback by republishing the previous update.
    - Every OTA must pass the same release gates as a binary except device-matrix and store checks (7.9).
    - `expo-updates` makes a network request at launch (update check). This is not analytics, but it is a network destination: list it in the data map and privacy label review (LEGAL-REQ-041). Check after first frame (`checkAutomatically: 'ON_LOAD'` with `fallbackToCacheTimeout: 0`, names **Unverified**) so launch never waits.
-6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS. Amended by ADR 0022: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate, and `ios-v<x.y.z>` marks the released one; the version lives in `apps/mobile/version.json`.
+6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS. Amended by ADR 0022: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate, and `ios-v<x.y.z>` marks the released one; the version lives in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`).
 7. Privacy manifest (`PrivacyInfo.xcprivacy`) generated in `app.config.ts` from `docs/legal/data-map.yaml` once it exists; until then a checked-in list reviewed per release. Required-reason APIs used by Expo modules (UserDefaults, file timestamps, disk space for the low-storage check) declared.
 8. CI builds Android on every PR (no release) so parity breaks show up immediately.
 

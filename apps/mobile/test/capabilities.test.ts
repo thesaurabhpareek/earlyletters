@@ -441,7 +441,9 @@ describe('[D-115] the preflight fails either alpha build without the signed Engl
 
   it('gives the D-115 PASS only when the key check passed: a repeated key id withholds it', () => {
     const source = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
-    expect(source).toMatch(/keysUsable = repeated\.length === 0;\n\s*if \(repeated\.length\) fail\(/);
+    expect(source).toMatch(/keysUsable = repeated\.length === 0;\n\s*if \(repeated\.length\) \{\n\s*fail\(/);
+    // ...and the founder-step summary says FAIL for step 4 then, not CHECK.
+    expect(source).toMatch(/stepFourMissing\.push\(`FAIL above: packages\/api\/src\/keys\.ts lists key id/);
     expect(source).toMatch(/if \(keysUsable && manifestPublished\) pass\('D-115:/);
     expect(source.match(/pass\('D-115:/g)).toHaveLength(1);
   });

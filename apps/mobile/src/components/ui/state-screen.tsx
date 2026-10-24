@@ -144,19 +144,28 @@ export type InlineStateProps = Common & {
   children?: ReactNode;
   /** Spoken name when the visible text is not enough (loading with a count). */
   accessibilityLabel?: string;
+  /**
+   * Loading's drawing holds still (Review while "Hear it" plays, S14). Every other kind's drawing, when `art` names
+   * one, is always still: in the hard moments nothing moves (EXPERIENCE_PASS S16).
+   */
+  still?: boolean;
 };
 
-export function InlineState({ kind, title, body, glyph, primary, quiet, children, accessibilityLabel }: InlineStateProps) {
+export function InlineState({ kind, title, body, art, glyph, primary, quiet, children, accessibilityLabel, still = false }: InlineStateProps) {
   const spec = STATE_SPEC[kind];
   const focused = useIsFocused();
+  // Loading always has its drawing (breathing unless held still); other kinds show one only when `art` names it (S16).
+  const drawing = kind === 'loading' ? (art ?? spec.art) : art;
   return (
     <Card padding={6} radius="xl" className="gap-4" accessibilityLabel={accessibilityLabel} {...stateA11y(kind)}>
       {glyph ? (
         <StateGlyph icon={glyph} />
-      ) : kind === 'loading' ? (
-        <Breathe paused={!focused}>
-          <LineArt name={spec.art} width={96} style={{ marginLeft: -8 }} />
+      ) : drawing && kind === 'loading' ? (
+        <Breathe paused={!focused || still}>
+          <LineArt name={drawing} width={96} style={{ marginLeft: -8 }} />
         </Breathe>
+      ) : drawing ? (
+        <LineArt name={drawing} width={96} animate={false} style={{ marginLeft: -8 }} />
       ) : null}
       <View className="gap-1.5">
         <Text variant="headline" asHeading>

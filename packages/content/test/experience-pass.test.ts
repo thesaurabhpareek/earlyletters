@@ -49,6 +49,9 @@ function leaves(value: unknown, path = ''): Leaf[] {
 const CHANGED = [
   // Switched by P2 with the stop screen that shows it alone (S02).
   'en.ageGate.stopTitle',
+  // Switched by P4 with Listen telling off, in use and full apart (S13).
+  'en.errors.micDenied.title',
+  'en.errors.micDenied.body',
   'en.onboarding.child.nameLabel',
   'en.onboarding.child.expectingHelp',
   'en.onboarding.child.addAnotherHelp',
@@ -228,8 +231,6 @@ const WE_ALLOWED = new Set([
  * billingCopy.plan.* is registered text (in-app-disclosures.md section 3), so its new words wait for counsel.
  */
 const HELD: Record<string, string> = {
-  'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
-  'en.errors.micDenied.body': 'P4',
   'features.billing.plan.monthly': 'P6, after counsel', // shown beside plan.yearly; registered group
   'features.billing.plan.payment': 'counsel, then P6',
   'features.billing.plan.grace': 'counsel, then P6',
