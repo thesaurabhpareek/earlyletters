@@ -1,8 +1,9 @@
 // web: later (<span> with dotted underline) | android: same (verify dotted underline, COMPONENTS 2.19)
 /**
- * Transcript paragraph with quiet dotted underlines on machine edits
- * (COMPONENTS 2.19, MOTION 5d). Underlines render at final opacity on the
- * first frame. A pure deletion shows as a short dotted mark where the
+ * Transcript paragraph with every machine edit marked (COMPONENTS 2.19, MOTION 5d), in the website ProofLetter's
+ * grammar (EXPERIENCE_PASS S17): a word taken out is struck through in textMuted; a word spelled another way (a
+ * misheard name) shows the struck heard word followed by the kept word on an accentSoft wash; added punctuation keeps
+ * the quiet dotted underline. Every mark is at full strength from the first frame and tappable. A pure deletion shows as a short dotted mark where the
  * words were: an inline mark on an accentSoft wash with a solid editMark underline (it reads as a
  * mark, not as an ellipsis typo), 32pt wide, whose hitSlop makes a 44x44pt target. Nested Text is not
  * reliably focusable by VoiceOver, so Review also lists every edit as a row.
@@ -58,7 +59,24 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
         }
         const open = s.edit === openEdit;
         const edit = s.edit;
-        const taken = !s.text && edits?.[edit] ? rowShows(edits[edit]) : null;
+        const shows = edits?.[edit] ? rowShows(edits[edit]) : null;
+        const taken = !s.text ? shows : null;
+        if (s.text && shows?.kind === 'change') {
+          // A word spelled another way: what was heard, struck, then the kept word on a wash (S17).
+          return (
+            <Text
+              key={i}
+              onPress={() => onPressEdit(edit)}
+              accessibilityRole="button"
+              accessibilityLabel={fill(copy.review.rowChange, { a: shows.from, b: shows.to })}
+              accessibilityHint={pendingCopy.review.editA11yHint}
+              suppressHighlighting
+              testID="review.mark.change">
+              <Text style={{ textDecorationLine: 'line-through', textDecorationStyle: 'solid', textDecorationColor: mark, color: c.textMuted }}>{shows.from}</Text>{' '}
+              <Text style={{ backgroundColor: c.accentSoft, textDecorationLine: open ? 'underline' : 'none', textDecorationColor: mark }}>{s.text}</Text>
+            </Text>
+          );
+        }
         if (taken?.kind === 'struck') {
           // Words taken out, kept visible and struck through; a tap opens the "You said / Now it reads" card.
           return (
