@@ -27,12 +27,13 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: plan.view, details: {}, checkedAt: null }),
 }));
+vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 
 const store = await import('../src/lib/store');
-const { afterLetterKept, keepGateFor } = await import('../src/lib/billing/gates');
+const { countAfterSave, keepSheetFor } = await import('../src/lib/billing/keep-step');
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 const { armKeep, consumeKeep, peekKeep, resetKeep } = await import('../src/lib/capture/keep-intent');
-const { primaryDestination, typedFinalText } = await import('../src/components/capture/review-view.logic');
+const { primaryDestination, typedFinalText, writeSwipeAllowed, writeWords } = await import('../src/components/capture/review-view.logic');
 
 const PLUS: PlanView = { state: 'active', effectiveUntil: '2099-01-01T00:00:00Z', verifiedAt: '2026-10-03T00:00:00Z', environment: 'production', isTester: false };
 const now = () => '2026-10-03T09:00:00.000Z';
@@ -74,21 +75,22 @@ function writeDraft(text: string): string {
 type Outcome = { outcome: 'kept' | 'sheet' | 'nothing'; holding: boolean };
 
 /**
- * Review's one Keep step, in review.tsx's order (`save(inBook)`): the gate with `finalText`, then the letter, then
- * the count. `finalText` is `userText ?? cleanedText`, and a typed letter's `cleanedText` is `typedFinalText(raw)`.
+ * Review's one Keep step, in review.tsx's order (`save(inBook)`): the Keep step rule (lib/billing/keep-step.ts,
+ * #277) with `finalText` (`keepSheetFor`: a gate means the sheet opens and nothing is written), then the letter,
+ * then the count (`countAfterSave`). `finalText` is `userText ?? cleanedText`, and a typed letter's `cleanedText`
+ * is `typedFinalText(raw)`.
  */
 async function save(draftId: string, inBook: boolean, userText: string | null = null): Promise<'kept' | 'sheet'> {
   const d = store.getDraft(draftId)!;
   const raw = d.typedText ?? '';
   const finalText = userText ?? typedFinalText(raw);
-  const gate = await keepGateFor({ wordsOnScreen: finalText });
-  if (gate !== null && gate.decision.kind === 'offer') return 'sheet';
+  if ((await keepSheetFor(finalText)) !== null) return 'sheet';
   store.saveLetterFromDraft(d.id, {
     id: d.id, kind: 'letter', occurredOn: '2026-10-03', capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
     promptKey: null, engineVersion: 5, rawTranscript: raw, machineEdits: [], finalText, inBook, soundsLikeMe: null,
     childId: asha, authorSignsAs: 'Mama', audioUri: null, audioDurationMs: null,
   });
-  await afterLetterKept();
+  await countAfterSave(finalText);
   return 'kept';
 }
 
@@ -175,10 +177,113 @@ describe('[S20, D-103] the one-tap keep asks the M17 gate', () => {
     expect(counted()).toBe(3);
   });
 
+  it('[L1] Review\'s path asks the gate for a typed letter too: past the free letters the Keep sheet opens and nothing is written', async () => {
+    // Two typed letters kept on Review's path (no tap on Write, so no intent): free.
+    for (const words of ['You held my thumb.', 'Two teeth today.']) {
+      const id = writeDraft(words);
+      expect(await reviewMounts(id)).toEqual({ outcome: 'nothing', holding: false });
+      expect(await save(id, true)).toBe('kept');
+    }
+    expect(counted()).toBe(2);
+    // The third, typed, on Review's path: "Add to Asha's book" opens the Keep sheet, for Keep private too.
+    const third = writeDraft(SMART);
+    const before = store.getDraft(third);
+    expect(await reviewMounts(third)).toEqual({ outcome: 'nothing', holding: false });
+    expect(await save(third, true)).toBe('sheet');
+    expect(await save(third, false)).toBe('sheet');
+    expect(store.getEntry(third)).toBeNull();
+    expect(store.getDraft(third)).toEqual(before); // held: the draft is untouched, its words as typed
+    expect(counted()).toBe(2);
+    // With Plus, the same tap keeps it, exactly as typed.
+    plan.view = PLUS;
+    expect(await save(third, true)).toBe('kept');
+    expect(store.getEntry(third)!.finalText).toBe(SMART);
+    expect(counted()).toBe(3);
+  });
+
   it('"Try again" after a save that did not work keeps the letter where the person chose', () => {
     expect(primaryDestination({ saveFailed: true, lastInBook: false })).toBe(false);
     expect(primaryDestination({ saveFailed: true, lastInBook: true })).toBe(true);
     expect(primaryDestination({ saveFailed: false, lastInBook: false })).toBe(true); // before a failure the primary is the book
+  });
+});
+
+describe('[S19, L3] Write on a lasting write failure: the words stay, and so does the sheet, until a write works', () => {
+  it('a failed write holds Close, Android\'s back and the swipe; the next good write saves the newest words and releases all three', () => {
+    // Write's persist(): writeWords with the store's own createDraft and setDraftTyped. A full disk throws.
+    let disk = true;
+    const io = {
+      create: (v: string) => {
+        if (!disk) throw new Error('SQLITE_FULL');
+        return store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: v }).id;
+      },
+      update: (id: string, v: string) => {
+        if (!disk) throw new Error('SQLITE_FULL');
+        store.setDraftTyped(id, v);
+      },
+    };
+    let draftId: string | null = null;
+    let line: 'none' | 'saved' | 'failed' = 'none'; // "Saved on this phone" or "Not saved yet"
+    const persist = (value: string): boolean => {
+      const r = writeWords(io, draftId, value);
+      draftId = r.draftId;
+      if (r.saveState) line = r.saveState;
+      return r.ok;
+    };
+    const closes = (text: string) => !text.trim() || persist(text); // close() and Android's back
+    const swipes = (text: string) => writeSwipeAllowed({ text, writeFailed: line === 'failed' });
+    // A swipe down: allowed, it closes; refused, iOS springs the sheet back and Write runs close() (gestureCancel).
+    const swipeCloses = (text: string) => swipes(text) || closes(text);
+
+    expect(persist('   ')).toBe(false); // nothing typed: nothing written, nothing shown
+    expect([draftId, line]).toEqual([null, 'none']);
+    expect(persist('Asha, you')).toBe(true);
+    expect(line).toBe('saved');
+    expect(swipes('Asha, you')).toBe(true);
+
+    disk = false;
+    expect(persist('Asha, you sang')).toBe(false);
+    expect(line).toBe('failed'); // "Not saved yet"
+    expect(swipes('Asha, you sang')).toBe(false);
+    expect(closes('Asha, you sang')).toBe(false); // Close and Android's back stay on Write
+    expect(store.getDraft(draftId!)!.typedText).toBe('Asha, you'); // the phone still has the last good words
+    expect(swipes('  ')).toBe(true); // nothing on screen to lose
+    expect(swipeCloses('Asha, you sang')).toBe(false); // the refused swipe retried the write: still "Not saved yet"
+    expect(line).toBe('failed');
+
+    // The disk comes back and the person types nothing more: the last autosave still says it failed, so the swipe
+    // is still refused, but the refused swipe retries the write as Close does, and both close.
+    disk = true;
+    expect(swipes('Asha, you sang')).toBe(false);
+    expect([swipeCloses('Asha, you sang'), line]).toEqual([true, 'saved']);
+    expect(store.getDraft(draftId!)!.typedText).toBe('Asha, you sang');
+    expect(closes('Asha, you sang')).toBe(true);
+
+    expect(persist('Asha, you sang to the cat')).toBe(true);
+    expect(line).toBe('saved'); // "Saved on this phone" again
+    expect(swipes('Asha, you sang to the cat')).toBe(true);
+    expect(closes('Asha, you sang to the cat')).toBe(true);
+    expect(store.getDraft(draftId!)!.typedText).toBe('Asha, you sang to the cat');
+  });
+
+  it('a first write that fails creates nothing, and the next one creates the draft once', () => {
+    let disk = false;
+    let created = 0;
+    const io = {
+      create: (v: string) => {
+        if (!disk) throw new Error('SQLITE_FULL');
+        created++;
+        return store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: v }).id;
+      },
+      update: (id: string, v: string) => store.setDraftTyped(id, v),
+    };
+    expect(writeWords(io, null, 'You waved.')).toEqual({ ok: false, draftId: null, saveState: 'failed' });
+    disk = true;
+    const r = writeWords(io, null, 'You waved.');
+    expect(r).toMatchObject({ ok: true, saveState: 'saved' });
+    expect(writeWords(io, r.draftId, 'You waved at me.')).toEqual({ ok: true, draftId: r.draftId, saveState: 'saved' });
+    expect(created).toBe(1);
+    expect(store.getDraft(r.draftId!)!.typedText).toBe('You waved at me.');
   });
 });
 
@@ -204,6 +309,12 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
     expect(review).toMatch(/const finalText = userText \?\? cleanedText;/);
     expect(save).toMatch(/^\s*finalText,$/m);
     expect(save).not.toMatch(/finalText:\s*cleanedText|cleanedText/);
+  });
+
+  it('[L1] the gate in save is exactly `if (await keepNeedsPlus(finalText)) {`, with nothing in front of it', () => {
+    // The only thing before it is hashing the recording; no condition (typed, keeping, a flag) can skip it.
+    expect(save).toMatch(/try \{\s*const audio = await ensureAudioHash\(draft\);\s*if \(await keepNeedsPlus\(finalText\)\) \{\s*saving\.current = false;\s*return;\s*\}/);
+    expect(save.match(/^.*keepNeedsPlus.*$/gm)?.map((l) => l.trim())).toEqual(['if (await keepNeedsPlus(finalText)) {']);
   });
 
   it('save always asks keepNeedsPlus before writing, and knows nothing of where the keep came from', () => {
