@@ -9,7 +9,10 @@
  *               on the outbox op); the card stays in its row while the page goes back into it, then collapses out
  *               of its row when the Book is on screen again, and the Book shows "Letter deleted." with Undo.
  *   first seen  the other parent's letter, the first time this phone shows it (option B): the same wash, once.
+ *   second free with `secondFree=1` the arrival also brings "That was your second free letter." as a toast, once
+ *               (S21, D-082; P4b sets it with `arrived`).
  */
+import { tokens } from '@scribe/design-tokens';
 import type { Entry } from '@/lib/store';
 
 /* ------------------------------------------------------------------ */
@@ -27,6 +30,20 @@ export function arrivalOf(param: string | string[] | undefined, sections: readon
     if (i >= 0) return { id, sectionIndex: s, itemIndex: i };
   }
   return null;
+}
+
+/**
+ * The second kept letter (S21, D-082): Review passes `secondFree=1` with `arrived`, and the Book shows "That was your
+ * second free letter." as its own toast once the landing is done: no action, so it leaves after 4 s (ui/toast.tsx).
+ * Only the exact value "1" counts, so no other param or link can raise it.
+ */
+export function secondFreeOnArrival(param: string | string[] | undefined): boolean {
+  return (Array.isArray(param) ? param[0] : param) === '1';
+}
+
+/** After the landing: Review's dissolve onto the Book (the route's own length; fadeMs under Reduce Motion). */
+export function arrivalToastDelayMs(reduced: boolean): number {
+  return reduced ? tokens.motion.fadeMs : tokens.motion.route.dissolveMs;
 }
 
 /* ------------------------------------------------------------------ */

@@ -479,6 +479,19 @@ export function exitFor(report) {
   return EXIT.pass;
 }
 
+/**
+ * Why a report exits 1. 'loss': a run lost, doubled or damaged a letter or recording, the app did not start after
+ * a kill, or a database check failed (S0 in docs/qa/DEVICE_TEST_PLAN.md). 'playable': nothing of that, and only
+ * 07's DL-01 rule failed (49 or more of 50 kept takes play to within 5 s of the kill), with the counts. Null for any
+ * other exit. The exit stays 1 either way; this only names the case.
+ */
+export function failReason(report) {
+  if (report.exit !== EXIT.fail) return null;
+  const c = countsOf(report);
+  if (report.mode !== 'dl01' || c.bad > 0 || (report.audits ?? []).length > 0) return { kind: 'loss' };
+  return { kind: 'playable', playing: c.within5s, judged: c.completed, needed: Math.ceil(DEFAULTS.playableShare * c.completed) };
+}
+
 /** Whether a report is big enough to be the B2-11 gate. */
 export function meetsGate(report) {
   const c = countsOf(report);
@@ -540,6 +553,8 @@ export function mergeReports(reports) {
 const VERDICT = {
   [EXIT.pass]: 'PASS: every run kept its letter or recording exactly once, the database checked clean after every relaunch, and the self-check caught every planted failure',
   [EXIT.fail]: 'FAIL: a run lost, doubled or damaged a letter or recording, the app did not start after a kill, or the database check failed',
+  // Exit 1 too, but nothing lost: see failReason and renderMarkdown.
+  playable: (w) => `FAIL, the DL-01 playable rule only: nothing lost, doubled or damaged, but ${w.playing} of ${w.judged} kept takes play to within 5 s, and 07 needs 49 in 50 (${w.needed} of ${w.judged})`,
   [EXIT.usage]: 'NOT RUN: usage error',
   [EXIT.incomplete]: 'INCOMPLETE: not every run finished (see errors); this is not a pass',
   [EXIT.blind]: 'BLIND: the self-check missed a planted failure, so this run proves nothing',
@@ -555,7 +570,7 @@ export function renderMarkdown(report) {
   const lines = [
     `# Kill harness: ${title}`,
     '',
-    `**${VERDICT[report.exit]}** (exit ${report.exit}).`,
+    `**${failReason(report)?.kind === 'playable' ? VERDICT.playable(failReason(report)) : VERDICT[report.exit]}** (exit ${report.exit}).`,
     '',
     '| | |',
     '|---|---|',
@@ -569,7 +584,7 @@ export function renderMarkdown(report) {
   lines.push(`| Started, finished (UTC) | ${report.startedAt}, ${report.finishedAt ?? 'not finished'} |`);
   const devices = (Array.isArray(report.device) ? report.device : [report.device]).filter(Boolean);
   for (const d of devices) lines.push(`| Device and build | ${Object.entries(d).map(([k, v]) => `${k} ${v}`).join('; ')} |`);
-  if (Object.keys(report.sweep ?? {}).length) lines.push(`| The app's launch sweep, summed | ${Object.entries(report.sweep).map(([k, n]) => `${k} ${n}`).join(', ')} |`);
+  if (Object.keys(report.sweep ?? {}).length) lines.push(`| The app's launch sweep, summed over every launch, the self-check's included | ${Object.entries(report.sweep).map(([k, n]) => `${k} ${n}`).join(', ')} |`);
   lines.push('', '| Outcome | Runs |', '|---|---|');
   const order = report.mode === 'dl02' ? ['letter', 'draft', 'lost', 'doubled', 'fail'] : ['kept-playable', 'kept-unplayable', 'lost', 'doubled', 'fail'];
   for (const k of order) lines.push(`| ${k} | ${c[k] ?? 0} |`);

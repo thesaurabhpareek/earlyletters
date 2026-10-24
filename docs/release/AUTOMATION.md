@@ -172,7 +172,7 @@ Every workflow below sets `permissions: {}` at the top and grants per job only w
 | C. Ignored Build Step | field exists [V30] | [U] whether it runs before `build-container-init` |
 | D. `git.deploymentEnabled` in `vercel.json` | read from the deployed branch [V30] | does not work here |
 
-**Branch protection (AF-03, now).** On both branches: require a pull request; require `required` and `applied migrations unchanged` (both already report on every PR [R: #152 check runs]); block force pushes and deletions; **do not allow bypassing** (so founder-credential sessions cannot push directly). On `main` also one approving review, from the approver. On `develop` no approval count (D-107 lets the coordinator merge app code) until AF-21: CODEOWNERS names the approver for the founder-only paths of D-107 (`supabase/**`, auth, payments, `.github/**`, `apps/mobile/{eas.json,app.config.ts}`, the engine files), and "Require review from Code Owners" turns on. After RA-20-03 the required list grows to `fence` and the four aggregators.
+**Branch protection (AF-03, now).** On both branches: require a pull request; require `required` and `applied migrations unchanged` (both already report on every PR [R: #152 check runs]); block force pushes and deletions; **do not allow bypassing** (so founder-credential sessions cannot push directly). On `main` also one approving review, from the approver. On `develop` no approval count (D-107 lets the coordinator merge app code; since 23 Oct, D-117's operating rule also lets the coordinator merge D-107's founder-only paths after two independent passing reviews on the current head and green CI, so AF-21 as written would add a review D-117 does not ask for) until AF-21: CODEOWNERS names the approver for the founder-only paths of D-107 (`supabase/**`, auth, payments, `.github/**`, `apps/mobile/{eas.json,app.config.ts}`, the engine files), and "Require review from Code Owners" turns on. After RA-20-03 the required list grows to `fence` and the four aggregators.
 
 ### 2.2 Merge to `develop`: staging database and Edge Functions
 
@@ -336,7 +336,7 @@ Until RA-20-07 exists, every TestFlight undo is the App Store Connect click it n
 
 - **May dispatch**: the coordinator dispatches `testflight.yml` (lands in "Founder" only, within the cap; ADR 0022 has the coordinator run builds) and `release-cut.yml`; any agent may dispatch `ios-compile.yml`, `nightly.yml`, the kill harness, `ios-e2e.yml`, `web-e2e.yml`, `health.yml` and `advisors.yml`.
 - **Never dispatch**: `deploy-db.yml`, `deploy-functions.yml`, `packs-publish.yml`, `testflight-testers.yml`, `release-ios.yml` (COORDINATION section 6: agents never deploy, publish or apply migrations). They run on their merge or tag trigger, or by the founder. Changing that needs a decision entry amending COORDINATION section 6.
-- **Never**: approve a deployment; set, read or change a secret, an environment or **any repository or environment variable (`R17_PASSED` above all)**; change a setting, ruleset or branch protection; merge founder-class PRs (D-107); push tags, except the coordinator's RC and `db-v*` tags in 2.5.
+- **Never**: approve a deployment; set, read or change a secret, an environment or **any repository or environment variable (`R17_PASSED` above all)**; change a setting, ruleset or branch protection; merge founder-class PRs, except the coordinator under D-117's operating rule (the coordinator's, which the founder may reverse): after two independent passing reviews on the current head and green CI (`npm run test:db` green for database pull requests); push tags, except the coordinator's RC and `db-v*` tags in 2.5.
 - **Connectors are production credentials.** The Supabase, Vercel and mail connectors in agent sessions bypass every GitHub gate (0.1 item 8). Agents do not use them against staging, production or the founder's inbox; RA-01-01 lists them.
 - Read results with `actions_list`, `actions_get`, `get_job_logs`. Summaries carry build numbers, links and verdicts, never secrets, tester text or project URLs. Limits: a job runs at most 6 hours; a run, including approval waits, at most 35 days [V6].
 
@@ -422,7 +422,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 | # | Step | Minutes | Unblocks | Page |
 |---|---|---|---|---|
 | AF-20 | Actions settings: default workflow permissions read-only; Actions may not create or approve PRs; "Require approval for all external contributors"; an event policy allowing `pull_request_target` for `fence.yml` only, **before Mon 2 Nov or before #30 merges, whichever is first**; "Require actions to be pinned to a full-length commit SHA" once `agents.yml` and `claude.yml` are pinned | 20 | the fence after 2 Nov | [V34], [V-S01] |
-| AF-21 | Merge RA-20-17 (CODEOWNERS names the approver for D-107's founder-only paths), then turn on "Require review from Code Owners" on `develop` | 10 | D-107 enforced, not only written | [V7] |
+| AF-21 | Merge RA-20-17 (CODEOWNERS names the approver for D-107's founder-only paths), then turn on "Require review from Code Owners" on `develop` | 10 | D-107 enforced, not only written (D-117 now lets the coordinator merge these paths; see "Branch protection" in 2.1) | [V7] |
 | AF-22 | The remaining environments (`testers`, `app-store`, `packs`, `health`, `agents`) as each package lands, with the secrets of 2.0; delete the repository `EXPO_TOKEN` after one green dispatch of `testflight.yml` with the environment secret (RA-20-06a, #241), as AF-07 and 2.3 say; or now, since nothing on `develop` or `main` reads it and `testflight.yml` has never run, putting the robot token straight into `testflight`, so that the first green run proves the environment secret was read | 30 | RA-20-06, -07, -08, -11, -12 | [V2] |
 | AF-23 | Rulesets for tags `ios-v*`, `db-v*` and branch `release/*` | 10 | store lane | [V7] |
 | AF-24 | Code security: Dependabot alerts and updates, CodeQL default setup; confirm push protection is on | 10 | 2.9 | [V11], [V-S01] |
@@ -468,7 +468,7 @@ Globs: `.github/**` except the harness workflows while the "harness landing" cla
 | RA-20-13 | Optional website staged promote (`autoAssignCustomDomains` off and `vercel promote` [V30]) in a `web-production` environment | AF-15 | rehearsed on a no-op change | no |
 | RA-20-14 | Docs cross-links; the private feedback workflow template | RA-07-04 | links resolve; `actionlint` passes | no |
 | RA-20-16 | Trace gate as a non-required PR job | #176 | runs on every PR | no |
-| RA-20-17 | CODEOWNERS proposal naming the approver for D-107's founder-only paths (founder-owned file) | AF-02 | founder merge, then AF-21 | no |
+| RA-20-17 | CODEOWNERS proposal naming the approver for D-107's founder-only paths (founder-owned file; D-117 now lets the coordinator merge those paths) | AF-02 | founder merge, then AF-21 | no |
 
 ### S07: platform and ops (`scripts/ops/**`, `scripts/packs/**`, `docs/ops/**` except S20's files)
 
