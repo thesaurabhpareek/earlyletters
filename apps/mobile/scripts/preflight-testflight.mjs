@@ -474,6 +474,7 @@ if (!SPEC.google) {
   // Same rule as docsBaseFor in src/lib/remote/base.logic.ts: an https origin, no path, no trailing slash.
   const valid = /^https:\/\/[^\s/]+$/.test(value.replace(/\/+$/, ''));
   let keySet = false;
+  let keysUsable = false;
   let keyIds = [];
   try {
     const keysSource = read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, '');
@@ -499,6 +500,7 @@ if (!SPEC.google) {
   } else {
     // The app and publish.ts take the first key with a given id, so a second key under the same id is never used (F19-REQ-002: two keys).
     const repeated = [...new Set(keyIds.filter((id, i) => keyIds.indexOf(id) !== i))];
+    keysUsable = repeated.length === 0;
     if (repeated.length) fail(`packages/api/src/keys.ts lists key id ${repeated.join(', ')} more than once; only the first is ever used, so the other key fails when it is needed. Give the backup its own id: \`node scripts/packs/keygen.mjs --backup\`.`);
     else if (keyIds.length < 2) warn(`packages/api/src/keys.ts trusts ${keyIds.length || 'one'} signing key; F19-REQ-002 asks for two, a primary and a cold backup (\`node scripts/packs/keygen.mjs --backup\`). With one, losing it stops every new document until an app release.`);
     else pass(`${keyIds.length} pack signing keys in packages/api/src/keys.ts, each with its own id`);
@@ -517,7 +519,8 @@ if (!SPEC.google) {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
     step(4, keySet ? 'check' : 'open', 'a manifest is in the repo; check the R2 bucket serves it');
   }
-  if (keySet && manifestPublished) pass('D-115: a trusted signing key and a published pack manifest are in the repo (the signed English pack release is a build 1 prerequisite; whether the host serves it is the UNVERIFIED line)');
+  // Only when the key check passed: a repeated key id already FAILed above.
+  if (keysUsable && manifestPublished) pass('D-115: a trusted signing key and a published pack manifest are in the repo (the signed English pack release is a build 1 prerequisite; whether the host serves it is the UNVERIFIED line)');
 }
 
 // ---------------------------------------------------------------- 6. no real family data (CLAUDE.md privacy rule)

@@ -425,10 +425,12 @@ describe('[D-115] the preflight fails either alpha build without the signed Engl
 
   it('FAILs testflight and preview, citing D-115, for each of the key and the manifest that is missing, and PASSes once both are in', async () => {
     const missing = (TRUSTED_SIGNING_KEYS.length === 0 ? 1 : 0) + (PACK_MANIFEST === null ? 1 : 0);
+    // A repeated key id FAILs on its own (F19-REQ-002), and then the D-115 PASS is withheld too.
+    const repeatedId = new Set(TRUSTED_SIGNING_KEYS.map((k) => k.keyId)).size !== TRUSTED_SIGNING_KEYS.length;
     for (const r of await Promise.all([preflight('testflight'), preflight('preview')])) {
       const lines = r.out.split('\n');
       expect(lines.filter((l) => l.startsWith('FAIL') && /D-115/.test(l)), r.out).toHaveLength(missing);
-      expect(lines.filter((l) => /^PASS\s+D-115:/.test(l)), r.out).toHaveLength(missing ? 0 : 1);
+      expect(lines.filter((l) => /^PASS\s+D-115:/.test(l)), r.out).toHaveLength(missing || repeatedId ? 0 : 1);
       expect(r.out).not.toMatch(/Step 4 is optional/);
       if (missing) {
         expect(r.code).toBe(1);
@@ -436,6 +438,13 @@ describe('[D-115] the preflight fails either alpha build without the signed Engl
       }
     }
   }, 180_000);
+
+  it('gives the D-115 PASS only when the key check passed: a repeated key id withholds it', () => {
+    const source = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
+    expect(source).toMatch(/keysUsable = repeated\.length === 0;\n\s*if \(repeated\.length\) fail\(/);
+    expect(source).toMatch(/if \(keysUsable && manifestPublished\) pass\('D-115:/);
+    expect(source.match(/pass\('D-115:/g)).toHaveLength(1);
+  });
 });
 
 // ---------------------------------------------------------------------------

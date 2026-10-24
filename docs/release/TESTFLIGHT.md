@@ -52,7 +52,7 @@ Each step names what it unblocks. The preflight prints the open ones by these na
 **Step 5. Build 1: preflight, build, submit, testers.** About 30 minutes of yours; the EAS queue and Apple's processing add an hour or more (*unverified*).
 - **From GitHub, once `develop` is the default branch (AF-05, founder):** Actions > testflight > Run workflow, branch `develop`, profile `testflight`, upload ticked. It runs typecheck, every test and `preflight:testflight` (read its log: WARN lines and the founder steps at the end), then builds on EAS and submits. Until AF-05 the button does not exist: GitHub offers Run workflow only for a workflow on the default branch, which is `main`, and `main` has no `testflight.yml` (`docs/release/AUTOMATION.md` section 0.1 item 3). So build 1 runs from your own computer (below).
 - **Signing, the first time:** the workflow runs `--non-interactive`, so the iOS distribution certificate and profile for `.preview` must already be in EAS. Either let EAS create them from the API key of step 2.6 (*unverified* in non-interactive mode), or run `npx eas-cli@latest credentials --platform ios` once on your own computer (10 minutes). The automation plan may add a one-off credentials job instead.
-- **From your own computer** (the path for build 1 until AF-05; same result): `npm ci`, `npm run preflight:testflight -w @scribe/mobile`, then in `apps/mobile`: `npx eas-cli@latest build --platform ios --profile testflight` and `npx eas-cli@latest submit --platform ios --profile testflight --latest`.
+- **From your own computer** (the path for build 1 until AF-05; same result): `npm ci`, `npm run preflight:testflight -w @scribe/mobile`, then in `apps/mobile`: `npx eas-cli@24.10.0 build --platform ios --profile testflight` and `npx eas-cli@24.10.0 submit --platform ios --profile testflight --latest` (the version `testflight.yml` pins as `EAS_CLI_VERSION`, so both paths build with one CLI).
 - **If `eas build` asks to install expo-updates, answer no.** The profiles set `channel`, but expo-updates is not installed and over-the-air updates are not planned for the alpha (`EXPO_PUBLIC_` values are inlined at build time, `apps/mobile/src/lib/capabilities.ts`).
 
 The build number is the EAS remote counter; the version comes from `app.config.ts`. Then add the build to a TestFlight group (below).
@@ -103,7 +103,7 @@ curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com  # what
 ```
 *Unblocks:* sign-in links and invite links opening the app from Mail and Messages; the calm fallback page when a link opens in a browser. Without it the links open the website, and the code from the same email still signs the person in.
 
-**Step 11. Build 2: preflight, build, submit, the family group only.** About 20 minutes of yours, plus the queue. Once `develop` is the default branch (AF-05): Actions > testflight > Run workflow, branch `develop`, profile `preview`, upload ticked (it runs `preflight:alpha`). Until then, from your own computer (answer no to the expo-updates prompt, as in step 5): `npm run preflight:alpha -w @scribe/mobile`, then `npx eas-cli@latest build --platform ios --profile preview` and `npx eas-cli@latest submit --platform ios --profile preview --latest` in `apps/mobile`.
+**Step 11. Build 2: preflight, build, submit, the family group only.** About 20 minutes of yours, plus the queue. Once `develop` is the default branch (AF-05): Actions > testflight > Run workflow, branch `develop`, profile `preview`, upload ticked (it runs `preflight:alpha`). Until then, from your own computer (answer no to the expo-updates prompt, as in step 5): `npm run preflight:alpha -w @scribe/mobile`, then `npx eas-cli@24.10.0 build --platform ios --profile preview` and `npx eas-cli@24.10.0 submit --platform ios --profile preview --latest` in `apps/mobile`.
 Add the build to the **Family** internal group only (below).
 *Unblocks:* the alpha with servers.
 
@@ -182,7 +182,7 @@ Build 1:
 Build 2:
 > This test adds signing in and sharing a book with the other parent. Please sign in with Apple or your email, keep a few letters, and check they are there after you sign out and back in on this phone. If you are two parents, invite the other one from the Family tab and write one letter each. Tell us anything that felt confusing, slow, or wrong, and what you were doing when it happened.
 
-If a build goes out without step 4, add: "Recording works, but the words will not appear yet."
+If a build goes out without step 4, add: "Recording works, but the words will not appear yet." That can happen only if the founder reverses D-115 first: the preflight FAILs both builds without the signed pack.
 
 ## What the preflight checks
 
