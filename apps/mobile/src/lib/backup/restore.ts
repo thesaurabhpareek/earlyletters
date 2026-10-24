@@ -16,8 +16,9 @@
  * the header names this entry, this author and the row's key version; every
  * segment authenticates; the original's SHA-256 inside the object equals the
  * decrypted file's, and the letter's own `audio_sha256` when this phone has
- * one. A failure discards the download and tries once more, then leaves the
- * letter "not on this phone" (F08-U20).
+ * one. A failure of these, or a download refused (4xx), discards the download
+ * and tries once more, then leaves the letter "not on this phone" (F08-U20);
+ * anything else is retried on a later pass (`failedTry`).
  *
  * Kill path: decrypted bytes exist only in backup-tmp (excluded from device
  * backup, swept at launch). The letter is pointed at its final path first and
@@ -28,7 +29,7 @@
  */
 import { bytesToHex } from './bytes';
 import { BackupServerError, ESCROW_DETAILS, needsSignIn, type BackupServer, type BlobRow, type EscrowClient, type ReleasedKey } from './contract';
-import { BackupStopped, HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
+import { BackupFormatError, BackupStopped, HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
 import { DeviceRevoked, type KeyManager, type BookKeyState } from './keys';
 import type { BackupDb } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
@@ -171,6 +172,17 @@ const releaseUnusable = (e: unknown) => {
 };
 /** The Keychain could not take the key just now (the phone locked as the release landed): the release is fine. */
 const keychainBusy = (e: unknown) => (e as { code?: unknown } | null)?.code === 'keychain_unavailable';
+/**
+ * A failed try of a download (F08-U20), from a closed list of reasons about the object itself: the
+ * download or its signed URL refused (4xx), a header that does not parse, a file key or a segment
+ * that does not authenticate. The header naming another entry, author or key version and a hash
+ * that does not match are counted where they are found. Anything else (the Keychain not reading as
+ * the phone locks, a full disk, the network) is retried on a later pass and never counted.
+ */
+const failedTry = (e: unknown) =>
+  e instanceof BackupServerError
+    ? !e.retryable && /^HTTP4\d\d$/.test(e.code)
+    : e instanceof BackupFormatError || (e as { code?: unknown } | null)?.code === 'key_open_failed';
 /** The server has confirmed recordings of mine (a returning person: Settings says so when backup is off here). */
 export const HAS_BACKUP_META = 'hasBackup';
 
@@ -186,9 +198,10 @@ export function createRestore(d: RestoreDeps) {
   const unlisted = new Set<string>();
   /**
    * Missing letters whose recording a listing named but no key here opens, while their keys wait on
-   * escrow (a hold) or escrow was stopped (review B N4 on #252): no more listings for them in this
-   * run either. Escrow is asked on its own meanwhile (`waitsForKeys`, at its own pace), and the set
-   * is cleared once keys are stored or the person taps Try again, so they are listed again then.
+   * escrow: a hold, a Stop (review B N4 on #252), the escrow switch off, a fresh sign-in, or a try
+   * that did not get through. No more listings for them in this run either, since a listing cannot
+   * change any of those. Escrow is asked on its own meanwhile (`waitsForKeys`, at its own pace), and
+   * the set is cleared once keys are stored or the person taps Try again, so they are listed again then.
    */
   const unopenable = new Set<string>();
   /** A missing letter's restore has something left to do (nothing has settled it: done, kept here or failed). */
@@ -293,8 +306,7 @@ export function createRestore(d: RestoreDeps) {
       cleanup();
       // The live session is another account's now (account.ts): a stop, not a failed try.
       if (e instanceof BackupStopped) return { kind: 'gate', reason: 'stopped' };
-      if (e instanceof BackupServerError && e.retryable) return { kind: 'retry' };
-      return failOnce(blob.entryId);
+      return failedTry(e) ? failOnce(blob.entryId) : { kind: 'retry' };
     }
     try {
       // The ciphertext hash is a transfer check only (review A note 1 on #150). backup_confirm stores the
@@ -380,8 +392,7 @@ export function createRestore(d: RestoreDeps) {
       return { kind: 'done' };
     } catch (e) {
       cleanup();
-      if (e instanceof BackupServerError && e.retryable) return { kind: 'retry' };
-      return failOnce(blob.entryId);
+      return failedTry(e) ? failOnce(blob.entryId) : { kind: 'retry' };
     }
   }
 
@@ -430,6 +441,14 @@ export function createRestore(d: RestoreDeps) {
       const saved = d.db.getMeta(REQUEST_META);
       if (!saved) {
         const req = await d.escrow.request(device.deviceId);
+        // This device's request, released and stored here less than 24 hours ago, answered as it stands:
+        // the next release call would open every key again with no new hold and email the owner again,
+        // on every pass while a recording still lacks its key (a book's wrap that did not open there).
+        // Stop instead; after 24 hours a request is a new one, with its own hold (review A N3 on #255).
+        if (req.state === 'released') {
+          d.db.setMeta(STOPPED_META, 'released_already');
+          return { kind: 'stopped' };
+        }
         d.db.setMeta(REQUEST_META, JSON.stringify({ requestId: req.requestId, holdUntil: req.holdUntil, polledAt: d.clock.now() }));
         return { kind: 'waiting_hold', holdUntil: req.holdUntil };
       }
@@ -564,7 +583,7 @@ export function createRestore(d: RestoreDeps) {
       const first = await pass();
       if (first.needEscrow) {
         const keys = await escrowStep();
-        if (keys.kind === 'waiting_hold' || keys.kind === 'stopped') for (const id of first.keyless) unopenable.add(id);
+        if (keys.kind !== 'ready') for (const id of first.keyless) unopenable.add(id);
         if (keys.kind !== 'ready') return { restored: first.restored, keys, remaining: first.remaining, escrow: true };
         const second = await pass();
         return { restored: first.restored + second.restored, keys: second.needEscrow ? { kind: 'unavailable' } : { kind: 'ready' }, remaining: second.remaining, escrow: true };
@@ -586,7 +605,8 @@ export function createRestore(d: RestoreDeps) {
      * The person tapped Try again after a stopped, expired or unusable request. A revoked or
      * unknown device gets a new device key first (never on its own, ADR 0024). A release kept
      * here is stored again from that copy, with no new release; only an unusable release is
-     * dropped, so escrow is asked once more.
+     * dropped, so escrow is asked once more. A request released here less than 24 hours ago stops
+     * again (`released_already`): no release without a new hold.
      */
     async tryAgain(): Promise<void> {
       const why = d.db.getMeta(STOPPED_META);

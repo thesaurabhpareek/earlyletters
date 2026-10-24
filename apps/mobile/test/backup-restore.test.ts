@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
+import { HEADER_LEN } from '../src/lib/backup/format';
 import { planRestore, type LocalLetter } from '../src/lib/backup/restore';
 import { FakeBackend, FakeICloud, fakeM4a, sha256Hex } from './helpers/backup-node';
 import { addChild, audioOf, cleanupPhones, makePhone, recordLetter, syncText, type Phone } from './helpers/backup-phone';
@@ -212,6 +213,68 @@ describe('[F08-REQ-023] restore on a new phone', () => {
     await b.service.tick();
     expect(b.backupDb.restoreItem(recs[0].id)?.state).toBe('failed');
     expect(existsSync(fileURLToPath(b.files.documentUri('gone.m4a')))).toBe(false);
+  });
+
+  it('[#252 follow-up] the Keychain not reading as the phone locks is no failed try: nothing counted, and the recording comes back later', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    const unwrap = b.vault.unwrapFileKey;
+    b.vault.unwrapFileKey = async () => {
+      throw Object.assign(new Error('keychain_unavailable'), { code: 'keychain_unavailable' });
+    };
+    for (let i = 0; i < 3; i++) await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toBeNull(); // not failed, and no try counted
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+    expect(readdirSync(b.files.tmpDir)).toEqual([]);
+    b.vault.unwrapFileKey = unwrap; // unlocked
+    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)?.state).toBe('done');
+    expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+  });
+
+  it('[#252 follow-up] a file key that does not open under the book key is still a failed try: tried once more, then not on this phone', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const obj = backend.objects.get(backend.blobs.get(recs[0].id)!.objectPath)!;
+    obj[HEADER_LEN - 1] ^= 1; // the wrapped file key's tag, at the end of the header
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'pending', attempts: 1 });
+    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'failed', attempts: 2 });
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+  });
+
+  it('[review N1 on #255] an object that is gone is refused when its URL is signed (404): tried once more, then failed for good, nothing stored', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    backend.objects.delete(backend.blobs.get(recs[0].id)!.objectPath);
+    let downloads = 0;
+    const download = backend.downloader.download;
+    backend.downloader.download = async (url: string, toUri: string) => {
+      downloads += 1;
+      return download(url, toUri);
+    };
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'pending', attempts: 1 });
+    for (let i = 0; i < 3; i++) await b.service.tick();
+    expect(b.backupDb.restoreItem(recs[0].id)).toMatchObject({ state: 'failed', attempts: 2 });
+    expect(downloads).toBe(0); // refused when signed, before any download
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+    expect(documents(b)).toEqual([]);
+    expect(readdirSync(b.files.tmpDir)).toEqual([]);
+    expect(b.service.view().restore).toBeNull(); // Settings no longer says recordings are coming back
   });
 
   it('a file that appears while the recording downloads wins; the download is dropped', async () => {
