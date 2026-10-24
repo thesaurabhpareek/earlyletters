@@ -215,8 +215,9 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/scale=\{1\.75\}/);
   });
 
-  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines', () => {
-    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{3\}/);
+  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines; whole at accessibility sizes (P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{large \? undefined : 3\}/);
+    expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
   });
 
   it('5.8 rows 1 and 2: Listen is an unlit room (the light underneath leaves and returns)', () => {
@@ -252,11 +253,19 @@ describe('the screen uses them (source)', () => {
   it('[review B B1] at accessibility sizes the room scrolls and Pause, Finish and Let it go stay pinned below it', () => {
     const room = c.slice(c.indexOf('testID="listen.room"'), c.indexOf('</ScrollView>'));
     expect(c).toMatch(/<ScrollView className="flex-1" contentContainerStyle=\{\{ flexGrow: 1 \}\}[^>]*testID="listen\.room">/);
-    // Inside the scroll: the audience block, the prompt, the circle, the clock and the lines.
-    for (const part of ['p.toChild', 'testID="listen.prompt"', '<ListeningAura', 'elapsedClock(', 't.listeningHint']) expect(room, part).toContain(part);
+    // Inside the scroll: the audience block, the prompt, the circle, the hint, and the clock and line at default sizes.
+    for (const part of ['p.toChild', 'testID="listen.prompt"', '<ListeningAura', '{!large && clockAndLine}', 't.listeningHint']) expect(room, part).toContain(part);
     // After it, outside the scroll: the controls.
     const after = c.slice(c.indexOf('</ScrollView>'));
     for (const part of ['onPress={togglePause}', 'onPress={finish}', 'onPress={discard}']) expect(after, part).toContain(part);
+  });
+
+  it('[P4 critics S5] at accessibility sizes the clock and "Listening." are pinned with Pause and Finish, so the screen always says it is recording', () => {
+    const block = c.slice(c.indexOf('const clockAndLine = ('), c.indexOf('return (', c.indexOf('const clockAndLine = (')));
+    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', 'accessibilityLiveRegion="polite"']) expect(block, part).toContain(part);
+    const pinned = c.slice(c.indexOf('</ScrollView>'));
+    expect(pinned).toMatch(/<View className="gap-2 px-5 pb-4">\s*\{large && clockAndLine\}\s*<ButtonRow>/);
+    expect(c.match(/clockAndLine\}/g)).toHaveLength(2); // once in the room, once pinned: never both
   });
 
   it('[review B L5] Reduce Motion reaches the aura; the start circle is a 120 pt button; the clock and "Listening." are spoken; the start plays its haptic first', () => {

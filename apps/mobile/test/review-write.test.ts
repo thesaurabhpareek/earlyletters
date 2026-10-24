@@ -11,7 +11,7 @@ import { tokens } from '@scribe/design-tokens';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, peekKeep, resetKeep } from '../src/lib/capture/keep-intent';
 import { arrivalToastDelayMs, secondFreeOnArrival } from '../src/components/book/book.logic';
-import { SCREEN_READER_HOLD_MS, savedMomentLeaveInMs } from '../src/components/capture/review-view.logic';
+import { SCREEN_READER_HOLD_MAX_MS, SCREEN_READER_HOLD_MS, savedMomentLeaveInMs, type AnnouncementEnd } from '../src/components/capture/review-view.logic';
 import { fileIntoMonthPlan } from '../src/lib/transitions.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -97,7 +97,7 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     // screen-reader state changes, counting from the commit.
     const commit = moment.slice(moment.indexOf('useEffect(() => {\n    if (!committed) return;'), moment.indexOf('const cardStyle'));
     expect(commit).toMatch(/if \(!committed\) return;\s*committedAt\.current = Date\.now\(\);/);
-    expect(commit).toMatch(/useEffect\(\(\) => \{\s*if \(!committed \|\| committedAt\.current === null\) return;\s*const wait = savedMomentLeaveInMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader, elapsedMs: Date\.now\(\) - committedAt\.current \}\);\s*const t = setTimeout\(finish, wait\);\s*return \(\) => clearTimeout\(t\);[\s\S]*?\}, \[committed, screenReader\]\);/);
+    expect(commit).toMatch(/useEffect\(\(\) => \{\s*if \(!committed \|\| committedAt\.current === null\) return;\s*const wait = savedMomentLeaveInMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader, announcement, elapsedMs: Date\.now\(\) - committedAt\.current \}\);\s*const t = setTimeout\(finish, wait\);\s*return \(\) => clearTimeout\(t\);[\s\S]*?\}, \[committed, screenReader, announcement\]\);/);
     expect(moment).not.toMatch(/savedMomentDoneMs/);
     // The commit effect runs once, at the commit: its deps are exactly [committed]. With screenReader in them, a late
     // screen-reader answer would restart the clock and say the chip again over the Book (lens A A3).
@@ -129,6 +129,45 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
       expect(leavesAt(true, null)).toBe(SCREEN_READER_HOLD_MS); // the one-tap path: known before the commit
       expect(leavesAt(false, 30)).toBe(SCREEN_READER_HOLD_MS); // Review's path: known 30 ms after the commit
       expect(leavesAt(false, 850)).toBe(SCREEN_READER_HOLD_MS);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('with a screen reader on, the moment holds until iOS says its sentence has finished: 3 s at least, about 8 s at most; 3 s where no such event fires (P4 critics S6)', () => {
+    // saved-moment.tsx: listening for announcementFinished starts before the sentence is said, matches only that
+    // sentence, and only on iOS; elsewhere the hold stays 3 s.
+    const listen = moment.slice(moment.indexOf("useEffect(() => {\n    if (!committed || Platform.OS !== 'ios') return;"), moment.indexOf('useEffect(() => {\n    if (!committed) return;'));
+    expect(listen).toMatch(/AccessibilityInfo\.addEventListener\('announcementFinished', \(e: \{ announcement\?: string \}\) => \{\s*if \(e\?\.announcement === said\) setHeard\(true\);\s*\}\);\s*return \(\) => sub\.remove\(\);/);
+    expect(moment.indexOf("'announcementFinished'")).toBeLessThan(moment.indexOf('announce(said);')); // subscribed first
+    expect(moment).toMatch(/const announcement: AnnouncementEnd = Platform\.OS !== 'ios' \? 'noSignal' : heard \? 'heard' : 'waiting';/);
+
+    // The timer effect on fake timers, with the event arriving (or not) at a given time after the commit.
+    vi.useFakeTimers();
+    try {
+      const plan = fileIntoMonthPlan(false);
+      const leavesAt = (platform: 'ios' | 'web', finishedAtMs: number | null): number => {
+        const t0 = Date.now();
+        let left = -1;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const time = (announcement: AnnouncementEnd) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            if (left < 0) left = Date.now() - t0;
+          }, savedMomentLeaveInMs({ dismissAtMs: plan.dismissAtMs, screenReader: true, announcement, elapsedMs: Date.now() - t0 }));
+        };
+        time(platform === 'ios' ? 'waiting' : 'noSignal');
+        if (platform === 'ios' && finishedAtMs !== null) setTimeout(() => time('heard'), finishedAtMs);
+        vi.advanceTimersByTime(20_000);
+        return left;
+      };
+      expect(leavesAt('ios', 1200)).toBe(SCREEN_READER_HOLD_MS); // a quick sentence: still the 3 s floor
+      expect(leavesAt('ios', 4500) - 4500).toBeGreaterThanOrEqual(0); // a slow speech rate: as soon as the sentence ends
+      expect(leavesAt('ios', 4500) - 4500).toBeLessThanOrEqual(1); // (a zero-delay timer fires a tick later)
+      expect(leavesAt('ios', null)).toBe(SCREEN_READER_HOLD_MAX_MS); // no event at all: about 8 s, then the Book
+      expect(leavesAt('ios', 9000)).toBe(SCREEN_READER_HOLD_MAX_MS); // never past the cap
+      expect(leavesAt('web', null)).toBe(SCREEN_READER_HOLD_MS); // no such event on the web: 3 s
+      expect(SCREEN_READER_HOLD_MAX_MS).toBe(8000);
     } finally {
       vi.useRealTimers();
     }
@@ -259,8 +298,8 @@ describe('S17: Review reads as a letter', () => {
   it('a repaired name shows the struck heard word, then the kept word on a wash', () => {
     const t = code(src('components/capture/transcript.tsx'));
     expect(t).toMatch(/shows\?\.kind === 'change'/);
-    expect(t).toMatch(/textDecorationLine: 'line-through'[^}]*color: c\.textMuted \}\}>\{shows\.from\}/);
-    expect(t).toMatch(/<Text style=\{\{ backgroundColor: c\.accentSoft/);
+    expect(t).toMatch(/<LetterSpan scale=\{scale\} style=\{\{ textDecorationLine: 'line-through'[^}]*color: c\.textMuted \}\}>\s*\{shows\.from\}/);
+    expect(t).toMatch(/<LetterSpan scale=\{scale\} style=\{\{ backgroundColor: c\.accentSoft, textDecorationLine: open/);
   });
 });
 
