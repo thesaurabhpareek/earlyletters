@@ -16,12 +16,14 @@ import {
   savePrimaryLabel,
   savedMoment,
   savedMomentDoneMs,
+  savedMomentLeaveInMs,
   setAsideAtSave,
   showViewControl,
   signInAfterLandingMs,
   spokenSeparator,
   typedFinalText,
   viewFromSetting,
+  writeSwipeAllowed,
 } from './review-view.logic';
 
 describe('review view (D-086)', () => {
@@ -132,6 +134,13 @@ describe('a typed letter (S19, S20)', () => {
     expect(typedFinalText('one\n\ntwo')).toBe('one\n\ntwo');
   });
 
+  it('Write swipes away unless words on screen could not be written to the phone', () => {
+    expect(writeSwipeAllowed({ text: 'Asha, you sang.', writeFailed: false })).toBe(true);
+    expect(writeSwipeAllowed({ text: 'Asha, you sang.', writeFailed: true })).toBe(false);
+    expect(writeSwipeAllowed({ text: ' \n ', writeFailed: true })).toBe(true);
+    expect(writeSwipeAllowed({ text: '', writeFailed: false })).toBe(true);
+  });
+
   it('back in Review it keeps Write\'s heading, "Your letter"; a letter with a recording reads "Read it back"', () => {
     expect(reviewHeading({ typedOnly: true })).toBe('Your letter');
     expect(reviewHeading({ typedOnly: false })).toBe('Read it back');
@@ -171,6 +180,13 @@ describe('the saved moment (S21)', () => {
     expect(savedMomentDoneMs({ dismissAtMs: 900, screenReader: false })).toBe(900);
     expect(savedMomentDoneMs({ dismissAtMs: 900, screenReader: true })).toBe(3000);
     expect(savedMomentDoneMs({ dismissAtMs: 4000, screenReader: true })).toBe(4000);
+  });
+
+  it('asked again later, it still counts from the commit, and never asks for a wait below zero', () => {
+    expect(savedMomentLeaveInMs({ dismissAtMs: 900, screenReader: false, elapsedMs: 0 })).toBe(900);
+    expect(savedMomentLeaveInMs({ dismissAtMs: 900, screenReader: true, elapsedMs: 30 })).toBe(2970);
+    expect(savedMomentLeaveInMs({ dismissAtMs: 900, screenReader: false, elapsedMs: 40 })).toBe(860);
+    expect(savedMomentLeaveInMs({ dismissAtMs: 900, screenReader: true, elapsedMs: 3500 })).toBe(0);
   });
 
   it('lands on the Book with `arrived=<entry id>`, and asks for the second-free toast only on the second letter', () => {

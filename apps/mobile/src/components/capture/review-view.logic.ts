@@ -194,6 +194,46 @@ export function savedMomentDoneMs(input: { dismissAtMs: number; screenReader: bo
   return input.screenReader ? Math.max(input.dismissAtMs, SCREEN_READER_HOLD_MS) : input.dismissAtMs;
 }
 
+/**
+ * How long the saved moment still waits, `elapsedMs` after the commit, with what is known about the screen reader
+ * now. Asked again whenever that changes: on Review's path the moment mounts at the commit, before the system has
+ * said whether VoiceOver is on, so the first answer can be "off" for a few milliseconds. When "on" arrives, the
+ * moment still holds about 3 s from the commit, on both paths.
+ */
+export function savedMomentLeaveInMs(input: { dismissAtMs: number; screenReader: boolean; elapsedMs: number }): number {
+  return Math.max(0, savedMomentDoneMs(input) - input.elapsedMs);
+}
+
+/**
+ * Whether Write's sheet may be swiped away (S19): not while words are on screen that the last write could not put
+ * on this phone. Close stays open in the same case; both work again after the next write that goes through.
+ */
+export function writeSwipeAllowed(input: { text: string; writeFailed: boolean }): boolean {
+  return !(input.writeFailed && input.text.trim().length > 0);
+}
+
+/** What one write of Write's words did: the draft it wrote to, and the autosave line to show (null: unchanged). */
+export type WriteResult = { ok: boolean; draftId: string | null; saveState: 'saved' | 'failed' | null };
+
+/**
+ * One write of Write's words to this phone (S19): the first words create the typed draft, later ones update it.
+ * A write that throws (a full disk) answers "failed": "Not saved yet" shows, and Close, Android's back and the
+ * swipe hold the sheet open. The next write that goes through answers "saved", which releases all three. Empty
+ * words with no draft yet write nothing and change nothing.
+ */
+export function writeWords(io: { create: (value: string) => string; update: (draftId: string, value: string) => void }, draftId: string | null, value: string): WriteResult {
+  try {
+    if (!draftId) {
+      if (!value.trim()) return { ok: false, draftId: null, saveState: null };
+      return { ok: true, draftId: io.create(value), saveState: 'saved' };
+    }
+    io.update(draftId, value);
+    return { ok: true, draftId, saveState: 'saved' };
+  } catch {
+    return { ok: false, draftId, saveState: 'failed' };
+  }
+}
+
 /** 5.8 row 5b: the first-letter sign-in sheet rises 600 ms after the Book is on screen, so the letter is seen first. */
 export const SIGN_IN_AFTER_BOOK_MS = 600;
 
