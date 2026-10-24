@@ -32,7 +32,7 @@
  */
 import type { EmailLinkType } from './links.logic';
 
-/** Longest life of an email link or code that a project can set (Supabase: 3600 s). */
+/** How long this phone remembers that it asked for an email: one hour, longer than the 900 s link and code life (docs/ops/AUTH_SETUP.md 4.4). */
 export const PENDING_REQUEST_TTL_MS = 60 * 60 * 1000;
 
 /** The clock may move back a little (NTP); anything further in the future is damaged. */
