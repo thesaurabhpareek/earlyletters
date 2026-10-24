@@ -53,14 +53,27 @@
  *                     transcribes English only, and another language needs a native
  *                     reviewer first. On, the language picker offers English alone, with
  *                     one line that other languages come in a later update
- *                     (components/language/language-picker.logic.ts).
+ *                     (components/language/language-picker.logic.ts), and a recording whose
+ *                     noted language is another waits for its language: it is never handed to
+ *                     the recogniser, and Review and the letter page say so
+ *                     (lib/transcription-queue/language-hold.ts, N2 on #247).
  *                     Its own switch, not tied to server features: on in both alpha
  *                     profiles (`testflight` with servers off, `preview` with them on);
  *                     development and e2e leave it unset, so it is off there and the picker
- *                     is as before. It changes what the picker offers and nothing else: a
- *                     language already stored on the phone is left as it is, and the text
- *                     rules, packs and speech catalog are untouched. Remote config has no key
- *                     for it.
+ *                     is as before. A language already stored on the phone is never changed,
+ *                     so in a build with the switch off such a recording proceeds in its own
+ *                     language; the text rules, packs and speech catalog are untouched.
+ *                     Remote config has no key for it.
+ *
+ *                     Inlined at build time, like every EXPO_PUBLIC_* value here (checked
+ *                     against babel-preset-expo 57.0.13, plugins/inline-env-vars.js, for
+ *                     production bundles). An over-the-air update would carry the value of
+ *                     the environment where `eas update` runs (the shell, .env files, and EAS
+ *                     environment variables when --environment is passed), not eas.json's
+ *                     build profiles; that EAS Update behaviour was not checked against the
+ *                     Expo docs. expo-updates is not installed today (docs/release/ENVIRONMENTS.md).
+ *                     Production leaves it unset; English only there is a founder call (D-115
+ *                     covers the English-only pack release, not this profile).
  *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */

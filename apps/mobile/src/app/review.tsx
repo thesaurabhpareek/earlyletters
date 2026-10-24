@@ -101,7 +101,7 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, type Job } from '@/lib/transcription-queue';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, waitingForLanguageNote, type Job } from '@/lib/transcription-queue';
 import { speechConsentCopy } from '@scribe/content';
 import { showReviewAsk } from '@/lib/models/speech-consent.logic';
 import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
@@ -227,7 +227,9 @@ export default function Review() {
   }, [job?.phase]);
 
   const packWait = job?.phase === 'waiting_for_pack';
-  const canKeepVoice = packWait || job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech');
+  // D-111 item 4: a language this build does not hear yet. The recording waits for its language; it can be kept.
+  const languageWait = job?.phase === 'waiting_for_language';
+  const canKeepVoice = packWait || languageWait || job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech');
 
   const tryAgain = () => {
     if (!draft) return;
@@ -560,7 +562,7 @@ export default function Review() {
     spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice))
       ? footerShell(
           <Button size="lg" fullWidth onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
-            <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
+            <Text>{packWait || languageWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
           </Button>,
         )
       : null;
@@ -956,6 +958,19 @@ function WordsStatus({
         body={wordsCopy.noSpeech.body}
         primary={{ label: wordsCopy.noSpeech.tryAgainButton, onPress: onRetry, testID: 'review.retry' }}
         quiet={[{ label: wordsCopy.noSpeech.recordAgainButton, onPress: onRecordAgain, testID: 'review.recordAgain' }, type]}
+      />
+    );
+  }
+
+  // A language this build does not hear yet (D-111 item 4): nothing to download and no language named, one line.
+  const languageWait = waitingForLanguageNote(job);
+  if (languageWait) {
+    return (
+      <InlineState
+        kind="empty"
+        title={languageWait}
+        quiet={[{ label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }]}
+        accessibilityLabel={languageWait}
       />
     );
   }
