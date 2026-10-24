@@ -153,6 +153,70 @@ describe('[F16 6.2 I] what may leave the phone', () => {
   });
 });
 
+describe('[LEGAL-REQ-009] a let-go during a consent pause, behind an upload of the same draft whose answer was lost (review A N1 on #250)', () => {
+  /** A held draft at v700 on the server, an upload of it sent with no answer heard, then let go; and a second draft let go. */
+  const pausedLetGo = () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('You hid behind the curtain.');
+    drafts.markHeld(repo, d, true);
+    db.run("UPDATE drafts SET held_v = '700', held_typed = 'You hid behind the curtain.' WHERE id = ?", d);
+    drafts.setTyped(repo, d, 'You hid behind the curtain and giggled.');
+    enqueueHeldDraft(db, d, qctx);
+    const up = takeBatch(db, { now: NOW });
+    markSent(db, up.rows, NOW); // it may have applied: the answer never came
+    const other = draft('You found the remote.');
+    drafts.markHeld(repo, other, true);
+    db.run("UPDATE drafts SET held_v = '650' WHERE id = ?", other);
+    enqueueHeldDiscard(db, d, qctx);
+    enqueueHeldDiscard(db, other, qctx);
+    const base = (id: string) => (JSON.parse(ops(db).find((o) => o.type === 'held.discard' && o.entity_id === id)!.payload) as PushOp).base;
+    return { db, d, other, upOp: up.ops[0].op, base };
+  };
+
+  it('the upload goes first, alone, and a duplicate answer rebases the let-go on the version that upload wrote before it leaves', () => {
+    const { db, d, other, upOp, base } = pausedLetGo();
+    expect(ops(db).map((o) => [o.type, o.entity_id])).toEqual([['held.upsert', d], ['held.discard', d], ['held.discard', other]]);
+    expect(base(d)).toBe('700'); // the version from before the upload: stale if it applied
+    expect(takeBatch(db, { now: NOW }).ops.map((o) => o.type)).toEqual(['held.upsert']); // outside a pause: as before
+    const ahead = takeBatch(db, { now: NOW, onlyDeletes: true });
+    expect(ahead.ops.map((o) => [o.type, o.id])).toEqual([['held.upsert', d]]);
+    markSent(db, ahead.rows, NOW);
+    applyPushResponse(db, ahead.rows, {
+      results: [{ op: upOp, ok: true, dup: true, applied_v: '800', held: { id: d, v: '800', updated_at: NOW } }], paused: false, stopped: false,
+    } as PushResponse, qctx);
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true }).ops.map((o) => [o.type, o.id, o.base])).toEqual([['held.discard', d, '800'], ['held.discard', other, '650']]);
+  });
+
+  it('an upload that meets SCCON itself never applied: it stays sent, and once sent ahead in this pass the let-go goes on its own base', () => {
+    const { db, d, other, upOp } = pausedLetGo();
+    const ahead = takeBatch(db, { now: NOW, onlyDeletes: true });
+    markSent(db, ahead.rows, NOW);
+    applyPushResponse(db, ahead.rows, { results: [], paused: true, stopped: false, consent: 'sensitive-data' } as PushResponse, qctx);
+    expect(db.all('SELECT type, sent_at FROM sync_outbox WHERE entity_id = ? ORDER BY seq', d)).toEqual([
+      { type: 'held.upsert', sent_at: NOW }, // a retry is left as sent
+      { type: 'held.discard', sent_at: null },
+    ]);
+    const next = takeBatch(db, { now: NOW, onlyDeletes: true, aheadSent: new Set([upOp]) });
+    expect(next.ops.map((o) => [o.type, o.id, o.base])).toEqual([['held.discard', d, '700'], ['held.discard', other, '650']]);
+  });
+
+  it('an upload still backing off after a failed send is not due: the let-go behind it waits with it, and the other deletions go', () => {
+    const { db, d, other } = pausedLetGo();
+    db.run("UPDATE sync_outbox SET attempts = 1, next_attempt_at = '2026-10-03T09:05:00.000Z' WHERE entity_id = ? AND type = 'held.upsert'", d);
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true }).ops.map((o) => [o.type, o.id])).toEqual([['held.discard', other]]);
+    expect(takeBatch(db, { now: '2026-10-03T09:06:00.000Z', onlyDeletes: true }).ops.map((o) => [o.type, o.id])).toEqual([['held.upsert', d]]);
+  });
+
+  it('a held upload with no let-go behind it, or one never sent, does not go during a pause', () => {
+    const { db, repo, draft } = signedIn();
+    const d = draft('You stacked the cups.');
+    drafts.markHeld(repo, d, true);
+    enqueueHeldDraft(db, d, qctx);
+    markSent(db, takeBatch(db, { now: NOW }).rows, NOW);
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true }).ops).toEqual([]);
+  });
+});
+
 describe('an older server', () => {
   it('held ops wait on the phone until the pull shows a held section; everything else still goes', () => {
     const { db, repo, draft } = signedIn();

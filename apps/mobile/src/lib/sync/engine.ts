@@ -171,10 +171,14 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let onlyDeletes = false;
     let single = false;
     let contentAccepted = false;
+    // Held uploads sent ahead of a let-go in this pass's deletions round (takeBatch): each goes once, so after a
+    // paused answer the let-go goes next instead of the upload again.
+    const aheadSent = new Set<string>();
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
       if (killed()) return 'stop';
-      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50 });
+      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, aheadSent });
       if (batch.rows.length === 0) break;
+      if (onlyDeletes) for (const r of batch.rows) if (r.type === 'held.upsert') aheadSent.add(r.op_id);
       tx(() => markSent(db, batch.rows, iso()));
       const res = await call<PushResponse>('sync_push', { p_ops: batch.ops });
       if ('failure' in res) {
@@ -203,7 +207,8 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       if (out.pushed + out.rejected > 0) changed();
       if (!onlyDeletes && !out.paused) contentAccepted = true;
       if (out.paused) {
-        // SCCON: letters wait on the phone; deletions still go (LEGAL-REQ-009).
+        // SCCON: letters wait on the phone; deletions still go (LEGAL-REQ-009), a let-go after the held upload
+        // ahead of it whose answer was lost (takeBatch).
         tx(() => writeSetting(db, SYNC_SETTING.pausedFor, out.consent || 'consent'));
         onlyDeletes = true;
         continue;
