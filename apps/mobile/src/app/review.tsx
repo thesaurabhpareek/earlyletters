@@ -99,7 +99,8 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { afterKeep, afterLetterKept, billingCopy, keepSheetFor, type KeepGate } from '@/lib/billing';
+import { afterLetterKept, billingCopy, type KeepGate } from '@/lib/billing';
+import { afterKeep, keepSheetFor } from '@/lib/billing/keep-step';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
