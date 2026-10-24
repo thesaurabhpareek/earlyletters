@@ -16,6 +16,8 @@
 #            four shards of 125, about 2.5 h each [E].
 #            Every size runs the harness's planted-failure self-check first, so even the smoke cannot pass blind.
 #   dl01-merged  gate only: merges the four DL-01 reports into the one DL-01 verdict.
+#   release-launch  the store build's JavaScript (testflight profile env, no seam), Release, launched for 20 s: the
+#            scope check for a launch failure, and B-8 on a real Release bundle.
 # Each harness job uploads its report.json and report.md (run numbers and outcomes; no ids, no words) as an artifact.
 #
 # Exit codes (README section 9), each named in an annotation; any exit but 0 fails the job, so a red run is red:
@@ -40,6 +42,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/kill-harness.yml
+      - .github/scripts/sim-crash-report.sh
       - apps/mobile/e2e/kill/**
       - apps/mobile/src/dev/e2e-seams.ts
       - apps/mobile/src/dev/kill-drill*.ts
@@ -200,6 +203,10 @@ jobs:
         run: |
           set +e
           log="$RUNNER_TEMP/xcodebuild.log"
+          # The bundle phase writes the Hermes source map here (react-native-xcode.sh), so a crash's JavaScript stack
+          # can be read back to file and line in the harness job (it travels with the app, never in the app).
+          mkdir -p "$RUNNER_TEMP/kill-app"
+          export SOURCEMAP_FILE="$RUNNER_TEMP/kill-app/main.jsbundle.map"
           xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
@@ -244,6 +251,175 @@ jobs:
         with:
           name: xcodebuild-log
           path: ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Scope check for the harness and a product check on its own: the store build's JavaScript, built the way the
+  # testflight profile builds it (servers off, no EXPO_PUBLIC_E2E, so no seam), Release, on the same runner, then
+  # launched on a simulator for 20 s. It fails if the bundle carries the seam (B-8 on the real Release bundle), if
+  # the app is gone after 20 s, or if its log has an RCTFatalException. No Release build of the app had been
+  # launched before this job; ios-compile.yml builds Debug and never launches.
+  release-launch:
+    name: store-profile Release launch (testflight env, no seam, 20 s)
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$app" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not on this image. Installed:"; ls -d /Applications/Xcode*.app; exit 1
+          fi
+          sudo xcode-select -s "$app/Contents/Developer"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build env from the eas.json testflight profile (server features off, no e2e)
+        run: |
+          set -euo pipefail
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.testflight.env || {};
+            env.EXPO_PUBLIC_SERVER_FEATURES = "off";
+            if ("EXPO_PUBLIC_E2E" in env) { console.error("the testflight profile must not set EXPO_PUBLIC_E2E (B-9)"); process.exit(1); }
+            for (const [k, v] of Object.entries(env)) {
+              if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) { console.error("refusing " + k); process.exit(1); }
+              console.log(k + "=" + v);
+            }
+          ' | tee -a "$GITHUB_ENV"
+
+      - name: expo prebuild --platform ios --no-install
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install --clean
+
+      - name: Native project facts
+        id: project
+        working-directory: apps/mobile/ios
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          projects=(*.xcodeproj)
+          if [ "${#projects[@]}" -ne 1 ]; then echo "::error::expected one .xcodeproj in apps/mobile/ios, found: ${projects[*]:-none}"; exit 1; fi
+          name="${projects[0]%.xcodeproj}"
+          echo "workspace=${name}.xcworkspace" >> "$GITHUB_OUTPUT"
+          echo "scheme=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore CocoaPods
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**/*.podspec', 'apps/mobile/ios/Podfile.properties.json') }}
+          restore-keys: |
+            pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: pod install
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      # The same Release DerivedData as the e2e build: the native code is the same, so this build is mostly the
+      # JavaScript bundle and the app's own target.
+      - name: Restore DerivedData (Release)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/DerivedData
+          key: dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**') }}
+          restore-keys: |
+            dd-release-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)
+        working-directory: apps/mobile/ios
+        env:
+          WORKSPACE: ${{ steps.project.outputs.workspace }}
+          SCHEME: ${{ steps.project.outputs.scheme }}
+        run: |
+          set +e
+          log="$RUNNER_TEMP/xcodebuild.log"
+          mkdir -p "$RUNNER_TEMP/store-app"
+          export SOURCEMAP_FILE="$RUNNER_TEMP/store-app/main.jsbundle.map"
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+            build > "$log" 2>&1
+          status=$?
+          echo "- store-profile xcodebuild: exit ${status} after $((SECONDS / 60)) min $((SECONDS % 60)) s" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '(fatal )?error: |\*\* BUILD (SUCCEEDED|FAILED) \*\*' "$log" | grep -v '/Pods/' | head -200
+          if [ "$status" -ne 0 ]; then echo "::error title=xcodebuild failed (exit ${status})::store-profile Release build"; tail -150 "$log"; fi
+          exit "$status"
+
+      - name: The app is the store-profile build and carries no seam
+        run: |
+          set -euo pipefail
+          app="$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphonesimulator" -maxdepth 1 -name '*.app' | head -n 1)"
+          [ -n "$app" ] || { echo "::error::no .app in the Release-iphonesimulator products"; exit 1; }
+          id="$(plutil -extract CFBundleIdentifier raw "$app/Info.plist")"
+          case "$id" in
+            *.preview) ;;
+            *) echo "::error::bundle id ${id} is not the preview one the testflight profile builds"; exit 1 ;;
+          esac
+          [ -f "$app/main.jsbundle" ] || { echo "::error::no main.jsbundle in the app"; exit 1; }
+          if grep -aq e2eKillDrill "$app/main.jsbundle"; then echo "::error::the store-profile bundle carries the e2e seam (B-8)"; exit 1; fi
+          ditto "$app" "$RUNNER_TEMP/store-app/App.app"
+          echo "APP_ID=$id" >> "$GITHUB_ENV"
+
+      - name: Simulator
+        run: |
+          set -euo pipefail
+          udid=""
+          for type in 'iPhone SE (3rd generation)' 'iPhone 17e'; do
+            if udid="$(xcrun simctl create store-sim "$type" 2>/dev/null)"; then break; fi
+            udid=""
+            echo "::warning::no '${type}' simulator on this image"
+          done
+          [ -n "$udid" ] || { echo "::error::could not create a simulator"; exit 1; }
+          xcrun simctl bootstatus "$udid" -b > "$RUNNER_TEMP/bootstatus.log" 2>&1 || { tail -40 "$RUNNER_TEMP/bootstatus.log"; exit 1; }
+          echo "::notice title=Simulator::${type}"
+          echo "UDID=$udid" >> "$GITHUB_ENV"
+
+      - name: Launch and stay up for 20 s
+        run: |
+          set -euo pipefail
+          xcrun simctl install "$UDID" "$RUNNER_TEMP/store-app/App.app"
+          out="$(xcrun simctl launch "$UDID" "$APP_ID")"
+          pid="${out##*: }"
+          echo "launched ${APP_ID}, pid ${pid}"
+          sleep 20
+          exe="$(plutil -extract CFBundleExecutable raw "$RUNNER_TEMP/store-app/App.app/Info.plist")"
+          xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate "process == \"${exe}\"" > "$RUNNER_TEMP/launch-log.txt" 2>&1 || true
+          if grep -q RCTFatalException "$RUNNER_TEMP/launch-log.txt"; then
+            echo "::error title=Release launch::the store-profile app threw an unhandled JavaScript exception at launch"; exit 1
+          fi
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "::error title=Release launch::the store-profile app is gone 20 s after launch"; exit 1
+          fi
+          echo "::notice title=Release launch::the store-profile app is up 20 s after launch, no fatal exception"
+          echo "- store-profile Release app: up 20 s after launch, no fatal exception" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Why the app stopped (on failure)
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/diag"
+          [ -n "${UDID:-}" ] && .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/store-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/store-app/main.jsbundle.map"
+          exit 0
+
+      - name: Upload the diagnostics (on failure)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-diagnostics-store-launch-${{ github.run_id }}
+          path: ${{ runner.temp }}/diag
           if-no-files-found: ignore
           retention-days: 14
 
@@ -346,28 +522,9 @@ jobs:
       - name: Why the app stopped (on failure)
         if: failure()
         run: |
-          set +e
-          out="$RUNNER_TEMP/diag"; mkdir -p "$out"
-          exe="$(plutil -extract CFBundleExecutable raw "$RUNNER_TEMP/kill-app/App.app/Info.plist")"
-          xcrun simctl spawn "$UDID" log show --last 30m --style compact \
-            --predicate "process == \"${exe}\" OR eventMessage CONTAINS \"e2eKillDrill\"" > "$out/app-log.txt" 2>&1
-          cp "$RUNNER_TEMP/bootstatus.log" "$out/" 2>/dev/null
-          echo "### ${exe}: log lines that name an error (full log in the artifact)"
-          grep -E -i 'exception|fatal|error|abort|crash|terminat' "$out/app-log.txt" | tail -80
-          find "$HOME/Library/Logs/DiagnosticReports" -name "${exe}*" -exec cp {} "$out/" \; 2>/dev/null
-          for f in "$out"/*.ips; do
-            [ -f "$f" ] || continue
-            echo "### crash report $(basename "$f")"
-            node -e '
-              const t = require("fs").readFileSync(process.argv[1], "utf8");
-              const r = JSON.parse(t.slice(t.indexOf("\n") + 1));
-              console.log(JSON.stringify({ exception: r.exception, termination: r.termination, asi: r.asi }, null, 1));
-              const th = (r.threads || [])[r.faultingThread] || {};
-              for (const f of (th.frames || []).slice(0, 30)) console.log(" ", (r.usedImages[f.imageIndex] || {}).name, f.symbol || "", f.imageOffset);
-              for (const f of (r.lastExceptionBacktrace || []).slice(0, 30)) console.log("  last exception:", (r.usedImages[f.imageIndex] || {}).name, f.symbol || "");
-            ' "$f"
-          done
-          exit 0
+          mkdir -p "$RUNNER_TEMP/diag"
+          cp "$RUNNER_TEMP/bootstatus.log" "$RUNNER_TEMP/diag/" 2>/dev/null || true
+          .github/scripts/sim-crash-report.sh "$UDID" "$RUNNER_TEMP/kill-app/App.app" "$RUNNER_TEMP/diag" "$RUNNER_TEMP/kill-app/main.jsbundle.map"
 
       - name: Upload the diagnostics (on failure)
         if: failure()
