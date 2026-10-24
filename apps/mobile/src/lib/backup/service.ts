@@ -109,6 +109,11 @@ export function createBackupService(deps: BackupServiceDeps) {
    * For 7 days after a hold ends, any release call opens every key and emails the owner at once, so
    * this phone's keys are read first, as restore does (`keysArrived`), and escrow is asked only for a
    * book they do not open.
+   *
+   * With two books and only one key arriving, the queue has not reached the other book yet, so this
+   * read starts its iCloud wait and the flag is cleared: escrow is asked once uploads resume and that
+   * wait ends (still one release). If uploads stay paused past the 7-day release window, the request
+   * expires and only Try again asks once more (review A N2 on #255).
    */
   async function uploadsNeedEscrow(): Promise<boolean> {
     const books = new Set(d.db.jobs().filter((j) => j.state === 'queued').map((j) => j.childId));
