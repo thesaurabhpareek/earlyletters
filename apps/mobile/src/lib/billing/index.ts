@@ -5,6 +5,7 @@
  *   usePlan()              screens: PlanView, details, plusOn, Plan screen line, store support
  *   keepGateFor({wordsOnScreen})  the Keep step's gate (D-082, D-083, M17 D-103): 2 free letters, then Plus; null when no words are on screen (never counts, never a sheet)
  *   keepLetterGate()       the decision under keepGateFor (decideKeepLetter); Review calls keepGateFor
+ *   keepSheetFor(words), afterKeep(words), keepWords({wordsOnScreen, write})   the Keep step around one save (keep-step.ts): Review, Save words, Read it back
  *   hasPlus(), isJoinedBook(child)   replacements for the old store.ts stubs
  *   lettersKeptNow(), eraseLetterLedger()  the letter ledger (letter-ledger.ts); Erase everything clears it
  *   presentPlusStore()     Apple's SubscriptionStoreView
@@ -37,5 +38,6 @@ export {
   type KeepGate,
 } from './gates';
 export { syncLedger } from './letter-ledger';
+export { afterKeep, keepSheetFor, keepWords, type KeepWordsResult } from './keep-step';
 export { manageSubscription, presentPlusStore, redeemOfferCode, requestRefund, restorePurchases, storeSheetOptions, type RestoreResult } from './actions';
 export { EMPTY_PLAN, localDateOf, planLine, plusOn, type PlanDetails, type PlanLine, type PlanState } from './plan.logic';

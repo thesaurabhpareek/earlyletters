@@ -9,8 +9,9 @@
  * and a held Keep writes nothing.
  *
  * Screens do not load in Node, so this runs Review's Keep order (gate, then write, then the
- * count) against the real store, ledger and gate, and pins review.tsx to that order and to
- * the values it passes. Fictional Asha family only.
+ * count) with the same functions review.tsx calls (lib/billing/keep-step.ts keepSheetFor and
+ * afterKeep, tested on their own in keep-step.test.ts) against the real store, ledger and gate,
+ * and pins review.tsx to that order and to the values it passes. Fictional Asha family only.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,9 +29,11 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: plan.view, details: {}, checkedAt: null }),
 }));
+vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 
 const store = await import('../src/lib/store');
-const { afterLetterKept, freeLettersAllowance, hasPlus, hasWords, keepGateFor } = await import('../src/lib/billing/gates');
+const { afterLetterKept, freeLettersAllowance, hasPlus, keepGateFor } = await import('../src/lib/billing/gates');
+const { afterKeep, keepSheetFor } = await import('../src/lib/billing/keep-step');
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 
 const PLUS: PlanView = { state: 'active', effectiveUntil: '2099-01-01T00:00:00Z', verifiedAt: '2026-10-03T00:00:00Z', environment: 'production', isTester: false };
@@ -70,16 +73,15 @@ type Button = 'keep' | 'keepPrivately' | 'keepVoice';
 type Gate = Awaited<ReturnType<typeof keepGateFor>>;
 
 /**
- * One tap in Review, in review.tsx's order: `save(inBook)` asks keepGateFor with `finalText` and opens
- * the sheet only on `offer`; `keepRecordingOnly` asks no gate. Otherwise the letter is written and the
- * count mirrored. Only a save with words runs noteKept (`noted`: the second-free line and
- * free_allowance_reached, when Plus is off and the count equals the allowance); a save without words
- * runs afterLetterKept alone. On the sheet nothing is written.
+ * One tap in Review, in review.tsx's order: `save(inBook)` asks keepSheetFor(finalText) and opens the
+ * sheet when it answers a gate; `keepRecordingOnly` asks no gate. Otherwise the letter is written, then
+ * `save` runs afterKeep(finalText) (`noted`: the second-free line) and `keepRecordingOnly` runs
+ * afterLetterKept alone. On the sheet nothing is written.
  */
 async function tap(draftId: string, button: Button, finalText = ''): Promise<{ outcome: 'kept' | 'sheet'; gate: Gate; noted: boolean }> {
   const d = store.getDraft(draftId)!;
-  const gate = button === 'keepVoice' ? null : await keepGateFor({ wordsOnScreen: finalText });
-  if (gate !== null && gate.decision.kind === 'offer') return { outcome: 'sheet', gate, noted: false };
+  const gate = button === 'keepVoice' ? null : await keepSheetFor(finalText);
+  if (gate !== null) return { outcome: 'sheet', gate, noted: false };
   if (button === 'keepVoice') {
     store.saveVoiceOnlyFromDraft({ ...d, audioSha256: 'a'.repeat(64), audioBytes: 12000 }, { childId: asha, authorSignsAs: 'Mama', inBook: false, engineVersion: 5 });
   } else {
@@ -91,9 +93,11 @@ async function tap(draftId: string, button: Button, finalText = ''): Promise<{ o
       audioUri: d.audioUri, audioDurationMs: d.audioDurationMs, audioSha256: typed ? undefined : 'b'.repeat(64), audioBytes: typed ? undefined : 12000,
     });
   }
-  const kept = await afterLetterKept();
-  const noted = button !== 'keepVoice' && hasWords(finalText) && !hasPlus() && kept === freeLettersAllowance();
-  return { outcome: 'kept', gate, noted };
+  if (button === 'keepVoice') {
+    await afterLetterKept();
+    return { outcome: 'kept', gate, noted: false };
+  }
+  return { outcome: 'kept', gate, noted: await afterKeep(finalText) };
 }
 
 /** Two letters with words kept, free: the allowance is used, and the second one notes it (once). */
@@ -106,11 +110,10 @@ async function useTheFreeLetters(): Promise<void> {
 describe('[F14-REQ-037] Review asks the gate with the words on screen', () => {
   it('1. words on screen, under the free allowance: kept and counted (spoken, then typed)', async () => {
     const a = await tap(spokenDraft('Asha, you laughed at the rain.'), 'keep', 'Asha, you laughed at the rain.');
-    expect(a.outcome).toBe('kept');
-    expect(a.gate?.decision).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 2 });
+    expect(a).toEqual({ outcome: 'kept', gate: null, noted: false });
     expect(counted()).toBe(1);
     const b = await tap(typedDraft('You held my thumb all night.'), 'keepPrivately', 'You held my thumb all night.');
-    expect(b.gate?.decision).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 1 });
+    expect(b).toEqual({ outcome: 'kept', gate: null, noted: true });
     expect(counted()).toBe(2);
   });
 
@@ -127,7 +130,7 @@ describe('[F14-REQ-037] Review asks the gate with the words on screen', () => {
     expect(counted()).toBe(2);
     plan.view = PLUS;
     const plus = await tap(id, 'keep', 'You found your feet.');
-    expect(plus.gate?.decision).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(plus).toEqual({ outcome: 'kept', gate: null, noted: false });
     expect(counted()).toBe(3);
   });
 
@@ -199,12 +202,12 @@ describe('review.tsx is wired to the M17 gate', () => {
     if (end < 0) throw new Error(`review.tsx: anchor not found after ${from}: ${to}`);
     return review.slice(start, end);
   };
-  const gate = between('const keepNeedsPlus = async', 'const noteKept = async');
+  const gate = between('const keepNeedsPlus = async', 'const saving = useRef(false)');
   const save = between('const save = async', 'const keepRecordingOnly = async');
   const voice = between('const keepRecordingOnly = async', 'const dismissFirstNote');
 
-  it('asks keepGateFor with the words on screen; keepLetterGate is not called here', () => {
-    expect(review).toMatch(/keepGateFor\(\{\s*wordsOnScreen\b/);
+  it('asks the gate (keepSheetFor) with the words on screen; keepLetterGate is not called here', () => {
+    expect(gate).toMatch(/await keepSheetFor\(\s*wordsOnScreen\s*\)/);
     expect(review).not.toMatch(/keepLetterGate/);
   });
 
@@ -213,20 +216,20 @@ describe('review.tsx is wired to the M17 gate', () => {
   });
 
   it('Keep and Keep privately ask the gate with finalText before writing the letter', () => {
-    const ask = save.search(/(keepNeedsPlus|keepGateFor)\(\s*(\{\s*wordsOnScreen:\s*)?finalText\b/);
+    const ask = save.search(/(keepNeedsPlus|keepSheetFor|keepGateFor)\(\s*(\{\s*wordsOnScreen:\s*)?finalText\b/);
     expect(ask).toBeGreaterThan(-1);
     expect(ask).toBeLessThan(save.indexOf('saveLetterFromDraft('));
   });
 
-  it('after the save, only a letter with words runs noteKept (marks only never repeat the second-free line)', () => {
-    expect(save).toMatch(/hasWords\(\s*finalText\s*\)[^;]*noteKept\(/);
-    expect(save).not.toMatch(/^\s*await noteKept\(\);/m);
+  it('after the save, afterKeep(finalText) decides the second-free line (the rule, words only, is tested in keep-step.test.ts)', () => {
+    expect(save).toMatch(/\bif \(\s*await afterKeep\(\s*finalText\s*\)\s*\)\s*setSecondFree\(true\)/);
+    expect(save.indexOf('afterKeep(')).toBeGreaterThan(save.indexOf('saveLetterFromDraft('));
+    expect(review).not.toMatch(/noteKept|track\('free_allowance_reached'/); // the note lives in afterKeep only
   });
 
   it('keeping the voice without words asks no gate with words, and never notes a free letter it did not count', () => {
     expect(voice).toMatch(/saveVoiceOnlyFromDraft\(/);
-    expect(voice).not.toMatch(/keepGateFor\(|keepLetterGate|keepNeedsPlus\((?!\s*null\s*\))/);
-    expect(voice).not.toMatch(/noteKept\(/);
+    expect(voice).not.toMatch(/keepGateFor\(|keepSheetFor\(|keepLetterGate|keepNeedsPlus\(|afterKeep\(/);
     expect(voice).toMatch(/afterLetterKept\(/);
   });
 });

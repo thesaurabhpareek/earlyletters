@@ -519,7 +519,8 @@ export function setWordsForWaitingEntry(
 /**
  * "Write the words" on a letter still waiting for its words (D-086), or on a spoken letter whose words came
  * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once. False
- * when the letter already had words, was deleted, is on the server, or the text is empty.
+ * when the letter already had words, was deleted, is on the server, or the text is empty. The Keep gate
+ * decision comes first, in the screen (lib/billing keepWords: the letter page's Save words).
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
@@ -544,7 +545,7 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
  * counting moment, F14 6.2 B2). The review mark and the count are written in one
  * transaction. The words are not changed here (an edit is a separate save).
  * False when the letter has no words waiting for review. The Keep gate decision
- * comes first, in the screen (lib/billing keepGateFor, with the words on screen).
+ * comes first, in the screen (lib/billing keepWords: the letter page's Read it back).
  */
 export function keepReviewedWords(id: string): boolean {
   const c = ctx();

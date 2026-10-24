@@ -26,7 +26,7 @@ import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { BackHandler, Modal, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, FadeIn, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +46,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
 import { useFontScale, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
+import { billingCopy, keepWords, type KeepGate } from '@/lib/billing';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
@@ -56,6 +57,7 @@ import {
   getActiveChild,
   getChild,
   getEntry,
+  keepReviewedWords,
   listDeleted,
   setEntryInBook,
   setTypedWordsForWaitingEntry,
@@ -73,6 +75,7 @@ import { AppNote } from '@/components/book/app-note';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf, shortDateline } from '@/components/book/chapters';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
+import { PlusGate } from '@/components/child/plus-gate';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
@@ -297,6 +300,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // Words that arrived after the letter was saved and have not been read back yet (D-086).
   const [unread, setUnread] = useState(() => isReadItBack(entry.id));
   useEffect(() => subscribeTo('entries', () => setUnread(isReadItBack(entry.id))), [entry.id]);
+  const keeper = useKeepWords(child.name);
 
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
@@ -383,11 +387,16 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         <Animated.View style={[{ gap: 28 }, restBody]}>
         {spoken && <AudioPlayer entryId={entry.id} />}
 
-        {own && words === 'waiting' && <WaitingCard entry={entry} />}
+        {own && words === 'waiting' && <WaitingCard entry={entry} keep={keeper.keep} />}
         {own && words === 'words' && unread && (
           <ReadItBackCard
-            onRead={() => {
+            onRead={async () => {
               haptic('tap');
+              // Words that arrived later count here, read with them on screen (M17, F14 6.2 B2 step 3).
+              if (entry.wordsUnreviewed) {
+                const kept = await keeper.keep(entry.finalText, () => keepReviewedWords(entry.id));
+                if (kept === 'sheet' || kept === 'busy') return; // not read back yet: the card stays
+              }
               clearReadItBack(entry.id);
               setUnread(false);
             }}
@@ -456,8 +465,57 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       />
 
       <ReadingSizeSheet visible={sizeOpen} value={size} onChange={onSize} onClose={() => setSizeOpen(false)} />
+      {keeper.sheet}
     </View>
   );
+}
+
+type Keep = (wordsOnScreen: string, write: () => boolean) => Promise<'kept' | 'sheet' | 'unchanged' | 'busy'>;
+
+/**
+ * The Keep step on the letter page (M17, D-103; F14 6.2 B2 steps 3 and 4): Save words and Read it back are where a
+ * letter kept without words counts, with its words on screen. With the free letters used and Plus off, the Keep
+ * sheet opens instead and nothing is written: typed words stay in their sheet, words that arrived stay on the letter
+ * unkept. After Plus starts, the person taps again (D-083). The sheet leaves out its held note, which promises a
+ * wait on Tonight that is not true here. The rule itself is lib/billing/keep-step.ts (keepWords), tested there.
+ */
+function useKeepWords(childName: string): { keep: Keep; sheet: ReactNode } {
+  const toast = useToast();
+  const [gate, setGate] = useState<KeepGate | null>(null);
+  const busy = useRef(false);
+  const keep: Keep = async (wordsOnScreen, write) => {
+    if (busy.current) return 'busy';
+    busy.current = true;
+    try {
+      const r = await keepWords({ wordsOnScreen, write });
+      if (r.kind === 'sheet') setGate(r.gate);
+      if (r.kind === 'kept' && r.secondFree) toast.show({ message: billingCopy.keepGate.secondFreeNote });
+      return r.kind;
+    } finally {
+      busy.current = false;
+    }
+  };
+  const sheet = (
+    <Modal visible={gate !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setGate(null)}>
+      <View className="flex-1 bg-background">
+        {gate && (
+          <PlusGate
+            variant="keep_letter"
+            childName={childName}
+            lapsed={gate.decision.kind === 'offer' && gate.decision.lapsed}
+            lettersKept={gate.lettersKept}
+            showHeldNote={false}
+            onHold={() => {
+              track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+              setGate(null);
+            }}
+            onPlus={() => setGate(null)}
+          />
+        )}
+      </View>
+    </Modal>
+  );
+  return { keep, sheet };
 }
 
 /** Card to page only: the page's own Back and "Aa" (the native header is hidden). A swipe down on it goes back too. */
@@ -514,7 +572,7 @@ function NotFoundBody({ onShelf }: { onShelf: boolean }) {
  * the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are Try again or Get words ready when that is what
  * would help, and Write the words, which opens the words sheet (S28). The recording itself is never touched.
  */
-function WaitingCard({ entry }: { entry: Entry }) {
+function WaitingCard({ entry, keep }: { entry: Entry; keep: Keep }) {
   const language = languageFor(entry.id);
   const job = useWordsJob(entry.id);
   const download = useSpeechDownload(job?.phase === 'waiting_for_pack' ? language : null);
@@ -552,13 +610,13 @@ function WaitingCard({ entry }: { entry: Entry }) {
       {reason && <Text variant="footnote">{reason}</Text>}
       {primary}
       <Button size="md" variant={primary ? 'secondary' : 'primary'} label={w.writeButton} onPress={() => setWriting(true)} testID="letter.write" />
-      <WordsSheet entryId={entry.id} open={writing} onClose={() => setWriting(false)} />
+      <WordsSheet entryId={entry.id} open={writing} onClose={() => setWriting(false)} keep={keep} />
     </View>
   );
 }
 
 /** "Words for this recording": type the words for a recording that has none yet (S28). Typed, never machine words. */
-function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean; onClose: () => void }) {
+function WordsSheet({ entryId, open, onClose, keep }: { entryId: string; open: boolean; onClose: () => void; keep: Keep }) {
   const w = wordsCopy.waiting;
   const [text, setText] = useState('');
   return (
@@ -569,9 +627,10 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
           size="lg"
           label={w.saveButton}
           disabled={!text.trim()}
-          onPress={() => {
+          onPress={async () => {
             haptic('tap');
-            if (setTypedWordsForWaitingEntry(entryId, text)) onClose();
+            // The typed words count at this Save (M17, F14 6.2 B2 step 4); on the Keep sheet they stay here.
+            if ((await keep(text, () => setTypedWordsForWaitingEntry(entryId, text))) === 'kept') onClose();
           }}
           testID="letter.writeWords.save"
         />
