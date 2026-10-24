@@ -5,7 +5,8 @@
 -- PENDING: not yet applied. Apply after 20261023030000_held_drafts_write_checks.sql (#254),
 -- following supabase/APPLY.md (section "File 23"). Never edits an earlier file. Redefines no
 -- function and adds no column: one check constraint on public.entries, nothing else. Refuses a
--- second run, and a run before 20261023030000 (55000).
+-- second run, a run before 20261023030000, and a run while a stored letter fails the check (55000);
+-- a refused run changes nothing and records nothing.
 --
 -- The gap. entries.machine_edits (20260930000000) is `jsonb not null default '[]'` with no shape
 -- check, while author_edits and locked_spans have one (20261015030000). entry.upsert and
@@ -61,23 +62,46 @@
 -- entry_versions (20261002020000, nullable) is read by no pull, push answer or RPC the app calls,
 -- so no value in it can make the contract refuse anything, and its writers copy a checked value
 -- already (entries_record_version: the letter's old machine_edits; entries_drop_held: a held
--- draft's, null or an array). A check there would also block the heal of a stored bad letter
--- below: the version trigger copies the old value into entry_versions in the same statement.
+-- draft's, null or an array).
 --
--- Existing rows. Never deleted or rewritten (the constitution). The check is added NOT VALID (new
--- and changed rows are checked from now on), then the stored letters it refuses are counted, and
--- it is validated only when that count is 0. Otherwise it stays NOT VALID, a warning names it and
--- the count (count and constraint name only, never an id or a value: CLAUDE.md privacy), and
--- APPLY.md File 23 says what to do. Such a letter breaks its author's pull before this file and
--- after it, until it heals. It heals with an upload of its words (an entry.upsert or
--- entry.reupload with the text group and an array). Until then every other update of that row is
--- refused 23514, and so is any statement that updates it with others: an op that does not change
--- the words, Delete and Restore (Recently deleted), in_book and approval changes, leave_child and
--- remove_child_member when they take letters out of the book, and request_account_deletion and
--- cancel_account_deletion for its author (one update over all of the author's letters). Real
--- deletes are never checked: Erase now and the purges go on.
+-- Existing rows. Never deleted or rewritten (the constitution). In one statement the check is added
+-- NOT VALID, the stored letters it refuses are counted, and it is validated when that count is 0.
+-- When the count is not 0 the statement raises 55000 with the count and the constraint name only
+-- (never an id or a value: CLAUDE.md privacy), so the whole file rolls back: no constraint, no
+-- history row, no row changed. APPLY.md File 23 escalates the count; a repair is a decision, never
+-- an operator step. File 22 leaves such a check NOT VALID instead. On entries that is not safe: a
+-- NOT VALID check still refuses every update of a row that fails it, and those updates include the
+-- deletion and membership paths (reviews A and B on #258):
+--   cancel_account_deletion updates all of the author's letters (20261005000000:472): it is
+--     refused, the request stays scheduled, and the account is purged on day 30 although the
+--     person cancelled;
+--   finalize_account_deletion clears reviewed_by on other authors' letters (20261003020000:170):
+--     the request sticks in executing after the Auth user is gone;
+--   Erase now under a legal hold tombstones with an UPDATE (20261016000000:898): 23514 instead of
+--     deferred;
+--   undo_parent_join (20261015020000:435), review_family_letter (20261003000000:521) and
+--     request_book_deletion with a co-parent (20261003000000:672) are refused over another
+--     person's letter;
+--   a failing letter in Recently deleted cannot heal by upload (entries_guard answers SCTMB,
+--     20261016000000:218; restore_entry 23514, 20261015000000:858).
+-- Once the file is applied no stored letter can fail the check (every insert and update is
+-- checked), so none of these can happen afterwards.
 --
--- New SQLSTATEs: none. Reused: 23514 (check violation), 55000 (second run, or a run before file 22).
+-- One transaction. The main block is one statement, so the add, the count, the validate and the
+-- comment commit or roll back together however the file is run. The pinned CLI (2.119.0,
+-- deploy-db.yml) also sends a file with no transaction control and no index, vacuum or cluster
+-- statement as one batch with one Sync, its history insert last (apps/cli-go/pkg/migration/file.go
+-- ExecBatch; apps/cli/src/command-internal/migration-apply.ts execMigrationBatch), so a refused
+-- run records nothing; the test harness runs a file as one implicit transaction too.
+--
+-- Locks. The add takes ACCESS EXCLUSIVE on entries until the file commits, with up to two scans
+-- (the count, the validate), and while it waits for that lock every pull and push queues behind
+-- it. So the block first sets lock_timeout to 5 s, local to this transaction (files 20 to 22 set
+-- none): on a busy table the file fails with Postgres's own 55P03 (lock_not_available), nothing
+-- changed and nothing recorded, and APPLY.md File 23 says to retry.
+--
+-- New SQLSTATEs: none. Reused: 23514 (check violation), 55000 (second run, a run before file 22, or a
+-- stored letter that fails the check).
 -- Tests: supabase/tests/entries_machine_edits_check.test.mjs (new). Fictional family "Asha" only.
 
 -- --- 0. Run once, after 20261023030000 ----------------------------------------
@@ -95,11 +119,7 @@ begin
 end;
 $$;
 
--- --- 1. The check, NOT VALID: every insert and update from now on ------------
-alter table public.entries add constraint entries_machine_edits_shape
-  check (jsonb_typeof(machine_edits) = 'array') not valid;
-
--- --- 2. The letters already stored: count, then validate only when none fails --
+-- --- 1. One statement: add NOT VALID, count, then validate at 0 or refuse the file --
 -- The count reads the expression Postgres stored for the constraint, so it is exactly what the
 -- check refuses (a check refuses a row only when its expression is false, never when it is null).
 do $$
@@ -107,19 +127,21 @@ declare
   v_expr text;
   v_bad bigint;
 begin
+  -- Never wait long for the exclusive lock: every pull and push would queue behind the wait.
+  perform set_config('lock_timeout', '5s', true);
+  alter table public.entries add constraint entries_machine_edits_shape
+    check (jsonb_typeof(machine_edits) = 'array') not valid;
   select pg_get_expr(k.conbin, k.conrelid) into v_expr
     from pg_constraint k
    where k.conrelid = 'public.entries'::regclass and k.conname = 'entries_machine_edits_shape';
   execute format('select count(*) from public.entries where (%s) is false', v_expr) into v_bad;
-  if v_bad = 0 then
-    alter table public.entries validate constraint entries_machine_edits_shape;
-    raise notice 'entries_machine_edits_shape: 0 stored letters fail it; validated';
-  else
-    raise warning 'entries_machine_edits_shape: % stored letters fail it; left NOT VALID, no row changed (supabase/APPLY.md, File 23)',
-      v_bad;
+  if v_bad <> 0 then
+    raise exception 'entries_machine_edits_shape: % stored letters fail it; nothing applied, no row changed (supabase/APPLY.md, File 23)',
+      v_bad using errcode = '55000';
   end if;
+  alter table public.entries validate constraint entries_machine_edits_shape;
+  comment on constraint entries_machine_edits_shape on public.entries is
+    'A JSON array, as the contract reads a letter''s machine_edits (20261023040000). 23514 on a write.';
+  raise notice 'entries_machine_edits_shape: 0 stored letters fail it; validated';
 end;
 $$;
-
-comment on constraint entries_machine_edits_shape on public.entries is
-  'A JSON array, as the contract reads a letter''s machine_edits (20261023040000). 23514 on a write.';

@@ -3,7 +3,8 @@
 // Data API write whose machine_edits is not a JSON array is refused with 23514, so nothing the contract refuses is
 // stored and the author's book pull keeps parsing; every answer is parsed with the contract itself
 // (packages/api/src/server/sync.ts, read here through Node's type stripping); letters stored before the file are
-// never changed, and the check stays NOT VALID while one of them fails it. Fictional family "Asha" only (CLAUDE.md).
+// never changed, and while one of them fails the check the file refuses whole (55000) and leaves no check behind.
+// Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
 
@@ -76,6 +77,10 @@ const NAME = 'entries_machine_edits_shape';
 const validated = async (x) => (await x.sys(`select convalidated from pg_constraint where conrelid = 'public.entries'::regclass
   and conname = $1`, [NAME])).rows.map((c) => c.convalidated);
 const pushParses = (r) => parsePushResponse(r).ok;
+// Error code and message of a failing call (the message is checked for privacy), or 'ok'.
+const errOf = async (fn) => { try { await fn(); return { code: 'ok', message: '' }; } catch (e) { return { code: e.code ?? 'error', message: e.message ?? '' }; } };
+const lockTimeout = async (x) => (await x.sys('show lock_timeout')).rows[0].lock_timeout;
+const FILE_SQL = readFileSync(mine, 'utf8');
 // jsonb keeps its own key order, so a stored edit list is compared in SQL.
 const sameEdits = async (x, id, edits) => (await x.sys(`select machine_edits = $2::jsonb s from entries where id = $1`,
   [id, JSON.stringify(edits)])).rows[0]?.s === true;
@@ -100,6 +105,12 @@ check('a second run is refused (55000), and changes nothing', (await codeOf(() =
   const early = await createDb(beforeHeldChecks);
   check('a run before 20261023030000 is refused (55000), and adds nothing',
     (await codeOf(() => early.db.exec(readFileSync(mine, 'utf8')))) === '55000' && (await validated(early)).length === 0);
+}
+{
+  const code = FILE_SQL.replace(/--[^\n]*/g, '');
+  const at = code.indexOf("perform set_config('lock_timeout', '5s', true);");
+  check('[locks] the file sets a local lock_timeout of 5s in the same statement, before it asks for the exclusive lock on entries',
+    at > 0 && at < code.indexOf('alter table public.entries add constraint entries_machine_edits_shape'));
 }
 check('[contract] the app treats 23514 and 23502 as a permanent refusal (classifySqlstate: reject, never retried)',
   ['23514', '23502'].every((c) => classifySqlstate(c).action === 'reject' && classifySqlstate(c, 'queue').action === 'reject'));
@@ -217,7 +228,7 @@ check('the other parent\'s pull parses and never carries machine_edits (author-o
     && pushParses(r));
 }
 
-// --- 6. Letters stored before the file: counted, never changed; the check stays NOT VALID -----
+// --- 6. Letters stored before the file: one that fails makes the file refuse whole (55000) ------
 {
   const old = await createDb(before);
   const child = await setUp(old);
@@ -251,52 +262,56 @@ check('the other parent\'s pull parses and never carries machine_edits (author-o
   check('[the gap] before the file, held_state\'s fallback current carries the letter\'s non-array machine_edits and the whole push answer is invalid',
     r.results[0].dup === true && r.results[0].current?.machine_edits?.removed === 'um' && !pushParses(r));
 
+  // The author could write straight through the Data API too (review A N6 on #258).
+  const direct = id7();
+  check('[the gap] before the file, a direct Data API write of a non-array applied too (an insert of {} and an update to JSON null)',
+    (await codeOf(() => old.as(A, `insert into entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version,
+        raw_transcript, machine_edits, final_text) values ($1, $2, $3, 'letter', current_date, now(), 'typed', 5, 'You smiled.', '{}'::jsonb,
+        'You smiled.')`, [direct, child, A]))) === 'ok'
+    && (await codeOf(() => old.as(A, `update entries set machine_edits = 'null'::jsonb where id = $1`, [ids.good2]))) === 'ok'
+    && (await rowOf(old, direct)).t === 'object' && (await rowOf(old, ids.good2)).t === 'null');
+  const failing = [ids.obj, ids.nul, ids.str, K, direct, ids.good2];
+
   const snap = async () => JSON.stringify((await old.sys(`select e::text r from entries e order by id`)).rows);
   const before0 = await snap();
-  const notices = [];
-  const applied = await codeOf(() => old.db.exec(readFileSync(mine, 'utf8'), { onNotice: (m) => notices.push(m) }));
-  check('[existing rows] the file applies over letters that fail its check (it never fails on them)', applied === 'ok');
-  check('[existing rows] the check a stored letter fails stays NOT VALID', JSON.stringify(await validated(old)) === '[false]');
+  const lock0 = await lockTimeout(old);
+  const refused = await errOf(() => old.db.exec(FILE_SQL));
+  check('[existing rows] over 6 failing letters the file refuses: 55000, with the count and the constraint name only',
+    refused.code === '55000'
+    && refused.message === 'entries_machine_edits_shape: 6 stored letters fail it; nothing applied, no row changed (supabase/APPLY.md, File 23)');
+  check('[existing rows] the refused file rolled back whole: no constraint is left behind, not even NOT VALID',
+    (await validated(old)).length === 0
+    && (await old.sys(`select count(*)::int c from pg_constraint where conname = $1`, [NAME])).rows[0].c === 0);
   check('[constitution] no stored letter is changed or deleted (every column, versions and times included)', (await snap()) === before0);
-  const said = notices.map((m) => `${m.severity} ${m.message}`);
-  check('[existing rows] the count is reported: 4 stored letters fail it (object, JSON null, string, and the kept letter)',
-    said.length === 1 && /^WARNING entries_machine_edits_shape: 4 stored letters fail it; left NOT VALID, no row changed \(supabase\/APPLY\.md, File 23\)$/.test(said[0]));
-  check('[privacy] the report names the check and a count only: no id, no value, no words',
-    !said.some((s) => [...Object.values(ids), K].some((i) => s.includes(i)) || /removed|laughed|hummed|null|string|object/.test(s)));
-
-  // A NOT VALID check still refuses every new and changed row.
-  const fresh = id7();
-  let o = await oldPush(A, [op('entry.upsert', fresh, letter(fresh, child, { machine_edits: {} }))]);
-  check('[existing rows] a NOT VALID check still refuses a new bad letter (23514)', o.results[0].code === '23514' && !(await rowOf(old, fresh)));
-  const b0 = await rowOf(old, ids.obj);
-  o = await oldPush(A, [op('entry.upsert', ids.obj, letter(ids.obj, child, { in_book: false, machine_edits: [] }), { changed: ['in_book'], base: b0.v })]);
-  check('[existing rows] an op on a failing letter that does not change its words is refused 23514; the row stays as it was',
-    o.results[0].code === '23514' && (await rowOf(old, ids.obj)).in_book === true && pushParses(o));
-  o = await oldPush(A, [op('entry.delete', ids.obj)]);
-  check('[existing rows] Delete (Recently deleted) of a failing letter is refused 23514 until it heals',
-    o.results[0].code === '23514' && (await rowOf(old, ids.obj)).deleted_at === null && pushParses(o));
-  check('[existing rows] the author\'s account deletion request is refused 23514 while one of their letters fails (one update over all of them), and nothing is recorded',
-    (await codeOf(() => old.as(A, `select * from public.request_account_deletion('ios')`))) === '23514'
-    && (await old.sys(`select count(*)::int c from deletion_requests where profile_id = $1`, [A])).rows[0].c === 0);
-  o = await oldPush(A, [op('entry.upsert', ids.obj, letter(ids.obj, child, { machine_edits: [] }), { changed: ['text'], base: b0.v })]);
-  const healed = await rowOf(old, ids.obj);
-  check('[existing rows] an upload of its words with an array heals the letter; the old edit list is kept in entry_versions (nothing lost)',
-    o.results[0].ok === true && healed.t === 'array' && healed.final_text === b0.final_text && pushParses(o)
-    && (await old.sys(`select count(*)::int c from entry_versions where entry_id = $1 and machine_edits = '{"removed": "um"}'::jsonb`, [ids.obj])).rows[0].c === 1);
-  o = await oldPush(A, [op('entry.delete', ids.obj)]);
-  check('[existing rows] once healed, Delete works again', o.results[0].ok === true && (await rowOf(old, ids.obj)).deleted_at !== null);
-  o = await oldPush(A, [op('entry.erase', ids.nul)]);
-  check('[existing rows] Erase now of a failing letter still works (a real delete is never checked)',
-    o.results[0].ok === true && o.results[0].erased === true && !(await rowOf(old, ids.nul)) && pushParses(o));
-  for (const i of [ids.str, K]) {
-    const s0 = await rowOf(old, i);
-    await oldPush(A, [op('entry.upsert', i, letter(i, child, { final_text: s0.final_text, machine_edits: [] }), { changed: ['text'], base: s0.v })]);
-  }
+  check('[privacy] the refusal names the check and a count only: no id, no value, no words',
+    ![...Object.values(ids), K, direct].some((i) => refused.message.includes(i)) && !/removed|laughed|hummed|smiled|null|string|object/.test(refused.message));
+  check('[locks] the lock_timeout the file sets is local: after the refused run the session has its own value again',
+    (await lockTimeout(old)) === lock0);
+  // With no check left behind, the paths reviews A and B named go on for the failing letters (N1, N4).
+  let o = await oldPush(A, [op('entry.delete', ids.obj)]);
+  const del = (await rowOf(old, ids.obj)).deleted_at !== null;
+  o = await oldPush(A, [op('entry.restore', ids.obj)]);
+  check('[existing rows] Delete and Restore of a failing letter still go on after the refused run',
+    del && o.results[0].ok === true && (await rowOf(old, ids.obj)).deleted_at === null && pushParses(o));
+  check('[existing rows] the author can still ask for account deletion and cancel it again (no check refuses the update over their letters)',
+    (await codeOf(() => old.as(A, `select * from public.request_account_deletion('ios')`))) === 'ok'
+    && (await codeOf(() => old.as(A, `select public.cancel_account_deletion()`))) === 'ok'
+    && (await old.sys(`select status from deletion_requests where profile_id = $1`, [A])).rows.map((x) => x.status).join() === 'cancelled'
+    && (await old.sys(`select count(*)::int c from entries where author_id = $1 and deleted_at is not null`, [A])).rows[0].c === 0);
+  // Count 0. Here the author erases each failing letter with Erase now (the author's own act); a repair of a stored
+  // edit list is a decision for the owner, never an operator step or a test fixture (APPLY.md File 23).
+  const erased = [];
+  for (const i of failing) erased.push((await oldPush(A, [op('entry.erase', i)])).results[0].erased === true);
   const left = (await old.sys(`select count(*)::int c from entries where jsonb_typeof(machine_edits) <> 'array'`)).rows[0].c;
-  check('[existing rows] once every failing letter healed, the author\'s pull parses again', left === 0 && parsePullResponse(await oldPull(A, ownPull)).ok);
-  await old.sys(`alter table entries validate constraint ${NAME}`);
-  check('[APPLY.md File 23] once no stored letter fails it, the check validates by hand', JSON.stringify(await validated(old)) === '[true]');
-  check('[existing rows] and the account deletion request goes through', (await codeOf(() => old.as(A, `select * from public.request_account_deletion('ios')`))) === 'ok');
+  const notices = [];
+  const applied = await codeOf(() => old.db.exec(FILE_SQL, { onNotice: (m) => notices.push(`${m.severity} ${m.message}`) }));
+  check('[existing rows] once no stored letter fails it, the same file applies on its next run and validates (the refused run left nothing)',
+    erased.every(Boolean) && left === 0 && applied === 'ok' && JSON.stringify(await validated(old)) === '[true]'
+    && JSON.stringify(notices) === JSON.stringify(['NOTICE entries_machine_edits_shape: 0 stored letters fail it; validated']));
+  const fresh = id7();
+  o = await oldPush(A, [op('entry.upsert', fresh, letter(fresh, child, { machine_edits: {} }))]);
+  check('[existing rows] from then on a new bad letter is refused 23514, and the author\'s pull parses',
+    o.results[0].code === '23514' && !(await rowOf(old, fresh)) && pushParses(o) && parsePullResponse(await oldPull(A, ownPull)).ok);
 }
 
 // --- 7. Letters stored before the file that pass: validated at once, untouched ------------
@@ -313,9 +328,10 @@ check('the other parent\'s pull parses and never carries machine_edits (author-o
   const snap = async () => JSON.stringify((await old.sys(`select e::text r from entries e order by id`)).rows);
   const before0 = await snap();
   const notices = [];
-  const applied = await codeOf(() => old.db.exec(readFileSync(mine, 'utf8'), { onNotice: (m) => notices.push(`${m.severity} ${m.message}`) }));
+  const lock0 = await lockTimeout(old);
+  const applied = await codeOf(() => old.db.exec(FILE_SQL, { onNotice: (m) => notices.push(`${m.severity} ${m.message}`) }));
   check('[existing rows] over letters that all pass, the file applies, validates the check and says so (a NOTICE, no WARNING)',
-    applied === 'ok' && JSON.stringify(await validated(old)) === '[true]'
+    applied === 'ok' && JSON.stringify(await validated(old)) === '[true]' && (await lockTimeout(old)) === lock0
     && JSON.stringify(notices) === JSON.stringify(['NOTICE entries_machine_edits_shape: 0 stored letters fail it; validated']));
   check('[constitution] the letters already stored are unchanged and their pull parses',
     (await snap()) === before0 && ((p) => p.ok && ids.every((id) => rowsOf(p).some((y) => y.id === id)))(parsePullResponse(await pullOn(old)(A, ownPull))));
