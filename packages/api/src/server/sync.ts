@@ -595,6 +595,12 @@ export const PulledRowSchema = v.object({
   prompt_library_version: v.nullish(v.number()),
   engine_version: v.number(),
   raw_transcript: v.optional(str),
+  /**
+   * Own rows only. A JSON array, checked on entries since 20261023040000
+   * (entries_machine_edits_shape, 23514 on a write), so a letter written
+   * since then parses here. While a stored letter fails it, the file refuses
+   * (55000 with the count, nothing applied; supabase/APPLY.md File 23).
+   */
   machine_edits: v.optional(v.array(v.unknown())),
   /** Null until the author edits by hand (S02 20261015030000: null or an array). */
   author_edits: v.nullish(v.array(v.unknown())),
