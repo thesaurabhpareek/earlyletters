@@ -32,9 +32,10 @@ describe('a kept letter arrives in the Book (5.8 row 5)', () => {
 
   it('the Book washes the card once and clears the param, so Back and tab taps never replay it (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/useLocalSearchParams<\{ arrived\?: string \}>\(\)/);
+    // `secondFree` rides with `arrived` on the second kept letter (P4b, S21) and is cleared with it.
+    expect(book).toMatch(/useLocalSearchParams<\{ arrived\?: string; secondFree\?: string \}>\(\)/);
     expect(book).toMatch(/wash\(\[arrival\.id\]\)/);
-    expect(book).toMatch(/router\.setParams\(\{ arrived: undefined \}\)/);
+    expect(book).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
   });
 });
 

@@ -10,6 +10,7 @@ import { en } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { afterEach, describe, expect, it } from 'vitest';
 import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, resetKeep } from '../src/lib/capture/keep-intent';
+import { arrivalToastDelayMs, secondFreeOnArrival } from '../src/components/book/book.logic';
 import { fileIntoMonthPlan } from '../src/lib/transitions.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -117,6 +118,20 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
 
   it('the second-free line is no longer under the chip (the Book shows it after the landing)', () => {
     expect(review).not.toMatch(/keepGate\.secondFreeNote/);
+  });
+
+  it('the Book shows "That was your second free letter." once, after the landing, with no action (S21, D-082)', () => {
+    expect(secondFreeOnArrival('1')).toBe(true);
+    expect(secondFreeOnArrival(['1'])).toBe(true);
+    for (const v of [undefined, '', '0', 'true', 'yes', ['2']]) expect(secondFreeOnArrival(v as string | string[] | undefined), String(v)).toBe(false);
+    expect(arrivalToastDelayMs(false)).toBe(tokens.motion.route.dissolveMs);
+    expect(arrivalToastDelayMs(true)).toBe(tokens.motion.fadeMs);
+    const book = code(src('app/(tabs)/book.tsx'));
+    const arrival = book.slice(book.indexOf('const arrival = arrivalOf('), book.indexOf('router.setParams({ arrived: undefined, secondFree: undefined });') + 80);
+    expect(arrival).toMatch(/if \(secondFreeOnArrival\(params\.secondFree\)\) \{\s*secondFreeTimer\.current = setTimeout\(\(\) => toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\), arrivalToastDelayMs\(reduced\)\);/);
+    // No action, so it leaves on its own; cleared with `arrived`, so Back and tab taps never replay it.
+    expect(arrival).not.toMatch(/secondFreeNote[^)]*action/);
+    expect(arrival).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
   });
 });
 

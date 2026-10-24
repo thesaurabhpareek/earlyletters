@@ -39,8 +39,9 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await write('You laughed at the rain.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();
-  // The second-free line moves from the saved card to the Book's own toast after the landing (S21); the Book reads
-  // `secondFree=1` once P5 adds it (a request in the P4b pull request), so it is not asserted here yet.
+  // The second-free line is the Book's own toast after the landing (S21), not under the chip.
+  await expect(tab(app, 'Book')).toBeVisible({ timeout: 4000 });
+  await expect(app.getByText('That was your second free letter.')).toBeVisible({ timeout: 4000 });
   await step('happy', 'The second free letter', 'The second letter is kept like the first. "That was your second free letter." shows once, as the Book\'s toast after the landing, with no count of what is left (D-082, S21).', undefined, { settle: 120 });
   await write('You waved at the dog.');
   await btn(app, /^Add to .*book/).click();
