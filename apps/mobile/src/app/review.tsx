@@ -201,6 +201,8 @@ export default function Review() {
   const [wash, setWash] = useState(false);
   // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
   const [view, setView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
+  // The view Review opened with: choosing the other one is a change of the person's, kept only until Keep (S1).
+  const [openedView] = useState(view);
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
@@ -424,6 +426,9 @@ export default function Review() {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
     player.pause();
+    // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
+    // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
+    await setAudioMode('idle').catch(() => {});
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
@@ -487,6 +492,7 @@ export default function Review() {
     if (!draft || !child || saving.current) return;
     saving.current = true;
     player.pause();
+    await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
@@ -752,9 +758,9 @@ export default function Review() {
     <SafeAreaView className="flex-1 bg-background">
       <ModalHeader
         onClose={() => router.back()}
-        // Say what is true: the person's own changes (Change words, a fix put back) are only on this screen until Keep
+        // Say what is true: the person's own changes (Change words, a fix put back, the other view) are only on this screen until Keep
         // (P4 critics' pass S1; storing them on the draft is build 3's item, #274 N1).
-        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed }) ? undefined : pendingCopy.write.savedOnPhone}
+        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
         leading={
           editing ? (
             // Done sits in the header while editing (S18), and above the keyboard on iOS.
@@ -862,7 +868,6 @@ export default function Review() {
                       restoredIndex={wash ? marker : null}
                       card={openE && view === 'fixes' ? markCard : null}
                       accessibilityLabel={finalText}
-                      accessibilityHint={line === 'count' ? countText : undefined}
                       onPressEdit={(i) => {
                         if (i >= applied.length) return;
                         haptic('tap');

@@ -50,16 +50,20 @@ describe('[M1] every mark is drawn in the letter\'s face, at the letter\'s size'
 });
 
 describe('[S1] Close never says "Saved on this phone" over changes only on the screen', () => {
-  it('Change words, or a fix put back, are changes Review holds until Keep; an Undo of the put-back takes it back', () => {
-    expect(reviewHasOwnChanges({ userText: null, applied: 2, proposed: 2 })).toBe(false);
-    expect(reviewHasOwnChanges({ userText: 'Asha, you held the spoon.', applied: 2, proposed: 2 })).toBe(true);
-    expect(reviewHasOwnChanges({ userText: '', applied: 2, proposed: 2 })).toBe(true); // every word cleared is a change too
-    expect(reviewHasOwnChanges({ userText: null, applied: 1, proposed: 2 })).toBe(true); // one put back
-    expect(reviewHasOwnChanges({ userText: null, applied: 0, proposed: 0 })).toBe(false); // nothing proposed
+  it('Change words, a fix put back, or the other view are changes Review holds until Keep; going back takes them back', () => {
+    const none = { userText: null, applied: 2, proposed: 2, view: 'fixes', openedView: 'fixes' } as const;
+    expect(reviewHasOwnChanges(none)).toBe(false);
+    expect(reviewHasOwnChanges({ ...none, userText: 'Asha, you held the spoon.' })).toBe(true);
+    expect(reviewHasOwnChanges({ ...none, userText: '' })).toBe(true); // every word cleared is a change too
+    expect(reviewHasOwnChanges({ ...none, applied: 1 })).toBe(true); // one put back
+    expect(reviewHasOwnChanges({ ...none, applied: 0, proposed: 0 })).toBe(false); // nothing proposed
+    expect(reviewHasOwnChanges({ ...none, view: 'exact' })).toBe(true); // "Exactly as said" chosen (#289 lens B)
+    expect(reviewHasOwnChanges({ ...none, view: 'exact', openedView: 'exact' })).toBe(false); // opened that way (Settings)
   });
 
   it('the hint is dropped while they are there, and kept otherwise', () => {
-    expect(review).toMatch(/closeHint=\{reviewHasOwnChanges\(\{ userText, applied: applied\.length, proposed \}\) \? undefined : pendingCopy\.write\.savedOnPhone\}/);
+    expect(review).toMatch(/closeHint=\{reviewHasOwnChanges\(\{ userText, applied: applied\.length, proposed, view, openedView \}\) \? undefined : pendingCopy\.write\.savedOnPhone\}/);
+    expect(review).toMatch(/const \[openedView\] = useState\(view\);/);
     expect(review.match(/closeHint=/g)).toHaveLength(1);
   });
 });
@@ -73,10 +77,20 @@ describe('[S2] Write\'s two destinations are stacked, as Review\'s footer is', (
 });
 
 describe('[S3] VoiceOver reads the letter as it will be kept, and the fix rows are open', () => {
-  it('the paragraph\'s label is the words as kept, its hint the fix count; the rest of a cut letter is not read twice', () => {
-    expect(review).toMatch(/accessibilityLabel=\{finalText\}\s*accessibilityHint=\{line === 'count' \? countText : undefined\}/);
+  it('the paragraph\'s label is the words as kept; the rest of a cut letter is not read twice', () => {
+    expect(review).toMatch(/accessibilityLabel=\{finalText\}/);
     expect(transcript).toMatch(/accessibilityLabel=\{key === 'below' \? undefined : accessibilityLabel\}/);
     expect(transcript).toMatch(/accessibilityElementsHidden=\{key === 'below' && !!accessibilityLabel\}/);
+    // No hint: iOS replaces a paragraph's hint with "2 buttons found" (#289 lens B); the count row says it right below.
+    expect(transcript).not.toMatch(/accessibilityHint=\{accessibilityHint\}|accessibilityHint=\{key/);
+    expect(review).not.toMatch(/accessibilityHint=\{line === 'count'/);
+  });
+
+  it('with a screen reader on, the marks inside the paragraph are not buttons of their own (iOS would read each by its visible text)', () => {
+    expect(transcript).toMatch(/const screenReader = useScreenReader\(\);\s*const role = screenReader \? undefined : \('button' as const\);/);
+    const spans = transcript.slice(transcript.indexOf('const render = '), transcript.indexOf('const paragraph = '));
+    const letterSpanButtons = spans.match(/<LetterSpan[\s\S]*?accessibilityRole=\{?[^\s>]*/g)?.map((m) => m.slice(m.lastIndexOf('accessibilityRole'))) ?? [];
+    expect(letterSpanButtons).toEqual(['accessibilityRole={role}', 'accessibilityRole={role}', 'accessibilityRole={role}']);
   });
 
   it('with a screen reader on, the fix rows (the path to every mark) start open', () => {
