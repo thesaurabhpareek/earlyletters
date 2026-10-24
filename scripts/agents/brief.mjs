@@ -284,8 +284,9 @@ const doc = [
   "",
   `1. Labels on every PR you open or update: \`agent:${handle}\` and \`from:agent\` (\`gh pr edit <n> --add-label agent:${handle},from:agent\`).`,
   `2. Commit messages end with \`Agent: ${handle}\`.`,
-  `3. Post exactly one journal entry: write it to a file and run \`gh issue comment ${journal || "<journal>"} --body-file <file>\`. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\` and it follows section 5 of the operating model.`,
-  "4. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
+  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Post with \`gh api -X POST repos/${repo}/issues/${journal || "<journal>"}/comments -F body=@<file>\` and complete it with \`gh api -X PATCH repos/${repo}/issues/comments/<id> -F body=@<file>\`.`,
+  "4. New BL, D or ADR numbers come from `node scripts/agents/next-id.mjs`, never from reading develop alone.",
+  "5. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
   "",
 ].join("\n");
 
