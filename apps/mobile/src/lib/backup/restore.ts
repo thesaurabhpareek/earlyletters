@@ -441,6 +441,14 @@ export function createRestore(d: RestoreDeps) {
       const saved = d.db.getMeta(REQUEST_META);
       if (!saved) {
         const req = await d.escrow.request(device.deviceId);
+        // This device's request, released and stored here less than 24 hours ago, answered as it stands:
+        // the next release call would open every key again with no new hold and email the owner again,
+        // on every pass while a recording still lacks its key (a book's wrap that did not open there).
+        // Stop instead; after 24 hours a request is a new one, with its own hold (review A N3 on #255).
+        if (req.state === 'released') {
+          d.db.setMeta(STOPPED_META, 'released_already');
+          return { kind: 'stopped' };
+        }
         d.db.setMeta(REQUEST_META, JSON.stringify({ requestId: req.requestId, holdUntil: req.holdUntil, polledAt: d.clock.now() }));
         return { kind: 'waiting_hold', holdUntil: req.holdUntil };
       }
@@ -597,7 +605,8 @@ export function createRestore(d: RestoreDeps) {
      * The person tapped Try again after a stopped, expired or unusable request. A revoked or
      * unknown device gets a new device key first (never on its own, ADR 0024). A release kept
      * here is stored again from that copy, with no new release; only an unusable release is
-     * dropped, so escrow is asked once more.
+     * dropped, so escrow is asked once more. A request released here less than 24 hours ago stops
+     * again (`released_already`): no release without a new hold.
      */
     async tryAgain(): Promise<void> {
       const why = d.db.getMeta(STOPPED_META);
