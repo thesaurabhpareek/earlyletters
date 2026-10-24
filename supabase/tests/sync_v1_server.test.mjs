@@ -914,4 +914,51 @@ check('[LEGAL-REQ-039] held drafts are in the incident scope as letter text', sc
 check('the backup tables are accepted in scope (counted once #151 is applied)',
   (await codeOf(() => sys(`select public.ops_incident_scope('{"tables": ["audio_blobs", "child_keys"]}')`))) === 'ok');
 
+// --- 10. A repeat is answered from its receipt before any consent check (#259) ---
+// During a consent pause the phone sends a held upload whose answer was lost ahead of a let-go of the same
+// draft (apps/mobile/src/lib/sync/outbox.ts takeBatch), and rebases the let-go on the repeat's applied_v. That
+// relies on sync_push claiming the op id first and on the duplicate path only reading (sync_v1_server.sql,
+// sync_push: sync_op_claim, then dup_answer, held_dup or dup_outcome), so a change that gated the claim or
+// wrote on a repeat fails here, for both kinds of pause. Last in the file: the terms version stays published.
+const RP = id7();
+await push(A, [op('held.upsert', RP, held(RP))]);
+let rpRow = await heldRow(RP);
+const upRP = op('held.upsert', RP, held(RP, { typed: 'You hummed all the way home, and up the stairs.' }), { changed: ['text'], base: rpRow.v });
+await push(A, [upRP]); // applied; the phone never heard the answer
+rpRow = await heldRow(RP);
+const appliedRP = (await receipt(upRP.op)).a;
+check('[#259] the applied held upload\'s receipt names the version it wrote, which is also its words version (applied_v = v = text_xid)',
+  appliedRP === rpRow.v && rpRow.v === rpRow.t && rpRow.typed_text === 'You hummed all the way home, and up the stairs.');
+const RL = id7();
+const upRL = op('entry.upsert', RL, letter(RL, { text: 'You climbed the stairs, one at a time.' }));
+await push(A, [upRL]);
+const appliedRL = (await receipt(upRL.op)).a;
+const rlRow = await entry(RL);
+for (const pause of ['sensitive-data', 'terms']) {
+  if (pause === 'sensitive-data') {
+    await as(A, `select public.record_policy_act('sensitive-data', '1.0.0', 'withdraw', 'settings_toggle', 'settings.privacy', '1', 'ios')`);
+  } else {
+    // A major terms change with requires_reconsent, its 30 days' notice over, now in force: A has not accepted it.
+    await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from,
+                 effective_at, content_sha256, url, summary)
+               values ('terms', '2.0.0', 'major', true, now() - interval '31 days', now() - interval '31 days', now() - interval '1 minute',
+                 sha256(convert_to('terms 2.0.0', 'UTF8')), 'https://example.invalid/terms/2.0.0', 'Second version')`);
+  }
+  r = await push(A, [upRP, upRL]);
+  check(`[#259] in a ${pause} pause, a repeat of an applied held upload and of an applied letter is answered from its receipt: dup with applied_v, not paused, nothing written`,
+    r.paused === false && r.results.length === 2
+    && r.results[0].ok === true && r.results[0].dup === true && r.results[0].applied_v === appliedRP
+    && r.results[1].ok === true && r.results[1].dup === true && r.results[1].applied_v === appliedRL
+    && same(await heldRow(RP), rpRow) && same(await entry(RL), rlRow));
+  r = await push(A, [op('held.upsert', RP, held(RP, { typed: 'A new upload in the pause.' }), { changed: ['text'], base: rpRow.v })]);
+  check(`[#259] in the same ${pause} pause a new upload meets SCCON and is not stored`,
+    r.paused === true && r.consent === pause && r.results.length === 0 && same(await heldRow(RP), rpRow));
+  if (pause === 'sensitive-data') {
+    await as(A, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1', 'ios')`);
+  }
+}
+r = await push(A, [op('held.discard', RP, {}, { base: appliedRP })]);
+check('[#259] in the pause, a let-go on the applied_v of this phone\'s own upload is taken, not kept',
+  r.paused === false && r.results[0].ok === true && !r.results[0].kept && !(await heldRow(RP)) && (await marker(RP)) === 'discarded');
+
 done();

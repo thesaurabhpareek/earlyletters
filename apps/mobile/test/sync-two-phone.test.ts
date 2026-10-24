@@ -971,7 +971,11 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
   interface Seen { type: string; id: string; op: string; sent: Record<string, unknown>; r: Answer }
 
   beforeEach(async () => {
-    if (server) await server.sys('delete from sync_rate_windows');
+    if (!server) return;
+    await server.sys('delete from sync_rate_windows');
+    // A case that failed midway never leaves consent withdrawn for the next one (one failure, not 38).
+    const g = (await server.sys('select sensitive_data from public.content_gate_state($1)', [MAMA])).rows[0];
+    if (g && !g.sensitive_data) await server.sensitiveConsent(MAMA, 'accept');
   });
 
   beforeAll(async () => {
@@ -2092,10 +2096,14 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
    * - `pause: 'terms'`: the pause is a terms version that asks every member to consent again (`requires_reconsent`),
    *   not a withdrawn consent; the server raises it from the same require_content_consent().
    * - `beforePause` runs after the lost answer and before the pause starts (another phone's change).
+   * - `behindRefused` names ops behind B that the lost run refused too (every other op behind B applied).
    */
   const refusedThenPaused = async (
     queue: () => void,
-    opts: { losePull?: boolean; refusal?: 'gone' | 'scimm'; pause?: 'sensitive' | 'terms'; beforePause?: () => Promise<void> } = {},
+    opts: {
+      losePull?: boolean; refusal?: 'gone' | 'scimm'; pause?: 'sensitive' | 'terms'; beforePause?: () => Promise<void>;
+      behindRefused?: () => string[];
+    } = {},
   ) => {
     const scimm = opts.refusal === 'scimm';
     const erased = writeLetter(P, BOOK, 'You ate a whole pear.');
@@ -2120,7 +2128,8 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     expect(first.res?.results?.[0]).toEqual(scimm
       ? { op: opB, ok: false, code: 'SCIMM' }
       : { op: opB, ok: false, code: 'SCDEL', gone: true });
-    expect(first.res?.results?.slice(1).every((r) => r.ok)).toBe(true); // the ops behind B applied
+    const refusedBehind = opts.behindRefused?.() ?? [];
+    expect(first.res?.results?.slice(1).filter((r) => !r.ok).map((r) => r.op)).toEqual(refusedBehind); // the other ops behind B applied
     expect(await receipt(opB)).toBe(false); // refused, so not claimed
     await opts.beforePause?.();
 
@@ -2314,7 +2323,7 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     expect(draftText(Q, nap)).toBeUndefined(); // gone: discarded, at its next pull
   }, 60_000);
 
-  it('[F16-REQ-029] [LEGAL-REQ-009] the same let-go when the upload never reached the server: it goes ahead of the let-go once, meets SCCON itself (it never applied), and the let-go then leaves on its own base and is taken', async () => {
+  it('[F16-REQ-029] [LEGAL-REQ-009] the same let-go when the upload never reached the server and heads the queue: it meets SCCON itself (it never applied), so it does not go again ahead of the let-go, which leaves on its own base and is taken', async () => {
     const sock = await heldOnBoth('You lost a sock.');
     P.store.setDraftTyped(sock, 'You lost a sock under the sofa.'); // op H
     const opH = queuedFor(P, sock)[0].op_id;
@@ -2325,8 +2334,8 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     tick(); // past H's backoff
     letGo(P, sock);
     expect((await P.sync(w.s)).phase).toBe('paused_consent');
-    // At the head of the queue, then once ahead of the let-go: both times it met SCCON and was rolled back.
-    expect(answersFor(w, 'held.upsert', sock)).toEqual([{ alone: true, paused: true, answer: null }, { alone: true, paused: true, answer: null }]);
+    // Alone at the head of the queue it met SCCON, so the server rolled it back: one request, not two.
+    expect(answersFor(w, 'held.upsert', sock)).toEqual([{ alone: true, paused: true, answer: null }]);
     expect(answersFor(w, 'held.discard', sock)).toEqual([{ alone: true, paused: false, answer: { op: expect.any(String), ok: true } }]);
     expect(await heldText(sock)).toBeUndefined();
     expect(outbox(P)).toEqual([]); // the server took the let-go, so the upload queued before it is dropped
@@ -2337,6 +2346,76 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     expect(await heldText(sock)).toBeUndefined(); // nothing waited to bring it back
     await Q.sync();
     expect(draftText(Q, sock)).toBeUndefined();
+  }, 60_000);
+
+  it('[F16-REQ-029] [LEGAL-REQ-009] the same let-go when the upload never reached the server behind an edit that meets SCCON first: it goes ahead of the let-go once, meets SCCON itself, and the let-go then leaves on its own base and is taken', async () => {
+    const swing = writeLetter(P, BOOK, 'You rode the swing.');
+    await P.sync();
+    const mitt = await heldOnBoth('You lost a mitten.');
+    editWords(P, swing, 'You rode the swing, higher and higher.'); // op E, ahead of H
+    P.store.setDraftTyped(mitt, 'You lost a mitten in the snow.'); // op H
+    const opH = queuedFor(P, mitt)[0].op_id;
+    const w = watch();
+    expect((await P.sync(flaky(w.s, { failBefore: 1, only: 'sync_push' }))).phase).toBe('offline'); // E and H left, never arrived
+    expect(await receipt(opH)).toBe(false);
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    tick();
+    letGo(P, mitt);
+    expect((await P.sync(w.s)).phase).toBe('paused_consent');
+    // E met SCCON, so nothing tells H's fate; H then goes ahead of the let-go once, alone, and meets SCCON itself.
+    expect(answersFor(w, 'held.upsert', mitt)).toEqual([{ alone: false, paused: true, answer: null }, { alone: true, paused: true, answer: null }]);
+    expect(answersFor(w, 'held.discard', mitt)).toEqual([{ alone: true, paused: false, answer: { op: expect.any(String), ok: true } }]);
+    expect(await heldText(mitt)).toBeUndefined();
+    expect(outbox(P)).toEqual(['entry.upsert']); // only E waits, for consent
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect((await serverEntry(swing))?.final_text).toBe('You rode the swing, higher and higher.');
+    expect(await heldText(mitt)).toBeUndefined();
+    await Q.sync();
+    expect(draftText(Q, mitt)).toBeUndefined();
+  }, 60_000);
+
+  it('[F16-REQ-029] [LEGAL-REQ-009] two held uploads go ahead of their let-gos one at a time: the first never applied and meets SCCON, so the second, which applied, is still answered and its let-go is taken (review B N5 on #259)', async () => {
+    const rain = await heldOnBoth('You splashed in the rain.');
+    const moon = await heldOnBoth('You waved at the moon.');
+    let opHa = '';
+    let opHb = '';
+    const { w } = await refusedThenPaused(() => {
+      P.store.setDraftTyped(rain, 'You splashed in the rain in your new boots.'); // op Ha, behind B
+      opHa = queuedFor(P, rain)[0].op_id;
+      // A client bug sends a capture mode the server refuses (23514, held_drafts_write_checks), so Ha never
+      // applies and is not claimed; in the pause it meets SCCON first (the consent gate runs before the check).
+      const row = P.db.get<{ seq: number; payload: string }>('SELECT seq, payload FROM sync_outbox WHERE op_id = ?', opHa)!;
+      const p = JSON.parse(row.payload) as { data: Record<string, unknown> };
+      p.data.capture_mode = 'hummed';
+      P.db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), row.seq);
+      P.store.setDraftTyped(moon, 'You waved at the moon, and it followed the car.'); // op Hb, behind Ha
+      opHb = queuedFor(P, moon)[0].op_id;
+    }, { behindRefused: () => [opHa] });
+    expect(await receipt(opHa)).toBe(false);
+    expect(await receipt(opHb)).toBe(true);
+    letGo(P, rain);
+    letGo(P, moon);
+    expect((await P.sync(w.s)).phase).toBe('paused_consent');
+    // Each goes alone, so a paused answer can only be about that one upload. Two in one batch would both look
+    // unanswered, and the second let-go would leave on the version from before Hb and be answered kept.
+    expect(answersFor(w, 'held.upsert', rain).at(-1)).toEqual({ alone: true, paused: true, answer: null });
+    expect(answersFor(w, 'held.upsert', moon).at(-1)).toEqual({ alone: true, paused: false, answer: expect.objectContaining({ ok: true, dup: true }) });
+    expect(answersFor(w, 'held.discard', moon)).toEqual([expect.objectContaining({ paused: false, answer: { op: expect.any(String), ok: true } })]);
+    expect(answersFor(w, 'held.discard', rain)).toEqual([expect.objectContaining({ paused: false, answer: { op: expect.any(String), ok: true } })]);
+    expect(await heldText(rain)).toBeUndefined();
+    expect(await heldText(moon)).toBeUndefined();
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect(P.db.all("SELECT op_id FROM rejected_writes WHERE entity_id IN (?, ?)", rain, moon)).toEqual([]);
+    await Q.sync();
+    expect([draftText(Q, rain), draftText(Q, moon)]).toEqual([undefined, undefined]);
   }, 60_000);
 
   it('[F16-REQ-029] [LEGAL-REQ-009] the same let-go after the author\'s other phone changed the draft once this phone\'s upload applied: still answered kept, and the other phone\'s words stay on the server and come back to this phone', async () => {
@@ -2477,5 +2556,47 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     expect(words(Q, shell)?.final_text).toBe(latest);
     expect(words(papa, shell)?.final_text).toBe(latest);
     expect(words(Q, odd)?.final_text).toBe('You ate a whole pear.');
+  }, 60_000);
+
+  it('[F16-REQ-029] [LEGAL-REQ-009] the upload sent ahead of a let-go is refused (42501: the join was undone during the pause): it is dropped, not kept as a refused write, the let-go goes on its own base, and the server keeps the draft as it was (review B N4 on #259)', async () => {
+    // Papa's own book for Asha, which Mama joins as a parent; Papa may undo that join for 72 hours (F11-REQ-008).
+    const papas = papa.store.addChild({ name: 'Asha', birthday: '2025-04-12', dueDate: null, signsAs: 'Papa' }).id;
+    await papa.sync();
+    const token = (await server.userSql(PAPA, `select public.create_child_invite($1, 'parent') t`, [papas])).rows[0].t;
+    await server.userSql(MAMA, 'select public.accept_child_invite($1)', [token]);
+    const swing = writeLetter(P, BOOK, 'You pushed the swing.');
+    await P.sync();
+    expect(P.store.getChild(papas)).not.toBeNull();
+    tick(5_000);
+    const bath = P.store.createDraft({ childId: papas, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'You sang in the bath.' }).id;
+    expect(P.store.holdDraft(bath, { inBookChoice: true })).toBe(true);
+    await P.sync();
+    expect(await heldText(bath)).toBe('You sang in the bath.');
+
+    editWords(P, swing, 'You pushed the swing all by yourself.'); // op E, ahead of H
+    P.store.setDraftTyped(bath, 'You sang in the bath, and the duck sang back.'); // op H
+    const w = watch();
+    expect((await P.sync(flaky(w.s, { failBefore: 1, only: 'sync_push' }))).phase).toBe('offline'); // E and H never arrived
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    expect((await server.userSql(PAPA, 'select public.undo_parent_join($1, $2) r', [papas, MAMA])).rows[0].r).toBe('undone');
+    tick();
+    letGo(P, bath);
+    expect((await P.sync(w.s)).phase).toBe('paused_consent');
+    // E met SCCON; H went ahead of the let-go and was refused before any write (not a parent of the book now).
+    expect(answersFor(w, 'held.upsert', bath).at(-1)).toEqual({ alone: true, paused: false, answer: { op: expect.any(String), ok: false, code: '42501' } });
+    // A refused op is not claimed, so it never applied: the let-go went on its own base. Mama is no longer a parent,
+    // so the server answers missing and keeps the row (an undone join keeps the person's held drafts, 20261023010000).
+    expect(answersFor(w, 'held.discard', bath)).toEqual([{ alone: true, paused: false, answer: { op: expect.any(String), ok: true, missing: true } }]);
+    // The author let these words go after the upload was queued: no refused write keeps them (final review A-M3).
+    expect(P.db.all('SELECT op_id, code FROM rejected_writes WHERE entity_id = ?', bath)).toEqual([]);
+    expect((await P.sync(w.s)).rejected).toBe(0);
+    // Nothing is lost: the server still holds the draft as it was before the upload, the author's own row.
+    expect(await heldText(bath)).toBe('You sang in the bath.');
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    tick(2_000);
+    await P.sync(w.s);
+    expect(outbox(P)).toEqual([]);
+    expect((await serverEntry(swing))?.final_text).toBe('You pushed the swing all by yourself.');
   }, 60_000);
 });

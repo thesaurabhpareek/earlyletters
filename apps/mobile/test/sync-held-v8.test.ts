@@ -187,7 +187,7 @@ describe('[LEGAL-REQ-009] a let-go during a consent pause, behind an upload of t
     expect(takeBatch(db, { now: NOW, onlyDeletes: true }).ops.map((o) => [o.type, o.id, o.base])).toEqual([['held.discard', d, '800'], ['held.discard', other, '650']]);
   });
 
-  it('an upload that meets SCCON itself never applied: it stays sent, and once sent ahead in this pass the let-go goes on its own base', () => {
+  it('an upload that meets SCCON itself never applied: it stays sent, and once the engine knows that, the let-go goes on its own base', () => {
     const { db, d, other, upOp } = pausedLetGo();
     const ahead = takeBatch(db, { now: NOW, onlyDeletes: true });
     markSent(db, ahead.rows, NOW);
@@ -196,7 +196,7 @@ describe('[LEGAL-REQ-009] a let-go during a consent pause, behind an upload of t
       { type: 'held.upsert', sent_at: NOW }, // a retry is left as sent
       { type: 'held.discard', sent_at: null },
     ]);
-    const next = takeBatch(db, { now: NOW, onlyDeletes: true, aheadSent: new Set([upOp]) });
+    const next = takeBatch(db, { now: NOW, onlyDeletes: true, metSccon: new Set([upOp]) });
     expect(next.ops.map((o) => [o.type, o.id, o.base])).toEqual([['held.discard', d, '700'], ['held.discard', other, '650']]);
   });
 
@@ -207,7 +207,26 @@ describe('[LEGAL-REQ-009] a let-go during a consent pause, behind an upload of t
     expect(takeBatch(db, { now: '2026-10-03T09:06:00.000Z', onlyDeletes: true }).ops.map((o) => [o.type, o.id])).toEqual([['held.upsert', d]]);
   });
 
-  it('a held upload with no let-go behind it, or one never sent, does not go during a pause', () => {
+  it('the limit applies after those filters: in single-op mode the let-go, or another deletion, still goes in the same pass (review B N1 on #259)', () => {
+    const { db, d, other, upOp } = pausedLetGo();
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true, maxOps: 1 }).ops.map((o) => [o.type, o.id])).toEqual([['held.upsert', d]]);
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true, maxOps: 1, metSccon: new Set([upOp]) }).ops.map((o) => [o.type, o.id])).toEqual([['held.discard', d]]);
+    db.run("UPDATE sync_outbox SET attempts = 1, next_attempt_at = '2026-10-03T09:05:00.000Z' WHERE entity_id = ? AND type = 'held.upsert'", d);
+    expect(takeBatch(db, { now: NOW, onlyDeletes: true, maxOps: 1 }).ops.map((o) => [o.type, o.id])).toEqual([['held.discard', other]]);
+  });
+
+  it('a held upload refused while its let-go waits behind it is dropped, not kept as a refused write: the author let those words go, and the let-go goes next on its own base (review B N4 on #259)', () => {
+    const { db, d, upOp, base } = pausedLetGo();
+    const ahead = takeBatch(db, { now: NOW, onlyDeletes: true });
+    markSent(db, ahead.rows, NOW);
+    const out = applyPushResponse(db, ahead.rows, { results: [{ op: upOp, ok: false, code: '42501' }], paused: false, stopped: false } as PushResponse, qctx);
+    expect(out.rejected).toBe(0);
+    expect(db.all('SELECT op_id FROM rejected_writes WHERE entity_id = ?', d)).toEqual([]);
+    expect(ops(db).filter((o) => o.entity_id === d).map((o) => o.type)).toEqual(['held.discard']);
+    expect(base(d)).toBe('700');
+  });
+
+  it('a held upload with no let-go behind it does not go during a pause', () => {
     const { db, repo, draft } = signedIn();
     const d = draft('You stacked the cups.');
     drafts.markHeld(repo, d, true);

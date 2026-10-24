@@ -171,14 +171,13 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let onlyDeletes = false;
     let single = false;
     let contentAccepted = false;
-    // Held uploads sent ahead of a let-go in this pass's deletions round (takeBatch): each goes once, so after a
-    // paused answer the let-go goes next instead of the upload again.
-    const aheadSent = new Set<string>();
+    // Held uploads that met SCCON themselves in this pass, so never applied: they need not go ahead of a let-go
+    // (takeBatch), and the let-go goes next. One sent ahead and answered leaves the queue or stops held ops.
+    const metSccon = new Set<string>();
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
       if (killed()) return 'stop';
-      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, aheadSent });
+      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, metSccon });
       if (batch.rows.length === 0) break;
-      if (onlyDeletes) for (const r of batch.rows) if (r.type === 'held.upsert') aheadSent.add(r.op_id);
       tx(() => markSent(db, batch.rows, iso()));
       const res = await call<PushResponse>('sync_push', { p_ops: batch.ops });
       if ('failure' in res) {
@@ -208,7 +207,9 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       if (!onlyDeletes && !out.paused) contentAccepted = true;
       if (out.paused) {
         // SCCON: letters wait on the phone; deletions still go (LEGAL-REQ-009), a let-go after the held upload
-        // ahead of it whose answer was lost (takeBatch).
+        // ahead of it whose answer was lost (takeBatch). A held upload that met SCCON itself never applied, so it
+        // need not go ahead of its let-go in this pass, whether it met it at the head of the queue or sent ahead.
+        if (out.pausedAt?.type === 'held.upsert') metSccon.add(out.pausedAt.op_id);
         tx(() => writeSetting(db, SYNC_SETTING.pausedFor, out.consent || 'consent'));
         onlyDeletes = true;
         continue;
