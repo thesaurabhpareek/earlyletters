@@ -109,7 +109,8 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { afterLetterKept, freeLettersAllowance, hasPlus, hasWords, keepGateFor, type KeepGate } from '@/lib/billing';
+import { afterLetterKept, type KeepGate } from '@/lib/billing';
+import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -402,31 +403,14 @@ export default function Review() {
   /**
    * True when the Keep sheet opened instead: the caller returns without saving. Never throws.
    * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText`.
+   * The rule (no words on screen: no gate, no sheet) lives in lib/billing/keep-step.ts, tested there.
    */
   const keepNeedsPlus = async (wordsOnScreen: string): Promise<boolean> => {
     if (devPass.current) return false;
-    const g = await keepGateFor({ wordsOnScreen });
-    // null: no words on screen (marks only, such as "..."). Under M17 this save never counts toward the free
-    // letters (the ledger uses the same hasWords rule), so there is nothing to gate: no ledger read, no sheet,
-    // Keep goes ahead at once.
-    if (g === null || g.decision.kind === 'allow') return false;
-    track('keep_gate_shown', {
-      letters_kept: Math.min(1000, g.lettersKept),
-      allowance: Math.min(100, Math.max(2, g.allowance)),
-      lapsed: g.decision.lapsed ? 1 : 0,
-    });
+    const g = await keepSheetFor(wordsOnScreen);
+    if (g === null) return false;
     setGate(g);
     return true;
-  };
-
-  /** After the letter is saved: copy the count to the Keychain, and note the moment the free letters are used. */
-  const noteKept = async () => {
-    const kept = await afterLetterKept();
-    const allowance = freeLettersAllowance();
-    if (!hasPlus() && kept === allowance) {
-      track('free_allowance_reached', { allowance: Math.min(100, allowance) });
-      if (allowance === 2) setSecondFree(true);
-    }
   };
 
   const saving = useRef(false);
@@ -482,8 +466,8 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
-      // Marks only ("...") never count (M17), so they never note the second free letter or free_allowance_reached.
-      await (hasWords(finalText) ? noteKept() : afterLetterKept());
+      // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
+      if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
