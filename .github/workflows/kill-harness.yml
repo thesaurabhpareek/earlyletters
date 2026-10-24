@@ -17,7 +17,8 @@
 #            Every size runs the harness's planted-failure self-check first, so even the smoke cannot pass blind.
 #   dl01-merged  gate only: merges the four DL-01 reports into the one DL-01 verdict.
 #   release-launch  the store build's JavaScript (testflight profile env, no seam), Release, launched for 20 s: the
-#            scope check for a launch failure, and B-8 on a real Release bundle.
+#            scope check for a launch failure, and B-8 on a real Release bundle. Dispatch and schedule only: on a pull
+#            request ios-compile.yml's launch job runs the same check, so a harness PR builds two Release apps, not three.
 # Each harness job uploads its report.json and report.md (run numbers and outcomes; no ids, no words) as an artifact.
 #
 # Exit codes (README section 9), each named in an annotation; any exit but 0 fails the job, so a red run is red:
@@ -273,10 +274,12 @@ jobs:
   # Scope check for the harness and a product check on its own: the store build's JavaScript, built the way the
   # testflight profile builds it (servers off, no EXPO_PUBLIC_E2E, so no seam), Release, on the same runner, then
   # launched on a simulator for 20 s. It fails if the bundle carries the seam (B-8 on the real Release bundle), if
-  # the app is gone after 20 s, or if its log has an RCTFatalException. No Release build of the app had been
-  # launched before this job; ios-compile.yml builds Debug and never launches.
+  # the app is gone after 20 s, if the simulator log cannot be read or holds no line from the app, or if it holds an
+  # RCTFatalException. ios-compile.yml's launch job runs the same check on every mobile pull request, so this one
+  # runs on dispatch and the schedule only.
   release-launch:
     name: store-profile Release launch (testflight env, no seam, 20 s)
+    if: github.event_name != 'pull_request'
     runs-on: macos-26
     timeout-minutes: 90
     steps:
@@ -392,6 +395,7 @@ jobs:
           echo "APP_ID=$id" >> "$GITHUB_ENV"
 
       - name: Simulator
+        timeout-minutes: 15
         run: |
           set -euo pipefail
           udid=""
@@ -406,6 +410,7 @@ jobs:
           echo "UDID=$udid" >> "$GITHUB_ENV"
 
       - name: Launch and stay up for 20 s
+        timeout-minutes: 5
         run: |
           set -euo pipefail
           xcrun simctl install "$UDID" "$RUNNER_TEMP/store-app/App.app"
@@ -415,7 +420,10 @@ jobs:
           sleep 20
           exe="$(plutil -extract CFBundleExecutable raw "$RUNNER_TEMP/store-app/App.app/Info.plist")"
           if ! xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate "process == \"${exe}\"" > "$RUNNER_TEMP/launch-log.txt" 2>&1; then
-            echo "::error title=Release launch::could not read the simulator log, so the launch was not checked"; tail -20 "$RUNNER_TEMP/launch-log.txt" | sed -e 's/::/: :/g'; exit 1
+            echo "::error title=Release launch::could not read the simulator log, so the launch was not checked"; tail -20 "$RUNNER_TEMP/launch-log.txt" | sed -e 's/::/: :/g' -e 's/##\[/# #[/g'; exit 1
+          fi
+          if ! grep -qF "${exe}[" "$RUNNER_TEMP/launch-log.txt"; then
+            echo "::error title=Release launch::the simulator log holds no line from the app, so the launch was not observed"; exit 1
           fi
           if grep -q RCTFatalException "$RUNNER_TEMP/launch-log.txt"; then
             echo "::error title=Release launch::the store-profile app threw an unhandled JavaScript exception at launch"; exit 1
@@ -525,7 +533,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/diag"
           node apps/mobile/e2e/kill/run-kill-harness.mjs --mode "$MODE" --udid "$UDID" \
             --app "$RUNNER_TEMP/kill-app/App.app" --runs "$RUNS" "${extra[@]}" --out "$RUNNER_TEMP/kill" 2>&1 \
-            | tee "$RUNNER_TEMP/diag/harness.log"
+            | tee "$RUNNER_TEMP/diag/harness.log" | sed -e 's/::/: :/g' -e 's/##\[/# #[/g'
           code=${PIPESTATUS[0]}
           echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s on runner image ${ImageVersion:-unknown}" >> "$GITHUB_STEP_SUMMARY"
           case "$code" in
@@ -584,7 +592,7 @@ jobs:
   dl01-merged:
     name: dl01 merged (the DL-01 gate verdict)
     needs: [plan, harness]
-    if: always() && needs.plan.outputs.size == 'gate' && needs.harness.result != 'skipped'
+    if: ${{ !cancelled() && needs.plan.outputs.size == 'gate' && needs.harness.result != 'skipped' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

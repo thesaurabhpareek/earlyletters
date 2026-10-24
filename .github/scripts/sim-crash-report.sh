@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Why an app stopped on an iOS simulator, printed into the CI job log (artifacts are kept too, but the log is
-# what every reader can open). Used by .github/workflows/kill-harness.yml.
+# what every reader can open). Used by .github/workflows/kill-harness.yml and .github/workflows/ios-compile.yml.
 #
 #   .github/scripts/sim-crash-report.sh <udid> <path/to/App.app> <out-dir> [main.jsbundle.map]
 #
@@ -64,7 +64,7 @@ for f in "$out"/*.ips; do
     const th = (r.threads || [])[r.faultingThread] || {};
     for (const f of (th.frames || []).slice(0, 30)) console.log(" ", (r.usedImages[f.imageIndex] || {}).name, f.symbol || "", f.imageOffset);
     for (const f of (r.lastExceptionBacktrace || []).slice(0, 30)) console.log("  last exception:", (r.usedImages[f.imageIndex] || {}).name, f.symbol || "");
-  ' "$f" | safe
+  ' "$f" 2>&1 | safe
   echo "::endgroup::"
 done
 exit 0

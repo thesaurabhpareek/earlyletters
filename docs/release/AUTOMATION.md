@@ -89,7 +89,7 @@ Re-read at `develop` b7669ba (16 Oct): since the first revision #111 (`docs/ops/
 | `testflight.yml` | develop (#145 extends) | manual: typecheck, tests, preflight, then `eas build --non-interactive --wait [--auto-submit]`; #145 adds a `profile` input and pins eas-cli 24.10.0 | Cannot be dispatched; `EXPO_TOKEN` is a repository secret; `actions/*@v4` not SHA-pinned [R] |
 | `agents.yml`, `agents-check.yml`, `claude.yml` | develop | agent dispatcher (off until `AGENTS_ENABLED`), roster checks, `@claude` for the owner | `claude.yml`'s gate was `author_association == 'OWNER'`, which agent comments also pass [V-S01, R], and its review triggers ran each pull request's own copy of the file with the repository secrets (SECRETS_REVIEW SR-1). RA-20-02a removes the review triggers and adds `performed_via_github_app == null`, the fork-head refusal, SHA pins and `npm ci`; the comment and issue triggers go live when the default branch changes |
 | `web.yml`, `web-e2e.yml` | main | website typecheck, tests, two builds; Playwright e2e | Not on `develop`; path-filtered |
-| `ios-compile.yml` | branch `ci/ios-compile-check` (S20) | prebuild, pod install, `xcodebuild` for the Simulator on `macos-26`, errors as annotations; path-filtered `pull_request` and dispatch | Path-filtered, so it needs an aggregator before it can be required (2.12) |
+| `ios-compile.yml` | develop (#188, #284) | `compile`: prebuild, pod install, Debug `xcodebuild` for the Simulator on `macos-26`, errors as annotations, on native changes. `launch`: the testflight profile's JavaScript in Release, installed on a simulator and launched for 20 s, failing on a fatal exception, a dead process, an unreadable log or no line from the app, on every mobile change (since #284; the check that would have stopped the #276 crash). Path-filtered `pull_request` and dispatch | Path-filtered, so it needs an aggregator before it can be required (2.12) |
 
 ### 1.2 App config and scripts
 
@@ -349,6 +349,7 @@ Each must fail before its fix and pass after; S19 records each in RA-19-03 and t
 | `ci.yml` `required` | a failing unit test | `required` red, merge blocked |
 | Path-filtered aggregators (`db-cli`, `web`, `web-e2e`, `ios-compile`) | (1) a migration that fails `db reset`; (2) a `changes` step that exits 1 | both block the merge (the second is the skipped-job-counts-as-pass case [V8]) |
 | `ios-compile.yml` | a Swift syntax error in a scratch PR | red with the file and line annotated |
+| `ios-compile.yml` `launch` | a throw at startup in a dev-only file, in a scratch PR | `launch` red with "threw an unhandled JavaScript exception at launch", and the log names the file and line (PLANT_RECORD) |
 | Migration guard | an edit to an applied migration | red (#30's tests plus one real PR) |
 | Fence | (1) a `supabase/**` change without the label; (2) the label applied by an app-acting session; (3) a push after the label | all red; after Mon 2 Nov the fence still runs |
 | `security.yml` | a gitleaks test string on a throwaway branch | `secrets (full history)` red |
@@ -455,7 +456,7 @@ Globs: `.github/**` except the harness workflows while the "harness landing" cla
 | RA-20-01 | Lineage: merge `main` into `develop` | after Thu 29 | a green Vercel preview on a `develop` PR; a green EAS build after it. Founder merge | no |
 | RA-20-02 | Default-branch follow-through in `.github/README.md` and TESTFLIGHT.md; TESTFLIGHT.md links to RA-16-01's texts in place of #145's copy (one writer) | #145 merged; RA-16-01; the coordinator's release of `.github/README.md` from the harness claim | every workflow listed by the API | no |
 | RA-20-03a | Land #30, with the tightened label check and the npm cooldown | AF-20 policy | fence plants pass, including after Mon 2 Nov | no |
-| RA-20-03b | Aggregators for `db-cli`, `web`, `web-e2e`, `ios-compile` | RA-20-01 (for the web checks) | the two plants of 2.12 block merges | no |
+| RA-20-03b | Aggregators for `db-cli`, `web`, `web-e2e`, `ios-compile` (both jobs, `compile` and `launch`) | RA-20-01 (for the web checks) | the two plants of 2.12 block merges | no |
 | RA-20-03c | `actionlint`, `permissions: {}` defaults, SHA pins everywhere; the required-check list on both branches | RA-20-03a | required checks read back by API | no |
 | RA-20-05 | `deploy-functions.yml` | AF-06 token, or none | 2.12 plants pass | no |
 | RA-20-06 | `testflight.yml` v2 (2.3) | RA-16-01, AF-10, AF-21 (or nightly builds wait for the approver), AF-22 | a nightly build reaches "Founder" with its text; the cap plants pass | no |

@@ -396,7 +396,10 @@ jobs:
           ditto "$app" "$RUNNER_TEMP/store-app/App.app"
           echo "APP_ID=$id" >> "$GITHUB_ENV"
 
+      # Step timeouts, so a hung boot or launch frees the runner (5 macOS jobs at once on this plan): the boot took
+      # 6m39s on #284's run and 2 to 3 min before.
       - name: Simulator
+        timeout-minutes: 15
         run: |
           set -euo pipefail
           udid=""
@@ -411,6 +414,7 @@ jobs:
           echo "UDID=$udid" >> "$GITHUB_ENV"
 
       - name: Launch and stay up for 20 s
+        timeout-minutes: 5
         run: |
           set -euo pipefail
           xcrun simctl install "$UDID" "$RUNNER_TEMP/store-app/App.app"
