@@ -11,11 +11,13 @@ import {
   MAX_PLAUSIBLE_MONO,
   SIGNAL_RMS,
   chirpWav,
+  classifyHelperError,
   codeOf,
   crossCorrelate,
   damageReading,
   damageLength,
   damageSync,
+  firstHelperFailure,
   frameStarts,
   lengthAgainstFrames,
   pcm16,
@@ -23,6 +25,7 @@ import {
   rms,
   truncations,
   zeroRunAtEnd,
+  zeroRunWithSignal,
 } from './adts-parity-lib';
 
 /** One ADTS frame for AAC-LC, 48 kHz, mono, no CRC: the header byte for byte, then filler payload. */
@@ -196,5 +199,55 @@ describe('[ADR 0027 V3] reading a damaged file the ADR\'s way', () => {
     ['other audio past the damage: mismatch', { score: 0.3 }, 'mismatch', true, true],
   ] as const)('%s', (_name, change, reading, failure, decided) => {
     expect(damageReading({ ...base, ...change })).toMatchObject({ reading, failure, decided });
+  });
+});
+
+describe('[ADR 0027 V3] review of #282, round 2', () => {
+  it('Ctrl-C or SIGTERM on the helper is the person stopping the run, never an answer; a timeout and a crash are answers', () => {
+    expect(classifyHelperError(Object.assign(new Error('x'), { signal: 'SIGINT', status: null }))).toBe('interrupt');
+    expect(classifyHelperError(Object.assign(new Error('x'), { signal: 'SIGTERM', status: null }))).toBe('interrupt');
+    // execFileSync's own timeout kills with SIGTERM and says ETIMEDOUT: that is a stall, an answer.
+    expect(classifyHelperError(Object.assign(new Error('x'), { code: 'ETIMEDOUT', signal: 'SIGTERM' }))).toBe('helper_timeout');
+    expect(classifyHelperError(Object.assign(new Error('x'), { signal: 'SIGTRAP', status: null }))).toBe('helper_crashed_SIGTRAP');
+    expect(classifyHelperError(Object.assign(new Error('x'), { signal: null, status: 3 }))).toBe('helper_crashed_exit_3');
+    expect(classifyHelperError(new SyntaxError('Unexpected end of JSON input'))).toBe('helper_bad_output');
+    expect(classifyHelperError(Object.assign(new Error('Command failed: /Users/me/x.aac'), { signal: '/Users/me' }))).toBe('helper_crashed_exit_unknown');
+  });
+
+  it('a helper failure anywhere in a damaged file\'s calls, its planned run included, is the answer for that file', () => {
+    expect(firstHelperFailure([undefined, null, 'decoder_short', 'helper_crashed_SIGSEGV', 'helper_timeout'])).toBe('helper_crashed_SIGSEGV');
+    expect(firstHelperFailure([undefined, 'break_inside', 'ERR_SCRIBE_AUDIO_DECODE'])).toBeNull();
+    const base = { probeOk: true, fullLength: true, refused: null, earlyStops: 0, referenceRms: 5000, comparable: true, pastAllZero: false, score: 0.99 };
+    expect(damageReading({ ...base, helperFailed: firstHelperFailure([undefined, undefined, 'helper_crashed_SIGTRAP']) })).toMatchObject({ reading: 'helper-failed', failure: true });
+  });
+
+  it('a shift over one frame is named in the reading, so ADR 0027 V3 (3)\'s "within one frame" can be judged from the report', () => {
+    const base = { helperFailed: null, probeOk: true, fullLength: true, refused: null, earlyStops: 0, referenceRms: 5000, comparable: true, pastAllZero: false, score: 0.99 };
+    expect(damageReading({ ...base, lagFrames: 1 }).text).toBe('full length, the right audio past the damage: read past');
+    expect(damageReading({ ...base, lagFrames: 0.4 }).text).toBe('full length, the right audio past the damage: read past');
+    const two = damageReading({ ...base, lagFrames: 2 });
+    expect(two).toMatchObject({ reading: 'read-past', failure: false });
+    expect(two.text).toContain('shifted 2 frames (dropped at the damage; ADR 0027 V3 (3) says within one frame: judge it)');
+  });
+
+  it('a frame or more of zeros where the undamaged take has signal reads as a silent stop, though the rest correlates', () => {
+    const n = 16000;
+    const ref = new Int16Array(n).map((_, i) => Math.round(3000 * Math.sin(i / 7)));
+    const dropout = ref.slice();
+    dropout.fill(0, 4000, 4000 + 2 * 342); // two frames of zeros: about 4 percent of the span
+    expect(zeroRunWithSignal(dropout, ref, { from: 0, length: n, lag: 0 })).toBe(2 * 342);
+    // Where the reference is silent too, zeros are not audio the decoder failed to return.
+    const quiet = ref.slice();
+    quiet.fill(0, 8000, 9000);
+    const quietOut = quiet.slice();
+    expect(zeroRunWithSignal(quietOut, quiet, { from: 0, length: n, lag: 0 })).toBe(0);
+    // Under one frame of zeros is not a dropout.
+    const tiny = ref.slice();
+    tiny.fill(0, 100, 300);
+    expect(zeroRunWithSignal(tiny, ref, { from: 0, length: n, lag: 0 })).toBe(200);
+    const base = { helperFailed: null, probeOk: true, fullLength: true, refused: null, earlyStops: 0, referenceRms: 3000, comparable: true, pastAllZero: false, score: 0.97 };
+    expect(damageReading({ ...base, zeroRun: 2 * 342 })).toMatchObject({ reading: 'stops-silently', failure: true });
+    expect(damageReading({ ...base, zeroRun: 2 * 342 }).text).toContain('A RUN OF 2 FRAMES OF ZEROS PAST THE DAMAGE');
+    expect(damageReading({ ...base, zeroRun: 200 })).toMatchObject({ reading: 'read-past' });
   });
 });

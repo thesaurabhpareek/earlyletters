@@ -295,6 +295,48 @@ export async function planRun(io: RecordingIo, uri: string, bytes: Uint8Array, s
   return { refused: null, durationMs: run.durationMs, countedMs, usedCopy, windows };
 }
 
+/**
+ * What a failed call of the Core Audio helper means. A timeout (execFileSync kills it with SIGTERM and says
+ * ETIMEDOUT) and a crash are answers about the file; SIGINT or SIGTERM otherwise is the person stopping the run
+ * (Ctrl-C reaches the helper too), which must end the run, not be recorded as an answer.
+ */
+export function classifyHelperError(e: unknown): 'interrupt' | string {
+  const err = e as { code?: unknown; signal?: unknown; status?: unknown } | null;
+  if (err?.code === 'ETIMEDOUT') return 'helper_timeout';
+  if (err?.signal === 'SIGINT' || err?.signal === 'SIGTERM') return 'interrupt';
+  if (e instanceof SyntaxError) return 'helper_bad_output';
+  if (typeof err?.signal === 'string' && /^SIG[A-Z0-9]+$/.test(err.signal)) return `helper_crashed_${err.signal}`;
+  return `helper_crashed_exit_${typeof err?.status === 'number' ? err.status : 'unknown'}`;
+}
+
+/** The first helper failure among the codes a file's calls returned (probe, window decode, the planned run's decodes). */
+export function firstHelperFailure(codes: ReadonlyArray<string | null | undefined>): string | null {
+  return codes.find((c): c is string => typeof c === 'string' && c.startsWith('helper_')) ?? null;
+}
+
+/**
+ * The longest run of exact zeros in `pcm[from, from + length)` over which the reference, `lag` samples on
+ * (`ref[i + lag]`), has signal (RMS at least SIGNAL_RMS). A frame or more of that is audio the decoder did not return:
+ * a correlation over the whole span can still reach SAME_AUDIO with about a fifth of it zero (review of #282).
+ */
+export function zeroRunWithSignal(pcm: Int16Array, ref: Int16Array, o: { from: number; length: number; lag: number }): number {
+  let longest = 0;
+  const end = Math.min(pcm.length, o.from + o.length);
+  for (let i = o.from; i < end; ) {
+    if (pcm[i] !== 0) {
+      i++;
+      continue;
+    }
+    let k = i;
+    while (k < end && pcm[k] === 0) k++;
+    const a = Math.max(0, i + o.lag);
+    const b = Math.min(ref.length, k + o.lag);
+    if (k - i > longest && b > a && rms(ref, a, b) >= SIGNAL_RMS) longest = k - i;
+    i = k;
+  }
+  return longest;
+}
+
 export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'stops-silently' | 'mismatch' | 'cannot-tell' | 'helper-failed';
 
 /**
@@ -306,8 +348,10 @@ export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'sto
  * - otherwise the audio past the damage is compared with the undamaged take's, from four frames past the damage (the
  *   ADR's 85 ms tolerance) and within four frames of lag (a decoder that drops the damaged frame shifts what follows),
  *   but only where the undamaged take has signal (`referenceRms` at least SIGNAL_RMS) over enough samples: exact zeros
- *   there mean a silent stop, a correlation of SAME_AUDIO or more means read past, anything else is a mismatch. Where
- *   the undamaged take is silent or the span too short, this file cannot tell, and says so.
+ *   there (all of it, or a run of a frame or more where the reference has signal, `zeroRun`) mean a silent stop, a
+ *   correlation of SAME_AUDIO or more means read past, anything else is a mismatch. A shift of more than one frame is
+ *   named in the text (ADR 0027 V3 (3) says within one frame), so the report shows it. Where the undamaged take is
+ *   silent or the span too short, this file cannot tell, and says so.
  */
 export function damageReading(o: {
   helperFailed: string | null;
@@ -318,7 +362,11 @@ export function damageReading(o: {
   referenceRms: number | null;
   comparable: boolean;
   pastAllZero: boolean;
+  /** The longest run of exact zeros, in 16 kHz samples, where the reference has signal (zeroRunWithSignal). */
+  zeroRun?: number;
   score: number | null;
+  /** The best lag in frames (positive: frames dropped at the damage). */
+  lagFrames?: number | null;
 }): { reading: DamageReading; text: string; failure: boolean; decided: boolean } {
   if (o.helperFailed) return { reading: 'helper-failed', text: `the Core Audio helper failed on this file (${o.helperFailed}): report it, it is itself a V3 answer`, failure: true, decided: true };
   if (!o.probeOk || !o.fullLength) {
@@ -332,9 +380,14 @@ export function damageReading(o: {
   if (!o.comparable || o.referenceRms === null || o.referenceRms < SIGNAL_RMS) {
     return { reading: 'cannot-tell', text: 'cannot tell: the undamaged take is silent (or too short) past the damage, so there is nothing to compare; use a take with signal to its end', failure: false, decided: false };
   }
-  if (o.pastAllZero) {
-    return { reading: 'stops-silently', text: 'FULL LENGTH, ZEROS PAST THE DAMAGE where the undamaged take has signal: Core Audio stops silently; the native early-stop check (S08) goes in before the flip', failure: true, decided: true };
+  if (o.pastAllZero || (o.zeroRun ?? 0) >= FRAME_AT_PCM) {
+    const what = o.pastAllZero ? 'ZEROS PAST THE DAMAGE' : `A RUN OF ${Math.round(((o.zeroRun ?? 0) / FRAME_AT_PCM) * 10) / 10} FRAMES OF ZEROS PAST THE DAMAGE`;
+    return { reading: 'stops-silently', text: `FULL LENGTH, ${what} where the undamaged take has signal: Core Audio stops silently; the native early-stop check (S08) goes in before the flip`, failure: true, decided: true };
   }
-  if (o.score !== null && o.score >= SAME_AUDIO) return { reading: 'read-past', text: 'full length, the right audio past the damage: read past', failure: false, decided: true };
+  if (o.score !== null && o.score >= SAME_AUDIO) {
+    const shift = o.lagFrames ?? 0;
+    const shifted = Math.abs(shift) > 1 ? `, shifted ${Math.round(Math.abs(shift) * 10) / 10} frames (${shift > 0 ? 'dropped at' : 'added at'} the damage; ADR 0027 V3 (3) says within one frame: judge it)` : '';
+    return { reading: 'read-past', text: `full length, the right audio past the damage: read past${shifted}`, failure: false, decided: true };
+  }
   return { reading: 'mismatch', text: 'full length, audio past the damage that does not match the undamaged take: report it', failure: true, decided: true };
 }

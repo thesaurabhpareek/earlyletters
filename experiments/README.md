@@ -154,7 +154,7 @@ npm run adts-parity -w @scribe/experiments -- --take experiments/recordings/v1-d
 - **Damaged files, two ways.** First, the sync byte of the frame 20 from the end is zeroed. Second, the `frame_length` 10 frames from the end is set to a possible but wrong value. For each, the report gives:
   - Core Audio's length before and after the damage, against the counted frames;
   - whether a window starting before the damage returns audio after it, exact zeros, or an error, and how often a read stopped early (the primary evidence);
-  - that audio cross-correlated against the undamaged take. The comparison starts four frames past the damage (ADR 0027's 85 ms tolerance) and allows four frames of lag, because a decoder that drops the damaged frame shifts what follows. It is made only where the undamaged take has signal; elsewhere the report says "cannot tell", not a verdict;
+  - that audio cross-correlated against the undamaged take. The comparison starts four frames past the damage (ADR 0027's 85 ms tolerance) and allows four frames of lag, because a decoder that drops the damaged frame shifts what follows. ADR 0027's V3 row says "within one frame", so any shift over one frame is named in the reading ("read past, shifted N frames"). A run of a frame or more of exact zeros where the undamaged take has signal reads as a silent stop, even when the rest correlates. The comparison is made only where the undamaged take has signal; elsewhere the report says "cannot tell", not a verdict;
   - whether the run is refused (`break_inside`) or planned over every counted frame.
 
   "Full length, zeros past the damage" means Core Audio stops silently, and the native early-stop check (S08) goes in before the flip.
@@ -168,7 +168,10 @@ npm run adts-parity -w @scribe/experiments -- --take experiments/recordings/v1-d
 - 0: every V3 condition checked here holds;
 - 2: one does not (the report says which);
 - 3: a damage case could not be decided, because the take is silent past the damage;
-- 1: the run itself failed.
+- 1: the run itself failed;
+- 130: stopped with Ctrl-C (or SIGTERM), even in the middle of a Core Audio call. That is never recorded as an answer about a file.
+
+V4 is not a gate. A helper failure there is listed as "not measured", and the exit stays as V3 decided it.
 
 Send report.md to the coordinator, or paste it into the PR or evidence file that asked for it.
 
@@ -178,13 +181,13 @@ Send report.md to the coordinator, or paste it into the PR or evidence file that
 - the real transcription job through Whisper;
 - the `scrubbedTo` freeze in the player itself.
 
-**The in-app half, and the gap.** It fits the kill drill without touching a production code path, and it is built: a `decode` mode in `apps/mobile/src/dev/kill-drill.ts` (its PR follows #281), with the mode and a `decoded` marker added to `kill-drill.logic.ts` and `e2e/kill/protocol.mjs` (the parity test keeps them one protocol). In that mode the app runs, on each kept DL-01 take the host names (by file name, in `Documents/ExpoAudio`; running it on this kit's twins, cuts and damaged files would need the host to place them there first, which is not built):
+**The in-app half, and the gap.** It fits the kill drill without touching a production code path. It exists only on the branch `feat/kill-drill-decode-check` (995cb9a, stacked on #281; no PR yet), and once that merges it will be a `decode` mode in `apps/mobile/src/dev/kill-drill.ts`, with the mode and a `decoded` marker added to `kill-drill.logic.ts` and `e2e/kill/protocol.mjs` (the parity test keeps them one protocol). In that mode the app will run, on each kept DL-01 take the host names (by file name, in `Documents/ExpoAudio`; running it on this kit's twins, cuts and damaged files would need the host to place them there first, which is not built):
 - `scanRecordingFile`, `ScribeAudio.probe`;
 - `openRecordingForRun` with the real `wholeFramesCopy`, with the take's stored progress mark;
 - `decodePcm16` over every `findSpeech` window;
 - `ScribeAudio.enhance` into Caches, then a probe of that copy, which it deletes.
 
-It writes numbers only. The harness runs the mode once after the DL-01 runs whenever a kept take is `.aac`, and reports it without changing the exit code, so `kill-harness.yml` needs no change. **The gap:** the real transcription job needs an installed speech pack, and the e2e simulator build has none (servers off; the packs are signed and hosted, D-115). So on the simulator the drill reaches the step where a run is refused or planned (`decoder_short`, `break_inside`), which is the step V2's "none is refused" assertion is about, but not Whisper itself. Whisper on killed ADTS takes needs the founder's device, or a seam that installs a pack on the simulator.
+It will write numbers only. The harness will run the mode once after the DL-01 runs whenever a kept take is `.aac`, and report it without changing the exit code, so `kill-harness.yml` needs no change. **The gap:** the real transcription job needs an installed speech pack, and the e2e simulator build has none (servers off; the packs are signed and hosted, D-115). So on the simulator the drill reaches the step where a run is refused or planned (`decoder_short`, `break_inside`), which is the step V2's "none is refused" assertion is about, but not Whisper itself. Whisper on killed ADTS takes needs the founder's device, or a seam that installs a pack on the simulator.
 
 ## Verified so far (on Linux)
 Oct 2, 2026: `npm run experiment:edits` ran on the fictional samples, rules only and against a stub model server that returned a mix of valid edits, invented words and non-JSON. Every invented word was rejected and the non-JSON reply fell back to rules only.

@@ -21,7 +21,8 @@
  * git-ignored). Every temporary file (cut and damaged copies, decoded PCM, the twin, the helper binary) is deleted as
  * the run ends, on Ctrl-C too. A take of a voice never leaves this Mac and nothing about it but numbers is written.
  * Exit code: 0 every V3 condition checked here holds; 2 one does not (the report says which); 3 a damage case could
- * not be decided (the take is silent past the damage); 1 the run itself failed.
+ * not be decided (the take is silent past the damage); 1 the run itself failed; 130 stopped with Ctrl-C (or SIGTERM).
+ * V4 is not a gate: a helper failure there is listed as not measured and leaves the exit as V3 decided it.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -35,16 +36,19 @@ import {
   SAME_AUDIO,
   SOURCE_RATE,
   chirpWav,
+  classifyHelperError,
   crossCorrelate,
   damageLength,
   damageReading,
   damageSync,
+  firstHelperFailure,
   lengthAgainstFrames,
   pcm16,
   planRun,
   rms,
   truncations,
   zeroRunAtEnd,
+  zeroRunWithSignal,
   type PlannedRun,
 } from './adts-parity-lib';
 
@@ -129,17 +133,21 @@ async function run(dir: string): Promise<number> {
 
   /**
    * One call of the Core Audio helper. A crash (a Swift trap, a Core Audio exception on damaged data) or a stall is
-   * itself an answer, so it comes back as { ok: false, code } with no command line and no path in it.
+   * itself an answer, so it comes back as { ok: false, code } with no command line and no path in it. Ctrl-C reaches
+   * the helper too, and the run cannot take the signal while it waits: a helper ended by SIGINT or SIGTERM ends the
+   * run (exit 130), never an answer about the file.
    */
   const swift = (...a: string[]): Json => {
     try {
       const out = execFileSync(bin, a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: HELPER_TIMEOUT_MS });
       return JSON.parse(out.trim().split('\n').pop() ?? '') as Json;
     } catch (e) {
-      const err = e as { code?: string; signal?: string | null; status?: number | null };
-      if (err.code === 'ETIMEDOUT') return { ok: false, code: 'helper_timeout' };
-      if (err instanceof SyntaxError) return { ok: false, code: 'helper_bad_output' };
-      return { ok: false, code: err.signal ? `helper_crashed_${err.signal}` : `helper_crashed_exit_${err.status ?? 'unknown'}` };
+      const code = classifyHelperError(e);
+      if (code === 'interrupt') {
+        cleanUp();
+        process.exit(130);
+      }
+      return { ok: false, code };
     }
   };
   const probe = (path: string): Probe => swift('probe', path) as unknown as Probe;
@@ -180,7 +188,7 @@ async function run(dir: string): Promise<number> {
     },
   };
   let copies = 0;
-  const plan = async (path: string, bytes: Uint8Array): Promise<PlannedRun & { decodes: DecodeStats }> => {
+  const plan = async (path: string, bytes: Uint8Array): Promise<PlannedRun & { decodes: DecodeStats; helperFailure: string | null }> => {
     decodeLog = [];
     const p = await planRun(io, path, bytes, null, async (wholeBytes) => {
       const copy = join(dir, `whole-frames-${copies++}.aac`);
@@ -188,7 +196,11 @@ async function run(dir: string): Promise<number> {
       return { uri: copy, remove: () => rmSync(copy, { force: true }) };
     });
     const ok = decodeLog.filter((d) => d.ok);
-    return { ...p, decodes: { calls: decodeLog.length, decodedSamples: ok.reduce((n, d) => n + (d.decodedSamples ?? 0), 0), earlyStops: ok.reduce((n, d) => n + (d.earlyStops ?? 0), 0) } };
+    return {
+      ...p,
+      decodes: { calls: decodeLog.length, decodedSamples: ok.reduce((n, d) => n + (d.decodedSamples ?? 0), 0), earlyStops: ok.reduce((n, d) => n + (d.earlyStops ?? 0), 0) },
+      helperFailure: firstHelperFailure([p.refused, ...decodeLog.map((d) => d.code)]),
+    };
   };
   /** Decoded samples at 16 kHz against whole frames: within one frame, with or without Apple's 2112 samples of priming. */
   const decodedAgainstFrames = (decoded16k: number, frames: number) => lengthAgainstFrames(Math.round((decoded16k * SOURCE_RATE) / PCM_RATE), frames);
@@ -336,7 +348,9 @@ async function run(dir: string): Promise<number> {
     let referenceRms: number | null = null;
     let comparable = false;
     let pastAllZero = false;
+    let zeroRun = 0;
     let score: number | null = null;
+    let lagFrames: number | null = null;
     if (w.ok && w.pcm) {
       // Compared from four frames past the damage: ADR 0027 lets the damaged frame and the 3 after it go unheard (its
       // 85 ms tolerance), and a decoder that follows a damaged length misreads a frame or two before it resyncs.
@@ -354,6 +368,10 @@ async function run(dir: string): Promise<number> {
           // Within 4 frames of lag: a decoder that drops the damaged frame shifts what follows by one.
           const c = crossCorrelate(w.pcm, ref, { from: after, length, maxLag: Math.ceil(COMPARE_SKIP_FRAMES * FRAME_AT_PCM) });
           score = c.score;
+          lagFrames = c.lag === null ? null : c.lag / FRAME_AT_PCM;
+          // A frame or more of exact zeros where the undamaged take has signal is audio the decoder did not return.
+          zeroRun = zeroRunWithSignal(w.pcm, ref, { from: after, length, lag: c.lag ?? 0 });
+          afterDamage.zeroRunFrames = Math.round((zeroRun / FRAME_AT_PCM) * 100) / 100;
           afterDamage.againstUndamaged =
             c.score === null || c.lag === null
               ? 'no overlap with signal on both sides'
@@ -364,7 +382,8 @@ async function run(dir: string): Promise<number> {
     }
     const planned = await plan(path, d.bytes);
     row.planned = planned;
-    const helperFailed = [p, w].map((x) => x.code).find((c) => typeof c === 'string' && c.startsWith('helper_')) ?? null;
+    // A helper failure in any of the file's calls, the planned run's included, is the answer for this file.
+    const helperFailed = firstHelperFailure([p.code, w.code, planned.helperFailure]);
     const reading = damageReading({
       helperFailed,
       probeOk: p.ok,
@@ -374,7 +393,9 @@ async function run(dir: string): Promise<number> {
       referenceRms,
       comparable,
       pastAllZero,
+      zeroRun,
       score,
+      lagFrames,
     });
     row.reading = reading;
     if (reading.failure) failures.push(`V3: ${d.name}: ${reading.text}`);
