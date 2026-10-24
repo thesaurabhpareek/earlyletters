@@ -60,12 +60,13 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 
 export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last());
 
-/** Type a letter on the Write screen and save it from Review (the honest path to a letter on the web, which has no speech model). */
+/**
+ * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no
+ * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
+ */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
-  await btn(page, 'Save').click();
-  await expect(page.getByText('Add to ')).toBeVisible();
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
 }
 
