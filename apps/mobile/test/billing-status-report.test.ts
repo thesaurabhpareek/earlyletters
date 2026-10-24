@@ -431,14 +431,14 @@ describe('[M14] the report is loaded only behind capabilities.statusReport', () 
   it('no static import of the report modules outside lib/billing/status-report*', () => {
     const offenders = files(SRC.pathname)
       .filter((f) => !/lib\/billing\/status-report/.test(f))
-      .filter((f) => /from\s+['"][^'"]*status-report(\.native|\.logic)?['"]/.test(readFileSync(f, 'utf8')));
+      .filter((f) => /from\s+['"][^'"]*status-report(\.app|\.logic)?['"]/.test(readFileSync(f, 'utf8')));
     expect(offenders).toEqual([]);
   });
 
   it('plan-store and actions import it dynamically inside a capabilities.statusReport check', () => {
     for (const f of ['lib/billing/plan-store.ts', 'lib/billing/actions.ts']) {
       const text = readFileSync(new URL(f, SRC), 'utf8');
-      const at = text.indexOf("import('./status-report.native')");
+      const at = text.indexOf("import('./status-report.app')");
       expect(at, f).toBeGreaterThan(0);
       const before = text.slice(Math.max(0, at - 300), at);
       expect(before, f).toMatch(/if \(capabilities\.statusReport\) \{/);
