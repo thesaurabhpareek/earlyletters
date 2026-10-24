@@ -199,6 +199,7 @@ describe('review.tsx is wired to the M17 gate', () => {
     if (end < 0) throw new Error(`review.tsx: anchor not found after ${from}: ${to}`);
     return review.slice(start, end);
   };
+  const gate = between('const keepNeedsPlus = async', 'const noteKept = async');
   const save = between('const save = async', 'const keepRecordingOnly = async');
   const voice = between('const keepRecordingOnly = async', 'const dismissFirstNote');
 
@@ -208,7 +209,7 @@ describe('review.tsx is wired to the M17 gate', () => {
   });
 
   it('a null answer lets Keep go ahead (no sheet)', () => {
-    expect(review).toMatch(/(=== null|!\s*\w+\s*\|\||\?\.decision)[^;]*return false/);
+    expect(gate).toMatch(/(=== null|!\s*\w+\s*\|\||\?\.decision)[^;]*return false/);
   });
 
   it('Keep and Keep privately ask the gate with finalText before writing the letter', () => {
