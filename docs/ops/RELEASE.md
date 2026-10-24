@@ -39,7 +39,7 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (proposed: Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; D-089 planned Tue 27 Oct; proposed until the founder confirms), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
 - `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
@@ -82,10 +82,10 @@ The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not en
 ### 3.1 `eas init` (once; founder, FT-17)
 ```bash
 cd apps/mobile
-npx eas-cli@latest login            # Expo account with two-factor (FT-02)
-npx eas-cli@latest init             # creates or links the EAS project for slug "scribe"
+npx eas-cli@24.10.0 login           # Expo account with two-factor (FT-02)
+npx eas-cli@24.10.0 init            # creates or links the EAS project for slug "scribe"
 ```
-`eas init` creates or links a project (V: EAS CLI reference, flags `--id`, `--force`, `--non-interactive`). Our config is dynamic (`app.config.ts`, F), so EAS cannot write the id into it by itself (A: Expo forum "EAS project ID with dynamic configuration"). The founder sends the printed `projectId` to the coordinator, who adds it in `app.config.ts` as `extra.eas.projectId` (and `owner`) in a PR (BL-339, TESTID_REQUESTS B-6). Re-run `npx eas-cli init --id <projectId>` on any new machine.
+`eas init` creates or links a project (V: EAS CLI reference, flags `--id`, `--force`, `--non-interactive`). Our config is dynamic (`app.config.ts`, F), so EAS cannot write the id into it by itself (A: Expo forum "EAS project ID with dynamic configuration"). The founder sends the printed `projectId` to the coordinator, who adds it in `app.config.ts` as `extra.eas.projectId` (and `owner`) in a PR (BL-339, TESTID_REQUESTS B-6). Re-run `npx eas-cli@24.10.0 init --id <projectId>` on any new machine.
 
 ### 3.2 Profiles (F: `eas.json` today; requests from TESTID_REQUESTS B-1 to B-3)
 
@@ -157,7 +157,7 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 - **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli@24.10.0 credentials -p ios`.
 - **Capabilities:** EAS enables the entitlements in the config on the App ID during the build (Sign in with Apple, Associated Domains; DEVICE_TEST_PLAN S1-06 turns that Assumption into V). Check the App ID in Certificates, Identifiers & Profiles after the first build (AUTH_SETUP 2.1).
 - **No push key.** The app schedules only local notifications (reminders and plan reminders) and never asks for a push token (no `getDevicePushTokenAsync` or `getExpoPushTokenAsync` in `apps/mobile`). expo-notifications' own plugin, which prebuild applies because the package is installed, writes `aps-environment`; `app.config.ts` removes it, so no remote push entitlement is configured (F: `expo prebuild` and `expo config --type introspect` show no `aps-environment`; `apps/mobile/test/config.test.ts` checks the introspected entitlements of every profile and the preflight checks the generated ones; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so an interactive `eas build` does not offer to create a push key (eas-cli 24.10.0, `IosCredentialsProvider.js`); if it ever asks "Would you like to set up Push Notifications for your project?", answer No.
-- **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
+- **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli@24.10.0 device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
 - **App Store Connect API key for `eas submit`:** made through `eas credentials` (App Store Connect: Manage your API Key) so later submissions are non-interactive (V: Expo "Submit to the Apple App Store"); creating team keys is an Account Holder or Admin action (A). It never leaves EAS and the founder's password manager.
 - **The Sign in with Apple `.p8` key** used by the purge worker (and, from v1.1, by the `apple-token` Edge Function parked on Line B, G-03) is a different key with a different job (AUTH_SETUP 2.4, SECURITY.md 5; Line B's AUTH_SETUP 2.7 describes `apple-token`). It is not a signing credential.
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
@@ -259,9 +259,9 @@ No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 ## 9. Packs, remote config and content publishing
 
-Signed and published only by the coordinator, with the founder's OK and the founder's key (COORDINATION 6, ADR 0016 7). The secret key lives only in the founder's password manager.
+D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below are `publish.ts`'s development-only path, which overwrites without `upload`'s checks. The secret key lives only in the founder's password manager.
 
-1. Once: `npx tsx scripts/packs/keygen.ts`; the public key line goes into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
+1. Once: `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`; both public key lines go into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
 2. Each publish, on the founder's machine:
    ```bash
    export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...        # from the password manager, this shell only
