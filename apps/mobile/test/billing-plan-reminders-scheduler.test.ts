@@ -209,20 +209,30 @@ describe('[G-15] scheduling', () => {
     await reschedulePlanReminders();
     expect(ours().length).toBeGreaterThan(0);
     plan = planOf({ willAutoRenew: false });
+    const before = phone.api.getAllScheduledNotificationsAsync.mock.calls.length;
+    // Only the listener re-plans here: the test never calls reschedulePlanReminders() itself.
     for (const l of planListeners) l();
-    expect(ours().length).toBeGreaterThan(0); // not yet: debounced
+    await vi.advanceTimersByTimeAsync(100);
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(before); // not yet: debounced
+    expect(ours().length).toBeGreaterThan(0);
     await vi.advanceTimersByTimeAsync(1000);
-    await reschedulePlanReminders();
-    expect(ours()).toEqual([]);
+    await vi.waitFor(() => expect(ours()).toEqual([]));
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(before + 1);
   });
 
   it('coming to the foreground re-plans (a new day, a zone change, a change made in iOS Settings)', async () => {
     stop = startPlanReminders(source);
     await reschedulePlanReminders();
     plan = planOf({ ownership: 'familyShared' });
+    const before = phone.api.getAllScheduledNotificationsAsync.mock.calls.length;
+    // Only the AppState listener re-plans here: the test never calls reschedulePlanReminders() itself.
+    for (const l of phone.state.appStateListeners) l('background');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(before); // going away is not a reason
+    expect(ours().length).toBeGreaterThan(0);
     for (const l of phone.state.appStateListeners) l('active');
-    await reschedulePlanReminders();
-    expect(ours()).toEqual([]);
+    await vi.waitFor(() => expect(ours()).toEqual([]));
+    expect(phone.api.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(before + 1);
   });
 
   it('never throws into the app when the notification API fails', async () => {
