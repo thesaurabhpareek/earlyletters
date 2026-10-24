@@ -57,12 +57,12 @@ jobs:
             echo "### Verifier fuzz"
             echo "Seed \`$seed\`, runs \`$runs\`. Replay locally:"
             echo
-            echo "\`SCRIBE_FUZZ_SEED=$seed SCRIBE_FUZZ_RUNS=$runs npm test -w @scribe/core -- verify.fuzz --testTimeout=900000\`"
+            echo "\`SCRIBE_FUZZ_SEED=$seed SCRIBE_FUZZ_RUNS=$runs npm test -w @scribe/core -- test/verify.fuzz.test.ts test/verify.r01.fuzz.test.ts --testTimeout=900000\`"
           } >> "$GITHUB_STEP_SUMMARY"
       # The long timeout is needed because vitest's default (5 s) is per test
       # and the property test is one test; 100000 runs took about 20 s locally.
       - name: Property test
-        run: npm test -w @scribe/core -- verify.fuzz --testTimeout=900000
+        run: npm test -w @scribe/core -- test/verify.fuzz.test.ts test/verify.r01.fuzz.test.ts --testTimeout=900000
 
   db:
     name: database (real stack)

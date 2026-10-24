@@ -44,15 +44,20 @@ export const CEILING_MIN_WORDS = 3;
  * ellipsis character. With the language's own sentence ends (R.isSentenceEnd),
  * two of them touching are a doubled end mark, whichever marks they are:
  * "?.", "!.", "।.", "？." as much as ".." (#179 re-check Note E, 23 Oct 2026).
+ * Exported for the R-01 property test, whose oracle reads this set and
+ * BETWEEN_MARKS so it can never be narrower than the verifier (#249 review B-N3).
  */
-const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
+export const END_MARK = /^[.!?。！？؟।॥‽⁇⁈⁉‼⸮\u2026]$/u;
 /**
  * What may sit between two end marks that still touch: spaces, closing quotes
  * and invisible characters. Not a closing bracket: a mark inside brackets ends
  * the bracketed words only, and the sentence around them still takes its own
- * ("We went home (it rained!)."; #249 review F1 and N1).
+ * ("We went home (it rained!)."; #249 review F1 and N1). Nor the CJK closing
+ * brackets U+3011, U+3009 and U+300B: as bridges they would refuse more, but
+ * would also let an edit delete one, or move a mark across it, and join the
+ * two marks said on each side (the #249 follow-up's single-edit differential).
  */
-const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』]$/u;
+export const BETWEEN_MARKS = /^[\s"'\u201D\u2019»›」』]$/u;
 
 const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
   clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),

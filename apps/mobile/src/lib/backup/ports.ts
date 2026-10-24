@@ -52,6 +52,7 @@ export interface KeyVault {
   bookKeyCheck(ref: BookKeyRef, version: number, label: Uint8Array): Promise<Uint8Array>;
   /** AES-256-GCM of a 32-byte file key under HKDF(BK, BOOK_SUBKEY_INFO.fileKeyWrap): 12-byte nonce, then ciphertext and tag (60 bytes). */
   wrapFileKey(ref: BookKeyRef, version: number, fileKey: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
+  /** Codes: `key_open_failed` (the wrapped key does not authenticate), `keychain_unavailable` (the Keychain is not reading now). */
   unwrapFileKey(ref: BookKeyRef, version: number, wrapped: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   /** Seals the book key to a recipient X25519 public key (the escrow key) with HPKE base mode. */
   sealBookKey(ref: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array): Promise<Sealed>;

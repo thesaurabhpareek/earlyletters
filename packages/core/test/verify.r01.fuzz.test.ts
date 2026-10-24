@@ -35,10 +35,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   applyEdits,
+  BETWEEN_MARKS,
   checkEdit,
   compileRules,
+  END_MARK,
   ENGLISH_RULES,
   faithfulClean,
+  isInvisible,
+  MOOD_CANON,
   protectedSpansFor,
   verifyEdits,
   type DictionaryTerm,
@@ -227,7 +231,8 @@ function toks(text: string, char: boolean): Tok[] {
   return out;
 }
 
-const MOOD: Record<string, string> = { '?': '?', '？': '?', '؟': '?', '!': '!', '！': '!', '¿': '¿', '¡': '¡' };
+// With the verifier's own table added, so a combined mark the generator writes ("‽", "⁉", U+2E2E) is a mood mark here too.
+const MOOD: Record<string, string> = { ...MOOD_CANON, '?': '?', '？': '?', '؟': '?', '!': '!', '！': '!', '¿': '¿', '¡': '¡' };
 const moodOf = (s: string) => [...s].map((c) => MOOD[c] ?? '').join('');
 /** With paired openers (Spanish), an added ¿ or ¡ that pairs with its ? or ! is a repair; one is never removed. */
 const pairs = (lang: Lang) => lang.pack?.punctuation.pairOpeners === true && lang.pack.punctuation.review.status !== 'draft';
@@ -253,22 +258,39 @@ const HYPHENATED = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\
 const hyphenated = (s: string) => [...s.matchAll(HYPHENATED)].map((m) => lw(m[0]));
 const lettersOnly = (s: string) => s.normalize('NFC').replace(/[^\p{L}\p{M}\p{N}]/gu, '').toLowerCase();
 /**
- * End marks that touch the end mark before them, counted ("?." is 1, "..." is 2): only spaces, closing quotes
- * or brackets and invisible characters may sit between. Written out here, apart from verify.ts (engine 7,
- * #179 re-check Note E: "more?." and "她睡了？." were accepted).
+ * End marks that touch the end mark before them, counted ("?." is 1, "..." is 2): only spaces, quotation
+ * marks and invisible characters may sit between (engine 7, #179 re-check Note E: "more?."
+ * and "她睡了？." were accepted). The sets are the verifier's own, imported (END_MARK, BETWEEN_MARKS, the
+ * language's sentence ends and quotation marks), so the oracle is never narrower than the verifier: the
+ * copy written out here lacked U+2E2E, U+203A and the opening quotes (#249 review B-N3). A closing bracket
+ * is not between, as in the verifier: "We went home (it rained!)." keeps its own "." (#249 review F1, N1).
  */
-const END_MARK = /[.!?。！？؟।॥\u2026‽‼⁇⁈⁉]/u;
-const BETWEEN_ENDS = /[\s"'\u201D\u2019»」』)\]）]/u;
-function touchingEnds(s: string): number {
+const isEnd = (c: string, R: LanguageRules) => END_MARK.test(c) || R.isSentenceEnd(c);
+const betweenEnds = (c: string, R: LanguageRules) => BETWEEN_MARKS.test(c) || INVISIBLE.test(c) || isInvisible(c) || R.isQuoteChar(c);
+function touchingEnds(s: string, R: LanguageRules): number {
   let n = 0;
   let open = false;
   for (const c of s) {
-    if (END_MARK.test(c)) {
+    if (isEnd(c, R)) {
       if (open) n++;
       open = true;
-    } else if (!BETWEEN_ENDS.test(c) && !INVISIBLE.test(c)) open = false;
+    } else if (!betweenEnds(c, R)) open = false;
   }
   return n;
+}
+/** Every end mark the verifier knows, read off END_MARK itself: U+203D, U+2E2E, U+061F, the danda, U+3002, U+FF01, U+FF1F, U+2026 among them. */
+const END_MARKS: string[] = [];
+for (let cp = 0; cp <= 0x10ffff; cp++) if ((cp < 0xd800 || cp > 0xdfff) && END_MARK.test(String.fromCodePoint(cp))) END_MARKS.push(String.fromCodePoint(cp));
+const cpAt = (s: string, i: number) => (i < s.length ? String.fromCodePoint(s.codePointAt(i)!) : '');
+/** Where the end marks of `s` start, in UTF-16 units. */
+function endsAt(s: string): number[] {
+  const out: number[] = [];
+  let i = 0;
+  for (const c of s) {
+    if (END_MARK.test(c)) out.push(i);
+    i += c.length;
+  }
+  return out;
 }
 
 const OPEN_CLOSE: Record<string, string> = { '“': '”', '‘': '’', '„': '“”', '«': '»', '「': '」', '『': '』', '"': '"' };
@@ -368,7 +390,7 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
     if (!(e.type === 'filler' && e.replacement === '' && ws.length > 0 && ws.every((t) => lang.fillers.has(t.lw)))) return 'mood_changed';
   }
   if (quoteMarks(text) !== quoteMarks(raw)) return 'quotes_changed';
-  if (touchingEnds(text) > touchingEnds(raw)) return 'end_mark_doubled';
+  if (touchingEnds(text, lang.rules) > touchingEnds(raw, lang.rules)) return 'end_mark_doubled';
   const q = quoted(raw);
   for (const e of accepted) {
     if (e.type !== 'punctuation' && e.type !== 'paragraph' && q.some((s) => s.start < e.end && e.start < s.end)) return 'quoted_words_edited';
@@ -422,7 +444,7 @@ function brokenFinal(editedRaw: string, final: string, lang: Lang): string | nul
 // U+00AD (soft hyphen) joined on review (#179 N3, 23 Oct): the house rule used to drop it with no stored edit.
 const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF', '\u00AD'];
 const QUOTES: Array<[string, string]> = [['“', '”'], ['‘', '’'], ['„', '“'], ['«', '»'], ['「', '」'], ['"', '"']];
-const MOODS = ['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!'];
+const MOODS = [...new Set(['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!', ...END_MARKS])];
 const MARKS = ['́', '̀', '̂', '̈', 'ा', 'ि', 'े', '्', 'ं', 'َ', 'ُ', 'ِ'];
 
 /** A synthetic letter: one to three corpus sentences, mutated. */
@@ -438,6 +460,11 @@ function letter(lang: Lang, rnd: () => number): string {
     const w = pick(t.slice(1)); // a hyphenated yes or no, or a spaced filler pair, before a word
     const hy = lang.hyphenated.length ? pick([...lang.hyphenated, 'uh uh', 'mm hmm']) : '';
     if (hy && lang.code === 'en') raw = `${raw.slice(0, w.start)}${hy}, ${raw.slice(w.start)}`;
+  }
+  const ends = endsAt(raw);
+  if (ends.length && rnd() < 0.25) {
+    const at = pick(ends); // a said end mark in another script, as a recogniser may write it ("‽", U+2026, U+061F in English)
+    raw = raw.slice(0, at) + pick(END_MARKS) + raw.slice(at + cpAt(raw, at).length);
   }
   return raw;
 }
@@ -459,7 +486,7 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
     const i = t.indexOf(w);
     const last = t[Math.min(t.length - 1, i + Math.floor(rnd() * 3))];
     const type = pick(TYPES);
-    switch (Math.floor(rnd() * 18)) {
+    switch (Math.floor(rnd() * 19)) {
       case 0: mk('swap_word', type, w.start, last.end, pick(lang.pool)); break;
       case 1: mk('negation', type, w.start, w.end, rnd() < 0.5 ? `${w.w}n't` : `${pick(lang.pool)} ${w.w}`); break;
       case 2: { const at = w.start + 1 + Math.floor(rnd() * Math.max(1, w.w.length - 1)); mk('apostrophe', pick(['punctuation', type]), at, at, "'"); break; }
@@ -497,6 +524,18 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
       }
       case 15: if (lang.code === 'en') mk('noun_number', 'agreement', w.start, w.end, w.w.endsWith('s') ? w.w.slice(0, -1) : `${w.w}s`); break; // D9
       case 16: mk('heard_as', 'stt_fix', w.start, w.end, pick(dict).term); break;
+      case 17: { // engine 7: any end mark the verifier knows, put before or after one already said, or behind its closers
+        const ends = endsAt(raw);
+        if (!ends.length) break;
+        let at = pick(ends);
+        const where = Math.floor(rnd() * 3);
+        if (where > 0) at += cpAt(raw, at).length;
+        if (where > 1) for (let c = cpAt(raw, at); c && betweenEnds(c, lang.rules); c = cpAt(raw, at)) at += c.length;
+        const mark = pick(END_MARKS);
+        tally.set(`mark ${mark}`, (tally.get(`mark ${mark}`) ?? 0) + 1);
+        mk('mark_pair', pick(['punctuation', type]), at, at, mark);
+        break;
+      }
       default: // honest repairs, so the verifier has something to accept
         if (rnd() < 0.5) mk('honest_period', 'punctuation', raw.trimEnd().length, raw.trimEnd().length, lang.code === 'zh' ? '。' : '.');
         else if (/^\p{Ll}/u.test(raw)) mk('honest_case', 'punctuation', 0, 1, raw[0].toUpperCase());
@@ -509,7 +548,7 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
 /* ---------- the property ---------- */
 
 describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property', () => {
-  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each, zero meaning changes`, () => {
+  it(`[F06-REQ-021] ${RUNS} synthetic letters (seed ${SEED}), seven languages, three attack paths each, zero meaning changes`, async () => {
     const rnd = mulberry32(SEED);
     const langs = makeLangs();
     const tally = new Map<string, number>();
@@ -523,6 +562,9 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     };
 
     for (let run = 0; run < RUNS; run++) {
+      // Hand the worker back to vitest now and then: one synchronous call longer than 60 s fails the run with
+      // "Timeout calling onTaskUpdate" although every case passed (80,000 runs, about 100 s, 23 Oct).
+      if (run % 2000 === 1999) await new Promise<void>((resolve) => setImmediate(resolve));
       const lang = langs[Math.floor(rnd() * langs.length)];
       perLang.set(lang.id, (perLang.get(lang.id) ?? 0) + 1);
       const dict = lang.code === 'en' ? enDict(rnd) : lang.dict();
@@ -558,9 +600,12 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
 
     // Not vacuous: every language ran, every attack shape was proposed, and honest edits still get through.
     expect(new Set([...perLang.keys()].map((id) => id.slice(0, 2)))).toEqual(new Set(['en', 'es', 'fr', 'pt', 'hi', 'ar', 'zh']));
-    for (const kind of ['swap_word', 'negation', 'mood', 'quote', 'delete', 'to_term', 'invisible', 'hyphen_part', 'name_word_case', 'name_swap', 'mark_swap', 'noun_number', 'heard_as']) {
+    for (const kind of ['swap_word', 'negation', 'mood', 'quote', 'delete', 'to_term', 'invisible', 'hyphen_part', 'name_word_case', 'name_swap', 'mark_swap', 'noun_number', 'heard_as', 'mark_pair']) {
       expect(tally.get(kind) ?? 0, kind).toBeGreaterThan(50);
     }
+    // Every end mark the verifier knows was put next to a said one (#249 review B-N3).
+    expect(END_MARKS).toEqual(expect.arrayContaining(['.', '?', '!', '\u203D', '\u2E2E', '\u061F', '\u0964', '\u3002', '\uFF01', '\uFF1F', '\u2026']));
+    for (const mark of END_MARKS) expect(tally.get(`mark ${mark}`) ?? 0, `mark U+${mark.codePointAt(0)!.toString(16)}`).toBeGreaterThan(RUNS / 1000);
     expect(proposed).toBeGreaterThan(RUNS * 2);
     expect(accepted).toBeGreaterThan(RUNS / 20);
     expect(rulesApplied).toBeGreaterThan(RUNS / 4);

@@ -607,6 +607,167 @@ describe('what Settings says, and the recovery service is asked only when it mus
     expect(backend.unwraps).toHaveLength(0);
   });
 
+  it('[#252 follow-up] with the escrow switch off, then a fresh sign-in needed, the list is read once in this run; escrow alone is asked after', async () => {
+    const live: LiveSession = { uid: MAMA };
+    const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    const letters = [recordLetter(a, ASHA, 20_000), recordLetter(a, ASHA, 5_000)];
+    await a.service.turnOn();
+    await a.service.tick();
+    const c = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-c', live });
+    syncText(a, c);
+    await c.service.tick(); // iCloud Keychain may still bring the key
+    clock.t += ICLOUD_WAIT_MS;
+    const n = reads(live);
+    c.cond.escrowKilled = true;
+    for (let i = 0; i < 5; i++) {
+      await c.service.tick();
+      clock.t += 1000;
+    }
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'unavailable' });
+    expect(backend.restores.size).toBe(0);
+    c.cond.escrowKilled = false;
+    backend.stepUpRequired = true;
+    for (let i = 0; i < 5; i++) {
+      await c.service.tick();
+      clock.t += 1000;
+    }
+    expect(n.listBlobs).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'sign_in_again' });
+    expect(backend.restores.size).toBe(0);
+    backend.stepUpRequired = false; // signed in again
+    await c.service.tick();
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    expect(n.listBlobs).toBe(1);
+    clock.t += 72 * HOUR;
+    await c.service.tick();
+    expect(n.listBlobs).toBe(2); // the keys are here: listed once more, and every recording comes back
+    expect(backend.releaseCalls).toBe(1);
+    for (const r of letters) expect(audioOf(c, r.id).sha256, r.id).toBe(sha256Hex(r.plain));
+  });
+
+  it('[review A N3 on #255] a release that leaves a recording without its key is not asked for again with no new hold', async () => {
+    const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    const twin = 'a5a5a5a5-0000-4000-8000-000000000002';
+    addChild(a, ASHA);
+    addChild(a, twin, 'Asha twin');
+    const asha = recordLetter(a, ASHA, 20_000);
+    const late = recordLetter(a, twin, 20_000);
+    await a.service.turnOn();
+    await a.service.tick();
+    // As #151: a request this device released in the last 24 hours is answered as it stands, and the next
+    // release call releases it again with no new hold. The twin's wrap does not open there, so a release
+    // carries Asha's key only.
+    const escrowFor = backend.escrowFor.bind(backend);
+    const releasedAt = new Map<string, number>();
+    let releases = 0;
+    backend.escrowFor = (uid: string) => {
+      const e = escrowFor(uid);
+      return {
+        async request(deviceId: string) {
+          for (const [id, at] of releasedAt) {
+            const r = backend.restores.get(id)!;
+            if (r.deviceId === deviceId && clock.t - at < 24 * HOUR) return { requestId: id, state: 'released' as const, holdUntil: r.holdUntil };
+          }
+          return e.request(deviceId);
+        },
+        async release(requestId: string, deviceId: string) {
+          const out = await e.release(requestId, deviceId);
+          if (out.state !== 'released') return out;
+          releases += 1;
+          releasedAt.set(requestId, clock.t);
+          return { ...out, keys: out.keys.filter((k) => k.childId !== twin) };
+        },
+      };
+    };
+    const c = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-c' });
+    syncText(a, c);
+    await c.service.tick();
+    clock.t += ICLOUD_WAIT_MS;
+    await c.service.tick();
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    clock.t += 72 * HOUR;
+    for (let i = 0; i < 8; i++) {
+      await c.service.tick();
+      clock.t += 60 * 1000;
+    }
+    expect(releases).toBe(1);
+    expect(audioOf(c, asha.id).sha256).toBe(sha256Hex(asha.plain));
+    expect(audioOf(c, late.id).uri).toBeNull();
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    await c.service.tryAgain(); // within the 24 hours: still no release without a new hold
+    await c.service.tick();
+    expect(releases).toBe(1);
+    expect(c.service.view().restore).toEqual({ kind: 'stopped' });
+    clock.t += 24 * HOUR;
+    await c.service.tryAgain(); // a day later Try again makes a new request, with its own hold
+    await c.service.tick();
+    expect(c.service.view().restore?.kind).toBe('waiting_hold');
+    expect(releases).toBe(1);
+  });
+
+  /** Phone B has Mama's own new letter and no book key (no iCloud Keychain): the upload side asked escrow and waits on the hold. */
+  async function heldUpload() {
+    const clock = { t: Date.parse('2026-10-29T19:00:00Z') };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    recordLetter(a, ASHA, 10_000);
+    await a.service.turnOn();
+    await a.service.tick();
+    const b = makePhone({ backend, uid: MAMA, icloud: null, clock, name: 'mama-b' });
+    addChild(b, ASHA);
+    const own = recordLetter(b, ASHA, 10_000);
+    await b.service.turnOn();
+    await b.service.tick();
+    clock.t += ICLOUD_WAIT_MS;
+    await b.service.tick();
+    expect(b.service.view().status.kind).toBe('waiting_key');
+    // Backup on mobile data is off and the phone is on it: uploads pause before the queue reads the key again.
+    b.cond.net = 'cellular';
+    return { clock, backend, a, b, own };
+  }
+
+  it('[escrow window] a key iCloud Keychain brings while uploads are paused: after the hold no release, no email', async () => {
+    const { clock, backend, a, b, own } = await heldUpload();
+    iCloudBrings(a, b);
+    clock.t += 72 * HOUR; // the hold is over: for 7 days a release call would open every key at once
+    for (let i = 0; i < 3; i++) {
+      await b.service.tick();
+      clock.t += 5 * 60 * 1000;
+    }
+    expect(backend.releaseCalls).toBe(0);
+    expect(backend.unwraps).toHaveLength(0);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(0);
+    expect(b.service.view().status).toEqual({ kind: 'waiting_wifi' });
+    b.cond.net = 'wifi';
+    await b.service.tick();
+    expect(backend.blobs.get(own.id)?.state).toBe('confirmed');
+    expect(b.service.view().status).toMatchObject({ kind: 'current' });
+    expect(backend.releaseCalls).toBe(0);
+  });
+
+  it('[escrow window] with uploads paused and still no key here, escrow is asked after the hold and releases exactly once', async () => {
+    const { clock, backend, b, own } = await heldUpload();
+    clock.t += 72 * HOUR;
+    for (let i = 0; i < 3; i++) {
+      await b.service.tick();
+      clock.t += 5 * 60 * 1000;
+    }
+    expect(backend.releaseCalls).toBe(1);
+    expect(backend.unwraps).toHaveLength(1);
+    expect(backend.emails.filter((e) => e.kind === 'key_opened')).toHaveLength(1);
+    b.cond.net = 'wifi';
+    await b.service.tick();
+    expect(backend.blobs.get(own.id)?.state).toBe('confirmed');
+    expect(backend.releaseCalls).toBe(1);
+  });
+
   it('[review B N3 on #252] a release that lands as another account signs in is kept: stored from the saved copy later, one release, one email', async () => {
     const live: LiveSession = { uid: MAMA };
     const { backend, c, letters, clock } = await heldRestore({ live });
