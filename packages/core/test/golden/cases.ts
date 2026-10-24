@@ -248,4 +248,28 @@ export const GOLDEN_CASES: GoldenCase[] = [
     raw: 'Did you want more? Uh-uh, she said.',
     dictionary: [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }],
   },
+  // Rulings on #262, the same release.
+  {
+    // A capital past a kept filler is a case change no removal forced: "Hope" would read as the child's name.
+    id: 'e8-model-capital-after-locked-filler',
+    lang: 'en',
+    raw: 'Um, hope is here.',
+    locked: ['Um'],
+    dictionary: [{ term: 'Hope', kind: 'child', heardAs: [] }],
+    model: [{ type: 'punctuation', original: 'hope', replacement: 'Hope' }],
+  },
+  {
+    // The later "." moved inside the quote, beside the "." said there (the house rule then straightens the quotes).
+    id: 'e8-model-mark-moved-into-quote',
+    lang: 'en',
+    raw: 'She said no.\u201D. Then she slept.',
+    model: [{ type: 'punctuation', original: '\u201D.', replacement: '.\u201D' }],
+  },
+  {
+    // A taught heard-as "uh" never turns the filler into a name; the filler rule removes it.
+    id: 'e8-heard-as-filler',
+    lang: 'en',
+    raw: 'Uh, she came over.',
+    dictionary: [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }],
+  },
 ];

@@ -76,7 +76,7 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
 
   it('covers 40 to 70 cases across English, Hinglish, Devanagari and NFD, with unique ids', () => {
     expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(40);
-    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(70); // 60 until engine 8 added its three
+    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(70); // 60 until engine 8 added its six
     expect(new Set(GOLDEN_CASES.map((c) => c.id)).size).toBe(GOLDEN_CASES.length);
     for (const lang of ['en', 'hinglish', 'hi', 'nfd'] as const) {
       expect(GOLDEN_CASES.filter((c) => c.lang === lang).length, lang).toBeGreaterThanOrEqual(5);
@@ -153,7 +153,7 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     }
   });
 
-  it('[F06-REQ-019] engine 8 changed no engine 7 case; its three new cases keep the words and marks as said', () => {
+  it('[F06-REQ-019] engine 8 changed no engine 7 case; its six new cases keep the words, marks and case as said', () => {
     if (ENGINE_VERSION < 8) return;
     const seven = JSON.parse(readFileSync(join(DIR, 'engine-v7.json'), 'utf8')) as GoldenFile;
     const eight = JSON.parse(readFileSync(join(DIR, 'engine-v8.json'), 'utf8')) as GoldenFile;
@@ -164,5 +164,12 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     expect(eight.cases['e8-model-period-behind-quote'].rejected).toEqual(['punctuation:changes_sentence_type']);
     expect(eight.cases['e8-heard-as-inside-uh-uh'].text).toBe('Did you want more? Uh-uh, she said.');
     expect(eight.cases['e8-heard-as-inside-uh-uh'].rejected).toEqual(['stt_fix:splits_word', 'stt_fix:splits_word']);
+    // Rulings on #262.
+    expect(eight.cases['e8-model-capital-after-locked-filler'].text).toBe('Um, hope is here.');
+    expect(eight.cases['e8-model-capital-after-locked-filler'].rejected).toEqual(['filler:overlaps_protected', 'punctuation:case_change_not_sentence_start']);
+    expect(eight.cases['e8-model-mark-moved-into-quote'].text).toBe('She said no.". Then she slept.');
+    expect(eight.cases['e8-model-mark-moved-into-quote'].rejected).toEqual(['punctuation:changes_sentence_type']);
+    expect(eight.cases['e8-heard-as-filler'].text).toBe('she came over.');
+    expect(eight.cases['e8-heard-as-filler'].rejected).toEqual(['stt_fix:stt_fix_protected_word']);
   });
 });

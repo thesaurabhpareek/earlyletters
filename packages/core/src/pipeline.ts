@@ -137,10 +137,12 @@ export const ENGINE_VERSION = 8;
 // 8 (2026-10-24): refusals only, the follow-up to the #257 reviews. Every
 //   change refuses more. The claim that engine 8 accepts no single edit
 //   engine 7 refused rests on the differential, not on a proof: over the
-//   1,642 test-suite strings, 604,703 single edits, 0 accepted by 8 and
-//   refused by 7 (64 the other way); with each of the 15 quotation marks
-//   below put after every end mark, 4,520,426 edits, 0 (73,230 the other
-//   way). Every engine 7 golden case reads the same.
+//   1,667 test-suite strings, 620,743 single edits, 0 accepted by 8 and
+//   refused by 7 (66 the other way); with each of the 15 quotation marks
+//   below put after every end mark, 4,764,941 edits, 0 (75,915 the other
+//   way). The differential makes no case edits and no name fixes, so the
+//   first and third rulings below rest on their tests and the golden
+//   corpus. Every engine 7 golden case reads the same.
 //   - Words are read as they are seen. An invisible character that is not
 //     itself a letter or mark (direction marks, joiners, zero-width space,
 //     word joiner, BOM, soft hyphen, tags) joins and splits nothing: no edit
@@ -164,7 +166,20 @@ export const ENGINE_VERSION = 8;
 //     agreement "A-ha" into "An-ha" (seed 2 run 84272).
 //   - verify.ts exports its end-mark and bridge sets as frozen lists of
 //     strings, no longer as RegExp objects an importer could recompile.
-//   Golden corpus: every engine 7 case reads the same; three cases added.
+//   Rulings on #262, the same release (24 Oct):
+//   - A capital is raised only at a sentence start that a removal in the
+//     same edit set made, never past a filler that stays: the capitals
+//     check (raisedOffSentenceStart) no longer skips fillers. With "Um"
+//     locked, "Um, hope is here." no longer becomes "Um, Hope is here.", and
+//     cleanRulesOnly leaves "um, so we went home" lower case (seed 20261003
+//     run 14032).
+//   - No mark moves inside a quote to sit beside the mark said there: "no."
+//     U+201D "." no longer becomes "no.." U+201D (a bare pair, nothing at
+//     all between two end marks, is counted too).
+//   - A name fix never replaces a word the engine classes as a filler: a
+//     taught heard-as "uh" no longer turns "Uh, she came over." into "Usha,
+//     she came over.".
+//   Golden corpus: every engine 7 case reads the same; six cases added.
 
 export interface CleanOptions {
   level: EditLevel;

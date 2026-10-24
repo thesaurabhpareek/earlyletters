@@ -585,6 +585,39 @@
         "stt_fix:splits_word"
       ],
       "suggestions": []
+    },
+    "e8-model-capital-after-locked-filler": {
+      "text": "Um, hope is here.",
+      "applied": [],
+      "rejected": [
+        "filler:overlaps_protected",
+        "punctuation:case_change_not_sentence_start"
+      ],
+      "suggestions": []
+    },
+    "e8-model-mark-moved-into-quote": {
+      "text": "She said no.\". Then she slept.",
+      "applied": [],
+      "rejected": [
+        "punctuation:changes_sentence_type"
+      ],
+      "suggestions": []
+    },
+    "e8-heard-as-filler": {
+      "text": "she came over.",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 0,
+          "end": 4,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [
+        "stt_fix:stt_fix_protected_word"
+      ],
+      "suggestions": []
     }
   }
 }

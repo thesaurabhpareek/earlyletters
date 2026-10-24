@@ -16,6 +16,7 @@ import * as verifyModule from '../src/verify';
 import {
   BETWEEN_MARKS,
   checkEdit,
+  cleanRulesOnly,
   compileRules,
   END_MARKS,
   ENGLISH_RULES,
@@ -255,6 +256,82 @@ describe('[F06-REQ-009] engine 8: a name fix or agreement replaces a whole word,
     expect(verdict(hyphenated, edit(hyphenated, 'stt_fix', 'Mary-Anne', 'Mary-Ann'), [{ term: 'Mary-Ann', kind: 'child', heardAs: ['Mary-Anne'] }])).toBeNull();
     const spaced = 'We met Usher - then we left.';
     expect(verdict(spaced, edit(spaced, 'stt_fix', 'Usher', 'Asha'), [{ term: 'Asha', kind: 'child', heardAs: ['Usher'] }])).toBeNull();
+  });
+});
+
+/* ---------- rulings on #262 (24 Oct 2026) ---------- */
+
+describe('[F06-REQ-015] engine 8 (ruling on #262): a capital is raised only where a removal in the same set made a sentence start, never past a kept filler', () => {
+  const hope: DictionaryTerm[] = [{ term: 'Hope', kind: 'child', heardAs: [] }];
+  const capital = (raw: string, i: number): Edit => at('punctuation', raw, i, raw[i], raw[i].toUpperCase());
+
+  it('seed 20261003 run 14032: "S" after a kept "Um," is refused on its own (verifyEdits; checkEdit leaves raised capitals to it)', () => {
+    const raw = 'Um, so-so, Asha laughed at the the duck today.';
+    const r = verifyEdits([{ ...capital(raw, 4), source: 'rule' }], { raw, level: 'clean', dictionary: [], protectedSpans: [] });
+    expect(r.rejected.map((x) => x.reason)).toEqual(['case_change_not_sentence_start']);
+  });
+
+  it('a locked filler and a model capital: "Um, hope is here." stays, never "Um, Hope is here." (the child\'s name)', () => {
+    const raw = 'Um, hope is here.';
+    const r = faithfulClean(raw, { level: 'clean', dictionary: hope, language: 'en', locked: ['Um'], modelEdits: [capital(raw, 4)] });
+    expect(r.text).toBe('Um, hope is here.');
+    expect(r.rejected.map((x) => `${x.edit.type}:${x.reason}`)).toEqual(['filler:overlaps_protected', 'punctuation:case_change_not_sentence_start']);
+  });
+
+  it('the rules\' own sentence case after a locked filler: cleanRulesOnly leaves "um, so we went home" lower case', async () => {
+    const r = await cleanRulesOnly({ raw: 'um, so we went home', level: 'clean', dictionary: [], locked: ['um'] }, { language: 'en' });
+    expect(r.text).toBe('um, so we went home.'); // engine 7: "um, So we went home."
+  });
+
+  it('still allowed: the filler removed in the same set makes the next word the sentence start, and it may be raised', async () => {
+    const raw = 'Um, hope is here.';
+    expect(faithfulClean(raw, { level: 'clean', dictionary: hope, language: 'en', modelEdits: [capital(raw, 4)] }).text).toBe('Hope is here.');
+    const both = verifyEdits([edit(raw, 'filler', 'Um, ', ''), capital(raw, 4)], { raw, level: 'clean', dictionary: hope, protectedSpans: [] });
+    expect(both.rejected).toEqual([]);
+    expect((await cleanRulesOnly({ raw: 'um, so we went home', level: 'clean', dictionary: [] }, { language: 'en' })).text).toBe('So we went home.');
+  });
+});
+
+describe('[F06-REQ-004] engine 8 (ruling on #262): no mark is moved inside a quote to sit beside the mark said there', () => {
+  it('every Unicode quotation mark: "no." + mark + "." may not become "no.." + mark; the later mark may still go', () => {
+    const accepted: string[] = [];
+    for (const q of QUOTES) {
+      const raw = `She said no.${q}. Then she slept.`;
+      const i = raw.indexOf(`${q}.`);
+      if (verdict(raw, at('punctuation', raw, i, `${q}.`, `.${q}`)) !== 'changes_sentence_type') accepted.push(`${hex(q)} moved`);
+      if (verdict(raw, at('punctuation', raw, i + q.length, '.', '')) !== null) accepted.push(`${hex(q)} later mark kept`);
+    }
+    expect(accepted).toEqual([]); // engine 7 accepted the move behind the 15 marks it bridged (U+201D among them)
+  });
+
+  it('through the pipeline the quoted words were already protected; the verifier alone, as for Review\'s offers, now refuses it too', () => {
+    const raw = 'She said \u201Cno.\u201D. Then she slept.';
+    const i = raw.indexOf('\u201D.');
+    const move = at('punctuation', raw, i, '\u201D.', '.\u201D');
+    expect(faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en', modelEdits: [move] }).applied).toEqual([]);
+    const ctx = { raw, level: 'clean' as const, dictionary: [], protectedSpans: [] };
+    expect(checkEdit(move, ctx)).toBe('changes_sentence_type'); // engine 7: null
+  });
+});
+
+describe('[F07-REQ-012] engine 8 (ruling on #262): a name fix never replaces a word the engine classes as a filler', () => {
+  const usha: DictionaryTerm[] = [{ term: 'Usha', kind: 'family', heardAs: ['uh'] }];
+
+  it('a taught heard-as "uh" leaves a lone "uh" to the filler rules: "Uh, she came over." never becomes "Usha, she came over."', () => {
+    const raw = 'Uh, she came over.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Uh', 'Usha'), usha)).toBe('stt_fix_protected_word');
+    expect(faithfulClean(raw, { level: 'clean', dictionary: usha, language: 'en' }).text).toBe('she came over.'); // engine 7: "Usha, she came over."
+    expect(faithfulClean('She came over, uh, today.', { level: 'clean', dictionary: usha, language: 'en' }).text).not.toContain('Usha');
+  });
+
+  it('an offered filler too: a taught "mm" leaves the answer "Mm." as said', () => {
+    const may: DictionaryTerm[] = [{ term: 'May', kind: 'child', heardAs: ['mm'] }];
+    expect(faithfulClean('Did she sleep? Mm. She did.', { level: 'clean', dictionary: may, language: 'en' }).text).toBe('Did she sleep? Mm. She did.');
+  });
+
+  it('negative case: a heard-as that is a word, not a filler sound, is still applied', () => {
+    const raw = 'We met Usher today.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'Usher', 'Asha'), [{ term: 'Asha', kind: 'child', heardAs: ['Usher'] }])).toBeNull();
   });
 });
 

@@ -410,25 +410,37 @@ function nearMark(ch: string, R: LanguageRules, bridges = false): boolean {
  * so an edit that only deletes the space between two marks still makes a new
  * pair (#249 review N3); `same` counts tight pairs of one mark twice, so "।."
  * may not become "।।" either, which engine 6 refused (#249 single-edit
- * differential).
+ * differential). Engine 8 adds `bare`: two marks with nothing at all between.
+ * A closing quote between two marks keeps them a tight pair, so moving the
+ * later mark inside the quote ("no." U+201D "." to "no.." U+201D) left every
+ * other count as it was and was accepted; a bare pair it did not have is
+ * refused (ruling on #262: a move that leaves two end marks side by side adds
+ * nothing the person said and is not a repair).
  */
 interface MarkPairs {
   loose: number;
   tight: number;
   same: number;
+  bare: number;
 }
 function endMarkPairs(text: string, R: LanguageRules, bridges: boolean): MarkPairs {
-  const pairs: MarkPairs = { loose: 0, tight: 0, same: 0 };
+  const pairs: MarkPairs = { loose: 0, tight: 0, same: 0, bare: 0 };
   let loose = false;
   let tight = '';
+  let bare = false;
   for (const ch of text) {
     if (isEndMark(ch, R)) {
       if (loose) pairs.loose++;
       if (tight) pairs.tight++;
       if (tight === ch) pairs.same++;
+      if (bare) pairs.bare++;
       loose = true;
       tight = ch;
-    } else if (!nearMark(ch, R, bridges)) {
+      bare = true;
+      continue;
+    }
+    bare = false;
+    if (!nearMark(ch, R, bridges)) {
       loose = false;
       tight = '';
     } else if (/\s/u.test(ch)) {
@@ -438,9 +450,9 @@ function endMarkPairs(text: string, R: LanguageRules, bridges: boolean): MarkPai
   return pairs;
 }
 
-/** Does `a` have a pair of touching end marks that `b` lacks, counted any of the three ways? */
-function morePairs(a: MarkPairs, b: MarkPairs): boolean {
-  return a.loose > b.loose || a.tight > b.tight || a.same > b.same;
+/** Does `a` have a pair of touching end marks that `b` lacks, counted any of the three ways, or with `bare` the fourth (engine 8)? */
+function morePairs(a: MarkPairs, b: MarkPairs, bare: boolean): boolean {
+  return a.loose > b.loose || a.tight > b.tight || a.same > b.same || (bare && a.bare > b.bare);
 }
 
 function endMarkCount(text: string, R: LanguageRules): number {
@@ -538,7 +550,7 @@ function movesFirstMarkIn(raw: string, e: Edit, R: LanguageRules, bridges: boole
 function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
   return readingsFor(raw, e.replacement).some((bridges) => {
     const p = markRunPairs(raw, e.start, e.end, e.replacement, R, bridges);
-    return morePairs(p.swapped, p.asIs);
+    return morePairs(p.swapped, p.asIs, true);
   });
 }
 
@@ -550,8 +562,8 @@ function addsEndMarkPair(raw: string, e: Edit, R: LanguageRules): boolean {
  * without it. Returns the edit to refuse: one that adds an end mark before
  * one that only removes, so the removal stands and the speaker's mark is the
  * one left. Null when no accepted edit makes a new pair. Engine 7's reading
- * first, so whatever it refuses is refused as before; then the QUOTE_BRIDGES
- * reading (engine 8).
+ * and counts first, so whatever it refuses is refused as before; then engine
+ * 8's, with bare pairs and the QUOTE_BRIDGES reading.
  */
 function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules): Edit | null {
   const sorted = [...accepted].sort(byStart);
@@ -565,12 +577,13 @@ function doublesEndMarkInContext(raw: string, accepted: Edit[], R: LanguageRules
     pos = e.end;
   }
   text += raw.slice(pos);
-  for (const bridges of readingsFor(raw, text)) {
+  const passes = [{ bridges: false, bare: false }, ...readingsFor(raw, text).map((bridges) => ({ bridges, bare: true }))];
+  for (const { bridges, bare } of passes) {
     let blamed: Edit | null = null;
     for (const e of sorted) {
       const f = at.get(e)!;
       const p = markRunPairs(text, f, f + e.replacement.length, e.original, R, bridges);
-      if (!morePairs(p.asIs, p.swapped)) continue;
+      if (!morePairs(p.asIs, p.swapped, bare)) continue;
       if (endMarkCount(e.replacement, R) > endMarkCount(e.original, R)) return e;
       blamed ??= e;
     }
@@ -735,6 +748,10 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   // The term in another case. Not for a term spelled like an everyday word:
   // "I hope" stays as said for a child named Hope, "we will" for Will (F06-REQ-008, R-01 D10).
   if (o === R.norm(entry.term)) return isEverydayTerm(entry.term, R) ? 'stt_fix_protected_word' : null;
+  // Engine 8 (ruling on #262): a filler sound is never a name, taught or not. A heard-as "uh" taught for
+  // Usha turned "Uh, she came over." into "Usha, she came over."; the filler rules decide what a filler is.
+  const sounds = R.tokens(original);
+  if (sounds.length > 0 && sounds.every((t) => R.isFiller(t.word, true))) return 'stt_fix_protected_word';
   // A learned mishearing the parent taught, unless it carries meaning on its own:
   // a taught "no" must never erase a negation (F07 7.2 rule 5).
   if (entry.heardAs.some((h) => R.norm(h) === o)) return heardAsCarriesMeaning(original, entry.kind, R) ? 'stt_fix_protected_word' : null;
@@ -1002,11 +1019,19 @@ function finalPrefix(raw: string, accepted: Edit[], e: Edit, at: number): string
 
 /**
  * A raised capital must start a sentence in the text the parent will see
- * (or be the pronoun I). Checked against the accepted set, so "um so" and a
- * removed false start still count as sentence starts, and "will" -> "Will"
- * mid-sentence does not.
+ * (or be the pronoun I). Checked against the accepted set, so "um so" with
+ * "um" removed and a removed false start still count as sentence starts, and
+ * "will" -> "Will" mid-sentence does not.
+ *
+ * Engine 8 (ruling on #262): the prefix is read as it will stand, with no
+ * filler skipped. It already has every accepted removal applied, so a filler
+ * still in it is a filler that stays, and a capital past it is a case change
+ * no removal forced: "Um, hope is here." with "Um" locked and a model's "H"
+ * read as the child's name Hope, and cleanRulesOnly gave "um, So we went
+ * home." (seed 20261003 run 14032). Engines 6 and 7 skipped trailing fillers
+ * whether or not the set removed them.
  */
-function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, level: EditLevel, R: LanguageRules): boolean {
+function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, R: LanguageRules): boolean {
   if (e.type !== 'punctuation') return false;
   const changes = caseChanges(e, R) ?? [];
   const edited = raw.slice(0, e.start) + e.replacement + raw.slice(e.end);
@@ -1014,10 +1039,9 @@ function raisedOffSentenceStart(raw: string, accepted: Edit[], e: Edit, level: E
     if (!c.raised) return false;
     const word = wordAt(edited, e.start + c.at).word;
     if (R.isPronounI(word)) return false;
-    // A capital on a filler means the rules keep that filler (the second "uh"
-    // of "Uh uh"), so the fillers before it are kept too: check the prefix as
-    // said, with no filler skipping (engine 6, found by the F06-REQ-021 property test).
-    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), R.isFiller(word) ? 'verbatim' : level);
+    // 'verbatim': skip opening quotes and brackets, never a filler. (Engine 6 read a capital on a filler,
+    // the second "uh" of "Uh uh", this way already; engine 8 reads every capital so.)
+    return !R.startsSentence(finalPrefix(raw, accepted, e, c.at), 'verbatim');
   });
 }
 
@@ -1083,7 +1107,7 @@ export function verifyEdits(edits: Edit[], ctx: VerifyContext): VerifyResult {
       continue;
     }
     for (const e of accepted) {
-      if (raisedOffSentenceStart(ctx.raw, accepted, e, ctx.level, R)) {
+      if (raisedOffSentenceStart(ctx.raw, accepted, e, R)) {
         rejected.push({ edit: e, reason: 'case_change_not_sentence_start' });
         accepted = accepted.filter((a) => a !== e);
         changed = true;

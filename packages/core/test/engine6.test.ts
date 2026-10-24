@@ -253,8 +253,12 @@ describe('[F06-REQ-005] hyphenated words are one word', () => {
   it('a capital on a kept filler is checked as said: "Uh uh" never becomes "Uh Uh" (property test finding)', () => {
     const raw = 'We saw the moon. Uh uh, not now.';
     expect(verdict(raw, edit(raw, 'punctuation', 'u', 'U', 0))).toBe('case_change_not_sentence_start');
-    const raw2 = 'um she walked.'; // the rules remove "um", so "She" starts the sentence (RulePunctuationProvider contract)
-    expect(verdict(raw2, edit(raw2, 'punctuation', 's', 'S'))).toBeNull();
+    // Engine 8 (ruling on #262): "She" starts the sentence only with the removal of "um" in the same set,
+    // as the rules make it (RulePunctuationProvider contract); alone, the capital lands past a kept filler.
+    const raw2 = 'um she walked.';
+    expect(verdict(raw2, edit(raw2, 'punctuation', 's', 'S'))).toBe('case_change_not_sentence_start');
+    const both = verifyEdits([edit(raw2, 'filler', 'um ', ''), edit(raw2, 'punctuation', 's', 'S')], { raw: raw2, level: 'clean', dictionary: [], protectedSpans: [] });
+    expect(both.rejected).toEqual([]);
   });
 });
 
