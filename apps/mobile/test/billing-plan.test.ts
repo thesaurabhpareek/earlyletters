@@ -187,6 +187,17 @@ describe('snapshot validation and the device cache', () => {
     expect(sameEntitlements(snap([tx()]), snap([tx({ expiresAt: at(50) })]))).toBe(false);
     expect(sameEntitlements(null, null)).toBe(true);
   });
+
+  it('[G-15] the first purchase date survives the cache and counts as a change (the yearly reminder\'s anniversary)', () => {
+    const first = tx({ originalPurchasedAt: at(-400) });
+    const s = snap([first], [status()]);
+    expect(parsePlanCache(serializePlanCache(s))?.entitlements[0].originalPurchasedAt).toBe(at(-400));
+    expect(planFromSnapshot(s).details).toMatchObject({ purchasedAt: at(-10), originalPurchasedAt: at(-400) });
+    expect(planFromSnapshot(snap([tx()])).details.originalPurchasedAt).toBeNull();
+    // A corrected first-purchase date from StoreKit is a change worth re-caching and re-planning.
+    expect(sameEntitlements(s, snap([tx({ originalPurchasedAt: at(-30) })], [status()]))).toBe(false);
+    expect(sanitizeSnapshot({ ...s, entitlements: [{ ...first, originalPurchasedAt: 'yesterday' }] })?.entitlements[0].originalPurchasedAt).toBeUndefined();
+  });
 });
 
 const ACTIVE = planFromSnapshot(snap([tx()])).view;

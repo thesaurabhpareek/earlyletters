@@ -86,7 +86,7 @@ const PLUS: PlanView = { state: 'active', effectiveUntil: '2026-12-01T00:00:00Z'
 const NOW = '2026-10-03T12:00:00Z';
 
 /**
- * What Review does at Keep (lib/billing/gates.ts keepLetterGate, review.tsx save): decide first, and only
+ * What Review does at a Keep with words on screen (lib/billing/gates.ts keepGateFor, review.tsx save): decide first, and only
  * when allowed write the letter. Returns whether it was kept.
  */
 async function pressKeep(id: string, plan: PlanView, allowance?: unknown): Promise<'kept' | 'held'> {

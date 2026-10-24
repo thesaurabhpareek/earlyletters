@@ -48,7 +48,7 @@ This chapter covers everything around identity that keeps a family's letters saf
 
 **SEC-R09 (MUST)** Dependabot opens grouped weekly PRs (Expo and React Native move together) and version updates for GitHub Actions. *Enforced by:* `.github/dependabot.yml`, pending PR #30; Dependabot security updates must also be switched on in repo settings (founder, CI-05).
 
-**SEC-R10 (MUST)** Every third-party action is pinned to a full commit SHA with the version in a comment; downloaded binaries are checksum-verified; runners use a fixed image (`ubuntu-24.04`). *Why:* GitHub documents a full SHA as the only immutable reference. *Enforced by:* pending PR #30 for `ci.yml`, `migration-guard.yml`, `security.yml`, `fence.yml`; not yet for `agents.yml`, `agents-check.yml`, `claude.yml` (harness branch, still on `@v4`, `@v1`, `@v3`).
+**SEC-R10 (MUST)** Every third-party action is pinned to a full commit SHA with the version in a comment; downloaded binaries are checksum-verified; runners use a fixed image (`ubuntu-24.04`). *Why:* GitHub documents a full SHA as the only immutable reference. *Enforced by:* pending PR #30 for `ci.yml`, `migration-guard.yml`, `security.yml`, `fence.yml`; `agents-check.yml` is pinned on `develop` (checkout v7.0.1, setup-node v7.0.0) and `claude.yml` with RA-20-02a (#272); not yet for `agents.yml`, which still runs `anthropics/claude-code-action@v1` and `actions/create-github-app-token@v3` unpinned.
 
 **SEC-R11 (MUST)** Workflows default to `permissions: contents: read` and raise per job. A `pull_request_target` workflow never checks out or runs PR code. Untrusted strings (PR titles, bodies, branch names) reach shell only through `env:`. *Enforced by:* `review`; present in `ci.yml` and `fence.yml` (PR #30).
 

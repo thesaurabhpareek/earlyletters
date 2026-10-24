@@ -80,8 +80,10 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
   it('every screen that deviated now uses StateScreen or InlineState', () => {
     const uses: [string, RegExp][] = [
       ['app/review.tsx', /<StateScreen[\s\S]*kind="error"/], // J06-13: no draft
-      ['app/review.tsx', /<InlineState[\s\S]*kind="loading"/], // J05-03: words on their way
-      ['app/review.tsx', /<InlineState[\s\S]*kind="error"/], // transcription failed
+      // J05-03 words on their way, and a failed transcription: one InlineState whose kind comes from the card (P4, S14 to S16)
+      ['app/review.tsx', /<InlineState[\s\S]*kind=\{card\.kind\}/],
+      ['components/capture/words-state.logic.ts', /state: 'writing',\s*kind: 'loading'/],
+      ['components/capture/words-state.logic.ts', /state: 'failed', kind: 'error'/],
       ['app/read-together.tsx', /<StateScreen kind="empty"/], // J11-07
       ['app/letter/[id].tsx', /<StateScreen kind="notFound"/], // J10-11
       ['app/listen.tsx', /<StateScreen[\s\S]*kind="empty"/], // J05-04: microphone off

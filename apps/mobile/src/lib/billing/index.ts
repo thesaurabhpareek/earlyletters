@@ -3,8 +3,8 @@
  *
  *   startPlus()            boot: StoreKit listener, foreground re-read (wire in app/_layout.tsx)
  *   usePlan()              screens: PlanView, details, plusOn, Plan screen line, store support
- *   keepLetterGate()       decideKeepLetter for the Keep step (D-082, D-083): 2 free letters, then Plus
- *   keepGateFor({wordsOnScreen})  the M17 gate (D-103): null when no words are on screen (never counts, never a sheet)
+ *   keepGateFor({wordsOnScreen})  the Keep step's gate (D-082, D-083, M17 D-103): 2 free letters, then Plus; null when no words are on screen (never counts, never a sheet)
+ *   keepLetterGate()       the decision under keepGateFor (decideKeepLetter); Review calls keepGateFor
  *   hasPlus(), isJoinedBook(child)   replacements for the old store.ts stubs
  *   lettersKeptNow(), eraseLetterLedger()  the letter ledger (letter-ledger.ts); Erase everything clears it
  *   presentPlusStore()     Apple's SubscriptionStoreView
@@ -19,7 +19,7 @@ export { usePlan, type UsePlan } from './use-plan';
 export { askPlanReminderPermission, canAskForReminders, getPlanReminderPermission, reschedulePlanReminders } from './plan-reminders';
 export { activePlanNote, noteLines, purchaseConfirmation, subjectOf, trialDaysOf, type PlanNote } from './plan-reminders.logic';
 export { PlanNoteBody, PlanNoticeHost, usePlanNote } from './plan-notice';
-import './letter-ledger.native';
+import './letter-ledger.keychain';
 export {
   afterLetterKept,
   allBookFacts,
