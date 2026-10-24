@@ -516,7 +516,7 @@ Dates follow #152 section 2.2.
 Fri 16  window 1: #145 (with RA-20-06a if ready), the project-id PR. AF-02, AF-03, AF-04
 Mon 19  window 2: RA-20-00 ios-compile, RA-20-02a claude.yml. AF-01 Active (latest Fri 23), AF-06, AF-08, AF-09;
         RA-16-01 alpha texts, RA-17-04
-Tue 20  window 3: the keys PR. AF-10 build 1 (proposed: Mon 26 Oct, DECISIONS.md D-089, until the founder confirms); AF-11 Beta App Review for Friends
+Tue 20  window 3: the keys PR. AF-10 build 1 (proposed by the coordinator: Mon 26 Oct, until the founder confirms); AF-11 Beta App Review for Friends
 Wed 21  window 4: RA-20-04 staging, the R-17 batch. AF-05 default branch (latest), AF-07, AF-12, AF-14;
         restore drill on a throwaway project
 Thu 22  window 5: RA-20-10a + RA-19-04 + RA-20-18 kill harness, RA-20-19 nightly report, RA-07-06 smoke.
@@ -525,7 +525,7 @@ Fri 23  R1: kill-path drill (B2-14), packDownloads drill; ios-compile green on #
 Mon 26  R-17 sign-off (#152 F21)
 Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (proposed: freeze Tue 3 Nov 5:00 AM PT, DECISIONS.md D-089, until the founder confirms)
 Wed 28  green nightly within 24 h of build 2 (B2-22); TestFlight expiry check
-Thu 29  go/no-go (proposed: Thu 5 Nov, until the founder confirms)
+Thu 29  go/no-go (proposed by the coordinator: Thu 5 Nov, until the founder confirms)
 after   RA-20-01, RA-20-03a/b/c, AF-20 (before Mon 2 Nov), RA-20-05/06/07/08/09/10/11/12, RA-07-*, AF-21 to AF-28
 ```
 
