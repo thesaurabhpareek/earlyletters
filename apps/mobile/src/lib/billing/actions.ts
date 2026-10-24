@@ -67,7 +67,7 @@ export async function presentPlusStore(): Promise<StoreSheetOutcome> {
       // D-081: the terms our store sheet showed, for the first status report (WP-F14-15a).
       if (capabilities.statusReport) {
         const details = getPlan().details;
-        void import('./status-report.native').then((m) => m.recordPurchaseConsent(details)).catch(() => {});
+        void import('./status-report.app').then((m) => m.recordPurchaseConsent(details)).catch(() => {});
       }
       try {
         router.push(CONFIRMATION_ROUTE);

@@ -132,7 +132,7 @@ export function startPlus(): () => void {
   let stopStatusReport: () => void = () => {};
   let stopped = false;
   if (capabilities.statusReport) {
-    void import('./status-report.native')
+    void import('./status-report.app')
       .then((m) => {
         if (!stopped) stopStatusReport = m.startStatusReport();
       })
