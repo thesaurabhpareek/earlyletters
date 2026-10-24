@@ -60,9 +60,9 @@
 --     or SELECT and keep UPDATE; new functions get no EXECUTE for the three roles, while PUBLIC's EXECUTE
 --     stays. There this file removes the TRUNCATE, REFERENCES, TRIGGER and MAINTAIN that remain, and its
 --     other revokes, like the service_role function revokes of files 20 and 21, change nothing.
---   In that second world every file from 20260930000000 on, files 1 and 2 included, relies on grants it
---   never makes, so the app cannot read or write until an explicit-grants file is applied (planned as
---   20261023060000, its own PR).
+--   In that second world every file from 20260930000000 on that creates a table, sequence or function,
+--   files 1 and 2 included, relies on grants it never makes, so the app cannot read or write until an
+--   explicit-grants file is applied (planned as 20261023060000, its own PR).
 -- `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions
 -- from anon, authenticated, service_role` would make every later object start from nothing in both
 -- worlds; it changes no existing object. This file does not run it: it is a project-wide decision, not a

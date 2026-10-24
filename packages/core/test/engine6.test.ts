@@ -3,7 +3,8 @@
  * commonWords pack table, the F07 save check, and the helpers the R-01
  * guards rest on. The end-to-end R-01 cases live in test/regression/ and the
  * property in verify.r01.fuzz.test.ts. Engine 7 (the #179 follow-up on end
- * marks and the verifier's windows) is pinned at the end of this file.
+ * marks and the verifier's windows) is pinned at the end of this file;
+ * engine 8 (the #257 follow-up) in engine8.test.ts.
  *
  * The constitution: the machine may remove and repair. It may never add meaning.
  * Fictional family only.
@@ -49,8 +50,8 @@ const verdict = (raw: string, e: Edit, dictionary: DictionaryTerm[] = []) => {
 };
 
 describe('[F06-REQ-018] the engine version moves with every behaviour change', () => {
-  it('ENGINE_VERSION is 7 and pipeline.ts has a dated changelog line for it', () => {
-    expect(ENGINE_VERSION).toBe(7);
+  it('ENGINE_VERSION is 8 and pipeline.ts has a dated changelog line for it', () => {
+    expect(ENGINE_VERSION).toBe(8);
     const src = readFileSync(join(__dirname, '../src/pipeline.ts'), 'utf8');
     expect(src).toMatch(new RegExp(`^// ${ENGINE_VERSION} \\(\\d{4}-\\d{2}-\\d{2}\\):`, 'm'));
     expect(src).not.toMatch(/Pending \d/);
@@ -252,8 +253,12 @@ describe('[F06-REQ-005] hyphenated words are one word', () => {
   it('a capital on a kept filler is checked as said: "Uh uh" never becomes "Uh Uh" (property test finding)', () => {
     const raw = 'We saw the moon. Uh uh, not now.';
     expect(verdict(raw, edit(raw, 'punctuation', 'u', 'U', 0))).toBe('case_change_not_sentence_start');
-    const raw2 = 'um she walked.'; // the rules remove "um", so "She" starts the sentence (RulePunctuationProvider contract)
-    expect(verdict(raw2, edit(raw2, 'punctuation', 's', 'S'))).toBeNull();
+    // Engine 8 (ruling on #262): "She" starts the sentence only with the removal of "um" in the same set,
+    // as the rules make it (RulePunctuationProvider contract); alone, the capital lands past a kept filler.
+    const raw2 = 'um she walked.';
+    expect(verdict(raw2, edit(raw2, 'punctuation', 's', 'S'))).toBe('case_change_not_sentence_start');
+    const both = verifyEdits([edit(raw2, 'filler', 'um ', ''), edit(raw2, 'punctuation', 's', 'S')], { raw: raw2, level: 'clean', dictionary: [], protectedSpans: [] });
+    expect(both.rejected).toEqual([]);
   });
 });
 

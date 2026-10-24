@@ -14,7 +14,7 @@ Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branc
 - No ESLint or Prettier config anywhere; only `apps/mobile` has a `lint` script (`expo lint`). PR #30 adds a CI lint job that skips until a root `lint` script exists.
 - (15 Oct) CI `required` job (`.github/workflows/ci.yml`) needs install, tests and content rules, `npm run test:db`, the Deno functions job and typecheck.
 - Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (582 on 15 Oct).
-- (23 Oct) `ENGINE_VERSION = 7` in `packages/core/src/pipeline.ts` (engine 7, PR #249); its golden corpus is `packages/core/test/golden/engine-v7.json`.
+- (24 Oct) `ENGINE_VERSION = 8` in `packages/core/src/pipeline.ts` (engine 8, PR #262, refusals only: words joined through an invisible character, a mark behind any quotation mark, a heard-as inside a hyphenated word or on a filler, a capital past a kept filler, a mark moved inside a quote); its golden corpus is `packages/core/test/golden/engine-v8.json`. Engine 7 was PR #249 (`engine-v7.json`).
 - Seeded fuzz pattern: `packages/core/test/verify.fuzz.test.ts`, env `SCRIBE_FUZZ_SEED`.
 - Typed errors exist: `MigrationError` (`apps/mobile/src/lib/db/migrations.ts`), `TranscriberUnavailable` (`apps/mobile/src/lib/transcribe.ts`), `AudioMissingError` (`store.ts`). Untyped: `packages/core/src/age.ts:15` puts the input date in the message (gap CODE-G2).
 - (15 Oct) Shared enums: `packages/core/src/domain.ts` is on `develop` (PR #31) with a test that parses migration CHECK constraints.
