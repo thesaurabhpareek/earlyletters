@@ -17,8 +17,9 @@
  * words (development builds) are never saved as a transcript.
  *
  * The Keep gate (D-082, D-083): the first 2 letters are free, then keeping another needs
- * Plus. It runs here, at the Keep buttons (spoken, typed, or a voice kept without words),
- * after the recording is hashed and BEFORE anything is saved. When Plus is needed, the
+ * Plus. It runs here, at the Keep buttons (spoken or typed), after the recording is hashed
+ * and BEFORE anything is saved. M17 (D-103): it asks only when the letter's words are on
+ * screen; a voice kept without words never counts and never opens the sheet. When Plus is needed, the
  * sheet opens and nothing is written: the draft stays exactly where it is, so a closed
  * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
  * shows again and the person taps Keep themselves.
@@ -84,7 +85,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, keepLetterGate, type KeepGate } from '@/lib/billing';
+import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, keepGateFor, type KeepGate } from '@/lib/billing';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -349,11 +350,18 @@ export default function Review() {
 
   // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
   const devPass = useRef(false);
-  /** True when the Keep sheet opened instead: the caller returns without saving. Never throws. */
-  const keepNeedsPlus = async (): Promise<boolean> => {
+  /**
+   * True when the Keep sheet opened instead: the caller returns without saving. Never throws.
+   * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText` for
+   * Keep and Keep privately, null for a voice kept without words.
+   */
+  const keepNeedsPlus = async (wordsOnScreen: string | null): Promise<boolean> => {
     if (devPass.current) return false;
-    const g = await keepLetterGate();
-    if (g.decision.kind === 'allow') return false;
+    const g = await keepGateFor({ wordsOnScreen });
+    // null: no words on screen. Under M17 this save never counts toward the free letters (the ledger skips a
+    // letter without words), so there is nothing to gate: no ledger read, no sheet, Keep goes ahead at once.
+    // The letter counts later, at the save where its words are first on screen.
+    if (g === null || g.decision.kind === 'allow') return false;
     track('keep_gate_shown', {
       letters_kept: Math.min(1000, g.lettersKept),
       allowance: Math.min(100, Math.max(2, g.allowance)),
@@ -381,7 +389,7 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
-      if (await keepNeedsPlus()) {
+      if (await keepNeedsPlus(finalText)) {
         saving.current = false; // held: the draft is untouched
         return;
       }
@@ -443,7 +451,8 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
-      if (await keepNeedsPlus()) {
+      // No words on screen: the queue has none yet, nobody spoke, or only development sample words show (never saved).
+      if (await keepNeedsPlus(null)) {
         saving.current = false; // held: the draft is untouched
         return;
       }
@@ -469,7 +478,7 @@ export default function Review() {
       setDraft(fresh);
       setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
-      await noteKept();
+      await afterLetterKept(); // never counted (M17), so never the second-free line or free_allowance_reached
       finishSave(false, firstLetter);
     } catch {
       saving.current = false;

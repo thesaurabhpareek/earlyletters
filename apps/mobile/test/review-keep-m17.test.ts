@@ -1,0 +1,201 @@
+/// <reference types="node" />
+/**
+ * Review's Keep step asks the M17 gate (D-103; F14-REQ-037, F14-REQ-038; WP-F14-20, the
+ * review.tsx half; go/no-go B2-7). Keep and Keep privately pass the letter's words on screen
+ * (`finalText`) to keepGateFor; keeping the voice without words passes null. A null answer
+ * means no words on screen: no sheet, no count, and Keep goes ahead. Every other Keep
+ * behaviour is as before (D-082, D-083): the first 2 letters kept are free, then the sheet,
+ * and a held Keep writes nothing.
+ *
+ * Screens do not load in Node, so this runs Review's Keep order (gate, then write, then the
+ * count) against the real store, ledger and gate, and pins review.tsx to that order and to
+ * the values it passes. Fictional Asha family only.
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NO_PLAN, type PlanView } from '@scribe/core';
+import { nodeDb } from './helpers/node-db';
+
+const plan = vi.hoisted(() => ({ view: null as unknown }));
+vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
+vi.mock('../src/lib/db/repos/open-native', () => ({
+  openNativeDb: () => {
+    throw new Error('native open must not be used in tests');
+  },
+}));
+vi.mock('../src/lib/billing/plan-store', () => ({
+  getPlan: () => ({ view: plan.view, details: {}, checkedAt: null }),
+}));
+
+const store = await import('../src/lib/store');
+const { afterLetterKept, keepGateFor } = await import('../src/lib/billing/gates');
+const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
+
+const PLUS: PlanView = { state: 'active', effectiveUntil: '2099-01-01T00:00:00Z', verifiedAt: '2026-10-03T00:00:00Z', environment: 'production', isTester: false };
+const now = () => '2026-10-03T09:00:00.000Z';
+let seq = 0;
+const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
+let close: () => void = () => {};
+let asha = '';
+
+beforeEach(() => {
+  plan.view = NO_PLAN;
+  configureLedgerStorage(null); // a fresh process: the in-memory Keychain floor starts at 0
+  store.closeStore();
+  const h = nodeDb();
+  close = h.close;
+  expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now, newId }).ok).toBe(true);
+  asha = store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+});
+afterEach(() => {
+  store.closeStore();
+  configureLedgerStorage(null);
+  close();
+});
+
+const counted = () => store.ledgerDb().counts().recorded;
+
+function spokenDraft(words?: string): string {
+  const d = store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: `file:///Documents/${newId()}.m4a`, audioDurationMs: 9000 });
+  if (words !== undefined) store.setDraftTranscript(d.id, words); // the queue sets the raw transcript once
+  return d.id;
+}
+function typedDraft(text: string): string {
+  return store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text }).id;
+}
+
+type Button = 'keep' | 'keepPrivately' | 'keepVoice';
+type Gate = Awaited<ReturnType<typeof keepGateFor>>;
+
+/**
+ * One tap in Review, in review.tsx's order: `save(inBook)` passes `finalText` to keepNeedsPlus and
+ * `keepRecordingOnly` passes null; keepNeedsPlus asks keepGateFor and opens the sheet only on `offer`;
+ * otherwise the letter is written and the count mirrored (afterLetterKept). On the sheet nothing is written.
+ */
+async function tap(draftId: string, button: Button, finalText = ''): Promise<{ outcome: 'kept' | 'sheet'; gate: Gate }> {
+  const d = store.getDraft(draftId)!;
+  const gate = await keepGateFor({ wordsOnScreen: button === 'keepVoice' ? null : finalText });
+  if (gate !== null && gate.decision.kind === 'offer') return { outcome: 'sheet', gate };
+  if (button === 'keepVoice') {
+    store.saveVoiceOnlyFromDraft({ ...d, audioSha256: 'a'.repeat(64), audioBytes: 12000 }, { childId: asha, authorSignsAs: 'Mama', inBook: false, engineVersion: 5 });
+  } else {
+    const typed = d.typedText != null && d.typedText.trim().length > 0;
+    store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'letter', occurredOn: '2026-10-03', capturedAt: d.createdAt, captureMode: typed ? 'typed' : 'spoken',
+      editLevel: typed ? 'verbatim' : 'clean', promptKey: null, engineVersion: 5, rawTranscript: typed ? d.typedText! : (d.rawTranscript ?? ''),
+      machineEdits: [], finalText, inBook: button === 'keep', soundsLikeMe: null, childId: asha, authorSignsAs: 'Mama',
+      audioUri: d.audioUri, audioDurationMs: d.audioDurationMs, audioSha256: typed ? undefined : 'b'.repeat(64), audioBytes: typed ? undefined : 12000,
+    });
+  }
+  await afterLetterKept();
+  return { outcome: 'kept', gate };
+}
+
+/** Two letters with words kept, free: the allowance is used. */
+async function useTheFreeLetters(): Promise<void> {
+  await tap(spokenDraft('Asha, you sang to the cat.'), 'keep', 'Asha, you sang to the cat.');
+  await tap(typedDraft('Two teeth today.'), 'keepPrivately', 'Two teeth today.');
+  expect(counted()).toBe(2);
+}
+
+describe('[F14-REQ-037] Review asks the gate with the words on screen', () => {
+  it('1. words on screen, under the free allowance: kept and counted (spoken, then typed)', async () => {
+    const a = await tap(spokenDraft('Asha, you laughed at the rain.'), 'keep', 'Asha, you laughed at the rain.');
+    expect(a.outcome).toBe('kept');
+    expect(a.gate?.decision).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 2 });
+    expect(counted()).toBe(1);
+    const b = await tap(typedDraft('You held my thumb all night.'), 'keepPrivately', 'You held my thumb all night.');
+    expect(b.gate?.decision).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 1 });
+    expect(counted()).toBe(2);
+  });
+
+  it('2. words on screen, over the allowance, no Plus: the Keep sheet, as today, and nothing is written', async () => {
+    await useTheFreeLetters();
+    const id = spokenDraft('You found your feet.');
+    const before = store.getDraft(id);
+    const r = await tap(id, 'keep', 'You found your feet.');
+    expect(r.outcome).toBe('sheet');
+    expect(r.gate?.decision).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: false });
+    expect(r.gate?.lettersKept).toBe(2);
+    expect(store.getDraft(id)).toEqual(before); // held: the draft is untouched
+    expect(store.getEntry(id)).toBeNull();
+    expect(counted()).toBe(2);
+    plan.view = PLUS;
+    const plus = await tap(id, 'keep', 'You found your feet.');
+    expect(plus.gate?.decision).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(counted()).toBe(3);
+  });
+
+  it('3. no words on screen: the gate answers null, so the letter is kept with no count and no sheet, even past the allowance', async () => {
+    for (const words of [null, undefined, '', '   ']) expect(await keepGateFor({ wordsOnScreen: words })).toBeNull();
+    await useTheFreeLetters();
+    const r = await tap(spokenDraft(), 'keepVoice');
+    expect(r).toEqual({ outcome: 'kept', gate: null });
+    expect(counted()).toBe(2);
+  });
+
+  it('4. [F14-REQ-038] a voice-only letter (no model yet, waiting for its language, nobody spoke): 3 saves, 0 sheets, 0 counted', async () => {
+    const outcomes: string[] = [];
+    for (let i = 0; i < 3; i++) outcomes.push((await tap(spokenDraft(), 'keepVoice')).outcome);
+    expect(outcomes).toEqual(['kept', 'kept', 'kept']);
+    expect(counted()).toBe(0);
+    // Those 3 letters never used an allowance: the next 2 letters with words are still free.
+    await useTheFreeLetters();
+    expect((await tap(typedDraft('You said ba.'), 'keep', 'You said ba.')).outcome).toBe('sheet');
+  });
+
+  it('5. a held draft: reopened with its words on screen it asks again; held without words it keeps with no count or sheet', async () => {
+    await useTheFreeLetters();
+    const withWords = spokenDraft('You clapped for the first time.');
+    expect((await tap(withWords, 'keep', 'You clapped for the first time.')).outcome).toBe('sheet');
+    expect(store.holdDraft(withWords, { inBookChoice: true })).toBe(true); // "Leave it waiting"
+    const held = store.getDraft(withWords);
+    expect((await tap(withWords, 'keep', 'You clapped for the first time.')).outcome).toBe('sheet');
+    expect(store.getDraft(withWords)).toEqual(held);
+    expect(counted()).toBe(2);
+    // A recording held before its words existed (an earlier build gated voice keeps): it no longer reaches the gate.
+    const noWords = spokenDraft();
+    expect(store.holdDraft(noWords, { inBookChoice: null })).toBe(true);
+    expect(await tap(noWords, 'keepVoice')).toEqual({ outcome: 'kept', gate: null });
+    expect(counted()).toBe(2);
+    // After Plus starts, the person taps Keep on the held letter with words: kept and counted.
+    plan.view = PLUS;
+    expect((await tap(withWords, 'keep', 'You clapped for the first time.')).outcome).toBe('kept');
+    expect(store.getDraft(withWords)).toBeNull();
+    expect(counted()).toBe(3);
+  });
+});
+
+describe('review.tsx is wired to the M17 gate', () => {
+  const review = readFileSync(join(__dirname, '..', 'src', 'app', 'review.tsx'), 'utf8');
+  const between = (from: string, to: string) => review.slice(review.indexOf(from), review.indexOf(to, review.indexOf(from)));
+  const gate = between('const keepNeedsPlus = async', 'const noteKept = async');
+  const save = between('const save = async', 'const keepRecordingOnly = async');
+  const voice = between('const keepRecordingOnly = async', 'const dismissFirstNote');
+
+  it('asks keepGateFor with the words on screen, never the old keepLetterGate', () => {
+    expect(review).not.toMatch(/keepLetterGate/);
+    expect(gate).toMatch(/const g = await keepGateFor\(\{ wordsOnScreen \}\);/);
+  });
+
+  it('a null answer goes ahead before anything about the sheet: no keep_gate_shown, no setGate', () => {
+    const allow = gate.indexOf("if (g === null || g.decision.kind === 'allow') return false;");
+    expect(allow).toBeGreaterThan(-1);
+    expect(gate.indexOf("track('keep_gate_shown'")).toBeGreaterThan(allow);
+    expect(gate.indexOf('setGate(g)')).toBeGreaterThan(allow);
+  });
+
+  it('Keep and Keep privately pass finalText (the words the person sees) before writing the letter', () => {
+    expect(review).toMatch(/const finalText = userText \?\? cleanedText;/);
+    expect(save).toMatch(/if \(await keepNeedsPlus\(finalText\)\)/);
+    expect(save.indexOf('keepNeedsPlus(finalText)')).toBeLessThan(save.indexOf('saveLetterFromDraft('));
+  });
+
+  it('keeping the voice without words passes null, and never notes a free letter it did not count', () => {
+    expect(voice).toMatch(/if \(await keepNeedsPlus\(null\)\)/);
+    expect(voice.indexOf('keepNeedsPlus(null)')).toBeLessThan(voice.indexOf('saveVoiceOnlyFromDraft('));
+    expect(voice).not.toMatch(/noteKept\(/);
+    expect(voice).toMatch(/await afterLetterKept\(\);/);
+  });
+});
