@@ -42,9 +42,9 @@ Who does what:
 - `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
-- `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
+- `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
 - `ios-v<x.y.z>` is pushed after Apple approves and the founder releases, on the same commit as the released RC. The workflow refuses it without an RC tag on that commit and a release record `docs/release/<x.y.z>.md`, then publishes the GitHub Release from the record.
-- Tags never move and are never reused (D-089). The tag's version equals `apps/mobile/version.json`; the build number is not in the tag (2.2).
+- Tags never move and are never reused (D-089). The tag's version equals `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); the build number is not in the tag (2.2).
 
 ### 1.3 CI gates (F: `.github/workflows/ci.yml`, `migration-guard.yml`; TDD 07 9.1)
 
@@ -61,7 +61,7 @@ The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not en
 
 ### 1.4 Hotfix (D-089)
 1. Fix merged to `develop` first (upstream first), labelled `release:<major>.<minor>`.
-2. Coordinator cherry-picks it onto `release/<major>.<minor>` and bumps PATCH in `apps/mobile/version.json` there only (never on `develop`).
+2. Coordinator cherry-picks it onto `release/<major>.<minor>` and bumps PATCH in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) there only (never on `develop`).
 3. Push the next RC tag (`ios-v1.0.1-rc.1`); same gates; TF-04 smoke; submit that build; ask for an expedited review if it fixes a critical bug (7.3). No OTA in v1.0 (D-091, section 8).
 4. After release, tag `ios-v1.0.1` on the RC's commit.
 
@@ -70,12 +70,12 @@ The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not en
 ### 2.1 What each number is
 | Number | Where | Who changes it |
 |---|---|---|
-| Marketing version (`CFBundleShortVersionString`, Android `versionName`) | `apps/mobile/version.json`, read by `app.config.ts` (D-089, BL-436) | MINOR: a PR on `develop` before the release PR; PATCH: the coordinator on the release branch (1.4) (V: Expo "App version management": set it explicitly for each store release) |
+| Marketing version (`CFBundleShortVersionString`, Android `versionName`) | `apps/mobile/version.json`, read by `app.config.ts` (D-089, BL-436) (after #109; until then `apps/mobile/app.config.ts:162`) | MINOR: a PR on `develop` before the release PR; PATCH: the coordinator on the release branch (1.4) (V: Expo "App version management": set it explicitly for each store release) |
 | Build number (`CFBundleVersion`) | EAS servers | EAS, automatically (2.2) |
 | Runtime version | not used: no `expo-updates` in v1.0 (D-091, section 8) | n/a |
 
 ### 2.2 Remote build numbers (F: `eas.json`)
-`cli.appVersionSource` is `remote` and the `production` profile has `autoIncrement: true` (F). EAS stores the iOS build number and bumps it on every production build, which avoids the common rejection for a duplicate build number (V: Expo "App version management", remote version source recommended from EAS CLI 12). Never set `ios.buildNumber` in `app.config.ts`. To see or set it: `npx eas-cli build:version:get -p ios` and `build:version:set` (A: command names from the EAS CLI reference).
+`cli.appVersionSource` is `remote` and the `production` profile has `autoIncrement: true` (F). EAS stores the iOS build number and bumps it on every production build, which avoids the common rejection for a duplicate build number (V: Expo "App version management", remote version source recommended from EAS CLI 12). Never set `ios.buildNumber` in `app.config.ts`. To see or set it: `npx eas-cli@24.10.0 build:version:get -p ios` and `build:version:set` (A: command names from the EAS CLI reference).
 
 ## 3. EAS: project, profiles, variables, image
 
@@ -111,7 +111,7 @@ Requested submit profile (A: values come from the founder after FT-08):
 `ascAppId` and `appleTeamId` are documented `submit.production.ios` keys, and `groups` adds the build to TestFlight internal groups (V: Expo "Configure with eas.json"). On the production record that group is `Release candidates` (the founder's phones, for TF-04 and FT-39); C0 runs on the `.preview` record (5.2). Neither id is a secret, but they are written only after the founder confirms them.
 
 ### 3.3 Build variables
-Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
+Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli@24.10.0 env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
 
 ### 3.4 The build (from an RC tag)
 Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, a trusted signing key in `packages/api/src/keys.ts` (and a warning if `eas.json` has no `EXPO_PUBLIC_DOCS_BASE_URL`), then, after the founder approves the run in the `app-store` environment, `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. Whether `--auto-submit` still submits after the CLI exits with `--no-wait` is Unverified: on the first RC, watch the build page on expo.dev for the linked submission and record what happened in `docs/release/1.0.0.md`. The checks run `npm test` and typecheck but not `test:db` or `test:functions`: v1.0 runs no server code. It needs the environment and secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
@@ -120,8 +120,8 @@ By hand only as an exception: if the workflow cannot run and the founder approve
 ```bash
 git switch --detach ios-v1.0.0-rc.1
 cd apps/mobile
-npx eas-cli@latest build --platform ios --profile production      # store build, build number bumped by EAS
-npx eas-cli@latest submit --platform ios --latest                   # uploads to App Store Connect (TestFlight)
+npx eas-cli@24.10.0 build --platform ios --profile production      # store build, build number bumped by EAS
+npx eas-cli@24.10.0 submit --platform ios --latest                   # uploads to App Store Connect (TestFlight)
 ```
 `eas submit` uploads the build; it shows in TestFlight after processing (V: Expo "Submit to the Apple App Store", "usually 10-15 minutes"). Record the build id, build number and commit in `docs/release/<x.y.z>.md`.
 
@@ -154,7 +154,7 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 ## 4. Signing with an individual developer account
 
 - **Account:** the founder's individual Apple Developer Program membership (D-004, D-064). Only the Account Holder accepts agreements, sets up Paid Apps, tax and bank (APP_STORE_CONNECT_SUBSCRIPTIONS step 1); the seller name on the App Store is the founder's legal name (D-004).
-- **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli credentials -p ios`.
+- **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli@24.10.0 credentials -p ios`.
 - **Capabilities:** EAS enables the entitlements in the config on the App ID during the build (Sign in with Apple, Associated Domains; DEVICE_TEST_PLAN S1-06 turns that Assumption into V). Check the App ID in Certificates, Identifiers & Profiles after the first build (AUTH_SETUP 2.1).
 - **No push key.** The app schedules only local notifications (reminders and plan reminders) and never asks for a push token (no `getDevicePushTokenAsync` or `getExpoPushTokenAsync` in `apps/mobile`). expo-notifications' own plugin, which prebuild applies because the package is installed, writes `aps-environment`; `app.config.ts` removes it, so no remote push entitlement is configured (F: `expo prebuild` and `expo config --type introspect` show no `aps-environment`; `apps/mobile/test/config.test.ts` checks the introspected entitlements of every profile and the preflight checks the generated ones; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so an interactive `eas build` does not offer to create a push key (eas-cli 24.10.0, `IosCredentialsProvider.js`); if it ever asks "Would you like to set up Push Notifications for your project?", answer No.
 - **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
