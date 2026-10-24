@@ -21,9 +21,11 @@
 # Each harness job uploads its report.json and report.md (run numbers and outcomes; no ids, no words) as an artifact.
 #
 # Exit codes (README section 9), each named in an annotation; any exit but 0 fails the job, so a red run is red:
-#   1 loss: a letter or take lost, doubled or damaged, the app did not start after a kill, or DL-01 under 49 in 50
-#   2 usage or a refused setup; 3 incomplete: a timeout, no microphone, fewer runs judged than planned, or the drill
-#   never armed; 4 the self-check missed a planted failure.
+#   1 two cases, both red: a letter or take lost, doubled or damaged, the app did not start after a kill, or a
+#     database check failed (S0, docs/qa/DEVICE_TEST_PLAN.md); or, with nothing lost, DL-01 under 49 in 50 kept
+#     takes playing to within 5 s (07's playable rule). The annotation says which (failReason in harness.mjs).
+#   2 usage or a refused setup; 3 incomplete: a timeout, no microphone, fewer runs judged than planned, an error in
+#   the harness, or the drill never armed; 4 the self-check missed a planted failure.
 #   A build that cannot launch exits 3 with "self-check run 0: app_exited" (the app was gone before the drill's
 #   boot marker). Then the step "Why the app stopped" prints the uncaught exception and its stack read back to file
 #   and line (.github/scripts/sim-crash-report.sh), and the release-launch job says whether the store build fails
@@ -244,7 +246,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/kill-app" && ditto "$app" "$RUNNER_TEMP/kill-app/App.app"
           {
             echo "### e2e simulator app"
-            echo "- commit \`${GITHUB_SHA:0:12}\`, Xcode ${XCODE_VERSION}, bundle id \`${id}\`"
+            echo "- commit \`${GITHUB_SHA:0:12}\`, Xcode ${XCODE_VERSION}, runner image ${ImageVersion:-unknown}, bundle id \`${id}\`"
             echo "- main.jsbundle sha256 \`$(shasum -a 256 "$app/main.jsbundle" | cut -c1-16)\`, carries the seam"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -514,12 +516,20 @@ jobs:
             --app "$RUNNER_TEMP/kill-app/App.app" --runs "$RUNS" "${extra[@]}" --out "$RUNNER_TEMP/kill" 2>&1 \
             | tee "$RUNNER_TEMP/diag/harness.log"
           code=${PIPESTATUS[0]}
-          echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s on runner image ${ImageVersion:-unknown}" >> "$GITHUB_STEP_SUMMARY"
           case "$code" in
             0) echo "::notice title=${LABEL} PASS::every run kept its letter or take exactly once, and the self-check caught every plant" ;;
-            1) echo "::error title=${LABEL} exit 1 (loss)::a letter or take was lost, doubled or damaged, the app did not start after a kill, or DL-01 is under 49 in 50 playable. S0: report.md names the run, seed and kill time" ;;
+            1)
+              REPORT="$RUNNER_TEMP/kill/report.json"
+              why="$(node --input-type=module -e "import { failReason } from './apps/mobile/e2e/kill/harness.mjs'; import { readFileSync } from 'node:fs'; const w = failReason(JSON.parse(readFileSync(process.argv[1], 'utf8'))); console.log(w && w.kind === 'playable' ? ['playable', w.playing, w.judged, w.needed].join(' ') : 'loss');" "$REPORT" 2>/dev/null || echo loss)"
+              read -r kind playing judged needed <<< "$why"
+              if [ "$kind" = playable ]; then
+                echo "::error title=${LABEL} exit 1 (playable rule)::DL-01: ${playing} of ${judged} kept takes play to within 5 s; the rule is 49 in 50 (here ${needed} of ${judged}). Nothing lost or doubled, so not S0; the job stays red"
+              else
+                echo "::error title=${LABEL} exit 1 (S0 loss)::a letter or take was lost, doubled or damaged, the app did not start after a kill, or a database check failed. report.md names the run, seed and kill time"
+              fi ;;
             2) echo "::error title=${LABEL} exit 2 (not run)::usage or a refused setup (wrong bundle id, no --mic-silent)" ;;
-            3) echo "::error title=${LABEL} exit 3 (incomplete)::a timeout, no microphone (record_failed), fewer runs judged than planned, or the drill never armed. With app_exited at self-check run 0 the app could not launch: the next step prints why. report.md names the stage" ;;
+            3) echo "::error title=${LABEL} exit 3 (incomplete)::a timeout, no microphone (record_failed), fewer runs judged than planned, an error in the harness, or the drill never armed. With app_exited at self-check run 0 the app could not launch: the next step prints why. report.md names the stage" ;;
             4) echo "::error title=${LABEL} exit 4 (blind)::the self-check missed a planted failure, so this run proves nothing" ;;
             *) echo "::error title=${LABEL} exit ${code}::not a harness exit code" ;;
           esac
@@ -591,11 +601,22 @@ jobs:
           node apps/mobile/e2e/kill/run-kill-harness.mjs --merge "$RUNNER_TEMP"/s1/report.json "$RUNNER_TEMP"/s2/report.json \
             "$RUNNER_TEMP"/s3/report.json "$RUNNER_TEMP"/s4/report.json --out "$RUNNER_TEMP/merged"
           code=$?
+          {
+            echo "- dl01-merged is the DL-01 verdict. One 125-run shard is red below 123 kept takes playing to within 5 s (49 in 50, rounded up), while the merged 500 needs 490 in all: a red shard with a green merged verdict is a pass."
+          } >> "$GITHUB_STEP_SUMMARY"
           case "$code" in
-            0) echo "::notice title=DL-01 merged PASS::500 of 500 kept, and every shard's self-check caught every plant" ;;
-            1) echo "::error title=DL-01 merged exit 1 (loss)::a take was lost, doubled or damaged, the app did not start after a kill, or under 49 in 50 playable. S0" ;;
+            0) echo "::notice title=DL-01 merged PASS::500 of 500 kept, at least 490 play to within 5 s, and every shard's self-check caught every plant" ;;
+            1)
+              REPORT="$RUNNER_TEMP/merged/report.json"
+              why="$(node --input-type=module -e "import { failReason } from './apps/mobile/e2e/kill/harness.mjs'; import { readFileSync } from 'node:fs'; const w = failReason(JSON.parse(readFileSync(process.argv[1], 'utf8'))); console.log(w && w.kind === 'playable' ? ['playable', w.playing, w.judged, w.needed].join(' ') : 'loss');" "$REPORT" 2>/dev/null || echo loss)"
+              read -r kind playing judged needed <<< "$why"
+              if [ "$kind" = playable ]; then
+                echo "::error title=DL-01 merged exit 1 (playable rule)::${playing} of ${judged} kept takes play to within 5 s; the rule is 49 in 50 (here ${needed} of ${judged}). Nothing lost or doubled, so not S0"
+              else
+                echo "::error title=DL-01 merged exit 1 (S0 loss)::a take was lost, doubled or damaged, the app did not start after a kill, or a database check failed"
+              fi ;;
             2) echo "::error title=DL-01 merged exit 2::the shards could not be merged (a duplicate shard, or another build or settings)" ;;
-            3) echo "::error title=DL-01 merged exit 3 (incomplete)::a shard did not finish every run (never armed, a timeout, no microphone)" ;;
+            3) echo "::error title=DL-01 merged exit 3 (incomplete)::a shard did not finish every run (never armed, a timeout, no microphone, an error in the harness)" ;;
             4) echo "::error title=DL-01 merged exit 4 (blind)::a shard's self-check missed a planted failure" ;;
             *) echo "::error title=DL-01 merged exit ${code}::not a harness exit code" ;;
           esac
