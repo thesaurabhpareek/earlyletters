@@ -287,8 +287,8 @@ async function run(work: string): Promise<number> {
     const asset = swift('asset', path);
     const targets = countedS ? [1, 60, 300, 599, countedS - 2].filter((t) => t > 0 && t < countedS - 1) : [1];
     const seeks = swift('seek', path, ...targets.map((t) => t.toFixed(3)));
-    type Seek = { preciseKey: boolean; zeroTolerance: boolean; targetS: number; landedS: number };
-    const landed = ((seeks.seeks as Seek[] | undefined) ?? []).map((x) => ({ ...x, errorS: Math.round((x.landedS - x.targetS) * 1000) / 1000 }));
+    type Seek = { preciseKey: boolean; zeroTolerance: boolean; targetS: number; landedS: number | null };
+    const landed = ((seeks.seeks as Seek[] | undefined) ?? []).map((x) => ({ ...x, errorS: x.landedS === null ? null : Math.round((x.landedS - x.targetS) * 1000) / 1000 }));
     v4.push({
       name,
       countedS,
@@ -298,7 +298,7 @@ async function run(work: string): Promise<number> {
       seeks: landed,
       // use-letter-player.ts:144-146 clears scrubbedTo only within 0.75 s of currentTime: a seek landing farther
       // than that from its target (infinite tolerance, as expo-audio's seekTo) freezes the shown position.
-      scrubbedToFreezes: landed.filter((x) => !x.zeroTolerance && Math.abs(x.errorS) > 0.75).length,
+      scrubbedToFreezes: landed.filter((x) => !x.zeroTolerance && x.errorS !== null && Math.abs(x.errorS) > 0.75).length,
     });
   }
   report.v4 = v4;

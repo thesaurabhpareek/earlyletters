@@ -27,6 +27,11 @@ func emit(_ object: [String: Any]) {
   print(String(data: data, encoding: .utf8)!)
 }
 
+/// A number JSON can carry: an indefinite CMTime's seconds (NaN) or an infinity becomes null.
+func num(_ x: Double) -> Any {
+  x.isFinite ? x : NSNull()
+}
+
 func fail(_ code: String) -> Never {
   emit(["ok": false, "code": code])
   exit(0)
@@ -161,7 +166,7 @@ func asset(_ path: String) async throws {
   let a = try await plain.load(.duration)
   let b = try await precise.load(.duration)
   let playable = try await plain.load(.isPlayable)
-  emit(["ok": true, "playable": playable, "durationS": a.seconds, "preciseDurationS": b.seconds])
+  emit(["ok": true, "playable": playable, "durationS": num(a.seconds), "preciseDurationS": num(b.seconds)])
 }
 
 /// V4: where a seek lands, with infinite tolerance (expo-audio 57's seekTo) and with none, without and with the key.
@@ -181,7 +186,7 @@ func seek(_ path: String, targets: [Double]) async {
         let target = CMTime(seconds: t, preferredTimescale: 48_000)
         let tolerance = exact ? CMTime.zero : CMTime.positiveInfinity
         _ = await player.seek(to: target, toleranceBefore: tolerance, toleranceAfter: tolerance)
-        results.append(["preciseKey": precise, "zeroTolerance": exact, "targetS": t, "landedS": player.currentTime().seconds])
+        results.append(["preciseKey": precise, "zeroTolerance": exact, "targetS": t, "landedS": num(player.currentTime().seconds)])
       }
     }
   }
