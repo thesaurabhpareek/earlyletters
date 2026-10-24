@@ -6,7 +6,7 @@ How work moves from an idea to a build in people's hands. If this file and anoth
 
 | Branch | Role | Who may merge into it |
 |---|---|---|
-| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | The coordinator for app code, docs and tests, once two independent review agents pass and CI is green on the head; the founder for `supabase/**`, auth, payments, release configuration and the engine files (D-107, `docs/agents/COORDINATION.md` section 6) |
+| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | The coordinator for app code, docs and tests, once two independent review agents pass and CI is green on the head; and, under D-117's operating rule (the coordinator's, which the founder may reverse), also `supabase/**`, auth, payments, release configuration and the engine files, after two independent passing reviews on the current head and green CI (`docs/agents/COORDINATION.md` section 6) |
 | `main` | What is live: the website (Vercel deploys from `main`) and tagged app releases. Updated only by a release PR from `develop`, or a website hotfix. | Founder |
 | short branches | `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` | The author opens a PR into `develop` |
 
@@ -27,7 +27,7 @@ A pull request merges only when all hold:
 3. Content rules pass (fix the copy, never the test). No entry text, transcript, audio or child name in analytics, logs or crash reports.
 4. Docs updated: backlog status, decision record or ADR when a decision was made, runbook when a step changed.
 5. Screens changed: a recorded flow in `apps/mobile/e2e-web` covers it and the journey record is regenerated.
-6. The PR template is filled in; the diff was re-read by someone other than the author: two independent review agents (D-107), and the founder for founder-only merges.
+6. The PR template is filled in; the diff was re-read by someone other than the author: two independent review agents (D-107; D-117 for the paths that were founder-only merges).
 
 ## Environments
 | | App bundle id | Backend | Purpose |
