@@ -3,15 +3,18 @@
 # (apps/mobile/e2e/kill/, RA-19-04; apps/mobile/e2e/README.md section 9) and the evidence it produces.
 #
 # Jobs, DL-01 and DL-02 only:
+#   plan     the one place the sizes are set, from the event (below).
 #   build    the e2e simulator app on ios-compile.yml's runner (macos-26, Xcode 26.6 pinned, the same prebuild and
 #            CocoaPods cache): the env of the eas.json `e2e` profile (B-1: EXPO_PUBLIC_E2E=1, EXPO_PUBLIC_APP_ENV
 #            development, servers off; never a store profile), Release configuration (release JavaScript, no Metro),
 #            no signing, no secrets. It fails unless the bundle carries the seam (B-8 in reverse: the RA-20-18
 #            wiring line is in) and the bundle id is the `.dev` one. The app never leaves the run.
 #   harness  DL-02 (kill during save) and DL-01 (kill while recording), each on a fresh simulator.
-#            Nightly: 50 runs a mode (DL-02 adds 5 at each of the four crash points; DL-01 one shard).
+#            Smoke (pull_request): 5 runs a mode, and DL-02 holds once at each of the four crash points.
+#            Nightly (schedule, or dispatch with `gate` off): 50 runs a mode (DL-02 adds 5 at each crash point).
 #            Gate (dispatch with `gate` on, B2-11): DL-02 500 random kills and 50 at each crash point; DL-01 500 in
 #            four shards of 125, about 2.5 h each [E].
+#            Every size runs the harness's planted-failure self-check first, so even the smoke cannot pass blind.
 #   dl01-merged  gate only: merges the four DL-01 reports into the one DL-01 verdict.
 # Each harness job uploads its report.json and report.md (run numbers and outcomes; no ids, no words) as an artifact.
 #
@@ -26,13 +29,20 @@
 # still cannot record, the drill writes record_failed and the harness exits 3; then DL-01 runs on the founder's Mac
 # with a silent virtual input (AF-14; README section 9).
 #
-# When: workflow_dispatch (agents may dispatch it, AUTOMATION.md 2.11) and the nightly schedule. GitHub starts either
-# only once this file is on the default branch (AF-05); after one run, the API dispatches it on any branch or tag
-# (github/docs, events-that-trigger-workflows). Standard macOS runners are free for this public repository; the gate
-# run holds five at once.
+# When: a pull request that changes this file, the harness or the drill (a smoke run that re-proves the build and the
+# arming; it also registers the workflow, so the API can dispatch it on any branch before AF-05); workflow_dispatch
+# (agents may dispatch it, AUTOMATION.md 2.11); and the nightly schedule, which GitHub fires only once this file is on
+# the default branch (AF-05) (github/docs, events-that-trigger-workflows). No job reads a secret, so a pull request
+# from a fork runs the same way. Standard macOS runners are free for this public repository; the gate holds five.
 name: Kill harness (DL-01, DL-02)
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/kill-harness.yml
+      - apps/mobile/e2e/kill/**
+      - apps/mobile/src/dev/e2e-seams.ts
+      - apps/mobile/src/dev/kill-drill*.ts
   workflow_dispatch:
     inputs:
       gate:
@@ -45,26 +55,60 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its older smoke run. A nightly never cancels a running gate on the same branch:
+# it waits behind it.
 concurrency:
   group: kill-harness-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
   XCODE_VERSION: '26.6'
   NODE_VERSION: '22'
-  GATE: ${{ github.event_name == 'workflow_dispatch' && inputs.gate && '1' || '0' }}
 
 defaults:
   run:
     shell: bash
 
 jobs:
+  plan:
+    name: sizes for this run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      size: ${{ steps.size.outputs.size }}
+      matrix: ${{ steps.size.outputs.matrix }}
+      minutes: ${{ steps.size.outputs.minutes }}
+    steps:
+      - name: The one place the sizes are set (smoke, nightly or the B2-11 gate)
+        id: size
+        env:
+          EVENT: ${{ github.event_name }}
+          GATE_INPUT: ${{ inputs.gate }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ]; then size=smoke
+          elif [ "$EVENT" = workflow_dispatch ] && [ "$GATE_INPUT" = true ]; then size=gate
+          else size=nightly; fi
+          case "$size" in
+            smoke)
+              minutes=60
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":5,"points":1},{"mode":"dl01","n":1,"of":1,"runs":5,"points":0}]' ;;
+            nightly)
+              minutes=340
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":50,"points":5},{"mode":"dl01","n":1,"of":1,"runs":50,"points":0}]' ;;
+            gate)
+              minutes=340
+              matrix='[{"mode":"dl02","n":1,"of":1,"runs":500,"points":50},{"mode":"dl01","n":1,"of":4,"runs":125,"points":0},{"mode":"dl01","n":2,"of":4,"runs":125,"points":0},{"mode":"dl01","n":3,"of":4,"runs":125,"points":0},{"mode":"dl01","n":4,"of":4,"runs":125,"points":0}]' ;;
+          esac
+          { echo "size=$size"; echo "minutes=$minutes"; echo "matrix=$matrix"; } >> "$GITHUB_OUTPUT"
+          echo "Kill harness sizes: **${size}** (${EVENT})" >> "$GITHUB_STEP_SUMMARY"
+
   build:
     name: e2e simulator app (e2e profile, Release, seam on)
     runs-on: macos-26
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -199,17 +243,13 @@ jobs:
 
   harness:
     name: ${{ matrix.mode }} ${{ matrix.n }} of ${{ matrix.of }} (${{ matrix.runs }} runs)
-    needs: build
+    needs: [plan, build]
     runs-on: macos-26
-    timeout-minutes: 340
+    timeout-minutes: ${{ fromJSON(needs.plan.outputs.minutes) }}
     strategy:
       fail-fast: false
       matrix:
-        # Gate: DL-02 at full size and DL-01 in four shards of 125. Nightly (schedule, or dispatch with gate off): 50 a mode.
-        include: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.gate
-          && '[{"mode":"dl02","n":1,"of":1,"runs":500,"points":50},{"mode":"dl01","n":1,"of":4,"runs":125,"points":0},{"mode":"dl01","n":2,"of":4,"runs":125,"points":0},{"mode":"dl01","n":3,"of":4,"runs":125,"points":0},{"mode":"dl01","n":4,"of":4,"runs":125,"points":0}]'
-          || '[{"mode":"dl02","n":1,"of":1,"runs":50,"points":5},{"mode":"dl01","n":1,"of":1,"runs":50,"points":0}]') }}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -288,7 +328,7 @@ jobs:
           exit "$code"
 
       - name: Keep the shard report for the merge (gate, DL-01)
-        if: always() && env.GATE == '1' && matrix.mode == 'dl01'
+        if: always() && needs.plan.outputs.size == 'gate' && matrix.mode == 'dl01'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/kill
@@ -304,8 +344,8 @@ jobs:
 
   dl01-merged:
     name: dl01 merged (the DL-01 gate verdict)
-    needs: harness
-    if: always() && github.event_name == 'workflow_dispatch' && inputs.gate && needs.harness.result != 'skipped'
+    needs: [plan, harness]
+    if: always() && needs.plan.outputs.size == 'gate' && needs.harness.result != 'skipped'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
