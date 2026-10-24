@@ -34,4 +34,7 @@ The constitution in `CLAUDE.md` comes first: the machine may remove and repair, 
 19. Need something outside your files? Open a handoff to the owner (`docs/agents/AGENT-COMMS.md`). Never edit another agent's files.
 20. A rule nobody enforces is a wish. When agents break a rule twice, turn it into a check. (AIE-R04, AIE-R06)
 
+## Release
+21. Build once and promote the same binary; the branch decides what is in it and remote config decides what is on. Agents prepare, the coordinator tags, the founder approves; no agent holds a store or build credential. (REL-R05, REL-R06, REL-R13, REL-R17)
+
 This page summarises the chapters. When it and a chapter disagree, the chapter wins; tell its owner with a handoff. Precedence between this compendium and other sources is AIE-R01. When a chapter and the code disagree, that is a bug in one of them: say which in your PR.
