@@ -20,15 +20,17 @@
  *   gets '' (raw is what the recogniser heard in speech: nothing).
  * Sample words (development builds) are never stored.
  *
- * The language a recording is heard in is decided in one place, `hearing(id)` (hearing.ts): Review's request and
- * the waiting letters queue with it, and the job hands it to the recogniser. While the English-only switch is on
- * (D-111 item 4), a recording noted in another language is heard in English and the words carry a note, so Review
- * and the letter page say so (`heardInEnglishNoteFor`). The stored choice is never changed.
+ * Languages this build does not hear yet (language-hold.ts: every language but English while the English-only
+ * switch is on, D-111 item 4) are set on the queue once, at start. A recording in one of them waits for its
+ * language: it is never handed to the recogniser, never fails and asks for no download, and Review and the letter
+ * page say so (`waitingForLanguageNote`). The stored choice is never changed, so in a build that hears the language
+ * the recording proceeds in its own language.
  */
 import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
+import { capabilities } from '../capabilities';
 import { removeWholeFrameCopies } from '../capture/adts-file';
 import {
   deleteSetting,
@@ -46,7 +48,7 @@ import {
   subscribe as subscribeStore,
 } from '../store';
 import { migrateSpeechConsent, setSpeechDownloadChoice, speechAutoStartAllowed } from '../models/speech-consent';
-import { forgetLetterLanguage, noteHeardInEnglish, onAuthorSpeechLanguage, rememberLetterLanguage } from '../models/author-language';
+import { forgetLetterLanguage, letterLanguage, onAuthorSpeechLanguage, rememberLetterLanguage } from '../models/author-language';
 import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelId } from '../models/catalog';
 import {
   bindSpeechPacks,
@@ -71,7 +73,7 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
-import { hearing } from './hearing';
+import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
   jobFailureOf,
@@ -85,7 +87,7 @@ import {
 } from './machine';
 
 export type { Job, JobPhase, QueueState } from './machine';
-export { heardInEnglishNoteFor, hearing } from './hearing';
+export { waitingForLanguageNote } from './language-hold';
 
 let state: QueueState = initialQueue();
 let started = false;
@@ -155,6 +157,8 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   if (started) return stopTranscriptionQueue;
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
+  // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
   // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
   // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
   try {
@@ -224,9 +228,9 @@ export function requestWords(draftId: string): void {
   if (!started) startTranscriptionQueue();
   const d = getDraft(draftId);
   if (!d?.audioUri || d.rawTranscript != null) return;
-  rememberLetterLanguage(draftId);
-  const { language } = hearing(draftId);
+  const language = rememberLetterLanguage(draftId);
   dispatch({ type: 'enqueue', id: draftId, kind: 'draft', language, capturedAt: d.createdAt });
+  if (state.onHold.includes(language)) return; // waits for its language: no download, and Review says so
   if (speechAutoStartAllowed()) void requestSpeechFor(language); // otherwise Review shows the ask
 }
 
@@ -348,7 +352,7 @@ function syncLetters(): void {
     for (const entry of listWaitingForWords(child.id)) {
       if (!entry.audioUri) continue;
       waiting.add(entry.id);
-      step({ type: 'enqueue', id: entry.id, kind: 'entry', language: hearing(entry.id).language, capturedAt: entry.capturedAt });
+      step({ type: 'enqueue', id: entry.id, kind: 'entry', language: letterLanguage(entry.id), capturedAt: entry.capturedAt });
     }
   }
   for (const job of Object.values(state.jobs)) {
@@ -458,11 +462,7 @@ async function runJob(id: string): Promise<void> {
     dispatch({ type: 'remove', id });
     return;
   }
-  // Heard in English while the English-only switch moved another language to English (whatever the job was queued
-  // with); otherwise the job's own language, exactly as before.
-  const heard = hearing(id);
-  const language = heard.heardInEnglish ? heard.language : job.language;
-  const transcriber = await transcriberFor(language);
+  const transcriber = await transcriberFor(job.language);
   if (!transcriber) {
     refreshReady();
     return;
@@ -471,7 +471,7 @@ async function runJob(id: string): Promise<void> {
   if (state.running !== id) return;
   // transcription_completed (TRACKING_PLAN 9): model family, buckets and the outcome only; dropped until a yes.
   const startedAt = Date.now();
-  const modelId = transcriber.isSample ? null : (planFor([language]).asr[language] ?? null);
+  const modelId = transcriber.isSample ? null : (planFor([job.language]).asr[job.language] ?? null);
   const report = (outcome: 'ok' | 'no_speech' | 'failed') => {
     if (transcriber.isSample) return;
     try {
@@ -485,11 +485,11 @@ async function runJob(id: string): Promise<void> {
     const child = source.childId ? getChild(source.childId) : null;
     const dictionary = child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : [];
     const res = await transcriber.transcribe(
-      { audioUri: source.audioUri, durationMs: source.durationMs, dictionary, language },
+      { audioUri: source.audioUri, durationMs: source.durationMs, dictionary, language: job.language },
       { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total }) },
     );
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
-    deliver(id, res, transcriber.isSample, heard.heardInEnglish);
+    deliver(id, res, transcriber.isSample);
     if (!transcriber.isSample) copiesDue.add(id);
     report(res.outcome);
     dispatch({ type: 'finish', id, outcome: res.outcome });
@@ -511,7 +511,7 @@ async function runJob(id: string): Promise<void> {
   }
 }
 
-function deliver(id: string, res: TranscribeResult, isSample: boolean, heardInEnglish: boolean): void {
+function deliver(id: string, res: TranscribeResult, isSample: boolean): void {
   if (isSample) {
     sampleWords.set(id, res);
     return;
@@ -519,10 +519,7 @@ function deliver(id: string, res: TranscribeResult, isSample: boolean, heardInEn
   // NFC at the transcription boundary, before raw becomes immutable (ADR 0014: not an edit).
   const raw = toNFC(res.raw);
   if (getDraft(id)) {
-    if (raw) {
-      if (heardInEnglish) noteHeardInEnglish(id); // first, so Review's notice is there the moment the words are
-      setDraftTranscript(id, raw); // raw set once; Review cleans it with the parent
-    }
+    if (raw) setDraftTranscript(id, raw); // raw set once; Review cleans it with the parent
     return;
   }
   const entry = getEntry(id);
@@ -531,7 +528,6 @@ function deliver(id: string, res: TranscribeResult, isSample: boolean, heardInEn
     // parent to read them back; the flag is set first so the card is there the moment the words are.
     const late = lateArrivingWords(raw);
     if (late.finalText) flagReadItBack(id);
-    if (late.finalText && heardInEnglish) noteHeardInEnglish(id);
     setWordsForWaitingEntry(id, { ...late, engineVersion: ENGINE_VERSION });
     forgetLetterLanguage(id);
   }
@@ -542,10 +538,7 @@ export function spokenFor(language: SpeechLanguage) {
   return getSpokenLanguages().languages.find((l) => l.code === language) ?? language;
 }
 
-/**
- * The language Review names while words wait and cleans the words in: the recording's own (the author's when it
- * was never noted), as heard (English while the English-only switch moved it, or once its words were heard so).
- */
+/** The language Review names while words wait: the recording's own (the author's when it was never noted). */
 export function languageFor(id: string): SpeechLanguage {
-  return state.jobs[id]?.language ?? hearing(id).language;
+  return state.jobs[id]?.language ?? letterLanguage(id);
 }

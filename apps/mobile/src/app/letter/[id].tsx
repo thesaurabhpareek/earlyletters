@@ -66,7 +66,7 @@ import {
 } from '@/lib/store';
 import { useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
-import { heardInEnglishNoteFor, languageFor, retryWords, startSpeechDownload } from '@/lib/transcription-queue';
+import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
@@ -308,8 +308,6 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made.
   const provenance = copy.book.provenance[provenanceOf(entry)];
   const provenanceLine = spoken && own ? `${provenance}. ${copy.book.recordingOnPhone}.` : provenance;
-  // D-111 item 4: words heard in English because this build offers English only, though another language was chosen.
-  const heardNote = spoken && words === 'words' ? heardInEnglishNoteFor(entry.id) : null;
 
   const aa = (
     <Pressable
@@ -406,11 +404,6 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 {provenanceLine}
               </Text>
             </View>
-            {heardNote ? (
-              <Text variant="footnote" tone="muted" className="pl-6" testID="letter.heardInEnglish">
-                {heardNote}
-              </Text>
-            ) : null}
             {!entry.inBook && (
               <View className="flex-row pt-1">
                 <PrivateChip color={c.text} />
@@ -531,18 +524,22 @@ function WaitingCard({ entry }: { entry: Entry }) {
   const failed = job?.phase === 'failed';
   const retryable = failed && job.failure !== 'file_missing' && job.failure !== 'unsupported';
   const packWait = job?.phase === 'waiting_for_pack';
+  // D-111 item 4: a language this build does not hear yet; the letter waits for its language (from the job, no read).
+  const languageWait = waitingForLanguageNote(job);
   const p = download.progress;
   const reason = failed
     ? copy.errors.transcriptionFailed.body
-    : packWait
-      ? download.hold === 'waiting_for_wifi'
-        ? wordsCopy.pack.waitingForWifi
-        : download.hold === 'no_space'
-          ? wordsCopy.pack.noSpace
-          : p !== null
-            ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
-            : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
-      : null;
+    : languageWait
+      ? languageWait
+      : packWait
+        ? download.hold === 'waiting_for_wifi'
+          ? wordsCopy.pack.waitingForWifi
+          : download.hold === 'no_space'
+            ? wordsCopy.pack.noSpace
+            : p !== null
+              ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+              : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
+        : null;
 
   const primary = retryable ? (
     <Button size="md" label={w.retryButton} onPress={() => retryWords(entry.id)} testID="letter.retry" />

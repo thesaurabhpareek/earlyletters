@@ -680,10 +680,10 @@ describe('feature-local app copy files', () => {
 });
 
 describe('English-only notices (D-111 item 4)', () => {
-  it('the picker line and the heard-in-English line are in-app copy, so every rule here reads them', () => {
+  it('the picker line and the waiting-for-its-language line are in-app copy, so every rule here reads them', () => {
     const paths = IN_APP.map((l) => l.path);
     expect(paths).toContain('features.language.picker.englishOnly');
-    expect(paths).toContain('features.language.heardInEnglish');
+    expect(paths).toContain('features.language.waitingForLanguage');
   });
 });
 

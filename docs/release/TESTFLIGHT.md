@@ -14,7 +14,7 @@ D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build wit
 | Who | anyone you invite | **the family only** until the R-17 gate passes (D-100, see "Who may have which build") |
 | When | as soon as steps 1 to 3 are done | when steps 6 to 9 are done as well |
 | Preflight | `npm run preflight:testflight -w @scribe/mobile` | `npm run preflight:alpha -w @scribe/mobile` |
-| Cut from | a commit that includes #247 (the picker offers English only) and #260 (a language stored before it is heard in English, and the person is told) | the same |
+| Cut from | a commit that includes #247 (the picker offers English only) and #260 (a language stored before it waits for its language, and the person is told) | the same |
 
 **No build has been made and nothing has been uploaded.** Both need the founder's Apple Developer and Expo accounts. **Where builds run:** every build, submit and store action runs in GitHub Actions (`.github/workflows/testflight.yml`, from the Actions tab) or on your own computer, with secrets held in GitHub and EAS. Agent sandboxes cannot reach expo.dev, api.expo.dev or App Store Connect, so no agent ever builds, signs or uploads. Further release automation comes through `docs/release/AUTOMATION.md` (in review). Anything marked *unverified* is a fact about Apple, Expo or Supabase that has not been confirmed from a primary source here; check it on the screen before relying on it. Times are estimates of your hands-on time [A], plus waits that are not yours.
 

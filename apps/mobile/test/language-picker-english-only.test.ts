@@ -118,7 +118,7 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
     expect(src('app/onboarding.tsx')).toMatch(/<LanguagePicker\b/);
   });
 
-  it('only capabilities.ts, the picker, the Spoken language screen and the recogniser\'s language rule (transcription-queue/hearing, N2 on #247) mention the switch: no store, sync, rules or pack code reads it', () => {
+  it('only capabilities.ts, the picker, the Spoken language screen and the queue\'s language hold (transcription-queue, N2 on #247) mention the switch: no store, sync, rules or pack code reads it', () => {
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const n of readdirSync(dir)) {
@@ -134,8 +134,8 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
       'components/language/language-picker.logic.ts',
       'components/language/language-picker.tsx',
       'lib/capabilities.ts',
-      'lib/transcription-queue/hearing.logic.ts',
-      'lib/transcription-queue/hearing.ts',
+      'lib/transcription-queue/index.ts',
+      'lib/transcription-queue/language-hold.ts',
     ]);
   });
 });

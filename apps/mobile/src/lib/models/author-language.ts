@@ -59,19 +59,3 @@ export function rememberLetterLanguage(id: string, lang: SpeechLanguage = author
 export function forgetLetterLanguage(id: string): void {
   deleteSetting(LETTER_KEY(id));
 }
-
-const HEARD_IN_ENGLISH_KEY = (id: string) => `speech.heardInEnglish.${id}`;
-
-/**
- * D-111 item 4 (N2 on #247): this recording's words were heard in English because the build offers English only
- * and its noted language was another (transcription-queue/hearing.ts). Set once, with the words, by the queue.
- * Kept with the letter (not cleared when its words are set), so Review and the letter page can say so and Review
- * cleans the words in English. Holds no words and no language: one key per recording, on this phone only.
- */
-export function noteHeardInEnglish(id: string): void {
-  setSetting(HEARD_IN_ENGLISH_KEY(id), '1');
-}
-
-export function wasHeardInEnglish(id: string): boolean {
-  return getSetting(HEARD_IN_ENGLISH_KEY(id)) === '1';
-}
