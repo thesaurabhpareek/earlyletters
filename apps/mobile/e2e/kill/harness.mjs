@@ -23,6 +23,22 @@ export const DEFAULTS = Object.freeze({
 
 /** What each planted failure must be judged as. */
 export const PLANT_EXPECTS = Object.freeze({ loss: 'lost', double: 'doubled', damage: 'fail' });
+
+/**
+ * Whether a planted run came back as the failure it plants. A run whose next launch did not start is a fail
+ * whatever the plant did, so its own outcome proves nothing: the plant then counts as caught only if the
+ * database, read once that launch was gone (relaunchFailed), holds the planted failure, for a damage plant with
+ * its recording changed. Not read, or anything else there, is a miss. The run stays a fail of the app (exit 1);
+ * a relaunch slower than the boot budget no longer also reports a plant the oracle caught as missed.
+ * @param {{ plant: string, outcome: string, reasons: string[], database?: { read: boolean, run?: string, runReasons?: string[] } }} r
+ */
+export function plantCaught(r) {
+  const want = PLANT_EXPECTS[r.plant];
+  if (!want) return false;
+  if (!r.reasons.some((x) => x.startsWith('the app did not start'))) return r.outcome === want;
+  const d = r.database;
+  return Boolean(d?.read) && d.run === want && (r.plant !== 'damage' || (d.runReasons ?? []).includes('the recording changed'));
+}
 const PLANTS = { dl02: ['loss', 'double', 'damage'], dl01: ['loss', 'double'] };
 /** The B2-11 gate sizes: 500 random kills a mode, and for DL-02 50 at each crash point. */
 export const GATE = Object.freeze({ runs: 500, pointRuns: 50 });
@@ -378,7 +394,7 @@ export async function runHarness(opts) {
     report.selfCheck.asked = planted.length;
     report.selfCheck.runs = sc.results.map((r) => ({ run: r.run, plant: r.plant, kind: r.kind, outcome: r.outcome, reasons: r.reasons }));
     for (const r of sc.results) {
-      if (r.outcome === PLANT_EXPECTS[r.plant] && !r.reasons.some((x) => x.startsWith('the app did not start'))) report.selfCheck.caught += 1;
+      if (plantCaught(r)) report.selfCheck.caught += 1;
       else report.selfCheck.missed.push({ run: r.run, plant: r.plant, outcome: r.outcome });
     }
     report.errors.push(...sc.errors);
