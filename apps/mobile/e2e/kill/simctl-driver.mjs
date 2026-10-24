@@ -175,18 +175,23 @@ export function simctlDriver(o) {
 
     sha256: sha256OfFile,
 
-    /** afinfo opens the file the way Core Audio would play it; a take cut off without its index will not open. */
+    /**
+     * afinfo opens the file the way Core Audio would play it; a take cut off without its index will not open. For an
+     * ADTS take (`.aac`) its output is kept too, as check V1's evidence (the oracle removes the file's name); its
+     * estimated duration is not the take's length there (the oracle counts frames, adts-evidence.mjs).
+     */
     playable(path) {
       const st = statSync(path);
       const key = `${path}|${st.size}|${st.mtimeMs}`;
       if (playableCache.has(key)) return playableCache.get(key);
       const r = spawnSync('afinfo', [path], { encoding: 'utf8' });
+      const keepText = /\.aac$/i.test(path);
       let out;
       if (r.error) out = { ok: null, durationS: null };
-      else if (r.status !== 0) out = { ok: false, durationS: null };
+      else if (r.status !== 0) out = { ok: false, durationS: null, ...(keepText ? { text: `${r.stdout ?? ''}${r.stderr ?? ''}`.slice(0, 4000) } : {}) };
       else {
         const m = /estimated duration:\s*([\d.]+)\s*sec/.exec(r.stdout);
-        out = { ok: true, durationS: m ? Number(m[1]) : null };
+        out = { ok: true, durationS: m ? Number(m[1]) : null, ...(keepText ? { text: r.stdout.slice(0, 4000) } : {}) };
       }
       playableCache.set(key, out);
       return out;

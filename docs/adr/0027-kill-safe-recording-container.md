@@ -150,6 +150,7 @@ Android ADTS needs its own checks first:
 - **Thu 22:** the first nightly runs DL-01 on the default build (V2, which shows whether the risk is real). S19 adds one shard on an `ios: 'adts'` build. V1 runs the same day.
 - **Fri 23 to Mon 26:** V3. With V1, V2 and V3 green, flip `ios` to `'adts'` (one line). V4 and V6 follow.
 - **Tue 27 gate:** run on the flipped build.
+- **Sat 24 Oct, V2 on the default build: the risk is real.** Kill-harness run 40076982108 on #269's head c5be718, job dl01 (5 runs, the smoke size): 5 of 5 killed M4A takes were kept, and none plays: `afinfo` fails with AVFoundation -11829 "cannot open" on every kept file. Kills came 43 to 105 s after arming; the input was BlackHole 2ch (silence). 0 lost, 0 doubled, the database clean; the launch sweep listed every take as `unplayable-recording`. Exit 1 by 07's 49-in-50 playable rule. The DL-02 job passed (9 of 9). So DL-01 stays red on every M4A build: build 1 (Mon 26 Oct) ships M4A as planned, and the flip targets build 2 (freeze Tue 3 Nov 13:00 UTC) once V1, V2 on an ADTS build, and V3 pass. The harness now judges an ADTS take by its whole frames, records its tail and prints V1's evidence (`apps/mobile/e2e/kill/adts-evidence.mjs`, README section 9).
 
 If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1 fails and A3 does not help, the alpha falls back to 06-nfr row 188: the founder decides whether killed takes that are kept and listed but do not play are acceptable for the alpha, and option F becomes post-alpha work.
 

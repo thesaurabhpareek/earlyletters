@@ -55,6 +55,21 @@ function listAudio(documentsDir) {
   return files;
 }
 
+/**
+ * The file path a row stores (`audio_uri`, a file:// URI on iOS), decoded, so the oracle can check that the row
+ * points at the very file the host lists, not only at one of the same name. Null when there is no URI.
+ */
+export function storedPathOf(uri) {
+  if (!uri) return null;
+  const clean = String(uri).split(/[?#]/)[0];
+  const path = clean.replace(/^file:\/\//, '');
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
 const shaCache = new Map();
 /** SHA-256 of a file, cached by path, size and time, so a long run does not hash old takes again. */
 export function sha256OfFile(path) {
@@ -71,7 +86,7 @@ export function readSnapshot(where) {
   const dbPath = where.dbPath ?? findDatabase(where.dataDir);
   const documentsDir = join(where.dataDir, 'Documents');
   const files = existsSync(documentsDir) ? listAudio(documentsDir) : new Map();
-  if (!dbPath || !existsSync(dbPath)) return indexed({ dbPath: null, integrity: 'no database file', drafts: [], entries: [], orphans: [], files });
+  if (!dbPath || !existsSync(dbPath)) return indexed({ dbPath: null, documentsDir, integrity: 'no database file', drafts: [], entries: [], orphans: [], files });
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
     // 07 and 06-nfr gate: `PRAGMA integrity_check` must answer ok after every kill.
@@ -86,6 +101,7 @@ export function readSnapshot(where) {
         typedText: r.typed_text,
         rawTranscript: r.raw_transcript,
         audioFile: r.audio_uri ? fileNameOf(r.audio_uri) : null,
+        audioPath: storedPathOf(r.audio_uri),
         audioSha256: r.audio_sha256,
         audioBytes: r.audio_bytes,
         state: r.state,
@@ -99,11 +115,12 @@ export function readSnapshot(where) {
         rawTranscript: r.raw_transcript,
         finalText: r.final_text,
         audioFile: r.audio_uri ? fileNameOf(r.audio_uri) : null,
+        audioPath: storedPathOf(r.audio_uri),
         audioSha256: r.audio_sha256,
         deleted: r.deleted_at !== null,
       }));
     const orphans = db.prepare('SELECT file_name FROM orphan_audio').all().map((r) => r.file_name);
-    return indexed({ dbPath, integrity, drafts, entries, orphans, files });
+    return indexed({ dbPath, documentsDir, integrity, drafts, entries, orphans, files });
   } finally {
     db.close();
   }
