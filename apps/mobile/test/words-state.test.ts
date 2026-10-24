@@ -250,7 +250,7 @@ describe('Review uses the card (source)', () => {
 
   it('"Hear it" is offered only when there is a sound to hear', () => {
     expect(review).toMatch(/const hasSound = spoken && phase !== 'waiting' && !\(job\?\.phase === 'failed' && job\.failure === 'file_missing'\)/);
-    expect(review).toMatch(/leading=\{\s*hasSound \?/);
+    expect(review).toMatch(/: hasSound \? \(/);
   });
 
   it('Review is an unlit room (5.8 rows 4 and 4a)', () => {
