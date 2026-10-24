@@ -7,9 +7,9 @@
 --
 -- The gap.
 --   - policy_acceptances (20261002020000_data_governance.sql:624) was never revoked from the API roles,
---     so anon and authenticated hold INSERT, UPDATE and DELETE, and on hosted Supabase (whose default
---     privileges grant ALL on every new table in public) also TRUNCATE, REFERENCES, TRIGGER and, from
---     Postgres 17, MAINTAIN. Row security refuses the writes (no write policy; the restrictive
+--     so anon and authenticated hold INSERT, UPDATE and DELETE where Supabase's old automatic grants
+--     apply (ALL on every new table in public), and TRUNCATE, REFERENCES, TRIGGER and, from Postgres 17,
+--     MAINTAIN in every project (new tables keep those four without the automatic grants too). Row security refuses the writes (no write policy; the restrictive
 --     anonymous-session policy), but TRUNCATE skips row security and the table has no truncate guard,
 --     and MAINTAIN allows LOCK TABLE ... IN ACCESS EXCLUSIVE MODE (which stalls record_policy_act),
 --     VACUUM, REINDEX and CLUSTER. None of it is reachable through PostgREST, which runs no raw SQL, so
@@ -47,25 +47,29 @@
 -- privilege since 20261016001000). A truncate guard on policy_acceptances, like
 -- subscription_consents_no_truncate, is not added here: after this file only the owner may truncate it.
 --
--- Default privileges (reported, not changed). A revoke changes only the tables that exist. On a project
--- with Supabase's automatic grants, a table a later migration creates in public gets ALL for anon,
--- authenticated and service_role again, and a new function gets EXECUTE for all three (and for PUBLIC,
--- which is Postgres's own default). `alter default privileges for role postgres in schema public revoke
--- all on tables from anon, authenticated, service_role` (and the same on functions and sequences) would
--- stop that for every object the migration role creates from then on; it changes no existing object.
--- This file does not do it, because:
---   - it is a project-wide decision, not a consent-table one: every later migration would then have to
---     grant each new table and function to the roles that use it, while the pending files before this
---     one, applied in the same push, rely on the automatic grants (for example authenticated's SELECT on
---     policy_acceptances behind my_policy_state, and its writes on held_drafts);
---   - Supabase is making the table and sequence half of that change itself: the default for new projects
---     since 30 May 2026, and applied to all existing projects on 30 Oct 2026 (changelog, GitHub
---     discussion supabase 45329; for objects the postgres role creates). PUBLIC's EXECUTE on functions
---     stays (Postgres's default);
---   - the test harness (supabase/tests/harness.mjs) models the automatic grants; changing them needs the
---     harness, the access matrix and every pending file's grants reviewed in the same change.
--- It belongs in its own PR, decided by the data architect and the founder. APPLY.md "Hosted checks before
--- the first apply" query a) shows which defaults the hosted project has.
+-- Default privileges (reported, not changed). A revoke changes only the objects that exist, and which
+-- defaults a project has decides what this file changes:
+--   - With Supabase's old automatic grants (until 30 Oct 2026, on projects created before 30 May 2026
+--     with them), a table a later migration creates in public gets ALL for anon, authenticated and
+--     service_role, a sequence ALL, and a function EXECUTE for all three (and for PUBLIC, Postgres's own
+--     default). There this file removes everything listed above.
+--   - Without them (projects created since 30 May 2026, and every project for objects made after 30 Oct
+--     2026: GitHub discussion supabase 45329, and the CLI's RevokeDefaultDataApiPrivilegesSql, which
+--     matches what Studio runs at project creation), new tables get no SELECT, INSERT, UPDATE or DELETE
+--     for the three roles but keep TRUNCATE, REFERENCES, TRIGGER and MAINTAIN; new sequences get no USAGE
+--     or SELECT and keep UPDATE; new functions get no EXECUTE for the three roles, while PUBLIC's EXECUTE
+--     stays. There this file removes the TRUNCATE, REFERENCES, TRIGGER and MAINTAIN that remain, and its
+--     other revokes, like the service_role function revokes of files 20 and 21, change nothing.
+--   In that second world every file from 20260930000000 on, files 1 and 2 included, relies on grants it
+--   never makes, so the app cannot read or write until an explicit-grants file is applied (planned as
+--   20261023060000, its own PR).
+-- `alter default privileges for role postgres in schema public revoke all on tables, sequences, functions
+-- from anon, authenticated, service_role` would make every later object start from nothing in both
+-- worlds; it changes no existing object. This file does not run it: it is a project-wide decision, not a
+-- consent-table one, and it belongs with the explicit grants that make the app work without the defaults
+-- and with the harness and access matrix moved to that world in the same change (its own PR, decided by
+-- the data architect and the founder). APPLY.md "Hosted checks before the first apply" a) shows which
+-- world a project is in.
 --
 -- New SQLSTATEs: none. Reused: 55000 (second run, or a run before 20261023040000). Tests: rows in
 -- supabase/tests/access_matrix.test.mjs (every persona, the service role, and the privilege lists) and
@@ -80,8 +84,9 @@ begin
     raise exception '20261023050000 needs 20261023040000 first (entries_machine_edits_shape is missing)' using errcode = '55000';
   end if;
   -- This file's own end state: authenticated reads policy_acceptances and writes nothing, and anon has
-  -- no SELECT. (On a project whose tables got no automatic grants, authenticated has no SELECT either,
-  -- so the file runs and its revokes change nothing.)
+  -- no SELECT. On a project without the automatic grants authenticated has no SELECT here until the
+  -- explicit-grants file, so the file runs (removing the TRUNCATE, REFERENCES, TRIGGER and MAINTAIN new
+  -- tables still get), and a second run before that file is not refused; it changes nothing.
   if has_table_privilege('authenticated', 'public.policy_acceptances', 'SELECT')
      and not has_table_privilege('authenticated', 'public.policy_acceptances', 'INSERT')
      and not has_table_privilege('anon', 'public.policy_acceptances', 'SELECT') then

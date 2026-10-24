@@ -35,29 +35,33 @@ Step 4 drops whatever entries SELECT policies exist, so it is correct whether or
 
 ## Hosted checks before the first apply
 
-Once per hosted project (staging first, then production), in the SQL Editor, before `deploy-db.yml` first applies the pending files. Every query only reads and prints counts and names only. Write the answers in the deploy notes. If one differs from the expected answer, stop and ask before applying.
+Once per hosted project, in the SQL Editor, before `deploy-db.yml` first applies the pending files. `early-letters` has files 1 and 2 applied; `scribe-staging` and `scribe-prod` start empty (`docs/ops/DEPLOY.md:35-37`). a), b) and c) run on any project, empty or not; d) runs only where files 1 and 2 are applied. Every query only reads and prints counts and names only. Write the answers in the deploy notes. If one differs from the expected answer, stop and ask before applying.
 
-a) The Postgres version, and the grants new objects get. The pending files and the test harness (`supabase/tests/harness.mjs`) assume Supabase's automatic grants, and many pending files create tables without granting them (file 24's header, "Default privileges"):
+a) The Postgres version, and the defaults the project gives new objects. Supabase stopped granting new tables, sequences and functions in `public` to anon, authenticated and service_role on projects created since 30 May 2026 (the date that matters for staging and production), and does the same on every existing project from 30 Oct 2026 (GitHub discussion supabase 45329; the CLI's `RevokeDefaultDataApiPrivilegesSql`, which matches what Studio runs at project creation). New tables still get TRUNCATE, REFERENCES, TRIGGER and MAINTAIN, and new sequences UPDATE, so the query reads only the privileges that change:
 ```sql
 select current_setting('server_version_num')::int / 10000 as major;   -- 17 (supabase/config.toml)
-select d.defaclobjtype as kind, string_agg(distinct r.rolname::text, ', ' order by r.rolname::text) as grantees
-  from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a join pg_roles r on r.oid = a.grantee
+select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELECT') as tables_select,
+       count(*) filter (where d.defaclobjtype = 'S' and a.privilege_type = 'USAGE') as sequences_usage,
+       count(*) filter (where d.defaclobjtype = 'f' and a.privilege_type = 'EXECUTE') as functions_execute
+  from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
  where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
- group by 1 order by 1;
--- three rows, S, f and r, each naming anon, authenticated and service_role (postgres may be listed too)
+   and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
 ```
-If there is no row `r`, or it does not name `anon` and `authenticated`, stop: Supabase stops granting new tables automatically on every existing project on 30 Oct 2026 (GitHub discussion supabase 45329), and the pending files would then create tables the app cannot read (for example `policy_versions` and `my_policy_state`, which the consent sheets read). They need explicit grants first.
+- `3 | 3 | 3`: the old automatic grants. Every pending file applies and works as written.
+- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). The explicit-grants file (planned as file 25, `20261023060000`) is what makes the app work there: apply it right after the others, and open the project to nobody before it is applied.
+- Anything else: stop and ask.
 
-b) Whether the owner of the purge functions sees every Storage object. The legal hold checks (file 21), `ops_storage_residue` and `ops_storage_owned_by` read `storage.objects` as the role that applied the migrations; without BYPASSRLS they find nothing and answer "not held" (review B on #251). Run as that role (the SQL Editor's `postgres` is the role `deploy-db.yml` uses):
+b) Whether the role that applies the migrations sees every Storage object. The legal hold checks (file 21), `ops_storage_residue` and `ops_storage_owned_by` read `storage.objects` as that role (it owns the functions); without BYPASSRLS they find nothing and answer "not held" (review B on #251). Run as that role (the SQL Editor's `postgres` is the role `deploy-db.yml` uses):
 ```sql
 select rolname, rolsuper, rolbypassrls from pg_roles where rolname = current_user;   -- postgres | false | true
 select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects' order by 1;
--- with files 1 and 2 only: entry_photos_author_delete, entry_photos_author_insert, entry_photos_author_update, entry_photos_read,
--- and any policy made in the dashboard (write their names down)
+-- an empty project: no rows, or only policies made in the dashboard (write their names down)
+-- early-letters (files 1 and 2): entry_photos_author_delete, entry_photos_author_insert, entry_photos_author_update,
+-- entry_photos_read, and any made in the dashboard
 ```
-After file 21, once: `select bool_and(r.rolsuper or r.rolbypassrls) from pg_roles r join pg_proc p on p.proowner = r.oid where p.proname in ('book_purge_held', 'purge_due', 'prepare_account_purge', 'ops_storage_owned_by');` (expect true).
+After file 21, on every project, once: `select bool_and(r.rolsuper or r.rolbypassrls) from pg_roles r join pg_proc p on p.proowner = r.oid where p.proname in ('book_purge_held', 'purge_due', 'prepare_account_purge', 'ops_storage_owned_by');` (expect true).
 
-c) The Storage name indexes the hold checks' folder scans use (review B on #251, comment 6376345025, section 2):
+c) The Storage name indexes the hold checks' folder scans use (review B on #251, comment 6376345025, section 2). `storage.objects` exists on every project, empty or not:
 ```sql
 select indexname, indexdef ~ '\(bucket_id, name' as bucket_and_name, indexdef ~ 'text_pattern_ops' as name_prefix
   from pg_indexes where schemaname = 'storage' and tablename = 'objects' order by 1;
@@ -65,7 +69,7 @@ select indexname, indexdef ~ '\(bucket_id, name' as bucket_and_name, indexdef ~ 
 ```
 If neither a `bucket_and_name` nor a `name_prefix` index is listed, tell the owner before file 21: every purge run would then scan all of `storage.objects` for each book it checks.
 
-d) The Before counts files 20 to 23 ask for (numbers only in the deploy notes). On a project where only files 1 and 2 are applied:
+d) The Before counts files 20 to 23 ask for (numbers only in the deploy notes), on a project where files 1 and 2 are applied (`early-letters`). On an empty project there is nothing to count: `select count(*) from pg_tables where schemaname = 'public';` is 0, and every one of these counts is 0 by definition.
 ```sql
 select (select count(*) from pg_attribute where attrelid = 'public.children'::regclass and attname = 'purged_at' and not attisdropped) as file_20,   -- 0
        (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname = 'book_purge_held') as file_21,                      -- 0
@@ -1043,9 +1047,9 @@ What it changes:
 - **`anon` and `authenticated`** lose INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on `policy_acceptances`, `policy_documents` and `policy_versions`, and `anon` loses SELECT on `policy_acceptances`. Row security already refused every one of these, except TRUNCATE and LOCK, which it never sees, and no code path uses them. `authenticated` keeps SELECT on all three (its own acts through `my_policy_state`, and the published texts); `anon` keeps SELECT on the published texts (the consent sheets before sign-in, the staging smoke).
 - **`service_role`** loses MAINTAIN on `policy_acceptances` and `subscription_consents` (an exclusive lock there stalls every consent act). File 20 revoked the rest, and `information_schema.role_table_grants` does not list MAINTAIN, so File 20's check could not see it. It keeps SELECT there, and every right on `policy_documents` and `policy_versions` (publishing).
 - MAINTAIN exists from Postgres 17; on an older server those revokes are skipped. Every writer is a definer function and keeps working.
-- **Default privileges are not changed**: a table a later file creates gets the automatic grants again. The file header says what `alter default privileges` would do and why it is not here; "Hosted checks before the first apply" a) shows what the project has.
+- **Default privileges are not changed.** With the old automatic grants this file removes everything above, and a table a later file creates gets them again. Without them (every project created since 30 May 2026) it removes the TRUNCATE, REFERENCES, TRIGGER and MAINTAIN that new tables still get, and its other revokes change nothing. The file header says what `alter default privileges` would do and why it is not here; "Hosted checks before the first apply" a) shows which world a project is in.
 
-**Before.** Every earlier file. Read only (expect true, then true; a false second answer means the automatic grants are gone, see "Hosted checks before the first apply" a):
+**Before.** Every earlier file. Read only (expect true; then true on a project with the automatic grants, false on one without them, see "Hosted checks before the first apply" a):
 ```sql
 select exists (select 1 from pg_constraint where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape');
 select has_table_privilege('authenticated', 'public.policy_acceptances', 'SELECT');
