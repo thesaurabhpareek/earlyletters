@@ -21,6 +21,7 @@ import {
   END_MARKS,
   ENGLISH_RULES,
   faithfulClean,
+  isInvisible,
   protectedSpansFor,
   QUOTE_BRIDGES,
   verifyEdits,
@@ -58,17 +59,22 @@ function edit(raw: string, type: EditType, original: string, replacement: string
 }
 const hex = (c: string) => `U+${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`;
 
-/** Every code point of a Unicode class, listed here from Unicode itself, never read from src. */
-function everyCodePoint(re: RegExp): string[] {
+/** Every code point for which `has` holds. */
+function everyCodePoint(has: (ch: string) => boolean): string[] {
   const out: string[] = [];
-  for (let cp = 0; cp <= 0x10ffff; cp++) if ((cp < 0xd800 || cp > 0xdfff) && re.test(String.fromCodePoint(cp))) out.push(String.fromCodePoint(cp));
+  for (let cp = 0; cp <= 0x10ffff; cp++) if ((cp < 0xd800 || cp > 0xdfff) && has(String.fromCodePoint(cp))) out.push(String.fromCodePoint(cp));
   return out;
 }
 
 /* ---------- 1. words joined through an invisible character ---------- */
 
-/** Every invisible character the engine knows (meaning.ts: default-ignorable code points and bidi controls). */
-const INVISIBLES = everyCodePoint(/^[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]$/u);
+/**
+ * Every invisible character the engine knows, read from the engine itself (isInvisible, meaning.ts), so a
+ * code point added there by hand is swept too (round 2, lens B F3). The test below also checks that it
+ * holds every default-ignorable code point and bidi control Unicode lists, so it can never narrow.
+ */
+const INVISIBLES = everyCodePoint(isInvisible);
+const UNICODE_INVISIBLES = everyCodePoint((c) => /^[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]$/u.test(c));
 /** The eleven #257 review A tried by hand. */
 const TRIED = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF', '\u00AD', '\u2060'];
 
@@ -87,7 +93,7 @@ describe('[F06-REQ-003] engine 8: no edit joins two words through an invisible c
 
   it('every invisible character the engine knows, at a word end or a word start: the space beside it may not go, as paragraph or punctuation', () => {
     expect(INVISIBLES.length).toBeGreaterThan(4000);
-    expect(INVISIBLES).toEqual(expect.arrayContaining(TRIED));
+    expect(INVISIBLES).toEqual(expect.arrayContaining([...UNICODE_INVISIBLES, ...TRIED]));
     const accepted: string[] = [];
     const ctx = (raw: string) => ({ raw, level: 'clean' as const, dictionary: [], protectedSpans: [], rules: ENGLISH_RULES });
     for (const inv of INVISIBLES) {
@@ -169,8 +175,8 @@ describe('[F06-REQ-003] engine 8: no edit joins two words through an invisible c
 
 /* ---------- 2. the marks that sit between two end marks ---------- */
 
-/** Every Unicode quotation mark, from Unicode itself. */
-const QUOTES = everyCodePoint(/^\p{Quotation_Mark}$/u);
+/** Every Unicode quotation mark, from Unicode itself, never read from src. */
+const QUOTES = everyCodePoint((c) => /^\p{Quotation_Mark}$/u.test(c));
 /** The sixteen end marks, written out: a mark dropped from END_MARKS fails the table below (#257 review A, plant P3). */
 const ENDS = ['.', '!', '?', '\u3002', '\uFF01', '\uFF1F', '\u061F', '\u0964', '\u0965', '\u203D', '\u2047', '\u2048', '\u2049', '\u203C', '\u2E2E', '\u2026'];
 /** The fifteen quotation marks engine 7 read as walls (#257 review A counted 14; its list names these 15). */
@@ -211,6 +217,26 @@ describe('[F06-REQ-004] engine 8: an end mark put behind any quotation mark stil
     }
   });
 
+  it('the fifteen as walls too: behind "no." and one of them, the first of two marks said after it stands (round 2: fails if they are read only as bridges)', () => {
+    // As bridges alone, the first "." after the quotation mark would be a later mark of the run before it, and each
+    // edit below would be accepted, as the plain widening measured (1,320 edits on the spliced differential); as walls,
+    // engine 7's reading, it is the first mark of its own run. The bare-pair check of ruling 2 does not decide these:
+    // the raw already has a bare pair after the quotation mark.
+    const accepted: string[] = [];
+    for (const q of WALLS_IN_ENGINE_7) {
+      const raw = `She said no.${q}.. Then she slept.`;
+      const i = raw.indexOf(q) + q.length;
+      const edits: Array<[string, Edit]> = [
+        ['moved across', at('punctuation', raw, i - 1, `${q}.`, `.${q}`)],
+        ['changed to U+2026', at('punctuation', raw, i, '.', '\u2026')],
+        ['deleted', at('punctuation', raw, i, '.', '')],
+      ];
+      for (const [what, e] of edits) if (verdict(raw, e) !== 'changes_sentence_type') accepted.push(`${hex(q)}: the first "." after it ${what}`);
+      if (verdict(raw, at('punctuation', raw, i + 1, '.', '')) !== null) accepted.push(`${hex(q)}: the later "." may not go`);
+    }
+    expect(accepted).toEqual([]);
+  });
+
   it('two fair edits together: a trailing filler removed and a "." put behind U+2018 are refused together, as behind U+201D', () => {
     for (const close of ['\u2018', '\u201D']) {
       const raw = `She said \u201Ano.${close} um`;
@@ -249,6 +275,27 @@ describe('[F06-REQ-009] engine 8: a name fix or agreement replaces a whole word,
     expect(verdict(raw, edit(raw, 'stt_fix', 'hmm', 'May'), may)).toBe('splits_word');
     const aha = 'A-ha, she said.';
     expect(verdict(aha, edit(aha, 'agreement', 'A', 'An'))).toBe('splits_word');
+  });
+
+  it('a letter change inside a hyphenated word stays refused, from the rules too: "Usher-ji" never "Asha-ji", "Grandma-Usher" never "Grandma-Asha"', () => {
+    const asha: DictionaryTerm[] = [{ term: 'Asha', kind: 'child', heardAs: ['Usher'] }];
+    for (const raw of ['We met Usher-ji today.', 'We met Grandma-Usher today.', 'We met Usher\u2011ji today.']) {
+      expect(verdict(raw, edit(raw, 'stt_fix', 'Usher', 'Asha'), asha), raw).toBe('splits_word');
+      expect(faithfulClean(raw, { level: 'clean', dictionary: asha, language: 'en' }).text, raw).toContain('Usher');
+    }
+  });
+
+  it('round 2 (lens A N4): a whole part in another case, every letter kept, may still be fixed: "asha-ji" to "Asha-ji", as in engine 7', () => {
+    const asha: DictionaryTerm[] = [{ term: 'Asha', kind: 'child', heardAs: ['Usher'] }];
+    for (const [raw, fixed] of [['We met asha-ji today.', 'We met Asha-ji today.'], ['We met asha\u2011ji today.', 'We met Asha\u2011ji today.'], ['Hi grandma-asha.', 'Hi grandma-Asha.']]) {
+      expect(verdict(raw, edit(raw, 'stt_fix', 'asha', 'Asha'), asha), raw).toBeNull();
+      expect(faithfulClean(raw, { level: 'clean', dictionary: asha, language: 'en' }).text, raw).toBe(fixed);
+    }
+    // The case-only branch still keeps an everyday word and a filler as said ("hope-filled", "uh-uh" with a term "Uh").
+    const hope = 'It was a hope-filled day.';
+    expect(verdict(hope, edit(hope, 'stt_fix', 'hope', 'Hope'), [{ term: 'Hope', kind: 'child', heardAs: [] }])).toBe('stt_fix_protected_word');
+    const no = 'Did you want more? uh-uh, she said.';
+    expect(verdict(no, edit(no, 'stt_fix', 'uh', 'Uh'), [{ term: 'Uh', kind: 'family', heardAs: [] }])).toBe('stt_fix_protected_word');
   });
 
   it('negative cases: a whole hyphenated word, or a word beside a spaced hyphen, may still be fixed', () => {
@@ -327,6 +374,13 @@ describe('[F07-REQ-012] engine 8 (ruling on #262): a name fix never replaces a w
   it('an offered filler too: a taught "mm" leaves the answer "Mm." as said', () => {
     const may: DictionaryTerm[] = [{ term: 'May', kind: 'child', heardAs: ['mm'] }];
     expect(faithfulClean('Did she sleep? Mm. She did.', { level: 'clean', dictionary: may, language: 'en' }).text).toBe('Did she sleep? Mm. She did.');
+  });
+
+  it('round 2 (lens A N3): nor in another case: a family term "Um" never turns "She was, um, tired." into "She was, Um, tired."', () => {
+    const um: DictionaryTerm[] = [{ term: 'Um', kind: 'family', heardAs: [] }];
+    const raw = 'She was, um, tired.';
+    expect(verdict(raw, edit(raw, 'stt_fix', 'um', 'Um'), um)).toBe('stt_fix_protected_word'); // engine 7 accepted it
+    expect(faithfulClean(raw, { level: 'clean', dictionary: um, language: 'en' }).text).not.toContain('Um'); // the filler rule takes it
   });
 
   it('negative case: a heard-as that is a word, not a filler sound, is still applied', () => {

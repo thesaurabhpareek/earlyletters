@@ -298,9 +298,13 @@ function changesSeenWords(raw: string, e: Edit, R: LanguageRules): boolean {
  * Its span, without the spaces at its edges, may not touch a hyphen that
  * joins it to the next part ("Mm" of "Mm-hmm" to "May"; "Uh" and "uh" of
  * "Uh-uh" each to "Usha"; "A" of "A-ha" to "An"). A whole hyphenated word is
- * still one word a fix may replace.
+ * still one word a fix may replace, and so is a whole part in another case
+ * with every letter kept ("asha-ji" to "Asha-ji", a Hinglish honorific;
+ * engine 7 accepted it, round 2, lens A N4): checkSttFix then judges it as
+ * any case-only fix (an everyday word or a filler stays as said).
  */
-function cutsHyphenated(raw: string, e: Edit): boolean {
+function cutsHyphenated(raw: string, e: Edit, R: LanguageRules): boolean {
+  if (e.type === 'stt_fix' && R.norm(e.original.trim()) === R.norm(e.replacement.trim())) return false;
   const lead = e.original.length - e.original.trimStart().length;
   const trail = e.original.length - e.original.trimEnd().length;
   return e.end - trail > e.start + lead && hyphenJoined(raw, e.start + lead, e.end - trail);
@@ -745,13 +749,15 @@ function checkSttFix(e: Edit, ctx: VerifyContext): RejectReason | null {
   // One family name never becomes another (F06-REQ-014, R-01 D13), whatever the
   // source, and before any dictionary-backed shortcut (F07 7.2 rule 2).
   if (targetsOtherTerm(e.original, rep, ctx.dictionary, R)) return 'stt_fix_protected_word';
+  // Engine 8 (ruling on #262): a filler sound is never a name, taught or not, and in no case: a heard-as
+  // "uh" taught for Usha turned "Uh, she came over." into "Usha, she came over.", and a family term "Um"
+  // turned "She was, um, tired." into "She was, Um, tired." (round 2, lens A N3). Checked before the
+  // case-only branch below; the filler rules decide what a filler is.
+  const sounds = R.tokens(original);
+  if (sounds.length > 0 && sounds.every((t) => R.isFiller(t.word, true))) return 'stt_fix_protected_word';
   // The term in another case. Not for a term spelled like an everyday word:
   // "I hope" stays as said for a child named Hope, "we will" for Will (F06-REQ-008, R-01 D10).
   if (o === R.norm(entry.term)) return isEverydayTerm(entry.term, R) ? 'stt_fix_protected_word' : null;
-  // Engine 8 (ruling on #262): a filler sound is never a name, taught or not. A heard-as "uh" taught for
-  // Usha turned "Uh, she came over." into "Usha, she came over."; the filler rules decide what a filler is.
-  const sounds = R.tokens(original);
-  if (sounds.length > 0 && sounds.every((t) => R.isFiller(t.word, true))) return 'stt_fix_protected_word';
   // A learned mishearing the parent taught, unless it carries meaning on its own:
   // a taught "no" must never erase a negation (F07 7.2 rule 5).
   if (entry.heardAs.some((h) => R.norm(h) === o)) return heardAsCarriesMeaning(original, entry.kind, R) ? 'stt_fix_protected_word' : null;
@@ -917,7 +923,7 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   } else if ((e.type === 'punctuation' || e.type === 'paragraph') && splitsHyphenated(raw, e)) {
     // Nor may punctuation or whitespace split one ("uh-oh" -> "uh -oh", "so-so" -> "so so"): found by the F06-REQ-021 property test.
     return 'changes_word';
-  } else if ((e.type === 'stt_fix' || e.type === 'agreement') && cutsHyphenated(raw, e)) {
+  } else if ((e.type === 'stt_fix' || e.type === 'agreement') && cutsHyphenated(raw, e, R)) {
     // Nor may a name fix or agreement replace part of one: a taught heard-as "uh" turned "Uh-uh" (no)
     // into "Usha-Usha" on the rules-only path (engine 8; seed 2 run 84272, #257 review A, section 3).
     return 'splits_word';

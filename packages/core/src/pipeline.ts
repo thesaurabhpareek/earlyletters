@@ -135,14 +135,22 @@ export const ENGINE_VERSION = 8;
 //     (Adlam).
 //   Golden corpus: every engine 6 case reads the same; two cases added.
 // 8 (2026-10-24): refusals only, the follow-up to the #257 reviews. Every
-//   change refuses more. The claim that engine 8 accepts no single edit
-//   engine 7 refused rests on the differential, not on a proof: over the
-//   1,667 test-suite strings, 620,743 single edits, 0 accepted by 8 and
-//   refused by 7 (66 the other way); with each of the 15 quotation marks
-//   below put after every end mark, 4,764,941 edits, 0 (75,915 the other
-//   way). The differential makes no case edits and no name fixes, so the
-//   first and third rulings below rest on their tests and the golden
-//   corpus. Every engine 7 golden case reads the same.
+//   change refuses more. The claim is about single edits: engine 8 accepts
+//   no single edit engine 7 refused. It rests on the differential, not on a
+//   proof: over the 1,685 test-suite strings, 629,718 single edits, 0
+//   accepted by 8 and refused by 7 (66 the other way); with each of the 15
+//   quotation marks below put after every end mark, 4,885,076 edits, 0
+//   (77,340 the other way). The differential makes no case edits and no
+//   name fixes; a sweep of 23,017 single name fixes (case-only and heard-as)
+//   over the same strings also finds 0, and the review's sweeps of case
+//   edits and agreement found 0. In a list of edits engine 8 can accept an
+//   edit engine 7 refused, though never one either engine refuses alone:
+//   one engine 7 refused only as overlapping an edit engine 8 now refuses,
+//   one engine 7 blamed in the end-mark context check for a pair another
+//   edit made, and model edits engine 7 discarded together at the change
+//   ceiling that fall back under it once engine 8 refuses one of them (#262
+//   round 2 review A: 4,638 and 870 in its spliced sweep, the ceiling by a
+//   constructed case). Every engine 7 golden case reads the same.
 //   - Words are read as they are seen. An invisible character that is not
 //     itself a letter or mark (direction marks, joiners, zero-width space,
 //     word joiner, BOM, soft hyphen, tags) joins and splits nothing: no edit
@@ -160,10 +168,12 @@ export const ENGINE_VERSION = 8;
 //     Those 15 are read both ways, as walls (engine 7) and as bridges, and an
 //     edit that either reading refuses is refused: as bridges alone they
 //     would also have let a mark move across one (#257 review A, section 1).
-//   - A name fix or agreement may not replace part of a hyphenated word: a
-//     taught heard-as "uh" no longer turns "Uh-uh" (no) into "Usha-Usha" on
-//     the rules-only path, nor "mm" turn "Mm-hmm" (yes) into "May-hmm", nor
-//     agreement "A-ha" into "An-ha" (seed 2 run 84272).
+//   - A name fix or agreement may not change the letters of part of a
+//     hyphenated word: a taught heard-as "uh" no longer turns "Uh-uh" (no)
+//     into "Usha-Usha" on the rules-only path, nor "mm" turn "Mm-hmm" (yes)
+//     into "May-hmm", nor agreement "A-ha" into "An-ha" (seed 2 run 84272).
+//     A whole part in another case, every letter kept, is still fixed as
+//     any case-only fix: "asha-ji" to "Asha-ji" (round 2).
 //   - verify.ts exports its end-mark and bridge sets as frozen lists of
 //     strings, no longer as RegExp objects an importer could recompile.
 //   Rulings on #262, the same release (24 Oct):
@@ -176,9 +186,10 @@ export const ENGINE_VERSION = 8;
 //   - No mark moves inside a quote to sit beside the mark said there: "no."
 //     U+201D "." no longer becomes "no.." U+201D (a bare pair, nothing at
 //     all between two end marks, is counted too).
-//   - A name fix never replaces a word the engine classes as a filler: a
-//     taught heard-as "uh" no longer turns "Uh, she came over." into "Usha,
-//     she came over.".
+//   - A name fix never replaces a word the engine classes as a filler, in
+//     any case: a taught heard-as "uh" no longer turns "Uh, she came over."
+//     into "Usha, she came over.", nor a family term "Um" turn "She was, um,
+//     tired." into "She was, Um, tired." (round 2).
 //   Golden corpus: every engine 7 case reads the same; six cases added.
 
 export interface CleanOptions {

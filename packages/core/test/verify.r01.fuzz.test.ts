@@ -459,7 +459,14 @@ function brokenFinal(editedRaw: string, final: string, lang: Lang): string | nul
 // U+00AD (soft hyphen) joined on review (#179 N3, 23 Oct): the house rule used to drop it with no stored edit.
 const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF', '\u00AD'];
 const QUOTES: Array<[string, string]> = [['“', '”'], ['‘', '’'], ['„', '“'], ['«', '»'], ['「', '」'], ['"', '"']];
-const MOODS = [...new Set(['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!', ...END_MARKS])];
+/**
+ * The end marks in code point order, the order develop's oracle listed them in (it read them off the verifier's
+ * RegExp one code point at a time), so a draw picks the same mark as before engine 8 and paths 1 to 3 replay
+ * exactly (round 2, lens B F1: the hand order of END_MARKS changed 5,528 of 14,033 runs on seed 20261003).
+ * All sixteen are in the BMP, so the default sort is code point order.
+ */
+const MARKS_IN_ORDER: readonly string[] = [...END_MARKS].sort();
+const MOODS = [...new Set(['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!', ...MARKS_IN_ORDER])];
 const MARKS = ['́', '̀', '̂', '̈', 'ा', 'ि', 'े', '्', 'ं', 'َ', 'ُ', 'ِ'];
 
 /** A synthetic letter: one to three corpus sentences, mutated. */
@@ -479,7 +486,7 @@ function letter(lang: Lang, rnd: () => number): string {
   const ends = endsAt(raw);
   if (ends.length && rnd() < 0.25) {
     const at = pick(ends); // a said end mark in another script, as a recogniser may write it ("‽", U+2026, U+061F in English)
-    raw = raw.slice(0, at) + pick(END_MARKS) + raw.slice(at + cpAt(raw, at).length);
+    raw = raw.slice(0, at) + pick(MARKS_IN_ORDER) + raw.slice(at + cpAt(raw, at).length);
   }
   return raw;
 }
@@ -546,7 +553,7 @@ function hostile(raw: string, lang: Lang, dict: DictionaryTerm[], rnd: () => num
         const where = Math.floor(rnd() * 3);
         if (where > 0) at += cpAt(raw, at).length;
         if (where > 1) for (let c = cpAt(raw, at); c && betweenEnds(c, lang.rules); c = cpAt(raw, at)) at += c.length;
-        const mark = pick(END_MARKS);
+        const mark = pick(MARKS_IN_ORDER);
         tally.set(`mark ${mark}`, (tally.get(`mark ${mark}`) ?? 0) + 1);
         mk('mark_pair', pick(['punctuation', type]), at, at, mark);
         break;
@@ -612,7 +619,7 @@ function edgeCase(lang: Lang, dict: DictionaryTerm[], rnd: () => number, tally: 
   const q = pick(ALL_QUOTES);
   const raw = base.slice(0, at) + q + base.slice(at);
   tally.set(`behind ${hex(q)}`, (tally.get(`behind ${hex(q)}`) ?? 0) + 1);
-  if (rnd() < 0.7) mk(raw, pick(['punctuation', 'punctuation', 'paragraph', 'filler'] as const), at + 1, at + 1, pick(END_MARKS));
+  if (rnd() < 0.7) mk(raw, pick(['punctuation', 'punctuation', 'paragraph', 'filler'] as const), at + 1, at + 1, pick(MARKS_IN_ORDER));
   else if (raw[at + 1] !== undefined && END_MARKS.includes(raw[at + 1])) mk(raw, 'punctuation', at, at + 2, raw[at + 1] + q); // "no." q "." to "no.." q
   else mk(raw, 'punctuation', at - 1, at + 1, q + raw[at - 1]); // the said mark moved behind the quotation mark
   return { raw, edits };

@@ -66,7 +66,7 @@ describe('RulePunctuationProvider: sentence case and terminal punctuation', () =
     expect(punctuationEdits(req('   '))).toEqual([]);
   });
 
-  it('emits only punctuation edits, and every one passes the verifier', () => {
+  it('emits only punctuation edits, and with the filler rules beside them every one passes the verifier', () => {
     const raw = 'um she walked. then, uh, Asia laughed. and she said "bau"';
     const edits = punctuationEdits(req(raw));
     expect(edits.length).toBeGreaterThan(0);
