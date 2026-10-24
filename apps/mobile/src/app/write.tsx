@@ -19,7 +19,7 @@
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
  */
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
@@ -28,7 +28,7 @@ import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, spokenSeparator } from '@/components/capture/review-view.logic';
+import { addButtonLabel, spokenSeparator, writeSwipeAllowed } from '@/components/capture/review-view.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -102,7 +102,7 @@ export default function Write() {
   };
 
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
-  // never dropped.
+  // never dropped. After a write that did not go through, the swipe down is refused instead, as Close is (below).
   const persistRef = useRef(persist);
   persistRef.current = persist;
   useEffect(
@@ -143,6 +143,9 @@ export default function Write() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* Words on screen that the last write could not keep: the sheet will not swipe away (iOS holds it in place), so
+          they are never lost to a swipe. Close stays open in the same case; both work again after the next good write. */}
+      <Stack.Screen options={{ gestureEnabled: writeSwipeAllowed({ text, writeFailed: saveState === 'failed' }) }} />
       <Lamp scene="write" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ModalHeader

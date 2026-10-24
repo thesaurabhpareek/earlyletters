@@ -8,9 +8,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { en } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, peekKeep, resetKeep } from '../src/lib/capture/keep-intent';
 import { arrivalToastDelayMs, secondFreeOnArrival } from '../src/components/book/book.logic';
+import { SCREEN_READER_HOLD_MS, savedMomentLeaveInMs, writeSwipeAllowed } from '../src/components/capture/review-view.logic';
 import { fileIntoMonthPlan } from '../src/lib/transitions.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -87,9 +88,44 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     // The words are at part strength only while the card leaves: 350 ms.
     expect(p.dismissAtMs - p.moveAtMs!).toBe(350);
     expect(moment).toMatch(/const plan = fileIntoMonthPlan\(reduced\)/);
-    // With VoiceOver on, the moment holds until its announcement can be heard (savedMomentDoneMs).
+    // With VoiceOver on, the moment holds until its announcement can be heard (next test).
     expect(moment).toMatch(/const screenReader = useScreenReader\(\)/);
-    expect(moment).toMatch(/const t = setTimeout\(finish, savedMomentDoneMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader \}\)\)/);
+  });
+
+  it('with a screen reader on, both paths hold about 3 s from the commit, even when that state arrives after it (follow-up L2)', () => {
+    // saved-moment.tsx: the commit effect starts the clock; a second effect times the leaving, again whenever the
+    // screen-reader state changes, counting from the commit.
+    const commit = moment.slice(moment.indexOf('useEffect(() => {\n    if (!committed) return;'), moment.indexOf('const cardStyle'));
+    expect(commit).toMatch(/if \(!committed\) return;\s*committedAt\.current = Date\.now\(\);/);
+    expect(commit).toMatch(/useEffect\(\(\) => \{\s*if \(!committed \|\| committedAt\.current === null\) return;\s*const wait = savedMomentLeaveInMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader, elapsedMs: Date\.now\(\) - committedAt\.current \}\);\s*const t = setTimeout\(finish, wait\);\s*return \(\) => clearTimeout\(t\);[\s\S]*?\}, \[committed, screenReader\]\);/);
+    expect(moment).not.toMatch(/savedMomentDoneMs/);
+
+    // The same two effects, run on fake timers: when does the moment leave for the Book?
+    vi.useFakeTimers();
+    try {
+      const plan = fileIntoMonthPlan(false);
+      const leavesAt = (readerAtCommit: boolean, readerArrivesAtMs: number | null): number => {
+        const t0 = Date.now();
+        let left = -1;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const time = (screenReader: boolean) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            if (left < 0) left = Date.now() - t0;
+          }, savedMomentLeaveInMs({ dismissAtMs: plan.dismissAtMs, screenReader, elapsedMs: Date.now() - t0 }));
+        };
+        time(readerAtCommit);
+        if (readerArrivesAtMs !== null) setTimeout(() => time(true), readerArrivesAtMs);
+        vi.advanceTimersByTime(10_000);
+        return left;
+      };
+      expect(leavesAt(false, null)).toBe(plan.dismissAtMs); // no screen reader: 900 ms, as designed
+      expect(leavesAt(true, null)).toBe(SCREEN_READER_HOLD_MS); // the one-tap path: known before the commit
+      expect(leavesAt(false, 30)).toBe(SCREEN_READER_HOLD_MS); // Review's path: known 30 ms after the commit
+      expect(leavesAt(false, 850)).toBe(SCREEN_READER_HOLD_MS);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Reduce Motion: the chip and the line fade in, nothing travels, then the Book', () => {
@@ -281,6 +317,29 @@ describe('S19: Write', () => {
     expect(close).toMatch(/timer\.current = null;/);
     const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
     expect(keep).toMatch(/timer\.current = null;/);
+  });
+
+  it('after a write that did not go through, a swipe down cannot close Write either, until the next write works (follow-up L3)', () => {
+    expect(write).toMatch(/<Stack\.Screen options=\{\{ gestureEnabled: writeSwipeAllowed\(\{ text, writeFailed: saveState === 'failed' \}\) \}\} \/>/);
+    expect(write).toMatch(/import \{ Stack, router, useLocalSearchParams \} from 'expo-router';/);
+
+    // Write's autosave and its two ways out, on one lasting failure: the swipe and Close agree at every step.
+    let db = true;
+    let state: 'none' | 'saved' | 'failed' = 'none';
+    const autosave = () => (state = db ? 'saved' : 'failed');
+    const closes = (text: string) => !(text.trim() && !db); // close(): persist now; stay open when it fails
+    const swipes = (text: string) => writeSwipeAllowed({ text, writeFailed: state === 'failed' });
+
+    autosave();
+    expect([swipes('Asha, you'), closes('Asha, you')]).toEqual([true, true]);
+    db = false; // a full disk
+    autosave();
+    expect(state).toBe('failed');
+    expect([swipes('Asha, you sang'), closes('Asha, you sang')]).toEqual([false, false]); // the words stay on screen
+    expect(swipes('   ')).toBe(true); // nothing on screen to lose
+    db = true;
+    autosave();
+    expect([swipes('Asha, you sang to me'), closes('Asha, you sang to me')]).toEqual([true, true]);
   });
 });
 
