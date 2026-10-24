@@ -25,6 +25,8 @@
  * Words exist (M17, D-103 (b)): at least one letter or digit in any script. Marks alone
  * ("...", "?!") are not words. The Keep gate (gates.ts keepGateFor) and the ledger query
  * (db/repos/ledger.ts) share this one rule, so a save the gate does not ask about never counts.
+ * Accepted: text holding a digit counts even when it reads as a symbol (`<3`, a keycap one, a
+ * superscript two). `\p{N}` stays whole because some scripts write numbers as `No` (Ethiopic).
  */
 export function hasWords(text: string | null | undefined): boolean {
   return typeof text === 'string' && /[\p{L}\p{N}]/u.test(text);

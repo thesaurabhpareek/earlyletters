@@ -85,7 +85,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, keepGateFor, type KeepGate } from '@/lib/billing';
+import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, hasWords, keepGateFor, type KeepGate } from '@/lib/billing';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -433,7 +433,8 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
-      await noteKept();
+      // Marks only ("...") never count (M17), so they never note the second free letter or free_allowance_reached.
+      await (hasWords(finalText) ? noteKept() : afterLetterKept());
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;

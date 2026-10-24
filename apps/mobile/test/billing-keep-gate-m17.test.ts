@@ -31,6 +31,11 @@ describe('[F14-REQ-037] words seen: the gate opens only with words on screen', (
   it('words are any letter or digit in any script; blank, spaces and punctuation are not words', () => {
     for (const t of ['Asha, you laughed at the rain.', 'आशा', '3', ' ok ']) expect(hasWords(t), t).toBe(true);
     for (const t of ['', '   ', '\n\t', '.,?!', null, undefined]) expect(hasWords(t as string | null | undefined), String(t)).toBe(false);
+    // Arabic with vowel marks and Chinese are words; an emoji, an ellipsis character or a combining mark alone are not.
+    for (const t of ['\u0643\u064E\u062A\u064E\u0628\u064E', '\u4F60\u597D']) expect(hasWords(t), t).toBe(true);
+    for (const t of ['\u{1F49B}', '\u2026', '\u0301']) expect(hasWords(t), t).toBe(false);
+    // Accepted (#268): text holding a digit counts even when it reads as a symbol.
+    for (const t of ['<3', '1\uFE0F\u20E3', '\u00B2']) expect(hasWords(t), t).toBe(true);
   });
 
   it('[F14-REQ-038] a save with no words (no speech model yet, nobody spoke) never reads the ledger and never offers Plus', async () => {
