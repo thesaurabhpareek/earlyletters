@@ -5,6 +5,10 @@
  * actions presentPlusStore), so a build with the flag off never loads this file or the
  * server contract it uses (packages/api/test/server-features-off.test.ts).
  *
+ * Never name this file with a platform suffix (.ios, .android, .native, .web): Metro would then resolve
+ * './status-report' below to this file itself on a phone, and createStatusReporter would be undefined
+ * (test/platform-split.test.ts guards it).
+ *
  * Triggers: the start of the app, every plan change (purchase, renewal, cancel seen at the
  * next open, D-080), the app coming to the foreground, and a sign-in (the signed-out queue,
  * F14-REQ-043), counted once the claim screen is settled (reportingUserOf). Each trigger waits a moment so a burst becomes one flush.

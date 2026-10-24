@@ -1,7 +1,7 @@
 /**
  * The D-080 status report sender (WP-F14-15a). No React Native here: every outside call is
  * a dependency, so test/billing-status-report.test.ts runs it in Node with fakes. The real
- * dependencies are assembled in status-report.native.ts, which plan-store and actions load
+ * dependencies are assembled in status-report.app.ts, which plan-store and actions load
  * with a dynamic import only when `capabilities.statusReport` is on.
  *
  * One flush:
