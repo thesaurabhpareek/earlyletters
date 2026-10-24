@@ -26,12 +26,23 @@ export async function createDb(files, options = {}) {
     create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'),1)-1] $$;
     alter table storage.objects enable row level security;
     grant usage on schema storage to authenticated, anon; grant all on storage.objects to authenticated, anon;
-    -- Mirror Supabase's default privileges (TDD 02 C18): every table and view a
-    -- migration creates is granted to both API roles and the service role at
-    -- creation, so a migration's own revoke (for example on book_entries, or the
-    -- backup tables' revoke from service_role) is what the tests see.
+    -- Mirror Supabase's default privileges (TDD 02 C18): every table, view and
+    -- function a migration creates in public is granted to both API roles and the
+    -- service role at creation, so a migration's own revoke (for example on
+    -- book_entries, the backup tables' revoke from service_role, or an internal
+    -- function's revoke from service_role) is what the tests see. Hosted projects
+    -- run "alter default privileges in schema public grant all on tables" and
+    -- "... grant all on functions" to anon, authenticated and service_role
+    -- (supabase/postgres migrations/db/init-scripts/00000000000000-initial-schema.sql;
+    -- docs "Securing your API", section "Default privileges for new tables and
+    -- functions"). ALL on a table is SELECT, INSERT, UPDATE, DELETE, TRUNCATE,
+    -- REFERENCES, TRIGGER and, from Postgres 17, MAINTAIN; ALL on a function is
+    -- EXECUTE. Postgres itself also grants EXECUTE on every new function to PUBLIC,
+    -- so a revoke from PUBLIC alone leaves these three explicit grants in place.
+    -- Sequences (hosted grants ALL on them too) are not modelled: no test reads them.
     grant usage on schema public to authenticated, anon, service_role;
-    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon, service_role;
+    alter default privileges in schema public grant all on tables to authenticated, anon, service_role;
+    alter default privileges in schema public grant all on functions to authenticated, anon, service_role;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
   // Session settings the hosted project sets with `alter database` (supabase/APPLY.md):

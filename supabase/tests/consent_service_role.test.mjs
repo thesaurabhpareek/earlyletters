@@ -2,8 +2,8 @@
 // re-check on #178, comment 6372368217). The row guards on policy_acceptances and
 // subscription_consents let a DELETE through while app.retention_purge is on, which any session
 // can set, and service_role bypasses RLS. Hosted Supabase grants service_role every table
-// privilege, TRUNCATE included (the harness's default privileges stop at DELETE), so this file
-// grants the rest as hosted does, shows the gap with the earlier files, applies 20261023010000
+// privilege, TRUNCATE included (the harness does too since #248 review B T2; the grant below
+// stays so the file states it), shows the gap with the earlier files, applies 20261023010000
 // and the files after it, and shows it closed, with every definer writer still working.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users } from './harness.mjs';
