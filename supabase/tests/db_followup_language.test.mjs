@@ -6,6 +6,9 @@ import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, join } = h;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 const { A, B, N } = users;
 
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${N}')`);

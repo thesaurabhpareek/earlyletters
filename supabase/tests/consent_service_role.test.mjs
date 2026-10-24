@@ -2,8 +2,8 @@
 // re-check on #178, comment 6372368217). The row guards on policy_acceptances and
 // subscription_consents let a DELETE through while app.retention_purge is on, which any session
 // can set, and service_role bypasses RLS. Hosted Supabase grants service_role every table
-// privilege, TRUNCATE included (the harness does too since #248 review B T2; the grant below
-// stays so the file states it), shows the gap with the earlier files, applies 20261023010000
+// privilege, TRUNCATE included (with the old automatic grants; the grant below makes it so in
+// either harness world), shows the gap with the earlier files, applies 20261023010000
 // and the files after it, and shows it closed, with every definer writer still working.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users } from './harness.mjs';
@@ -59,7 +59,8 @@ for (const f of all.filter((f) => name(f) >= name(mine))) await db.exec(readFile
 
 // ── After: closed ────────────────────────────────────────────────────────
 for (const t of ['policy_acceptances', 'subscription_consents']) {
-  check(`after: the service role reads ${t}`, (await asService(`select 1 from ${t}`)) === 'ok');
+  // 20261023060000: no path reads a table with the service key, so it reads neither (both worlds).
+  check(`after: the service role does not read ${t} either (42501)`, (await asService(`select 1 from ${t}`)) === '42501');
   check(`after: the service role cannot delete from ${t}, also with app.retention_purge on (42501)`,
     (await asService(`delete from ${t}`, true)) === '42501' && (await asService(`delete from ${t}`)) === '42501');
   check(`after: nor update or truncate ${t} (42501)`,

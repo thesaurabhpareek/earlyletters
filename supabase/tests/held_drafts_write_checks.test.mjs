@@ -213,8 +213,10 @@ check('[N2] a refused held.upsert and its repeat parse, current from the held ro
   pushParses(r) && r.results[0].current?.final_text === 'You laughed, then you slept.' && pushParses(await push(A, [stale])));
 
 // --- 4. Rows stored before the file: counted, never changed; a failing check stays NOT VALID --
+// The old server could store rows only with Supabase's old automatic grants (before 20261023060000 nothing
+// else let sync_push write), so it is built in that world.
 {
-  const old = await createDb(before);
+  const old = await createDb(before, { defaultGrants: 'legacy' });
   const child = await setUp(old);
   const oldPush = pushOn(old);
   const ids = { mode: id7(), level: id7(), good: id7(), good2: id7() };

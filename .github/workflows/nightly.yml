@@ -6,6 +6,13 @@
 #   perf  the database plan checks and p95 budgets at launch scale (1,000 families
 #         x 400 letters). Pull requests run the plan checks at 250 x 400 and do not
 #         check budgets, so a slow runner cannot turn `required` red (S02, after #214).
+#   legacy-grants  the database rules (PGlite) with Supabase's old automatic grants
+#         (SCRIBE_DEFAULT_GRANTS=legacy). Pull requests run them without the
+#         automatic grants, the world of every project created since 30 May 2026
+#         (supabase/tests/harness.mjs), and db-cli.yml runs this legacy pass too on
+#         every pull request that changes supabase/**. GitHub runs this file only
+#         once it is on the default branch (main); until then db-cli.yml is the
+#         proof.
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Nightly
 
@@ -83,3 +90,17 @@ jobs:
         env:
           PERF_BUDGETS: '1'
         run: npm run test:db:perf
+
+  legacy-grants:
+    name: database rules (old automatic grants)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Access rules, governance, classification, performance (PGlite, old automatic grants)
+        env:
+          SCRIBE_DEFAULT_GRANTS: legacy
+        run: npm run test:db

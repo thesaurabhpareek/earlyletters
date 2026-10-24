@@ -7,8 +7,11 @@
 // Requires: npm i @electric-sql/pglite (dev only).
 import { createDb, users, uuid7 } from './harness.mjs';
 
-const { db, check, as, sys, fails, done, publishPolicies, consent, invite } = await createDb(process.argv.slice(2));
+const { db, check, as, sys, fails, codeOf, done, publishPolicies, consent, invite } = await createDb(process.argv.slice(2));
 const { A, B, C } = users;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 check(`${process.argv.length - 2} migration(s) apply cleanly`, true);
 
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}')`);
@@ -56,7 +59,9 @@ check('co-parent cannot read the author\'s rows in the entries table', (await as
 check('book view has no raw transcript column', await fails(() => as(B, 'select raw_transcript from book_entries')));
 check('stranger sees nothing', (await as(C, 'select id from entries')).rows.length === 0 && (await as(C, 'select id from book_entries')).rows.length === 0);
 check('co-parent cannot edit the author\'s entry', (await as(B, `update entries set final_text='x' where id='${BOOK}'`)).affectedRows === 0);
-check('nobody can hard-delete an entry', (await as(A, `delete from entries where id='${BOOK}'`)).affectedRows === 0);
+// 20261023060000: no role holds DELETE on entries (no policy allows it), so the delete is refused outright.
+check('nobody can hard-delete an entry', (await codeOf(() => as(A, `delete from entries where id='${BOOK}'`))) === '42501'
+  && (await sys(`select 1 from entries where id='${BOOK}'`)).rows.length === 1);
 check('stranger cannot write to a child they do not belong to', await fails(() => as(C, insert('0192b000-0000-7000-8000-000000000009', false, C))));
 check('cannot write an entry as someone else', await fails(() => as(B, insert('0192b000-0000-7000-8000-000000000008', false))));
 check('raw transcript is immutable', await fails(() => as(A, `update entries set raw_transcript='changed' where id='${PRIVATE}'`)));
@@ -65,8 +70,10 @@ check('captured_at is immutable', await fails(() => as(A, `update entries set ca
 await as(A, `update entries set final_text='She walked to me.' where id='${PRIVATE}'`);
 const versions = await sys(`select final_text from entry_versions where entry_id='${PRIVATE}'`);
 check('edits are versioned server-side', versions.rows.length === 1 && versions.rows[0].final_text === 'She walked.');
-check('author can read own history', (await as(A, 'select * from entry_versions')).rows.length === 1);
-check('co-parent cannot read history', (await as(B, 'select * from entry_versions')).rows.length === 0);
+// 20261023060000: no client reads entry_versions directly; the history row is there for definer code.
+check('the edit left one history row', (await sys(`select 1 from entry_versions where entry_id='${PRIVATE}'`)).rows.length === 1);
+check('no client reads history directly (42501)', (await codeOf(() => as(A, 'select * from entry_versions'))) === '42501'
+  && (await codeOf(() => as(B, 'select * from entry_versions'))) === '42501');
 
 await as(A, `update entries set deleted_at=now() where id='${BOOK}'`);
 check('tombstoned entry leaves the co-parent view', (await as(B, 'select id from book_entries')).rows.length === 0);
@@ -83,8 +90,10 @@ check('co-parent can read the photo once it is in the book', (await as(B, 'selec
 check('stranger cannot upload into another family\'s folder', await fails(() => as(C, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${C}/x.jpg')`)));
 check('cannot upload under another author\'s folder', await fails(() => as(B, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${CHILD}/${A}/y.jpg')`)));
 
-await as(A, `insert into dictionary_terms (owner_id, child_id, term, kind, heard_as) values ('${A}', '${CHILD}', 'Asha', 'child', '{Asia}')`);
-check('dictionary is private to its owner', (await as(B, 'select * from dictionary_terms')).rows.length === 0);
+await sys(`insert into dictionary_terms (owner_id, child_id, term, kind, heard_as) values ('${A}', '${CHILD}', 'Asha', 'child', '{Asia}')`);
+// 20261023060000: the dictionary lives on the device; no client reads or writes the table.
+check('dictionary is read by no client (42501)', (await codeOf(() => as(B, 'select * from dictionary_terms'))) === '42501'
+  && (await codeOf(() => as(A, 'select * from dictionary_terms'))) === '42501');
 check('no server table for safety tiers (PRD K-06)', await fails(() => as(A, `insert into safety_events (author_id, tier) values ('${A}', 1)`)));
 
 // Leaving

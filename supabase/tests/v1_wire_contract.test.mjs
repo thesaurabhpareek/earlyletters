@@ -7,6 +7,9 @@ import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, publishPolicies, consent, newChild, join, done } = h;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 const { A, B, C } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}')`);
 await publishPolicies();
@@ -115,7 +118,8 @@ check('pack_ref must look like lang@version', (await bad({ pack_ref: 'arabic pac
 
 // ── Dictionary forms (WP-F07-04 server column) ──────────────────────────
 let terms = 0;
-const term = (forms) => codeOf(() => as(A, `insert into dictionary_terms (owner_id, child_id, term, kind, forms) values ($1, $2, $3, 'family', $4::jsonb)`,
+// As the owner: no client writes dictionary_terms since 20261023060000; the check constraint holds for every writer.
+const term = (forms) => codeOf(() => sys(`insert into dictionary_terms (owner_id, child_id, term, kind, forms) values ($1, $2, $3, 'family', $4::jsonb)`,
   [A, CHILD, `Nani ${++terms}`, forms === null ? null : JSON.stringify(forms)]));
 check('[F07-REQ-008] a term with forms per script is stored',
   (await term([{ script: 'latin', text: 'Asha', heardAs: ['Asia'] }, { script: 'devanagari', text: 'आशा', heardAs: [], offerOnly: [] }])) === 'ok');

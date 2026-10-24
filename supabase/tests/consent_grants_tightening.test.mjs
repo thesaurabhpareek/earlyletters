@@ -1,10 +1,12 @@
 // The consent tables' grants match their row security (20261023050000_consent_grants_tightening.sql;
-// review B on #248, notes G2 and G3). The harness grants every new table ALL for anon, authenticated and
-// service_role, as hosted Supabase does, so this file shows the gap on the earlier files, applies this
-// one, shows it closed, and shows every path that writes or reads these tables still working: the
-// person's own act, the app's reads, publishing, pseudonymisation at account deletion, both retention
-// purges and a support-assisted act. status_report_store is in subscription_status.test.mjs, which runs
-// every file. Also the guards: a second run, and a run before 20261023040000 (55000, nothing changed).
+// review B on #248, notes G2 and G3). Runs in either default-grant world (harness.mjs DEFAULT_GRANTS): in
+// both, new tables give anon and authenticated TRUNCATE and MAINTAIN, so this file shows that gap on the
+// earlier files, applies this one, shows it closed, then applies the files after it (20261023060000 gives
+// back what a path uses) and shows every path that writes or reads these tables working: the person's own
+// act, the app's reads, publishing, pseudonymisation at account deletion, both retention purges and a
+// support-assisted act. status_report_store is in subscription_status.test.mjs, which runs every file. Also
+// the guards: a run before 20261023040000 (55000, nothing changed), and a second run (55000 with the old
+// automatic grants or after 20261023060000; without them and before it, not refused and changing nothing).
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users } from './harness.mjs';
@@ -14,7 +16,7 @@ const name = (f) => f.split('/').pop();
 const mine = all.find((f) => name(f).startsWith('20261023050000'));
 if (!mine) throw new Error('20261023050000_consent_grants_tightening.sql is not in the migration list');
 const sql = readFileSync(mine, 'utf8');
-const { db, check, as, asAnon, sys, codeOf, done, publishPolicies, consent } = await createDb(all.filter((f) => name(f) < name(mine)));
+const { db, check, as, asAnon, sys, codeOf, done, publishPolicies, consent, defaults } = await createDb(all.filter((f) => name(f) < name(mine)));
 const { A, B } = users;
 
 await sys(`insert into auth.users values ('${A}'),('${B}')`);
@@ -54,8 +56,11 @@ const privileges = async (x = sys) => (await x(`select r || ' ' || t || ' ' || p
 // ── Before: the gap ──────────────────────────────────────────────────────
 check('before: a signed-in person may truncate policy_acceptances (TRUNCATE skips row security)',
   (await asRole('authenticated', 'truncate policy_acceptances')) === 'ok');
-check('before: anon holds SELECT on policy_acceptances (row security gives it no row)',
-  (await sys(`select has_table_privilege('anon', 'public.policy_acceptances', 'SELECT') x`)).rows[0].x);
+check('before: so may anon', (await asRole('anon', 'truncate policy_acceptances')) === 'ok');
+if (defaults.mode === 'legacy') {
+  check('before (old automatic grants): anon holds SELECT on policy_acceptances (row security gives it no row)',
+    (await sys(`select has_table_privilege('anon', 'public.policy_acceptances', 'SELECT') x`)).rows[0].x);
+}
 check('before: a signed-in person may lock policy_versions exclusively (MAINTAIN, UPDATE or DELETE)',
   (await asRole('authenticated', 'lock table policy_versions in access exclusive mode')) === 'ok');
 check('before: the service role may lock both consent record tables exclusively (MAINTAIN, kept by 20261023010000)',
@@ -67,36 +72,42 @@ const beforePrivs = await privileges();
 const early = await createDb(all.filter((f) => name(f) < '20261023040000'));
 const earlyPrivs = await privileges(early.sys);
 check('a run before 20261023040000 is refused (55000) and changes nothing', (await codeOf(() => early.db.exec(sql))) === '55000'
-  && JSON.stringify(await privileges(early.sys)) === JSON.stringify(earlyPrivs) && earlyPrivs.includes('authenticated policy_acceptances INSERT'));
+  && JSON.stringify(await privileges(early.sys)) === JSON.stringify(earlyPrivs) && earlyPrivs.includes('anon policy_acceptances TRUNCATE'));
 await early.db.close();
 
 await db.exec(sql);
 const afterPrivs = await privileges();
-check('a second run is refused (55000) and changes nothing', (await codeOf(() => db.exec(sql))) === '55000'
+check(defaults.mode === 'legacy' ? 'a second run is refused (55000) and changes nothing'
+  : 'a second run (no automatic grants, before 20261023060000) is not refused and changes nothing',
+  (await codeOf(() => db.exec(sql))) === (defaults.mode === 'legacy' ? '55000' : 'ok')
   && JSON.stringify(await privileges()) === JSON.stringify(afterPrivs));
 
-// ── After: exactly what a path uses ──────────────────────────────────────
-check('after: anon and authenticated hold SELECT only, where a path reads; service_role SELECT on the records and everything on the published texts',
-  JSON.stringify(afterPrivs) === JSON.stringify([
-    'anon policy_documents SELECT', 'anon policy_versions SELECT',
-    'authenticated policy_acceptances SELECT', 'authenticated policy_documents SELECT', 'authenticated policy_versions SELECT',
-    'service_role policy_acceptances SELECT',
-    ...PRIVS.map((p) => `service_role policy_documents ${p}`).sort(), ...PRIVS.map((p) => `service_role policy_versions ${p}`).sort(),
-    'service_role subscription_consents SELECT',
-  ].sort()) || console.log(`      holds: ${afterPrivs.join(', ')}`));
+// ── After this file ──────────────────────────────────────────────────────
+const NEVER = /^(anon|authenticated) policy_(acceptances|documents|versions) (INSERT|UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER|MAINTAIN)$|^anon policy_acceptances SELECT$|^service_role (policy_acceptances|subscription_consents) (INSERT|UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER|MAINTAIN)$/;
+check('after: anon and authenticated hold no write, truncate, references, trigger or maintain on the three policy tables, anon no read of the acts, and service_role nothing but a read on the two records',
+  afterPrivs.every((v) => !NEVER.test(v)) || console.log(`      holds: ${afterPrivs.filter((v) => NEVER.test(v)).join(', ')}`));
 check('after: nothing else changed (every privilege taken away was in the list this file names)',
-  beforePrivs.filter((v) => !afterPrivs.includes(v)).every((v) => /^(anon|authenticated) policy_(acceptances|documents|versions) |^anon policy_acceptances SELECT$|^service_role (policy_acceptances|subscription_consents) MAINTAIN$/.test(v))
-  && afterPrivs.every((v) => beforePrivs.includes(v)));
+  beforePrivs.filter((v) => !afterPrivs.includes(v)).every((v) => NEVER.test(v)) && afterPrivs.every((v) => beforePrivs.includes(v)));
 for (const [label, role, statement] of [
   ['a signed-in person cannot truncate policy_acceptances', 'authenticated', 'truncate policy_acceptances'],
   ['nor delete their own acts', 'authenticated', 'delete from policy_acceptances where profile_id = auth.uid()'],
   ['nor edit a published version', 'authenticated', `update policy_versions set summary = 'x'`],
   ['nor lock a consent table exclusively', 'authenticated', 'lock table policy_versions in access exclusive mode'],
   ['anon cannot read policy_acceptances', 'anon', 'select 1 from policy_acceptances'],
+  ['nor truncate it', 'anon', 'truncate policy_acceptances'],
   ['anon cannot add a policy document', 'anon', `insert into policy_documents (key, title, needs_affirmative_act) values ('grants-doc', 'x', false)`],
   ['the service role cannot lock policy_acceptances exclusively', 'service_role', 'lock table policy_acceptances in access exclusive mode'],
   ['nor subscription_consents', 'service_role', 'lock table subscription_consents in access exclusive mode'],
 ]) check(`after: ${label} (42501)`, (await asRole(role, statement)) === '42501');
+
+// ── Then the files after it (20261023060000): the same end state in both worlds ──
+for (const f of all.filter((f) => name(f) > name(mine))) await db.exec(readFileSync(f, 'utf8'));
+const finalPrivs = await privileges();
+check('with every file (20261023060000: a grant only where a path reads): anon and authenticated read policy_versions, authenticated its own acts; nothing else',
+  JSON.stringify(finalPrivs) === JSON.stringify([
+    'anon policy_versions SELECT', 'authenticated policy_acceptances SELECT', 'authenticated policy_versions SELECT',
+  ]) || console.log(`      holds: ${finalPrivs.join(', ')}`));
+check('with every file, this file refuses to run again (55000) in both worlds', (await codeOf(() => db.exec(sql))) === '55000');
 check('every record is still there', JSON.stringify(await counts()) === JSON.stringify(start));
 
 // ── The paths that must still work ───────────────────────────────────────
@@ -107,15 +118,18 @@ check('the app still reads its own state (my_policy_state) and its own acts',
   && (await as(A, `select 1 from policy_acceptances`)).rows.length === aStart + 1);
 check('policy_actions_needed and the sync gate still answer', (await codeOf(() => as(A, `select * from public.policy_actions_needed()`))) === 'ok'
   && (await codeOf(() => as(A, `select * from public.my_sync_gate()`))) === 'ok');
-check('the published versions are still read before sign-in (anon) and after (the consent sheets, the staging smoke)',
+check('the published versions are still read: anonymously by the deploy smoke, and after sign-in by the consent sheets',
   (await asAnon(`select document, version, effective_at from policy_versions`)).rows.length >= 4
-  && (await asAnon(`select key from policy_documents`)).rows.length >= 4
   && (await as(A, `select 1 from policy_versions where document = 'terms'`)).rows.length === 1);
-check('the service role still publishes a version and reads the records', (await asRole('service_role', `insert into policy_versions
-  (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
-  values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`)) === 'ok'
-  && (await asRole('service_role', 'select 1 from policy_acceptances')) === 'ok' && (await asRole('service_role', 'select 1 from subscription_consents')) === 'ok'
-  && (await asRole('service_role', 'lock table policy_acceptances in access share mode')) === 'ok');
+check('policy_documents is read by no client directly (42501)', (await codeOf(() => asAnon(`select key from policy_documents`))) === '42501'
+  && (await codeOf(() => as(A, `select key from policy_documents`))) === '42501');
+await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at,
+  content_sha256, url, summary) values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`);
+check('publishing is the owner\'s (SQL Editor, APPLY.md step 8.2); the service key holds no table privilege at all',
+  (await sys(`select 1 from policy_versions where document = 'privacy' and version = '1.0.1'`)).rows.length === 1
+  && (await asRole('service_role', 'select 1 from policy_acceptances')) === '42501' && (await asRole('service_role', 'select 1 from subscription_consents')) === '42501'
+  && (await asRole('service_role', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at,
+    content_sha256, url, summary) values ('privacy', '1.0.2', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.2', 'x')`)) === '42501');
 await sys(`insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform)
   values ($1, 'terms', '1.0.0', 'accept', 'support_assisted', 'support.desk', '1', 'ios')`, [A]);
 check('the owner still records a support-assisted act (SQL Editor)', (await counts()).p === start.p + 2);
