@@ -134,6 +134,18 @@ describe('[F14-REQ-037] words seen: a letter counts at the save where its words 
     expect(counts().recorded).toBe(1);
   });
 
+  it('a letter of marks only never counts, before or at the allowance; letters with words still do (#268)', () => {
+    const c = asha();
+    keepTyped(c, '...');
+    keepTyped(c, '?!');
+    expect(counts()).toEqual({ recorded: 0, present: 0 });
+    keepTyped(c, 'You waved at the moon.');
+    keepTyped(c, 'Two teeth.');
+    expect(counts()).toEqual({ recorded: 2, present: 2 });
+    keepTyped(c, '...'); // at the allowance: still 2, in the mirror and in letters present
+    expect(counts()).toEqual({ recorded: 2, present: 2 });
+  });
+
   it('a spoken letter with no words at all (nobody spoke) and a quiet-day mark never count', () => {
     const c = asha();
     const d = store.createDraft({ childId: c, captureMode: 'spoken', promptKey: null, audioUri: null, audioDurationMs: 4000 });

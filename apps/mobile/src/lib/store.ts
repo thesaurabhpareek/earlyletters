@@ -544,7 +544,7 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
  * counting moment, F14 6.2 B2). The review mark and the count are written in one
  * transaction. The words are not changed here (an edit is a separate save).
  * False when the letter has no words waiting for review. The Keep gate decision
- * comes first, in the screen (lib/billing keepLetterGate).
+ * comes first, in the screen (lib/billing keepGateFor, with the words on screen).
  */
 export function keepReviewedWords(id: string): boolean {
   const c = ctx();
