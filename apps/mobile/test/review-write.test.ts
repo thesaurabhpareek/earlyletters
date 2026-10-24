@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { en } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { afterEach, describe, expect, it } from 'vitest';
-import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, resetKeep } from '../src/lib/capture/keep-intent';
+import { KEEP_ARM_WINDOW_MS, armKeep, consumeKeep, peekKeep, resetKeep } from '../src/lib/capture/keep-intent';
 import { arrivalToastDelayMs, secondFreeOnArrival } from '../src/components/book/book.logic';
 import { fileIntoMonthPlan } from '../src/lib/transitions.logic';
 
@@ -56,11 +56,27 @@ describe('S20: a typed letter keeps from Write with one tap (the keep intent)', 
     expect(write).not.toMatch(/keepGateFor|keepLetterGate|saveLetterFromDraft|decideKeepLetter/);
   });
 
+  it('Review\'s first frame can look without spending it; only the mount spends it', () => {
+    armKeep('d1', false, 0);
+    expect(peekKeep('d1', 10)).toEqual({ inBook: false });
+    expect(peekKeep('d1', 20)).toEqual({ inBook: false }); // looking spends nothing
+    expect(peekKeep('d2', 20)).toBeNull();
+    expect(peekKeep('d1', KEEP_ARM_WINDOW_MS + 1)).toBeNull();
+    expect(consumeKeep('d1', 30)).toEqual({ inBook: false });
+    expect(peekKeep('d1', 40)).toBeNull();
+  });
+
   it('Review runs its own one Keep step at once for it, and never for a spoken letter', () => {
-    expect(review).toMatch(/keepIntent\.current = consumeKeep\(draftId\)/);
-    expect(review).toMatch(/if \(intent && phase === 'ready' && typed\) keepTo\(intent\.inBook\)/);
+    // The first frame already holds the sheet still (no flash of the editable letter), from a look that spends nothing.
+    expect(review).toMatch(/const \[keeping, setKeeping\] = useState\(\(\) => typed && peekKeep\(draftId\) !== null\)/);
+    expect(review).toMatch(/const intent = consumeKeep\(draftId\);\s*if \(intent && phase === 'ready' && typed\) keepTo\(intent\.inBook\);\s*else setKeeping\(false\);/);
     // After the Plus sheet or a failed save, it is the ordinary Review again.
     expect(review).toMatch(/if \(gate \|\| saveFailed\) setKeeping\(false\)/);
+  });
+
+  it('a typed letter back in Review (the Plus sheet, a failed save) keeps Write\'s heading, never "Read it back" (M3 condition a)', () => {
+    expect(review).toMatch(/\{reviewHeading\(\{ typedOnly: typed && !spoken \}\)\}/);
+    expect(review).not.toMatch(/\{r\.title\}/);
   });
 });
 
@@ -71,12 +87,16 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     // The words are at part strength only while the card leaves: 350 ms.
     expect(p.dismissAtMs - p.moveAtMs!).toBe(350);
     expect(moment).toMatch(/const plan = fileIntoMonthPlan\(reduced\)/);
-    expect(moment).toMatch(/const t = setTimeout\(finish, plan\.dismissAtMs\)/);
+    // With VoiceOver on, the moment holds until its announcement can be heard (savedMomentDoneMs).
+    expect(moment).toMatch(/const screenReader = useScreenReader\(\)/);
+    expect(moment).toMatch(/const t = setTimeout\(finish, savedMomentDoneMs\(\{ dismissAtMs: plan\.dismissAtMs, screenReader \}\)\)/);
   });
 
   it('Reduce Motion: the chip and the line fade in, nothing travels, then the Book', () => {
     const p = fileIntoMonthPlan(true);
     expect(p).toMatchObject({ scaleTo: 1, chipAtMs: 0, chipFadeMs: tokens.motion.fadeMs, moveAtMs: null, dy: 0, dismissAtMs: 900 });
+    // The plan is chosen from the person's own setting (lens B X2).
+    expect(moment).toMatch(/const reduced = useReducedMotion\(\);/);
   });
 
   it('commits first: nothing moves until the save has committed, and a tap skips to the end', () => {
@@ -90,13 +110,29 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
   it('the line is in text with a success check, never green words; the words are never ghosted', () => {
     expect(moment).toMatch(/<CheckCircleIcon size=\{18\} color=\{c\.success\} weight="fill" \/>\s*<Text variant="callout">\{line\}<\/Text>/);
     expect(moment).not.toMatch(/tone="success"/);
-    expect(moment).toMatch(/<ExcerptFade text=\{words\} lines=\{SAVED_CARD_LINES\} variant="letterBody" surface=\{c\.surfaceRaised\} \/>/);
+    expect(moment).toMatch(/<ExcerptFade text=\{words\} lines=\{large \? SAVED_CARD_LINES_LARGE : SAVED_CARD_LINES\} variant="letterBody" surface=\{c\.surfaceRaised\} \/>/);
+  });
+
+  it('at accessibility text sizes the card shows fewer lines, so the chip and the line stay on screen', () => {
+    expect(moment).toMatch(/const large = useIsAccessibilitySize\(\)/);
+    expect(moment).toMatch(/export const SAVED_CARD_LINES = 6;/);
+    expect(moment).toMatch(/export const SAVED_CARD_LINES_LARGE = 2;/);
+  });
+
+  it('the chip reads in subhead (P1\'s trust-copy floor), its edge from the stroke token', () => {
+    expect(moment).toMatch(/<Text variant="subhead" tone="default">\s*\{chip\}/);
+    expect(moment).not.toMatch(/variant="caption"/);
+    expect(moment).toMatch(/borderWidth: tokens\.stroke\.control,/);
+    expect(moment).not.toMatch(/borderWidth: 1\b/);
   });
 
   it('VoiceOver hears the chip and the line once, as they appear, and nothing claims a save before the commit', () => {
     const effect = moment.slice(moment.indexOf('useEffect(() => {'), moment.indexOf('const cardStyle'));
-    expect(effect.indexOf("announce([chip, line].filter(Boolean).join(' '))")).toBeGreaterThan(effect.indexOf('if (!committed) return;'));
+    expect(effect.indexOf('if (!committed) return;')).toBeGreaterThan(-1);
+    expect(effect.indexOf('announce(said);')).toBeGreaterThan(effect.indexOf('if (!committed) return;'));
+    expect(moment).toMatch(/const said = momentAnnouncement\(chip, line\)/);
     expect(moment).toMatch(/accessible=\{committed\}/);
+    expect(moment).toMatch(/accessibilityLabel=\{said\}/);
   });
 
   it('the chip carries the website\'s lit edge, and a plain line under Increase Contrast or Reduce Transparency', () => {
@@ -140,6 +176,8 @@ describe('S17: Review reads as a letter', () => {
     expect(review).toMatch(/<LetterSheet\s+header=\{header\}\s+editing=\{editing\}/);
     expect(review).not.toMatch(/r\.trustLine|r\.destination\.privateHelp|r\.subtitle/);
     expect(sheet).toMatch(/accessibilityLabel=\{onChangeBook \? undefined : header\.toSpoken\}/);
+    // With twins, the header is the button: VoiceOver hears "To Asha, Month 7", then what a tap does.
+    expect(sheet).toMatch(/<Pressable onPress=\{onChangeBook\} accessibilityRole="button" accessibilityLabel=\{header\.toSpoken\} accessibilityHint=\{changeLabel\}/);
   });
 
   it('the sheet: surfaceRaised, xl top and md bottom corners, elevation 2 on paper, a line edge on night paper, 20 pt padding', () => {
@@ -147,7 +185,8 @@ describe('S17: Review reads as a letter', () => {
     expect(sheet).toMatch(/borderTopLeftRadius: tokens\.radius\.xl/);
     expect(sheet).toMatch(/borderBottomLeftRadius: tokens\.radius\.md/);
     expect(sheet).toMatch(/const e = tokens\.elevation\[2\]/);
-    expect(sheet).toMatch(/scheme === 'dark'\s*\?\s*\{ borderWidth: 1, borderColor: c\.line \}/);
+    expect(sheet).toMatch(/scheme === 'dark'\s*\?\s*\{ borderWidth: tokens\.stroke\.control, borderColor: c\.line \}/);
+    expect(sheet).not.toMatch(/borderWidth: 1\b/);
     expect(sheet).toMatch(/padding: tokens\.space\[5\]/);
   });
 
@@ -161,6 +200,18 @@ describe('S17: Review reads as a letter', () => {
     expect(footer.indexOf('{r.saveFailed}')).toBeGreaterThan(-1);
     expect(footer.indexOf('{r.saveFailed}')).toBeLessThan(footer.indexOf('savePrimaryLabel('));
     expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    // Said aloud too (iOS VoiceOver ignores live regions).
+    expect(review).toMatch(/useEffect\(\(\) => \{\s*if \(saveFailed\) announce\(r\.saveFailed\);\s*\}, \[saveFailed, r\.saveFailed\]\);/);
+  });
+
+  it('"Keep private" stays after a failed save, so focus is never dropped and the other destination is one tap away', () => {
+    const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
+    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} testID="review\.save\.private">/);
+    expect(footer).not.toMatch(/!saveFailed\s*&&/);
+  });
+
+  it('switching how the letter reads cross-fades the words (swapMs), never a jump', () => {
+    expect(review).toMatch(/<Animated\.View key=\{view\} entering=\{FadeIn\.duration\(tokens\.motion\.swapMs\)\}>/);
   });
 
   it('a repaired name shows the struck heard word, then the kept word on a wash', () => {
@@ -172,11 +223,19 @@ describe('S17: Review reads as a letter', () => {
 });
 
 describe('S18: changing words in place', () => {
-  it('no box inside the letter: the sheet\'s edge becomes the 1.5 pt accent line, Done in the header and above the keyboard', () => {
+  it('no box inside the letter: the sheet\'s edge becomes the 1.5 pt accent line; Done in the header and in the footer the keyboard lifts', () => {
     expect(sheet).toMatch(/editing\s*\?\s*\{ borderWidth: tokens\.stroke\.selected, borderColor: c\.accent \}/);
     expect(review).not.toMatch(/tokens\.focusRing\.width/);
     expect(review).toMatch(/testID="review\.edit\.doneHeader"/);
-    expect(review).toMatch(/<InputAccessoryView nativeID=\{EDIT_ACCESSORY_ID\}>/);
+    // One Done above the keyboard, not two: the footer rides on the keyboard (KeyboardAvoidingView), no input accessory.
+    expect(review).not.toMatch(/InputAccessoryView|EDIT_ACCESSORY_ID|inputAccessoryViewID/);
+    const open = review.indexOf("<KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}");
+    const end = review.indexOf('</KeyboardAvoidingView>');
+    expect(open).toBeGreaterThan(-1);
+    expect(review.indexOf('{!inlineFooter && footer}', open)).toBeGreaterThan(open);
+    expect(review.indexOf('{!inlineFooter && footer}', open)).toBeLessThan(end);
+    const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
+    expect(footer).toMatch(/editing \? \(\s*<Button size="lg" fullWidth label=\{copy\.common\.doneButton\} onPress=\{\(\) => setEditing\(false\)\} testID="review\.edit\.done" \/>/);
   });
 
   it('the person\'s edits are stored as theirs (userText becomes the final text, never re-cleaned)', () => {
@@ -204,8 +263,41 @@ describe('S19: Write', () => {
     expect(en.write.notSaved).toBe('Not saved yet');
   });
 
-  it('typed words are never touched by the machine (no engine call in Write)', () => {
-    expect(write).not.toMatch(/cleanSpoken|faithfulClean|applyEdits|withoutEdit/);
+  it('typed words are never touched by the machine: no engine call in Write, and Review keeps them as typed (F04-REQ-012)', () => {
+    expect(write).not.toMatch(/cleanSpoken|faithfulClean|applyEdits|withoutEdit|normalizeChars/);
+    expect(review).toMatch(/typed \? typedFinalText\(raw\)/);
+    expect(review).not.toMatch(/normalizeChars|applyEdits/);
+    // End to end, byte for byte, on the one-tap path and the Review path: test/review-keep-from-write.test.ts.
+  });
+
+  it('words that cannot be written to this phone keep Write open; a pending autosave is written on any way out', () => {
+    const close = write.slice(write.indexOf('const close = () =>'), write.indexOf('const keep = (inBook: boolean)'));
+    expect(close).toMatch(/else if \(text\.trim\(\) && !persist\(text\)\) return;\s*router\.back\(\);/);
+    expect(write).toMatch(/timer\.current = setTimeout\(\(\) => \{\s*timer\.current = null;\s*persist\(value\);/);
+    expect(write).toMatch(/latest\.current = value;/);
+    // Unmount (a swipe down within the pause): the pending autosave is flushed with the newest words, not dropped.
+    expect(write).toMatch(/useEffect\(\s*\(\) => \(\) => \{\s*if \(timer\.current\) \{\s*clearTimeout\(timer\.current\);\s*timer\.current = null;\s*persistRef\.current\(latest\.current\);/);
+    // Close and Keep write now and disarm the timer, so the flush never writes twice or brings back a deleted draft.
+    expect(close).toMatch(/timer\.current = null;/);
+    const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
+    expect(keep).toMatch(/timer\.current = null;/);
+  });
+});
+
+describe('every word on these screens comes from packages/content (lens B X1, X4)', () => {
+  const screens = { review, write, moment, sheet, transcript: code(src('components/capture/transcript.tsx')) };
+
+  it('no text typed into a Text or a label, a title or a hint', () => {
+    for (const [name, s] of Object.entries(screens)) {
+      expect([...s.matchAll(/>([^<>{}]*[A-Za-z][^<>{}]*)<\/Text>/g)].map((m) => m[1].trim()), name).toEqual([]);
+      expect(s.match(/\b(label|title|body|accessibilityLabel|accessibilityHint|message|placeholder)="[^"]*[A-Za-z]/g), name).toBeNull();
+    }
+  });
+
+  it('a changed word carries its own label and hint ("Usher to Asha", from the row copy)', () => {
+    const t = screens.transcript;
+    const change = t.slice(t.indexOf("shows?.kind === 'change'"), t.indexOf("taken?.kind === 'struck'"));
+    expect(change).toMatch(/accessibilityRole="button"\s*accessibilityLabel=\{fill\(copy\.review\.rowChange, \{ a: shows\.from, b: shows\.to \}\)\}\s*accessibilityHint=\{pendingCopy\.review\.editA11yHint\}/);
   });
 });
 

@@ -2,19 +2,25 @@ import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
 import {
   BUTTON_MAX_CHARS,
+  SCREEN_READER_HOLD_MS,
   SIGN_IN_AFTER_BOOK_MS,
   addButtonLabel,
   arrivalParams,
   countLine,
   fixesInForce,
   letterHeader,
+  momentAnnouncement,
+  primaryDestination,
+  reviewHeading,
   rowShows,
   savePrimaryLabel,
   savedMoment,
+  savedMomentDoneMs,
   setAsideAtSave,
   showViewControl,
   signInAfterLandingMs,
   spokenSeparator,
+  typedFinalText,
   viewFromSetting,
 } from './review-view.logic';
 
@@ -90,6 +96,11 @@ describe('the letter sheet header (S17)', () => {
     expect(h.from).not.toContain('·');
     expect(spokenSeparator('To Asha · Before You')).toBe('To Asha, Before You');
   });
+
+  it('a middle dot inside a name (the Catalan l·l) is part of the name, never a pause', () => {
+    expect(spokenSeparator('To Asha·la · Month 4')).toBe('To Asha·la, Month 4');
+    expect(letterHeader({ childName: 'Asha·la', signsAs: 'Mama', month: 4 }).toSpoken).toBe('To Asha·la, Month 4');
+  });
 });
 
 describe('the primary button label (S17)', () => {
@@ -104,6 +115,26 @@ describe('the primary button label (S17)', () => {
   it('after a save that did not work, the primary reads "Try again" for that attempt', () => {
     expect(savePrimaryLabel({ childName: 'Asha', saveFailed: true })).toBe('Try again');
     expect(savePrimaryLabel({ childName: 'Asha', saveFailed: false })).toBe("Add to Asha's book");
+  });
+
+  it('"Try again" keeps the letter where the person chose; before a failure the primary is the book', () => {
+    expect(primaryDestination({ saveFailed: true, lastInBook: false })).toBe(false);
+    expect(primaryDestination({ saveFailed: true, lastInBook: true })).toBe(true);
+    expect(primaryDestination({ saveFailed: false, lastInBook: false })).toBe(true);
+  });
+});
+
+describe('a typed letter (S19, S20)', () => {
+  it('is kept exactly as typed: only the ends are trimmed, no character is swapped', () => {
+    const smart = 'Asha\u2019s first word \u2014 mama. \u201CMore\u201D she said\u2026';
+    expect(typedFinalText(smart)).toBe(smart);
+    expect(typedFinalText(`  ${smart}\n`)).toBe(smart);
+    expect(typedFinalText('one\n\ntwo')).toBe('one\n\ntwo');
+  });
+
+  it('back in Review it keeps Write\'s heading, "Your letter"; a letter with a recording reads "Read it back"', () => {
+    expect(reviewHeading({ typedOnly: true })).toBe('Your letter');
+    expect(reviewHeading({ typedOnly: false })).toBe('Read it back');
   });
 });
 
@@ -128,6 +159,18 @@ describe('the saved moment (S21)', () => {
       const m = savedMoment({ kind, childName: 'Asha', month: 7 });
       expect(`${m.chip} ${m.line ?? ''}`.replace('Month 7', '')).not.toMatch(/\d/);
     }
+  });
+
+  it('VoiceOver hears the chip, then the line, as one announcement; the lock chip alone when there is no line', () => {
+    expect(momentAnnouncement('Kept in Month 7', "Added to Asha's book.")).toBe("Kept in Month 7. Added to Asha's book.");
+    expect(momentAnnouncement('Kept just for you.', null)).toBe('Kept just for you.');
+  });
+
+  it('with a screen reader on, the moment holds about 3 s so the announcement is heard before the Book', () => {
+    expect(SCREEN_READER_HOLD_MS).toBe(3000);
+    expect(savedMomentDoneMs({ dismissAtMs: 900, screenReader: false })).toBe(900);
+    expect(savedMomentDoneMs({ dismissAtMs: 900, screenReader: true })).toBe(3000);
+    expect(savedMomentDoneMs({ dismissAtMs: 4000, screenReader: true })).toBe(4000);
   });
 
   it('lands on the Book with `arrived=<entry id>`, and asks for the second-free toast only on the second letter', () => {

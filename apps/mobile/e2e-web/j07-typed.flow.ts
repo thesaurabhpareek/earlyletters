@@ -1,4 +1,4 @@
-import { btn, firstRun, journey, tab } from './support/app';
+import { btn, firstRun, journey, selectedTab, tab } from './support/app';
 import { expect, test } from './support/journey';
 
 test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app, record }) => {
@@ -16,7 +16,7 @@ test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app,
   await expect(app.getByText("Added to Asha's book.")).toBeVisible();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toHaveCount(0);
   await step('happy', 'Saved to the book, no Review', 'One tap keeps a typed letter: no "Read it back" screen. The Keep step runs exactly as for a spoken letter, then the letter files into its month (S20, S21).', undefined, { settle: 120 });
-  await expect(tab(app, 'Book')).toBeVisible({ timeout: 4000 });
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('You put both hands on the window today and watched the rain.')).toBeVisible();
   await step('happy', 'On the Book', 'The person lands on the Book, on the new letter in its month (5.8 row 5a).', undefined, { settle: 400 });
 });
@@ -35,12 +35,12 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();
   await expect(app.getByText('That was your second free letter.')).toHaveCount(0);
-  await expect(tab(app, 'Book')).toBeVisible({ timeout: 4000 });
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await write('You laughed at the rain.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();
   // The second-free line is the Book's own toast after the landing (S21), not under the chip.
-  await expect(tab(app, 'Book')).toBeVisible({ timeout: 4000 });
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('That was your second free letter.')).toBeVisible({ timeout: 4000 });
   await step('happy', 'The second free letter', 'The second letter is kept like the first. "That was your second free letter." shows once, as the Book\'s toast after the landing, with no count of what is left (D-082, S21).', undefined, { settle: 120 });
   await write('You waved at the dog.');

@@ -89,30 +89,48 @@ export default function Write() {
     return true;
   };
 
+  // The words as last typed, for the unmount flush (a closure would hold an old copy).
+  const latest = useRef(text);
   const onChange = (value: string) => {
     setText(value);
+    latest.current = value;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => persist(value), 500);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      persist(value);
+    }, 500);
   };
 
+  // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
+  // never dropped.
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+        persistRef.current(latest.current);
+      }
     },
     [],
   );
 
   const close = () => {
     if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
     // An empty typed draft is nothing; a recording draft is always kept.
     if (draftId.current && !text.trim() && !getDraft(draftId.current)?.audioUri) deleteDraft(draftId.current);
-    else if (text.trim()) persist(text);
+    // Words that cannot be written to this phone keep the sheet open, with "Not saved yet" on screen and said aloud:
+    // closing would lose them (S19).
+    else if (text.trim() && !persist(text)) return;
     router.back();
   };
 
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
   const keep = (inBook: boolean) => {
     if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
     if (!persist(text) || !draftId.current) return;
     armKeep(draftId.current, inBook);
     router.replace({ pathname: '/review', params: { draftId: draftId.current } });

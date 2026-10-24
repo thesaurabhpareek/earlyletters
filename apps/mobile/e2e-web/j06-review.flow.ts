@@ -1,4 +1,4 @@
-import { btn, journey, tab } from './support/app';
+import { btn, journey, selectedTab, tab } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const NOTE_SEED = 'Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).';
@@ -46,7 +46,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await expect(app.getByTestId('review.saved.chip')).toHaveText(/^Kept in /);
   await expect(app.getByText("Added to Asha's book.")).toBeVisible();
   await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120 });
-  await expect(tab(app, 'Book')).toBeVisible({ timeout: 4000 });
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('Read it back', { exact: true })).toHaveCount(0);
   await step('happy', 'On the Book, on the new letter', 'Review dissolves onto the Book, which is already on the new letter under its month, with the arrival wash. Tonight is never seen in between (5.8 row 5).', undefined, { settle: 400 });
 });
@@ -87,9 +87,9 @@ test('[J06e] Keep needs Plus past the free letters: the letter is held, never lo
 test('[J06d] a Review link with no draft', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 13, 'J06-01');
   await seeded(app, 'asha', '/review');
-  await expect(app.getByRole('heading', { name: 'Nothing to read back here' })).toBeVisible();
+  await expect(app.getByText('Nothing to read back here', { exact: true })).toBeVisible();
   await expect(app.getByText(/Something went wrong|try again/i)).toHaveCount(0);
   await step('unhappy', 'Review with no draft', 'Opened by a stale link with nothing to read back: the page drawing, "Nothing to read back here", one way on, "Go to the book", and Close. No error, nothing to try again (S23).');
   await btn(app, 'Go to the book').click();
-  await expect(tab(app, 'Book')).toBeVisible();
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
 });

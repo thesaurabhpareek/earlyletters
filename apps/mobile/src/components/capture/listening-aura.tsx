@@ -77,9 +77,11 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
       s.value += (0 - s.value) * (1 - Math.exp(-dt / B.releaseMs));
       idleW.value = 0;
       if (processing.value) {
-        // The take has ended (5.8 row 4): the glow releases from where the voice left it, over releaseMs (400 ms).
-        scale.value = 1 + B.scaleMax * s.value;
-        opacity.value = B.opacityMin + (B.opacityMax - B.opacityMin) * s.value;
+        // The take has ended (5.8 row 4): the glow releases from what is on screen (the voice, or the idle breath if
+        // the person was quiet), easing to rest over releaseMs (400 ms).
+        const k = Math.exp(-dt / B.releaseMs);
+        scale.value = 1 + (scale.value - 1) * k;
+        opacity.value = B.opacityMin + (opacity.value - B.opacityMin) * k;
         return;
       }
       scale.value = 1;

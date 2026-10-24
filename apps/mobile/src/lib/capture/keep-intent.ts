@@ -8,7 +8,8 @@
  *
  * Only a tap arms it, for that draft, and only for a moment: a link, a restored screen or a second Review never
  * keeps anything by itself (the same rule as Listen's start, lib/resilience/start-intent.ts). Pure and in memory;
- * nothing is stored. Tested in Node (test/keep-intent.test.ts).
+ * nothing is stored. Tested in Node (test/review-write.test.ts, and the one-tap keep end to end in
+ * test/review-keep-from-write.test.ts).
  */
 export const KEEP_ARM_WINDOW_MS = 5000;
 
@@ -21,7 +22,14 @@ export function armKeep(draftId: string, inBook: boolean, now: number = Date.now
   armed = { draftId, inBook, at: now };
 }
 
-/** Review, on mount: the destination the person chose for this draft a moment ago, once; else null. */
+/** Review's first frame: whether a keep is armed for this draft right now, without spending it. */
+export function peekKeep(draftId: string | null | undefined, now: number = Date.now()): { inBook: boolean } | null {
+  const a = armed;
+  if (!a || !draftId || a.draftId !== draftId) return null;
+  return now - a.at >= 0 && now - a.at <= KEEP_ARM_WINDOW_MS ? { inBook: a.inBook } : null;
+}
+
+/** Review, once mounted: the destination the person chose for this draft a moment ago, once; else null. */
 export function consumeKeep(draftId: string | null | undefined, now: number = Date.now()): { inBook: boolean } | null {
   const a = armed;
   armed = null;

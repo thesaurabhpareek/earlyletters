@@ -96,18 +96,49 @@ export function letterHeader(input: { childName: string; signsAs: string; month:
   return { to, toSpoken: spokenSeparator(to), from: fill(copy.common.signature, { signsAs: input.signsAs }) };
 }
 
-/** "To Asha · Month 7" read aloud as "To Asha, Month 7": the separator becomes a pause, never a word. */
+/**
+ * "To Asha · Month 7" read aloud as "To Asha, Month 7": the separator (a middle dot with a space on each side, as the
+ * content strings write it) becomes a pause, never a word. A middle dot inside a name ("Marcel·la") is left alone.
+ */
 export function spokenSeparator(text: string): string {
-  return text.replace(/\s*·\s*/g, ', ');
+  return text.replace(/\s+·\s+/g, ', ');
 }
 
-/** Button labels are 22 characters or fewer with the Asha fixtures (packages/content/test/rules.test.ts). */
+/**
+ * Button labels are 22 characters or fewer with the Asha fixtures (packages/content/test/rules.test.ts). Counted in
+ * UTF-16 code units, the same measure as the rules test: cautious for scripts with combining marks, a little generous
+ * for wide scripts. A label that runs long wraps; it never clips (button.tsx).
+ */
 export const BUTTON_MAX_CHARS = 22;
 
 /** "Add to Asha's book", or "Add to the book" when the filled label would pass 22 characters (a long or two-word name, S17). */
 export function addButtonLabel(childName: string): string {
   const full = fill(copy.review.destination.addButton, { child: childName });
   return full.length <= BUTTON_MAX_CHARS ? full : copy.review.destination.addButtonShort;
+}
+
+/**
+ * A typed letter's words as they are kept: exactly as typed, trimmed at the ends and nothing else (S19 "typed words are
+ * never touched by the machine"; F04-REQ-012, F06-REQ-037). No character is swapped: a curly apostrophe, an em dash,
+ * curly quotes and an ellipsis character stay as the keyboard wrote them.
+ */
+export function typedFinalText(raw: string): string {
+  return raw.trim();
+}
+
+/** Where the primary keeps the letter: the book, or after a save that did not work, where the person chose (S17). */
+export function primaryDestination(input: { saveFailed: boolean; lastInBook: boolean }): boolean {
+  return input.saveFailed ? input.lastInBook : true;
+}
+
+/**
+ * Review's heading: "Read it back" for a letter with a recording; for a letter that was only typed, Write's own name
+ * for it ("Your letter"), so a typed letter that comes back to Review (a failed save, the Plus sheet after a one-tap
+ * keep, a held letter) keeps the shape it came from and never reads "Read it back" (S20; coordinator's condition on
+ * 5.8 row 5a).
+ */
+export function reviewHeading(input: { typedOnly: boolean }): string {
+  return input.typedOnly ? copy.write.label : copy.review.title;
 }
 
 /**
@@ -148,6 +179,19 @@ export function savedMoment(input: { kind: SavedKind; childName: string; month: 
  */
 export function arrivalParams(input: { entryId: string; secondFree: boolean }): { arrived: string; secondFree?: '1' } {
   return input.secondFree ? { arrived: input.entryId, secondFree: '1' } : { arrived: input.entryId };
+}
+
+/** The saved moment, said once: the chip, a pause, then the line ("Kept in Month 7. Added to Asha's book."). */
+export function momentAnnouncement(chip: string, line: string | null): string {
+  return line ? `${chip}. ${line}` : chip;
+}
+
+/** With a screen reader on, the saved moment holds at least this long, so its announcement is heard before the Book. */
+export const SCREEN_READER_HOLD_MS = 3000;
+
+/** When the saved moment hands over to the Book: the timeline's end, or later while a screen reader speaks. */
+export function savedMomentDoneMs(input: { dismissAtMs: number; screenReader: boolean }): number {
+  return input.screenReader ? Math.max(input.dismissAtMs, SCREEN_READER_HOLD_MS) : input.dismissAtMs;
 }
 
 /** 5.8 row 5b: the first-letter sign-in sheet rises 600 ms after the Book is on screen, so the letter is seen first. */

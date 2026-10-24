@@ -6,7 +6,7 @@
  *
  *   0 ms     the sheet scales from 1 to 0.9 and its radius goes from xl to md, on `gentle`
  *   250 ms   the chip fades in under it ("Kept in Month 7", or the lock and "Kept just for you."): accentSoft fill,
- *            caption, the website's lit edge (a 1 pt lamp-amber border at 40 percent; a 1 pt line under Increase
+ *            subhead (P1's trust-copy floor; S21 says caption), the website's lit edge (a 1 pt lamp-amber border at 40 percent; a 1 pt line under Increase
  *            Contrast or Reduce Transparency)
  *   550 ms   the card moves down 24 pt and fades (350 ms, so the words are never at part strength for longer)
  *   900 ms   `onDone`: Review lands on the Book, on the new letter
@@ -25,13 +25,18 @@ import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withD
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Text } from '@/components/ui/text';
-import { announce, useTheme } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { useReducedMotion } from '@/lib/motion';
 import { fileIntoMonthPlan } from '@/lib/transitions.logic';
 import { LetterHeaderRow, useSheetSurface, type LetterHeader } from './letter-sheet';
+import { momentAnnouncement, savedMomentDoneMs } from './review-view.logic';
 
-/** Lines of the letter shown on the card while it files away: whole lines, then a fade (S21, the excerpt rule). */
+/**
+ * Lines of the letter shown on the card while it files away: whole lines, then a fade (S21, the excerpt rule). Fewer at
+ * accessibility text sizes, so the chip and the line stay on screen at AX5.
+ */
 export const SAVED_CARD_LINES = 6;
+export const SAVED_CARD_LINES_LARGE = 2;
 
 const M = tokens.motion;
 const STANDARD = Easing.bezier(...M.easing);
@@ -59,7 +64,10 @@ export function SavedMoment({
   const { c, highContrast, reduceTransparency } = useTheme();
   const reduced = useReducedMotion();
   const surface = useSheetSurface();
+  const screenReader = useScreenReader();
+  const large = useIsAccessibilitySize();
   const plan = fileIntoMonthPlan(reduced);
+  const said = momentAnnouncement(chip, line);
   const done = useRef(false);
   const finish = () => {
     if (!committed || done.current) return;
@@ -76,7 +84,7 @@ export function SavedMoment({
   useEffect(() => {
     if (!committed) return;
     // Said once, as it appears (the card itself is hidden from VoiceOver while it files away).
-    announce([chip, line].filter(Boolean).join(' '));
+    announce(said);
     const g = M.gentle;
     const spring = { stiffness: g.stiffness, damping: g.damping, mass: g.mass, reduceMotion: ReduceMotion.Never };
     if (plan.scaleTo !== 1) {
@@ -89,7 +97,8 @@ export function SavedMoment({
       lift.value = withDelay(plan.moveAtMs, withTiming(plan.dy, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
       fade.value = withDelay(plan.moveAtMs, withTiming(0, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
     }
-    const t = setTimeout(finish, plan.dismissAtMs);
+    // With a screen reader on, the moment holds until its announcement can be heard (about 3 s), then the Book.
+    const t = setTimeout(finish, savedMomentDoneMs({ dismissAtMs: plan.dismissAtMs, screenReader }));
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committed]);
@@ -108,11 +117,11 @@ export function SavedMoment({
       className="flex-1 justify-center px-4"
       accessible={committed}
       accessibilityRole="button"
-      accessibilityLabel={[chip, line].filter(Boolean).join(' ')}
+      accessibilityLabel={said}
       testID="review.saved">
       <Animated.View style={[surface, cardStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <LetterHeaderRow header={header} />
-        <ExcerptFade text={words} lines={SAVED_CARD_LINES} variant="letterBody" surface={c.surfaceRaised} />
+        <ExcerptFade text={words} lines={large ? SAVED_CARD_LINES_LARGE : SAVED_CARD_LINES} variant="letterBody" surface={c.surfaceRaised} />
       </Animated.View>
       <Animated.View style={[{ alignItems: 'center', gap: tokens.space[3], marginTop: tokens.space[6] }, chipStyle]} accessibilityLiveRegion="polite">
         <View
@@ -120,12 +129,13 @@ export function SavedMoment({
           style={{
             borderRadius: tokens.radius.pill,
             backgroundColor: c.accentSoft,
-            borderWidth: 1,
+            borderWidth: tokens.stroke.control,
             borderColor: highContrast || reduceTransparency ? c.line : LIT_EDGE,
           }}
           testID="review.saved.chip">
           {lock && <LockSimpleIcon size={14} color={c.textMuted} />}
-          <Text variant="caption" tone="default">
+          {/* subhead, not caption: P1's rule keeps trust copy ("Kept just for you.") at 16 pt or more (S21 says caption). */}
+          <Text variant="subhead" tone="default">
             {chip}
           </Text>
         </View>

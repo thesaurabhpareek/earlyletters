@@ -9,8 +9,8 @@
  *   `line` edge instead of a shadow (the high-contrast line under Increase Contrast); 20 pt padding.
  *   Editing (S18): no box inside the letter; the sheet's own edge becomes a 1.5 pt accent line.
  *
- * The header's left side is the "whose book" switch when there are two or more books (twins), read as
- * "To Asha. Change". VoiceOver never hears the "·" (review-view.logic.ts `letterHeader`).
+ * The header's left side is the "whose book" switch when there are two or more books (twins): VoiceOver reads it as
+ * "To Asha, Month 7" with the hint "To Asha. Change". VoiceOver never hears the "·" (review-view.logic.ts `letterHeader`).
  */
 import type { ReactNode } from 'react';
 import { Platform, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -27,7 +27,7 @@ export function useSheetSurface(editing = false): ViewStyle {
   const edge = editing
     ? { borderWidth: tokens.stroke.selected, borderColor: c.accent }
     : scheme === 'dark'
-      ? { borderWidth: 1, borderColor: c.line }
+      ? { borderWidth: tokens.stroke.control, borderColor: c.line }
       : Platform.OS === 'web'
         ? ({ boxShadow: e.web } as ViewStyle)
         : { shadowColor: e.shadowColor, shadowOpacity: e.shadowOpacity, shadowRadius: e.shadowRadius, shadowOffset: e.shadowOffset, elevation: e.elevation };
@@ -53,7 +53,8 @@ export function LetterHeaderRow({ header, onChangeBook, changeLabel }: { header:
   return (
     <View className="flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
       {onChangeBook ? (
-        <Pressable onPress={onChangeBook} accessibilityRole="button" accessibilityLabel={changeLabel ?? header.toSpoken} className="min-h-11 justify-center" testID="review.sheet.to">
+        // The month stays in what VoiceOver says ("To Asha, Month 7"); changing the book is the hint ("To Asha. Change").
+        <Pressable onPress={onChangeBook} accessibilityRole="button" accessibilityLabel={header.toSpoken} accessibilityHint={changeLabel} className="min-h-11 justify-center" testID="review.sheet.to">
           {to}
         </Pressable>
       ) : (

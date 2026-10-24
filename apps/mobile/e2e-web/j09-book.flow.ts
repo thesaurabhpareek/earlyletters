@@ -12,8 +12,8 @@ test('[J09] the Book: empty, one letter, many letters', async ({ app, record }) 
   await step('happy', 'An empty book', 'The closed cover named and signed in first run, one plain sentence, one action: "Write a letter". No counts, no gaps, nothing to fill in. With one book there is no "For Asha" row: "Asha\'s book" already says the name.');
   await btn(app, 'Write a letter').click();
   await expect(app.getByRole('heading', { level: 1 })).toBeVisible();
+  // A typed letter keeps from Write with one tap and lands on the Book (P4b, S20, S21).
   await typeLetter(app, 'You laughed at the dog today, a whole belly laugh.');
-  await expect(app.getByText('A thought to start with', { exact: false }).first()).toBeVisible({ timeout: 8000 });
   await app.getByText('Book', { exact: true }).last().click();
   await expect(app.getByText(/laughed at the dog/)).toBeVisible();
   // The letter sits under the current month's opener, which is lit and says no sentence about filing.
