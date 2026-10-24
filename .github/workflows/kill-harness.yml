@@ -22,8 +22,12 @@
 #
 # Exit codes (README section 9), each named in an annotation; any exit but 0 fails the job, so a red run is red:
 #   1 loss: a letter or take lost, doubled or damaged, the app did not start after a kill, or DL-01 under 49 in 50
-#   2 usage or a refused setup; 3 incomplete: the drill never armed (no wiring line, or not the e2e build), a
-#   timeout, no microphone, or fewer runs judged than planned; 4 the self-check missed a planted failure.
+#   2 usage or a refused setup; 3 incomplete: a timeout, no microphone, fewer runs judged than planned, or the drill
+#   never armed; 4 the self-check missed a planted failure.
+#   A build that cannot launch exits 3 with "self-check run 0: app_exited" (the app was gone before the drill's
+#   boot marker). Then the step "Why the app stopped" prints the uncaught exception and its stack read back to file
+#   and line (.github/scripts/sim-crash-report.sh), and the release-launch job says whether the store build fails
+#   the same way. Run 40072977424 found this: every Release bundle threw at lib/billing/letter-ledger.native.ts:10.
 #
 # DL-01 microphone: the simulator records from the runner's default input, and the macos-26 arm64 image lists no
 # audio device (actions/runner-images images/macos/macos-26-arm64-Readme.md, image 20261013.0424.1). The job installs
@@ -509,7 +513,7 @@ jobs:
             0) echo "::notice title=${LABEL} PASS::every run kept its letter or take exactly once, and the self-check caught every plant" ;;
             1) echo "::error title=${LABEL} exit 1 (loss)::a letter or take was lost, doubled or damaged, the app did not start after a kill, or DL-01 is under 49 in 50 playable. S0: report.md names the run, seed and kill time" ;;
             2) echo "::error title=${LABEL} exit 2 (not run)::usage or a refused setup (wrong bundle id, no --mic-silent)" ;;
-            3) echo "::error title=${LABEL} exit 3 (incomplete)::the drill never armed (no RA-20-18 wiring line, or not the e2e build), a timeout, no microphone (record_failed), or fewer runs judged than planned. report.md names the stage" ;;
+            3) echo "::error title=${LABEL} exit 3 (incomplete)::a timeout, no microphone (record_failed), fewer runs judged than planned, or the drill never armed. With app_exited at self-check run 0 the app could not launch: the next step prints why. report.md names the stage" ;;
             4) echo "::error title=${LABEL} exit 4 (blind)::the self-check missed a planted failure, so this run proves nothing" ;;
             *) echo "::error title=${LABEL} exit ${code}::not a harness exit code" ;;
           esac
