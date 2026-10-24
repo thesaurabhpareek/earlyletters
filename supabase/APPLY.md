@@ -48,7 +48,7 @@ select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELE
    and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
 ```
 - `3 | 3 | 3`: the old automatic grants. Every pending file applies and works as written.
-- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). The explicit-grants file (planned as file 25, `20261023060000`) is what makes the app work there: apply it right after the others, and open the project to nobody before it is applied.
+- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026; staging and production are both new projects and will both answer this). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). File 25 (the explicit-grants file, `20261023060000`, PR pending) is what makes the app work there: do not approve the first staging run until file 25 is on `develop`, so one push applies files 1 to 25, and open the project to nobody before it is applied.
 - Anything else: stop and ask.
 
 b) Whether the role that applies the migrations sees every Storage object. The legal hold checks (file 21), `ops_storage_residue` and `ops_storage_owned_by` read `storage.objects` as that role (it owns the functions); without BYPASSRLS they find nothing and answer "not held" (review B on #251). Run as that role (the SQL Editor's `postgres` is the role `deploy-db.yml` uses):
@@ -817,7 +817,7 @@ A full rollback, as one reverse migration, in this order: re-run `sync_push` and
 
 **Before.** Every earlier pending file, file 17 included. `app.consent_pepper` set (step 6): an account with consent records cannot be deleted without it (`55000`, like G-12).
 
-**Apply.** Two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project").
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project").
 
 **Turn on** (it fails closed until then, and the phone keeps its report for later): `alter database postgres set app.status_report_enabled = 'on';` Anything else pauses both RPCs again (`SCKIL`, detail `statusReport`, which the `subscription-status` function answers as 503 paused).
 
@@ -853,7 +853,7 @@ S05's text (`docs/ops/BACKUP_RUNBOOK.md` appendix A on `feat/backup-server`), wi
 What it does: the private `entry-audio` bucket and its owner-only policies; tables `backup_devices`, `child_keys`, `audio_blobs`, `backup_usage`, `restore_requests`, `restore_approvals`, `escrow_unwraps` (append-only), `escrow_rotation_notices`, none of them granted to `service_role`; the `backup` policy document; client RPCs `backup_*`; the `escrow_svc` role (created NOLOGIN) with EXECUTE on ten `escrow_*` functions only; service functions `backup_svc_sweep`, `backup_svc_unwraps_between`, `backup_svc_stop`; triggers on `entries`, `profiles` and `deletion_requests` so every deletion path removes backups by exact path; `purge_ledger.entity_type` gains `audio_blob` (no value removed).
 Depends on: every earlier file. Needs `app.consent_pepper` set before any account deletion (step 6).
 With file 17: either order works (both widen the ledger kinds without dropping any). If #151 is applied before file 17, file 17 adds the held-draft branch to `backup_entry_exists`; if after, #151's own file must carry that branch (request on #151). File 17 calls `backup_forget_entry` from the held-draft delete trigger whenever it exists, and `ops_replay_ledger` replays `audio_blob` once `audio_blobs` exists.
-Apply: two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml` (staging from `develop`; production on a `db-v*` tag).
+Apply: after two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml` (staging from `develop`; production on a `db-v*` tag).
 Check (expect each):
 ```sql
 select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -912,7 +912,7 @@ select (select attname from pg_attribute where attrelid = 'public.children'::reg
 select to_regclass('public.audio_blobs') is not null and to_regclass('public.held_drafts') is not null;
 ```
 
-**Apply.** Two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run (`55000`).
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run (`55000`).
 
 **Check** (expect 0, then true, then 0):
 ```sql
@@ -1055,7 +1055,7 @@ select exists (select 1 from pg_constraint where conrelid = 'public.entries'::re
 select has_table_privilege('authenticated', 'public.policy_acceptances', 'SELECT');
 ```
 
-**Apply.** Two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 23 (`55000`).
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a run before file 23 (`55000`), and a second run on a project with the automatic grants or after file 25 (`55000`); on a project without them, a second run before file 25 is not refused and changes nothing.
 
 **Check** (expect five rows: `anon policy_documents SELECT`, `anon policy_versions SELECT`, `authenticated policy_acceptances SELECT`, `authenticated policy_documents SELECT`, `authenticated policy_versions SELECT`; then 0). On Postgres 15, leave `MAINTAIN` out of both lists:
 ```sql

@@ -360,16 +360,16 @@ check('sent notices go after 90 days', (await asRole('service_role', `select pub
 const copy = await asRole('service_role', `select public.backup_svc_unwraps_between(now() - interval '1 day', now() + interval '1 minute', 100) r`).then((x) => x.rows[0].r);
 check('[F08-REQ-042] the daily copy lists the day\'s rows with ids, reason, outcome and times', copy.length >= 4 && copy.every((r) => r.id && r.at && r.reason && r.outcome));
 // The key bytes are every wrap this file stored (the boxes, the rewrap, and what child_keys holds now), in each encoding
-// they travel in: lowercase hex (escrow_wrap_hex), base64 of the whole wrap, and base64 of a SealedBox's enc and ct. Each
+// they travel in: lowercase hex (escrow_wrap_hex), base64 of the whole wrap, and base64 and hex of a SealedBox's enc and ct. Each
 // token is 44 characters or more and the copy's ids are hex or UUIDs, so a random id can never match one (the old check
 // looked for 'aaaa', which a random id or hash could hold). Each row must also carry exactly the fields the function names.
 const COPY_FIELDS = JSON.stringify(['at', 'child', 'device', 'ekv', 'id', 'kv', 'outcome', 'profile', 'reason', 'req', 'restore', 'subject']);
 const keyTokens = ['aa', 'ab', 'ba', 'ca', 'dd'].flatMap((b) => [wrapOf(b).toString('hex'), wrapOf(b).toString('base64'),
-  hex(b, 32).toString('base64'), hex(b, 48).toString('base64')])
+  hex(b, 32).toString('base64'), hex(b, 48).toString('base64'), hex(b, 32).toString('hex'), hex(b, 48).toString('hex')])
   .concat((await sys(`select encode(escrow_wrap, 'hex') h, translate(encode(escrow_wrap, 'base64'), E'\\n', '') b from child_keys`)).rows
     .flatMap((r) => [r.h, r.b]));
 const copyText = JSON.stringify(copy);
-check('[F08-REQ-042] the daily copy has no key bytes', keyTokens.length >= 23 && keyTokens.every((t) => t.length >= 44 && !copyText.includes(t))
+check('[F08-REQ-042] the daily copy has no key bytes', keyTokens.length >= 33 && keyTokens.every((t) => t.length >= 44 && !copyText.includes(t))
   && copy.every((r) => JSON.stringify(Object.keys(r).sort()) === COPY_FIELDS));
 check('users cannot read the daily copy function', await codeOf(() => as(A, `select public.backup_svc_unwraps_between(now(), now(), 1)`)) === '42501');
 

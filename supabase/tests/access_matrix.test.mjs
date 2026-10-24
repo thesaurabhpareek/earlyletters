@@ -497,7 +497,9 @@ check('[#248 G2] anon and authenticated hold SELECT only, and only where a path 
 const mirror = await (async () => {
   await db.exec('begin');
   try {
+    // Revoked from PUBLIC first, so the function half cannot pass through PUBLIC's EXECUTE (lens A F4, lens B N1).
     await db.exec(`create function public.matrix_mirror_probe() returns int language sql as $$ select 1 $$;
+      revoke execute on function public.matrix_mirror_probe() from public;
       create table public.matrix_mirror_probe (x int);`);
     return (await sys(`select bool_and(has_function_privilege(r, 'public.matrix_mirror_probe()', 'execute')
         and has_table_privilege(r, 'public.matrix_mirror_probe', p)) x
