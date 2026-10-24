@@ -171,9 +171,12 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let onlyDeletes = false;
     let single = false;
     let contentAccepted = false;
+    // Held uploads that met SCCON themselves in this pass, so never applied: they need not go ahead of a let-go
+    // (takeBatch), and the let-go goes next. One sent ahead and answered leaves the queue or stops held ops.
+    const metSccon = new Set<string>();
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
       if (killed()) return 'stop';
-      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50 });
+      const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, metSccon });
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));
       const res = await call<PushResponse>('sync_push', { p_ops: batch.ops });
@@ -203,7 +206,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       if (out.pushed + out.rejected > 0) changed();
       if (!onlyDeletes && !out.paused) contentAccepted = true;
       if (out.paused) {
-        // SCCON: letters wait on the phone; deletions still go (LEGAL-REQ-009).
+        // SCCON: letters wait on the phone; deletions still go (LEGAL-REQ-009), a let-go after the held upload
+        // ahead of it whose answer was lost (takeBatch). A held upload that met SCCON itself never applied, so it
+        // need not go ahead of its let-go in this pass, whether it met it at the head of the queue or sent ahead.
+        if (out.pausedAt?.type === 'held.upsert') metSccon.add(out.pausedAt.op_id);
         tx(() => writeSetting(db, SYNC_SETTING.pausedFor, out.consent || 'consent'));
         onlyDeletes = true;
         continue;
