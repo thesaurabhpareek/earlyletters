@@ -39,7 +39,7 @@ Other honest limits, so nobody reads more into the controls than they give:
 Each step has a check. Stop at the first check that fails.
 
 ### B1. Apply the migration to staging
-Through `deploy-db.yml` with the `approve-migration` label (S02's APPLY section for this file, appendix A). Then publish version 1.0.0 of the `backup` consent document once counsel has seen the backup lines (F08-REQ-037, F08-REQ-039). Until a version is published, every backup call answers SCCON and nothing uploads.
+After two independent passing reviews on the current head, with green CI, the coordinator merges the migration into `develop` (D-117), and the founder applies it through `deploy-db.yml` (S02's APPLY section for this file, appendix A). Then publish version 1.0.0 of the `backup` consent document once counsel has seen the backup lines (F08-REQ-037, F08-REQ-039). Until a version is published, every backup call answers SCCON and nothing uploads.
 
 Check:
 ```sql

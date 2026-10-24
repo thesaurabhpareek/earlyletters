@@ -41,9 +41,10 @@ on:
     branches: [develop]
     tags: ['db-v*']
   # Staging only, and only from develop (the catch-up path above). Every
-  # migration on develop came in through a PR that passed the fence with the
-  # approve-migration label (D-041); the staging Environment's required
-  # reviewer and deployment-branch rule are the second check.
+  # migration on develop came in through a PR with two independent passing
+  # reviews on its head and green CI, merged by the coordinator (D-117); the
+  # staging Environment's required reviewer (the founder) and deployment-branch
+  # rule are the second check.
   workflow_dispatch:
 
 permissions:

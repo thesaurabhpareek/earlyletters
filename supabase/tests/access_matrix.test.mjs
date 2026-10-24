@@ -124,7 +124,8 @@ const READS = [
   ['entry_versions', 'select 1 from entry_versions', [],                              [1, 0, 1, 0, 0, 0]],
   ['dictionary_terms', 'select 1 from dictionary_terms', [],                          [1, 0, 0, 0, 0, 0]],
   ['child_member_prefs', 'select 1 from child_member_prefs', [],                      [1, 1, 1, 0, 0, 0]],
-  ['policy_acceptances', 'select 1 from policy_acceptances', [],                      [2, 2, 2, 2, 0, 0]],
+  // 20261023050000: anon has no SELECT (row security gave it no row); signed-in people read their own acts.
+  ['policy_acceptances', 'select 1 from policy_acceptances', [],                      [2, 2, 2, 2, 0, '42501']],
   ['my_policy_state', 'select 1 from my_policy_state', [],                            [2, 2, 2, 2, 0, '42501']],
   ['policy_documents', 'select 1 from policy_documents limit 1', [],                  [1, 1, 1, 1, 1, 1]],
   ['policy_versions', 'select 1 from policy_versions limit 1', [],                    [1, 1, 1, 1, 1, 1]],
@@ -201,6 +202,20 @@ const WRITES = [
   ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
   ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', 'none']],
   ['policy_acceptances: insert directly', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values (auth.uid(), 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261023050000 (review B G2 and G3 on #248): the consent tables' writes are revoked from the API roles, so
+  // what row security refused ('none') is now refused by privilege, and TRUNCATE and LOCK, which row security
+  // never sees, are refused too (before: 'ok' for everyone holding the default ALL).
+  ['policy_acceptances: update own act', `update policy_acceptances set action = 'decline' where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: delete own acts', `delete from policy_acceptances where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: truncate', `truncate policy_acceptances`,                     ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: lock exclusively (MAINTAIN)', `lock table policy_acceptances in access exclusive mode`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: publish a version', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
+    values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: edit a version', `update policy_versions set summary = 'x'`,     ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: delete a version', `delete from policy_versions where version = '9.9.9'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: lock exclusively (MAINTAIN)', `lock table policy_versions in access exclusive mode`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_documents: add a document', `insert into policy_documents (key, title, needs_affirmative_act) values ('matrix-doc', 'x', false)`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_documents: delete a document', `delete from policy_documents where key = 'matrix-doc'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
   // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
@@ -392,8 +407,8 @@ for (const sql of SERVICE_ONLY) {
   cells += 3;
   check(`service-only ${name}: refused for users, anonymous and anon`, got.every((g) => g === '42501') || console.log(`      got ${got}`));
 }
-// 20261023010000: those are not the service role's either (hosted Supabase grants it every new function);
-// 20261023020000 adds book_purge_held.
+// 20261023010000: those are not the service role's either (hosted Supabase grants it every new function, and so
+// does the harness since #248 review B T1, so these checks can fail); 20261023020000 adds book_purge_held.
 for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid)']) {
   check(`internal ${sig}: not executable by service_role`,
     !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
@@ -435,6 +450,19 @@ const SERVICE_ROLE = [
   ['subscription_consents: delete', 'delete from subscription_consents', '42501'],
   ['subscription_consents: delete with app.retention_purge on', 'delete from subscription_consents', '42501', true],
   ['subscription_consents: truncate', 'truncate subscription_consents', '42501'],
+  // 20261023050000 (review B G3 on #248): nor MAINTAIN, which allowed an exclusive lock that stalls every consent act.
+  ['policy_acceptances: lock exclusively (MAINTAIN)', 'lock table policy_acceptances in access exclusive mode', '42501'],
+  ['subscription_consents: lock exclusively (MAINTAIN)', 'lock table subscription_consents in access exclusive mode', '42501'],
+  ['policy_acceptances: a shared read lock still works', 'lock table policy_acceptances in access share mode', 'ok'],
+  // Publishing stays the service role's (20261002020000: publishing, support-assisted, retention purge).
+  ['policy_versions: publish a version', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
+    values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`, 'ok'],
+  // 20261023010000 and 20261023020000: the internal purge functions are not the service role's. The harness now
+  // grants every new function to anon, authenticated and service_role as hosted Supabase does, so these rows fail
+  // if a migration forgets the revoke from service_role.
+  ['book_kept_authors: execute', `select public.book_kept_authors('${CHILD}')`, '42501'],
+  ['purge_book_keep_authors: execute', `select public.purge_book_keep_authors('${CHILD}', array['${B}']::uuid[], 'child_purge', null)`, '42501'],
+  ['book_purge_held: execute', `select public.book_purge_held('${CHILD}')`, '42501'],
 ];
 for (const [label, sql, expect, purge] of SERVICE_ROLE) {
   const got = await asService(sql, purge);
@@ -442,13 +470,46 @@ for (const [label, sql, expect, purge] of SERVICE_ROLE) {
   check(`service_role ${label}: expected ${fmt(expect)}`, fmt(got) === fmt(expect) || console.log(`      got ${fmt(got)}`));
 }
 const consentPrivs = (await sys(`select t || ' ' || p v from unnest(array['policy_acceptances', 'subscription_consents']) t
-  cross join unnest(array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p
+  cross join unnest(array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
   where has_table_privilege('service_role', 'public.' || t, p) order by 1`)).rows.map((r) => r.v);
 for (const v of consentPrivs) console.log(`      service_role still holds: ${v}`);
-check('[#178 re-check] service_role holds no write, truncate, references or trigger privilege on either consent table',
+check('[#178 re-check, #248 G3] service_role holds no write, truncate, references, trigger or maintain privilege on either consent table',
   consentPrivs.length === 0);
 check('[#178 re-check] the records are still there after every refused write', (await sys(`select
   (select count(*) from policy_acceptances)::int > 0 and (select count(*) from subscription_consents)::int = 1 x`)).rows[0].x);
+
+// 20261023050000 (review B G2 on #248): what the API roles hold on the consent tables is exactly what a code path
+// uses: authenticated reads its own acts (my_policy_state is security_invoker) and both roles read the published
+// documents and versions. has_table_privilege, not information_schema, because role_table_grants hides MAINTAIN.
+const apiConsentPrivs = (await sys(`select r || ' ' || t || ' ' || p v from unnest(array['anon', 'authenticated']) r
+  cross join unnest(array['policy_acceptances', 'policy_documents', 'policy_versions', 'subscription_consents']) t
+  cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+  where has_table_privilege(r, 'public.' || t, p) order by 1`)).rows.map((r) => r.v);
+check('[#248 G2] anon and authenticated hold SELECT only, and only where a path reads: '
+  + 'authenticated on policy_acceptances, both on policy_documents and policy_versions, neither on subscription_consents',
+  JSON.stringify(apiConsentPrivs) === JSON.stringify(['anon policy_documents SELECT', 'anon policy_versions SELECT',
+    'authenticated policy_acceptances SELECT', 'authenticated policy_documents SELECT', 'authenticated policy_versions SELECT'])
+  || console.log(`      got ${apiConsentPrivs.join(', ')}`));
+
+// ── The harness grants new objects as hosted Supabase does (review B T1 and T2 on #248) ─────────────────
+// Without this mirror a missing revoke could not fail: a function and a table created now must be open to
+// anon, authenticated and service_role (EXECUTE; ALL, TRUNCATE and MAINTAIN included), as on hosted.
+const mirror = await (async () => {
+  await db.exec('begin');
+  try {
+    // Revoked from PUBLIC first, so the function half cannot pass through PUBLIC's EXECUTE (lens A F4, lens B N1).
+    await db.exec(`create function public.matrix_mirror_probe() returns int language sql as $$ select 1 $$;
+      revoke execute on function public.matrix_mirror_probe() from public;
+      create table public.matrix_mirror_probe (x int);`);
+    return (await sys(`select bool_and(has_function_privilege(r, 'public.matrix_mirror_probe()', 'execute')
+        and has_table_privilege(r, 'public.matrix_mirror_probe', p)) x
+      from unnest(array['anon', 'authenticated', 'service_role']) r
+      cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p`)).rows[0].x;
+  } finally {
+    await db.exec('rollback');
+  }
+})();
+check('[#248 T1, T2] the harness gives a new function EXECUTE and a new table ALL for anon, authenticated and service_role, as hosted does', mirror === true);
 
 // ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
 // The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the

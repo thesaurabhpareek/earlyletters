@@ -33,6 +33,52 @@ Step 4 drops whatever entries SELECT policies exist, so it is correct whether or
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
+## Hosted checks before the first apply
+
+Once per hosted project, in the SQL Editor, before `deploy-db.yml` first applies the pending files. `early-letters` has files 1 and 2 applied; `scribe-staging` and `scribe-prod` start empty (`docs/ops/DEPLOY.md:35-37`). a), b) and c) run on any project, empty or not; d) runs only where files 1 and 2 are applied. Every query only reads and prints counts and names only. Write the answers in the deploy notes. If one differs from the expected answer, stop and ask before applying.
+
+a) The Postgres version, and the defaults the project gives new objects. Supabase stopped granting new tables, sequences and functions in `public` to anon, authenticated and service_role on projects created since 30 May 2026 (the date that matters for staging and production), and does the same on every existing project from 30 Oct 2026 (GitHub discussion supabase 45329; the CLI's `RevokeDefaultDataApiPrivilegesSql`, which matches what Studio runs at project creation). New tables still get TRUNCATE, REFERENCES, TRIGGER and MAINTAIN, and new sequences UPDATE, so the query reads only the privileges that change:
+```sql
+select current_setting('server_version_num')::int / 10000 as major;   -- 17 (supabase/config.toml)
+select count(*) filter (where d.defaclobjtype = 'r' and a.privilege_type = 'SELECT') as tables_select,
+       count(*) filter (where d.defaclobjtype = 'S' and a.privilege_type = 'USAGE') as sequences_usage,
+       count(*) filter (where d.defaclobjtype = 'f' and a.privilege_type = 'EXECUTE') as functions_execute
+  from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
+ where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = 'postgres'::regrole
+   and a.grantee in ('anon'::regrole, 'authenticated'::regrole, 'service_role'::regrole);
+```
+- `3 | 3 | 3`: the old automatic grants. Every pending file applies and works as written.
+- `0 | 0 | 0`: no automatic grants (every project created since 30 May 2026; staging and production are both new projects and will both answer this). Every pending file still applies cleanly, files 1 and 2 included, but none of them grants what the app uses, so afterwards the consent sheets, sync, letters and family reads all get `42501`; the deploy job's smoke fails first (the anonymous `policy_versions` read). File 25 (the explicit-grants file, `20261023060000`, PR pending) is what makes the app work there: do not approve the first staging run until file 25 is on `develop`, so one push applies files 1 to 25, and open the project to nobody before it is applied.
+- Anything else: stop and ask.
+
+b) Whether the role that applies the migrations sees every Storage object. The legal hold checks (file 21), `ops_storage_residue` and `ops_storage_owned_by` read `storage.objects` as that role (it owns the functions); without BYPASSRLS they find nothing and answer "not held" (review B on #251). Run as that role (the SQL Editor's `postgres` is the role `deploy-db.yml` uses):
+```sql
+select rolname, rolsuper, rolbypassrls from pg_roles where rolname = current_user;   -- postgres | false | true
+select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects' order by 1;
+-- an empty project: no rows, or only policies made in the dashboard (write their names down)
+-- early-letters (files 1 and 2): entry_photos_author_delete, entry_photos_author_insert, entry_photos_author_update,
+-- entry_photos_read, and any made in the dashboard
+```
+After file 21, on every project, once: `select bool_and(r.rolsuper or r.rolbypassrls) from pg_roles r join pg_proc p on p.proowner = r.oid where p.proname in ('book_purge_held', 'purge_due', 'prepare_account_purge', 'ops_storage_owned_by');` (expect true).
+
+c) The Storage name indexes the hold checks' folder scans use (review B on #251, comment 6376345025, section 2). `storage.objects` exists on every project, empty or not:
+```sql
+select indexname, indexdef ~ '\(bucket_id, name' as bucket_and_name, indexdef ~ 'text_pattern_ops' as name_prefix
+  from pg_indexes where schemaname = 'storage' and tablename = 'objects' order by 1;
+-- includes bucketid_objname | true | false and name_prefix_search | false | true
+```
+If neither a `bucket_and_name` nor a `name_prefix` index is listed, tell the owner before file 21: every purge run would then scan all of `storage.objects` for each book it checks.
+
+d) The Before counts files 20 to 23 ask for (numbers only in the deploy notes), on a project where files 1 and 2 are applied (`early-letters`). On an empty project there is nothing to count: `select count(*) from pg_tables where schemaname = 'public';` is 0, and every one of these counts is 0 by definition.
+```sql
+select (select count(*) from pg_attribute where attrelid = 'public.children'::regclass and attname = 'purged_at' and not attisdropped) as file_20,   -- 0
+       (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname = 'book_purge_held') as file_21,                      -- 0
+       to_regclass('public.held_drafts') is not null as file_22_table,                                                                            -- false
+       (select count(*) from public.entries) as file_23_letters,                                                                                 -- the number of letters
+       (select count(*) from public.entries where jsonb_typeof(machine_edits) <> 'array') as file_23_not_array;                                  -- 0
+```
+If `file_22_table` is true there (file 17 is applied), run File 22's Before counts as well. The last two are File 23's.
+
 ## Step 1. Apply the entries policy (pending file 3)
 
 1. Dashboard > SQL Editor > New query. Paste the whole of `supabase/migrations/20261002010000_entries_select_policy.sql` (it has its own `begin` / `commit`). Run.
@@ -771,7 +817,7 @@ A full rollback, as one reverse migration, in this order: re-run `sync_push` and
 
 **Before.** Every earlier pending file, file 17 included. `app.consent_pepper` set (step 6): an account with consent records cannot be deleted without it (`55000`, like G-12).
 
-**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project").
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project").
 
 **Turn on** (it fails closed until then, and the phone keeps its report for later): `alter database postgres set app.status_report_enabled = 'on';` Anything else pauses both RPCs again (`SCKIL`, detail `statusReport`, which the `subscription-status` function answers as 503 paused).
 
@@ -807,7 +853,7 @@ S05's text (`docs/ops/BACKUP_RUNBOOK.md` appendix A on `feat/backup-server`), wi
 What it does: the private `entry-audio` bucket and its owner-only policies; tables `backup_devices`, `child_keys`, `audio_blobs`, `backup_usage`, `restore_requests`, `restore_approvals`, `escrow_unwraps` (append-only), `escrow_rotation_notices`, none of them granted to `service_role`; the `backup` policy document; client RPCs `backup_*`; the `escrow_svc` role (created NOLOGIN) with EXECUTE on ten `escrow_*` functions only; service functions `backup_svc_sweep`, `backup_svc_unwraps_between`, `backup_svc_stop`; triggers on `entries`, `profiles` and `deletion_requests` so every deletion path removes backups by exact path; `purge_ledger.entity_type` gains `audio_blob` (no value removed).
 Depends on: every earlier file. Needs `app.consent_pepper` set before any account deletion (step 6).
 With file 17: either order works (both widen the ledger kinds without dropping any). If #151 is applied before file 17, file 17 adds the held-draft branch to `backup_entry_exists`; if after, #151's own file must carry that branch (request on #151). File 17 calls `backup_forget_entry` from the held-draft delete trigger whenever it exists, and `ops_replay_ledger` replays `audio_blob` once `audio_blobs` exists.
-Apply: through `deploy-db.yml` (staging by `workflow_dispatch` with `approve-migration`; production on a `db-v*` tag).
+Apply: after two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml` (staging from `develop`; production on a `db-v*` tag).
 Check (expect each):
 ```sql
 select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -866,7 +912,7 @@ select (select attname from pg_attribute where attrelid = 'public.children'::reg
 select to_regclass('public.audio_blobs') is not null and to_regclass('public.held_drafts') is not null;
 ```
 
-**Apply.** Through `deploy-db.yml` with `approve-migration`, staging first ("How these files reach a project"). The file refuses a second run (`55000`).
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run (`55000`).
 
 **Check** (expect 0, then true, then 0):
 ```sql
@@ -992,3 +1038,35 @@ Then repeat step 21's `search_path` query (expect 0 rows; this file adds no func
 **If the count is not 0.** The file refuses (`55000`, with the count only) and changes nothing. The letter stays exactly as stored, and its author's pull stays broken as it is today. Escalate to the coordinator with the three counts (numbers only, never an id or a value). Do not edit or delete the row, and do not try to bring the count to 0 yourself: the repair is a decision, never an operator step. Writing `[]` would falsely record that the machine made no edits; the person's words (`final_text`, `raw_transcript`) are never touched; and putting back an earlier array from `entry_versions` is not an operator's call either. The app cannot heal such a letter on its own (review B M1 on #258). Once the decision is carried out, run the Before counts again, then apply.
 
 **Rollback.** Prefer fixing forward; rolling back brings the gap back. At any time: `alter table public.entries drop constraint entries_machine_edits_shape;` (it takes the exclusive lock on `entries` briefly). No data changes either way. The migration history row stays, so `db push` never runs this file again; to add the check back, write a new migration.
+
+## File 24: the consent tables' grants match their row security (24 Oct 2026, stream S02)
+
+`20261023050000_consent_grants_tightening.sql`. Review B on #248 (comment 6374282549), notes G2, G3 and G4. Apply it after `20261023040000_entries_machine_edits_check.sql`. Privileges only: it adds, redefines and drops nothing. Tests: `consent_grants_tightening` (new) and new rows in `access_matrix`.
+
+What it changes:
+- **`anon` and `authenticated`** lose INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on `policy_acceptances`, `policy_documents` and `policy_versions`, and `anon` loses SELECT on `policy_acceptances`. Row security already refused every one of these, except TRUNCATE and LOCK, which it never sees, and no code path uses them. `authenticated` keeps SELECT on all three (its own acts through `my_policy_state`, and the published texts); `anon` keeps SELECT on the published texts (the consent sheets before sign-in, the staging smoke).
+- **`service_role`** loses MAINTAIN on `policy_acceptances` and `subscription_consents` (an exclusive lock there stalls every consent act). File 20 revoked the rest, and `information_schema.role_table_grants` does not list MAINTAIN, so File 20's check could not see it. It keeps SELECT there, and every right on `policy_documents` and `policy_versions` (publishing).
+- MAINTAIN exists from Postgres 17; on an older server those revokes are skipped. Every writer is a definer function and keeps working.
+- **Default privileges are not changed.** With the old automatic grants this file removes everything above, and a table a later file creates gets them again. Without them (every project created since 30 May 2026) it removes the TRUNCATE, REFERENCES, TRIGGER and MAINTAIN that new tables still get, and its other revokes change nothing. The file header says what `alter default privileges` would do and why it is not here; "Hosted checks before the first apply" a) shows which world a project is in.
+
+**Before.** Every earlier file. Read only (expect true; then true on a project with the automatic grants, false on one without them, see "Hosted checks before the first apply" a):
+```sql
+select exists (select 1 from pg_constraint where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape');
+select has_table_privilege('authenticated', 'public.policy_acceptances', 'SELECT');
+```
+
+**Apply.** After two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop` (D-117), and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a run before file 23 (`55000`), and a second run on a project with the automatic grants or after file 25 (`55000`); on a project without them, a second run before file 25 is not refused and changes nothing.
+
+**Check** (expect five rows: `anon policy_documents SELECT`, `anon policy_versions SELECT`, `authenticated policy_acceptances SELECT`, `authenticated policy_documents SELECT`, `authenticated policy_versions SELECT`; then 0). On Postgres 15, leave `MAINTAIN` out of both lists:
+```sql
+select r || ' ' || t || ' ' || p from unnest(array['anon', 'authenticated']) r
+  cross join unnest(array['policy_acceptances', 'policy_documents', 'policy_versions', 'subscription_consents']) t
+  cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+ where has_table_privilege(r, 'public.' || t, p) order by 1;
+select count(*) from unnest(array['policy_acceptances', 'subscription_consents']) t
+ cross join unnest(array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+ where has_table_privilege('service_role', 'public.' || t, p);
+```
+Then repeat step 21's `search_path` query (expect 0 rows; this file adds no function). Advisors: none new expected.
+
+**Rollback.** Prefer not to: it gives back privileges no path uses. If a path turns out to need one, grant that one privilege to that one role in a new file (for example `grant select on public.policy_acceptances to anon;`), never the default ALL.
