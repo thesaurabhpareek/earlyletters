@@ -26,8 +26,9 @@
 # still cannot record, the drill writes record_failed and the harness exits 3; then DL-01 runs on the founder's Mac
 # with a silent virtual input (AF-14; README section 9).
 #
-# When: workflow_dispatch on any branch (agents may dispatch it, AUTOMATION.md 2.11). The schedule fires only once
-# this file is on the default branch (AF-05). Standard macOS runners are free for this public repository; the gate
+# When: workflow_dispatch (agents may dispatch it, AUTOMATION.md 2.11) and the nightly schedule. GitHub starts either
+# only once this file is on the default branch (AF-05); after one run, the API dispatches it on any branch or tag
+# (github/docs, events-that-trigger-workflows). Standard macOS runners are free for this public repository; the gate
 # run holds five at once.
 name: Kill harness (DL-01, DL-02)
 
