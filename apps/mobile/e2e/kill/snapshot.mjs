@@ -2,7 +2,7 @@
 // The oracle (oracle.mjs) judges a run from this snapshot alone, never from anything the app reports about itself.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileNameOf } from './protocol.mjs';
 
@@ -40,7 +40,8 @@ function listAudio(documentsDir) {
     } catch {
       return;
     }
-    for (const it of items) {
+    // Sorted, so the order of files that share a name never depends on the file system.
+    for (const it of items.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
       const p = join(dir, it.name);
       if (it.isDirectory()) walk(p);
       else if (it.isFile() && AUDIO.test(it.name)) {
@@ -56,18 +57,28 @@ function listAudio(documentsDir) {
 }
 
 /**
- * The file path a row stores (`audio_uri`, a file:// URI on iOS), decoded, so the oracle can check that the row
- * points at the very file the host lists, not only at one of the same name. Null when there is no URI.
+ * The file path a row stores (`audio_uri`, a file:// URI on iOS), so the oracle can check that the row points at
+ * the very file the host lists, not only at one of the same name. Spelling is undone, never meaning: `file://`,
+ * `file://localhost` and `file:` go, percent-encoding is decoded, and `//`, `./` and `../` are resolved
+ * (`normalizePath`). Null when there is no URI.
  */
 export function storedPathOf(uri) {
   if (!uri) return null;
   const clean = String(uri).split(/[?#]/)[0];
-  const path = clean.replace(/^file:\/\//, '');
+  const path = clean.replace(/^file:\/\/localhost(?=\/)/i, '').replace(/^file:\/\//i, '').replace(/^file:/i, '');
+  let decoded = path;
   try {
-    return decodeURIComponent(path);
+    decoded = decodeURIComponent(path);
   } catch {
-    return path;
+    // a stray % stays as it is
   }
+  return normalizePath(decoded);
+}
+
+/** A path with `//`, `./` and `../` resolved (POSIX), and no trailing slash. */
+export function normalizePath(p) {
+  const n = posix.normalize(String(p));
+  return n.length > 1 && n.endsWith('/') ? n.slice(0, -1) : n;
 }
 
 const shaCache = new Map();

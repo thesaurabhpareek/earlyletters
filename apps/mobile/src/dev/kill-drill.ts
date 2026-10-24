@@ -20,6 +20,13 @@
  *
  * Plants (`e2eKillPlant`) break a save on purpose, so the harness proves it can see a lost, doubled or
  * damaged letter before it reports a pass (a run that cannot fail proves nothing). They exist only here.
+ *
+ * A `decode` launch (ADR 0027, checks V2 and V3, the in-app half) reads the takes the host names after its DL-01
+ * runs, with the app's own code and nothing else: the frame scan, ScribeAudio's probe, `openRecordingForRun` with
+ * the real whole-frame copy and the take's stored progress mark, every `findSpeech` window through `decodePcm16`,
+ * and, for the first few, a listening copy (`enhance`) that it probes and deletes. That is the transcription job
+ * up to Whisper, where a run is refused or planned. Whisper itself needs a speech pack, which the e2e simulator
+ * build has none of; the marker says whether one was installed. It writes numbers only, never audio or words.
  */
 import { bundleId as brandBundleId } from '@scribe/brand';
 import { ENGINE_VERSION } from '@scribe/core';
@@ -29,11 +36,18 @@ import * as Device from 'expo-device';
 import { Directory, File, Paths } from 'expo-file-system';
 import { useEffect } from 'react';
 import { Settings } from 'react-native';
+import { ScribeAudio, scribeAudioErrorCode } from '../../modules/scribe-audio';
 import { setAudioMode } from '@/lib/audio-mode';
 import { afterLetterKept } from '@/lib/billing';
+import { adtsLengthEvidence, breaksInside } from '@/lib/capture/adts';
+import { scanRecordingFile, wholeFramesCopy } from '@/lib/capture/adts-file';
 import { VOICE_RECORDING_OPTIONS, beginTake, ensureAudioHash, hashAudioFile } from '@/lib/capture/recorder';
+import { containerOfRecording } from '@/lib/capture/recording-file';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { fileNameOf } from '@/lib/capture/sweep.logic';
+import { vadWindows } from '@/lib/transcribe-plan';
+import { RunInputError, openRecordingForRun } from '@/lib/transcribe-run';
+import { createWhisperTranscriber } from '@/lib/transcribe-whisper';
 import type { SqlParam } from '@/lib/db/sql';
 import {
   addChild,
@@ -57,8 +71,11 @@ import {
   type Entry,
 } from '@/lib/store';
 import {
+  DECODE_FILE_NAME,
+  DECODE_LIMIT,
   DRAFT_REMOVE,
   DRILL_BUNDLE_SUFFIX,
+  ENHANCE_LIMIT,
   FIXTURE_FILE,
   MARKER_DIR,
   OWNED_SETTING,
@@ -72,6 +89,7 @@ import {
   parseDrillArgs,
   type ArmedMarker,
   type CrashPoint,
+  type DecodeRequest,
   type DrillArgs,
   type MarkerKind,
 } from './kill-drill.logic';
@@ -188,14 +206,15 @@ async function runDrill(a: DrillArgs, recorder: AudioRecorder | null): Promise<v
   await nextFrame();
   const report = await runLaunchSweep();
   writeMarker('boot', a.run, { run: a.run, mode: a.mode, swept: report !== null, sweep: report ?? {}, at: new Date().toISOString() });
-  if (a.mode !== 'dl01' && a.mode !== 'dl02') return;
+  if (a.mode !== 'dl01' && a.mode !== 'dl02' && a.mode !== 'decode') return;
   // The host judges the previous run now; nothing changes on disk until it says go.
   const t0 = Date.now();
   while (!hasMarker('go', a.run)) {
     if (Date.now() - t0 > GO_WAIT_MS) throw new DrillError('no_go');
     await sleep(25);
   }
-  if (a.mode === 'dl02') await (a.point ? pointDrill(a) : saveDrill(a));
+  if (a.mode === 'decode') await decodeDrill(a);
+  else if (a.mode === 'dl02') await (a.point ? pointDrill(a) : saveDrill(a));
   else await recordDrill(a, recorder);
 }
 
@@ -476,4 +495,133 @@ async function recordDrill(a: DrillArgs, recorder: AudioRecorder | null): Promis
       // the next tick tries again
     }
   }, 5000);
+}
+
+// ── ADR 0027: the in-app decode check of kept takes (checks V2 and V3) ──
+
+/** The host's `go` marker for a decode launch; read again if the host is still writing it. */
+async function readDecodeRequest(run: number): Promise<DecodeRequest> {
+  for (let i = 0; ; i += 1) {
+    try {
+      const body = JSON.parse(new File(markerDir(), markerName('go', run)).textSync()) as Partial<DecodeRequest>;
+      return { run, files: Array.isArray(body.files) ? body.files.slice(0, DECODE_LIMIT) : [] };
+    } catch {
+      if (i >= 40) throw new DrillError('decode_request_unreadable');
+      await sleep(25);
+    }
+  }
+}
+
+const codeOf = (e: unknown) => (e instanceof RunInputError ? e.reason : (scribeAudioErrorCode(e) ?? 'error'));
+
+/** A listening copy of the take in Caches, its length, then the copy deleted. */
+async function enhanceCheck(uri: string): Promise<Record<string, unknown>> {
+  const audio = ScribeAudio;
+  if (!audio) return { error: 'no_scribe_audio' };
+  const out = new File(markerDir(), 'enhance-check.m4a');
+  try {
+    if (!audio.isIsolationAvailable()) return { error: 'isolation_unavailable' };
+    if (out.exists) out.delete();
+    const made = await audio.enhance('kill-drill-enhance', uri, out.uri, { mix: 80 });
+    const probe = await audio.probe(out.uri);
+    return { ms: made.durationMs, copyProbeMs: probe.durationMs };
+  } catch (e) {
+    return { error: codeOf(e) };
+  } finally {
+    try {
+      if (out.exists) out.delete();
+    } catch {
+      // the uninstall at the end of the harness removes it
+    }
+  }
+}
+
+/**
+ * One take as the transcription job reads it, up to Whisper (transcribe-whisper.ts): the frame scan, the probe,
+ * `openRecordingForRun` with the real whole-frame copy and the stored progress mark, then every 5-minute window
+ * `findSpeech` decodes. Numbers only.
+ */
+async function decodeOne(uri: string, draftId: string | null, withEnhance: boolean): Promise<Record<string, unknown>> {
+  const audio = ScribeAudio;
+  if (!audio) return { error: 'no_scribe_audio' };
+  const container = containerOfRecording(uri);
+  const storedMs = draftId ? (getDraft(draftId)?.audioDurationMs ?? null) : null;
+  const scan = container === 'adts' ? await scanRecordingFile(uri) : null;
+  const out: Record<string, unknown> = { container, storedMs };
+  if (scan) {
+    Object.assign(out, {
+      frames: scan.frames,
+      wholeBytes: scan.wholeBytes,
+      tailBytes: scan.tailBytes,
+      tail: scan.tail,
+      framesAfterBreak: scan.framesAfterBreak,
+      countedMs: adtsLengthEvidence(scan).countedMs,
+    });
+  }
+  try {
+    const p = await audio.probe(uri);
+    out.probeMs = p.durationMs;
+    out.sampleRate = p.sampleRate;
+  } catch (e) {
+    out.probeError = codeOf(e);
+  }
+  let usedCopy = false;
+  let windows = 0;
+  try {
+    const run = await openRecordingForRun(
+      { probeMs: async (u) => (await audio.probe(u)).durationMs, decode: (u, pieces) => audio.decodePcm16(u, [...pieces]) },
+      uri,
+      storedMs,
+      scan ? { evidence: adtsLengthEvidence(scan), tail: scan.wholeBytes > 0 ? scan.tail : 'none', breakInside: breaksInside(scan) } : null,
+      () => {
+        usedCopy = true;
+        return wholeFramesCopy(uri, scan?.wholeBytes ?? 0);
+      },
+    );
+    out.plannedMs = run.durationMs;
+    try {
+      for (const w of vadWindows(run.durationMs)) {
+        await run.decode([{ srcStartMs: w.startMs, srcEndMs: w.endMs, silenceBeforeMs: 0 }]);
+        windows += 1;
+      }
+    } finally {
+      run.close();
+    }
+  } catch (e) {
+    out.refused = codeOf(e);
+  }
+  out.usedCopy = usedCopy;
+  out.windows = windows;
+  if (withEnhance) out.enhance = await enhanceCheck(uri);
+  return out;
+}
+
+async function decodeDrill(a: DrillArgs): Promise<void> {
+  const request = await readDecodeRequest(a.run);
+  let whisper: string | null;
+  try {
+    whisper = (await createWhisperTranscriber().availability('en')) ?? 'available';
+  } catch {
+    whisper = 'unknown';
+  }
+  const takes = new Directory(Paths.document, TAKE_DIR);
+  const results: Array<Record<string, unknown>> = [];
+  for (const [i, f] of request.files.entries()) {
+    const name = typeof f?.name === 'string' ? f.name : '';
+    if (!DECODE_FILE_NAME.test(name)) {
+      results.push({ name: null, error: 'bad_name' });
+      continue;
+    }
+    const file = new File(takes, name);
+    if (!file.exists) {
+      results.push({ name, error: 'missing' });
+      continue;
+    }
+    try {
+      results.push({ name, ...(await decodeOne(file.uri, typeof f.draftId === 'string' ? f.draftId : null, i < ENHANCE_LIMIT)) });
+    } catch (e) {
+      results.push({ name, error: codeOf(e) });
+    }
+  }
+  writeMarker('decoded', a.run, { run: a.run, whisper, results, at: new Date().toISOString() });
 }

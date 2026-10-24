@@ -135,9 +135,9 @@ export function simctlDriver(o) {
       return o.needsFixture ? sha256OfFile(makeFixture()) : null;
     },
 
-    /** Lets the app go on after the host judged the previous run (protocol: the go marker). */
-    writeGo(run) {
-      writeFileSync(join(markers(), markerName('go', run)), JSON.stringify({ run }));
+    /** Lets the app go on after the host judged the previous run (protocol: the go marker; a decode launch's names its takes). */
+    writeGo(run, body = { run }) {
+      writeFileSync(join(markers(), markerName('go', run)), JSON.stringify(body));
     },
 
     readMarker(kind, run) {

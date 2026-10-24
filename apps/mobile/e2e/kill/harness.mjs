@@ -8,7 +8,7 @@
 // A relaunch that fails after a kill is a fail (exit 1), never incomplete. Whatever happens, a report is returned.
 import { MONO_FRAME_LIMIT, afinfoFields, v1Findings } from './adts-evidence.mjs';
 import { auditStore, classifyDl01, classifyDl02, isBad } from './oracle.mjs';
-import { CRASH_POINTS, DRILL_KINDS, PLANT_LOSS_GAP_MS, POINT_EXPECTS } from './protocol.mjs';
+import { CRASH_POINTS, DECODE_LIMIT, DRILL_KINDS, PLANT_LOSS_GAP_MS, POINT_EXPECTS } from './protocol.mjs';
 
 export const EXIT = Object.freeze({ pass: 0, fail: 1, usage: 2, incomplete: 3, blind: 4 });
 
@@ -16,7 +16,7 @@ export const DEFAULTS = Object.freeze({
   // DL-02: 07 "Kill during save", random 0 to 400 ms after Save. DL-01: 07 "Kill while recording", 10 to 120 s.
   dl02: { delayMs: [0, 400], plantDelayMs: [0, 400] },
   dl01: { delayMs: [10000, 120000], plantDelayMs: [2000, 4000] },
-  timeouts: { bootMs: 120000, armMs: 30000, pointMs: 30000 },
+  timeouts: { bootMs: 120000, armMs: 30000, pointMs: 30000, decodeMs: 120000, decodePerTakeMs: 30000 },
   selfCheck: 2,
   // 07 "Kill while recording": 49 or more of 50 playable to within 5 s.
   playableShare: 49 / 50,
@@ -121,7 +121,7 @@ const defined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) =
  * @param {[number, number]} [opts.plantDelayMs]
  * @param {number} [opts.seed]
  * @param {number} [opts.selfCheck]  planted runs of each kind
- * @param {{ bootMs: number, armMs: number, pointMs: number }} [opts.timeouts]
+ * @param {{ bootMs: number, armMs: number, pointMs: number, decodeMs?: number, decodePerTakeMs?: number }} [opts.timeouts]
  * @param {(line: string) => void} [opts.log]
  */
 export async function runHarness(opts) {
@@ -178,6 +178,8 @@ export async function runHarness(opts) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const driver = o.driver;
   const io = { sha256: (path) => driver.sha256(path), playable: (path) => driver.playable(path) };
+  /** Each judged run's armed marker (its take's file name and draft), kept out of the report: the decode check names takes by file. */
+  const armedByRun = new Map();
 
   const waitFor = async (kind, run, pid, timeoutMs, pollMs) => {
     const t0 = Date.now();
@@ -219,6 +221,7 @@ export async function runHarness(opts) {
 
     const judge = (p, bootMarker) => {
       const base = baseOf(p);
+      armedByRun.set(base.run, p.armed);
       let snap;
       try {
         snap = driver.snapshot();
@@ -380,6 +383,31 @@ export async function runHarness(opts) {
     return { results, errors, fatal };
   };
 
+  /**
+   * One launch in the drill's `decode` mode (kill-drill.ts): the app reads each kept ADTS take as its transcription
+   * job would, up to Whisper, and writes the numbers. Matched back to runs by order; no file name reaches the report.
+   */
+  const decodeCheck = async (runs, run) => {
+    const pid = await driver.launch({ mode: 'decode', run });
+    const boot = await waitFor('boot', run, pid, o.timeouts.bootMs, 50);
+    if (!boot.ok) {
+      await driver.kill(pid);
+      return { error: boot.code, runs: [] };
+    }
+    driver.writeGo(run, { run, files: runs.map((r) => ({ name: armedByRun.get(r.run).audioFile, draftId: armedByRun.get(r.run).draftId ?? null })) });
+    const done = await waitFor('decoded', run, pid, o.timeouts.decodeMs + o.timeouts.decodePerTakeMs * runs.length, 250);
+    await driver.terminate(pid);
+    if (!done.ok) return { error: done.code, runs: [] };
+    const results = Array.isArray(done.marker.results) ? done.marker.results : [];
+    return {
+      whisper: done.marker.whisper ?? null,
+      runs: runs.map((r, i) => {
+        const { name: _name, ...rest } = results[i] ?? { error: 'no_result' };
+        return { run: r.run, ...(r.shard ? { shard: r.shard } : {}), ...rest };
+      }),
+    };
+  };
+
   try {
     report.device = driver.info ? await driver.info() : null;
 
@@ -413,6 +441,18 @@ export async function runHarness(opts) {
     const real = await series(items, o.delayMs, 'run');
     report.runs = real.results;
     report.errors.push(...real.errors);
+
+    // 3. ADR 0027 (V2 and V3, the in-app half): the kept ADTS takes read by the app's own code, up to Whisper, on
+    // the same install. Reported only; it never changes the exit code.
+    const adtsKept = o.mode === 'dl01' && !real.fatal ? real.results.filter((r) => (r.outcome === 'kept-playable' || r.outcome === 'kept-unplayable') && r.container === 'adts' && armedByRun.has(r.run)) : [];
+    if (adtsKept.length) {
+      stage = 'decode check';
+      try {
+        report.decodeCheck = await decodeCheck(adtsKept.slice(0, DECODE_LIMIT), (items.at(-1)?.run ?? 0) + 2);
+      } catch (e) {
+        report.decodeCheck = { error: String(e?.message ?? e).slice(0, 160), runs: [] };
+      }
+    }
     return finish();
   } catch (e) {
     report.crashed = { stage, message: String(e?.message ?? e).slice(0, 300) };
@@ -562,8 +602,17 @@ const VERDICT = {
 
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
-/** A content-free Markdown summary (run numbers, outcomes and reasons; no ids, no words). */
-export function renderMarkdown(report) {
+/** Kept ADTS takes whose V1 evidence blocks the GitHub step summary carries; report.md and the job log carry all. */
+export const STEP_SUMMARY_EVIDENCE = 10;
+/** GitHub refuses a step summary over 1 MiB; the summary is cut well before that, with a note. */
+export const STEP_SUMMARY_MAX_BYTES = 900 * 1024;
+
+/**
+ * A content-free Markdown summary (run numbers, outcomes and reasons; no ids, no words).
+ * @param {object} report
+ * @param {{ evidenceLimit?: number }} [o]  how many kept ADTS takes get their V1 evidence block (default: all)
+ */
+export function renderMarkdown(report, o = {}) {
   const c = countsOf(report);
   const title = report.mode === 'dl02' ? 'DL-02, kill during save' : 'DL-01, kill while recording';
   const seeds = Array.isArray(report.seed) ? report.seed.join(', ') : report.seed;
@@ -615,8 +664,18 @@ export function renderMarkdown(report) {
     lines.push('', 'Errors:');
     for (const e of report.errors) lines.push(`- ${e.phase}${e.stage ? ` (${e.stage})` : ''} run ${e.run ?? '-'}: ${e.code}`);
   }
-  if (report.mode === 'dl01') lines.push(...renderAdts(report, c));
+  if (report.mode === 'dl01') lines.push(...renderAdts(report, c, o.evidenceLimit ?? Infinity));
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * The GitHub step summary: report.md with the V1 evidence blocks of the first few ADTS takes only, and cut with a
+ * note if it would still pass GitHub's 1 MiB limit. report.md and the job log keep everything.
+ */
+export function stepSummary(report) {
+  const md = renderMarkdown(report, { evidenceLimit: STEP_SUMMARY_EVIDENCE });
+  if (Buffer.byteLength(md) <= STEP_SUMMARY_MAX_BYTES) return md;
+  return `${Buffer.from(md).subarray(0, STEP_SUMMARY_MAX_BYTES).toString('utf8')}\n\n(Cut here to stay under GitHub's step summary limit; report.md in the artifact and the job log have the rest.)\n`;
 }
 
 const runLabel = (r) => (r.shard ? `${r.shard}.${r.run}` : String(r.run));
@@ -627,7 +686,7 @@ const fixed = (x, d) => (Number.isFinite(x) ? x.toFixed(d) : '-');
  * tail as the kill left it, and V1's evidence (the first 16 bytes, afinfo's output without the file's name, the
  * header fields and the frame size distribution). Run numbers only; no ids, no words, no audio beyond 16 bytes.
  */
-function renderAdts(report, c) {
+function renderAdts(report, c, evidenceLimit) {
   const runs = report.runs.filter((r) => (r.outcome === 'kept-playable' || r.outcome === 'kept-unplayable') && r.container === 'adts' && r.adts);
   if (!runs.length) return [];
   const a = c.adts;
@@ -648,7 +707,7 @@ function renderAdts(report, c) {
       `| Frame bytes over every kept take | min ${Math.min(...sizes.map((s) => s.min ?? Infinity))}, mean ${frames ? (bytes / frames).toFixed(1) : '-'}, max ${Math.max(...sizes.map((s) => s.max ?? 0))}, over ${frames} frames; over ${MONO_FRAME_LIMIT} bytes: ${sizes.reduce((n, s) => n + s.overLimit, 0)} |`,
     );
   }
-  out.push(`| Takes failing a V1 check (FF F1, AAC-LC, frequency index 3, channel configuration 1, no ftyp at offset 4, no frame over ${MONO_FRAME_LIMIT} bytes, no break) | ${a.v1Failing} |`);
+  out.push(`| Takes failing a V1 check (FF F1 or FF F9, AAC-LC, frequency index 3, channel configuration 1, no ftyp at offset 4, no frame over ${MONO_FRAME_LIMIT} bytes, no break) | ${a.v1Failing} |`);
   const devices = (Array.isArray(report.device) ? report.device : [report.device]).filter(Boolean);
   const inputs = [...new Set(devices.map((d) => d.micInput).filter(Boolean))];
   if (inputs.length) out.push(`| Microphone input | ${inputs.join(', ')}. A silent input gives the frame sizes of silence: V1's speech half needs a device run |`);
@@ -666,14 +725,19 @@ function renderAdts(report, c) {
   for (const r of runs) {
     const f = r.adts;
     const h = f.header;
-    const head = h ? `${h.profile}, frequency index ${h.frequencyIndex}, channel configuration ${h.channelConfiguration}${h.crc ? ', CRC' : ''}${f.ftypAt4 ? ', ftyp at 4' : ''}` : f.ftypAt4 ? 'not ADTS (ftyp at 4)' : 'not ADTS';
+    const id = h ? (h.mpeg === 2 ? 'FF F9 (MPEG-2 ID)' : 'FF F1 (MPEG-4 ID)') : '';
+    const head = h
+      ? `${id}, ${h.profile}, frequency index ${h.frequencyIndex}, channel configuration ${h.channelConfiguration}${h.crc ? ', CRC' : ''}${f.ftypAt4 ? ', ftyp at 4' : ''}`
+      : f.adts ? 'cut inside its first header' : f.ftypAt4 ? 'not ADTS (ftyp at 4)' : 'not ADTS';
     const fb = f.frameBytes ? `${f.frameBytes.min}, ${f.frameBytes.mean}, ${f.frameBytes.max}` : '-';
     out.push(
       `| ${runLabel(r)} | ${r.afinfoOpens === true ? 'yes' : r.afinfoOpens === false ? 'no' : 'not run'} | ${f.adts ? f.frames : '-'} | ${fixed(r.durationS, 3)} | ${fixed(r.afinfoDurationS, 3)} | ${r.deviationMs ?? '-'} | ${f.adts ? f.tailBytes : '-'} | ${f.adts ? f.tail : '-'}${f.framesAfterBreak ? ` (${f.framesAfterBreak} frames after it)` : ''} | ${fb} | ${f.kbps ?? '-'} | ${head} | ${r.storedPath ?? '-'} |`,
     );
   }
+  if (report.decodeCheck) out.push(...renderDecodeCheck(report.decodeCheck));
   out.push('', "### V1 evidence for each kept take (afinfo's File line replaced; nothing else changed)");
-  for (const r of runs) {
+  if (runs.length > evidenceLimit) out.push('', `The first ${evidenceLimit} of ${runs.length} takes here; report.md and the job log carry every one.`);
+  for (const r of runs.slice(0, evidenceLimit)) {
     const af = afinfoFields(r.afinfo);
     out.push(
       '',
@@ -683,6 +747,73 @@ function renderAdts(report, c) {
       r.adts.first16,
       ...(r.afinfo ? ['', r.afinfo] : ['', '(no afinfo output)']),
       '```',
+    );
+  }
+  return out;
+}
+
+const FRAME_MS = (1024 / 48000) * 1000;
+const PRIMING_MS = (2112 / 48000) * 1000;
+
+/** How a probe length stands against the counted frames: within one frame, within one frame after 2112 samples of priming, or neither. */
+function probeAgainstCounted(probeMs, countedMs) {
+  if (!Number.isFinite(probeMs) || !Number.isFinite(countedMs)) return null;
+  const gap = countedMs - probeMs;
+  if (Math.abs(gap) <= FRAME_MS) return 'one frame';
+  if (Math.abs(gap - PRIMING_MS) <= FRAME_MS) return 'one frame after priming';
+  return 'no';
+}
+
+/**
+ * The drill's decode launch (ADR 0027 V2 and V3, the in-app half): each kept ADTS take as the app's transcription job
+ * reads it, up to Whisper. V2 asserts that none is refused and that each plans over its counted frames.
+ */
+function renderDecodeCheck(d) {
+  const out = ['', '### In-app decode check (ScribeAudio on the simulator; ADR 0027 V2 and V3)', ''];
+  out.push(
+    "Each kept ADTS take read by the app's own transcription job up to Whisper, in one more launch on the same install: the frame scan, `ScribeAudio.probe`, `openRecordingForRun` (length check and whole-frame copy) with the take's stored progress mark, and every `findSpeech` window through `decodePcm16`; the first takes also get a listening copy (`enhance`), probed and deleted.",
+  );
+  if (d.error) {
+    out.push('', `**The decode launch did not finish (${d.error}); nothing below was measured.**`);
+    return out;
+  }
+  const runs = d.runs ?? [];
+  const read = runs.filter((r) => !r.error);
+  const refused = read.filter((r) => r.refused);
+  const planned = read.filter((r) => !r.refused && Number.isFinite(r.plannedMs) && Number.isFinite(r.countedMs) && r.plannedMs >= r.countedMs - 0.5);
+  const vs = read.map((r) => probeAgainstCounted(r.probeMs, r.countedMs));
+  const enh = runs.filter((r) => r.enhance);
+  const enhOk = enh.filter((r) => Number.isFinite(r.enhance.copyProbeMs) && Number.isFinite(r.probeMs) && Math.abs(r.enhance.copyProbeMs - r.probeMs) <= FRAME_MS);
+  out.push(
+    '',
+    '| | |',
+    '|---|---|',
+    `| Takes read, of those asked | ${read.length} of ${runs.length}${runs.length - read.length ? ` (${runs.filter((r) => r.error).map((r) => r.error).join(', ')})` : ''} |`,
+    `| Refused (a visible decode_failed; V2 asserts none) | ${refused.length}${refused.length ? `: ${[...new Set(refused.map((r) => r.refused))].join(', ')}` : ''} |`,
+    `| Planned over at least the counted frames | ${planned.length} of ${read.length} |`,
+    `| probe within one frame of the counted frames | ${vs.filter((x) => x === 'one frame').length}; within one frame after 2112 samples of priming: ${vs.filter((x) => x === 'one frame after priming').length}; neither: ${vs.filter((x) => x === 'no').length}; no probe: ${vs.filter((x) => x === null).length} |`,
+    `| Read through the whole-frame copy | ${read.filter((r) => r.usedCopy).length} |`,
+    `| Listening copy (enhance) length within one frame of the original | ${enh.length ? `${enhOk.length} of ${enh.length}${enh.some((r) => r.enhance.error) ? ` (${[...new Set(enh.filter((r) => r.enhance.error).map((r) => r.enhance.error))].join(', ')})` : ''}` : 'not run'} |`,
+    `| Whisper on the simulator | ${d.whisper ?? 'unknown'} (the real job needs a speech pack; without one it stops before Whisper) |`,
+  );
+  const findings = [
+    ...refused.map((r) => `run ${runLabel(r)}: refused (${r.refused})`),
+    ...read.filter((r, i) => vs[i] === 'no').map((r) => `run ${runLabel(r)}: probe ${fixed(r.probeMs, 1)} ms against ${fixed(r.countedMs, 1)} ms of counted frames`),
+    ...runs.filter((r) => r.error).map((r) => `run ${runLabel(r)}: not read (${r.error})`),
+  ];
+  if (findings.length) {
+    out.push('', `**FINDING, to report before any flip (ADR 0027 V2 and V3): ${findings.length}.**`, '');
+    for (const x of findings.slice(0, 100)) out.push(`- ${x}`);
+  }
+  out.push('', '| Run | Counted (ms) | probe (ms) | probe against counted | Stored mark (ms) | Planned (ms) | Copy | Windows | Refused | enhance (ms, copy probe ms) |', '|---|---|---|---|---|---|---|---|---|---|');
+  for (const r of runs) {
+    if (r.error) {
+      out.push(`| ${runLabel(r)} | not read: ${r.error} | | | | | | | | |`);
+      continue;
+    }
+    const e = r.enhance ? (r.enhance.error ? r.enhance.error : `${fixed(r.enhance.ms, 1)}, ${fixed(r.enhance.copyProbeMs, 1)}`) : '-';
+    out.push(
+      `| ${runLabel(r)} | ${fixed(r.countedMs, 1)} | ${r.probeError ?? fixed(r.probeMs, 1)} | ${probeAgainstCounted(r.probeMs, r.countedMs) ?? '-'} | ${r.storedMs ?? '-'} | ${fixed(r.plannedMs, 1)} | ${r.usedCopy ? 'yes' : 'no'} | ${r.windows ?? '-'} | ${r.refused ?? 'no'} | ${e} |`,
     );
   }
   return out;
