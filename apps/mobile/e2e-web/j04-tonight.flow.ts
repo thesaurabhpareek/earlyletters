@@ -1,4 +1,4 @@
-import { btn, firstRun, journey, typeLetter } from './support/app';
+import { btn, firstRun, journey, tab, typeLetter } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
@@ -93,13 +93,15 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   // A free phone: two letters are kept, the third is held at the Keep step (D-082). Typed, so no recording has to
   // load in a browser.
   await firstRun(app);
+  // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
+  await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');
+  await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await btn(app, /^Type/).click();
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
-  await btn(app, 'Save').click();
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
   await expect(app.getByText('This one waits on this phone, on Tonight, exactly as it is, for as long as you like.')).toBeVisible();

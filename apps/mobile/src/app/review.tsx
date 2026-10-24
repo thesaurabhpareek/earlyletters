@@ -8,7 +8,8 @@
  * choosing Exactly as said keeps the fixes in state, so it is reversible
  * (D-086, review-view.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
- * entry locally first, then the success haptic, then the settle animation.
+ * entry locally first, then the success haptic, then the saved moment, which
+ * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
  *
  * Save is one transaction (DATA-REQ-048): the audio is hashed first, then
  * the letter is inserted and the draft removed together. When words are not
@@ -33,19 +34,18 @@
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
-  applyEdits,
   describeEdit,
   finalText as languageFinalText,
-  normalizeChars,
   segments as toSegments,
   toNFC,
   withoutEdit,
@@ -55,10 +55,21 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { LetterSheet } from '@/components/capture/letter-sheet';
+import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
+import { monthFor } from '@/components/book/chapters';
 import {
   DEFAULT_VIEW_SETTING,
+  arrivalParams,
   countLine,
+  letterHeader,
+  primaryDestination,
+  reviewHeading,
+  savePrimaryLabel,
+  savedMoment,
+  signInAfterLandingMs,
+  typedFinalText,
   fixesInForce,
   rowShows,
   setAsideAtSave,
@@ -83,7 +94,6 @@ import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { PlusGate } from '@/components/child/plus-gate';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useUnlitRoom } from '@/components/ui/lamp';
 import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -92,14 +102,14 @@ import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
+import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
-import { ageText } from '@/lib/dates';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { afterLetterKept, billingCopy, type KeepGate } from '@/lib/billing';
+import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { afterKeep, keepSheetFor } from '@/lib/billing/keep-step';
 import { useMotion } from '@/lib/motion';
 import {
@@ -112,6 +122,7 @@ import {
   listHiddenChildren,
   saveLetterFromDraft,
   saveVoiceOnlyFromDraft,
+  setActiveChildId,
   setDraftChild,
   setSetting,
   todayISO,
@@ -122,7 +133,6 @@ import { showReviewAsk } from '@/lib/models/speech-consent.logic';
 import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
 import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
-import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
@@ -193,10 +203,18 @@ export default function Review() {
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [fieldFocused, setFieldFocused] = useState(false);
   const [userText, setUserText] = useState<string | null>(null);
+  const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
+  // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
+  const [fixesOpen, setFixesOpen] = useState(false);
+  // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
+  // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
+  // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
+  // ordinary Review for the letter (the person taps Keep themselves after Plus starts, as everywhere else). No Close
+  // while it runs, by design: a typed letter has no recording to hash, and the gate reads this phone's own ledger.
+  const [keeping, setKeeping] = useState(() => typed && peekKeep(draftId) !== null);
 
   const dictionary = useMemo(
     () => (child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : []),
@@ -235,6 +253,7 @@ export default function Review() {
     if (!words) return;
     setIsSample(!stored && !!samplePart);
     setRaw(toNFC(words)); // the queue stores NFC; sample words get the same form
+    setWordsArrived(true); // the letter fades in once, never word by word (MOTION 5c)
     setPhase('ready');
   }, [phase, draft, job?.phase, job?.outcome]);
 
@@ -301,8 +320,9 @@ export default function Review() {
     const all = restored && view === 'fixes' ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : inForce;
     return toSegments(raw, all, typed ? undefined : rules);
   }, [raw, applied, inForce, restored, view, typed, rules]);
-  // Typed text keeps the house character rule only (unchanged); spoken text uses its language's final-text rule.
-  const cleanedText = useMemo(() => (typed ? normalizeChars(applyEdits(raw, inForce)).trim() : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
+  // Typed words are kept exactly as typed (S19; F04-REQ-012, F06-REQ-037): trimmed, no character swapped. Spoken text
+  // uses its language's final-text rule.
+  const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
   const putBack = (index: number) => {
@@ -351,27 +371,31 @@ export default function Review() {
     setChildId(id);
   };
 
-  // Save: commit, haptic, then animate (MOTION principle 3).
-  const settle = useSharedValue(1);
-  const settleStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.9 + 0.1 * settle.value }], opacity: settle.value }));
-  // After the very first letter on this phone, someone signed out is offered an account (PRD A F3):
-  // the sign-in sheet replaces Review, and "Not now" always works (the app is local-first).
+  // Save: commit, haptic, then animate (MOTION principle 3). The saved moment (components/capture/saved-moment.tsx)
+  // files the letter into its month and then lands on the Book (S21, 5.8 row 5).
+  // After the very first letter on this phone, someone signed out is offered an account (PRD A F3): the sign-in
+  // sheet rises over the Book once the letter is seen in its place, never in place of Review (5.8 row 5b), and
+  // "Not now" always works (the app is local-first).
   const auth = useAuth();
   const offerSignIn = useRef(false);
   const left = useRef(false);
-  const leave = () => {
-    if (left.current) return; // the timer and a tap must not both navigate
+  const land = () => {
+    if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
     left.current = true;
-    if (offerSignIn.current) router.replace({ pathname: '/sign-in', params: { trigger: 'first_letter' } });
-    else router.back();
+    // The Book, on the book the letter was kept in (Review can move a draft to another book), on the new letter:
+    // one navigation back to the tabs selects the Book tab under Review as Review dissolves away over it, so Tonight
+    // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
+    setActiveChildId(child.id);
+    router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
+    if (offerSignIn.current) {
+      setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
+    }
   };
   const finishSave = (inBook: boolean, firstLetter: boolean) => {
     offerSignIn.current = firstLetter && auth.configured && auth.state.status === 'signedOut';
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
-    settle.value = motion.spring(0, 'gentle');
-    setTimeout(leave, 900); // sequenceMaxMs; a tap skips it
   };
 
   // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
@@ -493,19 +517,46 @@ export default function Review() {
     }
   };
 
+  useEffect(() => {
+    if (gate || saveFailed) setKeeping(false);
+  }, [gate, saveFailed]);
+
+  /** The person's choice of where the letter goes; "Try again" after a failed save keeps it where they chose (S17). */
+  const lastDestination = useRef(true);
+  const keepTo = (inBook: boolean) => {
+    lastDestination.current = inBook;
+    void save(inBook);
+  };
+
+  // A typed letter keeping from Write (S20, 5.8 row 5a): the person already chose where it goes, so the one Keep step
+  // runs at once, with no "Read it back" screen. Only Write's tap arms it, for this draft (lib/capture/keep-intent.ts).
+  useEffect(() => {
+    const intent = consumeKeep(draftId);
+    if (intent && phase === 'ready' && typed) keepTo(intent.inBook);
+    else setKeeping(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A save that did not work is said aloud as well as shown (iOS VoiceOver ignores live regions): the words are safe
+  // first, then what happened (S17, VOICE).
+  useEffect(() => {
+    if (saveFailed) announce(r.saveFailed);
+  }, [saveFailed, r.saveFailed]);
+
   const dismissFirstNote = () => {
     setSetting('review.firstNoteSeen', '1');
     setFirstNote(false);
   };
 
   if (!draft || !child) {
-    // The one state pattern (ui/state-screen); a modal, so Close is the header's, top right.
+    // Opened with nothing to read back (a stale link, S23): not an error, nothing to try again. The page drawing,
+    // still; one way on to the book; Close in the header.
     return (
       <StateScreen
-        kind="error"
-        title={copy.errors.generic.title}
-        body={copy.errors.generic.body}
-        header={<ModalHeader onClose={() => router.back()} />}
+        kind="notFound"
+        title={r.noDraft.title}
+        header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
+        primary={{ label: r.noDraft.button, onPress: () => router.dismissTo('/book'), testID: 'review.noDraft.book' }}
       />
     );
   }
@@ -520,8 +571,10 @@ export default function Review() {
           ? r.noChanges
           : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
 
-  const age = ageText(child, todayISO());
-  const dateline = age ? `${child.name} · ${age}` : child.name;
+  // The letter sheet's header (S17): the month it files into, from the day it was said.
+  const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
+  const month = monthFor(child, occurredOn);
+  const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
@@ -601,6 +654,8 @@ export default function Review() {
   const footerShell = (children: ReactNode) => (
     <View className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}>{children}</View>
   );
+  // "Add to Asha's book" (primary; "Add to the book" when the name makes it long) and "Keep private" (quiet). A save
+  // that did not work keeps the letter, says so directly above the primary, and the primary reads "Try again" (S17).
   const footer =
     phase === 'ready' && !isSample
       ? footerShell(
@@ -608,10 +663,16 @@ export default function Review() {
             <Button size="lg" fullWidth label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
           ) : (
             <>
-              <Button size="lg" fullWidth onPress={() => save(true)} disabled={!finalText.trim()} accessibilityHint={r.destination.title} testID="review.save.book">
-                <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
+              {saveFailed && (
+                <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive" className="pb-1 text-center" testID="review.saveFailed">
+                  {r.saveFailed}
+                </Text>
+              )}
+              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+                <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
               </Button>
-              <Button variant="quiet" fullWidth onPress={() => save(false)} disabled={!finalText.trim()} testID="review.save.private">
+              {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
                 <Text>{r.destination.privateButton}</Text>
               </Button>
             </>
@@ -629,30 +690,22 @@ export default function Review() {
         )
       : null;
 
-  if (phase === 'saved') {
+  // The saved moment (S21), and, for a typed letter keeping from Write (S20), the same sheet holding still while the
+  // one Keep step runs: the moment starts from exactly what the person saw.
+  const keepingFromWrite = keeping && phase === 'ready' && !saveFailed && !gate;
+  if (phase === 'saved' || keepingFromWrite) {
+    const moment = savedMoment({ kind: voiceOnly ? 'voice' : savedTo === 'private' ? 'private' : 'book', childName: child.name, month, keptForWords });
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
-        <Pressable onPress={leave} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
-          <Animated.View style={settleStyle}>
-            <Card className="rounded-3xl border-0 bg-card p-6">
-              <Text variant="letterBody" numberOfLines={4}>
-                {voiceOnly ? pendingCopy.book.waitingForWords : finalText}
-              </Text>
-            </Card>
-          </Animated.View>
-          <Animated.View entering={FadeIn.delay(250).duration(200)} className="mt-6 items-center" accessibilityLiveRegion="polite">
-            <Text variant="callout" tone="success">
-              {voiceOnly
-                ? keptForWords
-                  ? wordsCopy.pack.keptToast
-                  : pendingCopy.review.voiceOnlyToast
-                : savedTo === 'book'
-                  ? fill(r.destination.addedToast, { child: child.name })
-                  : r.destination.privateToast}
-            </Text>
-            {secondFree && <Text className="mt-1 text-base text-muted-foreground">{billingCopy.keepGate.secondFreeNote}</Text>}
-          </Animated.View>
-        </Pressable>
+      <SafeAreaView className="flex-1 bg-background">
+        <SavedMoment
+          header={header}
+          words={voiceOnly ? pendingCopy.book.waitingForWords : finalText}
+          chip={moment.chip}
+          lock={moment.lock}
+          line={moment.line}
+          committed={phase === 'saved'}
+          onDone={land}
+        />
       </SafeAreaView>
     );
   }
@@ -663,7 +716,10 @@ export default function Review() {
         onClose={() => router.back()}
         closeHint={pendingCopy.write.savedOnPhone}
         leading={
-          hasSound ? (
+          editing ? (
+            // Done sits in the header while editing (S18), and above the keyboard on iOS.
+            <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
+          ) : hasSound ? (
             <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
               {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
               <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
@@ -672,218 +728,221 @@ export default function Review() {
         }
       />
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
-        <View className="gap-1">
-          <Pressable
-            onPress={pickChild}
-            disabled={!many}
-            accessibilityRole={many ? 'button' : 'text'}
-            accessibilityLabel={many ? fill(pendingCopy.review.toChildA11y, { child: child.name }) : undefined}
-            className="min-h-11 justify-center">
-            <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
-              {dateline}
-            </Text>
-          </Pressable>
+      {/* While words are changed the footer's Done rides above the keyboard (S18), and the letter scrolls clear of it. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
+          {/* The title, then the letter on its sheet. No reassurance line: the marks speak for themselves (S17). */}
           <Text variant="title1" asHeading>
-            {r.title}
+            {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-          {!typed && phase === 'ready' && (
-            <Text variant="subhead" tone="default" testID="review.trustLine">
-              {r.trustLine}
-            </Text>
-          )}
-        </View>
 
-        {isSample && (
-          <View className="rounded-2xl border border-caution p-3">
-            <Text variant="subhead" tone="caution">
-              {pendingCopy.review.sampleBanner}
-            </Text>
-            <Text variant="subhead" tone="caution">
-              {pendingCopy.review.sampleNotSaved}
-            </Text>
-          </View>
-        )}
-
-        {firstNote && phase === 'ready' && (
-          <Animated.View entering={motion.enter()} layout={LinearTransition.springify().damping(30)}>
-            {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
-            <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
-              <View className="flex-row items-center justify-between gap-2">
-                <Text variant="headline" className="flex-1">
-                  {r.firstNote.title}
-                </Text>
-                <Button variant="quiet" size="sm" label={r.firstNote.dismissButton} onPress={dismissFirstNote} testID="review.firstNote.dismiss" />
-              </View>
-              <Text variant="subhead" className="pr-2">
-                {r.firstNote.body}
+          {isSample && (
+            <View className="rounded-2xl border border-caution p-3">
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleBanner}
+              </Text>
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleNotSaved}
               </Text>
             </View>
-          </Animated.View>
-        )}
+          )}
 
-        {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
-        {stopNote && (
-          <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
-            {stopNote}
-          </Text>
-        )}
+          {firstNote && phase === 'ready' && (
+            <Animated.View entering={motion.enter()} layout={motion.layout()}>
+              {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
+              <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text variant="headline" className="flex-1">
+                    {r.firstNote.title}
+                  </Text>
+                  <Button variant="quiet" size="sm" label={r.firstNote.dismissButton} onPress={dismissFirstNote} testID="review.firstNote.dismiss" />
+                </View>
+                <Text variant="subhead" className="pr-2">
+                  {r.firstNote.body}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
 
-        {card && (
-          // The words are on their way, or they did not come (S14 to S16). The card enters just after Listen dissolves in (5.8 row 4).
-          <Animated.View entering={motion.enter(3)}>
-            <WordsStatus card={card} size={ask ? formatBytes(ask.bytes) : ''} lengthMs={draft.audioDurationMs} run={runWordsAction} />
-          </Animated.View>
-        )}
+          {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
+          {stopNote && (
+            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
+              {stopNote}
+            </Text>
+          )}
 
-        {saveFailed && (
-          <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
-            {copy.errors.generic.body}
-          </Text>
-        )}
+          {card && (
+            // The words are on their way, or they did not come (S14 to S16). The card enters just after Listen dissolves in (5.8 row 4).
+            <Animated.View entering={motion.enter(3)}>
+              <WordsStatus card={card} size={ask ? formatBytes(ask.bytes) : ''} lengthMs={draft.audioDurationMs} run={runWordsAction} />
+            </Animated.View>
+          )}
 
-        {phase === 'ready' && (
-          <>
-            <Animated.View layout={LinearTransition.springify().damping(30)}>
-              <Card className="gap-4 rounded-3xl border-0 bg-card p-5">
-                {editing ? (
-                  // The letter face inside the design system's focus ring (2 pt, offset 2, radius sm), never a bare TextInput (D-086 5.4).
-                  <View
-                    style={{
-                      borderRadius: tokens.radius.sm,
-                      borderWidth: tokens.focusRing.width,
-                      borderColor: fieldFocused ? c.focus : 'transparent',
-                      padding: tokens.focusRing.offset,
-                    }}>
+          {/* A keep that did not work before the words were there: the words are safe first (VOICE), then what happened. */}
+          {saveFailed && phase !== 'ready' && (
+            <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
+              {r.saveFailed}
+            </Text>
+          )}
+
+          {phase === 'ready' && (
+            <>
+              {/* The letter on its sheet (S17), arriving with one fade when its words have just come (MOTION 5c). */}
+              <Animated.View layout={motion.layout()} entering={wordsArrived ? FadeIn.duration(tokens.motion.swapMs) : undefined}>
+                <LetterSheet
+                  header={header}
+                  editing={editing}
+                  onChangeBook={many ? pickChild : undefined}
+                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  {editing ? (
+                    // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
+                    // is the accent line. The system draws Full Keyboard Access's own focus ring.
                     <TextField
                       variant="letter"
                       label={pendingCopy.write.label}
                       labelHidden
                       value={finalText}
                       onChangeText={setUserText}
-                      onFocus={() => setFieldFocused(true)}
-                      onBlur={() => setFieldFocused(false)}
                       multiline
                       autoFocus
                       inputClassName="min-h-40"
                       testID="review.editField"
                     />
-                  </View>
-                ) : userText !== null ? (
-                  <Text variant="letterBody" selectable>
-                    {userText}
-                  </Text>
-                ) : (
-                  <Transcript
-                    segments={segs}
-                    edits={view === 'fixes' ? applied : undefined}
-                    openEdit={openEdit}
-                    restoredIndex={wash ? marker : null}
-                    onPressEdit={(i) => {
-                      if (i >= applied.length) return;
-                      haptic('tap');
-                      setOpenEdit(openEdit === i ? null : i);
-                    }}
-                  />
-                )}
+                  ) : userText !== null ? (
+                    <Text variant="letterBody" selectable>
+                      {userText}
+                    </Text>
+                  ) : (
+                    // "With small fixes" and "Exactly as said" cross-fade (S17: 150 ms, swapMs; a fade is also the Reduce Motion form).
+                    <Animated.View key={view} entering={FadeIn.duration(tokens.motion.swapMs)}>
+                    <Transcript
+                      segments={segs}
+                      edits={view === 'fixes' ? applied : undefined}
+                      openEdit={openEdit}
+                      restoredIndex={wash ? marker : null}
+                      onPressEdit={(i) => {
+                        if (i >= applied.length) return;
+                        haptic('tap');
+                        setOpenEdit(openEdit === i ? null : i);
+                      }}
+                    />
+                    </Animated.View>
+                  )}
 
-                {openE && view === 'fixes' && userText === null && (
-                  <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4" testID="review.card">
-                    <Text variant="labelSmall">{labelOf(openE).label}</Text>
-                    <Text variant="subhead">{labelOf(openE).explain}</Text>
-                    {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
-                    {openE.original.trim() !== '' && (
-                      <>
-                        <Text variant="footnote">{r.cardYouSaid}</Text>
-                        <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
-                      </>
-                    )}
-                    {openE.replacement.trim() !== '' ? (
-                      <>
-                        <Text variant="footnote">{r.cardNowReads}</Text>
-                        <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
-                      </>
-                    ) : (
-                      <Text variant="footnote">{r.cardTakenOut}</Text>
-                    )}
-                    <ButtonRow>
-                      <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
-                        <Text>{r.undoEditButton}</Text>
+                  {openE && view === 'fixes' && userText === null && (
+                    <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+                      <Text variant="labelSmall">{labelOf(openE).label}</Text>
+                      <Text variant="subhead">{labelOf(openE).explain}</Text>
+                      {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
+                      {openE.original.trim() !== '' && (
+                        <>
+                          <Text variant="footnote">{r.cardYouSaid}</Text>
+                          <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
+                        </>
+                      )}
+                      {openE.replacement.trim() !== '' ? (
+                        <>
+                          <Text variant="footnote">{r.cardNowReads}</Text>
+                          <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+                        </>
+                      ) : (
+                        <Text variant="footnote">{r.cardTakenOut}</Text>
+                      )}
+                      <ButtonRow>
+                        <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
+                          <Text>{r.undoEditButton}</Text>
+                        </Button>
+                        <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+                          <Text tone="muted">{copy.common.closeButton}</Text>
+                        </Button>
+                      </ButtonRow>
+                    </Animated.View>
+                  )}
+
+                  {restored && (
+                    <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
+                      <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
+                      <Button size="sm" variant="quiet" onPress={undoPutBack}>
+                        <Text>{copy.common.undoButton}</Text>
                       </Button>
-                      <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+                      <Button size="sm" variant="quiet" onPress={() => setRestored(null)}>
                         <Text tone="muted">{copy.common.closeButton}</Text>
                       </Button>
-                    </ButtonRow>
-                  </Animated.View>
-                )}
+                    </View>
+                  )}
+                </LetterSheet>
+              </Animated.View>
 
-                {restored && (
-                  <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
-                    <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
-                    <Button size="sm" variant="quiet" onPress={undoPutBack}>
-                      <Text>{copy.common.undoButton}</Text>
-                    </Button>
-                    <Button size="sm" variant="quiet" onPress={() => setRestored(null)}>
-                      <Text tone="muted">{copy.common.closeButton}</Text>
-                    </Button>
-                  </View>
-                )}
-              </Card>
-            </Animated.View>
+              {!typed && userText === null && !editing && (
+                <View className="gap-3">
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
+                  {line === 'count' ? (
+                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                    <Pressable
+                      onPress={() => {
+                        haptic('tap');
+                        setFixesOpen((o) => !o);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityLiveRegion="polite"
+                      className="min-h-12 flex-row items-center justify-between gap-3"
+                      testID="review.count">
+                      <Text variant="subhead">{countText}</Text>
+                      {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+                    </Pressable>
+                  ) : (
+                    <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
+                      {countText}
+                    </Text>
+                  )}
+                  {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
+                  {view === 'fixes' && applied.length > 0 && fixesOpen && (
+                    <View>
+                      {applied.map((e, i) => (
+                        <FixRow
+                          key={`${e.start}-${e.type}`}
+                          label={labelOf(e).label}
+                          shows={rowShows(e)}
+                          open={openEdit === i}
+                          onPress={() => {
+                            haptic('tap');
+                            setOpenEdit(openEdit === i ? null : i);
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
 
-            {!typed && userText === null && !editing && (
-              <View className="gap-3">
-                {/* One control, both the view and the choice for this letter. Reversible until save. */}
-                {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
-                <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
-                  {countText}
-                </Text>
-                {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
-                {view === 'fixes' && applied.length > 0 && (
-                  <View>
-                    {applied.map((e, i) => (
-                      <FixRow
-                        key={`${e.start}-${e.type}`}
-                        label={labelOf(e).label}
-                        shows={rowShows(e)}
-                        open={openEdit === i}
-                        onPress={() => {
-                          haptic('tap');
-                          setOpenEdit(openEdit === i ? null : i);
-                        }}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
+              {!isSample && !editing && (
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  className="-ml-4 self-start"
+                  testID="review.edit"
+                  onPress={() => {
+                    track('review_action', { action: 'edit_text' });
+                    setEditing(true);
+                  }}>
+                  <Text>{pendingCopy.review.editTextButton}</Text>
+                </Button>
+              )}
 
-            {!isSample && !editing && (
-              <Button
-                variant="quiet"
-                size="sm"
-                className="-ml-4 self-start"
-                testID="review.edit"
-                onPress={() => {
-                  track('review_action', { action: 'edit_text' });
-                  setEditing(true);
-                }}>
-                <Text>{pendingCopy.review.editTextButton}</Text>
-              </Button>
-            )}
+              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
+              {inlineFooter ? footer : null}
+            </>
+          )}
+          {inlineFooter ? keepFooter : null}
+        </ScrollView>
 
-            <Text variant="subhead" tone="muted">{r.destination.privateHelp}</Text>
-            {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
-            {inlineFooter ? footer : null}
-          </>
-        )}
-        {inlineFooter ? keepFooter : null}
-      </ScrollView>
-
-      {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll.
-          At accessibility text sizes it moves into the scroll instead, so the letter keeps the screen. */}
-      {!inlineFooter && footer}
-      {!inlineFooter && keepFooter}
+        {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll.
+            At accessibility text sizes it moves into the scroll instead, so the letter keeps the screen. */}
+        {!inlineFooter && footer}
+        {!inlineFooter && keepFooter}
+      </KeyboardAvoidingView>
 
       <WhoseBookSheet
         visible={pickerOpen}
@@ -982,16 +1041,35 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
  * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
  */
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
-  // VoiceOver ignores live regions on iOS, so a change of state is said aloud: the card's own title (never the
-  // letter's words), and "Read it back later" when it appears (TDD 09 V1). The first state is read with the screen.
+  // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
+  // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
+  // and "Read it back later" when it appears (TDD 09 V1).
   const said = useRef<{ state: string; later: boolean } | null>(null);
+  const title = useRef(card.title);
+  title.current = card.title;
+  const first = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (first.current) clearTimeout(first.current);
+    },
+    [],
+  );
   useEffect(() => {
     const now = { state: card.state, later: card.quiet === 'later' };
     const before = said.current;
     said.current = now;
-    if (!before) return;
-    if (before.state !== now.state) announce(card.title);
-    else if (!before.later && now.later) announce(wordsActionLabel('later'));
+    if (!before) {
+      first.current = setTimeout(() => {
+        first.current = null;
+        announce(title.current);
+      }, tokens.motion.route.dissolveMs);
+      return;
+    }
+    if (before.state !== now.state) {
+      if (first.current) clearTimeout(first.current);
+      first.current = null;
+      announce(card.title);
+    } else if (!before.later && now.later) announce(wordsActionLabel('later'));
   }, [card.state, card.quiet, card.title]);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
