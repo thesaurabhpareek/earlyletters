@@ -161,7 +161,7 @@ Gap ids defined here:
 | SEC-R07 | MUST | licence allowlist check | not yet | TDD 04 8.2 |
 | SEC-R08 | MUST | `security.yml` audit gate, `audit-ignore.json` | pending PR #30 | CI-05 |
 | SEC-R09 | MUST | `dependabot.yml`; repo setting | pending PR #30; setting founder-only | CI-05 |
-| SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); not yet (`agents.yml`, `agents-check.yml`, `claude.yml`) | CI-06 |
+| SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); pinned: `agents-check.yml` on `develop`, `claude.yml` with RA-20-02a (#272); not yet `agents.yml` (`anthropics/claude-code-action@v1`, `actions/create-github-app-token@v3`) | CI-06 |
 | SEC-R11 | MUST | review | review (pattern present in PR #30) | |
 | SEC-R12 | MUST | branch protection or ruleset | not yet (decided 14 Oct, #127 item 7; founder applies the settings) | CI-01 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |
