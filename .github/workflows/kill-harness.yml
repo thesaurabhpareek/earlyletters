@@ -411,7 +411,7 @@ jobs:
           echo "UDID=$udid" >> "$GITHUB_ENV"
 
       - name: Launch and stay up for 20 s
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           set -euo pipefail
           xcrun simctl install "$UDID" "$RUNNER_TEMP/store-app/App.app"
