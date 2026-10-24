@@ -42,13 +42,15 @@ describe('keep awake', () => {
 });
 
 describe('a take that ended by leaving the app says so', () => {
-  it('Listening passes stopped=background to Review, and only for that reason', () => {
+  // Since P4 (EXPERIENCE_PASS S14) a call or an alert, and the app closing, say so too; the rules are pure and tested
+  // in test/listen.test.ts (reviewParams) and test/words-state.test.ts (stopLine). Here: the screens use them.
+  it('Listening passes why the take stopped to Review (leaving the app, or a call or an alert)', () => {
     const listen = src('app/listen.tsx');
-    expect(listen).toMatch(/reason === 'background' \? \{ draftId: draft\.id, stopped: 'background' \} : \{ draftId: draft\.id \}/);
+    expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: reviewParams\(draft\.id, reason\) \}\)/);
   });
 
   it('Review shows one plain line for it', () => {
-    expect(src('app/review.tsx')).toMatch(/stopped === 'background' && spoken/);
+    expect(src('app/review.tsx')).toMatch(/stopLine\(\{ stopped, recoveredAt: draft\.recoveredAt, spoken \}\)/);
     expect(wordsCopy.pack.stoppedInBackground).toBe('The recording stopped when you left the app. Everything before that is kept.');
   });
 });

@@ -1,28 +1,42 @@
 /**
- * Listening (DESIGN_LANGUAGE 12, MOTION 5b). Records AAC M4A, mono, 64 kbps,
- * 48 kHz (ADR 0005, ADR 0015; settings in lib/capture/recorder.ts
- * VOICE_RECORDING_OPTIONS) into the app's document directory, so it stays on this phone.
+ * Listening (DESIGN_LANGUAGE 12, MOTION 5b; EXPERIENCE_PASS_2026-10 S11, S12, S13 and 5.8 rows 1 to 4, package P4).
+ * Records AAC M4A, mono, 64 kbps, 48 kHz (ADR 0005, ADR 0015; settings in lib/capture/recorder.ts
+ * VOICE_RECORDING_OPTIONS) into the app's document directory.
  *
  * Crash-safe (LEGAL-REQ-011, TDD 01 3.4): the draft row is written before the
  * microphone goes live (lib/capture/recorder.ts). Finish, the app going to
  * the background, an audio interruption (call, Siri, alarm) and leaving the
- * screen all stop and keep the take, then Review opens. Only "Let it go",
- * confirmed, deletes audio. Never records in the background.
+ * screen all stop and keep the take, then Review opens and says why it stopped
+ * when it was not Finish. Only "Let it go", confirmed, deletes audio. Never records in the background.
  *
  * Starts only from a tap: Tonight's Speak arms it (lib/resilience/start-intent.ts). Opened any other way
- * (the scribe://listen link, a restored screen) it waits in the ready state until the person taps Start.
+ * (the scribe://listen link, a restored screen) it is Listening at rest (S12): the red circle is the start
+ * control, and the microphone is not touched until it is tapped.
  * The screen stays awake only while a take is recording (not paused), and is released when it ends.
+ *
+ * A room with no lamp (5.2): Tonight's light fades out as Listen covers it and comes back when it leaves
+ * (useUnlitRoom, 5.8 rows 1 and 2). Only the voice moves the aura; nothing else on this screen moves after it
+ * arrives (S11). The room's rules are pure in components/capture/listen.logic.ts; the three start problems
+ * (off, in use, full) in components/capture/mic-state.logic.ts.
  */
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
-import { File } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneSlashIcon } from 'phosphor-react-native/src/icons/MicrophoneSlash';
 import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, AppState, Linking, View } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
-import { ListeningAura, type AuraState } from '@/components/capture/listening-aura';
+import { AccessibilityInfo, Alert, AppState, Linking, Platform, Pressable, View } from 'react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
+import { renderTemplate } from '@scribe/core';
+import { PROMPTS } from '@scribe/content';
+import { tokens } from '@scribe/design-tokens';
+import { ListeningAura } from '@/components/capture/listening-aura';
+import { afterForeground, elapsedClock, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
+import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
+import { useUnlitRoom } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
@@ -31,24 +45,28 @@ import { useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
-import { useReducedMotion } from '@/lib/motion';
+import { useMotion, useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
+import { freeBytesFrom } from '@/lib/capture/free-space';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { consumeListenStart } from '@/lib/resilience/start-intent';
 
-type Phase = 'ready' | 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
+/** The red circle (MOTION 5b): 120 pt, the aura's disc. The start control sits exactly over it (S12). */
+const AURA_SIZE = 240;
+const DISC = AURA_SIZE / 2;
 
-function clock(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+/** Free space now, or null when unknown. The web preview has no file system, so it never blocks there. */
+function freeBytesNow(): number | null {
+  return Platform.OS === 'web' ? null : freeBytesFrom(() => Paths.availableDiskSpace);
 }
 
 export default function Listen() {
   const { c } = useTheme();
   const t = copy.tonight.states;
   const p = pendingCopy.listen;
+  const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
   const child = getActiveChild();
   const reduced = useReducedMotion();
@@ -66,10 +84,17 @@ export default function Listen() {
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
   const tapped = useRef<boolean | null>(null);
   if (tapped.current === null) tapped.current = consumeListenStart();
-  const [phase, setPhase] = useState<Phase>(tapped.current ? 'asking' : 'ready');
+  const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
+
+  // A room with no lamp over a lit one (5.8 rows 1 and 2): Tonight's light leaves, and returns when Listen does.
+  useUnlitRoom();
+
   useEffect(() => {
-    if (phase === 'denied') track('error_shown', { code: 'mic_denied' });
+    if (isMicProblem(phase)) {
+      const code = MIC_ERROR_CODE[phase];
+      if (code) track('error_shown', { code });
+    }
   }, [phase]);
 
   // Metering into the UI thread; never setState per frame.
@@ -102,17 +127,19 @@ export default function Listen() {
     ended.current = true;
     setPhase('finishing');
     const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
-    haptic('press'); // after the session ends: iOS mutes haptics while recording
-    // `stopped=background`: Review says so in one honest line when leaving the app ended the take.
-    if (draft) router.replace({ pathname: '/review', params: reason === 'background' ? { draftId: draft.id, stopped: 'background' } : { draftId: draft.id } });
+    haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
+    // Review says why in one honest line when leaving the app or a call ended the take (S14).
+    if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
     else router.back();
   };
 
   const start = async () => {
     if (!child) return;
     const perm = (await getRecordingPermissionsAsync()).granted ? { granted: true } : await requestRecordingPermissionsAsync();
-    if (!perm.granted) {
-      setPhase('denied');
+    // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
+    const blocked = startBlocker({ granted: perm.granted, freeBytes: freeBytesNow() });
+    if (blocked) {
+      setPhase(blocked);
       return;
     }
     // Haptic before the session activates: iOS mutes haptics while recording.
@@ -124,11 +151,25 @@ export default function Listen() {
     AccessibilityInfo.announceForAccessibility(t.listening);
   };
 
+  /** Whether the microphone is allowed now; null when the system cannot say. */
+  const grantedNow = async (): Promise<boolean | null> => {
+    try {
+      return (await getRecordingPermissionsAsync()).granted;
+    } catch {
+      return null;
+    }
+  };
+
   const begin = () => {
     setPhase('asking');
-    start().catch(() => {
-      if (takeId.current) void endTake('interruption');
-      else setPhase('denied');
+    start().catch(async () => {
+      // A take that began ends as an interruption and is kept; before that, a granted microphone is busy, never "off" (S13).
+      const failure = startFailure({ takeBegun: takeId.current !== null, granted: await grantedNow() });
+      if (failure === 'interrupted') void endTake('interruption');
+      else {
+        await setAudioMode('idle').catch(() => {});
+        setPhase(failure);
+      }
     });
   };
 
@@ -142,10 +183,17 @@ export default function Listen() {
 
   // App leaves the foreground: stop and keep (LEGAL-REQ-011, PRD checklist 6.3).
   // `inactive` alone (Control Center, a notification) does nothing; a real
-  // interruption is caught below.
+  // interruption is caught below. Back in front with the microphone now on (from Settings): idle Listening (S13).
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'background') void endTake('background');
+      if (next === 'active' && phaseRef.current === 'denied') {
+        void grantedNow().then((granted) => {
+          if (granted) setPhase((now) => afterForeground(now, true));
+        });
+      }
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,13 +247,13 @@ export default function Listen() {
   const finish = () => endTake('user');
 
   const discard = () => {
-    haptic('warning');
     Alert.alert(p.discardTitle, p.discardBody, [
       { text: p.keepButton, style: 'cancel' },
       {
         text: p.discardConfirm,
         style: 'destructive',
         onPress: async () => {
+          haptic('warning'); // only once the person has confirmed (MOTION 6, 5.8 row 2)
           const id = takeId.current;
           ended.current = true;
           trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
@@ -225,55 +273,46 @@ export default function Listen() {
     ]);
   };
 
+  // "Type instead" carries the prompt over as Write's line (5.8 row 3).
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   if (!child) return null;
 
-  if (phase === 'ready') {
-    const r = p.ready;
-    // Nothing is recording. A tap starts it; Close leaves without touching the microphone.
+  if (isMicProblem(phase)) {
+    const v = micStateView(phase);
+    const run: Record<MicAction, () => void> = { type: typeInstead, settings: () => void Linking.openSettings(), tryAgain: begin };
+    // One state layout (S13): the glyph in its soft circle, the cause, one primary and one quiet way, Close top right.
     return (
       <StateScreen
         kind="empty"
-        art="envelope"
-        title={r.title}
-        body={r.body}
-        header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
-        primary={{ label: r.startButton, onPress: begin }}
+        glyph={v.glyph === 'warningCircle' ? WarningCircleIcon : MicrophoneSlashIcon}
+        title={v.title}
+        body={v.body}
+        header={<ModalHeader onClose={close} />}
+        primary={{ label: v.primary.label, icon: v.primary.action === 'type' ? PencilSimpleIcon : undefined, onPress: run[v.primary.action], testID: `listen.${phase}.primary` }}
+        quiet={[{ label: v.quiet.label, onPress: run[v.quiet.action], testID: `listen.${phase}.quiet` }]}
       />
     );
   }
 
-  if (phase === 'denied') {
-    const e = copy.errors.micDenied;
-    // A choice, not an error: calm card, Type offered first (DESIGN_LANGUAGE 12, Listening).
-    return (
-      <StateScreen
-        kind="empty"
-        art="envelope"
-        title={e.title}
-        body={e.body}
-        header={<ModalHeader onClose={() => router.back()} />}
-        primary={{ label: e.typeButton, icon: PencilSimpleIcon, onPress: typeInstead }}
-        quiet={[{ label: e.settingsButton, onPress: () => Linking.openSettings() }]}
-      />
-    );
-  }
-
-  const aura: AuraState = phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : phase === 'finishing' ? 'processing' : 'idle';
+  const room = listenRoom(phase);
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
-
+  const prompt = promptLine(promptKey, PROMPTS);
   const elapsedA11y = fill(p.elapsedA11y, {
     minutes: Math.floor(status.durationMillis / 60000),
     seconds: Math.floor(status.durationMillis / 1000) % 60,
   });
-  const live = phase === 'recording' || phase === 'paused';
+  const line = room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
 
   // Design: Voice Memos-simple, Calm-quiet. The glow is the only thing that moves, and
-  // only with the voice (MOTION 5b). Controls are static and full strength from frame one.
+  // only with the voice (MOTION 5b). Controls are static and full strength from frame one (5.8 rule 3).
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="items-center gap-1.5 px-6 pt-6">
+      {/* Close only before a take exists (S12); the same height after, so nothing below it moves when the take starts. */}
+      {room.close ? <ModalHeader onClose={close} /> : <View className="min-h-12 pt-1" />}
+
+      <Animated.View entering={motion.enter(2)} className="items-center gap-1.5 px-6 pt-2">
         <Text variant="headline" asHeading className="text-center">
           {fill(p.toChild, { child: child.name })}
         </Text>
@@ -283,18 +322,40 @@ export default function Listen() {
             {p.audience}
           </Text>
         </View>
-      </View>
+        {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
+        {prompt && (
+          <Text variant="prompt" tone="muted" numberOfLines={3} className="mt-3 text-center" testID="listen.prompt">
+            {renderTemplate(prompt, { child: child.name })}
+          </Text>
+        )}
+      </Animated.View>
 
       <View className="flex-1 items-center justify-center gap-5">
-        <ListeningAura state={aura} db={db} reduced={reduced} />
-        <Text variant="headline" scale={1.75} className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
-          {clock(status.durationMillis)}
-        </Text>
-        <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
-          <Text variant="callout" className="text-center">
-            {phase === 'paused' ? t.paused : quiet ? t.stillHere : t.listening}
+        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <ListeningAura state={room.aura} db={db} reduced={reduced} size={AURA_SIZE} />
+          {room.startControl && (
+            // The whole red circle starts the take (S12). The aura is decorative, so the button sits over its disc.
+            <Pressable
+              onPress={begin}
+              accessibilityRole="button"
+              accessibilityLabel={p.ready.startA11y}
+              testID="listen.start"
+              hitSlop={tokens.space[2]}
+              style={{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC / 2 }}
+            />
+          )}
+        </View>
+        {room.clock && (
+          // A recording screen is not a timer (S11): headline, tabular figures, textMuted.
+          <Text variant="headline" tone="muted" className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
+            {elapsedClock(status.durationMillis)}
           </Text>
-          {phase !== 'paused' && (
+        )}
+        <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
+          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
+            {line}
+          </Text>
+          {room.line === 'listening' && (
             <Text variant="footnote" className="text-center">
               {t.listeningHint}
             </Text>
@@ -307,15 +368,20 @@ export default function Listen() {
           <Button
             variant="secondary"
             size="lg"
-            disabled={!live}
+            disabled={!room.controls}
             onPress={togglePause}
             label={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}
           />
-          <Button size="lg" disabled={!live} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
+          <Button size="lg" disabled={!room.controls} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
         </ButtonRow>
-        <Button variant="quiet" onPress={discard} disabled={phase === 'finishing'} className="self-center">
-          <Text tone="muted">{p.discardButton}</Text>
-        </Button>
+        {room.discard ? (
+          <Button variant="quiet" onPress={discard} disabled={phase === 'finishing'} className="self-center">
+            <Text tone="muted">{p.discardButton}</Text>
+          </Button>
+        ) : (
+          // Its slot stays, so the controls above never move when a take starts (5.8 rule 3).
+          <View style={{ height: tokens.target.min }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+        )}
       </View>
     </SafeAreaView>
   );

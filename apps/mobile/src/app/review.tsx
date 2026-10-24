@@ -65,11 +65,14 @@ import {
   viewFromSetting,
   type ReviewView,
 } from '@/components/capture/review-view.logic';
+import { clockOf } from '@/components/tonight/draft-card.logic';
+import { lengthA11y, stopLine, waitingHints, wordsActionLabel, wordsCard, type WordsAction, type WordsCard } from '@/components/capture/words-state.logic';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { PlusGate } from '@/components/child/plus-gate';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useUnlitRoom } from '@/components/ui/lamp';
 import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
@@ -101,14 +104,12 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, waitingForLanguageNote, type Job } from '@/lib/transcription-queue';
-import { speechConsentCopy } from '@scribe/content';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload } from '@/lib/transcription-queue';
 import { showReviewAsk } from '@/lib/models/speech-consent.logic';
 import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
 import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
-import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
-import type { SpeechLanguage } from '@/lib/models/catalog';
+import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
@@ -141,6 +142,8 @@ export default function Review() {
   const inlineFooter = footerPlacement(useIsAccessibilitySize()) === 'inline';
   const r = copy.review;
   const motion = useMotion();
+  // A room with no lamp (5.2): the light underneath leaves while Review is up and returns after (5.8 rows 4 and 4a).
+  useUnlitRoom();
   const { draftId, stopped } = useLocalSearchParams<{ draftId: string; stopped?: string }>();
   const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
   const [childId, setChildId] = useState(draft?.childId ?? '');
@@ -226,10 +229,24 @@ export default function Review() {
     if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
   }, [job?.phase]);
 
-  const packWait = job?.phase === 'waiting_for_pack';
-  // D-111 item 4: a language this build does not hear yet. The recording waits for its language; it can be kept.
-  const languageWait = job?.phase === 'waiting_for_language';
-  const canKeepVoice = packWait || languageWait || job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech');
+  // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
+  // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
+  const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
+  const shownAt = useRef(Date.now());
+  const progressAt = useRef(Date.now());
+  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}`;
+  const lastProgressKey = useRef(progressKey);
+  if (lastProgressKey.current !== progressKey) {
+    lastProgressKey.current = progressKey;
+    progressAt.current = Date.now();
+  }
+  const laterOffered = useRef(false);
+  const [, setWaitTick] = useState(0);
+  useEffect(() => {
+    if (!writingNow) return;
+    const id = setInterval(() => setWaitTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [writingNow]);
 
   const tryAgain = () => {
     if (!draft) return;
@@ -509,6 +526,46 @@ export default function Review() {
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
+  // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
+  const ask = job?.phase === 'waiting_for_pack' ? speechAskFor(language) : null;
+  const hints = waitingHints({ elapsedMs: Date.now() - shownAt.current, sinceProgressMs: Date.now() - progressAt.current, laterOffered: laterOffered.current });
+  if (writingNow && hints.later) laterOffered.current = true;
+  const card =
+    phase === 'transcribing' || phase === 'waiting'
+      ? wordsCard({
+          emptyFile: phase === 'waiting',
+          job,
+          download: {
+            ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
+            progress: download.progress,
+            hold: download.hold,
+            lowSpace: ask?.kind === 'low_space',
+            // The size comes from this phone's plan, never a typed number (D-087).
+            size: ask ? formatBytes(ask.bytes) : '',
+            mb: ask ? Math.round(ask.bytes / 1e6) : 0,
+            neededSize: ask ? formatBytes(ask.neededBytes) : '',
+          },
+          hints,
+          playing: playStatus.playing,
+        })
+      : null;
+  // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
+  const hasSound = spoken && phase !== 'waiting' && !(job?.phase === 'failed' && job.failure === 'file_missing');
+  const stopNote = stopLine({ stopped, recoveredAt: draft.recoveredAt, spoken });
+  const runWordsAction: Record<WordsAction, () => void> = {
+    retry: tryAgain,
+    keep: () => void keepRecordingOnly(),
+    type: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    // The person writes the words for this recording; the app never fills them in (S16).
+    write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    recordAgain,
+    download: () => void startSpeechDownload(language),
+    // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
+    cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
+    // Review closes; the queue carries on, and Tonight shows the recording waiting for its words (S14).
+    later: () => (router.canGoBack() ? router.back() : router.replace('/')),
+  };
+
   if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
     return (
       <SafeAreaView className="flex-1 bg-background">
@@ -557,12 +614,13 @@ export default function Review() {
           ),
         )
       : null;
-  // No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself.
+  // Sample words (development builds) are never saved: the footer keeps the recording itself. Every other state that
+  // can keep the recording carries "Keep the recording" in its own card (S15, S16), so there is never a second one here.
   const keepFooter =
-    spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice))
+    spoken && phase === 'ready' && isSample
       ? footerShell(
-          <Button size="lg" fullWidth onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
-            <Text>{packWait || languageWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
+          <Button size="lg" fullWidth onPress={keepRecordingOnly} testID="review.keepVoice">
+            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
           </Button>,
         )
       : null;
@@ -601,7 +659,7 @@ export default function Review() {
         onClose={() => router.back()}
         closeHint={pendingCopy.write.savedOnPhone}
         leading={
-          spoken ? (
+          hasSound ? (
             <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
               {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
               <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
@@ -660,33 +718,18 @@ export default function Review() {
           </Animated.View>
         )}
 
-        {/* Leaving the app ended the take (it never records in the background). One honest line, nothing alarming. */}
-        {stopped === 'background' && spoken && (
-          <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">
-            {wordsCopy.pack.stoppedInBackground}
+        {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
+        {stopNote && (
+          <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
+            {stopNote}
           </Text>
         )}
 
-        {phase === 'transcribing' && (
-          <WordsStatus
-            job={job}
-            download={download}
-            language={language}
-            languageName={languageNames[language]}
-            onRetry={tryAgain}
-            onRecordAgain={recordAgain}
-            onType={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}
-          />
-        )}
-
-        {phase === 'waiting' && (
-          // The recording file is empty (a take cut off before any audio): nothing to write down.
-          <InlineState
-            kind="error"
-            title={copy.errors.transcriptionFailed.title}
-            body={copy.errors.transcriptionFailed.body}
-            primary={{ label: copy.errors.micDenied.typeButton, onPress: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }) }}
-          />
+        {card && (
+          // The words are on their way, or they did not come (S14 to S16). The card enters just after Listen dissolves in (5.8 row 4).
+          <Animated.View entering={motion.enter(3)}>
+            <WordsStatus card={card} size={ask ? formatBytes(ask.bytes) : ''} lengthMs={draft.audioDurationMs} run={runWordsAction} />
+          </Animated.View>
         )}
 
         {saveFailed && (
@@ -917,120 +960,44 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
   );
 }
 
-/** Calm, honest status while words are on their way (no spinner, real numbers only). */
-function WordsStatus({
-  job,
-  download,
-  language,
-  languageName,
-  onRetry,
-  onRecordAgain,
-  onType,
-}: {
-  job: Job | null;
-  download: { progress: number | null; hold: 'waiting_for_wifi' | 'no_space' | 'offline' | null };
-  language: SpeechLanguage;
-  languageName: string;
-  onRetry: () => void;
-  onRecordAgain: () => void;
-  onType: () => void;
-}) {
-  const type = { label: copy.errors.micDenied.typeButton, onPress: onType, testID: 'review.type' };
+/** Where each action's testID comes from (e2e flows and journey steps read them). */
+const WORDS_TEST_ID: Record<WordsAction, string> = {
+  retry: 'review.retry',
+  keep: 'review.keepVoice',
+  type: 'review.type',
+  write: 'review.write',
+  recordAgain: 'review.recordAgain',
+  download: 'review.getReady',
+  cellular: 'review.mobileData',
+  later: 'review.later',
+};
 
-  if (job?.phase === 'failed') {
-    const canRetry = job.failure !== 'file_missing' && job.failure !== 'unsupported';
-    return (
-      <InlineState
-        kind="error"
-        title={copy.errors.transcriptionFailed.title}
-        body={copy.errors.transcriptionFailed.body}
-        primary={canRetry ? { label: copy.errors.transcriptionFailed.button, onPress: onRetry, testID: 'review.retry' } : type}
-        quiet={canRetry ? [type] : undefined}
-      />
-    );
-  }
-
-  if (job?.phase === 'done' && job.outcome === 'no_speech') {
-    return (
-      <InlineState
-        kind="empty"
-        title={wordsCopy.noSpeech.title}
-        body={wordsCopy.noSpeech.body}
-        primary={{ label: wordsCopy.noSpeech.tryAgainButton, onPress: onRetry, testID: 'review.retry' }}
-        quiet={[{ label: wordsCopy.noSpeech.recordAgainButton, onPress: onRecordAgain, testID: 'review.recordAgain' }, type]}
-      />
-    );
-  }
-
-  // A language this build does not hear yet (D-111 item 4): nothing to download and no language named, one line.
-  const languageWait = waitingForLanguageNote(job);
-  if (languageWait) {
-    return (
-      <InlineState
-        kind="empty"
-        title={languageWait}
-        quiet={[{ label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }]}
-        accessibilityLabel={languageWait}
-      />
-    );
-  }
-
-  if (job?.phase === 'waiting_for_pack') {
-    const p = download.progress;
-    const ask = speechAskFor(language);
-    const type = { label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' };
-    // The person has not yet said yes to the one-time download: ask, with the size (D-087). Nothing started on its own.
-    if (showReviewAsk({ choice: speechDownloadChoice(), progress: p, hold: download.hold })) {
-      return (
-        <InlineState
-          kind="empty"
-          title={fill(wordsCopy.pack.askTitle, { name: languageName })}
-          body={fill(wordsCopy.pack.askBody, { size: formatBytes(ask.bytes) })}
-          primary={ask.kind === 'ask' ? { label: wordsCopy.pack.askButton, onPress: () => void startSpeechDownload(language), testID: 'review.getReady' } : undefined}
-          quiet={[type]}>
-          {ask.kind === 'low_space' && (
-            <Text variant="subhead" tone="muted">{fill(speechConsentCopy.lowSpace, { size: formatBytes(ask.neededBytes) })}</Text>
-          )}
-          <Text variant="subhead" tone="muted">{speechConsentCopy.footnote}</Text>
-        </InlineState>
-      );
-    }
-    const line =
-      download.hold === 'waiting_for_wifi'
-        ? wordsCopy.pack.waitingForWifi
-        : download.hold === 'no_space'
-          ? wordsCopy.pack.noSpace
-          : p !== null
-            ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
-            : null;
-    return (
-      <InlineState
-        kind="loading"
-        title={fill(wordsCopy.pack.title, { name: languageName })}
-        body={fill(wordsCopy.pack.body, { name: languageName })}
-        quiet={[
-          // One time, this download only. The Wi-Fi-only default stays.
-          ...(download.hold === 'waiting_for_wifi'
-            ? [{ label: fill(wordsCopy.pack.mobileDataButton, { size: formatBytes(ask.bytes) }), onPress: () => void startSpeechDownload(language, { allowCellularOnce: true }), testID: 'review.mobileData' }]
-            : []),
-          type,
-        ]}>
-        {line && <Text variant="subhead" tone="muted">{line}</Text>}
-        {p !== null && download.hold === null && <ProgressLine value={p} />}
-      </InlineState>
-    );
-  }
-
-  const total = job?.phase === 'running' ? (job.progress?.total ?? 0) : 0;
-  const done = job?.progress?.done ?? 0;
-  const part = Math.min(total, done + 1);
-  const line = total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing;
+/**
+ * Review before the words are there (S14 to S16), one calm card: no spinner, real numbers only. While the words are
+ * written down the moon breathes (still while "Hear it" plays) over the recording's length; every other state holds
+ * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
+ */
+function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
+  const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
+  const primary = action(card.primary);
+  const quiet = action(card.quiet);
+  const length = card.state === 'writing' ? clockOf(lengthMs) : null;
   return (
     <InlineState
-      kind="loading"
-      title={line}
-      accessibilityLabel={total > 1 ? fill(wordsCopy.listeningA11y, { n: part, count: total }) : wordsCopy.preparing}>
-      {total > 1 && <ProgressLine value={done / total} />}
+      kind={card.kind}
+      art={card.art}
+      still={card.still}
+      title={card.title}
+      body={card.body}
+      primary={primary}
+      quiet={quiet ? [quiet] : undefined}>
+      {length && (
+        <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={lengthA11y(lengthMs) ?? undefined}>
+          {length}
+        </Text>
+      )}
+      {card.note && <Text variant="footnote">{card.note}</Text>}
+      {card.bar !== undefined && <ProgressLine value={card.bar} />}
     </InlineState>
   );
 }
