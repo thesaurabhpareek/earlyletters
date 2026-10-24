@@ -307,6 +307,14 @@ describe('Review uses the card (source)', () => {
     expect(review).toMatch(/leading=\{\s*hasSound \?/);
   });
 
+  it('[review B L4] a change of card is said aloud (VoiceOver ignores live regions on iOS): the title, then "Read it back later" when it appears', () => {
+    const status = review.slice(review.indexOf('function WordsStatus('), review.indexOf('const action = (a: WordsAction | null)'));
+    expect(status).toMatch(/if \(!before\) return;/);
+    expect(status).toMatch(/if \(before\.state !== now\.state\) announce\(card\.title\);/);
+    expect(status).toMatch(/else if \(!before\.later && now\.later\) announce\(wordsActionLabel\('later'\)\);/);
+    expect(review).toMatch(/import \{ announce, useIsAccessibilitySize, useTheme \} from '@\/lib\/a11y';/);
+  });
+
   it('Review is an unlit room (5.8 rows 4 and 4a)', () => {
     expect(review).toMatch(/\buseUnlitRoom\(\);/);
   });

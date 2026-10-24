@@ -123,7 +123,7 @@ import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
@@ -998,6 +998,17 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
  * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
  */
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
+  // VoiceOver ignores live regions on iOS, so a change of state is said aloud: the card's own title (never the
+  // letter's words), and "Read it back later" when it appears (TDD 09 V1). The first state is read with the screen.
+  const said = useRef<{ state: string; later: boolean } | null>(null);
+  useEffect(() => {
+    const now = { state: card.state, later: card.quiet === 'later' };
+    const before = said.current;
+    said.current = now;
+    if (!before) return;
+    if (before.state !== now.state) announce(card.title);
+    else if (!before.later && now.later) announce(wordsActionLabel('later'));
+  }, [card.state, card.quiet, card.title]);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
   const quiet = action(card.quiet);

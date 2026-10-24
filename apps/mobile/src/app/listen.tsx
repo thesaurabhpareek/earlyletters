@@ -27,7 +27,7 @@ import { MicrophoneSlashIcon } from 'phosphor-react-native/src/icons/MicrophoneS
 import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, AppState, Linking, Platform, Pressable, View } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
@@ -318,65 +318,79 @@ export default function Listen() {
     minutes: Math.floor(status.durationMillis / 60000),
     seconds: Math.floor(status.durationMillis / 1000) % 60,
   });
-  const line = room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
+  // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
+  const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
 
   // Design: Voice Memos-simple, Calm-quiet. The glow is the only thing that moves, and
   // only with the voice (MOTION 5b). Controls are static and full strength from frame one (5.8 rule 3).
+  // At accessibility text sizes the room scrolls and Pause, Finish and Let it go stay pinned and reachable, as every
+  // state screen does (COMPONENTS 2.15a; F04-REQ-019: nothing truncates at AX5; TDD 09 V1: every control reachable).
   return (
     <SafeAreaView className="flex-1 bg-background">
-      {/* Close only before a take exists (S12); the same height after, so nothing below it moves when the take starts. */}
-      {room.close ? <ModalHeader onClose={close} /> : <View className="min-h-12 pt-1" />}
-
-      <Animated.View entering={motion.enter(2)} className="items-center gap-1.5 px-6 pt-2">
-        <Text variant="headline" asHeading className="text-center">
-          {fill(p.toChild, { child: child.name })}
-        </Text>
-        <View className="flex-row items-center gap-1.5">
-          <LockSimpleIcon size={14} color={c.textMuted} />
-          <Text variant="footnote" className="text-center">
-            {p.audience}
-          </Text>
+      {/* Close only at rest (S12). Otherwise the same header, invisible and inert, so nothing below it moves when the
+          take starts, at every text size. */}
+      {room.close ? (
+        <ModalHeader onClose={close} />
+      ) : (
+        <View style={{ opacity: 0 }} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="listen.headerSlot">
+          <ModalHeader onClose={close} closeDisabled />
         </View>
-        {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
-        {prompt && (
-          <Text variant="prompt" tone="muted" numberOfLines={3} className="mt-3 text-center" testID="listen.prompt">
-            {renderTemplate(prompt, { child: child.name })}
-          </Text>
-        )}
-      </Animated.View>
+      )}
 
-      <View className="flex-1 items-center justify-center gap-5">
-        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <ListeningAura state={room.aura} db={db} reduced={reduced} size={AURA_SIZE} />
-          {room.startControl && (
-            // The whole red circle starts the take (S12). The aura is decorative, so the button sits over its disc.
-            <Pressable
-              onPress={begin}
-              accessibilityRole="button"
-              accessibilityLabel={p.ready.startA11y}
-              testID="listen.start"
-              hitSlop={tokens.space[2]}
-              style={{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC / 2 }}
-            />
-          )}
-        </View>
-        {room.clock && (
-          // A recording screen is not a timer (S11): headline, tabular figures, textMuted.
-          <Text variant="headline" tone="muted" className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
-            {elapsedClock(status.durationMillis)}
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} testID="listen.room">
+        <Animated.View entering={motion.enter(2)} className="items-center gap-1.5 px-6 pt-2">
+          <Text variant="headline" asHeading className="text-center">
+            {fill(p.toChild, { child: child.name })}
           </Text>
-        )}
-        <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
-          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
-            {line}
-          </Text>
-          {room.line === 'listening' && (
-            <Text variant="footnote" className="text-center">
-              {t.listeningHint}
+          <View className="flex-row items-center gap-1.5">
+            <LockSimpleIcon size={14} color={c.textMuted} />
+            <Text variant="footnote" className="shrink text-center">
+              {p.audience}
+            </Text>
+          </View>
+          {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
+          {prompt && (
+            <Text variant="prompt" tone="muted" numberOfLines={3} className="mt-3 text-center" testID="listen.prompt">
+              {renderTemplate(prompt, { child: child.name })}
             </Text>
           )}
+        </Animated.View>
+
+        <View className="flex-1 items-center justify-center gap-5 py-4">
+          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <ListeningAura state={room.aura} db={db} reduced={reduced} size={AURA_SIZE} />
+            {room.startControl && (
+              // The whole red circle starts the take (S12). The aura is decorative, so the button sits over its disc.
+              <Pressable
+                onPress={begin}
+                accessibilityRole="button"
+                accessibilityLabel={p.ready.startA11y}
+                testID="listen.start"
+                hitSlop={tokens.space[2]}
+                style={{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC / 2 }}
+              />
+            )}
+          </View>
+          {room.clock && (
+            // A recording screen is not a timer (S11): headline, tabular figures, textMuted.
+            <Text variant="headline" tone="muted" className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
+              {elapsedClock(status.durationMillis)}
+            </Text>
+          )}
+          <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
+            {line !== null ? (
+              <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
+                {line}
+              </Text>
+            ) : null}
+            {room.line === 'listening' && (
+              <Text variant="footnote" className="text-center">
+                {t.listeningHint}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       <View className="gap-2 px-5 pb-4">
         <ButtonRow>
@@ -394,8 +408,13 @@ export default function Listen() {
             <Text tone="muted">{p.discardButton}</Text>
           </Button>
         ) : (
-          // Its slot stays, so the controls above never move when a take starts (5.8 rule 3).
-          <View style={{ height: tokens.target.min }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+          // Its slot stays, holding the same button invisibly, so the controls above never move when a take starts,
+          // at every text size (5.8 rule 3).
+          <View style={{ opacity: 0 }} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID="listen.discardSlot">
+            <Button variant="quiet" disabled className="self-center">
+              <Text tone="muted">{p.discardButton}</Text>
+            </Button>
+          </View>
         )}
       </View>
     </SafeAreaView>
