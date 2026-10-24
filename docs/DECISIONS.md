@@ -410,6 +410,7 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 - **Gate (amended 15 Oct, founder):** the store-lane jobs run in the GitHub environment `app-store` (founder as required reviewer, only `ios-v*` tags and `release/*` branches, store secrets held there), with tag and branch rulesets that only admins bypass (ADR 0022 decision 8, FT-20). The 3 Oct design assumed a private repository; it is public.
 - **Proposed 17 Oct (coordinator, not decided):** the approver account is the only reviewer of `app-store`, with prevent self-review on and admin bypass off; rulesets have no bypass and only keep `ios-v*`, `db-v*` and `release/*` immutable (ADR 0026 decision 1, Proposed; SR-3 on #206). This takes effect when the founder accepts ADR 0026 decision 1. Until then the 15 Oct gate above stands.
 - **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/ops/RELEASE.md` (qa-e2e's release train, amended for D-089); record `docs/release/1.0.0.md`; BL-436 to BL-439.
+- **Note (24 Oct 2026, docs; the decision text above is unchanged):** `apps/mobile/version.json` arrives with #109 (BL-436), ordered after the go/no-go (`docs/release/AUTOMATION.md:532`). Until #109 merges, the version is `apps/mobile/app.config.ts:162` (`version: '1.0.0'`).
 
 ### D-090 Release team
 - **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct).
@@ -458,7 +459,7 @@ Two founder answers given on 3 Oct (evening) change second-round entries. Where 
 | D-079 | Old logo directions archived | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-080 | The app reports subscription status only, so we can send the auto-renewal reminders | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-081 | Purchase consent records (supersedes D-049) | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
-| D-089 | Release engineering model (ADR 0022): preview lane for C0 and C1; store lane from `release/<major>.<minor>` cut at freeze; one version in `apps/mobile/version.json`; EAS build numbers; `ios-v<x.y.z>-rc.<n>` tags build candidates; the tested RC is the binary submitted; `ios-v<x.y.z>` on release; store text generated from `packages/content` | Decided (founder) | Yes | 2026-10-13 |
+| D-089 | Release engineering model (ADR 0022): preview lane for C0 and C1; store lane from `release/<major>.<minor>` cut at freeze; one version in `apps/mobile/version.json` (note, 24 Oct: after #109; until then `apps/mobile/app.config.ts:162`); EAS build numbers; `ios-v<x.y.z>-rc.<n>` tags build candidates; the tested RC is the binary submitted; `ios-v<x.y.z>` on release; store text generated from `packages/content` | Decided (founder) | Yes | 2026-10-13 |
 | D-090 | Release team: a `release` agent plus `ops` as Platform and Reliability Engineer (DevOps and SRE); SRE splits out after launch | Decided (founder) | Yes | 2026-10-13 |
 | D-091 | No over-the-air updates (`expo-updates`) in v1.0; fixes ship as PATCH builds; revisit for v1.1 | Decided (founder; changes the 3 Oct recommendation) | Yes | 2026-10-13 |
 | D-092 | EAS Free plan until builds would exceed 15 iOS a month, then Starter ($19 a month plus usage) | Decided (founder) | Yes | 2026-10-13 |

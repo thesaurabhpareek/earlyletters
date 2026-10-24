@@ -9,6 +9,7 @@
  * `brand.publisher.domain` says (example.com today, the real domain later).
  */
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
@@ -145,7 +146,11 @@ type Profile = {
   env?: Record<string, string>;
 };
 const easText = fs.readFileSync(path.join(ROOT, 'eas.json'), 'utf8');
-const easFile = JSON.parse(easText) as { cli: { appVersionSource?: string }; build: Record<string, Profile>; submit: Record<string, unknown> };
+const easFile = JSON.parse(easText) as {
+  cli: { appVersionSource?: string; promptToConfigurePushNotifications?: boolean };
+  build: Record<string, Profile>;
+  submit: Record<string, unknown>;
+};
 
 /** Variables a profile may name; anything else in a profile's env is a review question (secrets live in EAS). */
 const PROFILE_VARIABLES = [
@@ -428,6 +433,45 @@ describe('e2e seams stay out of every uploadable build (TESTID_REQUESTS.md B-1, 
     expect(e2eRefusal({ e2e: ' 1 ', appEnv: 'preview' })).toMatch(/EXPO_PUBLIC_APP_ENV=preview/);
     expect(e2eRefusal({ e2e: '1', appEnv: 'development', easBuildProfile: 'e2e' })).toBeNull();
     expect(e2eRefusal({ e2e: '1', appEnv: 'development', easBuildProfile: '' })).toBeNull();
+  });
+});
+
+describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
+  // expo-notifications' automatic plugin writes aps-environment; app.config.ts removes it. This evaluates the
+  // config the way `expo config --type introspect` does, which is what EAS capability sync reads (eas-cli 24.10.0
+  // build/project/ios/entitlements.js), so the removal is guarded under npm test, not only by the preflight's prebuild.
+  const req = createRequire(path.join(ROOT, 'package.json'));
+  const { getPrebuildConfigAsync } = createRequire(req.resolve('@expo/cli/package.json'))('@expo/prebuild-config');
+  const { compileModsAsync } = req('expo/config-plugins');
+
+  async function introspectedEntitlements(name: string): Promise<Record<string, unknown>> {
+    const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+    const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
+    try {
+      for (const k of names) delete process.env[k];
+      for (const [k, v] of Object.entries(easFile.build[name]?.env ?? {})) process.env[k] = v;
+      const { exp } = await getPrebuildConfigAsync(ROOT, { platforms: ['ios'] });
+      const out = await compileModsAsync(exp, { projectRoot: ROOT, introspect: true, platforms: ['ios'], assertMissingModProviders: false, ignoreExistingNativeFiles: true });
+      return out.ios?.entitlements ?? {};
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  }
+
+  for (const name of Object.keys(easFile.build)) {
+    it(`${name}: the introspected entitlements carry no aps-environment and keep the other three`, async () => {
+      const ent = await introspectedEntitlements(name);
+      expect(Object.keys(ent).sort(), name).toEqual(['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', DATA_PROTECTION_KEY].sort());
+      expect(ent[DATA_PROTECTION_KEY]).toBe(DATA_PROTECTION_CLASS);
+      expect(ent['com.apple.developer.associated-domains']).toEqual([`applinks:${brand.publisher.domain}`]);
+    }, 60_000);
+  }
+
+  it('eas.json turns off eas-cli\'s push setup question, so an interactive build never offers to make a push key', () => {
+    expect(easFile.cli.promptToConfigurePushNotifications).toBe(false);
   });
 });
 

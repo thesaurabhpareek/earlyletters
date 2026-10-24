@@ -67,7 +67,7 @@ function walkFiles(dir: string, out: string[] = []): string[] {
  * S03, S04, S05 and S06 add their modules here when they adopt the contracts.
  */
 const GATED_VALUE_IMPORTERS: Record<string, string> = {
-  // S06, WP-F14-15a: reached only through import('./status-report.native') in plan-store startPlus and
+  // S06, WP-F14-15a: reached only through import('./status-report.app') in plan-store startPlus and
   // actions presentPlusStore, each behind `capabilities.statusReport` (build flag plus server switch).
   'apps/mobile/src/lib/billing/status-report.logic.ts': 'capabilities.statusReport (dynamic import from lib/billing/plan-store.ts and actions.ts)',
   // S05, backup client: parseEscrowKeys for EXPO_PUBLIC_ESCROW_KEYS. Reached only from lib/backup/runtime.ts, which
