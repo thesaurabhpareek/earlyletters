@@ -901,25 +901,64 @@ export interface Batch {
 }
 
 /**
+ * A held upload that may already have applied (it left the phone and no answer settled it) with a let-go of
+ * the same draft queued behind it. The let-go's base is the version this phone saw before that upload, so if
+ * the upload applied, the server would keep the row for words that were this phone's own (review A N1 on #250).
+ * An upload that never left cannot be behind a let-go: enqueueHeldDiscard drops it.
+ */
+const UPLOAD_AHEAD_OF_LET_GO = `o.type = 'held.upsert' AND o.sent_at IS NOT NULL
+  AND EXISTS (SELECT 1 FROM sync_outbox x WHERE x.entity_id = o.entity_id AND x.type = 'held.discard' AND x.seq > o.seq)`;
+
+/**
  * The next batch in queue order: at most `maxOps` ops and about `maxBytes` of
  * JSON (the server takes 50 and 256 KB). When the head op is backing off,
  * nothing is sent (order is kept). `onlyDeletes` is the consent-pause mode:
  * tombstones still go (LEGAL-REQ-009).
+ *
+ * In that mode a held upload that may already have applied goes ahead of a let-go of the same draft, alone in
+ * its batch, and the one-op-per-letter rule keeps the let-go for the next batch. The server answers a repeat
+ * from its receipt, before any consent check, so a `dup` with `applied_v` rebases the let-go on the version
+ * this phone's own upload wrote (settleHeldAnswer) before it leaves. An upload that never applied meets SCCON
+ * itself and is rolled back, so nothing is stored without consent either way; the engine then passes its op id
+ * in `metSccon` (as it does when the upload met SCCON at the head of the queue) and the let-go goes on the base
+ * it has, which nothing of this phone's moved. In that mode the limit applies after these filters, so a
+ * filtered row never hides a deletion behind it (review B N1 on #259).
  */
-export function takeBatch(db: SqlDb, opts: { now: string; onlyDeletes?: boolean; maxOps?: number; maxBytes?: number }): Batch {
+export function takeBatch(
+  db: SqlDb,
+  opts: { now: string; onlyDeletes?: boolean; maxOps?: number; maxBytes?: number; metSccon?: ReadonlySet<string> },
+): Batch {
   const maxOps = opts.maxOps ?? 50;
   const maxBytes = opts.maxBytes ?? 200_000;
-  const rows = db.all<OutboxRow>(
-    `SELECT o.* FROM sync_outbox o WHERE ${sendable(db)} ${opts.onlyDeletes ? "AND o.type IN ('entry.delete', 'held.discard', 'entry.erase')" : ''}
-     ORDER BY o.lane, o.seq LIMIT ?`,
-    maxOps,
-  );
+  const ahead = (r: OutboxRow) => !!opts.onlyDeletes && r.type === 'held.upsert';
+  let rows = opts.onlyDeletes
+    ? db.all<OutboxRow>(
+      `SELECT o.* FROM sync_outbox o WHERE ${sendable(db)}
+         AND (o.type IN ('entry.delete', 'held.discard', 'entry.erase') OR (${UPLOAD_AHEAD_OF_LET_GO}))
+       ORDER BY o.lane, o.seq`,
+    )
+    : db.all<OutboxRow>(`SELECT o.* FROM sync_outbox o WHERE ${sendable(db)} ORDER BY o.lane, o.seq LIMIT ?`, maxOps);
+  if (opts.onlyDeletes) {
+    // An upload that met SCCON in this pass never applied: it does not go again. One still backing off is not
+    // due yet: the let-go behind it waits with it, and the other deletions go. The limit comes after (only
+    // deletions and such uploads are read here, never the letters waiting for consent).
+    const neverApplied = (r: OutboxRow) => opts.metSccon?.has(r.op_id) ?? false;
+    const notDue = new Set(rows.filter((r) => ahead(r) && !neverApplied(r) && r.next_attempt_at && r.next_attempt_at > opts.now).map((r) => r.entity_id));
+    rows = rows
+      .filter((r) => (ahead(r) ? !neverApplied(r) && !notDue.has(r.entity_id) : !(r.type === 'held.discard' && notDue.has(r.entity_id))))
+      .slice(0, maxOps);
+  }
   if (rows.length === 0) return { rows: [], ops: [], waitUntil: null };
   if (rows[0].next_attempt_at && rows[0].next_attempt_at > opts.now) return { rows: [], ops: [], waitUntil: rows[0].next_attempt_at };
   const out: OutboxRow[] = [];
   const letters = new Set<string>();
   let bytes = 0;
   for (const r of rows) {
+    if (ahead(r)) {
+      // Alone, so a paused answer can only mean that this upload met SCCON (it never applied).
+      if (out.length === 0) out.push(r);
+      break;
+    }
     if (out.length > 0 && bytes + r.payload.length > maxBytes) break;
     // An erase waiting for a server that can erase is skipped until its time (its lane never blocks the rest).
     if (r.lane === ERASE_LANE && r.next_attempt_at && r.next_attempt_at > opts.now) continue;

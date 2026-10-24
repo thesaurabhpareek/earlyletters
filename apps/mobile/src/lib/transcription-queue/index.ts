@@ -19,11 +19,18 @@
  * - nobody spoke: a draft gets nothing (Review says so); a waiting letter
  *   gets '' (raw is what the recogniser heard in speech: nothing).
  * Sample words (development builds) are never stored.
+ *
+ * Languages this build does not hear yet (language-hold.ts: every language but English while the English-only
+ * switch is on, D-111 item 4) are set on the queue once, at start. A recording in one of them waits for its
+ * language: it is never handed to the recogniser, never fails and asks for no download, and Review and the letter
+ * page say so (`waitingForLanguageNote`). The stored choice is never changed, so in a build that hears the language
+ * the recording proceeds in its own language.
  */
 import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
+import { capabilities } from '../capabilities';
 import { removeWholeFrameCopies } from '../capture/adts-file';
 import {
   deleteSetting,
@@ -66,6 +73,7 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
+import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
   jobFailureOf,
@@ -79,6 +87,7 @@ import {
 } from './machine';
 
 export type { Job, JobPhase, QueueState } from './machine';
+export { waitingForLanguageNote } from './language-hold';
 
 let state: QueueState = initialQueue();
 let started = false;
@@ -148,6 +157,8 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   if (started) return stopTranscriptionQueue;
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
+  // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
   // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
   // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
   try {
@@ -219,6 +230,7 @@ export function requestWords(draftId: string): void {
   if (!d?.audioUri || d.rawTranscript != null) return;
   const language = rememberLetterLanguage(draftId);
   dispatch({ type: 'enqueue', id: draftId, kind: 'draft', language, capturedAt: d.createdAt });
+  if (state.onHold.includes(language)) return; // waits for its language: no download, and Review says so
   if (speechAutoStartAllowed()) void requestSpeechFor(language); // otherwise Review shows the ask
 }
 

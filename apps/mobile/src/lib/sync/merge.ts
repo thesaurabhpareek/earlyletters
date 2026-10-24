@@ -227,6 +227,11 @@ export interface PushOutcome {
   consent: string | null;
   /** A transient server error stopped the batch at this op (retry from it). */
   stoppedAt: OutboxRow | null;
+  /**
+   * SCCON: the op that met it, the first one the answer left unanswered. It got past its claim, so it had no
+   * receipt and never applied, and this run rolled it back.
+   */
+  pausedAt: OutboxRow | null;
 }
 
 /**
@@ -403,6 +408,18 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
       db.run("UPDATE entries SET deleted_at = COALESCE(deleted_at, ?), sync_state = 'erased', held_v = NULL WHERE id = ?", ctx.now, row.entity_id);
       continue;
     }
+    if (row.type === 'held.upsert' && db.get<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type = 'held.discard' AND seq > ?", row.entity_id, row.seq,
+    )!.n > 0) {
+      // Refused, whatever the code, while a let-go of the same draft waits behind it: the author let these words
+      // go after this upload was queued, so they are not kept as a refused write (final review A-M3: letting go
+      // removes every copy in rejected_writes). During a consent pause only 42501, 22023 and 22008 can reach here,
+      // raised before any write; the write-time checks meet SCCON first. A refused op is not claimed and never
+      // applied, so the let-go goes next on its own base (review B N4 on #259). With no let-go queued, a refused
+      // upload is kept below as a refused write, the draft's words with it.
+      removeOp(db, row.seq);
+      continue;
+    }
     rejected++;
     rejectOp(db, row, r.code, ctx.now);
     if (row.type === 'book.create' || row.type === 'book.first_run') {
@@ -441,6 +458,7 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     paused: !!res.paused,
     consent: res.paused ? (res.consent ?? null) : null,
     stoppedAt: res.stopped ? (unanswered[0] ?? null) : null,
+    pausedAt: res.paused ? (unanswered[0] ?? null) : null,
   };
 }
 

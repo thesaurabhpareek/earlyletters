@@ -679,6 +679,14 @@ describe('feature-local app copy files', () => {
   });
 });
 
+describe('English-only notices (D-111 item 4)', () => {
+  it('the picker line and the waiting-for-its-language line are in-app copy, so every rule here reads them', () => {
+    const paths = IN_APP.map((l) => l.path);
+    expect(paths).toContain('features.language.picker.englishOnly');
+    expect(paths).toContain('features.language.waitingForLanguage');
+  });
+});
+
 describe('support resources (D-034)', () => {
   it('dials digits only and names each line', () => {
     for (const r of en.struggling.resources) {
