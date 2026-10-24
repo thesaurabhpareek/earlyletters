@@ -315,6 +315,34 @@ describe('[F16 6.2 I] held drafts: the contract equals 20261016000000', () => {
     expect(Object.keys(PulledHeldSchema.entries).sort()).toEqual(sent);
   });
 
+  it('every closed list and array a pulled held row carries is checked on held_drafts with exactly the contract\'s values (review A N1 on #253)', () => {
+    // The table and every later `alter table public.held_drafts` (20261023030000 adds the checks entries have),
+    // so a held row the server stores is one PulledHeldSchema parses: never dropped and counted in `rejected`.
+    let checks = table![1];
+    for (const { text } of sql) {
+      for (const m of text.matchAll(/alter table (?:if exists )?(?:only )?public\.held_drafts\s+([^;]+);/g)) checks += `\n${m[1]}`;
+    }
+    type S = { type: string; options?: readonly string[]; wrapped?: S };
+    const unwrap = (s: S): S => (s.wrapped ? unwrap(s.wrapped) : s);
+    let lists = 0;
+    let arrays = 0;
+    for (const [col, schema] of Object.entries(PulledHeldSchema.entries as Record<string, S>)) {
+      const s = unwrap(schema);
+      if (s.type === 'picklist') {
+        const found = [...checks.matchAll(new RegExp(`\\b${col} in \\(([^)]*)\\)`, 'g'))];
+        expect(found.length, `held_drafts has no check on ${col}: a row PulledHeldSchema drops can be stored`).toBeGreaterThan(0);
+        for (const f of found) {
+          expect([...f[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort(), `the ${col} check differs from the contract`).toEqual([...s.options!].sort());
+        }
+        lists++;
+      } else if (s.type === 'array') {
+        expect(checks, `held_drafts has no array check on ${col}`).toMatch(new RegExp(`jsonb_typeof\\(${col}\\) = 'array'`));
+        arrays++;
+      }
+    }
+    expect([lists, arrays]).toEqual([5, 3]);
+  });
+
   it('the gone markers equal the held_drafts_gone check', () => {
     expect(gone, 'held_drafts_gone table not found').not.toBeNull();
     const m = /gone in \(([^)]+)\)/.exec(gone![1]);
