@@ -352,15 +352,14 @@ export default function Review() {
   const devPass = useRef(false);
   /**
    * True when the Keep sheet opened instead: the caller returns without saving. Never throws.
-   * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText` for
-   * Keep and Keep privately, null for a voice kept without words.
+   * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText`.
    */
-  const keepNeedsPlus = async (wordsOnScreen: string | null): Promise<boolean> => {
+  const keepNeedsPlus = async (wordsOnScreen: string): Promise<boolean> => {
     if (devPass.current) return false;
     const g = await keepGateFor({ wordsOnScreen });
-    // null: no words on screen. Under M17 this save never counts toward the free letters (the ledger skips a
-    // letter without words), so there is nothing to gate: no ledger read, no sheet, Keep goes ahead at once.
-    // The letter counts later, at the save where its words are first on screen.
+    // null: no words on screen (marks only, such as "..."). Under M17 this save never counts toward the free
+    // letters (the ledger uses the same hasWords rule), so there is nothing to gate: no ledger read, no sheet,
+    // Keep goes ahead at once.
     if (g === null || g.decision.kind === 'allow') return false;
     track('keep_gate_shown', {
       letters_kept: Math.min(1000, g.lettersKept),
@@ -451,11 +450,9 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
-      // No words on screen: the queue has none yet, nobody spoke, or only development sample words show (never saved).
-      if (await keepNeedsPlus(null)) {
-        saving.current = false; // held: the draft is untouched
-        return;
-      }
+      // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
+      // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
+      // It counts later, at the save where its words are first on screen.
       const firstLetter = !hasAnyLetter();
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(

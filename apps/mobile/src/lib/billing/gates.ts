@@ -11,6 +11,7 @@
 import { decideKeepLetter, freeLettersFrom, type KeepLetterDecision } from '@scribe/core';
 import { ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
 import { clearLedger, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
+import { hasWords } from './letter-ledger.logic';
 import { getPlan } from './plan-store';
 import { isJoinedBook as joined, plusOn, type BookFacts } from './plan.logic';
 
@@ -75,8 +76,8 @@ export interface KeepGate {
 }
 
 /**
- * The gate for the Keep buttons in Review (spoken, typed, or voice kept without
- * words). Call it after the recording is hashed and BEFORE saving. It also
+ * The decision under keepGateFor, which Review calls (M17: only with words on
+ * screen). Call it after the recording is hashed and BEFORE saving. It also
  * heals the ledger (a reinstall or a backup restore). On `offer`, the caller
  * opens the Keep sheet and returns WITHOUT saving: the draft stays exactly
  * where it is. Never throws; an unreadable ledger counts as 0, the safe side.
@@ -111,10 +112,8 @@ export async function keepGateFor(save: { wordsOnScreen: string | null | undefin
   return keepLetterGate(now);
 }
 
-/** Words count as on screen when there is at least one letter or digit in any script. */
-export function hasWords(text: string | null | undefined): boolean {
-  return typeof text === 'string' && /[\p{L}\p{N}]/u.test(text);
-}
+/** Words count as on screen when there is at least one letter or digit in any script (the ledger's rule too). */
+export { hasWords };
 
 /** Letters kept so far, for the Plan screen and analytics. 0 when the store cannot be read. */
 export async function lettersKeptNow(): Promise<number> {

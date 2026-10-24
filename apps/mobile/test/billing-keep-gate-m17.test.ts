@@ -23,7 +23,7 @@ const { hasWords, keepGateFor, keepLetterGate } = await import('../src/lib/billi
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 
 beforeEach(() => {
-  counts.mockClear();
+  counts.mockReset().mockReturnValue({ recorded: 2, present: 2 }); // no mockReturnValueOnce carries into the next test
   configureLedgerStorage(null); // a fresh process: the in-memory Keychain floor starts at 0
 });
 
