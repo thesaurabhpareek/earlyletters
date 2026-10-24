@@ -12,7 +12,8 @@
  * profiles, off in development and e2e.
  */
 import { execFile } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseRemoteConfig, TRUSTED_SIGNING_KEYS } from '@scribe/api';
@@ -447,6 +448,50 @@ describe('[D-115] the preflight fails either alpha build without the signed Engl
     expect(source).toMatch(/if \(keysUsable && manifestPublished\) pass\('D-115:/);
     expect(source.match(/pass\('D-115:/g)).toHaveLength(1);
   });
+
+  it('a key id listed twice with a manifest published: exit 1, the repeated-id FAIL, step 4 open on that FAIL, and the "Step 4 is open" line, not "no words"', async () => {
+    // Fictional Asha keys and manifest, in a copy of the repo made of symlinks: the real keys.ts and published.ts
+    // are never touched. Only the directories on the way to a replaced file are real.
+    const repo = join(APP, '..', '..');
+    const key = (id: string) => `  { keyId: '${id}', publicKey: 'QXNoYSBmaWN0aW9uYWwga2V5LCBub3QgYSByZWFsIGtleQ==', kinds: ['pack-manifest', 'remote-config', 'content-bundle'] },\n`;
+    const files: Record<string, string> = {
+      'apps/mobile/scripts/preflight-testflight.mjs': readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8'),
+      'packages/api/src/keys.ts': `import type { TrustedKey } from './integrity';\n\nexport const TRUSTED_SIGNING_KEYS: readonly TrustedKey[] = [\n${key('asha-2026-10')}${key('asha-2026-10')}];\n`,
+      'supabase/functions/config/published.ts': `export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = '{"fictional":"Asha"}';\n`,
+    };
+    const dirs = new Set(Object.keys(files).flatMap((f) => f.split('/').slice(0, -1).map((_, i, parts) => parts.slice(0, i + 1).join('/'))));
+    const tree = mkdtempSync(join(tmpdir(), 'scribe-preflight-tree-'));
+    try {
+      const mirror = (rel: string) => {
+        mkdirSync(join(tree, rel), { recursive: true });
+        for (const name of readdirSync(join(repo, rel))) {
+          const r = rel ? `${rel}/${name}` : name;
+          if (r in files) continue;
+          if (dirs.has(r)) mirror(r);
+          else symlinkSync(join(repo, r), join(tree, r));
+        }
+      };
+      mirror('');
+      for (const [f, text] of Object.entries(files)) writeFileSync(join(tree, f), text);
+      const env = { ...process.env };
+      for (const k of Object.keys(env)) if (/^(EXPO_PUBLIC_|VITEST)/.test(k) || k === 'EAS_BUILD_PROFILE') delete env[k];
+      const args = [join(tree, 'apps/mobile/scripts/preflight-testflight.mjs'), '--profile', 'testflight', '--skip-prebuild'];
+      const r = await new Promise<{ code: number; out: string }>((resolve) => {
+        execFile(process.execPath, args, { cwd: join(tree, 'apps/mobile'), env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+          resolve({ code: err ? Number(err.code ?? 1) : 0, out: `${stdout}${stderr}` });
+        });
+      });
+      const lines = r.out.split('\n');
+      expect(r.code, r.out).toBe(1);
+      expect(lines.filter((l) => l.startsWith('FAIL')), r.out).toEqual([expect.stringMatching(/lists key id asha-2026-10 more than once/)]);
+      expect(r.out).toMatch(/MISSING\s+Step 4\..*FAIL above: packages\/api\/src\/keys\.ts lists key id asha-2026-10/);
+      expect(r.out).toMatch(/Step 4 is open: fix the FAIL above\..*only if the manifest was signed with that key/);
+      expect(r.out).not.toMatch(/recordings get no words/);
+      expect(lines.filter((l) => /^PASS\s+D-115:/.test(l)), r.out).toEqual([]);
+    } finally {
+      rmSync(tree, { recursive: true, force: true });
+    }
+  }, 180_000);
 });
 
 // ---------------------------------------------------------------------------

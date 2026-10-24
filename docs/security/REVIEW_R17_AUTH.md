@@ -79,6 +79,6 @@ On `feat/auth-v1-gate` the same case passes, with the owner unset and an empty o
 | Review agent 1 (session `01StdYGY`) | Token and session security | Found four gaps and fixed them on the branch instead of returning a verdict: link refusal at cold start, pending note not spent by other sign-ins and sign-outs, capture and revocation client-id lists could differ, docs. Accepted as documented: `rate_hit` skipped on errors other than SCRAT; a foreign link spends this phone's verifier (denial of service only). Its fixes inside S01's files were kept; its purge-worker edit went to S07 as a patch | 15 Oct 2026, 5296916 and 296bc61 |
 | Review agent 2 (session `01J4KEwT`) | Privacy and the kill path | **ready**, with 2 minor findings and 5 nits, all answered in PR #139 (see the PR comment) | 15 Oct 2026, reviewed db3678c |
 | Shared R-17 review (with S02, S04, S20 items) | All of R-17 | pending | |
-| Merge | D-107 made auth a founder merge; under D-117's operating rule the coordinator merges after two independent passing reviews on the current head and green CI | merged (#139) | 23 Oct 2026, c8e9962 |
+| Merge (git record) | #139 merged into `develop` | merged | 23 Oct 2026, c8e9962 |
 
-Because review agent 1 changed code it was reviewing, it is not an independent second verdict on the final commit. A fresh independent review of the head commit is still needed before the label (08-delivery 6.2, D-041).
+Because review agent 1 changed code it was reviewing, it is not an independent second verdict on the final commit. Two independent reviews of the head commit passed before the merge (reviews A and B on #139, both PASS WITH NOTES at 9238dd9, 23 Oct); the `approve-migration` label is no longer used (D-117).

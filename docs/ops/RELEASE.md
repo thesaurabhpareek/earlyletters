@@ -259,9 +259,9 @@ No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 ## 9. Packs, remote config and content publishing
 
-Signed and published only by the coordinator, with the founder's OK and the founder's key (COORDINATION 6, ADR 0016 7). The secret key lives only in the founder's password manager.
+D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below are `publish.ts`'s development-only path, which overwrites without `upload`'s checks. The secret key lives only in the founder's password manager.
 
-1. Once: `npx tsx scripts/packs/keygen.ts`; the public key line goes into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
+1. Once: `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`; both public key lines go into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
 2. Each publish, on the founder's machine:
    ```bash
    export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...        # from the password manager, this shell only
