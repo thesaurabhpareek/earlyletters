@@ -4,7 +4,10 @@
  *   startPlus()            boot: StoreKit listener, foreground re-read (wire in app/_layout.tsx)
  *   usePlan()              screens: PlanView, details, plusOn, Plan screen line, store support
  *   keepGateFor({wordsOnScreen})  the Keep step's gate (D-082, D-083, M17 D-103): 2 free letters, then Plus; null when no words are on screen (never counts, never a sheet)
- *   keepLetterGate()       the decision under keepGateFor (decideKeepLetter); Review calls keepGateFor
+ *   keepLetterGate()       the decision under keepGateFor (decideKeepLetter); Review reaches it through keepSheetFor
+ *   keepSheetFor(wordsOnScreen), countAfterSave(wordsOnScreen)   the Keep step around one save in Review: import them from
+ *                          '@/lib/billing/keep-step', not from here. This index is the startup surface that wires the Keychain
+ *                          (test/billing-keychain-wiring.test.ts) and stays free of analytics, which loads React Native
  *   hasPlus(), isJoinedBook(child)   replacements for the old store.ts stubs
  *   lettersKeptNow(), eraseLetterLedger()  the letter ledger (letter-ledger.ts); Erase everything clears it
  *   presentPlusStore()     Apple's SubscriptionStoreView

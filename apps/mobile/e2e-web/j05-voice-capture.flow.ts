@@ -39,7 +39,7 @@ test('[J05b] microphone permission denied', async ({ app, record }) => {
   await expect(btn(app, /Type/).first()).toBeVisible();
   await step('unhappy', 'Microphone is off', 'One calm state with the microphone glyph: "The microphone is off". Type instead first, Open Settings quiet, Close at the top right. Only a refused permission lands here (S13). The browser denial is simulated by refusing getUserMedia; on a phone it is iOS\'s permission state, and "Open Settings" is native and does nothing on web.');
   await btn(app, /Type/).first().click();
-  await expect(btn(app, 'Save')).toBeVisible();
+  await expect(btn(app, /^Add to .*book/)).toBeVisible();
   await step('happy', 'Typing instead', 'The person lands on the Write page for the same prompt.');
 });
 

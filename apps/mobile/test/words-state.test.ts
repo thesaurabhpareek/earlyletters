@@ -304,14 +304,17 @@ describe('Review uses the card (source)', () => {
 
   it('"Hear it" is offered only when there is a sound to hear', () => {
     expect(review).toMatch(/const hasSound = spoken && file !== 'empty' && !\(job\?\.phase === 'failed' && job\.failure === 'file_missing'\)/);
-    expect(review).toMatch(/leading=\{\s*hasSound \?/);
+    expect(review).toMatch(/: hasSound \? \(/);
   });
 
   it('[review B L4] a change of card is said aloud (VoiceOver ignores live regions on iOS): the title, then "Read it back later" when it appears', () => {
     const status = review.slice(review.indexOf('function WordsStatus('), review.indexOf('const action = (a: WordsAction | null)'));
-    expect(status).toMatch(/if \(!before\) return;/);
-    expect(status).toMatch(/if \(before\.state !== now\.state\) announce\(card\.title\);/);
-    expect(status).toMatch(/else if \(!before\.later && now\.later\) announce\(wordsActionLabel\('later'\)\);/);
+    // The first card is said once Review has dissolved in (focus lands on "Hear it", not on the card), with the
+    // newest title; it is cleared on unmount, and replaced at once by a change of state (#271 lens B final note).
+    expect(status).toMatch(/if \(!before\) \{\s*first\.current = setTimeout\(\(\) => \{\s*first\.current = null;\s*announce\(title\.current\);\s*\}, tokens\.motion\.route\.dissolveMs\);\s*return;\s*\}/);
+    expect(status).toMatch(/title\.current = card\.title;/);
+    expect(status).toMatch(/\(\) => \(\) => \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*\}/);
+    expect(status).toMatch(/if \(before\.state !== now\.state\) \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*first\.current = null;\s*announce\(card\.title\);\s*\} else if \(!before\.later && now\.later\) announce\(wordsActionLabel\('later'\)\);/);
     expect(review).toMatch(/import \{ announce, useIsAccessibilitySize, useTheme \} from '@\/lib\/a11y';/);
   });
 

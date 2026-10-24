@@ -58,14 +58,19 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
   };
 }
 
-export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last());
+// `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
+export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
 
-/** Type a letter on the Write screen and save it from Review (the honest path to a letter on the web, which has no speech model). */
+/** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
+export const selectedTab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name, selected: true });
+
+/**
+ * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no
+ * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
+ */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
-  await btn(page, 'Save').click();
-  await expect(page.getByText('Add to ')).toBeVisible();
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
 }
 

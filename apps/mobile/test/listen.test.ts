@@ -276,7 +276,8 @@ describe('the screen uses them (source)', () => {
 
   it('[review B L1] when a take ends the glow releases from where the voice left it, over releaseMs', () => {
     const aura = code(src('components/capture/listening-aura.tsx'));
-    expect(aura).toMatch(/if \(processing\.value\) \{\s*scale\.value = 1 \+ B\.scaleMax \* s\.value;\s*opacity\.value = B\.opacityMin \+ \(B\.opacityMax - B\.opacityMin\) \* s\.value;/);
+    // From what is on screen (the voice, or the idle breath when the person was quiet; #271 lens B note 1), over releaseMs.
+    expect(aura).toMatch(/if \(processing\.value\) \{\s*const k = Math\.exp\(-dt \/ B\.releaseMs\);\s*scale\.value = 1 \+ \(scale\.value - 1\) \* k;\s*opacity\.value = B\.opacityMin \+ \(opacity\.value - B\.opacityMin\) \* k;/);
     expect(aura).toMatch(/s\.value \+= \(0 - s\.value\) \* \(1 - Math\.exp\(-dt \/ B\.releaseMs\)\)/);
     expect(tokens.motion.breath.releaseMs).toBe(400);
   });

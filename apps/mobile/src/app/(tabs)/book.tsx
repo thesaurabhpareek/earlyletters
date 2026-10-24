@@ -29,6 +29,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { billingCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { BlurSurface } from '@/components/platform/blur-surface';
@@ -47,7 +48,7 @@ import { isReadItBack } from '@/lib/read-it-back';
 import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { arrivalOf, bookHandoff, firstBookViewThisSession, firstSeen, parseSeen, withLeaving } from '@/components/book/book.logic';
+import { arrivalOf, arrivalToastDelayMs, bookHandoff, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -68,7 +69,7 @@ export default function Book() {
   const insets = useSafeAreaInsets();
   const { enter, reduced } = useMotion();
   const { children, active } = useChildren();
-  const params = useLocalSearchParams<{ arrived?: string }>();
+  const params = useLocalSearchParams<{ arrived?: string; secondFree?: string }>();
   const [entries, setEntries] = useState<Entry[]>([]);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
   const [washes, setWashes] = useState<Record<string, number>>({});
@@ -124,6 +125,10 @@ export default function Book() {
     list.scrollToLocation({ ...target, animated: false });
   }, []);
   const arrival = arrivalOf(params.arrived, chapters);
+  const secondFreeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (secondFreeTimer.current) clearTimeout(secondFreeTimer.current);
+  }, []);
   useEffect(() => {
     if (!params.arrived) return;
     if (arrival) {
@@ -131,7 +136,11 @@ export default function Book() {
       pendingScroll.current = { sectionIndex: arrival.sectionIndex, itemIndex: arrival.itemIndex };
       scrollToArrival();
     }
-    router.setParams({ arrived: undefined });
+    // The second kept letter (S21, D-082): one calm line once the landing is done, no action, no count of what is left.
+    if (secondFreeOnArrival(params.secondFree)) {
+      secondFreeTimer.current = setTimeout(() => toast.show({ message: billingCopy.keepGate.secondFreeNote }), arrivalToastDelayMs(reduced));
+    }
+    router.setParams({ arrived: undefined, secondFree: undefined });
     // Only a new param is an arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.arrived]);
