@@ -25,6 +25,7 @@
 // missing file, no stored hash that differs from its file, and every letter judged kept earlier still kept.
 
 import { adtsFactsOfFile, containerOfName, redactAfinfo } from './adts-evidence.mjs';
+import { normalizePath } from './snapshot.mjs';
 
 export const BAD_OUTCOMES = ['lost', 'doubled', 'fail'];
 
@@ -87,22 +88,31 @@ export function classifyDl02(snap, armed, io, expect = {}) {
   return { outcome, reasons: [] };
 }
 
-const DOCUMENTS = '/Documents/';
-
 /**
- * Where a row's stored path stands against the take the host lists: `same`, the very file; `other-container`, the
- * same folder and name under Documents with another container path before it (the app and the host name the
- * container differently; the app's sweep found the file at the stored path, or it would have rebased the row);
- * `other`, any other folder or name, or no stored path: the row does not point at the file the host judged.
+ * Where a row's stored path stands against the take the host lists, after both are normalized (`normalizePath`:
+ * `//`, `./` and `../` resolved; the stored one also loses `file://` or `file://localhost` and its percent-encoding):
+ * - `same`: the very file;
+ * - `other-container`: the same folder and file under Documents, behind another container path (a `/private`
+ *   prefix, another container id, a path relative to Documents). The app and the host spell the container
+ *   differently; the app's sweep found the file at the stored path, or it would have rebased the row;
+ * - `other`: any other folder or file, or no stored path. The row does not point at the file the host judged.
+ * The comparison under Documents is by suffix: the stored path must end in `Documents/` and the listed take's path
+ * inside the listed Documents folder, so a folder named Documents higher up never decides it.
  * @param {string|null} storedPath  @param {string} listedPath  @param {string|undefined} documentsDir
  */
 export function storedPathAgainst(storedPath, listedPath, documentsDir) {
   if (!storedPath) return 'other';
-  if (storedPath === listedPath) return 'same';
-  const i = storedPath.lastIndexOf(DOCUMENTS);
-  const storedRel = i >= 0 ? storedPath.slice(i + DOCUMENTS.length) : null;
-  const listedRel = documentsDir && listedPath.startsWith(`${documentsDir}/`) ? listedPath.slice(documentsDir.length + 1) : null;
-  return storedRel !== null && storedRel === listedRel ? 'other-container' : 'other';
+  const stored = normalizePath(storedPath);
+  const listed = normalizePath(listedPath);
+  if (stored === listed) return 'same';
+  const docs = documentsDir ? normalizePath(documentsDir) : null;
+  const rel = docs && listed.startsWith(`${docs}/`) ? listed.slice(docs.length + 1) : null;
+  if (!rel) return 'other';
+  // In the listed container itself, any other path is another file (a folder named Documents inside it included).
+  if (stored.startsWith(`${docs}/`)) return 'other';
+  const under = `Documents/${rel}`;
+  if (stored === under || stored === rel || stored.endsWith(`/${under}`)) return 'other-container';
+  return 'other';
 }
 
 /**
@@ -131,7 +141,7 @@ export function classifyDl01(snap, armed, io, expect = {}) {
   if (rows.length > 1) return { outcome: 'doubled', reasons: [`${rows.length} rows point at the take`], ...none };
   const row = rows[0];
   // The take the row points at: the listed file at its stored path, else the first of that name.
-  const f = listed.find((x) => x.path === row.audioPath) ?? listed[0];
+  const f = listed.find((x) => row.audioPath && normalizePath(x.path) === normalizePath(row.audioPath)) ?? listed[0];
   if (f.bytes === 0) return { outcome: 'lost', reasons: ['the take file is empty'], ...none };
   const afinfo = io.playable(f.path);
   const reasons = [];
