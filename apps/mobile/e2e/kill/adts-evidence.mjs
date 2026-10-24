@@ -9,7 +9,7 @@
 // it returns holds audio beyond the first 16 bytes (a 7-byte frame header and the start of the encoder's first
 // frame), which check V1 asks to see.
 import { readFileSync, statSync } from 'node:fs';
-import { AAC_FRAME_SAMPLES, AAC_MAX_BLOCK_BYTES_PER_CHANNEL, ADTS_MAX_FRAME_BYTES, ADTS_SAMPLE_RATES, scanAdts } from '../../src/lib/capture/adts.ts';
+import { AAC_FRAME_SAMPLES, AAC_MAX_BLOCK_BYTES_PER_CHANNEL, ADTS_SAMPLE_RATES, breaksInside, scanAdts } from '../../src/lib/capture/adts.ts';
 
 /** The container a take's file name says: `.aac` is ADTS (capture/recording-file.ts `containerOfRecording`). */
 export function containerOfName(name) {
@@ -35,9 +35,14 @@ export function xxd16(bytes) {
   return `00000000: ${groups.join(' ')}  ${text}`;
 }
 
-/** The fields of the first frame header that check V1 names, read from the bytes. Null when it is not an ADTS header. */
+/**
+ * The fields of the first frame header that check V1 names, read from the bytes. Null when it is not a whole ADTS
+ * header. `mpeg` is the header's ID bit: 4 for `FF F1`, 2 for `FF F9`. Both are ADTS with the same AAC-LC frames;
+ * Core Audio writes the MPEG-2 ID (`FF F9`, run 40081955446), and V1 accepts either (ADR 0027).
+ */
 export function firstHeader(b) {
   if (b.length < 7 || b[0] !== 0xff || (b[1] & 0xf0) !== 0xf0) return null;
+  // channel_configuration is 3 bits: the last bit of byte 2, then the top two of byte 3.
   const objectType = ((b[2] >> 6) & 0x03) + 1; // ADTS profile is the MPEG-4 audio object type less one
   const frequencyIndex = (b[2] >> 2) & 0x0f;
   return {
@@ -77,7 +82,7 @@ export function wholeFrameLengths(b, wholeBytes) {
  *   sampleRate: number|null, channelConfiguration: number }} AdtsHeader
  * @typedef {{ count: number, min: number|null, mean: number|null, max: number|null, overLimit: number, notLc: number }} FrameBytes
  * @typedef {{ adts: boolean, first16: string, ftypAt4: boolean, totalBytes: number, header?: AdtsHeader|null,
- *   frames?: number, sampleRate?: number, channels?: number, wholeBytes?: number, tailBytes?: number,
+ *   frames?: number, sampleRate?: number|null, channels?: number|null, wholeBytes?: number, tailBytes?: number,
  *   tail?: 'none'|'cut'|'break', framesAfterBreak?: number, breakInside?: boolean, durationMs?: number,
  *   kbps?: number|null, frameBytes?: FrameBytes|null }} AdtsFacts
  */
@@ -94,7 +99,14 @@ export function adtsFacts(bytes) {
   const ftypAt4 = b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
   const base = { first16: xxd16(b), ftypAt4, totalBytes: b.length };
   const scan = scanAdts(b);
-  if (!scan) return { adts: false, ...base };
+  if (!scan) {
+    // A take a kill cut inside its first header (under 7 bytes, each an ADTS header's so far) is ADTS with no whole
+    // frame, not another format: scanAdts needs a whole first header to say so.
+    if (headerPrefix(b)) {
+      return { adts: true, ...base, header: null, frames: 0, sampleRate: null, channels: null, wholeBytes: 0, tailBytes: b.length, tail: 'cut', framesAfterBreak: 0, breakInside: false, durationMs: 0, kbps: null, frameBytes: { count: 0, min: null, mean: null, max: null, overLimit: 0, notLc: 0 } };
+    }
+    return { adts: false, ...base };
+  }
   const walk = wholeFrameLengths(b, scan.wholeBytes);
   const lengths = walk?.lengths ?? [];
   const durationMs = (scan.frames * AAC_FRAME_SAMPLES * 1000) / scan.sampleRate;
@@ -109,7 +121,7 @@ export function adtsFacts(bytes) {
     tailBytes: scan.tailBytes,
     tail: scan.tail,
     framesAfterBreak: scan.framesAfterBreak,
-    breakInside: scan.tailBytes > ADTS_MAX_FRAME_BYTES,
+    breakInside: breaksInside(scan),
     durationMs,
     kbps: durationMs > 0 ? Math.round((scan.wholeBytes * 8) / durationMs) : null,
     frameBytes: walk
@@ -123,6 +135,14 @@ export function adtsFacts(bytes) {
         }
       : null,
   };
+}
+
+/** Under 7 bytes, and every byte so far is an ADTS header's: the sync word, layer 00, a sampling index that exists. */
+function headerPrefix(b) {
+  if (b.length < 1 || b.length >= 7 || b[0] !== 0xff) return false;
+  if (b.length > 1 && (b[1] & 0xf6) !== 0xf0) return false;
+  if (b.length > 2 && ((b[2] >> 2) & 0x0f) >= ADTS_SAMPLE_RATES.length) return false;
+  return true;
 }
 
 const factsCache = new Map();
@@ -140,18 +160,20 @@ export function adtsFactsOfFile(path) {
 
 /**
  * What check V1 asks of every take, from its facts, as findings (an empty list is a pass): an ADTS stream starting
- * `FF F1`, AAC-LC, frequency index 3 (48 kHz), channel configuration 1, no `ftyp` at offset 4, no frame over the AAC
- * limit, and a tail that is not a break. A killed take ends `cut` or `none`; a finished one must end `none` (V1).
+ * `FF F1` or `FF F9` (layer 00, no CRC; the ID bit may say MPEG-4 or MPEG-2, and Core Audio writes MPEG-2), AAC-LC,
+ * frequency index 3 (48 kHz), channel configuration 1, no `ftyp` at offset 4, no frame over the AAC limit, and a tail
+ * that is not a break. A killed take ends `cut` or `none`; a finished one must end `none` (V1).
  */
 export function v1Findings(f) {
   const out = [];
   if (f.ftypAt4) out.push('an ftyp box at offset 4 (an MPEG-4 file, not ADTS)');
   if (!f.adts) return [...out, 'no ADTS stream'];
   const h = f.header;
-  if (!h || h.mpeg !== 4 || h.layer !== 0 || h.crc) out.push('the first header is not FF F1 (MPEG-4, layer 0, no CRC)');
-  if (h && h.objectType !== 2) out.push(`profile ${h.profile}, not AAC-LC`);
-  if (h && h.frequencyIndex !== 3) out.push(`frequency index ${h.frequencyIndex}, not 3 (48 kHz)`);
-  if (h && h.channelConfiguration !== 1) out.push(`channel configuration ${h.channelConfiguration}, not 1`);
+  if (!h) return [...out, 'cut inside its first header: no whole frame'];
+  if (h.layer !== 0 || h.crc) out.push('the first header is not FF F1 or FF F9 (layer 0, no CRC)');
+  if (h.objectType !== 2) out.push(`profile ${h.profile}, not AAC-LC`);
+  if (h.frequencyIndex !== 3) out.push(`frequency index ${h.frequencyIndex}, not 3 (48 kHz)`);
+  if (h.channelConfiguration !== 1) out.push(`channel configuration ${h.channelConfiguration}, not 1`);
   if (!f.frameBytes) out.push('the frame walk does not land on the end of the whole frames');
   else {
     if (f.frameBytes.overLimit) out.push(`${f.frameBytes.overLimit} frame(s) over ${MONO_FRAME_LIMIT} bytes`);
