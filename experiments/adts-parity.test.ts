@@ -250,4 +250,14 @@ describe('[ADR 0027 V3] review of #282, round 2', () => {
     expect(damageReading({ ...base, zeroRun: 2 * 342 }).text).toContain('A RUN OF 2 FRAMES OF ZEROS PAST THE DAMAGE');
     expect(damageReading({ ...base, zeroRun: 200 })).toMatchObject({ reading: 'read-past' });
   });
+
+  it('a window decode that throws is decided by the planned run: refused is fine, planned is a failure (review of #282, round 3)', () => {
+    const base = { helperFailed: null, probeOk: true, fullLength: true, earlyStops: 0, referenceRms: null, comparable: false, pastAllZero: false, score: null };
+    expect(damageReading({ ...base, windowError: 'ERR_SCRIBE_AUDIO_DECODE', refused: 'break_inside' })).toMatchObject({ reading: 'refused', failure: false, decided: true });
+    const planned = damageReading({ ...base, windowError: 'ERR_SCRIBE_AUDIO_DECODE', refused: null });
+    expect(planned).toMatchObject({ reading: 'decode-throws', failure: true, decided: true });
+    expect(planned.text).toBe('the window past the damage throws (ERR_SCRIBE_AUDIO_DECODE), and the run was planned: report it');
+    // A helper failure still comes first.
+    expect(damageReading({ ...base, helperFailed: 'helper_timeout', windowError: 'helper_timeout', refused: null })).toMatchObject({ reading: 'helper-failed' });
+  });
 });

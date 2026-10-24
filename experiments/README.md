@@ -169,7 +169,7 @@ npm run adts-parity -w @scribe/experiments -- --take experiments/recordings/v1-d
 - 2: one does not (the report says which);
 - 3: a damage case could not be decided, because the take is silent past the damage;
 - 1: the run itself failed;
-- 130: stopped with Ctrl-C (or SIGTERM), even in the middle of a Core Audio call. That is never recorded as an answer about a file.
+- 130: stopped with Ctrl-C (or SIGTERM), at any step: in the middle of a Core Audio call, while swiftc, ffmpeg, afconvert or a version check runs, or between the steps. A stop is never recorded as an answer about a file.
 
 V4 is not a gate. A helper failure there is listed as "not measured", and the exit stays as V3 decided it.
 

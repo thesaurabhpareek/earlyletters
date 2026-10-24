@@ -21,7 +21,8 @@
  * git-ignored). Every temporary file (cut and damaged copies, decoded PCM, the twin, the helper binary) is deleted as
  * the run ends, on Ctrl-C too. A take of a voice never leaves this Mac and nothing about it but numbers is written.
  * Exit code: 0 every V3 condition checked here holds; 2 one does not (the report says which); 3 a damage case could
- * not be decided (the take is silent past the damage); 1 the run itself failed; 130 stopped with Ctrl-C (or SIGTERM).
+ * not be decided (the take is silent past the damage); 1 the run itself failed; 130 stopped with Ctrl-C (or SIGTERM),
+ * at any step: during a Core Audio call, a tool (swiftc, ffmpeg, afconvert, a version check) or between steps.
  * V4 is not a gate: a helper failure there is listed as not measured and leaves the exit as V3 decided it.
  */
 import { execFileSync } from 'node:child_process';
@@ -103,11 +104,33 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-/** One line of a tool's version, or "unknown"; never fails the run. */
+/** Ctrl-C or SIGTERM reached a tool this run started: the person is stopping the run (exit 130), at any step. */
+function stopIfInterrupted(e: unknown): void {
+  if (classifyHelperError(e) === 'interrupt') {
+    cleanUp();
+    process.exit(130);
+  }
+}
+
+/** A tool the run needs (swiftc, ffmpeg, afconvert): Ctrl-C ends the run with 130; any other failure fails it (exit 1). */
+function tool(cmd: string, args: string[], stdio: 'ignore' | 'inherit' = 'ignore'): void {
+  try {
+    execFileSync(cmd, args, { stdio: ['ignore', 'ignore', stdio] });
+  } catch (e) {
+    stopIfInterrupted(e);
+    throw e;
+  }
+}
+
+/** Lets a pending Ctrl-C or SIGTERM run its handler between the long JavaScript steps. */
+const breathe = () => new Promise<void>((r) => setImmediate(r));
+
+/** One line of a tool's version, or "unknown"; never fails the run, but Ctrl-C still stops it. */
 function version(cmd: string, args: string[]): string {
   try {
     return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 20_000 }).trim().split('\n')[0];
-  } catch {
+  } catch (e) {
+    stopIfInterrupted(e);
     return 'unknown';
   }
 }
@@ -129,7 +152,7 @@ async function run(dir: string): Promise<number> {
   const outDir = arg('--out') ?? join(ROOT, 'results', 'adts-parity');
   mkdirSync(outDir, { recursive: true });
   const bin = join(dir, 'adts-coreaudio');
-  execFileSync('xcrun', ['swiftc', '-O', '-o', bin, join(ROOT, 'adts-coreaudio.swift')], { stdio: ['ignore', 'ignore', 'inherit'] });
+  tool('xcrun', ['swiftc', '-O', '-o', bin, join(ROOT, 'adts-coreaudio.swift')], 'inherit');
 
   /**
    * One call of the Core Audio helper. A crash (a Swift trap, a Core Audio exception on damaged data) or a stall is
@@ -142,12 +165,8 @@ async function run(dir: string): Promise<number> {
       const out = execFileSync(bin, a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: HELPER_TIMEOUT_MS });
       return JSON.parse(out.trim().split('\n').pop() ?? '') as Json;
     } catch (e) {
-      const code = classifyHelperError(e);
-      if (code === 'interrupt') {
-        cleanUp();
-        process.exit(130);
-      }
-      return { ok: false, code };
+      stopIfInterrupted(e);
+      return { ok: false, code: classifyHelperError(e) };
     }
   };
   const probe = (path: string): Probe => swift('probe', path) as unknown as Probe;
@@ -211,13 +230,15 @@ async function run(dir: string): Promise<number> {
     const wav = join(dir, `${name}.wav`);
     const aac = join(dir, `${name}.aac`);
     writeFileSync(wav, chirpWav(seconds).wav);
-    execFileSync('afconvert', ['-f', 'adts', '-d', 'aac', '-b', '64000', wav, aac], { stdio: 'ignore' });
+    tool('afconvert', ['-f', 'adts', '-d', 'aac', '-b', '64000', wav, aac]);
     rmSync(wav);
     generated.push(name);
     return aac;
   };
   const takePath = arg('--take') ?? makeTake(30, 'tone-30s');
+  await breathe();
   const longPath = arg('--long') ?? makeTake(10.5 * 60, 'tone-10m30s');
+  await breathe();
   const killedArg = arg('--killed');
   const killedAll = killedArg ? (statSync(killedArg).isDirectory() ? readdirSync(killedArg).sort().map((f) => join(killedArg, f)) : [killedArg]) : [];
   const killed = killedAll.filter((f) => /\.aac$/i.test(f));
@@ -253,7 +274,8 @@ async function run(dir: string): Promise<number> {
   // 1. Twins of identical frames, lined up by cross-correlation. No early stop, and every decoded length within one
   // frame of the counted frames (with or without the priming).
   const twin = join(dir, 'twin.m4a');
-  execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', takePath, '-c:a', 'copy', '-f', 'mp4', twin], { stdio: 'inherit' });
+  await breathe();
+  tool('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', takePath, '-c:a', 'copy', '-f', 'mp4', twin], 'inherit');
   const pa = probe(takePath);
   const pm = probe(twin);
   const da = pa.ok ? decode(takePath, 0, pa.durationMs ?? 0) : ({ ok: false, code: pa.code } as Decoded);
@@ -293,6 +315,7 @@ async function run(dir: string): Promise<number> {
     if (da.decodedSamples !== undefined && dm.decodedSamples !== undefined) parity.decodedLengthGapFrames = Math.round(((da.decodedSamples - dm.decodedSamples) / FRAME_AT_PCM) * 100) / 100;
   }
   report.parity = parity;
+  await breathe();
 
   // 2. Truncated files and real killed takes: probe opens them (or the whole-frame copy), every window decodes with no
   // early stop, the run plans over the whole frames, and the decoded length is the whole frames within one frame.
@@ -318,6 +341,7 @@ async function run(dir: string): Promise<number> {
     writeFileSync(path, t.bytes);
     await checkCut(t.name, t.what, path, t.bytes);
     rmSync(path, { force: true });
+    await breathe();
   }
   for (const [i, path] of killed.entries()) await checkCut(`killed-${i + 1}`, 'a DL-01 killed take', path, new Uint8Array(readFileSync(path)));
   report.cuts = cuts;
@@ -386,6 +410,7 @@ async function run(dir: string): Promise<number> {
     const helperFailed = firstHelperFailure([p.code, w.code, planned.helperFailure]);
     const reading = damageReading({
       helperFailed,
+      windowError: w.ok ? null : (w.code ?? 'error'),
       probeOk: p.ok,
       fullLength: Boolean(p.ok && evidence && (p.durationMs ?? 0) >= evidence.minDecodedMs),
       refused: planned.refused,
@@ -402,6 +427,7 @@ async function run(dir: string): Promise<number> {
     if (!reading.decided) undecided.push(`V3: ${d.name}: ${reading.text}`);
     damaged.push(row);
     rmSync(path, { force: true });
+    await breathe();
   }
   report.damaged = damaged;
 

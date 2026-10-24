@@ -337,7 +337,7 @@ export function zeroRunWithSignal(pcm: Int16Array, ref: Int16Array, o: { from: n
   return longest;
 }
 
-export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'stops-silently' | 'mismatch' | 'cannot-tell' | 'helper-failed';
+export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'stops-silently' | 'mismatch' | 'cannot-tell' | 'helper-failed' | 'decode-throws';
 
 /**
  * ADR 0027's reading of a damaged file (V3), from what Core Audio did:
@@ -355,6 +355,8 @@ export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'sto
  */
 export function damageReading(o: {
   helperFailed: string | null;
+  /** The window decode's own error code when it threw (not a helper failure), else null. */
+  windowError?: string | null;
   probeOk: boolean;
   fullLength: boolean;
   refused: string | null;
@@ -369,6 +371,11 @@ export function damageReading(o: {
   lagFrames?: number | null;
 }): { reading: DamageReading; text: string; failure: boolean; decided: boolean } {
   if (o.helperFailed) return { reading: 'helper-failed', text: `the Core Audio helper failed on this file (${o.helperFailed}): report it, it is itself a V3 answer`, failure: true, decided: true };
+  if (o.windowError) {
+    return o.refused
+      ? { reading: 'refused', text: `the window past the damage throws (${o.windowError}), and the run is refused (${o.refused}), as ADR 0027 wants`, failure: false, decided: true }
+      : { reading: 'decode-throws', text: `the window past the damage throws (${o.windowError}), and the run was planned: report it`, failure: true, decided: true };
+  }
   if (!o.probeOk || !o.fullLength) {
     return o.refused
       ? { reading: 'refused', text: `short or unreadable, and the run is refused (${o.refused}), as ADR 0027 wants`, failure: false, decided: true }
