@@ -73,7 +73,7 @@ select (select count(*) from pg_attribute where attrelid = 'public.children'::re
        (select count(*) from public.entries) as file_23_letters,                                                                                 -- the number of letters
        (select count(*) from public.entries where jsonb_typeof(machine_edits) <> 'array') as file_23_not_array;                                  -- 0
 ```
-If `file_22_table` is true there (file 17 is applied), run File 22's Before counts as well. File 23 is `20261023040000` (#258) once it is merged.
+If `file_22_table` is true there (file 17 is applied), run File 22's Before counts as well. The last two are File 23's.
 
 ## Step 1. Apply the entries policy (pending file 3)
 
@@ -996,9 +996,48 @@ Then repeat step 21's `search_path` query (expect 0 rows; this file adds no func
 
 **Rollback.** Prefer fixing forward; rolling back brings the gap back. At any time, as one transaction: `alter table public.held_drafts drop constraint held_drafts_capture_mode_check, drop constraint held_drafts_edit_level_check, drop constraint held_drafts_machine_edits_shape, drop constraint held_drafts_author_edits_shape, drop constraint held_drafts_locked_spans_shape;` No data changes either way.
 
+## File 23: a letter is checked at write time for an array `machine_edits` (24 Oct 2026, stream S02)
+
+`20261023040000_entries_machine_edits_check.sql`. The gap file 22 recorded in its header ("One gap stays in entries"): `entries.machine_edits` is `jsonb not null default '[]'` with no shape check, while `author_edits` and `locked_spans` have one (file 16). `entry.upsert` and `entry.reupload` stored it as sent, and an author could write it straight through the Data API, so a JSON null, an object, a string, a number or a boolean could be stored. The app's pull parser refuses such a letter (`PulledRowSchema`: an array), and because a book's rows are one array, one such letter made the author's whole pull answer invalid, every book in it, on every phone of the author (worse than a held draft, which is dropped and counted). The same value in a `current` built from the letter (a words refusal, `dup_outcome`, and `held_state`'s fallback when no held row is left) made the whole push answer invalid, so the refusal the person must resolve never arrived. Another member's pull never carries `machine_edits`. Apply it after `20261023030000_held_drafts_write_checks.sql`. It adds one check constraint on `entries`; it redefines no function, adds no column and drops nothing. Tests: `entries_machine_edits_check` (new) and one drift test in `packages/api/test/contract-drift.test.ts` (every array a pulled letter row carries has an array check on `entries`).
+
+What it changes:
+- **`entries_machine_edits_shape`: `machine_edits` is a JSON array**, exactly what the contract accepts for a letter: any array, no size cap of its own (the push batch's 256 KB cap bounds it) and no check on the elements. No null branch: the column is not null, so a SQL null was refused already (`23502`).
+- **How a refusal answers.** A write that fails it is a check violation, `23514`, the code every `entries` check answers: `sync_push` answers that op `{op, ok: false, code: "23514"}` (no message, no value), changes nothing for it (a Keep leaves its held draft as it was) and goes on with the rest of the batch. The row `sync_push` proposes is checked before Postgres meets the stored letter, so an op with a bad `machine_edits` is refused whole even when it does not change the words, as a bad `author_edits` already is. A JSON null in the op is the jsonb value null, not a SQL null: it was stored before this file and is `23514` now. An absent key is `[]`, as before. A direct Data API write of null is `23502`, as before. The app treats both codes as a permanent refusal: the phone keeps the letter and the op in `rejected_writes` and marks the letter `rejected` (`apps/mobile/src/lib/sync/merge.ts`); the letter stays on the phone, but no screen shows that state yet (WP-F16-01). No app path sends anything but an array.
+- **Not checked, on purpose.** `entry_versions.machine_edits` and `entries.stt_meta`: no pull, push answer or RPC the app calls carries them, so no value there can make the contract refuse anything.
+- **A stored letter that fails the check stops the file; no row is ever deleted or changed** (the constitution). In one statement the file adds the check `NOT VALID`, counts the stored letters it refuses, and validates it when the count is 0 (a `NOTICE` says so). When the count is not 0 it raises `55000` with the count and the check name only (never an id or a value), and the whole file rolls back: no check, no history row, no row changed, so the next `db push` runs it again. It never leaves a failing letter behind a `NOT VALID` check, as file 22 would, because on `entries` such a check refuses every update of that letter, and those updates include the deletion paths: a cancelled account deletion would still be purged on day 30 (`cancel_account_deletion`), another person's account deletion would stick in `executing` after their Auth user is gone (`finalize_account_deletion`), Erase now under a legal hold, the undo of a join, a family letter's review and a book deletion with a co-parent would be refused, and a deleted failing letter could never heal (reviews A and B on #258). Once the file is applied no stored row can fail the check (every insert and update is checked), so no line in `docs/ops/runbooks/stuck-deletion.md` is needed.
+- **Locks.** The file holds an ACCESS EXCLUSIVE lock on `entries` until it commits, which blocks every pull and book read as well as writes, with up to two scans of the table (the count and the validate). It waits at most 5 seconds for that lock (`lock_timeout`, set local to the file; files 20 to 22 set none), because while it waits every pull and push queues behind it. The whole file is one transaction under `supabase db push` (the pinned CLI 2.119.0 sends it as one batch, its history insert last) and its main block is one statement anyway. Apply it at a quiet time; the Before step's third query says how many letters there are.
+
+**Before.** Every earlier file. Read only (expect true, then 0, then the number of stored letters, then three counts, each 0):
+```sql
+select exists (select 1 from pg_constraint where conrelid = to_regclass('public.held_drafts') and conname = 'held_drafts_capture_mode_check');
+select count(*) from pg_constraint where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape';
+select count(*) from public.entries;
+select count(*) filter (where jsonb_typeof(e.machine_edits) <> 'array') as failing,
+       count(*) filter (where jsonb_typeof(e.machine_edits) <> 'array'
+                          and exists (select 1 from public.deletion_requests d
+                                       where d.profile_id = e.author_id and d.status in ('scheduled', 'held', 'executing'))) as failing_open_deletion,
+       count(*) filter (where jsonb_typeof(e.machine_edits) <> 'array'
+                          and (e.reviewed_by is not null
+                               or exists (select 1 from public.child_members m where m.child_id = e.child_id and m.profile_id <> e.author_id))) as failing_shared
+  from public.entries e;
+```
+Write the three counts in the deploy notes (numbers only). `failing` must be 0: the file refuses otherwise (see "If the count is not 0"). The other two say how urgent a non-zero count is: failing letters whose author has an open deletion request (review A N1; book deletion requests are counted too, on purpose, since a book deletion updates letters as well), and failing letters that another person's action touches, because `reviewed_by` is set or the book has another member who may write in it (review A N2).
+
+**Apply.** Through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run, a run before file 22, and a run while a stored letter fails the check (all `55000`); a refused run changes nothing and records nothing. A refused file 23 also holds back every later migration in the same `db push`, because the push stops at the first failing file: the operator sees the push fail, and the Before count is the way to avoid it. If it fails with `55P03` (`lock_not_available`, "canceling statement due to lock timeout"), nothing changed and nothing was recorded either: retry the deploy a little later, when fewer pulls are running.
+
+**Check** (expect one row, `true`; the file never commits the check `NOT VALID`):
+```sql
+select convalidated from pg_constraint where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape';
+```
+Then repeat step 21's `search_path` query (expect 0 rows; this file adds no function). Advisors: none new expected.
+
+**If the count is not 0.** The file refuses (`55000`, with the count only) and changes nothing. The letter stays exactly as stored, and its author's pull stays broken as it is today. Escalate to the coordinator with the three counts (numbers only, never an id or a value). Do not edit or delete the row, and do not try to bring the count to 0 yourself: the repair is a decision, never an operator step. Writing `[]` would falsely record that the machine made no edits; the person's words (`final_text`, `raw_transcript`) are never touched; and putting back an earlier array from `entry_versions` is not an operator's call either. The app cannot heal such a letter on its own (review B M1 on #258). Once the decision is carried out, run the Before counts again, then apply.
+
+**Rollback.** Prefer fixing forward; rolling back brings the gap back. At any time: `alter table public.entries drop constraint entries_machine_edits_shape;` (it takes the exclusive lock on `entries` briefly). No data changes either way. The migration history row stays, so `db push` never runs this file again; to add the check back, write a new migration.
+
 ## File 24: the consent tables' grants match their row security (24 Oct 2026, stream S02)
 
-`20261023050000_consent_grants_tightening.sql`. Review B on #248 (comment 6374282549), notes G2, G3 and G4. Apply it after `20261023030000_held_drafts_write_checks.sql`, and after file 23 (`20261023040000`, #258) when that is merged. Privileges only: it adds, redefines and drops nothing. Tests: `consent_grants_tightening` (new) and new rows in `access_matrix`.
+`20261023050000_consent_grants_tightening.sql`. Review B on #248 (comment 6374282549), notes G2, G3 and G4. Apply it after `20261023040000_entries_machine_edits_check.sql`. Privileges only: it adds, redefines and drops nothing. Tests: `consent_grants_tightening` (new) and new rows in `access_matrix`.
 
 What it changes:
 - **`anon` and `authenticated`** lose INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on `policy_acceptances`, `policy_documents` and `policy_versions`, and `anon` loses SELECT on `policy_acceptances`. Row security already refused every one of these, except TRUNCATE and LOCK, which it never sees, and no code path uses them. `authenticated` keeps SELECT on all three (its own acts through `my_policy_state`, and the published texts); `anon` keeps SELECT on the published texts (the consent sheets before sign-in, the staging smoke).
@@ -1008,11 +1047,11 @@ What it changes:
 
 **Before.** Every earlier file. Read only (expect true, then true; a false second answer means the automatic grants are gone, see "Hosted checks before the first apply" a):
 ```sql
-select exists (select 1 from pg_constraint where conrelid = to_regclass('public.held_drafts') and conname = 'held_drafts_capture_mode_check');
+select exists (select 1 from pg_constraint where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape');
 select has_table_privilege('authenticated', 'public.policy_acceptances', 'SELECT');
 ```
 
-**Apply.** Two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 22 (`55000`).
+**Apply.** Two reviews, then the coordinator merges it into `develop`, and the founder applies it through `deploy-db.yml`, staging first ("How these files reach a project"). The file refuses a second run, and a run before file 23 (`55000`).
 
 **Check** (expect five rows: `anon policy_documents SELECT`, `anon policy_versions SELECT`, `authenticated policy_acceptances SELECT`, `authenticated policy_documents SELECT`, `authenticated policy_versions SELECT`; then 0). On Postgres 15, leave `MAINTAIN` out of both lists:
 ```sql

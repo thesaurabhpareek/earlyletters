@@ -1,10 +1,9 @@
 -- The consent tables' grants match their row security (review B on #248, comment 6374282549, notes G2,
 -- G3 and G4; the #251 reviews). Nothing a code path uses is taken away.
 --
--- PENDING: not yet applied. Apply after 20261023030000_held_drafts_write_checks.sql, and after
--- 20261023040000 (#258) if that is merged first (filename order), following supabase/APPLY.md (section
--- "File 24"). Never edits an earlier file. Redefines nothing, adds nothing: privileges only. Refuses a
--- second run, and a run before 20261023030000 (55000).
+-- PENDING: not yet applied. Apply after 20261023040000_entries_machine_edits_check.sql (#258), following
+-- supabase/APPLY.md (section "File 24"). Never edits an earlier file. Redefines nothing, adds nothing:
+-- privileges only. Refuses a second run, and a run before 20261023040000 (55000).
 --
 -- The gap.
 --   - policy_acceptances (20261002020000_data_governance.sql:624) was never revoked from the API roles,
@@ -68,17 +67,17 @@
 -- It belongs in its own PR, decided by the data architect and the founder. APPLY.md "Hosted checks before
 -- the first apply" query a) shows which defaults the hosted project has.
 --
--- New SQLSTATEs: none. Reused: 55000 (second run, or a run before 20261023030000). Tests: rows in
+-- New SQLSTATEs: none. Reused: 55000 (second run, or a run before 20261023040000). Tests: rows in
 -- supabase/tests/access_matrix.test.mjs (every persona, the service role, and the privilege lists) and
 -- supabase/tests/consent_grants_tightening.test.mjs (new: the guards, and every definer writer and the
 -- app's reads still working). Fictional family "Asha" only (CLAUDE.md).
 
--- --- 0. Run once, after 20261023030000 --------------------------------------
+-- --- 0. Run once, after 20261023040000 --------------------------------------
 do $$
 begin
   if not exists (select 1 from pg_constraint
-                  where conrelid = to_regclass('public.held_drafts') and conname = 'held_drafts_capture_mode_check') then
-    raise exception '20261023050000 needs 20261023030000 first (held_drafts_capture_mode_check is missing)' using errcode = '55000';
+                  where conrelid = 'public.entries'::regclass and conname = 'entries_machine_edits_shape') then
+    raise exception '20261023050000 needs 20261023040000 first (entries_machine_edits_shape is missing)' using errcode = '55000';
   end if;
   -- This file's own end state: authenticated reads policy_acceptances and writes nothing, and anon has
   -- no SELECT. (On a project whose tables got no automatic grants, authenticated has no SELECT either,

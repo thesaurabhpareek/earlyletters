@@ -4,7 +4,7 @@
 // one, shows it closed, and shows every path that writes or reads these tables still working: the
 // person's own act, the app's reads, publishing, pseudonymisation at account deletion, both retention
 // purges and a support-assisted act. status_report_store is in subscription_status.test.mjs, which runs
-// every file. Also the guards: a second run, and a run before 20261023030000 (55000, nothing changed).
+// every file. Also the guards: a second run, and a run before 20261023040000 (55000, nothing changed).
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users } from './harness.mjs';
@@ -64,9 +64,9 @@ check('before: the service role may lock both consent record tables exclusively 
 const beforePrivs = await privileges();
 
 // ── The guards ───────────────────────────────────────────────────────────
-const early = await createDb(all.filter((f) => name(f) < '20261023030000'));
+const early = await createDb(all.filter((f) => name(f) < '20261023040000'));
 const earlyPrivs = await privileges(early.sys);
-check('a run before 20261023030000 is refused (55000) and changes nothing', (await codeOf(() => early.db.exec(sql))) === '55000'
+check('a run before 20261023040000 is refused (55000) and changes nothing', (await codeOf(() => early.db.exec(sql))) === '55000'
   && JSON.stringify(await privileges(early.sys)) === JSON.stringify(earlyPrivs) && earlyPrivs.includes('authenticated policy_acceptances INSERT'));
 await early.db.close();
 

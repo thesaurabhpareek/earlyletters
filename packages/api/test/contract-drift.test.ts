@@ -171,6 +171,21 @@ describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, fi
     for (const k of schemaKeys) expect(sqlKeys.has(k) || PENDING_PULL_COLUMNS.includes(k), `${k} is in the contract but sync_pull never sends it`).toBe(true);
   });
 
+  it('every array an own letter row carries has an array check on entries (20261023040000), so no new letter fails its author\'s whole pull', () => {
+    // The table and every later `alter table public.entries`: one letter PulledRowSchema refuses makes the whole pull answer invalid.
+    const table = /create table public\.entries \(([^]*?)\n\);/.exec(all);
+    expect(table, 'entries table not found').not.toBeNull();
+    let checks = table![1];
+    for (const { text } of sql) {
+      for (const m of text.matchAll(/alter table (?:if exists )?(?:only )?public\.entries\s+([^;]+);/g)) checks += `\n${m[1]}`;
+    }
+    type S = { type: string; wrapped?: S };
+    const unwrap = (s: S): S => (s.wrapped ? unwrap(s.wrapped) : s);
+    const arrays = Object.entries(PulledRowSchema.entries as Record<string, S>).filter(([, s]) => unwrap(s).type === 'array').map(([c]) => c);
+    expect(arrays.sort()).toEqual(['author_edits', 'locked_spans', 'machine_edits']);
+    for (const c of arrays) expect(checks, `entries has no array check on ${c}`).toMatch(new RegExp(`jsonb_typeof\\(${c}\\) = 'array'`));
+  });
+
   it('the left-book section sends the same own-row keys, and its book entry equals GoneBookSchema (review A 7 on #138)', () => {
     const start = pull.indexOf('where key::uuid <> all(v_live)');
     const goneAt = pull.indexOf('v_gone := v_gone ||', start);
