@@ -125,8 +125,9 @@ export function contentFindings(file: string, bytes: Buffer, names = NAME_HASHES
     if (!text.includes('\0')) return findings(text, names, dates);
   }
   const text = bytes.toString('latin1');
-  const runs = (text.match(BINARY_TEXT) ?? []).join('\n');
-  return [...new Set([...findings(runs, names, NONE), ...findings(text, NONE, dates)])];
+  const hits = findings((text.match(BINARY_TEXT) ?? []).join('\n'), names, NONE);
+  if (dateCandidates(text).some((d) => dates.has(sha(d)))) hits.push('real birth date');
+  return hits;
 }
 
 /** A path as it may be printed: a guarded name becomes <name>, and digits become # when it holds the guarded date. */
