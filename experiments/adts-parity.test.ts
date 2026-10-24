@@ -9,8 +9,11 @@ import { AAC_FRAME_SAMPLES, AAC_PRIMING_SAMPLES, scanAdts } from '../apps/mobile
 import {
   FRAME_AT_PCM,
   MAX_PLAUSIBLE_MONO,
+  SIGNAL_RMS,
   chirpWav,
+  codeOf,
   crossCorrelate,
+  damageReading,
   damageLength,
   damageSync,
   frameStarts,
@@ -105,6 +108,29 @@ describe('[ADR 0027 V3] the numbers V3 asks for', () => {
     expect(FRAME_AT_PCM).toBeCloseTo(341.33, 2);
   });
 
+  it('the generated take has signal to its very end, so the damage near the end always has audio to compare (review of #282)', () => {
+    const src = pcm16(chirpWav(30).wav.subarray(44));
+    const rate = 48000;
+    expect(src.length).toBe(30 * rate);
+    expect(rms(src, src.length - AAC_FRAME_SAMPLES)).toBeGreaterThan(SIGNAL_RMS); // the last frame
+    for (let end = src.length; end > src.length - 2 * rate; end -= rate / 10) expect(rms(src, end - rate / 10, end), `100 ms ending at ${end}`).toBeGreaterThan(SIGNAL_RMS);
+    // Where the two damage cases fall, 20 and 10 frames from the end, the take holds signal.
+    for (const fromEnd of [20, 10]) expect(rms(src, src.length - fromEnd * AAC_FRAME_SAMPLES)).toBeGreaterThan(SIGNAL_RMS);
+    expect(src.reduce((m, x) => Math.max(m, Math.abs(x)), 0)).toBeLessThan(32767); // no clipping
+  });
+
+  it('cross-correlation says nothing (null) on silence or with no overlap, never a fake lag', () => {
+    expect(crossCorrelate(new Int16Array(1000), new Int16Array(1000), { from: 100, length: 500, maxLag: 50 })).toEqual({ lag: null, score: null });
+    expect(crossCorrelate(new Int16Array(1000).fill(5), new Int16Array(1000), { from: 100, length: 500, maxLag: 50 })).toEqual({ lag: null, score: null });
+    expect(crossCorrelate(new Int16Array(100).fill(5), new Int16Array(10).fill(5), { from: 50, length: 50, maxLag: 5 })).toEqual({ lag: null, score: null });
+  });
+
+  it('an error becomes its code, never its message (a helper message can hold a path)', () => {
+    expect(codeOf(Object.assign(new Error('Command failed: /Users/me/Library/Developer/x.aac'), { code: 'helper_crashed_SIGTRAP' }))).toBe('helper_crashed_SIGTRAP');
+    expect(codeOf(new Error('Command failed: /Users/me/x.aac'))).toBe('error');
+    expect(codeOf(Object.assign(new Error('x'), { code: '/Users/me/x.aac' }))).toBe('error');
+  });
+
   it('zeros at the end and loudness', () => {
     expect(zeroRunAtEnd(new Int16Array([5, 0, 3, 0, 0]))).toBe(2);
     expect(rms(new Int16Array([3, -3, 3, -3]))).toBe(3);
@@ -153,5 +179,22 @@ describe('[ADR 0027 V3] the run is planned by the app\'s own code, as transcribe
     });
     expect(run.refused).toBeNull();
     expect(run.durationMs).toBeGreaterThanOrEqual(ms(119));
+  });
+});
+
+describe('[ADR 0027 V3] reading a damaged file the ADR\'s way', () => {
+  const base = { helperFailed: null, probeOk: true, fullLength: true, refused: null, earlyStops: 0, referenceRms: 5000, comparable: true, pastAllZero: false, score: 0.99 };
+  it.each([
+    ['the helper crashed: an answer to report', { helperFailed: 'helper_crashed_SIGTRAP' }, 'helper-failed', true, true],
+    ['short, and the run refused: as the ADR wants', { fullLength: false, refused: 'break_inside' }, 'refused', false, true],
+    ['short, and not refused: report it', { fullLength: false }, 'short-not-refused', true, true],
+    ['full length with an early stop: silent stop, whatever the audio', { earlyStops: 1, score: 0.99 }, 'stops-silently', true, true],
+    ['the undamaged take silent past the damage: cannot tell (review of #282)', { referenceRms: 0, pastAllZero: true, score: null }, 'cannot-tell', false, false],
+    ['too short a span to compare: cannot tell', { comparable: false }, 'cannot-tell', false, false],
+    ['zeros where the undamaged take has signal: silent stop', { pastAllZero: true, score: null }, 'stops-silently', true, true],
+    ['the right audio past the damage: read past', {}, 'read-past', false, true],
+    ['other audio past the damage: mismatch', { score: 0.3 }, 'mismatch', true, true],
+  ] as const)('%s', (_name, change, reading, failure, decided) => {
+    expect(damageReading({ ...base, ...change })).toMatchObject({ reading, failure, decided });
   });
 });

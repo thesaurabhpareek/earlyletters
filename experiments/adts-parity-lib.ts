@@ -8,8 +8,7 @@
  * Pure: bytes in, bytes or numbers out. Nothing here reads or writes a file, or logs.
  */
 import { AAC_FRAME_SAMPLES, AAC_MAX_BLOCK_BYTES_PER_CHANNEL, AAC_PRIMING_SAMPLES, adtsLengthEvidence, breaksInside, scanAdts, type AdtsScan } from '../apps/mobile/src/lib/capture/adts';
-import { vadWindows } from '../apps/mobile/src/lib/transcribe-plan';
-import { RunInputError, openRecordingForRun, type DecodeRange, type RecordingIo, type WholeFrameCopy } from '../apps/mobile/src/lib/transcribe-run';
+import { RunInputError, findSpeech, openRecordingForRun, type RecordingIo, type WholeFrameCopy } from '../apps/mobile/src/lib/transcribe-run';
 
 /** Source samples a second (our recordings: 48 kHz) and the decoder's output rate (ScribeAudio: 16 kHz). */
 export const SOURCE_RATE = 48_000;
@@ -18,6 +17,10 @@ export const PCM_RATE = 16_000;
 export const FRAME_AT_PCM = (AAC_FRAME_SAMPLES * PCM_RATE) / SOURCE_RATE;
 /** A frame_length a mono frame may claim (ADR 0027 `plausibleLength`: 7 + 768 + 4). */
 export const MAX_PLAUSIBLE_MONO = 7 + AAC_MAX_BLOCK_BYTES_PER_CHANNEL + 4;
+/** A 16-bit RMS above this holds signal; the generated take never falls below it, digital silence is 0. */
+export const SIGNAL_RMS = 200;
+/** A correlation at least this high, within one frame of lag, means the same audio. */
+export const SAME_AUDIO = 0.9;
 
 const frameLengthAt = (b: Uint8Array, at: number) => ((b[at + 3] & 0x03) << 11) | (b[at + 4] << 3) | (b[at + 5] >> 5);
 
@@ -50,7 +53,9 @@ export interface TestFile {
 /**
  * V3's truncated files: a finished take cut where a kill can cut it, at three offsets: inside a frame's payload
  * (frame 30 from the end), inside a header (3 bytes into the frame 20 from the end), and right after a whole header
- * (frame 10 from the end). Each must scan as a kill cut.
+ * (frame 10 from the end). Each must scan as a kill cut. Written for our recorder's frames (7-byte headers, 11 bytes
+ * and up): a frame under 9 bytes has no payload byte past 8 to cut inside, and with a CRC (9-byte header) the "after
+ * the header" cut lands inside it.
  */
 export function truncations(bytes: Uint8Array): TestFile[] {
   const { starts } = frameStarts(bytes);
@@ -111,10 +116,11 @@ export function pcm16(bytes: Uint8Array): Int16Array {
 
 /**
  * The lag (in samples) that best lines `b` up with `a`: `b[i + lag]` against `a[i]` over `a[from, from + length)`,
- * for every lag in [-maxLag, maxLag], by normalized cross-correlation. `score` is 1 for identical shapes.
+ * for every lag in [-maxLag, maxLag], by normalized cross-correlation. `score` is 1 for identical shapes. Both are
+ * null when no lag has signal on both sides (silence, or no overlap): then nothing can be said.
  */
-export function crossCorrelate(a: Int16Array, b: Int16Array, o: { from: number; length: number; maxLag: number }): { lag: number; score: number } {
-  let best = { lag: 0, score: -Infinity };
+export function crossCorrelate(a: Int16Array, b: Int16Array, o: { from: number; length: number; maxLag: number }): { lag: number | null; score: number | null } {
+  let best: { lag: number | null; score: number | null } = { lag: null, score: null };
   const end = Math.min(a.length, o.from + o.length);
   for (let lag = -o.maxLag; lag <= o.maxLag; lag++) {
     let dot = 0;
@@ -127,8 +133,9 @@ export function crossCorrelate(a: Int16Array, b: Int16Array, o: { from: number; 
       ea += a[i] * a[i];
       eb += b[j] * b[j];
     }
-    const score = ea > 0 && eb > 0 ? dot / Math.sqrt(ea * eb) : 0;
-    if (score > best.score) best = { lag, score };
+    if (ea === 0 || eb === 0) continue;
+    const score = dot / Math.sqrt(ea * eb);
+    if (best.score === null || score > best.score) best = { lag, score };
   }
   return best;
 }
@@ -161,23 +168,32 @@ export function seeded(seed: number): () => number {
 }
 
 /**
- * A 16-bit mono WAV at 48 kHz of chirps (300 to 3000 Hz over 200 ms) at irregular onsets, silence between: a tone
- * with a known envelope (V3 allows it in place of speech), whose cross-correlation has one sharp peak. Never a voice.
+ * A 16-bit mono WAV at 48 kHz with signal in every moment, to the last sample (V3 allows a tone with a known
+ * envelope in place of speech; never a voice). A bed of sweeps (300 to 3000 Hz, a 2.3 s period, its level drifting
+ * on a 3.7 s cycle) runs the whole length, so the frames V3 damages near the end always hold audio to compare
+ * (review of #282: chirps alone left the last half second silent). Chirps (300 to 3000 Hz over 200 ms) at irregular
+ * onsets ride on it, the last one cut off by the end, and give the cross-correlation one sharp peak.
  */
 export function chirpWav(seconds: number, seed = 27): { wav: Uint8Array; onsetsMs: number[] } {
   const n = Math.round(seconds * SOURCE_RATE);
-  const samples = new Int16Array(n);
+  const samples = new Float64Array(n);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SOURCE_RATE;
+    const f = 300 + 2700 * ((t % 2.3) / 2.3);
+    phase += (2 * Math.PI * f) / SOURCE_RATE;
+    samples[i] = 0.12 * (0.65 + 0.35 * Math.sin((2 * Math.PI * t) / 3.7)) * Math.sin(phase);
+  }
   const rand = seeded(seed);
   const onsetsMs: number[] = [];
   const burst = Math.round(0.2 * SOURCE_RATE);
-  for (let t = 0.25 + rand() * 0.5; t * SOURCE_RATE + burst < n; t += 0.45 + rand() * 0.9) {
+  for (let t = 0.25 + rand() * 0.5; t * SOURCE_RATE < n; t += 0.45 + rand() * 0.9) {
     const start = Math.round(t * SOURCE_RATE);
     onsetsMs.push(Math.round(t * 1000));
-    for (let k = 0; k < burst; k++) {
+    for (let k = 0; k < burst && start + k < n; k++) {
       const x = k / SOURCE_RATE;
-      const phase = 2 * Math.PI * (300 * x + ((3000 - 300) / (2 * 0.2)) * x * x);
-      const env = Math.sin((Math.PI * k) / burst);
-      samples[start + k] = Math.round(0.3 * 32767 * env * Math.sin(phase));
+      const ph = 2 * Math.PI * (300 * x + ((3000 - 300) / (2 * 0.2)) * x * x);
+      samples[start + k] += 0.3 * Math.sin((Math.PI * k) / burst) * Math.sin(ph);
     }
   }
   const wav = new Uint8Array(44 + n * 2);
@@ -198,7 +214,7 @@ export function chirpWav(seconds: number, seed = 27): { wav: Uint8Array; onsetsM
   view.setUint16(34, 16, true);
   tag(36, 'data');
   view.setUint32(40, n * 2, true);
-  for (let i = 0; i < n; i++) view.setInt16(44 + i * 2, samples[i], true);
+  for (let i = 0; i < n; i++) view.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, samples[i])) * 32767), true);
   return { wav, onsetsMs };
 }
 
@@ -232,11 +248,19 @@ export interface PlannedRun {
   windows: WindowRead[];
 }
 
+/** An error's code, never its message (a helper's message can hold a path). */
+export function codeOf(e: unknown): string {
+  if (e instanceof RunInputError) return e.reason;
+  const code = (e as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && /^[A-Za-z0-9_]+$/.test(code) ? code : 'error';
+}
+
 /**
  * The input half of the app's transcription job, as transcribe-whisper.ts runs it, up to Whisper: the frame scan,
- * `openRecordingForRun` (length check, whole-frame copy, refusal), then every 5-minute window decoded as
- * `findSpeech` decodes it. Whisper itself is not run (the speech packs are the phone's); refusal is decided before
- * it, and the audio it would hear is what the windows return.
+ * `openRecordingForRun` (length check, whole-frame copy, refusal), then the app's own `findSpeech` with a voice
+ * detector that finds nothing, so every 5-minute window is decoded exactly as the app decodes it. Whisper itself is
+ * not run (the speech packs are the phone's); refusal is decided before it, and the audio it would hear is what the
+ * windows return.
  */
 export async function planRun(io: RecordingIo, uri: string, bytes: Uint8Array, storedMs: number | null, makeCopy: (wholeBytes: number) => Promise<WholeFrameCopy>): Promise<PlannedRun> {
   const adts = scanAdts(bytes);
@@ -250,20 +274,67 @@ export async function planRun(io: RecordingIo, uri: string, bytes: Uint8Array, s
       return makeCopy(adts?.wholeBytes ?? 0);
     });
   } catch (e) {
-    const code = e instanceof RunInputError ? e.reason : String((e as { code?: unknown })?.code ?? (e as Error)?.message ?? 'error');
-    return { refused: code, durationMs: null, countedMs, usedCopy, windows: [] };
+    return { refused: codeOf(e), durationMs: null, countedMs, usedCopy, windows: [] };
   }
   const windows: WindowRead[] = [];
   try {
-    for (const w of vadWindows(run.durationMs)) {
-      const pcm = new Int16Array(await run.decode([{ srcStartMs: w.startMs, srcEndMs: w.endMs, silenceBeforeMs: 0 } satisfies DecodeRange]));
-      windows.push({ startMs: w.startMs, endMs: w.endMs, samples: pcm.length, zeroTail: zeroRunAtEnd(pcm) });
-    }
+    await findSpeech(run.durationMs, {
+      decodeWindow: async (startMs, endMs) => {
+        const buf = await run.decode([{ srcStartMs: startMs, srcEndMs: endMs, silenceBeforeMs: 0 }]);
+        const pcm = new Int16Array(buf);
+        windows.push({ startMs, endMs, samples: pcm.length, zeroTail: zeroRunAtEnd(pcm) });
+        return buf;
+      },
+      detectSpeech: async () => [],
+    });
   } catch (e) {
-    const code = e instanceof RunInputError ? e.reason : String((e as { code?: unknown })?.code ?? (e as Error)?.message ?? 'error');
-    return { refused: code, durationMs: run.durationMs, countedMs, usedCopy, windows };
+    return { refused: codeOf(e), durationMs: run.durationMs, countedMs, usedCopy, windows };
   } finally {
     run.close();
   }
   return { refused: null, durationMs: run.durationMs, countedMs, usedCopy, windows };
+}
+
+export type DamageReading = 'refused' | 'short-not-refused' | 'read-past' | 'stops-silently' | 'mismatch' | 'cannot-tell' | 'helper-failed';
+
+/**
+ * ADR 0027's reading of a damaged file (V3), from what Core Audio did:
+ * - the helper crashed or timed out on it: that is itself an answer to report;
+ * - a short or unreadable probe is fine when the run is refused (as the app refuses it), and a finding when not;
+ * - at full length, a read that returned nothing with Core Audio's own length unread (`earlyStops`, the helper's
+ *   count, the primary evidence) means Core Audio stops silently: the native early-stop check (S08) goes in first;
+ * - otherwise the audio past the damage is compared with the undamaged take's, from four frames past the damage (the
+ *   ADR's 85 ms tolerance) and within four frames of lag (a decoder that drops the damaged frame shifts what follows),
+ *   but only where the undamaged take has signal (`referenceRms` at least SIGNAL_RMS) over enough samples: exact zeros
+ *   there mean a silent stop, a correlation of SAME_AUDIO or more means read past, anything else is a mismatch. Where
+ *   the undamaged take is silent or the span too short, this file cannot tell, and says so.
+ */
+export function damageReading(o: {
+  helperFailed: string | null;
+  probeOk: boolean;
+  fullLength: boolean;
+  refused: string | null;
+  earlyStops: number;
+  referenceRms: number | null;
+  comparable: boolean;
+  pastAllZero: boolean;
+  score: number | null;
+}): { reading: DamageReading; text: string; failure: boolean; decided: boolean } {
+  if (o.helperFailed) return { reading: 'helper-failed', text: `the Core Audio helper failed on this file (${o.helperFailed}): report it, it is itself a V3 answer`, failure: true, decided: true };
+  if (!o.probeOk || !o.fullLength) {
+    return o.refused
+      ? { reading: 'refused', text: `short or unreadable, and the run is refused (${o.refused}), as ADR 0027 wants`, failure: false, decided: true }
+      : { reading: 'short-not-refused', text: 'short or unreadable, and the run was not refused: report it', failure: true, decided: true };
+  }
+  if (o.earlyStops > 0) {
+    return { reading: 'stops-silently', text: 'FULL LENGTH, A READ STOPPED EARLY: Core Audio stops silently at the damage; the native early-stop check (S08) goes in before the flip', failure: true, decided: true };
+  }
+  if (!o.comparable || o.referenceRms === null || o.referenceRms < SIGNAL_RMS) {
+    return { reading: 'cannot-tell', text: 'cannot tell: the undamaged take is silent (or too short) past the damage, so there is nothing to compare; use a take with signal to its end', failure: false, decided: false };
+  }
+  if (o.pastAllZero) {
+    return { reading: 'stops-silently', text: 'FULL LENGTH, ZEROS PAST THE DAMAGE where the undamaged take has signal: Core Audio stops silently; the native early-stop check (S08) goes in before the flip', failure: true, decided: true };
+  }
+  if (o.score !== null && o.score >= SAME_AUDIO) return { reading: 'read-past', text: 'full length, the right audio past the damage: read past', failure: false, decided: true };
+  return { reading: 'mismatch', text: 'full length, audio past the damage that does not match the undamaged take: report it', failure: true, decided: true };
 }
