@@ -19,7 +19,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { migrate } from '../src/lib/db/migrations';
 import { children, drafts, entries, letters, settings, uuidv7From, type Entry, type RepoContext } from '../src/lib/db/repos';
 import * as logic from '../src/dev/kill-drill.logic';
-import { EXIT, countsOf, meetsGate, mergeReports, planRuns, plantCaught, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
+import { EXIT, countsOf, failReason, meetsGate, mergeReports, planRuns, plantCaught, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
 import { auditStore, classifyDl01, classifyDl02 } from '../e2e/kill/oracle.mjs';
 import * as protocol from '../e2e/kill/protocol.mjs';
 import { readSnapshot, sha256OfFile } from '../e2e/kill/snapshot.mjs';
@@ -813,6 +813,11 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
     const report = await runHarness({ driver: fakeDriver('dl01-silent', 'atomic', { playable: false }), mode: 'dl01', runs: 3, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 16, timeouts: fast });
     expect(countsOf(report)).toMatchObject({ kept: 3, 'kept-unplayable': 3, within5s: 0, bad: 0 });
     expect(report.exit).toBe(EXIT.fail);
+    // Exit 1, but nothing lost: the report and the workflow name the playable rule, not a loss (S0).
+    expect(failReason(report)).toEqual({ kind: 'playable', playing: 0, judged: 3, needed: 3 });
+    const md = renderMarkdown(report);
+    expect(md).toContain('FAIL, the DL-01 playable rule only: nothing lost, doubled or damaged, but 0 of 3 kept takes play to within 5 s, and 07 needs 49 in 50 (3 of 3)');
+    expect(md).not.toContain('FAIL: a run lost');
   }, 60_000);
 
   it('regression: a listing that shows only the top of Documents never finishes a DL-01 take kept in Documents/ExpoAudio, and the harness fails it', async () => {
@@ -826,6 +831,9 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
     for (const r of report.runs) expect(r).toMatchObject({ outcome: 'fail', reasons: ['still marked recording after the sweep'] });
     expect(report.sweep['drop-empty-recording']).toBeGreaterThan(0);
     expect(report.exit).toBe(EXIT.fail);
+    // A take that is not kept is a loss, never the playable rule.
+    expect(failReason(report)).toEqual({ kind: 'loss' });
+    expect(renderMarkdown(report)).toContain('FAIL: a run lost');
   }, 60_000);
 
   it("the app's real sweep on takes where expo-audio 57 writes them (Documents/ExpoAudio) keeps every take; it fails if the sweep goes back to the top of Documents", async () => {

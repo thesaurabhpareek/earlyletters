@@ -35,6 +35,7 @@ import { startSync } from '@/lib/sync';
 import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
 import { useStoreReady } from '@/dev/store-ready';
+import { useE2eSeams } from '@/dev/e2e-seams';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -135,6 +136,8 @@ export default function RootLayout() {
 }
 
 function Root() {
+  // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
+  useE2eSeams();
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
