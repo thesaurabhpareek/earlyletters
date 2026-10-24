@@ -352,6 +352,20 @@ describe('[F06-REQ-004] engine 7: no end mark next to one already said, whicheve
     }
   });
 
+  it('the CJK closing brackets (U+3011, U+3009, U+300B) are brackets too, not between two marks (#249 follow-up)', () => {
+    for (const close of ['\u3011', '\u3009', '\u300B']) {
+      const open = String.fromCodePoint(close.codePointAt(0)! - 1);
+      const inside = `She said ${open}no!${close}`;
+      expect(v7(inside, atEnd(inside, '.')), close).toBeNull(); // the sentence around them takes its own, as after ")"
+      // Bridging them would let an edit join the two marks said on each side: the single-edit differential found
+      // 381 such edits accepted (the closer deleted, a mark moved across it, the first mark after it changed).
+      const raw = `Asha slept.${close}. Then she woke.`;
+      const c = raw.indexOf(close);
+      expect(v7(raw, at(c, '', close)), close).toBe('changes_sentence_type');
+      expect(v7(raw, at(c, `.${close}`, `${close}.`)), close).toBe('changes_sentence_type');
+    }
+  });
+
   it('negative cases: one end mark where none was, after a word, is still accepted', () => {
     expect(v7('Was there more', atEnd('Was there more', '.'))).toBeNull();
     expect(verdictIn(HI, 'आशा आज बहुत हँसी', atEnd('आशा आज बहुत हँसी', '।'))).toBeNull();
