@@ -123,6 +123,20 @@ export function blobRow(r: BlobWire, profileId: string): BlobRow | null {
   };
 }
 
+/**
+ * Storage refused to sign a download URL because the object is not there: restore counts that as a
+ * failed try, so runtime.ts raises it as `HTTP404` (restore.ts `failedTry`), never under the code
+ * Storage's body names (`NoSuchKey`), which `serverError` would take first and restore would retry
+ * on every pass (review N1 on #255). storage-js 2.117.2's `StorageApiError` has `status`, the HTTP
+ * status (a number), `statusCode`, the body's `statusCode` (else its `code`, else the HTTP status, as
+ * a string), and `code`, the body's own code. This relies on `status` when it is 404, and otherwise
+ * on `statusCode` '404', which Storage sends for a missing object when it answers HTTP 400.
+ */
+export function storageNotFound(e: unknown): boolean {
+  const x = e as { status?: unknown; statusCode?: unknown } | null;
+  return x?.status === 404 || x?.statusCode === '404';
+}
+
 // ── Escrow project: the `escrow` function ────────────────────────────────
 
 /** Routes under the escrow project's URL (`supabase/functions/escrow/contract.ts`). */
