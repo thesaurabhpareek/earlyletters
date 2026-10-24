@@ -13,6 +13,9 @@
 #         every pull request that changes supabase/**. GitHub runs this file only
 #         once it is on the default branch (main); until then db-cli.yml is the
 #         proof.
+#   report  a red scheduled run opens one `nightly` issue with the run link, or
+#         comments on the one already open (never a second); a green scheduled
+#         run closes it (RA-20-19; AUTOMATION.md 2.8; B2-22).
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Nightly
 
@@ -29,6 +32,10 @@ on:
         description: Fuzz runs
         required: false
         default: '100000'
+      report_issue:
+        description: Open or close the nightly issue as a scheduled run does (the planted failure in AUTOMATION.md 2.12)
+        type: boolean
+        default: false
 
 concurrency:
   group: nightly
@@ -104,3 +111,72 @@ jobs:
         env:
           SCRIBE_DEFAULT_GRANTS: legacy
         run: npm run test:db
+
+  # RA-20-19. Scheduled runs only, or a dispatch with report_issue on. No checkout and no install: the script
+  # below is the whole job, run by the image's Node. The default GITHUB_TOKEN here holds issues: write and nothing
+  # else (job permissions replace the workflow's). It touches only open `nightly` issues this job opened
+  # (github-actions[bot]), so a person's issue with the label is never commented on or closed. The text is the run
+  # link, the time and the red jobs' names: no content. apps/mobile/test/nightly-issue.test.ts runs this exact
+  # script against a stand-in for the GitHub API.
+  report:
+    name: nightly issue (opened on red, closed on green)
+    needs: [fuzz, db, perf, legacy-grants]
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.report_issue) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the nightly issue
+        id: nightly-issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node --input-type=module <<'JS'
+          const api = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}`;
+          const BOT = 'github-actions[bot]';
+          async function call(method, path, body, okStatuses = []) {
+            const res = await fetch(api + path, {
+              method,
+              headers: {
+                authorization: `Bearer ${process.env.GH_TOKEN}`,
+                accept: 'application/vnd.github+json',
+                'x-github-api-version': '2022-11-28',
+                'content-type': 'application/json',
+              },
+              body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            if (!res.ok && !okStatuses.includes(res.status)) throw new Error(`${method} ${path.split('?')[0]}: HTTP ${res.status}`);
+            return res.status === 204 || !res.ok ? null : res.json();
+          }
+          const red = Object.entries(JSON.parse(process.env.NEEDS))
+            .filter(([, job]) => job.result !== 'success')
+            .map(([name, job]) => `${name}: ${job.result}`);
+          const when = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+          // Oldest first; only issues this job opened, never a pull request.
+          const listed = await call('GET', '/issues?labels=nightly&state=open&sort=created&direction=asc&per_page=100');
+          const open = listed.filter((i) => !i.pull_request && i.user?.login === BOT);
+          if (red.length) {
+            const body = `The nightly run of ${when} is red: ${process.env.RUN_URL}\n\n${red.map((r) => `- ${r}`).join('\n')}`;
+            if (open.length) {
+              await call('POST', `/issues/${open[0].number}/comments`, { body });
+              console.log(`red: commented on #${open[0].number}`);
+            } else {
+              // 422: the label exists already.
+              await call('POST', '/labels', { name: 'nightly', color: 'd73a4a', description: 'A red nightly run (nightly.yml)' }, [422]);
+              const issue = await call('POST', '/issues', { title: 'Nightly checks are red', body: `${body}\n\nThe next green nightly run closes this issue.`, labels: ['nightly'] });
+              // A label dropped on create would hide this issue from the next run and open a second one.
+              if (!issue.labels?.some((l) => (l.name ?? l) === 'nightly')) await call('POST', `/issues/${issue.number}/labels`, { labels: ['nightly'] });
+              console.log(`red: opened #${issue.number}`);
+            }
+          } else {
+            for (const i of open) {
+              await call('POST', `/issues/${i.number}/comments`, { body: `Green again on ${when}: ${process.env.RUN_URL}` });
+              await call('PATCH', `/issues/${i.number}`, { state: 'closed', state_reason: 'completed' });
+              console.log(`green: closed #${i.number}`);
+            }
+            if (!open.length) console.log('green: no nightly issue open');
+          }
+          JS

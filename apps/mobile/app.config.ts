@@ -34,6 +34,7 @@
  * background database writes while the phone is locked.
  */
 import type { ConfigContext, ExpoConfig } from 'expo/config';
+import { withEntitlementsPlist, type ConfigPlugin } from 'expo/config-plugins';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -92,6 +93,21 @@ export const DATA_PROTECTION_ENTITLEMENT = 'com.apple.developer.default-data-pro
 export const DATA_PROTECTION_CLASS = 'NSFileProtectionCompleteUntilFirstUserAuthentication';
 
 /**
+ * No remote push: reminders (F13) and plan reminders are local notifications, and nothing in the app asks for a
+ * push token. expo-notifications' own plugin, which prebuild applies because the package is installed, still
+ * writes aps-environment; this removes it, so no build carries a push capability it does not use
+ * (docs/ops/RELEASE.md section 4). Prebuild applies that plugin after this config, and a mod registered
+ * earlier runs later, so the key is gone from the written entitlements file. When co-parent push is built
+ * (F11 WP-F11-09c, which registers a token), remove this and request the entitlement on purpose.
+ */
+const PUSH_ENTITLEMENT = 'aps-environment';
+const withoutRemotePush: ConfigPlugin = (c) =>
+  withEntitlementsPlist(c, (m) => {
+    delete m.modResults[PUSH_ENTITLEMENT];
+    return m;
+  });
+
+/**
  * The iOS privacy manifest (BL-349, LEGAL-REQ-043): required-reason APIs, no
  * tracking, and the collected data types for this build's switches, from
  * src/lib/privacy-manifest.ts (evidence and Apple's sources are there). A build
@@ -139,7 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const e2eStop = e2eRefusal({ e2e: process.env.EXPO_PUBLIC_E2E, appEnv: APP_ENV, easBuildProfile: process.env.EAS_BUILD_PROFILE });
   if (e2eStop !== null) throw new Error(e2eStop);
   const appId = `${bundleId()}${ID_SUFFIX[APP_ENV]}`;
-  return {
+  return withoutRemotePush({
   ...config,
   name: brand.name,
   slug: brand.codename,
@@ -251,5 +267,5 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     appEnv: APP_ENV,
     ...capabilityFlags(),
   },
-  };
+  });
 };
