@@ -1,30 +1,43 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import Animated, { FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
+import { tokens } from '@scribe/design-tokens';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
-import { shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
+import { shelfActions, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
+import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { ListSection } from '@/components/ui/list-row';
+import { Card } from '@/components/ui/card';
+import { StateScreen } from '@/components/ui/state-screen';
 import { UIProvider } from '@/components/ui/provider';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
+import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
+import { capabilities } from '@/lib/capabilities';
 import { eraseDeletedLetter } from '@/lib/capture/erase';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
-import { listDeleted, subscribeTo, undeleteEntry } from '@/lib/store';
+import { useReducedMotion } from '@/lib/motion';
+import { getActiveChild, getChild, listDeleted, subscribeTo, undeleteEntry, type DeletedEntry } from '@/lib/store';
+import { authorOf } from '@/components/child/child-store';
 import { bookCopy } from '@/components/book/copy';
 
 /**
- * Recently deleted (D-085, debate Q-014): a letter the person deletes waits here for 30 days
- * with its recording, then the launch purge erases it (file first, then the row). Restore puts
- * it back exactly as it was. Erase now ends the wait: the letter and its recording are erased
- * from this phone at once, after one question. Deleted text can still sit in an old iPhone
- * backup, which the privacy policy says.
+ * Recently deleted (D-085, debate Q-014, EXPERIENCE_PASS S38, S39, S63): a letter the person deletes waits here for
+ * 30 days with its recording, then the launch purge erases it (file first, then the row). Restore puts it back exactly
+ * as it was. Erase now ends the wait: the letter and its recording are erased for good, after one question.
  *
- * Calm on purpose: no countdown, no count of what is left. Each row says the day it will be
- * erased, once.
+ * Each card holds the person's words as they are (letterBody, two lines that end in a fade; every word in the
+ * accessibility label), who it is from, and one line joining the two dates ("Deleted October 13. Kept here until
+ * November 12."). Calm on purpose: no countdown, no count of what is left.
+ *
+ * Every toast replaces the one on screen (components/ui/toast), so after Erase now no "Back in Asha's book." can sit
+ * under "Letter erased.". Restore's toast carries "Open"; Erase now's carries no action, so it may time out.
+ *
+ * A build that syncs shows no Erase now until the server erase exists (S63, F17-REQ-025): the card shows its date
+ * line, from the server's deleted_at plus 30 days, and the letter goes at the server purge.
  */
 export default function RecentlyDeleted() {
   return (
@@ -37,17 +50,23 @@ export default function RecentlyDeleted() {
 function Shelf() {
   const d = copy.settings.delete;
   const toast = useToast();
+  const reduced = useReducedMotion();
   const read = useCallback(() => listDeleted(), []);
   const [rows, setRows] = useState(read);
   const [erasing, setErasing] = useState<string | null>(null);
   useEffect(() => subscribeTo('entries', () => setRows(read())), [read]);
+  const actions = shelfActions({ sync: capabilities.sync });
 
-  const restore = (id: string, inBook: boolean) => {
+  const restore = (e: DeletedEntry) => {
     haptic('tap');
-    undeleteEntry(id);
-    track('letter_deleted', { action: 'restored', destination: inBook ? 'book' : 'private' });
+    undeleteEntry(e.id);
+    track('letter_deleted', { action: 'restored', destination: e.inBook ? 'book' : 'private' });
     setRows(read());
-    toast.show({ message: d.restoredToast });
+    const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
+    toast.show({
+      message: fill(d.restoredToast, { child: child?.name ?? '' }),
+      action: { label: d.openButton, testID: 'shelf.open', onPress: () => router.push({ pathname: '/letter/[id]', params: { id: e.id } }) },
+    });
   };
 
   const erase = () => {
@@ -55,28 +74,33 @@ function Shelf() {
     setErasing(null);
     if (!id) return;
     haptic('warning');
-    eraseDeletedLetter(id);
+    const done = eraseDeletedLetter(id);
     setRows(read());
+    if (done) toast.show({ message: d.erasedToast });
   };
 
+  if (rows.length === 0) {
+    return (
+      <View className="flex-1 bg-background">
+        <Stack.Screen options={{ title: d.recentlyDeleted }} />
+        {/* No repeated heading: the nav title already says Recently deleted. */}
+        <StateScreen kind="empty" art="page" title={d.shelfEmpty} />
+      </View>
+    );
+  }
+
+  const layout = reduced ? undefined : LinearTransition.springify().stiffness(tokens.motion.standard.stiffness).damping(tokens.motion.standard.damping).mass(tokens.motion.standard.mass);
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-4 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: d.recentlyDeleted }} />
-      {rows.length === 0 ? (
-        <EmptyState title={d.recentlyDeleted} body={d.shelfEmpty} />
-      ) : (
-        <>
-          <Text variant="subhead" tone="muted">
-            {d.shelfHelp}
-          </Text>
-          <ListSection>
-            {rows.map((e) => {
-              const v = shelfRow(e);
-              return <ShelfRow key={e.id} v={v} onRestore={() => restore(e.id, e.inBook)} onErase={() => setErasing(e.id)} />;
-            })}
-          </ListSection>
-        </>
-      )}
+      <Text variant="subhead" tone="muted">
+        {d.shelfHelp}
+      </Text>
+      {rows.map((e) => (
+        <Animated.View key={e.id} layout={layout} exiting={FadeOut.duration(reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}>
+          <ShelfCard v={shelfRow(e)} from={signatureOf(e)} eraseNow={actions.eraseNow} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
+        </Animated.View>
+      ))}
       <ConfirmSheet
         open={erasing !== null}
         title={d.eraseNowTitle}
@@ -90,24 +114,38 @@ function Shelf() {
   );
 }
 
-function ShelfRow({ v, onRestore, onErase }: { v: ShelfRowView; onRestore: () => void; onErase: () => void }) {
+/** "From Mama": the signature frozen with the letter, or its book's for this phone. */
+function signatureOf(e: DeletedEntry): string {
+  const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
+  const signsAs = child ? authorOf(e, child) : (e.authorSignsAs ?? '');
+  return signsAs ? fill(copy.book.signature, { signsAs }) : '';
+}
+
+function ShelfCard({ v, from, eraseNow, onRestore, onErase }: { v: ShelfRowView; from: string; eraseNow: boolean; onRestore: () => void; onErase: () => void }) {
   const d = copy.settings.delete;
-  const words = v.excerpt ?? (v.words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke);
-  const erases = fill(d.erasesOn, { date: v.erasesDate });
+  const { c } = useTheme();
+  const note = v.fullText === null;
+  const words = v.fullText ?? (v.words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke);
+  const dates = shelfDateLine(v, d);
   return (
-    <View className="gap-3 px-4 py-4" accessible={false}>
-      <View accessible accessibilityLabel={`${words}. ${v.letterDate}. ${fill(d.deletedOn, { date: v.deletedDate })}. ${erases}`} className="gap-1">
-        <Text variant="body" numberOfLines={3}>
-          {words}
-        </Text>
-        <Text variant="footnote">{v.letterDate}</Text>
-        <Text variant="footnote">{fill(d.deletedOn, { date: v.deletedDate })}</Text>
-        <Text variant="footnote">{erases}</Text>
+    <Card radius="md" padding={4} className="gap-3" testID="shelf.card">
+      <View accessible accessibilityLabel={[words, note ? null : from, v.letterDate, dates].filter(Boolean).join('. ')} className="gap-2">
+        {note ? (
+          <Text variant="footnote">{words}</Text>
+        ) : (
+          <ExcerptFade text={words} lines={2} variant="letterBody" tone="muted" surface={c.surfaceRaised} />
+        )}
+        {note || !from ? null : (
+          <Text variant="labelSmall" tone="muted">
+            {from}
+          </Text>
+        )}
+        <Text variant="footnote">{dates}</Text>
       </View>
-      <View className="flex-row flex-wrap gap-2">
-        <Button variant="secondary" size="md" label={d.restoreButton} onPress={onRestore} />
-        <Button variant="destructive" size="md" label={d.eraseNow} onPress={onErase} />
+      <View className="flex-row flex-wrap items-center gap-2">
+        <Button variant="secondary" size="md" label={d.restoreButton} onPress={onRestore} testID="shelf.restore" />
+        {eraseNow ? <Button variant="destructive" size="md" icon={TrashIcon} label={d.eraseNow} onPress={onErase} testID="shelf.eraseNow" /> : null}
       </View>
-    </View>
+    </Card>
   );
 }

@@ -2,7 +2,10 @@
 // Facts verified 3 Oct 2026 from each LICENSE or OFL file in the repo and the model catalogue
 // (apps/mobile/src/lib/models/catalog.ts). Pack attributions are copied word for word from
 // packs/text-rules/*.json `attribution`; test/rules.test.ts fails if a pack adds one that is
-// missing here. The full list of npm libraries is generated at release (BL request in the report).
+// missing here. Every bundled library, font and vendored file, with its full notice, is generated
+// into apps/mobile/src/generated/licences.json (`npm run licences:generate -w @scribe/mobile`) and
+// read through apps/mobile/src/lib/licences.ts; the Licenses page (EXPERIENCE_PASS_2026-10, P6)
+// renders it beside these hand-kept sections.
 
 interface Item {
   name: string;
@@ -12,8 +15,9 @@ interface Item {
 }
 
 export const licences = {
-  title: 'Licences',
-  rowLabel: 'Licences',
+  // US spelling on screen (D-087); the object and file keep their names so imports stay stable.
+  title: 'Licenses',
+  rowLabel: 'Licenses',
   intro: 'This app is built with the help of open work by many people. Thank you.',
   sections: [
     {
@@ -45,6 +49,6 @@ export const licences = {
     'Pinyin readings derived from pinyin-data (https://github.com/mozillazg/pinyin-data), Copyright 2016 mozillazg, MIT License, from the Unicode Han Database (Unihan) kMandarin field, Copyright Unicode, Inc., Unicode License v3.',
   ],
   librariesTitle: 'Software libraries',
-  // TODO(release): append the generated notices for every bundled npm library (MIT and BSD ask for the notice).
-  libraries: 'React Native, Expo and the other libraries in this app are open source, under the MIT, Apache 2.0, BSD and ISC licences.',
+  // The notices themselves come from apps/mobile/src/lib/licences.ts (generated), not from copy.
+  libraries: 'React Native, Expo and the other libraries in this app are open source. Each one is listed below with its license.',
 } as const;

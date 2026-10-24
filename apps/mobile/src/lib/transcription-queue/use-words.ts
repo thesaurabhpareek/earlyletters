@@ -3,7 +3,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import type { SpeechLanguage } from '../models/catalog';
-import { speechDownloadHold, speechDownloadProgress, subscribeWords, wordsJob, wordsTick, type Job } from './index';
+import { speechDownloadFailure, speechDownloadHold, speechDownloadProgress, subscribeWords, wordsJob, wordsTick, type Job } from './index';
 
 /** Re-renders on every queue or download update. */
 export function useWordsTick(): number {
@@ -15,13 +15,20 @@ export function useWordsJob(id: string | null | undefined): Job | null {
   return id ? wordsJob(id) : null;
 }
 
-export function useSpeechDownload(language: SpeechLanguage | null): { progress: number | null; hold: ReturnType<typeof speechDownloadHold> } {
+export interface SpeechDownloadState {
+  progress: number | null;
+  hold: ReturnType<typeof speechDownloadHold>;
+  /** The last failure's pack engine code when nothing is in flight (packsCopy.failures), else null. */
+  failure: string | null;
+}
+
+export function useSpeechDownload(language: SpeechLanguage | null): SpeechDownloadState {
   useWordsTick();
-  if (!language) return { progress: null, hold: null };
+  if (!language) return { progress: null, hold: null, failure: null };
   try {
-    return { progress: speechDownloadProgress(language), hold: speechDownloadHold(language) };
+    return { progress: speechDownloadProgress(language), hold: speechDownloadHold(language), failure: speechDownloadFailure(language) };
   } catch {
     // Where speech files cannot be read at all (the web design preview), there is nothing to show; never a crash.
-    return { progress: null, hold: null };
+    return { progress: null, hold: null, failure: null };
   }
 }

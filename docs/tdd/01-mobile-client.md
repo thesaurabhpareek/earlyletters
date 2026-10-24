@@ -203,7 +203,7 @@ flowchart TD
 
 - The initial route is passed as the Stack's `initialRouteName` via a guarded group (`(gate)`, `(app)`), so there is no render-then-redirect flash. Expo Router supports redirect in layouts; the exact "protected routes" API in Router 57 is **Unverified**, so the fallback is `<Redirect>` in the group layouts, which still happens before the splash hides.
 - Splash hides on the first layout of the chosen route (`onLayout` of the root view), not in an effect of an unrelated component.
-- Deep links (`/i/<token>`, `/auth/callback`) are parsed in `links.ts` from `Linking.getInitialURL()` and the URL listener; the invite token is written to Keychain before any UI (A-REQ-028). Token-bearing URLs are never logged and never passed as route params; the route gets a boolean `hasInvite`.
+- Deep links (`/j#t=<token>`, `/auth/callback`) are parsed in `links.ts` from `Linking.getInitialURL()` and the URL listener; the invite token is written to Keychain before any UI (A-REQ-028). Token-bearing URLs are never logged and never passed as route params; the route gets a boolean `hasInvite`.
 - An invite link still hits the age gate first (PRD-REQ-019).
 - `export function ErrorBoundary` in the root layout (Expo Router convention) shows a calm full-screen error with "Try again" and "Export what is on this phone" (export works without the rest of the app). Errors are recorded in the local diagnostics ring buffer with route template and error class only.
 
@@ -387,14 +387,14 @@ Rules:
 2. **Do not run the first App Store Connect upload until `company.domain` is final** (PRD 9 Q5, BL-053). Dev and preview builds use a separate bundle id suffix (`.dev`, `.preview`) so the real id is untouched.
 3. `eas.json` profiles: `development` (dev client, internal), `preview` (release config, internal TestFlight for the founding family, `__DEV__` false), `production` (store). Each profile sets `EXPO_PUBLIC_ENV` and the remote-config/Supabase endpoints; no secrets in the bundle (LEGAL-REQ-026). Secrets in EAS secrets.
 4. Runtime version policy: `fingerprint` (native fingerprint) so an OTA update can never target a binary with different native modules. **Unverified** exact option name in SDK 57; the alternative is `appVersion`.
-5. **OTA (EAS Update) policy**:
+5. **OTA (EAS Update) policy** (not in v1.0: D-091, ADR 0022 decision 9; this policy applies if OTA is adopted later):
    - Allowed: JS and asset fixes, copy changes already approved, config default changes, bug fixes that do not change data handling.
    - Not allowed by OTA (store release only): anything that changes what data is collected, sent or to whom (new network host, new SDK, new analytics event, consent text), anything that changes the privacy label or manifest (LEGAL-REQ-042, -043), local schema migrations that cannot be rolled back, permission changes, Plus pricing or disclosure text (LEGAL-REQ-046). Reason: App Review guideline on code changes plus our disclosures must match the reviewed build. 
    - Updates download in the background and apply on the next cold start; never reload mid-session (a parent may be recording).
    - Channels: `preview` and `production`; a staged rollout percentage for production OTA where supported (**Unverified**), and an immediate rollback by republishing the previous update.
    - Every OTA must pass the same release gates as a binary except device-matrix and store checks (7.9).
    - `expo-updates` makes a network request at launch (update check). This is not analytics, but it is a network destination: list it in the data map and privacy label review (LEGAL-REQ-041). Check after first frame (`checkAutomatically: 'ON_LOAD'` with `fallbackToCacheTimeout: 0`, names **Unverified**) so launch never waits.
-6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS.
+6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS. Amended by ADR 0022: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate, and `ios-v<x.y.z>` marks the released one; the version lives in `apps/mobile/version.json`.
 7. Privacy manifest (`PrivacyInfo.xcprivacy`) generated in `app.config.ts` from `docs/legal/data-map.yaml` once it exists; until then a checked-in list reviewed per release. Required-reason APIs used by Expo modules (UserDefaults, file timestamps, disk space for the low-storage check) declared.
 8. CI builds Android on every PR (no release) so parity breaks show up immediately.
 
@@ -410,7 +410,7 @@ Rules:
 - Account deletion: send `analyticsIds()` with the request, then `forgetIds()` (PRD-REQ-018).
 
 #### 3.11.2 Sentry
-- Initialised only when `analytics.consent() === 'granted'` (one switch, LEGAL-REQ-003); `sendDefaultPii: false`; `beforeSend` and `beforeBreadcrumb` use the scrubbers from BL-021; no console breadcrumbs, no HTTP bodies or query strings, URLs containing `token_hash` or `/i/` dropped (A-NFR-012). Source maps uploaded by EAS build.
+- Initialised only when `analytics.consent() === 'granted'` (one switch, LEGAL-REQ-003); `sendDefaultPii: false`; `beforeSend` and `beforeBreadcrumb` use the scrubbers from BL-021; no console breadcrumbs, no HTTP bodies or query strings, URLs containing `token_hash`, and invite links (`/j` with the token in the fragment as `t`), dropped (A-NFR-012). Source maps uploaded by EAS build.
 - Withdrawal calls `Sentry.close()` and disables the integration within the session.
 - **Risk R-07: crash visibility.** Opt-in after the first letter means no first-run crashes and few crashes overall reach Sentry. Mitigations: (a) TestFlight and App Store Connect crash logs (collected by Apple from users who share diagnostics with developers at the OS level; whether this needs mention in our privacy label is **OQ-4** for counsel); (b) the local `diagnostics` ring buffer (content-free) that a user can choose to attach to a support email; (c) release gates that do not depend on field crash data (7.9).
 
@@ -643,7 +643,7 @@ Rec: Maestro (YAML flows, works with Expo dev and release builds, readable by a 
 - Network host allowlist: an E2E run behind a proxy records every host; CI fails on a host missing from the data map (LEGAL-REQ-041).
 - Log canary: E2E with Asha fixtures, device logs and Sentry test events scanned for fixture strings (LEGAL-REQ-014).
 - Locked-device test: with the phone locked after first unlock, background tasks can read the DB; before first unlock, the files are unreadable (A-1).
-- Deep link fuzzing: malformed `/i/` and `/auth/callback` URLs never crash and never log the token.
+- Deep link fuzzing: malformed `/j#t=` and `/auth/callback` URLs never crash and never log the token.
 
 ### 7.8 Which tests gate a release
 | Gate | Blocks | Runs |

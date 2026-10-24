@@ -33,7 +33,7 @@ export const previewValues: EmailValues = {
 
   // links
   appUrl: `${SITE}/open`,
-  inviteUrl: `${SITE}/i/preview-not-a-real-invite`, // coparent-invite (universal link, 7 days)
+  inviteUrl: `${SITE}/j#t=preview-not-a-real-invite`, // coparent-invite (universal link, 7 days)
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
   confirmDeleteUrl: `${SITE}/delete-account/confirm#token=preview-not-a-real-token`, // deletion-confirm (web route to build)
   documentUrl: `${SITE}/privacy`,
@@ -63,4 +63,8 @@ export const previewValues: EmailValues = {
   backupClearDate: 'Monday, November 9, 2026',
   documentName: 'Privacy Policy',
   changeSummary: 'Preview only: the approved plain-language summary of the change goes here.',
+
+  // recording backup and the recovery key (backup.en.ts; sent by the escrow function)
+  holdUntil: 'Sunday, October 4, 2026 at 9:14 pm UTC',
+  stopUrl: `${SITE}/stop#t=preview-not-a-real-token`,
 };

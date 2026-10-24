@@ -1709,12 +1709,28 @@
       "rule": "Symbol alone, centred, 96 pt tall, on paper (paperDark in dark mode). No wordmark, no tagline, no motion."
     },
     "app.header": {
-      "title": "In-app brand header (welcome, empty book)",
+      "title": "In-app brand header (a screen that needs the name in a small space)",
       "assets": [
         "logo.lockup.horizontal.small.ink",
         "logo.lockup.horizontal.small.reversed"
       ],
       "rule": "Small cut, 20 to 26 pt tall. Navigation bars use the system title, not the logo."
+    },
+    "app.welcome": {
+      "title": "Welcome screen lockup (first run, after the age question)",
+      "assets": [
+        "logo.lockup.stacked.ink",
+        "logo.lockup.stacked.reversed"
+      ],
+      "rule": "Stacked lockup, 96 pt tall, centred, its top 96 pt below the safe-area top; ink on paper, reversed on dark. The one logo on the screen; its accessibility label is the brand name, and the name is never typed in a font beside it. It fades in once (tokens.motion.fadeMs) and never moves. The atmosphere lamp may light the paper, never as a glow inside, behind or around the mark. Approved D-109 (F3), 16 Oct 2026."
+    },
+    "app.brand-device": {
+      "title": "Opening quotation pair as the in-app brand device (welcome, empty states)",
+      "assets": [
+        "logo.symbol.accent",
+        "logo.symbol.reversed"
+      ],
+      "rule": "The symbol alone, 40 to 64 pt tall, above the heading: accent on paper, reversed on dark. One per screen, decorative (hidden from screen readers), never rotated, never closed. It only fades in (tokens.motion.fadeMs); it never moves, and it never sits on a screen that records or plays a voice."
     },
     "app.paywall": {
       "title": "Plus paywall header (above Apple SubscriptionStoreView)",
