@@ -99,7 +99,7 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
 
   it('lands on the Book of the book the letter was kept in, on the new letter, with no stop on Tonight', () => {
     const land = review.slice(review.indexOf('const land = () =>'), review.indexOf('const finishSave = '));
-    expect(land).toMatch(/setActiveChildId\(child\.id\);\s*router\.navigate\(\{ pathname: '\/book', params: arrivalParams\(\{ entryId: draft\.id, secondFree \}\) \}\)/);
+    expect(land).toMatch(/setActiveChildId\(child\.id\);\s*router\.dismissTo\(\{ pathname: '\/book', params: arrivalParams\(\{ entryId: draft\.id, secondFree \}\) \}\)/);
     expect(land).not.toMatch(/router\.back\(\)/);
   });
 
@@ -193,7 +193,7 @@ describe('S23: Review opened with no draft', () => {
     const empty = review.slice(review.indexOf('if (!draft || !child) {'), review.indexOf('const line = countLine'));
     expect(empty).toMatch(/kind="notFound"/);
     expect(empty).toMatch(/title=\{r\.noDraft\.title\}/);
-    expect(empty).toMatch(/label: r\.noDraft\.button, onPress: \(\) => router\.navigate\('\/book'\)/);
+    expect(empty).toMatch(/label: r\.noDraft\.button, onPress: \(\) => router\.dismissTo\('\/book'\)/);
     expect(empty).not.toMatch(/errors\.generic|body=/);
     expect(en.review.noDraft.title).toBe('Nothing to read back here');
   });

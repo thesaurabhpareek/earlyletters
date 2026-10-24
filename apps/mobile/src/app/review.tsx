@@ -8,7 +8,8 @@
  * choosing Exactly as said keeps the fixes in state, so it is reversible
  * (D-086, review-view.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
- * entry locally first, then the success haptic, then the settle animation.
+ * entry locally first, then the success haptic, then the saved moment, which
+ * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
  *
  * Save is one transaction (DATA-REQ-048): the audio is hashed first, then
  * the letter is inserted and the draft removed together. When words are not
@@ -381,10 +382,10 @@ export default function Review() {
     if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
     left.current = true;
     // The Book, on the book the letter was kept in (Review can move a draft to another book), on the new letter:
-    // one navigation selects the Book tab under Review and Review dissolves away over it, so Tonight is never seen
-    // between them. The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
+    // one navigation back to the tabs selects the Book tab under Review as Review dissolves away over it, so Tonight
+    // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
     setActiveChildId(child.id);
-    router.navigate({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
+    router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
     if (offerSignIn.current) {
       setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
     }
@@ -558,7 +559,7 @@ export default function Review() {
         kind="notFound"
         title={r.noDraft.title}
         header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
-        primary={{ label: r.noDraft.button, onPress: () => router.navigate('/book'), testID: 'review.noDraft.book' }}
+        primary={{ label: r.noDraft.button, onPress: () => router.dismissTo('/book'), testID: 'review.noDraft.book' }}
       />
     );
   }
