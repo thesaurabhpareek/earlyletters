@@ -13,3 +13,5 @@ What it does not do: write MEMORY.md itself. The agent does, in its own PR, so m
 
 Known limits (Unverified in live use): the lane has not run on a live agent yet; the 5-word match can miss a reworded lesson and then re-list it once.
 Tests: scripts/agents/memory.test.mjs.
+
+Needs `AGENTS_BOT_LOGINS` (or `AGENTS_APP_CLIENT_ID`) set: journal entries count only from trusted authors. Without it, entries posted by the agents GitHub App are ignored and Actions-run agents get no past entries or lessons. Entries posted from the founder's account in interactive sessions are unaffected.
