@@ -13,7 +13,7 @@ Labels used below: **Verified** means checked on 3 Oct 2026 against the source o
 | Pull request | PR that changes `supabase/**` | `.github/workflows/db-cli.yml` | `supabase start`, `supabase db reset --local`, `supabase db lint --local --level error --fail-on error`, `npm run test:db` | No |
 | Nightly | 10:23 UTC daily, or by hand | `.github/workflows/nightly.yml` | Verifier fuzz with a random seed (100000 runs), then the same checks as `db-cli.yml` | No |
 | Staging | Push to `develop` that changes `supabase/migrations/**` (RA-20-04), or a manual run (Run workflow) on `develop` as the catch-up. Staging follows `develop` only: a push to `main` deploys nothing to a database | `.github/workflows/deploy-db.yml`, job `deploy to staging` | After the `staging` reviewer approves: `supabase db push --dry-run`, then `supabase db push`, applied from **`develop`'s tip** (so a later run never applies older migrations); then the smoke's database checks | `scribe-staging` |
-| Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `production` Environment, then dry run, then push | `scribe-prod` |
+| Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `db-production` Environment, then dry run, then push | `scribe-prod` |
 | Edge Functions | Push to `develop` that changes a function's code, or a manual run on `develop` | `.github/workflows/deploy-functions.yml`, jobs `what to deploy`, then `deploy to staging` | Waits in `staging`; checks staging has every migration on `develop`, deploys every function except `escrow` from `develop`'s tip, checks the function list, then the smoke's health checks (see "Edge Functions to staging") | Reads `supabase_migrations.schema_migrations` only |
 
 Rules the database workflows enforce (`deploy-functions.yml` has its own, in "Edge Functions to staging", and is the one workflow that holds an access token):
@@ -33,7 +33,7 @@ Why the staging trigger is not a `paths:` filter: `deploy-db.yml` triggers on ev
 |---|---|---|---|---|
 | Local | the CLI stack from `supabase/config.toml` (`project_id = "scribe"`) | none | none | none |
 | Staging | `scribe-staging` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `staging` | `SUPABASE_DB_URL_STAGING`; for the smoke and the functions also `SUPABASE_STAGING_URL`, `SUPABASE_STAGING_PUBLISHABLE_KEY`, `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN_STAGING` (see "The content-free smoke" and "Edge Functions to staging") |
-| Production | `scribe-prod` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `production` | `SUPABASE_DB_URL_PROD` |
+| Production | `scribe-prod` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `db-production` | `SUPABASE_DB_URL_PROD` |
 
 The current live project `early-letters` (ref `fpkxggtzwoumdghwzlsl`, us-west-1, org "ParentingApp") is **slated for retirement, pending the founder's decision**. Nothing in this pipeline points at it. Until it is retired, `supabase/APPLY.md` remains its manual process, and `.github/migrations-applied.txt` still describes it (2 of 7 files applied there). Both new projects are built clean from the migrations by CI, never by pasting SQL or inserting rows into `supabase_migrations.schema_migrations` by hand.
 
@@ -64,7 +64,7 @@ Settings > Environments.
    - Deployment branches and tags: "Selected branches and tags", add branch `develop` only. Staging follows `develop`; nothing from `main` deploys to it.
    - Environment secret `SUPABASE_DB_URL_STAGING` = the staging session pooler URL.
    - Required reviewers: you, while staging holds the alpha's real letters (D-106, `docs/ops/ENVIRONMENTS.md`), so a manual run from `develop` waits for your approval. Leave "Prevent self-review" off while you are the only reviewer.
-2. **`production`**
+2. **`db-production`** (not `production`: GitHub matches environment names without regard to case, and `production` resolves to the `Production` environment that Vercel's deployments created; SR-2 in `docs/security/SECRETS_REVIEW.md`, on #206 until it merges)
    - Required reviewers: you. Leave "Prevent self-review" off while you are the only reviewer, or nobody can approve.
    - Deployment branches and tags: "Selected branches and tags", add a **tag** rule `db-v*`. Remove any branch rule.
    - Environment secret `SUPABASE_DB_URL_PROD` = the production session pooler URL.
@@ -78,7 +78,7 @@ Settings > Rules > Rulesets > New tag ruleset:
 - Target tags matching `db-v*`.
 - Restrict creations, updates and deletions; bypass list: repository admin (you).
 
-This stops anyone else from creating a production tag. The production Environment's reviewer approval is the second gate.
+This stops anyone else from creating a production tag. The `db-production` Environment's reviewer approval is the second gate.
 
 ### 4. Per-environment database settings
 
@@ -90,7 +90,7 @@ Brief decision 4: Sign in with Apple, Sign in with Google, email magic link, no 
 
 ## Tagging flow (a normal release)
 
-1. Merge the migration into `develop` through a PR. `db-cli.yml` and `CI` must pass; the fence needs the `approve-migration` label (D-041).
+1. Merge the migration into `develop` through a PR: after two independent passing reviews on the current head, with green CI (`db-cli.yml` and `CI`), the coordinator merges it (D-117; the `approve-migration` label of D-041 is no longer used).
 2. The push to `develop` runs `deploy to staging` after you approve it: dry run, then push to `scribe-staging`. Read the run summary for the list of files to record.
 3. Check staging (the app against staging, Supabase advisors, the checks in `supabase/APPLY.md` that apply to the new files).
 4. Open a PR that adds the listed file names to `.github/migrations-applied.txt` (see "After a deploy").
@@ -102,7 +102,7 @@ Brief decision 4: Sign in with Apple, Sign in with Google, email magic link, no 
    git push origin db-v2026.10.12.1
    ```
    Suggested name: `db-v<year>.<month>.<day>.<n>`. Any name starting with `db-v` triggers the job.
-7. Actions > Deploy database > the tag's run: read the dry run in staging's run, then approve the `production` deployment. The job checks the tag is on `main`, runs the dry run, then pushes.
+7. Actions > Deploy database > the tag's run: read the dry run in staging's run, then approve the `db-production` deployment. The job checks the tag is on `main`, runs the dry run, then pushes.
 8. If production printed files that staging's PR did not already record, add them in a PR.
 
 `supabase db push` applies every migration the target has not recorded, in file order. If a deploy is queued behind a running one, GitHub keeps one pending run per concurrency group and a newer pending run replaces the older one (**Assumed**, standard GitHub concurrency behaviour). That is harmless here: the next push applies everything pending.
@@ -149,13 +149,13 @@ Today the file still describes `early-letters` (2 files). On the first staging d
 
 **Functions after migrations (RA-20-04).** Staging gets `develop`'s migrations on a **push** to `develop` that changes them, behind the `staging` reviewer: that is RA-20-04, and the main path. A **manual run** on `develop` (Actions > Deploy database > Run workflow, branch `develop`; it appears once the workflow is on the default branch, AF-05) is the catch-up path, not a second main path; on any other ref it fails at once, and it never reaches production. Both apply `develop`'s tip, so a run that queued late or replaced another never applies older migrations. When a merge carries migrations and functions, two runs wait: **approve Deploy database first**. If you approve the functions run first, it stops before deploying anything and lists the migrations staging lacks. If no Deploy database run is waiting (a run was rejected, cancelled or failed, or the migrations reached `develop` before the push trigger existed), re-run the latest Deploy database run on `develop` whose push changed migrations, start the manual run on `develop`, or push from your computer. Then re-run the functions job.
 
-**Staging follows `develop` only (decided 17 Oct 2026).** A push to `main` deploys nothing to a database. Staging takes `develop`'s migrations and functions; production takes migrations only from a `db-v*` tag on `main`, through `production`, once AF-42 sets that project up after the alpha. Before this decision a push to `main` also deployed staging; with staging ahead of `main` that run could only fail `db push` (the remote holds versions `main` lacks).
+**Staging follows `develop` only (decided 17 Oct 2026).** A push to `main` deploys nothing to a database. Staging takes `develop`'s migrations and functions; production takes migrations only from a `db-v*` tag on `main`, through `db-production`, once AF-42 sets that project up after the alpha. Before this decision a push to `main` also deployed staging; with staging ahead of `main` that run could only fail `db push` (the remote holds versions `main` lacks).
 
 **Which functions skip the gateway's JWT check, and which the smoke reaches.** `NO_VERIFY_JWT` and `SMOKE_HEALTH` in `.github/scripts/functions-deploy.mjs`. `NO_VERIFY_JWT` must agree with the deploy line in each function's `index.ts` header; if one disagrees, the plan fails and nothing deploys, so a change to a function's gateway check also changes a `.github/**` file. A function with no deploy line keeps the check, with a warning. `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` keep the check: their health routes cannot answer without a session, so the function list confirms them instead of the smoke. When S01 or S06 gives one an anonymous health route and `--no-verify-jwt`, add it to both lists in the same PR.
 
 **Without the token.** The job deploys nothing. The run summary is titled "NOT DEPLOYED" and gives the commands to run from your computer, and a warning marks the run. Such a run is never evidence (AUTOMATION.md 2.12, planted failure 1). A change under `supabase/functions/escrow/` is never deployed and the plan says so (planted failure 2).
 
-**The token (AF-06).** `SUPABASE_ACCESS_TOKEN_STAGING` on the `staging` Environment only: the narrowest token that can deploy Edge Functions to the staging project. **Add it only after the `staging` reviewer and branch rules are set and read back, and never as a classic token** (rules 1 and 2 below). Classic tokens carry the whole account; scoped tokens are a public alpha (AUTOMATION.md 2.2). This is the one exception to the no-token rule above (POPS-04): it is not in `deploy-db.yml` and not on `production`. CLI 2.119.0 accepts only tokens shaped `sbp_`, `sbp_oauth_` or `sbp_v0_` followed by 40 hex characters and refuses others before calling the API (**Verified** with the binary); whether a scoped token has that shape is **Unverified**.
+**The token (AF-06).** `SUPABASE_ACCESS_TOKEN_STAGING` on the `staging` Environment only: the narrowest token that can deploy Edge Functions to the staging project. **Add it only after the `staging` reviewer and branch rules are set and read back, and never as a classic token** (rules 1 and 2 below). Classic tokens carry the whole account; scoped tokens are a public alpha (AUTOMATION.md 2.2). This is the one exception to the no-token rule above (POPS-04): it is not in `deploy-db.yml` and not on `db-production`. CLI 2.119.0 accepts only tokens shaped `sbp_`, `sbp_oauth_` or `sbp_v0_` followed by 40 hex characters and refuses others before calling the API (**Verified** with the binary); whether a scoped token has that shape is **Unverified**.
 
 Rules for the token, in this order:
 1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branch `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.

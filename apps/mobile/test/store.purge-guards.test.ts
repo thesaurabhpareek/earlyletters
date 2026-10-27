@@ -180,7 +180,7 @@ describe('a recording that will not erase', () => {
 });
 
 describe('what an erased letter takes with it', () => {
-  it('[D-085] its queued uploads go too, so nothing about an erased letter is ever sent later', () => {
+  it('[D-085] its queued uploads go too, so nothing about an erased letter is ever sent later; only the erase itself, which carries the id alone (F16-REQ-024)', () => {
     // An account owns the phone (the outbox queues) while the build switch stays off (the purge runs here).
     store.setSetting(SYNC_SETTING.owner, 'mama-account');
     save(1);
@@ -195,7 +195,10 @@ describe('what an erased letter takes with it', () => {
     expect(ops(id(2))).toBe(1);
     const d = disk([uri(1), uri(2)]);
     expect(store.purgeExpired(T0 + SHELF_MS, d.eraser)).toBe(1);
-    expect(ops(id(1))).toBe(0);
+    // The server may hold it (its upload left): one entry.erase, so the server's copy goes too (sync final review A-M2).
+    const left = db.all<{ type: string; payload: string }>('SELECT type, payload FROM sync_outbox WHERE entity_id = ?', id(1));
+    expect(left.map((o) => o.type)).toEqual(['entry.erase']);
+    expect((JSON.parse(left[0].payload) as { data: unknown }).data).toEqual({});
     expect(ops(id(2))).toBe(1);
     expect(store.getEntry(id(2))).not.toBeNull();
   });

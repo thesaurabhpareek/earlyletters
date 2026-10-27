@@ -2,7 +2,7 @@
 // The oracle (oracle.mjs) judges a run from this snapshot alone, never from anything the app reports about itself.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileNameOf } from './protocol.mjs';
 
@@ -40,7 +40,8 @@ function listAudio(documentsDir) {
     } catch {
       return;
     }
-    for (const it of items) {
+    // Sorted, so the order of files that share a name never depends on the file system.
+    for (const it of items.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
       const p = join(dir, it.name);
       if (it.isDirectory()) walk(p);
       else if (it.isFile() && AUDIO.test(it.name)) {
@@ -53,6 +54,31 @@ function listAudio(documentsDir) {
   };
   walk(documentsDir);
   return files;
+}
+
+/**
+ * The file path a row stores (`audio_uri`, a file:// URI on iOS), so the oracle can check that the row points at
+ * the very file the host lists, not only at one of the same name. Spelling is undone, never meaning: `file://`,
+ * `file://localhost` and `file:` go, percent-encoding is decoded, and `//`, `./` and `../` are resolved
+ * (`normalizePath`). Null when there is no URI.
+ */
+export function storedPathOf(uri) {
+  if (!uri) return null;
+  const clean = String(uri).split(/[?#]/)[0];
+  const path = clean.replace(/^file:\/\/localhost(?=\/)/i, '').replace(/^file:\/\//i, '').replace(/^file:/i, '');
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    // a stray % stays as it is
+  }
+  return normalizePath(decoded);
+}
+
+/** A path with `//`, `./` and `../` resolved (POSIX), and no trailing slash. */
+export function normalizePath(p) {
+  const n = posix.normalize(String(p));
+  return n.length > 1 && n.endsWith('/') ? n.slice(0, -1) : n;
 }
 
 const shaCache = new Map();
@@ -71,7 +97,7 @@ export function readSnapshot(where) {
   const dbPath = where.dbPath ?? findDatabase(where.dataDir);
   const documentsDir = join(where.dataDir, 'Documents');
   const files = existsSync(documentsDir) ? listAudio(documentsDir) : new Map();
-  if (!dbPath || !existsSync(dbPath)) return indexed({ dbPath: null, integrity: 'no database file', drafts: [], entries: [], orphans: [], files });
+  if (!dbPath || !existsSync(dbPath)) return indexed({ dbPath: null, documentsDir, integrity: 'no database file', drafts: [], entries: [], orphans: [], files });
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
     // 07 and 06-nfr gate: `PRAGMA integrity_check` must answer ok after every kill.
@@ -86,6 +112,7 @@ export function readSnapshot(where) {
         typedText: r.typed_text,
         rawTranscript: r.raw_transcript,
         audioFile: r.audio_uri ? fileNameOf(r.audio_uri) : null,
+        audioPath: storedPathOf(r.audio_uri),
         audioSha256: r.audio_sha256,
         audioBytes: r.audio_bytes,
         state: r.state,
@@ -99,11 +126,12 @@ export function readSnapshot(where) {
         rawTranscript: r.raw_transcript,
         finalText: r.final_text,
         audioFile: r.audio_uri ? fileNameOf(r.audio_uri) : null,
+        audioPath: storedPathOf(r.audio_uri),
         audioSha256: r.audio_sha256,
         deleted: r.deleted_at !== null,
       }));
     const orphans = db.prepare('SELECT file_name FROM orphan_audio').all().map((r) => r.file_name);
-    return indexed({ dbPath, integrity, drafts, entries, orphans, files });
+    return indexed({ dbPath, documentsDir, integrity, drafts, entries, orphans, files });
   } finally {
     db.close();
   }

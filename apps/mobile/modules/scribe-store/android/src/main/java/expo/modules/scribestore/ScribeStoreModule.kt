@@ -51,5 +51,10 @@ class ScribeStoreModule : Module() {
     AsyncFunction("beginRefundRequest") { _: List<String> ->
       "unavailable"
     }
+
+    // D-080 status report: no purchases on Android until Google Play billing (v1.1), so nothing to report.
+    AsyncFunction("statusReportRefs") { _: String, _: List<String> ->
+      emptyList<Map<String, Any>>()
+    }
   }
 }

@@ -75,7 +75,9 @@ export const en = {
     promise: {
       title: "Exactly as you said it.",
       body: "This is Word for word. We take out a stray \"um\", fix a misheard name, add a missing comma, and mark every small fix so you can undo it.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the sample shows it)
-      body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
+      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
+      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
+      body2: "We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -237,8 +239,8 @@ export const en = {
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
     draftWaiting: {
-      // Held until P3: today's single waiting card shows this for typed drafts too (spec S09 has the new words).
-      title: "A letter is waiting to be read back.",
+      // The first row of a draft card on Tonight: a spoken draft whose words are ready but not shown (S09, P3).
+      title: "A recording is ready to read back.",
     },
     // One card per unfinished letter on Tonight, newest first, never a total (S09). A card shows the person's own
     // first words when it has them; these are the state lines and actions. Spoken and waiting for its words reuses
@@ -547,9 +549,9 @@ export const en = {
     previousButton: "Back one",
     replayButton: "Hear it again",
     autoplayLabel: "Keep playing",
-    // The dateline (S30): the month first, then who signed it. nowReading is held until P5: today's screen
-    // builds the first-weeks and Before You datelines its own way, so the new words would mix two formats.
-    nowReading: "{signsAs}, Month {month}",
+    // The dateline (S30): the month first, then who signed it, in the same shape for all three chapters. VoiceOver
+    // hears it without the separator ("Month 4, from Mama").
+    nowReading: "Month {month} · From {signsAs}",
     nowReadingNewborn: "The first weeks · From {signsAs}",
     nowReadingBefore: "Before You · From {signsAs}",
     // VoiceOver only; the screen shows a hairline progress line, never "1 / 5".
@@ -798,8 +800,8 @@ export const en = {
       // Option B (D-100): a synced letter is not only on this phone, so the erase lines name no place.
       // Counsel claims review (listed in the P0 pull request).
       eraseNowBody: "The letter and its recording are erased for good.",
-      // Held until P5: the shelf shows this toast without filling {child} (spec S38 has the new words).
-      restoredToast: "Letter restored.",
+      // After Restore (S38), with "Open"; {child} is the restored letter's book.
+      restoredToast: "Back in {child}'s book.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
@@ -981,11 +983,11 @@ export const en = {
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
     // Off: "Type instead" first, "Open Settings" quiet. Busy and full: `common.tryAgainButton` and `micDenied.typeButton`.
-    // micDenied title and body are held until P4: today every start failure (a call holding the microphone,
-    // a full phone) lands on this screen, so "The microphone is off" would be untrue there (spec S13).
+    // Switched by P4 with Listen telling the three apart (listen.logic.ts `startBlocker`, `startFailure`): only a
+    // microphone that is really off reaches these words.
     micDenied: {
-      title: "We can't hear you yet",
-      body: "Allow the microphone in Settings to speak your letters. Or type instead.",
+      title: "The microphone is off",
+      body: "Turn it on in Settings, or type this one.",
       settingsButton: "Open Settings",
       typeButton: "Type instead",
     },

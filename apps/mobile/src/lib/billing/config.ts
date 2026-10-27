@@ -27,6 +27,14 @@ export function periodOf(id: string | null | undefined): 'month' | 'year' | null
 export const APPLE_MANAGE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 export const APPLE_REPORT_A_PROBLEM_URL = 'https://reportaproblem.apple.com';
 
+/**
+ * Version of docs/legal/subscription-terms.md that the store sheet links to (front matter
+ * `version`). The D-081 consent record names it with a hash of the store sheet text
+ * (status-report.logic.ts termsVersionOf); test/billing-status-report.test.ts fails when
+ * the document's version moves and this does not.
+ */
+export const SUBSCRIPTION_TERMS_DOC_VERSION = '1.4.0';
+
 /** Device settings key for the last entitlement snapshot (L2: product id, dates, flags; no ids). */
 export const PLAN_CACHE_KEY = 'plus.cache';
 

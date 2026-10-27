@@ -2,9 +2,10 @@ import '@/global.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { getLinkingURL } from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
@@ -19,6 +20,7 @@ import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
+import { startBackup } from '@/lib/backup/gate';
 import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
@@ -28,10 +30,12 @@ import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
 import { useRouteTransitions } from '@/lib/motion';
-import { getSetting, subscribe } from '@/lib/store';
+import { getFamily, getSetting, subscribe, subscribeTo } from '@/lib/store';
 import { startSync } from '@/lib/sync';
+import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
 import { useStoreReady } from '@/dev/store-ready';
+import { useE2eSeams } from '@/dev/e2e-seams';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +53,26 @@ function useAppearance(): void {
   useEffect(() => {
     Uniwind.setTheme(appearance);
   }, [appearance]);
+}
+
+/** Whether a book is on this phone: the same test Tonight uses before it sends a person to first run. */
+const hasBookNow = (): boolean => getFamily() !== null;
+const subscribeToBook = (onChange: () => void) => subscribeTo(['children', 'settings'], onChange);
+
+/**
+ * R1: a phone with no book that opened at the root shows first run as the stack's first route, so the tabs never
+ * mount first (no tab bar and no unlit page between the age question and the welcome). The rule, and why the tabs
+ * then stay for the session, is tabsInStack in lib/transitions.logic.ts. The store is read through
+ * useSyncExternalStore, so a book made on first run's last step adds the tabs in the same render that dispatches
+ * first run's replace to "/".
+ */
+function useTabsInStack(): boolean {
+  const [atRoot] = useState(() => openedAtRoot(getLinkingURL()));
+  const hasBook = useSyncExternalStore(subscribeToBook, hasBookNow, hasBookNow);
+  const [hadTabs, setHadTabs] = useState(false);
+  const tabs = tabsInStack({ hasBook, openedAtRoot: atRoot, hadTabs });
+  if (tabs && !hadTabs) setHadTabs(true);
+  return tabs;
 }
 
 /** One service failing to start never stops the others or the app (each one also works offline). */
@@ -80,6 +104,7 @@ function startServices(launchedAt: number): void {
   safely(() => startTranscriptionQueue());
   safely(startListeningCopies); // the player's clearer listening copy lookup, stale copies swept
   safely(startSync); // waits for a signed-in, consented session itself (syncAllowed)
+  safely(startBackup); // capabilities.backup off: returns at once and loads nothing (lib/backup/gate.ts)
   safely(startPlus); // StoreKit 2 entitlements on this phone
   safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);
@@ -111,11 +136,14 @@ export default function RootLayout() {
 }
 
 function Root() {
+  // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
+  useE2eSeams();
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
   // How each route is presented and how it moves (EXPERIENCE_PASS 5.8): one table, read here, no duration typed.
   const routes = useRouteTransitions();
+  const tabs = useTabsInStack();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
@@ -168,7 +196,10 @@ function Root() {
           <SessionProvider onUnder18={closeGate}>
             <ScreenViews />
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-              <Stack.Screen name="(tabs)" options={routes['(tabs)']} />
+              {/* R1: with no book, first run is the first route and the tabs are not mounted behind it (useTabsInStack). */}
+              <Stack.Protected guard={tabs}>
+                <Stack.Screen name="(tabs)" options={routes['(tabs)']} />
+              </Stack.Protected>
               <Stack.Screen name="onboarding" options={{ gestureEnabled: false, ...routes.onboarding }} />
               <Stack.Screen name="write" options={routes.write} />
               <Stack.Screen name="listen" options={{ gestureEnabled: false, ...routes.listen }} />

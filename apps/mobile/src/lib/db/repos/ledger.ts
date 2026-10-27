@@ -7,6 +7,7 @@
  */
 import {
   applyKept,
+  hasWords,
   LEDGER_SETTING_KEY,
   parseLedger,
   raised,
@@ -32,7 +33,9 @@ export function readState(ctx: RepoContext): LedgerState {
  *            author (made on this phone before any sign-in). The other parent's
  *            synced letters never count, and never raise the mirror or Keychain.
  *   worded   its words exist: not a voice-only letter still waiting for them,
- *            and not empty.
+ *            and at least one letter or digit (hasWords, the Keep gate's rule;
+ *            marks alone such as "..." are not words). SQLite has no Unicode
+ *            letter class, so that last test runs on the rows the query returns.
  *   kept     kept from Review with the words on screen: words the machine wrote
  *            later count only once the author keeps them (transcript_status
  *            'unreviewed' until then, entries.ts).
@@ -50,13 +53,13 @@ export const COUNTED_LETTERS_SQL = `kind = 'letter'
 
 export function countPresent(ctx: RepoContext): number {
   const owner = settings.getSetting(ctx, OWNER_SETTING) ?? '';
-  return ctx.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM entries WHERE ${COUNTED_LETTERS_SQL}`, owner)?.n ?? 0;
+  return ctx.db.all<{ t: string | null }>(`SELECT final_text AS t FROM entries WHERE ${COUNTED_LETTERS_SQL}`, owner).filter((r) => hasWords(r.t)).length;
 }
 
 /** Whether one letter counts by the rule above (the save path asks before recording it). */
 export function counts(ctx: RepoContext, id: string): boolean {
   const owner = settings.getSetting(ctx, OWNER_SETTING) ?? '';
-  return ctx.db.get<{ t: number }>(`SELECT 1 AS t FROM entries WHERE id = ? AND ${COUNTED_LETTERS_SQL}`, id, owner) !== null;
+  return hasWords(ctx.db.get<{ t: string | null }>(`SELECT final_text AS t FROM entries WHERE id = ? AND ${COUNTED_LETTERS_SQL}`, id, owner)?.t);
 }
 
 /**

@@ -9,6 +9,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 |---|---|
 | [SECURITY.md](SECURITY.md) | Every secret and who holds it, key rotation, least privilege, the Supabase settings checklist, the Sign in with Apple key for token revocation |
 | [DOMAINS.md](DOMAINS.md) | earlyletters.com and earlyletters.app at Porkbun: account security, every DNS record, DMARC plan, CAA, Vercel, packs CDN, universal links, addresses, security.txt |
+| [PACKS_HOSTING.md](PACKS_HOSTING.md) | Language packs, speech models and signed documents on `packs.earlyletters.app`: signing key, bucket, upload, verify, rollback, cost |
 | [well-known/](well-known/) | Files the website must serve: `apple-app-site-association`, `security.txt` |
 | [runbooks/stuck-deletion.md](runbooks/stuck-deletion.md) | An account deletion that has not finished |
 | [runbooks/purge-failing.md](runbooks/purge-failing.md) | The purge or the worker is not running, or Storage deletes fail; installing the schedule |

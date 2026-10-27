@@ -23,11 +23,29 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-// node:sqlite prints an experimental warning on first use; the harness output stays readable without it.
+// node:sqlite prints an experimental warning on first use, and Node notes that it reparses the app's frame scanner
+// (src/lib/capture/adts.ts, which apps/mobile/package.json does not mark as a module) as one; the harness output
+// stays readable without them.
 const emitWarning = process.emitWarning;
-process.emitWarning = (w, ...rest) => (String(w).includes('SQLite') ? undefined : emitWarning.call(process, w, ...rest));
+const quiet = (w) => String(w).includes('SQLite') || (String(w).includes('adts.ts') && String(w).includes('Module type'));
+process.emitWarning = (w, ...rest) => (quiet(w) ? undefined : emitWarning.call(process, w, ...rest));
 
-const { EXIT, mergeReports, renderMarkdown, runHarness } = await import('./harness.mjs');
+// The oracle judges ADTS takes with the app's own scanAdts, imported from TypeScript as it is (adts-evidence.mjs):
+// Node 22.18 or later strips the types by default. On an older Node nothing runs.
+let harness;
+try {
+  harness = await import('./harness.mjs');
+} catch (e) {
+  // Before 22.18 (without --experimental-strip-types) Node cannot load a .ts file at all; any other failure is not the version.
+  const ts = e?.code === 'ERR_UNKNOWN_FILE_EXTENSION' && String(e?.message ?? '').includes('.ts');
+  console.error(
+    ts
+      ? `the kill harness needs Node 22.18 or later, which imports the app's frame scanner (src/lib/capture/adts.ts) as it is; this is Node ${process.versions.node}`
+      : `the kill harness could not load: ${String(e?.message ?? e).slice(0, 300)}`,
+  );
+  process.exit(2);
+}
+const { EXIT, mergeReports, renderDecodeSection, renderMarkdown, runHarness, stepSummary } = harness;
 const { bundleIdOf, simctlDriver } = await import('./simctl-driver.mjs');
 const { DRILL_BUNDLE_SUFFIX } = await import('./protocol.mjs');
 
@@ -77,13 +95,31 @@ function stamp() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
 }
 
+/**
+ * The decode check, once it ends after the verdict (ADR 0027): report.json and report.md are written again in full,
+ * and only the decode section is printed and appended to the step summary, under the verdict already there.
+ */
+function publishDecode(report, outDir, asJson) {
+  try {
+    writeFileSync(join(outDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+    writeFileSync(join(outDir, 'report.md'), renderMarkdown(report));
+    const section = renderDecodeSection(report);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, section);
+    if (asJson) console.log(JSON.stringify({ decodeCheck: { ...report.decodeCheck, runs: report.decodeCheck.runs?.length ?? 0 } }));
+    else console.log(section);
+  } catch (e) {
+    console.error(`could not write the decode check to ${outDir}: ${String(e?.message ?? e)}`);
+    console.log(JSON.stringify(report.decodeCheck));
+  }
+}
+
 function publish(report, outDir, asJson) {
   try {
     mkdirSync(outDir, { recursive: true });
     const md = renderMarkdown(report);
     writeFileSync(join(outDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     writeFileSync(join(outDir, 'report.md'), md);
-    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, stepSummary(report));
     if (asJson) {
       const { runs: _runs, ...head } = report;
       console.log(JSON.stringify(head));
@@ -166,7 +202,19 @@ async function main() {
     mode: a.mode,
     needsFixture: a.mode === 'dl02',
   });
-  const opts = { driver, mode: a.mode, runs: a.runs ?? 500, kinds, log: (l) => console.error(l) };
+  // The verdict is written as soon as it is final, before the in-app decode check can delay it (ADR 0027).
+  let verdict = null;
+  const opts = {
+    driver,
+    mode: a.mode,
+    runs: a.runs ?? 500,
+    kinds,
+    log: (l) => console.error(l),
+    onVerdict: (r) => {
+      verdict = r;
+      publish(r, outDir, a.json);
+    },
+  };
   if (delayMs) opts.delayMs = delayMs;
   if (a.seed !== undefined) opts.seed = a.seed;
   if (a.selfCheck !== undefined) opts.selfCheck = a.selfCheck;
@@ -175,8 +223,12 @@ async function main() {
   try {
     report = await runHarness(opts);
   } catch (e) {
-    // runHarness returns a report for its own errors; this is only for something it could not catch.
-    report = {
+    // runHarness returns a report for its own errors; this is only for something it could not catch. After the
+    // verdict was written, it never replaces it.
+    if (verdict) {
+      console.error(`after the verdict: ${String(e?.message ?? e).slice(0, 300)}`);
+      report = verdict;
+    } else report = {
       mode: a.mode, runsAsked: opts.runs, seed: opts.seed ?? null, delayMs: delayMs ?? [0, 0], kinds,
       startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), device: null,
       selfCheck: { asked: 0, caught: 0, missed: [], runs: [] }, runs: [], audits: [], sweep: {},
@@ -190,7 +242,8 @@ async function main() {
       console.error(`cleanup: ${String(e?.message ?? e)}`);
     }
   }
-  publish(report, outDir, a.json);
+  if (report !== verdict) publish(report, outDir, a.json);
+  else if (report.decodeCheck && !report.decodeCheck.pending) publishDecode(report, outDir, a.json);
   return report.exit;
 }
 

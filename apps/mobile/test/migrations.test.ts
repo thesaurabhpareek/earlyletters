@@ -66,7 +66,9 @@ describe('local database migrator', () => {
     );
     expect(after.map((e) => sha(e.raw_transcript))).toEqual(before.map((e) => sha(e.raw_transcript)));
     expect(after.map((e) => e.final_text)).toEqual(before.map((e) => e.final_text));
-    const kids = db.all<{ id: string; name: string; signs_as: string }>('SELECT id, name, signs_as FROM children');
+    const kids = db.all<{ id: string; name: string; signs_as: string }>(
+      'SELECT c.id, c.name, p.signs_as FROM children c JOIN child_member_prefs p ON p.child_id = c.id',
+    );
     expect(kids).toHaveLength(1);
     expect(kids[0]).toMatchObject({ name: 'Asha', signs_as: 'Mama' });
     expect(after[0].child_id).toBe(kids[0].id);
@@ -222,7 +224,7 @@ describe('[WP-F04-03] migration 6: draft kind, occurred date and precision, lett
          final_text, in_book, updated_at, child_id) VALUES ('e1', 'letter', '2026-09-29', ?, 'typed', 'verbatim', 2, 'Hi Asha.', '[]', 'Hi Asha.', 1, ?, 'c1')`,
       NOW, NOW,
     );
-    expect(migrate(db, ctx)).toMatchObject({ from: 5, to: 6 });
+    expect(migrate(db, ctx)).toMatchObject({ from: 5, to: LATEST_VERSION });
     expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['kind', 'occurred_on', 'occurred_precision', 'language', 'base_direction']));
     expect(cols(db, 'entries')).toEqual(expect.arrayContaining(['occurred_precision', 'language', 'base_direction']));
     expect(db.get("SELECT kind, occurred_on, occurred_precision, language, base_direction FROM drafts WHERE id = 'd1'"))
@@ -244,15 +246,30 @@ describe('[WP-F04-03] migration 6: draft kind, occurred date and precision, lett
 
 describe('[WP-F04-03] every earlier schema migrates to head with row counts and content hashes unchanged', () => {
   const upTo = (version: number) => MIGRATIONS.filter((m) => m.version <= version);
-  const TABLES = ['settings', 'entries', 'children', 'drafts', 'orphan_audio', 'sync_outbox', 'rejected_writes', 'sync_books'];
+  const TABLES = ['settings', 'entries', 'children', 'drafts', 'orphan_audio', 'sync_outbox', 'rejected_writes', 'sync_books', 'child_member_prefs'];
   const exists = (db: SqlDb, t: string) => db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name = ?", t)!.n === 1;
 
-  /** For each table: row count and a hash of every column that exists now, in primary-key order. */
+  /**
+   * Columns that later versions moved to another table (v7: a person's choices for a book left
+   * `children` for `child_member_prefs`, hidden_at included). Read them where they live now, so the
+   * hash compares values, not layout.
+   */
+  const MOVED: Record<string, Record<string, string>> = {
+    children: {
+      signs_as: '(SELECT p.signs_as FROM child_member_prefs p WHERE p.child_id = children.id)',
+      reminders_on: '(SELECT p.reminders_on FROM child_member_prefs p WHERE p.child_id = children.id)',
+      hidden_at: 'COALESCE((SELECT p.hidden_at FROM child_member_prefs p WHERE p.child_id = children.id), children.hidden_at)',
+    },
+  };
+
+  /** For each table: row count and a hash of every column it had before, in primary-key order. */
   function snapshot(db: SqlDb, columnsOf: Record<string, string[]>) {
     const out: Record<string, { n: number; sha: string }> = {};
     for (const t of Object.keys(columnsOf)) {
-      const c = columnsOf[t];
-      const rows = db.all<Record<string, unknown>>(`SELECT ${c.join(', ')} FROM ${t} ORDER BY 1`);
+      const now = new Set(cols(db, t));
+      const prefs = exists(db, 'child_member_prefs');
+      const select = columnsOf[t].map((c) => (prefs && MOVED[t]?.[c] && (c === 'hidden_at' || !now.has(c)) ? `${MOVED[t][c]} AS ${c}` : c));
+      const rows = db.all<Record<string, unknown>>(`SELECT ${select.join(', ')} FROM ${t} ORDER BY 1`);
       out[t] = { n: rows.length, sha: sha(JSON.stringify(rows)) };
     }
     return out;
@@ -269,8 +286,16 @@ describe('[WP-F04-03] every earlier schema migrates to head with row counts and 
       );
       return;
     }
-    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
-    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Mama', ?, ?)", NOW, NOW);
+    if (version >= 7) {
+      // v7 holds a person's choices for a book in child_member_prefs.
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Amma', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at) VALUES ('c1', 'Mama', 1, NULL, ?), ('c2', 'Amma', 0, ?, ?)", NOW, NOW, NOW);
+    } else {
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at, hidden_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Amma', ?, ?, ?)", NOW, NOW, NOW);
+      db.run("UPDATE children SET reminders_on = 0 WHERE id = 'c2'");
+    }
     const audio = version >= 3 ? ", audio_sha256, audio_bytes, transcript_status" : '';
     const audioVals = version >= 3 ? ", ?, 48000, NULL" : '';
     for (const [id, child, text] of [['e1', 'c1', 'Asha, you laughed at the rain today.'], ['e2', 'c1', 'Two teeth.'], ['e3', 'c2', 'Hello, little one.']]) {
