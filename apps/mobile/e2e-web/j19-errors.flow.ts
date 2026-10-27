@@ -20,10 +20,10 @@ test('[J19] a route that does not exist', async ({ app, record }) => {
 test('[J19] a link to Listen does not start recording by itself', async ({ app, record }) => {
   const step = journey(record, 'J19', 'errors', 2, 'J19-01');
   await seeded(app, 'asha', '/listen');
-  await expect(app.getByText('Ready when you are')).toBeVisible();
+  await expect(app.getByText('Tap the red circle and talk.')).toBeVisible();
   await app.waitForTimeout(2500);
   await expect(app.getByText('Listening.')).toHaveCount(0);
-  await step('unhappy', 'Listen opened without a tap', 'Opened by a link, a restored screen or a stale route (not by Speak), Listen waits: "Nothing is recording yet. Tap Start when you want to speak." The microphone is not touched. On a phone the scribe://listen link goes to Tonight instead.');
-  await app.getByRole('button', { name: 'Start' }).click();
+  await step('unhappy', 'Listen opened without a tap', 'Opened by a link, a restored screen or a stale route (not by Speak), Listen waits at rest: the red circle and "Tap the red circle and talk." (S12). The microphone is not touched until the circle is tapped. On a phone the scribe://listen link goes to Tonight instead.');
+  await app.getByRole('button', { name: 'Start recording' }).click();
   await expect(app.getByText('Listening.')).toBeVisible();
 });

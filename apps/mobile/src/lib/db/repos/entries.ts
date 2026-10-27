@@ -13,7 +13,10 @@
  *   EntryTombstonedError, the other writers return false. The only ways out
  *   of a tombstone are `undelete` (local Undo) and, later, a restore intent
  *   (WS-09). Reads of the audio path for the launch sweep still see them.
- * - Words of a waiting voice-only letter are set once.
+ * - Words of a waiting voice-only letter are set once. Words the machine
+ *   wrote later wait for the author's review (transcript_status 'unreviewed',
+ *   M17): the letter shows them, and it counts toward the free letters only
+ *   when the author keeps them (`keepReviewedWords`).
  *
  * No defaults are read here: the caller passes the child and signature it
  * resolved (store.ts does that), so a repository never falls back to the
@@ -22,7 +25,7 @@
 import type { Edit, EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
 import type { EntrySyncState } from '../../sync/types';
-import type { CaptureMode, Entry, EntryKind } from './types';
+import type { BaseDirection, CaptureMode, Entry, EntryKind, OccurredPrecision } from './types';
 
 interface EntryRow {
   id: string;
@@ -48,11 +51,17 @@ interface EntryRow {
   transcript_status: string | null;
   sync_state: string | null;
   approval: string | null;
+  occurred_precision: string;
+  language: string | null;
+  base_direction: string;
 }
 
 const COLS = `id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
   machine_edits, final_text, in_book, sounds_like_me, child_id, author_id, author_signs_as, audio_uri, audio_duration_ms,
-  audio_sha256, audio_bytes, transcript_status, sync_state, approval`;
+  audio_sha256, audio_bytes, transcript_status, sync_state, approval, occurred_precision, language, base_direction`;
+
+/** transcript_status of a voice-only letter whose words the machine wrote later and the author has not kept yet (M17). */
+export const WORDS_UNREVIEWED = 'unreviewed';
 
 /** The row exists but is tombstoned; edits are refused until it is restored. Code only, no row content. */
 export class EntryTombstonedError extends Error {
@@ -94,6 +103,10 @@ const fromRow = (r: EntryRow): Entry => ({
   transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
   syncState: (r.sync_state ?? 'local') as EntrySyncState,
   approval: r.approval,
+  occurredPrecision: (r.occurred_precision === 'month' ? 'month' : 'day') as OccurredPrecision,
+  language: r.language,
+  baseDirection: (r.base_direction === 'rtl' ? 'rtl' : 'ltr') as BaseDirection,
+  wordsUnreviewed: r.transcript_status === WORDS_UNREVIEWED,
 });
 
 /** Values the caller resolved for a first insert. Ignored when the row already exists. */
@@ -119,8 +132,9 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
   ctx.db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key,
        engine_version, raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at,
-       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status,
+       occurred_precision, language, base_direction)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
@@ -133,6 +147,7 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
     e.inBook ? 1 : 0, e.soundsLikeMe === null ? null : e.soundsLikeMe ? 1 : 0, ctx.now(),
     childForInsert, e.authorId ?? null, signsAs, e.audioUri ?? null, e.audioDurationMs ?? null,
     e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null,
+    e.occurredPrecision === 'month' ? 'month' : 'day', e.language ?? null, e.baseDirection === 'rtl' ? 'rtl' : 'ltr',
     childForUpdate, childForUpdate,
   );
   if (changes(ctx.db) === 0) throw new EntryTombstonedError();
@@ -182,9 +197,10 @@ export function setWordsOnce(
   id: string,
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
+  // The words exist now, but the author has not kept them from Review yet (M17, F14-REQ-037).
   ctx.db.run(
     `UPDATE entries SET raw_transcript = ?, machine_edits = ?, final_text = ?, edit_level = ?, engine_version = ?,
-       transcript_status = NULL, updated_at = ?
+       transcript_status = '${WORDS_UNREVIEWED}', updated_at = ?
      WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
     w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, ctx.now(), id,
   );
@@ -192,10 +208,61 @@ export function setWordsOnce(
 }
 
 /**
- * The parent typed the words for a recording that never got any (D-086 "Write the words"). Only a letter that
- * is still waiting, with its raw still '': it was held and never uploaded, so the first raw is still free to
- * set. The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with typed
- * words), so it is never called spoken. False when it already has words, was deleted or is missing.
+ * The author kept words the machine wrote later, with them on screen (M17: the
+ * counting moment). Clears the review mark only; the words are not touched here.
+ * False when the letter has no words waiting for review.
+ */
+export function markWordsReviewed(ctx: RepoContext, id: string): boolean {
+  ctx.db.run(
+    `UPDATE entries SET transcript_status = NULL, updated_at = ? WHERE id = ? AND transcript_status = '${WORDS_UNREVIEWED}' AND deleted_at IS NULL`,
+    ctx.now(), id,
+  );
+  return changes(ctx.db) === 1;
+}
+
+/** Letters whose machine-written words wait for the author's review, oldest first (S11's Review step reads this). */
+export function listWordsToReview({ db }: RepoContext, childId: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${COLS} FROM entries WHERE child_id = ? AND deleted_at IS NULL AND transcript_status = '${WORDS_UNREVIEWED}'
+       ORDER BY captured_at ASC, id ASC`,
+      childId,
+    )
+    .map(fromRow);
+}
+
+/**
+ * The author chose this phone's words over the other phone's after a word
+ * conflict (F16 6.2 E step 4). Only the words group; raw_transcript and every
+ * written-once column stay. False for a missing or tombstoned letter.
+ */
+export function replaceWords(
+  ctx: RepoContext,
+  id: string,
+  w: { final_text: string; machine_edits: unknown[]; edit_level: string },
+): boolean {
+  ctx.db.run(
+    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
+    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
+  );
+  return changes(ctx.db) === 1;
+}
+
+/** A quiet-day mark already exists for this book on this day (F04 11.3; D-084 keeps one per day). */
+export function hasNotMuchOn({ db }: RepoContext, childId: string, isoDate: string): boolean {
+  return db.get<{ t: number }>(
+    "SELECT 1 AS t FROM entries WHERE child_id = ? AND kind = 'not_much' AND occurred_on = ? AND deleted_at IS NULL LIMIT 1",
+    childId, isoDate,
+  ) !== null;
+}
+
+/**
+ * The parent typed the words for a recording that never got any (D-086 "Write the words"). A letter still
+ * waiting, or a spoken letter whose transcription came back with no words (S28, P5 #222), with its raw still
+ * '' and never on the server, so the first raw is still free to set (the server's raw is fixed once a letter
+ * is there). The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with
+ * typed words), so it is never called spoken. False when it already has words, was deleted, is on the
+ * server, or is missing.
  */
 export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): boolean {
   const words = text.trim();
@@ -203,7 +270,10 @@ export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): b
   ctx.db.run(
     `UPDATE entries SET raw_transcript = ?, machine_edits = '[]', final_text = ?, edit_level = 'verbatim', capture_mode = 'mixed',
        transcript_status = NULL, updated_at = ?
-     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
+     WHERE id = ? AND raw_transcript = '' AND deleted_at IS NULL
+       AND (transcript_status = 'waiting'
+            OR (transcript_status IS NULL AND kind = 'letter' AND final_text = '' AND server_version IS NULL
+                AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id AND (o.sent_at IS NOT NULL OR o.attempts > 0))))`,
     words, words, ctx.now(), id,
   );
   return changes(ctx.db) === 1;
@@ -232,7 +302,8 @@ export type DeletedEntry = Entry & { deletedAt: string };
 export function listDeleted({ db }: RepoContext): DeletedEntry[] {
   return db
     .all<EntryRow & { deleted_at: string }>(
-      `SELECT ${COLS}, deleted_at FROM entries WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC, id DESC`,
+      // 'erased': erased for good on the server; it leaves this phone right after the sync (never restorable).
+      `SELECT ${COLS}, deleted_at FROM entries WHERE deleted_at IS NOT NULL AND sync_state <> 'erased' ORDER BY deleted_at DESC, id DESC`,
     )
     .map((r) => ({ ...fromRow(r), deletedAt: r.deleted_at }));
 }
@@ -241,6 +312,21 @@ export function listDeleted({ db }: RepoContext): DeletedEntry[] {
 export function expiredIds({ db }: RepoContext, cutoffIso: string): string[] {
   return db
     .all<{ id: string }>('SELECT id FROM entries WHERE deleted_at IS NOT NULL AND deleted_at <= ? ORDER BY deleted_at, id', cutoffIso)
+    .map((r) => r.id);
+}
+
+/**
+ * Like expiredIds, for a sync build: only letters the server does not hold (no
+ * server version, no held row) with nothing queued for them, which only this phone's clock
+ * can erase. The server's purge owns every other one.
+ */
+export function expiredLocalOnlyIds({ db }: RepoContext, cutoffIso: string): string[] {
+  return db
+    .all<{ id: string }>(
+      `SELECT id FROM entries WHERE deleted_at IS NOT NULL AND deleted_at <= ? AND server_version IS NULL AND held_v IS NULL
+         AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id) ORDER BY deleted_at, id`,
+      cutoffIso,
+    )
     .map((r) => r.id);
 }
 
@@ -258,7 +344,11 @@ export function deletedAudioUri({ db }: RepoContext, id: string): string | null 
 export function eraseRow({ db }: RepoContext, id: string): boolean {
   db.run('DELETE FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
   const done = changes(db) === 1;
-  if (done) db.run('DELETE FROM sync_outbox WHERE entity_id = ?', id);
+  if (done) {
+    // Erase means every copy of its words on this phone: refused uploads and conflict copies go too.
+    db.run('DELETE FROM sync_outbox WHERE entity_id = ?', id);
+    db.run('DELETE FROM rejected_writes WHERE entity_id = ?', id);
+  }
   return done;
 }
 

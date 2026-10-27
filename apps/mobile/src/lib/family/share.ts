@@ -12,6 +12,7 @@ export type ShareResult = 'shared' | 'dismissed';
 export async function shareInviteLink(url: string, child: string, signsAs: string | null): Promise<ShareResult> {
   const c = familyCopy.create;
   const text = signsAs ? fill(c.shareMessageNamed, { child, signsAs }) : fill(c.shareMessage, { child });
-  const res = await Share.share({ message: `${text} ${url}`, title: fill(c.shareTitle, { child }) });
-  return res.action === Share.dismissedAction ? 'dismissed' : 'shared';
+  const res: { action?: string } | undefined = await Share.share({ message: `${text} ${url}`, title: fill(c.shareTitle, { child }) });
+  // iOS answers with an action; the web's navigator.share answers with nothing once it is done.
+  return res?.action === Share.dismissedAction ? 'dismissed' : 'shared';
 }

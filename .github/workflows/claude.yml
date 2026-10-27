@@ -1,40 +1,76 @@
 # @claude anywhere in this repo, for the founder only. Mention @claude in an
-# issue, a PR comment or a review and Claude Code answers or makes the change
-# on a branch. On this public repo, mentions from anyone else are ignored.
+# issue or a comment and Claude Code answers or makes the change on a branch.
+# On this public repo, mentions from anyone else are ignored.
+#
+# Hardened before develop becomes the default branch (RA-20-02a; ADR 0026
+# decision 3; docs/security/SECRETS_REVIEW.md SR-1, SR-9, SR-10). After AF-05,
+# GitHub runs issue_comment and issues events from the default branch, with
+# write tokens and the Anthropic secrets. Each guard below says what it stops.
 name: Claude
 
 on:
+  # Only events GitHub runs from the default branch's copy of this file. The
+  # review events (pull_request_review, pull_request_review_comment) are gone:
+  # they run the copy in the pull request's merge commit, so any branch could
+  # edit this file, drop every guard below and start it with a review (SR-1).
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
-  pull_request_review:
-    types: [submitted]
+  # opened only. On `assigned` the clause below would read how the issue was
+  # created, not who assigned it, so anyone who can assign (an agent acting
+  # through the app included) could re-fire it on a founder's issue. The
+  # founder re-triggers with a comment, which the comment clause guards.
   issues:
-    types: [opened, assigned]
+    types: [opened]
 
 permissions:
   contents: read
 
 jobs:
   claude:
+    # Every clause needs all three:
+    # - the text mentions @claude;
+    # - author_association OWNER: the founder's account only, never a
+    #   collaborator or a stranger;
+    # - performed_via_github_app == null: typed by the founder, not posted
+    #   through a GitHub App. Agent sessions act as the founder's account
+    #   through the Claude GitHub App, so their comments are OWNER too; GitHub
+    #   names the app on them (this repo's agent comments carry `claude`). This
+    #   stops an agent, or any app acting for the founder, from starting a job
+    #   that holds write tokens and the Anthropic secrets.
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && github.event.comment.author_association == 'OWNER') ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.comment.author_association == 'OWNER') ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && github.event.review.author_association == 'OWNER') ||
-      (github.event_name == 'issues' && contains(format('{0} {1}', github.event.issue.title, github.event.issue.body), '@claude') && github.event.issue.author_association == 'OWNER')
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && github.event.comment.author_association == 'OWNER' && github.event.comment.performed_via_github_app == null) ||
+      (github.event_name == 'issues' && contains(format('{0} {1}', github.event.issue.title, github.event.issue.body), '@claude') && github.event.issue.author_association == 'OWNER' && github.event.issue.performed_via_github_app == null)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     concurrency:
-      group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+      group: claude-${{ github.event.issue.number }}
       cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
       issues: write
       actions: read
+      # Needed: without a github_token input the action exchanges this run's
+      # OIDC token for the Claude GitHub App's token (src/github/token.ts at the
+      # pinned commit).
       id-token: write
     steps:
+      # No fork heads. On a comment on a pull request the action checks out the
+      # pull request's head, a fork's too (src/github/operations/branch.ts), and
+      # Claude would run its code with this job's tokens and secrets. The
+      # payload does not say where the head lives, so ask the API, and stop
+      # before the checkout, the install or any secret.
+      - name: Refuse a pull request whose head is a fork
+        if: github.event_name == 'issue_comment' && github.event.issue.pull_request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.head.repo.full_name // ""')"
+          if [ "$head" != "$GITHUB_REPOSITORY" ]; then
+            echo "::error::pull request #${PR} has its head in ${head:-a deleted repository}, not ${GITHUB_REPOSITORY}: @claude never runs a fork's code"
+            exit 1
+          fi
       # Until the founder adds ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN
       # (docs/agents/HARNESS.md section 12) this job ends here, green, with a
       # notice, instead of failing on a missing credential.
@@ -51,15 +87,28 @@ jobs:
             echo "::notice::@claude is not switched on: add the ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN secret (docs/agents/HARNESS.md section 12). Skipping."
           fi
       # develop is the integration branch; main is only updated on release.
+      # Every action is pinned to a full commit SHA, so a moved tag cannot
+      # change the code that runs next to the secrets (SR-10).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.creds.outputs.ready == 'true'
         with:
           ref: develop
           fetch-depth: 0
-      - name: Install dependencies
+      # npm ci from the lockfile, with only setup-node's download cache: never
+      # the node_modules that .github/actions/setup restores, which skips npm's
+      # integrity check and which any push to the default branch writes (SR-9).
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: steps.creds.outputs.ready == 'true'
-        uses: ./.github/actions/setup
-      - uses: anthropics/claude-code-action@v1
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies (npm ci, no restored node_modules)
+        if: steps.creds.outputs.ready == 'true'
+        run: npm ci --no-audit --no-fund
+      # v1.0.252 (16 Oct 2026), the newest v1 release at least a week old on
+      # 24 Oct; the v1 tag itself moved to v1.0.261 on 23 Oct.
+      - uses: anthropics/claude-code-action@f27be6b65a4652f08a2ba3cff79114829b588967 # v1.0.252
         if: steps.creds.outputs.ready == 'true'
         with:
           # Either secret works. CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`)
