@@ -1,9 +1,9 @@
 /// <reference types="node" />
 /**
- * The recording container switch, per platform (ADR 0027, accepted pending checks V1, V2 and V3). Both
- * platforms record M4A until those checks pass; then build 2 flips iOS to ADTS with the one line
- * `RECORDING_CONTAINERS.ios = 'adts'` (capture/recording-file.ts). Android stays M4A: it is not in the
- * alpha, and Media3 seeks ADTS only with constant-bitrate seeking, which expo-audio does not enable.
+ * The recording container switch, per platform (ADR 0027). iOS records ADTS from build 2: the one line
+ * `RECORDING_CONTAINERS.ios = 'adts'` (capture/recording-file.ts), flipped on 27 Oct on the simulator
+ * evidence, and set back to 'm4a' if a check due before the freeze fails. Android stays M4A: it is not in
+ * the alpha, and Media3 seeks ADTS only with constant-bitrate seeking, which expo-audio does not enable.
  * These tests pin the M4A settings byte for byte, show that ADTS changes only the file type and only on
  * the platform that flips, and that the rest of the app (Export included) already treats an ADTS take as
  * a recording, so they hold before and after the flip.
@@ -65,6 +65,13 @@ describe('[ADR 0005] the M4A recording is unchanged', () => {
 describe('[ADR 0027] ADTS on iOS only, for build 2', () => {
   it('Android records M4A in build 2: its ADTS is post-alpha, with its own checks', () => {
     expect(RECORDING_CONTAINERS.android).toBe('m4a');
+  });
+
+  it('iOS records ADTS from build 2 (flipped 27 Oct; the one line goes back to m4a if V1, V3 or V4 fails before the freeze)', () => {
+    expect(RECORDING_CONTAINERS).toEqual({ ios: 'adts', android: 'm4a' });
+    expect(VOICE_RECORDING_OPTIONS).toEqual(voiceRecordingOptions(BUILD_2));
+    expect(VOICE_RECORDING_OPTIONS.ios).toMatchObject({ extension: '.aac', outputFormat: 'aac ' });
+    expect(VOICE_RECORDING_OPTIONS.android).toMatchObject({ extension: '.m4a', outputFormat: 'mpeg4' });
   });
 
   it('the build 2 flip changes only iOS, and only its file type: the same AAC-LC frames, rate, channels, bitrate and quality', () => {

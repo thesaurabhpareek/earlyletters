@@ -37,9 +37,10 @@
 # still cannot record, the drill writes record_failed and the harness exits 3; then DL-01 runs on the founder's Mac
 # with a silent virtual input (AF-14; README section 9).
 #
-# When: a pull request that changes this file, the harness or the drill (a smoke run that re-proves the build and the
-# arming; it also registers the workflow, so the API can dispatch it on any branch before AF-05); workflow_dispatch
-# (agents may dispatch it, AUTOMATION.md 2.11); and the nightly schedule, which GitHub fires only once this file is on
+# When: a pull request that changes this file, the harness, the drill or the capture code (apps/mobile/src/lib/capture:
+# the recorder, its container switch, the sweep and the frame scanner the harness imports). That smoke run re-proves the
+# build and the arming; it also registers the workflow, so the API can dispatch it on any branch before AF-05. Then
+# workflow_dispatch (agents may dispatch it, AUTOMATION.md 2.11); and the nightly schedule, which GitHub fires only once this file is on
 # the default branch (AF-05) (github/docs, events-that-trigger-workflows). No job reads a secret, so a pull request
 # from a fork runs the same way. Standard macOS runners are free for this public repository; the gate holds five.
 name: Kill harness (DL-01, DL-02)
@@ -52,6 +53,7 @@ on:
       - apps/mobile/e2e/kill/**
       - apps/mobile/src/dev/e2e-seams.ts
       - apps/mobile/src/dev/kill-drill*.ts
+      - apps/mobile/src/lib/capture/**
   workflow_dispatch:
     inputs:
       gate:

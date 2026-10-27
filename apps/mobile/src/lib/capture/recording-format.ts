@@ -1,8 +1,7 @@
 /**
- * The recorder settings for each platform's container (ADR 0027, accepted
- * pending checks V1, V2 and V3; until then ADR 0005's M4A stays the default
- * on both platforms). The switch itself is `RECORDING_CONTAINERS` in
- * recording-file.ts.
+ * The recorder settings for each platform's container (ADR 0027: iOS records
+ * ADTS from build 2, Android keeps ADR 0005's M4A). The switch itself is
+ * `RECORDING_CONTAINERS` in recording-file.ts.
  *
  * - 'm4a', today: AAC-LC in MPEG-4. The index (`moov`) is written when the
  *   recorder stops, so a take cut off by a kill most likely has none and will

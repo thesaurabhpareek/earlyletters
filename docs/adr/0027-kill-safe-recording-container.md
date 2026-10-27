@@ -1,7 +1,12 @@
 # ADR 0027: A recording container that survives a kill
 
-- **Status:** Accepted pending V1, V2 and V3, 17 Oct 2026, for build 2, **iOS only**. The coordinator decided on 17 Oct under delegation, and the founder may reverse it.
-  - It takes effect on iOS when three checks pass: V1 (iOS writes real ADTS), V2 (DL-01 passes on a simulator) and V3 (decode parity). Until then both platforms record M4A.
+- **Status:** Accepted; flipped on the simulator evidence; V1 speech half, V3 Mac half and V4 due before the build 2 freeze, revert on failure. **iOS only**, from build 2.
+  - History: accepted pending V1, V2 and V3 on 17 Oct 2026 (the coordinator, under delegation). Flipped on 27 Oct by the coordinator under D-117, reversible by the same one line. The founder may reverse either.
+  - The evidence for the flip:
+    - V2 passed twice on the simulator: 100 kills, 100 playable, against M4A's 0 of 55 across three runs;
+    - V3's in-app decode half: 50 of 50 read, none refused, and the probe within one frame of the counted frames;
+    - V1's header half.
+  - Due before the build 2 freeze (Tue 3 Nov 13:00 UTC), on the device or the Mac (`docs/qa/DEVICE_TEST_PLAN.md` DL-06): V1's speech half, V3's Mac half, and V4. If one fails, `ios` goes back to `'m4a'` before the freeze.
   - Android stays M4A in build 2. Android ADTS is post-alpha, with its own checks (section "Android").
   - If V1 fails, try option A3 (set the file type explicitly). If that fails too, the founder decides on 06-nfr row 188 ("below 49, the founder decides on the ADTS fallback before beta C1").
   - It amends ADR 0005 (audio format) for the container only.
@@ -62,7 +67,7 @@ Sizes are arithmetic:
 | **Playback** | expo-audio builds the `AVURLAsset` without `AVURLAssetPreferPreciseDurationAndTimingKey` (`AudioUtils.swift:87-93`). Apple says formats without summary information give approximate duration and timing [V], so ADTS duration and scrubbing are approximate by design. `seekTo` uses infinite tolerance; `scrubbedTo` clears only within 0.75 s of `currentTime` (`use-letter-player.ts:144-146`), so a late seek can freeze the shown position. The listening copy plays by default and is built from `source.length` frames (`ScribeAudioModule.swift:423`), so a short length would also shorten what a parent hears [U, V3 and V4] | B and C: exact duration. F: as today |
 | **Sweep, erase, recovery export, harness** | Already treat `.aac` as a recording (`sweep.logic.ts` `RECORDING_EXTENSIONS`; the harness snapshot uses the same list; `afinfo` reads ADTS [S]). The e2e inspectors now do too (`inspect-container.sh`, `inspect-export.sh`). Tested in this PR | |
 
-## Decision (accepted pending V1, V2 and V3)
+## Decision (accepted; flipped on iOS on 27 Oct)
 
 **Option A on iOS, through option G.** Record AAC-LC as ADTS (`.aac`) and keep the file exactly as recorded.
 - The codec, rate, channels, bitrate and quality are ADR 0005's; only the container changes.
@@ -70,10 +75,10 @@ Sizes are arithmetic:
 - A2's remux stays available if V3 or V4 shows ADTS length or seeking is not good enough. A3 is the first fallback if V1 fails.
 
 The switch is `RECORDING_CONTAINERS` in `apps/mobile/src/lib/capture/recording-file.ts`.
-- **Both platforms stay `'m4a'` until V1, V2 and V3 pass.** Then the flip is the one line `ios: 'adts'`; Android stays `'m4a'`.
+- **iOS records `'adts'` from build 2:** the one line `ios: 'adts'`, flipped on 27 Oct. Android stays `'m4a'`. The same line goes back to `'m4a'` if V1's speech half, V3's Mac half or V4 fails before the build 2 freeze.
 - Listen and the kill drill both record with `VOICE_RECORDING_OPTIONS`, so the one constant moves both.
 - Export already names and labels each recording by its own container.
-- The disk tests' stand-in recorder follows the constant, so a flipped run records `.aac` takes in them. The whole suite passes with iOS flipped (checked in this PR, then set back).
+- The disk tests' stand-in recorder follows the constant, so a flipped run records `.aac` takes in them. The whole suite passes with iOS flipped: checked when this ADR was written, and again with the flip in place on 27 Oct (the mobile suite: 136 files, 2613 passed, 1 skipped).
 
 ### The tail safeguard (in code now, for ADTS; M4A runs exactly as on develop)
 `raw_transcript` is immutable and `verifyEdits` cannot see words lost before it exists. So the run must never plan over a length shorter than the file proves, and must refuse only when the file holds audio the decoder cannot reach.
@@ -164,7 +169,26 @@ Android ADTS needs its own checks first:
     - V2's second half, the transcription job on every killed take, which the drill's decode check runs next;
     - V1's device half;
     - V3.
+- **Sat 24 Oct, V2 again on an ADTS build, now with the in-app decode check: passes on the simulator.**
+  - Run 40089036324, nightly size, on `exp/adts-flip-v2` at 86dc613: develop, #281's harness, the drill's decode check, and the flip. 68.5 min including the decode launch.
+  - Job dl01: PASS, exit 0. 50 of 50 kept and playing to within 5 s of the kill (18 to 1,484 ms off). 0 lost, 0 doubled, 0 fail; the stored path was the take's path on disk for 50 of 50; the self-check caught 4 of 4; the database was clean after every relaunch. Seed 1876117271.
+  - Tails: none 50. Every frame was 11 bytes over 160,413 frames (BlackHole silence); V1 check failures 0.
+  - V2's second half and V3's in-app half: the drill's decode check runs the transcription job up to Whisper on every kept take.
+    - 50 of 50 read, 0 refused, 50 of 50 planned over at least the counted frames.
+    - The probe was within one frame of the counted frames on all 50, equal to the millisecond on every row read.
+    - The whole-frame copy was used 0 times (no take had a tail).
+    - The listening copy's length was within one frame of the original's, 5 of 5.
+    - Whisper itself did not run: model-missing, because the e2e simulator build has no speech pack.
+  - DL-02 passed (50 of 50).
 - **Tue 27 gate:** run on the flipped build.
+- **Tue 27 Oct: flipped on the simulator evidence.** The coordinator decided under D-117, reversible by the same one line: `RECORDING_CONTAINERS.ios = 'adts'` from build 2.
+  - Why now: V2 is proven twice on the simulator (100 kills, 100 playable, against M4A's 0 of 55 across three runs); V3's in-app decode half passes 50 of 50 with no refusal and the probe within one frame; V1's header half passes. Flipping now lets build 2's CI and nightly prove the real build, while the device and Mac checks run before the freeze.
+  - The flip PR also adds `apps/mobile/src/lib/capture/**` to the kill-harness smoke's pull_request paths, so any change to the capture code proves itself.
+  - Due before the build 2 freeze (Tue 3 Nov 13:00 UTC), as `docs/qa/DEVICE_TEST_PLAN.md` DL-06:
+    - V1's speech half: a device take's header and frame sizes;
+    - V3's Mac half: the Mac kit is on develop (#282). The founder runs `npm run adts-parity -w @scribe/experiments`, with no arguments and with the device takes, and sends the coordinator the exit code and `experiments/results/adts-parity/report.md`;
+    - V4: playback timing and seeking on the device.
+  - If one fails, the line goes back to `'m4a'` before the freeze.
 
 If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1 fails and A3 does not help, the alpha falls back to 06-nfr row 188: the founder decides whether killed takes that are kept and listed but do not play are acceptable for the alpha, and option F becomes post-alpha work.
 

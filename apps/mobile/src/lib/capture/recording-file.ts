@@ -21,13 +21,16 @@ export const RECORDING_FILES = {
 export type RecordingMimeType = (typeof RECORDING_FILES)[RecordingContainer]['mimeType'];
 
 /**
- * The container new takes use, per platform (ADR 0027, accepted pending V1,
- * V2 and V3). Build 2 flips iOS to 'adts' once those three checks pass: that
- * is the one-line change. Android stays 'm4a': it is not in the alpha, and
- * Media3 seeks ADTS only with constant-bitrate seeking, which expo-audio does
- * not enable, so Android ADTS is post-alpha work with its own checks.
+ * The container new takes use, per platform (ADR 0027). iOS records ADTS
+ * from build 2: flipped on 27 Oct on the simulator evidence (V2 passed twice,
+ * 50 of 50 killed takes playing each time; V3's in-app decode check 50 of 50;
+ * V1's header half). V1's speech half, V3's Mac half and V4 are due before the
+ * build 2 freeze, and this line goes back to 'm4a' if one fails. Android
+ * stays 'm4a': it is not in the alpha, and Media3 seeks ADTS only with
+ * constant-bitrate seeking, which expo-audio does not enable, so Android ADTS
+ * is post-alpha work with its own checks.
  */
-export const RECORDING_CONTAINERS: Readonly<Record<RecordingPlatform, RecordingContainer>> = { ios: 'm4a', android: 'm4a' };
+export const RECORDING_CONTAINERS: Readonly<Record<RecordingPlatform, RecordingContainer>> = { ios: 'adts', android: 'm4a' };
 
 /** The container new takes use on a platform (`Platform.OS`); anything but Android follows iOS. */
 export function recordingContainerFor(os: string): RecordingContainer {
