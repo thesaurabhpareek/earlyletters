@@ -11,6 +11,7 @@
  * serves earlyletters.com once the domain is attached.
  */
 import { site } from '@/content/site';
+import { Lockup } from '@/components/brand/Lockup';
 import { NotifyForm } from '@/components/cta/NotifyForm';
 import { ShareButton } from '@/components/site/ShareButton';
 import { Aurora } from './Aurora';
@@ -33,7 +34,7 @@ export function Landing() {
 
       <header className={styles.header}>
         <a href="#top" className={styles.brand}>
-          {site.brand.name}
+          <Lockup label />
         </a>
       </header>
 

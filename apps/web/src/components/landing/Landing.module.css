@@ -19,8 +19,8 @@
 }
 .brand {
   pointer-events: auto;
-  font-family: var(--font-serif);
-  font-size: 20px;
+  display: block;
+  line-height: 0;
   color: var(--night-ink);
   text-decoration: none;
 }
