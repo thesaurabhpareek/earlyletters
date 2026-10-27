@@ -396,8 +396,9 @@ describe('every word on these screens comes from packages/content (lens B X1, X4
 
   it('a changed word carries its own label and hint ("Usher to Asha", from the row copy)', () => {
     const t = screens.transcript;
-    const change = t.slice(t.indexOf("shows?.kind === 'change'"), t.indexOf("taken?.kind === 'struck'"));
-    expect(change).toMatch(/accessibilityRole="button"\s*accessibilityLabel=\{fill\(copy\.review\.rowChange, \{ a: shows\.from, b: shows\.to \}\)\}\s*accessibilityHint=\{pendingCopy\.review\.editA11yHint\}/);
+    const change = t.slice(t.indexOf("if (s.text && shows?.kind === 'change') {"), t.indexOf("if (taken?.kind === 'struck') {"));
+    // A button with its own label and hint where marks are buttons; with a screen reader on the fix rows are (P4c S3).
+    expect(change).toMatch(/accessibilityRole=\{role\}\s*accessibilityLabel=\{fill\(copy\.review\.rowChange, \{ a: shows\.from, b: shows\.to \}\)\}\s*accessibilityHint=\{pendingCopy\.review\.editA11yHint\}/);
   });
 });
 

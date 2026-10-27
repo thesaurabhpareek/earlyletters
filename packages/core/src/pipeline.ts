@@ -313,17 +313,39 @@ export interface Segment {
  * edits, so the review screen can underline every change. Joining the
  * segments' text always equals faithfulClean(...).text (before trim).
  * A pure deletion becomes an empty-text segment placed where the words were.
+ *
+ * Display only. The final text is normalised once, whole, and cut where each
+ * run ends: at the length its normalised prefix shares with the whole. So a
+ * run keeps its leading comma and space ("Asha" then ", today"; normalising
+ * each run alone took them), and a tidy step that reaches across a cut (a
+ * space before a comma) moves the cut, never a character.
  */
 export function segments(raw: string, applied: Edit[], rules?: LanguageRules): Segment[] {
   const R = rules ?? rulesFor({});
   const sorted = applied.map((e, i) => ({ e, i })).sort((a, b) => a.e.start - b.e.start);
-  const out: Segment[] = [];
+  const runs: Segment[] = [];
   let pos = 0;
   for (const { e, i } of sorted) {
-    if (e.start > pos) out.push({ text: raw.slice(pos, e.start), edit: null });
-    out.push({ text: e.replacement, edit: i });
+    if (e.start > pos) runs.push({ text: raw.slice(pos, e.start), edit: null });
+    runs.push({ text: e.replacement, edit: i });
     pos = e.end;
   }
-  if (pos < raw.length) out.push({ text: raw.slice(pos), edit: null });
-  return out.map((s) => ({ ...s, text: R.normalizeFinal(s.text) }));
+  if (pos < raw.length) runs.push({ text: raw.slice(pos), edit: null });
+  const whole = R.normalizeFinal(runs.map((s) => s.text).join(''));
+  let prefix = '';
+  let from = 0;
+  return runs.map((s, k) => {
+    prefix += s.text;
+    const to = k === runs.length - 1 ? whole.length : Math.max(from, sharedStart(R.normalizeFinal(prefix), whole));
+    const text = whole.slice(from, to);
+    from = to;
+    return { text, edit: s.edit };
+  });
+}
+
+/** How many leading characters two strings share. */
+function sharedStart(a: string, b: string): number {
+  let n = 0;
+  while (n < a.length && n < b.length && a[n] === b[n]) n++;
+  return n;
 }

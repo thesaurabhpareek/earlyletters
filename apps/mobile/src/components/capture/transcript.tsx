@@ -14,7 +14,7 @@ import type { Edit, Segment } from '@scribe/core';
 import { Fragment, useRef, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { Text, type TextProps } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { useScreenReader, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { rowShows } from './review-view.logic';
 import { cardCutAt, placeAroundCard } from './transcript.logic';
@@ -37,11 +37,9 @@ interface Props {
   card?: ReactNode;
   /**
    * What VoiceOver reads for the paragraph: the words as they will be kept, so taken-out and heard words are not read as
-   * part of the letter (P4 critics' pass S3). The fix rows are the path to each mark.
+   * part of the letter (P4 critics' pass S3). The fix rows, open while a screen reader is on, are the path to each mark.
    */
   accessibilityLabel?: string;
-  /** With the label: how many small fixes there are ("2 small fixes"). */
-  accessibilityHint?: string;
 }
 
 /** A space where struck words would otherwise touch their neighbours (the taken-out span often carried its own space). */
@@ -63,13 +61,18 @@ function LetterSpan({ scale, ...props }: TextProps & { scale: number }) {
   return <Text variant="letterBody" scale={scale} {...props} />;
 }
 
-export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edits, scale = 1, card, accessibilityLabel, accessibilityHint }: Props) {
+export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edits, scale = 1, card, accessibilityLabel }: Props) {
   // editMark: full-strength underline colour (5.82:1 light, 7.64:1 dark; darker again under Increase
   // Contrast), replacing accent at 60%, which failed 3:1 in light mode (TDD 09 2.7, A11Y-F04).
   const { c } = useTheme();
   const mark = c.editMark;
   // The paragraph's lines as last laid out whole (read when a card opens; never a render of their own).
   const lines = useRef<string[] | null>(null);
+  // With a screen reader on, the marks inside the paragraph are not buttons of their own: iOS would read each by its
+  // visible text ("um, button", "Usher Asha") instead of the paragraph's label, and replace any hint with "2 buttons
+  // found" (#289 lens B, from React Native's paragraph accessibility). The fix rows are the way to each mark.
+  const screenReader = useScreenReader();
+  const role = screenReader ? undefined : ('button' as const);
 
   const showsOf = (s: Segment) => (s.edit !== null && edits?.[s.edit] ? rowShows(edits[s.edit]) : null);
 
@@ -103,7 +106,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
           key={i}
           scale={scale}
           onPress={() => onPressEdit(edit)}
-          accessibilityRole="button"
+          accessibilityRole={role}
           accessibilityLabel={fill(copy.review.rowChange, { a: shows.from, b: shows.to })}
           accessibilityHint={pendingCopy.review.editA11yHint}
           suppressHighlighting
@@ -126,7 +129,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
           <LetterSpan
             scale={scale}
             onPress={() => onPressEdit(edit)}
-            accessibilityRole="button"
+            accessibilityRole={role}
             accessibilityLabel={fill(copy.review.removedWordsA11y, { name: taken.text })}
             accessibilityHint={pendingCopy.review.editA11yHint}
             suppressHighlighting
@@ -166,7 +169,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
         key={i}
         scale={scale}
         onPress={() => onPressEdit(edit)}
-        accessibilityRole="button"
+        accessibilityRole={role}
         accessibilityHint={pendingCopy.review.editA11yHint}
         accessibilityLabel={s.text}
         suppressHighlighting
@@ -189,7 +192,6 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
       selectable
       testID={whole ? 'review.transcript' : `review.transcript.${key}`}
       accessibilityLabel={key === 'below' ? undefined : accessibilityLabel}
-      accessibilityHint={key === 'below' ? undefined : accessibilityHint}
       // The rest of a cut letter is read as part of the label above it, so VoiceOver does not read it twice.
       accessibilityElementsHidden={key === 'below' && !!accessibilityLabel}
       importantForAccessibility={key === 'below' && accessibilityLabel ? 'no-hide-descendants' : undefined}
