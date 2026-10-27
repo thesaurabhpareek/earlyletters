@@ -45,7 +45,7 @@ try {
   );
   process.exit(2);
 }
-const { EXIT, mergeReports, renderMarkdown, runHarness, stepSummary } = harness;
+const { EXIT, mergeReports, renderDecodeSection, renderMarkdown, runHarness, stepSummary } = harness;
 const { bundleIdOf, simctlDriver } = await import('./simctl-driver.mjs');
 const { DRILL_BUNDLE_SUFFIX } = await import('./protocol.mjs');
 
@@ -93,6 +93,24 @@ function range(text) {
 
 function stamp() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+}
+
+/**
+ * The decode check, once it ends after the verdict (ADR 0027): report.json and report.md are written again in full,
+ * and only the decode section is printed and appended to the step summary, under the verdict already there.
+ */
+function publishDecode(report, outDir, asJson) {
+  try {
+    writeFileSync(join(outDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+    writeFileSync(join(outDir, 'report.md'), renderMarkdown(report));
+    const section = renderDecodeSection(report);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, section);
+    if (asJson) console.log(JSON.stringify({ decodeCheck: { ...report.decodeCheck, runs: report.decodeCheck.runs?.length ?? 0 } }));
+    else console.log(section);
+  } catch (e) {
+    console.error(`could not write the decode check to ${outDir}: ${String(e?.message ?? e)}`);
+    console.log(JSON.stringify(report.decodeCheck));
+  }
 }
 
 function publish(report, outDir, asJson) {
@@ -184,7 +202,19 @@ async function main() {
     mode: a.mode,
     needsFixture: a.mode === 'dl02',
   });
-  const opts = { driver, mode: a.mode, runs: a.runs ?? 500, kinds, log: (l) => console.error(l) };
+  // The verdict is written as soon as it is final, before the in-app decode check can delay it (ADR 0027).
+  let verdict = null;
+  const opts = {
+    driver,
+    mode: a.mode,
+    runs: a.runs ?? 500,
+    kinds,
+    log: (l) => console.error(l),
+    onVerdict: (r) => {
+      verdict = r;
+      publish(r, outDir, a.json);
+    },
+  };
   if (delayMs) opts.delayMs = delayMs;
   if (a.seed !== undefined) opts.seed = a.seed;
   if (a.selfCheck !== undefined) opts.selfCheck = a.selfCheck;
@@ -193,8 +223,12 @@ async function main() {
   try {
     report = await runHarness(opts);
   } catch (e) {
-    // runHarness returns a report for its own errors; this is only for something it could not catch.
-    report = {
+    // runHarness returns a report for its own errors; this is only for something it could not catch. After the
+    // verdict was written, it never replaces it.
+    if (verdict) {
+      console.error(`after the verdict: ${String(e?.message ?? e).slice(0, 300)}`);
+      report = verdict;
+    } else report = {
       mode: a.mode, runsAsked: opts.runs, seed: opts.seed ?? null, delayMs: delayMs ?? [0, 0], kinds,
       startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), device: null,
       selfCheck: { asked: 0, caught: 0, missed: [], runs: [] }, runs: [], audits: [], sweep: {},
@@ -208,7 +242,8 @@ async function main() {
       console.error(`cleanup: ${String(e?.message ?? e)}`);
     }
   }
-  publish(report, outDir, a.json);
+  if (report !== verdict) publish(report, outDir, a.json);
+  else if (report.decodeCheck && !report.decodeCheck.pending) publishDecode(report, outDir, a.json);
   return report.exit;
 }
 

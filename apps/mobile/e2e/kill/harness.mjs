@@ -16,7 +16,9 @@ export const DEFAULTS = Object.freeze({
   // DL-02: 07 "Kill during save", random 0 to 400 ms after Save. DL-01: 07 "Kill while recording", 10 to 120 s.
   dl02: { delayMs: [0, 400], plantDelayMs: [0, 400] },
   dl01: { delayMs: [10000, 120000], plantDelayMs: [2000, 4000] },
-  timeouts: { bootMs: 120000, armMs: 30000, pointMs: 30000, decodeMs: 120000, decodePerTakeMs: 30000 },
+  // The decode launch waits 120 s plus 30 s a take, never more than 20 min in all (run 40089036324 read 50 takes in
+  // about 5 min); it runs after the DL-01 verdict is written, so it can never lose or delay it.
+  timeouts: { bootMs: 120000, armMs: 30000, pointMs: 30000, decodeMs: 120000, decodePerTakeMs: 30000, decodeMaxMs: 20 * 60 * 1000 },
   selfCheck: 2,
   // 07 "Kill while recording": 49 or more of 50 playable to within 5 s.
   playableShare: 49 / 50,
@@ -121,7 +123,9 @@ const defined = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) =
  * @param {[number, number]} [opts.plantDelayMs]
  * @param {number} [opts.seed]
  * @param {number} [opts.selfCheck]  planted runs of each kind
- * @param {{ bootMs: number, armMs: number, pointMs: number, decodeMs?: number, decodePerTakeMs?: number }} [opts.timeouts]
+ * @param {{ bootMs: number, armMs: number, pointMs: number, decodeMs?: number, decodePerTakeMs?: number, decodeMaxMs?: number }} [opts.timeouts]
+ * @param {(report: any) => void | Promise<void>} [opts.onVerdict]  called once the DL-01 or DL-02 verdict is final,
+ *   before the in-app decode check starts (ADR 0027), so a caller writes the verdict before anything else can delay it
  * @param {(line: string) => void} [opts.log]
  */
 export async function runHarness(opts) {
@@ -395,7 +399,7 @@ export async function runHarness(opts) {
       return { error: boot.code, runs: [] };
     }
     driver.writeGo(run, { run, files: runs.map((r) => ({ name: armedByRun.get(r.run).audioFile, draftId: armedByRun.get(r.run).draftId ?? null })) });
-    const done = await waitFor('decoded', run, pid, o.timeouts.decodeMs + o.timeouts.decodePerTakeMs * runs.length, 250);
+    const done = await waitFor('decoded', run, pid, Math.min(o.timeouts.decodeMaxMs, o.timeouts.decodeMs + o.timeouts.decodePerTakeMs * runs.length), 250);
     await driver.terminate(pid);
     if (!done.ok) return { error: done.code, runs: [] };
     const results = Array.isArray(done.marker.results) ? done.marker.results : [];
@@ -443,8 +447,18 @@ export async function runHarness(opts) {
     report.errors.push(...real.errors);
 
     // 3. ADR 0027 (V2 and V3, the in-app half): the kept ADTS takes read by the app's own code, up to Whisper, on
-    // the same install. Reported only; it never changes the exit code.
+    // the same install. The verdict is final first and handed to onVerdict, so a decode launch that hangs or crashes
+    // can never lose or delay it; the decode check is added after, and it never changes the exit code.
     const adtsKept = o.mode === 'dl01' && !real.fatal ? real.results.filter((r) => (r.outcome === 'kept-playable' || r.outcome === 'kept-unplayable') && r.container === 'adts' && armedByRun.has(r.run)) : [];
+    if (adtsKept.length) report.decodeCheck = { pending: true, runs: [] };
+    finish();
+    if (o.onVerdict) {
+      try {
+        await o.onVerdict(report);
+      } catch {
+        // the caller's own failure to write; the verdict is still returned
+      }
+    }
     if (adtsKept.length) {
       stage = 'decode check';
       try {
@@ -453,7 +467,7 @@ export async function runHarness(opts) {
         report.decodeCheck = { error: String(e?.message ?? e).slice(0, 160), runs: [] };
       }
     }
-    return finish();
+    return report;
   } catch (e) {
     report.crashed = { stage, message: String(e?.message ?? e).slice(0, 300) };
     report.errors.push({ phase: 'harness', stage, code: report.crashed.message });
@@ -586,6 +600,17 @@ export function mergeReports(reports) {
     exit: EXIT.usage,
   };
   for (const r of reports) for (const [k, n] of Object.entries(r.sweep ?? {})) merged.sweep[k] = (merged.sweep[k] ?? 0) + n;
+  // The in-app decode check (ADR 0027): every shard's rows, labelled with their shard, and each shard's own failure,
+  // so the gate's merged verdict shows it as the shard reports do. It never changes the exit code.
+  const decodes = reports.map((r, i) => ({ shard: i + 1, d: r.decodeCheck })).filter((x) => x.d);
+  if (decodes.length) {
+    merged.decodeCheck = {
+      whisper: [...new Set(decodes.map((x) => x.d.whisper).filter(Boolean))].join(', ') || null,
+      runs: decodes.flatMap((x) => (x.d.runs ?? []).map((r) => ({ ...r, shard: x.shard }))),
+      // A shard whose job ended while its decode check ran wrote its verdict with the check still pending.
+      shardErrors: decodes.filter((x) => x.d.error || x.d.pending).map((x) => ({ shard: x.shard, error: x.d.error ?? 'not finished: the job ended while it ran' })),
+    };
+  }
   merged.exit = exitFor(merged);
   return merged;
 }
@@ -773,17 +798,34 @@ function renderDecodeCheck(d) {
   out.push(
     "Each kept ADTS take read by the app's own transcription job up to Whisper, in one more launch on the same install: the frame scan, `ScribeAudio.probe`, `openRecordingForRun` (length check and whole-frame copy) with the take's stored progress mark, and every `findSpeech` window through `decodePcm16`; the first takes also get a listening copy (`enhance`), probed and deleted.",
   );
+  if (d.pending) {
+    out.push('', '**Running after this verdict: the decode check is appended when it ends.** The DL-01 verdict above is final either way.');
+    return out;
+  }
   if (d.error) {
     out.push('', `**The decode launch did not finish (${d.error}); nothing below was measured.**`);
     return out;
   }
+  for (const e of d.shardErrors ?? []) out.push('', `**Shard ${e.shard}: the decode launch did not finish (${e.error}); none of its takes was measured.**`);
   const runs = d.runs ?? [];
   const read = runs.filter((r) => !r.error);
   const refused = read.filter((r) => r.refused);
-  const planned = read.filter((r) => !r.refused && Number.isFinite(r.plannedMs) && Number.isFinite(r.countedMs) && r.plannedMs >= r.countedMs - 0.5);
+  const plannedFull = (r) => Number.isFinite(r.plannedMs) && Number.isFinite(r.countedMs) && r.plannedMs >= r.countedMs - 0.5;
+  const planned = read.filter((r) => !r.refused && plannedFull(r));
+  const plannedShort = read.filter((r) => !r.refused && Number.isFinite(r.countedMs) && !plannedFull(r));
   const vs = read.map((r) => probeAgainstCounted(r.probeMs, r.countedMs));
   const enh = runs.filter((r) => r.enhance);
-  const enhOk = enh.filter((r) => Number.isFinite(r.enhance.copyProbeMs) && Number.isFinite(r.probeMs) && Math.abs(r.enhance.copyProbeMs - r.probeMs) <= FRAME_MS);
+  // The listening copy against the original's probe, and against the counted frames (allowing the priming): a parent
+  // must hear all that was recorded (lens B on #291).
+  const copyOk = (r) =>
+    Number.isFinite(r.enhance.copyProbeMs) &&
+    Number.isFinite(r.probeMs) &&
+    Math.abs(r.enhance.copyProbeMs - r.probeMs) <= FRAME_MS &&
+    (!Number.isFinite(r.countedMs) || probeAgainstCounted(r.enhance.copyProbeMs, r.countedMs) !== 'no');
+  const enhOk = enh.filter((r) => !r.enhance.error && copyOk(r));
+  // The simulator has no voice isolation component; any other enhance error is a finding.
+  const enhFailed = enh.filter((r) => r.enhance.error && r.enhance.error !== 'isolation_unavailable');
+  const enhOff = enh.filter((r) => !r.enhance.error && !copyOk(r));
   out.push(
     '',
     '| | |',
@@ -793,13 +835,21 @@ function renderDecodeCheck(d) {
     `| Planned over at least the counted frames | ${planned.length} of ${read.length} |`,
     `| probe within one frame of the counted frames | ${vs.filter((x) => x === 'one frame').length}; within one frame after 2112 samples of priming: ${vs.filter((x) => x === 'one frame after priming').length}; neither: ${vs.filter((x) => x === 'no').length}; no probe: ${vs.filter((x) => x === null).length} |`,
     `| Read through the whole-frame copy | ${read.filter((r) => r.usedCopy).length} |`,
-    `| Listening copy (enhance) length within one frame of the original | ${enh.length ? `${enhOk.length} of ${enh.length}${enh.some((r) => r.enhance.error) ? ` (${[...new Set(enh.filter((r) => r.enhance.error).map((r) => r.enhance.error))].join(', ')})` : ''}` : 'not run'} |`,
+    `| Listening copy (enhance) length within one frame of the original and of the counted frames | ${enh.length ? `${enhOk.length} of ${enh.length}${enh.some((r) => r.enhance.error) ? ` (${[...new Set(enh.filter((r) => r.enhance.error).map((r) => r.enhance.error))].join(', ')})` : ''}` : 'not run'} |`,
     `| Whisper on the simulator | ${d.whisper ?? 'unknown'} (the real job needs a speech pack; without one it stops before Whisper) |`,
+  );
+  out.push(
+    '',
+    "Not measured here: the input is silent (BlackHole), so this proves refuse-or-plan and lengths, not the decoding of speech; the recorder's clock (`durationMillis`) on finished takes is not compared (DL-01 keeps killed takes, and the stored mark is the progress mark); the samples Core Audio returned and early stops cannot be seen from JavaScript (`decodePcm16` returns a buffer of the requested size), so the length here is the probe's; and the damaged files are the Mac kit's (experiments/README.md section 8).",
   );
   const findings = [
     ...refused.map((r) => `run ${runLabel(r)}: refused (${r.refused})`),
+    ...plannedShort.map((r) => `run ${runLabel(r)}: planned over ${fixed(r.plannedMs, 1)} ms, short of its ${fixed(r.countedMs, 1)} ms of counted frames`),
     ...read.filter((r, i) => vs[i] === 'no').map((r) => `run ${runLabel(r)}: probe ${fixed(r.probeMs, 1)} ms against ${fixed(r.countedMs, 1)} ms of counted frames`),
+    ...enhOff.map((r) => `run ${runLabel(r)}: listening copy ${fixed(r.enhance.copyProbeMs, 1)} ms against the original's ${fixed(r.probeMs, 1)} ms and ${fixed(r.countedMs, 1)} ms of counted frames`),
+    ...enhFailed.map((r) => `run ${runLabel(r)}: no listening copy (${r.enhance.error})`),
     ...runs.filter((r) => r.error).map((r) => `run ${runLabel(r)}: not read (${r.error})`),
+    ...(d.shardErrors ?? []).map((e) => `shard ${e.shard}: the decode launch did not finish (${e.error})`),
   ];
   if (findings.length) {
     out.push('', `**FINDING, to report before any flip (ADR 0027 V2 and V3): ${findings.length}.**`, '');
@@ -817,4 +867,9 @@ function renderDecodeCheck(d) {
     );
   }
   return out;
+}
+
+/** The decode check alone, as Markdown: what the harness prints and appends to the step summary once it ends. */
+export function renderDecodeSection(report) {
+  return report.decodeCheck ? `${renderDecodeCheck(report.decodeCheck).join('\n')}\n` : '';
 }
