@@ -688,7 +688,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Needs: production App Store Connect record, `submit.production.ascAppId`, `EXPO_TOKEN`, production signing credentials in EAS, BL-339.
 
 #### BL-438 Release records (new, D-089)
-- Status: ready. Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
+- Status: in-progress (first alpha-era refresh of `docs/release/1.0.0.md` on branch `docs/release-record-alpha`, 27 Oct; then `ops` keeps it current twice a week). Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: keep `docs/release/1.0.0.md` current twice a week until release; one record per later version; `apple.copyright` once the founder confirms the holder.
 
 #### BL-439 Release health watch (new, D-090)
