@@ -4,7 +4,7 @@ Saturday 24 October 2026. The experience critics' pass over package P4 of `docs/
 
 ## 0. Verdict for B2-10 (P4's share)
 
-**Not signed yet. Two items must be cleared before build 2: M1 fixed, and S9's device check run (and its fix made if it reproduces); with both cleared, P4 is signed for build 2**, provided the ten Should items are fixed or ruled by the coordinator and the device items in section 7 go on the build 2 run sheet. Ranks as the coordinator ruled them on 24 Oct (section 9).
+**Not signed yet. Three items must be cleared before build 2: M1 fixed, the segments item fixed, and S9's device check run (and its fix made if it reproduces). Two are cleared: M1 by #289 and the segments item by #290 (section 9, 27 Oct); with S9 cleared too, P4 is signed for build 2**, provided the ten Should items are fixed or ruled by the coordinator and the device items in section 7 go on the build 2 run sheet. Ranks as the coordinator ruled them on 24 Oct, with the segments item added on 27 Oct (section 9).
 
 P4 is close. The parent at night gets one calm room per moment: Listen is still and honest, the three microphone problems name their real causes, the waiting card never pretends software is writing, Review reads as a letter on a sheet with every mark visible from the first frame, a typed letter keeps with one tap, the save commits before anything moves, and the app lands on the Book in about 1.2 s without a frame of Tonight. The failed save, the failed autosave and the stale link all say the words are safe first and give one way on. Nothing on these screens writes meaning.
 
@@ -12,7 +12,7 @@ M1 is visual but sits on the trust screen: inside the letter, every mark (a stru
 
 | Rank | Count |
 |---|---|
-| Must before build 2 | 2 |
+| Must before build 2 | 3 |
 | Should before build 2 | 10 |
 | Later | 17 |
 | Accept as built | 24 |
@@ -281,6 +281,4 @@ At AX5 (emulated): Listen's pinned Pause, Finish and Let it go end at 848 pt of 
 | S3 | The proposed screen-reader label is sound only with the fix rows starting open: a VoiceOver user then hears the kept words and can reach every removed word as a row | Keep the two halves together in the spec amendment | none needed: section 5's S17 row already carries both halves in one line, and the spec owner applies them together |
 | Segments (added Tue 27 Oct) | The critics' re-check of M1 on #289 (comment 6383654667) found, outside P4c's files, that a mark before a comma lost the comma and the space in Review's "With small fixes" view (`segments()` in `packages/core/src/pipeline.ts`); the saved letter was right | Must before build 2, owner the engine: the re-check's recommendation, ranked Must by the coordinator | Fixed by #290 (012d208, Tue 27 Oct, 1:34 PM PT), display only, `ENGINE_VERSION` 8 unchanged: the runs now join to the saved text byte for byte, pinned by `packages/core/test/segments.test.ts` |
 
-Counts after the rulings: Must 2 (M1, S9), Should 10, Later 17, Accept as built 24. The fix-first three are unchanged: M1, S1, S2.
-
-With the 27 Oct row, the Musts are three: M1, cleared by P4c (#289, c9bc6c0; the re-check above), the segments item, fixed by #290 (012d208), and S9, still open on the build 2 phone list.
+Counts after the rulings and the 27 Oct row: Must 3 (M1 cleared by P4c #289, c9bc6c0; the segments item fixed by #290, 012d208; S9 open on the build 2 phone list), Should 10, Later 17, Accept as built 24. The fix-first three are unchanged: M1, S1, S2.
