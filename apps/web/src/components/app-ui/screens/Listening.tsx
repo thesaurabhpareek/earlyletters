@@ -1,6 +1,6 @@
 'use client';
 /**
- * The Listening screen (DESIGN_LANGUAGE 12, MOTION 5b and 5c) in dark mode: "To Asha", "Listening.",
+ * The Listening screen (DESIGN_LANGUAGE 12, MOTION 5b and 5c) in dark mode: "To Lina", "Listening.",
  * the breathing glow behind the microphone disc (driven by `level`), the elapsed time, and the newest
  * lines of what was heard arriving word by word (driven by `words`). No waveform. The words are the
  * microphone's, as heard: the review scene shows the small fixes later.

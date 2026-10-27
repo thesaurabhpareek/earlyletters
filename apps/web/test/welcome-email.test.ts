@@ -34,7 +34,7 @@ describe('renderWelcomeEmail', () => {
 describe('the letter in the email', () => {
   it('shows only words the sample letter holds', () => {
     expect(sampleLetter.text.startsWith(site.welcomeEmail.letterExcerpt)).toBe(true);
-    expect(sampleLetter.to).toBe('Asha');
+    expect(sampleLetter.to).toBe('Lina');
     expect(site.welcomeEmail.letterTo).toBe(`To ${sampleLetter.to}`);
     expect(site.welcomeEmail.letterFrom).toBe(`From ${sampleLetter.from}`);
   });
