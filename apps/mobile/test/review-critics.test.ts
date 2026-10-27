@@ -126,6 +126,16 @@ describe('[S8] a mark\'s card opens under its own line', () => {
     expect(cardCutAt({ shown, open: 3, lines })).toBe(shown.join('').length); // "your" is on the last line
   });
 
+  it('a mark that ends exactly where its line ends opens its card under that line, not the next (#289 lens A)', () => {
+    // A struck "um," carries the space after it, so its line can end exactly where the mark ends.
+    const words = ['Asha, ', 'um, ', 'today you held the spoon by yourself.'];
+    const lines = ['Asha, um, ', 'today you held the spoon ', 'by yourself.'];
+    expect(lines.join('')).toBe(words.join(''));
+    expect(cardCutAt({ shown: words, open: 1, lines })).toBe(10); // under line 1
+    expect(cardCutAt({ shown: words, open: 0, lines })).toBe(10); // "Asha, " ends inside line 1: under line 1 too
+    expect(cardCutAt({ shown: words, open: 2, lines })).toBe(words.join('').length); // the last word: under the last line
+  });
+
   it('with the lines unknown or not adding up (the web): the cut is the end of the mark\'s sentence', () => {
     const sentence = 'Asha, um, today you held the spoon by yourself. '.length;
     expect(cardCutAt({ shown, open: 1, lines: null })).toBe(sentence);

@@ -24,6 +24,7 @@ export function cardCutAt(input: { shown: readonly string[]; open: number; lines
     let end = 0;
     for (const line of input.lines) {
       end += line.length;
+      // `>=`: a mark that ends exactly at its line's end (a struck word with its space) opens under that line.
       if (end >= markEnd) return end;
     }
     return full.length;
