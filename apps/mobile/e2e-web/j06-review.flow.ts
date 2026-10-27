@@ -17,14 +17,16 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await expect(app.getByText(/^To Asha · /i)).toBeVisible();
   await expect(app.getByText(/^From Mama$/i)).toBeVisible();
   await expect(app.getByTestId('review.trustLine')).toHaveCount(0);
-  await step('happy', 'Review, with a first-time note', 'The letter on a sheet with its header, "TO ASHA · MONTH N" and "FROM MAMA", each small fix marked in the words (taken-out words struck through, a name spelled your way shown after the word heard), the fixes folded behind one row, and the registered one-time note. No reassurance line under the title (S17). ' + NOTE_SEED);
+  await step('happy', 'Review, with a first-time note', 'The letter on a sheet with its header, "TO ASHA · MONTH N" and "FROM MAMA", each small fix marked in the words, in the letter\'s own face (taken-out words struck through, a name spelled your way shown after the word heard), the fixes behind one row (open from the start while a screen reader is on, which the web build always reports), and the registered one-time note. No reassurance line under the title (S17). ' + NOTE_SEED);
   await btn(app, 'Got it').click();
   await step('happy', 'First note dismissed', '"Got it" collapses the note for good.');
 
-  await app.getByTestId('review.count').click();
+  // The rows start open while a screen reader is on (P4 critics' pass S3), and the web build always reports one.
+  const count = app.getByTestId('review.count');
+  if (!(await app.getByTestId('review.fixRow').first().isVisible())) await count.click();
   await app.getByRole('button', { name: /Took out a sound/ }).first().click();
   await expect(btn(app, /Put it back/i)).toBeVisible();
-  await step('happy', 'Why was this changed?', 'Tapping a mark in the letter, or its row behind "N small fixes", says what kind of fix it was, shows the exact words said and how it reads now, and offers to put it back.');
+  await step('happy', 'Why was this changed?', 'Tapping a mark in the letter, or its row behind "N small fixes", opens a card under the mark\'s own line: what kind of fix it was, the exact words said and how it reads now, and an offer to put it back.');
   await btn(app, /Put it back/i).click();
   await expect(app.getByText(/put back/i).first()).toBeVisible();
   await step('happy', 'Put back', 'The original words return, marked for a moment, with Undo beside them.');

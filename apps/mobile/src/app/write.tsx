@@ -9,8 +9,8 @@
  * - Day One / Apple Notes writing surface: no box, the letter face at letter size. The prompt, when there is one,
  *   is the literary line in `prompt` textMuted above the page. Typed text keeps the keyboard's own autocorrect;
  *   the machine never touches it.
- * - Above the keyboard, the two destinations side by side (stacked at accessibility sizes): "Add to Asha's book"
- *   and "Keep private", in the outline style until there is text.
+ * - Above the keyboard, the two destinations stacked as Review's footer is: "Add to Asha's book" full width and
+ *   "Keep private" quiet beneath, off until there is text (P4 critics' pass S2).
  * - "Saved on this phone" is a quiet status after a pause, announced at most every 10 s, and it stays. A write that
  *   fails shows "Not saved yet" in the same place and is tried again on the next pause. Neither is a status colour:
  *   this is lit paper (D-110).
@@ -29,13 +29,13 @@ import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { addButtonLabel, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
-import { Button, ButtonRow } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { announce, useTheme } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
@@ -160,10 +160,30 @@ export default function Write() {
     router.replace({ pathname: '/review', params: { draftId: draftId.current } });
   };
 
+  // At accessibility text sizes the autosave line has its own row under the header, where it can wrap, instead of
+  // running into Close (P4 critics' pass S5).
+  const large = useIsAccessibilitySize();
+
   if (!child) return null;
   const age = ageText(child, todayISO());
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const empty = !text.trim();
+  const status =
+    saveState === 'saved' ? (
+      <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
+        <CheckIcon size={14} color={c.textMuted} weight="bold" />
+        <Text variant="footnote" className="shrink">
+          {pendingCopy.write.savedOnPhone}
+        </Text>
+      </Animated.View>
+    ) : saveState === 'failed' ? (
+      <Animated.View key="failed" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.notSaved">
+        <WarningCircleIcon size={14} color={c.textMuted} weight="bold" />
+        <Text variant="footnote" tone="default" className="shrink">
+          {copy.write.notSaved}
+        </Text>
+      </Animated.View>
+    ) : null;
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -172,24 +192,8 @@ export default function Write() {
       <Stack.Screen options={screenOptions} />
       <Lamp scene="write" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ModalHeader
-          onClose={close}
-          leading={
-            saveState === 'saved' ? (
-              <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
-                <CheckIcon size={14} color={c.textMuted} weight="bold" />
-                <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
-              </Animated.View>
-            ) : saveState === 'failed' ? (
-              <Animated.View key="failed" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.notSaved">
-                <WarningCircleIcon size={14} color={c.textMuted} weight="bold" />
-                <Text variant="footnote" tone="default">
-                  {copy.write.notSaved}
-                </Text>
-              </Animated.View>
-            ) : null
-          }
-        />
+        <ModalHeader onClose={close} leading={large ? null : status} />
+        {large && status ? <View className="px-5 pb-1">{status}</View> : null}
         <ScrollView contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
           <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
             {dateline}
@@ -211,11 +215,11 @@ export default function Write() {
             autoFocus
           />
         </ScrollView>
-        <View className="border-t border-border bg-background px-5 pb-2 pt-3">
-          <ButtonRow>
-            <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
-            <Button variant="quiet" size="lg" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
-          </ButtonRow>
+        {/* Stacked as Review's footer is: "Add to Asha's book" full width, "Keep private" quiet beneath, so the main
+            action never breaks over two lines (P4 critics' pass S2). */}
+        <View className="gap-1 border-t border-border bg-background px-5 pb-2 pt-3">
+          <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
+          <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

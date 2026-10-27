@@ -41,7 +41,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -70,6 +70,9 @@ export default function Listen() {
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
   const child = getActiveChild();
   const reduced = useReducedMotion();
+  // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
+  // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
+  const large = useIsAccessibilitySize();
   const takeId = useRef<string | null>(null);
   const ended = useRef(false);
   const seenLive = useRef(false);
@@ -321,6 +324,25 @@ export default function Listen() {
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
   const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
 
+  // The clock and the room's line: in the room, or pinned with the controls at accessibility sizes (S5).
+  const clockAndLine = (
+    <View className="items-center gap-1" testID="listen.status">
+      {room.clock && (
+        // A recording screen is not a timer (S11): headline, tabular figures, textMuted.
+        <Text variant="headline" tone="muted" className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
+          {elapsedClock(status.durationMillis)}
+        </Text>
+      )}
+      <View className="items-center px-8" accessibilityLiveRegion="polite">
+        {line !== null ? (
+          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
+            {line}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+
   // Design: Voice Memos-simple, Calm-quiet. The glow is the only thing that moves, and
   // only with the voice (MOTION 5b). Controls are static and full strength from frame one (5.8 rule 3).
   // At accessibility text sizes the room scrolls and Pause, Finish and Let it go stay pinned and reachable, as every
@@ -350,7 +372,7 @@ export default function Listen() {
           </View>
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
-            <Text variant="prompt" tone="muted" numberOfLines={3} className="mt-3 text-center" testID="listen.prompt">
+            <Text variant="prompt" tone="muted" numberOfLines={large ? undefined : 3} className="mt-3 text-center" testID="listen.prompt">
               {renderTemplate(prompt, { child: child.name })}
             </Text>
           )}
@@ -371,18 +393,8 @@ export default function Listen() {
               />
             )}
           </View>
-          {room.clock && (
-            // A recording screen is not a timer (S11): headline, tabular figures, textMuted.
-            <Text variant="headline" tone="muted" className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
-              {elapsedClock(status.durationMillis)}
-            </Text>
-          )}
-          <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
-            {line !== null ? (
-              <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
-                {line}
-              </Text>
-            ) : null}
+          {!large && clockAndLine}
+          <View className="items-center gap-1 px-8">
             {room.line === 'listening' && (
               <Text variant="footnote" className="text-center">
                 {t.listeningHint}
@@ -393,6 +405,7 @@ export default function Listen() {
       </ScrollView>
 
       <View className="gap-2 px-5 pb-4">
+        {large && clockAndLine}
         <ButtonRow>
           <Button
             variant="secondary"

@@ -19,8 +19,8 @@
  */
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
-import { useEffect, useRef } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Platform, Pressable, View } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
@@ -29,7 +29,7 @@ import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/l
 import { useReducedMotion } from '@/lib/motion';
 import { fileIntoMonthPlan } from '@/lib/transitions.logic';
 import { LetterHeaderRow, useSheetSurface, type LetterHeader } from './letter-sheet';
-import { momentAnnouncement, savedMomentLeaveInMs } from './review-view.logic';
+import { momentAnnouncement, savedMomentLeaveInMs, type AnnouncementEnd } from './review-view.logic';
 
 /**
  * Lines of the letter shown on the card while it files away: whole lines, then a fade (S21, the excerpt rule). Fewer at
@@ -71,6 +71,9 @@ export function SavedMoment({
   const done = useRef(false);
   // When the save committed: the moment's clock, so a screen-reader answer that arrives later still counts from here.
   const committedAt = useRef<number | null>(null);
+  // iOS says when VoiceOver has finished a sentence (announcementFinished); elsewhere nothing does, and 3 s stands.
+  const [heard, setHeard] = useState(false);
+  const announcement: AnnouncementEnd = Platform.OS !== 'ios' ? 'noSignal' : heard ? 'heard' : 'waiting';
   const finish = () => {
     if (!committed || done.current) return;
     done.current = true;
@@ -82,6 +85,16 @@ export function SavedMoment({
   const lift = useSharedValue(0);
   const fade = useSharedValue(1);
   const chipIn = useSharedValue(0);
+
+  // Listening for the end of the moment's own sentence, from before it is said (this effect runs before the next).
+  useEffect(() => {
+    if (!committed || Platform.OS !== 'ios') return;
+    const sub = AccessibilityInfo.addEventListener('announcementFinished', (e: { announcement?: string }) => {
+      if (e?.announcement === said) setHeard(true);
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committed]);
 
   useEffect(() => {
     if (!committed) return;
@@ -103,16 +116,17 @@ export function SavedMoment({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committed]);
 
-  // Then the Book. With a screen reader on, the moment holds until its announcement can be heard (about 3 s from the
-  // commit). Timed again when the screen-reader state arrives: on Review's path the moment mounts at the commit, while
-  // that state is still unknown (it reads off for a moment), so timing it once would leave after 900 ms with VoiceOver on.
+  // Then the Book. With a screen reader on, the moment holds until its sentence has been said: at least 3 s from the
+  // commit, and on iOS until announcementFinished comes for it, at most about 8 s (S6). Timed again when the
+  // screen-reader state or that event arrives, always counting from the commit: on Review's path the moment mounts at
+  // the commit while the screen-reader state still reads off, so timing it once would leave after 900 ms.
   useEffect(() => {
     if (!committed || committedAt.current === null) return;
-    const wait = savedMomentLeaveInMs({ dismissAtMs: plan.dismissAtMs, screenReader, elapsedMs: Date.now() - committedAt.current });
+    const wait = savedMomentLeaveInMs({ dismissAtMs: plan.dismissAtMs, screenReader, announcement, elapsedMs: Date.now() - committedAt.current });
     const t = setTimeout(finish, wait);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [committed, screenReader]);
+  }, [committed, screenReader, announcement]);
 
   const cardStyle = useAnimatedStyle(() => ({
     opacity: fade.value,

@@ -65,6 +65,7 @@ import {
   countLine,
   letterHeader,
   primaryDestination,
+  reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
   savedMoment,
@@ -134,7 +135,7 @@ import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent'
 import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
@@ -209,6 +210,11 @@ export default function Review() {
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
   // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
   const [fixesOpen, setFixesOpen] = useState(false);
+  // With a screen reader on the rows are the path to every mark, so they start open (P4 critics' pass S3).
+  const screenReader = useScreenReader();
+  useEffect(() => {
+    if (screenReader) setFixesOpen(true);
+  }, [screenReader]);
   // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
   // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
   // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
@@ -710,11 +716,45 @@ export default function Review() {
     );
   }
 
+  // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
+  // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
+  const markCard = openE ? (
+    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+      <Text variant="labelSmall">{labelOf(openE).label}</Text>
+      <Text variant="subhead">{labelOf(openE).explain}</Text>
+      {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
+      {openE.original.trim() !== '' && (
+        <>
+          <Text variant="footnote">{r.cardYouSaid}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
+        </>
+      )}
+      {openE.replacement.trim() !== '' ? (
+        <>
+          <Text variant="footnote">{r.cardNowReads}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+        </>
+      ) : (
+        <Text variant="footnote">{r.cardTakenOut}</Text>
+      )}
+      <ButtonRow>
+        <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
+          <Text>{r.undoEditButton}</Text>
+        </Button>
+        <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+          <Text tone="muted">{copy.common.closeButton}</Text>
+        </Button>
+      </ButtonRow>
+    </Animated.View>
+  ) : null;
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ModalHeader
         onClose={() => router.back()}
-        closeHint={pendingCopy.write.savedOnPhone}
+        // Say what is true: the person's own changes (Change words, a fix put back) are only on this screen until Keep
+        // (P4 critics' pass S1; storing them on the draft is build 3's item, #274 N1).
+        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed }) ? undefined : pendingCopy.write.savedOnPhone}
         leading={
           editing ? (
             // Done sits in the header while editing (S18), and above the keyboard on iOS.
@@ -820,42 +860,15 @@ export default function Review() {
                       edits={view === 'fixes' ? applied : undefined}
                       openEdit={openEdit}
                       restoredIndex={wash ? marker : null}
+                      card={openE && view === 'fixes' ? markCard : null}
+                      accessibilityLabel={finalText}
+                      accessibilityHint={line === 'count' ? countText : undefined}
                       onPressEdit={(i) => {
                         if (i >= applied.length) return;
                         haptic('tap');
                         setOpenEdit(openEdit === i ? null : i);
                       }}
                     />
-                    </Animated.View>
-                  )}
-
-                  {openE && view === 'fixes' && userText === null && (
-                    <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4" testID="review.card">
-                      <Text variant="labelSmall">{labelOf(openE).label}</Text>
-                      <Text variant="subhead">{labelOf(openE).explain}</Text>
-                      {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
-                      {openE.original.trim() !== '' && (
-                        <>
-                          <Text variant="footnote">{r.cardYouSaid}</Text>
-                          <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
-                        </>
-                      )}
-                      {openE.replacement.trim() !== '' ? (
-                        <>
-                          <Text variant="footnote">{r.cardNowReads}</Text>
-                          <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
-                        </>
-                      ) : (
-                        <Text variant="footnote">{r.cardTakenOut}</Text>
-                      )}
-                      <ButtonRow>
-                        <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
-                          <Text>{r.undoEditButton}</Text>
-                        </Button>
-                        <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
-                          <Text tone="muted">{copy.common.closeButton}</Text>
-                        </Button>
-                      </ButtonRow>
                     </Animated.View>
                   )}
 
@@ -958,16 +971,19 @@ export default function Review() {
 /**
  * "With small fixes | Exactly as said" (COMPONENTS 2.19, D-086 5.4). Full width under the card, 44 pt tall, pill
  * shaped. Selected: accentSoft fill, accent edge (stroke.selected) and a check, so it never relies on colour alone.
+ * At accessibility text sizes the two options stack, full width, with no line limit, so neither label is cut
+ * (COMPONENTS 0.1; P4 critics' pass S4).
  */
 function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: ReviewView) => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const r = copy.review;
   const options: { value: ReviewView; label: string }[] = [
     { value: 'fixes', label: r.view.fixes },
     { value: 'exact', label: r.view.exact },
   ];
   return (
-    <View className="flex-row gap-2" accessibilityRole="radiogroup" accessibilityLabel={r.view.a11y} testID="review.view">
+    <View className={stacked ? 'gap-2' : 'flex-row gap-2'} accessibilityRole="radiogroup" accessibilityLabel={r.view.a11y} testID="review.view">
       {options.map((o) => {
         const selected = view === o.value;
         return (
@@ -978,7 +994,7 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
             accessibilityState={{ selected, checked: selected }}
             accessibilityLabel={o.label}
             testID={`review.view.${o.value}`}
-            className="min-h-11 flex-1 flex-row items-center justify-center gap-1.5 px-3 py-2"
+            className={stacked ? 'min-h-11 flex-row items-center justify-center gap-1.5 px-3 py-2' : 'min-h-11 flex-1 flex-row items-center justify-center gap-1.5 px-3 py-2'}
             style={{
               borderRadius: tokens.radius.pill,
               backgroundColor: selected ? c.accentSoft : 'transparent',
@@ -986,7 +1002,7 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
               borderColor: selected ? c.accent : c.controlBorder,
             }}>
             {selected && <CheckIcon size={16} color={c.accent} weight="bold" />}
-            <Text variant="labelSmall" numberOfLines={2} style={{ textAlign: 'center' }}>
+            <Text variant="labelSmall" numberOfLines={stacked ? undefined : 2} className="shrink" style={{ textAlign: 'center' }}>
               {o.label}
             </Text>
           </Pressable>
