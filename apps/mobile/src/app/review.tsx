@@ -668,6 +668,7 @@ export default function Review() {
           childName={child.name}
           lapsed={gate.decision.lapsed}
           lettersKept={gate.lettersKept}
+          heldOn={later ? 'letter' : 'tonight'}
           onHold={() => {
             track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
             router.back(); // the draft stays: Tonight shows "A letter is waiting"; a later letter's words stay on it

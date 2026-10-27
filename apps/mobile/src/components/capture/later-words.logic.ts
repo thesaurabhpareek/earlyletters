@@ -15,7 +15,8 @@ import type { Draft, Entry } from '@/lib/store';
 
 /** The letter as Review's draft, when it is a letter of the author's with words waiting for review; else null. */
 export function laterWordsDraft(e: Entry | null | undefined, own: (e: Entry) => boolean): Draft | null {
-  if (!e || e.kind !== 'letter' || !e.wordsUnreviewed || !e.childId || !own(e)) return null;
+  // Words waiting must be words: the machine's "nobody spoke" result waits as '' and has no Review to open.
+  if (!e || e.kind !== 'letter' || !e.wordsUnreviewed || !e.finalText.trim() || !e.childId || !own(e)) return null;
   return {
     id: e.id,
     childId: e.childId,

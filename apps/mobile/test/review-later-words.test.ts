@@ -32,12 +32,15 @@ const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledge
 const { laterWordsDraft } = await import('../src/components/capture/later-words.logic');
 const { typedFinalText } = await import('../src/components/capture/review-view.logic');
 const { flagReadItBack, isReadItBack } = await import('../src/lib/read-it-back');
+const { takeOwnership } = await import('../src/lib/sync/ownership');
+const { billingCopy } = await import('../src/lib/billing/copy');
 
 const PLUS: PlanView = { state: 'active', effectiveUntil: '2099-01-01T00:00:00Z', verifiedAt: '2026-10-03T00:00:00Z', environment: 'production', isTester: false };
 const now = () => '2026-10-03T09:00:00.000Z';
 let seq = 0;
 const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
 let close: () => void = () => {};
+let raw: ReturnType<typeof nodeDb>['db'];
 let asha = '';
 const own = () => true;
 
@@ -48,6 +51,7 @@ beforeEach(() => {
   store.closeStore();
   const db = nodeDb();
   close = db.close;
+  raw = db.db;
   expect(store.openStore({ open: () => ({ db: db.db, close: () => {} }), now, newId }).ok).toBe(true);
   asha = store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
 });
@@ -67,9 +71,9 @@ function voiceOnly(): string {
   return d.id;
 }
 /** The machine's words arrive later (the transcription queue), and the card is flagged, as the queue does. */
-function wordsArrive(id: string, words: string): void {
+function wordsArrive(id: string, words: string, finalText = words.trim()): void {
   flagReadItBack(id);
-  expect(store.setWordsForWaitingEntry(id, { rawTranscript: words, machineEdits: [] as Edit[], finalText: words.trim(), editLevel: 'verbatim', engineVersion: 5 })).toBe(true);
+  expect(store.setWordsForWaitingEntry(id, { rawTranscript: words, machineEdits: [] as Edit[], finalText, editLevel: 'verbatim', engineVersion: 5 })).toBe(true);
 }
 /** The letter page's Save words: the store write it makes before it opens Review. */
 const saveWords = (id: string, text: string) => store.setTypedWordsForWaitingEntry(id, text);
@@ -105,6 +109,20 @@ describe('[#53] the letter page never counts: it hands the keep to Review', () =
     expect(d).toMatchObject({ id: v, childId: asha, typedText: 'You found your feet.', rawTranscript: 'You found your feet.', state: 'ready' });
     expect(d.audioUri).toMatch(/^file:\/\/\/Documents\//);
     expect(typedFinalText(d.typedText!)).toBe(store.getEntry(v)!.finalText);
+  });
+
+  it('Review shows the stored words, not the raw transcript, when the two differ', async () => {
+    const v = voiceOnly();
+    wordsArrive(v, 'You said \u201Cba\u201D to the cat.', 'You said "ba" to the cat.');
+    expect(laterWordsDraft(store.getEntry(v), own)?.typedText).toBe('You said "ba" to the cat.');
+    expect((await reviewKeep(v, true)).wordsOnScreen).toBe('You said "ba" to the cat.');
+  });
+
+  it('no Review for words waiting that are empty (the machine heard nobody)', () => {
+    const v = voiceOnly();
+    expect(store.setWordsForWaitingEntry(v, { rawTranscript: '', machineEdits: [] as Edit[], finalText: '', editLevel: 'verbatim', engineVersion: 5 })).toBe(true);
+    expect(store.getEntry(v)?.wordsUnreviewed).toBe(true);
+    expect(laterWordsDraft(store.getEntry(v), own)).toBeNull();
   });
 
   it('Review opens only for an own letter with words waiting: not for one still waiting, already kept, or another author', () => {
@@ -152,6 +170,27 @@ describe('[F14-REQ-037] Review\'s Keep step runs for a letter whose words arrive
     h.view = PLUS; // after Plus starts, the person taps Keep in Review again (D-083)
     expect(await reviewKeep(ids[2], true)).toEqual({ outcome: 'kept', noted: false, wordsOnScreen: 'You said ba.' });
     expect(counted()).toBe(3);
+  });
+
+  it('a Keep on a letter already kept changes nothing: not its place, not the count', async () => {
+    const v = voiceOnly();
+    saveWords(v, 'You waved.');
+    await reviewKeep(v, true);
+    expect(store.keepReviewedWords(v, false)).toBe(false);
+    expect(store.getEntry(v)?.inBook).toBe(true);
+    expect(counted()).toBe(1);
+  });
+
+  it('signed in, the place the person chose goes to the outbox with the letter', async () => {
+    takeOwnership(raw, '11111111-1111-1111-1111-111111111111', { now: now(), newId });
+    const v = voiceOnly();
+    saveWords(v, 'You hummed.');
+    await reviewKeep(v, true);
+    const ops = raw.all<{ type: string; payload: string }>("SELECT type, payload FROM sync_outbox WHERE entity_id = ? AND type = 'entry.upsert' ORDER BY seq", v);
+    expect(ops.length).toBeGreaterThan(0);
+    const last = JSON.parse(ops[ops.length - 1].payload) as { changed?: string[]; data: { in_book: boolean; final_text: string } };
+    expect(last.data).toMatchObject({ in_book: true, final_text: 'You hummed.' });
+    expect(last.changed ?? ['in_book']).toContain('in_book');
   });
 
   it('marks only typed on the letter page: Review keeps them with no sheet, no count and no note, past the allowance too', async () => {
@@ -223,6 +262,18 @@ describe('[#53] the letter page and Review are wired this way', () => {
     const helper = between(review, 'function keepLaterLetter(', 'function hasAnyLetter(');
     expect(helper).toMatch(/if \(!keepReviewedWords\(id, inBook\)\) throw/);
     expect(helper).toMatch(/clearReadItBack\(id\)/);
+  });
+
+  it('the Keep sheet says where such a letter\'s words wait, never Tonight', () => {
+    expect(review).toMatch(/heldOn=\{later \? 'letter' : 'tonight'\}/);
+    const gate = read('components/child/plus-gate.tsx');
+    expect(gate).toMatch(/heldOn = 'tonight'/);
+    expect(gate).toMatch(/\{onLetter \? k\.heldNoteLetter : k\.heldNote\}/);
+    expect(gate).toMatch(/offline \? \(onLetter \? k\.offlineLetter : k\.offline\)/);
+    for (const line of [billingCopy.keepGate.heldNoteLetter, billingCopy.keepGate.offlineLetter]) {
+      expect(line).toMatch(/this letter/);
+      expect(line).not.toMatch(/Tonight|phone/);
+    }
   });
 
   it('Review shows such a letter\'s words as stored: no Change words, no other book, and no second letter_saved', () => {
