@@ -8,6 +8,7 @@ import { Linking } from 'react-native';
 import { brand } from '@scribe/brand';
 import { tokens } from '@scribe/design-tokens';
 import { ScribeStore, type OfferCodeOutcome, type RefundOutcome, type StoreSheetOptions, type StoreSheetOutcome } from '../../../modules/scribe-store';
+import { capabilities } from '../capabilities';
 import { APPLE_MANAGE_SUBSCRIPTIONS_URL, APPLE_REPORT_A_PROBLEM_URL, PLUS_PRODUCT_IDS } from './config';
 import { billingCopy } from './copy';
 import { getPlan, refreshPlan, storeViewSupport } from './plan-store';
@@ -63,6 +64,11 @@ export async function presentPlusStore(): Promise<StoreSheetOutcome> {
     const result: StoreSheetOutcome = plusOn(getPlan(), now) ? 'purchased' : outcome;
     if (result === 'purchased' && !hadOwn && ownPlusOn(getPlan(), now)) {
       void reschedulePlanReminders();
+      // D-081: the terms our store sheet showed, for the first status report (WP-F14-15a).
+      if (capabilities.statusReport) {
+        const details = getPlan().details;
+        void import('./status-report.app').then((m) => m.recordPurchaseConsent(details)).catch(() => {});
+      }
       try {
         router.push(CONFIRMATION_ROUTE);
       } catch {

@@ -11,7 +11,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
-import type { ExportSnapshot, SnapshotEntry } from '../../src/lib/export/build.logic';
+import { phoneConsent, type ExportSnapshot, type SnapshotEntry } from '../../src/lib/export/build.logic';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -128,5 +128,7 @@ export function ashaSnapshot(): ExportSnapshot {
       entry({ id: 'e9', occurredOn: '2027-03-10', captureMode: 'typed', finalText: 'One year and two days. You walked to the door and waved.', editLevel: 'verbatim' }),
       entry({ id: 'd1', childId: DEV, occurredOn: '2025-01-05', captureMode: 'typed', finalText: 'First snow.', editLevel: 'verbatim' }),
     ],
+    // The 18+ gate was answered yes; v1.0 never asks about usage sharing.
+    consent: phoneConsent(true, null),
   };
 }

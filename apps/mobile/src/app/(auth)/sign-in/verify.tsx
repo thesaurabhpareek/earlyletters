@@ -1,8 +1,16 @@
 // android: same
 /**
  * The email link opened the app (PRD A F5): +native-intent kept the token
- * hash in memory and routed here. Verify it once, then consent. An expired or
- * used link offers the code from the same email, or a new email (A-REQ-024).
+ * hash in memory and routed here. Open it once, then consent and the claim
+ * screen. An expired or used link offers the code from the same email, or a
+ * new email (A-REQ-024).
+ *
+ * BL-347 (security review H1): a link opens only when this phone asked for
+ * the email, and then only through PKCE; never while someone is signed in.
+ * Otherwise the screen says so calmly under its own heading: the code from
+ * the same email (F02-U11), or, when someone is already signed in here, sign
+ * out and type the code (F02-U27; sign-out drops this phone's pending request,
+ * so the same link never works after it).
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -12,13 +20,15 @@ import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { authErrorMessage } from '@/lib/auth/messages';
 import { takePendingAuthLink } from '@/lib/auth/pending';
 import { useAuth } from '@/lib/auth/session-provider';
-import { Busy, ErrorLine, QuietButton, SheetFrame, SheetTitle } from '@/lib/auth/ui';
+import { Busy, ErrorLine, QuietButton, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 
 export default function VerifyLink() {
   const auth = useAuth();
+  const close = useCloseSheet();
   const v = authCopy.verify;
   const [error, setError] = useState<AuthErrorKind | null>(null);
   const started = useRef(false);
+  const refused = error === 'other_phone' || error === 'already_signed_in';
 
   useEffect(() => {
     if (started.current) return;
@@ -38,12 +48,18 @@ export default function VerifyLink() {
 
   return (
     <SheetFrame>
-      <SheetTitle>{v.title}</SheetTitle>
+      <SheetTitle>{refused ? v.refusedTitle : v.title}</SheetTitle>
       {error ? (
         <View className="gap-3">
           <ErrorLine message={authErrorMessage(error)} />
-          <QuietButton label={v.typeCode} onPress={() => router.replace('/sign-in/code')} />
-          <QuietButton label={v.newEmail} onPress={() => router.replace('/sign-in/email')} />
+          {error === 'already_signed_in' ? (
+            <QuietButton label={v.close} onPress={close} />
+          ) : (
+            <>
+              <QuietButton label={v.typeCode} onPress={() => router.replace('/sign-in/code')} />
+              <QuietButton label={v.newEmail} onPress={() => router.replace('/sign-in/email')} />
+            </>
+          )}
         </View>
       ) : (
         <Busy label={v.title} />

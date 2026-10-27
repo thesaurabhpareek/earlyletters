@@ -1,6 +1,6 @@
 # Runbook: an account deletion has not finished
 
-Alerts that point here: `request_stuck`, `step_failed`, `step_retrying`, `residue`, `apple_no_token`, `holds_review`. Also use it when someone writes in saying their account still exists after 30 days.
+Alerts that point here: `request_stuck`, `step_failed`, `step_retrying`, `residue`, `apple_no_token`, `holds_review`, `pepper_missing`. Also use it when someone writes in saying their account still exists after 30 days.
 
 Promise being protected (data-policy section 5, DATA-REQ-036): live systems within 31 days of the request, backups within 38, processors within 45. The worker retries every step from 1 minute up to every 6 hours for 7 days, then marks it `failed` and stops that request.
 
@@ -62,7 +62,26 @@ select public.ops_storage_owned_by('<former profile id>', 100);
 ```sql
 select scope, reason_code, matter_ref, placed_at, review_by from legal_holds where released_at is null;
 ```
-A held request waits on purpose (DATA-REQ-035). When counsel releases the hold: `update legal_holds set released_at = now(), released_by = '<handle>' where id = '<hold>';` and the next hourly purge moves the request on. `holds_review` means a hold passed its `review_by` date: ask counsel, then extend `review_by` or release.
+Which holds block one held request: holds on the person, on a book deleted with the request, on their own letters, held drafts and backups and the books those are in, and on anyone's letter in a book deleted with the request or its author (20261023020000). A hold on a former member's own row in a kept book is listed but does not block. If it lists nothing, the hold is on the book or owner of a Storage object, or on a book that became theirs alone during the grace period.
+```sql
+with r as (select id, profile_id p from deletion_requests where id = '<request>'),
+     b as (select c.id from children c, r where c.deletion_request_id = r.id and c.purged_at is null),
+     named (why, id) as (
+       select 'the person', p from r
+       union all select 'a book deleted with the request', id from b
+       union all select 'their letter', e.id from entries e, r where e.author_id = r.p
+       union all select 'a book with their letter', e.child_id from entries e, r where e.author_id = r.p
+       union all select 'their held draft', h.id from held_drafts h, r where h.author_id = r.p
+       union all select 'a book with their held draft', h.child_id from held_drafts h, r where h.author_id = r.p
+       union all select 'their backup', a.entry_id from audio_blobs a, r where a.author_id = r.p
+       union all select 'a book with their book key', k.child_id from child_keys k, r where k.profile_id = r.p
+       union all select 'a letter in a book deleted with the request', e.id from entries e join b on b.id = e.child_id
+       union all select 'an author in a book deleted with the request', e.author_id from entries e join b on b.id = e.child_id)
+select distinct h.id, h.scope, h.matter_ref, h.review_by, n.why
+  from legal_holds h join named n on n.id = h.scope_id
+ where h.released_at is null;
+```
+A held request waits on purpose (DATA-REQ-035). When counsel releases the hold: `update legal_holds set released_at = now(), released_by = '<handle>' where id = '<hold>';` and the next purge run (the worker runs every 15 minutes) moves the request on. `holds_review` means a hold passed its `review_by` date: ask counsel, then extend `review_by` or release.
 
 ## 6. `residue`: verification found something
 
@@ -76,6 +95,10 @@ node scripts/ops/verify-deletion.ts --project-ref <ref> --ticket <ticket> --prof
 ## 7. `apple_no_token`
 
 Informational: the person signed in with Apple but we hold no refresh token (the sign-in exchange failed or predates the `apple-token` function). Deletion completed; the receipt says `apple: no_token`. Nothing to revoke from our side. If this appears for new accounts, the capture side is broken (SECURITY.md 5).
+
+## 7a. `pepper_missing`: the consent pepper is not set
+
+An account deletion is waiting or running and `app.consent_pepper` is missing or shorter than 32 characters. Since `20261015010000` (BL-334) deleting a profile that has policy acceptances fails closed with `55000`, so the `auth_user` step retries instead of storing reversible hashes; Supabase Auth reports it only as a database error. Fix: set the pepper once as in `supabase/APPLY.md` step 6 (never change it afterwards), confirm `select public.consent_pepper_ready();` returns true as the service role, then retry as in section 3. The alert clears on the next worker run.
 
 ## 8. When the published deadline will be missed
 

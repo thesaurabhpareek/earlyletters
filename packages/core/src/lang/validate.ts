@@ -281,13 +281,24 @@ export function validatePack(input: unknown, opts: { expectLanguage?: LanguageCo
   const m = input.meaning;
   const meaningSets: Record<string, Set<string>> = {};
   if (
-    c.table(m, '$.meaning', [
-      'negations', 'negationSuffixes', 'negationPrefixes', 'modals', 'numberWords', 'functionWords', 'pronouns', 'kinship', 'alwaysCapitalized',
-      'agreementGroups', 'tenseGroups', 'agreementInflections', 'vowels', 'minStem', 'tenseEndings', 'stemDropFinal',
-    ])
+    c.table(
+      m,
+      '$.meaning',
+      [
+        'negations', 'negationSuffixes', 'negationPrefixes', 'modals', 'numberWords', 'functionWords', 'pronouns', 'kinship', 'alwaysCapitalized',
+        'agreementGroups', 'tenseGroups', 'agreementInflections', 'vowels', 'minStem', 'tenseEndings', 'stemDropFinal',
+      ],
+      ['commonWords'],
+    )
   ) {
     for (const k of ['negations', 'modals', 'numberWords', 'functionWords', 'pronouns', 'kinship', 'alwaysCapitalized']) {
       meaningSets[k] = new Set(c.words(m[k], `$.meaning.${k}`));
+    }
+    // Everyday words that are also names (F06-REQ-008): one word each, lowercase, like every word table.
+    if (m.commonWords !== undefined) {
+      c.words(m.commonWords, '$.meaning.commonWords');
+      // An interpreter older than 2 does not know this table: the pack must say so, so that app refuses it cleanly.
+      if (typeof input.engine === 'number' && input.engine < 2) c.err('$.meaning.commonWords', 'needs_engine_2');
     }
     if (c.array(m.negationSuffixes, '$.meaning.negationSuffixes', 8)) m.negationSuffixes.forEach((s, i) => c.str(s, `$.meaning.negationSuffixes[${i}]`, 8));
     if (c.array(m.negationPrefixes, '$.meaning.negationPrefixes', 8)) m.negationPrefixes.forEach((s, i) => c.str(s, `$.meaning.negationPrefixes[${i}]`, 8));

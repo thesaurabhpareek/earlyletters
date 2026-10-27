@@ -18,11 +18,12 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
-- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** under "Check-ins" in `BOARD.md`:
-  `HH:MM <agent> | done: … | next: … | blocked/needs: …`
-- Before each check-in, read the last 20 check-ins. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
+- Every ~20 tool calls or ~30 minutes, append **at most 3 lines** to your own check-in file, `docs/agents/checkins/<agent>.md`, named after the agent in your claim line (for example `S10.md` or `experience-p1-visual-system.md`; create it on your first check-in). Time is UTC, from `date -u`:
+  `HH:MM (DD Mon) <agent> | done: ... | next: ... | blocked/needs: ...`
+- Never append check-ins to `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section in `BOARD.md` stays as history.
+- Before each check-in, read the newest check-ins on every branch: `git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' && git log --remotes -n 20 -p --format='%h %ci %s' -- docs/agents/checkins/`. File times in a fresh clone are checkout times, so don't sort by them. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
 - When you finish, change your claim to `done` and put a pointer to your report in the claim line.
-- Keep `BOARD.md` edits append-only, except your own claim line. Re-read the file right before writing.
+- In `BOARD.md`, add your claim line when you start (section 2); after that, change only your own claim line. Re-read the file right before writing.
 
 ## 4. One answer per question: propose, debate, converge
 Some choices shape other people's work: a library, a data shape, an API contract, a naming scheme, a UX pattern, a copy convention, a folder layout. For those:
@@ -49,10 +50,11 @@ Never copy a constant, type, colour or string into a second place. Import it.
 ## 6. Releases: one train, no surprise publishes
 - **Agents never commit, push, deploy, publish packs or config, apply migrations, change DNS or send email to real people.**
 - **Integration happens per wave.** Agents finish and the coordinator runs all checks (`npm test`, `npm run test:db`, mobile `tsc`, the Deno tests). Green means a commit on the wave branch `auto/<date>-<topic>`, then a merge to `develop`, then push.
-- **`main`** changes only through a release PR from `develop`, approved by the founder. Tags are `ios-v<x.y.z>`. EAS builds come only from tagged commits.
+- **`main`** changes only through a release PR from `develop`, approved by the founder. Store builds come only from tagged commits: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate; `ios-v<x.y.z>` marks the candidate that was released. Preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`). Details: ADR 0022, `docs/ops/RELEASE.md`.
 - **Live migrations:** the founder applies them in the order given in `supabase/APPLY.md`. Every applied file is added to `.github/migrations-applied.txt`. Applied migrations are never edited.
-- **Packs, remote config, content:** signed and published only via `scripts/packs/publish.ts` by the coordinator, with the founder's OK. Git history is the audit log.
+- **Packs, remote config, content (D-115):** the founder creates and holds the pack signing keys (`node scripts/packs/keygen.mjs`, then `--backup`) and publishes on one computer with `scripts/packs/publish.ts`: `release` (it signs the pack manifest, the remote config and the content bundle, English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job uploads a release or reads the signing or upload secrets, and the coordinator never holds a key. The signed English pack release is a build 1 prerequisite, and the preflight FAILs both alpha builds until the public keys and the published manifest are merged. A non-English pack ships only when a native reviewer and the founder say so. Git history is the audit log.
 - **Website (other thread):** serves `docs/ops/well-known/*` and the legal pages at the URLs in `packages/brand`. Changes to those URLs or files are coordinated on the board first.
+- **Merging into `develop` (D-107, D-117):** the coordinator may merge a pull request that changes app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests once two independent review agents pass it and CI is green on its head (D-107). D-117 records the founder's blanket approval of 23 Oct 2026 in the founder's words, and under it the coordinator's operating rule (the coordinator's, not the founder's words; the founder may reverse any of it): the coordinator also merges the founder-only path classes of D-107, which are `supabase/**` (database, migrations, access rules), auth, payments (billing, StoreKit, `packages/core/src/plan.ts`), `.github/**`, `apps/mobile/eas.json` and `apps/mobile/app.config.ts`, the engine files (`EditType`, `verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`), and production deploys of the alpha queue. A merge needs two independent passing reviews on the current head and green CI (`npm run test:db` green for database pull requests). Steps that only the founder can perform stay the founder's, as a matter of fact: applying migrations to the hosted projects; the Apple, Expo, Supabase and Vercel accounts and their secrets; the signing and escrow keys. Legal text is counsel's to sign. Production deploys outside the alpha queue (the website on `main`, the App Store, TestFlight external groups) stay the founder's approval (D-107).
 
 ## 7. Cross-thread coordination
 - Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `BOARD.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
@@ -64,3 +66,13 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - Tests sit next to their workspace's `test/` folder, so the workspace's test runner picks them up.
 - Scratch output, screenshots and previews go in the session scratchpad, never in the repo.
 - Reports are short: files changed, test results, what needs a device, what the founder must do, requests to other owners, and facts versus assumptions.
+
+## 9. Writing for the founder
+This covers anything the founder reads: PR descriptions, reports, status updates, the program status sheet and plan docs. Write like an experienced technical and business program manager.
+- Lead with status and the ask. A date is On track, At risk or Off track, with the reason in one line.
+- Use numbers, dates, owners and links, not adjectives. Keep sentences short and words plain.
+- No filler or hype: not "leverage", "robust", "seamless", "comprehensive", "crucial", "delve", "ensure", "streamline", "holistic", "utilize", "empower" or "unlock".
+- Times are in Pacific time with the day, for example "Tue 27 Oct, 5:00 AM PT". Convert UTC times from the repo.
+- Say "unverified" when it is. Don't hedge what you checked.
+- A decision for the founder comes with a recommendation and the date it's needed.
+- Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.
