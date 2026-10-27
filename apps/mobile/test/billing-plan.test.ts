@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import type { NativeEntitlementSnapshot, NativeStatus, NativeTransaction } from '../modules/scribe-store/types';
 import { periodOf, PLUS_PRODUCT_IDS } from '../src/lib/billing/config';
 import { billingCopy } from '../src/lib/billing/copy';
+import { APP_STORE_PLUS } from '../../../packages/content/src/pricing';
 import {
   EMPTY_PLAN,
   isJoinedBook,
@@ -186,6 +187,17 @@ describe('snapshot validation and the device cache', () => {
     expect(sameEntitlements(snap([tx()]), snap([tx({ expiresAt: at(50) })]))).toBe(false);
     expect(sameEntitlements(null, null)).toBe(true);
   });
+
+  it('[G-15] the first purchase date survives the cache and counts as a change (the yearly reminder\'s anniversary)', () => {
+    const first = tx({ originalPurchasedAt: at(-400) });
+    const s = snap([first], [status()]);
+    expect(parsePlanCache(serializePlanCache(s))?.entitlements[0].originalPurchasedAt).toBe(at(-400));
+    expect(planFromSnapshot(s).details).toMatchObject({ purchasedAt: at(-10), originalPurchasedAt: at(-400) });
+    expect(planFromSnapshot(snap([tx()])).details.originalPurchasedAt).toBeNull();
+    // A corrected first-purchase date from StoreKit is a change worth re-caching and re-planning.
+    expect(sameEntitlements(s, snap([tx({ originalPurchasedAt: at(-30) })], [status()]))).toBe(false);
+    expect(sanitizeSnapshot({ ...s, entitlements: [{ ...first, originalPurchasedAt: 'yesterday' }] })?.entitlements[0].originalPurchasedAt).toBeUndefined();
+  });
 });
 
 const ACTIVE = planFromSnapshot(snap([tx()])).view;
@@ -250,6 +262,24 @@ describe('products and the StoreKit configuration file', () => {
     expect(byId['plus.annual'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P2M', numberOfPeriods: 1 });
     expect(periodOf('plus.monthly')).toBe('month');
     expect(periodOf('plus.annual')).toBe('year');
+  });
+
+  it('[D-077, F14-REQ-030] names and descriptions match what App Store Connect gets, within Apple\'s limits, and promise only v1.0', () => {
+    const subs = file.subscriptionGroups[0].subscriptions as Array<{ productID: string; referenceName: string; localizations: Array<{ displayName: string; description: string }> }>;
+    const byId = Object.fromEntries(subs.map((x) => [x.productID, x]));
+    const meta = { 'plus.monthly': APP_STORE_PLUS.monthly, 'plus.annual': APP_STORE_PLUS.annual } as const;
+    for (const id of PLUS_PRODUCT_IDS) {
+      const want = meta[id];
+      expect(byId[id].referenceName).toBe(want.referenceName);
+      expect(byId[id].localizations[0]).toMatchObject({ displayName: want.displayName, description: want.description });
+      expect(want.displayName.length).toBeGreaterThanOrEqual(2);
+      expect(want.displayName.length).toBeLessThanOrEqual(30);
+      expect(want.description.length).toBeLessThanOrEqual(45);
+      expect(want.description).not.toMatch(/Read together|book|backup|theme|free|\$/i);
+    }
+    expect(file.subscriptionGroups[0].name).toBe(APP_STORE_PLUS.group.referenceName);
+    // The confirmation sheet and the emails name the plan the same way (D-077).
+    expect([APP_STORE_PLUS.monthly.displayName, APP_STORE_PLUS.annual.displayName]).toEqual([billingCopy.confirmation.planMonthly, billingCopy.confirmation.planAnnual]);
   });
 });
 

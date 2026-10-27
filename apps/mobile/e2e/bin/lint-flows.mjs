@@ -26,6 +26,11 @@ try {
 const E2E = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 const ALWAYS_OK = new Set(['e2e.wait.never']); // waited on on purpose, never present
+// The five P0 flows that run nightly (PRD V2 08 section 3.3 S19; R5 EQ-10). Each
+// must keep at least one flow file tagged `p0-nightly` (bin/run-p0-nightly.sh).
+const P0_TAG = 'p0-nightly';
+const P0_FLOWS = ['E2E-01', 'E2E-03', 'E2E-12', 'E2E-13', 'E2E-17'];
+const p0Seen = new Set();
 
 // Requested ids: every backticked token in TESTID_REQUESTS.md that looks like an id.
 const requests = readFileSync(join(E2E, 'TESTID_REQUESTS.md'), 'utf8');
@@ -83,8 +88,12 @@ function lintFile(path, { isFlow }) {
     const tags = config.tags ?? [];
     const e2eId = /E2E-(\d\d)/.exec(rel)?.[0];
     if (!e2eId || !tags.includes(e2eId)) problems.push(`${rel}: tags must include ${e2eId ?? 'its E2E id'}`);
-    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$/.test(t)))
+    // PRD V2 requirement ids (F##-REQ-###) count as well as the legacy ones.
+    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA|F\d\d)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$/.test(t)))
       problems.push(`${rel}: tags name no requirement or decision id`);
+    if (tags.includes(P0_TAG) && !P0_FLOWS.includes(e2eId))
+      problems.push(`${rel}: tagged ${P0_TAG} but ${e2eId} is not one of the P0 nightly flows (${P0_FLOWS.join(', ')})`);
+    if (tags.includes(P0_TAG)) p0Seen.add(e2eId);
   }
   walk(commands, (o) => {
     if (typeof o.id === 'string' && !isRequested(o.id)) problems.push(`${rel}: id "${o.id}" is not in TESTID_REQUESTS.md`);
@@ -104,6 +113,10 @@ const ids = new Set(flows.map((f) => /E2E-(\d\d)/.exec(f)?.[0]));
 for (let n = 1; n <= 15; n++) {
   const id = `E2E-${String(n).padStart(2, '0')}`;
   if (!ids.has(id)) problems.push(`no flow for ${id}`);
+}
+for (const id of P0_FLOWS) {
+  if (!ids.has(id)) problems.push(`no flow for P0 nightly flow ${id}`);
+  else if (!p0Seen.has(id)) problems.push(`${id} has no flow tagged ${P0_TAG}`);
 }
 
 // Report only: which ids the flows use that the app does not set yet (template

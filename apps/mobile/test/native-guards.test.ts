@@ -89,8 +89,9 @@ describe('module API parity (ADR 0013: one JavaScript path)', () => {
   it('iOS, Android and the TypeScript declaration expose the same ScribeStore functions', () => {
     const ios = functions(store);
     expect(functions(kotlinStore)).toEqual(ios);
-    for (const name of ios) expect(tsStore, name).toMatch(new RegExp(`\\b${name}\\(`));
-    expect(ios).toEqual(['beginRefundRequest', 'currentEntitlements', 'presentOfferCodeRedeemSheet', 'presentSubscriptionStore', 'showManageSubscriptions', 'startTransactionListener', 'storeViewSupport', 'sync']);
+    // `name?(` is an optional declaration: a build whose native half predates it reads as absent (statusReportRefs, WP-F14-15a).
+    for (const name of ios) expect(tsStore, name).toMatch(new RegExp(`\\b${name}\\??\\(`));
+    expect(ios).toEqual(['beginRefundRequest', 'currentEntitlements', 'presentOfferCodeRedeemSheet', 'presentSubscriptionStore', 'showManageSubscriptions', 'startTransactionListener', 'statusReportRefs', 'storeViewSupport', 'sync']);
   });
 
   it('only product ids, dates and flags cross into JavaScript', () => {

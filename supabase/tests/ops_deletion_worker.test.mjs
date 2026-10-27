@@ -220,8 +220,10 @@ const byBucket = await j(`select public.ops_incident_scope($1) v`, [JSON.stringi
 check('incident by bucket: photo owners listed with photo counts', byBucket.profiles.some((p) => p.profile_id === S2 && p.photos === 1)
   && byBucket.totals.photos >= 2);
 const all = await j(`select public.ops_incident_scope('{"all": true}') v`);
+// escrow_present follows the schema: true once the backup migration (S05) has created child_keys.
 check('incident "all": every remaining person, flags for audio and escrow', all.totals.profiles === (await sys(`select count(*)::int n from profiles`)).rows[0].n
-  && all.audio_on_server === false && all.escrow_present === false);
+  && all.audio_on_server === false
+  && all.escrow_present === (await sys(`select to_regclass('public.child_keys') is not null v`)).rows[0].v);
 check('incident output carries no content', !JSON.stringify(all).includes('Asha') && !JSON.stringify(all).includes('laughed'));
 check('incident scope rejects unknown tables', (await codeOf(() => sys(`select public.ops_incident_scope('{"tables": ["entries; drop table x"]}')`))) === '22023');
 

@@ -12,26 +12,28 @@ Labels used below: **Verified** means checked on 3 Oct 2026 against the source o
 |---|---|---|---|---|
 | Pull request | PR that changes `supabase/**` | `.github/workflows/db-cli.yml` | `supabase start`, `supabase db reset --local`, `supabase db lint --local --level error --fail-on error`, `npm run test:db` | No |
 | Nightly | 10:23 UTC daily, or by hand | `.github/workflows/nightly.yml` | Verifier fuzz with a random seed (100000 runs), then the same checks as `db-cli.yml` | No |
-| Staging | Push to `main` that changes `supabase/migrations/**` | `.github/workflows/deploy-db.yml`, job `deploy to staging` | `supabase db push --dry-run`, then `supabase db push` | `scribe-staging` |
-| Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `production` Environment, then dry run, then push | `scribe-prod` |
+| Staging | Push to `develop` that changes `supabase/migrations/**` (RA-20-04), or a manual run (Run workflow) on `develop` as the catch-up. Staging follows `develop` only: a push to `main` deploys nothing to a database | `.github/workflows/deploy-db.yml`, job `deploy to staging` | After the `staging` reviewer approves: `supabase db push --dry-run`, then `supabase db push`, applied from **`develop`'s tip** (so a later run never applies older migrations); then the smoke's database checks | `scribe-staging` |
+| Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `db-production` Environment, then dry run, then push | `scribe-prod` |
+| Edge Functions | Push to `develop` that changes a function's code, or a manual run on `develop` | `.github/workflows/deploy-functions.yml`, jobs `what to deploy`, then `deploy to staging` | Waits in `staging`; checks staging has every migration on `develop`, deploys every function except `escrow` from `develop`'s tip, checks the function list, then the smoke's health checks (see "Edge Functions to staging") | Reads `supabase_migrations.schema_migrations` only |
 
-Rules the workflows enforce:
+Rules the database workflows enforce (`deploy-functions.yml` has its own, in "Edge Functions to staging", and is the one workflow that holds an access token):
 - Every deploy job has `permissions: contents: read` and checks out without persisting credentials.
 - Each environment has its own concurrency group (`deploy-db-staging`, `deploy-db-production`) with `cancel-in-progress: false`, so a running push is never cancelled halfway.
 - The only credential is one Postgres connection URL per environment, stored as an Environment secret. There is no `SUPABASE_ACCESS_TOKEN` anywhere (POPS-04), so CI cannot create, delete, pause or reconfigure projects, and cannot run `supabase link` or `supabase config push`.
-- The production job refuses a tag whose commit is not on `main`.
+- The production job refuses a tag whose commit is not on `main`, and runs only on a tag **push**: a manual run never reaches production.
+- A manual run deploys `develop`'s tip to staging and fails on any other branch or tag.
 - After a push, the job prints (and writes to the run summary) every migration file not yet listed in `.github/migrations-applied.txt`. It never edits that file. A pull request records them (see "After a deploy").
-- The Supabase CLI is pinned to 2.119.0 in all three workflows, installed by `supabase/setup-cli` pinned to the v3.0.1 commit. Bump both deliberately.
+- The Supabase CLI is pinned to 2.119.0 in all four workflows (`db-cli.yml`, `nightly.yml`, `deploy-db.yml`, `deploy-functions.yml`), installed by `supabase/setup-cli` pinned to the v3.0.1 commit. Bump both deliberately.
 
-Why the staging trigger is not a `paths:` filter: `deploy-db.yml` triggers on every push to `main` and on `db-v*` tags, and a small `migrations changed` job diffs the push for `supabase/migrations/`. This keeps tag pushes from ever being filtered out by a path rule.
+Why the staging trigger is not a `paths:` filter: `deploy-db.yml` triggers on every push to `develop` and on `db-v*` tags, and a small `migrations changed` job diffs the push for `supabase/migrations/`. This keeps tag pushes from ever being filtered out by a path rule.
 
 ## Environments
 
 | Environment | Supabase project | Supabase org | GitHub Environment | Secret |
 |---|---|---|---|---|
 | Local | the CLI stack from `supabase/config.toml` (`project_id = "scribe"`) | none | none | none |
-| Staging | `scribe-staging` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `staging` | `SUPABASE_DB_URL_STAGING` |
-| Production | `scribe-prod` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `production` | `SUPABASE_DB_URL_PROD` |
+| Staging | `scribe-staging` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `staging` | `SUPABASE_DB_URL_STAGING`; for the smoke and the functions also `SUPABASE_STAGING_URL`, `SUPABASE_STAGING_PUBLISHABLE_KEY`, `SUPABASE_STAGING_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN_STAGING` (see "The content-free smoke" and "Edge Functions to staging") |
+| Production | `scribe-prod` (**does not exist yet**) | "Early Letters" (**does not exist yet**) | `db-production` | `SUPABASE_DB_URL_PROD` |
 
 The current live project `early-letters` (ref `fpkxggtzwoumdghwzlsl`, us-west-1, org "ParentingApp") is **slated for retirement, pending the founder's decision**. Nothing in this pipeline points at it. Until it is retired, `supabase/APPLY.md` remains its manual process, and `.github/migrations-applied.txt` still describes it (2 of 7 files applied there). Both new projects are built clean from the migrations by CI, never by pasting SQL or inserting rows into `supabase_migrations.schema_migrations` by hand.
 
@@ -59,15 +61,15 @@ Do these in order. None of them can be done by CI or by an agent.
 Settings > Environments.
 
 1. **`staging`**
-   - Deployment branches and tags: "Selected branches and tags", add branch `main`.
+   - Deployment branches and tags: "Selected branches and tags", add branch `develop` only. Staging follows `develop`; nothing from `main` deploys to it.
    - Environment secret `SUPABASE_DB_URL_STAGING` = the staging session pooler URL.
-   - No reviewers needed.
-2. **`production`**
+   - Required reviewers: you, while staging holds the alpha's real letters (D-106, `docs/ops/ENVIRONMENTS.md`), so a manual run from `develop` waits for your approval. Leave "Prevent self-review" off while you are the only reviewer.
+2. **`db-production`** (not `production`: GitHub matches environment names without regard to case, and `production` resolves to the `Production` environment that Vercel's deployments created; SR-2 in `docs/security/SECRETS_REVIEW.md`, on #206 until it merges)
    - Required reviewers: you. Leave "Prevent self-review" off while you are the only reviewer, or nobody can approve.
    - Deployment branches and tags: "Selected branches and tags", add a **tag** rule `db-v*`. Remove any branch rule.
    - Environment secret `SUPABASE_DB_URL_PROD` = the production session pooler URL.
 3. Do **not** create repository-level secrets with these names. Environment secrets are released only to a job that names the environment, and for production only after you approve the run.
-4. Create both Environments before the first migration reaches `main`. If a workflow names an Environment that does not exist, GitHub creates it without any protection (**Assumed**, standard GitHub behaviour), and the job then fails on the missing secret check.
+4. Create both Environments before the first migration reaches `develop`. If a workflow names an Environment that does not exist, GitHub creates it without any protection (**Assumed**, standard GitHub behaviour), and the job then fails on the missing secret check.
 5. Required reviewers on Environments for a **private** repository may need a paid GitHub plan (**Assumed**, not checked; the repo is public today and the GitHub Pro decision is open).
 
 ### 3. Protect the tags
@@ -76,7 +78,7 @@ Settings > Rules > Rulesets > New tag ruleset:
 - Target tags matching `db-v*`.
 - Restrict creations, updates and deletions; bypass list: repository admin (you).
 
-This stops anyone else from creating a production tag. The production Environment's reviewer approval is the second gate.
+This stops anyone else from creating a production tag. The `db-production` Environment's reviewer approval is the second gate.
 
 ### 4. Per-environment database settings
 
@@ -88,19 +90,19 @@ Brief decision 4: Sign in with Apple, Sign in with Google, email magic link, no 
 
 ## Tagging flow (a normal release)
 
-1. Merge the migration into `develop` through a PR. `db-cli.yml` and `CI` must pass; the fence needs the `approve-migration` label (D-041).
-2. Open the release PR from `develop` into `main` and merge it.
-3. The push to `main` runs `deploy to staging`: dry run, then push to `scribe-staging`. Read the run summary for the list of files to record.
-4. Check staging (the app against staging, Supabase advisors, the checks in `supabase/APPLY.md` that apply to the new files).
-5. Open a PR that adds the listed file names to `.github/migrations-applied.txt` (see "After a deploy").
-6. Tag the commit on `main` that staging received, and push the tag:
+1. Merge the migration into `develop` through a PR: after two independent passing reviews on the current head, with green CI (`db-cli.yml` and `CI`), the coordinator merges it (D-117; the `approve-migration` label of D-041 is no longer used).
+2. The push to `develop` runs `deploy to staging` after you approve it: dry run, then push to `scribe-staging`. Read the run summary for the list of files to record.
+3. Check staging (the app against staging, Supabase advisors, the checks in `supabase/APPLY.md` that apply to the new files).
+4. Open a PR that adds the listed file names to `.github/migrations-applied.txt` (see "After a deploy").
+5. Open the release PR from `develop` into `main` and merge it. The push to `main` deploys nothing to a database.
+6. Production, from AF-42 on (after the alpha): tag the commit on `main` that carries the migrations staging received, and push the tag:
    ```bash
    git fetch origin
    git tag -a db-v2026.10.12.1 -m "DB: <one line>" <commit on origin/main>
    git push origin db-v2026.10.12.1
    ```
    Suggested name: `db-v<year>.<month>.<day>.<n>`. Any name starting with `db-v` triggers the job.
-7. Actions > Deploy database > the tag's run: read the dry run in staging's run, then approve the `production` deployment. The job checks the tag is on `main`, runs the dry run, then pushes.
+7. Actions > Deploy database > the tag's run: read the dry run in staging's run, then approve the `db-production` deployment. The job checks the tag is on `main`, runs the dry run, then pushes.
 8. If production printed files that staging's PR did not already record, add them in a PR.
 
 `supabase db push` applies every migration the target has not recorded, in file order. If a deploy is queued behind a running one, GitHub keeps one pending run per concurrency group and a newer pending run replaces the older one (**Assumed**, standard GitHub concurrency behaviour). That is harmless here: the next push applies everything pending.
@@ -114,6 +116,53 @@ The workflow prints the list but does not commit it, on purpose:
 - the change goes through review and the migration guard like any other.
 
 Today the file still describes `early-letters` (2 files). On the first staging deploy, all 7 files are applied and listed by the job; the PR that records them adds the 5 missing lines.
+
+## The content-free smoke (RA-07-06, after every staging deploy)
+
+`deploy to staging` in `deploy-db.yml` ends with `node scripts/ops/staging-smoke.ts --db-only` (#202; what each red line means and how to fix it: `docs/ops/runbooks/staging-smoke.md`). `--db-only` keeps it to the checks this job owns: two read-only catalog queries through `psql` (consent pepper length, statement logging, cron jobs). Function health and Auth settings belong to `deploy-functions.yml` and to AF-13, which this job does not deploy. `--db-only` is S07's flag on #202; until #202 carries it, the smoke ignores the unknown flag and runs every check. **A run before AF-13 (Thu 22) is red by design:** the pepper and the cron jobs are founder steps (APPLY 6 and 7), so the first develop run on Wed 21 shows what AF-13 still has to do. It prints statuses and closed values only, never a URL, key, row or table contents, so the run summary can go into a ticket as it is. A red smoke fails the job **after** the push: the migrations are applied, and the red lines say what staging still lacks. On a commit without the script the step fails with "scripts/ops/staging-smoke.ts is not on this commit".
+
+**`psql` on the runner.** The `ubuntu-24.04` image lists PostgreSQL 16 with its client (actions/runner-images, `images/ubuntu/Ubuntu2404-Readme.md`, image 20261012.334.1; **Verified** 16 Oct 2026). The job checks with `command -v psql` and installs Ubuntu's `postgresql-client` (which is `postgresql-client-16` on 24.04) if it is missing. psql 16 against staging's Postgres 17 for two plain read-only queries is **Assumed** fine; the first run shows it. `ubuntu-latest` moves to Ubuntu 26.04 in November 2026 (PostgreSQL 18 there); these workflows name `ubuntu-24.04`, so that change does not reach them.
+
+**Secrets it adds to the `staging` Environment.** Public values, stored as secrets so the logs mask them; no new credential:
+
+| Secret | Value |
+|---|---|
+| `SUPABASE_STAGING_URL` | `https://<staging ref>.supabase.co` |
+| `SUPABASE_STAGING_PUBLISHABLE_KEY` | the staging `sb_publishable_` key the alpha builds use. The smoke refuses secret and service-role keys |
+| `SUPABASE_STAGING_PROJECT_REF` | the staging project ref; the smoke refuses a URL or database URL for another project |
+
+`SUPABASE_DB_URL_STAGING` is the one the job already holds. If staging runs the alpha without Sign in with Apple, the `sign-in providers` line of `deploy-functions.yml`'s smoke is red; add `--providers email` there until Apple is configured.
+
+## Edge Functions to staging (`deploy-functions.yml`, RA-20-05)
+
+| | |
+|---|---|
+| Trigger | A push to `develop` that changes a function's code: its `index.ts` and every file it imports, in `supabase/functions/` or `packages/` (for example `packages/api/src/envelope.ts`). A change to the workflow or to `.github/scripts/functions-deploy.mjs` counts too. Or a manual run (Run workflow) on `develop`, with `function` set to a folder name or `all`; a manual run on any other branch fails. A test file or README next to a function does not count |
+| First | the job checks out **`develop`'s tip**, not the pushed commit, and plans again there. Staging must already have every file in `supabase/migrations` on that tip (a read-only `psql` read of `supabase_migrations.schema_migrations`); if not, nothing deploys and the summary lists the missing files: approve the Deploy database run first, then re-run |
+| Deploys | every function except `escrow` (D-102: its own project, founder only), one at a time, with `supabase functions deploy <name> --project-ref <ref> --use-api`, plus `--no-verify-jwt` for `config`, `content` and `purge-worker`. A second guard in the Deploy step refuses `escrow`, `escrow-*` and `escrow_*` before any API call. Never `--prune`: a function removed from the repository stays on staging until you delete it. The summary names the deployed commit |
+| Then | `supabase functions list -o json` must show each deployed function ACTIVE, on a **higher version** than before the run (a later update time on the same version does not count), and must report the gateway JWT check it was deployed with (a list that does not say fails). Only if every deploy landed and the list confirmed it, the smoke with `--no-db --functions config,content,purge-worker` must get health 200 from each (plus the policy-version and sign-up lines). After any failure the smoke does not run and the summary says why, so a GREEN table never sits under a red job |
+| Waits in | `staging` (the approver) |
+| Secrets | `SUPABASE_ACCESS_TOKEN_STAGING`, `SUPABASE_STAGING_PROJECT_REF`; `SUPABASE_DB_URL_STAGING` for the read-only migrations check (as PG* variables, never in argv; it is the owner URL today, so move this read to S02's catalog-only role once that role can read `supabase_migrations.schema_migrations`); for the smoke, `SUPABASE_STAGING_URL` and `SUPABASE_STAGING_PUBLISHABLE_KEY` |
+| Permissions | `contents: read` |
+
+**Why every function, from `develop`'s tip.** Each run waits for your approval in `staging`. A job joins the concurrency group when it becomes ready, so runs can queue out of push order, and GitHub keeps only the newest pending run: an older pending one is cancelled. Deploying only the pushed commit's changed functions could then put older code on staging last, or drop a change. Each run instead deploys every function at `develop`'s tip when the job starts, so whichever run goes last deploys the newest `develop`, the same way `db push` applies every pending migration. The plan still lists which functions changed. **Your approval therefore does not pin a commit:** the job deploys whatever `develop` is when it starts (after you approve), and the summary records which commit that was. That is safe only while `develop` is protected (AF-03).
+
+**Functions after migrations (RA-20-04).** Staging gets `develop`'s migrations on a **push** to `develop` that changes them, behind the `staging` reviewer: that is RA-20-04, and the main path. A **manual run** on `develop` (Actions > Deploy database > Run workflow, branch `develop`; it appears once the workflow is on the default branch, AF-05) is the catch-up path, not a second main path; on any other ref it fails at once, and it never reaches production. Both apply `develop`'s tip, so a run that queued late or replaced another never applies older migrations. When a merge carries migrations and functions, two runs wait: **approve Deploy database first**. If you approve the functions run first, it stops before deploying anything and lists the migrations staging lacks. If no Deploy database run is waiting (a run was rejected, cancelled or failed, or the migrations reached `develop` before the push trigger existed), re-run the latest Deploy database run on `develop` whose push changed migrations, start the manual run on `develop`, or push from your computer. Then re-run the functions job.
+
+**Staging follows `develop` only (decided 17 Oct 2026).** A push to `main` deploys nothing to a database. Staging takes `develop`'s migrations and functions; production takes migrations only from a `db-v*` tag on `main`, through `db-production`, once AF-42 sets that project up after the alpha. Before this decision a push to `main` also deployed staging; with staging ahead of `main` that run could only fail `db push` (the remote holds versions `main` lacks).
+
+**Which functions skip the gateway's JWT check, and which the smoke reaches.** `NO_VERIFY_JWT` and `SMOKE_HEALTH` in `.github/scripts/functions-deploy.mjs`. `NO_VERIFY_JWT` must agree with the deploy line in each function's `index.ts` header; if one disagrees, the plan fails and nothing deploys, so a change to a function's gateway check also changes a `.github/**` file. A function with no deploy line keeps the check, with a warning. `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` keep the check: their health routes cannot answer without a session, so the function list confirms them instead of the smoke. When S01 or S06 gives one an anonymous health route and `--no-verify-jwt`, add it to both lists in the same PR.
+
+**Without the token.** The job deploys nothing. The run summary is titled "NOT DEPLOYED" and gives the commands to run from your computer, and a warning marks the run. Such a run is never evidence (AUTOMATION.md 2.12, planted failure 1). A change under `supabase/functions/escrow/` is never deployed and the plan says so (planted failure 2).
+
+**The token (AF-06).** `SUPABASE_ACCESS_TOKEN_STAGING` on the `staging` Environment only: the narrowest token that can deploy Edge Functions to the staging project. **Add it only after the `staging` reviewer and branch rules are set and read back, and never as a classic token** (rules 1 and 2 below). Classic tokens carry the whole account; scoped tokens are a public alpha (AUTOMATION.md 2.2). This is the one exception to the no-token rule above (POPS-04): it is not in `deploy-db.yml` and not on `db-production`. CLI 2.119.0 accepts only tokens shaped `sbp_`, `sbp_oauth_` or `sbp_v0_` followed by 40 hex characters and refuses others before calling the API (**Verified** with the binary); whether a scoped token has that shape is **Unverified**.
+
+Rules for the token, in this order:
+1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branch `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.
+2. **Never fall back to a classic access token** if a scoped one is refused. A classic token reaches every project on the account, production included. Leave the secret unset instead (the run says NOT DEPLOYED and you deploy from your computer), or keep staging in an organization the token cannot leave (AF-06).
+3. **Until the approver account exists (AF-02)**, any session holding your GitHub credential can approve as you, so the reviewer is a policy, not a control. Hold the token until AF-02 is in place, or accept that for the alpha.
+
+**Dispatch** needs the workflow on the default branch (`main` today, AF-05). Until then the push trigger on `develop` is the only way it runs; agents never dispatch it (AUTOMATION.md 2.11).
 
 ## Rollback
 
@@ -146,5 +195,10 @@ A restore is the last resort. For a schema mistake, a forward-fix migration is f
 | `supabase/setup-cli` v3.0.1 commit `45a513f8c64c0bc8e0e3dfe572b5c95be85f6359` and its `version` input | `git ls-remote` and its `action.yml` at that commit |
 | Fuzz seed and run count | `packages/core/test/verify.fuzz.test.ts` reads `SCRIBE_FUZZ_SEED` and `SCRIBE_FUZZ_RUNS`; a random-seed 100000-run pass took about 20 s locally and needs `--testTimeout` (vitest's 5 s default fails it) |
 | Workflows | actionlint 1.7.12 with shellcheck 0.10.0: no findings |
+| `supabase functions deploy <name> --project-ref --use-api [--no-verify-jwt]` and `supabase functions list --project-ref -o json` in CLI 2.119.0 (16 Oct 2026) | `--help` of the 2.119.0 release binary, and that binary run against a local stand-in for the Management API (`--profile supabase-local`): deploy sends `verify_jwt: false` only with `--no-verify-jwt`; `list -o json` prints only a JSON array (`slug`, `status`, `version`, `updated_at`, `verify_jwt`) on stdout; no token, or a token of the wrong shape, stops before any request |
+| The plan's import closure | equals the files the CLI uploads for every function on `develop` with #202, #139 and #178 (the same stand-in run), and equals `deno info --json` (deno 2.9.6) for every function on `develop`; `.github/workflows/deploy-scripts.yml` repeats the `deno info` comparison on every pull request that can change it |
+| `deploy-functions.yml` and the smoke steps | each step's script run locally against the stand-in and #202's smoke (its HTTP answers stubbed): green, NOT DEPLOYED, a failed deploy, an unchanged version, a missing health route, missing secrets, a missing script, a manual run on `main` or for `escrow`, and `escrow`, `escrow-keys` or `escrow_v2` reaching the Deploy step (refused before any API call). After the tip rework (17 Oct): the deploy job's steps in order with the stand-in, a local PostgreSQL 16 holding a migration history, and #202's smoke at bb7aa06: green (4 of 4 confirmed, smoke GREEN), staging one migration behind (nothing deployed, the file named, smoke NOT RUN), and an unreachable database. `node --test .github/scripts/functions-deploy.test.mjs`: 28 tests, plus the `deno info` comparison |
+| The migrations check | `supabase db push --dry-run` of CLI 2.119.0 against the same local PostgreSQL prints `{"upToDate": ..., "migrations": [...]}`; the script's psql read agrees with it one migration behind, up to date, and on a fresh database |
+| `psql` on `ubuntu-24.04` | actions/runner-images `images/ubuntu/Ubuntu2404-Readme.md` and `scripts/build/install-postgresql.sh` (PostgreSQL 16 from the PGDG repository, client included) |
 
-Not verified: no workflow has run on GitHub, and `supabase start` / `db reset` / `db lint` could not run here (no Docker daemon in the build environment).
+Not verified: no workflow has run on GitHub, and `supabase start` / `db reset` / `db lint` could not run here (no Docker daemon in the build environment). For the smoke and the functions: no run against a real Supabase project (the gateway's answer for a missing function, the pooler accepting psql's read-only transaction, `cron.job` visible to the role in `SUPABASE_DB_URL_STAGING`, and a scoped token working with the CLI are all open until the first staging run).
