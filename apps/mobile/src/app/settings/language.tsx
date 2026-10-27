@@ -19,10 +19,12 @@ import { ScrollView, View } from 'react-native';
 import { languageInfo, type LanguageCode } from '@scribe/core';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { alsoSpokenView } from '@/components/language/language-picker.logic';
 import { LanguageRow } from '@/components/language/language-row';
 import { ChoiceGroup } from '@/components/ui/choice-group';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
+import { capabilities } from '@/lib/capabilities';
 import { fill } from '@/lib/copy';
 import { ensureTextRules, useTextRulesStatus } from '@/lib/language/packs';
 import { MAX_LANGUAGES, type SpokenLanguage } from '@/lib/language/spoken-language.logic';
@@ -56,6 +58,8 @@ export default function LanguageSettings() {
     ? `${t.primaryFooter} ${fill(t.safeModeNote, { name: languageInfo(primary.code).english })}`
     : t.primaryFooter;
   const full = spoken.languages.length >= MAX_LANGUAGES;
+  // English only (D-111 item 4): nothing can be added, so no Add row and no "two more" line.
+  const also = alsoSpokenView(capabilities.englishOnly, spoken.others.length);
 
   return (
     <>
@@ -71,19 +75,23 @@ export default function LanguageSettings() {
           />
         </ListSection>
 
-        <ListSection title={t.othersTitle} footer={t.othersFooter}>
-          {spoken.others.map((l, i) => (
-            <LanguageRow
-              key={l.code}
-              first={i === 0}
-              code={l.code}
-              status={status[l.code]}
-              onRemove={() => spoken.remove(l.code)}
-              onRetry={() => void ensureTextRules(l.code, { allowCellularOnce: true })}
-            />
-          ))}
-          <ListRow title={full ? t.addLanguageFull : t.addLanguage} trailing={full ? 'none' : 'chevron'} disabled={full} onPress={full ? undefined : () => setPicker('add')} />
-        </ListSection>
+        {also.section ? (
+          <ListSection title={t.othersTitle} footer={also.footer ? t.othersFooter : undefined}>
+            {spoken.others.map((l, i) => (
+              <LanguageRow
+                key={l.code}
+                first={i === 0}
+                code={l.code}
+                status={status[l.code]}
+                onRemove={() => spoken.remove(l.code)}
+                onRetry={() => void ensureTextRules(l.code, { allowCellularOnce: true })}
+              />
+            ))}
+            {also.add ? (
+              <ListRow title={full ? t.addLanguageFull : t.addLanguage} trailing={full ? 'none' : 'chevron'} disabled={full} onPress={full ? undefined : () => setPicker('add')} />
+            ) : null}
+          </ListSection>
+        ) : null}
 
         {spoken.languages.map((l) => (
           <PerAuthorChoices key={l.code} language={l} onChange={(patch) => spoken.update(l.code, patch)} />

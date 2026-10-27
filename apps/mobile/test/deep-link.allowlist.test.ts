@@ -43,7 +43,7 @@ describe('[A-NFR-010] hosts: only the brand origin, exactly', () => {
   it('only https carries secrets: http, ftp and javascript on the brand host are other', () => {
     for (const scheme of ['http', 'ftp', 'javascript', 'file']) {
       expect(classify(`${scheme}://${HOST}/auth/callback#token_hash=${HASH}`), scheme).toEqual({ kind: 'other' });
-      expect(classify(`${scheme}://${HOST}/i/${TOKEN}`), scheme).toEqual({ kind: 'other' });
+      expect(classify(`${scheme}://${HOST}/j#t=${TOKEN}`), scheme).toEqual({ kind: 'other' });
     }
   });
 });
@@ -102,6 +102,8 @@ describe('[TDD-04 3.1.6] the custom scheme never carries a usable secret', () =>
     [`${brand.scheme}://auth/callback/`, 'auth-code'],
     [`${brand.scheme}://auth/callback#token_hash=${HASH}&type=email`, 'auth-code'],
     [`${brand.scheme}://auth/callback?token_hash=${HASH}`, 'auth-code'],
+    [`${brand.scheme}://j#t=${TOKEN}`, 'other'],
+    [`${brand.scheme}:///j#t=${TOKEN}`, 'other'],
     [`${brand.scheme}://i/${TOKEN}`, 'other'],
     [`${brand.scheme}:///i/${TOKEN}`, 'other'],
     [`${brand.scheme}://tonight`, 'other'],
@@ -116,28 +118,43 @@ describe('[TDD-04 3.1.6] the custom scheme never carries a usable secret', () =>
 });
 
 describe('[PRD-A F7] invites', () => {
-  it('a universal link on the brand host carries the token; everything else is other', () => {
+  it('a universal link on the brand host carries the token in the fragment, /j#t=<token>; everything else is other', () => {
+    expect(inviteUrl(TOKEN, brand.web.origin)).toBe(`https://${HOST}/j#t=${TOKEN}`);
     expect(classify(inviteUrl(TOKEN, brand.web.origin))).toEqual({ kind: 'invite', token: TOKEN });
-    expect(classify(`https://${HOST}/i/${TOKEN}/`)).toEqual({ kind: 'invite', token: TOKEN });
-    expect(classify(`https://${HOST}/i/${TOKEN}/more`)).toEqual({ kind: 'other' });
-    expect(classify(`https://${HOST}/invite/${TOKEN}`)).toEqual({ kind: 'other' });
-    expect(classify(`https://${HOST}/i/`)).toEqual({ kind: 'other' });
-    expect(classify(`https://${HOST}/i/${TOKEN.slice(0, 31)}`)).toEqual({ kind: 'other' });
-    expect(classify(`https://${HOST}/i/${'a'.repeat(129)}`)).toEqual({ kind: 'other' });
-    expect(classify(`https://${HOST}/i/${TOKEN.slice(0, 40)}%2F..`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j/#t=${TOKEN}`)).toEqual({ kind: 'invite', token: TOKEN });
+    expect(classify(`https://${HOST}/j?x=1#t=${TOKEN}`)).toEqual({ kind: 'invite', token: TOKEN });
+    expect(classify(`https://${HOST}/j/more#t=${TOKEN}`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/invite#t=${TOKEN}`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j#t=`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j#t=${TOKEN.slice(0, 31)}`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j#t=${'a'.repeat(129)}`)).toEqual({ kind: 'other' });
+    expect(classify(`https://${HOST}/j#t=${TOKEN.slice(0, 40)}%2F..`)).toEqual({ kind: 'other' });
+  });
+
+  it('the old /i/<token> form is refused everywhere: it put the token in the path, where the website and its logs see it (B-NFR-002)', () => {
+    for (const url of [`https://${HOST}/i/${TOKEN}`, `https://${HOST}/i/${TOKEN}/`, `https://www.${HOST}/i/${TOKEN}`]) {
+      expect(classify(url), url).toEqual({ kind: 'other' });
+      expect(parseInviteUrl(url, brand.web.origin), url).toBeNull();
+      expect(parseInviteInput(`see ${url} x`, brand.web.origin), url).toBeNull();
+    }
   });
 
   it('the www alias is pasted-text only: iOS never opens the app for it (app.config.ts associates the apex domain alone)', () => {
     const config = readFileSync(join(__dirname, '..', 'app.config.ts'), 'utf8');
     expect(config).toMatch(/associatedDomains: \[`applinks:\$\{brand\.publisher\.domain\}`\]/);
     // So a www link reaching classifyIncomingUrl did not come from the system and is not routed as an invite...
-    expect(classify(`https://www.${HOST}/i/${TOKEN}`)).toEqual({ kind: 'other' });
+    expect(classify(`https://www.${HOST}/j#t=${TOKEN}`)).toEqual({ kind: 'other' });
     // ...while "I was invited" accepts it when the person pastes it (people retype links).
-    expect(parseInviteInput(`see https://www.${HOST}/i/${TOKEN} x`, brand.web.origin)).toBe(TOKEN);
-    expect(parseInviteUrl(`https://www.${HOST}/i/${TOKEN}`, brand.web.origin)).toBe(TOKEN);
+    expect(parseInviteInput(`see https://www.${HOST}/j#t=${TOKEN} x`, brand.web.origin)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://www.${HOST}/j#t=${TOKEN}`, brand.web.origin)).toBe(TOKEN);
   });
 
-  it('parseInviteUrl refuses a token hidden in the query or fragment: only the path counts', () => {
+  it('parseInviteUrl takes the token from the fragment only: a token in the path or the query is refused', () => {
+    expect(parseInviteUrl(`https://${HOST}/j?t=${TOKEN}`, brand.web.origin)).toBeNull();
+    expect(classify(`https://${HOST}/j?t=${TOKEN}`)).toEqual({ kind: 'other' });
+    expect(parseInviteUrl(`https://${HOST}/j/${TOKEN}`, brand.web.origin)).toBeNull();
+    expect(parseInviteUrl(`https://${HOST}/j#${TOKEN}`, brand.web.origin)).toBeNull();
     expect(parseInviteUrl(`https://${HOST}/i/x?token=${TOKEN}`, brand.web.origin)).toBeNull();
     expect(parseInviteUrl(`https://${HOST}/i/#${TOKEN}`, brand.web.origin)).toBeNull();
   });

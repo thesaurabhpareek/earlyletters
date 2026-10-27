@@ -12,41 +12,19 @@
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
+import { REAL_FRAME_LENGTHS, adtsFrame, concat } from './helpers/adts-frames';
 import { createDisk, iosContainer, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 
-const { AAC_FRAME_SAMPLES, AAC_PRIMING_SAMPLES, ADTS_MAX_FRAME_BYTES, adtsLengthEvidence, breaksInside, scanAdts } = await import('../src/lib/capture/adts');
+const { AAC_FRAME_SAMPLES, AAC_MAX_BLOCK_BYTES_PER_CHANNEL, AAC_PRIMING_SAMPLES, ADTS_MAX_FRAME_BYTES, adtsLengthEvidence, breaksInside, scanAdts } = await import(
+  '../src/lib/capture/adts'
+);
 const { copyKeyOf, removeWholeFrameCopies, removeWholeFrameCopiesOf, scanRecordingFile, wholeFramesCopy } = await import('../src/lib/capture/adts-file');
 const { RunInputError, checkedRunDuration, openRecordingForRun, runDurationMs } = await import('../src/lib/transcribe-run');
 const { jobFailureOf } = await import('../src/lib/transcription-queue/machine');
 
-/** One ADTS frame: a 7-byte header (9 with CRC) for AAC-LC, then `payload` bytes. */
-function adtsFrame(payload: number, o: { sampleRateIndex?: number; channels?: number; crc?: boolean; blocks?: number } = {}): Uint8Array {
-  const { sampleRateIndex = 3, channels = 1, crc = false, blocks = 1 } = o;
-  const header = crc ? 9 : 7;
-  const len = header + payload;
-  const b = new Uint8Array(len);
-  b[0] = 0xff;
-  b[1] = 0xf0 | (crc ? 0 : 1); // MPEG-4, layer 00, protection_absent
-  b[2] = (1 << 6) | (sampleRateIndex << 2) | ((channels >> 2) & 1); // profile 1 = AAC-LC
-  b[3] = ((channels & 3) << 6) | ((len >> 11) & 3);
-  b[4] = (len >> 3) & 0xff;
-  b[5] = ((len & 7) << 5) | 0x1f;
-  b[6] = 0xfc | ((blocks - 1) & 3);
-  for (let i = header; i < len; i++) b[i] = (i * 7 + payload) & 0xff;
-  return b;
-}
-const concat = (...parts: Uint8Array[]) => {
-  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
-  let o = 0;
-  for (const p of parts) {
-    out.set(p, o);
-    o += p.length;
-  }
-  return out;
-};
 const stream = (frames: number, payload = 170) => concat(...Array.from({ length: frames }, (_, i) => adtsFrame(payload + (i % 5))));
 const frameMs = (AAC_FRAME_SAMPLES / 48000) * 1000;
 const sha = (b: Uint8Array) => createHash('sha256').update(b).digest('hex');
@@ -279,26 +257,39 @@ describe('[ADR 0027] opening a recording for a run', () => {
   });
 });
 
-/**
- * The framing of a real encoder's ADTS: every frame length, in order, of ffmpeg 6.1's native AAC encoder
- * (6 s of a 330 Hz tone with pink noise, 48 kHz, mono, 64 kbit/s; 283 frames, 50,565 bytes). Its headers are
- * `FF F1 4C 40 .. .. FC` with the length bits set, which adtsFrame builds byte for byte; the payload is filler,
- * since the scanner reads only headers. No audio is committed (.gitignore: never commit recordings).
- */
-const REAL_FRAME_LENGTHS = [
-  191, 216, 167, 162, 178, 184, 174, 171, 172, 184, 186, 187, 171, 178, 174, 172, 189, 170, 162, 184, 185, 176, 189, 188, 186, 184, 173, 175,
-  179, 202, 175, 165, 170, 187, 165, 171, 167, 172, 188, 178, 182, 171, 172, 190, 183, 198, 186, 184, 170, 184, 171, 172, 167, 178, 195, 179,
-  174, 180, 180, 167, 171, 191, 198, 180, 174, 182, 181, 183, 172, 172, 184, 155, 193, 200, 174, 185, 189, 196, 163, 185, 162, 174, 176, 183,
-  177, 178, 172, 176, 185, 197, 182, 173, 174, 173, 178, 181, 171, 165, 178, 172, 192, 181, 179, 176, 188, 170, 168, 189, 166, 171, 190, 176,
-  190, 167, 163, 188, 188, 186, 172, 185, 188, 172, 174, 205, 192, 185, 164, 186, 171, 166, 171, 175, 187, 173, 173, 163, 203, 164, 163, 178,
-  171, 201, 188, 173, 176, 186, 197, 183, 167, 167, 170, 171, 173, 192, 188, 188, 184, 177, 167, 171, 176, 173, 177, 172, 173, 175, 169, 184,
-  177, 183, 197, 186, 183, 189, 167, 172, 176, 169, 180, 173, 202, 192, 179, 180, 168, 182, 175, 175, 174, 199, 166, 167, 177, 169, 191, 171,
-  179, 175, 180, 183, 184, 181, 177, 178, 191, 182, 166, 170, 173, 176, 178, 181, 189, 183, 175, 178, 174, 176, 170, 179, 187, 176, 176, 177,
-  192, 175, 174, 170, 183, 176, 169, 178, 181, 195, 178, 175, 182, 167, 171, 179, 178, 186, 179, 183, 169, 166, 178, 185, 180, 190, 175, 182,
-  177, 173, 178, 177, 180, 178, 185, 170, 189, 170, 169, 180, 186, 176, 172, 183, 178, 176, 181, 176, 183, 177, 174, 172, 174, 183, 180, 179,
-  179, 174, 215,
-];
 const realStream = () => concat(...REAL_FRAME_LENGTHS.map((len) => adtsFrame(len - 7)));
+
+/** A seeded generator (mulberry32), so random payloads and trailers are the same on every run. */
+function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/** `n` random bytes, four from each draw. */
+const randomBytes = (n: number, rand: () => number) => {
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i += 4) {
+    const x = Math.floor(rand() * 4294967296);
+    for (let k = 0; k < 4 && i + k < n; k++) out[i + k] = (x >>> (8 * k)) & 0xff;
+  }
+  return out;
+};
+/** The real encoder's framing with random payload bytes, as compressed audio looks: 0xFF bytes and all. */
+const realStreamRandomPayload = (seed: number) => {
+  const rand = seeded(seed);
+  return concat(...REAL_FRAME_LENGTHS.map((len) => {
+    const f = adtsFrame(len - 7);
+    f.set(randomBytes(len - 7, rand), 7);
+    return f;
+  }));
+};
+/** Byte offset where frame `i` of the real framing starts. */
+const realFrameStart = (i: number) => REAL_FRAME_LENGTHS.slice(0, i).reduce((n, len) => n + len, 0);
 
 /**
  * A decoder that behaves as Core Audio might at worst (V3 finds out): it reads whole frames exactly, priming
@@ -353,6 +344,22 @@ describe('[ADR 0027, review Y] only a tail exactly as a kill leaves it is read f
     expect(cuts).toBe(4000 - boundaries);
   });
 
+  it('the same every-byte cut with random payload bytes (compressed audio holds 0xFF bytes): never a break, never frames found after the cut', () => {
+    const misjudged: number[] = [];
+    let cuts = 0;
+    for (const seed of [1, 2, 3]) {
+      const full = realStreamRandomPayload(seed);
+      for (let end = full.length - 4000; end < full.length; end++) {
+        const scan = scanAdts(full.subarray(0, end))!;
+        if (scan.tailBytes === 0) continue;
+        cuts += 1;
+        if (scan.tail !== 'cut' || scan.framesAfterBreak !== 0) misjudged.push(seed * 1_000_000 + end);
+      }
+    }
+    expect(misjudged).toEqual([]);
+    expect(cuts).toBe(3 * 3978);
+  });
+
   it('a kill cut through CRC headers (9 bytes) is a kill cut at every byte too', () => {
     const crc = concat(...Array.from({ length: 12 }, (_, i) => adtsFrame(150 + i, { crc: true })));
     for (let end = 9; end < crc.length; end++) {
@@ -401,6 +408,122 @@ describe('[ADR 0027, review Y] only a tail exactly as a kill leaves it is read f
     });
     expect(run.durationMs).toBe(facts.evidence.countedMs);
     run.close();
+    expect(copies).toBe(0);
+  });
+});
+
+describe('[ADR 0027, reviews Y and X on #219] damage near the end is never read past silently', () => {
+  const sevenOneStream = (frames: number) => concat(...Array.from({ length: frames }, () => adtsFrame(164))); // 171-byte frames
+  const claimLength = (bytes: Uint8Array, at: number, len: number) => {
+    bytes[at + 3] = (bytes[at + 3] & 0xfc) | ((len >> 11) & 3);
+    bytes[at + 4] = (len >> 3) & 0xff;
+    bytes[at + 5] = ((len & 7) << 5) | (bytes[at + 5] & 0x1f);
+  };
+  const decoderOf = (probeMs: number) => ({ probeMs: async () => probeMs, decode: async () => new ArrayBuffer(2) });
+  const priming = (AAC_PRIMING_SAMPLES / 48000) * 1000;
+  const framesMs = (n: number) => ((n * AAC_FRAME_SAMPLES) / 48000) * 1000;
+
+  it('[Y] the frames after damage count toward the proven length: a decoder that stops at the damage with no error reads short and is refused, never copied', async () => {
+    const damaged = realStreamRandomPayload(27);
+    damaged[realFrameStart(REAL_FRAME_LENGTHS.length - 20)] = 0x00; // the sync byte of the frame 20 from the end
+    const { scan, facts } = factsOf(damaged);
+    expect(scan).toMatchObject({ frames: REAL_FRAME_LENGTHS.length - 20, tail: 'break', framesAfterBreak: 19 });
+    expect(facts.evidence.countedMs).toBeCloseTo(framesMs(REAL_FRAME_LENGTHS.length - 1), 6); // all but the damaged frame
+    let copies = 0;
+    const makeCopy = async () => {
+      copies += 1;
+      return { uri: 'copy', remove: () => {} };
+    };
+    // Stops at the damage silently: its length is the frames before it, priming trimmed or not.
+    for (const stopped of [framesMs(scan.frames) - priming, framesMs(scan.frames)]) {
+      await expect(openRecordingForRun(decoderOf(stopped), 'orig', null, facts, makeCopy)).rejects.toMatchObject({ reason: 'break_inside' });
+    }
+    expect(copies).toBe(0);
+  });
+
+  it('[Y] a decoder that reads past the damage is trusted, and the run plans over every frame the file proves', async () => {
+    const damaged = realStreamRandomPayload(28);
+    damaged[realFrameStart(REAL_FRAME_LENGTHS.length - 20)] = 0x00;
+    const { facts } = factsOf(damaged);
+    const run = await openRecordingForRun(decoderOf(framesMs(REAL_FRAME_LENGTHS.length) - priming), 'orig', null, facts, async () => {
+      throw new Error('no copy for a break');
+    });
+    expect(run.durationMs).toBe(facts.evidence.countedMs);
+    run.close();
+  });
+
+  it('[Y] 2,000 random trailers of 1 to 8,000 bytes after a finished take never add frames, so a decoder that reads the take well is never refused', async () => {
+    const rand = seeded(2026);
+    const pool = randomBytes(1 << 20, rand); // each trailer is a random slice of 1 MiB of random bytes
+    const full = realStreamRandomPayload(29);
+    const take = full.subarray(realFrameStart(REAL_FRAME_LENGTHS.length - 40)); // its last 40 frames: only the end is searched
+    const added: number[] = [];
+    let longest = new Uint8Array(0);
+    for (let i = 0; i < 2000; i++) {
+      const length = 1 + Math.floor(rand() * 8000);
+      const from = Math.floor(rand() * (pool.length - length));
+      const trailer = pool.subarray(from, from + length);
+      const scan = scanAdts(concat(take, trailer))!;
+      if (scan.frames !== 40 || scan.framesAfterBreak !== 0) added.push(i);
+      if (trailer.length > longest.length) longest = trailer;
+    }
+    expect(added).toEqual([]);
+    // So the length the take proves is its frames alone, and a decoder that reads them well is trusted.
+    const { facts } = factsOf(concat(full, longest));
+    expect(facts.evidence.countedMs).toBeCloseTo(framesMs(REAL_FRAME_LENGTHS.length), 6);
+    const run = await openRecordingForRun(decoderOf(framesMs(REAL_FRAME_LENGTHS.length) - priming), 'orig', null, facts, async () => ({ uri: 'copy', remove: () => {} }));
+    expect(run.durationMs).toBe(facts.evidence.countedMs);
+    run.close();
+  });
+
+  it('[X] a frame_length damaged to a length no AAC frame can have (more than 6144 bits per channel) is a break, not a kill cut', () => {
+    const bytes = sevenOneStream(300);
+    claimLength(bytes, 298 * 171, 4000); // the header 2 frames from the end; 342 bytes follow, 1 whole frame after it
+    const scan = scanAdts(bytes)!;
+    expect(scan).toMatchObject({ frames: 298, tail: 'break', framesAfterBreak: 0 });
+    // The longest frame a mono AAC-LC block allows still reads as a kill cut when the file ends inside it.
+    const longest = concat(sevenOneStream(10), adtsFrame(AAC_MAX_BLOCK_BYTES_PER_CHANNEL + 4).subarray(0, 300));
+    expect(scanAdts(longest)).toMatchObject({ frames: 10, tail: 'cut' });
+    const tooLong = concat(sevenOneStream(10), adtsFrame(AAC_MAX_BLOCK_BYTES_PER_CHANNEL + 5).subarray(0, 300));
+    expect(scanAdts(tooLong)).toMatchObject({ frames: 10, tail: 'break' });
+  });
+
+  it('[X] a frame_length damaged to a possible length that runs past the end is a break when this stream\'s frames follow it to the end', () => {
+    const bytes = sevenOneStream(300);
+    claimLength(bytes, 296 * 171, 700); // possible (at most 779), and longer than the 684 bytes left
+    expect(scanAdts(bytes)).toMatchObject({ frames: 296, tail: 'break', framesAfterBreak: 3 });
+  });
+
+  it.each([
+    ['20-byte quiet frames, the header 40 from the end claiming 775 bytes (X: 832 ms unheard before)', 20, 500, 460],
+    ['171-byte frames, the header 8 from the end claiming 775 bytes (X: 149 ms unheard before)', 171, 300, 292],
+  ])('[X and Y on #226] %s: the frames a damaged possible length swallows are counted, so a decoder that stops at the damage is refused', async (_name, size, total, damagedAt) => {
+    const bytes = concat(...Array.from({ length: total }, () => adtsFrame(size - 7)));
+    claimLength(bytes, damagedAt * size, 775); // possible (at most 779), lands inside a later frame
+    const { scan, facts } = factsOf(bytes);
+    expect(scan).toMatchObject({ frames: damagedAt + 1, tail: 'break' });
+    expect(scan.frames + scan.framesAfterBreak).toBe(total); // the damaged frame, the frames it swallowed, and the rest
+    // Stops before the damaged frame, or reads it and stops at the bad landing; priming trimmed or kept.
+    for (const heard of [damagedAt, damagedAt + 1]) {
+      for (const stopped of [framesMs(heard) - priming, framesMs(heard)]) {
+        await expect(openRecordingForRun(decoderOf(stopped), 'orig', null, facts, async () => ({ uri: 'copy', remove: () => {} }))).rejects.toMatchObject({ reason: 'break_inside' });
+      }
+    }
+  });
+
+  it('[X] X\'s repro: the header 5 frames from the end claiming 4,000 bytes is refused when the decoder fails on it, never read from a copy of the 295 frames before it', async () => {
+    const bytes = sevenOneStream(300);
+    claimLength(bytes, 295 * 171, 4000);
+    const { scan, facts } = factsOf(bytes);
+    expect(scan).toMatchObject({ frames: 295, tailBytes: 855, tail: 'break', framesAfterBreak: 4 });
+    const files = new Map([['orig', bytes]]);
+    let copies = 0;
+    await expect(
+      openRecordingForRun(strictDecoder(files), 'orig', null, facts, async () => {
+        copies += 1;
+        return { uri: 'copy', remove: () => {} };
+      }),
+    ).rejects.toMatchObject({ reason: 'break_inside' });
     expect(copies).toBe(0);
   });
 });

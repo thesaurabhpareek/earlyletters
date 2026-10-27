@@ -228,6 +228,36 @@ describe('the book mark comes from the registry', () => {
   });
 });
 
+describe('first run names and signs the cover (R3: S05 and S06)', () => {
+  const SRC = join(__dirname, '..', 'src');
+  /** Comments are not code. */
+  const code = (rel: string) => readFileSync(join(SRC, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  it('the name field can set what is typed in the letter face at 22 pt, the book\'s title; its label stays Mukta', () => {
+    expect(tokens.type.nameField).toMatchObject({ fontFamily: tokens.fontFamily.serif, fontSize: 22, maxScale: null });
+    const field = code('components/ui/text-field.tsx');
+    expect(field).toMatch(/face\?: 'sans' \| 'serif'/);
+    expect(field).toMatch(/face = 'sans'/);
+    expect(field).toMatch(/const fieldToken = face === 'serif' \? 'nameField' : 'body'/);
+    expect(field).toMatch(/typeStyle\(fieldToken, \{ fontsReady: ready \}\)/);
+    expect(field).toMatch(/<Text variant="labelSmall" tone="muted">\s*\{label\}/);
+  });
+
+  it('a new signature cross-fades on the front\'s foot line on snappy; the flyleaf and Reduce Motion do not move', () => {
+    const cover = code('components/book/book-cover.tsx');
+    expect(cover).toMatch(/<FootLine set=\{signature \?\? NO_LINES\} size=\{size\} surface=\{c\.surfaceRaised\} crossFade=\{mounted && !still && 'snappy'\} \/>/);
+    expect(cover).toMatch(/\{signature \? <FootLine set=\{signature\} size=\{size\} surface=\{c\.surfaceRaised\} crossFade=\{false\} \/> : null\}/);
+    // Keyed by the words, so the old line fades out as the new one fades in, and a removed one fades out.
+    expect(cover).toMatch(/<NameLines key=\{set\.full\} set=\{set\} italic surface=\{surface\} crossFade=\{crossFade\} \/>/);
+    expect(cover).toMatch(/const s = springConfig\(kind\);/);
+    expect(cover).toMatch(/FadeIn\.springify\(\)\.stiffness\(s\.stiffness\)\.damping\(s\.damping\)\.mass\(s\.mass\)/);
+    expect(cover).toMatch(/FadeOut\.springify\(\)\.stiffness\(s\.stiffness\)\.damping\(s\.damping\)\.mass\(s\.mass\)/);
+    // The name keeps its fadeMs cross-fade.
+    expect(cover).toMatch(/<NameLines key=\{name\} set=\{coverName\(name, size, 'closed'\)\} surface=\{c\.surfaceRaised\} crossFade=\{mounted && !still && 'fade'\} \/>/);
+    expect(cover).toMatch(/const still = reduced \|\| !animate;/);
+  });
+});
+
 /** Advance widths straight from a TrueType file: the cmap (format 4) and hmtx tables. */
 function fontWidths(path: string, from = 32, to = 126): number[] {
   const b = readFileSync(path);

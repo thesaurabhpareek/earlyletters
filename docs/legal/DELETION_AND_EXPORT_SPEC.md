@@ -132,6 +132,8 @@ Rules (PRD B-REQ-016, F8; Terms 8.3): only a parent can delete; with a co-parent
 | Two or more parents | `left_and_removed_own_letters` | Caller's letters in this book tombstoned (`deleted_reason='book_deletion'`), caller's membership removed. Co-parent's and family letters untouched. Caller can restore their own letters from Recently deleted for 30 days; they return to the book. |
 | Sole parent | `book_scheduled` | `children.deleted_at=now()`, `deletion_requests` row (kind `book`). Book disappears from all members' views (`child_is_live`). Each contributor gets "Save a copy of your letters to {child}" with a server export link valid 30 days (DATA-REQ-054). Any parent can cancel within 30 days. Day 30: `purge_due()` deletes the book; cascade removes members, invites, every letter (including contributors'), versions, dictionary terms; whole `{child_id}/` Storage prefix enqueued. |
 
+**Kept book (20261023010000, D-116).** When the book still holds letters, held drafts or recording backups of someone who is no longer a member (they left, their join was undone, or they were removed), day 30 and the sole parent's account deletion purge everyone else's rows; in `entry-photos` (and `entry-audio`, which the worker mirrors from it) everyone else's folders go person by person, never the whole `{child_id}/` prefix, while the book's own `child-photos/{child_id}/` folder goes whole; and they keep those rows with their author and the book row tombstoned (`purged_at`; only the name, birth date and due date kept, readable by no app role) until nothing of theirs is left, when `purge_due()` deletes it as above.
+
 **DATA-REQ-014 (P0) Book deletion follows the equals rule.**
 - Given two parents, When parent A deletes the book, Then the book remains for B, B's letters and family letters are untouched, A's letters are tombstoned, and A is no longer a member (draft test).
 - Given a sole parent with two contributors, When they delete the book, Then both contributors receive the export notice within 1 hour, And no member sees the book, And the parent can cancel until day 30 (draft test for cancel).
@@ -213,7 +215,7 @@ Order matters: Supabase refuses to delete a user who owns Storage objects [D6], 
 | # | Step (`deletion_request_steps.step`) | Action | Success test |
 |---|---|---|---|
 | 0 | | `purge_due()` moves the request to `executing` (or `held` under legal hold) | status |
-| 1 | | `prepare_account_purge(request)`: re-checks holds; tombstones books where the user became sole parent; enqueues all `{child}/{user}/` prefixes and whole prefixes of books deleted with the account; hard-deletes the user's letters and those books; writes the ledger | function returns counts |
+| 1 | | `prepare_account_purge(request)`: re-checks holds on every row it would delete (DATA-REQ-035); tombstones books where the user became sole parent; enqueues all `{child}/{user}/` prefixes and whole prefixes of books deleted with the account; hard-deletes the user's letters and those books; writes the ledger | function returns counts |
 | 2 | `storage_objects` | Drain the queue via Storage API (list prefix, delete in batches). In v1.0 no audio or photos are stored, so this is usually empty | listing each prefix returns 0 objects |
 | 3 | `apple_token_revoke` | Unwrap the stored refresh token and `POST https://appleid.apple.com/auth/revoke` [D2]; `not_applicable` if no Apple identity; `apple: no_token` plus an alert if an Apple user has no stored token (capture not built yet, security review H3) | HTTP 200 (also returned if already revoked) |
 | 4 | `posthog` | `not_applicable` at execution: events were deleted at request time by `analytics-forget` with the ids the phone kept | receipt `posthog: at_request` |
@@ -293,6 +295,7 @@ Facts: Supabase Pro keeps 7 days of daily backups; Team 14; Enterprise up to 30;
 
 **DATA-REQ-035 (P0) Legal holds.**
 - Given a hold on a letter, a book or an account, When `purge_due()` runs after day 30, Then the held scope is not purged and an account request moves to `held` (draft test for letters).
+- Given a hold on any row an account purge would delete (a book deleted with the account, anyone's letter, held draft, recording backup or book key in it except a former member's rows the purge keeps, or the person's own rows and Storage objects in a held book), When `prepare_account_purge()` runs, Then nothing changes and the request moves to `held` (20261023020000; `purge_legal_holds.test.mjs`).
 - Given the hold is released, Then the next run purges or executes normally.
 - Given any user, Then `legal_holds` is unreadable (draft test).
 

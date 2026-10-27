@@ -3,11 +3,14 @@
  * Publishing pipeline (ADR 0016), run by `npm test -w @scribe/api`. Checks
  * that what the script publishes is exactly what a phone accepts.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   base64ToBytes,
   generateSigningKey,
+  KILL_SWITCH_KEYS,
   parsePackManifest,
+  parseRemoteConfig,
   sha256Hex,
   verifySignedDocument,
   type TrustedKey,
@@ -24,6 +27,7 @@ import {
   buildTextRulesPack,
   configModule,
   contentModule,
+  killSwitchSteps,
   packVersionNumber,
   publishedVersion,
   readPublished,
@@ -42,6 +46,13 @@ const spanishSource = JSON.stringify({ ...structuredClone(ENGLISH_PACK), languag
 const opts = { baseUrl: 'https://packs.earlyletters.app/', minAppVersion: '1.0.0' };
 
 describe('signing key', () => {
+  it('refuses a key id that keys.ts lists twice: phones use only the first (review A of #162, N5)', () => {
+    const other = generateSigningKey();
+    const twice: TrustedKey[] = [...trusted, { keyId: 'el-test', publicKey: other.publicKey, kinds: trusted[0].kinds }];
+    expect(() => readSigningKey(env, twice)).toThrow(/lists key id el-test more than once/);
+    expect(() => readSigningKey({ EL_SIGNING_KEY: other.secretKey, EL_SIGNING_KEY_ID: 'el-test' }, twice)).toThrow(/more than once/);
+  });
+
   it('reads a trusted key from the environment', () => {
     const k = readSigningKey(env, trusted);
     expect(k.keyId).toBe('el-test');
@@ -141,6 +152,45 @@ describe('published modules', () => {
     expect(cmd).toContain('public, max-age=31536000, immutable');
     const big = uploadCommands([{ ...es, bytes: new Uint8Array(1) , entry: es.entry, objectKey: 'speech/x.bin' }].map((f) => ({ ...f, bytes: { length: 600_000_000 } as Uint8Array })), 'b');
     expect(big[0]).toMatch(/^rclone copyto/);
+  });
+});
+
+describe('[WP-F19-16] the remote-config signing path with the M14 kill switches', () => {
+  const source = JSON.parse(readFileSync(new URL('./remote-config.json', import.meta.url), 'utf8')) as { killSwitches: Record<string, boolean> };
+
+  it('the committed source lists every kill switch, all off, and builds strictly', () => {
+    expect(Object.keys(source.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
+    expect(Object.values(source.killSwitches).every((v) => v === false)).toBe(true);
+    const c = buildRemoteConfig(source, 2, '2026-10-15T12:00:00.000Z');
+    expect(c.killSwitches.backupUploads).toBe(false);
+  });
+
+  it('a signed config with backupUploads, escrow and statusReport set verifies and parses on a phone', () => {
+    const k = readSigningKey(env, trusted);
+    const c = buildRemoteConfig({ ...source, killSwitches: { ...source.killSwitches, backupUploads: true, escrow: true, statusReport: true } }, 3, '2026-10-15T12:00:00.000Z');
+    const { text } = sign('remote-config', c, k, trusted);
+    const v = verifySignedDocument(JSON.parse(text), 'remote-config', trusted);
+    expect(v.ok).toBe(true);
+    const parsed = v.ok ? parseRemoteConfig(v.doc.payload) : null;
+    expect(parsed?.ok && parsed.value.killSwitches).toMatchObject({ backupUploads: true, escrow: true, statusReport: true });
+  });
+
+  it('prints the server-side secret steps and the re-sign rule for clearing a switch', () => {
+    const steps = killSwitchSteps({ ...source.killSwitches, invites: true, escrow: true, sync: true });
+    expect(steps).toContain('  npx supabase secrets set KILL_SWITCHES=invites');
+    expect(steps).toContain('  npx supabase secrets set ESCROW_SWITCH=off --project-ref <scribe-escrow ref>');
+    expect(steps).toContain("  alter database postgres set app.escrow_enabled = 'off';");
+    expect(steps).toContain("  alter database postgres set app.backup_enabled = 'on';");
+    expect(steps).toContain('Switches on: escrow, invites, sync.');
+    // statusReport stops the SQL as well as the function (review B N7 on #138; S06's 20261016001000).
+    expect(steps).toContain("  alter database postgres set app.status_report_enabled = 'on';");
+    const report = killSwitchSteps({ ...source.killSwitches, statusReport: true });
+    expect(report).toContain('  npx supabase secrets set KILL_SWITCHES=statusReport');
+    expect(report).toContain("  alter database postgres set app.status_report_enabled = 'off';");
+    const off = killSwitchSteps(source.killSwitches);
+    expect(off).toContain('  npx supabase secrets unset KILL_SWITCHES');
+    expect(off).toContain('  npx supabase secrets set ESCROW_SWITCH=on --project-ref <scribe-escrow ref>');
+    expect(off.some((s) => /each week for 4 weeks/.test(s))).toBe(true);
   });
 });
 

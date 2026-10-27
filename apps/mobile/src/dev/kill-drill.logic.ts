@@ -13,11 +13,13 @@
  *   microphone is live);
  * - `point-<run>.json` when a crash-point run reached its point and holds there for the kill;
  * - `done-<run>.json` when the save returned (DL-02 only);
+ * - `decoded-<run>.json` when a `decode` launch has read every take the host named in its `go` marker (ADR 0027:
+ *   ScribeAudio's probe and decode, and the run's length check, on the kept DL-01 takes; numbers only);
  * - `error-<run>.json` when the drill refused or could not run (no microphone, not a simulator, ...).
  * Markers carry run numbers, ids and hashes, never letter words other than the drill line below.
  */
 
-export const DRILL_MODES = ['setup', 'verify', 'dl01', 'dl02'] as const;
+export const DRILL_MODES = ['setup', 'verify', 'dl01', 'dl02', 'decode'] as const;
 export type DrillMode = (typeof DRILL_MODES)[number];
 
 /** DL-02 kinds: a typed letter; a spoken letter hashed at Finish; a spoken letter whose hash is made during Save. */
@@ -73,7 +75,22 @@ export interface DrillArgs {
   point: CrashPoint | null;
 }
 
-export type MarkerKind = 'boot' | 'go' | 'armed' | 'point' | 'done' | 'error';
+export type MarkerKind = 'boot' | 'go' | 'armed' | 'point' | 'done' | 'decoded' | 'error';
+
+/**
+ * A `decode` launch's `go` marker (ADR 0027, checks V2 and V3, the in-app half): the takes to read, by file name
+ * under Documents/ExpoAudio, each with its draft so the run gets the stored progress mark the app would pass.
+ */
+export interface DecodeRequest {
+  run: number;
+  files: Array<{ name: string; draftId: string | null }>;
+}
+
+/** Only a recording's own file name, no folder: what a decode request may name. */
+export const DECODE_FILE_NAME = /^[\w.-]{1,128}\.(aac|m4a)$/;
+/** At most this many takes in one decode launch, and the first this many also get a listening copy (`enhance`). */
+export const DECODE_LIMIT = 600;
+export const ENHANCE_LIMIT = 5;
 
 export function markerName(kind: MarkerKind, run: number): string {
   return `${kind}-${run}.json`;

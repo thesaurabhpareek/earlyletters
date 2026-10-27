@@ -26,6 +26,7 @@ import {
 import { takeOwnership } from '../src/lib/sync/ownership';
 import { ALL_GROUPS, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { insertBook } from './helpers/store-fixture';
 
 // ── Server (PGlite with every migration) ─────────────────────────────────
 function migrationsDir(): string {
@@ -40,6 +41,13 @@ const B = '22222222-2222-2222-2222-222222222222'; // Papa, co-parent
 
 let pg: PGlite;
 let lock: Promise<unknown> = Promise.resolve();
+/**
+ * Whether the migrations define sync protocol v1 (the words compare and set,
+ * ADR 0025 section 5): S02's v1 server file makes sync_push answer conflict_groups.
+ * This file loads no stand-in, so with develop's migrations alone the server is v0
+ * (later arrival wins). The same check as helpers/sync-server.ts.
+ */
+let protocolV1 = false;
 /** PGlite has one connection: role switches and the call must not interleave. */
 function serial<T>(fn: () => Promise<T>): Promise<T> {
   const next = lock.then(fn, fn);
@@ -140,7 +148,7 @@ function engineOn(db: SqlDb, uid: string, supabase: SupabaseLike, pageSize = 200
 function addBook(db: SqlDb, name: string, birthday: string, signsAs = 'Mama'): string {
   const id = uuid7();
   db.transaction(() => {
-    db.run('INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, NULL, ?, ?, ?)', id, name, birthday, signsAs, iso(), iso());
+    insertBook(db, { id, name, birthday, signsAs, at: iso() });
     enqueueBookCreate(db, id, ctx());
   });
   return id;
@@ -209,6 +217,12 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     `);
     const dir = migrationsDir();
     for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) await pg.exec(readFileSync(join(dir, f), 'utf8'));
+    // Test-only (20261023060000): the tombstone test compares a phone with what the co-parent sees through
+    // book_entries; on a project only sync_pull reads that view (as its owner), so no client holds SELECT on it.
+    await pg.exec('grant select on public.book_entries to authenticated');
+    protocolV1 = (await pg.query<{ v1: boolean }>(
+      "select exists (select 1 from pg_proc where proname = 'sync_push' and prosrc like '%conflict_groups%') as v1",
+    )).rows[0].v1;
     await pg.exec(`insert into auth.users values ('${A}'), ('${B}')`);
     for (const doc of ['terms', 'sensitive-data']) {
       await pg.query(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
@@ -235,7 +249,8 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     const own = takeOwnership(A1, A, ctx());
     expect(own).toMatchObject({ outcome: 'claimed', books: 2, localOnlyBooks: 0 });
     expect(local(A1, ids.first)?.author_id).toBe(A);
-    expect(outboxTypes(A1)).toEqual(['book.first_run', 'prefs.upsert', 'prefs.upsert', 'entry.upsert', 'entry.upsert']);
+    // v8: the letter waiting for its words is queued as its author-only held row (WP-F16-17).
+    expect(outboxTypes(A1)).toEqual(['book.first_run', 'prefs.upsert', 'prefs.upsert', 'entry.upsert', 'entry.upsert', 'held.upsert']);
     expect(takeOwnership(A1, A, ctx()).outcome).toBe('already');
     expect(() => takeOwnership(A1, B, ctx())).toThrow('sync_account_mismatch');
 
@@ -248,14 +263,15 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect(await server(ids.waiting)).toBeUndefined(); // held until its words exist
     expect(await server(ids.gone)).toBeUndefined(); // deleted before it ever left the phone
     expect(local(A1, ids.first)?.sync_state).toBe('synced');
-    expect(pendingCount(A1)).toBe(0);
+    // This server has no held drafts (its pull has no held section): the held row waits on the phone, never refused.
+    expect(outboxTypes(A1)).toEqual(['held.upsert']);
   }, 60_000);
 
   it('ordered and coalesced: three edits before a sync go up as one op, after the letter they edit', async () => {
     ids.edited = saveLetter(A1, ASHA, 'Two teeth.');
     editLetter(A1, ids.edited, 'Two teeth today.');
     editLetter(A1, ids.edited, 'Two teeth today, both at once.');
-    expect(outboxTypes(A1)).toEqual(['entry.upsert']);
+    expect(outboxTypes(A1)).toEqual(['held.upsert', 'entry.upsert']);
     // The waiting letter gets its words: its first upload.
     A1.transaction(() => {
       A1.run("UPDATE entries SET raw_transcript = 'um you sang', final_text = 'You sang.', transcript_status = NULL WHERE id = ?", ids.waiting);
@@ -265,6 +281,7 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect((await server(ids.edited))?.final_text).toBe('Two teeth today, both at once.');
     expect((await sys('select count(*)::int n from entry_versions where entry_id = $1', [ids.edited])).rows[0].n).toBe(0);
     expect((await server(ids.waiting))?.final_text).toBe('You sang.');
+    expect(pendingCount(A1)).toBe(0); // its words exist: the letter went, and its held upload with it
   }, 60_000);
 
   it('the co-parent joins and receives the book, its settings and the in-book letters, never raw transcripts', async () => {
@@ -342,20 +359,39 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect(B1.get<{ n: number }>("SELECT COUNT(*) AS n FROM entries WHERE final_text LIKE 'Page test%'")!.n).toBe(6);
   }, 60_000);
 
-  it('[D-023] two phones edit one letter offline: last writer wins, both converge, the earlier words stay in history', async () => {
+  it('[D-023] [F16-REQ-010] two phones edit one letter offline: the server\'s rule decides, both converge, and no version of the words is lost', async () => {
     expect(takeOwnership(A2, A, ctx()).outcome).toBe('claimed');
     await engineOn(A2, A, serverFor(A)).sync(); // a second phone for the same account: the whole book comes down
     expect(local(A2, ids.first)).toMatchObject({ final_text: 'She walked to me.', raw_transcript: 'um She walked to me.', sync_state: 'synced' });
     editLetter(A1, ids.first, 'She walked to me from the sofa.');
     editLetter(A2, ids.first, 'She walked all the way to me.');
     await engineOn(A1, A, serverFor(A)).sync();
-    await engineOn(A2, A, serverFor(A)).sync();
+    const second = await engineOn(A2, A, serverFor(A)).sync();
     await engineOn(A1, A, serverFor(A)).sync();
-    expect((await server(ids.first))?.final_text).toBe('She walked all the way to me.');
-    expect(local(A1, ids.first)?.final_text).toBe('She walked all the way to me.');
-    expect(local(A2, ids.first)?.final_text).toBe('She walked all the way to me.');
-    expect((await sys(`select 1 from entry_versions where entry_id = $1 and final_text = 'She walked to me from the sofa.'`, [ids.first])).rows.length).toBe(1);
+    const copies = (db: SqlDb) =>
+      db.all<{ payload: string }>("SELECT payload FROM rejected_writes WHERE code = 'conflict' AND entity_id = ?", ids.first)
+        .map((r) => (JSON.parse(r.payload) as { data: { final_text: string } }).data.final_text);
+    if (protocolV1) {
+      // v1 (ADR 0025 section 5; D-111 item 10): the first arrival's words stand; the second phone's words are
+      // refused, kept on that phone as a conflict copy for the author to choose, and never re-sent by themselves.
+      expect(second.conflicts).toBe(1);
+      expect((await server(ids.first))?.final_text).toBe('She walked to me from the sofa.');
+      expect(local(A1, ids.first)?.final_text).toBe('She walked to me from the sofa.');
+      expect(local(A2, ids.first)?.final_text).toBe('She walked to me from the sofa.');
+      expect(copies(A2)).toEqual(['She walked all the way to me.']);
+      expect(copies(A1)).toEqual([]);
+      expect(pendingCount(A2)).toBe(0);
+      expect((await sys(`select 1 from entry_versions where entry_id = $1 and final_text = 'She walked to me.'`, [ids.first])).rows.length).toBe(1);
+    } else {
+      // v0 (20261005000000 alone, D-023): later arrival wins; the earlier words stay in the server's history.
+      expect(second.conflicts).toBe(0);
+      expect((await server(ids.first))?.final_text).toBe('She walked all the way to me.');
+      expect(local(A1, ids.first)?.final_text).toBe('She walked all the way to me.');
+      expect(local(A2, ids.first)?.final_text).toBe('She walked all the way to me.');
+      expect((await sys(`select 1 from entry_versions where entry_id = $1 and final_text = 'She walked to me from the sofa.'`, [ids.first])).rows.length).toBe(1);
+    }
     expect(local(A1, ids.first)?.raw_transcript).toBe('um She walked to me.'); // never changes
+    expect(local(A2, ids.first)?.raw_transcript).toBe('um She walked to me.');
   }, 60_000);
 
   it('tombstones: a delete reaches my other phone as Recently deleted and leaves the co-parent\'s phone; a restore brings it back', async () => {

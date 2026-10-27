@@ -30,7 +30,8 @@
  * - The lamp never cuts between rooms (EXPERIENCE_PASS 5.8). Only the first lit room after a cold launch
  *   arrives slowly (arriveMs); every later lamp comes up as a return (returnMs), unless it asks to
  *   `arrive`. persistKey "firstRun" keeps one light from the gate through onboarding; "tabs" lets the
- *   arriving tab start at the light the last tab left and settle to its own over returnMs. An unlit room
+ *   arriving tab start at the light the last tab left (or, the first time, the light first run left) and
+ *   settle to its own over returnMs. An unlit room
  *   over a lit one (useUnlitRoom: Listen, Review, Read together, the letter page) fades every lamp
  *   underneath over leaveMs and brings it back over returnMs. Under a sheet the room keeps its light and
  *   pauses its breath.
@@ -143,7 +144,7 @@ export function LampView({ persistKey, arrive, focused = true, ...input }: LampP
 
   const nextId = useRef(0);
   const [layers, setLayers] = useState<Layer[]>(() =>
-    planLampMount(lampMemory.get(persistKey), light, reduced, { key: persistKey, firstOfSession: lampMemory.firstOfSession(), arrive }).map((p) => ({
+    planLampMount(lampMemory.atMount(persistKey), light, reduced, { key: persistKey, firstOfSession: lampMemory.firstOfSession(), arrive }).map((p) => ({
       ...p,
       id: nextId.current++,
     })),

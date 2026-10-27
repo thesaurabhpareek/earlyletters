@@ -10,6 +10,7 @@
  */
 import { AppState } from 'react-native';
 import { ScribeStore, type NativeEntitlementSnapshot, type StoreViewSupport } from '../../../modules/scribe-store';
+import { capabilities } from '../capabilities';
 import { getSetting, setSetting } from '../store';
 import { PLAN_CACHE_KEY, PLUS_PRODUCT_IDS } from './config';
 import { startPlanReminders } from './plan-reminders';
@@ -126,11 +127,26 @@ export function startPlus(): () => void {
   } catch {
     // Notifications unavailable (web preview): the in-app note still works.
   }
+  // The D-080 status report (WP-F14-15a): only in a build with the statusReport flag, and
+  // loaded lazily so a build without it never evaluates the server contract.
+  let stopStatusReport: () => void = () => {};
+  let stopped = false;
+  if (capabilities.statusReport) {
+    void import('./status-report.app')
+      .then((m) => {
+        if (!stopped) stopStatusReport = m.startStatusReport();
+      })
+      .catch(() => {
+        // Not loadable (web preview): the phone reminders still work.
+      });
+  }
   void refreshPlan();
   return () => {
     changes?.remove();
     foreground.remove();
     stopReminders();
+    stopped = true;
+    stopStatusReport();
     started = false;
   };
 }
