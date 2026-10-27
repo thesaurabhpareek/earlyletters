@@ -355,3 +355,14 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Review by:** on trigger
 - **Status:** in force; the F06-REQ-010 one-line amendment is pending in the PRD lane (source)
 - **As built:** `packages/core/src/lang/english-tables.ts`, `packages/core/src/lang/english.ts`, `packs/text-rules/en.json`, `packages/core/test/engine6.test.ts`
+
+### R-020 Coordinator's rulings on the P4 critics' pass (capture and Review)
+- **Source:** `docs/design/reviews/P4_CRITICS_PASS_2026-10-24.md` section 9 (Coordinator's rulings, 24 Oct 2026); PR #287 (merged 24 Oct 2026); review comment 6383314742 on #286
+- **Decided:** four rulings. M1 (the changed-word mark nests twice): stays Must; every span inside `Transcript` takes the letter face and the space stays outside the strike. S10 (toast timing under VoiceOver): Later, owner P1; DESIGN_LANGUAGE 11.5 and COMPONENTS 2.14 govern. S7 (wait past 8 s): Should only if the first letter on an iPhone SE 3 with a cold model waits past 8 s, otherwise Later. S9 (VoiceOver speech picked up by a recording): moved to Must as a blocking device check on the build 2 run sheet; if confirmed, announcements are suppressed during a take before P4 is signed.
+- **Why:** S9: words the person never said would enter the letter, shown as theirs and unmarked, which is the constitution's line. M1: a fix on the outer spans alone would leave the struck heard word and the kept name in the wrong face. Others: as in the table in section 9.
+- **Door:** two-way: ranks and fixes in an internal review document
+- **Reversal cost:** low: a document and code
+- **Revisit when:** technology: the S9 device check on a phone confirms or clears VoiceOver speech in a take; customer: the S7 cold-start time is measured on an SE 3
+- **Review by:** on trigger
+- **Status:** in force; no D-id in `docs/DECISIONS.md`
+- **As built:** `docs/design/reviews/P4_CRITICS_PASS_2026-10-24.md`; the fixes are in #289 and #292 (merged 27 Oct 2026) per their titles

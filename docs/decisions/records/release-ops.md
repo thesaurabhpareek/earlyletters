@@ -187,8 +187,8 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Reversal cost:** medium: items 6 and 7 need copy, policy and counsel changes once published; the rest are code, copy or project settings
 - **Revisit when:** technology: the held-draft table is not green in `sync-two-phone` by Fri 23 Oct 2026 (item 9: build 2 ships with held sync off); law: counsel answers items 7 and 13; scale: the R-17 limits measured in the alpha (item 8)
 - **Review by:** 2026-10-29
-- **Status:** in force, except items 7 and 13 (counsel, open); item 3 of D-104 is not changed here. Follow-up PRs named in the source and still open on 23 Oct: #238 (item 12), #184 (the BL-322 copy in item 8), #182 and #208 (items 9 and 10), #140 (item 8)
-- **As built:** item 12 not built: `apps/mobile/src/app/onboarding.tsx` still has `COVER_MIN_FREE_HEIGHT = 640`; item 2 is a Vercel project setting, applied Sat 17 Oct per the source; items 9 and 10 are in open PRs #182 and #208
+- **Status:** in force, except items 7 and 13 (counsel, open); item 3 of D-104 is not changed here. Follow-up PRs named in the source, all merged 23 Oct 2026: #238 (item 12, the design docs only), #184 (the BL-322 copy in item 8), #182 and #208 (items 9 and 10), #140 (item 8)
+- **As built:** item 12 not built in code: `apps/mobile/src/app/onboarding.tsx` still has `COVER_MIN_FREE_HEIGHT = 640` on 27 Oct (#238 changed the design docs only); item 2 is a Vercel project setting, applied Sat 17 Oct per the source; items 9 and 10: the phone side is #182 (local schema v8) and the server side #208 (`supabase/migrations/20261016000000_sync_v1_server.sql`, switch `app.held_sync`); item 8: #140
 - **Also:** amends D-104 (item 2) and R-007; confirms D-097 and D-063; D-106
 
 ### R-019 Staging follows `develop` only
