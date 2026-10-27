@@ -126,7 +126,7 @@ What you get:
 - A non-English language also needs a native speaker's sign-off of its pack tables (F05-REQ-005): `docs/qa/evidence/F05-pack-<lang>-<version>.md` with a `Reviewer role:` and a `Date:` line, and the pack's filler, repeat and punctuation tables marked native-reviewed.
 
 ## 8. ADTS decode parity and playback (ADR 0027 checks V3 and V4)
-ADR 0027 records iOS takes as ADTS (`.aac`) from build 2: flipped on 27 Oct on the simulator evidence, with V1's speech half, V3's Mac half (this kit) and V4 due before the build 2 freeze, and the line set back to M4A if one fails. V3 asks whether Core Audio decodes an ADTS take exactly as it decodes the same frames in M4A, and what it does with a take a kill cut off or damage broke. V4 asks how the player times and seeks it. This kit runs the Mac half of both. About 5 minutes, no recording needed.
+ADR 0027 records iOS takes as ADTS (`.aac`) in every iOS build cut from develop from the 27 Oct flip on, build 1 included: flipped on the simulator evidence, with V1's speech half, V3's Mac half (this kit) and V4 due before the build 2 freeze (Tue 3 Nov 13:00 UTC), and the line set back to M4A if one fails. V3 asks whether Core Audio decodes an ADTS take exactly as it decodes the same frames in M4A, and what it does with a take a kill cut off or damage broke. V4 asks how the player times and seeks it. This kit runs the Mac half of both. About 5 minutes, no recording needed.
 
 It needs Xcode (for `xcrun swiftc` and Core Audio), `npm install` at the repo root (section 1), and ffmpeg:
 ```bash

@@ -1,8 +1,9 @@
 /// <reference types="node" />
 /**
- * The recording container switch, per platform (ADR 0027). iOS records ADTS from build 2: the one line
- * `RECORDING_CONTAINERS.ios = 'adts'` (capture/recording-file.ts), flipped on 27 Oct on the simulator
- * evidence, and set back to 'm4a' if a check due before the freeze fails. Android stays M4A: it is not in
+ * The recording container switch, per platform (ADR 0027). iOS records ADTS in every build cut from develop
+ * from the 27 Oct flip on, build 1 included: the one line `RECORDING_CONTAINERS.ios = 'adts'`
+ * (capture/recording-file.ts), flipped on the simulator evidence, and set back to 'm4a' if a check due
+ * before the freeze fails. Android stays M4A: it is not in
  * the alpha, and Media3 seeks ADTS only with constant-bitrate seeking, which expo-audio does not enable.
  * These tests pin the M4A settings byte for byte, show that ADTS changes only the file type and only on
  * the platform that flips, and that the rest of the app (Export included) already treats an ADTS take as
@@ -30,7 +31,7 @@ const { audioPath } = await import('../src/lib/export/build.logic');
 
 const DOCS = 'file:///var/mobile/Containers/Data/Application/B81D7E44/Documents/';
 const M4A_BOTH = { ios: 'm4a', android: 'm4a' } as const;
-const BUILD_2 = { ios: 'adts', android: 'm4a' } as const;
+const FLIPPED = { ios: 'adts', android: 'm4a' } as const;
 
 describe('[ADR 0005] the M4A recording is unchanged', () => {
   it('AAC-LC, mono, 48 kHz, 64 kbps, high quality, metering on, in .m4a under Documents, exactly as before', () => {
@@ -51,6 +52,7 @@ describe('[ADR 0005] the M4A recording is unchanged', () => {
     expect(VOICE_RECORDING_OPTIONS).toEqual(voiceRecordingOptions(RECORDING_CONTAINERS));
     expect(recordingContainerFor('ios')).toBe(RECORDING_CONTAINERS.ios);
     expect(recordingContainerFor('android')).toBe(RECORDING_CONTAINERS.android);
+    expect(recordingContainerFor('web')).toBe(RECORDING_CONTAINERS.ios); // anything but Android follows iOS
   });
 
   it('Export names a take in each platform\'s current container by that container\'s extension, so the flip needs no Export change', () => {
@@ -62,21 +64,21 @@ describe('[ADR 0005] the M4A recording is unchanged', () => {
   });
 });
 
-describe('[ADR 0027] ADTS on iOS only, for build 2', () => {
-  it('Android records M4A in build 2: its ADTS is post-alpha, with its own checks', () => {
+describe('[ADR 0027] ADTS on iOS only, from the 27 Oct flip on', () => {
+  it('Android records M4A: its ADTS is post-alpha, with its own checks', () => {
     expect(RECORDING_CONTAINERS.android).toBe('m4a');
   });
 
-  it('iOS records ADTS from build 2 (flipped 27 Oct; the one line goes back to m4a if V1, V3 or V4 fails before the freeze)', () => {
+  it('iOS records ADTS in every build from the 27 Oct flip on, build 1 included (the one line goes back to m4a if V1, V3 or V4 fails before the freeze)', () => {
     expect(RECORDING_CONTAINERS).toEqual({ ios: 'adts', android: 'm4a' });
-    expect(VOICE_RECORDING_OPTIONS).toEqual(voiceRecordingOptions(BUILD_2));
+    expect(VOICE_RECORDING_OPTIONS).toEqual(voiceRecordingOptions(FLIPPED));
     expect(VOICE_RECORDING_OPTIONS.ios).toMatchObject({ extension: '.aac', outputFormat: 'aac ' });
     expect(VOICE_RECORDING_OPTIONS.android).toMatchObject({ extension: '.m4a', outputFormat: 'mpeg4' });
   });
 
-  it('the build 2 flip changes only iOS, and only its file type: the same AAC-LC frames, rate, channels, bitrate and quality', () => {
+  it('the flip changes only iOS, and only its file type: the same AAC-LC frames, rate, channels, bitrate and quality', () => {
     const before = voiceRecordingOptions(M4A_BOTH);
-    const after = voiceRecordingOptions(BUILD_2);
+    const after = voiceRecordingOptions(FLIPPED);
     expect(after.ios).toEqual({ ...before.ios, extension: '.aac' }); // the codec stays kAudioFormatMPEG4AAC
     expect(after.android).toEqual(before.android); // .m4a, mpeg4
     expect({ ...after, extension: null, ios: null }).toEqual({ ...before, extension: null, ios: null });

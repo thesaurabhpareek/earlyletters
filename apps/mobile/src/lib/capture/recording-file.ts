@@ -21,11 +21,13 @@ export const RECORDING_FILES = {
 export type RecordingMimeType = (typeof RECORDING_FILES)[RecordingContainer]['mimeType'];
 
 /**
- * The container new takes use, per platform (ADR 0027). iOS records ADTS
- * from build 2: flipped on 27 Oct on the simulator evidence (V2 passed twice,
- * 50 of 50 killed takes playing each time; V3's in-app decode check 50 of 50;
- * V1's header half). V1's speech half, V3's Mac half and V4 are due before the
- * build 2 freeze, and this line goes back to 'm4a' if one fails. Android
+ * The container new takes use, per platform (ADR 0027). iOS records ADTS in
+ * every build cut from develop from the 27 Oct flip on, build 1 included,
+ * flipped on the simulator evidence (V2 passed twice, 50 of 50 killed takes
+ * playing each time; V3's in-app decode check 50 of 50; V1's header half).
+ * V1's speech half, V3's Mac half and V4 (DEVICE_TEST_PLAN DL-06) are due
+ * before Tue 3 Nov 13:00 UTC, the build 2 freeze. If one fails, the
+ * coordinator sets this one line back to 'm4a', and nothing else. Android
  * stays 'm4a': it is not in the alpha, and Media3 seeks ADTS only with
  * constant-bitrate seeking, which expo-audio does not enable, so Android ADTS
  * is post-alpha work with its own checks.
