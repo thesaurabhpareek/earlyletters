@@ -196,11 +196,11 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 
 ## 5. Spec-owner changes
 
-Each row changes a line in `docs/design/EXPERIENCE_PASS_2026-10.md` (or MOTION.md) to match what was built and accepted, or to the fix a Should item proposes. Line numbers are on 11de4f9.
+Each row changes a line in `docs/design/EXPERIENCE_PASS_2026-10.md` (or MOTION.md) to match what was built and accepted, or to the fix a Should item proposes. Line numbers are on 11de4f9. Updated Tue 27 Oct from the "For the spec owner" list of #292 (lens B6 on #289, and the two wording notes of #292's review B): the S11 472, S17 Motion 637, S17 States 639 and S21 screen-reader rows, and two new rows, S17 Close and S19 at accessibility sizes, now describe what P4c built (#289, #292).
 
 | Spec line | Says now | Proposed wording | Because |
 |---|---|---|---|
-| S11 Visual, 472 | the prompt "at most 3 lines" | "at most 3 lines at the default text sizes; at accessibility sizes the whole prompt, in the room's scroll" | S5 |
+| S11 Visual, 472 | the prompt "at most 3 lines" | "at most 3 lines at the default text sizes; at accessibility sizes the whole prompt, in the room's scroll, with the clock and 'Listening.' pinned with Pause and Finish" | S5 (#289) |
 | S12 Visual, 492 | lists the room at rest | add: "Pause and Finish hold their place below the circle, dimmed, so nothing moves when the take starts; no Let it go before a take exists" | A16 |
 | S14 copy, 537 | `review.waitingLong` "after 8 s" | "after 8 s, only for a recording over a minute or in more than one part" | S7 |
 | S14 Visual, 546 | "the line in `callout`" | "the line in `headline`, the title every Review state card uses" | A2 |
@@ -210,15 +210,18 @@ Each row changes a line in `docs/design/EXPERIENCE_PASS_2026-10.md` (or MOTION.m
 | S16 table, 585 to 588 | four rows | add a row: "The recording has sound the phone cannot open (the launch sweep's cut-off take) / `errors.transcriptionFailed.title` / `.body` / Keep the recording / Type it instead", as #271 built | A21 |
 | S17 Visual, 635 | "16 pt gutters" and the wash "(radius 4)" | "20 pt gutters, the same for the saved card" and "the wash has square ends (nested text takes no radius)" | L3, A12 |
 | S17 Visual, 635 | the segmented control | add: "at accessibility sizes the two options stack, full width, with no line limit" | S4 |
-| S17 States, 639, and acceptance | nothing for a screen reader | add: "With a screen reader on, the paragraph's label is the words as they will be kept, its hint the fix count, and the fix rows start open" | S3 |
+| S17 Motion, 637 | the card expands "under its line" | add: "where the lines are not known yet (the web, or before the first layout), under the mark's sentence" | S8 (#289) |
+| S17 States, 639, and acceptance | nothing for a screen reader | add: "With a screen reader on, the paragraph's label is the kept words, with no hint (React Native's iOS paragraph never reads one); the marks are not buttons, and the fix rows start open" (replaces "its hint the fix count") | S3 (#292) |
+| S17, new Close line | none | "Close's hint says 'Saved on this phone' only while Review holds none of the person's own changes (Change words, a fix put back, the other view)." | S1 (#289, #292) |
 | S18 Visual, 652 | "'Done' sits in the header and in the keyboard accessory bar. The 2 pt focus ring stays for Full Keyboard Access only." | "Done sits in the header and in the footer, which rides above the keyboard. The system draws Full Keyboard Access's focus ring." | A13, L15 |
 | S19 copy, 660 | `write.notSaved` "caution, in the same place" | "in `text` with a WarningCircle in `textMuted`, in the same place (Write is lit paper: no status colour, D-110)" | A9 |
 | S19 Visual, 662 | "side by side, stacking at accessibility sizes" | "stacked, as Review's footer: 'Add to {child}'s book' full width, 'Keep private' quiet beneath" | S2 |
 | S19, new States line | none | "While words are on screen that the last write could not keep, Close, Android's back and the swipe hold the sheet; each tries the write again and closes once it goes through." | A15 |
+| S19, accessibility sizes | none | add: "At accessibility sizes the autosave line has its own row under the header." | S5 (#289) |
 | S20 Decision, 671, and 5.8 row 5a, 1806 | "the same sequence plays inside Write's sheet" and "the sheet dismisses natively onto the Book" | "Write writes the words and hands the letter to Review's one Keep step (`lib/capture/keep-intent.ts`); Review holds the sheet still, runs the Keep step, plays the saved moment in its full-screen room and lands on the Book. A failed save or the Plus sheet leaves the ordinary Review, headed 'Your letter'." | A6 |
 | S21 Visual and motion, 694 | the chip in "`caption`"; "then Review fades out (200 ms)" | "`subhead` (P1's trust-copy floor)"; "then Review fades out over `motion.route.dissolveMs` (280 ms)" | A10, A7 |
 | S21 Reduce Motion, 696 | "one 200 ms fade, then the modal dismisses" | "one 200 ms fade; the moment holds until `sequenceMaxMs` (900 ms) from the commit, then the modal dismisses" | A14 |
-| S21, new screen-reader line | none | "With a screen reader on, the moment is said once at the commit and holds until that announcement has finished (iOS `announcementFinished`), at least 3 s and at most about 8 s from the commit; a tap still skips." | S6 |
+| S21, new screen-reader line | none | "With a screen reader on, the moment is said once at the commit and holds until that announcement has finished (iOS `announcementFinished`), at least 3 s and at most about 8 s from the commit, and 3 s where no such event fires (web, Android); a tap still skips." | S6 (#289) |
 | S21 copy, 692 | `secondFreeNote` "(no action, 4 s)" | Withdrawn by the coordinator (section 9): no change proposed; COMPONENTS 2.14 governs | S10 |
 | 5.8 rule 5, 1792 | "about 1.2 s, under the 2 s `hardCeilingMs`" | add: "With a screen reader on, the hand-off waits for the saved moment's announcement (S21); the 1.2 s and 2 s figures are for motion." | S6 |
 | 5.8 row 4, 1803 | "`soft` when the take ends"; "the moon card `enter`s at 80 ms" | "`press` (Light) when the take ends (MOTION 6)"; "at 90 ms (`motion.enter(3)`, the stagger step)" | A3, A4 |
@@ -276,5 +279,8 @@ At AX5 (emulated): Listen's pinned Pause, Finish and Let it go end at 848 pt of 
 | S9 | If VoiceOver's own speech is picked up, words the person never said enter the letter, shown as theirs and unmarked: the constitution's line | A blocking device check: a gate line on the build 2 run sheet. If confirmed, announcements are suppressed during a take before P4 is signed | moved from Should to Must; its fix line; section 7 |
 | S2 | Measured at 375, 390, 402 and 440 pt: the primary wraps on every width | Unchanged rank; "S2 on iOS" joins section 7 | section 7 |
 | S3 | The proposed screen-reader label is sound only with the fix rows starting open: a VoiceOver user then hears the kept words and can reach every removed word as a row | Keep the two halves together in the spec amendment | none needed: section 5's S17 row already carries both halves in one line, and the spec owner applies them together |
+| Segments (added Tue 27 Oct) | The critics' re-check of M1 on #289 (comment 6383654667) found, outside P4c's files, that a mark before a comma lost the comma and the space in Review's "With small fixes" view (`segments()` in `packages/core/src/pipeline.ts`); the saved letter was right | Must before build 2, owner the engine: the re-check's recommendation, ranked Must by the coordinator | Fixed by #290 (012d208, Tue 27 Oct, 1:34 PM PT), display only, `ENGINE_VERSION` 8 unchanged: the runs now join to the saved text byte for byte, pinned by `packages/core/test/segments.test.ts` |
 
 Counts after the rulings: Must 2 (M1, S9), Should 10, Later 17, Accept as built 24. The fix-first three are unchanged: M1, S1, S2.
+
+With the 27 Oct row, the Musts are three: M1, cleared by P4c (#289, c9bc6c0; the re-check above), the segments item, fixed by #290 (012d208), and S9, still open on the build 2 phone list.
