@@ -10,8 +10,8 @@ The alpha plan written on 15 Oct 2026 for decision D-106 (PR #152, closed unmerg
 | The two builds and the twelve founder build steps | `docs/release/TESTFLIGHT.md` |
 | Environments (staging, production) | `docs/release/ENVIRONMENTS.md` |
 | The release train after the alpha | `docs/ops/RELEASE.md` and ADR 0022 |
-| What is not in the alpha (section 1.3: Google sign-in, Android, and the rest of that list) | `docs/qa/ALPHA_GO_NO_GO.md` section 1 and D-111 (the English-only and feature scope); the original's section 1.3 on the branch below is the fuller list |
-| The founder steps F01 to F27 with their hands-on hours (section 4: F19 2 h, F23 2.5 h, F25 2.5 h), cited by the run sheets | The original's section 4 on the branch below (lines 172 to 210 at 1ae1ace6). `docs/release/AUTOMATION.md` section 6 and `docs/FOUNDER_TASKS.md` carry the steps that are still live (F01, F02, F04, F08, F09, F12, F13, F16 under their AF numbers); the dates in the original are the 15 Oct calendar and have all moved |
+| What is not in the alpha (section 1.3: Google sign-in, Android, and the rest of that list) | `docs/release/TESTFLIGHT.md` lines 173 and 199 (Google sign-in is not offered in either alpha build) and D-111 (the English-only and feature scope); the original's section 1.3 on the branch below is the fuller list |
+| The founder steps F01 to F27 with their hands-on hours (section 4: F19 2 h, F23 2.5 h, F25 2.5 h), cited by the run sheets | The original's section 4 on the branch below (lines 172 to 210 at 1ae1ace6). `docs/release/AUTOMATION.md` section 4 (its "= #152 Fxx" rows, lines 405 to 417, and the 0.2 table) carries the steps that are still live under their AF numbers (F01, F02, F04, F08, F09, F12, F13, F16, and F17 under AF-13), and `docs/FOUNDER_TASKS.md` holds the same steps as FT-01, FT-07, FT-08, FT-10, FT-16 and FT-17; the dates in the original are the 15 Oct calendar and have all moved |
 
 Section numbers cited elsewhere as "ALPHA_PLAN section 6" mean the go/no-go checks and the decision rule: use `docs/qa/ALPHA_GO_NO_GO.md` sections 1 to 3.
 
