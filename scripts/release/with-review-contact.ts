@@ -6,19 +6,24 @@
 //   {"firstName","lastName","email","phone","copyright","demoUsername"?,"demoPassword"?,"demoRequired"?,"notes"?}
 // `phone` is in international format with a leading "+" (App Store Connect refuses digits only).
 // `copyright` (for example "2026 <publisher's legal name>") goes to `apple.copyright`. It is in the secret because the
-// individual publisher's name is never in code (packages/brand, D-004). v1.0 has no sign-in, so no demo account.
+// individual publisher's name is never in code (packages/brand, D-004).
+// A build with server features on has sign-in (D-100), so App Review needs a working demo account (guideline 2.1):
+// the secret must then carry `demoUsername` and `demoPassword` (Asha only), and the notes must not say there is no sign-in.
 // `notes` defaults to the review notes below, so the 5.1.1(ix) positioning (D-004) is always sent.
 // Errors never echo the secret: a parse failure reports a fixed message, and missing fields are named, not shown.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { storeListing } from '../../packages/content/src/store.en';
-import { STORE_CONFIG_PATH } from './store-config';
+import { productionServerFeatures, STORE_CONFIG_PATH } from './store-config';
 
 const REQUIRED = ['firstName', 'lastName', 'email', 'phone', 'copyright'] as const;
 
 /** Guideline 2.1 and D-004: the reviewer notes live with every other store word in packages/content. */
 export const REVIEW_NOTES = storeListing.reviewNotes;
 
-export function withReviewContact(config: Record<string, unknown>, raw: string | undefined) {
+/** Words that describe an on-device build; wrong in the notes of a build with sign-in. */
+const NO_SIGN_IN = /\bno (sign-in|sign in|account)\b/i;
+
+export function withReviewContact(config: Record<string, unknown>, raw: string | undefined, serverFeatures: string | undefined = 'off') {
   if (!raw) throw new Error('ASC_REVIEW_CONTACT_JSON is not set');
   let parsed: unknown;
   try {
@@ -36,12 +41,19 @@ export function withReviewContact(config: Record<string, unknown>, raw: string |
   if (!/^\+[0-9][0-9 ()-]{6,}$/.test((review.phone as string).trim())) {
     throw new Error('ASC_REVIEW_CONTACT_JSON phone must be international format starting with "+" (value not shown)');
   }
+  const notes = typeof review.notes === 'string' ? review.notes : REVIEW_NOTES;
+  if (serverFeatures === 'on') {
+    const demo = ['demoUsername', 'demoPassword'].filter((k) => typeof review[k] !== 'string' || !(review[k] as string).trim());
+    if (demo.length) throw new Error(`The production build has sign-in (server features on): ASC_REVIEW_CONTACT_JSON is missing ${demo.join(', ')}`);
+    if (NO_SIGN_IN.test(notes)) throw new Error('The review notes say there is no sign-in or account, but the production build has server features on (BL-341)');
+  }
   const apple = (config.apple ?? {}) as Record<string, unknown>;
-  return { ...config, apple: { ...apple, copyright, review: { notes: REVIEW_NOTES, ...review } } };
+  const reviewOut = serverFeatures === 'on' ? { ...review, demoRequired: true, notes } : { ...review, notes };
+  return { ...config, apple: { ...apple, copyright, review: reviewOut } };
 }
 
 if (process.argv[1]?.endsWith('with-review-contact.ts')) {
   const config = JSON.parse(readFileSync(STORE_CONFIG_PATH, 'utf8'));
-  writeFileSync(STORE_CONFIG_PATH, `${JSON.stringify(withReviewContact(config, process.env.REVIEW), null, 2)}\n`);
+  writeFileSync(STORE_CONFIG_PATH, `${JSON.stringify(withReviewContact(config, process.env.REVIEW, productionServerFeatures()), null, 2)}\n`);
   console.log('review contact added (values not printed)');
 }

@@ -118,6 +118,15 @@ describe('App Review contact (added in CI only)', () => {
     expect(() => withReviewContact({}, JSON.stringify({ ...secret, phone: '+1 (555) 010-0100' }))).not.toThrow();
   });
 
+  it('needs a demo account and sign-in-true notes when the production build has server features on (D-100)', () => {
+    expect(() => withReviewContact({}, JSON.stringify(secret), 'on')).toThrow(/demoUsername, demoPassword/);
+    const demo = { ...secret, demoUsername: 'asha.reviewer@example.org', demoPassword: 'fictional-only' };
+    expect(() => withReviewContact({}, JSON.stringify({ ...demo, notes: 'There is no sign-in.' }), 'on')).toThrow(/no sign-in/);
+    const out = withReviewContact({}, JSON.stringify({ ...demo, notes: 'Sign in with the demo account below.' }), 'on') as unknown as { apple: { review: Record<string, unknown> } };
+    expect(out.apple.review).toMatchObject({ demoRequired: true, demoUsername: 'asha.reviewer@example.org', notes: 'Sign in with the demo account below.' });
+    expect(() => withReviewContact({}, JSON.stringify(secret), 'off')).not.toThrow();
+  });
+
   it('keeps review notes within the App Store Connect limit (4,000 bytes)', () => {
     expect(new TextEncoder().encode(REVIEW_NOTES).length).toBeLessThanOrEqual(4000);
   });
