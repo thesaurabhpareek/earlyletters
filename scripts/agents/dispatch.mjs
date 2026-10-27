@@ -23,7 +23,7 @@ import {
   isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
-import { needsIndependentReview } from "./hardening.mjs";
+import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
 import * as lane from "./lane.mjs";
 import * as reviewfp from "./reviewfp.mjs";
 import * as verdicts from "./verdicts.mjs";
@@ -216,8 +216,7 @@ function firstD041Target() {
   const heads = new Set(openPRs.map((pr) => pr.head.sha));
   for (const sha of Object.keys(state.d041)) if (!heads.has(sha)) delete state.d041[sha];
   // A release PR (develop into main) carries work already reviewed PR by PR, so it is skipped.
-  const pool = openPRs.filter((pr) => !agentOfPR(pr) && !pr.draft && pr.head.ref !== roster.base_branch)
-    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  const pool = d041Pool(openPRs, { trust, base: roster.base_branch, agentOfPR });
   for (const pr of pool) {
     const sha = pr.head.sha;
     if (state.d041[sha] === undefined) {
@@ -225,9 +224,9 @@ function firstD041Target() {
       state.d041[sha] = needsIndependentReview(files);
     }
     if (!state.d041[sha]) continue;
-    const reviewed = (ghAll(`/repos/${repo}/pulls/${pr.number}/reviews`, { allowFail: true }) ?? [])
-      .some((r) => (r.body ?? "").includes(`red-team:${sha}`));
-    if (!reviewed) return pr;
+    // Same trusted-marker test as everywhere else (prFacts is cached per run): a review
+    // from an outsider that mentions the sha must not count as the independent review.
+    if (!prFacts(pr).redTeam) return pr;
   }
   return undefined;
 }
@@ -321,7 +320,7 @@ function nextWork(agent, mine, queue) {
   if (agent.kind === "reviewer") {
     const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending && !reviewfp.equivalentReviewed(hctx(), pr));
     const pick = candidates.find(sensitive) ?? firstD041Target() ?? candidates[0];
-    if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick)}: ${pick.title}`, label: `review #${pick.number}` };
+    if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick) ?? pick.user?.login ?? "pr"}: ${oneLine(pick.title)}`, label: `review #${pick.number}` };
   }
   if (agent.kind === "digest") {
     const due = state.lastDigest !== today && now.getUTCHours() >= (roster.limits.digest_hour_utc ?? 14);

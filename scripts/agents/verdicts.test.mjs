@@ -54,7 +54,7 @@ test("board shows the mix of the last 20 and warns after 15 or more without ship
   const g = fakeGh(byPr);
   const lines = boardLines(ctxFor(g, [1, 2, 3, 4, 5].map((n) => pr(n))));
   assert.equal(lines[0], "- **Red-team verdicts, last 20 of 25 seen:** ship 0, fix first 16, founder decision 4.");
-  assert.equal(lines[1], "- **Warning:** no ship verdict in 24 reviews; run the calibration set (`agents/red-team/calibration/README.md`).");
+  assert.equal(lines[1], "- **Warning:** no ship verdict in 24 reviews; see docs/agents/hardening/reviewer-calibration.md (the calibration set is not built yet).");
   assert.equal(lines.length, 2);
 });
 

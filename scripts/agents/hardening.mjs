@@ -1,6 +1,30 @@
 // Helpers added after the first two weeks (3 to 15 Oct 2026). Kept apart from
 // lib.mjs so parallel harness PRs do not collide at the end of that file.
 
+import { isTrusted } from "./lib.mjs";
+
+/** Text from GitHub (a PR title, say) as one short line that cannot open a code span or a new instruction. */
+export function oneLine(text, max = 100) {
+  return String(text ?? "").replace(/[`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+/** Journal entries a brief may use: the marker comes first AND the author is trusted. Anyone can comment on a journal issue. */
+export function trustedJournalEntries(comments, trust) {
+  return (comments ?? []).filter((c) => isTrusted(c, trust) && /^\s*<!-- journal run:/.test(c?.body ?? ""));
+}
+
+/**
+ * Open PRs the independent-review pool may pick: not drafts, not the release PR
+ * (head == base), not agent PRs (they go through the normal review path), and
+ * only from a trusted author. A drive-by PR on a public repo must not spend a run.
+ */
+export function d041Pool(prs, { trust, base, agentOfPR }) {
+  return (prs ?? [])
+    .filter((pr) => !agentOfPR(pr) && !pr.draft && pr.head?.ref !== base)
+    .filter((pr) => isTrusted({ user: pr.user, author_association: pr.author_association }, trust))
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+}
+
 // ---------- D-041: paths that need an independent review run ----------
 
 /** True when a PR touches the database, workflows or auth code (D-041), whoever wrote it. */

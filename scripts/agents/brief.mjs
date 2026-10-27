@@ -44,7 +44,7 @@ if (!journal) {
   journal = String(issues[0]?.number ?? "");
 }
 const comments = journal ? ghAll(`/repos/${repo}/issues/${journal}/comments`, { allowFail: true }) : [];
-const entries = comments.filter((c) => (c.body ?? "").includes("<!-- journal run:"));
+const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
 const founderNotes = comments.filter((c) => isFounderComment(c, roster) && new Date(c.created_at) > lastEntryAt);
 const recent = entries.slice(-3);
@@ -76,7 +76,7 @@ function assignmentSection() {
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${pr?.title ?? ""}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
+    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
     lines.push("Follow section 6 of the operating model. Read the diff with `gh pr diff " + prNum + "`. Your review body must start with `<!-- red-team:" + (pr?.head?.sha ?? "<sha>") + " -->`.");
   } else if (mode === "handoff") {
     lines.push(...handoffSection(String(taskId).replace(/^#/, "")));
@@ -216,6 +216,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
+import { trustedJournalEntries, oneLine } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in

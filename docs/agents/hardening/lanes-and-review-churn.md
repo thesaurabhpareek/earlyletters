@@ -9,8 +9,8 @@ Problem: from 15 Oct, the 4-hourly scheduled lane ran several times. Each run en
 a minute with no board update, claim, journal or receipt, and nobody noticed.
 
 - Every dispatcher run calls `recordTick`, which stores `state.lanes[<lane>] = { at, run }`.
-- The lane is `actions` in Actions mode. With `--local` it is `AGENTS_LANE` (each schedule sets
-  it), or `local` when unset. Names are cleaned to `[A-Za-z0-9._-]`, 40 characters at most.
+- The lane is `actions` in Actions mode. With `--local` it is `AGENTS_LANE` (only the 4-hourly scheduled task sets it so far; other schedules are other threads and
+  unverified), or `local` when unset. Names are cleaned to `[A-Za-z0-9._-]`, 40 characters at most.
 - Dry runs tick too, but a dry run never writes the board (dispatch.mjs writes only when
   `!DRY && board`), so their ticks are never saved.
 - The board shows a `## Lanes` section: each lane's last tick in UTC and its age. A lane silent

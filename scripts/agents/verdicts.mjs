@@ -5,7 +5,7 @@
 // The board shows the red team's verdict mix over its last 20 reviews, and warns
 // when 15 or more reviews in a row carry no "ship" verdict: a reviewer that never
 // passes anything is as uninformative as one that passes everything. The fix is
-// the calibration set in agents/red-team/calibration/ (docs/agents/hardening/reviewer-calibration.md).
+// the calibration set planned in docs/agents/hardening/reviewer-calibration.md (not built yet).
 //
 // A red-team review is a PR review whose body starts with `<!-- red-team:<sha> -->`;
 // its verdict is the second line (`Verdict: ship | fix first | founder decision`).
@@ -64,7 +64,7 @@ export function refresh(ctx) {
 
   const open = new Set();
   for (const pr of ctx.openPRs ?? []) open.add(String(pr.number));
-  for (const [n, e] of Object.entries(st.prs)) if (!open.has(n)) e.x = 1;
+  for (const [n, e] of Object.entries(st.prs)) { if (open.has(n)) delete e.x; else e.x = 1; } // a reopened PR is refreshed again
 
   if (ctx.gh && (!st.closedAt || now - new Date(st.closedAt) >= CLOSED_EVERY_MS)) {
     const closed = ctx.gh(`/repos/${ctx.repo}/pulls?state=closed&sort=updated&direction=desc&per_page=${CLOSED_LIST}`, { allowFail: true });
@@ -117,7 +117,7 @@ export function formatLines(sum, unscanned = 0) {
   if (c.unclear) mix.push(`no verdict line ${c.unclear}`);
   const lines = [`- **Red-team verdicts, last ${sum.recent} of ${sum.total} seen:** ${mix.join(", ")}.`];
   if (sum.sinceShip >= WARN_AFTER) {
-    lines.push(`- **Warning:** no ship verdict in ${sum.sinceShip} reviews; run the calibration set (\`agents/red-team/calibration/README.md\`).`);
+    lines.push(`- **Warning:** no ship verdict in ${sum.sinceShip} reviews; see docs/agents/hardening/reviewer-calibration.md (the calibration set is not built yet).`);
   }
   if (unscanned) lines.push(`- Verdict cache still filling: ${unscanned} open PRs not scanned yet (${FETCH_BUDGET} per tick).`);
   return lines;
