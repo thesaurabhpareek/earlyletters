@@ -864,7 +864,7 @@ export default function Review() {
                 <LetterSheet
                   header={header}
                   editing={editing}
-                  onChangeBook={many ? pickChild : undefined}
+                  onChangeBook={many && !later ? pickChild : undefined}
                   changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
                   {editing ? (
                     // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge

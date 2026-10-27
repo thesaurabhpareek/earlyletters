@@ -279,6 +279,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
   it('Review shows such a letter\'s words as stored: no Change words, no other book, and no second letter_saved', () => {
     expect(review).toMatch(/\{!isSample && !editing && !later && \(/);
     expect(review).toMatch(/if \(listChildren\(\)\.length < 2 \|\| !draft \|\| later\) return;/);
+    expect(review).toMatch(/onChangeBook=\{many && !later \? pickChild : undefined\}/); // no dead control for VoiceOver
     expect(between(review, 'const save = async', 'const keepRecordingOnly = async')).toMatch(/if \(!later\) trackLetterSaved\(\{/);
   });
 });
