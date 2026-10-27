@@ -244,3 +244,15 @@ What v1.0 is and is not: scope, family roles, first run, letters and the release
 - **Review by:** on trigger
 - **Status:** in force: PR #124 merged on 16 Oct 2026
 - **As built:** `docs/prd/v2/`
+
+### D-113 Co-parent build 2: Leave hidden until left books are listed; the invite text keeps the name
+- **Source:** `docs/DECISIONS.md` D-113 (Delegated call by the coordinator, founder may reverse, 23 Oct 2026); review of PRs #165 and #184 (#184 merged 23 Oct 2026)
+- **Decided:** (1) Leave is hidden in build 2: no Leave row, none on a child's settings screen, and `/invite/leave` says it is coming. (2) Before build 3, books a phone has left are listed under "Letters to {child}" with read, export and delete, and Leave comes back with that (BL-444). (3) The invite share text keeps the child's name, because the parent writes and sends it; the server's peek never reveals the name before joining.
+- **Why:** after leaving, the book list hides the book, so the leaver's letters stay on the phone but no screen lists, exports or deletes them. For item 3, the parent writes the text on their own device and sends it to someone they chose; if it is forwarded, the name goes with it.
+- **Door:** two-way: a flag and copy, until BL-444 ships
+- **Reversal cost:** low: code; the server side already keeps a leaver's letters
+- **Revisit when:** technology: BL-444 (left books listed) is built, which returns Leave
+- **Review by:** on trigger
+- **Status:** in force; amended in effect by D-116 for what the server keeps of a leaver's letters
+- **As built:** `apps/mobile/src/lib/family/entry.logic.ts` (`LEAVE_BOOK_OFFERED`), `packages/content/src/features/family.en.ts`; BL-444 not built
+- **Also:** relies on D-111 item 8; D-116

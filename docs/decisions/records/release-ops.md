@@ -80,7 +80,7 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Reversal cost:** low
 - **Revisit when:** team: a second person with merge rights joins; platform: the repository goes private (environments and rulesets then need a paid plan)
 - **Review by:** 2026-10-23
-- **Status:** in force: a founder action in GitHub settings, not yet done. The environment and the tag and branch rulesets are now in the log as the 15 Oct gate amendment of D-089 (merged PR #108, ADR 0022 decision 8); branch protection for `develop` and `main` is not in the log
+- **Status:** in force: a founder action in GitHub settings, not yet done. The environment and the tag and branch rulesets are now in the log as the 15 Oct gate amendment of D-089 (merged PR #108, ADR 0022 decision 8); branch protection for `develop` and `main` is not in the log. Checked 27 Oct 2026: the GitHub API still reports `develop` as not protected, so the review date of 23 Oct has passed with the setting not done (waits on the founder)
 - **As built:** not built: agent sessions cannot change repository settings; `.github/workflows/deploy-db.yml` already uses an environment
 
 ### R-009 The repository stays public on GitHub Free
@@ -213,3 +213,26 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Review by:** on trigger
 - **Status:** proposed: each numbered decision waits for the founder's acceptance; decisions 1 to 3 are founder settings
 - **As built:** `docs/release/AUTOMATION.md` (the plan and founder checklist AF-01 to AF-43); no settings changed per the ADR
+
+### D-114 Database budgets on the nightly; plan checks on every pull request
+- **Source:** `docs/DECISIONS.md` D-114 (Delegated call by the coordinator, founder may reverse, 23 Oct 2026); PR #215 and the docs PR #240 (merged 23 Oct 2026)
+- **Decided:** pull requests run the deterministic plan and named-index checks at 250 families x 400 letters; the p95 budgets run on the nightly only, at 1,000 x 400 (`PERF_BUDGETS=1`); a nightly red from a missed budget alone is advisory and does not fail go/no-go row B2-22 until the budgets get their own workflow with one retry; until the default branch is `develop` (AF-05) the plan checks on every pull request are the guard.
+- **Why:** shared runners make timing budgets flaky: on 23 Oct the same SQL missed 5 of 6 read budgets at a load average of 10 and passed them at 3 (source).
+- **Door:** two-way: workflow and policy lines
+- **Reversal cost:** low: workflow config and policy text
+- **Revisit when:** technology: the budgets get their own workflow with one retry; platform: the default branch becomes `develop` so the nightly can run
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `supabase/tests/perf.test.mjs`, `supabase/tests/sync_perf.test.mjs`, the `perf` job in `.github/workflows/nightly.yml`, DB-R21 in `docs/engineering/03-database-and-schema.md`
+
+### D-115 English-only pack release before build 1; other languages wait for a native reviewer
+- **Source:** `docs/DECISIONS.md` D-115 (Delegated call by the coordinator, founder may reverse, 23 Oct 2026); PR #162 (merged 23 Oct 2026); PR #246 (the log entry); runbook `docs/ops/PACKS_HOSTING.md`
+- **Decided:** an English-only pack release is a build 1 prerequisite, because the app loads a speech model only from the signed manifest on the D-097 host. The founder runs the key ceremony and the `release`, `upload` and `verify` steps on one computer with the private key outside the repo; no CI job reads the signing or upload secrets. `release` defaults to `--languages en`. A non-English pack ships only when a native reviewer and the founder say so. The app-side gate on the language picker is S12, a follow-up.
+- **Why:** the manifest is the app's only source of models, so the release decides what build 1 can do; a draft text pack in another language would put unreviewed words in front of a family; the signing key stays with the founder (source).
+- **Door:** two-way: a release flag and a host file; the signing key itself is covered by its own ceremony
+- **Reversal cost:** low: publish another release
+- **Revisit when:** customer: a native reviewer and the founder approve a second language; platform: the host or manifest scheme changes
+- **Review by:** on trigger
+- **Status:** in force; unverified from the sandbox: the real upload and the live host, so the founder's first run is the check (source)
+- **As built:** `scripts/packs/` (`keygen.mjs`, `release`, `upload`, `verify`), `docs/ops/PACKS_HOSTING.md`; three docs still name the coordinator as the signer (`docs/ops/RELEASE.md` section 9, BL-335, the coordination doc section 6 under `docs/agents/`) per the source
+- **Also:** builds on D-111 item 4 and D-097

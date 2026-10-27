@@ -195,7 +195,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Revisit when:** law: counsel answers on the Keychain count and trial wording; platform: App Review raises guideline 3.1.2(a)
 - **Review by:** on trigger
 - **Status:** amended by D-103: a voice letter kept without words no longer counts at once, and only your own letters count
-- **As built:** `apps/mobile/src/lib/billing/letter-ledger.native.ts`, `apps/mobile/src/lib/db/repos/ledger.ts`
+- **As built:** `apps/mobile/src/lib/billing/letter-ledger.keychain.ts`, `apps/mobile/src/lib/db/repos/ledger.ts`
 
 ### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy
 - **Source:** `docs/DECISIONS.md` D-094 (Decided, delegated by founder, 2026-10-15; needs counsel: COUNSEL_PACKET C-1 to C-3 and Q37); PR #122 (merged 15 Oct 2026); PR #121 (merged 15 Oct 2026)

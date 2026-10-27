@@ -178,3 +178,41 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Review by:** on trigger
 - **Status:** in force: the F08-REQ-034 text in `docs/prd/v2/features/F08-recordings.md` is updated in a follow-up, per the log
 - **As built:** not built on `develop`; the backup server is open PR #151
+
+### ADR-0023 Email sign-in links: PKCE, a pending request note, and the claim after consent
+- **Source:** `docs/adr/0023-email-links-pkce.md` (status line: Proposed, stream S01, 15 Oct 2026; decider: the founder; until decided the code in PR #139 is the spec default); PR #139 (merged 23 Oct 2026)
+- **Decided:** three layers, each enough to stop security review finding H1 alone. (1) The phone writes a Keychain note (the time only, never the address) when it asks for an email, and opens a link only while an unexpired note (1 hour) exists. (2) The Supabase client uses the PKCE flow, so a link from another phone's flow fails at the code exchange; `verifyOtp({ token_hash })` is no longer called. (3) A session is released to sync only once consent is complete and, when the phone's letters belong to no account yet, the person has tapped "Keep them here" on a screen showing the masked account email. A link is refused while any account is signed in on the phone; a typed code works on any phone.
+- **Why:** before the change one tap on a link made by anyone signed the parent's phone into the sender's account, and the phone's letters, transcripts and child details uploaded to that account (security review H1). Two sends in a row leave only the newest link working. The challenge method is `plain` because the app's runtime has no WebCrypto digest; the ADR says that is enough for H1 and gives the condition for revisiting it.
+- **Alternatives:** the pending note alone (a stolen link plus a recent request would still verify); PKCE alone (device behaviour only partly verified); claim on sign-in with an undo (uploads would already have happened); `verifyOtp` with PKCE on (accepts a link from anyone). All rejected in the ADR.
+- **Door:** two-way: auth code and copy; no user data depends on the link format
+- **Reversal cost:** medium: auth code and tests, plus the device checks AUTH_SETUP 11.3 and 11.10 again
+- **Revisit when:** technology: the runtime gets WebCrypto digest or a maintained native shim is adopted (move the challenge to S256; a new native module needs the founder)
+- **Review by:** on trigger
+- **Status:** in force as the spec default: the ADR is still marked Proposed and its acceptance by the founder is not recorded in the source. Device checks AUTH_SETUP 11.3 and 11.10 must pass before C1 (the ADR's consequences)
+- **As built:** `apps/mobile/src/lib/auth/email-link.logic.ts`, `apps/mobile/src/lib/auth/account-claim.logic.ts`, `apps/mobile/src/lib/auth/pending.ts`, `apps/mobile/src/lib/supabase/client.ts`, `apps/mobile/src/app/(auth)/sign-in/verify.tsx`
+- **Also:** closes BL-347; F02-REQ-018 to F02-REQ-020
+
+### ADR-0024 Owner backup v1.0: a key per (child, author), a device key per install, a recovery-key access log
+- **Source:** `docs/adr/0024-owner-backup-v1.md` (status line: Proposed, 15 Oct 2026; owner S05; decided at T15 or the spec default stands); PR #150 (client, merged 23 Oct 2026, flag off); PR #151 (server half)
+- **Decided:** each author backs up and restores only their own recordings. Keys: a random file key per recording, wrapped under a book key that is one random 256-bit key per (child, author, version) in a synchronizable Keychain item; one X25519 device key pair per install and account, kept on that device only. The escrow function seals released keys to an enrolled device, every release is logged, and the object format is written once in TypeScript over a two-call native seal and open. Backup has its own build flag, `capabilities.backup`, off in every profile, and the native module `scribe-keys` is excluded from autolinking until a Mac build has compiled it.
+- **Why:** with one key per child (ADR 0006) the second parent cannot open the first parent's key, and creating their own collides with it (review R2 AR-05); D-102 keeps server escrow, so a family that loses every device gets its recordings back, with honest copy. CryptoKit does what backup needs, so no third-party crypto library is added (D-065).
+- **Alternatives:** one key per child; `react-native-quick-crypto`; whole-file encryption in Swift; password-derived keys; no escrow (Vault mode, later); an escrow key in a cloud KMS (later ADR); sending a plaintext book key to the server. Each rejected in the ADR with a reason.
+- **Door:** one-way after launch: key and object formats cannot change once families hold encrypted backups
+- **Reversal cost:** high once recordings are backed up: a new format needs a migration of every stored object and every wrapped key; before the flag turns on, code only
+- **Revisit when:** customer: family listening is wanted (v1.1, D-073); technology: a Mac or macOS CI build first compiles `scribe-keys` (remove the autolinking exclusion); platform: the runtime lacks the iOS 17 HPKE floor (D-098)
+- **Review by:** on trigger
+- **Status:** in force as the spec default: the ADR is still marked Proposed and its section 9 lists items for the coordinator and the founder (the access-log design, the Keychain service name `scribe.backup`, #151's eight deviations from F08 6.5, a counsel question on a `backup` consent act); acceptance is not recorded in the source
+- **As built:** `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/`, `apps/mobile/src/app/settings/backup.tsx`, `packages/content/src/features/backup.en.ts`; flag off in every profile
+- **Also:** amends ADR-0006 (decision items 1 to 4); implements D-073, D-102, D-104 item 2 and D-108
+
+### D-116 A former member's letters survive the remaining parent's book deletion
+- **Source:** `docs/DECISIONS.md` D-116 (Delegated call by the coordinator, founder may reverse, 23 Oct 2026); PR #248 (merged 23 Oct 2026) and review A note N1 on #151
+- **Decided:** when the remaining parent deletes the book or their account, the letters, held drafts and recording backups of anyone who left, whose join was undone or who was removed stay theirs. The `children` row stays tombstoned (`purged_at`) with the name and dates for the kept letters' labels, readable by no app role until the left-book listing (BL-444) serves it to kept authors only, and goes once nothing of theirs is left. Current members are purged as before. `undo_parent_join` no longer deletes the removed parent's held drafts on the server.
+- **Why:** the constitution (the machine never destroys a person's words without their own ask) and DATA-REQ-014, the equals rule: one parent's delete is never the end of another person's words (source).
+- **Door:** one-way after launch: once the policy line promises what is kept, and once kept letters exist, undoing the rule would delete a person's words
+- **Reversal cost:** high: counsel wording on three privacy policy lines, a migration, and loss of kept letters
+- **Revisit when:** law: counsel words the policy lines (the source names `privacy-policy.md` lines 159, 179 and 235 as still saying everything is removed); technology: BL-444 serves kept books to their authors
+- **Review by:** on trigger
+- **Status:** in force; waits on counsel for the policy text
+- **As built:** migration `20261023010000_s02_purge_and_consent_guards.sql`; `docs/legal/DATA_CLASSIFICATION.md` (L4 retention row) and `docs/legal/DELETION_AND_EXPORT_SPEC.md` section 2.3
+- **Also:** relies on D-113; amends the book purge under D-111 item 7

@@ -344,3 +344,14 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Status:** proposed: accepted pending V1, V2 and V3; both platforms record M4A on `develop`
 - **As built:** `apps/mobile/src/lib/capture/recording-file.ts` (`RECORDING_CONTAINERS`, both `'m4a'`), `apps/mobile/src/lib/capture/adts.ts`, `apps/mobile/src/lib/transcribe-run.ts`
 - **Also:** amends ADR-0005 for the container only, once in effect
+
+### D-112 Engine 6 open calls: D14, commonWords, "mm", kinship rule 4
+- **Source:** `docs/DECISIONS.md` D-112 (Delegated call by the coordinator, founder may reverse, 23 Oct 2026); the engine-lens review of PR #179 (merged 23 Oct 2026), section 6
+- **Decided:** four calls. (1) The D14 character rule stays as built for the alpha: em and en dashes, curly quotes and ellipses change in the final text with no stored edit, and no word, number, negation, mood mark, quotation count or invisible character changes; storing each change as an undoable edit and narrowing `NUMBER_DASH` (it turns an em dash between two numbers into a range) is WP-F06-05, after the alpha. (2) The English `commonWords` seed stays minus mason, carter, cooper, hunter and rowan. (3) "mm" moves from automatic removals (`fillers.auto`) to the offered list (`fillers.suggest`), so Review offers it and the engine never removes it. (4) Kinship rule 4 is confirmed as built: the machine never changes the case of a kinship word.
+- **Why:** item 3: a removed answer is lost meaning; item 2: those names are rarely meant as the everyday word, so a child with one keeps the recogniser's capital; items 1 and 4: not recorded in the source beyond "as built"
+- **Door:** two-way: engine tables and rules, with tests
+- **Reversal cost:** low: code and tests; no stored edit depends on item 1 because none is stored yet
+- **Revisit when:** technology: WP-F06-05 lands (item 1 changes); customer: a parent reports a lost "mm" answer or a wrongly kept capital
+- **Review by:** on trigger
+- **Status:** in force; the F06-REQ-010 one-line amendment is pending in the PRD lane (source)
+- **As built:** `packages/core/src/lang/english-tables.ts`, `packages/core/src/lang/english.ts`, `packs/text-rules/en.json`, `packages/core/test/engine6.test.ts`

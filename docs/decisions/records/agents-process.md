@@ -125,7 +125,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Reversal cost:** low: a rule in `docs/agents/COORDINATION.md`
 - **Revisit when:** team: a coordinator-merged PR breaks `develop`; team: agents stop acting through the founder's own account (ADR 0026 AF-27)
 - **Review by:** on trigger
-- **Status:** in force: confirms the delegation part of D-106 and replaces item 1 of D-104
+- **Status:** amended by D-117: confirms the delegation part of D-106 and replaces item 1 of D-104; D-117 (23 Oct 2026) supersedes the founder-only merge list in part
 - **As built:** `docs/agents/COORDINATION.md` section 6
 
 ### ADR-0021 An engineering compendium owned by five steward agents
@@ -162,3 +162,15 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `docs/agents/COORDINATION.md` section 3, `docs/agents/checkins/README.md`, `.gitattributes`
+
+### D-117 Blanket approval from the founder, and the coordinator's operating rule under it
+- **Source:** `docs/DECISIONS.md` D-117 (Decided, founder, 23 Oct 2026; the operating rule is the coordinator's, founder may reverse); PR #261 for the process docs
+- **Decided:** the founder's words, 23 Oct 2026: "Everything is approved. Don't keep asking me to approve things. I give you a blanket approval." Under it the coordinator's rule (not the founder's words): merge the founder-only path classes of D-107 (`supabase/**`, auth, payments, `.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`, the engine files, production deploys of the alpha queue) after two independent passing reviews on the current head and green CI. Steps only the founder can perform stay the founder's: applying migrations to the hosted projects, the Apple, Expo, Supabase and Vercel accounts and secrets, the signing and escrow keys. Legal text is counsel's to sign.
+- **Why:** it was the founder's reply when asked to approve the alpha queue item by item (source).
+- **Door:** two-way: an internal merge rule
+- **Reversal cost:** low: a rule in `docs/agents/COORDINATION.md`; merges already made stay made
+- **Revisit when:** team: a coordinator-merged change to `supabase/**` or `.github/**` breaks `develop` or a hosted project; team: agents stop acting through the founder's own account (ADR 0026 AF-27)
+- **Review by:** on trigger
+- **Status:** in force; supersedes D-107's founder-only merge list in part. `docs/agents/COORDINATION.md` section 6 still states D-107's rule (follow-up for its owner, per the source)
+- **As built:** `supabase/APPLY.md`, `docs/ops/DEPLOY.md`, `docs/ops/BACKUP_RUNBOOK.md`, `.github/workflows/deploy-db.yml` (the `approve-migration` label of D-041 is no longer used)
+- **Also:** amends D-107; D-041
