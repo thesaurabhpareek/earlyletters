@@ -6,6 +6,7 @@
 // A run cannot pass vacuously: before the real runs, on its own fresh install, the harness runs planted failures
 // (the app loses, doubles or damages a letter on purpose) and stops with exit 4 unless it caught every one.
 // A relaunch that fails after a kill is a fail (exit 1), never incomplete. Whatever happens, a report is returned.
+import { MONO_FRAME_LIMIT, afinfoFields, v1Findings } from './adts-evidence.mjs';
 import { auditStore, classifyDl01, classifyDl02, isBad } from './oracle.mjs';
 import { CRASH_POINTS, DRILL_KINDS, PLANT_LOSS_GAP_MS, POINT_EXPECTS } from './protocol.mjs';
 
@@ -444,6 +445,22 @@ export function countsOf(report) {
     c.within5s = report.runs.filter((r) => r.within5s).length;
     c.unplayableRate = kept ? (c['kept-unplayable'] ?? 0) / kept : null;
     c.wronglyListed = report.runs.filter((r) => r.wronglyListed).length;
+    const keptRuns = report.runs.filter((r) => r.outcome === 'kept-playable' || r.outcome === 'kept-unplayable');
+    c.storedPath = {
+      same: keptRuns.filter((r) => r.storedPath === 'same').length,
+      otherContainer: keptRuns.filter((r) => r.storedPath === 'other-container').length,
+      other: report.runs.filter((r) => r.storedPath === 'other').length,
+    };
+    // ADR 0027: kept ADTS takes, their tails as the kill left them, and those failing a check V1 names.
+    const adts = keptRuns.filter((r) => r.container === 'adts' && r.adts);
+    c.adts = {
+      kept: adts.length,
+      none: adts.filter((r) => r.adts.tail === 'none').length,
+      cut: adts.filter((r) => r.adts.tail === 'cut').length,
+      break: adts.filter((r) => r.adts.tail === 'break').length,
+      notAdts: adts.filter((r) => !r.adts.adts).length,
+      v1Failing: adts.filter((r) => v1Findings(r.adts).length > 0).length,
+    };
   }
   return c;
 }
@@ -545,8 +562,17 @@ const VERDICT = {
 
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
-/** A content-free Markdown summary (run numbers, outcomes and reasons; no ids, no words). */
-export function renderMarkdown(report) {
+/** Kept ADTS takes whose V1 evidence blocks the GitHub step summary carries; report.md and the job log carry all. */
+export const STEP_SUMMARY_EVIDENCE = 10;
+/** GitHub refuses a step summary over 1 MiB; the summary is cut well before that, with a note. */
+export const STEP_SUMMARY_MAX_BYTES = 900 * 1024;
+
+/**
+ * A content-free Markdown summary (run numbers, outcomes and reasons; no ids, no words).
+ * @param {object} report
+ * @param {{ evidenceLimit?: number }} [o]  how many kept ADTS takes get their V1 evidence block (default: all)
+ */
+export function renderMarkdown(report, o = {}) {
   const c = countsOf(report);
   const title = report.mode === 'dl02' ? 'DL-02, kill during save' : 'DL-01, kill while recording';
   const seeds = Array.isArray(report.seed) ? report.seed.join(', ') : report.seed;
@@ -577,6 +603,7 @@ export function renderMarkdown(report) {
   } else {
     lines.push(`| (playing to within 5 s of the kill; 07 needs ${pct(DEFAULTS.playableShare)}) | ${c.within5s} of ${c.completed} |`);
     lines.push(`| (playable but listed as unplayable) | ${c.wronglyListed} |`);
+    lines.push(`| (kept, the row's stored path is the take's path on disk) | ${c.storedPath.same} of ${c.kept}${c.storedPath.otherContainer ? `; ${c.storedPath.otherContainer} name the same folder and file under another container path` : ''} |`);
   }
   lines.push('', 'What a clean result rules out (95% upper bound on the loss rate per kill, zero failures in n runs; about 3/n):', '');
   const bound = (s) => (s.bad === 0 && s.runs > 0 ? `${s.runs} clean, rules out above ${pct(upperBound95(s.runs))}` : s.runs ? `${s.bad} of ${s.runs} bad` : 'none run');
@@ -597,5 +624,89 @@ export function renderMarkdown(report) {
     lines.push('', 'Errors:');
     for (const e of report.errors) lines.push(`- ${e.phase}${e.stage ? ` (${e.stage})` : ''} run ${e.run ?? '-'}: ${e.code}`);
   }
+  if (report.mode === 'dl01') lines.push(...renderAdts(report, c, o.evidenceLimit ?? Infinity));
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * The GitHub step summary: report.md with the V1 evidence blocks of the first few ADTS takes only, and cut with a
+ * note if it would still pass GitHub's 1 MiB limit. report.md and the job log keep everything.
+ */
+export function stepSummary(report) {
+  const md = renderMarkdown(report, { evidenceLimit: STEP_SUMMARY_EVIDENCE });
+  if (Buffer.byteLength(md) <= STEP_SUMMARY_MAX_BYTES) return md;
+  return `${Buffer.from(md).subarray(0, STEP_SUMMARY_MAX_BYTES).toString('utf8')}\n\n(Cut here to stay under GitHub's step summary limit; report.md in the artifact and the job log have the rest.)\n`;
+}
+
+const runLabel = (r) => (r.shard ? `${r.shard}.${r.run}` : String(r.run));
+const fixed = (x, d) => (Number.isFinite(x) ? x.toFixed(d) : '-');
+
+/**
+ * ADR 0027 checks V1 and V2 for every kept ADTS take: how it was judged (whole frames, not afinfo's estimate), its
+ * tail as the kill left it, and V1's evidence (the first 16 bytes, afinfo's output without the file's name, the
+ * header fields and the frame size distribution). Run numbers only; no ids, no words, no audio beyond 16 bytes.
+ */
+function renderAdts(report, c, evidenceLimit) {
+  const runs = report.runs.filter((r) => (r.outcome === 'kept-playable' || r.outcome === 'kept-unplayable') && r.container === 'adts' && r.adts);
+  if (!runs.length) return [];
+  const a = c.adts;
+  const out = ['', '## ADTS takes (ADR 0027, checks V1 and V2)', ''];
+  out.push(
+    "An ADTS take's length is its whole frames (frames x 1024 / sample rate), counted on the host with the app's own `scanAdts`, never afinfo's estimated duration; afinfo must still open it.",
+    '',
+    '| | |',
+    '|---|---|',
+    `| Kept .aac takes | ${a.kept} of ${c.kept} kept |`,
+    `| Tails after the kill (scanAdts) | none ${a.none}, cut ${a.cut}, break ${a.break} |`,
+  );
+  const sizes = runs.map((r) => r.adts.frameBytes).filter(Boolean);
+  const frames = sizes.reduce((n, s) => n + s.count, 0);
+  const bytes = runs.reduce((n, r) => n + (r.adts.frameBytes ? r.adts.wholeBytes : 0), 0);
+  if (sizes.length) {
+    out.push(
+      `| Frame bytes over every kept take | min ${Math.min(...sizes.map((s) => s.min ?? Infinity))}, mean ${frames ? (bytes / frames).toFixed(1) : '-'}, max ${Math.max(...sizes.map((s) => s.max ?? 0))}, over ${frames} frames; over ${MONO_FRAME_LIMIT} bytes: ${sizes.reduce((n, s) => n + s.overLimit, 0)} |`,
+    );
+  }
+  out.push(`| Takes failing a V1 check (FF F1 or FF F9, AAC-LC, frequency index 3, channel configuration 1, no ftyp at offset 4, no frame over ${MONO_FRAME_LIMIT} bytes, no break) | ${a.v1Failing} |`);
+  const devices = (Array.isArray(report.device) ? report.device : [report.device]).filter(Boolean);
+  const inputs = [...new Set(devices.map((d) => d.micInput).filter(Boolean))];
+  if (inputs.length) out.push(`| Microphone input | ${inputs.join(', ')}. A silent input gives the frame sizes of silence: V1's speech half needs a device run |`);
+  const findings = runs.flatMap((r) => v1Findings(r.adts).map((x) => `run ${runLabel(r)}: ${x}`));
+  if (findings.length) {
+    out.push('', `**FINDING, to report before any flip (ADR 0027): ${findings.length} V1 or tail finding(s).**`, '');
+    for (const x of findings.slice(0, 100)) out.push(`- ${x}`);
+    if (findings.length > 100) out.push(`- ... ${findings.length - 100} more in report.json`);
+  }
+  out.push(
+    '',
+    '| Run | afinfo opens | Whole frames | Length by frames (s) | afinfo estimate (s) | Off the kill point (ms) | Bytes after the last whole frame | Tail | Frame bytes min, mean, max | kbit/s | First header | Stored path |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|',
+  );
+  for (const r of runs) {
+    const f = r.adts;
+    const h = f.header;
+    const id = h ? (h.mpeg === 2 ? 'FF F9 (MPEG-2 ID)' : 'FF F1 (MPEG-4 ID)') : '';
+    const head = h
+      ? `${id}, ${h.profile}, frequency index ${h.frequencyIndex}, channel configuration ${h.channelConfiguration}${h.crc ? ', CRC' : ''}${f.ftypAt4 ? ', ftyp at 4' : ''}`
+      : f.adts ? 'cut inside its first header' : f.ftypAt4 ? 'not ADTS (ftyp at 4)' : 'not ADTS';
+    const fb = f.frameBytes ? `${f.frameBytes.min}, ${f.frameBytes.mean}, ${f.frameBytes.max}` : '-';
+    out.push(
+      `| ${runLabel(r)} | ${r.afinfoOpens === true ? 'yes' : r.afinfoOpens === false ? 'no' : 'not run'} | ${f.adts ? f.frames : '-'} | ${fixed(r.durationS, 3)} | ${fixed(r.afinfoDurationS, 3)} | ${r.deviationMs ?? '-'} | ${f.adts ? f.tailBytes : '-'} | ${f.adts ? f.tail : '-'}${f.framesAfterBreak ? ` (${f.framesAfterBreak} frames after it)` : ''} | ${fb} | ${f.kbps ?? '-'} | ${head} | ${r.storedPath ?? '-'} |`,
+    );
+  }
+  out.push('', "### V1 evidence for each kept take (afinfo's File line replaced; nothing else changed)");
+  if (runs.length > evidenceLimit) out.push('', `The first ${evidenceLimit} of ${runs.length} takes here; report.md and the job log carry every one.`);
+  for (const r of runs.slice(0, evidenceLimit)) {
+    const af = afinfoFields(r.afinfo);
+    out.push(
+      '',
+      `Run ${runLabel(r)}: afinfo file type ${af.fileType ?? '-'}; data format ${af.dataFormat ?? '-'}; bit rate ${af.bitRate ?? '-'}. First 16 bytes (xxd -l 16):`,
+      '',
+      '```',
+      r.adts.first16,
+      ...(r.afinfo ? ['', r.afinfo] : ['', '(no afinfo output)']),
+      '```',
+    );
+  }
+  return out;
 }

@@ -19,10 +19,13 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { migrate } from '../src/lib/db/migrations';
 import { children, drafts, entries, letters, settings, uuidv7From, type Entry, type RepoContext } from '../src/lib/db/repos';
 import * as logic from '../src/dev/kill-drill.logic';
-import { EXIT, countsOf, failReason, meetsGate, mergeReports, planRuns, plantCaught, renderMarkdown, runHarness, upperBound95 } from '../e2e/kill/harness.mjs';
-import { auditStore, classifyDl01, classifyDl02 } from '../e2e/kill/oracle.mjs';
+import { EXIT, STEP_SUMMARY_EVIDENCE, STEP_SUMMARY_MAX_BYTES, countsOf, failReason, meetsGate, mergeReports, planRuns, plantCaught, renderMarkdown, runHarness, stepSummary, upperBound95 } from '../e2e/kill/harness.mjs';
+import { MONO_FRAME_LIMIT, adtsFacts, containerOfName, firstHeader, redactAfinfo, v1Findings, xxd16 } from '../e2e/kill/adts-evidence.mjs';
+import { auditStore, classifyDl01, classifyDl02, storedPathAgainst } from '../e2e/kill/oracle.mjs';
 import * as protocol from '../e2e/kill/protocol.mjs';
-import { readSnapshot, sha256OfFile } from '../e2e/kill/snapshot.mjs';
+import { normalizePath, readSnapshot, sha256OfFile, storedPathOf } from '../e2e/kill/snapshot.mjs';
+import { AAC_FRAME_SAMPLES, scanAdts } from '../src/lib/capture/adts';
+import { REAL_FRAME_LENGTHS, adtsFrame, concat } from './helpers/adts-frames';
 import { nodeDb } from './helpers/node-db';
 
 /**
@@ -139,7 +142,39 @@ interface FakeOptions {
   playable?: boolean;
   /** The launch of this run exits before its sweep: the app does not start again after the kill before it. */
   exitsAtLaunch?: number;
+  /**
+   * DL-01 takes as ADTS (`.aac`, ADR 0027): real frame headers on the framing of a real encoder, written at its bit
+   * rate, so a kill cuts the file mid-frame as it would cut the recorder's. The stand-in afinfo opens every one and
+   * prints an estimated duration that is wrong on purpose (99 s): the harness must count frames instead.
+   */
+  container?: 'm4a' | 'adts';
+  /** ADTS takes whose sixth frame has its sync byte zeroed: every kept take's tail is a break (a FINDING). */
+  damagedAdts?: boolean;
 }
+
+/** The real encoder's framing three times over (about 18 s), and how many of its bytes a millisecond of it holds. */
+const ADTS_TAKE = concat(...[0, 1, 2].flatMap(() => REAL_FRAME_LENGTHS.map((len) => adtsFrame(len - 7))));
+const ADTS_BYTES_PER_MS = REAL_FRAME_LENGTHS.reduce((n, len) => n + len, 0) / ((REAL_FRAME_LENGTHS.length * AAC_FRAME_SAMPLES * 1000) / 48000);
+/** The same stream with the sync byte of its sixth frame zeroed. */
+const ADTS_TAKE_DAMAGED = (() => {
+  const d = ADTS_TAKE.slice();
+  d[REAL_FRAME_LENGTHS.slice(0, 5).reduce((n, len) => n + len, 0)] = 0x00;
+  return d;
+})();
+/** What afinfo prints for an ADTS file, with the path in its File line, as on a Mac (its duration is a stand-in). */
+const fakeAfinfo = (path: string) =>
+  [
+    `File:           ${path}`,
+    'File type ID:   adts',
+    'Num Tracks:     1',
+    '----',
+    'Data format:     1 ch,  48000 Hz, aac (0x00000000) 0 bits/channel, 0 bytes/packet, 1024 frames/packet, 0 frames/packet',
+    '                no channel layout.',
+    'estimated duration: 99.000000 sec',
+    `audio bytes: ${statSync(path).size}`,
+    'bit rate: 64000 bits per second',
+    '----',
+  ].join('\n');
 interface LaunchArgs {
   mode: string;
   run: number;
@@ -318,18 +353,30 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
     }
     if (behaviour === 'record-fails') return mark('error', a.run, { run: a.run, code: 'record_failed' });
     // DL-01: a take that grows while it records (one byte a millisecond; the fake's player reads its length from that).
+    // As ADTS: frames at a real encoder's bit rate, appended in pieces that end anywhere, so a kill cuts a frame.
     mkdirSync(takes, { recursive: true });
-    const path = join(takes, `recording-${a.run}.m4a`);
-    writeFileSync(path, randomBytes(250));
+    const adts = fo.container === 'adts';
+    const takeName = `recording-${a.run}.${adts ? 'aac' : 'm4a'}`;
+    const path = join(takes, takeName);
+    let written = adts ? Math.round(250 * ADTS_BYTES_PER_MS) : 0;
+    const stream = fo.damagedAdts ? ADTS_TAKE_DAMAGED : ADTS_TAKE;
+    writeFileSync(path, adts ? stream.subarray(0, written) : randomBytes(250));
     const draftId = ctx.newId();
     drafts.insert(ctx, draftId, { childId, captureMode: 'spoken', promptKey: null, audioUri: `file://${path}`, audioDurationMs: 0, state: 'recording' });
     if (plant === 'loss') rmSync(path, { force: true });
     if (plant === 'double') {
       for (let i = 0; i < 2; i += 1) entries.upsert(ctx, drillEntry(ctx.newId(), logic.drillText(a.run), childId, { uri: `file://${path}`, sha256: null, bytes: null }), defaults);
     }
-    mark('armed', a.run, { run: a.run, mode: 'dl01', kind: null, plant, point: null, draftId, audioFile: `recording-${a.run}.m4a`, text: null, sha256: null, recordedMs: 250 });
+    mark('armed', a.run, { run: a.run, mode: 'dl01', kind: null, plant, point: null, draftId, audioFile: takeName, text: null, sha256: null, recordedMs: 250 });
+    const step = Math.round(10 * ADTS_BYTES_PER_MS);
     const grow = () => {
-      if (existsSync(path)) appendFileSync(path, randomBytes(10));
+      if (existsSync(path)) {
+        if (!adts) appendFileSync(path, randomBytes(10));
+        else if (written < ADTS_TAKE.length) {
+          appendFileSync(path, stream.subarray(written, written + step));
+          written += step;
+        }
+      }
       later(p, 10, grow);
     };
     if (plant !== 'loss') later(p, 10, grow);
@@ -406,7 +453,12 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
     },
     snapshot: () => readSnapshot({ dataDir: c.data }),
     sha256: sha256OfFile,
-    playable: (path: string) => (fo.playable === false ? { ok: false, durationS: null } : { ok: true, durationS: statSync(path).size / 1000 }),
+    playable: (path: string) =>
+      fo.playable === false
+        ? { ok: false, durationS: null }
+        : path.endsWith('.aac')
+          ? { ok: true, durationS: 99, text: fakeAfinfo(path) }
+          : { ok: true, durationS: statSync(path).size / 1000 },
     cleanup: async () => {},
   };
 }
@@ -655,6 +707,108 @@ describe('[DATA-REQ-048] the oracle judges a run from the database and files alo
     close();
   }, 30_000);
 
+  it('[ADR 0027] DL-01 ADTS: a take is judged by its whole frames, never by afinfo\'s estimate, and its tail is recorded', () => {
+    const { c, takes, ctx, close, childId } = setup('oracle-adts');
+    const frameS = AAC_FRAME_SAMPLES / 48000;
+    const real = concat(...REAL_FRAME_LENGTHS.map((len) => adtsFrame(len - 7)));
+    const take = (n: number, bytes: Uint8Array, state: 'ready' | 'unrecoverable' = 'ready', dir = takes) => {
+      const path = join(dir, `recording-${n}.aac`);
+      writeFileSync(path, bytes);
+      const id = ctx.newId();
+      drafts.insert(ctx, id, { childId, captureMode: 'spoken', promptKey: null, audioUri: `file://${path}`, audioDurationMs: 0, state, audioSha256: state === 'ready' ? sha(path) : null, audioBytes: bytes.length });
+      return { id, path, armed: { draftId: id, audioFile: `recording-${n}.aac` } };
+    };
+    // afinfo opens a cut-off ADTS stream and estimates a duration from the bytes: 99 s here, whatever the frames.
+    const afinfo = (p: string) => ({ ok: true as boolean | null, durationS: 99, text: fakeAfinfo(p) });
+    const io = { sha256: sha256OfFile, playable: afinfo };
+    const killed = take(1, concat(real, adtsFrame(170).subarray(0, 60))); // a kill cut the next frame after 60 bytes
+    const headerOnly = take(2, adtsFrame(170).subarray(0, 60), 'unrecoverable'); // the first frame cut off: no whole frame
+    const inHeader = take(5, adtsFrame(170).subarray(0, 5), 'unrecoverable'); // cut inside the first header
+    const m4a = take(3, concat(new Uint8Array([0, 0, 0, 0x20]), new TextEncoder().encode('ftypM4A '), new Uint8Array(400)), 'unrecoverable');
+    const damaged = real.slice();
+    damaged[REAL_FRAME_LENGTHS.slice(0, -20).reduce((n, len) => n + len, 0)] = 0x00; // the sync byte of the frame 20 from the end
+    const broken = take(4, damaged);
+    const snap = readSnapshot({ dataDir: c.data });
+    const lengthS = REAL_FRAME_LENGTHS.length * frameS;
+    const v = classifyDl01(snap, killed.armed, io, { expectedMs: lengthS * 1000 + 3000 });
+    expect(v).toMatchObject({ outcome: 'kept-playable', container: 'adts', storedPath: 'same', afinfoOpens: true, afinfoDurationS: 99, deviationMs: 3000, within5s: true });
+    expect(v.durationS).toBeCloseTo(lengthS, 9);
+    expect(v.adts).toMatchObject({ adts: true, frames: REAL_FRAME_LENGTHS.length, tailBytes: 60, tail: 'cut', framesAfterBreak: 0 });
+    expect(v.afinfo).toContain('File:           (this take)');
+    expect(v.afinfo).not.toContain('recording-1');
+    // afinfo's estimate would have been 96 s off the kill point; the frames are 3 s off.
+    expect(classifyDl01(snap, killed.armed, io, { expectedMs: lengthS * 1000 + 6000 }).within5s).toBe(false);
+    // afinfo opens it, but there is not one whole frame: it does not play.
+    expect(classifyDl01(snap, headerOnly.armed, io)).toMatchObject({ outcome: 'kept-unplayable', playable: false, adts: { frames: 0, tail: 'cut', tailBytes: 60 } });
+    // Cut inside its first header: ADTS with no whole frame, not "another format".
+    expect(classifyDl01(snap, inHeader.armed, io)).toMatchObject({ outcome: 'kept-unplayable', playable: false, reasons: [], adts: { adts: true, frames: 0, tail: 'cut', tailBytes: 5 } });
+    // An M4A under an .aac name is not the container ADR 0027 asks for: it does not count as playing.
+    expect(classifyDl01(snap, m4a.armed, io)).toMatchObject({ outcome: 'kept-unplayable', playable: false, reasons: ['named .aac, but its bytes are not an ADTS stream'], adts: { adts: false, ftypAt4: true } });
+    // A break is recorded, as a finding to report before any flip; the frames before it are what a reader is sure to reach.
+    const b = classifyDl01(snap, broken.armed, io);
+    expect(b).toMatchObject({ outcome: 'kept-playable', adts: { tail: 'break', frames: REAL_FRAME_LENGTHS.length - 20, framesAfterBreak: 19 } });
+    expect(b.durationS).toBeCloseTo((REAL_FRAME_LENGTHS.length - 20) * frameS, 9);
+    expect(v1Findings(b.adts)).toEqual([expect.stringMatching(/^the tail is a break \(\d+ bytes after the last whole frame, 19 frames after it\)$/)]);
+    // When afinfo cannot open it, it does not play, whatever its frames; a take shown as ready then fails.
+    expect(classifyDl01(snap, killed.armed, { ...io, playable: () => ({ ok: false, durationS: null }) })).toMatchObject({ outcome: 'fail', reasons: [expect.stringContaining('F08-REQ-019')] });
+    // An M4A is judged exactly as before: afinfo's duration, no frame facts.
+    expect(containerOfName('recording-1.m4a')).toBe('m4a');
+    close();
+  }, 30_000);
+
+  it('DL-01: the row must point at the very take on disk, not only at a file of the same name', () => {
+    const { c, takes, ctx, close, childId } = setup('oracle-path');
+    const io = { sha256: sha256OfFile, playable: (p: string) => ({ ok: true as boolean | null, durationS: statSync(p).size / 1000 }) };
+    const row = (name: string, uri: string) => {
+      const id = ctx.newId();
+      drafts.insert(ctx, id, { childId, captureMode: 'spoken', promptKey: null, audioUri: uri, audioDurationMs: 0, state: 'unrecoverable' });
+      return { draftId: id, audioFile: name };
+    };
+    // The file lives in Documents/ExpoAudio; the row says the top of Documents. The host lists it by name anywhere.
+    writeFileSync(join(takes, 'recording-1.m4a'), randomBytes(3000));
+    const wrongFolder = row('recording-1.m4a', `file://${join(c.docs, 'recording-1.m4a')}`);
+    // Two folders hold the name; the row points at one of them, which is the one judged.
+    writeFileSync(join(takes, 'recording-2.m4a'), randomBytes(3000));
+    writeFileSync(join(c.docs, 'recording-2.m4a'), randomBytes(0));
+    const both = row('recording-2.m4a', `file://${join(takes, 'recording-2.m4a')}`);
+    // The same folder and file under Documents, behind another container path (percent-encoded, as a URI may be).
+    writeFileSync(join(takes, 'recording 3.m4a'), randomBytes(3000));
+    const moved = row('recording 3.m4a', 'file:///private/var/mobile/Containers/Data/Application/0000/Documents/ExpoAudio/recording%203.m4a');
+    // Two folders hold the name the other way round: the row points at the top of Documents, the recorder's folder
+    // holds an empty file of that name. The listing is sorted, so a judge that took the first file would take the wrong one.
+    writeFileSync(join(c.docs, 'recording-4.m4a'), randomBytes(3000));
+    writeFileSync(join(takes, 'recording-4.m4a'), randomBytes(0));
+    const top = row('recording-4.m4a', `file://${join(c.docs, 'recording-4.m4a')}`);
+    const snap = readSnapshot({ dataDir: c.data });
+    expect((snap.files.get('recording-4.m4a') ?? []).map((f: { path: string }) => f.path)).toEqual([join(takes, 'recording-4.m4a'), join(c.docs, 'recording-4.m4a')]);
+    expect(classifyDl01(snap, top, io)).toMatchObject({ outcome: 'kept-unplayable', storedPath: 'same', durationS: 3 });
+    expect(classifyDl01(snap, wrongFolder, io)).toMatchObject({ outcome: 'fail', storedPath: 'other', reasons: [expect.stringContaining('stored path is not the path of the take on disk')] });
+    expect(classifyDl01(snap, both, io)).toMatchObject({ outcome: 'kept-unplayable', storedPath: 'same', durationS: 3 }); // the 3000-byte take, not the empty one
+    expect(classifyDl01(snap, moved, io)).toMatchObject({ outcome: 'kept-unplayable', storedPath: 'other-container', reasons: [expect.stringContaining('another container path')] });
+    expect(storedPathOf('file:///a/Documents/ExpoAudio/recording%203.aac?x=1')).toBe('/a/Documents/ExpoAudio/recording 3.aac');
+    expect(storedPathAgainst(null, '/a/Documents/x.aac', '/a/Documents')).toBe('other');
+    close();
+  }, 30_000);
+
+  it('DL-01: only a genuinely different file fails the stored path check; spellings of the same file do not (review of #281)', () => {
+    const docs = '/Users/runner/Library/Developer/CoreSimulator/Devices/D/data/Containers/Data/Application/AAA/Documents';
+    const listed = `${docs}/ExpoAudio/recording-5.aac`;
+    const verdict = (uri: string) => storedPathAgainst(storedPathOf(uri), listed, docs);
+    // The same file, spelled differently.
+    for (const uri of [`file://${listed}`, `file://localhost${listed}`, `file:${listed}`, `file://${docs}//ExpoAudio/./recording-5.aac`, `file://${docs}/ExpoAudio/../ExpoAudio/recording-5.aac`, `file://${docs}/ExpoAudio/recording%2D5.aac`, `file:///${listed}`]) {
+      expect(verdict(uri), uri).toBe('same');
+    }
+    // The same folder and file under Documents, behind another container path, or relative to Documents: a note.
+    for (const uri of [`file:///private${listed}`, `file://${docs.replace('AAA', 'BBB')}/ExpoAudio/recording-5.aac`, 'ExpoAudio/recording-5.aac', './ExpoAudio/recording-5.aac', 'Documents/ExpoAudio/recording-5.aac', 'file:///Users/me/Documents/sims/Containers/Data/Application/CCC/Documents/ExpoAudio/recording-5.aac']) {
+      expect(verdict(uri), uri).toBe('other-container');
+    }
+    // Another folder or another file: a fail.
+    for (const uri of [`file://${docs}/recording-5.aac`, `file://${docs}/ExpoAudio/recording-6.aac`, `file://${docs}/Documents/ExpoAudio/recording-5.aac`, 'file:///elsewhere/recording-5.aac', 'recording-5.aac', `file://${docs}/ExpoAudio/recording-5.m4a`]) {
+      expect(verdict(uri), uri).toBe('other');
+    }
+    expect(normalizePath('/a//b/./c/../d/')).toBe('/a/b/d');
+  });
+
   it('the whole-database audit: integrity, rows pointing at missing files, stored hashes, and earlier letters judged again', () => {
     const { c, takes, ctx, close, childId, defaults, io } = setup('oracle-audit');
     const path = join(takes, logic.drillAudioName(1));
@@ -846,6 +1000,172 @@ describe('[DATA-REQ-048] [F04-REQ-024] the harness cannot pass vacuously, and ne
     expect(report.audits).toEqual([]);
     expect(report.exit).toBe(EXIT.pass);
   }, 60_000);
+});
+
+describe('[ADR 0027] DL-01 on an ADTS build: frames counted on the host, tails recorded, V1 evidence printed', () => {
+  it('kept ADTS takes are judged by their frames and end as a kill leaves them; the report prints the evidence with no ids', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl01-adts', 'atomic', { takeDir: logic.TAKE_DIR, container: 'adts' }), mode: 'dl01', runs: 3, delayMs: [20, 60], plantDelayMs: [10, 30], selfCheck: 1, seed: 19, timeouts: fast });
+    expect(report.selfCheck.caught).toBe(2);
+    const c = countsOf(report);
+    expect(c).toMatchObject({ completed: 3, kept: 3, within5s: 3, bad: 0, storedPath: { same: 3, otherContainer: 0, other: 0 } });
+    expect(c.adts).toMatchObject({ kept: 3, break: 0, notAdts: 0, v1Failing: 0 });
+    expect(c.adts.none + c.adts.cut).toBe(3);
+    for (const r of report.runs) {
+      expect(r).toMatchObject({ outcome: 'kept-playable', container: 'adts', afinfoDurationS: 99 });
+      // The length is the whole frames, not afinfo's 99 s.
+      expect(r.durationS).toBeCloseTo((r.adts.frames * AAC_FRAME_SAMPLES) / 48000, 9);
+      expect(r.durationS).toBeLessThan(5);
+      expect(['cut', 'none']).toContain(r.adts.tail);
+      expect(r.adts.frameBytes).toMatchObject({ overLimit: 0, notLc: 0 });
+    }
+    expect(report.exit).toBe(EXIT.pass);
+    const md = renderMarkdown(report);
+    expect(md).toContain('## ADTS takes (ADR 0027, checks V1 and V2)');
+    expect(md).toContain(`| Tails after the kill (scanAdts) | none ${c.adts.none}, cut ${c.adts.cut}, break 0 |`);
+    expect(md).toContain("(kept, the row's stored path is the take's path on disk) | 3 of 3 |");
+    expect(md.match(/^00000000: fff1 4c40 /gm)).toHaveLength(3); // the first 16 bytes of each kept take, as xxd prints them
+    expect(md).toContain('afinfo file type adts; data format 1 ch,  48000 Hz, aac');
+    expect(md).toContain('AAC-LC, frequency index 3, channel configuration 1');
+    expect(md.match(/File: {11}\(this take\)/g)).toHaveLength(3);
+    // No take names (they carry the recorder's id), no draft ids, no paths.
+    expect(md).not.toMatch(/recording-\d|\w\.aac\b|\/Documents|[0-9a-f]{8}-[0-9a-f]{4}-/);
+    expect(md).not.toContain('FINDING');
+  }, 60_000);
+});
+
+describe('[ADR 0027] findings and the step summary never change the verdict', () => {
+  it('a FINDING (here a break in every take) is reported and never changes the exit code', async () => {
+    const report = await runHarness({ driver: fakeDriver('dl01-adts-break', 'atomic', { takeDir: logic.TAKE_DIR, container: 'adts', damagedAdts: true }), mode: 'dl01', runs: 2, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 22, timeouts: fast });
+    const c = countsOf(report);
+    expect(c).toMatchObject({ completed: 2, kept: 2, bad: 0, within5s: 2 });
+    expect(c.adts).toMatchObject({ break: 2, v1Failing: 2 });
+    expect(report.exit).toBe(EXIT.pass);
+    expect(failReason(report)).toBeNull();
+    const md = renderMarkdown(report);
+    expect(md).toContain('**FINDING, to report before any flip (ADR 0027): 2 V1 or tail finding(s).**');
+    expect(md).toMatch(/- run 1: the tail is a break \(\d+ bytes after the last whole frame/);
+    expect(md).toContain('**PASS:');
+  }, 60_000);
+
+  it('the step summary carries the V1 evidence of the first few takes only, and stays under GitHub\'s 1 MiB', () => {
+    const take = (run: number) => ({
+      run,
+      outcome: 'kept-playable',
+      within5s: true,
+      container: 'adts',
+      storedPath: 'same',
+      durationS: 60,
+      afinfoOpens: true,
+      afinfoDurationS: 57,
+      deviationMs: 100,
+      afinfo: `File:           (this take)\n${'x'.repeat(3900)}`,
+      adts: adtsFacts(concat(adtsFrame(4), adtsFrame(4))),
+    });
+    const report = {
+      mode: 'dl01', runsAsked: 30, runsPlanned: 30, seed: 1, delayMs: [10000, 120000], kinds: null, selfCheckPerPlant: 2,
+      startedAt: 'x', finishedAt: 'y', device: null, selfCheck: { asked: 4, caught: 4, missed: [], runs: [] },
+      runs: Array.from({ length: 30 }, (_, i) => take(i + 1)), audits: [], sweep: {}, errors: [], crashed: null, exit: EXIT.pass,
+    };
+    const full = renderMarkdown(report);
+    const summary = stepSummary(report);
+    expect(full.match(/^00000000: /gm)).toHaveLength(30);
+    expect(summary.match(/^00000000: /gm)).toHaveLength(STEP_SUMMARY_EVIDENCE);
+    expect(summary).toContain(`The first ${STEP_SUMMARY_EVIDENCE} of 30 takes here; report.md and the job log carry every one.`);
+    // A gate-sized merged report (500 takes) fits with the evidence capped; one far past it is cut with a note.
+    const gate = stepSummary({ ...report, runs: Array.from({ length: 500 }, (_, i) => take(i + 1)), runsAsked: 500, runsPlanned: 500 });
+    expect(Buffer.byteLength(gate)).toBeLessThan(STEP_SUMMARY_MAX_BYTES);
+    expect(gate).not.toContain('Cut here');
+    const huge = stepSummary({ ...report, runs: Array.from({ length: 6000 }, (_, i) => take(i + 1)), runsAsked: 6000, runsPlanned: 6000 });
+    expect(huge).toContain("Cut here to stay under GitHub's step summary limit");
+    expect(Buffer.byteLength(huge)).toBeLessThan(1024 * 1024);
+  });
+});
+
+describe('[ADR 0027] the host reads frames with the app\'s own scanner, on the framing its tests pin', () => {
+  const real = () => concat(...REAL_FRAME_LENGTHS.map((len) => adtsFrame(len - 7)));
+  const total = REAL_FRAME_LENGTHS.reduce((n, len) => n + len, 0);
+
+  it('the frame sizes walked are exactly the real encoder\'s, on the chain scanAdts proved, and a kill cut leaves the whole frames', () => {
+    const f = adtsFacts(real());
+    expect(f).toMatchObject({ adts: true, frames: 283, tail: 'none', tailBytes: 0, wholeBytes: total, totalBytes: total, ftypAt4: false });
+    expect(f.frameBytes).toEqual({ count: 283, min: Math.min(...REAL_FRAME_LENGTHS), mean: Math.round((total / 283) * 10) / 10, max: Math.max(...REAL_FRAME_LENGTHS), overLimit: 0, notLc: 0 });
+    expect(f.header).toEqual({ mpeg: 4, layer: 0, crc: false, objectType: 2, profile: 'AAC-LC', frequencyIndex: 3, sampleRate: 48000, channelConfiguration: 1 });
+    expect(f.first16.startsWith('00000000: fff1 4c40 ')).toBe(true);
+    expect(f.kbps).toBe(Math.round((total * 8) / ((283 * AAC_FRAME_SAMPLES * 1000) / 48000)));
+    expect(v1Findings(f)).toEqual([]);
+    // The figures are scanAdts's own: frames, whole bytes, tail.
+    const s = scanAdts(real())!;
+    expect([f.frames, f.wholeBytes, f.tail, f.tailBytes]).toEqual([s.frames, s.wholeBytes, s.tail, s.tailBytes]);
+    for (let cut = 1; cut < 200; cut += 13) {
+      const killed = adtsFacts(real().subarray(0, total - cut));
+      const last = REAL_FRAME_LENGTHS.at(-1)!;
+      expect(killed).toMatchObject({ frames: cut < last ? 282 : 281, tail: 'cut' });
+      expect(killed.frameBytes!.count).toBe(killed.frames);
+    }
+  });
+
+  it('flags what check V1 rules out: a frame over the AAC limit, a header that is not AAC-LC 48 kHz mono, an ftyp at offset 4', () => {
+    const big = adtsFacts(concat(adtsFrame(170), adtsFrame(MONO_FRAME_LIMIT - 7 + 1), adtsFrame(170)));
+    expect(big.frameBytes).toMatchObject({ count: 3, max: MONO_FRAME_LIMIT + 1, overLimit: 1 });
+    expect(v1Findings(big)).toEqual([`1 frame(s) over ${MONO_FRAME_LIMIT} bytes`]);
+    const at44k = adtsFacts(concat(adtsFrame(170, { sampleRateIndex: 4, channels: 2 }), adtsFrame(170, { sampleRateIndex: 4, channels: 2 })));
+    expect(v1Findings(at44k)).toEqual(['frequency index 4, not 3 (48 kHz)', 'channel configuration 2, not 1']);
+    const main = adtsFrame(170);
+    main[2] &= 0x3f; // profile 0: AAC Main
+    expect(v1Findings(adtsFacts(concat(main, adtsFrame(170))))).toEqual(['profile AAC Main, not AAC-LC', '1 frame header(s) not AAC-LC']);
+    expect(v1Findings(adtsFacts(concat(adtsFrame(100, { crc: true }), adtsFrame(100, { crc: true }))))).toEqual(['the first header is not FF F1 or FF F9 (layer 0, no CRC)']);
+    expect(v1Findings(adtsFacts(concat(new Uint8Array([0, 0, 0, 0x20]), new TextEncoder().encode('ftypM4A '), new Uint8Array(40))))).toEqual(['an ftyp box at offset 4 (an MPEG-4 file, not ADTS)', 'no ADTS stream']);
+  });
+
+  it('the AAC limit is 7 + 768 = 775 bytes a mono frame: 775 passes, 776 is a finding (ADR 0027)', () => {
+    expect(MONO_FRAME_LIMIT).toBe(775);
+    expect(adtsFacts(concat(adtsFrame(768), adtsFrame(170))).frameBytes).toMatchObject({ max: 775, overLimit: 0 });
+    expect(v1Findings(adtsFacts(concat(adtsFrame(768), adtsFrame(170))))).toEqual([]);
+    expect(adtsFacts(concat(adtsFrame(769), adtsFrame(170))).frameBytes).toMatchObject({ max: 776, overLimit: 1 });
+  });
+
+  it('reads all three channel_configuration bits, so configurations 4 to 7 are named as they are', () => {
+    for (const channels of [1, 2, 3, 4, 5, 6, 7]) {
+      const f = concat(adtsFrame(170, { channels }), adtsFrame(170, { channels }));
+      expect(firstHeader(f)!.channelConfiguration, `configuration ${channels}`).toBe(channels);
+      expect(v1Findings(adtsFacts(f)), `configuration ${channels}`).toEqual(channels === 1 ? [] : [`channel configuration ${channels}, not 1`]);
+    }
+  });
+
+  it('FF F9 (the MPEG-2 ID bit, what Core Audio writes; run 40081955446) passes V1 as FF F1 does', () => {
+    const mpeg2 = (f: Uint8Array) => {
+      f[1] |= 0x08;
+      return f;
+    };
+    const f = concat(mpeg2(adtsFrame(4)), mpeg2(adtsFrame(4)), mpeg2(adtsFrame(4)));
+    const facts = adtsFacts(f);
+    expect(facts.first16.startsWith('00000000: fff9 4c40 ')).toBe(true);
+    expect(facts.header).toMatchObject({ mpeg: 2, layer: 0, crc: false, profile: 'AAC-LC', frequencyIndex: 3, channelConfiguration: 1 });
+    expect(facts).toMatchObject({ adts: true, frames: 3, tail: 'none', frameBytes: { min: 11, max: 11 } });
+    expect(v1Findings(facts)).toEqual([]);
+  });
+
+  it('a take cut inside its first header is ADTS with no whole frame, not another format', () => {
+    for (const n of [1, 3, 6]) {
+      const f = adtsFacts(adtsFrame(170).subarray(0, n));
+      expect(f, `${n} bytes`).toMatchObject({ adts: true, header: null, frames: 0, tail: 'cut', tailBytes: n, wholeBytes: 0 });
+      expect(v1Findings(f)).toEqual(['cut inside its first header: no whole frame']);
+    }
+    // Bytes that are not an ADTS header's stay "not ADTS".
+    expect(adtsFacts(new Uint8Array([0xff, 0x00, 0x12])).adts).toBe(false);
+    expect(adtsFacts(new Uint8Array([0x00, 0x00, 0x00, 0x20])).adts).toBe(false);
+  });
+
+  it('prints the first 16 bytes as xxd -l 16 does, and afinfo\'s output without the take\'s path or name', () => {
+    expect(xxd16(new Uint8Array([0xff, 0xf1, 0x4c, 0x40, 0x1f, 0x1f, 0xfc, 0x21, 0x41, 0x42, 0, 0, 0, 0, 0, 0, 0x99]))).toBe(
+      '00000000: fff1 4c40 1f1f fc21 4142 0000 0000 0000  ..L@...!AB......',
+    );
+    // A short file: the printable column stays where xxd puts it.
+    expect(xxd16(new Uint8Array([0xff, 0xf1, 0x4c]))).toBe(`00000000: ${'fff1 4c'.padEnd(39)}  ..L`);
+    const path = '/Users/runner/Library/Developer/CoreSimulator/Devices/X/data/Containers/Data/Application/Y/Documents/ExpoAudio/recording-5D2E0F11.aac';
+    const out = redactAfinfo(`File:           ${path}\nFile type ID:   adts\nnote: recording-5D2E0F11.aac opened`, path, '(this take)');
+    expect(out).toBe('File:           (this take)\nFile type ID:   adts\nnote: (this take) opened');
+  });
 });
 
 describe('settings, shards and what a clean result proves', () => {
