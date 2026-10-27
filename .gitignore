@@ -54,6 +54,11 @@ yarn-error.*
 .env
 .env.*
 !.env.development
+# pack signing key and upload credentials, at any depth (docs/ops/PACKS_HOSTING.md); they belong in ~/.config/early-letters/
+signing.env
+*.signing.env
+r2.env
+*.r2.env
 .env*.local
 apps/*/.env
 credentials.json
@@ -93,3 +98,7 @@ packages/emails/out/
 # INDEX.md, steps/*.json and critiques/ stay tracked. See docs/release/journey/README.md.
 docs/release/journey/screens/**
 *.pdf
+
+# coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
+coverage/
+!/scripts/coverage/

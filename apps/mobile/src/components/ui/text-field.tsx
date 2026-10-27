@@ -3,7 +3,9 @@
  * TextField (COMPONENTS 2.7, 2.8).
  *   field   one line (child's name, "what they call you"): visible label above, 1 pt
  *           controlBorder edge (3:1, WCAG 1.4.11), 2 pt focus ring drawn outside the
- *           edge so nothing shifts, helper below.
+ *           edge so nothing shifts, helper below. face="serif" sets what is typed in the
+ *           letter face at 22 pt (tokens.type.nameField): the child's name on first run is
+ *           the book's title (S05). The label, helper and error stay in Mukta.
  *   letter  the Type half of capture: paper, no box, Literata at letter size, grows
  *           with the text (Day One / Apple Notes writing surface).
  *
@@ -29,6 +31,8 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
   helper?: string;
   error?: string | null;
   variant?: 'field' | 'letter';
+  /** The field variant's typed text: Mukta (default), or the letter face for the child's name (S05). */
+  face?: 'sans' | 'serif';
   /** Reading Size multiplier for the letter variant. */
   scale?: number;
   trailing?: React.ReactNode;
@@ -39,7 +43,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
 const R = tokens.radius;
 
 export const TextField = React.forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, labelHidden, helper, error, variant = 'field', scale, trailing, className, inputClassName, onFocus, onBlur, multiline, ...props },
+  { label, labelHidden, helper, error, variant = 'field', face = 'sans', scale, trailing, className, inputClassName, onFocus, onBlur, multiline, ...props },
   ref,
 ) {
   const { c } = useTheme();
@@ -52,8 +56,9 @@ export const TextField = React.forwardRef<TextInput, TextFieldProps>(function Te
   }, [error]);
 
   // Single-line iOS inputs mis-place text with an explicit lineHeight, so the field style drops it.
-  const { lineHeight: _lh, ...fieldStyle } = typeStyle('body', { fontsReady: ready });
-  const textStyle = letter ? typeStyle('letterBody', { scale, fontsReady: ready }) : multiline ? typeStyle('body', { fontsReady: ready }) : fieldStyle;
+  const fieldToken = face === 'serif' ? 'nameField' : 'body';
+  const { lineHeight: _lh, ...fieldStyle } = typeStyle(fieldToken, { fontsReady: ready });
+  const textStyle = letter ? typeStyle('letterBody', { scale, fontsReady: ready }) : multiline ? typeStyle(fieldToken, { fontsReady: ready }) : fieldStyle;
   const hint = [helper, error].filter(Boolean).join('. ') || undefined;
 
   const input = (

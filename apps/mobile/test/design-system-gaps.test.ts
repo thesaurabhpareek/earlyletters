@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
 import { HEADER_TARGET, IDIOM, ROOT_ROUTE_CONTEXT, presentationFor, type NavContext } from '../src/lib/navigation.logic';
+import { routeTransitions, type RootRoute } from '../src/lib/transitions.logic';
 import { TRUST_COPY_MIN_PT, footerPlacement, pinnedFooterHeight } from '../src/lib/review-layout.logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -29,13 +30,18 @@ describe('(3) one back/close idiom per context', () => {
   });
 
   it('the root stack presents exactly the routes the table calls modal as modals', () => {
-    const layout = read('app/_layout.tsx');
-    for (const [route, ctx] of Object.entries(ROOT_ROUTE_CONTEXT)) {
-      const m = layout.match(new RegExp(`<Stack\\.Screen name="${route.replace(/[[\]()]/g, '\\$&')}"([^>]*)/>`));
-      if (!m) continue; // settings and onboarding mount without options
-      const presented = /presentation: '(modal|fullScreenModal)'/.test(m[1]);
-      expect(presented, route).toBe(presentationFor(ctx) === 'modal');
+    // Presentation lives in one table (lib/transitions.logic.ts routeTransitions, EXPERIENCE_PASS 5.8), which the
+    // root layout spreads into every Stack.Screen; the layout types none itself.
+    const layout = code(read('app/_layout.tsx'));
+    for (const r of [false, true]) {
+      const table = routeTransitions(r);
+      for (const [route, ctx] of Object.entries(ROOT_ROUTE_CONTEXT)) {
+        const presented = table[route as RootRoute].presentation === 'modal' || table[route as RootRoute].presentation === 'fullScreenModal';
+        expect(presented, route).toBe(presentationFor(ctx) === 'modal');
+        expect(layout, route).toMatch(new RegExp(`<Stack\\.Screen name="${route.replace(/[[\]()]/g, '\\$&')}"[^>]*routes(\\.|\\[')`));
+      }
     }
+    expect(layout).not.toMatch(/presentation:/);
   });
 
   it('every modal screen draws Close with ModalHeader (top right) and none draws it top-left or at the bottom', () => {
@@ -73,9 +79,11 @@ describe('(3) one back/close idiom per context', () => {
 describe('(2) one shared pattern for loading, empty and error states', () => {
   it('every screen that deviated now uses StateScreen or InlineState', () => {
     const uses: [string, RegExp][] = [
-      ['app/review.tsx', /<StateScreen[\s\S]*kind="error"/], // J06-13: no draft
-      ['app/review.tsx', /<InlineState[\s\S]*kind="loading"/], // J05-03: words on their way
-      ['app/review.tsx', /<InlineState[\s\S]*kind="error"/], // transcription failed
+      ['app/review.tsx', /<StateScreen[\s\S]*kind="notFound"/], // J06-13: no draft, "Nothing to read back here" (P4b, S23)
+      // J05-03 words on their way, and a failed transcription: one InlineState whose kind comes from the card (P4, S14 to S16)
+      ['app/review.tsx', /<InlineState[\s\S]*kind=\{card\.kind\}/],
+      ['components/capture/words-state.logic.ts', /state: 'writing',\s*kind: 'loading'/],
+      ['components/capture/words-state.logic.ts', /state: 'failed', kind: 'error'/],
       ['app/read-together.tsx', /<StateScreen kind="empty"/], // J11-07
       ['app/letter/[id].tsx', /<StateScreen kind="notFound"/], // J10-11
       ['app/listen.tsx', /<StateScreen[\s\S]*kind="empty"/], // J05-04: microphone off
@@ -119,7 +127,7 @@ describe('(4) touch targets and Review layout', () => {
     const review = read('app/review.tsx');
     expect(review).not.toMatch(/variant="ghost"/);
     expect(review).toMatch(/label=\{r\.firstNote\.dismissButton\}/);
-    expect(review).toMatch(/variant="quiet" fullWidth onPress=\{\(\) => save\(false\)\}/);
+    expect(review).toMatch(/variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\}/);
   });
 
   it('while editing, the footer is one primary Done, so the only way out is a 56 pt button', () => {
@@ -137,11 +145,13 @@ describe('(4) touch targets and Review layout', () => {
   it('trust copy on Review is never below the subhead step (16 pt), and never caption or footnote', () => {
     expect(TRUST_COPY_MIN_PT).toBe(16);
     const review = code(read('app/review.tsx'));
-    for (const key of ['r.trustLine', 'r.firstNote.body', 'r.destination.privateHelp']) {
+    for (const key of ['r.firstNote.body']) {
       const tag = review.match(new RegExp(`(<Text[^>]*>)\\s*\\{${key.replace(/\./g, '\\.')}\\}\\s*</Text>`));
       expect(tag, key).not.toBeNull();
       expect(tag![1], key).toMatch(/variant="subhead"/);
     }
+    // The permanent reassurance line and the private help line are no longer shown (P4b, S17: RET in P0).
+    expect(review).not.toMatch(/\{r\.trustLine\}|\{r\.destination\.privateHelp\}/);
     expect(review).not.toMatch(/text-(xs|sm)\b/);
   });
 

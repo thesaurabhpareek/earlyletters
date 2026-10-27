@@ -64,8 +64,25 @@ export const authCopy = {
 
   verify: {
     title: 'Signing you in',
+    // Heading over the two refusals (F02-U11 `errors.other_phone`, F02-U27 `errors.already_signed_in`): nothing is signing in.
+    refusedTitle: "This link can't be used here",
     typeCode: 'Type the code instead',
     newEmail: 'Send a new email',
+    close: 'Close',
+  },
+
+  /**
+   * Before this phone's letters join an account (BL-347, F02 6.2 step 6,
+   * F02-REQ-019). {email} is the account address, masked ("a***@example.com").
+   */
+  claim: {
+    title: 'Keep your letters in this account?',
+    body: 'Your letters on this phone will be kept in the account {email}.',
+    noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
+    help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
+    keep: 'Keep them here',
+    notMine: 'Not my account',
+    waiting: 'Finish setting up to choose where your letters are kept.',
   },
 
   errors: {
@@ -81,6 +98,11 @@ export const authCopy = {
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: "We couldn't finish setting up your account. Your letters are safe on this phone. Please try again.",
     unknown: 'Something went wrong. Your letters are safe on this phone. Please try again.',
+    // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
+    other_phone: 'Type the code from the email on this phone instead.',
+    // Any account, this one included. Sign-out drops this phone's pending request, so the same link
+    // never works after it; the code from the email does.
+    already_signed_in: "You're already signed in on this phone. To use another account, sign out, then type the code from the email.",
   },
 
   consent: {

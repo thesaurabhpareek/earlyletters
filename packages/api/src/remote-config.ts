@@ -18,6 +18,9 @@
  */
 import * as v from 'valibot';
 import { DocVersionSchema, IsoTimestampSchema, SemverSchema } from './common';
+import type { KillSwitchKey } from './kill-switches';
+
+export { KILL_SWITCH_KEYS, M14_KILL_SWITCH_KEYS, parseKillSwitchList, type KillSwitchKey } from './kill-switches';
 
 export const REMOTE_CONFIG_SCHEMA_VERSION = 1;
 
@@ -46,22 +49,20 @@ export type IntroVariant = (typeof INTRO_VARIANTS)[number];
 export const FAMILY_TEASER_VARIANTS = ['coming_soon', 'quiet'] as const;
 export type FamilyTeaserVariant = (typeof FAMILY_TEASER_VARIANTS)[number];
 
-/** Kill switches: `true` means the feature is stopped. Each one only stops a server-dependent feature. */
-export const KILL_SWITCH_KEYS = [
-  /** Upload and download of letters. Local writing and reading continue. */
-  'sync',
-  /** Creating and redeeming co-parent invites. */
-  'invites',
-  /** Photo upload and signed photo URLs. */
-  'photos',
-  /** New pack downloads (installed packs keep working). */
-  'packDownloads',
-  /** Server content blocks (the packaged copy is used instead). */
-  'serverContent',
-] as const;
-export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
+
 
 const bool = (d: boolean) => v.fallback(v.boolean(), d);
+
+const KILL_SWITCHES_OFF: Record<KillSwitchKey, boolean> = {
+  sync: false,
+  invites: false,
+  photos: false,
+  packDownloads: false,
+  serverContent: false,
+  backupUploads: false,
+  escrow: false,
+  statusReport: false,
+};
 
 const KillSwitchesSchema = v.fallback(
   v.object({
@@ -70,8 +71,11 @@ const KillSwitchesSchema = v.fallback(
     photos: bool(false),
     packDownloads: bool(false),
     serverContent: bool(false),
+    backupUploads: bool(false),
+    escrow: bool(false),
+    statusReport: bool(false),
   }),
-  { sync: false, invites: false, photos: false, packDownloads: false, serverContent: false },
+  { ...KILL_SWITCHES_OFF },
 );
 
 const FlagsSchema = v.fallback(
@@ -116,7 +120,7 @@ export const DEFAULT_REMOTE_CONFIG: RemoteConfig = {
   freeLettersAllowance: BUNDLED_FREE_LETTERS,
   forceReauthEpoch: 0,
   flags: { introVariant: 'four', lockScreenNamesDefault: false, familyTeaser: 'coming_soon' },
-  killSwitches: { sync: false, invites: false, photos: false, packDownloads: false, serverContent: false },
+  killSwitches: { ...KILL_SWITCHES_OFF },
 };
 
 /** Validates a config payload (after its signature was checked). Never throws. */
@@ -140,4 +144,41 @@ export function effectiveFreeSessions(config: Pick<RemoteConfig, 'readTogetherFr
 
 export function isKilled(config: Pick<RemoteConfig, 'killSwitches'>, key: KillSwitchKey): boolean {
   return config.killSwitches[key] === true;
+}
+
+/**
+ * Staleness rule for kill switches (F19-REQ-008 Rev, R2 AR-27, review L10):
+ * a config whose `generatedAt` is more than this much older than the newest
+ * server `Date` the phone has seen is stale.
+ */
+export const KILL_SWITCH_MAX_AGE_MS = 7 * 24 * 3600_000;
+
+/**
+ * True when the config is stale. A missing or unparsable server date means
+ * we cannot tell, and the switches apply (a stale copy still cannot win a
+ * version contest: `decideDocumentVersion`).
+ */
+export function killSwitchesStale(generatedAt: string, serverDate: string | null | undefined): boolean {
+  if (!serverDate) return false;
+  const served = Date.parse(serverDate);
+  const generated = Date.parse(generatedAt);
+  if (!Number.isFinite(served) || !Number.isFinite(generated)) return false;
+  return served - generated > KILL_SWITCH_MAX_AGE_MS;
+}
+
+/**
+ * The config to use after accepting `next`. When it is stale, a switch it
+ * clears stays set (an old copy held at a cache can never turn a stopped
+ * feature back on), but a switch it sets is honoured: it is a newer version
+ * than anything this phone accepted, and stopping a server feature is the
+ * safe direction. This is stricter than "ignore its switches" where it
+ * matters and avoids the hole that rule opens for new installs, which would
+ * otherwise miss a switch left on for more than a week (proposed as the
+ * F19-REQ-008 wording in the PR). Every other key applies.
+ */
+export function withFreshKillSwitches(next: RemoteConfig, lastGood: Pick<RemoteConfig, 'killSwitches'>, serverDate: string | null | undefined): RemoteConfig {
+  if (!killSwitchesStale(next.generatedAt, serverDate)) return next;
+  const merged = { ...next.killSwitches };
+  for (const k of Object.keys(merged) as KillSwitchKey[]) merged[k] = merged[k] || lastGood.killSwitches[k] === true;
+  return { ...next, killSwitches: merged };
 }
