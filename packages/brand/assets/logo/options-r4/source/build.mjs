@@ -181,6 +181,8 @@ async function buildProfiles() {
 }
 
 // ---------------------------------------------------------------- run
+export { C, SYM, SYM_SMALL, lockupSvg, symbolSvg, tileSvg, OPTIONS, TILES, png, write, ROOT, PRIM, read, sharp, markGroup, createRequire };
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
 const only = process.argv[2];
 const jobs = [];
 if (!only || only === 'B') jobs.push(buildIcons('B', path.join(ROOT, OPTIONS.B.name)), buildLockups('B', path.join(ROOT, OPTIONS.B.name)));
@@ -189,3 +191,4 @@ if (!only || only === 'D') jobs.push(buildIcons('D', path.join(ROOT, OPTIONS.D.n
 jobs.push(buildProfiles());
 await Promise.all(jobs);
 console.log('options-r4 built');
+}

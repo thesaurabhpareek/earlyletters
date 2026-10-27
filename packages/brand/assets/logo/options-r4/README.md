@@ -1,5 +1,7 @@
 # Logo options R4 (27 Oct 2026)
 
+Recommendation: ship A, keep B as the alternate (docs/brand/logo-r4/RECOMMENDATION.md).
+
 Status: candidates. Nothing here is registered in `packages/brand/registry.ts` and nothing replaces `assets/logo/primary` (D-071). Adopting an option means a new decision and a registry change.
 
 ## What these are
@@ -33,7 +35,21 @@ Open the review page: `presentation.html`.
 | Profile image | `../profile/earlyletters-profile-<option>-{1024,512,250}.png`: full-bleed square, mark inside the central 46 percent so a circle crop keeps it whole. 250 is Google's minimum |
 | Vectors | `symbol.svg`, `symbol-reversed.svg`, `symbol-small.svg` |
 
-Not built here: Open Graph image, Android adaptive and notification glyphs (v1.1), and the hand-tuned sub-pixel offsets the approved set has. Those would be done for the chosen option only.
+## Touchpoint assets (`<option>/touchpoints/`, built by `source/touchpoints.mjs`)
+Same recipes and proportions as `packages/brand/scripts/build-touchpoints.mjs`, so adopting an option means swapping files. Option C ships the lockup-based files only; its icon, notification glyph and Android layers are the approved mark's.
+
+| Use | Files |
+|---|---|
+| Share previews (Open Graph, X, iMessage, Slack, Facebook) | `og/og-image-1200x630.png` |
+| Square previews (WhatsApp, LinkedIn, Instagram) | `og/og-image-square-1200x1200.png` |
+| Video end cards | `video/end-card-1920x1080.png`, `end-card-1080x1920.png` |
+| Social post plate 4:5 | `social/post-template-1080x1350.png` |
+| Profile covers | `social/x-header-1500x500.png`, `linkedin-banner-1584x396.png`, `facebook-cover-1640x624.png`, `youtube-banner-2560x1440.png` (lockup inside the safe area) |
+| Avatars | `email/avatar-1024.png` (sender avatar, app icon), `social/avatar-circle-safe-1024.png` |
+| Notification glyph | `notification/glyph.svg` and `glyph-{24,36,48,72,96}.png` (white on transparent) |
+| Android adaptive launcher (v1.1) | `android/ic_launcher_foreground-432.png`, `ic_launcher_background-432.png`, `ic_launcher_monochrome-432.png`, `play-store-512.png` |
+
+Not done: wiring any option into the app, website or registry (that waits for a choice), the hand-tuned sub-pixel offsets of the approved icon set, and the BIMI SVG (blocked on DMARC anyway). `touchpoints-sheet.html` is a contact sheet of these files.
 
 ## Rebuild
 `node packages/brand/assets/logo/options-r4/source/build.mjs` (needs `sharp`, a devDependency of `@scribe/brand`).
