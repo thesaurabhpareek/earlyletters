@@ -4,6 +4,9 @@
 #   tag ios-v<x.y.z>-rc.<n>   checks, then an EAS production build uploaded to internal TestFlight
 #   tag ios-v<x.y.z>          the released RC: checks an RC tag sits on the same commit, then the GitHub Release
 #   manual run, job=metadata  pushes store text (apps/mobile/store.config.json) with the review contact
+#   manual run, job=checks    a dry run: the same RC checks on the ref you pick, with no tag, no environment, no secret
+#                             and no build. Run it on `develop` or a release branch to see what would stop an RC
+#                             today, before the first real tag. It cannot build or submit anything.
 #
 # The gate (ADR 0022 decision 8; the repository is public, so GitHub Free includes all of this):
 # - `build` and `metadata` run in the environment `app-store`: its only required reviewer is the approver account
@@ -28,7 +31,7 @@ on:
       job:
         description: What to run
         type: choice
-        options: [metadata]
+        options: [metadata, checks]
         required: true
 
 concurrency:
@@ -86,7 +89,10 @@ jobs:
   checks:
     name: checks (G2)
     needs: classify
-    if: needs.classify.outputs.kind == 'rc'
+    # classify is skipped on a manual run, so a status function is needed or this job is skipped with it. A tag
+    # whose classify failed has no kind and does not run. `build` below still needs a successful classify, so a
+    # manual dry run can never reach it.
+    if: ${{ !cancelled() && (needs.classify.outputs.kind == 'rc' || (github.event_name == 'workflow_dispatch' && inputs.job == 'checks')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -98,6 +104,9 @@ jobs:
       - run: npm run typecheck
       - name: Store metadata matches packages/content
         run: npx tsx scripts/release/store-config.ts --check
+      - name: Listing promises nothing the build switches off (BL-440; enforced by the metadata job, reported here)
+        continue-on-error: true
+        run: npx tsx scripts/release/store-config.ts --assert-shippable
       - name: No placeholder identity in the build
         run: |
           set -euo pipefail
