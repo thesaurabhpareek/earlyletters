@@ -824,7 +824,9 @@ describe('[DATA-REQ-048] the oracle judges a run from the database and files alo
       expect(verdict(uri), uri).toBe('other-container');
     }
     // Another folder or another file: a fail.
-    for (const uri of [`file://${docs}/recording-5.aac`, `file://${docs}/ExpoAudio/recording-6.aac`, `file://${docs}/Documents/ExpoAudio/recording-5.aac`, 'file:///elsewhere/recording-5.aac', 'recording-5.aac', `file://${docs}/ExpoAudio/recording-5.m4a`]) {
+    // A path in the listed container outside its Documents folder is another file too (lens A on #281).
+    const container = docs.slice(0, -'/Documents'.length);
+    for (const uri of [`file://${docs}/recording-5.aac`, `file://${docs}/ExpoAudio/recording-5.aac`.replace('/ExpoAudio/', '/ExpoAudio/x/'), `file://${docs}/ExpoAudio/recording-6.aac`, `file://${docs}/Documents/ExpoAudio/recording-5.aac`, `file://${container}/tmp/Documents/ExpoAudio/recording-5.aac`, `file://${container}/Library/Caches/Documents/ExpoAudio/recording-5.aac`, 'file:///elsewhere/recording-5.aac', 'recording-5.aac', `file://${docs}/ExpoAudio/recording-5.m4a`]) {
       expect(verdict(uri), uri).toBe('other');
     }
     expect(normalizePath('/a//b/./c/../d/')).toBe('/a/b/d');
