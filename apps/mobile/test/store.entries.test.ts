@@ -205,6 +205,7 @@ describe('typed words for a waiting letter (D-086, "Write the words")', () => {
       captureMode: 'mixed',
       editLevel: 'verbatim',
       transcriptStatus: null,
+      wordsUnreviewed: true, // they wait for the author's review: they count only when kept from Review (#53)
     });
   });
 
