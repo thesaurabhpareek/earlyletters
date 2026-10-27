@@ -261,7 +261,7 @@ describe('every language: random hostile edits never add or swap meaning', () =>
         }
         expect(proposed).toBeGreaterThan(RUNS * 2);
         expect(accepted).toBeGreaterThan(RUNS / 10);
-      });
+      }, 120_000); // thousands of runs per language: well past vitest's 5 s default on a loaded CI runner
     }
   }
 });

@@ -34,7 +34,7 @@ The machine may remove and repair. It may never add meaning.
 npm install            # once, at the repo root
 npm test               # every workspace with a test script: core, mobile, api, analytics, content, brand, emails, design-tokens, experiments; Node 22.5+ (node:sqlite)
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
+npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (32 files)
 npm run test:functions # Edge Functions and ops scripts (Deno via npx)
 npm run typecheck
 npm run mobile         # start the iOS app
@@ -67,4 +67,5 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - `develop` is the integration branch and always green; `main` is live (website and tagged releases). Every change is a PR into `develop`. Full rules: `docs/DEVELOPMENT.md`.
 - Short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
-- Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json`; build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.
+- Every new table, view, sequence or function in `public` carries its own grants in its own migration (default privileges are reset since `20261023060000`), and its grant goes in `supabase/tests/grants.mjs`.
+- Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.

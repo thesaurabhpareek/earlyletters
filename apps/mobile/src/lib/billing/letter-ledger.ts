@@ -14,7 +14,7 @@
  * its count are written together or not at all.
  *
  * This file imports no React Native: the Keychain is passed in
- * (`configureLedgerStorage`, wired in letter-ledger.native.ts), so the logic is
+ * (`configureLedgerStorage`, wired in letter-ledger.keychain.ts), so the logic is
  * unit-tested in Node. With no storage configured (web preview, tests) the
  * ledger runs on the database alone, which is the safe side.
  *

@@ -124,7 +124,7 @@ Gap ids defined here:
 | DB-R18 | MUST | `entries_guard_immutable`; `SCTMB` test | enforced on develop (server); device gap | MOB-03, WS-09 |
 | DB-R19 | MUST | `SCPRG` check; day 1 and day 61 tests | pending PR #32 | DB-02 |
 | DB-R20 | MUST NOT | review; cascade allowlist test proposed | not yet | DB-17, DB-03 |
-| DB-R21 | MUST | `perf.test.mjs` seq-scan and p95 budget; full index | enforced on develop; index pending PR #32 | DB-06 |
+| DB-R21 | MUST | `perf.test.mjs` seq-scan and named-index plan checks; p95 budget on the nightly (D-114); full index | plans enforced on develop; budget on develop (nightly only, advisory, runs after AF-05); index pending PR #32 | DB-06 |
 | DB-R23 | MUST | `server_seq` + tombstone pull | not yet | DB-08, D-023 |
 | DB-R24 | MUST | `SCCFG` tests; env settings check | pending PR #32; per-env check not yet | DB-07, DB-18 |
 | DB-R25 | MUST | migrator `user_version`; tombstone refusal; parity test | migrator on develop; refusal on develop (#29); parity not yet | CORE-03, WS-09 |
@@ -184,7 +184,7 @@ Gap ids defined here:
 | SEC-R07 | MUST | licence allowlist check | not yet | TDD 04 8.2 |
 | SEC-R08 | MUST | `security.yml` audit gate, `audit-ignore.json` | pending PR #30 | CI-05 |
 | SEC-R09 | MUST | `dependabot.yml`; repo setting | pending PR #30; setting founder-only | CI-05 |
-| SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); not yet (`agents.yml`, `agents-check.yml`, `claude.yml`) | CI-06 |
+| SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); pinned: `agents-check.yml` on `develop`, `claude.yml` with RA-20-02a (#272); not yet `agents.yml` (`anthropics/claude-code-action@v1`, `actions/create-github-app-token@v3`) | CI-06 |
 | SEC-R11 | MUST | review | review (pattern present in PR #30) | |
 | SEC-R12 | MUST | branch protection or ruleset | not yet (decided 14 Oct, #127 item 7; founder applies the settings) | CI-01 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |

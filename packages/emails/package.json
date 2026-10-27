@@ -10,7 +10,9 @@
     "build": "tsx scripts/render.ts",
     "export:supabase": "tsx scripts/export-supabase.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
+    "typecheck": "tsc --noEmit",
+    "export:escrow": "tsx scripts/export-escrow.ts"
   },
   "dependencies": {
     "@react-email/render": "^2.1.0",

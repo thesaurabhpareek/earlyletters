@@ -170,10 +170,10 @@ describe('Asha export (golden)', () => {
     expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
   });
 
-  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone, and no server history (schema 1.1.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.1.0');
+  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone, and no server history (since 1.1.0)', async () => {
+    // The version itself is pinned in export-recording-format.test.ts (1.2.0, ADR 0027).
     const account = accountOf((await makeExport()).zip);
-    expect(account.schema_version).toBe('1.1.0');
+    expect(account.schema_version).toBe(EXPORT_SCHEMA_VERSION);
     expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
     expect(Object.keys(account)).not.toContain('consent_history');
   });

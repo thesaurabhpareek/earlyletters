@@ -12,3 +12,4 @@ export * from './emails';
 export { onboardingStories, STORY_VISUALS } from './stories.en';
 export type { StoryCard, StoryVisual } from './stories.en';
 export * from './features';
+export { testflightCopy } from './release/testflight.en';

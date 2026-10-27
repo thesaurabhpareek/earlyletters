@@ -8,14 +8,22 @@
  * The Apple user identifier is kept in the Keychain so launch can ask Apple
  * whether the credential was revoked (A-REQ-033).
  *
- * Not built here, needs an Edge Function (TDD 04 `apple-token`): exchanging
- * the authorization code for a refresh token so account deletion can revoke
- * it (A-NFR-011). See docs/ops/AUTH_SETUP.md section 2.4.
+ * Right after sign-in, Apple's one-time authorization code goes to the
+ * `apple-token` Edge Function (BL-330, security review H3, F02-REQ-004,
+ * F02-REQ-022), which exchanges it with Apple for a refresh token and stores
+ * it wrapped, so account deletion can revoke it (App Store 5.1.1(v),
+ * A-NFR-011). The call never blocks or fails sign-in: the code lives five
+ * minutes and works once, and a missed capture shows up as `apple: no_token`
+ * on the deletion receipt and an ops alert. The code is never logged, never
+ * stored on the phone, and never sent anywhere else. AUTH_SETUP 2.7.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { serverFeaturesEnabled } from '../capabilities';
 import { secureStorage } from '../supabase/secure-storage';
+import { appleCaptureBody, APPLE_TOKEN_FUNCTION, captureVerdict, CAPTURE_ATTEMPTS, CAPTURE_RETRY_MS, type CaptureResult } from './apple-token.logic';
 import { makeNonce } from './nonce';
 
 const APPLE_USER_KEY = 'scribe.auth.appleUser';
@@ -48,6 +56,8 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   if (error) throw error;
   const userId = data.user?.id;
   if (!userId) throw Object.assign(new Error('apple_no_user'), { code: 'bad_oauth_callback' });
+  // BL-330: in the background; sign-in is already done whatever this returns.
+  if (credential.authorizationCode) void captureAppleToken(sb, credential.authorizationCode).catch(() => 'failed');
   await secureStorage.setItem(APPLE_USER_KEY, credential.user).catch(() => {});
   const name = fullName(credential.fullName);
   if (name) await secureStorage.setItem(PENDING_NAME_KEY, name).catch(() => {});
@@ -82,4 +92,39 @@ export async function appleCredentialRevoked(): Promise<boolean> {
 
 export async function forgetAppleUser(): Promise<void> {
   await secureStorage.removeItem(APPLE_USER_KEY).catch(() => {});
+}
+
+/** The bundle id Apple issued the code to (production, preview or dev build); the function checks it against its list. */
+function appleClientId(): string | null {
+  const id = Constants.expoConfig?.ios?.bundleIdentifier;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * POST /functions/v1/apple-token/v1 with the signed-in user's JWT (supabase-js
+ * adds it). A lost connection is tried once more a few seconds later; an
+ * answer from the function is final, because Apple refuses a code used twice.
+ */
+export async function captureAppleToken(
+  sb: Pick<SupabaseClient, 'functions'>,
+  authorizationCode: string,
+  wait: (ms: number) => Promise<void> = pause,
+): Promise<CaptureResult> {
+  if (!serverFeaturesEnabled()) return 'skipped';
+  const body = appleCaptureBody(authorizationCode, appleClientId());
+  if (!body) return 'failed';
+  for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt++) {
+    let verdict: CaptureResult | 'retry';
+    try {
+      const { error } = await sb.functions.invoke(APPLE_TOKEN_FUNCTION, { method: 'POST', body });
+      verdict = captureVerdict(error);
+    } catch (e) {
+      verdict = captureVerdict(e);
+    }
+    if (verdict !== 'retry') return verdict;
+    if (attempt < CAPTURE_ATTEMPTS) await wait(CAPTURE_RETRY_MS);
+  }
+  return 'failed';
 }

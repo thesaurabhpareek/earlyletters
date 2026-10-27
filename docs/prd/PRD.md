@@ -638,7 +638,7 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Account creation writes one `policy_acceptances` row for `terms` before any other row syncs, then shows the sensitive-data consent; declining leaves zero uploaded entries (LEGAL-REQ-001, LEGAL-REQ-006).
 - [ ] [auto] Local letters, children and dictionary move to the new user id in one transaction; a forced failure changes nothing (A-REQ-015).
 - [ ] [auto] Email: one message with link and 6-digit code; either signs in; both expire in 1 hour; the browser page does not verify on load (A-REQ-018, A-REQ-023).
-- [ ] [manual] Auth and `/i/` links open the app from Mail, Gmail, Outlook and Messages (A-REQ-022).
+- [ ] [manual] Auth and invite (`/j#t=<token>`) links open the app from Mail, Gmail, Outlook and Messages (A-REQ-022).
 - [ ] [auto] Sign out or Apple revocation never discards an unsynced letter (A-REQ-033).
 
 ### 6.2 First run, family, privacy

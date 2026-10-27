@@ -64,4 +64,4 @@ Check it took: `gh api repos/thesaurabhpareek/earlyletters/branches/BRANCH/prote
 
 - Timings on 3 Oct 2026 (2-core container): `npm test` about 12 s, `npm run test:db` about 41 s, typecheck about 20 s. `npm ci` cold is 1 to 1.5 minutes; with the `node_modules` cache, seconds.
 - If a job nears its timeout, split it rather than raising the timeout. The `db` job can shard by file (`npm run test:db -- perf` alone).
-- Nightly and release workflows (Maestro, random-seed fuzz, integration stack) are separate and not required for merging (TDD 07 section 10).
+- Nightly and release workflows (Maestro, random-seed fuzz, integration stack) are separate and not required for merging (TDD 07 section 10). Since #215 `workflows/nightly.yml` also has the `perf` job: the database plan checks and p95 budgets at launch scale (1,000 families x 400 letters, `PERF_BUDGETS=1`). Pull requests run the same plan checks at 250 x 400 without the budgets, so a slow runner cannot turn `required` red.
