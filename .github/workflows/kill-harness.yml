@@ -504,6 +504,7 @@ jobs:
           exit 0
 
       - name: Simulator
+        timeout-minutes: 15
         run: |
           set -euo pipefail
           udid=""
@@ -532,9 +533,10 @@ jobs:
           # Never pass it on a Mac in a family room (apps/mobile/e2e/README.md section 9).
           else extra=(--mic-silent); fi
           mkdir -p "$RUNNER_TEMP/diag"
+          # macOS's BSD sed (the image has no GNU sed): -l line-buffers it, so progress reaches the log before a timeout.
           node apps/mobile/e2e/kill/run-kill-harness.mjs --mode "$MODE" --udid "$UDID" \
             --app "$RUNNER_TEMP/kill-app/App.app" --runs "$RUNS" "${extra[@]}" --out "$RUNNER_TEMP/kill" 2>&1 \
-            | tee "$RUNNER_TEMP/diag/harness.log" | sed -e 's/::/: :/g' -e 's/##\[/# #[/g'
+            | tee "$RUNNER_TEMP/diag/harness.log" | /usr/bin/sed -l -e 's/::/: :/g' -e 's/##\[/# #[/g'
           code=${PIPESTATUS[0]}
           echo "- ${LABEL}: harness exit ${code} after $((SECONDS / 60)) min $((SECONDS % 60)) s on runner image ${ImageVersion:-unknown}" >> "$GITHUB_STEP_SUMMARY"
           REPORT_MD="$RUNNER_TEMP/kill/report.md"
@@ -566,7 +568,7 @@ jobs:
       # letter's words or audio: the app logs no letter text (CLAUDE.md privacy rules), and the drill's only data is
       # the fictional Asha's fixtures (a typed line and a generated tone).
       - name: Why the app stopped (on failure)
-        if: failure()
+        if: failure() || cancelled()
         run: |
           mkdir -p "$RUNNER_TEMP/diag"
           cp "$RUNNER_TEMP/bootstatus.log" "$RUNNER_TEMP/diag/" 2>/dev/null || true
@@ -577,7 +579,7 @@ jobs:
           fi
 
       - name: Upload the diagnostics (on failure)
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: kill-diagnostics-${{ matrix.mode }}-${{ matrix.n }}-${{ github.run_id }}-${{ github.run_attempt }}
