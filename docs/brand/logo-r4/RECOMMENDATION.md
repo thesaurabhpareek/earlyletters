@@ -7,7 +7,7 @@ Status: proposal for the founder. Nothing here changes D-071 or the registry.
 2. **Keep B, two tones, as the alternate.** Parent blob in ink or paper, child blob in the sepia accent, on a dark tile. It has the highest contrast (13.65:1 for the large blob) and stays distinct on light home screens.
 
 Rejected:
-- **C** (the name in quotation marks): it only changes the header lockup, it reads as a literal quotation of the name, and a second quote shape raises the chance of a look-alike conflict.
+- **C** (the name in quotation marks): it only changes the header lockup, it reads as a literal quotation of the name, and a second quote shape raises the chance of a look-alike conflict. It also breaks the rule in `BRAND_SYSTEM.md` section 1: opening quotes, never closing ones.
 - **D** (paper tile): the tile edge is 1.00 to 1.35:1 against light pages, so the icon loses its shape on a light home screen or white page.
 
 ## Why A over B

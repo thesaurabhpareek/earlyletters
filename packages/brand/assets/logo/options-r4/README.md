@@ -54,5 +54,5 @@ Not done: wiring any option into the app, website or registry (that waits for a 
 ## Rebuild
 `node packages/brand/assets/logo/options-r4/source/build.mjs` (needs `sharp`, a devDependency of `@scribe/brand`).
 
-## Profile image for earlyletters@gmail.com and email
-Use `profile/earlyletters-profile-A-approved-1024.png` to match the approved mark and the existing sender avatar (`email.avatar`). Swap in B or D files if one is chosen. Upload at Google Account > Personal info > Profile picture, signed in as that account.
+## Profile images for the brand Google account and email
+The registry says the social profile picture is the app icon (context `social.avatar`, asset `icon.app.default`), and the email sender avatar is the same icon (`email.avatar`). The files in `profile/` are circle-safe alternatives with the mark smaller inside the square, in case a platform crops tightly. Which one to upload is the founder's choice. For the Google account, upload at Google Account > Personal info > Profile picture while signed in as that account.
