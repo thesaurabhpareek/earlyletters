@@ -4,7 +4,7 @@
   - History: accepted pending V1, V2 and V3 on 17 Oct 2026 (the coordinator, under delegation). Flipped on 27 Oct by the coordinator under D-117, reversible by the same one line. The founder may reverse either.
   - The evidence for the flip:
     - V2 passed twice on the simulator: 100 kills, 100 playable, against M4A's 0 of 65 across four runs (40076982108, 40082148320 and 40085126690, 5 each; 40084319361, 50), and #288's smoke 40090988241 0 of 5 more;
-    - V3's in-app decode half: 50 of 50 read, none refused, and the probe within one frame of the counted frames (the drill's decode check, #291, open);
+    - V3's in-app decode half: 50 of 50 read, none refused, and the probe within one frame of the counted frames (the drill's decode check, #291, merged as 1c6795b);
     - V1's header half.
   - Due before the build 2 freeze (Tue 3 Nov 13:00 UTC): V1's speech half, V3's Mac half, and V4. They run on the first device build cut after this merge, whichever it is, and on the Mac (`docs/qa/DEVICE_TEST_PLAN.md` DL-06). If one fails, the coordinator sets `ios` back to `'m4a'` before the freeze.
   - A revert is the one line and nothing else. Takes already recorded as `.aac`, on testers' phones too if build 1 is out, stay `.aac` and keep playing, transcribing and exporting: every reader takes a take's container from its own file name (Consequences, "Two containers on one phone").
@@ -143,7 +143,7 @@ What gated the 27 Oct flip: V2 twice on the simulator, V1's header half, and V3'
 - Update TDD 03 section 3.2 rule 4, F04 section 11.6 and BACKLOG BL-382: S10.
 - Comments for their owners:
   - `modules/scribe-audio/index.ts:6` and `ScribeAudioModule.swift:150` (S08);
-  - `kill-drill.logic.ts:59`, the take example (S19). `:58`'s `fixture.m4a` is DL-02's tone and stays M4A.
+  - `kill-drill.logic.ts:61`, the take example (S19). `:60`'s `fixture.m4a` is DL-02's tone and stays M4A.
 - One shared helper for the drill's decode path and `transcribe-whisper.ts`'s call of `openRecordingForRun` and the windows, so the two cannot drift (lens B on #291): S08.
 
 ### Android: not in build 2
@@ -172,10 +172,10 @@ Android ADTS needs its own checks first:
     - V1's device half;
     - V3.
 - **Sat 24 Oct, V2 again on an ADTS build, now with the in-app decode check: passes on the simulator.**
-  - Run 40089036324, nightly size, on `exp/adts-flip-v2` at 86dc613: develop, #281's harness, the drill's decode check (#291, open), and the flip. 68.5 min including the decode launch.
+  - Run 40089036324, nightly size, on `exp/adts-flip-v2` at 86dc613: develop, #281's harness, the drill's decode check (#291, since merged as 1c6795b), and the flip. 68.5 min including the decode launch.
   - Job dl01: PASS, exit 0. 50 of 50 kept and playing to within 5 s of the kill (18 to 1,484 ms off). 0 lost, 0 doubled, 0 fail; the stored path was the take's path on disk for 50 of 50; the self-check caught 4 of 4; the database was clean after every relaunch. Seed 1876117271.
   - Tails: none 50. Every frame was 11 bytes over 160,413 frames (BlackHole silence). `FF F9` on every take; V1 check failures 0.
-  - V2's second half and V3's in-app half: the drill's decode check (#291, open) runs the transcription job up to Whisper on every kept take. Until #291 merges, develop's smoke has no decode section.
+  - V2's second half and V3's in-app half: the drill's decode check (#291, since merged as 1c6795b) runs the transcription job up to Whisper on every kept take.
     - 50 of 50 read, 0 refused, 50 of 50 planned over at least the counted frames.
     - The probe was within one frame of the counted frames on all 50, equal to the millisecond on every row read.
     - The whole-frame copy was used 0 times (no take had a tail).
