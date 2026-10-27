@@ -47,7 +47,7 @@ Same recipes and proportions as `packages/brand/scripts/build-touchpoints.mjs`, 
 | Profile covers | `social/x-header-1500x500.png`, `linkedin-banner-1584x396.png`, `facebook-cover-1640x624.png`, `youtube-banner-2560x1440.png` (lockup inside the safe area) |
 | Avatars | `email/avatar-1024.png` (sender avatar, app icon), `social/avatar-circle-safe-1024.png` |
 | Notification glyph | `notification/glyph.svg` and `glyph-{24,36,48,72,96}.png` (white on transparent) |
-| Android adaptive launcher (v1.1) | `android/ic_launcher_foreground-432.png`, `ic_launcher_background-432.png`, `ic_launcher_monochrome-432.png`, `play-store-512.png` |
+| Android adaptive launcher (v1.1) | `android-sizes/ic_launcher_foreground-432.png`, `ic_launcher_background-432.png`, `ic_launcher_monochrome-432.png`, `play-store-512.png` |
 
 Not done: wiring any option into the app, website or registry (that waits for a choice), the hand-tuned sub-pixel offsets of the approved icon set, and the BIMI SVG (blocked on DMARC anyway). `touchpoints-sheet.html` is a contact sheet of these files.
 

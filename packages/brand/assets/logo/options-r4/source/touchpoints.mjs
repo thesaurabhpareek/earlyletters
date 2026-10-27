@@ -133,11 +133,11 @@ async function android(o, T) {
   {
     const px = 432, w = px * 0.4;
     const mk = (cols) => `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${px} ${px}">${markGroup(SYM, px / 2, px / 2 + px * 0.02, w, cols)}</svg>`;
-    await png(mk(o.cols.light), path.join(T, 'android', 'ic_launcher_foreground-432.png'), false);
-    await png(mk({ big: '#FFFFFF' }), path.join(T, 'android', 'ic_launcher_monochrome-432.png'), false);
+    await png(mk(o.cols.light), path.join(T, 'android-sizes', 'ic_launcher_foreground-432.png'), false);
+    await png(mk({ big: '#FFFFFF' }), path.join(T, 'android-sizes', 'ic_launcher_monochrome-432.png'), false);
     const bg = `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}"><defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o.tiles.light[0]}"/><stop offset="1" stop-color="${o.tiles.light[1]}"/></linearGradient></defs><rect width="${px}" height="${px}" fill="url(#t)"/></svg>`;
-    await png(bg, path.join(T, 'android', 'ic_launcher_background-432.png'));
-    await png(tileSvg(512, { tile: o.tiles.light, cols: o.cols.light }), path.join(T, 'android', 'play-store-512.png'));
+    await png(bg, path.join(T, 'android-sizes', 'ic_launcher_background-432.png'));
+    await png(tileSvg(512, { tile: o.tiles.light, cols: o.cols.light }), path.join(T, 'android-sizes', 'play-store-512.png'));
   }
 }
 async function ensure(file) { fs.mkdirSync(path.dirname(file), { recursive: true }); return file; }

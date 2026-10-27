@@ -49,5 +49,5 @@ The 3:1 floor is WCAG 1.4.11 for graphical objects. Tile edges are not required 
 - Trademark clearance (BL-355) is still open for every option.
 
 ## Files
-- A: `packages/brand/assets/logo/primary` plus the touchpoint folders already in the registry. New: Android adaptive layers and Play icon in `options-r4/A-approved/touchpoints/android`.
+- A: `packages/brand/assets/logo/primary` plus the touchpoint folders already in the registry. New: Android adaptive layers and Play icon in `options-r4/A-approved/touchpoints/android-sizes`.
 - B: `packages/brand/assets/logo/options-r4/B-two-tone`, complete set including `touchpoints/`.
