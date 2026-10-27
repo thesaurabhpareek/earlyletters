@@ -47,6 +47,8 @@ The web preview is a stand-in. It has no haptics, no VoiceOver, no iOS sheet or 
 - A parent using VoiceOver through the speaker: their letter may contain "1 min 0 s recorded", and Review would show it as their words, unmarked.
 - Fix: a gate line on the build 2 run sheet, checked on a phone with VoiceOver through the speaker; if it reproduces, announce nothing while the microphone is live (the clock keeps its label, read on demand) before P4 is signed.
 
+**Segments (added 27 Oct, section 9).** A mark before a comma lost the comma and the space in Review's "With small fixes" view; found by the critics' re-check of M1 on #289 and ranked Must by the coordinator; fixed by #290 (012d208). With M1 and S9 above, it makes the three Musts of section 0.
+
 ### Should before build 2
 
 **S1. Change words, and every put-back, are lost on Close, while Close tells VoiceOver "Saved on this phone".** (#274 "Not done" N1.)

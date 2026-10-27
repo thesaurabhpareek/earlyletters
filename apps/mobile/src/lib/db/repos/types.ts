@@ -39,7 +39,7 @@ export interface Entry {
   authorSignsAs?: string;
   /**
    * Local file URI of the AAC recording, kept in the app's document directory (`Documents/ExpoAudio` on iOS):
-   * M4A (`.m4a`, ADR 0005), or ADTS (`.aac`, ADR 0027) once a platform records it. The extension names the container.
+   * M4A (`.m4a`, ADR 0005), or ADTS (`.aac`, ADR 0027), which iOS records since the 27 Oct flip. The extension names the container.
    */
   audioUri?: string | null;
   audioDurationMs?: number | null;
