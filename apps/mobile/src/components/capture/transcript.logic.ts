@@ -1,6 +1,6 @@
 /**
  * Where a mark's card opens in the letter (EXPERIENCE_PASS S17 Motion, MOTION 5d: "tapping a mark expands an inline
- * card under its line"; P4 critics' pass S8). Pure, tested in Node (test/transcript-logic.test.ts).
+ * card under its line"; P4 critics' pass S8). Pure, tested in Node (test/review-critics.test.ts, "[S8]").
  *
  * The paragraph is one Text, so the card cannot sit inside it. Instead the letter is cut in two at the end of the
  * line the open mark ends on, the card goes between, and the rest of the letter carries on below. Cut at a line's end,
@@ -24,6 +24,7 @@ export function cardCutAt(input: { shown: readonly string[]; open: number; lines
     let end = 0;
     for (const line of input.lines) {
       end += line.length;
+      // `>=`: a mark that ends exactly at its line's end (a struck word with its space) opens under that line.
       if (end >= markEnd) return end;
     }
     return full.length;

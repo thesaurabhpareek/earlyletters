@@ -229,8 +229,12 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **V-01 Gate:** focus lands on the question; Yes and No announce as choices, not selected; Continue announces dimmed until a choice.
 - **V-02 Welcome and first run:** each step's heading gets focus; every field has a label; errors are announced; Add another child is reachable.
 - **V-03 Tonight:** the greeting, the prompt, Speak and Type read in order; Another thought and Not much today reachable.
-- **V-04 Listening:** the elapsed time is spoken once a minute, not every second; Done is reachable without hunting; "To Asha" is reachable.
-- **V-05 Review:** the text reads in order; each machine edit is reachable with an action to put it back; Add to book and Keep private are reachable.
+- **V-04 Listening:** the elapsed time is spoken once a minute, not every second; Done is reachable without hunting; "To Asha" is reachable. At AX5 the clock and "Listening." are pinned above Pause and Finish, so the screen says it is recording without a scroll (P4c S5, #289).
+- **V-05 Review:** the text reads in order; each machine edit is reachable with an action to put it back; Add to book and Keep private are reachable. P4c (#289, #292):
+  - The letter's paragraph reads as the kept words (for the seeded Asha letter, "Asha, today you held the spoon by yourself."), with no struck words, no "N buttons found" and no inline mark read as a button; each edit is reached through its row under "N small fixes", and the rows are open on arrival (S3).
+  - When a row opens its card, note where focus goes: the card opens inside the letter, under the mark's line, and nothing moves focus to it (lens B B7). Record whether the card's "Put it back" can be reached without hunting.
+  - Keep, then listen: "Kept in Month N. Added to Asha's book." is said once, in full, before the Book; the Book comes as the sentence ends (at least 3 s, at most about 8 s). Record whether iOS's `announcementFinished` fires for that sentence word for word: if every save waits the full 8 s, it does not (S6, lens A A3).
+  - Start "Hear it", then Keep while it plays: the same sentence is said at once, not held until the Book (S6, lens B B4).
 - **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes.
 - **V-07 Apple's subscription sheet:** prices read with their periods (Apple's view, ASC doc D-10).
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
@@ -241,7 +245,10 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** TDD 09 section 2 findings table (status), `docs/design/COMPONENT_LIBRARY.md` for component fixes.
 
 ### S1-24 Display settings and the network check
-- **Steps:** (a) On SE 3 at AX5 with Bold Text and Increase Contrast, in Dark mode, walk Tonight, Review, Book, Settings, Plus gate. (b) Settings > Privacy & Security > App Privacy Report on (A: shows the domains each app contacted). Fresh install, first letter, Keep the book Not now, open Settings; read the report. Then turn Usage and crash reports on and off in Settings > Privacy and read it again.
+- **Steps:** (a) On SE 3 at AX5 with Bold Text and Increase Contrast, in Dark mode, walk Tonight, Review, Book, Settings, Plus gate, then Write and Listen (P4c, #289, #292), each also on a 6.1-inch phone:
+  - Review: every mark in the letter (a struck "um,", a struck repeat, the heard word and the kept name, a word put back) is in the letter's serif at the letter's size, at every Dynamic Type size from the default to AX5, with a plain space outside each strike (M1).
+  - Write with the keyboard up, then down. Emulated on the web at AX5 on an SE: "Add to Asha's book" is 260 pt tall, "Keep private" ends 18 pt below the screen, and the letter gets 0 pt with no keyboard; on a 402 by 874 screen the letter gets about 200 pt (lens B B2). Record the room the letter gets on each phone; if it is too small to read what is typed, the AX5 Write layout needs a follow-up (the destinations in the scroll after the letter, or the autosave line folded into the header).
+  - Listen during a take started from a prompt. Emulated on an SE: the room's window is 63 pt, under one 114 pt prompt line; on 402 by 874 it is 270 pt (lens B B3). Record whether the whole prompt can be read by scrolling the room while recording. (b) Settings > Privacy & Security > App Privacy Report on (A: shows the domains each app contacted). Fresh install, first letter, Keep the book Not now, open Settings; read the report. Then turn Usage and crash reports on and off in Settings > Privacy and read it again.
 - **Expected:** (a) No truncation, no overlapping controls, 44 pt targets (56 pt primary), contrast holds in dark (TDD 09 2.3 to 2.7). (b) Before consent: no PostHog or Sentry domain at all (PRD-REQ-016, LEGAL-REQ-003); after a yes, PostHog appears; after withdrawal, no new contact (PRD-REQ-018). Only expected hosts overall: the Supabase project, the packs and models host, the config and content functions.
 - **Record:** S1-24 row with the domain list (domains only).
 - **Update:** `docs/legal/app-store-privacy-labels.md` section 5 consistency check; `docs/legal/DATA_CLASSIFICATION.md` if an unexpected host appears.
