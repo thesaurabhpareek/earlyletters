@@ -33,8 +33,8 @@ export function Landing() {
       <StoryRail />
 
       <header className={styles.header}>
-        <a href="#top" className={styles.brand}>
-          <Lockup label />
+        <a href="#top" className={styles.brand} aria-label={site.brand.name}>
+          <Lockup />
         </a>
       </header>
 
