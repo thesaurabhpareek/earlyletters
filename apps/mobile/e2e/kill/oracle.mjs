@@ -108,8 +108,9 @@ export function storedPathAgainst(storedPath, listedPath, documentsDir) {
   const docs = documentsDir ? normalizePath(documentsDir) : null;
   const rel = docs && listed.startsWith(`${docs}/`) ? listed.slice(docs.length + 1) : null;
   if (!rel) return 'other';
-  // In the listed container itself, any other path is another file (a folder named Documents inside it included).
-  if (stored.startsWith(`${docs}/`)) return 'other';
+  // In the listed container itself (its Documents folder or anywhere else in it), any other path is another file.
+  const container = docs.endsWith('/Documents') ? docs.slice(0, -'/Documents'.length) : docs;
+  if (stored.startsWith(`${container}/`)) return 'other';
   const under = `Documents/${rel}`;
   if (stored === under || stored === rel || stored.endsWith(`/${under}`)) return 'other-container';
   return 'other';
