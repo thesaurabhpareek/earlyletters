@@ -20,6 +20,17 @@
  * No dependency: a small PRNG (mulberry32) with a fixed seed in CI. The
  * nightly job sets SCRIBE_FUZZ_SEED to a random value; a failure prints the
  * seed and the case so it can be replayed exactly.
+ *
+ * The nightly runs 100,000 cases. Each property hands the worker back to
+ * vitest every YIELD_EVERY runs, as verify.r01.fuzz.test.ts does: vitest's
+ * worker-to-main calls time out after a fixed 60 s ("Timeout calling
+ * onTaskUpdate"), not configurable in vitest 3.2, and the two loops ran
+ * back to back with no yield, about 46 to 52 s at 100,000 runs and failing
+ * at 140,000 although every case passed (#257 review A, section 3). The
+ * yield draws nothing from the PRNG, so every seed and run replays as
+ * before. With the yields the per-test timeout can fire, so it is now 600 s
+ * (100,000 runs took about 80 s here on 24 Oct). It is set on each test
+ * because vitest prefers that value to the nightly's --testTimeout.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -38,6 +49,8 @@ import {
 
 const SEED = Number(process.env.SCRIBE_FUZZ_SEED ?? 20261003);
 const RUNS = Number(process.env.SCRIBE_FUZZ_RUNS ?? 10000);
+const YIELD_EVERY = 2000;
+const handBack = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 // Fictional family only.
 const DICT: DictionaryTerm[] = [
@@ -253,11 +266,12 @@ function fuzzEdits(raw: string, rnd: () => number): Edit[] {
 }
 
 describe('verifier property: random model edits never add or swap meaning', () => {
-  it(`holds for ${RUNS} generated edit lists (seed ${SEED})`, () => {
+  it(`holds for ${RUNS} generated edit lists (seed ${SEED})`, async () => {
     const rnd = mulberry32(SEED);
     let proposed = 0;
     let accepted = 0;
     for (let run = 0; run < RUNS; run++) {
+      if (run % YIELD_EVERY === YIELD_EVERY - 1) await handBack();
       const raw = CORPUS[Math.floor(rnd() * CORPUS.length)];
       const edits = fuzzEdits(raw, rnd);
       proposed += edits.length;
@@ -282,7 +296,7 @@ describe('verifier property: random model edits never add or swap meaning', () =
     // Not vacuous: the generator proposes plenty, and honest repairs get through.
     expect(proposed).toBeGreaterThan(RUNS * 2);
     expect(accepted).toBeGreaterThan(RUNS / 10);
-  }, 120_000); // 10k runs through the verifier and the full pipeline: well past vitest's 5 s default.
+  }, 600_000); // 10k runs through the verifier and the full pipeline: well past vitest's 5 s default; the nightly runs 100k.
 
   it('the invariant itself catches the TDD 03 7.1 attacks (checker sanity)', () => {
     expect(checkInvariants('I can come.', 'I cannot come.')).toBe('added_or_swapped_word');
@@ -379,10 +393,11 @@ function unicodeEdits(raw: string, rnd: () => number): Edit[] {
 }
 
 describe('verifier property: Unicode edits never change a letter or its marks', () => {
-  it(`holds for ${RUNS} generated edit lists over Devanagari, Hinglish and NFD (seed ${SEED})`, () => {
+  it(`holds for ${RUNS} generated edit lists over Devanagari, Hinglish and NFD (seed ${SEED})`, async () => {
     const rnd = mulberry32(SEED ^ 0x5eed);
     let proposed = 0;
     for (let run = 0; run < RUNS; run++) {
+      if (run % YIELD_EVERY === YIELD_EVERY - 1) await handBack();
       const raw = UCORPUS[Math.floor(rnd() * UCORPUS.length)];
       const edits = unicodeEdits(raw, rnd);
       proposed += edits.length;
@@ -401,7 +416,7 @@ describe('verifier property: Unicode edits never change a letter or its marks', 
       }
     }
     expect(proposed).toBeGreaterThan(RUNS * 2);
-  }, 120_000);
+  }, 600_000);
 
   it('the invariant catches the CORE-01 attacks (checker sanity)', () => {
     expect(checkInvariants('वह खुश है।', 'वह खुश हो।')).toBe('added_or_swapped_word');

@@ -75,7 +75,7 @@ check('users cannot call create_child_row', (await codeOf(() => as(A, `select pu
 check('purge_due runs without the notification ledger', (await codeOf(() => sys(`select public.purge_due()`))) === 'ok');
 
 // A lapse is invisible to the server: existing books stay writable (C-REQ-028).
-check('[C-REQ-028] existing books stay writable', (await codeOf(() => as(A, `update children set nickname='Ashu' where id=$1`, [first]))) === 'ok');
+check('[C-REQ-028] existing books stay writable (book_update, the only path since 20261023060000)', (await codeOf(() => as(A, `select public.book_update($1, '{"nickname": "Ashu"}'::jsonb)`, [first]))) === 'ok');
 
 // Account deletion no longer has a purchase ledger to pseudonymise.
 await sys(`update children set deleted_at = now() where created_by=$1`, [A]);

@@ -1,13 +1,19 @@
-// Sync RPC performance on the launch-scale perf fixture: 1,000 families x 400
-// letters (400,000 entries), the same seed as perf.test.mjs, with every trigger
-// on for the writes. Asserts plans (index scans, no sequential scan of entries)
-// and server-side p95 per call class against the budgets below (decision 17;
-// packages/api ENDPOINT_CLASSES has the client-side p95 including the network:
-// read_rpc 300 ms, sync_batch 800 ms; TDD 06 3.2 gives a batch 250 ms of server time).
+// Sync RPC performance on the perf fixture (the same seed as perf.test.mjs), with
+// every trigger on for the writes. Asserts plans (index scans, no sequential scan
+// of entries) and server-side p95 per call class against the budgets below
+// (decision 17; packages/api ENDPOINT_CLASSES has the client-side p95 including the
+// network: read_rpc 300 ms, sync_batch 800 ms; TDD 06 3.2 gives a batch 250 ms of
+// server time).
+//
+// Two modes, as perf.test.mjs (S20, #214):
+//   default (every pull request): 250 families x 400 letters. The plan check and
+//     every row and result check run; p95 times are printed, not checked. A first
+//     pull needs at least 200 letters per family, so PERF_ENTRIES stays at 400.
+//   PERF_BUDGETS=1 (the nightly): 1,000 x 400 (launch scale), budgets checked too.
 //
 // Budgets are for PGlite (single-threaded WASM Postgres); native Postgres on
 // Supabase is faster. They guard against plan regressions, like perf.test.mjs.
-// Scale knobs: PERF_FAMILIES (default 1000), PERF_ENTRIES (default 400),
+// Scale knobs: PERF_FAMILIES (default 250, or 1000 with PERF_BUDGETS=1), PERF_ENTRIES (default 400),
 // PERF_SAMPLES (default 120), PERF_PUSH_SAMPLES (default 40).
 // Fictional family "Asha" only (CLAUDE.md).
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -15,7 +21,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDb, uuid7 } from './harness.mjs';
 
-const FAMILIES = Number(process.env.PERF_FAMILIES ?? 1000);
+const BUDGETS = process.env.PERF_BUDGETS === '1';
+const FAMILIES = Number(process.env.PERF_FAMILIES ?? (BUDGETS ? 1000 : 250));
 const PER_FAMILY = Number(process.env.PERF_ENTRIES ?? 400);
 const SAMPLES = Number(process.env.PERF_SAMPLES ?? 120);
 const PUSH_SAMPLES = Number(process.env.PERF_PUSH_SAMPLES ?? 40);
@@ -34,6 +41,9 @@ const BUDGET_MS = {
 
 const dataDir = mkdtempSync(join(tmpdir(), 'scribe-sync-perf-'));
 const { db, check, sys, done } = await createDb(process.argv.slice(2), { dataDir });
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 process.on('exit', () => { try { rmSync(dataDir, { recursive: true, force: true }); } catch {} });
 
 // ── Seed (perf.test.mjs fixture, plus consent so pushes pass the gate) ─────
@@ -207,8 +217,12 @@ console.log(`      ${'call'.padEnd(17)} ${'p50 ms'.padStart(8)} ${'p95 ms'.padSt
 for (const [name, x] of Object.entries(results)) {
   console.log(`      ${name.padEnd(17)} ${x.p50.toFixed(2).padStart(8)} ${x.p95.toFixed(2).padStart(8)} ${x.p99.toFixed(2).padStart(8)} ${String(BUDGET_MS[name]).padStart(7)}`);
 }
-for (const [name, x] of Object.entries(results)) {
-  check(`${name}: p95 ${x.p95.toFixed(2)} ms within ${BUDGET_MS[name]} ms (${x.n} samples)`, x.p95 <= BUDGET_MS[name]);
+if (BUDGETS) {
+  for (const [name, x] of Object.entries(results)) {
+    check(`${name}: p95 ${x.p95.toFixed(2)} ms within ${BUDGET_MS[name]} ms (${x.n} samples)`, x.p95 <= BUDGET_MS[name]);
+  }
+} else {
+  console.log(`      p95 budgets not checked at ${FAMILIES} x ${PER_FAMILY} (PERF_BUDGETS=1 checks them at launch scale; the nightly does)`);
 }
 await db.close();
 done();
