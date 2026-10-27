@@ -148,6 +148,10 @@ interface FakeOptions {
    * prints an estimated duration that is wrong on purpose (99 s): the harness must count frames instead.
    */
   container?: 'm4a' | 'adts';
+  /** The app's decode launch (ADR 0027): answers with numbers from the take's frames (default), never answers, or cannot be launched. */
+  decodes?: 'answers' | 'never' | 'throws';
+  /** How long the decode launch takes to answer once it has its go marker. */
+  decodeDelayMs?: number;
   /** ADTS takes whose sixth frame has its sync byte zeroed: every kept take's tail is a break (a FINDING). */
   damagedAdts?: boolean;
 }
@@ -243,6 +247,7 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
   const procs = new Map<number, Proc>();
   let nextPid = 100;
   let launches = 0;
+  const launchLog: Array<{ mode: string; run: number }> = [];
   let killsSoFar = 0;
   const later = (p: Proc, ms: number, fn: () => void | Promise<void>) => {
     p.timers.push(
@@ -281,8 +286,23 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
     const report = await runLaunchSweep();
     if (!p.alive) return;
     mark('boot', a.run, { run: a.run, mode: a.mode, swept: report !== null, sweep: report ?? {} });
+    if (a.mode === 'decode' && fo.decodes !== 'never') return waitGo(p, a.run, () => later(p, fo.decodeDelayMs ?? 0, () => decodeTakes(a.run)));
     if (behaviour === 'never-arms' || (a.mode !== 'dl01' && a.mode !== 'dl02')) return;
     waitGo(p, a.run, () => drill(p, a, childId));
+  };
+
+  /** The decode launch, faked: each named take's counted frames, a decoder that trims 2112 samples of priming, never refused. */
+  const decodeTakes = (run: number) => {
+    const go = JSON.parse(readFileSync(join(c.marks, logic.markerName('go', run)), 'utf8')) as { files: Array<{ name: string; draftId: string | null }> };
+    const results = go.files.map((f, i) => {
+      const path = join(takes, f.name);
+      if (!logic.DECODE_FILE_NAME.test(f.name) || !existsSync(path)) return { name: f.name, error: 'missing' };
+      const scan = scanAdts(readFileSync(path))!;
+      const countedMs = (scan.frames * AAC_FRAME_SAMPLES * 1000) / 48000;
+      const probeMs = countedMs - (2112 * 1000) / 48000;
+      return { name: f.name, container: 'adts', storedMs: 250, frames: scan.frames, tail: scan.tail, countedMs, probeMs, plannedMs: countedMs, usedCopy: false, windows: 1, ...(i < logic.ENHANCE_LIMIT ? { enhance: { error: 'isolation_unavailable' } } : {}) };
+    });
+    mark('decoded', run, { run, whisper: 'model-missing', results });
   };
 
   const drill = (p: Proc, a: LaunchArgs, childId: string) => {
@@ -404,9 +424,12 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
       writeFileSync(join(c.marks, logic.FIXTURE_FILE), randomBytes(4096));
     },
     fixtureSha256: () => sha(join(c.marks, logic.FIXTURE_FILE)),
-    writeGo: (run: number) => writeFileSync(join(c.marks, logic.markerName('go', run)), JSON.stringify({ run })),
+    writeGo: (run: number, body: object = { run }) => writeFileSync(join(c.marks, logic.markerName('go', run)), JSON.stringify(body)),
+    launchLog,
     async launch(a: LaunchArgs) {
       launches += 1;
+      launchLog.push({ mode: a.mode, run: a.run });
+      if (fo.decodes === 'throws' && a.mode === 'decode') throw new Error('xcrun simctl launch failed');
       if (behaviour === 'launch-throws' && a.run === 3) throw new Error('xcrun simctl launch failed');
       const pid = (nextPid += 1);
       const { ctx, close } = openCtx(c.dbPath);
@@ -469,7 +492,7 @@ function fakeDriver(name: string, behaviour: Behaviour = 'atomic', fo: FakeOptio
  * and the damage plant it was judging was reported missed. GitHub Actions sets CI on every job. A wait ends as soon
  * as the launch boots, so the wider budget costs a green run nothing; the tests that time a launch out set their own.
  */
-const fast = { bootMs: process.env.CI ? 30_000 : 4000, armMs: 4000, pointMs: 4000 };
+const fast = { bootMs: process.env.CI ? 30_000 : 4000, armMs: 4000, pointMs: 4000, decodeMs: 4000, decodePerTakeMs: 100, decodeMaxMs: 60_000 };
 
 describe('[DATA-REQ-048] [F04-REQ-024] the kill drill protocol is one protocol on both sides', () => {
   it('app and host agree on every name, folder and constant', () => {
@@ -487,11 +510,15 @@ describe('[DATA-REQ-048] [F04-REQ-024] the kill drill protocol is one protocol o
       logic.POINT_HOLD_MS,
       logic.DRILL_BUNDLE_SUFFIX,
     ]);
+    expect([protocol.DECODE_FILE_NAME.source, protocol.DECODE_LIMIT, protocol.ENHANCE_LIMIT]).toEqual([logic.DECODE_FILE_NAME.source, logic.DECODE_LIMIT, logic.ENHANCE_LIMIT]);
     for (const run of [0, 7, 500, 9001]) {
       expect(protocol.drillText(run)).toBe(logic.drillText(run));
       expect(protocol.drillAudioName(run)).toBe(logic.drillAudioName(run));
-      for (const k of ['boot', 'go', 'armed', 'point', 'done', 'error'] as const) expect(protocol.markerName(k, run)).toBe(logic.markerName(k, run));
+      for (const k of ['boot', 'go', 'armed', 'point', 'done', 'decoded', 'error'] as const) expect(protocol.markerName(k, run)).toBe(logic.markerName(k, run));
     }
+    // A decode request names a recording's own file, never a folder or another file.
+    for (const ok of ['recording-5D2E0F11-0000-4000-8000-0000000057A1.aac', 'kill-drill-3.m4a']) expect(logic.DECODE_FILE_NAME.test(ok)).toBe(true);
+    for (const bad of ['../scribe.db', 'ExpoAudio/recording-1.aac', 'recording-1.wav', '.aac', '']) expect(logic.DECODE_FILE_NAME.test(bad)).toBe(false);
     expect(logic.drillText(3)).toBe('Asha kill drill 3');
   });
 
@@ -803,7 +830,9 @@ describe('[DATA-REQ-048] the oracle judges a run from the database and files alo
       expect(verdict(uri), uri).toBe('other-container');
     }
     // Another folder or another file: a fail.
-    for (const uri of [`file://${docs}/recording-5.aac`, `file://${docs}/ExpoAudio/recording-6.aac`, `file://${docs}/Documents/ExpoAudio/recording-5.aac`, 'file:///elsewhere/recording-5.aac', 'recording-5.aac', `file://${docs}/ExpoAudio/recording-5.m4a`]) {
+    // A path in the listed container outside its Documents folder is another file too (lens A on #281).
+    const container = docs.slice(0, -'/Documents'.length);
+    for (const uri of [`file://${docs}/recording-5.aac`, `file://${docs}/ExpoAudio/recording-5.aac`.replace('/ExpoAudio/', '/ExpoAudio/x/'), `file://${docs}/ExpoAudio/recording-6.aac`, `file://${docs}/Documents/ExpoAudio/recording-5.aac`, `file://${container}/tmp/Documents/ExpoAudio/recording-5.aac`, `file://${container}/Library/Caches/Documents/ExpoAudio/recording-5.aac`, 'file:///elsewhere/recording-5.aac', 'recording-5.aac', `file://${docs}/ExpoAudio/recording-5.m4a`]) {
       expect(verdict(uri), uri).toBe('other');
     }
     expect(normalizePath('/a//b/./c/../d/')).toBe('/a/b/d');
@@ -1030,6 +1059,152 @@ describe('[ADR 0027] DL-01 on an ADTS build: frames counted on the host, tails r
     // No take names (they carry the recorder's id), no draft ids, no paths.
     expect(md).not.toMatch(/recording-\d|\w\.aac\b|\/Documents|[0-9a-f]{8}-[0-9a-f]{4}-/);
     expect(md).not.toContain('FINDING');
+    // The in-app decode check ran once on the same install, on every kept ADTS take, matched back by run number.
+    expect(report.decodeCheck.whisper).toBe('model-missing');
+    expect(report.decodeCheck.runs.map((r: { run: number }) => r.run)).toEqual(report.runs.map((r: { run: number }) => r.run));
+    for (const r of report.decodeCheck.runs) {
+      expect(r).toMatchObject({ container: 'adts', usedCopy: false, windows: 1 });
+      expect(r.refused).toBeUndefined();
+    }
+    expect(JSON.stringify(report.decodeCheck)).not.toMatch(/recording-\d/);
+    expect(md).toContain('### In-app decode check (ScribeAudio on the simulator; ADR 0027 V2 and V3)');
+    expect(md).toContain('| Refused (a visible decode_failed; V2 asserts none) | 0 |');
+    expect(md).toContain('| Planned over at least the counted frames | 3 of 3 |');
+    expect(md).toContain('| probe within one frame of the counted frames | 0; within one frame after 2112 samples of priming: 3; neither: 0; no probe: 0 |');
+    expect(md).toContain('| Listening copy (enhance) length within one frame of the original and of the counted frames | 0 of 3 (isolation_unavailable) |');
+    expect(md).not.toContain('no listening copy'); // the simulator's missing voice isolation is not a finding
+  }, 60_000);
+
+  it('a decode launch that never answers is reported, and changes neither the verdict nor the exit code; an M4A run has none', async () => {
+    const silent = await runHarness({ driver: fakeDriver('dl01-adts-nodecode', 'atomic', { takeDir: logic.TAKE_DIR, container: 'adts', decodes: 'never' }), mode: 'dl01', runs: 2, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 20, timeouts: fast });
+    expect(silent.decodeCheck).toEqual({ error: 'no_decoded_marker', runs: [] });
+    expect(silent.exit).toBe(EXIT.pass);
+    expect(renderMarkdown(silent)).toContain('**The decode launch did not finish (no_decoded_marker); nothing below was measured.**');
+    const m4a = await runHarness({ driver: fakeDriver('dl01-m4a-nodecode', 'atomic', { takeDir: logic.TAKE_DIR }), mode: 'dl01', runs: 2, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 21, timeouts: fast });
+    expect(m4a.decodeCheck).toBeUndefined();
+    expect(m4a.exit).toBe(EXIT.pass);
+  }, 60_000);
+});
+
+describe('[ADR 0027] the in-app decode check in the gate\'s merged report, and every failed condition a FINDING (lens B on #291)', () => {
+  const adtsRun = (name: string, seed: number) =>
+    runHarness({ driver: fakeDriver(name, 'atomic', { takeDir: logic.TAKE_DIR, container: 'adts' }), mode: 'dl01', runs: 2, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed, timeouts: fast });
+
+  it('merging shards keeps every shard\'s decode rows, labelled by shard, and a shard whose decode launch failed', async () => {
+    const a = await adtsRun('dl01-merge-a', 31);
+    const b = await adtsRun('dl01-merge-b', 32);
+    const merged = mergeReports([a, b]);
+    expect(merged.decodeCheck.whisper).toBe('model-missing');
+    expect(merged.decodeCheck.runs.map((r: { shard: number; run: number }) => `${r.shard}.${r.run}`)).toEqual(['1.1', '1.2', '2.1', '2.2']);
+    expect(merged.decodeCheck.shardErrors).toEqual([]);
+    expect(merged.exit).toBe(EXIT.pass);
+    const md = renderMarkdown(merged);
+    expect(md).toContain('### In-app decode check (ScribeAudio on the simulator; ADR 0027 V2 and V3)');
+    expect(md).toContain('| Takes read, of those asked | 4 of 4 |');
+    expect(md).toMatch(/^\| 2\.2 \| [\d.]+ \|/m);
+    // A shard whose decode launch did not answer is said, and its failure is a FINDING; the verdict is unchanged.
+    const broken = mergeReports([a, { ...b, decodeCheck: { error: 'no_decoded_marker', runs: [] } }]);
+    expect(broken.decodeCheck.shardErrors).toEqual([{ shard: 2, error: 'no_decoded_marker' }]);
+    expect(broken.decodeCheck.runs).toHaveLength(2);
+    expect(broken.exit).toBe(EXIT.pass);
+    const bmd = renderMarkdown(broken);
+    expect(bmd).toContain('**Shard 2: the decode launch did not finish (no_decoded_marker); none of its takes was measured.**');
+    expect(bmd).toContain('- shard 2: the decode launch did not finish (no_decoded_marker)');
+    // A merge of shards none of which ran the check has none.
+    expect('decodeCheck' in mergeReports([{ ...a, decodeCheck: undefined }, { ...b, decodeCheck: undefined }])).toBe(false);
+  }, 60_000);
+
+  it('a refusal, a run planned short, an off probe, a listening copy of the wrong length and a listening copy not made are each a FINDING; the exit never changes', async () => {
+    const report = await adtsRun('dl01-decode-findings', 33);
+    const row = (run: number, o: Record<string, unknown> = {}) => ({ run, container: 'adts', countedMs: 1000, probeMs: 1000, plannedMs: 1000, usedCopy: false, windows: 1, storedMs: 900, ...o });
+    report.decodeCheck = {
+      whisper: 'model-missing',
+      runs: [
+        row(1, { enhance: { ms: 1000, copyProbeMs: 500 } }),
+        row(2, { enhance: { error: 'ERR_SCRIBE_AUDIO_ENHANCE' } }),
+        row(3, { plannedMs: 700 }),
+        row(4, { refused: 'decoder_short', plannedMs: undefined }),
+        row(5, { probeMs: 400 }),
+        row(6, { enhance: { error: 'isolation_unavailable' } }),
+        row(7, { enhance: { ms: 1000, copyProbeMs: 1000 } }),
+      ],
+    };
+    const md = renderMarkdown(report);
+    expect(md).toContain('**FINDING, to report before any flip (ADR 0027 V2 and V3): 5.**');
+    expect(md).toContain('- run 1: listening copy 500.0 ms against the original\'s 1000.0 ms and 1000.0 ms of counted frames');
+    expect(md).toContain('- run 2: no listening copy (ERR_SCRIBE_AUDIO_ENHANCE)');
+    expect(md).toContain('- run 3: planned over 700.0 ms, short of its 1000.0 ms of counted frames');
+    expect(md).toContain('- run 4: refused (decoder_short)');
+    expect(md).toContain('- run 5: probe 400.0 ms against 1000.0 ms of counted frames');
+    expect(md).not.toMatch(/- run [67]:/); // the simulator's missing voice isolation, and a good copy, are not findings
+    expect(md).toContain('| Listening copy (enhance) length within one frame of the original and of the counted frames | 1 of 4 (ERR_SCRIBE_AUDIO_ENHANCE, isolation_unavailable) |');
+    expect(md).toContain('Not measured here: the input is silent (BlackHole)');
+    expect(report.exit).toBe(EXIT.pass);
+    expect(failReason(report)).toBeNull();
+  }, 60_000);
+});
+
+describe('[ADR 0027] when the decode check runs, and when it never does (lens A on #291: the surviving mutants)', () => {
+  const adts = (name: string, behaviour: Behaviour, fo: FakeOptions, seed: number, runs = 2, timeouts = fast) => {
+    const driver = fakeDriver(name, behaviour, { takeDir: logic.TAKE_DIR, container: 'adts', ...fo });
+    return { driver, report: runHarness({ driver, mode: 'dl01', runs, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed, timeouts }) };
+  };
+
+  it('the verdict is final and handed over before the decode launch starts; the decode check is added after and never changes it', async () => {
+    const seen: Array<{ exit: number; decode: unknown; decodeLaunched: boolean }> = [];
+    const driver = fakeDriver('dl01-verdict-first', 'atomic', { takeDir: logic.TAKE_DIR, container: 'adts' });
+    const report = await runHarness({
+      driver, mode: 'dl01', runs: 2, delayMs: [20, 40], plantDelayMs: [10, 30], selfCheck: 1, seed: 41, timeouts: fast,
+      onVerdict: (r: { exit: number; decodeCheck: unknown }) => {
+        seen.push({ exit: r.exit, decode: JSON.parse(JSON.stringify(r.decodeCheck)), decodeLaunched: driver.launchLog.some((l) => l.mode === 'decode') });
+      },
+    });
+    expect(seen).toEqual([{ exit: EXIT.pass, decode: { pending: true, runs: [] }, decodeLaunched: false }]);
+    expect(renderMarkdown({ ...report, decodeCheck: { pending: true, runs: [] } })).toContain('**Running after this verdict: the decode check is appended when it ends.**');
+    expect(report.exit).toBe(EXIT.pass);
+    expect(report.decodeCheck.runs).toHaveLength(2);
+    // H12: the decode launch has its own run number, after the verify launch's.
+    const verify = driver.launchLog.filter((l) => l.mode === 'verify').at(-1)!;
+    const decode = driver.launchLog.filter((l) => l.mode === 'decode');
+    expect(decode).toEqual([{ mode: 'decode', run: report.runsPlanned + 2 }]);
+    expect(verify.run).toBe(report.runsPlanned + 1);
+  }, 60_000);
+
+  it('H7: a decode launch that throws is caught: the verdict stays a pass, and the report says why', async () => {
+    const { report } = adts('dl01-decode-throws', 'atomic', { decodes: 'throws' }, 42);
+    const r = await report;
+    expect(r.decodeCheck).toEqual({ error: 'xcrun simctl launch failed', runs: [] });
+    expect(r.exit).toBe(EXIT.pass);
+    expect(r.crashed).toBeNull();
+    expect(r.errors).toEqual([]);
+  }, 60_000);
+
+  it('H2: after a fatal series (the app did not start after a kill) there is no decode launch, though earlier takes were kept', async () => {
+    // Run 3's launch exits before its sweep, so the app does not start again after run 2's kill: the series is fatal.
+    const { driver, report } = adts('dl01-decode-fatal', 'atomic', { exitsAtLaunch: 3 }, 43, 3);
+    const r = await report;
+    expect(r.exit).toBe(EXIT.fail);
+    expect(r.runs.filter((x: { outcome: string; container: string }) => x.outcome === 'kept-playable' && x.container === 'adts').length).toBeGreaterThan(0);
+    expect(r.decodeCheck).toBeUndefined();
+    expect(driver.launchLog.some((l) => l.mode === 'decode')).toBe(false);
+  }, 60_000);
+
+  it('H3: only kept takes are read: takes that failed (still marked recording) get no decode launch', async () => {
+    const { driver, report } = adts('dl01-decode-notkept', 'atomic', { topLevelOnly: true }, 44, 2);
+    const r = await report;
+    expect(countsOf(r)).toMatchObject({ kept: 0, bad: 2 });
+    expect(r.decodeCheck).toBeUndefined();
+    expect(driver.launchLog.some((l) => l.mode === 'decode')).toBe(false);
+  }, 60_000);
+
+  it('H14: the wait grows by the per-take allowance, and never past the cap', async () => {
+    // 2 takes: 200 ms plus 400 ms a take is 1000 ms, and the app answers after 600 ms.
+    const ok = await adts('dl01-decode-pertake', 'atomic', { decodeDelayMs: 600 }, 45, 2, { ...fast, decodeMs: 200, decodePerTakeMs: 400, decodeMaxMs: 60_000 }).report;
+    expect(ok.decodeCheck.runs).toHaveLength(2);
+    // The same with a 300 ms cap: the launch is given up and said, and the verdict stands.
+    const capped = await adts('dl01-decode-capped', 'atomic', { decodeDelayMs: 600 }, 46, 2, { ...fast, decodeMs: 200, decodePerTakeMs: 400, decodeMaxMs: 300 }).report;
+    expect(capped.decodeCheck).toEqual({ error: 'no_decoded_marker', runs: [] });
+    expect(capped.exit).toBe(EXIT.pass);
   }, 60_000);
 });
 
