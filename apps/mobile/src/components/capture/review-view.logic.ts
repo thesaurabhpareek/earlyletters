@@ -126,6 +126,15 @@ export function typedFinalText(raw: string): string {
   return raw.trim();
 }
 
+/**
+ * Whether Review holds changes the person made that are not on the phone yet: their own words from Change words, or a
+ * fix they put back. Both live only on this screen until Keep (#274 N1; storing them on the draft is build 3's item),
+ * so Close must not say "Saved on this phone" while either is there (P4 critics' pass S1).
+ */
+export function reviewHasOwnChanges(input: { userText: string | null; applied: number; proposed: number }): boolean {
+  return input.userText !== null || input.applied < input.proposed;
+}
+
 /** Where the primary keeps the letter: the book, or after a save that did not work, where the person chose (S17). */
 export function primaryDestination(input: { saveFailed: boolean; lastInBook: boolean }): boolean {
   return input.saveFailed ? input.lastInBook : true;
@@ -188,10 +197,25 @@ export function momentAnnouncement(chip: string, line: string | null): string {
 
 /** With a screen reader on, the saved moment holds at least this long, so its announcement is heard before the Book. */
 export const SCREEN_READER_HOLD_MS = 3000;
+/** And at most this long while it waits for the announcement to end (a slow speech rate), then the Book anyway. */
+export const SCREEN_READER_HOLD_MAX_MS = 8000;
 
-/** When the saved moment hands over to the Book: the timeline's end, or later while a screen reader speaks. */
-export function savedMomentDoneMs(input: { dismissAtMs: number; screenReader: boolean }): number {
-  return input.screenReader ? Math.max(input.dismissAtMs, SCREEN_READER_HOLD_MS) : input.dismissAtMs;
+/**
+ * Where the system says when the screen reader has finished the moment's sentence (TDD 09 2.2, "until the
+ * announcement ends"): `heard` once iOS's announcementFinished came for it, `waiting` on iOS before that, `noSignal`
+ * where no such event fires (the web preview, Android), which keeps the 3 s hold.
+ */
+export type AnnouncementEnd = 'heard' | 'waiting' | 'noSignal';
+
+/**
+ * When the saved moment hands over to the Book, from the commit: the timeline's end; with a screen reader on, at
+ * least 3 s, and while iOS has not yet said the sentence is finished, up to about 8 s (P4 critics' pass S6). A tap
+ * still skips at any time.
+ */
+export function savedMomentDoneMs(input: { dismissAtMs: number; screenReader: boolean; announcement?: AnnouncementEnd }): number {
+  if (!input.screenReader) return input.dismissAtMs;
+  const floor = Math.max(input.dismissAtMs, SCREEN_READER_HOLD_MS);
+  return input.announcement === 'waiting' ? Math.max(floor, SCREEN_READER_HOLD_MAX_MS) : floor;
 }
 
 /**
@@ -200,7 +224,7 @@ export function savedMomentDoneMs(input: { dismissAtMs: number; screenReader: bo
  * said whether VoiceOver is on, so the first answer can be "off" for a few milliseconds. When "on" arrives, the
  * moment still holds about 3 s from the commit, on both paths.
  */
-export function savedMomentLeaveInMs(input: { dismissAtMs: number; screenReader: boolean; elapsedMs: number }): number {
+export function savedMomentLeaveInMs(input: { dismissAtMs: number; screenReader: boolean; elapsedMs: number; announcement?: AnnouncementEnd }): number {
   return Math.max(0, savedMomentDoneMs(input) - input.elapsedMs);
 }
 

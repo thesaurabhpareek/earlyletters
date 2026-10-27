@@ -315,7 +315,7 @@ describe('Review uses the card (source)', () => {
     expect(status).toMatch(/title\.current = card\.title;/);
     expect(status).toMatch(/\(\) => \(\) => \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*\}/);
     expect(status).toMatch(/if \(before\.state !== now\.state\) \{\s*if \(first\.current\) clearTimeout\(first\.current\);\s*first\.current = null;\s*announce\(card\.title\);\s*\} else if \(!before\.later && now\.later\) announce\(wordsActionLabel\('later'\)\);/);
-    expect(review).toMatch(/import \{ announce, useIsAccessibilitySize, useTheme \} from '@\/lib\/a11y';/);
+    expect(review).toMatch(/import \{ announce, useIsAccessibilitySize, useScreenReader, useTheme \} from '@\/lib\/a11y';/);
   });
 
   it('Review is an unlit room (5.8 rows 4 and 4a)', () => {
