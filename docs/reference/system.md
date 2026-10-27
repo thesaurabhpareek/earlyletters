@@ -2,25 +2,27 @@
 title: The whole system
 owner: reference-docs
 covers: [apps/mobile/src/app/_layout.tsx, apps/mobile/src/lib/capabilities.ts, apps/mobile/src/lib/remote/**, apps/mobile/src/lib/build-env.ts, .github/migrations-applied.txt]
-verified_at: 8aabca9
-verified_on: 2026-10-17
+verified_at: 1c6795b
+verified_on: 2026-10-27
 ---
 
 # The whole system on one page
 
 Early Letters (codename `scribe`) is an iOS app, built with Expo, that lets a parent speak or type letters to a child and files them into a book by the child's month of age. This page says what runs where, how one letter travels from speaking to the book, where the data lives, and what leaves the phone. Each section links the page with the detail.
 
-## Build switches: server features and analytics are off
+## Build switches: server features are on in one profile only
 
-Sign-in, sync, co-parent sharing and backup exist as code on `develop`, and every build profile switches them off at build time. D-100 (founder; logged 16 Oct) ships server features in v1.0 after the R-17 security gate; the build profiles that turn them on are not on `develop` yet (open PR #145): the log settles it, replacing the on-device v1.0 in issue #127 (see [the register](../decisions/INDEX.md), D-100 and R-001); the comment in `apps/mobile/src/lib/capabilities.ts` still describes the earlier on-device decision. Analytics stays off in v1.0 (D-095). This page describes what a build from `develop` does today.
+Sign-in, sync, co-parent sharing and account deletion exist as code on `develop` and are switched on or off at build time. D-100 (founder) ships server features in v1.0 after the R-17 security gate, and D-106 makes the alpha build 2 the first build with them on, against the staging project (see [the register](../decisions/INDEX.md); `docs/release/TESTFLIGHT.md`). In `apps/mobile/eas.json` only the `preview` profile sets the server switch to `on`; `development`, `testflight` and `production` set it `off`. Analytics stays off in v1.0 (D-095). This page describes both: the default build with nothing leaving the phone, and what `preview` adds.
 
-| Switch | Read in | Value in every `eas.json` profile | Off means |
+| Switch | Read in | Value in `eas.json` | Off means |
 |---|---|---|---|
-| `EXPO_PUBLIC_SERVER_FEATURES` | `apps/mobile/src/lib/capabilities.ts` (`serverFeaturesEnabled`, `capabilities.signIn`, `.sync`, `.coParent`) | `off` in every `apps/mobile/eas.json` profile | No Supabase client is constructed, sync never starts, sign-in, Account and Delete account are not offered, the Family tab shows "coming soon" |
+| `EXPO_PUBLIC_SERVER_FEATURES` | `apps/mobile/src/lib/capabilities.ts` (`serverFeaturesEnabled`, `capabilities.signIn`, `.sync`, `.coParent`) | `on` in `preview`, `off` in the others | No Supabase client is constructed, sync never starts, sign-in, Account and Delete account are not offered, the Family tab shows "coming soon" |
+| `EXPO_PUBLIC_BACKUP`, `EXPO_PUBLIC_STATUS_REPORT` | same file (`capabilities.backup`, `.statusReport`, `mayRun`) | `off` in every profile | Each is on only when server features are also on and its own variable is `on`. Off: no recording backup (`startBackup` returns at once), no subscription status report |
 | `EXPO_PUBLIC_ANALYTICS` | same file (`analyticsEnabled`, `capabilities.analytics`) | `off` in every profile | No consent sheet, no usage switch, no PostHog client, `startAnalytics()` does nothing |
+| `EXPO_PUBLIC_ENGLISH_ONLY` | same file (`englishOnlyEnabled`) | `on` in `preview` and `testflight` (D-111) | On: the language picker offers English alone and a recording noted in another language waits for its language |
 | `EXPO_PUBLIC_APP_ENV` | `apps/mobile/src/lib/build-env.ts` | `development`, `preview` or `production` per profile | Picks the bundle id suffix and whether dev shortcuts exist |
 
-Only the value `on`, case-insensitive and with surrounding spaces ignored, turns a switch on (`capabilities.ts` and `app.config.ts` trim and lowercase it). Remote config has no key that can change either switch (`capabilities.ts`, `packages/api/src/remote-config.ts`). Details: [mobile-app.md](mobile-app.md).
+Only the value `on`, case-insensitive and with surrounding spaces ignored, turns a switch on. Remote config cannot turn any of these on. It can only pause a feature a build already has: the kill switches `sync`, `invites`, `photos`, `packDownloads`, `serverContent`, `backupUploads`, `escrow` and `statusReport` (`capabilities.ts`, `packages/api/src/kill-switches.ts`). Details: [mobile-app.md](mobile-app.md).
 
 ## What runs where
 
@@ -29,9 +31,10 @@ Only the value `on`, case-insensitive and with surrounding spaces ignored, turns
 | The phone | The Expo app in `apps/mobile`: capture, on-device transcription, the faithful-edit engine, Review, the Book, Read together, Export, reminders, Plus through StoreKit | Yes |
 | The phone | `packages/core` (engine and verifier), `packages/content` (every word), `packages/api` (contracts and signature checks), `packages/brand`, `packages/design-tokens`, bundled into the app | Yes |
 | Apple | StoreKit 2 purchases and entitlements for Plus, through the local module `apps/mobile/modules/scribe-store` | Yes |
-| A static host (CDN) | Signed remote config, pack manifest and content bundle, fetched only if the build sets `EXPO_PUBLIC_DOCS_BASE_URL` | Not set in `eas.json`; see below |
+| A static host (CDN) | Signed remote config, pack manifest and content bundle, fetched from `EXPO_PUBLIC_DOCS_BASE_URL` | Every `eas.json` profile sets it to the packs host (D-097); nothing it serves is trusted until a signing key is pasted into `packages/api/src/keys.ts`; see below |
 | Hugging Face and the self host | Speech model files, at the URLs the signed pack manifest lists (`apps/mobile/src/lib/models/catalog.ts`) | Only with a signed manifest |
-| Supabase | Postgres schema in `supabase/migrations`, Edge Functions in `supabase/functions`, a purge cron | Off in every build profile. 12 migrations exist; only the 2 in `.github/migrations-applied.txt` are applied live. A build from any current profile makes no Supabase call |
+| Supabase | Postgres schema in `supabase/migrations`, Edge Functions in `supabase/functions`, a purge cron | Only the `preview` profile calls it (staging). 25 migrations exist; only the 2 in `.github/migrations-applied.txt` are applied to the live project, and the repo does not record what staging has. `development`, `testflight` and `production` make no Supabase call |
+| A separate Supabase project `scribe-escrow` | The `escrow` function for the recording-backup recovery key (ADR 0024) | No: backup is off in every profile |
 | GitHub Actions | CI, database deploy pipeline, TestFlight build, the agent team | CI runs; others need founder setup |
 
 Server detail: [backend.md](backend.md). CI and release: [operations.md](operations.md).
@@ -69,13 +72,15 @@ Speech and the engine: [speech-and-languages.md](speech-and-languages.md).
 
 All of it: [data-and-storage.md](data-and-storage.md).
 
-## What leaves the phone in a build from `develop`
+## What leaves the phone
+
+First for the builds with server features off (`development`, `testflight`, `production`), then what `preview` adds.
 
 Checked by searching `apps/mobile/src` for `fetch(`, `openURL`, `openBrowserAsync` and download calls.
 
 | What | When | Code |
 |---|---|---|
-| GET of signed documents (remote config, pack manifest, content bundle), with `credentials: 'omit'` | Only if the build sets `EXPO_PUBLIC_DOCS_BASE_URL`; never Supabase while server features are off | `apps/mobile/src/lib/remote/base.logic.ts`, `remote/expo-adapter.ts` |
+| GET of signed documents (remote config, pack manifest, content bundle), with `credentials: 'omit'` | From `EXPO_PUBLIC_DOCS_BASE_URL`, which every profile sets; never Supabase while server features are off | `apps/mobile/src/lib/remote/base.logic.ts`, `remote/expo-adapter.ts` |
 | Range downloads of language packs and speech models | After a language is chosen and, for speech, after the person says yes to the download; only for packs listed in a verified manifest | `apps/mobile/src/lib/packs/engine.ts`, `models/speech-consent.ts` |
 | StoreKit 2 calls to Apple | Plan screen, purchase, restore, manage, refund, offer codes | `apps/mobile/modules/scribe-store`, `lib/billing/actions.ts` |
 | Links the person taps | Terms and Privacy pages in the in-app browser, the Help email (`mailto:`), helpline phone numbers, Apple's subscription pages | `app/settings/index.tsx`, `app/settings/privacy.tsx`, `lib/billing/actions.ts` |
@@ -83,11 +88,13 @@ Checked by searching `apps/mobile/src` for `fetch(`, `openURL`, `openBrowserAsyn
 
 Nothing else: no analytics, no crash reporting, no Supabase, no audio upload. Reminders are local notifications (`lib/reminders/scheduler.ts`).
 
-**Known gap.** `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`) is empty and no `eas.json` profile sets `EXPO_PUBLIC_DOCS_BASE_URL`, so a build made today has no verified manifest. It installs no language pack and no speech model, so recordings are kept but wait for their words (stated in `docs/release/TESTFLIGHT.md`, "Without this, no words").
+**What `preview` adds.** With server features on, all traffic to Supabase goes through the one client (`apps/mobile/src/lib/supabase/client.ts`): sign-in (Apple, Google or an email link using PKCE, ADR 0023), consent acts, letter sync (`sync_push` and `sync_pull`), invites, and account deletion; Sign in with Apple also sends one code to the `apple-token` function. Letter text, edits and held drafts upload through sync; audio does not, because backup is off. Analytics, crash reporting, backup and the status report still do not run. Server side: [backend.md](backend.md).
+
+**Known gap.** `packages/api/src/keys.ts` (`TRUSTED_SIGNING_KEYS`) is empty. Every profile now sets `EXPO_PUBLIC_DOCS_BASE_URL`, so the app fetches the documents, but with no trusted key it verifies none of them: it installs no language pack and no speech model, so recordings are kept but wait for their words (stated in `docs/release/TESTFLIGHT.md`, "Without this, no words"). The founder's key ceremony and English-only pack release are D-115.
 
 ## Boot, in one paragraph
 
-`apps/mobile/src/app/_layout.tsx` opens the database once (`useLaunch`); a failure shows the recovery screen instead of the app. Then the 18+ gate runs before any route. After it passes and after the first frame, the launch sweep and the background services start once per process, each in its own try. Order and detail: [mobile-app.md](mobile-app.md#boot-sequence).
+`apps/mobile/src/app/_layout.tsx` opens the database once (`useLaunch`); a failure shows the recovery screen instead of the app. Then the 18+ gate runs before any route. A phone with no book opens first run as the first route, so the tabs are not mounted behind it. After the gate passes and after the first frame, the launch sweep and the background services start once per process, each in its own try (remote documents, packs, transcription queue, sync, backup, Plus, free-letter ledger, reminders, analytics; the switches above decide which do anything). Order and detail: [mobile-app.md](mobile-app.md#boot-sequence).
 
 ## Where to go next
 

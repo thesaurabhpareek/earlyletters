@@ -28,6 +28,7 @@ Start here. This page says which document answers which question. It is kept cur
 | The dated decision log, D-001 onwards | [DECISIONS.md](DECISIONS.md) |
 | Why a technical design was chosen (ADR 0001 to 0022, 0025 to 0027 proposed or pending, 0101) | [adr/](adr/) |
 | Technical design per area (mobile, sync, audio, security, privacy, performance, quality, payments, accessibility, red team) | [tdd/](tdd/) (TDD 01 to 10) |
+| Email sign-in links (PKCE), owner backup keys and the sync protocol: the design decisions behind the auth, backup and sync code (all still marked Proposed) | [adr/0023-email-links-pkce.md](adr/0023-email-links-pkce.md), [adr/0024-owner-backup-v1.md](adr/0024-owner-backup-v1.md), [adr/0025-sync-protocol-v1.md](adr/0025-sync-protocol-v1.md) |
 
 ## What we are building
 
@@ -37,6 +38,7 @@ Start here. This page says which document answers which question. It is kept cur
 | Which requirement is built and tested where (generated) | [TRACE.md](TRACE.md) |
 | The earlier spec, PRD 1.3 (replaced by PRD V2; requirement ids keep their meaning) | [prd/PRD.md](prd/PRD.md) and sections [A](prd/A-entry-and-auth.md), [B](prd/B-first-run-and-family.md), [C](prd/C-habits-pricing-settings.md) |
 | The October experience pass: journey, copy, light and motion, and its critiques | [design/EXPERIENCE_PASS_2026-10.md](design/EXPERIENCE_PASS_2026-10.md), [design/experience-pass/critiques/](design/experience-pass/critiques/) |
+| The critics' pass over capture and Review, and the coordinator's rulings (go/no-go B2-10) | [design/reviews/P4_CRITICS_PASS_2026-10-24.md](design/reviews/P4_CRITICS_PASS_2026-10-24.md) |
 | The path to App Store submission | [ROADMAP.md](ROADMAP.md) |
 | The ordered v1.0 work list (BL ids) | [BACKLOG.md](BACKLOG.md) |
 | After v1.0: v1.0.1 to v1.3 | [backlog/FUTURE.md](backlog/FUTURE.md) and the six area files in [backlog/future/](backlog/future/) (file 06 is co-parent sharing) |
@@ -52,14 +54,17 @@ Start here. This page says which document answers which question. It is kept cur
 | The agent team, the harness and its rules | [agents/README.md](agents/README.md), [agents/HARNESS.md](agents/HARNESS.md), [agents/OPERATING_MODEL.md](agents/OPERATING_MODEL.md) |
 | How agents talk, open questions, the board, the 3 Oct brief, adding an agent, the 13 Oct port map | [agents/AGENT-COMMS.md](agents/AGENT-COMMS.md), [agents/DEBATES.md](agents/DEBATES.md), [agents/BOARD.md](agents/BOARD.md), [agents/BRIEF-2026-10-03.md](agents/BRIEF-2026-10-03.md), [agents/CHARTER_TEMPLATE.md](agents/CHARTER_TEMPLATE.md), [agents/PORT_MAP_2026-10-13.md](agents/PORT_MAP_2026-10-13.md) |
 | Where agents post check-ins (one file each, never at the end of the board) | [agents/checkins/README.md](agents/checkins/README.md) |
+| The check-in files per stream and agent (S01, S03, S06, S09, S20, the experience packages, release-docs-fix) | [agents/checkins/](agents/checkins/) |
 | Operations: deletion pipeline, deploys, secrets, domains, auth setup, app size, subscriptions setup | [ops/README.md](ops/README.md), [ops/DEPLOY.md](ops/DEPLOY.md), [ops/SECURITY.md](ops/SECURITY.md), [ops/DOMAINS.md](ops/DOMAINS.md), [ops/AUTH_SETUP.md](ops/AUTH_SETUP.md), [ops/APP_SIZE.md](ops/APP_SIZE.md), [ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md](ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md) |
 | What to do in an incident or when deletion is stuck | [ops/runbooks/](ops/runbooks/) (incident notification, purge failing, restore drill, staging smoke, stuck deletion, suspected leak) |
 | Files served from the website's `.well-known` | [ops/well-known/](ops/well-known/) |
+| Recording backup and the recovery key (founder runbook); the language pack and signed-document host | [ops/BACKUP_RUNBOOK.md](ops/BACKUP_RUNBOOK.md), [ops/PACKS_HOSTING.md](ops/PACKS_HOSTING.md) (D-097, D-115) |
 | Applying migrations to the live project by hand | [../supabase/APPLY.md](../supabase/APPLY.md) |
 | CI, review rules and branch protection | [../.github/README.md](../.github/README.md) |
 | How to test on a real iPhone, and where test evidence goes | [qa/DEVICE_TEST_PLAN.md](qa/DEVICE_TEST_PLAN.md), [qa/evidence/README.md](qa/evidence/README.md), [qa/evidence/TEMPLATE.md](qa/evidence/TEMPLATE.md) |
 | The alpha go/no-go and the scripted device sessions | [qa/ALPHA_GO_NO_GO.md](qa/ALPHA_GO_NO_GO.md), [qa/run-sheets/README.md](qa/run-sheets/README.md) |
 | Test coverage per workspace and its floors | [qa/COVERAGE.md](qa/COVERAGE.md) |
+| The backup restore drill on two iPhones | [qa/BACKUP_RESTORE_DRILL.md](qa/BACKUP_RESTORE_DRILL.md) |
 | Proposed CI jobs not yet in `.github/` | [ops/proposed/](ops/proposed/) |
 | What we measure and how insights come back | [analytics/TRACKING_PLAN.md](analytics/TRACKING_PLAN.md), [analytics/INSIGHTS_LOOP.md](analytics/INSIGHTS_LOOP.md) (analytics is off in every build profile) |
 
@@ -74,6 +79,7 @@ Start here. This page says which document answers which question. It is kept cur
 | Published texts (drafts, counsel review pending) | [legal/privacy-policy.md](legal/privacy-policy.md), [legal/terms-of-service.md](legal/terms-of-service.md), [legal/subscription-terms.md](legal/subscription-terms.md), [legal/consumer-health-data-notice.md](legal/consumer-health-data-notice.md), [legal/subprocessors.md](legal/subprocessors.md) |
 | What the app and store must disclose; App Store privacy labels | [legal/in-app-disclosures.md](legal/in-app-disclosures.md), [legal/app-store-privacy-labels.md](legal/app-store-privacy-labels.md) |
 | Compliance obligations; what counsel is asked | [legal/compliance-register.md](legal/compliance-register.md), [legal/COUNSEL_PACKET.md](legal/COUNSEL_PACKET.md), [legal/memos/](legal/memos/) |
+| Who sees TestFlight testers' feedback, and what testers are told | [legal/TESTFLIGHT_TESTERS.md](legal/TESTFLIGHT_TESTERS.md) |
 
 ## Brand, design and store
 
@@ -96,12 +102,14 @@ Start here. This page says which document answers which question. It is kept cur
 | Parents: behaviour, onboarding, willingness to pay | [research/USER_RESEARCH.md](research/USER_RESEARCH.md) |
 | What the text rules know about each language | [research/LANGUAGES.md](research/LANGUAGES.md) |
 | Independent reviews (brand, content, customer, design, legal) and the security and privacy review | [reviews/2026-10-03/README.md](reviews/2026-10-03/README.md), [reviews/2026-10-04-security-privacy.md](reviews/2026-10-04-security-privacy.md) |
+| Security reviews for the alpha: the R-17 gate (auth items, shared checklist) and the release secrets review | [security/REVIEW_R17_AUTH.md](security/REVIEW_R17_AUTH.md), [security/REVIEW_R17_CHECKLIST.md](security/REVIEW_R17_CHECKLIST.md), [security/SECRETS_REVIEW.md](security/SECRETS_REVIEW.md) |
 
 ## Release
 
 | Question | Read |
 |---|---|
 | How to make the first TestFlight build, and what it lacks | [release/TESTFLIGHT.md](release/TESTFLIGHT.md) |
+| Environments (preview, staging, production) and which dashboard each needs | [release/ENVIRONMENTS.md](release/ENVIRONMENTS.md) |
 | How a store release is cut, tagged and submitted (two lanes, release branch, RC tags) | [adr/0022-release-engineering.md](adr/0022-release-engineering.md) (D-089 to D-092), [ops/RELEASE.md](ops/RELEASE.md) (the release train runbook) |
 | Release automation: workflows, approvals, the founder's setup checklist (proposed, ADR 0026) | [release/AUTOMATION.md](release/AUTOMATION.md) |
 | Switching the agent harness on | [release/HARNESS_SETUP.md](release/HARNESS_SETUP.md) |

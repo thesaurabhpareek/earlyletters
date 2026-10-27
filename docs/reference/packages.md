@@ -2,8 +2,8 @@
 title: Packages and workspaces
 owner: reference-docs
 covers: [package.json, apps/mobile/package.json, packages/*/package.json, packages/*/src/index.ts, packages/brand/index.ts, packages/content/src/**, packages/design-tokens/**, packages/emails/**, packages/analytics/**, experiments/package.json]
-verified_at: 2cbea6d
-verified_on: 2026-10-23
+verified_at: 1c6795b
+verified_on: 2026-10-27
 ---
 
 # Packages and workspaces
@@ -33,12 +33,12 @@ Who imports what was read from `import ... from '@scribe/...'` lines and, for Ed
 
 | Package | Main exports | Imported by |
 |---|---|---|
-| `@scribe/core` | Edit types and `faithfulClean`, `verifyEdits`, `ENGINE_VERSION`, language rules and pack validation, age math (`ageOn`, `dateline`, `chapterOf`), prompt selection, safety tiers (`classify`), the plan rules (`decideKeepLetter`, `DEFAULT_FREE_LETTERS`), domain value sets (`ENTRY_KINDS`, `MEMBER_ROLES`) | `apps/mobile`, `@scribe/content`, `@scribe/analytics`, `experiments`, `scripts/packs` |
+| `@scribe/core` | Edit types and `faithfulClean`, `verifyEdits`, `ENGINE_VERSION`, language rules and pack validation, age math (`ageOn`, `dateline`, `chapterOf`), prompt selection, safety tiers (`classify`), the plan rules (`decideKeepLetter`, `DEFAULT_FREE_LETTERS`), domain value sets (`ENTRY_KINDS`, `MEMBER_ROLES`). Not in the index, imported by path: `family-rules` (`canDo`, who may do what in a shared book) and `invite` (invite code and token rules, expiry, the 72-hour undo window), pure and shared by the app, tests and Deno | `apps/mobile`, `@scribe/content`, `@scribe/analytics`, `experiments`, `scripts/packs` |
 | `@scribe/api` | Pack manifest, remote config and content bundle schemas and parsers, response envelope, API standards, canonical JSON, Ed25519 and SHA-256 helpers, `TRUSTED_SIGNING_KEYS` | `apps/mobile` (`lib/remote`, `lib/packs`, root layout), Edge Functions (`envelope.ts`, `standards.ts`), `scripts/packs` |
-| `@scribe/content` | Every string: `en` (in-app strings), prompts, `storeListing`, `site`, `book`, `permissions`, `pages`, emails, onboarding stories, feature copy, and `PLUS_PRICE` for public copy | `apps/mobile`, `@scribe/emails`, `purge-worker` (email copy), `scripts/packs` (content bundle) |
+| `@scribe/content` | Every string: `en` (in-app strings), prompts, `storeListing`, `site`, `book`, `permissions`, `pages`, emails, onboarding stories, feature copy, and `PLUS_PRICE` for public copy, `APP_STORE_PLUS` (App Store Connect names for Plus), feature copy for backup and family, backup emails, and `testflightCopy` (tester texts; only tests import it on `develop`) | `apps/mobile`, `@scribe/emails`, `purge-worker` (email copy), `scripts/packs` (content bundle) |
 | `@scribe/brand` | `brand` (name, store name, subtitle, publisher, web addresses, support, email identity, colours, scheme, codename) and `bundleId()` | `apps/mobile` (also loaded by `app.config.ts` at config time), `@scribe/content`, `@scribe/emails`, `purge-worker` |
 | `@scribe/design-tokens` | `tokens` (colours light and dark, high contrast, `atmosphere` (the lamp's scenes, tones and peaks per scheme, which colours may sit on lit paper (`onLitPaper`, D-110), and the light-scheme grain), type, spacing, radii, elevation, motion including `lamp` and `route`), generated CSS (`tokens.native.css`, `tokens.web.css`), `fonts`, and `textures` (the grain image, `grainTexture`, kept out of `tokens.ts` so Node and the web build never load a binary; `npm run build:grain -w @scribe/design-tokens` remakes it) | `apps/mobile`, `@scribe/emails` |
-| `@scribe/emails` | React Email components and templates, `renderForResend`, logo attachments | No other workspace imports it; its own `packages/emails/scripts/export-supabase.ts` generates `supabase/templates`. Email copy comes from `@scribe/content` |
+| `@scribe/emails` | React Email components and templates, `renderForResend`, logo attachments | No other workspace imports it; its own scripts generate files for the server: `packages/emails/scripts/export-supabase.ts` writes `supabase/templates`, and `export-escrow.ts` (`npm run export:escrow -w @scribe/emails`) writes `supabase/functions/escrow/email/templates.ts` for the backup recovery emails, with a test that fails when the committed file drifts. Email copy comes from `@scribe/content` |
 | `@scribe/analytics` | Event allowlist, consent gate, `createAnalytics`, PostHog adapter, insights engine (not exported from the index) | `apps/mobile/src/lib/analytics` (inert while `ANALYTICS=off`; the app has no PostHog SDK dependency in v1.0, #125), `scripts/insights` |
 | `@scribe/mobile` | The app; exports nothing | nobody |
 
@@ -78,6 +78,9 @@ From `CLAUDE.md` and the root `package.json`:
 | `npm run test:coverage` | Coverage per workspace with floors (`scripts/coverage/run.mjs`; each workspace's `vitest.coverage.config.ts`; `docs/qa/COVERAGE.md`) |
 | `npm run typecheck` | `typecheck` in every workspace |
 | `npm run test:db` | `supabase/tests/run.mjs` (PGlite access rules) |
-| `npm run test:functions` | Deno tests for `purge-worker`, `analytics-forget`, the shared logger and `scripts/ops` |
+| `npm run test:db:perf` | The database performance budgets (`supabase/tests/run.mjs perf`; the nightly runs the p95 budgets, D-114 in the [register](../decisions/INDEX.md)) |
+| `npm run test:functions` | Deno tests for `purge-worker`, `analytics-forget`, `apple-token`, `invite-redeem`, `subscription-status`, `escrow`, the shared code in `_shared` and `scripts/ops` |
+| `npm run differential -w @scribe/core` | The single-edit differential between two engines (`test/engine.differential.ts`); not part of `npm test` |
+| `npm run preflight:alpha -w @scribe/mobile` | The TestFlight preflight for the `preview` profile ([operations.md](operations.md)) |
 | `npm run mobile` | `expo start` in `apps/mobile` |
-| `npm run experiment` | The speech-model experiment kit (Mac). `npm run gate -w @scribe/experiments` runs the per-language gate (F05 7.1); nothing leaves the Mac |
+| `npm run experiment` | The speech-model experiment kit (Mac). `npm run gate -w @scribe/experiments` runs the per-language gate (F05 7.1) and `npm run adts-parity -w @scribe/experiments` runs the ADTS decode and playback checks against Core Audio (ADR 0027 checks V3 and V4); nothing leaves the Mac |
