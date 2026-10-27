@@ -1,0 +1,42 @@
+# Logo options R4 (27 Oct 2026)
+
+Status: candidates. Nothing here is registered in `packages/brand/registry.ts` and nothing replaces `assets/logo/primary` (D-071). Adopting an option means a new decision and a registry change.
+
+## What these are
+Rounds 1 to 3 already tried and rejected the letter "e", an envelope, a moon, rings, a book and a split heart (`docs/brand/logo-r3/BRIEF.md`). So R4 does not start another concept. It offers four treatments of the approved mark, checked against the live site (paper `#FBF8F3`, night `#161412`, EB Garamond wordmark, sepia accent).
+
+| Option | Idea | Changes from the approved mark |
+|---|---|---|
+| A | Approved mark (D-071) | Baseline, shown for comparison. Files stay in `assets/logo/primary` |
+| B | Two tones | Parent blob in ink or paper, child blob in sepia accent. Dark icon tile |
+| C | The name in quotation marks | Lockup only: the mark before the wordmark and turned half a turn after it. App icon stays as A |
+| D | Paper tile, one colour | Single deep sepia mark on a paper tile |
+
+Open the review page: `presentation.html`.
+
+## Copyright and trademark: what is and is not established
+- Shapes: all marks come from the custom drawing behind D-071 (`primary/geometry.json`, `primary/source`). No font glyph, stock icon or third-party artwork is traced or used as a mark.
+- Wordmark: outlined EB Garamond, SIL Open Font License 1.1 (`assets/fonts/eb-garamond/OFL.txt`). The OFL permits embedding outlines in a logo.
+- Distinctiveness: a quotation mark is a common symbol. A web search for quotation-mark logos returns many stock icons and brand logos. That is not a copyright problem for an original drawing, but it makes the mark weak as a trademark, and option C adds a second quote shape, which makes a look-alike conflict slightly more likely, not less.
+- Not done: no trademark clearance search (BL-355 is still open) and no legal review. Nothing here is cleared.
+
+## Sizes shipped (options B and D; C ships lockups only)
+| Use | Files |
+|---|---|
+| App Store master | `app/app-icon-1024.png`, `app-icon-dark-1024.png`, `app-icon-tinted-1024.png` (opaque RGB, no alpha, no rounded corners) |
+| iOS asset catalog | `app/png/icon-{40,58,60,80,87,120,152,167,180}.png` plus `-dark` twins. 40 px and smaller use the small cut |
+| Small UI and Spotlight | `app/png/icon-{16,29,32,48}.png` plus `-dark` |
+| Web favicon | `web/favicon.svg` (follows colour scheme), `favicon-{16,32,48}.png`, `apple-touch-icon.png` (180) |
+| Web manifest | `web/icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (mark inside the 80 percent safe zone) |
+| Website header | `lockup-horizontal.svg` and `-reversed.svg`; PNG at 32, 48, 64, 96 px tall in `web/header-*` |
+| Email header | `email/logo-light.png` and `logo-dark.png` (56 px tall, 2x) and `@1x` (28 px tall), transparent |
+| Profile image | `../profile/earlyletters-profile-<option>-{1024,512,250}.png`: full-bleed square, mark inside the central 46 percent so a circle crop keeps it whole. 250 is Google's minimum |
+| Vectors | `symbol.svg`, `symbol-reversed.svg`, `symbol-small.svg` |
+
+Not built here: Open Graph image, Android adaptive and notification glyphs (v1.1), and the hand-tuned sub-pixel offsets the approved set has. Those would be done for the chosen option only.
+
+## Rebuild
+`node packages/brand/assets/logo/options-r4/source/build.mjs` (needs `sharp`, a devDependency of `@scribe/brand`).
+
+## Profile image for earlyletters@gmail.com and email
+Use `profile/earlyletters-profile-A-approved-1024.png` to match the approved mark and the existing sender avatar (`email.avatar`). Swap in B or D files if one is chosen. Upload at Google Account > Personal info > Profile picture, signed in as that account.
