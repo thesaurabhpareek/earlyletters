@@ -5,7 +5,7 @@
  * (A-NFR-008). Never in route params, logs or analytics.
  */
 import { secureStorage } from '../supabase/secure-storage';
-import { decodePendingInvite, encodePendingInvite, isInviteToken, type PendingInvite } from './invite-link.logic';
+import { decodePendingInvite, encodePendingInvite, isInviteToken, shouldClearPendingInvite, type PendingInvite } from './invite-link.logic';
 
 const KEY = 'scribe.family.pendingInvite';
 
@@ -26,6 +26,20 @@ export async function readPendingInvite(now = Date.now()): Promise<PendingInvite
   return p;
 }
 
-export async function clearPendingInvite(): Promise<void> {
+/**
+ * Deletes the stored invite. With `token`, only if it is still that one: a newer link that arrived
+ * while the join sheet was open (+native-intent overwrites the item) is kept for the next launch.
+ */
+export async function clearPendingInvite(token?: string): Promise<void> {
+  if (token !== undefined) {
+    let raw: string | null = null;
+    try {
+      raw = await secureStorage.getItem(KEY);
+    } catch {
+      return; // Keychain locked: leave it; it expires on its own
+    }
+    if (shouldClearPendingInvite(raw, token)) await secureStorage.removeItem(KEY).catch(() => {});
+    return;
+  }
   await secureStorage.removeItem(KEY).catch(() => {});
 }

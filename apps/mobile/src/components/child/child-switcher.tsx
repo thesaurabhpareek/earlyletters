@@ -4,6 +4,9 @@
  * three taps away or fewer. The picker is the app's one `Sheet` with a radio list
  * (ChoiceGroup "list"), so it looks, moves and reads like Reading Size and Whose book.
  * The eyebrow uses the Text `caps` style: VoiceOver hears "For Asha", not letters.
+ * Each row names the child's current month under the book ("Month 7", "The first weeks", "Before You"), from the
+ * Book's own chapter titles; the current book has the check (EXPERIENCE_PASS S25). The Book shows this row only
+ * when there is more than one book (S24).
  */
 import { router } from 'expo-router';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
@@ -17,7 +20,14 @@ import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
 import { ordinalOf, track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
+import { todayISO, type Child } from '@/lib/store';
+import { chapterTitle, monthFor } from '@/components/book/chapters';
 import { useChildren } from './use-children';
+
+/** The month a child's book is in today, as its chapter names it. */
+export function currentMonthLine(child: Pick<Child, 'birthday'>): string {
+  return chapterTitle(monthFor(child, todayISO()));
+}
 
 export function ChildSwitcher() {
   const { c } = useTheme();
@@ -49,7 +59,7 @@ export function ChildSwitcher() {
           layout="list"
           className="-mx-4"
           value={active.id}
-          options={children.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }) }))}
+          options={children.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }), description: currentMonthLine(ch) }))}
           onChange={(id) => {
             select(id);
             track('child_switched', { child_ordinal: ordinalOf(id), surface: 'book' });

@@ -74,6 +74,9 @@ Deno.test('config: required secrets, Apple only when complete, budget bounds', (
   assert.deepEqual(full.apple!.clientIds, ['com.earlyletters.scribe', 'com.earlyletters.web']);
   assert.deepEqual(Object.keys(full.tokenKeks), ['1', '2']);
   assert.equal(full.budgetMs, 110_000);
+  // APPLE_EXTRA_CLIENT_IDS is not read: the worker revokes for exactly the list apple-token captures for (PR #139).
+  const more = readConfig(env({ ...base, APPLE_TEAM_ID: 'TEAM123456', APPLE_SIGNIN_KEY_ID: 'KEY1234567', APPLE_SIGNIN_PRIVATE_KEY: 'pem', APPLE_EXTRA_CLIENT_IDS: 'com.earlyletters.scribe.preview' })).config!;
+  assert.deepEqual(more.apple!.clientIds, ['com.earlyletters.scribe']);
 });
 
 Deno.test('safeEqual compares secrets without short-circuit on content', () => {
@@ -87,6 +90,9 @@ Deno.test('SLA counts map to alert kinds; a silent purge is an alert', () => {
   const zero = { tombstones_overdue: 0, requests_executing_over_24h: 0, requests_executing_over_7d: 0, steps_failed: 0, steps_retrying: 0, queue_stuck: 0, queue_attempts_high: 0, scheduled_overdue: 0, holds_past_review: 0, purge_run_age_minutes: 5 };
   assert.deepEqual(conditionsFromSla(zero), []);
   assert.deepEqual(conditionsFromSla({ ...zero, queue_stuck: 1, queue_attempts_high: 2, purge_run_age_minutes: null }), [['queue_stuck', 3], ['purge_silent', 1]]);
+  // BL-334: the fail-closed consent pepper names its own cause.
+  assert.deepEqual(conditionsFromSla({ ...zero, consent_pepper_missing: 1 }), [['pepper_missing', 1]]);
+  assert.deepEqual(conditionsFromSla({ ...zero, consent_pepper_missing: 0 }), []);
 });
 
 // The same character and tone rules as packages/content/test/rules.test.ts, for the worker's own copy.

@@ -80,8 +80,10 @@ function AccountSettings() {
   }
 
   const provider = auth.account.provider ?? 'other';
+  // BL-347: signed in and consented, but the claim screen was never answered: nothing syncs yet.
+  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
   const syncLabel =
-    s.status === 'needsConsent'
+    s.status === 'needsConsent' || claiming
       ? a.sync.waiting
       : s.status === 'ready'
         ? a.sync[s.sync === 'on' ? 'on' : s.sync === 'off' ? 'off' : 'unknown']
@@ -160,7 +162,7 @@ function AccountSettings() {
 
       <ListSection title={a.syncTitle}>
         <ListRow title={a.syncLabel} trailing={syncLabel} />
-        {s.status === 'needsConsent' && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
+        {(s.status === 'needsConsent' || claiming) && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
         {s.status === 'ready' && s.sync === 'off' && (
           <ListRow
             title={copy.sensitiveConsent.agreeButton}

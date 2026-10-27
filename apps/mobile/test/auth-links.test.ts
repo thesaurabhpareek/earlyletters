@@ -37,7 +37,7 @@ describe('incoming links: email sign-in (PRD A F5, TDD 04 3.1.3)', () => {
     expect(classifyIncomingUrl('scribe://auth/callback', CFG)).toEqual({ kind: 'auth-code' });
     expect(classifyIncomingUrl('scribe:///auth/callback', CFG)).toEqual({ kind: 'auth-code' });
     expect(classifyIncomingUrl(`scribe://auth/callback#token_hash=${HASH}&type=email`, CFG)).toEqual({ kind: 'auth-code' });
-    expect(classifyIncomingUrl(`scribe://i/${TOKEN}`, CFG)).toEqual({ kind: 'other' });
+    expect(classifyIncomingUrl(`scribe://j#t=${TOKEN}`, CFG)).toEqual({ kind: 'other' });
   });
 
   it('ignores other hosts and lookalikes', () => {
@@ -49,7 +49,7 @@ describe('incoming links: email sign-in (PRD A F5, TDD 04 3.1.3)', () => {
 
 describe('incoming links: invites and everything else', () => {
   it('routes an invite universal link', () => {
-    expect(classifyIncomingUrl(`https://earlyletters.com/i/${TOKEN}`, CFG)).toEqual({ kind: 'invite', token: TOKEN });
+    expect(classifyIncomingUrl(`https://earlyletters.com/j#t=${TOKEN}`, CFG)).toEqual({ kind: 'invite', token: TOKEN });
   });
 
   it("leaves Google's own redirect alone", () => {
