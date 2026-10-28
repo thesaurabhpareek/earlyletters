@@ -7,6 +7,7 @@ import './globals.css';
 import { site } from '@/content/site';
 import { webAsset } from '@/lib/brand/web-assets';
 import { resolveSiteUrl } from '@/lib/site-url';
+import { WebAnalytics } from '@/lib/analytics/WebAnalytics';
 
 // Every picture of the brand here is an approved registry file, copied by scripts/web/sync-brand-assets.mjs
 // (lib/brand/web-assets.ts): the tab icons are icon.svg and icon1.png, the Apple touch icon is apple-icon.ts, link
@@ -44,7 +45,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <WebAnalytics />
+      </body>
     </html>
   );
 }

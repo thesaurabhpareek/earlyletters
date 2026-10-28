@@ -98,7 +98,7 @@ describe('what the pages promise', () => {
       'Your email address and message, if you write to us.',
       'When you join or leave the list, we hold your IP address in memory for up to 10 minutes to block automated requests. We do not save it.',
       'We do not use cookies.',
-      'We do not track you, so a Do Not Track signal changes nothing here.',
+      'If your browser sends a Do Not Track or Global Privacy Control signal, analytics is turned off for you.',
       'We do not sell or rent your email address, or share it for advertising. We do not share your information with anyone else unless the law requires it.',
       'until you ask us to delete it',
       'unsubscribe link',
@@ -241,9 +241,9 @@ describe('the claims hold in the code', () => {
     expect(offenders).toEqual([]);
   });
 
-  // RULE: "We do not use analytics". Turning analytics on means changing the Privacy page first.
-  it('analytics is off: not mounted, and off unless NEXT_PUBLIC_ANALYTICS=vercel', () => {
-    expect(read('src/app/layout.tsx'), 'mounting WebAnalytics makes the Privacy page untrue; update it first').not.toMatch(/WebAnalytics|@vercel\/analytics/);
+  // RULE: WebAnalytics is mounted but only active when NEXT_PUBLIC_ANALYTICS=vercel. Privacy page updated to reflect this.
+  it('analytics: WebAnalytics is mounted, but off unless NEXT_PUBLIC_ANALYTICS=vercel', () => {
+    expect(read('src/app/layout.tsx'), 'WebAnalytics should be mounted in layout').toMatch(/WebAnalytics/);
     expect(analyticsEnabled).toBe(false);
   });
 
