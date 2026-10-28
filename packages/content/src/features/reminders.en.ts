@@ -46,8 +46,6 @@ export const reminderCopy = {
     enabledLabel: 'Reminders',
     howOftenTitle: 'How often',
     eveningsTitle: 'Which evenings',
-    eveningsHelp: 'Pick the evenings that suit you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the chips speak for themselves)
-    eveningHelp: 'Pick the evening that suits you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7
     timeTitle: 'Time',
     timeLabel: 'Reminder time',
     lateNightClamp: 'Late nights stay quiet.',
@@ -57,7 +55,6 @@ export const reminderCopy = {
     monthNotesHelp: 'A short message on the day a new month begins in each book, and on birthdays.',
     namesHelpOff: 'Notifications say "your little one" and show no names on the lock screen.',
     namesHelpOn: 'Notifications can show names on the lock screen.',
-    pausedHelp: 'Nothing is sent while reminders are paused. Your choices are kept.',
     deniedTitle: 'Notifications are off',
     deniedBody: 'Turn them on in Settings to get these reminders.',
     openSettingsButton: 'Open Settings',
