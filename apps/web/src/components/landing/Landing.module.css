@@ -112,7 +112,7 @@
   text-wrap: balance;
   font-size: clamp(17px, 1.6vw, 22px);
   line-height: 1.5;
-  color: var(--night-ink-muted);
+  color: color-mix(in srgb, var(--night-ink) 86%, transparent);
   animation: rise 1.4s var(--ease-standard) 0.7s both;
 }
 .actions {

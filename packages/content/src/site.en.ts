@@ -91,7 +91,7 @@ export const site = {
     },
     {
       q: "How much does it cost?",
-      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial, through the App Store in the US. One membership covers the whole family book, so grandparents add letters without one of their own. Plus also backs up every recording, opens Read together after the free sessions and covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
+      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial, through the App Store in the US. One membership covers the whole family book, so grandparents add letters without one of their own. Plus also backs up every recording, opens Read together after the free sessions and covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
     },
     {
       q: "What happens to my recordings?",

@@ -140,6 +140,7 @@
 }
 .successTitle {
   margin: 0;
+  text-wrap: balance;
   font-family: var(--font-serif);
   font-weight: 500;
   font-size: clamp(24px, 2.4vw, 32px);
@@ -147,6 +148,7 @@
 }
 .successBody {
   margin: 10px 0 0;
+  text-wrap: balance;
   font-size: clamp(16px, 1.5vw, 19px);
   line-height: 1.5;
   color: var(--night-ink-muted);
@@ -240,7 +242,7 @@
   padding: 0 2px;
   background: transparent;
   animation: none;
-  color: var(--night-accent);
+  color: var(--lamp);
   font-size: 17px;
   white-space: nowrap;
 }
