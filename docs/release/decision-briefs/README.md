@@ -2,7 +2,9 @@
 
 Status: nine questions are open for the founder. None is decided by these files. Each brief gives the question, the options, the evidence, the cost or risk of each option, a recommendation (labelled as one), what happens if nobody answers, and the date it is needed by. When the founder answers, the coordinator records any D-id in `docs/DECISIONS.md`; these briefs are not edited into decisions.
 
-Dates are tied to the alpha go/no-go, proposed by the coordinator for Thu 5 Nov 2026 and not yet confirmed by the founder ([1.0.0.md:14](../1.0.0.md#L14), [1.0.0.md:108](../1.0.0.md#L108)). The proposed freeze is Tue 3 Nov, 5:00 AM PT. If the founder moves those dates, the needed-by dates move with them.
+Dates are tied to the alpha go/no-go, proposed by the coordinator for Thu 5 Nov 2026 and not yet confirmed by the founder ([1.0.0.md:14](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/release/1.0.0.md#L14), [1.0.0.md:108](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/release/1.0.0.md#L108)). The proposed freeze is Tue 3 Nov, 5:00 AM PT. If the founder moves those dates, the needed-by dates move with them. Open PR [#340](https://github.com/thesaurabhpareek/earlyletters/pull/340) proposes recording D-124, which would confirm both dates; it is not merged, so they stay proposed here.
+
+Read against `develop` at `e7d96d58` (28 Oct, 13:53 UTC). Line links are pinned to that commit so they do not drift. [#340](https://github.com/thesaurabhpareek/earlyletters/pull/340) (open, not decided) also proposes D-121 and D-124, which would answer briefs (d), (f) and (i) if recorded; those briefs say how.
 
 Prepared by retro work package R1-09 (IMP-04, IMP-05, IMP-36, IMP-46, IMP-47, IMP-49, IMP-51, IMP-68). Conflict of interest: the session that commissioned the retro built the agent harness and wrote issue #127, which briefs (a), (b) and (i) are about.
 

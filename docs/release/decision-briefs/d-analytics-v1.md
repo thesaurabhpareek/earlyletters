@@ -8,10 +8,11 @@ Scope: the mobile app only. The website analytics PR #309 is covered by another 
 Is in-app analytics off for v1.0, or on with consent?
 
 ## Evidence
-- D-095 ([DECISIONS.md:590](../../DECISIONS.md#L590), 15 Oct, delegated by the founder): no analytics SDK or consent sheet in v1.0; analytics returns with consent in v1.1.
-- D-100 ([DECISIONS.md:646](../../DECISIONS.md#L646)) says the on-device assumption behind D-095 is superseded "where they conflict". It does not say whether analytics is one of those places.
-- `EXPO_PUBLIC_ANALYTICS` is `off` in all five build profiles ([eas.json:19, 36, 50, 64, 78](../../../apps/mobile/eas.json#L19)); the app reads it at [capabilities.ts:92](../../../apps/mobile/src/lib/capabilities.ts#L92).
-- Go/no-go rows B1-1 and B2-15 require analytics off and no analytics host ([ALPHA_GO_NO_GO.md:22](../../qa/ALPHA_GO_NO_GO.md#L22), [:57](../../qa/ALPHA_GO_NO_GO.md#L57)).
+- D-095 ([DECISIONS.md:590](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/DECISIONS.md#L590), 15 Oct, delegated by the founder): no analytics SDK or consent sheet in v1.0; analytics returns with consent in v1.1.
+- D-100 ([DECISIONS.md:647](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/DECISIONS.md#L647)) says the on-device assumption behind D-095 is superseded "where they conflict". It does not say whether analytics is one of those places.
+- `EXPO_PUBLIC_ANALYTICS` is `off` in all five build profiles ([eas.json:19, 36, 50, 64, 78](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/apps/mobile/eas.json#L19)); the app reads it at [capabilities.ts:92](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/apps/mobile/src/lib/capabilities.ts#L92).
+- Go/no-go rows B1-1 and B2-15 require analytics off and no analytics host ([ALPHA_GO_NO_GO.md:22](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/qa/ALPHA_GO_NO_GO.md#L22), [:57](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/qa/ALPHA_GO_NO_GO.md#L57)).
+- Open PR [#340](https://github.com/thesaurabhpareek/earlyletters/pull/340) (not merged, not decided) proposes D-124, which includes "analytics off for the whole 1.0 line". If recorded, that is option 1 below and this brief is answered.
 - The board still offers BL-326 (insights increments) to the analytics agent (retro panel 02; not rechecked here).
 
 ## Options
