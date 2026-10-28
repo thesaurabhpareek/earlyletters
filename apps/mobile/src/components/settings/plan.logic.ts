@@ -5,8 +5,9 @@
  * - Plus off, nothing to say: no status card (`plan.off` is retired). The first row is "See what Plus adds" (Apple's
  *   store view), or, with no store on this device, the line that says why. Plus on (or Apple retrying a payment): the
  *   first row reads "Plus", with the plan's name and the dates StoreKit reports (Terms 14.6).
- * - The promise (`billingCopy.store.promise`, registered) is the section's footer, once. No sentence is shown twice:
- *   a status sentence the open plan note already says (the renewal date, the cancel-by date) is left out of the row.
+ * - The promise (`billingCopy.store.promise`, registered) is the section's footer, once. No sentence and no date is
+ *   shown twice: a status sentence the open plan note or the restore result already says (the renewal date, the
+ *   cancel-by date, "Plus is on.") is left out of the row, and a trial whose date the note says reads "Plus is on.".
  * - "Manage subscription" only when a subscription exists (the Terms and emails name "Settings, Plan, Manage
  *   subscription", so the label itself never changes). "Redeem a code" is a row here too.
  * - The restore result shows inline under its row; a failure carries the warning mark.
@@ -85,10 +86,18 @@ export function planScreen(input: {
   storeSupport: StoreViewSupport;
   /** The open plan note's sentences (noteLines), so the row never repeats them. */
   noteLines: readonly string[];
+  /** The restore result on screen under its row ("Plus is on."), so the row never repeats it either. */
+  restored?: string | null;
   longDate: (ymd: string) => string;
 }): PlanScreen {
-  const said = new Set(input.noteLines);
-  const sentences = statusSentences(input.line, input.longDate).filter((s) => !said.has(s));
+  const said = new Set([...input.noteLines, ...(input.restored ? [input.restored] : [])]);
+  const line = input.line;
+  // A trial whose end date the open note already says ("Plus is free until {date}."): the row says only that Plus is
+  // on, so the date is said once (lens A f1 on #313).
+  const trialDateInNote = line.kind === 'trial' && input.noteLines.some((l) => l.includes(input.longDate(line.until)));
+  const sentences = statusSentences(line, input.longDate)
+    .map((s, i) => (trialDateInNote && i === 0 ? p.on : s))
+    .filter((s) => !said.has(s));
   const shared = input.plusOn && input.details.ownership === 'familyShared' ? [p.shared] : [];
   const status =
     input.line.kind === 'off'

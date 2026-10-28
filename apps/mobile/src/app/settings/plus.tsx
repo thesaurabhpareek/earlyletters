@@ -111,6 +111,8 @@ export default function PlanSettings() {
     storeSupport: plan.storeSupport,
     // The note says the date already: the row leaves that sentence out, so nothing is said twice (S41).
     noteLines: note ? noteLines(note, billingCopy.note, { timeZone: timeZone(), formatDay: (ymd) => longDate(ymd) }) : [],
+    // Nor what the restore result under its row says ("Plus is on.").
+    restored: restored?.text ?? null,
     longDate: (ymd) => longDate(ymd),
   });
   const notifications = useNotificationsAllowed();

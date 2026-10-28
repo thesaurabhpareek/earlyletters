@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
+import { fill } from '../src/lib/copy';
 import { appearanceSample, type SampleEntry } from '../src/components/settings/appearance.logic';
 import { exportEmpty, exportFailure, INSIDE } from '../src/components/settings/export.logic';
 import { HELD, planName, planScreen, restoreResult, statusSentences, subscriptionExists } from '../src/components/settings/plan.logic';
@@ -66,20 +67,59 @@ describe('[S41] Plan', () => {
     expect(renews.status?.subtitle).toBeNull();
     const trial: PlanLine = { kind: 'trial', until: '2026-11-13', cancelBy: '2026-11-12' };
     expect(statusSentences(trial, longDate)).toEqual(['Plus is on, free until November 13, 2026.', 'Cancel by November 12, 2026 and you pay nothing.']);
-    const t = screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true, noteLines: ['Plus is free until November 13, 2026.', 'Cancel by November 12, 2026 and you pay nothing.'] });
-    expect(t.status?.subtitle).toBe('Plus is on, free until November 13, 2026.');
-    // Everything a state can put on the screen, once each.
-    for (const s of [screen(), screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true }), screen({ line: { kind: 'grace' }, details: { ...monthly, status: 'grace' }, plusOn: true })]) {
-      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null]
+    // With the plan note open the note carries the trial date, so the row says only that Plus is on: the date once
+    // (lens A f1 on #313: "Plus is on, free until {date}." and "Plus is free until {date}." both showed).
+    const trialNote = ['Plus is free until November 13, 2026.', 'Cancel by November 12, 2026 and you pay nothing.'];
+    const t = screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true, noteLines: trialNote });
+    expect(t.status?.subtitle).toBe(p.on);
+    // No note open: the row carries the date and the cancel-by line itself.
+    expect(screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true }).status?.subtitle).toBe('Plus is on, free until November 13, 2026. Cancel by November 12, 2026 and you pay nothing.');
+    // "Plus is on." and the restore result "Plus is on." are one sentence, said once (lens A f2): StoreKit gave no
+    // period end, and a restore just worked.
+    expect(screen({ line: { kind: 'on' }, details: monthly, plusOn: true, restored: p.restored }).status?.subtitle).toBeNull();
+    expect(screen({ line: { kind: 'on' }, details: monthly, plusOn: true, restored: HELD.restoreNothing }).status?.subtitle).toBe(p.on);
+    expect(code('app/settings/plus.tsx')).toMatch(/restored: restored\?\.text \?\? null,/);
+    // Everything a state can put on the screen, once each, with the note and the restore result it can show; and
+    // every date at most once.
+    const states = [
+      { s: screen(), note: [] as string[], restore: null as string | null },
+      { s: screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true }), note: [], restore: null },
+      { s: screen({ line: trial, details: { ...monthly, status: 'trial' }, plusOn: true, noteLines: trialNote }), note: trialNote, restore: null },
+      { s: screen({ line: { kind: 'grace' }, details: { ...monthly, status: 'grace' }, plusOn: true }), note: [], restore: null },
+      { s: screen({ line: { kind: 'on' }, details: monthly, plusOn: true, restored: p.restored }), note: [], restore: p.restored },
+      { s: screen({ restored: HELD.restoreNothing }), note: [], restore: HELD.restoreNothing },
+    ];
+    for (const { s, note, restore } of states) {
+      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
         .filter((x): x is string => !!x)
         .flatMap((x) => x.split(/(?<=[.!?])\s+/));
-      expect(said.length).toBe(new Set(said).size);
+      expect(said.length, said.join(' | ')).toBe(new Set(said).size);
+      for (const date of ['November 13, 2026', 'November 12, 2026']) expect(said.filter((x) => x.includes(date)).length, date).toBeLessThanOrEqual(1);
     }
     // The promise sits where plan.off and plus.promise once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
     expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise\}>/);
     expect(plan).not.toMatch(/copy\.plus\.promise|p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
+  });
+
+  it('each status says its own sentence: ends is not renews, grace and retry are their own, shared only with Plus on', () => {
+    // Cancelled: "stays on until", never "renews" (a swap fails here).
+    const ends = screen({ line: { kind: 'ends', on: '2026-11-13' }, details: monthly, plusOn: true });
+    expect(ends.status?.subtitle).toBe('Plus stays on until November 13, 2026. It will not renew.');
+    expect(ends.status?.subtitle).not.toMatch(/renews/);
+    expect(statusSentences({ kind: 'ends', on: '2026-11-13' }, longDate)).toEqual([fill(p.ends, { date: 'November 13, 2026' })]);
+    expect(statusSentences({ kind: 'renews', on: '2026-11-13' }, longDate)).toEqual([fill(p.renews, { date: 'November 13, 2026' })]);
+    // Grace: Apple is retrying while Plus stays on; the registered sentence word for word.
+    const grace = screen({ line: { kind: 'grace' }, details: { ...monthly, status: 'grace' }, plusOn: true });
+    expect(grace.status).toEqual({ title: 'Plus', subtitle: p.grace, value: HELD.monthly });
+    expect(p.grace).not.toBe(p.retry);
+    // Family Sharing is said only while Plus is on: a shared subscription Apple is retrying says only the retry.
+    const sharedRetry = screen({ line: { kind: 'retry' }, details: { ...monthly, status: 'billing_retry', ownership: 'familyShared' }, plusOn: false });
+    expect(sharedRetry.status?.subtitle).toBe(p.retry);
+    expect(sharedRetry.status?.subtitle).not.toContain(p.shared);
+    expect(screen({ line: { kind: 'on' }, details: { ...monthly, ownership: 'purchased' }, plusOn: true }).status?.subtitle).toBe(p.on);
+    expect(statusSentences({ kind: 'off' }, longDate)).toEqual([]);
   });
 
   it('the restore result shows inline under its row, a failure with the warning mark; cancelled says nothing', () => {
@@ -121,10 +161,8 @@ describe('[S34] Reminders', () => {
     const screen = code('app/settings/reminders.tsx');
     expect(screen).not.toMatch(/pauseLabel|pausedHelp|paused: v/);
     expect(screen).toMatch(/<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
-    // The master switch keeps every choice when off: disable writes only `enabled`; enable clears `paused`.
-    const scheduler = code('lib/reminders/scheduler.ts');
-    expect(scheduler).toMatch(/export async function disableReminders\(\): Promise<void> \{\s*writePrefs\(\{ enabled: false \}\);/);
-    expect(scheduler).toMatch(/writePrefs\(\{ enabled: true, paused: false, cadence:/);
+    // The master switch keeps every choice when off, and on clears a pause: run through lib/reminders' public API
+    // in test/reminders-switch.test.ts (lens A f6 on #313 asked for behaviour, not another stream's source).
     expect(en.settings.reminders.pauseLabel).toBe('Pause all reminders'); // retired, kept until P7
   });
 
@@ -132,6 +170,15 @@ describe('[S34] Reminders', () => {
     expect(showNotificationsOff(prefs(true), 'denied')).toBe(true);
     expect(showNotificationsOff(prefs(true), 'granted')).toBe(false);
     expect(showNotificationsOff(prefs(false), 'denied')).toBe(false);
+    // Only a real "no": not yet asked, or not known yet, is not denied (no card).
+    expect(showNotificationsOff(prefs(true), 'undetermined')).toBe(false);
+    expect(showNotificationsOff(prefs(true), null)).toBe(false);
+    expect(showNotificationsOff(prefs(true, true), 'denied')).toBe(false);
+    // Back from Settings still denied, or from not asked to granted: no "Reminders are on.".
+    expect(remindersTurnedOnInSettings('denied', 'denied', prefs(true))).toBe(false);
+    expect(remindersTurnedOnInSettings('undetermined', 'granted', prefs(true))).toBe(false);
+    expect(remindersTurnedOnInSettings('denied', 'undetermined', prefs(true))).toBe(false);
+    expect(remindersTurnedOnInSettings('denied', 'granted', prefs(true, true))).toBe(false);
     expect(remindersTurnedOnInSettings('denied', 'granted', prefs(true))).toBe(true);
     expect(remindersTurnedOnInSettings('granted', 'granted', prefs(true))).toBe(false);
     expect(remindersTurnedOnInSettings(null, 'granted', prefs(true))).toBe(false);
@@ -190,6 +237,16 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'here', mb: 575 })).toMatchObject({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: 'Remove' });
     expect(speechRow({ kind: 'waitingForWifi', mb: 575 }).action).toBeNull();
     expect(speechRow({ kind: 'unknown', mb: 575 }).action).toBeNull();
+    // Each state's words and action, in full: Remove says what it frees; the rows that wait offer nothing to tap.
+    expect(speechRow({ kind: 'here', mb: 575 })).toEqual({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: speechSettingsCopy.confirmButton, percent: null, hint: speechSettingsCopy.removeHint });
+    expect(speechSettingsCopy.removeHint).toBe('Removes this language from the phone to free space');
+    expect(speechRow({ kind: 'noSpace', mb: 575 })).toEqual({ subtitle: 'Needs more free space, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
+    expect(speechRow({ kind: 'unknown', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
+    // The ring and its words stay between 0 and 100, rounded down (never "100%" before it is done).
+    expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
+    expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
     expect(code('app/settings/recordings.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
   });
 });
@@ -214,6 +271,15 @@ describe('[S43] Export', () => {
 
   it('the cover at the top, a glyph per "What is inside" row, and the waiting button under its line on an empty book', () => {
     expect(INSIDE.map((i) => exportCopy.screen[i.key])).toEqual([exportCopy.screen.includesLetters, exportCopy.screen.includesRecordings, exportCopy.screen.includesBook, exportCopy.screen.includesData]);
+    // Each row's own glyph (S43 Visual), and the screen draws the one named, never another.
+    expect(INSIDE.map((i) => [i.key, i.icon])).toEqual([
+      ['includesLetters', 'FileText'],
+      ['includesRecordings', 'Microphone'],
+      ['includesBook', 'BookOpen'],
+      ['includesData', 'Database'],
+    ]);
+    expect(code('app/settings/export.tsx')).toMatch(/const INSIDE_ICON = \{ FileText: FileTextIcon, Microphone: MicrophoneIcon, BookOpen: BookOpenIcon, Database: DatabaseIcon \} as const;/);
+    expect(code('app/settings/export.tsx')).toMatch(/const Icon = INSIDE_ICON\[icon\];\s*return <ListRow key=\{key\} title=\{s\[key\]\} leading=\{<Icon size=\{20\} color=\{c\.textMuted\} \/>\} \/>;/);
     expect(exportEmpty({ letters: 0 })).toBe(true);
     expect(exportEmpty({ letters: 3 })).toBe(false);
     expect(exportEmpty(null)).toBe(false);
@@ -228,7 +294,10 @@ describe('[S44] Privacy', () => {
     const list = code('components/consent/never-list.tsx');
     expect(list).not.toMatch(/ListRow|ListSection/);
     expect(list).toMatch(/consentCopy\.never\.map/);
-    expect(list).toMatch(/<ProhibitIcon size=\{20\} color=\{c\.textMuted\} \/>/);
+    // LockSimple: the icon section 5.4 lists for S44 (the coordinator's ruling on #313).
+    expect(list).toMatch(/import \{ LockSimpleIcon \} from 'phosphor-react-native\/src\/icons\/LockSimple';/);
+    expect(list).toMatch(/<LockSimpleIcon size=\{20\} color=\{c\.textMuted\} \/>/);
+    expect(list).not.toMatch(/Prohibit/);
     expect(code('app/settings/privacy.tsx')).toMatch(/<NeverList \/>/);
   });
 });
@@ -242,6 +311,12 @@ describe('[S45] Appearance', () => {
     // Never a private letter, the other parent's, a quiet-day mark or a letter still waiting for its words.
     expect(appearanceSample([letter({ inBook: false }), letter({ authorId: 'papa' }), letter({ kind: 'not_much', finalText: '' }), letter({ transcriptStatus: 'waiting', finalText: '' }), letter({ finalText: '\n\nYou waved at the dog.' })], own)).toBe('You waved at the dog.');
     expect(appearanceSample([], own)).toBeNull();
+    // A quiet-day mark never reaches the letter face, even one an old build stored with a sentence in it.
+    expect(appearanceSample([letter({ kind: 'not_much', finalText: 'A quiet day, kept.' }), letter({ finalText: 'You found your toes.' })], own)).toBe('You found your toes.');
+    expect(appearanceSample([letter({ kind: 'not_much', finalText: 'A quiet day, kept.' })], own)).toBeNull();
+    // The first line is trimmed; a letter with no words (blank or spaces only) is passed over and the search goes on.
+    expect(appearanceSample([letter({ finalText: '   You slept all afternoon.   ' })], own)).toBe('You slept all afternoon.');
+    expect(appearanceSample([letter({ finalText: '' }), letter({ finalText: '  \n \t ' }), letter({ finalText: 'You clapped.' })], own)).toBe('You clapped.');
     const screen = code('app/settings/appearance.tsx');
     expect(screen).not.toMatch(/reader\.preview\b/);
     expect(screen).toMatch(/copy\.reader\.previewEmpty/);
