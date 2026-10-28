@@ -12,13 +12,18 @@
  * outbox to drain (S01 with S03's lib/sync), and while it waits the Sign out row says so, with a
  * small spinner, then the page fades to signed out over `fadeMs`. Sign out is a row in `text`, not
  * red, and its native confirm is not destructive either: nothing is deleted.
- * An iOS Settings page: native push, no lamp, no haptic for an account.
+ * "Agree and sync" (for a person who chose "Keep on this phone") opens the sensitive-data step with its
+ * words (S55, LEGAL-REQ-006); consent is never recorded in one tap from here.
+ * Which row says what is components/auth/account-view.logic.ts (pure, tested).
+ * An iOS Settings page: native push, no lamp, no haptic for an account. Nothing enters on a visit
+ * (MOTION principle 2); the one fade is signing out while the page is open.
  */
 import { Redirect, Stack, router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
+import { accountView } from '@/components/auth/account-view.logic';
 import { BookCover } from '@/components/book/book-cover';
 import { useChildren } from '@/components/child/use-children';
 import { Button } from '@/components/ui/button';
@@ -36,7 +41,7 @@ import { copy, fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 
-/** Signed in and signed out replace each other with one fade (opacity only, also under Reduce Motion). */
+/** Signing out while the page is open: the signed-out page fades in (opacity only, which is also the Reduce Motion form, 5.8 rule 6). */
 const PAGE_IN = FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never);
 const PAGE = { gap: tokens.space[7], gutter: tokens.space[5], top: tokens.space[4], bottom: tokens.space[10] } as const;
 
@@ -57,7 +62,14 @@ function AccountSettings() {
   const s = auth.state;
   const showPasskeys = auth.signedIn && passkeysAvailable();
   const client = auth.client;
-  const waitingToSignOut = s.status === 'signingOut' && s.waitingForUploads;
+  const view = accountView(s, auth.claimPending);
+  const waitingToSignOut = view.signOut === 'waiting';
+  // Only a sign-out that happens on this page fades; a visit shows the page at once.
+  const wasSignedIn = useRef(auth.signedIn);
+  const signedOutHere = wasSignedIn.current && !auth.signedIn;
+  useEffect(() => {
+    wasSignedIn.current = auth.signedIn;
+  });
 
   const loadPasskeys = useCallback(async () => {
     if (!showPasskeys || !client) return;
@@ -89,7 +101,7 @@ function AccountSettings() {
     return (
       <ScrollView contentContainerStyle={scroll} contentInsetAdjustmentBehavior="automatic">
         <Stack.Screen options={{ title: a.title }} />
-        <Animated.View key="signedOut" entering={PAGE_IN} style={{ gap: tokens.space[4] }}>
+        <Animated.View key="signedOut" entering={signedOutHere ? PAGE_IN : undefined} style={{ gap: tokens.space[4] }}>
           {expired ? <ErrorLine message={authCopy.errors.session_expired} /> : null}
           {active ? <BookCover name={active.name} size="sm" animate={false} /> : null}
           <Text variant="title2" asHeading>
@@ -109,16 +121,6 @@ function AccountSettings() {
   }
 
   const provider = auth.account.provider ?? 'other';
-  // BL-347: signed in and consented, but the claim screen was never answered: nothing syncs yet.
-  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
-  const syncLabel =
-    s.status === 'needsConsent' || claiming
-      ? a.sync.waiting
-      : s.status === 'ready'
-        ? a.sync[s.sync === 'on' ? 'on' : s.sync === 'off' ? 'off' : 'unknown']
-        : s.status === 'signingOut' && s.waitingForUploads
-          ? a.sync.on
-          : a.sync.unknown;
 
   const addPasskey = async () => {
     if (!client) return;
@@ -182,7 +184,7 @@ function AccountSettings() {
   return (
     <ScrollView contentContainerStyle={scroll} contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: a.title }} />
-      <Animated.View key="signedIn" entering={PAGE_IN} style={{ gap: PAGE.gap }}>
+      <View style={{ gap: PAGE.gap }}>
         {/* The way in, on paper: the method's mark, how, and the address (shown here only, never logged). */}
         <View className="flex-row items-center px-1" style={{ gap: tokens.space[3] }}>
           <ProviderMark provider={provider} size={28} />
@@ -199,16 +201,11 @@ function AccountSettings() {
         </View>
 
         <ListSection title={a.syncTitle}>
-          <ListRow title={a.syncLabel} trailing={syncLabel} />
-          {(s.status === 'needsConsent' || claiming) && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
-          {s.status === 'ready' && s.sync === 'off' && (
-            <ListRow
-              title={copy.sensitiveConsent.agreeButton}
-              onPress={async () => {
-                const r = await auth.turnOnSync();
-                if (!r.ok) say(null, authErrorMessage(r.error));
-              }}
-            />
+          <ListRow title={a.syncLabel} trailing={a.sync[view.sync]} />
+          {view.finishSetup && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
+          {view.offerSync && (
+            // The sensitive-data step with its words, then the answer (LEGAL-REQ-006): never a one-tap consent here.
+            <ListRow title={copy.sensitiveConsent.agreeButton} trailing="chevron" onPress={() => router.push({ pathname: '/sign-in/consent', params: { step: 'sensitive' } })} />
           )}
         </ListSection>
 
@@ -229,7 +226,7 @@ function AccountSettings() {
         )}
 
         <ListSection title={a.devicesTitle} footer={a.signOutOthersHelp}>
-          <ListRow title={a.signOutOthers} onPress={() => void signOutOthers()} disabled={busy || waitingToSignOut} />
+          <ListRow title={a.signOutOthers} onPress={() => void signOutOthers()} disabled={busy || view.signOut !== 'ready'} />
         </ListSection>
 
         <View style={{ gap: tokens.space[3] }}>
@@ -244,11 +241,11 @@ function AccountSettings() {
               // The outbox is still sending: the row says so, with a small spinner, until this phone signs out.
               <ListRow title={a.signOutWaiting} leading={<ActivityIndicator color={c.accent} />} />
             ) : (
-              <ListRow title={a.signOut} onPress={signOut} disabled={s.status === 'signingOut'} />
+              <ListRow title={a.signOut} onPress={signOut} disabled={view.signOut === 'closing'} />
             )}
           </ListSection>
         </View>
-      </Animated.View>
+      </View>
     </ScrollView>
   );
 }

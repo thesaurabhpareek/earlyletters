@@ -10,7 +10,7 @@
  * quite right." shows on submit only, never while typing, and goes as soon as the person types.
  */
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { authCopy } from '@/lib/auth/copy';
@@ -18,7 +18,7 @@ import { looksLikeEmail } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
-import { useAuth } from '@/lib/auth/session-provider';
+import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { ErrorLine, SheetFrame, SheetTitle } from '@/lib/auth/ui';
 
 export default function EmailStep() {
@@ -27,19 +27,27 @@ export default function EmailStep() {
   const [email, setEmail] = useState(getPendingEmail() ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AuthErrorKind | null>(null);
+  // Set before the first await: a second tap (or Return) in the same frame sends no second email.
+  const inFlight = useRef(false);
   const value = email.trim();
   const ready = looksLikeEmail(value);
 
   const send = async () => {
-    if (busy) return;
+    if (busy || inFlight.current) return;
     if (!ready) {
       setError('invalid_email');
       return;
     }
+    inFlight.current = true;
     setBusy(true);
     setError(null);
-    const r = await auth.sendEmailLink(value);
-    setBusy(false);
+    let r: Outcome;
+    try {
+      r = await auth.sendEmailLink(value);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
     if (r.ok) {
       setPendingEmail(value);
       router.push('/sign-in/code');

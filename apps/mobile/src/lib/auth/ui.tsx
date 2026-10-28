@@ -37,7 +37,6 @@ import { announce, useFocusOnMount, useIsAccessibilitySize, useScheme, useTheme 
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
-import { authErrorMessage } from './messages';
 import { useAuth } from './session-provider';
 
 const tryAgainLabel = copy.common.tryAgainButton;
@@ -240,13 +239,12 @@ type ProviderKind = 'google' | 'email' | 'passkey';
 
 /**
  * Same height and shape as the Apple button, so no option looks smaller (A-REQ-016): 56 pt, bordered.
- * Busy: the tapped button keeps its size and shows a small spinner with the busy line inside it.
+ * Busy: the tapped button keeps its size and shows a small spinner with the busy line inside it. Button's own
+ * `loading` draws the spinner and says busy to VoiceOver (accessibilityState.busy); the busy one is not "dimmed".
  */
 export function ProviderButton({ kind, label, onPress, disabled, busy, busyLabel }: { kind: ProviderKind; label: string; onPress: () => void; disabled?: boolean; busy?: boolean; busyLabel?: string }) {
   const c = useColors();
-  const icon = busy ? (
-    <ActivityIndicator color={c.text} accessibilityElementsHidden importantForAccessibility="no" />
-  ) : kind === 'google' ? (
+  const icon = busy ? null : kind === 'google' ? (
     <GoogleMark />
   ) : kind === 'email' ? (
     <EnvelopeSimpleIcon size={20} color={c.text} />
@@ -262,9 +260,9 @@ export function ProviderButton({ kind, label, onPress, disabled, busy, busyLabel
         haptic('tap');
         onPress();
       }}
-      disabled={disabled || busy}
+      disabled={busy ? false : disabled}
+      loading={busy}
       accessibilityLabel={shown}
-      accessibilityState={{ busy: !!busy }}
       className="bg-card"
       style={{ minHeight: SHEET.button }}>
       {icon}
@@ -306,7 +304,6 @@ export function AccountGate({
 }) {
   const auth = useAuth();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const s = auth.state;
   const g = authCopy.account;
 
@@ -338,23 +335,27 @@ export function AccountGate({
   // ready, with sync off (declined) or unknown (offline at launch)
   const offline = s.sync === 'unknown';
   const sc = copy.sensitiveConsent;
+  if (!offline) {
+    // Declined earlier ("Keep on this phone"): "Agree and sync" opens the sensitive-data step with its words
+    // (S55, LEGAL-REQ-006), where the answer is recorded; consent is never given here in one tap.
+    return (
+      <View className="gap-4">
+        <SheetBody muted>{sc.declineHelp}</SheetBody>
+        <Button size="lg" fullWidth label={sc.agreeButton} onPress={() => router.push({ pathname: '/sign-in/consent', params: { step: 'sensitive' } })} />
+      </View>
+    );
+  }
   return (
     <View className="gap-4">
-      <SheetBody muted>{offline ? authCopy.errors.network : sc.declineHelp}</SheetBody>
-      <ErrorLine message={error} />
+      <SheetBody muted>{authCopy.errors.network}</SheetBody>
       <Button
         size="lg"
         fullWidth
         loading={busy}
-        label={offline ? tryAgainLabel : sc.agreeButton}
+        label={tryAgainLabel}
         onPress={async () => {
           setBusy(true);
-          setError(null);
-          if (offline) await auth.refreshGate();
-          else {
-            const r = await auth.turnOnSync();
-            if (!r.ok) setError(authErrorMessage(r.error));
-          }
+          await auth.refreshGate();
           setBusy(false);
         }}
       />

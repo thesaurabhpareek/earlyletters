@@ -19,7 +19,7 @@
  * No haptic for an account (MOTION 6): only the provider buttons' own `tap`.
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { BookCover } from '@/components/book/book-cover';
 import { useChildren } from '@/components/child/use-children';
@@ -51,6 +51,8 @@ export default function SignInSheet() {
   const [apple, setApple] = useState(false);
   const [busy, setBusy] = useState<AuthMethod | null>(null);
   const [error, setError] = useState<AuthErrorKind | null>(null);
+  // Set before the first await: a second tap in the same frame starts no second sign-in.
+  const inFlight = useRef(false);
   const s = authCopy.sheet;
   const child = active?.name ?? authCopy.consent.childFallback;
   const cover = active && ABOUT_THIS_BOOK.includes(trigger) && !ax ? active.name : null;
@@ -74,10 +76,17 @@ export default function SignInSheet() {
   }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async (method: AuthMethod, go: () => Promise<Outcome>) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(method);
     setError(null);
-    const r = await go();
-    setBusy(null);
+    let r: Outcome;
+    try {
+      r = await go();
+    } finally {
+      inFlight.current = false;
+      setBusy(null);
+    }
     if (r.ok) router.replace('/sign-in/consent');
     else if (r.error !== 'cancelled') setError(r.error);
   };

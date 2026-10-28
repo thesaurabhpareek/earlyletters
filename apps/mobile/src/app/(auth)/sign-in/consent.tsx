@@ -20,6 +20,10 @@
  *
  * Also the "Finish setting up" target from Family and Account, including for
  * a session whose claim was never answered (the app closed on that screen).
+ * And `/sign-in/consent?step=sensitive`, the target of "Agree and sync" on Account and
+ * the invite sheets for a person who chose "Keep on this phone": the same sensitive-data
+ * step with all its words (LEGAL-REQ-006); Agree records the accept (turnOnSync), and
+ * "Keep on this phone" closes with the earlier decline standing. Never a one-tap consent.
  *
  * Visual (EXPERIENCE_PASS S55): one sheet whose steps replace each other in place, cross-fading over
  * `fadeMs`. Every registered sentence is shown word for word (consent.terms.*, sensitiveConsent.*).
@@ -33,13 +37,14 @@
  * Haptics: `tap` on an answer (the Terms and sensitive-data buttons, the age pills); Continue is silent.
  */
 import { brand } from '@scribe/brand';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { useChildren } from '@/components/child/use-children';
+import { useFontScale } from '@/lib/a11y';
 import { AgeAnswers } from '@/components/gate/age-gate-screen';
 import { Button } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
@@ -60,10 +65,16 @@ const open = (url: string) => void WebBrowser.openBrowserAsync(url);
 const STEP_IN = FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never);
 const STEP_OUT = FadeOut.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never);
 
+/**
+ * The first step arrives with the route's own fade (the (auth) stack's STEP options), so only a step that replaces
+ * another fades here: one fade per change, never two at once.
+ */
 function StepFade({ step, children }: { step: string; children: ReactNode }) {
+  const first = useRef(step);
+  const changed = first.current !== step;
   return (
     <View style={styles.fill}>
-      <Animated.View key={step} entering={STEP_IN} exiting={STEP_OUT} style={StyleSheet.absoluteFill}>
+      <Animated.View key={step} entering={changed ? STEP_IN : undefined} exiting={STEP_OUT} style={StyleSheet.absoluteFill}>
         {children}
       </Animated.View>
     </View>
@@ -75,14 +86,22 @@ type Answer = (step: ConsentStep, accepted: boolean) => Promise<void>;
 export default function ConsentSteps() {
   const auth = useAuth();
   const close = useCloseSheet();
+  const params = useLocalSearchParams<{ step?: string }>();
   const { children, active } = useChildren();
   const [busy, setBusy] = useState<{ step: ConsentStep; accepted: boolean } | null>(null);
+  const [turnOnError, setTurnOnError] = useState<string | null>(null);
+  // Set before the first await, so a second tap in the same frame (Agree, then Keep) records nothing more.
+  const inFlight = useRef(false);
   const [noBook, setNoBook] = useState(false);
   const switching = useRef(false);
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name ?? k.childFallback;
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
+  // "Agree and sync" after an earlier "Keep on this phone": the sensitive-data step, whatever the gate's step list says.
+  const turningOn = params.step === 'sensitive' && s.status === 'ready' && s.sync === 'off';
+  const fromAgreeAndSync = params.step === 'sensitive';
+  const syncMode = s.status === 'ready' ? s.sync : null;
 
   // Done: close, unless a returning person found no book (PRD A F4 "No book here yet"),
   // or the claim screen still waits for an answer.
@@ -92,6 +111,12 @@ export default function ConsentSteps() {
       return;
     }
     if (s.status !== 'ready' || claiming) return;
+    // The sensitive-data step from "Agree and sync" stays until it is answered; once sync is on, it is done.
+    if (turningOn) return;
+    if (fromAgreeAndSync) {
+      close();
+      return;
+    }
     if (getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client || s.sync !== 'on') {
       close();
       return;
@@ -109,12 +134,37 @@ export default function ConsentSteps() {
     };
     // Runs when the state settles; close and children are stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.status, claiming]);
+  }, [s.status, claiming, syncMode]);
 
   const answer: Answer = async (step, accepted) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy({ step, accepted });
-    await auth.recordConsent(step, accepted);
-    setBusy(null);
+    try {
+      await auth.recordConsent(step, accepted);
+    } finally {
+      inFlight.current = false;
+      setBusy(null);
+    }
+  };
+
+  // Agree records the accept and re-reads the gate; Keep on this phone leaves the earlier decline as it is.
+  const answerTurnOn: Answer = async (_step, accepted) => {
+    if (inFlight.current) return;
+    if (!accepted) {
+      close();
+      return;
+    }
+    inFlight.current = true;
+    setBusy({ step: 'sensitive', accepted: true });
+    setTurnOnError(null);
+    try {
+      const r = await auth.turnOnSync();
+      if (!r.ok) setTurnOnError(authErrorMessage(r.error));
+    } finally {
+      inFlight.current = false;
+      setBusy(null);
+    }
   };
 
   if (noBook) {
@@ -174,6 +224,14 @@ export default function ConsentSteps() {
           <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
           <SheetBody muted>{c.help}</SheetBody>
         </SheetFrame>
+      </StepFade>
+    );
+  }
+
+  if (turningOn) {
+    return (
+      <StepFade step="sensitive">
+        <SensitiveStep child={child} busy={busy} error={turnOnError} answer={answerTurnOn} />
       </StepFade>
     );
   }
@@ -264,8 +322,18 @@ function AgeStep({ busy, error, answer }: { busy: boolean; error: string | null;
   );
 }
 
-function SensitiveStep({ child, busy, error, answer }: { child: string; busy: { step: ConsentStep; accepted: boolean } | null; error: string | null; answer: Answer }) {
+function SensitiveStep(props: { child: string; busy: { step: ConsentStep; accepted: boolean } | null; error: string | null; answer: Answer }) {
+  // A new text size measures both answers afresh (a remount), so the pair never keeps an old height.
+  const scale = useFontScale();
+  return <SensitiveAnswers key={scale} {...props} />;
+}
+
+function SensitiveAnswers({ child, busy, error, answer }: { child: string; busy: { step: ConsentStep; accepted: boolean } | null; error: string | null; answer: Answer }) {
   const sc = copy.sensitiveConsent;
+  // The two answers are the same height at every text size: if one wraps (AX sizes), the other grows to match.
+  const [tallest, setTallest] = useState<number>(tokens.target.primary);
+  const measure = (h: number) => setTallest((t) => (h > t + 0.5 ? h : t));
+  const pair = { minHeight: tallest };
   const pick = (accepted: boolean) => {
     haptic('tap');
     void answer('sensitive', accepted);
@@ -275,8 +343,27 @@ function SensitiveStep({ child, busy, error, answer }: { child: string; busy: { 
       footer={
         <>
           {/* The answer being recorded keeps its look with a spinner inside; the other waits. */}
-          <Button size="lg" fullWidth loading={busy?.accepted === true} disabled={busy?.accepted === false} label={sc.agreeButton} onPress={() => pick(true)} />
-          <Button size="lg" fullWidth variant="outline" loading={busy?.accepted === false} disabled={busy?.accepted === true} label={sc.declineButton} onPress={() => pick(false)} />
+          <Button
+            size="lg"
+            fullWidth
+            style={pair}
+            onLayout={(e) => measure(e.nativeEvent.layout.height)}
+            loading={busy?.accepted === true}
+            disabled={busy?.accepted === false}
+            label={sc.agreeButton}
+            onPress={() => pick(true)}
+          />
+          <Button
+            size="lg"
+            fullWidth
+            variant="outline"
+            style={pair}
+            onLayout={(e) => measure(e.nativeEvent.layout.height)}
+            loading={busy?.accepted === false}
+            disabled={busy?.accepted === true}
+            label={sc.declineButton}
+            onPress={() => pick(false)}
+          />
         </>
       }>
       <SheetTitle>{sc.title}</SheetTitle>

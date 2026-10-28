@@ -29,7 +29,7 @@ import { looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
-import { useAuth } from '@/lib/auth/session-provider';
+import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
@@ -67,6 +67,8 @@ export default function CodeStep() {
   const sentAt = auth.state.status === 'awaitingCode' ? auth.state.sentAt : null;
   const [now, setNow] = useState(Date.now());
   const submitted = useRef('');
+  // Set before the first await: a second submit in the same frame (auto-submit and Continue) asks once.
+  const inFlight = useRef(false);
   const field = useRef<TextInput>(null);
 
   // Re-render once the minute has passed so "Send a new email" turns on (no ticking numbers).
@@ -83,13 +85,19 @@ export default function CodeStep() {
   const paused = error === 'code_paused';
 
   const verify = async (value: string) => {
-    if (busy || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
+    if (busy || inFlight.current || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
+    inFlight.current = true;
     submitted.current = value;
     setBusy(true);
     setError(null);
     setNote(null);
-    const r = await auth.verifyEmailCode(address, value);
-    setBusy(false);
+    let r: Outcome;
+    try {
+      r = await auth.verifyEmailCode(address, value);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
     if (r.ok) {
       setPendingEmail(null);
       router.replace('/sign-in/consent');
@@ -110,14 +118,21 @@ export default function CodeStep() {
   };
 
   const resend = async () => {
+    if (inFlight.current) return;
     if (!looksLikeEmail(address)) {
       setError('invalid_email');
       return;
     }
+    inFlight.current = true;
     setBusy(true);
     setError(null);
-    const r = await auth.sendEmailLink(address);
-    setBusy(false);
+    let r: Outcome;
+    try {
+      r = await auth.sendEmailLink(address);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
     if (r.ok) {
       setPendingEmail(address);
       setNow(Date.now());
