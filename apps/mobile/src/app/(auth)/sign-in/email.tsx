@@ -54,7 +54,10 @@ export default function EmailStep() {
 
   return (
     <SheetFrame
-      onBack={busy ? undefined : () => router.back()}
+      // Back stays in place while sending (nothing moves); it waits until the send has an answer.
+      onBack={() => {
+        if (!busy) router.back();
+      }}
       footer={<Button size="lg" fullWidth variant={ready ? 'primary' : 'outline'} loading={busy} disabled={value.length === 0} label={e.send} onPress={() => void send()} />}>
       <SheetTitle>{e.title}</SheetTitle>
       <TextField
