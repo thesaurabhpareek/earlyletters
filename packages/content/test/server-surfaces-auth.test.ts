@@ -42,9 +42,10 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.notConfigured': 'Signing in is not available right now. Your letters are safe on this phone.',
   'errors.network': 'Your letters are safe on this phone. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
-  'errors.code_paused': 'You can try a code again in 15 minutes.',
-  'errors.rate_limited': 'Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
-  'errors.provider': 'That did not work this time. Try again, or try another way.',
+  // Led with "Your letters are safe." by the coordinator's ruling on the spec-owner note (28 Oct); the table's words follow.
+  'errors.code_paused': 'Your letters are safe. You can try a code again in 15 minutes.',
+  'errors.rate_limited': 'Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
+  'errors.provider': 'Your letters are safe. That did not work this time. Try again, or try another way.',
   'errors.session_expired': 'Your letters are safe on this phone. Sign in again to keep sharing them.',
   'errors.consent_unavailable': 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
   'errors.unknown': 'That did not work this time. Your letters are safe on this phone.',
@@ -76,7 +77,7 @@ const KEPT: Record<string, string> = {
   'sheet.lastMethod.apple': 'Last time you used Apple.',
   'errors.wrong_code': "That code didn't match. Check the newest email, or send a new one.",
   'errors.invalid_email': "That email doesn't look quite right.",
-  'errors.not_available': "This way of signing in isn't available right now. Try another way.",
+  'errors.not_available': "Your letters are safe. This way of signing in isn't available right now. Try another way.",
   'errors.under_18': '{app} is currently for adults 18 and over.',
   'email.title': 'Continue with email',
   'email.label': 'Email',
@@ -204,23 +205,27 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     expect(authCopy.sheet.bodies.settings).toBe(authCopy.sheet.bodies.first_letter);
   });
 
-  it('leads with the reassurance for the offline, lost-session and setup errors; has it in unknown and the kill path (S52)', () => {
-    const SAFE = 'Your letters are safe on this phone.';
-    for (const kind of ['network', 'session_expired', 'consent_unavailable'] as const) expect(authCopy.errors[kind].startsWith(SAFE), kind).toBe(true);
-    // The table's own words for `unknown` put "That did not work this time." first; the reassurance is its second sentence.
-    expect(authCopy.errors.unknown.startsWith(SAFE)).toBe(false);
-    expect(authCopy.errors.unknown).toContain(SAFE);
-    expect(authCopy.sheet.notConfigured).toContain(SAFE);
-    // The rest say nothing about the letters, as the table words them. The first six follow a failed attempt and are
-    // listed for the spec owner (PR #310) to rule what "failed attempt" covers; the other four are a typo in the
-    // address, the age answer and the two refused links. A change to either list shows here.
-    const without = Object.entries(authCopy.errors)
-      .filter(([, text]) => !text.includes(SAFE))
-      .map(([kind]) => kind)
-      .sort();
-    const FOR_THE_SPEC_OWNER = ['provider', 'not_available', 'rate_limited', 'expired', 'code_paused', 'wrong_code'];
-    const NOT_A_FAILED_ATTEMPT = ['invalid_email', 'under_18', 'other_phone', 'already_signed_in'];
-    expect(without).toEqual([...FOR_THE_SPEC_OWNER, ...NOT_A_FAILED_ATTEMPT].sort());
+  it('leads with the reassurance after every service- or network-caused failure; input errors keep the table words (S52)', () => {
+    // The rule (coordinator's ruling on #310's spec-owner note, 28 Oct; the founder may reverse it): an error the
+    // person did not cause (offline, the service, a lost session, setup) says the letters are safe as its first
+    // sentence. An error the person can fix by typing (a wrong or expired code, an address) keeps the table's words.
+    // `unknown` keeps the reassurance second. Every error is in exactly one list, so a new key must be placed.
+    const SAFE = /^Your letters are safe(?: on this phone)?\./;
+    const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'code_paused'];
+    const SECOND = ['unknown'];
+    const INPUT = ['wrong_code', 'expired', 'invalid_email'];
+    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'already_signed_in'];
+    const errors = authCopy.errors as Record<string, string>;
+    expect(Object.keys(errors).sort()).toEqual([...LEADS, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
+    for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);
+    for (const kind of SECOND) {
+      expect(errors[kind], kind).not.toMatch(SAFE);
+      expect(errors[kind], kind).toMatch(/\. Your letters are safe on this phone\.$/);
+    }
+    for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe/);
+    // The four the ruling changed keep their table words after the new first sentence.
+    expect(errors.provider).toBe('Your letters are safe. That did not work this time. Try again, or try another way.');
+    expect(authCopy.sheet.notConfigured).toContain('Your letters are safe on this phone.');
   });
 
   it('the age step has only the question and its two answers (S55, LEGAL-REQ-002: nothing explains or hints)', () => {
