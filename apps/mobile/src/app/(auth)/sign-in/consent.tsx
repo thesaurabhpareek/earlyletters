@@ -152,6 +152,9 @@ export default function ConsentSteps() {
   const answerTurnOn: Answer = async (_step, accepted) => {
     if (inFlight.current) return;
     if (!accepted) {
+      // Keep closes the sheet with the decline standing. The guard stays set while it closes, so an Agree
+      // tapped in the same frame records nothing.
+      inFlight.current = true;
       close();
       return;
     }
