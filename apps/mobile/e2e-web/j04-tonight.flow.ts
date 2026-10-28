@@ -108,8 +108,8 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await btn(app, 'Keep it here for now').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
-  // Until local schema v8 (#182) gives the draft its `held` field, a held typed letter is a typed draft ("Pick it
-  // up"); with it, "Waiting to be kept." and "Keep it" (S09). Either way it is one card, with the words as typed.
+  // "Keep it here for now" marks the draft held (store.holdDraft, P6a), so its one card says "Waiting to be kept." and
+  // "Keep it" (S09), with the words as typed; j06 asserts those words.
   await expect(app.getByRole('button', { name: /You waved at the dog on the corner\./ })).toHaveCount(1);
-  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Tonight, and it does: its own card with the words as typed. With the held-drafts schema (#182) the card says "Waiting to be kept." and "Keep it".');
+  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Tonight, and it does: its own card, with the words as typed, says "Waiting to be kept." and "Keep it".');
 });

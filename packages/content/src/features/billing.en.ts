@@ -46,7 +46,8 @@ export const billingCopy = {
     body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
     // heldNote, heldNoteSynced and offline promise the letter "waits on Tonight": P3 shows a card on Tonight for every
     // draft (spec S09, S22). Written to the register row "Keep step and held letter" (#163, 3.1.0); counsel reads them
-    // (C10). heldNoteSynced is the signed-in line; P6's Keep sheet shows it once sign-in is on.
+    // (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing shows it until counsel has read it
+    // (apps/mobile plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED).
     heldNote: 'This one waits on this phone, on Tonight, exactly as it is, for as long as you like.',
     heldNoteSynced: 'This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.',
     // The chip on the held letter's own card at the top of the sheet.
