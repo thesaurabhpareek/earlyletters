@@ -520,8 +520,8 @@ let packMissing = false;
     /* treated as not published */
   }
   if (!manifestPublished) {
-    fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release\`, then \`upload\` (docs/ops/PACKS_HOSTING.md), or the host answers 404 and nothing downloads. ${d115}`);
-    stepFourMissing.push('no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release` and `upload`)');
+    fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream\`, then load r2.env and run \`upload\` (docs/ops/PACKS_HOSTING.md steps 5 to 7), or the host answers 404 and nothing downloads. ${d115}`);
+    stepFourMissing.push('no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release --key-file <signing.env> --models upstream` and `upload`, PACKS_HOSTING steps 6 and 7)');
   } else {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
     if (keySet) step(4, 'check', 'a manifest is in the repo; check the R2 bucket serves it');

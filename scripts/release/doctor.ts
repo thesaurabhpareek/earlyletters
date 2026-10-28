@@ -108,8 +108,10 @@ export function repoFindings(files: { appConfig: string; easJson: string; keysTs
   const add = (level: Level, message: string) => out.push({ level, area: 'repo', message });
   const hasProject = /projectId\s*:\s*['"][0-9a-f-]{36}['"]/i.test(files.appConfig);
   add(hasProject ? 'PASS' : 'FAIL', hasProject ? 'app.config.ts names an Expo project id (extra.eas.projectId).' : 'app.config.ts has no extra.eas.projectId. Create the project (expo.dev, or `npx eas-cli@24.10.0 init` in apps/mobile) and send the id; S20 adds it (TESTFLIGHT.md step 3; FT-17, BL-339).');
-  // eas-cli 24.10.0 (getProjectIdAsync.js) asks for `owner` only below SDK 53, robot token or not; this app is SDK 57.
-  // So a missing owner is a WARN, with or without --live. When it is set, eas-cli refuses a mismatch.
+  // eas-cli 24.10.0 (getProjectIdAsync.js): once extra.eas.projectId is set, it asks for `owner` only below SDK 53,
+  // robot token or not (this app is SDK 57), and refuses an owner that does not match the project's. With no project
+  // id, a robot token without `owner` throws on any SDK (chooseAccountNameForEASProjectAsync), but the project id
+  // line above is a FAIL then anyway. So a missing owner is a WARN, with or without --live.
   const hasOwner = /\bowner\s*:\s*['"][^'"]+['"]/.test(files.appConfig);
   add(hasOwner ? 'PASS' : 'WARN', hasOwner ? 'app.config.ts names the Expo owner.' : 'app.config.ts has no `owner`. Optional for SDK 53 and later in eas-cli 24.10.0 (this app is SDK 57); if it is set, it must match the Expo account that owns the project.');
 

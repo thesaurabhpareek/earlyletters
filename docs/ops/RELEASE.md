@@ -159,7 +159,7 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 - **No push key.** The app schedules only local notifications (reminders and plan reminders) and never asks for a push token (no `getDevicePushTokenAsync` or `getExpoPushTokenAsync` in `apps/mobile`). expo-notifications' own plugin, which prebuild applies because the package is installed, writes `aps-environment`; `app.config.ts` removes it, so no remote push entitlement is configured (F: `expo prebuild` and `expo config --type introspect` show no `aps-environment`; `apps/mobile/test/config.test.ts` checks the introspected entitlements of every profile and the preflight checks the generated ones; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so an interactive `eas build` does not offer to create a push key (eas-cli 24.10.0, `IosCredentialsProvider.js`); if it ever asks "Would you like to set up Push Notifications for your project?", answer No.
 - **Internal builds** (`development`) are ad hoc: each iPhone is registered first (`npx eas-cli@24.10.0 device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
 - **App Store Connect API key for `eas submit`:** made through `eas credentials` (App Store Connect: Manage your API Key) so later submissions are non-interactive (V: Expo "Submit to the Apple App Store"); creating team keys is an Account Holder or Admin action (A). It never leaves EAS and the founder's password manager.
-- **The Sign in with Apple `.p8` key** used by the purge worker (and, from v1.1, by the `apple-token` Edge Function parked on Line B, G-03) is a different key with a different job (AUTH_SETUP 2.4, SECURITY.md 5; Line B's AUTH_SETUP 2.7 describes `apple-token`). It is not a signing credential.
+- **The Sign in with Apple `.p8` key** used by the purge worker and by the `apple-token` Edge Function (built in #139, G-03) is a different key with a different job (AUTH_SETUP 2.4 and 2.7, SECURITY.md 5). It is not a signing credential.
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
 
 ## 5. TestFlight
@@ -259,18 +259,18 @@ No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 ## 9. Packs, remote config and content publishing
 
-D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below are `publish.ts`'s development-only path, which overwrites without `upload`'s checks. The secret key lives only in the founder's password manager.
+D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below follow its steps 1, 6 and 7. The primary's secret key lives in the founder's password manager and in the key file of PACKS_HOSTING step 1, outside every checkout.
 
 1. Once: `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`; both public key lines go into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
-2. Each publish, on the founder's machine:
+2. Each publish, on the founder's machine (PACKS_HOSTING steps 6 and 7):
    ```bash
    # the key file of PACKS_HOSTING step 1, outside every checkout; never `export` the key (it stays in ~/.zsh_history)
-   npx tsx scripts/packs/publish.ts packs   --key-file ~/.config/early-letters/signing.env --base-url https://packs.<Q-001 host> --min-app 1.0.0
-   npx tsx scripts/packs/publish.ts config  --key-file ~/.config/early-letters/signing.env [--kill <switch>] [--unkill <switch>]
-   npx tsx scripts/packs/publish.ts content --key-file ~/.config/early-letters/signing.env
+   npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream
+   set -a; . ~/.config/early-letters/r2.env; set +a        # the upload credentials, PACKS_HOSTING step 5
+   npx tsx scripts/packs/publish.ts upload
    ```
-   The script validates every text pack, writes `dist/packs/`, signs the manifest, config and content, checks each signature the way a phone does, bumps each document's version by one and rewrites `supabase/functions/{config,content}/published.ts`. It uploads and deploys nothing; it prints the commands (F: `scripts/packs/publish.ts`).
-3. Run the printed upload commands (`wrangler r2 object put` up to 300 MB, `rclone copyto` above, F) and deploy: `npx supabase functions deploy config --no-verify-jwt --use-api` and the same for `content`.
+   `release` writes `dist/release/`, signs the manifest, the remote config (from `scripts/packs/remote-config.json`, where the kill switches are set) and the content bundle, checks each signature the way a phone does, and bumps the versions in `supabase/functions/{config,content}/published.ts`; during the alpha, skip item 3 of its printed next steps (PACKS_HOSTING step 6). `upload` sends packs first and the manifest last, overwrites and deletes nothing, then runs `verify` against the host (F: `scripts/packs/publish.ts`).
+3. Not this path: `publish.ts packs`, `config`, `content` and `all` are development only; they print `wrangler` commands that overwrite without `upload`'s checks (the header of `scripts/packs/publish.ts`).
 4. Commit the changed `published.ts` and `scripts/packs/remote-config.json` in a PR the same day: git history is the audit log of what was served (C-NFR-009).
 5. Staging first, then production, with one phone checking each (DEVICE_TEST_PLAN S1-16 for packs; a kill switch reaches an open app within about 5 minutes, ADR 0016 6).
 6. Kill switches available today (F: `remote-config.json`): `sync`, `invites`, `photos`, `packDownloads`, `serverContent`. `readTogetherFreeSessions` may only be raised (D-009). `forceReauthEpoch` signs everyone out once (G-06; use only for a security incident).

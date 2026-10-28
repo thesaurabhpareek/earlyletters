@@ -21,12 +21,12 @@ Rules that never bend:
 | `POSTHOG_PERSONAL_API_KEY` | analytics-forget | PostHog > Settings > Personal API keys > Create: scope **person: write** only, limited to the Early Letters project (Verified: bulk delete needs `person:write`) | Yearly |
 | `POSTHOG_PROJECT_ID` | analytics-forget | The numeric project id (Project settings) | n/a |
 | `POSTHOG_HOST` | analytics-forget | Optional; default `https://us.posthog.com` (US Cloud private API, Verified) | n/a |
-| `APPLE_TEAM_ID` | purge-worker | 10 characters, Apple Developer > Membership | n/a |
-| `APPLE_SIGNIN_KEY_ID` | purge-worker | 10 characters, the Sign in with Apple key (section 5) | With the key |
-| `APPLE_SIGNIN_PRIVATE_KEY` | purge-worker | Full contents of `AuthKey_<KEYID>.p8`, including the BEGIN and END lines. Literal newlines or `\n` both work | With the key |
-| `APPLE_SERVICES_ID` | purge-worker | Only if web or Android Apple sign-in is used (AUTH_SETUP 2.3); otherwise unset | n/a |
+| `APPLE_TEAM_ID` | purge-worker and apple-token | 10 characters, Apple Developer > Membership | n/a |
+| `APPLE_SIGNIN_KEY_ID` | purge-worker and apple-token | 10 characters, the Sign in with Apple key (section 5) | With the key |
+| `APPLE_SIGNIN_PRIVATE_KEY` | purge-worker and apple-token | Full contents of `AuthKey_<KEYID>.p8`, including the BEGIN and END lines. Literal newlines or `\n` both work | With the key |
+| `APPLE_SERVICES_ID` | purge-worker and apple-token (each adds it to the client ids it accepts) | Only if web or Android Apple sign-in is used (AUTH_SETUP 2.3); otherwise unset | n/a |
 | `APPLE_EXTRA_CLIENT_IDS` | neither function yet | Leave unset. Read by neither apple-token nor purge-worker until both change together, so no token is stored that deletion cannot revoke (AUTH_SETUP 2.7; apple-token's "same list" test) | n/a |
-| `SUPABASE_ANON_KEY` | invite-redeem, subscription-status | Injected by Supabase automatically; do not set. The publishable key, used as `apikey` when checking a session | With the publishable key |
+| `SUPABASE_ANON_KEY` | invite-redeem, subscription-status, apple-token | Injected by Supabase automatically; do not set. The publishable key, used as `apikey` when checking a session | With the publishable key |
 | `INVITE_CODE_PEPPER` | invite-redeem (and the code-registration route once built) | `openssl rand -base64 48` (at least 32 characters). HMAC key for invite codes; the function fails closed without it (BL-334). Never in the database or the app | Never while codes are live (stored HMACs must stay comparable); on suspicion, rotate and let open codes expire (7 days) |
 | `RATE_SUBJECT_SECRET` | invite-redeem | `openssl rand -base64 48` (at least 32 characters). HMAC key for rate-limit subjects (person, install, IP), rotated daily by construction; the function fails closed without it | On suspicion (counters only last an hour) |
 | `CLIENT_IP_HEADER` | invite-redeem | The one header the platform sets and overwrites with the caller's address (one of `cf-connecting-ip`, `x-real-ip`, `fly-client-ip`, `true-client-ip`). Check on the first staging deploy by sending a request with each header forged and seeing which value survives. Unset skips the per-IP limit (logged `no_address`) | When the platform changes |
@@ -37,6 +37,8 @@ Rules that never bend:
 | `PURGE_WORKER_BUDGET_MS` | purge-worker | Optional; default 110000. Raise toward 380000 only on a paid plan (wall clock limit is an Assumption) | n/a |
 
 The worker refuses to run (HTTP 500, alert in logs as `config`) until the four required values exist. Apple steps retry and raise an `apple_config` alert while a stored Apple token exists and the Apple values are missing.
+
+apple-token answers 503 (unavailable), and its health route 503, until `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY` and one `TOKEN_KEK_V<n>` are set (`supabase/functions/apple-token/handler.ts` `readAppleTokenConfig`).
 
 ### 1.2 Supabase Vault (SQL editor; used only by the cron jobs)
 
