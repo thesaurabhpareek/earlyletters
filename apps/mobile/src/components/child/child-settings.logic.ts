@@ -12,8 +12,8 @@
  *
  * "Write this book together". With server features off, the coming-soon row as today. With them on, one parent: the
  * row opens the invite sheet; two parents: its value is the other parent's signature ("Papa") and it opens the Family
- * tab. The label is `familyCopy.soon.settingsRow` until P8 adds `familyCopy.bookRow.label` (the same words) and asks
- * for the one-line switch.
+ * tab. The screen labels it `familyCopy.bookRow.label` with server features on and `familyCopy.soon.settingsRow` with
+ * them off (the same words, S46).
  */
 import { dueDatePassed } from '@scribe/core';
 import { familyCopy } from '@scribe/content';

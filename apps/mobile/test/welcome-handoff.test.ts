@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { welcomeMayLeave } from '../src/components/family/welcome-handoff.logic';
+import { firstRunWelcome, welcomeMayLeave } from '../src/components/family/welcome-handoff.logic';
 
 const code = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -38,5 +38,16 @@ describe('[5.8 rows 12 and 13] the welcome hands over only while it, or the sign
     for (const step of ['promise', 'child', 'signsAs', 'finish']) {
       for (const path of ['/onboarding', '/sign-in', '/invite']) expect(welcomeMayLeave(step, path), `${step} ${path}`).toBe(false);
     }
+  });
+});
+
+describe('[S59] the join sheet knows whether the welcome step is under it (lens A on #314)', () => {
+  it('first run says when its welcome step is the one showing, and clears it when it leaves', () => {
+    expect(firstRunWelcome.showing()).toBe(false);
+    firstRunWelcome.set(true);
+    expect(firstRunWelcome.showing()).toBe(true);
+    firstRunWelcome.set(false);
+    expect(firstRunWelcome.showing()).toBe(false);
+    expect(code('app/onboarding.tsx')).toMatch(/useEffect\(\(\) => \{\s*firstRunWelcome\.set\(step === 'welcome'\);\s*return \(\) => firstRunWelcome\.set\(false\);\s*\}, \[step\]\);/);
   });
 });

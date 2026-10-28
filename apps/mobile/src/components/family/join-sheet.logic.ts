@@ -65,14 +65,22 @@ export function joinedBody(inviter: string | null | undefined): string {
 export const JOINED_LANDING = '/book' as const;
 
 /**
- * How "Open the book" gets there, from the routes under the sheet. Over first run's welcome (a fresh install), the
- * sheet only closes: the welcome hands over to the Book itself and leaves the stack (welcome-handoff.logic.ts), so
- * nothing of first run stays under the tabs. Over the tabs (a parent who already has a book), the sheet dismisses to
- * the Book.
+ * How "Open the book" gets there, from the routes under the sheet and whether first run's welcome step is the one
+ * showing. Over the welcome (a fresh install), the sheet only closes: the welcome hands over to the Book itself and
+ * leaves the stack (welcome-handoff.logic.ts), so nothing of first run stays under the tabs. Over a later first-run
+ * step (an invite link opened part-way through first run), that step never hands over, so the sheet dismisses to
+ * the Book, as it does over the tabs (a parent who already has a book).
  */
-export function openLanding(routesUnderSheet: readonly string[]): 'welcome' | 'book' {
-  return routesUnderSheet.includes('onboarding') ? 'welcome' : 'book';
+export function openLanding(routesUnderSheet: readonly string[], welcomeShowing: boolean): 'welcome' | 'book' {
+  return routesUnderSheet.includes('onboarding') && welcomeShowing ? 'welcome' : 'book';
 }
+
+/**
+ * VoiceOver on the joined view (critics' pass S5): focus moves to the heading 350 ms after it shows (lib/a11y.ts
+ * useFocusOnMount), and VoiceOver starts reading it. The line that the book is on its way is spoken after that, queued
+ * behind the heading, so the focus move does not cut it off.
+ */
+export const SPEAK_AFTER_FOCUS_MS = 700;
 
 /**
  * Try again after a failure. A look (peek) that failed looks again, so its old answer is dropped; a join (accept)
