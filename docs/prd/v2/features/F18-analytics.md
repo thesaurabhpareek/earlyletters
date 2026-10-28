@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Release | v1.0 gate (the learning loop runs from the first beta cohort; its absence never blocks a release) |
+| Release | v1.1 or later (D-124, 28 Oct 2026: D-095 stands, so `EXPO_PUBLIC_ANALYTICS` is off for the whole 1.0 line and the P0 rows below bind from the release that turns analytics on). Before that: the learning loop runs from tester feedback and consent-free App Store Connect numbers; its absence never blocks a release |
 | Priority and rank | P0, rank 19 (`05-feature-map.md` section 2) |
 | Personas | P1, P2 (as people who choose to share or not); the founder and agents as readers |
 | Existing IDs | PRD-REQ-001, PRD-REQ-016, PRD-REQ-017, PRD-REQ-018, C-REQ-034, C-NFR-005, C-NFR-009, B-NFR-001, A-NFR-002, A-NFR-012, LEGAL-REQ-003, LEGAL-REQ-012, LEGAL-REQ-014, LEGAL-REQ-015, LEGAL-REQ-016, LEGAL-REQ-017, LEGAL-REQ-029, LEGAL-REQ-031, LEGAL-REQ-033, LEGAL-REQ-043, DATA-REQ-004, DATA-REQ-033, DATA-REQ-062, K-01, D-003, D-070, D-080, D-081, ADR 0008, BL-020, BL-021, BL-023, BL-024, BL-235, BL-239, BL-250, BL-251, BL-252, BL-319 |
