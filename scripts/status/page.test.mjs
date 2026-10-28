@@ -126,7 +126,7 @@ test("collect only reads, and the page fits in 15 lines", () => {
   assert.match(text, /- #50 database: PASS on head; PASS WITH NOTES on head\.\n/);
   assert.match(text, /- #52 payments, release config: PASS on an older head \(fewer than 2 on the merged head\)\./);
   assert.match(text, /Open PRs older than 14 days: 2\.$/);
-  assert.doesNotMatch(text, /[–—‘’“”…]/);
+  assert.doesNotMatch(text, /[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/);
 });
 
 test("extra lines hook: at most EXTRA_SLOTS, total never over 15", () => {
