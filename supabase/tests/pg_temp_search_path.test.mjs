@@ -5,6 +5,8 @@
 //      search_path with pg_catalog first and pg_temp last, or empty. The same check runs on role defaults.
 //   2. The shadowing probe itself lives in v1_gate_search_path.test.mjs (a temp table shadows child_members).
 //   3. After Erase now, the photo cannot be put back under the erased letter's path.
+//   4. After purge_due trims purge_ledger (60 days), the author's own erasure record alone still refuses it,
+//      and the co-parent and a stranger still get false.
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
@@ -133,7 +135,7 @@ check('the policy texts carry the purged check',
   (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_insert', 'entry_photos_author_update')
                and pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%'`)).rows[0].n === 2);
 
-// The helper does not tell anyone else whether a letter was erased, even from their own folder (D2).
+// The helper does not tell anyone else whether a letter was erased, even from their own folder (ruling D2 of the CTO review, #325).
 const own = (u, id) => `${CHILD}/${u}/${id}.jpg`;
 check('the other parent and a stranger get false for the author\'s erased path; the author gets true',
   (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false && (await purgedFn(A, p1)) === true);
@@ -148,11 +150,35 @@ const LH = id7();
 await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'erased')`, [LH, A, CHILD]);
 check('an \'erased\' held-draft marker answers true for its author and false for the co-parent',
   (await purgedFn(A, own(A, LH))) === true && (await purgedFn(B, own(B, LH))) === false);
-// Ledger-only id (restore replay: no author trail anywhere). Documented residual: any signed-in person in
-// their own folder gets true. The author is still refused, which is what the ledger is for.
+// Held-draft marker 'discarded' is not an erasure: the draft was let go, so its id is not purged and the
+// photo of a later letter under that id still uploads. Made the real way (held.upsert, then held.discard),
+// which also ledgers the id as 'held_draft', not 'entry'. Without the 'erased' condition on the marker
+// branch the helper would answer true here and wrongly refuse the photo.
+const LD = id7();
+const held = (id) => ({
+  id, child_id: CHILD, kind: 'held_letter', capture_mode: 'typed', created_at: NOW, occurred_on: '2026-10-02',
+  occurred_precision: 'day', base_direction: 'ltr', in_book_choice: true, typed_text: 'You hummed all the way home.',
+  final_text: null, machine_edits: null, edit_level: null, engine_version: 5, audio_kept_on_device: true,
+});
+await push(A, [op('held.upsert', LD, held(LD))]);
+const heldText = (await sys(`select text_xid::text t from held_drafts where id = $1`, [LD])).rows[0]?.t;
+const discarded = (await push(A, [{ ...op('held.discard', LD), base: heldText }])).results[0];
+check('held.discard lets the draft go: a \'discarded\' marker for its author and no \'entry\' ledger row',
+  discarded.ok === true && !discarded.kept && !discarded.missing
+  && (await sys(`select gone from held_drafts_gone where id = $1 and author_id = $2`, [LD, A])).rows[0]?.gone === 'discarded'
+  && (await sys(`select 1 from purge_ledger where entity_type = 'entry' and entity_id = $1`, [LD])).rows.length === 0);
+check('a \'discarded\' held-draft marker does not make the helper answer true, and the photo under that id still uploads',
+  (await purgedFn(A, own(A, LD))) === false && (await codeOf(() => upload(A, own(A, LD)))) === 'ok');
+// Ledger-only id: purge_ledger holds the id and nobody holds any other trail of it. Besides a restore replay
+// (the restored database never held the letter), an ordinary whole-book purge, an account purge and the purge
+// of a non-kept author's letters in a kept-book purge leave this state: entry_erasures goes with the book and
+// the author, purge_ledger keeps the id for 60 days. (Made here by inserting the ledger row.) Documented
+// residual: for up to 60 days any signed-in person who already knows the uuid gets true for a path in their
+// own folder, no more than sync_push entry.upsert with that id already tells them (SCDEL, gone: true).
+// The author is still refused, which is what the ledger is for.
 const LR = id7();
 await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', $1)`, [LR]);
-check('(residual, documented) a ledger-only id answers true to the author and to any signed-in person in their own folder',
+check('(residual, documented) a ledger-only id (restore replay, whole-book or account purge) answers true to the author and to any signed-in person in their own folder, until the ledger is trimmed',
   (await purgedFn(A, own(A, LR))) === true && (await purgedFn(B, own(B, LR))) === true);
 check('a ledger-only id is still refused to the author on upload (42501)', (await codeOf(() => upload(A, own(A, LR)))) === '42501');
 // Another author's trail beats the bare ledger: once B has a record of the id, A is not told it is purged.
@@ -161,5 +187,34 @@ await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', $1
 await sys(`insert into sync_private.entry_erasures (entry_id, child_id, author_id) values ($1, $2, $3)`, [LT, CHILD, B]);
 check('an id erased by B answers true for B only (not A, not C)',
   (await purgedFn(B, own(B, LT))) === true && (await purgedFn(A, own(A, LT))) === false && (await purgedFn(C, own(C, LT))) === false);
+
+// --- 4. The ledger is trimmed at 60 days; the author's own erasure record keeps the answer ---------------
+// purge_due deletes purge_ledger rows older than 60 days. entry_erasures stays for as long as the book and the
+// author exist. Every check above also had a ledger row, so the entry_erasures branch of the helper could be
+// deleted and all of them still passed. These run last: purge_due at +61 days touches other test state.
+const inLedger = async (id) => (await sys(`select 1 from purge_ledger where entity_type = 'entry' and entity_id = $1`, [id])).rows.length;
+const inErasures = async (id, who) => (await sys(`select 1 from sync_private.entry_erasures where entry_id = $1 and author_id = $2`, [id, who])).rows.length;
+check('before the trim: the erased ids L1 (author A) and LT (author B) are in purge_ledger and in their authors\' entry_erasures',
+  (await inLedger(L1)) === 1 && (await inErasures(L1, A)) === 1 && (await inLedger(LT)) === 1 && (await inErasures(LT, B)) === 1);
+await sys(`select public.purge_due(now() + interval '61 days')`);
+check('purge_due at 61 days trims the ledger rows (L1, LT and the ledger-only LR) and keeps the authors\' erasure records',
+  (await inLedger(L1)) === 0 && (await inLedger(LT)) === 0 && (await inLedger(LR)) === 0
+  && (await inErasures(L1, A)) === 1 && (await inErasures(LT, B)) === 1);
+check('with the ledger row gone, the author still gets true for the erased id (every extension), from the author\'s own record alone',
+  (await purgedFn(A, p1)) === true && (await purgedFn(A, `${CHILD}/${A}/${L1}.png`)) === true);
+check('with the ledger row gone, the author still cannot put the photo back, by upload or by rename (42501)',
+  (await codeOf(() => upload(A, p1))) === '42501' && (await codeOf(() => upload(A, `${CHILD}/${A}/${L1}.heic`))) === '42501'
+  && await (async () => {
+    const t = `${CHILD}/${A}/${id7()}.jpg`;
+    await upload(A, t);
+    return (await codeOf(() => rename(A, t, p1))) === '42501';
+  })());
+check('with the ledger row gone, the co-parent and a stranger still get false for the author\'s path and for the id in their own folders',
+  (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false
+  && (await purgedFn(B, own(B, L1))) === false && (await purgedFn(C, own(C, L1))) === false);
+check('with the ledger row gone, an id erased by B answers true for B only (not A, not C), from B\'s own record alone',
+  (await purgedFn(B, own(B, LT))) === true && (await purgedFn(A, own(A, LT))) === false && (await purgedFn(C, own(C, LT))) === false);
+check('with the ledger row gone, a ledger-only id answers false to everyone: the residual ends with the 60 day trim',
+  (await purgedFn(A, own(A, LR))) === false && (await purgedFn(B, own(B, LR))) === false && (await purgedFn(C, own(C, LR))) === false);
 
 done();
