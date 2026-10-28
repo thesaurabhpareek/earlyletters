@@ -384,10 +384,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         {spoken && <AudioPlayer entryId={entry.id} />}
 
         {own && words === 'waiting' && <WaitingCard entry={entry} />}
-        {own && words === 'words' && unread && (
+        {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
           <ReadItBackCard
+            typed={typedWords}
             onRead={() => {
               haptic('tap');
+              // Words waiting for review count at Review's Keep step, never here, and this page never shows a Plus
+              // sheet (M17, F14-REQ-037; F14 6.1 :129, 6.4): Review opens for this letter. Its Keep clears the card.
+              if (entry.wordsUnreviewed) return router.push({ pathname: '/review', params: { entryId: entry.id } });
               clearReadItBack(entry.id);
               setUnread(false);
             }}
@@ -571,7 +575,11 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
           disabled={!text.trim()}
           onPress={() => {
             haptic('tap');
-            if (setTypedWordsForWaitingEntry(entryId, text)) onClose();
+            // The typed words become the letter's at once, so they are never lost, and wait for review: they count at
+            // Review's Keep step for this letter, never here (M17, F14-REQ-037; F14 6.1 :129, 6.2 B2 step 4).
+            if (!setTypedWordsForWaitingEntry(entryId, text)) return;
+            onClose();
+            router.push({ pathname: '/review', params: { entryId } });
           }}
           testID="letter.writeWords.save"
         />
@@ -583,14 +591,16 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
 
 /**
  * "Words are ready. Read it back." The words arrived after the letter was saved, so they are exactly as said and
- * nothing was fixed unread (D-086). Reading them back is the parent's step; the card then goes away.
+ * nothing was fixed unread (D-086). Reading them back is the parent's step. While they wait for review (Entry
+ * .wordsUnreviewed) it opens Review for the letter, whose Keep step keeps them and takes the card away. Words the
+ * parent typed are not "as you said them", so that line is left out for them.
  */
-function ReadItBackCard({ onRead }: { onRead: () => void }) {
+function ReadItBackCard({ onRead, typed }: { onRead: () => void; typed: boolean }) {
   const w = wordsCopy.waiting;
   return (
     <View className="gap-3" accessibilityLiveRegion="polite" testID="letter.readItBack">
       <Text variant="headline">{w.readyBody}</Text>
-      <Text variant="footnote">{w.arrivedNote}</Text>
+      {!typed && <Text variant="footnote">{w.arrivedNote}</Text>}
       <Button size="md" label={w.readItBackButton} onPress={onRead} testID="letter.readItBack.done" />
     </View>
   );

@@ -13,10 +13,11 @@
  *   EntryTombstonedError, the other writers return false. The only ways out
  *   of a tombstone are `undelete` (local Undo) and, later, a restore intent
  *   (WS-09). Reads of the audio path for the launch sweep still see them.
- * - Words of a waiting voice-only letter are set once. Words the machine
- *   wrote later wait for the author's review (transcript_status 'unreviewed',
- *   M17): the letter shows them, and it counts toward the free letters only
- *   when the author keeps them (`keepReviewedWords`).
+ * - Words of a waiting voice-only letter are set once. Words that arrived
+ *   later, from the machine or typed on the letter page, wait for the author's
+ *   review (transcript_status 'unreviewed', M17): the letter shows them, and it
+ *   counts toward the free letters only when the author keeps them from Review
+ *   (`keepReviewedWords`).
  *
  * No defaults are read here: the caller passes the child and signature it
  * resolved (store.ts does that), so a repository never falls back to the
@@ -261,15 +262,17 @@ export function hasNotMuchOn({ db }: RepoContext, childId: string, isoDate: stri
  * waiting, or a spoken letter whose transcription came back with no words (S28, P5 #222), with its raw still
  * '' and never on the server, so the first raw is still free to set (the server's raw is fixed once a letter
  * is there). The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with
- * typed words), so it is never called spoken. False when it already has words, was deleted, is on the
- * server, or is missing.
+ * typed words), so it is never called spoken. The words wait for the author's review like words that arrived
+ * later (transcript_status 'unreviewed', M17): they are kept here at once and never lost, and the letter counts
+ * only when the author keeps them from Review (`keepReviewedWords`). False when it already has words, was
+ * deleted, is on the server, or is missing.
  */
 export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): boolean {
   const words = text.trim();
   if (!words) return false;
   ctx.db.run(
     `UPDATE entries SET raw_transcript = ?, machine_edits = '[]', final_text = ?, edit_level = 'verbatim', capture_mode = 'mixed',
-       transcript_status = NULL, updated_at = ?
+       transcript_status = '${WORDS_UNREVIEWED}', updated_at = ?
      WHERE id = ? AND raw_transcript = '' AND deleted_at IS NULL
        AND (transcript_status = 'waiting'
             OR (transcript_status IS NULL AND kind = 'letter' AND final_text = '' AND server_version IS NULL

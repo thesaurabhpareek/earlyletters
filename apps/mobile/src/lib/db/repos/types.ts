@@ -63,9 +63,10 @@ export interface Entry {
   /** v6: 'rtl' for Arabic and right-to-left typed letters. Defaults to 'ltr'. */
   baseDirection?: BaseDirection;
   /**
-   * Read only: the words of a voice-only letter arrived from the machine later and
-   * the author has not kept them from Review yet (M17). The letter shows them; it
-   * counts toward the free letters once kept (store `keepReviewedWords`).
+   * Read only: the words of a voice-only letter arrived later (from the machine, or
+   * typed on the letter page) and the author has not kept them from Review yet (M17).
+   * The letter shows them; it counts toward the free letters once kept (store
+   * `keepReviewedWords`, from Review's Keep step).
    */
   wordsUnreviewed?: boolean;
 }
