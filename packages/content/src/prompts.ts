@@ -3,8 +3,9 @@
 // Placeholders: {child}. No gendered pronouns for the child.
 // Band `before` is for a book whose child is not born yet (a due date, no birthday). Those prompts assume no birth:
 // no hands, no first day home, no visitors; they ask about the days now, the name, the home and what is hoped for.
-// They name no hour, no week count and no feeling. The openings for any age assume a child who is here, so a book
-// before the birth is never offered them (selectPrompt in @scribe/core).
+// They name no hour, no week count and no feeling, and presume nothing about the family: not that the home is being
+// changed for the child, not that anyone speaks to the child, not who is expecting or how. The openings for any age
+// assume a child who is here, so a book before the birth is never offered them (selectPrompt in @scribe/core).
 
 import type { Prompt } from '@scribe/core';
 export type { Prompt, PromptBand, PromptKind } from '@scribe/core';
@@ -96,8 +97,8 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.before.ordinary-day", text: "What does an ordinary day look like in your home these weeks?", band: "before", kind: "opening" },
   { key: "opening.before.name", text: "Where did the name {child} come from? Who said it out loud first?", band: "before", kind: "opening" },
   { key: "opening.before.hope", text: "What is one thing you hope {child} gets to love?", band: "before", kind: "opening" },
-  { key: "opening.before.room", text: "What is changing in your home to make room for {child}?", band: "before", kind: "opening" },
-  { key: "opening.before.talks", text: "Who talks to {child} these days? What do they say?", band: "before", kind: "opening" },
+  { key: "opening.before.reminds", text: "What is one thing in your home that makes you think of {child}?", band: "before", kind: "opening" },
+  { key: "opening.before.talking", text: "Who has been talking about {child} lately? What do they say?", band: "before", kind: "opening" },
   { key: "opening.before.sounds", text: "What does your home sound like these days?", band: "before", kind: "opening" },
   { key: "opening.before.here", text: "Where are you today, and what is around you? Tell {child}.", band: "before", kind: "opening" },
   { key: "opening.before.find", text: "What do you want {child} to find in this book one day?", band: "before", kind: "opening" },

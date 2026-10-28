@@ -155,6 +155,47 @@ const BEFORE: Prompt[] = [
 const WITH_BEFORE: Prompt[] = [...LIB, ...BEFORE];
 const preBirth: SelectInput = { ...base, ageMonths: 0, beforeBirth: true };
 
+/**
+ * The selection exactly as it was before the before band and the exclusion (selectPrompt at b6ae491), copied here as the
+ * reference: whatever the new code does not need to change, it must pick the same prompt as this does.
+ */
+function referenceHash(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function referenceSelect(input: SelectInput, library: readonly Prompt[]): Prompt {
+  const live = library.filter((p) => !p.retired);
+  if (live.length === 0) throw new Error('selectPrompt: empty prompt library');
+  const kind = kindFor(input);
+  const band = bandFor(input.ageMonths);
+  const recent = new Set(input.recentKeys.slice(0, AVOID_RECENT));
+  const fits = (p: Prompt) => p.band === 'any' || p.band === band;
+  let pool = live.filter((p) => p.kind === kind && fits(p));
+  if (pool.length === 0) pool = live.filter((p) => p.kind === 'opening' && fits(p));
+  if (pool.length === 0) pool = live.filter((p) => p.kind === 'opening');
+  if (kind === 'opening') {
+    const banded = pool.filter((p) => p.band === band && !recent.has(p.key));
+    if (banded.length && referenceHash(input.seed) % 3 !== 0) pool = banded;
+  }
+  const fresh = pool.filter((p) => !recent.has(p.key));
+  const choices = fresh.length ? fresh : pool;
+  return choices[referenceHash(`${input.seed}:${kind}`) % choices.length];
+}
+
+/** Every kind of night, age and recent list the reference can be compared on. */
+function* inputsToCompare(): Generator<SelectInput> {
+  const nights: Partial<SelectInput>[] = [{}, { daysSinceLastEntry: 9 }, { daysSinceLastEntry: null }, { hardStretch: true }, { together: true }, { role: 'contributor' }, { role: 'contributor', daysSinceLastEntry: 9 }];
+  for (const ageMonths of [0, 2, 5, 8, 11, 16, 22, 30, 50, 70]) {
+    for (const night of nights) {
+      for (let d = 0; d < 12; d++) yield { ...base, ageMonths, ...night, seed: `2026-10-${d}`, recentKeys: d % 3 ? [] : ['o.13.1', 'o.any.1', 'o.0.1'] };
+    }
+  }
+}
+
 describe('[S2] selectPrompt: a book before the birth gets the before set, and only that', () => {
   it('bandFor never returns the before band: it is a signal, not an age', () => {
     for (let m = -5; m < 200; m++) expect(bandFor(m)).not.toBe('before');
@@ -204,18 +245,21 @@ describe('[S2] selectPrompt: a book before the birth gets the before set, and on
     for (let d = 0; d < 40; d++) expect(selectPrompt({ ...base, ageMonths: 70, seed: `s${d}` }, lean).key).toBe('o.any.1');
   });
 
-  it('adding the before set changes nothing for a born child: the same prompt, night after night', () => {
-    for (let d = 0; d < 60; d++) {
-      const input = { ...base, seed: `n${d}`, recentKeys: d % 2 ? ['o.13.1'] : [] };
-      expect(selectPrompt(input, WITH_BEFORE).key).toBe(selectPrompt(input, LIB).key);
-      expect(selectPrompt({ ...input, daysSinceLastEntry: 9 }, WITH_BEFORE).key).toBe(selectPrompt({ ...input, daysSinceLastEntry: 9 }, LIB).key);
+  it('adding the before set changes nothing for a born child: the same prompt as before this change, every night', () => {
+    let compared = 0;
+    for (const input of inputsToCompare()) {
+      expect(selectPrompt(input, WITH_BEFORE).key, JSON.stringify(input)).toBe(referenceSelect(input, LIB).key);
+      expect(selectPrompt({ ...input, beforeBirth: false }, WITH_BEFORE).key, JSON.stringify(input)).toBe(referenceSelect(input, LIB).key);
+      compared++;
     }
+    expect(compared).toBe(10 * 7 * 12);
   });
 
-  it('a library with no before prompt (an old server bundle) behaves as it did: the age band decides', () => {
-    for (let d = 0; d < 20; d++) {
-      const p = selectPrompt({ ...preBirth, seed: `s${d}` }, LIB);
-      expect(['any', '0-3']).toContain(p.band);
+  it('a library with no before prompt (an old server bundle) selects exactly as it did before this change, whether or not the book is before the birth', () => {
+    for (const input of inputsToCompare()) {
+      // With no before prompt to offer, the flag is ignored and the age decides, as it did (Tonight sends age 0 then).
+      const asBefore = { ...input, beforeBirth: true };
+      expect(selectPrompt(asBefore, LIB).key, JSON.stringify(asBefore)).toBe(referenceSelect(input, LIB).key);
     }
   });
 

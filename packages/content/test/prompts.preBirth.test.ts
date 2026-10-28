@@ -1,8 +1,8 @@
 /**
  * The pre-birth prompts and how Tonight uses the library (P3 critics' pass of 28 Oct 2026, S2 and S4).
  *
- * S2: a book whose child is not born yet (a due date, no birthday) is offered the eight `before` prompts and nothing
- * else: not the 0 to 3 month prompts about hands and the first day home, and not the any-age openings, which assume a
+ * S2: a book whose child is not born yet (a due date, no birthday) is offered the `before` prompts (eight today) and
+ * nothing else: not the 0 to 3 month prompts about hands and the first day home, and not the any-age openings, which assume a
  * child who is here. A born child is never offered a `before` prompt.
  * S4: a press of "Another thought" never shows the prompt that was on screen.
  *
@@ -17,10 +17,38 @@ const BEFORE = PROMPTS.filter((p) => p.band === 'before');
 const base: SelectInput = { ageMonths: 5, daysSinceLastEntry: 1, hardStretch: false, role: 'parent', together: false, recentKeys: [], seed: '2026-10-28' };
 const render = (p: Prompt) => p.text.replace(/\{child\}/g, 'Asha');
 
-describe('[S2] the pre-birth set: six to eight openings that assume no birth', () => {
-  it('is six to eight openings in the before band, with stable keys of their own', () => {
-    expect(BEFORE.length).toBeGreaterThanOrEqual(6);
-    expect(BEFORE.length).toBeLessThanOrEqual(8);
+/**
+ * A statement would put words in the person's mouth ("Tell {child} how excited you are."). A question leaves the answer
+ * to them, and "Tell {child}." only points at who the letter is for. True when any sentence is neither.
+ */
+function fillsInWhatToSay(text: string): boolean {
+  const sentences = text.match(/[^.?!]*[.?!]+/g) ?? [];
+  if (sentences.join('') !== text) return true; // text that does not end in a sentence mark
+  return sentences.some((raw) => {
+    const s = raw.trim();
+    return !(/^[^?]+\?$/.test(s) || s === 'Tell {child}.');
+  });
+}
+
+/**
+ * What a prompt before a birth must not assume. F13-REQ-008 bans due, weeks left, countdown, labour and delivery; these
+ * add the other presumptions: a pregnancy (adoption, surrogacy, a wait after a loss), a partner, a clinic, a bump, a
+ * nursery, a home being changed, a plan, a count.
+ */
+const PRESUMES =
+  /\b(pregnan\w*|expect(?:ing|ant|ed)?|partner|husband|wife|spouse|mother|father|mum|mom|dad|mama|papa|parents?|doctors?|hospital|midwi\w*|clinic|nurses?|bump|kick\w*|scans?|ultrasound|trimester|labou?r|deliver\w*|due|countdown|left|to go|baby|babies|nursery|crib|cot|shower|registry|chang\w*|make room|prepar\w*|set up|how many|how much|how long)\b/i;
+
+/** Presumes that people already address the child (an adoption, a surrogacy, a family that does not, a wait after a loss). */
+const ADDRESSES = /\b(?:talks?|talking|speaks?|speaking|sings?|singing|reads?|reading|plays?|playing)\s+(?:to|with)\s+\{child\}/i;
+const presumesAnything = (text: string): boolean => PRESUMES.test(text) || ADDRESSES.test(text) || weekOutsideThese(text);
+
+/** "week" and "weeks" only in the one form that names no count: "these weeks". */
+const weekOutsideThese = (text: string): boolean => /\bweeks?\b/i.test(text.replace(/\bthese weeks\b/gi, ''));
+
+describe('[S2] the pre-birth set: openings that assume no birth', () => {
+  it('is at least eight openings in the before band, with stable keys of their own', () => {
+    // A floor, not a cap: the set may grow, and the next content addition must not be blocked by this test.
+    expect(BEFORE.length).toBeGreaterThanOrEqual(8);
     for (const p of BEFORE) {
       expect(p.kind, p.key).toBe('opening');
       expect(p.key, p.key).toMatch(/^opening\.before\.[a-z-]+$/);
@@ -60,6 +88,48 @@ describe('[S2] the pre-birth set: six to eight openings that assume no birth', (
     for (const p of BEFORE) {
       expect(p.text, p.key).not.toMatch(feeling);
       expect(p.text, p.key).not.toMatch(loss);
+    }
+  });
+
+  it('never fill in what to say: every sentence is a question, or exactly "Tell {child}."', () => {
+    for (const p of BEFORE) expect(fillsInWhatToSay(p.text), p.key).toBe(false);
+  });
+
+  it('presume nothing about who is expecting, how, or what the home, the body or the people around are doing', () => {
+    for (const p of BEFORE) {
+      expect(p.text, p.key).not.toMatch(PRESUMES);
+      expect(p.text, p.key).not.toMatch(ADDRESSES);
+      expect(weekOutsideThese(p.text), p.key).toBe(false);
+      expect(presumesAnything(p.text), p.key).toBe(false);
+    }
+  });
+
+  it('the checks above catch the likely slips, so a pass means something', () => {
+    for (const slip of [
+      'What is changing in your home to make room for {child}?',
+      'How many weeks are left?',
+      'Weeks to go, and how do you feel?',
+      'What did the doctor say at the scan?',
+      'How is the pregnancy going?',
+      'What did {child} kick today?',
+      'Tell {child} about the hospital bag.',
+      'How is your partner?',
+      'Where is the nursery?',
+      'When is {child} due?',
+      'What is the countdown like?',
+      'Tell {child} about the labour.',
+      'Who talks to {child} these days? What do they say?',
+      'What do you sing to {child}?',
+      'Who has been reading to {child}?',
+    ]) {
+      expect(presumesAnything(slip), slip).toBe(true);
+    }
+    for (const statement of ['Tell {child} how excited you are.', 'Say hello to {child}.', 'You are ready for {child}.', 'Tell {child}. Then say why.', 'What is one thing you hope for?!']) {
+      expect(fillsInWhatToSay(statement), statement).toBe(true);
+    }
+    for (const fine of ['Where are you today, and what is around you? Tell {child}.', 'What does your home sound like these days?']) {
+      expect(fillsInWhatToSay(fine), fine).toBe(false);
+      expect(presumesAnything(fine), fine).toBe(false);
     }
   });
 
