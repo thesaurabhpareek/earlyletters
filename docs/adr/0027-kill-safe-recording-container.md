@@ -6,6 +6,7 @@
     - V2 passed twice on the simulator: 100 kills, 100 playable, against M4A's 0 of 65 across four runs (40076982108, 40082148320 and 40085126690, 5 each; 40084319361, 50), and #288's smoke 40090988241 0 of 5 more;
     - V3's in-app decode half: 50 of 50 read, none refused, and the probe within one frame of the counted frames (the drill's decode check, #291, merged as 1c6795b);
     - V1's header half.
+  - Since the flip: a gate-size rehearsal on develop bbac5ec (run 40596403809, 28 Oct; not the freeze-night gate) passed. DL-01: "500 of 500 kept, at least 490 play to within 5 s, and every shard's self-check caught every plant". DL-02: 500 random kills and 50 at each crash point, PASS (timeline, 27 to 28 Oct).
   - Due before the build 2 freeze (Tue 3 Nov 13:00 UTC): V1's speech half, V3's Mac half, and V4. They run on the first device build cut after this merge, whichever it is, and on the Mac (`docs/qa/DEVICE_TEST_PLAN.md` DL-06). If one fails, the coordinator sets `ios` back to `'m4a'` before the freeze.
   - A revert is the one line and nothing else. Takes already recorded as `.aac`, on testers' phones too if build 1 is out, stay `.aac` and keep playing, transcribing and exporting: every reader takes a take's container from its own file name (Consequences, "Two containers on one phone").
   - Android stays M4A in build 2. Android ADTS is post-alpha, with its own checks (section "Android").
@@ -191,6 +192,14 @@ Android ADTS needs its own checks first:
     - V3's Mac half: the Mac kit is on develop (#282). The founder runs `npm run adts-parity -w @scribe/experiments`, with no arguments and with the device takes, and sends the coordinator the exit code and `experiments/results/adts-parity/report.md`;
     - V4: playback timing and seeking on the device.
   - If one fails, the coordinator sets the line back to `'m4a'` before the freeze: the one line and nothing else. Build 1's takes, if it is out by then, stay `.aac` on testers' phones and keep playing (Consequences, "Two containers on one phone").
+- **Tue 27 to Wed 28 Oct: a gate-size rehearsal on the flipped develop passes on the simulator.** Run 40596403809 on develop bbac5ec (#293's merge, ADTS), a week before the freeze. It is **not** the freeze-night gate, which runs at the freeze commit; B2-11 stays open until then, with this rehearsal recorded.
+  - DL-02 at gate size: 1 job, 500 random kills and 50 at each of the four crash points. PASS, "every run kept its letter or take exactly once, and the self-check caught every plant", 23:32:50Z to 00:58:43Z (1 h 26 min; about 7 s a kill over the 700).
+  - DL-01 at gate size: four shards of 125, each PASS with the same annotation. They started 23:32 to 23:54Z and finished 02:07:53Z (shard 2), 02:18:44Z (shard 4), 02:26:46Z (shard 3) and 02:33:23Z (shard 1): 2 h 35 min to 2 h 50 min a shard, on BlackHole 2ch (silence).
+  - The merged verdict job (02:33:39Z): "500 of 500 kept, at least 490 play to within 5 s, and every shard's self-check caught every plant". The exact playable count is in the merged report artifact `kill-dl01-merged-40596403809-1`, which agents here cannot download; this line quotes only the annotation. No job raised a FINDING warning (a V1 or tail finding in a report, #288).
+  - The build and the store-profile Release launch on the same run: green.
+  - Wall time from dispatch (22:38:52Z) to the merged verdict (02:33:39Z): 3 h 55 min. About 35 min until the build started (the launch check waited 29 min), an 18 min build (finished 23:32:48Z), then about 2.7 h of kills: the shards ran 2 h 35 min (shard 2), 2 h 42 min (4), 2 h 50 min (3) and 2 h 39 min (1), about 75 to 80 s a kill, and shard 1 waited about 21 min for a runner. Dispatch the freeze-night run about 5 hours before it is needed (about 4 hours at this load, plus margin for a busy runner pool).
+  - For comparison, M4A on develop c9bc6c0 that afternoon (run 40574814981, 50 runs, before the flip): DL-01 exit 1, 0 of 50 kept takes play, nothing lost or doubled; DL-02 passed. Before the flip: ADTS 50 of 50 twice at nightly size (40081955446, 40089036324); M4A 0 of 65 across four runs (three smokes and one at nightly size).
+  - The device half is still DL-06.
 
 If V2 shows killed M4A takes do play, keep M4A and mark this ADR rejected. If V1 fails and A3 does not help, the alpha falls back to 06-nfr row 188: the founder decides whether killed takes that are kept and listed but do not play are acceptable for the alpha, and option F becomes post-alpha work.
 
