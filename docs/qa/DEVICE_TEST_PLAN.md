@@ -324,7 +324,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Needs:** a switch-on build on both phones, with Mama and Papa joined to Asha's book (S1-22's setup).
 - **Steps:**
   - (a) On Mama's phone, open Settings > Asha's book. Read the "Write this book together" row, then tap it.
-  - (b) Read the footer under "Hide this book". Tap Hide this book, read the confirm, then Cancel. Build 2 has no "Show this book again" yet, so do not confirm the hide on a drill phone.
+  - (b) Read the footer under "Hide this book". Tap Hide this book, read the confirm, then Cancel. A confirmed hide is safe on a build with P6d (#361): Settings > Hidden books brings the book back (S1-32). On a build without it, do not confirm the hide on a drill phone.
   - (c) Only if a drill book has a co-parent whose member row has no signature: repeat (a) and (b) for that book. The server's `signs_as` is null there; the app does not let anyone save an empty signature.
   - (d) Turn VoiceOver on and swipe through the row and the footer.
 - **Expected:**
