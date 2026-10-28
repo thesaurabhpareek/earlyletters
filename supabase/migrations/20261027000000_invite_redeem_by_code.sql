@@ -6,6 +6,9 @@
 -- PENDING: not yet applied. Apply after 20261023060000_explicit_grants.sql,
 -- following supabase/APPLY.md. Never edits an earlier file.
 --
+-- ROLLBACK: drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]);
+--           drop table public.invite_redeem_failures;   (typed codes then answer 503 again)
+--
 -- What it does, in ONE transaction, so parallel guesses cannot all pass the
 -- gate before a failure is recorded, and a failure is committed before the
 -- answer leaves:
@@ -185,12 +188,16 @@ begin
   end if;
 
   -- Unusable: count it, in this transaction, before the answer leaves.
+  -- The purge below takes row locks outside the subject locks, so two callers with different subjects
+  -- can pick the same stale rows. skip locked makes the second skip them instead of waiting in a
+  -- different order (SQLSTATE 40P01 would roll back this failure insert and answer 503, uncounted).
   insert into invite_redeem_failures (scope, subject) values ('user', p_user_subjects[1]), ('device', p_device_subjects[1]), ('global', '');
   if cardinality(p_ip_subjects) > 0 then
     insert into invite_redeem_failures (scope, subject) values ('ip', p_ip_subjects[1]);
   end if;
   delete from invite_redeem_failures
-   where id in (select id from invite_redeem_failures where at < now() - interval '2 hours' order by at limit 200);
+   where id in (select id from invite_redeem_failures where at < now() - interval '2 hours' order by at limit 200
+                 for update skip locked);
   return jsonb_build_object('outcome', 'unusable', 'detail', v_unusable_detail);
 end;
 $$;
