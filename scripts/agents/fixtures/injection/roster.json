@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "repo": "example/asha-repo",
+  "base_branch": "develop",
+  "founder": "owner1",
+  "trusted_bots": ["claude[bot]"],
+  "limits": { "max_runs_per_day_total": 30, "max_parallel": 6, "digest_hour_utc": 14, "claim_grace_minutes": 20, "max_open_agent_prs": 10 },
+  "defaults": { "max_turns": 10, "timeout_minutes": 10, "daily_runs": 1, "wip_limit": 1, "engine": "opencode" },
+  "engines": { "opencode": { "default_model": "m", "default_budget_usd": 1, "version": "1" } },
+  "departments": { "quality": "ffffff" },
+  "agents": [
+    { "handle": "red-team", "title": "Red Team", "department": "quality", "kind": "reviewer" },
+    { "handle": "mobile", "title": "Mobile", "department": "quality", "backlog_owner_names": ["mobile"] },
+    { "handle": "qa", "title": "QA", "department": "quality" },
+    { "handle": "product", "title": "Product", "department": "quality", "kind": "planner" },
+    { "handle": "security-architect", "title": "Security Architect", "department": "quality", "kind": "steward", "review_paths": ["scripts/agents/**"] }
+  ]
+}
