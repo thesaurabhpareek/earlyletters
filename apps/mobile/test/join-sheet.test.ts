@@ -215,9 +215,11 @@ describe('[S59] VoiceOver hears the joined moment (critics\' pass S5; code-read,
     expect(joined).toMatch(
       /useEffect\(\(\) => \{\s*if \(!waitingLine\) return;\s*const id = setTimeout\(\(\) => announce\(waitingLine, \{ queue: true \}\), SPEAK_AFTER_FOCUS_MS\);\s*return \(\) => clearTimeout\(id\);\s*\}, \[waitingLine\]\);/,
     );
-    // After useFocusOnMount's move (350 ms after the view shows), with time for VoiceOver to start the heading.
+    // After useFocusOnMount's move (350 ms after the view shows), with time for VoiceOver to start the heading, and
+    // soon enough that the line still belongs to the moment the view showed.
     expect(code('lib/a11y.ts')).toMatch(/AccessibilityInfo\.sendAccessibilityEvent\(node, 'focus'\);[\s\S]{0,80}\}, 350\);/);
     expect(SPEAK_AFTER_FOCUS_MS).toBeGreaterThanOrEqual(350 + 300);
+    expect(SPEAK_AFTER_FOCUS_MS).toBeLessThanOrEqual(1500);
   });
 });
 

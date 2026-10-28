@@ -103,6 +103,16 @@ describe('[S2] the welcome while a joined book is on its way', () => {
     expect(store.get(), 'Try again never starts a wait').toBeNull();
     expect(heard).toBe(4);
   });
+
+  it('the store: a newer join replaces the wait, with its own book, name and time', () => {
+    const store = createJoinWaitStore();
+    store.start('book-asha', 'Asha', 5);
+    store.start('book-other', 'Ravi', 40);
+    expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
+    // The earlier book's name, read late, no longer reaches the wait.
+    store.named('book-asha', 'Asha');
+    expect(store.get()).toEqual({ childId: 'book-other', name: 'Ravi', since: 40 });
+  });
 });
 
 describe('[S2] the screens', () => {
@@ -120,9 +130,12 @@ describe('[S2] the screens', () => {
     expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;\s*const showContinue = joining\.begin;/);
     expect(first).toMatch(/\{showContinue \? \(\s*<View>\s*<Button size="lg" fullWidth disabled=\{disabled\} label=\{cta\}/);
     expect(first).toMatch(/\{joining\.retry \? <Button variant="quiet" size="sm" label=\{familyCopy\.accept\.tryAgain\} onPress=\{joining\.onRetry\}/);
-    // #374's controls: the line sits between the reason line and Continue, in the one controls block.
+    // #374's controls: the line sits between the reason line and Continue, in the one controls block, and both stay
+    // inside it (neither may cross its closing `</>`), so the finish step's pinned primary keeps its button.
     expect(first.match(/const controls = \(/g)).toHaveLength(1);
-    expect(first).toMatch(/const controls = \(\s*<>\s*\{block \? <ReasonLine[\s\S]*?\{joinLine \? \([\s\S]*?\{showContinue \? \(/);
+    expect(first).toMatch(
+      /const controls = \(\s*<>\s*\{block \? <ReasonLine[^\n]*\n\s*\{joinLine \? \((?:(?!<\/>)[\s\S])*?\) : null\}\s*\{showContinue \? \((?:(?!<\/>)[\s\S])*?\) : null\}\s*<\/>\s*\);/,
+    );
   });
 
   it('the hook: the wait ends with the book, the welcome or the account, and when first run leaves; sync on is read from the account', () => {
