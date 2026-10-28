@@ -59,9 +59,11 @@ export const authCopy = {
 
   code: {
     title: 'Check your email',
-    sentTo: 'We sent a link and a code to',
+    // {email}: the address the email went to, shown in `text`, the rest of the line in `textMuted`.
+    sentToEmail: 'A link and a code are on their way to {email}.',
     body: 'Tap the link on this phone, or type the code here.',
-    emailLabel: 'Which email did we send it to?',
+    // Shown only when the app restarted between sending and typing the code (the address is never stored).
+    emailLabel: 'Your email address',
     label: 'Code',
     verify: 'Continue',
     openMail: 'Open Mail',
