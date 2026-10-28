@@ -89,7 +89,7 @@ Both sides were read by the retro. The five rows marked [Repo-checked] were re-r
 | 1 | F06-REQ-016 (P0): `faithfulClean` does not call `normalizeChars`; each replacement is a stored edit | `packages/core/src/pipeline.ts` lines 272, 301 and 334 call `normalizeFinal`; D-112 item 1 keeps this for the alpha [Repo-checked] | Mark "Rev D-112" |
 | 2 | F06-REQ-010 uses key `fillers.offer` | Code comment in `pipeline.ts` line 77 names `fillers.suggest` [Repo-checked] | Rename in the spec or the code |
 | 3 | F11-REQ-011 (P0): Leave book offered to the co-parent | `LEAVE_BOOK_OFFERED = false` in `apps/mobile/src/lib/family/entry.logic.ts:46` (D-113) [Repo-checked] | Mark "Rev D-113" |
-| 4 | F08-REQ-034: four escrow functions and three secrets | D-108 says ten functions and nine settings; code count not verified | Amend F08-REQ-034 for D-108 |
+| 4 | F08-REQ-034: four escrow functions and three secrets | Verified 28 Oct [Repo]: the backup migration grants `escrow_svc` exactly ten `escrow_*` entry points and `audio_backup_escrow.test.mjs` asserts ten; `docs/ops/BACKUP_RUNBOOK.md` lists nine settings. D-108 matches the code | Amended in F08 (this PR) |
 | 5 | F16-REQ-027 (P0): timeouts | Only `escrow_svc` has a statement timeout [Repo-checked for that file; other migrations not searched] | Mark "Not built" and add C1 acceptance |
 | 6 | D-111 item 12: `COVER_MIN_FREE_HEIGHT` 480 | Retro reports 640 at `onboarding.tsx:79`; the coordinator did not find that path | Unverified, check |
 | 7 | 06-nfr.md: G4 needs at least 300 sessions | 07-quality-bar.md says 500 | Pick one |
@@ -227,7 +227,7 @@ This week only docs, the parser fix as its own branch, and the C-NFR-005 duplica
 | 8 | DR-01 A with an unlock order; DR-11 production-record gate Fri 13 Nov; DR-15 A; DR-21 as written with a minimum sample | D-125 |
 | 9 | 1x smoke test is the sync gate; external security test before server features open beyond the first families; founder hours and device operator are founder facts | D-125 |
 | 10 | The store listing holds "exactly as you said it" until counsel clears it | D-125 |
-| 11 | Open: a docs agent checks the merged backup server against D-108 | D-125 |
+| 11 | Resolved by reading the merged code: ten `escrow_*` entry points and nine settings, so D-108 is right and the spec was stale; F08-REQ-034 amended in this PR | D-125 item 11 (to be corrected, PR #340) |
 
 ### 8.3 Spec edits that follow (not done in this PR)
 
