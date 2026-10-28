@@ -638,6 +638,8 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-115 | Pack release (#162): an English-only pack release is a build 1 prerequisite, because the app gets the speech model only from the signed manifest on the D-097 host; the founder runs the key ceremony (`keygen.mjs`, then `--backup`), `release`, `upload` and `verify` on one computer; `release` defaults to `--languages en`; a non-English pack ships only when a native reviewer and the founder say so; the alpha's language picker gate in the app is S12 | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-23 |
 | D-116 | Former members' letters survive the book purge (#248): when the remaining parent deletes the book or their account, the letters, held drafts and recording backups of someone who left or whose join was undone stay theirs; the book row stays tombstoned (`purged_at`) with the name and dates for the kept letters' labels, readable by no app role until BL-444 serves it to kept authors only, and goes once nothing of theirs is left; undo no longer deletes the removed parent's held drafts on the server | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-23 |
 | D-117 | Blanket approval, in the founder's words only: "Everything is approved. Don't keep asking me to approve things. I give you a blanket approval." The coordinator's operating rule under it (merging the founder-only path classes after two independent passing reviews on the current head and green CI) is recorded separately in the entry and is not the founder's words | Decided (founder, 23 Oct 2026); operating rule by the coordinator (founder may reverse) | Yes | 2026-10-23 |
+| D-118 | The website names the founder's daughter by her first name for now. Only `apps/web/src/content/site.ts` may carry it, enforced by one narrow exception in both copies of the real-family guard. Tests, fixtures, docs, `packages/content` and the mobile app keep the fictional family "Asha". Supersedes D-111 item 1 for that one file | Decided (founder, 28 Oct 2026) | Yes | 2026-10-28 |
+| D-119 | Logo round 4: the approved mark (D-071) stays the primary and the two-tone version (B) is the alternate. The website header carries the approved lockup (#301, a production deploy the founder merges). Options C and D are rejected. Picked on the founder's delegation | Decided (design lead on the founder's delegation, 27 Oct 2026; founder may reverse) | Yes | 2026-10-27 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -812,3 +814,28 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Supersedes in part:** D-107's founder-only merge list; D-107's update names the same classes.
 - **Effects:** `supabase/APPLY.md` (files 18, 20, 24 and the backup server file), `docs/ops/DEPLOY.md`, `docs/ops/BACKUP_RUNBOOK.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` and the comment on the `workflow_dispatch` trigger in `.github/workflows/deploy-db.yml` name the process: after two independent passing reviews on the current head, with green CI, the coordinator merges into `develop`, and the founder applies through `deploy-db.yml` (PR #261). The `approve-migration` label (D-041) is no longer used; no workflow reads it. `docs/agents/COORDINATION.md` section 6 still states D-107's rule (follow-up for its owner).
 - **Owner:** founder (the approval); coordinator (the operating rule).
+
+### D-118 The website names the founder's daughter (founder, 28 Oct 2026)
+- **Status:** Decided by the founder, 28 Oct 2026, for now. The founder's words: "Yes [name] is fine for now. Change to that." Earlier the same day: "is ok fine for [name] used on website. I don't see a harm."
+- **Context:** commit `858841f6` (3 Oct 2026) replaced the real name with the fictional family (Asha, Neela) under the `CLAUDE.md` rule that real family details never go in code, tests or fixtures. D-111 item 1 (17 Oct) put the same rule on the website copy. The repository is public, and history was not purged (D-111). A repo-wide rename of the fictional family was considered first (Lina first) and not done: One alternative spelling was also a guarded form of the real name, so it could not be used.
+- **Decision:**
+  1. The website copy uses the founder's daughter's first name, one spelling, in `apps/web/src/content/site.ts` only. Comments and every other file say `[child]` or use the fictional family.
+  2. The real-family guard gets one exception in both of its copies (`packages/content/test/no-real-family-data.test.ts` on develop, `apps/web/test/no-real-family-data.test.ts` on main): that spelling's hash, that one file, contents only. Paths, other spellings, the nickname, the other family member's name and the birth date stay blocked everywhere. A test pins the allowed list to that one entry, so widening it means editing the guard on purpose.
+  3. Tests, fixtures, docs, `packages/content` and the mobile app keep the fictional family "Asha". The misheard-name demo on the site uses her name too.
+- **Supersedes in part:** D-111 item 1, for `site.ts` only.
+- **Risks the founder accepted:** the repository is public and the live site deploys from `main`, so the name is effectively permanent once deployed and appears next to the product in search. The sample letter is invented text and, with a real name, reads as a real family moment.
+- **Effects:** the website PR #302 (to `main`, deploys to production, the founder merges); the guard change in the develop copy must merge into `develop` before `main` is merged back, or develop's guard fails on `site.ts`.
+- **Review point (coordinator proposal, not the founder's):** look at this again before the site is promoted or the alpha link goes public.
+- **Owner:** founder; web lane for the copy; coordinator for the guard.
+
+### D-119 Logo round 4: ship the approved mark, keep the two-tone as the alternate (design lead on the founder's delegation, 27 Oct 2026)
+- **Status:** the founder asked "Pick for me as my design head" and for two options that work in dark mode, light mode and grayscale; the pick below was made on that delegation. The founder may reverse it. The founder then said to go ahead with the website header.
+- **Decision:**
+  1. The primary mark stays D-071 (`primary/`). Nothing changes in the registry.
+  2. The alternate is B, the two-tone version (parent blob in ink or paper, child blob in the sepia accent, dark tile): highest contrast of the set, and every pairing passes the 3:1 graphic floor.
+  3. Rejected: C (the name in quotation marks) because it breaks the opening-quotes-only rule in `BRAND_SYSTEM.md` section 1 and adds a second quote shape; D (paper tile) because its edge is 1.00 to 1.35:1 against light pages.
+  4. The website header carries the approved lockup (#301).
+- **Evidence:** `docs/brand/logo-r4/RECOMMENDATION.md` (measured contrast, grayscale proof, what was and was not checked).
+- **Not done:** colour-blindness simulation with a validated tool, testing with people, and trademark clearance (BL-355 stays open for every option).
+- **Effects:** #299 (candidate assets under `packages/brand/assets/logo/options-r4`, not registered), #301 (header, to `main`).
+- **Owner:** design lead; founder for reversal.

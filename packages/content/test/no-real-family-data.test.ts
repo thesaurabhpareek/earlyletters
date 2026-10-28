@@ -43,6 +43,11 @@
  * the file:
  *   git ls-files -z | while IFS= read -r -d '' f; do printf '%s %s\n' "$(printf %s "$f" | sha256sum | cut -c1-8)" "$f"; done | grep '^<hex>'
  *
+ * Exception (D-118, founder, 28 Oct 2026): the child's first name, in exactly the spelling whose hash is
+ * FIRST_NAME_HASH, may appear in the files listed in NAME_ALLOWED_IN, and in no other file. Paths, other
+ * spellings, the nickname, the other family member's name and the birth date stay forbidden everywhere. The list is
+ * pinned by a test, so widening it is a deliberate edit of this file in both copies.
+ *
  * Skipped: the contents of package-lock.json (third-party names) and of this
  * file. Every path, theirs included, is still checked.
  */
@@ -67,6 +72,15 @@ const NAME_HASHES = new Set([
 
 /** Real birth date, canonical YYYY-MM-DD. */
 const DATE_HASHES = new Set(['6f443d4600db4cc104a04cb56ec4925ab68dc5d3a4b850db32c51540e6d7a730']);
+
+/** The one spelling of the child's first name the founder allows in the files below (D-118). A hash, never the value. */
+const FIRST_NAME_HASH = '177b773d483d3fe541cd127ca95b62d7099e80651206c6ab7d6aa63eaa3bdc2c';
+/** Files whose contents may hold an allowed name: path -> hashes allowed there. Contents only: a path is never exempt. */
+export const NAME_ALLOWED_IN: Record<string, ReadonlySet<string>> = {
+  'apps/web/src/content/site.ts': new Set([FIRST_NAME_HASH]),
+};
+const withoutAllowed = (names: Set<string>, allowed?: ReadonlySet<string>): Set<string> =>
+  allowed ? new Set([...names].filter((h) => !allowed.has(h))) : names;
 
 /** This file, by its path from the repository root. */
 const SELF = 'packages/content/test/no-real-family-data.test.ts';
@@ -162,7 +176,13 @@ export function shown(path: string): string {
  * skip it on purpose (over MAX_BYTES), and throws when the file cannot be read. Throws when the list
  * lacks a LIST_MARKERS entry or a listed file cannot be read: the scan would prove less than it says.
  */
-export function scan(files: string[], read: (file: string) => Buffer | null, names = NAME_HASHES, dates = DATE_HASHES): string[] {
+export function scan(
+  files: string[],
+  read: (file: string) => Buffer | null,
+  names = NAME_HASHES,
+  dates = DATE_HASHES,
+  allowed: Record<string, ReadonlySet<string>> = NAME_ALLOWED_IN,
+): string[] {
   const absent = LIST_MARKERS.filter((m) => !files.includes(m));
   if (absent.length) {
     throw new Error(`The file list (${files.length} files) lacks ${absent.join(' and ')}: it is empty or not the repository root's, so the scan would prove nothing.`);
@@ -178,7 +198,7 @@ export function scan(files: string[], read: (file: string) => Buffer | null, nam
       } catch {
         unread.push(shown(f));
       }
-      if (bytes) hits.push(...contentFindings(f, bytes, names, dates));
+      if (bytes) hits.push(...contentFindings(f, bytes, withoutAllowed(names, allowed[f]), dates));
     }
     if (hits.length) bad.push(`${shown(f)}: ${hits.join(', ')}`);
   }
@@ -243,6 +263,28 @@ describe('no real family details in tracked files', () => {
       ]);
       expect(out.join('\n')).not.toMatch(/planted|1999|0909|09-09/i);
       expect(out[0]).toBe(`${sha('docs/plantedname-notes.md').slice(0, 8)}.md: real family name in the path`);
+    });
+
+    it('lets a listed file carry an allowed name, and nothing else: not another file, not a path, not a date', () => {
+      const ALLOW = { 'docs/ok.md': PLANT, 'docs/plantedname-path.md': PLANT, 'docs/dated.md': PLANT };
+      const files: Record<string, Buffer> = {
+        'docs/ok.md': Buffer.from('Plantedname\n'),
+        'docs/other.md': Buffer.from('Plantedname\n'),
+        'docs/plantedname-path.md': Buffer.from('Fine words.\n'),
+        'docs/dated.md': Buffer.from('1999-09-09\n'),
+      };
+      const out = scan(list(...Object.keys(files)), tree({ ...base, ...files }), PLANT, PLANT_DATE, ALLOW);
+      expect(out.map((line) => line.replace(/^[0-9a-f]{8}\.md: /, '<hash>.md: '))).toEqual([
+        '<hash>.md: real family name',
+        '<hash>.md: real family name in the path',
+        '<hash>.md: real birth date',
+      ]);
+    });
+
+    it('the real allowance is one file and one spelling (D-118)', () => {
+      expect(Object.keys(NAME_ALLOWED_IN)).toEqual(['apps/web/src/content/site.ts']);
+      expect([...NAME_ALLOWED_IN['apps/web/src/content/site.ts']]).toEqual([FIRST_NAME_HASH]);
+      expect(NAME_HASHES.has(FIRST_NAME_HASH)).toBe(true);
     });
 
     it('keeps only extensions that are not guarded tokens', () => {
