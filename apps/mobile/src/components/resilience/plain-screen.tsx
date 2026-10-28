@@ -12,7 +12,7 @@
  * throws and nothing waits for it. Reads the saved appearance when it can and falls back to the system scheme.
  * It never shows an error message, code or stack. Dynamic Type works (no fixed heights on text).
  */
-import { useEffect, useRef } from 'react';
+import { Component, useEffect, useRef, type ReactNode } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, Text, View, useColorScheme } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -38,6 +38,20 @@ export function useSchemeSafely(): 'light' | 'dark' {
 
 const ART = plainArt();
 
+/**
+ * The last resort on the one screen that must always draw: if the drawing itself throws (react-native-svg missing or
+ * failing), the screen goes on without it. The words and the buttons never depend on it.
+ */
+class DrawingBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 /** The page drawing, complete and still, in the scheme's own colours. Decorative. */
 function PageDrawing({ wash, line }: { wash: string; line: string }) {
   return (
@@ -58,6 +72,7 @@ export function PlainScreen({ title, body, hint, note, actions }: { title: strin
   // The safe area as the app launched (a constant: no provider to read it from).
   const insets = initialWindowMetrics?.insets;
   const heading = useRef<Text>(null);
+  const scroll = useRef<ScrollView>(null);
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
@@ -66,8 +81,12 @@ export function PlainScreen({ title, body, hint, note, actions }: { title: strin
   useEffect(() => {
     // Whatever brought this screen up, the splash must not stay over it: the launch recovery screen renders
     // before the app's own hideAsync runs, and the router only hides the splash for a render error.
-    void SplashScreen.hideAsync().catch(() => {});
-    void loadFonts();
+    try {
+      void SplashScreen.hideAsync().catch(() => {});
+      void loadFonts();
+    } catch {
+      // a native module that throws at once must not stop the focus below
+    }
     // VoiceOver starts on the title, not on whatever the failed screen had focused.
     const id = setTimeout(() => {
       try {
@@ -79,16 +98,35 @@ export function PlainScreen({ title, body, hint, note, actions }: { title: strin
     return () => clearTimeout(id);
   }, []);
 
+  // A note (the export's result) is the last thing in the scroll while the buttons stay put, so at large text sizes it
+  // can sit below the fold: once it has been laid out, scroll to it, and have VoiceOver read it (iOS ignores
+  // accessibilityLiveRegion). The note is a copy string from packages/content, never anything the person wrote.
+  useEffect(() => {
+    if (!note) return;
+    const id = setTimeout(() => {
+      try {
+        scroll.current?.scrollToEnd({ animated: false });
+        AccessibilityInfo.announceForAccessibility(note);
+      } catch {
+        // the note is still on the page, in reading order
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [note]);
+
   const L = PLAIN_LAYOUT;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets?.top ?? 0, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space[3]) }}>
       <ScrollView
+        ref={scroll}
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: L.gutter, paddingVertical: L.edge }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ alignItems: 'center', gap: L.gap }}>
-          <PageDrawing wash={c.accentSoft} line={c.textMuted} />
+          <DrawingBoundary>
+            <PageDrawing wash={c.accentSoft} line={c.textMuted} />
+          </DrawingBoundary>
           <View accessible={false} style={{ alignItems: 'center', gap: L.textGap }}>
             <Text ref={heading} accessibilityRole="header" maxFontSizeMultiplier={PLAIN_TYPE.title.maxScale} style={{ ...PLAIN_TYPE.title.style, color: c.text, textAlign: 'center' }}>
               {title}

@@ -19,7 +19,8 @@ const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
 /** Source without comments, so a doc comment that names a forbidden thing does not count. */
 const code = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-const imports = (t: string) => [...t.matchAll(/^import [^;]*? from '([^']+)';/gm)].map((m) => m[1]);
+// Every import form: named, default, namespace, type-only, side-effect, double quotes, across lines (lens B on #355).
+const imports = (t: string) => [...t.matchAll(/^import\s+(?:[^;]*?\s+from\s+)?['"]([^'"]+)['"]/gm)].map((m) => m[1]);
 const SYSTEM_FACES = /Georgia|Times|Helvetica|San Francisco|-apple-system|'System'/i;
 
 describe('PlainScreen faces (S50, S51)', () => {
@@ -83,6 +84,27 @@ describe('PlainScreen look (S50, S51)', () => {
     expect(src).toMatch(/from 'react-native-svg'/);
     expect(src).toMatch(/<Path\b/);
     expect(src).toMatch(/<PageDrawing wash=\{c\.accentSoft\} line=\{c\.textMuted\}/);
+    // The drawing is the one part allowed to fail: a boundary around it renders nothing instead.
+    expect(src).toMatch(/<DrawingBoundary>\s*<PageDrawing/);
+    expect(src).toMatch(/static getDerivedStateFromError\(\) \{\s*return \{ failed: true \};/);
+    expect(src).toMatch(/return this\.state\.failed \? null : this\.props\.children;/);
+  });
+
+  it('the title is a header, and a busy button cannot be pressed twice', () => {
+    const src = code(read('components/resilience/plain-screen.tsx'));
+    expect(src).toMatch(/<Text ref=\{heading\} accessibilityRole="header"/);
+    expect(src).toMatch(/disabled=\{a\.busy\}/);
+  });
+
+  it('a note that arrives scrolls into view after layout and is read by VoiceOver, its static words only (lens A on #355)', () => {
+    const src = code(read('components/resilience/plain-screen.tsx'));
+    const effect = src.slice(src.indexOf('useEffect(() => {\n    if (!note) return;'), src.indexOf('}, [note]);'));
+    expect(effect.length).toBeGreaterThan(0);
+    expect(effect).toMatch(/setTimeout\(\(\) => \{\s*try \{\s*scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/);
+    expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
+    expect(src).toMatch(/<ScrollView\s+ref=\{scroll\}/);
+    // The note is copy from packages/content (LaunchRecovery passes exportNothing or exportFailed), never an error.
+    expect(code(read('components/resilience/launch-recovery.tsx'))).toMatch(/note=\{note === 'nothing' \? e\.exportNothing : note === 'failed' \? e\.exportFailed : undefined\}/);
   });
 
   it('pill buttons: the primary is 56 pt and filled, the quiet one 44 pt with no fill', () => {
@@ -173,6 +195,8 @@ describe('nothing that can throw before render (S50)', () => {
     // RootLayout calls preventAutoHideAsync and hides the splash only inside Root, which recovery never mounts.
     const src = code(read('components/resilience/plain-screen.tsx'));
     expect(src).toMatch(/SplashScreen\.hideAsync\(\)/);
+    // In one try, so a native module that throws at once cannot skip the focus timer after it.
+    expect(src).toMatch(/try \{\s*void SplashScreen\.hideAsync\(\)\.catch\(\(\) => \{\}\);\s*void loadFonts\(\);\s*\} catch/);
     expect(code(read('app/_layout.tsx'))).toMatch(/if \(launch\.status === 'recovery'\) return <LaunchRecovery/);
   });
 

@@ -49,9 +49,27 @@ test('[J20] a screen throws while rendering (fault injected)', async ({ app, rec
   await expectBrandFaces(app, 'This page did not open', 'Your letters and recordings are safe on this phone.', 'Try again');
   await step('unhappy', 'A screen crashes (fault injected)', 'The root error boundary shows a calm screen instead of a blank page: a still page drawing, "This page did not open" in Literata and "Your letters and recordings are safe on this phone." in Mukta, with Try again and Go to Tonight as pill buttons. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here.');
 
+  // 20 pt gutters on both sides, the buttons full width at the bottom, as the 404 (S49) and every state.
+  const tryBox = await app.getByRole('button', { name: 'Try again' }).boundingBox();
+  const width = app.viewportSize()!.width;
+  expect(Math.round(tryBox!.x)).toBe(20);
+  expect(Math.round(width - (tryBox!.x + tryBox!.width))).toBe(20);
+
   // Go to Tonight works even though the screen that threw is still broken.
   await app.getByRole('button', { name: 'Go to Tonight' }).click();
   await expect(app.getByRole('button', { name: 'Speak' })).toBeVisible();
+
+  // Try again does something: with the fault gone, the app draws again instead of the crash screen, so a Try again
+  // that did nothing fails here. (On the web the remount comes back to Tonight, under which Review had opened.)
+  await app.getByText('Read it back').first().click();
+  await expect(app.getByRole('heading', { name: 'This page did not open' })).toBeVisible();
+  await app.evaluate(() => {
+    const w = window as unknown as { __RealPluralRules?: unknown };
+    (Intl as unknown as { PluralRules: unknown }).PluralRules = w.__RealPluralRules;
+  });
+  await app.getByRole('button', { name: 'Try again' }).click();
+  await expect(app.getByRole('heading', { name: 'This page did not open' })).toHaveCount(0);
+  await expect(app.getByRole('heading', { name: 'Read it back' }).or(app.getByRole('button', { name: 'Speak' })).first()).toBeVisible();
 });
 
 test('[J20] the book cannot be opened at launch (fault injected)', async ({ app, record }) => {
@@ -70,6 +88,21 @@ test('[J20] the book cannot be opened at launch (fault injected)', async ({ app,
   await expect(app.getByRole('button')).toHaveCount(2);
   await expectBrandFaces(app, 'The book could not open', 'Your letters and recordings are safe on this phone.', 'Try again');
   await step('unhappy', 'The book cannot be opened (fault injected)', 'If opening the database or updating it throws, a recovery screen replaces the app, in the same plain block as the crash screen: "The book could not open", the letters are safe on this phone, "Try again, or restart the phone.", and two actions: Try again and Export what\'s readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.');
+
+  // At a short height (as at large text sizes) the export's result is still seen: the screen scrolls to it, above the
+  // buttons that stay put (lens A on #355). The web has no files to export, so the result is one of the two notes.
+  await app.setViewportSize({ width: 402, height: 360 });
+  await app.getByRole('button', { name: "Export what's readable" }).click();
+  const note = app.getByText(/^(This phone has no recordings or files to export\.|That export did not work\. Your files are still on this phone\.)$/);
+  await expect(note).toBeVisible();
+  await expect
+    .poll(async () => {
+      const n = await note.boundingBox();
+      const b = await app.getByRole('button', { name: 'Try again' }).boundingBox();
+      return !!n && !!b && n.y >= 0 && n.y + n.height <= b.y;
+    })
+    .toBe(true);
+  await app.setViewportSize({ width: 402, height: 874 });
 
   await app.getByRole('button', { name: 'Try again' }).click();
   await expect(app.getByRole('button', { name: 'Speak' }).or(app.getByText('Begin the book')).first()).toBeVisible();
