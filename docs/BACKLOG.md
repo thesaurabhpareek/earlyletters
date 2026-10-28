@@ -1589,7 +1589,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 
 ## Review follow-ups, wave 2 (28 Oct 2026)
 
-Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #382 and the experience critics' passes) and filed here by the product agent from the coordinator's list, one entry per item, in the format of BL-446 to BL-456 (`Problem` and `Evidence` take the place of `Why`; `Gate` names the build the item must land before, or "none"). Line references were checked against `develop` at 1afb0d0; where a line is on an open PR's head, the entry says which PR. "Unverified" means the review said it and I could not find or run it. The brief's "later" is written as `blocked (PR #n merge)` where the PR was open when this was written; the product agent flips it when the PR merges. Priorities are the product agent's call (none were given); the file tags only [Critical] and [High] in a heading, so these carry a `Priority:` line. Not entered: the P8a link-versus-pause decision (F02-U14), because #372 had not merged.
+Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #382 and the experience critics' passes) and filed here by the product agent from the coordinator's list, one entry per item, in the format of BL-446 to BL-456 (`Problem` and `Evidence` take the place of `Why`; `Gate` names the build the item must land before, or "none"). Line references were checked against `develop` at 51c0c3e (1afb0d0 for the first pass, re-found after #380 merged); where a line is on an open PR's head, the entry says which PR. "Unverified" means the review said it and I could not find or run it. The brief's "later" is written as `blocked (PR #n merge)` where the PR was open when this was written; the product agent flips it when the PR merges. Priorities are the product agent's call (none were given); the file tags only [Critical] and [High] in a heading, so these carry a `Priority:` line. Not entered: the P8a link-versus-pause decision (F02-U14), because #372 had not merged.
 
 #### BL-457 Pin the See Plus note effect's dependency array, and use `announce()` there
 - Status: ready. Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
@@ -1653,27 +1653,27 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the 96 pt assertions exist and fail if the cover stops fading both names; points 2 and 3 are corrected; points 4 and 5 are settled by their owners.
 
 #### BL-462 Content rules guard: follow-ups to the fold into `rules.test.ts` (#380, P7-5)
-- Status: blocked (PR #380 merge; these are changes to files that PR adds). Mode: agent. Owner: content, legal (point 6). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
+- Status: ready. Mode: agent. Owner: content, legal (point 6). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
-- Problem and evidence (review of #380, open at writing; lines on its head a88e730 unless they say develop):
+- Problem and evidence (review of #380, merged as 51c0c3e; lines on develop):
   1. The SURFACES row's button-name regex `/(?:button|cta)$/i` (`packages/content/test/rules.test.ts:1015`) differs from the P0 regex `/(?:button|cta|action)(?:short)?$/i` (`:877`), so a `...CtaShort` or `...Action` leaf over 22 characters can bypass the row's button list. Use the P0 regex.
   2. The auth, family and deletion button lists (25, 17 and 8 entries: `packages/content/test/support/copy-surfaces.ts:290-317`, `:320-338`, `:340-349`) are not pinned by length or by set.
-  3. The guard reads `features` keys only (`rules.test.ts:970-977`): a `packages/content/src/features/*.en.ts` file not wired into `features/index.ts` is invisible. Add a `readdirSync` check.
-  4. Opt-out reasons are length-checked only (`rules.test.ts:978`). The `reminders`, `backup` and `billing` reasons (`copy-surfaces.ts:437-447`) should name their "we" lines: reminders `neutral.evening[1].body` says "Say it out loud and we will keep it." (`packages/content/src/features/reminders.en.ts:15`, duplicated at `packages/content/src/strings.en.ts:620`), a "we" outside any sanctioned promise (pre-existing, on develop); billing's reason overstates "pinned word for word" (40 of 102 leaves, from the review: unverified); export and packs have five "Please try again" lines (`packages/content/src/features/export.en.ts:34`; `packs.en.ts:36`, `:38`, `:39`, `:40`) that the auth-only chat-bot-voice rule does not cover.
-  5. No rule checks that `{child}` is still present in the deletion `what.staysNone` line (`packages/content/src/features/account-deletion.en.ts:19`): mutant B07 survives, on develop too.
+  3. The guard reads `features` keys only (`rules.test.ts:969-977`): a `packages/content/src/features/*.en.ts` file not wired into `features/index.ts` is invisible. Add a `readdirSync` check.
+  4. Opt-out reasons are length-checked only (`rules.test.ts:978`). The `reminders`, `backup` and `billing` reasons (`copy-surfaces.ts:434-447`) should name their "we" lines: reminders `neutral.evening[1].body` says "Say it out loud and we will keep it." (`packages/content/src/features/reminders.en.ts:15`, duplicated at `packages/content/src/strings.en.ts:620`), a "we" outside any sanctioned promise (pre-existing); billing's reason overstates "pinned word for word" (40 of 102 leaves, from the review: unverified); export and packs have five "Please try again" lines (`packages/content/src/features/export.en.ts:34`; `packs.en.ts:36`, `:38`, `:39`, `:40`) that the auth-only chat-bot-voice rule does not cover.
+  5. No rule checks that `{child}` is still present in the deletion `what.staysNone` line (`packages/content/src/features/account-deletion.en.ts:20`): mutant B07 survives (it survived before #380 too).
   6. `docs/legal/in-app-disclosures.md:50` (v1.4.0) still quotes the old `billingCopy.store.promise` wording ("... are free, always."): a counsel note only.
-- Scope: points 1 to 5 are test changes in the files #380 adds, plus the copy decision in point 4 (the "we" line and the five "Please try again" lines are the content owner's); point 6 goes to counsel's next read.
+- Scope: points 1 to 5 are test changes in the files #380 added, plus the copy decision in point 4 (the "we" line and the five "Please try again" lines are the content owner's); point 6 goes to counsel's next read.
 - Done when: each point is fixed with a test that fails on its mutant, or recorded here as left as it is.
 
 #### BL-463 Retire `en.plus.promise` (coordinator ruling: one small PR, no counsel step)
-- Status: blocked (PR #380 merge; the DELETED count of 42 assumes #380's 41). Mode: agent. Owner: content. Milestone: M11. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: content. Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
 - Problem: `en.plus.promise` has no reader in the app; only the claims guard and some documents still name it.
-- Evidence: the key at `packages/content/src/strings.en.ts:959` (inside `plus` at `:945`); the guard's reads at `packages/content/test/rules.test.ts:524-528`; `packages/content/test/experience-pass.test.ts:260` (`DELETED`, 40 on develop at `:492`, 41 on #380's head). Stale references: `docs/prd/v2/features/F14-plus.md:213`, `docs/prd/PRD.md:889`, `docs/tdd/08-payments-entitlements.md:413` (requirement documents: their owners update them, a proposed change goes in the PR body). From the review of #380, as ruled by the coordinator.
+- Evidence: the key at `packages/content/src/strings.en.ts:959` (inside `plus` at `:945`); the guard's reads at `packages/content/test/rules.test.ts:527-531`; `packages/content/test/experience-pass.test.ts:53` (`DELETED`; its length is pinned at 41 at `:258`, so this makes 42). Stale references: `docs/prd/v2/features/F14-plus.md:213`, `docs/prd/PRD.md:889`, `docs/tdd/08-payments-entitlements.md:413` (requirement documents: their owners update them, a proposed change goes in the PR body). From the review of #380 (merged as 51c0c3e), as ruled by the coordinator.
 - Scope: delete the key; retarget the claims guard to `billingCopy.store.promise` for sentences 1 and 2 and to `settingsHome.planHelp` or `billingCopy.store.subtitle` for the "keep adding letters" assertion; add `en.settingsHome.planHelp` to the scanned `plus` array; add the RET mark, the `DELETED` entry (count 42) and its pin.
 - Done when: `plus.promise` is gone, the claims guard still fails on a banned claim (check by hand once), and `npm test --workspace packages/content` passes.
 
@@ -1692,7 +1692,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Priority: Medium.
 - Gate: none named by the reviews; BL-323 (#161) satisfies LEGAL-REQ-034 for signed-in builds, so the coordinator sets the build.
 - Satisfies: LEGAL-REQ-034 (BL-323, through #161).
-- Problem: #161 and #163 conflict with develop and need rebases (from the 28 Oct reviews; GitHub's mergeable state for both read "unknown" when I checked, so the conflict is unverified here). #161's export goldens will also touch the e7 letter and the manifest hash that #373 changed, so its goldens must be regenerated after the rebase and not merged by hand.
+- Problem: #161 and #163 conflict with develop and need rebases (from the 28 Oct reviews; GitHub reports both as `mergeable: false`, state `dirty`, against develop 51c0c3e). #161's export goldens will also touch the e7 letter and the manifest hash that #373 changed, so its goldens must be regenerated after the rebase and not merged by hand.
 - Evidence: #161 (head 1087eac, `feat/export-consent-history`) and #163 (head 53a7622, `docs/legal-v1-server`), both open and based on develop; `apps/mobile/test/__golden__/export-asha/letters/Asha/2026-08/2026-08-10_e7.txt`, `manifest.json` and `manifest.sha256` changed in #373 (1ee20c8).
 - Scope: rebase each onto develop; regenerate #161's goldens and check the `account.json` consent-history fields still validate; re-read #163 against develop's docs.
 - Done when: both PRs are mergeable and their checks pass on the rebased head.
