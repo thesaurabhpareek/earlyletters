@@ -1,125 +1,209 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { Toggle } from '@/components/platform/toggle';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
-import { copy, fill } from '@/lib/copy';
-import { ordinalOf, track } from '@/lib/analytics/track';
-import { haptic } from '@/lib/haptics';
-import { isoOf, longDate } from '@/lib/dates';
-import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
-import { useTheme } from '@/lib/a11y';
-
-const DAY = 86_400_000;
-
+// web: same (the date control is a native date input) | android: same
 /**
- * Add a child (PRD B F2.1): name plus birthday or due date. Books are free to
- * start (D-082, D-083): the free letters are one pool across every book, so
- * there is no second-book gate.
+ * Add a child (PRD B F2.1; EXPERIENCE_PASS_2026-10 S47, package P6): the first-run child step again, for one more
+ * book. The name, then the birthday or the due date, with no date chosen for the person ("Born today" is a chip
+ * beside the date control), the small book cover taking the name after a typing pause, and one primary that waits
+ * with its reason in words above it. Free, with no Plus gate (D-082, D-083): the free letters are one pool across
+ * every book. The rules are add-child-form.logic.ts, shared with first run through packages/core.
+ *
+ * Motion: the date block arrives once the first letter of the name is in (S05), with `motion.enter`; the reason line
+ * cross-fades (swapMs); controls never animate in. Accessibility: the heading takes focus, the waiting primary is
+ * read as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to what is missing.
  */
-export function AddChildForm() {
-  const c = useTheme().c;
-  const o = copy.onboarding.child;
-  const x = copy.childrenExtra;
-  const [name, setName] = useState('');
-  const [expecting, setExpecting] = useState(false);
-  const [date, setDate] = useState(new Date());
-  const [pickerOpen, setPickerOpen] = useState(Platform.OS === 'ios');
-  const [tried, setTried] = useState(false);
+import { checkChildName, clampText, CHILD_NAME_MAX, latestDueDate, nearLimit, textLength } from '@scribe/core';
+import { router } from 'expo-router';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
+import * as React from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type Text as RNText, type TextInput } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { tokens } from '@scribe/design-tokens';
+import { BookCover } from '@/components/book/book-cover';
+import { Button } from '@/components/ui/button';
+import { Chip, ChoiceGroup } from '@/components/ui/choice-group';
+import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
+import { announce, useFocusOnMount, useTheme } from '@/lib/a11y';
+import { ordinalOf, track } from '@/lib/analytics/track';
+import { copy, fill } from '@/lib/copy';
+import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
+import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
+import { DateField, type DateFieldHandle } from './date-field';
+import { addChildBlock, addChildCta, addChildValues } from './add-child-form.logic';
 
-  const trimmed = name.trim();
-  const dateLabel = expecting ? x.dueDateLabel : o.birthdayLabel;
+/** The cover takes a typed name after this pause, with no motion per letter (S05, as first run). */
+const COVER_PAUSE_MS = 300;
+/** With the keyboard up and less free height than this (iPhone SE), the cover steps aside (S05, as first run). */
+const COVER_MIN_FREE_HEIGHT = 640;
+
+function useSettled<T>(value: T, ms: number): T {
+  const [settled, setSettled] = React.useState(value);
+  React.useEffect(() => {
+    const id = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return settled;
+}
+
+function useKeyboardHeight(): number {
+  const [height, setHeight] = React.useState(0);
+  React.useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return height;
+}
+
+export function AddChildForm() {
+  const o = copy.onboarding.child;
+  const motion = useMotion();
+  const heading = React.useRef<RNText>(null);
+  const nameField = React.useRef<TextInput>(null);
+  const dateField = React.useRef<DateFieldHandle>(null);
+  const [name, setName] = React.useState('');
+  const [expecting, setExpecting] = React.useState(false);
+  // No date is chosen for the person (S47): a seven-month-old is never saved as a newborn by a default.
+  const [birthday, setBirthday] = React.useState<string | null>(null);
+  const [dueDate, setDueDate] = React.useState<string | null>(null);
+  const [dateShown, setDateShown] = React.useState(false);
+  const [nudged, setNudged] = React.useState(false);
+  const coverName = useSettled(name, COVER_PAUSE_MS);
+  const keyboard = useKeyboardHeight();
+  const { height: windowHeight } = useWindowDimensions();
+  const showCover = keyboard === 0 || windowHeight - keyboard >= COVER_MIN_FREE_HEIGHT;
+
+  useFocusOnMount(heading);
+  React.useEffect(() => {
+    if (name.trim()) setDateShown(true);
+  }, [name]);
+
+  const today = todayISO();
+  const input = { name, expecting, birthday, dueDate, today };
+  const block = addChildBlock(input);
+  React.useEffect(() => setNudged(false), [block]);
 
   const save = () => {
-    setTried(true);
-    if (!trimmed) return;
-    const iso = todayISO(date);
+    const values = addChildValues(input);
+    if (!values) return;
     const signsAs = getActiveChild()?.signsAs ?? '';
-    const child = addChild({ name: trimmed, birthday: expecting ? null : iso, dueDate: expecting ? iso : null, signsAs });
+    const child = addChild({ ...values, signsAs });
     setActiveChildId(child.id);
     track('child_added', { has_date: true, child_ordinal: ordinalOf(child.id), in_first_run: false, added_together: false });
     haptic('success');
     router.dismissTo('/book');
   };
 
+  /** The waiting primary was tapped: say why, and move focus to what is missing. */
+  const nudge = () => {
+    if (!block) return;
+    setNudged(true);
+    announce(block);
+    if (!checkChildName(name).ok) nameField.current?.focus();
+    else dateField.current?.focus();
+  };
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-      <ScrollView contentContainerClassName="gap-6 px-5 pb-10 pt-4" keyboardShouldPersistTaps="handled">
-        <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
-          {o.title}
-        </Text>
-        <Text className="text-base leading-6 text-muted-foreground">{copy.children.add.body}</Text>
-
-        <View className="gap-2">
-          <Text className="text-base font-medium text-muted-foreground">{o.nameLabel}</Text>
-          <TextInput
-            className="min-h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground"
-            value={name}
-            onChangeText={setName}
-            placeholder={o.namePlaceholder}
-            placeholderTextColor={c.textMuted}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            accessibilityLabel={o.nameLabel}
-          />
-          {tried && !trimmed ? (
-            <Text accessibilityLiveRegion="polite" className="text-sm text-caution">
-              {x.nameRequired}
-            </Text>
-          ) : (
-            <Text className="text-sm text-muted-foreground">{o.nameHelp}</Text>
-          )}
+      <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-6 pt-4" keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic">
+        <View className="flex-row items-start gap-4">
+          <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
+            {o.title}
+          </Text>
+          {showCover ? (
+            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
+              <BookCover name={coverName} size="sm" />
+            </Animated.View>
+          ) : null}
         </View>
 
-        <View className="min-h-11 flex-row items-center justify-between gap-4">
-          <View className="flex-1 gap-1">
-            <Text className="text-base text-foreground">{o.expectingLabel}</Text>
-            <Text className="text-sm text-muted-foreground">{o.expectingHelp}</Text>
-          </View>
-          <Toggle
-            label={o.expectingLabel}
-            description={o.expectingHelp}
-            value={expecting}
-            onValueChange={(v) => {
-              setExpecting(v);
-              setDate(new Date());
-            }}
-          />
-        </View>
+        <TextField
+          ref={nameField}
+          label={o.nameLabel}
+          value={name}
+          onChangeText={(v) => setName(clampText(v, CHILD_NAME_MAX))}
+          placeholder={o.namePlaceholder}
+          autoCapitalize="words"
+          autoCorrect={false}
+          textContentType="givenName"
+          autoComplete="given-name"
+          returnKeyType="done"
+          helper={nearLimit(textLength(name), CHILD_NAME_MAX) ? fill(o.nameLimit, { n: CHILD_NAME_MAX }) : copy.children.add.twinsHelp}
+        />
 
-        <View className="gap-2">
-          <Text className="text-base font-medium text-muted-foreground">{dateLabel}</Text>
-          {Platform.OS !== 'ios' && (
-            <Pressable onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={dateLabel} className="min-h-12 justify-center rounded-2xl border border-border bg-card px-4">
-              <Text className="text-lg text-foreground">{longDate(isoOf(date))}</Text>
-            </Pressable>
-          )}
-          {pickerOpen && (
-            <DateTimePicker
-              key={expecting ? 'due' : 'birth'}
-              value={date}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'compact' : 'default'}
-              minimumDate={expecting ? new Date() : undefined}
-              maximumDate={expecting ? new Date(Date.now() + 305 * DAY) : new Date()}
-              accentColor={c.accent}
-              accessibilityLabel={dateLabel}
-              onChange={(_, d) => {
-                if (Platform.OS !== 'ios') setPickerOpen(false);
-                if (d) setDate(d);
-              }}
+        {dateShown ? (
+          <Animated.View entering={motion.enter()} className="gap-4">
+            <ChoiceGroup
+              label={o.birthdayLabel}
+              value={expecting ? 'expecting' : 'born'}
+              onChange={(v) => setExpecting(v === 'expecting')}
+              options={[
+                { value: 'born', label: o.birthdayLabel },
+                { value: 'expecting', label: o.expectingLabel },
+              ]}
             />
-          )}
-          <Text className="text-sm text-muted-foreground">{fill(o.birthdayHelp, { child: trimmed || o.nameLabel })}</Text>
-        </View>
+            <View className="gap-2">
+              <View className="min-h-12 flex-row flex-wrap items-center justify-between gap-2">
+                <Text variant="labelSmall" tone="muted">
+                  {expecting ? copy.childrenExtra.dueDateLabel : o.birthdayLabel}
+                </Text>
+                <View className="flex-row flex-wrap items-center justify-end gap-2">
+                  {/* "Born today" is a chip beside the date control, never a default (S05, S47). */}
+                  {!expecting && birthday !== today ? <Chip label={o.bornToday} onPress={() => setBirthday(today)} testID="addChild.bornToday" /> : null}
+                  <DateField
+                    ref={dateField}
+                    key={expecting ? 'due' : 'born'}
+                    label={expecting ? copy.childrenExtra.dueDateLabel : o.birthdayLabel}
+                    chooseLabel={o.chooseDate}
+                    value={expecting ? dueDate : birthday}
+                    onChange={expecting ? setDueDate : setBirthday}
+                    startISO={today}
+                    min={expecting ? today : undefined}
+                    max={expecting ? latestDueDate(today) : today}
+                  />
+                </View>
+              </View>
+              {expecting ? <Text variant="footnote">{o.expectingHelp}</Text> : null}
+            </View>
+          </Animated.View>
+        ) : null}
 
-        <Button size="lg" onPress={save} accessibilityLabel={copy.children.switcher.addButton}>
-          <Text>{trimmed ? fill(copy.children.add.cta, { child: trimmed }) : copy.children.switcher.addButton}</Text>
-        </Button>
+        <View className="flex-1" />
+        {/* Controls never animate in (MOTION principle 2). */}
+        <View>
+          {block ? <ReasonLine text={block} raised={nudged} /> : null}
+          <View>
+            <Button size="lg" fullWidth disabled={block !== null} label={addChildCta(name)} accessibilityHint={block ?? undefined} onPress={save} testID="addChild.add" />
+            {/* A tap on the waiting primary lands on this clear layer (a disabled button takes no tap) and raises the reason. */}
+            {block ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="addChild.add.waiting" /> : null}
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * Why the primary is waiting, directly above it: quiet (footnote, textMuted) until the waiting primary is tapped; then
+ * the same words with the warning mark on an accentSoft chip. Announced politely; a change cross-fades, never shakes.
+ */
+function ReasonLine({ text, raised }: { text: string; raised: boolean }) {
+  const { c } = useTheme();
+  return (
+    <Animated.View key={`${raised ? 'raised' : 'quiet'}:${text}`} entering={FadeIn.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never)} accessibilityLiveRegion="polite" className="mb-3" testID="addChild.reason">
+      {raised ? (
+        <View className="flex-row items-center gap-2 self-start rounded-2xl bg-secondary px-3 py-2">
+          <WarningCircleIcon size={18} color={c.caution} weight="bold" />
+          <Text variant="footnote" tone="default" className="shrink">
+            {text}
+          </Text>
+        </View>
+      ) : (
+        <Text variant="footnote">{text}</Text>
+      )}
+    </Animated.View>
   );
 }

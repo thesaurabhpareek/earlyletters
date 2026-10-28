@@ -22,9 +22,11 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | Item | Needs | When (`08-delivery.md` 10.2) |
 |---|---|---|
 | S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
+| S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
 | S1-09 invite links, push | Switch on; AASA on Apple's CDN; APNs key | W7 |
 | S2-14 sign out and revocation | Switch on | W14 |
 
@@ -262,17 +264,21 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - When a row opens its card, note where focus goes: the card opens inside the letter, under the mark's line, and nothing moves focus to it (lens B B7). Record whether the card's "Put it back" can be reached without hunting.
   - Keep, then listen: "Kept in Month N. Added to Asha's book." is said once, in full, before the Book; the Book comes as the sentence ends (at least 3 s, at most about 8 s). Record whether iOS's `announcementFinished` fires for that sentence word for word: if every save waits the full 8 s, it does not (S6, lens A A3).
   - Start "Hear it", then Keep while it plays: the same sentence is said at once, not held until the Book (S6, lens B B4).
-- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes.
+- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review:
+  - Focus lands on "Keep adding to Asha's book"; swiping back reaches the held letter as one element ("To Asha, Month 7", its words, "From Mama", "Waiting"); nothing of Review behind the sheet is reachable. The escape gesture returns to the letter in Review with nothing held or kept.
+  - "Keep it here for now" closes the sheet and Review; Tonight's card for that letter reads "Waiting to be kept." and "Keep it".
+  - With StoreKit: See Plus opens Apple's subscription view over the sheet; after a sandbox purchase the purchase confirmation opens, the sheet goes and the same Review shows for the person to tap Keep. Offline: the offline line shows under See Plus, which stays. Record any presentation that does not open.
 - **V-07 Apple's subscription sheet:** prices read with their periods (Apple's view, ASC doc D-10).
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
 - **V-09 Read together:** Previous, Next and Close reachable; playback state announced.
-- **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable.
+- **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable. P6a (S40, S46, S47): "If you are struggling" and Licenses push their own pages; each support line reads its name and how to reach it and starts a call; the early-version note is read once, after Version; Add a child reads its heading first, the waiting "Add this book" as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to the empty field; the due-date card's "Set the birthday" and "Hide" are reachable, and "Hide this book" opens a plain confirm.
 - **Expected:** All ten pass with no unlabelled element, no trapped focus and no truncated text at AX5 (letter text never capped, D-027).
 - **Record:** S1-23 rows V-01 to V-10.
 - **Update:** TDD 09 section 2 findings table (status), `docs/design/COMPONENT_LIBRARY.md` for component fixes.
 
 ### S1-24 Display settings and the network check
 - **Steps:** (a) On SE 3 at AX5 with Bold Text and Increase Contrast, in Dark mode, walk Tonight, Review, Book, Settings, Plus gate, then Write and Listen (P4c, #289, #292), each also on a 6.1-inch phone:
+  - The Keep needs Plus sheet (P6a, S22): at AX5 the held card is not tilted and the buttons are in the scroll under the words, nothing truncated; at the default size the card is tilted and the buttons are pinned; Reduce Motion fades the sheet in instead of sliding it. Add a child (S47) and a child's book settings (S46) at AX5: the date row and "Born today" wrap, the reason line sits above the primary.
   - Review: every mark in the letter (a struck "um,", a struck repeat, the heard word and the kept name, a word put back) is in the letter's serif at the letter's size, at every Dynamic Type size from the default to AX5, with a plain space outside each strike (M1).
   - Write with the keyboard up, then down. Emulated on the web at AX5 on an SE: "Add to Asha's book" is 260 pt tall, "Keep private" ends 18 pt below the screen, and the letter gets 0 pt with no keyboard; on a 402 by 874 screen the letter gets about 200 pt (lens B B2). Record the room the letter gets on each phone; if it is too small to read what is typed, the AX5 Write layout needs a follow-up (the destinations in the scroll after the letter, or the autosave line folded into the header).
   - Listen during a take started from a prompt. Emulated on an SE: the room's window is 63 pt, under one 114 pt prompt line; on 402 by 874 it is 270 pt (lens B B3). Record whether the whole prompt can be read by scrolling the room while recording. (b) Settings > Privacy & Security > App Privacy Report on (A: shows the domains each app contacted). Fresh install, first letter, Keep the book Not now, open Settings; read the report. Then turn Usage and crash reports on and off in Settings > Privacy and read it again.
@@ -291,6 +297,49 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
+
+### S1-27 Sign-in and Account screens (EXPERIENCE_PASS S52 to S56, package P8a; PR #310)
+- **Needs:** a switch-on build against staging (build 2), a drill account, the fictional family Asha. What the web build cannot show: the native sheet, AutoFill, VoiceOver, Dynamic Type, the native confirm.
+- **Steps:**
+  - (a) **Row 5b.** On a fresh install, run first run and keep the first letter. The Book appears with the letter in its month, and about 600 ms later the sign-in sheet ("Keep Asha's book on any phone") rises over the Book. It never replaces Review, and no frame of Tonight shows between them. Tap Not now: the Book stays as it was.
+  - (b) **Sensitive data at AX3 and AX5.** Sign in on an account with no sensitive-data answer. On the sensitive-data step at AX3 and at AX5, on an SE 3 and a 6.1-inch phone, "Agree and sync" and "Keep on this phone" are the same height and width. If one wraps, the other grows with it. Both are reachable.
+  - (c) **Terms at AX5.** On a new account, the Terms step at AX5: the agree line ("By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.") is fully visible, never cut, and sits right above "Agree and continue" (in the scroll at accessibility sizes).
+  - (d) **VoiceOver on the sign-in sheet.** On the sheet from Account (cover beside the title), focus lands on the title. The small book cover is not read. The privacy line is read once, as one element. A busy Google button is announced as busy, not dimmed. An error line is announced once.
+  - (e) **VoiceOver on Account.** The way-in mark (Apple, Google or envelope) is not read. "Signed in with email" and the address are read. With a letter queued (airplane mode, keep a letter, turn airplane mode off and sign out at once), the Sign out row says "Your newest letters are still on their way. This phone signs out once they are sent." with a spinner, and it is spoken once.
+  - (f) **AutoFill.** Continue with email offers the phone's addresses, and the code screen offers the code from Mail (S1-08 covers the mail apps). After a wrong code the field is empty and the keyboard is up again.
+  - (g) **Agree and sync, later.** On an account that chose "Keep on this phone", Settings > Account > "Agree and sync" opens the sensitive-data step with all its lines. Nothing is recorded until "Agree and sync" is tapped there.
+- **Expected:** All seven hold, with no truncation, no trapped focus and no element read twice.
+- **Record:** S1-27 rows (a) to (g), with the phone, iOS version and text size; screenshots with Asha only.
+- **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
+
+### S1-29 A child's book with two parents: the book row and the hide footer (S46; P6a, #312)
+- **Needs:** a switch-on build on both phones, with Mama and Papa joined to Asha's book (S1-22's setup).
+- **Steps:**
+  - (a) On Mama's phone, open Settings > Asha's book. Read the "Write this book together" row, then tap it.
+  - (b) Read the footer under "Hide this book". Tap Hide this book, read the confirm, then Cancel. Build 2 has no "Show this book again" yet, so do not confirm the hide on a drill phone.
+  - (c) Only if a drill book has a co-parent whose member row has no signature: repeat (a) and (b) for that book. The server's `signs_as` is null there; the app does not let anyone save an empty signature.
+  - (d) Turn VoiceOver on and swipe through the row and the footer.
+- **Expected:**
+  - (a) The row's value is Papa's own signature ("Papa"). The tap opens the Family tab, not the invite sheet.
+  - (b) The footer reads "Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Papa still sees Asha's book as before." The confirm is not styled as destructive.
+  - (c) The value and the footer say "Your co-parent", and the row still opens the Family tab.
+  - (d) VoiceOver reads the row's label and value, and reads the footer once.
+- **Record:** S1-29 row: (a) to (d) yes or no, or "not run" for (c), with the phones and iOS versions. Take a screenshot of the row and the footer, fictional names only.
+- **Update:** the S46 checkbox in `docs/design/EXPERIENCE_PASS_2026-10.md` (evidence column). Open an issue for any difference.
+
+### S1-30 Licenses: the page opens and scrolls, and cold start does not move (S40; P6a, #312)
+- **Steps:**
+  - (a) On the SE 3, with the S1-03 method, run 10 cold starts on the build before the Licenses page (develop at 49e3d93) and 10 on this one.
+  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the 565 KB list there and only there.
+  - (c) Fling to the end of the list and back. Open one notice and close it.
+  - (d) Repeat (c) at AX5, then with VoiceOver on: the group headings are headings, and each package row reads its name and its licence.
+- **Expected:**
+  - (a) Cold start p50 and p90 are within 50 ms of the build before, and inside the S1-03 budget, because nothing reads the list at launch.
+  - (b) The page opens with no visible stall. Over about 300 ms on the SE 3 is a finding; its follow-up, already listed on #312, is to move `licences.json` to an on-demand asset.
+  - (c) The list scrolls smoothly, with no blank rows after a fling.
+  - (d) Nothing is truncated.
+- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
+- **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).

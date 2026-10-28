@@ -4,7 +4,8 @@
  * run for real in the browser while the server is a script. What it is not: the server. The real
  * SQL is proven by test/family-e2e.test.ts (PGlite) and supabase/tests; this proves the screens.
  *
- * - Auth (GoTrue): an email code signs the person in with a session for `user`.
+ * - Auth (GoTrue): an email code signs the person in with a session for `user`. A flow can answer an auth
+ *   endpoint itself (`auth('otp', ...)`: a rate limit, a wrong code, or `abort` for a phone that is offline).
  * - The consent gate says everything is agreed, so sign-in ends on the sheet that asked for it.
  * - Sync is told to wait (stopped), so nothing else happens in the background.
  * - Each flow adds the RPCs and tables it needs. Anything else is a 404 that the flow's
@@ -27,7 +28,8 @@ export interface MockCall {
   body: unknown;
 }
 
-export type Answer = { status?: number; body: unknown; headers?: Record<string, string> };
+/** `abort`: no answer at all, as when the phone is offline (the request fails before any response). */
+export type Answer = { status?: number; body: unknown; headers?: Record<string, string>; abort?: boolean };
 type Handler = (call: MockCall) => Answer;
 
 export interface MockServer {
@@ -37,6 +39,10 @@ export interface MockServer {
   /** Answer `GET /rest/v1/<table>`. */
   table(name: string, handler: Handler): void;
   rpcCalls(name: string): MockCall[];
+  /** Answer `/auth/v1/<name>` (otp, verify, token, user, logout) instead of the default; a handler returning null falls back to it. */
+  auth(name: string, handler: (call: MockCall) => Answer | null): void;
+  /** Every request to the auth and data APIs (not remote config): what "nothing was asked" is checked against. */
+  serverCalls(): MockCall[];
 }
 
 const b64url = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
@@ -71,6 +77,7 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
   const s = session(opts.user, email);
   const rpcs = new Map<string, Handler>();
   const tables = new Map<string, Handler>();
+  const auths = new Map<string, (call: MockCall) => Answer | null>();
   const calls: MockCall[] = [];
 
   rpcs.set('my_sync_gate', () => ({ body: [{ terms_current: true, age_attested: true, sensitive_data: true, content_allowed: true }] }));
@@ -79,12 +86,14 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
   rpcs.set('sync_pull', () => ({ body: { epoch: 1, books: [], gone: [] } }));
 
   const reply = (route: Route, a: Answer) =>
-    route.fulfill({
-      status: a.status ?? 200,
-      contentType: 'application/json',
-      headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', ...a.headers },
-      body: a.body === undefined ? '' : JSON.stringify(a.body),
-    });
+    a.abort
+      ? route.abort('internetdisconnected')
+      : route.fulfill({
+          status: a.status ?? 200,
+          contentType: 'application/json',
+          headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', ...a.headers },
+          body: a.body === undefined ? '' : JSON.stringify(a.body),
+        });
 
   await page.route(`${MOCK_SUPABASE_URL}/**`, async (route) => {
     const req = route.request();
@@ -99,6 +108,9 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
     const call: MockCall = { method: req.method(), path: url.pathname, query: url.search, body };
     calls.push(call);
     const p = url.pathname;
+    const own = /^\/auth\/v1\/([a-z_]+)$/.exec(p);
+    const mine = own && auths.has(own[1]) ? auths.get(own[1])!(call) : null;
+    if (mine) return reply(route, mine);
     if (p === '/auth/v1/otp') return reply(route, { body: {} });
     if (p === '/auth/v1/verify' || p === '/auth/v1/token') return reply(route, { body: { ...s.session } });
     if (p === '/auth/v1/user') return reply(route, { body: s.user });
@@ -119,6 +131,8 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
     rpc: (name, h) => void rpcs.set(name, h),
     table: (name, h) => void tables.set(name, h),
     rpcCalls: (name) => calls.filter((c) => c.path === `/rest/v1/rpc/${name}`),
+    auth: (name, h) => void auths.set(name, h),
+    serverCalls: () => calls.filter((c) => c.path.startsWith('/auth/') || c.path.startsWith('/rest/')),
   };
 }
 
