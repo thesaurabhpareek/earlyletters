@@ -828,8 +828,8 @@ export const en = {
       weeklyLabel: "Weekly",
       fewTimesLabel: "A few times a week",
       everyEveningLabel: "Every evening",
-      // EXPERIENCE_PASS_2026-10 S34: P6 removes the Pause row if it duplicates the master switch; retire this key then.
-      pauseLabel: "Pause all reminders",
+      // S34: the master switch keeps the cadence, evenings and time when off, so P6 removed the Pause row.
+      pauseLabel: "Pause all reminders", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       help: "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
     },
     privacyLine: "Private by default. You decide what goes in the book.",
