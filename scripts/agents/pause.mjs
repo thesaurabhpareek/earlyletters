@@ -12,11 +12,15 @@
 // has no red-team review but an older head does. A PR whose current head is
 // recorded in state.reviewfp[<pr>].carried (reviewfp.mjs: the same changes as a
 // head the red team reviewed) is left out, because the red team is not
-// re-assigned to it; the board's fingerprint section shows it instead. Labels are
-// shown as they are; this module never changes labels. At most one reviews call
-// per PR per head, cached in ctx.state.drift, and at most MAX_FETCHES uncached
-// calls per tick.
+// re-assigned to it; the board's fingerprint section shows it instead. That holds
+// only while the inherited review still counts (reviewfp.equivalentReviewed, no
+// extra call once carried). If that review was removed or no longer comes from a
+// trusted identity, the head is listed here again. Labels are shown as they are;
+// this module never changes labels. At most one reviews call per PR per head,
+// cached in ctx.state.drift, and at most MAX_FETCHES uncached calls per tick.
 import { isTrusted, trustContext } from "./lib.mjs";
+import { verdictPhrase } from "./hardening.mjs";
+import { equivalentReviewed } from "./reviewfp.mjs";
 
 const NEW_WORK = new Set(["task", "standing"]);
 export const MAX_FETCHES = 8;
@@ -50,7 +54,7 @@ export function olderRedTeam(reviews, sha, trust) {
     if (!m || !isTrusted(r, trust) || sha.startsWith(m[1])) continue;
     const at = r.submitted_at ?? r.created_at ?? "";
     if (!best || at > best.at) {
-      const verdict = (r.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase();
+      const verdict = verdictPhrase(r.body);
       best = { sha: m[1], verdict, at };
     }
   }
@@ -73,7 +77,8 @@ export function boardLines(ctx) {
   for (const pr of [...agentPRs].sort((a, b) => a.number - b.number)) {
     const sha = pr.head?.sha ?? "";
     if (!sha || ctx.prFacts(pr).redTeam) continue;
-    if (state.reviewfp?.[pr.number]?.carried?.sha === sha) continue; // same changes as a reviewed head: never re-assigned
+    // Same changes as a reviewed head, and that review still counts: the red team is not re-assigned.
+    if (state.reviewfp?.[pr.number]?.carried?.sha === sha && equivalentReviewed(ctx, pr)) continue;
     const key = String(pr.number);
     let entry = cache[key];
     if (!entry || entry.head !== sha) {

@@ -43,7 +43,7 @@ test("a verdict-shaped review from an untrusted account is not counted", () => {
   assert.deepEqual(rows.map((r) => r[1]), ["fix first", "fix first"]);
 });
 
-test("board shows the mix of the last 20 and warns after 15 or more without ship", () => {
+test("board shows the mix of the last 20 and adds the calibration note after 15 or more without ship", () => {
   // 25 reviews on 5 PRs: one old ship, then 24 without ship (20 fix first, 4 founder decision).
   const byPr = {};
   for (let i = 0; i < 25; i++) {

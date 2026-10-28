@@ -11,10 +11,13 @@
 //   differs: the newest later head whose changes did not match (not fetched again).
 // One files call per PR per head (gh, one page of 100), and only for PRs that
 // already have state.reviewfp set or that are being assigned.
-// A match saves the red team's run. It is not a review of the new head: the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107).
+// A match saves the red team's run. It is not a review of the new head:
+// the merge rule reads two independent passing reviews on the current head and
+// green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107).
 // Design, and what the fingerprint cannot see: docs/agents/hardening/lanes-and-review-churn.md.
 import { createHash } from "node:crypto";
 import { trustContext, isTrusted, startsWithMarker } from "./lib.mjs";
+import { verdictPhrase } from "./hardening.mjs";
 
 /** Hunk headers carry line numbers that move when develop changes lines above the PR's edits. */
 export function normalizePatch(patch) {
@@ -89,7 +92,7 @@ export function equivalentReviewed(ctx, pr) {
   const fp = currentFp(ctx, pr);
   if (fp === undefined) return false;
   if (fp !== rec.fp) { rec.differs = head; return false; }
-  const verdict = (review.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase();
+  const verdict = verdictPhrase(review.body);
   rec.carried = { sha: head, verdict, at: String(review.submitted_at ?? review.created_at ?? "").slice(0, 10) };
   delete rec.differs;
   return true;

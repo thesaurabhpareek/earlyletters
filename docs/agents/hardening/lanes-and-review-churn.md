@@ -45,8 +45,17 @@ review content it has already reviewed.
   reviewed head", with both heads. `boardLines` runs on every tick, so the record exists whether or
   not the red team was free. A head whose changes differ is recorded as `differs`, so its files call
   is not repeated. `pause.mjs` leaves a carried head out of "Awaiting re-review".
-- A match saves the red team's run only. Nothing is posted on the new head, and the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107),
-  so the board line is a fingerprint match, not a review.
+- A match saves the red team's run only. Nothing is posted on the new head, and the merge rule
+  reads two independent passing reviews on the current head and green CI (D-117,
+  COORDINATION.md section 6, which is also the practice under D-107), so the board line is a
+  fingerprint match, not a review.
+- A carry counts only while the trusted red-team review of the recorded head still exists. If it
+  is removed or stops being trusted, `equivalentReviewed` is false, the head leaves "Same changes
+  as a reviewed head", and `pause.mjs` lists it under "Awaiting re-review" again (no extra
+  call: the check reads the PR's cached reviews).
+- The board shows only the verdict word of the inherited review (`ship`, `fix first` or
+  `founder decision`, read by `verdictPhrase` in `hardening.mjs`), never the words after it. Any
+  other text on the verdict line shows no verdict.
 
 What the fingerprint cannot see (a skipped head can still have changed behaviour):
 - Anything outside the PR's own diff against its merge base. A rebase or develop merge that changes

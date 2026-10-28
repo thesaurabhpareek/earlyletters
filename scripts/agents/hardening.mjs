@@ -8,6 +8,18 @@ export function oneLine(text, max = 100) {
   return String(text ?? "").replace(/[`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+/**
+ * The red-team verdict of a review body, only when it is exactly one the harness
+ * defines (OPERATING_MODEL section 6): "ship", "fix first" or "founder decision",
+ * on a line that starts with `Verdict:` (bold markers allowed), ending at a word
+ * boundary. Anything else, and every word after the verdict, returns "". Use it for
+ * text that reaches the board, so a reviewer's sentence never does.
+ */
+export function verdictPhrase(body) {
+  const m = String(body ?? "").match(/^[ \t]*\**Verdict:?\**:?[ \t]*(ship|fix[ \t]+first|founder[ \t]+decision)\b/im);
+  return m ? m[1].toLowerCase().replace(/\s+/g, " ") : "";
+}
+
 /** Journal entries a brief may use: the marker comes first AND the author is trusted. Anyone can comment on a journal issue. */
 export function trustedJournalEntries(comments, trust) {
   return (comments ?? []).filter((c) => isTrusted(c, trust) && /^\s*<!-- journal run:/.test(c?.body ?? ""));
