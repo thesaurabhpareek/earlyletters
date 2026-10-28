@@ -264,12 +264,18 @@ describe('[#53] the letter page and Review are wired this way', () => {
     expect(helper).toMatch(/clearReadItBack\(id\)/);
   });
 
-  it('the Keep sheet says where such a letter\'s words wait, never Tonight', () => {
+  it('the Keep sheet says where such a letter\'s words wait, never Tonight', async () => {
     expect(review).toMatch(/heldOn=\{later \? 'letter' : 'tonight'\}/);
     const gate = read('components/child/plus-gate.tsx');
     expect(gate).toMatch(/heldOn = 'tonight'/);
-    expect(gate).toMatch(/\{onLetter \? k\.heldNoteLetter : k\.heldNote\}/);
-    expect(gate).toMatch(/offline \? \(onLetter \? k\.offlineLetter : k\.offline\)/);
+    // The words are chosen in plus-gate.logic.ts (P6, S22), which the sheet draws: signed in or out, online or off.
+    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, storeSupport: plan\.storeSupport \}\)/);
+    const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
+    for (const synced of [false, true]) {
+      const base = { lapsed: false, heldOn: 'letter' as const, synced, storeSupport: 'available' as const };
+      expect(keepSheetView({ ...base, offline: false })).toMatchObject({ heldNote: billingCopy.keepGate.heldNoteLetter, note: null });
+      expect(keepSheetView({ ...base, offline: true }).note).toBe(billingCopy.keepGate.offlineLetter);
+    }
     for (const line of [billingCopy.keepGate.heldNoteLetter, billingCopy.keepGate.offlineLetter]) {
       expect(line).toMatch(/this letter/);
       expect(line).not.toMatch(/Tonight|phone/);
