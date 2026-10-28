@@ -273,6 +273,11 @@ describe('[S55] before your book syncs', () => {
     expect(turnOn.indexOf('if (!accepted) {')).toBeLessThan(turnOn.indexOf('await auth.turnOnSync()'));
   });
 
+  it('Agree from "Agree and sync" sets the guard before its await and releases it in finally, so a failed Agree can be tried again', () => {
+    const turnOn = between(consent, 'const answerTurnOn: Answer = async', '  };');
+    expect(turnOn).toMatch(/inFlight\.current = true;\s*setBusy[\s\S]*await auth\.turnOnSync\(\)[\s\S]*finally \{\s*inFlight\.current = false;/);
+  });
+
   it('"Agree and sync" after a decline shows the sensitive-data step with its words, then records (LEGAL-REQ-006)', () => {
     expect(consent).toMatch(/const turningOn = params\.step === 'sensitive' && s\.status === 'ready' && s\.sync === 'off'/);
     expect(between(consent, 'if (turningOn) {', 'if (s.status !== \'needsConsent\')')).toMatch(/<SensitiveStep child=\{child\} busy=\{busy\} error=\{turnOnError\} answer=\{answerTurnOn\} \/>/);

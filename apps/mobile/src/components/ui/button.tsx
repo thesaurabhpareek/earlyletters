@@ -12,6 +12,9 @@
  *
  * Accessibility contract
  * - role button; disabled and busy in accessibilityState; label = visible text (2.5.3).
+ * - Loading ignores presses without being disabled, so VoiceOver hears "busy", not "dimmed"
+ *   (Pressable writes its `disabled` prop over accessibilityState; button.logic.ts). On the web,
+ *   aria-busy carries it, since react-native-web does not map accessibilityState.
  * - Heights are minimums: at AX sizes the label wraps and the button grows, never clips.
  * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity. A disabled
  *   primary or secondary drops its fill for a 1 pt controlBorder outline (EXPERIENCE_PASS S01).
@@ -142,6 +145,7 @@ function Button({
           disabled={state.disabled}
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityState={state.accessibilityState}
+          aria-busy={loading ? true : undefined}
           onPressIn={(e) => {
             press.onPressIn();
             if (haptic && !inactive) playHaptic(haptic);
