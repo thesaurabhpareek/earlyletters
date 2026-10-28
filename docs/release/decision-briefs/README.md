@@ -8,7 +8,7 @@ Prepared by retro work package R1-09 (IMP-04, IMP-05, IMP-36, IMP-46, IMP-47, IM
 
 | Brief | Question | Needed by | Default if unanswered |
 |---|---|---|---|
-| [a](a-harness-actions-lane.md) | Provision the Actions agent lane, or retire it and trim the roster | Thu 5 Nov | Lane stays unregistered and idle; roster unchanged |
+| [a](a-harness-actions-lane.md) | How and when to turn on the rebuilt harness (the founder has said keep it and make it strong) | Thu 5 Nov | Rebuild packages proceed; unattended runs stay off |
 | [b](b-pr-316-roster-credit.md) | PR #316: five agents onto Claude Code for the API credit expiring 3 Nov | Fri 30 Oct | #316 spends nothing; the credit lapses |
 | [c](c-d117-founder-class-merges.md) | D-117: may the coordinator merge founder-class paths after two lens passes | Mon 2 Nov | The coordinator's rule stays, with nothing enforcing it |
 | [d](d-analytics-v1.md) | Analytics in v1.0 | Thu 5 Nov | Off in every build; the record stays ambiguous |

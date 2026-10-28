@@ -1,27 +1,35 @@
-# Brief (a): provision the Actions agent lane, or retire it
+# Brief (a): how and when to turn on the rebuilt harness
 
-Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go). Brief (b) depends on this one.
-Default if unanswered: nothing changes. `agents.yml` stays unregistered and idle, the 24-agent roster stays, and the question keeps coming back in triage.
+Status: open, not decided. The question is no longer whether to keep the harness but when unattended runs start. Needed by Thu 5 Nov (proposed go/no-go). Brief (b) depends on this one.
+Default if unanswered: the rebuild packages proceed, and unattended runs stay off, because `agents.yml` is unregistered and `AGENTS_ENABLED` is unset.
 Conflict of interest: the session that commissioned this brief built the harness.
 
-## Question
-Should the GitHub Actions agent lane (`.github/workflows/agents.yml`) be made to run, or be retired for v1.0 with the roster trimmed to what is used?
+## Founder's stated position (28 Oct 2026, as relayed by the coordinator; not a D-id)
+"I don't see why we should retire the harness. There is a lot of value we can create by a strong harness." Then: "let's do everything that a strong harness needs that would help me build stronger apps". The coordinator records any D-id.
 
-## Evidence
-- The default branch is `main` (GitHub API, 28 Oct). The workflows API lists 14 workflows; `agents.yml` is not one of them, so its schedule ([agents.yml:21](../../../.github/workflows/agents.yml#L21)) has never fired.
-- Once registered, every tick still skips unless `vars.AGENTS_ENABLED == 'true'` ([agents.yml:42](../../../.github/workflows/agents.yml#L42)). Engines need `OPENROUTER_API_KEY` or `ANTHROPIC_API_KEY` ([agents.yml:14](../../../.github/workflows/agents.yml#L14)).
+## Evidence of what failed
+- The default branch is `main` (GitHub API, 28 Oct). The workflows API lists 14 workflows; `agents.yml` is not one of them, so its schedule ([agents.yml:21](../../../.github/workflows/agents.yml#L21)) has never fired. Once registered, every tick still skips unless `vars.AGENTS_ENABLED == 'true'` ([agents.yml:42](../../../.github/workflows/agents.yml#L42)).
 - `agents/roster.json` lists 24 agents; 4 carry `paused_until`. The retro panels report 13 never ran (retro IMP-11; not rechecked here).
-- The separate 4-hourly scheduled lane left no journal entry in four weeks (retro spot-check 23).
+- The 4-hourly scheduled lane left no journal entry in four weeks (retro spot-check 23). Its prompt still cites #127 (retro spot-check 7).
 - Agents post through the founder's account, so trust checks cannot tell an agent from the founder (retro IMP-06; unverified here).
+- `develop` has no branch protection and no required checks (retro spot-check 3); the scheduled tasks carry write-capable connectors (retro spot-check 12).
 
-## Options
-| Option | What it changes | Cost or risk |
+## Rebuild packages (none turns an unattended lane on)
+- H1: a GitHub App identity for agents, with trust rules that tell agent posts from founder posts.
+- H2: freezes, honest board status and "no trace" runs enforced in the dispatcher, not prompt text.
+- H3: one usage budget across lanes, with a reserved share for build work.
+- H4: an offline end-to-end lane test plus a read-only start-of-run smoke check.
+- H5: charters and memories aligned with D-100 to D-119, with a charter lint.
+- H6: one task source that reads the backlog and the PRD V2 work packages.
+- H7: briefs that carry each agent's memory, lessons and new D-ids.
+- H8: interactive orchestration (claim, two lens reviews, merge train) written down as part of the harness.
+
+## Options (when unattended runs start)
+| Option | What it takes | Cost or risk |
 |---|---|---|
-| 1. Provision | Default branch to `develop` (with the ruleset step in Wave 0 item 9), an API key secret with a spend limit, `AGENTS_ENABLED=true` | About 1 to 2 hours of founder time plus spend. An unattended lane writes to a public repo as the founder in freeze week, with the IMP-06 trust gap open |
-| 2. Retire for v1.0 | Record that the Actions lane is not used for v1.0; leave `AGENTS_ENABLED` unset; disable the 4-hourly task (Wave 0 item 2); trim the roster after #316, #164 and #112 resolve; files stay, so it can return later | Sunk cost written off. Robustness items RB-10, RB-11, RB-32 and RB-35 drop. Low risk; reversible |
-| 3. Pause and decide after the alpha | Same as the default, with a named review date | Low risk; the open question keeps costing triage time |
-
-Option 2 does not block moving the default branch to `develop` for `nightly.yml`: `agents.yml` registers but stays idle while `AGENTS_ENABLED` is unset.
+| 1. After four preconditions | Branch protection with required checks on `develop` and `main` (Wave 0 item 8); the GitHub App identity (H1); write connectors removed from scheduled tasks (Wave 0 item 1); and the 5 Nov go/no-go has passed | Unattended runs start after 5 Nov. The founder's setup is about 1 to 2 hours plus API spend |
+| 2. Sooner, before the preconditions | Default branch to `develop`, an API key, `AGENTS_ENABLED=true` now | An unattended lane writes to a public repo as the founder, with no required checks, in freeze week (Tue 3 Nov, 5:00 AM PT); production connectors still attached |
+| 3. Interactive orchestration only until H1 to H8 land | Threads keep doing the work as now (H8 writes it down) | No unattended capacity until the rebuild lands; the date depends on H1 to H8 review time |
 
 ## Recommendation (a recommendation, not a decision)
-Option 2. In four weeks there is no evidence the lane produced merged work, and provisioning during freeze week adds unattended writes for no release benefit. Revisit after v1.0 with an agent identity of its own.
+Option 1. It gives the founder the strong harness asked for, with its safety checks in code before it runs alone, and keeps the release path clear until the go/no-go.

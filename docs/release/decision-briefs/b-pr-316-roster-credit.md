@@ -16,9 +16,9 @@ Merge [#316](https://github.com/thesaurabhpareek/earlyletters/pull/316) and prov
 ## Options
 | Option | What it changes | Cost or risk |
 |---|---|---|
-| 1. Close #316 | Nothing runs | Up to $200 of credit unused (amount unverified). No release risk |
-| 2. Merge and provision by Mon 2 Nov | Brief (a) option 1 steps plus the three steps in the PR body | About 1 to 2 hours of founder time. An unattended lane runs through the freeze (Tue 3 Nov, 5:00 AM PT) and the go/no-go, posting as the founder. Its reviews come from the same model family as the threads it reviews |
+| 1. Close #316 | Nothing runs; engine and roster choices wait for the rebuild (H5) and the sequencing in brief (a) | Up to $200 of credit unused (amount unverified). No release risk |
+| 2. Merge and provision by Mon 2 Nov | Brief (a) option 2 (turn on sooner) plus the three steps in the PR body | About 1 to 2 hours of founder time. An unattended lane runs through the freeze (Tue 3 Nov, 5:00 AM PT) and the go/no-go, posting as the founder. Its reviews come from the same model family as the threads it reviews |
 | 3. Spend the credit in supervised sessions | The founder runs and watches named review sessions with the key; no Actions lane | Founder time. Whether the credit applies to that use is unverified |
 
 ## Recommendation (a recommendation, not a decision)
-Option 1, unless brief (a) chooses to provision. The listed reviews can run in the existing interactive threads; a $200 credit does not justify switching on an unattended lane in freeze week.
+Option 1, unless brief (a) option 2 is chosen. Under brief (a)'s recommended sequencing, unattended runs start only after the 5 Nov go/no-go, two days after the credit expires, so #316 cannot spend it there. The listed reviews can run in the existing interactive threads; a $200 credit does not justify switching on an unattended lane before its safety checks exist.
