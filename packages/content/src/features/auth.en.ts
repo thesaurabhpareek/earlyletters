@@ -129,10 +129,10 @@ export const authCopy = {
       agree: 'Agree and continue',
       notNow: 'Not now',
     },
+    // The age step is the gate's own question (S01): the question as the title, Yes and No as
+    // pills, and common.continueButton. No explanatory line (LEGAL-REQ-002: presented neutrally).
     age: {
-      title: 'One quick question',
       body: 'Are you 18 or older?',
-      help: 'We ask everyone the same question.',
       yes: 'Yes',
       no: 'No',
     },
