@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { authCopy, en } from '../src';
-import { AUTH_WE_ALLOWED } from './support/copy-surfaces';
+import { AUTH_WE_ALLOWED, SURFACES } from './support/copy-surfaces';
 
 const at = (path: string): unknown =>
   path.split('.').reduce<unknown>((node, key) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[key] : undefined), authCopy);
@@ -145,8 +145,15 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
 
   it('leaves registered disclosure text word for word, and the privacy line is trust.signIn.privacy itself', () => {
     for (const [key, words] of Object.entries(REGISTERED)) expect(at(key), key).toBe(words);
-    // The only keys rules.test.ts lets say "we" are registered text.
+    // The only keys rules.test.ts lets say "we" are registered text, and the sign-in row widens no exception by prefix.
     for (const key of AUTH_WE_ALLOWED) expect(key in REGISTERED, key).toBe(true);
+    const row = SURFACES.find((s) => s.feature === 'auth')!;
+    expect(row.we.allowed).toEqual([...AUTH_WE_ALLOWED]);
+    expect(row.we.allowedPrefixes).toBeUndefined();
+    for (const b of row.banned) {
+      expect(b.allowedPrefixes, b.name).toBeUndefined();
+      for (const key of b.allowed ?? []) expect(key in REGISTERED, `${b.name}: ${key}`).toBe(true);
+    }
     expect(authCopy.sheet.privacy).toBe(en.trust.signIn.privacy);
     expect(authCopy.sheet.emailUse).toBe(en.trust.signIn.email);
     expect(authCopy.sheet.why).toBe(en.trust.signIn.why);

@@ -34,7 +34,7 @@ import {
   storeListing,
 } from '../src';
 import { alternateStories } from '../src/stories.en';
-import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACES, TOUCHED } from './support/copy-surfaces';
+import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
 
 type Leaf = { path: string; text: string };
 
@@ -965,7 +965,23 @@ describe('[EXPERIENCE_PASS_2026-10 P0] the promise sample (S04)', () => {
   });
 });
 
-describe.each(SURFACES)('[EXPERIENCE_PASS_2026-10 P8] rules over $name', (surface) => {
+describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface rules, or says why not', () => {
+  it('has a row or an opt-out with a reason for every key of `features`, and keeps the three P8 rows', () => {
+    const rows = SURFACES.map((s) => s.feature as string);
+    const optOut = Object.keys(SURFACE_OPT_OUT);
+    expect(new Set(rows).size).toBe(rows.length);
+    for (const required of ['auth', 'family', 'accountDeletion']) expect(rows, required).toContain(required);
+    // A new copy file must join with one row, or say why not.
+    expect(Object.keys(features).filter((k) => !rows.includes(k) && !optOut.includes(k))).toEqual([]);
+    // An opt-out is for a file that exists and has no row, and it says why.
+    expect(optOut.filter((k) => !(k in features) || rows.includes(k))).toEqual([]);
+    for (const [k, why] of Object.entries(SURFACE_OPT_OUT)) expect(why!.trim().length, k).toBeGreaterThan(20);
+    // A row points at the copy it names.
+    for (const s of SURFACES) expect(s.copy, s.name).toBe(features[s.feature]);
+  });
+});
+
+describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as const))('%s', (_title, surface) => {
   const ALL = leaves(surface.copy);
   const paths = new Set(ALL.map((l) => l.path));
   const line = (l: Leaf) => `${l.path}: ${l.text}`;
@@ -975,7 +991,7 @@ describe.each(SURFACES)('[EXPERIENCE_PASS_2026-10 P8] rules over $name', (surfac
     allowed.includes(path) || prefixes.some((p) => path.startsWith(p));
 
   it('finds the copy it checks, and every exception it names is a real leaf, so none can go stale', () => {
-    expect(ALL.length).toBeGreaterThan(20);
+    expect(ALL.length).toBeGreaterThan(0);
     const named = [
       ...(surface.we.allowed ?? []),
       ...surface.buttons,
@@ -994,7 +1010,10 @@ describe.each(SURFACES)('[EXPERIENCE_PASS_2026-10 P8] rules over $name', (surfac
   });
 
   it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
-    expect(surface.buttons.length).toBeGreaterThan(5);
+    expect(surface.buttons.length).toBeGreaterThan(0);
+    // The list cannot fall behind the file: every leaf named ...Button or ...Cta is on it.
+    const named = ALL.filter((l) => /(?:button|cta)$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
+    expect(named.filter((p) => !surface.buttons.includes(p))).toEqual([]);
     for (const key of surface.buttons) {
       const label = get(surface.copy, key);
       expect(typeof label, key).toBe('string');

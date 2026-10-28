@@ -248,8 +248,12 @@ export type Banned = {
 };
 
 export type Surface = {
+  /** The package and spec tag in the test title: the old per-file titles said P8a, P8b and P8c S64. */
+  tag: string;
   /** The copy file, for the test title. */
   name: string;
+  /** Its key in `features` (packages/content/src/features/index.ts): every key there has a row or an opt-out. */
+  feature: keyof typeof features;
   copy: unknown;
   /** The Asha fixtures that fill a placeholder (CLAUDE.md: tests use the fictional family "Asha"). */
   vars: Record<string, string>;
@@ -347,7 +351,6 @@ const DELETION_BUTTONS = [
 /** The disclosure keys chapter 7 keeps verbatim, the only ones in authCopy that may say "we" (S52 `sheet.privacy`, S55 `consent.terms.*`). */
 export const AUTH_WE_ALLOWED = ['sheet.privacy', 'sheet.emailUse', 'consent.terms.body'] as const;
 
-
 /** P8b: the invitee's lines before the join returns (BL-322, D-113): paste, signed out, peeking, ask, account, joining and the errors. */
 const FAMILY_BEFORE_JOIN = [
   ...['title', 'pasteLabel', 'pasteHelp', 'pastePlaceholder', 'continue', 'notRecognised', 'invitedTitle', 'signInBody', 'signIn', 'peeking', 'askTitle', 'invitedBy', 'invitedByUnknown', 'askBody', 'join', 'notNow', 'needsSync', 'joining', 'tryAgain', 'pasteAnother', 'tryLater'].map((k) => `accept.${k}`),
@@ -357,7 +360,9 @@ const FAMILY_BEFORE_JOIN = [
 
 export const SURFACES: readonly Surface[] = [
   {
-    name: 'authCopy (P8a, S52 to S56)',
+    tag: 'EXPERIENCE_PASS_2026-10 P8a',
+    name: 'authCopy (S52 to S56)',
+    feature: 'auth',
     copy: authCopy,
     vars: { app: brand.name, child: 'Asha', email: 'mama@example.invalid' },
     buttons: AUTH_BUTTONS,
@@ -376,7 +381,9 @@ export const SURFACES: readonly Surface[] = [
     uk: UK_LONG,
   },
   {
-    name: 'familyCopy (P8b, S57 to S60)',
+    tag: 'P8b',
+    name: 'familyCopy (S57 to S60)',
+    feature: 'family',
     copy: familyCopy,
     vars: { app: brand.name, child: 'Asha', signsAs: 'Papa', inviter: 'Mama', coParent: 'Papa', date: 'October 23' },
     buttons: FAMILY_BUTTONS,
@@ -395,7 +402,9 @@ export const SURFACES: readonly Surface[] = [
     uk: UK_SHORT,
   },
   {
-    name: 'accountDeletionCopy (P8c, S64)',
+    tag: 'P8c S64',
+    name: 'accountDeletionCopy',
+    feature: 'accountDeletion',
     copy: accountDeletionCopy,
     vars: { child: 'Asha', coParent: 'Papa', count: '12', date: 'November 27, 2026' },
     buttons: DELETION_BUTTONS,
@@ -416,3 +425,24 @@ export const SURFACES: readonly Surface[] = [
     uk: UK_SHORT,
   },
 ];
+
+/**
+ * Feature copy files that have no per-surface row, each with the reason. rules.test.ts fails when a key of `features`
+ * (packages/content/src/features/index.ts) is in neither SURFACES nor this list, so a new copy file must either join
+ * with one row above or say here why it does not. Every file below is still read by the global rules through IN_APP.
+ */
+export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
+  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet',
+  billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
+  contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
+  export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  language: 'the language picker; no per-file rule set written yet',
+  licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
+  packs: 'speech pack downloads; no per-file rule set written yet',
+  player: 'the letter player; no per-file rule set written yet',
+  reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  speech: 'speech settings; no per-file rule set written yet',
+  speechConsent: 'the speech consent card; pinned in apps/mobile/test/speech-consent.test.ts; no per-file rule set written yet',
+  words: 'transcription state words; no per-file rule set written yet',
+  languageNames: 'language names, not sentences',
+};
