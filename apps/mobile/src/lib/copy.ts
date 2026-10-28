@@ -4,7 +4,7 @@
  *
  * `{app}` (the public name) is filled here, once, from packages/brand, so
  * in-app copy never types the name and screens can render strings such as
- * `copy.ageGate.stopBody` as they are (CLAUDE.md: the name lives only in
+ * `copy.ageGate.stopTitle` as they are (CLAUDE.md: the name lives only in
  * packages/brand). Every other placeholder is left for `fill`.
  *
  * Feature-local copy files (`*copy.ts` under src/) are allowed for strings a
@@ -63,7 +63,6 @@ export const pendingCopy = {
     removeChild: copy.onboarding.child.removeA11y,
     signsAsTitleMany: copy.onboarding.signsAs.titleMany,
     andJoin: copy.common.andJoin,
-    mishearTitle: copy.onboarding.promise.mishearTitle,
   },
   listen: copy.listen,
   review: {
@@ -94,9 +93,6 @@ export const pendingCopy = {
   },
   readTogether: {
     emptyBody: copy.readTogether.empty,
-  },
-  reader: {
-    deletedUndoBody: copy.reader.deletedBody,
   },
   tonight: {
     waitingTitle: copy.tonight.draftWaiting.title,

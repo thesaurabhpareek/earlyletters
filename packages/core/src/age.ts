@@ -44,6 +44,15 @@ export function ageOn(birthISO: string, onISO: string): Age {
   return { months, weeks, days };
 }
 
+/**
+ * True when the child is not born yet on that day: there is no birthday (a book started with "Not here yet" and a due
+ * date), or the birthday is after it. The Book files such letters in Before You, Review's header says "Before You",
+ * and Tonight offers the pre-birth prompts. A due date does not matter here and is never counted toward.
+ */
+export function isBeforeBirth(birthISO: string | null | undefined, onISO: string): boolean {
+  return !birthISO || ageOn(birthISO, onISO).days < 0;
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
