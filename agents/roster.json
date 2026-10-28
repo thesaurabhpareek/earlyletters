@@ -64,8 +64,10 @@
       "daily_runs": 4,
       "wip_limit": 1,
       "max_turns": 60,
-      "model": "openrouter/z-ai/glm-5.2",
-      "max_budget_usd": 3
+      "model": "claude-sonnet-5-5",
+      "max_budget_usd": 5,
+      "engine": "claude-code",
+      "engine_note": "API credit week (27 Oct to 3 Nov 2026): revert to opencode when the Console credit is gone"
     },
     {
       "handle": "product",
@@ -106,7 +108,9 @@
         "data architect"
       ],
       "daily_runs": 3,
-      "wip_limit": 2
+      "wip_limit": 2,
+      "engine": "claude-code",
+      "engine_note": "API credit week (27 Oct to 3 Nov 2026): revert to opencode when the Console credit is gone"
     },
     {
       "handle": "security",
@@ -127,7 +131,9 @@
         "privacy engineer"
       ],
       "daily_runs": 2,
-      "wip_limit": 2
+      "wip_limit": 2,
+      "engine": "claude-code",
+      "engine_note": "API credit week (27 Oct to 3 Nov 2026): revert to opencode when the Console credit is gone"
     },
     {
       "handle": "speech",
@@ -251,7 +257,9 @@
         "SECURITY.md",
         "docs/security/**",
         "docs/ops/SECRETS.md"
-      ]
+      ],
+      "engine": "claude-code",
+      "engine_note": "API credit week (27 Oct to 3 Nov 2026): revert to opencode when the Console credit is gone"
     },
     {
       "handle": "compliance-engineer",
@@ -347,7 +355,9 @@
         "platform"
       ],
       "daily_runs": 1,
-      "wip_limit": 1
+      "wip_limit": 1,
+      "engine": "claude-code",
+      "engine_note": "API credit week (27 Oct to 3 Nov 2026): revert to opencode when the Console credit is gone"
     },
     {
       "handle": "chief-of-staff",
