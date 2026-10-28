@@ -31,7 +31,7 @@ Rules that never bend:
 | `RATE_SUBJECT_SECRET` | invite-redeem | `openssl rand -base64 48` (at least 32 characters). HMAC key for rate-limit subjects (person, install, IP), rotated daily by construction; the function fails closed without it | On suspicion (counters only last an hour) |
 | `CLIENT_IP_HEADER` | invite-redeem | The one header the platform sets and overwrites with the caller's address (one of `cf-connecting-ip`, `x-real-ip`, `fly-client-ip`, `true-client-ip`). Check on the first staging deploy by sending a request with each header forged and seeing which value survives. Unset skips the per-IP limit (logged `no_address`) | When the platform changes |
 | `KILL_SWITCHES` | invite-redeem, subscription-status (main project) | Optional comma list of remote-config kill-switch names, for example `invites,statusReport`. `scripts/packs/publish.ts config` prints the exact `supabase secrets set` line. Unset means none. Backup and escrow use `app.backup_enabled`, `app.escrow_enabled` and the escrow project's `ESCROW_SWITCH` instead (S05 runbook); the status report also has the database setting `app.status_report_enabled` (S06), which the same command prints | When the switch state changes |
-| `TOKEN_KEK_V1` | purge-worker, and the future `apple-token` function | `openssl rand -base64 32` (32 random bytes). Wraps stored Apple refresh tokens (AES-256-GCM). Losing it only means stored tokens cannot be revoked; it protects nothing else | Yearly, by adding `TOKEN_KEK_V2` (2.3) |
+| `TOKEN_KEK_V1` | purge-worker and `apple-token` | `openssl rand -base64 32` (32 random bytes). Wraps stored Apple refresh tokens (AES-256-GCM). Losing it only means stored tokens cannot be revoked; it protects nothing else | Yearly, by adding `TOKEN_KEK_V2` (2.3) |
 | `ALERT_EMAIL` | purge-worker | Optional; default `hello@earlyletters.com`. Suggested: `security@earlyletters.com` once it exists (DOMAINS.md 7) | n/a |
 | `MAIL_FROM` | purge-worker | Optional; default `Early Letters <hello@earlyletters.com>` (built from `packages/brand`) | n/a |
 | `PURGE_WORKER_BUDGET_MS` | purge-worker | Optional; default 110000. Raise toward 380000 only on a paid plan (wall clock limit is an Assumption) | n/a |
@@ -79,7 +79,7 @@ Create the new key with the same scope, set the secret, watch one worker run (or
 
 ### 2.3 `TOKEN_KEK` (Apple refresh token wrapping)
 1. Add `TOKEN_KEK_V2` (new random value). Keep `TOKEN_KEK_V1`.
-2. Point the capture side (`apple-token` function, not built) at version 2 for new tokens.
+2. The capture side (`apple-token`, built in #139) wraps new tokens under the newest `TOKEN_KEK_V<n>` it finds, so step 1 already points it at version 2 (`supabase/functions/apple-token/handler.ts`).
 3. Re-wrap old rows (a one-off script: unwrap with V1, wrap with V2, `ops_apple_token_put(..., 2, ...)`; not built, small) or simply wait: rows leave when people delete their accounts.
 4. When `select key_version, count(*) from ops.apple_tokens group by 1;` shows no version 1, remove `TOKEN_KEK_V1`.
 
@@ -132,7 +132,7 @@ Consoles: every account below has two-factor sign-in (a security key or an authe
 | Anonymous sign-ins | Off | Not used at v1.0 | Authentication > Providers |
 | Phone and unused providers | Off | Smaller surface | Authentication > Providers |
 | Auth audit logs | Keep the shortest retention offered; do not store IPs in the database if the option exists (DELETION spec OQ-5, Unverified) | Minimisation | Authentication > Audit Logs |
-| Edge Functions | `purge-worker` deployed with `--no-verify-jwt`; `analytics-forget` with JWT verification on | Section 3 | Edge Functions > function > Details |
+| Edge Functions | `config`, `content` and `purge-worker` deployed with `--no-verify-jwt`; `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` with JWT verification on (`.github/scripts/functions-deploy.mjs` `NO_VERIFY_JWT` and each function's `index.ts`; `escrow` lives in its own project, D-102) | Section 3 | Edge Functions > function > Details |
 | Storage | Every bucket private (`entry-photos`, `ops-ledger`); size and MIME limits as migrations set | DATA-REQ-047 | Storage |
 | Organization | MFA required for members; members: founder only | Section 3 | Organization > Settings |
 | Error verbosity | Ask Supabase support whether `log_error_verbosity = terse` can be set, so failing rows never reach Postgres logs (TDD 06 conflict C-2, Unverified) | Letter text in a CHECK failure | Support ticket |
@@ -150,7 +150,7 @@ Apple requires apps with Sign in with Apple to revoke the user's tokens when the
 
 **How revocation works:** the worker unwraps the stored refresh token (AES-256-GCM under `TOKEN_KEK_V<n>`, bound to the profile id), builds a 10-minute ES256 client secret (`iss` Team ID, `sub` the token's client id, which is the bundle id for native sign-in, `aud https://appleid.apple.com`), posts to `https://appleid.apple.com/auth/revoke`, and deletes the stored row. HTTP 200 and Apple's `invalid_grant` (token already unusable) both complete the step; `invalid_client` means our key or ids are wrong: the step retries and alerts `apple_config`.
 
-**What is not built yet (owner: auth engineer):** the capture side, the `apple-token` function that, right after native Apple sign-in, exchanges the one-time authorization code (`POST https://appleid.apple.com/auth/token`, `grant_type=authorization_code`, `client_id` = bundle id) and stores the refresh token with `wrapAppleToken()` from `supabase/functions/purge-worker/lib/apple.ts` and `ops_apple_token_put(profile, ciphertext, key_version, client_id)`. Until it ships, deletions of Apple users complete with the receipt saying `apple: no_token`, and the worker raises an `apple_no_token` alert so the gap stays visible. Ship it before Sign in with Apple reaches anyone outside the family.
+**The capture side (owner: auth engineer; built in #139, BL-330):** the `apple-token` function that, right after native Apple sign-in, exchanges the one-time authorization code (`POST https://appleid.apple.com/auth/token`, `grant_type=authorization_code`, `client_id` = bundle id) and stores the refresh token with `wrapAppleToken()` from `supabase/functions/purge-worker/lib/apple.ts` and `ops_apple_token_put(profile, ciphertext, key_version, client_id)`. Until it is deployed, deletions of Apple users complete with the receipt saying `apple: no_token`, and the worker raises an `apple_no_token` alert so the gap stays visible. Deploy it before Sign in with Apple reaches anyone outside the family.
 
 **Staging test:** sign in with Apple, delete the account, run the worker after day 30 (or set `scheduled_for` back on staging), then check `apple_token_revoke = done` and receipt `apple = revoked`, and on the iPhone, Settings > Apple Account > Sign in with Apple no longer lists the app (Assumption that revocation removes it).
 

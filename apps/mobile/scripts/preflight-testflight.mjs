@@ -59,7 +59,7 @@ const STEPS = {
   1: 'Step 1. Apple Developer Program enrolment (FT-01)',
   2: 'Step 2. App Store Connect: the .preview App ID, the app record, testers and the API key (FT-07, FT-08)',
   3: 'Step 3. Expo account, the project id and EXPO_TOKEN (FT-17, BL-339)',
-  4: 'Step 4. Words from speech: pack signing keys and the R2 bucket packs.earlyletters.app (FT-16, D-097)',
+  4: 'Step 4. Words from speech: pack signing keys and the R2 bucket early-letters-packs at packs.earlyletters.app (FT-16, D-097)',
   5: 'Step 5. Build 1: preflight, build, submit, testers',
   6: 'Step 6. Supabase staging project and its schema (FT-10)',
   7: 'Step 7. Supabase Auth on staging, with Resend SMTP for sign-in email (FT-12, FT-13)',
@@ -292,7 +292,7 @@ if (cfg) {
     step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
   } else {
     warn('No extra.eas.projectId in app.config.ts yet: founder step 3, listed as MISSING below. app.config.ts is a dynamic config, so eas-cli cannot write the id into it, and every `eas build`, from GitHub or from your own computer, stops until step 3\'s PR adds it (eas-cli 24.10.0, getProjectIdAsync.js: "the EAS project ID can\'t automatically be added"). The founder sends the id that expo.dev or `eas init` shows; it goes into `extra` in a small PR.');
-    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN as a GitHub secret');
+    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN only for builds from GitHub, as a secret of the GitHub Environment testflight');
   }
 
   // Version and build number.

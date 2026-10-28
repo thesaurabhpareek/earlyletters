@@ -251,14 +251,14 @@ If test 11.7 fails or Supabase changes the beta API, leave the flag off: that is
 
 ## 8. App build settings (environment variables)
 
-All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text") or in `eas.json` under `build.<profile>.env`. Locally, put them in `apps/mobile/.env.development.local` (git-ignored).
+All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text"), never in `eas.json` (the config tests and the preflight fail on a Supabase value there). For the alpha, follow `docs/release/TESTFLIGHT.md` step 9 for names and visibility: the `preview` environment, which both alpha builds read, holds only the Supabase URL, the publishable key and the code length, never a Google client id. Locally, put them in `apps/mobile/.env.development.local` (git-ignored).
 
 | Variable | Value | Without it |
 |---|---|---|
 | `EXPO_PUBLIC_SUPABASE_URL` | Project URL from 1.1 | App runs local-only; sign-in sheet says sign-in is not available in this build |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from 1.1 (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also accepted) | Same |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 | Google button hidden |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id | Google button hidden, Google plugin not in the build |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 (not in `preview` during the alpha) | Google button hidden |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id (not in `preview` during the alpha: it adds the Google plugin to both alpha builds) | Google button hidden, Google plugin not in the build |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | Same as 4.4 (default 6) | 6 |
 | `EXPO_PUBLIC_PASSKEYS` | `1` only after section 7 | Passkeys hidden |
 

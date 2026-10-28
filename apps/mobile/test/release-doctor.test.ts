@@ -81,10 +81,29 @@ describe('the repository wiring', () => {
   });
   it('fails each missing founder step, as develop is today (no production line fails)', () => {
     const f = repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: { production: {}, preview: {}, testflight: {} } }), keysTs: '[ ]' });
-    expect(f.filter((x) => x.level === 'FAIL').length).toBe(3);
-    expect(f.filter((x) => x.level === 'WARN').length).toBe(2);
-    expect(repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: {} }), keysTs: '[ ]' }, true).filter((x) => x.level === 'FAIL').length).toBe(5);
+    // FAIL: the project id and the signing keys. WARN: the two ascAppId lines and the owner.
+    expect(f.filter((x) => x.level === 'FAIL').length).toBe(2);
+    expect(f.filter((x) => x.level === 'WARN').length).toBe(3);
+    expect(repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: {} }), keysTs: '[ ]' }, true).filter((x) => x.level === 'FAIL').length).toBe(4);
     expect(lvl(f, 'submit.production')).toBe('NOT NEEDED');
+  });
+  it('a missing owner is a WARN, with or without --live: eas-cli 24.10.0 asks for it only below SDK 53, and this app is SDK 57', () => {
+    const noOwner = { ...good, appConfig: "extra: { eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } }" };
+    for (const live of [false, true]) {
+      const owner = repoFindings(noOwner, live).find((x) => x.message.includes('`owner`'));
+      expect(owner?.level).toBe('WARN');
+      expect(owner?.message).toMatch(/SDK 53/);
+      expect(owner?.message).toMatch(/must match the Expo account that owns the project/);
+    }
+    expect(repoFindings(noOwner).filter((x) => x.level === 'FAIL')).toEqual([]);
+    expect(lvl(repoFindings(good), 'Expo owner')).toBe('PASS');
+  });
+  it('a missing project id says how to get one without committing it yourself', () => {
+    const f = repoFindings({ ...good, appConfig: "owner: 'someone'" });
+    const id = f.find((x) => x.message.includes('extra.eas.projectId'));
+    expect(id?.level).toBe('FAIL');
+    expect(id?.message).toMatch(/send the id/);
+    expect(id?.message).not.toMatch(/commit the id/);
   });
   it('fails an ascAppId that is not numeric', () => {
     const f = repoFindings({ ...good, easJson: JSON.stringify({ submit: { testflight: { ios: { ascAppId: 'abc' } }, preview: { ios: { ascAppId: '2' } } } }) });
