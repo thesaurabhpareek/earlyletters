@@ -77,14 +77,144 @@ describe('the 60-character name: three lines, a fade, never an ellipsis', () => 
     }
   });
 
-  it('one word longer than the cover breaks between letters, never mid-letter, and still ends in a fade', () => {
+  it('one word longer than the cover is never split across lines: it ends the name in a fade on one line', () => {
     const word = `Asha${'a'.repeat(56)}`;
     expect(word.length).toBe(60);
-    const set = coverName(word, 'sm');
-    expect(set.lines).toHaveLength(3);
-    expect(set.truncated).toBe(true);
-    expect(word.startsWith(set.lines.join(''))).toBe(true);
-    for (const l of set.lines) expect(l).not.toMatch(ELLIPSIS);
+    for (const size of SIZES) {
+      const m = coverMetrics(size);
+      const set = coverName(word, size);
+      expect(set.lines, size).toHaveLength(1);
+      expect(set.truncated, size).toBe(true);
+      expect(word.startsWith(set.lines[0]), size).toBe(true);
+      expect(set.lines[0], size).not.toMatch(ELLIPSIS);
+      expect(set.full, size).toBe(word);
+      // The type went all the way down to the floor first, and the line runs to the edge so the fade sits on letters.
+      expect(set.fontSize, size).toBe(m.name.min);
+      expect(measure(set.lines[0], set.fontSize), size).toBeGreaterThan(m.textWidth * 0.75);
+    }
+  });
+});
+
+/**
+ * P2 critics' pass S2 (28 Oct): a first name of ten or more letters broke mid-word on the first-run cover ("Alexandrin"
+ * over "a"). The cover shows the typed name exactly as typed, in at most three lines, ending in a fade and never an
+ * ellipsis glyph; the type steps down to the floor first, and a word that is still wider ends the name in a fade on
+ * one line, so no letter is ever stranded on a line of its own. The names are typed test strings, nobody's.
+ */
+describe('a long first name is never broken in two (P2 S2)', () => {
+  const NAMES = ['Christopher', 'Maximilian', 'Alexandrina'] as const;
+  const STATES = ['closed', 'open'] as const;
+
+  for (const name of NAMES) {
+    for (const size of SIZES) {
+      for (const state of STATES) {
+        it(`${name} on the ${size} cover, ${state}: one line, the start of the name, whole or ending in a fade`, () => {
+          const m = coverMetrics(size);
+          const t = state === 'open' ? m.flyleafName : m.name;
+          const set = coverName(name, size, state);
+          expect(set.lines).toHaveLength(1); // never "Alexandrin" over "a"
+          expect(name.startsWith(set.lines[0])).toBe(true); // nothing added, nothing changed
+          expect(set.lines[0]).not.toMatch(ELLIPSIS);
+          expect(set.full).toBe(name); // the accessible name is complete
+          expect(set.fontSize).toBeGreaterThanOrEqual(tokens.minFontSize);
+          expect(measure(set.lines[0], set.fontSize)).toBeLessThanOrEqual(m.textWidth);
+          if (set.truncated) {
+            // Only after the type has stepped all the way down, and with the line run to the edge so the fade sits on letters.
+            expect(set.fontSize).toBe(t.min);
+            expect(measure(set.lines[0], set.fontSize)).toBeGreaterThan(m.textWidth * 0.75);
+            expect(set.lines[0].length).toBeLessThan(name.length);
+          } else {
+            expect(set.lines[0]).toBe(name);
+          }
+        });
+      }
+    }
+  }
+
+  it('the 132 pt and 160 pt covers hold all three names whole, closed and open (the 96 pt one fades Christopher and Alexandrina)', () => {
+    for (const name of NAMES) {
+      for (const size of ['md', 'lg'] as const) {
+        for (const state of STATES) expect(coverName(name, size, state), `${name} ${size} ${state}`).toMatchObject({ lines: [name], truncated: false });
+      }
+    }
+  });
+
+  it('on the 88 pt first-run cover the type steps down to the 13 pt floor, then the name fades: a ten-letter name does not fit there whole', () => {
+    // Measured with the bundled Literata Medium: 13 pt sets "Maximilian" 73.7 pt wide, "Christopher" 77.8 and
+    // "Alexandrina" 78.9 on a cover that leaves 71.8 (74 less 3 percent). Lowering the floor is the spec owner's call.
+    for (const name of NAMES) {
+      const set = coverName(name, 'sm');
+      expect(set, name).toMatchObject({ truncated: true, broken: true, fontSize: tokens.minFontSize, full: name });
+      expect(set.lines, name).toHaveLength(1);
+    }
+    expect(coverName('Christopher', 'sm').lines).toEqual(['Christophe']);
+    expect(coverName('Maximilian', 'sm').lines).toEqual(['Maximilia']);
+    expect(coverName('Alexandrina', 'sm').lines).toEqual(['Alexandrin']);
+  });
+
+  it('a name of several words keeps the words before a long one whole, and a long word ends the name instead of wrapping', () => {
+    expect(coverName('Asha Alexandrina', 'sm').lines).toEqual(['Asha', 'Alexandrin']);
+    expect(coverName('Wilhelmina Rose', 'sm')).toMatchObject({ lines: ['Wilhelmin'], truncated: true }); // never "Wilhelmin" over "a Rose"
+    expect(coverName('Wilhelmina Rose', 'thumb')).toMatchObject({ lines: ['Wilhelmina', 'Rose'], truncated: false });
+  });
+
+  it('every word of the typed names is whole on every line that is not the fading last one', () => {
+    for (const name of ['Asha Christopher Maximilian', 'Asha Meenakshi Ananya Saraswathi', LONG]) {
+      for (const size of SIZES) {
+        const set = coverName(name, size);
+        const words = new Set(name.split(' '));
+        for (const line of set.lines.slice(0, set.truncated ? -1 : undefined)) for (const w of line.split(' ')) expect(words.has(w), `${name} / ${size}: ${w}`).toBe(true);
+      }
+    }
+  });
+});
+
+/**
+ * The fade ends a name at the edge of the cover, so the cut is wherever the width runs out. It must land between whole
+ * letters: never between a letter and its accent, never inside a surrogate pair, a flag or a joined emoji, never leave a
+ * trailing space, and the name kept for the accessible label is always the whole of it. The width is swept so the cut
+ * visits every position of each name. Fictional names only (Asha) and typed test strings.
+ */
+describe('the cut is always between whole letters, and the whole name is always kept (P2 S2)', () => {
+  const NAMES = [
+    'Zoe\u0301'.repeat(12), // Zoe with the e written as e plus a combining acute, one word
+    'A\u{1F1EE}\u{1F1F3}'.repeat(10), // A and a two-part flag, one word
+    '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}Asha'.repeat(5), // a joined family emoji, then a name, one word
+    'Asha Zoe\u0301 Nin\u0303a Ame\u0301lie Ravi Mae\u0301 Lena Jo\u0303ao Christopher', // several words, accents, a long last word
+    'Asha  \u{1F1EE}\u{1F1F3} Nila Mae\u0301 Rose', // a run of spaces, a flag
+  ];
+
+  it('every line is the start of the name in whole letters, none starts or ends with a space, and `full` is the whole name', () => {
+    let faded = 0;
+    for (const name of NAMES) {
+      const all = graphemes(displayName(name));
+      for (let width = 12; width <= 170; width += 1.5) {
+        for (const maxLines of [1, 2, 3]) {
+          const set = setText(name, { size: 13, maxWidth: width, maxLines });
+          const where = `${JSON.stringify(name)} width ${width} lines ${maxLines}`;
+          const rebuilt = set.lines.join(' ');
+          expect(all.slice(0, graphemes(rebuilt).length).join(''), where).toBe(rebuilt);
+          for (const line of set.lines) {
+            expect(line.length, where).toBeGreaterThan(0);
+            expect(line, where).toBe(line.trim());
+            expect(line, where).not.toMatch(ELLIPSIS);
+          }
+          expect(set.lines.length, where).toBeLessThanOrEqual(maxLines);
+          expect(set.full, where).toBe(displayName(name));
+          if (set.truncated) faded++;
+        }
+      }
+    }
+    expect(faded).toBeGreaterThan(300); // the sweep really did cut names at the edge
+  });
+
+  it('a name cut by the fade fits the width it was set for, at every width (nothing runs past the cover)', () => {
+    for (const name of NAMES) {
+      for (let width = 30; width <= 170; width += 5) {
+        const set = setText(name, { size: 13, maxWidth: width, maxLines: 3 });
+        for (const line of set.lines) expect(measure(line, 13), `${JSON.stringify(name)} ${width}: ${line}`).toBeLessThanOrEqual(width * 0.97);
+      }
+    }
   });
 });
 
