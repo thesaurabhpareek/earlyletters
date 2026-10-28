@@ -19,11 +19,12 @@ const cfg = () => ({
     local: { runs: 3, cost_usd: 6 },
     "sched-4h": { runs: 3, cost_usd: 6 },
     "docs-daily": { runs: 1, cost_usd: 2 },
+    "prd-daily": { runs: 1, cost_usd: 2 },
   },
   profiles: {
     "freeze-week": {
       reserved_interactive_share: 0.8,
-      lanes: { actions: { runs: 1 }, "docs-daily": { runs: 0 } },
+      lanes: { actions: { runs: 1 }, "docs-daily": { runs: 0 }, "prd-daily": { runs: 0, cost_usd: 0 } },
     },
   },
   profile_windows: [],
@@ -90,6 +91,35 @@ test("sched-4h: its receipts count against its own cap, and AGENTS_LANE=sched-4h
       body: "<!-- receipt run:sched-202610280545 agent:qa cost:unknown --> Run receipt." }] };
   assert.match(blockedReason(ctx, { handle: "qa" }, { mode: "task" }, { config: cfg() }), /^budget: lane sched-4h: 1 run\(s\) today with unknown cost/);
   _resetTick();
+});
+
+test("sched-prd-<YYYYMMDD> is prd-daily, checked before the generic sched-<YYYYMMDD> docs shape", () => {
+  const c = cfg();
+  assert.equal(laneOfRun("sched-prd-20261028", c), "prd-daily");
+  assert.equal(laneOfRun("sched-20261028", c), "docs-daily", "the docs shape is unchanged");
+  const noPrd = { ...c, lanes: { ...c.lanes } };
+  delete noPrd.lanes["prd-daily"];
+  assert.equal(laneOfRun("sched-prd-20261028", noPrd), "unattributed", "never falls through to docs-daily");
+  assert.equal(laneOfRun("sched-prd-2026102", c), "unattributed");
+
+  const rows = [row("sched-prd-20261028", 0.4)];
+  const v = verdict("prd-daily", rows);
+  assert.equal(v.ok, false);
+  assert.match(v.reason, /lane prd-daily: 1 of 1 runs used today/);
+  assert.equal(verdict("docs-daily", rows).ok, true, "the docs lane is not charged for the PRD run");
+  const freeze = { ...c, profile_windows: [{ profile: "freeze-week", from: "2026-11-02", until: "2026-11-09", reason: "release freeze", decided_by: "D-120" }] };
+  const inWeek = new Date("2026-11-03T13:00:00Z");
+  const f = canRun("prd-daily", { config: freeze, usage: usageFromRows([], freeze, "2026-11-03"), now: inWeek });
+  assert.equal(f.ok, false);
+  assert.match(f.reason, /lane prd-daily: 0 of 0 runs used today \(freeze-week profile\)/);
+});
+
+test("the committed budget runs prd-daily once a day, 0 in freeze week, and maps its run ids", () => {
+  const b = loadBudget();
+  assert.equal(b.lanes["prd-daily"].runs, 1);
+  assert.ok(b.lanes["prd-daily"].cost_usd <= 2, "conservative cost cap");
+  assert.equal(b.profiles["freeze-week"].lanes["prd-daily"].runs, 0);
+  assert.equal(laneOfRun("sched-prd-20261028", b), "prd-daily");
 });
 
 test("the committed budget names the sched-4h lane that PR #328's agent-lane prompt sets", () => {

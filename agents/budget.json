@@ -1,5 +1,5 @@
 {
-  "$comment": "Usage budget across lanes (retro H3, AIE-R28). Read by scripts/agents/budget.mjs; rules and wiring in docs/agents/BUDGET.md. All caps are per UTC day. Scheduled lanes together may use daily_total times (1 - reserved_interactive_share); the rest is kept for interactive build work, which is never blocked. Unknown cost counts as over budget. The numbers are proposed defaults, not a founder decision: daily_total.runs equals roster limits.max_runs_per_day_total (30) and cost_usd is 30 runs at the opencode default_budget_usd (2). A lane is matched from the receipt run id: digits = actions, local or local-<n> = local, sched-<YYYYMMDDHHMM> = sched-4h, sched-<YYYYMMDD> = docs-daily, <lane>~<anything> = that lane.",
+  "$comment": "Usage budget across lanes (retro H3, AIE-R28). Read by scripts/agents/budget.mjs; rules and wiring in docs/agents/BUDGET.md. All caps are per UTC day. Scheduled lanes together may use daily_total times (1 - reserved_interactive_share); the rest is kept for interactive build work, which is never blocked. Unknown cost counts as over budget. The numbers are proposed defaults, not a founder decision: daily_total.runs equals roster limits.max_runs_per_day_total (30) and cost_usd is 30 runs at the opencode default_budget_usd (2). A lane is matched from the receipt run id: digits = actions, local or local-<n> = local, sched-<YYYYMMDDHHMM> = sched-4h, sched-prd-<YYYYMMDD> = prd-daily, sched-<YYYYMMDD> = docs-daily, <lane>~<anything> = that lane.",
   "version": 1,
   "daily_total": { "runs": 30, "cost_usd": 60 },
   "reserved_interactive_share": 0.5,
@@ -24,11 +24,15 @@
       "cost_usd": 6
     },
     "docs-daily": {
-      "$comment": "Daily docs run: run ids sched-<UTC YYYYMMDD>, no AGENTS_LANE (PR #328, docs/agents/lanes/docs-run.prompt.md).",
+      "$comment": "Daily docs run: AGENTS_LANE=docs-daily, run ids sched-<UTC YYYYMMDD> (PR #328, docs/agents/lanes/docs-run.prompt.md).",
       "runs": 1,
       "cost_usd": 4
     },
-    "prd-daily": { "runs": 1, "cost_usd": 4 }
+    "prd-daily": {
+      "$comment": "Daily PRD run: AGENTS_LANE=prd-daily, receipt run ids sched-prd-<UTC YYYYMMDD> (PR #328, docs/agents/lanes/prd-daily.prompt.md). One run, cost kept to one opencode default run.",
+      "runs": 1,
+      "cost_usd": 2
+    }
   },
   "profiles": {
     "freeze-week": {
@@ -39,7 +43,7 @@
         "local": { "runs": 1, "cost_usd": 2 },
         "sched-4h": { "runs": 1, "cost_usd": 2 },
         "docs-daily": { "runs": 0 },
-        "prd-daily": { "runs": 0 }
+        "prd-daily": { "runs": 0, "cost_usd": 0 }
       }
     }
   },
