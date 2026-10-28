@@ -163,12 +163,24 @@ describe('[S3] "Write the words" on a recording with no words', () => {
     expect(page).toMatch(/if \(!setTypedWordsForWaitingEntry\(entryId, text\)\) return;\s*onClose\(\);\s*router\.push\(\{ pathname: '\/review', params: \{ entryId \} \}\);/);
   });
 
-  it('the journey asserts it: j10e sees "Write the words" and neither retry nor "Get words ready" (S9 as well: j10c picks the Book card)', () => {
+  it('the journey asserts it: j10e sees "Write the words" and neither retry nor "Get words ready", and the save goes to Review', () => {
     const j10 = flow('j10-letter.flow.ts');
     const e2e = j10.slice(j10.indexOf("test('[J10e]"), j10.indexOf("test('[J10d]"));
     expect(e2e).toMatch(/await expect\(btn\(app, 'Write the words'\)\)\.toBeVisible\(\);/);
     expect(e2e).toMatch(/await expect\(btn\(app, 'Try again'\)\)\.toHaveCount\(0\);/);
     expect(e2e).toMatch(/await expect\(btn\(app, 'Get words ready'\)\)\.toHaveCount\(0\);/);
+    expect(e2e).toMatch(/await expect\(app\)\.toHaveURL\(\/\\\/review\/\);/);
+  });
+});
+
+describe('[S9] j10c picks the Book\'s own card', () => {
+  it('selects the card by test id, because the Tonight screen under the Book carries the same words on the web', () => {
+    const j10 = flow('j10-letter.flow.ts');
+    const waiting = j10.slice(j10.indexOf("test('[J10c]"), j10.indexOf("test('[J10e]"));
+    expect(waiting).toMatch(/app\.getByTestId\('book\.card'\)\.filter\(\{ hasText: \/waiting for its words\/i \}\)\.first\(\)\.click\(\);/);
+    expect(waiting).not.toMatch(/app\.getByText\(\/waiting for its words\/i\)\.first\(\)\.click\(\)/);
+    // The id it picks is the one the card sets.
+    expect(code(src('components/book/letter-card.tsx'))).toMatch(/testID="book\.card"/);
   });
 });
 

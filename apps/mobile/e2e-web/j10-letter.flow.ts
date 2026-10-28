@@ -136,6 +136,12 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
   await btn(app, 'Write the words').click();
   await expect(app.getByText('Words for this recording').first()).toBeVisible();
   await expect(app.getByTestId('letter.writeWords.save')).toBeDisabled();
+  // The result goes the same way as for a waiting letter: the typed words are stored and Review opens for the letter.
+  await app.getByRole('textbox').last().fill('You hummed the bath song, all the way through.');
+  await app.getByTestId('letter.writeWords.save').click();
+  await expect(app).toHaveURL(/\/review/);
+  // Review is on top of the letter page, which still holds the same words: look at the last copy.
+  await expect(app.getByText('You hummed the bath song, all the way through.').last()).toBeVisible();
 });
 
 test('[J10d] a letter that does not exist', async ({ app, record }) => {
