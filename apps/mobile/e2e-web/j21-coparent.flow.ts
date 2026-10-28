@@ -127,6 +127,8 @@ async function joinWithTheBookArriving(app: Page) {
     return { body: ASHA_BOOK };
   });
   m.table('children', () => ({ body: { name: CHILD } }));
+  // The Family tab's pending list after the join: this parent's book, no invites.
+  m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: accepted ? [{ id: ASHA_BOOK, role: 'parent', name: CHILD, members: [], invites: [] }] : [] } }));
   const at = '2026-10-20T09:00:00.000Z';
   const meta = {
     role: 'parent',
@@ -172,7 +174,22 @@ test('[J21g] invitee: once the book is on this phone, "Open the book" lands on t
   await btn(app, 'Open the book').click();
   await expect(app.getByText(`${CHILD}'s book`).first()).toBeVisible();
   await expect(app).toHaveURL(/\/book/);
-  await step('happy', 'The Book, lit for the second parent', 'The sheet closes onto the Book, on this book, and its light rises from unlit over 1.2 s, the one slow arrival outside first run (5.8 row 12).', undefined, { settle: 1400 });
+  await step('happy', 'The Book, lit for the second parent', 'The sheet closes onto the welcome, which hands over to the Book and leaves first run behind; the Book is on this book, and its light rises from unlit over 1.2 s, the one slow arrival outside first run (5.8 row 12).', undefined, { settle: 1400 });
+
+  // First run is gone from under the tabs: every other room stays where the person goes (lens B on #314).
+  const stays = async (where: RegExp) => {
+    await expect(app).toHaveURL(where);
+    await app.waitForTimeout(800);
+    await expect(app).toHaveURL(where);
+  };
+  await app.getByText('Tonight', { exact: true }).last().click();
+  await stays(/:\d+\/(\?[^/]*)?$/);
+  await app.getByText('Family', { exact: true }).last().click();
+  await stays(/\/family/);
+  // Settings is the gear on the Book.
+  await app.getByText('Book', { exact: true }).last().click();
+  await app.getByRole('button', { name: 'Settings' }).click();
+  await stays(/\/settings/);
 });
 
 test('[J21h] invitee: Close on the joined sheet, with the book here, hands over to the Book (no joined light: only Open leaves the mark)', async ({ app }) => {

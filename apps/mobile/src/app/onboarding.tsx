@@ -156,7 +156,8 @@ export default function Onboarding() {
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this phone, first run is
   // over (no second book is made by mistake), and the person lands on the Book, where the letters that came back
   // are, never on Tonight (EXPERIENCE_PASS 5.8 rows 12 and 13).
-  // While the join sheet is in front it waits: the joiner lands on the Book from "Open the book" (S59, P8b).
+  // Only while the welcome, or the sign-in sheet over it, is in front (components/family/welcome-handoff.logic.ts): the
+  // join sheet waits for Open or Close (S59, P8b), and no other screen is ever pulled back to the Book.
   const pathname = usePathname();
   useEffect(() => {
     if (!welcomeMayLeave(step, pathname)) return;

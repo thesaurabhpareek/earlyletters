@@ -12,13 +12,14 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '../src/components/family/join-sheet.logic';
+import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '../src/components/family/join-sheet.logic';
+import { startJoinedArrival } from '../src/components/family/joined-arrival.logic';
 import { joinedArrival } from '../src/components/family/family-notice';
-import { planLampMount } from '../src/components/ui/lamp.logic';
+import { lampMemory, planLampMount, resolveLamp } from '../src/components/ui/lamp.logic';
 import { FINAL_INVITE_ERRORS, inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { joinPlan, type JoinInputs } from '../src/lib/family/join-flow.logic';
 
@@ -107,11 +108,17 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
 });
 
 describe('[S59] "Open the book" lands on the Book with the light rising once (5.8 row 12)', () => {
-  it('lands on the Book, and leaves the one-shot arrival mark just before', () => {
+  afterEach(() => lampMemory.clear());
+
+  it('over the welcome the sheet only closes, and the welcome hands over and leaves the stack; over the tabs it dismisses to the Book', () => {
+    expect(openLanding(['onboarding', 'invite'])).toBe('welcome');
+    expect(openLanding(['(tabs)', 'invite'])).toBe('book');
+    expect(openLanding([])).toBe('book');
     expect(JOINED_LANDING).toBe('/book');
-    expect(code(SHEET)).toMatch(/joinedArrival\.leave\(\);\s*router\.dismissTo\(JOINED_LANDING\);/);
-    // Only "Open the book" leaves it: Close and every other view do not.
-    expect(code(SHEET).match(/joinedArrival\.leave\(/g)).toHaveLength(1);
+    const sheet = code(SHEET);
+    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*const under = navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\];\s*if \(openLanding\(under\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
+    // Only "Open the book" leaves the mark: Close and every other view do not.
+    expect(sheet.match(/joinedArrival\.leave\(/g)).toHaveLength(1);
   });
 
   it('the mark is taken once, whether the Book comes up new or was already under the sheet', () => {
@@ -121,19 +128,71 @@ describe('[S59] "Open the book" lands on the Book with the light rising once (5.
     expect(joinedArrival.waiting()).toBe(false);
     expect(joinedArrival.take()).toBe(false);
     const book = code('app/(tabs)/book.tsx');
-    expect(book).toMatch(/useState\(\(\) => \(joinedArrival\.waiting\(\) \? Date\.now\(\) : 0\)\)/);
-    expect(book).toMatch(/if \(joinedArrival\.take\(\)\) setJoinedAt\(\(t\) => t \|\| Date\.now\(\)\);/);
+    expect(book).toMatch(/useState\(\(\) => \(joinedArrival\.waiting\(\) \? startJoinedArrival\(\) : 0\)\)/);
+    expect(book).toMatch(/if \(joinedArrival\.take\(\)\) setJoinedAt\(\(t\) => t \|\| startJoinedArrival\(\)\);/);
   });
 
-  it('the Book\'s lamp then comes up from unlit over arriveMs, once; otherwise it shares the tabs\' light', () => {
+  it('the Book\'s lamp keeps the tabs\' shared light, and for this arrival comes up from unlit over arriveMs, once', () => {
     const book = code('app/(tabs)/book.tsx');
-    expect(book).toMatch(/\{joinedAt \? <Lamp key=\{joinedAt\} scene="book" arrive \/> : <Lamp scene="book" persistKey="tabs" \/>\}/);
-    // A lamp with no memory that is asked to arrive rises from 0 to the Book's 0.6 over arriveMs.
-    const light = { anchor: 'top' as const, core: 'gold' as const, tail: 'amber' as const, intensity: 0.6, breathe: false };
-    expect(planLampMount(undefined, light, false, { arrive: true, firstOfSession: false })).toEqual([{ light: { anchor: 'top', core: 'gold', tail: 'amber' }, from: 0, to: 0.6, ms: tokens.motion.lamp.arriveMs }]);
+    expect(book).toMatch(/\{joinedAt \? <Lamp key=\{joinedAt\} scene="book" persistKey="tabs" arrive \/> : <Lamp scene="book" persistKey="tabs" \/>\}/);
+    const light = resolveLamp({ scene: 'book' })!;
+    const geometry = { anchor: light.anchor, core: light.core, tail: light.tail };
+    // Coming from a lit room (the Family tab's 0.4): without the arrival the Book settles from it over returnMs.
+    lampMemory.set('tabs', resolveLamp({ scene: 'family' }));
+    expect(planLampMount(lampMemory.atMount('tabs'), light, false, { key: 'tabs', arrive: true, firstOfSession: false })[0].from).toBe(0.4);
+    // With the arrival the tabs' light is unlit first, so the Book rises from 0 to 0.6 over arriveMs.
+    expect(startJoinedArrival(1234)).toBe(1234);
+    expect(planLampMount(lampMemory.atMount('tabs'), light, false, { key: 'tabs', arrive: true, firstOfSession: false })).toEqual([{ light: geometry, from: 0, to: 0.6, ms: tokens.motion.lamp.arriveMs }]);
     expect(tokens.motion.lamp.arriveMs).toBe(1200);
+    // A fresh install has no tabs' light yet (the welcome's firstRun light would be followed): unlit too.
+    lampMemory.clear();
+    lampMemory.set('firstRun', resolveLamp({ scene: 'welcome' }));
+    startJoinedArrival();
+    expect(planLampMount(lampMemory.atMount('tabs'), light, false, { key: 'tabs', arrive: true, firstOfSession: false })[0]).toMatchObject({ from: 0, to: 0.6, ms: tokens.motion.lamp.arriveMs });
     // Reduce Motion: the Book lit at once.
-    expect(planLampMount(undefined, light, true, { arrive: true })).toEqual([{ light: { anchor: 'top', core: 'gold', tail: 'amber' }, from: 0.6, to: 0.6, ms: 0 }]);
+    expect(planLampMount(lampMemory.atMount('tabs'), light, true, { key: 'tabs', arrive: true })).toEqual([{ light: geometry, from: 0.6, to: 0.6, ms: 0 }]);
+  });
+});
+
+describe('[S59] the token and the steps (lens B mutation survivors on #314)', () => {
+  const sheet = () => code(SHEET);
+
+  it('J9: a join that worked forgets the link, so the next launch never joins again', () => {
+    expect(sheet()).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\s*await clearPendingInvite\(t\);/);
+  });
+
+  it('J22: "Paste another link" drops the dead token, so the sheet goes back to the paste field instead of looking again', () => {
+    expect(sheet()).toMatch(/const pasteAnother = \(\) => \{\s*started\.current = null;\s*setError\(null\);\s*setPreview\(null\);\s*setWantsJoin\(false\);\s*setPasted\(''\);\s*setToken\(null\);\s*\};/);
+    const kept = { ...BASE, signedIn: true, canSync: true };
+    expect(joinPlan({ ...kept, token: null })).toEqual({ view: 'paste', next: 'none' });
+    expect(joinPlan({ ...kept, token: TOKEN })).toEqual({ view: 'peeking', next: 'peek' });
+  });
+
+  it('J20: the failed step is recorded, so Try again after a failed join joins again without looking again', () => {
+    expect(sheet()).toMatch(/if \(FINAL_INVITE_ERRORS\.includes\(kind\)\) await clearPendingInvite\(t\);\s*setFailedAt\(stage\);\s*setError\(kind\);/);
+    expect(sheet()).toMatch(/if \(!retryKeepsPreview\(failedAt\)\) setPreview\(null\);/);
+    expect(retryKeepsPreview('accept')).toBe(true);
+    expect(retryKeepsPreview('peek')).toBe(false);
+    // With the answer kept and Join already tapped, the plan joins; without it, it would look again.
+    const retried = { ...BASE, signedIn: true, canSync: true, wantsJoin: true };
+    expect(joinPlan({ ...retried, preview: MAMA })).toEqual({ view: 'joining', next: 'accept' });
+    expect(joinPlan({ ...retried, preview: null })).toEqual({ view: 'peeking', next: 'peek' });
+  });
+
+  it('J10 and J23: Not now forgets the link, from the ask and from the signed-out view', () => {
+    expect(sheet()).toMatch(/const notNow = async \(\) => \{\s*if \(token\) await clearPendingInvite\(token\);\s*close\(\);\s*\};/);
+    expect(sheet()).toMatch(/\{plan\.view === 'signIn' \? <QuietButton label=\{a\.notNow\} onPress=\{\(\) => void notNow\(\)\} \/> : null\}/);
+    expect(sheet()).toMatch(/<QuietButton label=\{a\.notNow\} onPress=\{\(\) => void notNow\(\)\} \/>\s*<\/>/);
+  });
+
+  it('J11 and J12: each server call runs once per step, and Try again lets it run again', () => {
+    expect(sheet()).toMatch(/if \(!token \|\| plan\.next === 'none' \|\| started\.current === plan\.next\) return;\s*started\.current = plan\.next;/);
+    expect(sheet()).toMatch(/const retry = \(\) => \{\s*started\.current = null;/);
+  });
+
+  it('J13: nothing is joined until the tap: wantsJoin starts false', () => {
+    expect(sheet()).toMatch(/const \[wantsJoin, setWantsJoin\] = useState\(false\);/);
+    expect(joinPlan({ ...BASE, signedIn: true, canSync: true, preview: MAMA })).toEqual({ view: 'ask', next: 'none' });
   });
 });
 

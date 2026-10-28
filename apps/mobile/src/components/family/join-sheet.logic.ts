@@ -63,3 +63,21 @@ export function joinedBody(inviter: string | null | undefined): string {
  * one-shot mark the sheet leaves just before (family-notice.ts joinedArrival), not a route param.
  */
 export const JOINED_LANDING = '/book' as const;
+
+/**
+ * How "Open the book" gets there, from the routes under the sheet. Over first run's welcome (a fresh install), the
+ * sheet only closes: the welcome hands over to the Book itself and leaves the stack (welcome-handoff.logic.ts), so
+ * nothing of first run stays under the tabs. Over the tabs (a parent who already has a book), the sheet dismisses to
+ * the Book.
+ */
+export function openLanding(routesUnderSheet: readonly string[]): 'welcome' | 'book' {
+  return routesUnderSheet.includes('onboarding') ? 'welcome' : 'book';
+}
+
+/**
+ * Try again after a failure. A look (peek) that failed looks again, so its old answer is dropped; a join (accept)
+ * that failed keeps the answer it had and joins again, without asking the server to look a second time.
+ */
+export function retryKeepsPreview(failedAt: 'peek' | 'accept'): boolean {
+  return failedAt === 'accept';
+}

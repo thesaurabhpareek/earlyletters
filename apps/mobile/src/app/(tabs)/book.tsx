@@ -57,6 +57,7 @@ import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
 import { joinedArrival } from '@/components/family/family-notice';
+import { startJoinedArrival } from '@/components/family/joined-arrival.logic';
 import { ChildSwitcher } from '@/components/child/child-switcher';
 import { useChildren } from '@/components/child/use-children';
 
@@ -84,10 +85,10 @@ export default function Book() {
   const [stagger, setStagger] = useState(firstView && !params.arrived);
   useEffect(() => setStagger(false), []);
   // The second parent's first Book (S59, 5.8 row 12; the join sheet's "Open the book" leaves the mark): its light rises from unlit over arriveMs, once.
-  const [joinedAt, setJoinedAt] = useState(() => (joinedArrival.waiting() ? Date.now() : 0));
+  const [joinedAt, setJoinedAt] = useState(() => (joinedArrival.waiting() ? startJoinedArrival() : 0));
   useFocusEffect(
     useCallback(() => {
-      if (joinedArrival.take()) setJoinedAt((t) => t || Date.now());
+      if (joinedArrival.take()) setJoinedAt((t) => t || startJoinedArrival());
     }, []),
   );
 
@@ -268,7 +269,7 @@ export default function Book() {
 
   return (
     <View className="flex-1 bg-background" {...behind}>
-      {joinedAt ? <Lamp key={joinedAt} scene="book" arrive /> : <Lamp scene="book" persistKey="tabs" />}
+      {joinedAt ? <Lamp key={joinedAt} scene="book" persistKey="tabs" arrive /> : <Lamp scene="book" persistKey="tabs" />}
       <Animated.View key={active.id} className="flex-1" entering={switched ? FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never) : undefined}>
         {chapters.length === 0 ? (
           <View className="flex-1">

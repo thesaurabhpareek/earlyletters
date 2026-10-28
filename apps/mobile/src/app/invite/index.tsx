@@ -31,13 +31,13 @@
  * Keychain and Try again goes on once the switch lifts.
  */
 import { brand } from '@scribe/brand';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
-import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '@/components/family/join-sheet.logic';
+import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
@@ -179,7 +179,7 @@ function JoinBook() {
   const retry = () => {
     started.current = null;
     setError(null);
-    if (failedAt === 'peek') setPreview(null);
+    if (!retryKeepsPreview(failedAt)) setPreview(null);
   };
 
   const submitPaste = async () => {
@@ -324,6 +324,7 @@ function JoinBook() {
  */
 function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fallbackName: string | null; inviter: string | null; fade: boolean }) {
   const close = useCloseSheet();
+  const navigation = useNavigation();
   const a = familyCopy.accept;
   const ideas = copy.onboarding.signsAs;
   const [book, setBook] = useState(() => getChild(childId));
@@ -357,7 +358,10 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     setActiveChildId(childId);
     // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
     joinedArrival.leave();
-    router.dismissTo(JOINED_LANDING);
+    // Over first run's welcome the sheet only closes, and the welcome hands over to the Book and leaves the stack.
+    const under = navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [];
+    if (openLanding(under) === 'welcome') close();
+    else router.dismissTo(JOINED_LANDING);
   };
 
   return (
