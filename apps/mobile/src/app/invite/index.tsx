@@ -33,11 +33,13 @@
 import { brand } from '@scribe/brand';
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { View, type Text as RNText } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
+import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
-import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
+import { joinWait, joinWaitLine } from '@/components/family/join-wait.logic';
+import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
@@ -55,6 +57,7 @@ import { acceptInvite, bookName, peekInvite } from '@/lib/family/invites';
 import { joinedView, joinPlan } from '@/lib/family/join-flow.logic';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
+import { announce, useFocusOnMount } from '@/lib/a11y';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store';
 
@@ -66,9 +69,16 @@ export default function JoinBookRoute() {
   return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
 }
 
+/** Where this sheet closes onto: first run's welcome step, or anywhere else (join-sheet.logic.ts openLanding), now. */
+function useLanding(): () => 'welcome' | 'book' {
+  const navigation = useNavigation();
+  return () => openLanding(navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [], firstRunWelcome.showing());
+}
+
 function JoinBook() {
   const auth = useAuth();
   const close = useCloseSheet();
+  const landing = useLanding();
   const a = familyCopy.accept;
   const [loaded, setLoaded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -153,11 +163,18 @@ function JoinBook() {
   // Only after a tap on Join (or for an invite this person already accepted).
   const accept = async (t: string) => {
     if (!auth.client) return;
+    // Over first run's welcome, the join leaves the welcome a wait for the book (critics' pass S2,
+    // components/family/join-wait.logic.ts): asked now, while the sheet is open, and started the moment the join goes
+    // through, so a Close while joining, or a name that cannot be read, still leaves it.
+    const leavesWait = landing() === 'welcome';
     setBusy('accept');
     try {
       const childId = await acceptInvite(auth.client, t);
+      const here = getChild(childId);
+      if (leavesWait && !here) joinWait.start(childId, null);
       await clearPendingInvite(t);
-      const name = getChild(childId)?.name ?? (await bookName(auth.client, childId).catch(() => null));
+      const name = here?.name ?? (await bookName(auth.client, childId).catch(() => null));
+      joinWait.named(childId, name);
       haptic('success');
       setJoined({ childId, name, inviter: preview?.inviter ?? null });
     } catch (e) {
@@ -324,7 +341,7 @@ function JoinBook() {
  */
 function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fallbackName: string | null; inviter: string | null; fade: boolean }) {
   const close = useCloseSheet();
-  const navigation = useNavigation();
+  const landing = useLanding();
   const a = familyCopy.accept;
   const ideas = copy.onboarding.signsAs;
   const [book, setBook] = useState(() => getChild(childId));
@@ -344,6 +361,18 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
 
   const child = book?.name ?? fallbackName ?? '';
   const view = joinedView(book, signsAs);
+  // VoiceOver: focus moves to "You're in {child}'s book" as the joined view shows, as SheetTitle does on every other
+  // step, and while the book is still coming the line that says so is spoken once, after it (critics' pass S5).
+  const heading = useRef<RNText>(null);
+  const joinedTitle = child ? fill(a.joinedTitle, { child }) : a.title;
+  useFocusOnMount(heading, true, joinedTitle);
+  // The same words first run's welcome under the sheet shows if Close is tapped (components/family/join-wait.logic.ts).
+  const waitingLine = book ? null : joinWaitLine(child || null, 'waiting');
+  useEffect(() => {
+    if (!waitingLine) return;
+    const id = setTimeout(() => announce(waitingLine, { queue: true }), SPEAK_AFTER_FOCUS_MS);
+    return () => clearTimeout(id);
+  }, [waitingLine]);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
@@ -358,9 +387,8 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     setActiveChildId(childId);
     // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
     joinedArrival.leave();
-    // Over first run's welcome the sheet only closes, and the welcome hands over to the Book and leaves the stack.
-    const under = navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [];
-    if (openLanding(under) === 'welcome') close();
+    // Over first run's welcome step the sheet only closes, and the welcome hands over to the Book and leaves the stack.
+    if (landing() === 'welcome') close();
     else router.dismissTo(JOINED_LANDING);
   };
 
@@ -386,14 +414,14 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
         <View testID="invite.joined" className="gap-5">
           {/* The child's name appears here first, on the cover that opens (BL-322). */}
           {child ? <JoinedCover child={child} inviter={inviter} /> : null}
-          <Text variant="title1" asHeading={1}>
-            {child ? fill(a.joinedTitle, { child }) : a.title}
+          <Text ref={heading} variant="title1" asHeading={1}>
+            {joinedTitle}
           </Text>
           <Text variant="body">{joinedBody(inviter)}</Text>
-          {!book && child ? (
+          {waitingLine ? (
             <View className="gap-2">
               <Text variant="footnote" accessibilityLiveRegion="polite">
-                {fill(a.joinedWaiting, { child })}
+                {waitingLine}
               </Text>
               <WaitingBar />
             </View>

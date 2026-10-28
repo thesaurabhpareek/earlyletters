@@ -110,6 +110,14 @@ export const familyCopy = {
     /** The same line when the inviter set no sign-off. */
     joinedBodyUnknown: 'Your letters and theirs sit side by side, each signed.',
     joinedWaiting: "{child}'s book is on its way to this phone.",
+    /**
+     * First run's welcome, when the joined sheet was closed before the book arrived and the book has not come after a
+     * while or sync cannot reach the server (critics' pass S2): said with Try again, and "Begin the book" back.
+     */
+    joinedNotYet: "{child}'s book has not reached this phone yet.",
+    /** The same two lines when the child's name could not be read after joining (the joined sheet and the welcome). */
+    joinedWaitingUnknown: 'The book is on its way to this phone.',
+    joinedNotYetUnknown: 'The book has not reached this phone yet.',
     open: 'Open the book',
     close: 'Close',
     tryAgain: 'Try again',
