@@ -23,7 +23,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
-import { accountView } from '@/components/auth/account-view.logic';
+import { accountView, waitEndedEarly } from '@/components/auth/account-view.logic';
 import { BookCover } from '@/components/book/book-cover';
 import { useChildren } from '@/components/child/use-children';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,17 @@ function AccountSettings() {
   const client = auth.client;
   const view = accountView(s, auth.claimPending);
   const waitingToSignOut = view.signOut === 'waiting';
+  // BL-451: a wait that ended before the newest letters were sent; the signed-out page says where they are.
+  const previous = useRef(s);
+  const [endedEarly, setEndedEarly] = useState(false);
+  useEffect(() => {
+    if (waitEndedEarly(previous.current, s)) setEndedEarly(true);
+    if (auth.signedIn && s.status !== 'signingOut') setEndedEarly(false);
+    previous.current = s;
+  }, [s, auth.signedIn]);
+  useEffect(() => {
+    if (endedEarly && !auth.signedIn) announce(a.signOutEarly);
+  }, [endedEarly, auth.signedIn, a.signOutEarly]);
   // Only a sign-out that happens on this page fades; a visit shows the page at once.
   const wasSignedIn = useRef(auth.signedIn);
   const signedOutHere = wasSignedIn.current && !auth.signedIn;
@@ -110,6 +121,11 @@ function AccountSettings() {
           <Text variant="body" tone="muted">
             {fill(a.signedOutBody, { child: active?.name ?? authCopy.consent.childFallback })}
           </Text>
+          {endedEarly ? (
+            <Text variant="body" testID="account.signOutEarly">
+              {a.signOutEarly}
+            </Text>
+          ) : null}
           {auth.configured ? (
             <Button size="lg" fullWidth label={a.signIn} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } })} />
           ) : (
@@ -240,9 +256,12 @@ function AccountSettings() {
             {waitingToSignOut ? (
               // The outbox is still sending: the row says so, with a small spinner, until this phone signs out.
               <ListRow title={a.signOutWaiting} leading={<ActivityIndicator color={c.accent} />} />
-            ) : (
-              <ListRow title={a.signOut} onPress={signOut} disabled={view.signOut === 'closing'} />
-            )}
+            ) : null}
+            {view.staySignedIn ? (
+              // BL-451: only while a sign-out the person asked for waits; never while it is closing.
+              <ListRow title={a.staySignedIn} onPress={() => auth.cancelSignOutWait()} />
+            ) : null}
+            {waitingToSignOut ? null : <ListRow title={a.signOut} onPress={signOut} disabled={view.signOut === 'closing'} />}
           </ListSection>
         </View>
       </View>

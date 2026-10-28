@@ -186,6 +186,10 @@ export const authCopy = {
     signOutBody: 'Your letters stay on this phone. Sign in again any time.',
     // Shown while the outbox drains (F16, A-REQ-033): sign-out never drops a queued letter.
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
+    // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
+    staySignedIn: 'Stay signed in',
+    // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).
+    signOutEarly: 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
     cancel: 'Cancel',
   },
 } as const;

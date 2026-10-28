@@ -336,6 +336,22 @@ describe('[S56] Account', () => {
     expect(out).toMatch(/errors\.session_expired/);
   });
 
+  it('[BL-451] "Stay signed in" sits under the waiting row only when the account view offers it, and only cancels the wait', () => {
+    expect(account).toMatch(/\{view\.staySignedIn \? \(\s*<ListRow title=\{a\.staySignedIn\} onPress=\{\(\) => auth\.cancelSignOutWait\(\)\} \/>/);
+    // The waiting row and Sign out never show together.
+    expect(account).toMatch(/\{waitingToSignOut \? null : <ListRow title=\{a\.signOut\}/);
+  });
+
+  it('[BL-451] a wait that ended before the letters were sent is said once on the signed-out page', () => {
+    expect(account).toMatch(/if \(waitEndedEarly\(previous\.current, s\)\) setEndedEarly\(true\);/);
+    expect(account).toMatch(/previous\.current = s;/);
+    const out = between(account, 'if (!auth.signedIn) {', 'const provider');
+    expect(out).toMatch(/\{endedEarly \? \(\s*<Text variant="body" testID="account\.signOutEarly">\s*\{a\.signOutEarly\}/);
+    expect(account).toMatch(/if \(endedEarly && !auth\.signedIn\) announce\(a\.signOutEarly\)/);
+    // Signing in again clears it.
+    expect(account).toMatch(/if \(auth\.signedIn && s\.status !== 'signingOut'\) setEndedEarly\(false\);/);
+  });
+
   it('nothing fades in on a visit; only signing out on this page fades to signed out (MOTION principle 2)', () => {
     expect(account.match(/entering=/g)).toHaveLength(1);
     expect(account).toMatch(/entering=\{signedOutHere \? PAGE_IN : undefined\}/);
