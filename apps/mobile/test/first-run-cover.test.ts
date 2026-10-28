@@ -9,6 +9,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { en } from '@scribe/content';
+import { tokens } from '@scribe/design-tokens';
+import { measure } from '../src/components/book/book-cover.logic';
 import { COVER_MIN_FREE_HEIGHT, coverFitsAboveKeyboard, coverPlace } from '../src/components/book/cover-place.logic';
 import { FONT_SCALE, isAccessibilitySize, isLargeText } from '../src/lib/a11y.logic';
 
@@ -121,6 +124,18 @@ describe('[P2 S3] the name is typed in the book\'s title face', () => {
     // The signature field is not the book's title: it stays in the app's face.
     const signs = first.slice(first.indexOf('ref={signsAsField}'));
     expect(signs.slice(0, signs.indexOf('/>'))).not.toMatch(/face=/);
+  });
+
+  it('the placeholder fits the field on the narrowest iPhone, so it is never clipped or given an ellipsis', () => {
+    // Measured in Chromium on the web build at 375 pt: the field leaves 302 pt for text (375 less 24 pt of margin on each
+    // side, the 1 pt edge and 16 pt of padding each side). The old line, "First name, or the name you use at home", was
+    // 421 pt in Literata Regular 22 pt and read "First name, or the name you u". The widths here are Literata Medium's,
+    // which are wider than Regular's, so this is the safe side of the same bound (278 against 272 pt measured).
+    const room = 302;
+    expect(tokens.type.nameField.fontSize).toBe(22);
+    const text = en.onboarding.child.namePlaceholder;
+    expect(measure(text, tokens.type.nameField.fontSize)).toBeLessThanOrEqual(room);
+    expect(measure('First name, or the name you use at home', tokens.type.nameField.fontSize)).toBeGreaterThan(room);
   });
 
   it('Add a child: the same field, the same face', () => {

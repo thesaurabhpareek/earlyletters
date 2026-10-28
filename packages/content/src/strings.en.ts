@@ -97,7 +97,8 @@ export const en = {
       nameLabel: "Name",
       // The second and later name rows (twins or more).
       nameLabelMore: "Another child's name",
-      namePlaceholder: "First name, or the name you use at home",
+      // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
+      namePlaceholder: "First name, or a nickname",
       nameHelp: "You can add a nickname later.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       birthdayLabel: "Birthday",
       birthdayHelp: "We sort letters by {child}'s month of age.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
