@@ -1,31 +1,30 @@
 # Future backlog re-baseline (28 Oct 2026)
 
-Status: Proposal. It changes no founder decision and edits no existing backlog item. `docs/backlog/FUTURE.md` (3 Oct 2026) and the five lead files stay the source of item detail. This file does three things: it re-dates the plan, re-ranks existing items on the new evidence, and adds the items the evidence shows are missing.
+Status: Updated 28 Oct 2026 to the staged baseline of D-121 (PR #340). It changes no founder decision and edits no existing backlog item. `docs/backlog/FUTURE.md` (3 Oct 2026) and the five lead files stay the source of item detail. This file does three things: it re-dates the plan, re-ranks existing items on the new evidence, and adds the items the evidence shows are missing.
 
 Evidence used: `docs/prd/v2/research/R6-benchmark-delta-2026-10-28.md`, `R7-sentiment-refresh-2026-10-28.md`, and retro pass 1 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md`). Labels: [F] fact with a source, [S] signal, [A] assumption, [R] recommendation.
 
 ## 1. The dates in FUTURE.md are stale
 
-`FUTURE.md` section 1.1 assumes v1.0 is submitted in the week of 2 Nov 2026 and released Mon 16 Nov 2026, then v1.1 in mid-January 2027, v1.2 in mid-March and v1.3 in early May (so the Mother's Day event G-04 could run from about 25 April). Since then the founder moved the date (M15, D-100) and `08-delivery.md` plans submission in the week of Mon 3 May 2027 at about 40% confidence (R-16). The founder has not chosen between mid-January and May 2027 (D-100, retro section 6).
+`FUTURE.md` section 1.1 assumes v1.0 is submitted in the week of 2 Nov 2026 and released Mon 16 Nov 2026, then v1.1 in mid-January 2027, v1.2 in mid-March and v1.3 in early May. Since then the founder moved the date (M15, D-100), and on 28 Oct D-121 (PR #340) staged the release: the first store build is on-device only, submitted Tue 1 Dec 2026 and released about Tue 8 Dec [A, CTO analysis: 55% by Fri 11 Dec]. The server features follow in later 1.0.x releases behind existing flags, in this order: sync and co-parent sharing, status report and reminder emails, owner backup, the other six languages. The two scenarios this file first offered (submit 11 Jan or 3 May 2027) are superseded.
 
-So every date in FUTURE.md is replaced by an offset from the v1.0 release. The rule, kept from FUTURE.md: v1.1 comes about 8 weeks after v1.0, v1.2 about 8 weeks after v1.1, v1.3 about 8 weeks after v1.2 [A]. The v1.0 release is submission plus about 2 weeks [A, from ROADMAP 2.1: submit week of 2 Nov, release 16 Nov].
+The rule from FUTURE.md is kept: a feature release comes about 8 weeks after the one before [A]. Measured from the first binary:
 
-| Release | Scenario A: submit Mon 11 Jan 2027 | Scenario B: submit Mon 3 May 2027 (08 plan) |
-|---|---|---|
-| v1.0 release | about Mon 25 Jan 2027 | about Mon 17 May 2027 |
-| v1.1 | about Mon 22 Mar 2027 | about Mon 12 Jul 2027 |
-| v1.2 | about Mon 17 May 2027 | about Mon 6 Sep 2027 |
-| v1.3 | about Mon 12 Jul 2027 | about Mon 1 Nov 2027 |
+| Release | Date [A] |
+|---|---|
+| First store build (1.0) release | about Tue 8 Dec 2026 |
+| v1.1 | about Tue 2 Feb 2027 |
+| v1.2 | about Tue 30 Mar 2027 |
+| v1.3 | about Tue 25 May 2027 |
 
-All dates [A]. App Review slows in the last two weeks of December (FUTURE.md 1.1, marked unverified there), so none of these is placed there.
+The 1.0.x server stages have no dates yet. Their gates (soak, first families, counsel, an external security test before server features open beyond the first families) set them. Whether the 1.0.x stages take capacity from the v1.1 to v1.3 slots is not established here; FUTURE.md counts 3 releases of 24 person-weeks and does not model them [A, unverified]. A faster first build, Mon 16 Nov, exists only with a founder-signed counsel deferral (D-121).
 
-**What this breaks.**
-- **G-04 (Mother's Day event, Sun 9 May 2027).** It falls before the v1.0 release in scenario B and before v1.2 in scenario A. It cannot run in either, and the next Mother's Day is in 2028. Move G-04 to an in-app event that needs no release (App Store in-app events are metadata) or drop the date tie [R].
-- **Father's Day, Sun 20 Jun 2027.** In scenario A it falls between v1.2 and v1.3, in scenario B before v1.1. Same treatment [R].
-- **June 2027 print go/no-go (BK-14 depends on BK-13 signal, entity, Print Terms, T5-27).** It sits before v1.0 in scenario B. Print cannot be a go/no-go in June if v1.0 is not out [R]. Re-time to "6 weeks after v1.0 release".
-- **Capacity.** FUTURE.md counts about 125 person-weeks wanted against about 72 held (3 releases of 24). Scenario B moves the same 72 person-weeks later, so each release shows up about 8 weeks later than FUTURE.md shows, and the unfunded 60% grows older before it is built [A].
-
-Decision for the founder: pick scenario A or B so these dates can be fixed. Until then, publish offsets only.
+**What this changes.**
+- **G-04 (Mother's Day event, Sun 9 May 2027).** It now falls between v1.2 (about 30 Mar) and v1.3. It can run if its feature ships in v1.2, about 5 weeks ahead. If v1.2 slips more than about 3 weeks it cannot [A]. Event metadata needs no release; the feature does.
+- **Father's Day, Sun 20 Jun 2027.** It falls after v1.3 (about 25 May), so a v1.3 feature can serve it, with about 4 weeks of margin [A].
+- **June 2027 print go/no-go (BK-14, which depends on BK-13 signal, entity, Print Terms, T5-27).** Re-time to "6 weeks after the first release", about Tue 19 Jan 2027 [A]. The entity gate (D-125 item 6, decision by Fri 13 Nov) is now on its path.
+- **Capacity.** FUTURE.md counts about 125 person-weeks wanted against about 72 held. The staged server releases compete for the same people [A].
+- **App Review.** It slows in the last two weeks of December (FUTURE.md 1.1, marked unverified there). The 1 Dec submission lands before that; any resubmission after a rejection could land in it.
 
 ## 2. Re-rank existing items on the new evidence
 
@@ -115,6 +114,25 @@ Each is a research item with a question, a method and a decision it feeds. Count
 | FB-06c Heritage language | How do multilingual families record, and in which language do they write? R7 found 0 consumer posts. | 8 to 10 interviews across the seven languages, at least 1 per language where reachable | DR-01 language order, F38 second-language version, F45 |
 
 Size 2 in total [A]. Owner: founder with a research agent for scheduling and notes. Consent and recruiting rules apply (no children's data, no recordings of the child).
+
+## 3b. Engineering follow-ups from the 28 Oct decisions
+
+Each is one owner and one PR. None is started by this file. Founder-only steps are marked.
+
+| Follow-up | Owner | When |
+|---|---|---|
+| `EXPO_PUBLIC_ENGLISH_ONLY=on` in the `production` profile in `eas.json`, with its three tests (the switch is `capabilities.ts` line 75) | Mobile and release agents | After the 5 Nov go/no-go (`eas.json` is frozen 3 to 5 Nov) |
+| Store listing and screenshot rewrite for the staged binary; no seven-language or co-parent claims; no "exactly as you said it" in the subtitle | Store agent, counsel | Before submission |
+| Notes for Review sentence on dormant code (Apple 2.5.19, 2.3.1(a)); no "Coming soon" Family tab (F19-REQ-024, F21) | Store agent | Before submission |
+| Root `.easignore` after a dry run on build 1 (EAS then ignores `.gitignore`; the command and effect are unverified) | Release agent | After build 1 |
+| Wire `scripts/guards/docs-leak-guard.mjs` into the seam-guard job in `ci.yml` and `web.yml`; fix the stale comments in `web.yml` lines 18 and 28 | Ops | A `.github` change; founder step under D-122 |
+| `scripts/trace.mjs` ID pattern to read sub-IDs (line 33); fix the C-NFR-005 duplicate ID | QA agent | This week, as a branch |
+| `plan.ts` backup gate removed to match D-111 item 6, with test updates | Billing path, two reviews | After 5 Nov, before any profile turns backup on |
+| F18 re-tagged to v1.1 or later; DR-19 and DR-20 closed in `09`; `08-delivery.md` dates re-based | Docs agents | Separate docs PRs |
+| Check the merged backup server (PR #151) against D-108 and F08-REQ-034 | Docs agent | Before anyone edits the requirement |
+| Reconcile DR-01 (Hindi needs a tuned model) with counsel packet Q9 (Hindi uses the shared model) | Speech engineer | Before Hindi is scheduled |
+| Second private repository for design-level write-ups; Pull requests set to Collaborators only | Founder | This week |
+| Replace the stale "issue #127" line in the 4-hourly agent lane prompt | Founder (the update was refused to me) | This week |
 
 ## 4. Rules for the new backlog items
 

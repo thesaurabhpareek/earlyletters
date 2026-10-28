@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Proposal, 28 Oct 2026. Nothing here reopens or changes a founder decision. Each change is for the founder to accept or reject. |
+| Status | Decided with changes, 28 Oct 2026, by the coordinator on the founder's delegation (D-123 and D-125, recorded in PR #340; the founder may reverse). Section 8 holds the verdict for each rule and the ruling for each open decision. Nothing here reopens a founder decision. |
 | Why it exists | The build outran the spec. Retro pass 1 (28 Oct) read the PRs, reviews, decisions and code. Market research refreshed on 28 Oct (R6, R7). |
 | Scope | Rules for how every requirement is written and checked (section 1), the changes the retro proposes (section 2), spec-code drift to fix (section 3), scope pressure for the founder (section 4), requirements the market evidence adds (section 5), open decisions that block clarity (section 6). |
 | Evidence labels | Per `_AUTHORING.md` section 6. **[Repo]** means a file, PR or commit read in the repo. **[Retro]** means a count or finding from the 28 Oct retro that was not re-checked line by line. Items the retro could not verify say so. |
@@ -41,7 +41,7 @@ These apply to every new or changed requirement. They add to the template in `_A
 
 ## 2. Changes the retro proposes, by defect class
 
-Status for every row: **Proposed**. Apply to the named spec on acceptance. IDs ending a, b, c are new sub-IDs of an existing ID. All numbers come from the retro's reading of the PRs named [Retro].
+Status for every row: **Proposed** until its spec edit lands; the verdict per rule and row group is in section 8. Apply to the named spec on acceptance. IDs ending a, b, c are new sub-IDs of an existing ID. All numbers come from the retro's reading of the PRs named [Retro].
 
 ### C1. Multi-device, multi-account, kill switch
 
@@ -166,7 +166,7 @@ Evidence: an Apple staff reply (Jan 2026) says SpeechTranscriber was listed for 
 
 ## 6. Open founder decisions that block clarity
 
-From the retro, section 6. None is decided here.
+From the retro, section 6. Each is ruled in section 8.
 
 1. Submission date: D-100 leaves mid-January or May 2027 open; 08 says 3 May 2027 at about 40%.
 2. Freeze Tue 3 Nov and go/no-go Thu 5 Nov are proposed; the answer was overdue on 27 Oct.
@@ -184,7 +184,51 @@ From the retro, section 6. None is decided here.
 
 - `docs/TRACE.md` (headline counts, read 28 Oct 2026).
 - `docs/prd/v2/_AUTHORING.md`, `05-feature-map.md`, `08-delivery.md`, `09-decisions-and-risks.md`.
-- `docs/DECISIONS.md` (D-095 to D-117).
+- `docs/DECISIONS.md` (D-095 to D-117; D-121 to D-125 are in PR #340).
 - Retro pass 1 (28 Oct 2026): PR history and reviews through 27 Oct; PR numbers above.
 - `research/R6-benchmark-delta-2026-10-28.md`, `research/R7-sentiment-refresh-2026-10-28.md`.
 - Apple App Store Review Guidelines page, opened 28 Oct 2026 (2.3.1, 2.5.19, 5.1.2(i)).
+
+## 8. Decision record (28 Oct 2026)
+
+Rulings are the coordinator's, on the founder's delegation. The founder may reverse any of them. Counsel and Apple sign-off are not delegated. The CTO analysis (two reports, 28 Oct) supplied the verdicts on rules and scope.
+
+### 8.1 Rules (D-123)
+
+| Rule | Verdict | Change |
+|---|---|---|
+| RR-6 entry paths, RR-8 stand-ins, RR-9 no collisions, RR-11 freshness (no gate), RR-12 security by construction, RR-13 unknowns | Accepted | None |
+| RR-1, RR-4 | Accepted with change | New or changed rows only. No mass demotion of P0 rows before the 5 Nov go/no-go. The 50% P0 target stays a founder call |
+| RR-2 | Accepted with change | After `scripts/trace.mjs` reads sub-IDs such as 029a (its ID pattern on line 33 reads three digits only) |
+| RR-3 | Accepted with change | A ratchet: fails only on P0 rows added or changed after a committed baseline of today's counts |
+| RR-5 | Accepted with change | Rows for F14, F16 and F08 first |
+| RR-7 | Accepted with change | Warning only |
+| RR-10 | Accepted with change | Prices from `pricing.ts` (already tested); the claim registry is deferred |
+| "Pause over 24 hours" plan rule | Rejected | Not adopted |
+| F20-REQ-NEW-C (support-reply promise) | Rejected for now | Kept as a question under RR-13 |
+| F05-REQ-NEW-D (per-language test transcription) | Accepted with change | Done per language when it unlocks, not per build in CI |
+| F16-REQ-029a to c | Accepted, waits | On the trace parser fix |
+| F14-REQ-037 table cells | Accepted, waits | On D-104 item 3, now closed (D-125 item 1) |
+| F14-REQ-NEW-A | Accepted with change | Needs a real number, not a placeholder |
+
+This week only docs, the parser fix as its own branch, and the C-NFR-005 duplicate-ID fix. No new blocking check before 5 Nov.
+
+### 8.2 Open decisions in section 6
+
+| # | Ruling | Where recorded |
+|---|---|---|
+| 1 | The first store build is on-device only and staged; submit Tue 1 Dec 2026, release about Tue 8 Dec; full scope later in 1.0.x stages | D-121 |
+| 2 | Freeze Tue 3 Nov and go/no-go Thu 5 Nov confirmed | D-124 |
+| 3 | DR-19 option A; D-104 item 3 closed | D-125 |
+| 4 | D-099 stands; the cap takes effect when co-parent sharing first ships | D-124 |
+| 5 | D-095 stands for the whole 1.0 line; F18 moves to v1.1 or later | D-124 |
+| 6 | DR-20 and 08 section 6.2 superseded by D-107 and D-117 | D-125 |
+| 7 | Counsel items: working defaults stand; the first-binary set is sequenced first; D-109 welcome-first stays held | D-125 |
+| 8 | DR-01 A with an unlock order; DR-11 production-record gate Fri 13 Nov; DR-15 A; DR-21 as written with a minimum sample | D-125 |
+| 9 | 1x smoke test is the sync gate; external security test before server features open beyond the first families; founder hours and device operator are founder facts | D-125 |
+| 10 | The store listing holds "exactly as you said it" until counsel clears it | D-125 |
+| 11 | Open: a docs agent checks the merged backup server against D-108 | D-125 |
+
+### 8.3 Spec edits that follow (not done in this PR)
+
+Requirement rows for the staged release (which flags are on in the first binary), `F18` re-tagged to v1.1 or later, `08-delivery.md` dates re-based on D-121, DR-19 and DR-20 rows closed in `09-decisions-and-risks.md`, F21 listing claims per D-125 item 9. Each is a separate docs PR from the owning agent.
