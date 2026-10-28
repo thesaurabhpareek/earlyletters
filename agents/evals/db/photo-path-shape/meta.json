@@ -1,0 +1,1 @@
+{ "id": "photo-path-shape", "class": "db", "source": "PR #311 red-team finding 2 (head 86d30dd6): the erased-letter regex matched only the exact child/author/uuid.ext shape; {id}.x.jpg, {id}, {id}-1.jpg and nested paths were accepted", "roles": ["data-architect", "red-team"], "k": 3 }

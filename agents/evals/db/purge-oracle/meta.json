@@ -1,0 +1,1 @@
+{ "id": "purge-oracle", "class": "db", "source": "PR #311 red-team finding 3 (head 86d30dd6): photo_entry_is_purged executable by every authenticated user and reading purge_ledger globally, so it answered whether a letter was erased", "roles": ["data-architect", "red-team"], "k": 3 }

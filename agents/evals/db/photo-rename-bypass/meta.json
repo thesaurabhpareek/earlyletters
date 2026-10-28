@@ -1,0 +1,1 @@
+{ "id": "photo-rename-bypass", "class": "db", "source": "PR #311 red-team finding 1 (head 86d30dd6): entry_photos_author_update WITH CHECK lacked not photo_entry_is_purged(name), so a rename bypassed the purged-photo block", "roles": ["data-architect", "red-team"], "k": 3 }
