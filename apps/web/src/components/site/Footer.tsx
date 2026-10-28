@@ -32,7 +32,7 @@ export function Footer() {
           <ul className={styles.links}>
             {links.map((link) => (
               <li key={link.href}>
-                <Link className={styles.link} href={link.href}>
+                <Link className={styles.link} href={link.href} prefetch={false}>
                   {link.label}
                 </Link>
               </li>

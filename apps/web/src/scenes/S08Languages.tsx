@@ -15,7 +15,7 @@ import { Scene } from '@/film/Scene';
 import { Headline, Support } from '@/film/Copy';
 import { useStage } from '@/film/hooks';
 import { site } from '@/content/site';
-import { Grain, NightSky, Vignette } from '@/components/atmosphere';
+import { Grain, LampLight, NightSky, Vignette } from '@/components/atmosphere';
 import { arabicSerif, chineseSerif, devanagariSerif } from './parts/act3/fonts';
 import stage from '@/film/stage.module.css';
 import styles from './S08Languages.module.css';
@@ -28,7 +28,7 @@ const fontFor = (lang: string) =>
 
 export function S08Languages() {
   return (
-    <Scene id="languages" label={copy.label} tone="night" length={2.5}>
+    <Scene id="languages" label={copy.label} tone="night" length={2.0} rest={0.5} reducedMinHeight="140svh">
       <LanguagesStage />
     </Scene>
   );
@@ -58,6 +58,7 @@ function LanguagesStage() {
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
       <NightSky />
+      <LampLight intensity={0.3} x="50%" y="64%" size="85vmax" warmth="lamp" />
       <motion.div className={styles.copy} style={{ opacity: headOpacity, y: headY }}>
         <Headline>{copy.headline}</Headline>
         <Support>{copy.support}</Support>

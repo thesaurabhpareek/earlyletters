@@ -8,15 +8,17 @@ import { site } from '@/content/site';
 import { launch } from '@/lib/launch';
 import { track } from '@/lib/analytics';
 import { Wordmark } from '@/components/brand/Wordmark';
+import { useLenis } from '@/film/SmoothScroll';
 import { AppStoreBadge } from './AppStoreBadge';
 import { goToStart } from './goToStart';
-import { useInView, useToneAt } from './useTone';
+import { useSceneActive, useToneAt } from './useTone';
 import styles from './Header.module.css';
 
 export function Header() {
   const tone = useToneAt('top');
-  const hero = useInView('evening', 0.62);
-  const end = useInView('start', 0.5);
+  const hero = useSceneActive('evening', -Infinity, 0.13);
+  const end = useSceneActive('start', -0.4, Infinity);
+  const lenis = useLenis();
   return (
     <header className={styles.header} data-tone={tone} data-hero={hero || undefined}>
       <a href="#evening" className={styles.mark} aria-label={site.brand.name} tabIndex={hero ? -1 : 0}>
@@ -31,7 +33,7 @@ export function Header() {
             className={styles.pill}
             onClick={() => {
               track({ name: 'cta_click', mode: 'prelaunch', placement: 'header' });
-              goToStart();
+              goToStart(lenis);
             }}
           >
             {site.cta.prelaunch.button}
@@ -44,9 +46,12 @@ export function Header() {
 
 export function CtaPill() {
   const tone = useToneAt('bottom');
-  const hero = useInView('evening', 0.62);
-  const end = useInView('start', 0.3);
-  const hidden = hero || end;
+  const hero = useSceneActive('evening', -Infinity, 0.13);
+  const end = useSceneActive('start', -0.6, Infinity);
+  // The playing letter in S07 sits low on phones; the pill steps aside while it plays.
+  const peak = useSceneActive('years-later', 0.4, 0.92);
+  const lenis = useLenis();
+  const hidden = hero || end || peak;
   return (
     <div className={styles.pillBar} data-tone={tone} data-hidden={hidden || undefined} aria-hidden={hidden || undefined}>
       {launch.mode === 'live' ? (
@@ -58,7 +63,7 @@ export function CtaPill() {
           tabIndex={hidden ? -1 : 0}
           onClick={() => {
             track({ name: 'cta_click', mode: 'prelaunch', placement: 'pill' });
-            goToStart();
+            goToStart(lenis);
           }}
         >
           {site.cta.prelaunch.pill}
@@ -69,13 +74,14 @@ export function CtaPill() {
 }
 
 export function SkipLink() {
+  const lenis = useLenis();
   return (
     <a
       href="#start"
       className={styles.skip}
       onClick={(e) => {
         e.preventDefault();
-        goToStart();
+        goToStart(lenis);
       }}
     >
       {site.skip}

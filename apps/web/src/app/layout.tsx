@@ -5,6 +5,7 @@ import '@fontsource/mukta/500.css';
 import '@fontsource/mukta/600.css';
 import './globals.css';
 import { site } from '@/content/site';
+import { WebAnalytics } from '@/lib/analytics/WebAnalytics';
 
 // Owner: coordinator. E1 extends `metadata` (Open Graph, icons, canonical) in src/app/metadata.ts.
 export const metadata: Metadata = {
@@ -23,7 +24,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <WebAnalytics />
+      </body>
     </html>
   );
 }

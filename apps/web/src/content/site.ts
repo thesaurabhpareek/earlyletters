@@ -50,7 +50,7 @@ export type HeardSegment = { text: string; becomes?: string; kind?: 'name' | 'fi
 export const site = {
   meta: {
     title: `${NAME}: the baby memory book you fill by talking`,
-    description: `Talk to your child for a minute at the end of the day. ${NAME} keeps every word exactly as you said it, with your voice, in a book that grows month by month.`,
+    description: `Talk to your child for a minute at the end of the day. AI on your phone listens and keeps every word exactly as you said it, with your voice.`,
   },
 
   brand: {
@@ -62,7 +62,7 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'The baby memory book you fill by talking. Every word kept exactly as you said it, with your voice.',
+    line: 'The baby memory book you fill by talking. AI that listens to every word, and never rewrites one.',
   },
 
   cta: {
@@ -84,12 +84,12 @@ export const site = {
       label: 'Evening',
       dateline: '9:41 pm',
       headline: 'Meera is asleep.',
-      support: 'The house is quiet for the first time today.',
+      support: 'The house is quiet for the first time today. You are tired, and there is one thing you want to remember.',
     },
     s02: {
       label: 'A minute',
       headline: 'A minute is plenty.',
-      support: `Open ${NAME} and tell Meera about today. One sentence counts.`,
+      support: `No blank page, no homework. Open ${NAME}, tell Meera one thing about today, and put the phone down.`,
       /** strings.en.ts tonight.greeting.night with {name} = Papa */
       appGreeting: 'The house is quiet, Papa.',
       /** tonight.subtitle */
@@ -110,7 +110,7 @@ export const site = {
     s03: {
       label: 'Just talk',
       headline: 'Just talk.',
-      support: 'Say it the way you would say it to Meera. Pauses are fine.',
+      support: 'Say it the way you would say it to Meera. Pause, laugh, lose your thread. It is listening.',
       appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
@@ -122,8 +122,7 @@ export const site = {
     s04: {
       label: 'Exactly as you said it',
       headline: 'Exactly as you said it.',
-      support:
-        'Transcription runs on your phone by default and only clears the ums and misheard names. We never rewrite your words.',
+      support: "By default, AI on your phone listens, spells Meera's name right, clears the ums and false starts. It never adds a word.",
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -133,7 +132,7 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice stays with it.',
-      support: 'The recording is kept with every letter you speak. One day Meera can hear how you sounded tonight.',
+      support: 'Every letter you speak keeps its recording. One day Meera can hear how tired, and how happy, you sounded tonight.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
@@ -161,7 +160,7 @@ export const site = {
     s08: {
       label: 'Your language',
       headline: 'Say it in your language.',
-      support: 'English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, each written in its own script.',
+      support: 'The AI understands English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, and keeps each in its own script.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
@@ -182,7 +181,7 @@ export const site = {
       points: [
         'Your letters are shared only with the people you invite.',
         'No ads. We never sell your data.',
-        'Your letters are never used to train models.',
+        'Your letters are never used to train AI.',
         'Export your whole book, free, any time.',
         'Delete a letter or a recording whenever you like.',
       ],

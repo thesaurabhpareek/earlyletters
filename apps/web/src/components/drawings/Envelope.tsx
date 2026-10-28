@@ -13,6 +13,7 @@ import { motion, useTransform, type MotionValue } from 'motion/react';
 import { useId } from 'react';
 import { Stroke } from '@/scenes/parts/act3/stroke';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 export type EnvelopeProps = DrawingProps & { open?: MotionValue<number> };
 
@@ -26,15 +27,16 @@ const WRITING = 'M42.4 34.6 C62.1 34.1 88.6 34.3 112.3 34.8 M42.6 44.2 C66.4 43.
 
 export function Envelope({ draw, open, className, title, strokeWidth = 1.5 }: EnvelopeProps) {
   const clipId = useId().replace(/:/g, '');
+  const hairline = useHairline(160, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 -6 160 124"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

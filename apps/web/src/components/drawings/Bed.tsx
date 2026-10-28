@@ -8,6 +8,7 @@
  */
 import { motion, useTransform, type MotionValue } from 'motion/react';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 const STROKES: ReadonlyArray<readonly [string, number, number]> = [
   // duvet: top edge to the rounded corner, down the side, hem back to the left
@@ -24,26 +25,27 @@ const STROKES: ReadonlyArray<readonly [string, number, number]> = [
 function Line({ d, draw, from, to }: { d: string; draw: MotionValue<number>; from: number; to: number }) {
   const pathLength = useTransform(draw, [from, to], [0, 1]);
   const opacity = useTransform(pathLength, (v) => (v > 0.002 ? 1 : 0));
-  return <motion.path d={d} vectorEffect="non-scaling-stroke" style={{ pathLength, opacity }} />;
+  return <motion.path d={d} style={{ pathLength, opacity }} />;
 }
 
 export function Bed({ draw, className, title, strokeWidth = 1.5 }: DrawingProps) {
+  const hairline = useHairline(360, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 0 360 200"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ overflow: 'visible' }}
     >
       {title ? <title>{title}</title> : null}
       {STROKES.map(([d, from, to]) =>
-        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} vectorEffect="non-scaling-stroke" />,
+        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} />,
       )}
     </svg>
   );
