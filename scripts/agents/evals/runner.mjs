@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { MARK } from "./grade-host.mjs";
+import { MARK } from "./mark.mjs";
 import { pct, summarizeClass, summarizeTrials, tri } from "./stats.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,10 @@ function prepareTrial(task, { overlayReference = false, tmpBase } = {}) {
 export function gradeWorkdir(task, workdir, { graderTimeoutMs = 30000 } = {}) {
   const r = spawnSync(process.execPath, [HOST, task.graderPath, workdir], {
     encoding: "utf8", timeout: graderTimeoutMs, maxBuffer: 8 * 1024 * 1024,
+    // Graders read fixture content they did not write, so they get a minimal environment: no tokens
+    // or API keys from the runner's shell (review R323-b). The candidate keeps the full env on purpose,
+    // because a real engine needs its own credentials; the README says to run candidates only locally.
+    env: Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "SystemRoot"].filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]])),
   });
   if (r.error || r.signal) return { outcome: "error", reason: `grader process failed (${r.error ? r.error.code || r.error.message : r.signal})` };
   const line = (r.stdout || "").split("\n").reverse().find((l) => l.startsWith(MARK));

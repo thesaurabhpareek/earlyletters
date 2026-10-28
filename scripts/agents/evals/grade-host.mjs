@@ -3,7 +3,7 @@
 // trials, cannot crash the runner, and can be killed on timeout.
 import { pathToFileURL } from "node:url";
 
-export const MARK = "\u0001EVAL_RESULT:";
+import { MARK } from "./mark.mjs";
 try {
   const [graderPath, workdir] = process.argv.slice(2);
   const mod = await import(pathToFileURL(graderPath).href);
