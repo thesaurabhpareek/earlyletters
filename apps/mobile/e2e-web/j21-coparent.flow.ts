@@ -55,7 +55,9 @@ test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask
   await app.getByLabel('Invite link').fill(`Hi, it's Mama. Join me for ${CHILD}: ${LINK}`);
   await btn(app, 'Continue').click();
   await expect(app.getByText('You were invited to a book')).toBeVisible();
+  await expect(app.getByText('You each write from your own phone, in the same book.')).toBeVisible();
   await expect(app.getByText('Mama')).toHaveCount(0);
+  await expect(app.getByText(CHILD)).toHaveCount(0);
   expect(restCalls(m), 'nothing is asked of the server before sign-in').toEqual([]);
   await step('happy', 'Invited, not signed in', 'A generic line and Sign in. Nothing about the invite is known yet, so nothing is shown and nothing is asked of the server (BL-322): the token waits in the Keychain (A-REQ-028).');
 
@@ -71,9 +73,97 @@ test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask
 
   await btn(app, 'Join the book').click();
   await expect(app.getByText(`You're in ${CHILD}'s book`)).toBeVisible();
+  await expect(app.getByTestId('invite.joined.cover')).toBeVisible();
+  await expect(app.getByText("Your letters and Mama's sit side by side, each signed.")).toBeVisible();
   await expect(app.getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
   expect(m.rpcCalls('accept_child_invite')).toHaveLength(1);
-  await step('happy', 'Joined', 'One accept, after the tap. The book comes with the next sync; the open book does not change by itself (only "Open the book" opens it). Here sync is held, so it says the book is on its way.');
+  await step('happy', 'Joined', 'One accept, after the tap. The book\'s cover appears for the first time, with the child\'s name, and opens to the flyleaf: the name is seen here first (BL-322). The book comes with the next sync, under a thin bar with no count; the open book does not change by itself (only "Open the book" opens it). Here sync is held, so it says the book is on its way.', undefined, { settle: 900 });
+});
+
+test('[J21e] invitee: a typed code is not read, and the link still works', async ({ app }) => {
+  await mockServer(app, { user: PAPA });
+  await openOn(app);
+  await passAgeGate(app);
+  await btn(app, 'I was invited').click();
+  // Build 2 invites are links only: a code is not read, nothing is sent, and the field stays for the link.
+  await app.getByLabel('Invite link').fill('7K3M-9QXZ');
+  await btn(app, 'Continue').click();
+  await expect(app.getByText("That doesn't look like an invite link. Check the message and try again.")).toBeVisible();
+  await expect(app.getByLabel('Invite link')).toBeVisible();
+  await app.getByLabel('Invite link').fill(LINK);
+  await btn(app, 'Continue').click();
+  await expect(app.getByText('You were invited to a book')).toBeVisible();
+});
+
+test('[J21f] invitee: a server that does not answer is said plainly, and Try again keeps the link', async ({ app }) => {
+  allowConsoleError(app, /status of 503/);
+  const m = await mockServer(app, { user: PAPA });
+  let down = true;
+  m.rpc('peek_invite', () => (down ? { status: 503, body: { message: 'Service Unavailable' } } : { body: { inviter: 'Mama', role: 'parent' } }));
+  await openOn(app);
+  await passAgeGate(app);
+  await btn(app, 'I was invited').click();
+  await app.getByLabel('Invite link').fill(LINK);
+  await btn(app, 'Continue').click();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app, 'papa@example.invalid');
+  await expect(app.getByText('That did not work this time. Try again.')).toBeVisible();
+  down = false;
+  await btn(app, 'Try again').click();
+  await expect(app.getByText('Invited by Mama')).toBeVisible();
+  expect(m.rpcCalls('peek_invite')).toHaveLength(2);
+});
+
+test('[J21g] invitee: once the book is on this phone, "Open the book" lands on the Book', async ({ app, record }) => {
+  const step = journey(record, 'J21', 'co-parent-sharing', 6);
+  const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
+  let accepted = false;
+  m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
+  m.rpc('accept_child_invite', () => {
+    accepted = true;
+    return { body: ASHA_BOOK };
+  });
+  m.table('children', () => ({ body: { name: CHILD } }));
+  const at = '2026-10-20T09:00:00.000Z';
+  const meta = {
+    role: 'parent',
+    name: CHILD,
+    nickname: null,
+    date_of_birth: '2026-03-20',
+    birthday_md: null,
+    due_date: null,
+    family_can_read: false,
+    created_by_me: false,
+    my_signs_as: 'Papa',
+    include_in_reminders: true,
+    members: [
+      { profile_id: MAMA, role: 'parent', is_me: false, joined_at: at, signs_as: 'Mama' },
+      { profile_id: PAPA, role: 'parent', is_me: true, joined_at: at, signs_as: 'Papa' },
+    ],
+  };
+  // The book comes down with the first pull after the join (sync's own call; the mock answers it).
+  m.rpc('sync_pull', () => ({
+    body: accepted
+      ? { reset: false, epoch: 1, epoch_started_at: at, books: [{ id: ASHA_BOOK, access: 'parent', repull: false, meta_hash: 'm1', meta, rows: [], cursor: null, more: false }], gone: [], more: false }
+      : { reset: false, epoch: 1, epoch_started_at: at, books: [], gone: [], more: false },
+  }));
+  await openOn(app);
+  await passAgeGate(app);
+  await btn(app, 'I was invited').click();
+  await app.getByLabel('Invite link').fill(LINK);
+  await btn(app, 'Continue').click();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app, 'papa@example.invalid');
+  await btn(app, 'Join the book').click();
+  await expect(app.getByTestId('invite.joined.cover')).toBeVisible();
+  await expect(btn(app, 'Open the book')).toBeEnabled({ timeout: 20_000 });
+  await expect(app.getByLabel(`What does ${CHILD} call you?`)).toHaveValue('Papa');
+  await step('happy', 'Joined, the book is here', 'The cover has opened to the flyleaf. What the child calls this parent in the book is filled in with the inviter\'s suggestion and can be changed; "Open the book" is the one way the open book changes.', undefined, { settle: 900 });
+  await btn(app, 'Open the book').click();
+  await expect(app.getByText(`${CHILD}'s book`).first()).toBeVisible();
+  await expect(app).toHaveURL(/\/book(?![^?]*joined)/);
+  expect(new URL(app.url()).searchParams.get('joined'), 'the mark is cleared once read').toBeNull();
+  await step('happy', 'The Book, lit for the second parent', 'The sheet closes onto the Book, on this book, and its light rises from unlit over 1.2 s, the one slow arrival outside first run (5.8 row 12).', undefined, { settle: 1400 });
 });
 
 test('[J21b] invitee: a book that already has two parents is said plainly', async ({ app, record }) => {
@@ -126,7 +216,7 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await btn(app, 'Keep them here').click();
   await expect(app.getByLabel(`What does ${CHILD} call them?`)).toBeVisible();
   await app.getByLabel(`What does ${CHILD} call them?`).fill('Papa');
-  await expect(app.getByText('From Papa')).toBeVisible();
+  await expect(app.getByText('From Papa').first()).toBeVisible();
   await step('happy', 'Invite a co-parent', 'The sheet carries the book\'s cover: the invite is into this book. What the child calls them, in the letter face with the same ideas as first run, signs their letters, and the cover\'s foot line reads "From Papa" once the typing pauses. The invite is for this book only; the link works once, for 7 days.');
 
   await btn(app, 'Share invite link').click();

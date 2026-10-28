@@ -1,22 +1,30 @@
 // android: same
 /**
- * "I was invited" (PRD V2 F11 6.2 B; PRD A F7; A-REQ-028, A-REQ-029; BL-322, security review H2).
- * Co-parent only at v1.0 (B1).
+ * Joining a book: "I was invited", or an invite link (EXPERIENCE_PASS_2026-10 S59; PRD V2 F11 6.2 B; PRD A F7;
+ * A-REQ-028, A-REQ-029; BL-322, security review H2). Co-parent only at v1.0 (B1).
  *
  * 1. The token is already in the Keychain when a link opened the app (+native-intent); without a
  *    link, the person pastes it (read only from what they paste; the clipboard is never read on
- *    its own, A-REQ-029).
- * 2. Not signed in: a generic line and Sign in. Nothing about the invite is known or shown yet.
- * 3. Signed in: peek_invite shows who invited them (the inviter's sign-off only, never the
- *    child's name), and nothing happens until they tap Join. "Not now" forgets the link.
+ *    its own, A-REQ-029). Build 2 invites are links only: a typed code is not read, and gets the
+ *    not-recognised line (components/family/join-sheet.logic.ts).
+ * 2. Not signed in: a generic line, Sign in and Not now. Nothing about the invite is known or shown
+ *    yet: no cover, no names.
+ * 3. Signed in: peek_invite ("Opening the invite") shows who invited them (the inviter's sign-off
+ *    only, set as a letter's signature, never the child's name), and nothing happens until they tap
+ *    Join. "Not now" forgets the link.
  * 4. Join: consent and sync first if missing (accept needs them, SCCON), then
  *    accept_child_invite, once. Final errors (expired, used, cancelled, not found, already a
- *    member, two parents already) clear the token; a network error keeps it for another try.
- * 5. Joined: sync brings the book to this phone. The person sets what the child calls them in
- *    this book (prefilled with the inviter's suggestion, F11-REQ-024). The open book changes only
- *    when they tap "Open the book".
+ *    member, two parents already) clear the token; any other (offline, a server that did not
+ *    answer, a pause) keeps it for Try again.
+ * 5. Joined: the book cover appears for the first time, with the child's name, and opens to the
+ *    flyleaf; "Your letters and Mama's sit side by side, each signed."; while sync brings the book,
+ *    a line and a thin bar with no count. The person sets what the child calls them in this book
+ *    (prefilled with the inviter's suggestion, F11-REQ-024). The open book changes only when they
+ *    tap "Open the book", which lands on the Book with its light rising once (5.8 row 12).
  *
- * Which step shows, and which call runs next, is lib/family/join-flow.logic.ts (tested in Node).
+ * Views replace each other in place inside the one sheet (the frame's own cross-fade), never a push.
+ * Which step shows, and which call runs next, is lib/family/join-flow.logic.ts (tested in Node);
+ * what each step says is components/family/join-sheet.logic.ts.
  *
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), the look and the join say
  * invites are paused and send nothing. `paused` is not a final error, so the token stays in the
@@ -25,26 +33,32 @@
 import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { View } from 'react-native';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
+import { JoinAsk, JoinedCover, WaitingBar } from '@/components/family/join-ask';
+import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '@/components/family/join-sheet.logic';
+import { Button } from '@/components/ui/button';
+import { Chip, ChipGroup } from '@/components/ui/choice-group';
+import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { copy, fill } from '@/lib/copy';
 import { inviteDestination } from '@/lib/family/entry.logic';
-import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
-import { fill } from '@/lib/copy';
+import { AccountGate, Busy, ErrorLine, QuietButton, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { familyCopy } from '@/lib/family/copy';
 import { FINAL_INVITE_ERRORS, inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
-import { parseInviteInput } from '@/lib/family/invite-link.logic';
 import type { InvitePreview } from '@/lib/family/invite-preview.logic';
 import { acceptInvite, bookName, peekInvite } from '@/lib/family/invites';
-import { joinedView, joinErrorLine, joinPlan } from '@/lib/family/join-flow.logic';
+import { joinedView, joinPlan } from '@/lib/family/join-flow.logic';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store';
+
+/** A sign-off is at most 30 characters (lib/family/invites.ts). */
+const SIGNS_AS_MAX = 30;
 
 /** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon, and no token is kept. */
 export default function JoinBookRoute() {
@@ -53,19 +67,18 @@ export default function JoinBookRoute() {
 
 function JoinBook() {
   const auth = useAuth();
-  const c = useColors();
   const close = useCloseSheet();
   const a = familyCopy.accept;
   const [loaded, setLoaded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [pasted, setPasted] = useState('');
-  const [pasteError, setPasteError] = useState(false);
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [busy, setBusy] = useState<'peek' | 'accept' | null>(null);
   const [wantsJoin, setWantsJoin] = useState(false);
   const [failedAt, setFailedAt] = useState<'peek' | 'accept'>('peek');
   const [error, setError] = useState<InviteErrorKind | null>(null);
-  const [joined, setJoined] = useState<{ childId: string; name: string | null } | null>(null);
+  const [joined, setJoined] = useState<{ childId: string; name: string | null; inviter: string | null } | null>(null);
   const started = useRef<'peek' | 'accept' | null>(null);
 
   useEffect(() => {
@@ -138,7 +151,7 @@ function JoinBook() {
       await clearPendingInvite(t);
       const name = getChild(childId)?.name ?? (await bookName(auth.client, childId).catch(() => null));
       haptic('success');
-      setJoined({ childId, name });
+      setJoined({ childId, name, inviter: preview?.inviter ?? null });
     } catch (e) {
       await fail(e, 'accept', t);
     } finally {
@@ -162,17 +175,19 @@ function JoinBook() {
   };
 
   const submitPaste = async () => {
-    const t = parseInviteInput(pasted, brand.web.origin);
-    if (!t) {
-      setPasteError(true);
+    const read = readPasted(pasted, brand.web.origin);
+    if ('error' in read) {
+      // Nothing is sent: the field stays, with the line that says what to paste.
+      setPasteError(read.error);
       return;
     }
+    const t = read.token;
     await savePendingInvite(t);
     track('invite_opened', { via: 'paste', signed_in: auth.signedIn });
     started.current = null;
     setPreview(null);
     setWantsJoin(false);
-    setPasteError(false);
+    setPasteError(null);
     setToken(t);
   };
 
@@ -194,40 +209,34 @@ function JoinBook() {
     return (
       <SheetFrame>
         <SheetTitle>{a.title}</SheetTitle>
-        <Busy label={a.title} />
       </SheetFrame>
     );
   }
 
   if (plan.view === 'paste') {
     return (
-      <SheetFrame closeLabel={a.close}>
+      <SheetFrame
+        closeLabel={a.close}
+        footer={<Button testID="invite.paste.continue" size="lg" label={a.continue} onPress={() => void submitPaste()} disabled={pasted.trim().length === 0} />}>
         <View testID="invite.screen" className="gap-5">
-          <SheetTitle>{a.title}</SheetTitle>
-          <SheetBody muted>{a.pasteHelp}</SheetBody>
-          <View className="gap-2">
-            <Text className="text-base font-medium text-muted-foreground">{a.pasteLabel}</Text>
-            <TextInput
-              testID="invite.paste.input"
-              className="min-h-14 rounded-2xl border border-border bg-card px-4 text-base text-foreground"
-              value={pasted}
-              onChangeText={(v) => {
-                setPasted(v);
-                setPasteError(false);
-              }}
-              placeholder={a.pastePlaceholder}
-              placeholderTextColor={c.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              multiline
-              accessibilityLabel={a.pasteLabel}
-            />
-          </View>
-          <ErrorLine message={pasteError ? a.notRecognised : null} />
-          <Button testID="invite.paste.continue" size="lg" onPress={() => void submitPaste()} disabled={pasted.trim().length === 0}>
-            <Text>{a.continue}</Text>
-          </Button>
+          <SheetTitle>{joinTitle('paste', null)}</SheetTitle>
+          <TextField
+            testID="invite.paste.input"
+            label={a.pasteLabel}
+            helper={a.pasteHelp}
+            error={pasteError}
+            value={pasted}
+            onChangeText={(v) => {
+              setPasted(v);
+              setPasteError(null);
+            }}
+            placeholder={a.pastePlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            textContentType="URL"
+            multiline
+          />
         </View>
       </SheetFrame>
     );
@@ -241,53 +250,49 @@ function JoinBook() {
             <Button
               testID="invite.join"
               size="lg"
+              label={a.join}
               onPress={() => {
                 haptic('tap');
                 setWantsJoin(true);
-              }}>
-              <Text>{a.join}</Text>
-            </Button>
+              }}
+            />
             <QuietButton label={a.notNow} onPress={() => void notNow()} />
           </>
         }>
-        <View testID="invite.ask" className="gap-5">
-          <SheetTitle>{a.askTitle}</SheetTitle>
-          <SheetBody>{preview.inviter ? fill(a.invitedBy, { inviter: preview.inviter }) : a.invitedByUnknown}</SheetBody>
-          <SheetBody muted>{a.askBody}</SheetBody>
-        </View>
+        <JoinAsk inviter={preview.inviter} />
       </SheetFrame>
     );
   }
 
   if (plan.view === 'joined' && joined) {
-    return <Joined childId={joined.childId} fallbackName={joined.name} />;
+    return <Joined childId={joined.childId} fallbackName={joined.name} inviter={joined.inviter} />;
   }
 
+  const failure = plan.view === 'failed' && error ? joinFailure(error) : null;
   return (
     <SheetFrame closeLabel={a.close}>
       <View testID="invite.screen" className="gap-5">
-        <SheetTitle>{plan.view === 'signIn' ? a.invitedTitle : a.title}</SheetTitle>
+        <SheetTitle>{joinTitle(plan.view, null)}</SheetTitle>
         {plan.view === 'signIn' || plan.view === 'account' ? (
           // Sign in, finish consent, or turn sync back on; the sheet goes on by itself once it can.
           <AccountGate trigger="invite" signInBody={a.signInBody}>
             <Busy label={a.joining} />
           </AccountGate>
         ) : null}
-        {plan.view === 'peeking' ? <Busy label={a.title} /> : null}
+        {plan.view === 'signIn' ? <QuietButton label={a.notNow} onPress={() => void notNow()} /> : null}
+        {plan.view === 'peeking' ? <Busy label={a.peeking} /> : null}
         {plan.view === 'joining' ? (
           <View testID="invite.joining">
             <Busy label={a.joining} />
           </View>
         ) : null}
-        {plan.view === 'failed' && error ? (
+        {failure ? (
           <View testID="invite.error" className="gap-3">
-            <ErrorLine message={errorLine(error)} />
-            {FINAL_INVITE_ERRORS.includes(error) ? (
+            <ErrorLine message={failure.line} />
+            {failure.action === 'pasteAnother' ? (
               <QuietButton label={a.pasteAnother} onPress={pasteAnother} />
             ) : (
-              <Button size="lg" onPress={retry}>
-                <Text>{a.tryAgain}</Text>
-              </Button>
+              <Button size="lg" label={a.tryAgain} onPress={retry} />
             )}
           </View>
         ) : null}
@@ -296,25 +301,17 @@ function JoinBook() {
   );
 }
 
-/** The join sheet's line for an error (lib/family/join-flow.logic.ts joinErrorLine). */
-function errorLine(kind: InviteErrorKind): string {
-  const a = familyCopy.accept;
-  const line = joinErrorLine(kind);
-  if (line === 'needsSync') return a.needsSync;
-  if (line === 'tryLater') return a.tryLater;
-  return fill(familyCopy.errors[line], { child: '' });
-}
-
 /**
- * Joined. Waits for sync to bring the book, then asks what the child calls this parent in it
- * (prefilled with the inviter's suggestion) and offers to open it. Open needs a sign-off, and a
- * line says so while the field is empty (lib/family/join-flow.logic.ts joinedView). Nothing
- * switches by itself.
+ * Joined. The cover appears for the first time with the child's name and opens; the line under the title says
+ * whose letters sit together. While sync brings the book it waits (a line and a thin bar with no count); then it
+ * asks what the child calls this parent in it (prefilled with the inviter's suggestion) and offers to open it.
+ * Open needs a sign-off, and a line says so while the field is empty (lib/family/join-flow.logic.ts joinedView).
+ * Nothing switches by itself.
  */
-function Joined({ childId, fallbackName }: { childId: string; fallbackName: string | null }) {
-  const c = useColors();
+function Joined({ childId, fallbackName, inviter }: { childId: string; fallbackName: string | null; inviter: string | null }) {
   const close = useCloseSheet();
   const a = familyCopy.accept;
+  const ideas = copy.onboarding.signsAs;
   const [book, setBook] = useState(() => getChild(childId));
   const [signsAs, setSignsAs] = useState(() => book?.signsAs ?? '');
   const edited = useRef(false);
@@ -333,14 +330,19 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
   const child = book?.name ?? fallbackName ?? '';
   const view = joinedView(book, signsAs);
   const saveSignature = () => {
-    const s = signsAs.trim().slice(0, 30);
+    const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
+  };
+  const type = (v: string) => {
+    edited.current = true;
+    setSignsAs(v.slice(0, SIGNS_AS_MAX));
   };
   const open = () => {
     saveSignature();
     // The one place the open book changes: the person tapped "Open the book" (BL-322).
     setActiveChildId(childId);
-    router.dismissTo('/');
+    // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
+    router.dismissTo(JOINED_LANDING);
   };
 
   return (
@@ -348,9 +350,7 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
       footer={
         book ? (
           <>
-            <Button testID="invite.open" size="lg" onPress={open} disabled={!view.canOpen}>
-              <Text>{a.open}</Text>
-            </Button>
+            <Button testID="invite.open" size="lg" onPress={open} disabled={!view.canOpen} label={a.open} />
             <QuietButton
               label={a.close}
               onPress={() => {
@@ -360,38 +360,46 @@ function Joined({ childId, fallbackName }: { childId: string; fallbackName: stri
             />
           </>
         ) : (
-          <Button testID="invite.close" size="lg" onPress={close}>
-            <Text>{a.close}</Text>
-          </Button>
+          <Button testID="invite.close" size="lg" label={a.close} onPress={close} />
         )
       }>
       <View testID="invite.joined" className="gap-5">
-        <SheetTitle>{child ? fill(a.joinedTitle, { child }) : a.title}</SheetTitle>
-        <SheetBody>{a.joinedBody}</SheetBody>
-        {!book && child ? <SheetBody muted>{fill(a.joinedWaiting, { child })}</SheetBody> : null}
-        {book ? (
+        {/* The child's name appears here first, on the cover that opens (BL-322). */}
+        {child ? <JoinedCover child={child} inviter={inviter} /> : null}
+        <Text variant="title1" asHeading={1}>
+          {child ? fill(a.joinedTitle, { child }) : a.title}
+        </Text>
+        <Text variant="body">{joinedBody(inviter)}</Text>
+        {!book && child ? (
           <View className="gap-2">
-            <Text className="text-base font-medium text-muted-foreground">{fill(a.signsAsLabel, { child })}</Text>
-            <TextInput
+            <Text variant="footnote" accessibilityLiveRegion="polite">
+              {fill(a.joinedWaiting, { child })}
+            </Text>
+            <WaitingBar />
+          </View>
+        ) : null}
+        {book ? (
+          <View className="gap-3">
+            <TextField
               testID="invite.signsAs"
-              className="min-h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground"
+              label={fill(a.signsAsLabel, { child })}
+              face="serif"
+              helper={a.signsAsHelp}
               value={signsAs}
-              onChangeText={(v) => {
-                edited.current = true;
-                setSignsAs(v);
-              }}
+              onChangeText={type}
               placeholder={a.signsAsPlaceholder}
-              placeholderTextColor={c.textMuted}
-              maxLength={30}
+              maxLength={SIGNS_AS_MAX}
               autoCapitalize="words"
               autoCorrect={false}
               returnKeyType="done"
-              accessibilityLabel={fill(a.signsAsLabel, { child })}
-              accessibilityHint={a.signsAsHelp}
             />
-            <Text className="text-sm text-muted-foreground">{a.signsAsHelp}</Text>
+            <ChipGroup label={ideas.examplesLabel}>
+              {ideas.examples.map((ex) => (
+                <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => type(ex)} />
+              ))}
+            </ChipGroup>
             {view.needsSignsAs ? (
-              <Text testID="invite.signsAs.needed" accessibilityLiveRegion="polite" className="text-sm text-foreground">
+              <Text testID="invite.signsAs.needed" variant="footnote" tone="default" accessibilityLiveRegion="polite">
                 {fill(a.signsAsNeeded, { child })}
               </Text>
             ) : null}
