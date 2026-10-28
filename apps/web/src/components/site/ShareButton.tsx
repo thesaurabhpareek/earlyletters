@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { site } from '@/content/site';
+import { tap } from '@/lib/haptics';
 import styles from './ShareButton.module.css';
 
 const c = site.comingSoon;
@@ -17,6 +18,7 @@ export function ShareButton() {
   useEffect(() => setUrl(`${window.location.origin}/`), []);
 
   async function onClick() {
+    tap('light');
     const link = `${window.location.origin}/`;
     try {
       if (typeof navigator.share === 'function') {
@@ -50,7 +52,7 @@ export function ShareButton() {
       <ul className={styles.channels} aria-label={c.shareButton}>
         {channels.map((ch) => (
           <li key={ch.label}>
-            <a className={styles.channel} href={ch.href} {...(ch.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+            <a className={styles.channel} href={ch.href} onClick={() => tap('light')} {...(ch.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
               {ch.label}
             </a>
           </li>
