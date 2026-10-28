@@ -1,7 +1,9 @@
 /**
  * Pure parts of BookCover (EXPERIENCE_PASS 5.4): the journey's one object, a paper book with the
  * child's name on it. Sizes, the type on it, and how a name of any length is set: at most three
- * lines, ending in a fade when it does not fit, never an ellipsis glyph, never a changed word.
+ * lines, ending in a fade when it does not fit, never an ellipsis glyph, never a changed word, and
+ * never a word broken in two (a word that is wider than the cover at the type floor ends the name
+ * in a fade on one line: "Christophe" faded, never "Christophe" over a stranded "r").
  * Tested in test/book-cover.test.ts; book-cover.tsx draws it.
  *
  * Line breaking is measured, not guessed: the widths below are the advance widths of the bundled
@@ -28,7 +30,7 @@ export type CoverState = 'closed' | 'open';
 
 /**
  * The name on the closed cover is Literata Medium 17 pt on the smallest cover, and everything scales with the width.
- * A name sets itself like a book title: at the largest size, down to a floor, at which no word has to break (at the
+ * A name sets itself like a book title: at the largest size, down to a floor, at which no word is cut (at the
  * spec's 17 pt, "Meenakshi" is 91 pt wide on a cover that leaves 74), then it wraps at spaces, then it fades.
  * The foot line asks for up to 14 pt there (the spec's 15 pt sets "From Mama" 84 pt wide) and fits itself down to
  * the 13 pt type floor before it fades.
@@ -135,7 +137,7 @@ export type SetText = {
   truncated: boolean;
   /** The whole name, trimmed only for display: the accessible name, always complete. */
   full: string;
-  /** A line that is drawn whole (not the fading last one) had to break inside a word. */
+  /** A word is wider than a line at this size, so the name ends inside it, in a fade (a word is never split across lines). */
   broken: boolean;
 };
 
@@ -148,9 +150,11 @@ export function displayName(name: string): string {
 }
 
 /**
- * Breaks a name into at most `maxLines` lines that fit `maxWidth`, at spaces where it can and between
- * letters when one word is wider than the cover. When it does not fit, the last line is filled to the
- * edge (it fades there), so a long name ends in a fade and never in an ellipsis glyph.
+ * Breaks a name into at most `maxLines` lines that fit `maxWidth`, at spaces, and never inside a word. When it does not
+ * fit, the last line is filled to the edge (it fades there), so a long name ends in a fade and never in an ellipsis
+ * glyph. A single word wider than a line ("Alexandrina" on the smallest cover at the type floor) is not split across
+ * two lines, which would strand its last letter: the name ends in a fade on that line, after the whole words before it.
+ * The text in `lines` is always the start of the name, letter for letter.
  */
 export function setText(name: string, o: { size: number; maxWidth: number; maxLines: number; face?: CoverFace }): SetText {
   const full = displayName(name);
@@ -159,43 +163,37 @@ export function setText(name: string, o: { size: number; maxWidth: number; maxLi
   const fits = (t: string) => measure(t, o.size, face) <= max;
   if (!full) return { lines: [], truncated: false, full, broken: false };
 
-  const lines: string[] = [];
-  /** Indexes of lines that end inside a word. */
-  const midWord = new Set<number>();
-  let cur = '';
-  for (const word of full.split(' ')) {
-    const candidate = cur ? `${cur} ${word}` : word;
-    if (fits(candidate)) {
-      cur = candidate;
-      continue;
+  /** The longest start of `text` that fits one line: the line that runs to the edge and fades. */
+  const toTheEdge = (text: string) => {
+    let last = '';
+    for (const g of graphemes(text)) {
+      if (last && !fits(last + g)) break;
+      last += g;
     }
-    if (cur) lines.push(cur);
-    cur = '';
-    if (fits(word)) {
-      cur = word;
-      continue;
-    }
-    for (const g of graphemes(word)) {
-      if (cur && !fits(cur + g)) {
-        midWord.add(lines.length);
-        lines.push(cur);
-        cur = '';
-      }
-      cur += g;
-    }
-  }
-  if (cur) lines.push(cur);
-  if (lines.length <= o.maxLines) return { lines, truncated: false, full, broken: midWord.size > 0 };
+    return last.trimEnd();
+  };
 
-  // Too long: keep the first lines, then run the last one to the edge so the fade sits on real letters.
-  const kept = lines.slice(0, o.maxLines - 1);
-  const rest = lines.slice(o.maxLines - 1).join(' ');
-  let last = '';
-  for (const g of graphemes(rest)) {
-    if (last && !fits(last + g)) break;
-    last += g;
+  const words = full.split(' ');
+  const lines: string[] = [];
+  let at = 0;
+  while (at < words.length) {
+    // A line of whole words, as many as fit.
+    let line = '';
+    let next = at;
+    while (next < words.length) {
+      const candidate = line ? `${line} ${words[next]}` : words[next];
+      if (!fits(candidate)) break;
+      line = candidate;
+      next++;
+    }
+    // The next word alone is wider than a line: the name ends in a fade on this line, inside that word.
+    if (next === at) return { lines: [...lines, toTheEdge(words.slice(at).join(' '))], truncated: true, full, broken: true };
+    // Every line is taken and words remain: the last line is refilled from its first word, to the edge, and fades.
+    if (lines.length + 1 === o.maxLines && next < words.length) return { lines: [...lines, toTheEdge(words.slice(at).join(' '))], truncated: true, full, broken: false };
+    lines.push(line);
+    at = next;
   }
-  return { lines: [...kept, last.trimEnd()], truncated: true, full, broken: [...midWord].some((i) => i < kept.length) };
+  return { lines, truncated: false, full, broken: false };
 }
 
 /** The largest size from `size` down to `min` whose setting `accept`s; the `min` setting otherwise. */
@@ -209,8 +207,8 @@ function fit(text: string, o: { size: number; min: number; maxWidth: number; max
 
 /**
  * The name on a cover of this size and state (three lines closed, two on the flyleaf), set like a book title: the
- * largest size, down to the cover's floor, at which no drawn word breaks; then it wraps at spaces and, if it is still
- * too long, fades. Only a single word longer than the cover at its floor ever breaks between letters.
+ * largest size, down to the cover's floor, at which no word is cut; then it wraps at spaces and, if it is still too
+ * long, fades. A single word wider than the cover at its floor ends the name in a fade on one line (never two lines).
  */
 export function coverName(name: string, size: CoverSize, state: CoverState = 'closed'): FittedText {
   const m = coverMetrics(size);

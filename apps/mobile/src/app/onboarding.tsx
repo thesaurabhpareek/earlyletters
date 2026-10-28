@@ -36,11 +36,12 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type Text as RNText, type TextInput } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, latestDueDate, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
+import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
@@ -76,8 +77,6 @@ const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
 const MAX_FIRST_RUN_CHILDREN = 6;
 /** The cover takes a typed name after a pause this long, with no motion per letter (S05). */
 const COVER_PAUSE_MS = 300;
-/** With the keyboard up and less free height than this (iPhone SE), the cover steps aside so the form never scrolls (S05). */
-const COVER_MIN_FREE_HEIGHT = 640;
 /** The row that holds Back on every step but the welcome (min-h-12). */
 const BACK_ROW = 48;
 /** The welcome's layout under the lockup (S03): the hero 32 pt below it, the body 16 below that, the free line 12. */
@@ -99,20 +98,6 @@ function useSettled<T>(value: T, ms: number): T {
     return () => clearTimeout(id);
   }, [value, ms]);
   return settled;
-}
-
-/** How tall the keyboard is right now (0 when it is down). */
-function useKeyboardHeight(): number {
-  const [height, setHeight] = useState(0);
-  useEffect(() => {
-    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return height;
 }
 
 export default function Onboarding() {
@@ -149,9 +134,8 @@ export default function Onboarding() {
   const typedSignsAs = useSettled(signsAs, COVER_PAUSE_MS);
   const [chosenSignsAs, setChosenSignsAs] = useState<string | null>(null);
   const coverSignsAs = (chosenSignsAs === signsAs ? signsAs : typedSignsAs).trim();
-  const keyboard = useKeyboardHeight();
-  const { height: windowHeight } = useWindowDimensions();
-  const showCover = keyboard === 0 || windowHeight - keyboard >= COVER_MIN_FREE_HEIGHT;
+  // Beside the heading, under it at accessibility text sizes, or away while the keyboard leaves under 480 pt (S05).
+  const coverPlace = useCoverPlace();
 
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this phone, first run is
   // over (no second book is made by mistake), and the person lands on the Book, where the letters that came back
@@ -267,6 +251,21 @@ export default function Onboarding() {
     else dateField.current?.focus();
   };
 
+  // Controls never animate in (MOTION principle 2). On every step but the last they follow the step's content in the scroll;
+  // on "The book is open." they are pinned below it (S08), which is also the step whose content is tallest.
+  const pinned = step === 'finish';
+  const controls = (
+    <>
+      {block ? <ReasonLine text={block} raised={nudged} /> : null}
+      <View>
+        <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
+        {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
+            reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
+        {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
+      </View>
+    </>
+  );
+
   // The welcome's words arrive one after another (S03); under Reduce Motion, one fade.
   const enterAt = (ms: number) => (motion.reduced ? motion.enter(0) : motion.enter(0)?.delay(ms));
 
@@ -334,16 +333,9 @@ export default function Onboarding() {
 
               {step === 'child' && (
                 <>
-                  <View className="flex-row items-start gap-4">
-                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                      {o.child.title}
-                    </Text>
-                    {showCover ? (
-                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                        <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
-                      </Animated.View>
-                    ) : null}
-                  </View>
+                  <CoverHeading title={o.child.title} headingRef={heading} place={coverPlace}>
+                    <BookCover name={coverName} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                  </CoverHeading>
                   <View className="gap-3">
                     {names.map((n, i) => (
                       <TextField
@@ -352,6 +344,7 @@ export default function Onboarding() {
                           nameFields.current[i] = r;
                         }}
                         label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
+                        face="serif"
                         value={n}
                         onChangeText={(v) => setNameAt(i, v)}
                         placeholder={i === 0 ? o.child.namePlaceholder : undefined}
@@ -420,17 +413,10 @@ export default function Onboarding() {
 
               {step === 'signsAs' && (
                 <>
-                  <View className="flex-row items-start gap-4">
-                    <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-                      {signsAsTitle}
-                    </Text>
-                    {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
-                    {showCover ? (
-                      <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-                        <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
-                      </Animated.View>
-                    ) : null}
-                  </View>
+                  {/* The one signature preview: "From Mama" on the cover's foot line (S06). */}
+                  <CoverHeading title={signsAsTitle} headingRef={heading} place={coverPlace}>
+                    <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
+                  </CoverHeading>
                   <TextField
                     ref={signsAsField}
                     label={signsAsTitle}
@@ -503,14 +489,7 @@ export default function Onboarding() {
             <View className="flex-1" testID="onboarding.handoff" />
           )}
 
-          {/* Controls never animate in (MOTION principle 2). */}
-          {block ? <ReasonLine text={block} raised={nudged} /> : null}
-          <View>
-            <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
-            {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
-                reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
-            {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
-          </View>
+          {pinned ? null : controls}
           {step === 'welcome' && (capabilities.signIn || doors.joinButton) && (
             // Two doors, not offers: quiet text, no icon, no border, no line about accounts (S03).
             <View className={largeText ? 'mt-2 items-center' : 'mt-2 flex-row flex-wrap justify-center'} style={{ columnGap: WELCOME.doorGap }}>
@@ -527,6 +506,9 @@ export default function Onboarding() {
             </View>
           )}
         </ScrollView>
+        {/* "The book is open." pins its one primary below the scroll, so "Write the first one" is whole on an iPhone SE and
+            is the first thing reached at accessibility text sizes, whatever the speech card above it grows to (S08). */}
+        {pinned ? <View className="px-6 pb-6 pt-3">{controls}</View> : null}
       </KeyboardAvoidingView>
       <LanguagePicker visible={languageOpen} onClose={() => setLanguageOpen(false)} onSelect={chooseLanguage} selected={spoken.primary.code} />
     </SafeAreaView>
