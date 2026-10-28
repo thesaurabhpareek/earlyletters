@@ -17,7 +17,7 @@ Two opening quotation marks, one large and one small, leaning together. A grown-
 - **The wordmark** is EB Garamond, outlined, with its `tt` ligature and a word space opened 15 percent. It reads as a book, not an app.
 - **The colour** is sepia: cognac leather, a book spine, ink on paper.
 
-Approved by the founder on 2026-10-03 as r3 `final-a`. `primary/` is a byte-identical rebuild of it (`node packages/brand/assets/logo/primary/source/build.mjs`).
+Approved by the founder on 2026-10-03 as r3 `final-a`. `primary/` is a byte-identical rebuild of it (`node packages/brand/assets/logo/primary/source/build.mjs`). Round 4 treatments (two tones, the name in quotation marks, a paper tile) sit in `packages/brand/assets/logo/options-r4/` with a recommendation in `docs/brand/logo-r4/`: they are unchosen candidates, not in the registry, and no surface may use them.
 
 **Smart, never the author.** The product feels thoughtful and quick: it remembers the child's age, suggests a prompt, lists the right language. The brand never implies that software writes, improves or shapes a person's words. No sparkles, wands, robots, "AI" badges or "magic" anywhere near the mark or in any brand line.
 
