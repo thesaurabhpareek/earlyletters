@@ -1,6 +1,28 @@
-## What and why
+<!--
+Title: type(scope): outcome in plain words (BL-123). 72 characters max, one id when one exists.
+Types: feat fix perf refactor test docs chore. The scope is the area (db, mobile, web, core, api, content, release, ci, agents).
+Stacked on another PR? Say so in the first line of the body and name the base.
+Prose may be as long as the change needs. Keep the fixed sections below short.
+-->
 
-<!-- One concern per pull request. Link the backlog item (BL-...) and the requirement IDs it serves. -->
+## Summary and why
+
+One sentence on what changed. Then the problem it solves, and the backlog item, requirement and decision ids it serves.
+
+Satisfies:
+Data classes touched:
+
+<!-- Agent PRs also keep their Agent: and Mode: lines at the top. -->
+
+## Not verified
+
+Required on every PR. Say what you did not run or could not check. "Nothing" is allowed only with the reason.
+
+## Risk and rollback
+
+One line, required for db, ci and release changes: what could break, and the exact undo. Write "N/A: reason" otherwise.
+
+perf: n/a | checked-by: (test or command) | not-measured
 
 ## How it was checked
 
