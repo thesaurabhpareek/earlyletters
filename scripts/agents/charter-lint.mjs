@@ -30,29 +30,12 @@ const DEFAULT_ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", ".
 // entry gets removed.
 export const BASELINE = {
   ".claude/agents/ai-eng-lead.md": "open PRs #167 and #168 change this file",
-  ".claude/agents/analytics.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/chief-of-staff.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
   ".claude/agents/compliance-engineer.md": "open PRs #167 and #168 change this file",
-  ".claude/agents/content.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/data-architect.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
   ".claude/agents/data-steward.md": "open PRs #167 and #168 change this file",
-  ".claude/agents/decision-science.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/design-systems.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/legal.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/marketing.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
   ".claude/agents/mobile.md": "open PR #112 changes this file",
   ".claude/agents/ops.md": "open PR #112 changes this file",
-  ".claude/agents/payments.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
   ".claude/agents/principal-architect.md": "open PRs #112, #167 and #168 change this file",
-  ".claude/agents/privacy.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/product.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/qa.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/red-team.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
   ".claude/agents/security-architect.md": "open PRs #167 and #168 change this file",
-  ".claude/agents/security.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/speech.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/support.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
-  ".claude/agents/sync.md": "updated by the H5 charters PR (docs/harness-charters-d100)",
 };
 
 const MONTH = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*";

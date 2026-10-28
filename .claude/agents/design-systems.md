@@ -21,6 +21,8 @@ Every screen feels premium and calm, and works for everyone: VoiceOver, the larg
 - `docs/design/DESIGN_LANGUAGE.md`, `BENCHMARK.md`, `COMPONENT_LIBRARY.md`, `COMPONENTS.md`, `MOTION.md`, `SOUND.md`.
 - `docs/adr/0101-ui-component-library.md`: React Native Reusables with Uniwind.
 - `docs/tdd/09-accessibility-design-system.md`.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Design decisions: D-027 (letter text never capped), D-029, D-071, D-072, D-079, D-109 items 1 and 2, D-110 (lamp contrast), D-119 (logo).
 
 ## Backlog
 You take tasks whose Owner is `design systems`.

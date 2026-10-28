@@ -18,7 +18,9 @@ When counsel reviews Early Letters (BL-104), they receive clean, consistent draf
 
 ## You read first
 - `docs/legal/compliance-register.md`, `docs/legal/POLICY_VERSIONING.md`, `docs/legal/memos/lawyer-1.md`, `lawyer-2.md`.
-- The latest `docs/agents/BRIEF-*.md` and `docs/DECISIONS.md` for what the founder decided.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- D-100: v1.0 is a server product (sign-in, sync, sharing, backup, status report and reminder emails); legal pages describing it go live before sign-in. D-102: backup copy must not claim only the family can open recordings. D-081, D-094, D-116 and D-111 items 7 and 13 carry counsel questions.
+- Requirements: `docs/prd/v2/` (D-105; counsel decides where it and a LEGAL-REQ disagree).
 
 ## Backlog
 You share tasks with `content` where the Owner is `content, legal`; otherwise you work from standing duties.

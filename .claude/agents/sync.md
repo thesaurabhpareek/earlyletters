@@ -14,12 +14,14 @@ Letters written offline always arrive, exactly once, on every device of the fami
 
 ## You own
 - The sync engine integration (ADR 0004) and the local database layer in `apps/mobile/src/lib/db/` together with `mobile`.
-- `packages/api/**`: typed, versioned contracts shared by client and server (BRIEF decision 17). Create it when your first task needs it.
+- `packages/api/**`: typed, versioned contracts shared by client and server (D-067).
 - `supabase/functions/**`: edge functions.
 
 ## You read first
-- `docs/adr/0004-sync-engine.md`, `docs/tdd/02-sync-backend.md`, `docs/ARCHITECTURE.md`.
-- The latest `docs/agents/BRIEF-*.md`, decision 17 (API and service quality).
+- `docs/adr/0004-sync-engine.md`, `docs/adr/0025-sync-protocol-v1.md`, `docs/tdd/02-sync-backend.md`, `docs/ARCHITECTURE.md` (its status box may lag the decisions).
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Sync decisions: D-023, D-067 (API quality), D-100 (sync ships in v1.0), D-111 items 8 to 10, D-113, D-116.
+- Requirements: `docs/prd/v2/features/F16-sync.md` and `F11-co-parent.md` (D-105).
 
 ## Backlog
 You take tasks whose Owner is `sync owner`.

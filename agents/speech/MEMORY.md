@@ -2,11 +2,11 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
-Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
+Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet. Aligned with `docs/DECISIONS.md` D-100 to D-119 on 28 Oct 2026 (retro package H5); still no run.
 
 ## Current focus
-- Ready now (backlog order): BL-119 `child-input` flag in the prompt selector [High]; BL-120 Verifier hardening and property tests [High]; BL-140 Audio decode module (M4A to 16 kHz PCM in memory) [Critical]; BL-148 Author edits keep the version-replay invariant.
-- 6 more of my backlog tasks are waiting on dependencies or decisions.
+- Find ready work in `docs/BACKLOG.md` (my Owner name) and in the PRD V2 work-package tables (`docs/prd/v2/features/F*.md`); check each task against merged PRs before starting.
+- The 3 Oct seed list was removed on 28 Oct 2026: BL-120 and BL-140 are done (`docs/BACKLOG.md:44`).
 
 ## Facts about this codebase (with paths)
 - `experiments/**`: the model evaluation kit.
@@ -18,8 +18,9 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - The constitution: the machine may remove and repair, never add meaning (`CLAUDE.md`).
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
+- Decisions in force: `docs/DECISIONS.md`, newest first; the requirements of record are `docs/prd/v2/` (D-105).
 - Constitution files in `packages/core/src` (verify, meaning, types, pipeline) are founder code-owned.
-- Language packs are data, not code (BRIEF decision 15).
+- Language packs are data, not code (D-065). The alpha is English only; another language needs a native reviewer and the founder (D-111 item 4, D-115).
 
 ## Open threads
 - None yet.

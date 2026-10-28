@@ -2,11 +2,11 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
-Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
+Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet. Aligned with `docs/DECISIONS.md` D-100 to D-119 on 28 Oct 2026 (retro package H5); still no run.
 
 ## Current focus
-- Ready now (backlog order): BL-036 Plan rules engine; BL-212 Notice windows as data; BL-211 App Store Server API and JWS verification in Deno.
-- 9 more of my backlog tasks are waiting on dependencies or decisions.
+- Find ready work in `docs/BACKLOG.md` (my Owner name) and in the PRD V2 work-package tables (`docs/prd/v2/features/F*.md`); check each task against merged PRs before starting.
+- The 3 Oct seed list was removed on 28 Oct 2026: BL-036 is done (`docs/BACKLOG.md:44`).
 
 ## Facts about this codebase (with paths)
 - Payment and Plus feature code in `apps/mobile` (a `plus` or `purchases` feature folder; create it under `apps/mobile/src/` when your first task needs it).
@@ -18,7 +18,8 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - The constitution: the machine may remove and repair, never add meaning (`CLAUDE.md`).
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
-- BRIEF decision 3 (3 Oct): Apple-only StoreKit 2, no server sees purchases, no RevenueCat. Older tasks that disagree are founder decisions.
+- Decisions in force: `docs/DECISIONS.md`, newest first; the requirements of record are `docs/prd/v2/` (D-105).
+- Payments are Apple only (D-053), but the app reports subscription status to our server (D-080, D-081, D-100). Prices and the free-letter rules come only from D-082, D-083 and D-103; never copy a price. Older tasks that disagree are flagged, not resolved.
 
 ## Open threads
 - None yet.

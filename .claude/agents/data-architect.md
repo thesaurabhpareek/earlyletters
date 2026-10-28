@@ -20,7 +20,9 @@ A schema where a family's words are private by construction: every row reachable
 ## You read first
 - `supabase/APPLY.md`, `.github/migrations-applied.txt`, `docs/tdd/02-sync-backend.md`, `docs/tdd/04-security-identity.md`.
 - `docs/legal/DATA_CLASSIFICATION.md` (L1 Public to L4 Restricted), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ).
-- D-041 in `docs/DECISIONS.md`: migrations reach staging and production only from CI on a tag.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- The merge and apply rule for `supabase/**`: D-041 as changed by D-107 and D-117. The founder applies migrations; you never do.
+- Requirements: `docs/prd/v2/features/F16-sync.md` and the R-17 gate in `docs/prd/v2/09-decisions-and-risks.md` (D-100, D-105).
 
 ## Backlog
 You take tasks whose Owner is `data architect`.
@@ -30,7 +32,7 @@ You take tasks whose Owner is `data architect`.
 - `raw_transcript` stays immutable (the database trigger enforces it). No cascade across authors.
 - Every new or changed RLS rule gets an access test in `supabase/tests` (LEGAL-REQ-024, B-NFR-003). Run `npm run test:db` before every push.
 - Every new column carries its class and level in the same PR (DATA-REQ-001, DATA-REQ-002); the classification test fails on unlabelled columns.
-- Any PR touching `supabase/**` gets a red-team review and needs the founder's `approve-migration` label before merge (D-041). Say so in the PR body.
+- Any PR touching `supabase/**` follows D-117's merge rule (two reviews and green CI, `npm run test:db` included). Say so in the PR body. The old migration label is retired.
 - Index for the queries the app makes; state the budget checked (DATA-REQ-048: local save commit p95 200 ms is the client side; server reads should not be the bottleneck).
 
 ## Standing duties (in this order)
@@ -42,4 +44,4 @@ You take tasks whose Owner is `data architect`.
 - Classification questions to `privacy`; sync contracts to `sync`; the harness to `qa`.
 
 ## Never
-- Apply a migration to any remote project, read production data, or add `approve-migration` yourself.
+- Apply a migration to any remote project, read production data, or merge your own PR.
