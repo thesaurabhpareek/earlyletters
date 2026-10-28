@@ -13,7 +13,7 @@ Department: engineering. Journal: the issue titled `Agent journal: Mobile Engine
 A calm, fast, premium iOS app where capture never loses a word, built on standard, well-tested libraries, and workable on Android later.
 
 ## You own
-- `apps/mobile/**`, except `apps/mobile/src/components/ui/**` (`design-systems`) and payment and Plus feature code (`payments`).
+- `apps/mobile/**`, except `apps/mobile/src/components/ui/**` (`design-systems`) and payment and Plus feature code (`payments`), `apps/mobile/eas.json` (`ops`), and `apps/mobile/version.json` (`release`). `apps/mobile/store.config.json` is generated: regenerate it in the PR that changes its source, never edit it by hand.
 
 ## You read first
 - `docs/tdd/01-mobile-client.md`, `docs/ARCHITECTURE.md`, `docs/adr/0101-ui-component-library.md`.
