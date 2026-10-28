@@ -25,6 +25,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
+| S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
 | S1-09 invite links, push | Switch on; AASA on Apple's CDN; APNs key | W7 |
 | S2-14 sign out and revocation | Switch on | W14 |
 
@@ -295,6 +296,35 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
+
+### S1-29 A child's book with two parents: the book row and the hide footer (S46; P6a, #312)
+- **Needs:** a switch-on build on both phones, with Mama and Papa joined to Asha's book (S1-22's setup).
+- **Steps:**
+  - (a) On Mama's phone, open Settings > Asha's book. Read the "Write this book together" row, then tap it.
+  - (b) Read the footer under "Hide this book". Tap Hide this book, read the confirm, then Cancel. Build 2 has no "Show this book again" yet, so do not confirm the hide on a drill phone.
+  - (c) Only if a drill book has a co-parent whose member row has no signature: repeat (a) and (b) for that book. The server's `signs_as` is null there; the app does not let anyone save an empty signature.
+  - (d) Turn VoiceOver on and swipe through the row and the footer.
+- **Expected:**
+  - (a) The row's value is Papa's own signature ("Papa"). The tap opens the Family tab, not the invite sheet.
+  - (b) The footer reads "Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Papa still sees Asha's book as before." The confirm is not styled as destructive.
+  - (c) The value and the footer say "Your co-parent", and the row still opens the Family tab.
+  - (d) VoiceOver reads the row's label and value, and reads the footer once.
+- **Record:** S1-29 row: (a) to (d) yes or no, or "not run" for (c), with the phones and iOS versions. Take a screenshot of the row and the footer, fictional names only.
+- **Update:** the S46 checkbox in `docs/design/EXPERIENCE_PASS_2026-10.md` (evidence column). Open an issue for any difference.
+
+### S1-30 Licenses: the page opens and scrolls, and cold start does not move (S40; P6a, #312)
+- **Steps:**
+  - (a) On the SE 3, with the S1-03 method, run 10 cold starts on the build before the Licenses page (develop at 49e3d93) and 10 on this one.
+  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the 565 KB list there and only there.
+  - (c) Fling to the end of the list and back. Open one notice and close it.
+  - (d) Repeat (c) at AX5, then with VoiceOver on: the group headings are headings, and each package row reads its name and its licence.
+- **Expected:**
+  - (a) Cold start p50 and p90 are within 50 ms of the build before, and inside the S1-03 budget, because nothing reads the list at launch.
+  - (b) The page opens with no visible stall. Over about 300 ms on the SE 3 is a finding; its follow-up, already listed on #312, is to move `licences.json` to an on-demand asset.
+  - (c) The list scrolls smoothly, with no blank rows after a fling.
+  - (d) Nothing is truncated.
+- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
+- **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
