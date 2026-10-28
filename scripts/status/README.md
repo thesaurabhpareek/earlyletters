@@ -28,7 +28,7 @@ Only comments and reviews by trusted logins count. The default is the repo owner
 ## How a lens verdict is read
 
 Lens reviews are free text. The script follows the habit in PRs #165 to #205 and #293: the first line names the review and ends with the verdict, for example `## Review A (code and tests), PR #293 at f54c0e4: PASS WITH NOTES` or `PR #179 at df2991c: PASS`.
-- **Verdict:** the earliest of PASS WITH NOTES, PASS, FAIL, BLOCKING, CHANGES NEEDED, MERGE, MERGE AFTER FIX, DO NOT MERGE in the first line (text in brackets ignored). If the first line has none, the script uses a `Verdict:` line among the next 9.
+- **Verdict:** read from the text after the last colon of the first line (text in brackets ignored); if the first line has none, from a `Verdict:` line among the next 9. Reading is conservative: any negation or request for changes (not, never, no, cannot, won't, should not, blocked, reject, fail, request changes, changes needed, needs work, hold) makes it DO NOT MERGE, FAIL, CHANGES NEEDED or BLOCKING, whatever positive word also appears. Otherwise PASS WITH NOTES, MERGE AFTER FIX, PASS or MERGE. Anything else is no verdict.
 - **Sha:** the first hex word of 7 to 40 characters with a digit in it in the first line, otherwise `head <sha>` in the first five lines. A verdict without a sha never counts as on head.
 - A first line that names a different PR (`PR #166 at ...` posted on #182) is skipped.
 
@@ -48,7 +48,7 @@ From `docs/DECISIONS.md` D-117 and `docs/agents/COORDINATION.md` section 6, as `
 
 D-117 names `supabase/**`, `.github/**`, the two app config files and the engine files as paths. It names "auth" and "payments" only as words, apart from `plan.ts`. The auth and payments globs above are this script's reading, not a decision. Production deploys are not path based and are not covered.
 
-A founder-class line ends with "(fewer than 2 on the merged head)" when fewer than two of the last two lens verdicts name the merged head. The D-117 operating rule needs two passing reviews on the current head.
+A founder-class line ends with "(fewer than 2 passing on the merged head)" when fewer than two of the last two lens verdicts are passing (PASS, PASS WITH NOTES or MERGE) and name the merged head. The D-117 operating rule needs two passing reviews on the current head.
 
 ## Adding other reports (hook)
 

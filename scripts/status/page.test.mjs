@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  founderClasses, sameSha, parseLens, verdictsOf, buildModel, renderPage, renderFounderList, collect, MAX_LINES, EXTRA_SLOTS,
+  founderClasses, sameSha, parseLens, PASSING, verdictsOf, buildModel, renderPage, renderFounderList, collect, MAX_LINES, EXTRA_SLOTS,
 } from "./page.mjs";
 
 const NOW = "2026-10-28T12:00:00Z";
@@ -40,13 +40,30 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("<!-- merge-train -->\nPASS", 1), undefined);
   assert.equal(parseLens("Fixed in ea0affb: red-team findings 2 and 3.", 30), undefined);
   assert.equal(parseLens("## Review B (product fit, content and voice)", 170), undefined, "no verdict, no row");
-  // Negations must never read as approval (independent review of #339, 28 Oct).
+  // Negations and change requests are not approval (independent reviews of #339, 28 Oct).
   assert.equal(parseLens("## Review A at 1a2b3c4: DO NOT MERGE", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review B at 1a2b3c4: do not  merge until fixed", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review A at 1a2b3c4: don't merge", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review A at 1a2b3c4: not a pass, 2 issues", 310).verdict, "FAIL");
   assert.equal(parseLens("## Lens B verdict at 1a2b3c4: not mergeable", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict, "PASS");
+  const v = (t) => parseLens(`## Review A (accuracy) at 97b50e1: ${t}`, 310)?.verdict;
+  for (const t of ["REQUEST CHANGES, then merge", "should not merge", "must not merge", "cannot merge yet", "not ready to merge", "merge blocked"]) {
+    assert.ok(!PASSING.has(v(t)), `${t} must not pass`);
+  }
+  for (const t of ["cannot pass", "won't pass", "unable to pass", "needs work before merge", "CHANGES REQUESTED", "NOT APPROVED", "reject", "hold"]) {
+    assert.ok(!PASSING.has(v(t)), `${t} must not pass`);
+  }
+  assert.equal(v("REQUEST CHANGES, then merge"), "CHANGES NEEDED");
+  assert.equal(v("should not merge"), "DO NOT MERGE");
+  assert.equal(v("cannot pass"), "FAIL");
+  assert.equal(v("PASS WITH NOTES"), "PASS WITH NOTES");
+  assert.equal(v("MERGE AFTER FIX"), "MERGE AFTER FIX");
+  assert.equal(v("lgtm"), undefined, "unknown wording is no verdict");
+  // The habit on #359 and #360: verdict clause, then a sentence that says nothing is blocking.
+  assert.equal(parseLens("Review lens A (security), head a109a7b. Verdict: PASS WITH NOTES. No blocking finding.", 359).verdict, "PASS WITH NOTES");
+  assert.equal(parseLens("Review lens B, delta at fbf28ab. Verdict: PASS WITH NOTES. No Must.", 359).verdict, "PASS WITH NOTES");
+  assert.equal(parseLens("Review lens B, head a109a7b. Verdict: REQUEST CHANGES, then merge. Two Musts.", 359).verdict, "CHANGES NEEDED");
 });
 
 test("verdict-on-head: latest lens and red-team verdicts against the current head", () => {
@@ -131,7 +148,7 @@ test("collect only reads, and the page fits in 15 lines", () => {
   assert.doesNotMatch(text, /#41,/);
   assert.match(text, /Handoffs open over 48 h: 2\. #60 \(14 d, 0 comments\), #62 \(2 d, 2 comments\)\./);
   assert.match(text, /- #50 database: PASS on head; PASS WITH NOTES on head\.\n/);
-  assert.match(text, /- #52 payments, release config: PASS on an older head \(fewer than 2 on the merged head\)\./);
+  assert.match(text, /- #52 payments, release config: PASS on an older head \(fewer than 2 passing on the merged head\)\./);
   assert.match(text, /Open PRs older than 14 days: 2\.$/);
   assert.doesNotMatch(text, /[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/);
 });

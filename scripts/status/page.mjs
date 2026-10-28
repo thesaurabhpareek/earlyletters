@@ -40,22 +40,29 @@ export function sameSha(a, b) {
   return x.startsWith(y) || y.startsWith(x);
 }
 
-const VERDICT_WORDS = [
-  // Negated phrases come first in the text, so the earliest-match rule below picks them over "merge" and "pass".
-  ["do not merge", "DO NOT MERGE"], ["don't merge", "DO NOT MERGE"], ["not mergeable", "DO NOT MERGE"],
-  ["not a pass", "FAIL"], ["not pass", "FAIL"], ["no pass", "FAIL"],
-  ["pass with notes", "PASS WITH NOTES"], ["do-not-merge", "DO NOT MERGE"], ["merge-after-fix", "MERGE AFTER FIX"],
-  ["changes needed", "CHANGES NEEDED"], ["blocking", "BLOCKING"], ["block", "BLOCKING"], ["fail", "FAIL"],
-  ["pass", "PASS"], ["merge", "MERGE"],
-];
-const verdictIn = (s) => {
-  const t = s.toLowerCase();
-  let best; // the earliest verdict word wins ("FAIL, 1 blocking issue" is FAIL); ties go to the longer phrase
-  for (const [w, v] of VERDICT_WORDS) {
-    const i = t.search(new RegExp(`(^|[^a-z-])${w.replace(/ /g, "\\s+")}([^a-z-]|$)`));
-    if (i >= 0 && (!best || i < best.i)) best = { i, v };
+// Verdicts are read conservatively: any negation or request for changes in the verdict text
+// is not a pass, whatever positive word also appears ("should not merge", "REQUEST CHANGES,
+// then merge" and "cannot pass" are all blocking). Unknown wording is no verdict at all.
+const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|shouldn't|mustn't|unable|block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|request(ed|s)?\s+changes|changes\s+(requested|needed|required)|needs?\s+work|hold)\b/;
+const DONT_MERGE = /\b(do[\s-]+not|don't|should\s+not|shouldn't|must\s+not|mustn't|cannot|can't|won't|not\s+(ready\s+to\s+)?|not\s+yet)\s*merge|not\s+mergeable|merge\s+blocked/;
+export const PASSING = new Set(["PASS", "PASS WITH NOTES", "MERGE"]);
+export const verdictIn = (s) => {
+  const line = String(s).toLowerCase();
+  // The verdict is the clause after "Verdict:" (else after the last colon), up to the first
+  // full stop or semicolon, so "Verdict: PASS WITH NOTES. No blocking finding." is a pass.
+  const after = line.match(/verdict\s*[:-]\s*(.*)$/)?.[1] ?? (line.includes(":") ? line.slice(line.lastIndexOf(":") + 1) : line);
+  const t = after.split(/[.;]/)[0];
+  if (NEGATIVE.test(t)) {
+    if (DONT_MERGE.test(t)) return "DO NOT MERGE";
+    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(t)) return "FAIL";
+    if (/changes|needs?\s+work/.test(t)) return "CHANGES NEEDED";
+    return "BLOCKING";
   }
-  return best?.v;
+  if (/\bpass\s+with\s+notes\b/.test(t)) return "PASS WITH NOTES";
+  if (/\bmerge[\s-]+after[\s-]+fix\b/.test(t)) return "MERGE AFTER FIX";
+  if (/\bpass(ed|es)?\b/.test(t)) return "PASS";
+  if (/\bmerge\b/.test(t)) return "MERGE";
+  return undefined;
 };
 const shaIn = (s) => s.match(/(?<![0-9a-z])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?![0-9a-z])/i)?.[0];
 
@@ -131,8 +138,8 @@ export function buildModel(data, now) {
 /** One founder-class merge with its last two lens verdicts, checked against the merged head. */
 export function founderLine(p) {
   const two = p.lens.slice(-2);
-  const onHead = two.filter((v) => v.onHead).length;
-  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 on the merged head)" : ""}.`;
+  const onHead = two.filter((v) => v.onHead && PASSING.has(v.verdict)).length; // only passing verdicts count toward the two
+  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 passing on the merged head)" : ""}.`;
 }
 
 /** Pure: the weekly skim of D-117 merges, one line each, no line cap. */
