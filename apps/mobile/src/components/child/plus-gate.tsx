@@ -23,6 +23,11 @@ interface Props {
   /** Letters ever kept, a number for analytics. */
   lettersKept: number;
   /**
+   * Where the held letter waits, so the sheet says what is true: 'tonight' for a draft (Tonight shows it), 'letter'
+   * for a letter whose words arrived later (only its words wait, on the letter; task #53). Default 'tonight'.
+   */
+  heldOn?: 'tonight' | 'letter';
+  /**
    * Leave the letter held: it stays on the phone, untouched, waiting in Tonight. The caller leaves
    * Review. Nothing is kept and nothing is lost.
    */
@@ -44,7 +49,7 @@ interface Props {
  * view (ADR 0013), which shows the plans, prices, any free trial the person is eligible for, Restore and
  * the legal links. This screen never types a price or a trial. Content sits near the top (no floating block).
  */
-export function PlusGate({ childName, lapsed = false, lettersKept, onHold, onPlus, onContinueDev }: Props) {
+export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'tonight', onHold, onPlus, onContinueDev }: Props) {
   const c = useTheme().c;
   const k = billingCopy.keepGate;
   const g = billingCopy.gate;
@@ -68,7 +73,8 @@ export function PlusGate({ childName, lapsed = false, lettersKept, onHold, onPlu
   }, [plan.plusOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canOpen = plan.storeSupport === 'available';
-  const note = plan.storeSupport === 'needs_ios_17' ? g.needsNewerIos : plan.storeSupport === 'unsupported' ? g.unavailable : offline ? k.offline : null;
+  const onLetter = heldOn === 'letter';
+  const note = plan.storeSupport === 'needs_ios_17' ? g.needsNewerIos : plan.storeSupport === 'unsupported' ? g.unavailable : offline ? (onLetter ? k.offlineLetter : k.offline) : null;
 
   const open = async () => {
     haptic('tap');
@@ -105,7 +111,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, onHold, onPlu
       </Text>
       <Text className="text-lg leading-7 text-foreground">{lapsed ? k.lapsedBody : k.body}</Text>
       <Text className="text-base leading-6 text-muted-foreground" accessibilityLiveRegion="polite">
-        {k.heldNote}
+        {onLetter ? k.heldNoteLetter : k.heldNote}
       </Text>
       <View className="gap-3 pt-4">
         {canOpen && (
