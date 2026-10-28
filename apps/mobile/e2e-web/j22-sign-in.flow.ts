@@ -352,12 +352,14 @@ test('[J22i] the invite sheet\'s gate says why in its own words, and nothing abo
   await signInWithEmail(app);
   await expect(app.getByRole('heading', { name: 'Before your book syncs' })).toBeVisible({ timeout: 15_000 });
   await btn(app, 'Not now').last().click();
-  await expect(app.getByText('Finish setting up your account to invite someone.')).toBeVisible({ timeout: 15_000 });
-  await expect(btn(app, 'Finish setting up')).toBeVisible();
+  // `.last()`: on the web the Family tab's card, with the same sentence, stays in the tree under the sheet.
+  const finish = app.getByRole('button', { name: 'Finish setting up', exact: true }).last();
+  await expect(app.getByText('Finish setting up your account to invite someone.').last()).toBeVisible({ timeout: 15_000 });
+  await expect(finish).toBeVisible();
   await expect(app.getByText('Not set up yet')).toHaveCount(0);
   await step('unhappy', 'Invite, setup not finished', 'The invite sheet says why in its own words, as the Family tab\'s card does: "Finish setting up your account to invite someone." Account keeps "Not set up yet" as its row value.');
 
-  await btn(app, 'Finish setting up').click();
+  await finish.click();
   await btn(app, 'Agree and continue').click();
   await btn(app, 'Keep on this phone').click();
   await expect(btn(app, 'Agree and sync')).toBeVisible({ timeout: 15_000 });
