@@ -239,6 +239,31 @@ export function shouldRecheckGate(s: AuthState, stale: boolean): boolean {
   return false;
 }
 
+/**
+ * One consent-gate read, answered only if no newer read has started since. Reads overlap (a session
+ * appearing, a sign-out wait, the wait's poll, foreground, refreshGate), and an older, slower answer
+ * must never undo a newer one: a late "off" would end a wait the newer "on" let drain (S01).
+ */
+export async function readGateInOrder(
+  seq: { current: number },
+  load: () => Promise<{ gate: SyncGate; sensitiveDeclined: boolean }>,
+  dispatch: (e: AuthEvent) => void,
+): Promise<void> {
+  const mine = ++seq.current;
+  try {
+    const { gate, sensitiveDeclined } = await load();
+    if (mine === seq.current) dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
+  } catch {
+    if (mine === seq.current) dispatch({ type: 'GATE_UNAVAILABLE' });
+  }
+}
+
+/** Whether Sign out now waits for queued letters: the machine's own SIGN_OUT_REQUESTED rule, not canSync (S01). */
+export function signOutWouldWait(s: AuthState, pendingUploads: number): boolean {
+  const next = authReducer(s, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads });
+  return next.status === 'signingOut' && next.waitingForUploads;
+}
+
 /** The provider should call Supabase signOut now (nothing left to upload, or sync could never run). */
 export function shouldFinishSignOut(s: AuthState): boolean {
   return s.status === 'signingOut' && !s.waitingForUploads;

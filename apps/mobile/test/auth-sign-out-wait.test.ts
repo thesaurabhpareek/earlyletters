@@ -17,8 +17,10 @@ import {
   canSync,
   initialAuthState,
   isSignedIn,
+  readGateInOrder,
   shouldFinishSignOut,
   shouldRecheckGate,
+  signOutWouldWait,
   type AuthEvent,
   type AuthState,
   type SyncGate,
@@ -78,7 +80,15 @@ describe('S01: a sign-out wait that began offline can end (A-REQ-033)', () => {
 
   it('consent not given (new Terms, age line missing, sensitive-data never answered): the wait ends, nothing uploads', () => {
     const waiting = authReducer(blind, ask(2));
-    const notGiven: SyncGate[] = [NEW_ACCOUNT, { ...FULL, termsCurrent: false, contentAllowed: false }, { ...FULL, ageAttested: false, contentAllowed: false }, DECLINED];
+    const notGiven: SyncGate[] = [
+      NEW_ACCOUNT,
+      { ...FULL, termsCurrent: false, contentAllowed: false },
+      { ...FULL, ageAttested: false, contentAllowed: false },
+      DECLINED,
+      // contentAllowed alone is not enough: a step still needed ends the wait too.
+      { ...FULL, termsCurrent: false },
+      { ...FULL, ageAttested: false },
+    ];
     for (const g of notGiven) {
       const s = authReducer(waiting, gate(g, false));
       expect(shouldFinishSignOut(s), JSON.stringify(g)).toBe(true);
@@ -179,20 +189,117 @@ describe('S01: cancelling the wait (cancelSignOutWait)', () => {
   });
 });
 
+describe('S01: overlapping gate reads (readGateInOrder)', () => {
+  type Answer = { gate: SyncGate; sensitiveDeclined: boolean };
+  /** A gate read the test answers by hand, in any order. */
+  const pendingRead = () => {
+    let answer!: (a: Answer) => void;
+    let fail!: () => void;
+    const p = new Promise<Answer>((res, rej) => {
+      answer = res;
+      fail = () => rej(new Error('offline'));
+    });
+    return { load: () => p, answer, fail };
+  };
+
+  it('an older answer that lands after a newer one is dropped: a late "off" never ends the wait the newer "on" let drain', async () => {
+    const seq = { current: 0 };
+    let state = authReducer(blind, ask(2));
+    const dispatch = (e: AuthEvent) => void (state = authReducer(state, e));
+    const older = pendingRead();
+    const newer = pendingRead();
+    const first = readGateInOrder(seq, older.load, dispatch);
+    const second = readGateInOrder(seq, newer.load, dispatch);
+    newer.answer({ gate: FULL, sensitiveDeclined: false });
+    await second;
+    expect(state).toEqual({ status: 'signingOut', userId: U, reason: 'user', waitingForUploads: true, sync: 'on' });
+    older.answer({ gate: DECLINED, sensitiveDeclined: true });
+    await first;
+    expect(state.status === 'signingOut' && state.waitingForUploads && state.sync).toBe('on');
+    expect(canSync(state)).toBe(true);
+  });
+
+  it('an older failure after a newer answer dispatches nothing; the newest read answers, success or failure', async () => {
+    const seq = { current: 0 };
+    const seen: AuthEvent[] = [];
+    const older = pendingRead();
+    const newer = pendingRead();
+    const first = readGateInOrder(seq, older.load, (e) => seen.push(e));
+    const second = readGateInOrder(seq, newer.load, (e) => seen.push(e));
+    newer.answer({ gate: FULL, sensitiveDeclined: false });
+    await second;
+    older.fail();
+    await first;
+    expect(seen).toEqual([{ type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false }]);
+    const alone = pendingRead();
+    const third = readGateInOrder(seq, alone.load, (e) => seen.push(e));
+    alone.fail();
+    await third;
+    expect(seen).toEqual([{ type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false }, { type: 'GATE_UNAVAILABLE' }]);
+  });
+});
+
+describe('S01: what signOut() returns (signOutWouldWait)', () => {
+  it('a wait that begins while sync is unknown says "waiting", as the machine does (canSync said no)', () => {
+    expect(canSync(blind)).toBe(false);
+    expect(signOutWouldWait(blind, 2)).toBe(true);
+    expect(authReducer(blind, ask(2))).toMatchObject({ waitingForUploads: true });
+  });
+
+  it('the same rule as SIGN_OUT_REQUESTED everywhere else', () => {
+    expect(signOutWouldWait(readyOn, 3)).toBe(true);
+    expect(signOutWouldWait(readyOn, 0)).toBe(false);
+    expect(signOutWouldWait({ status: 'ready', userId: U, sync: 'off' }, 3)).toBe(false);
+    expect(signOutWouldWait(run([{ type: 'RESTORED', userId: U }, gate(NEW_ACCOUNT)]), 3)).toBe(false);
+    expect(signOutWouldWait({ status: 'signedOut' }, 3)).toBe(false);
+    expect(signOutWouldWait(authReducer(readyOn, ask(3)), 3)).toBe(true);
+  });
+});
+
 describe('S01: the session provider wiring', () => {
   const provider = () =>
     readFileSync(join(__dirname, '..', 'src/lib/auth/session-provider.tsx'), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '');
 
-  it('reads the gate when a sign-out starts waiting without it, and on foreground while waiting', () => {
+  it('reads the gate when a sign-out starts waiting without it', () => {
+    expect(provider()).toMatch(/const waitingBlind = state\.status === 'signingOut' && shouldRecheckGate\(state, false\);\s*useEffect\(\(\) => \{\s*if \(waitingBlind\) void checkGate\(\);\s*\}, \[waitingBlind, checkGate\]\);/);
+  });
+
+  it('the whole foreground listener: active only, the shared re-check rule, removed on unmount', () => {
+    expect(provider()).toMatch(
+      /useEffect\(\(\) => \{\s*const sub = AppState\.addEventListener\('change', \(s\) => \{\s*if \(s !== 'active'\) return;\s*if \(shouldRecheckGate\(stateRef\.current, Date\.now\(\) - lastGateCheck\.current > GATE_RECHECK_MS\)\) void checkGate\(\);\s*\}\);\s*return \(\) => sub\.remove\(\);\s*\}, \[checkGate\]\);/,
+    );
+  });
+
+  it('the whole wait effect: drained or polled, the poll re-reads a gate never read, both stop with the wait', () => {
+    expect(provider()).toMatch(
+      /const waiting = state\.status === 'signingOut' && state\.waitingForUploads;\s*useEffect\(\(\) => \{\s*if \(!waiting\) return;\s*const done = \(\) => dispatch\(\{ type: 'UPLOADS_DRAINED' \}\);\s*const off = onUploadsDrained\(done\);\s*const poll = setInterval\(\(\) => \{\s*if \(shouldRecheckGate\(stateRef\.current, false\)\) void checkGate\(\);\s*void pendingUploads\(\)\.then\(\(n\) => n === 0 && done\(\)\);\s*\}, 10_000\);\s*return \(\) => \{\s*off\(\);\s*clearInterval\(poll\);\s*\};\s*\}, \[waiting, checkGate\]\);/,
+    );
+  });
+
+  it('every gate read goes through readGateInOrder with one sequence for the provider', () => {
     const src = provider();
-    expect(src).toMatch(/const waitingBlind = state\.status === 'signingOut' && shouldRecheckGate\(state, false\);\s*useEffect\(\(\) => \{\s*if \(waitingBlind\) void checkGate\(\);\s*\}, \[waitingBlind, checkGate\]\);/);
-    expect(src).toMatch(/if \(shouldRecheckGate\(stateRef\.current, Date\.now\(\) - lastGateCheck\.current > GATE_RECHECK_MS\)\) void checkGate\(\);/);
+    expect(src).toMatch(/const gateSeq = useRef\(0\);\s*const checkGate = useCallback\(async \(\) => \{\s*if \(!sb\) return;\s*lastGateCheck\.current = Date\.now\(\);\s*await readGateInOrder\(gateSeq, \(\) => withTimeout\(loadSyncGate\(sb\), GATE_TIMEOUT_MS\), dispatch\);\s*\}, \[sb\]\);/);
+    expect(src.match(/loadSyncGate\(/g)).toHaveLength(1);
+    expect(src).not.toMatch(/type: 'GATE_(LOADED|UNAVAILABLE)'/);
+  });
+
+  it('signOut() answers with the machine rule, read after the queue count', () => {
+    expect(provider()).toMatch(
+      /async signOut\(\) \{\s*const pending = await pendingUploads\(\);\s*const waits = signOutWouldWait\(stateRef\.current, pending\);\s*dispatch\(\{ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending \}\);\s*return waits \? 'waiting' : 'done';\s*\},/,
+    );
   });
 
   it('cancelSignOutWait only moves the machine: no Supabase call, nothing deleted, nothing sent', () => {
     expect(provider()).toMatch(/cancelSignOutWait\(\) \{\s*dispatch\(\{ type: 'SIGN_OUT_WAIT_CANCELLED' \}\);\s*\},/);
+  });
+
+  it('"Not my account", a code sign-in and a link sign-in spend the pending request (and so the address)', () => {
+    const src = provider();
+    expect(src).toMatch(/async notMyAccount\(\) \{\s*dispatch\(\{ type: 'SIGN_OUT_REQUESTED', reason: 'switch_account', pendingUploads: 0 \}\);\s*await clearPendingEmailRequest\(\);\s*\},/);
+    expect(src).toMatch(/clearWrongCodes\(email\);\s*await clearPendingEmailRequest\(\);/);
+    expect(src).toMatch(/clearPending: \(\) => clearPendingEmailRequest\(\),/);
   });
 });
 
@@ -230,8 +337,9 @@ describe('S01: the typed address is forgotten after a link sign-in and after sig
     setPendingEmail(null);
   });
 
-  // Every sign-out path (finishing a sign-out, a sign-out Supabase made, the under-18 stop, "Not my account")
-  // calls clearPendingEmailRequest: asserted in auth-email-link.test.ts. That call now forgets the address too.
+  // Every sign-out path calls clearPendingEmailRequest: finishing a sign-out, a sign-out Supabase made and the
+  // under-18 stop are pinned in auth-email-link.test.ts, "Not my account" in the wiring block above. That call
+  // now forgets the address too.
   it('a sign-out forgets the address, with server features on or off (memory only, no Keychain read)', async () => {
     const { clearPendingEmailRequest, getPendingEmail, setPendingEmail } = await import('../src/lib/auth/pending');
     setPendingEmail(ASHA_EMAIL);
