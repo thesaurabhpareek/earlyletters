@@ -114,7 +114,11 @@ describe('[F08-REQ-020] object format v1: header, 64 KiB AES-256-GCM segments, h
     const plain = fakeM4a(3 * SEGMENT_SIZE);
     const s = await seal(plain);
     const hay = Buffer.from(s.bytes);
-    expect(hay.includes(Buffer.from('ftyp'))).toBe(false);
+    // The ftyp box is the recording's own first 16 bytes (size, "ftyp", major brand, minor version), not the 4 letters:
+    // any 4 bytes of ciphertext equal "ftyp" by chance (1 in 2^32 per byte), 16 bytes cannot (2^-128).
+    const start = plain.subarray(0, 16);
+    expect(start.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
+    expect(hay.includes(start), 'the sealed object carries the start of the recording').toBe(false);
     expect(hay.includes(Buffer.from(sha256Hex(plain), 'hex'))).toBe(false);
     expect(hay.includes(Buffer.from(sha256Hex(plain)))).toBe(false);
     expect(hay.includes(Buffer.from(s.fileKey))).toBe(false);
