@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 103 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 111 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
