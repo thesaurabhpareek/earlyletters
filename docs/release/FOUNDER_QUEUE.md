@@ -3,7 +3,7 @@
 Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
 
 - **Wave 0: 11 of 15 open, 2 partly done, 2 done.** Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on) and item 6 (secret scanning and push protection are on; Dependabot alerts could not be read).
-- **What the repo can see today** (`node scripts/founder/check.mjs`, 28 Oct): default branch `main`; no branch protection on `develop` or `main` (`main` has only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 25 migration files recorded as applied.
+- **What the repo can see today** (`node scripts/founder/check.mjs`, 28 Oct): default branch `main`; no branch protection on `develop` or `main` (`main` has only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 26 migration files recorded as applied.
 - **0 of 57 boxes** in `docs/FOUNDER_TASKS.md` are ticked. Steps done outside the repo (Apple, Expo, Supabase) are marked "unverified": tell the coordinator and the line changes.
 
 How to use it: work top to bottom. Each item gives the steps (or the exact section that holds them), your hands-on time, what it unblocks, and how its status can be checked. "Same as" lists the ids in older lists that this item replaces; the index at the end maps every old id. Older lists stay as they are: `docs/FOUNDER_TASKS.md` (FT), `docs/release/AUTOMATION.md` section 4 (AF), [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md) (steps 1 to 12), the 15 Oct alpha plan on commit 1ae1ace6 (F01 to F27, see `docs/release/ALPHA_PLAN.md`), and `docs/agents/BOARD.md` line 83. Where they disagree on dates, the dates in this file are not authoritative either: dates come from the dates file the coordinator names.
@@ -60,11 +60,11 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 - After: `nightly.yml` and `testflight.yml` register; `agents.yml` registers but stays idle while `AGENTS_ENABLED` is unset; the "Kill harness nightly-size dispatch" scheduled task disables itself on its next run (its step 1).
 - Unblocks: the Run workflow button for `testflight.yml` and `deploy-db.yml` (TESTFLIGHT steps 5 and 6.3), the scheduled nightly (B2-22).
 - Verify: checker `default-branch` and `workflows-registered`.
-- Same as: AF-05; BOARD line 83 ("AF-05").
+- Same as: AF-05; BOARD line 85 ("AF-05").
 
 **W0-10 Decide #302** (the child's first name on the live website, D-118). Open: #302 is open into `main` (REST, 28 Oct). 15 minutes to decide. Keep it knowing it is permanent in a public repo and site, after a privacy view; or use the fictional family. Separately, decide with counsel whether to check public git history for details from before #52. Decision brief: R1-09.
 
-**W0-11 Confirm or amend D-117's operating rule in one line.** Open. 5 minutes. The question: may the coordinator keep merging `supabase/**`, auth, payments and `.github/**` after two review passes (`docs/DECISIONS.md:809`)? Synthesis recommendation: yes, plus a weekly skim of a list of those merges (R1-03 prints it).
+**W0-11 Confirm or amend D-117's operating rule in one line.** Open. 5 minutes. The question: may the coordinator keep merging `supabase/**`, auth, payments and `.github/**` after two review passes (`docs/DECISIONS.md:810`)? Synthesis recommendation: yes, plus a weekly skim of a list of those merges (R1-03 prints it).
 
 **W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by 5 Nov. Briefs: R1-09.
 
@@ -101,11 +101,11 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | Q2-09 | Plus in the sandbox, optional: Paid Apps agreement, tax and bank; `plus.monthly`, `plus.annual` on the `.preview` record (TESTFLIGHT step 2.5) | 1 h 45 min | Plus checks | unverified | FT-06, FT-09, F14 |
 | Q2-10 | Build 2: `preflight:alpha`, build `preview`, submit, add to "Family" only (TESTFLIGHT step 11) | 20 min | the alpha with servers | open | F24 |
 | Q2-11 | Drills on real phones: AUTH_SETUP section 11 and two-phone sync (F19); backup drill (F23); build 2 checks StoreKit D-1 to D-12 and the SE 3 kill subset (F25) | 7 h | go/no-go evidence | unverified | F19, F23, F25, FT-22, FT-39 |
-| Q2-12 | Mac kit run for ADR 0027 V3 and V4: `npm run adts-parity -w @scribe/experiments` (`experiments/README.md` section 8) | unverified | ADR 0027 | open (BOARD line 83, by Fri 30 Oct) | BOARD line 83 |
-| Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 83 |
+| Q2-12 | Mac kit run for ADR 0027 V3 and V4: `npm run adts-parity -w @scribe/experiments` (`experiments/README.md` section 8) | unverified | ADR 0027 | open (BOARD line 85, by Fri 30 Oct) | BOARD line 85 |
+| Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 85 |
 | Q2-14 | R-17 sign-off: read `docs/security/REVIEW_R17_CHECKLIST.md` and the staging `test:db` evidence; record "R-17 passed" | 30 min | Friends may sign in (D-100) | open; a D-id records it | F21 |
 | Q2-15 | Friends: build 1 to Beta App Review for "Friends", invite by email (AF-11 replaces F26's route of adding friends as App Store Connect users, AUTOMATION section 4 intro) | 30 min plus review | friends on build 1 | unverified | AF-11, F26 |
-| Q2-16 | Answer the proposed dates (freeze Tue 3 Nov 13:00 UTC, go/no-go Thu 5 Nov), overdue since Sat 24 Oct (BOARD line 83); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 83 |
+| Q2-16 | Answer the proposed dates (freeze Tue 3 Nov 13:00 UTC, go/no-go Thu 5 Nov), overdue since Sat 24 Oct (BOARD line 85); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
 | Q2-17 | Upgrade Vercel to Pro (Hobby is non-commercial; AUTOMATION 0.1 item 10) | 10 min | commercial use of the site | unverified; price unverified | AF-15 |
 
 ---
@@ -133,5 +133,5 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | AF (`docs/release/AUTOMATION.md` section 4) | AF-01 W0-14a. AF-02 and AF-03 W0-08. AF-04 W0-14d. AF-05 W0-09. AF-06 W0-14f. AF-07 W0-08 and W0-07. AF-08 W0-14c. AF-09 W0-14b. AF-10 W0-14e. AF-11 Q2-15. AF-12 W0-14c. AF-13 Q2-01 and Q2-07. AF-14 overtaken: the harness runs on the macOS runner (AUTOMATION 0.2 row 13, measured 24 Oct). AF-15 Q2-17. AF-20 Q3-01. AF-21 Q3-02. AF-22 Q3-03. AF-23 W0-08. AF-24 W0-06 and Q3-04. AF-25 to AF-28 Q3-05. AF-40 to AF-43 Q3-06. |
 | TESTFLIGHT steps | 1 W0-14a. 2 W0-14b (2.5 is Q2-09). 3 W0-14d and W0-07. 4 W0-14c. 5 W0-14e. 6 W0-14f, W0-08 and Q2-01. 7 Q2-02 and Q2-03. 8 Q2-04. 9 Q2-05. 10 Q2-06. 11 Q2-10. 12 Q2-07. |
 | F (alpha plan, 1ae1ace6 section 4) | F01 W0-14a. F02 W0-14d. F03 overtaken by D-111 (alpha calls resolved 17 Oct; item by item unverified). F04 W0-14f. F05 Q2-02. F06 Q2-05. F07 W0-13. F08 W0-14b. F09 W0-14c. F10 Q2-02. F11 Q2-04. F12 W0-14e. F13 W0-14c. F14 Q2-09. F15 Q2-06. F16 Q2-01. F17 Q2-07. F18 Q2-08. F19 Q2-11. F20 Q2-08. F21 Q2-14. F22 W0-13. F23 Q2-11. F24 Q2-10. F25 Q2-11. F26 Q2-15. F27 Q2-16. W (daily merge window) overtaken by D-117. |
-| BOARD line 83 | TESTFLIGHT steps 1 to 5: W0-14a to e. Mac kit run: Q2-12. Scratch branch: Q2-13. AF-05: W0-09. Proposed dates: Q2-16. |
+| BOARD line 85 | TESTFLIGHT steps 1 to 5: W0-14a to e. Mac kit run: Q2-12. Scratch branch: Q2-13. AF-05: W0-09. Proposed dates: Q2-16. |
 | Retro Wave 0 | Items 1 to 15 are W0-01 to W0-15. |
