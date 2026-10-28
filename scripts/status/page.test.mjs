@@ -283,3 +283,21 @@ test("near-verdict window skips blank lines; 'No Must' does not hide a named Mus
   }
   assert.ok(countedPass(`## Review A at ${H}: PASS\n\nNo Must.\n\nNotes below.`));
 });
+
+test("fail closed on any later trusted comment or 'Request changes' review (Lens B, 28 Oct, at 2a18fa0)", () => {
+  const H7 = HEAD.slice(0, 7);
+  const pr = { number: 9, head: { sha: HEAD } };
+  const passes = [c(`## Review A at ${H7}: PASS`, 6), c(`## Review B at ${H7}: PASS`, 5)];
+  const line = (later, reviews = []) => founderLine({ number: 9, classes: ["database"], ...verdictsOf(pr, [...passes, ...later], reviews, ME) });
+  for (const body of ["FAIL", "Blocking: data loss", "Hold this PR", "Not ready: M1 is open", "Changes needed", "Do not ship",
+    "Found a data-loss bug in the purge path; fix first.", "Audit B: FAIL", "Critique (B): FAIL",
+    "<!-- agent:security -->\nReview B: FAIL. Do not merge."]) {
+    assert.match(line([c(body, 1)]), /fewer than 2 counted passes|a later review is not a counted pass/, body);
+  }
+  for (const body of ["", "See inline comments."]) {
+    const rc = { body, state: "CHANGES_REQUESTED", submitted_at: ago(1), user: { login: "owner" } };
+    assert.match(line([], [rc]), /fewer than 2 counted passes|a later review is not a counted pass/, `Request changes: "${body}"`);
+  }
+  // Known machine notes stay quiet, and an UNREAD note is never shown as a verdict.
+  assert.doesNotMatch(line([c("<!-- journal -->\nRun 12 done.", 1), c("<!-- receipt run=3 -->", 1)]), /read it|fewer|UNREAD/);
+});

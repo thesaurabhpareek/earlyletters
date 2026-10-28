@@ -154,13 +154,8 @@ export function countedPass(body) {
   return s ? { lens: s[1].toUpperCase(), sha: s[3], verdict: s[4].toUpperCase() } : { lens: m[1].toUpperCase(), sha: m[2], verdict: v[1].toUpperCase() };
 }
 
-/** True for a comment that looks like a review: a review word near the top, or a stop phrase. Machine notes (other markers) are not. */
-export function reviewLike(body) {
-  const lines = String(body ?? "").replace(/\r\n?|\u2028|\u2029/g, "\n").trim().split("\n");
-  if (/^<!--/.test(lines[0]) && !MARKER.test(lines[0].trim())) return false;
-  const top = lines.slice(0, 3).join("\n").toLowerCase().replace(APOSTROPHES, "'");
-  return /\b(review(er)?|lens|re-?check|verdict|second\s+look)\b/.test(top) || STOP_ANYWHERE.test(lines.slice(0, 15).join("\n").toLowerCase().replace(APOSTROPHES, "'"));
-}
+/** Known machine notes that never carry a review: merge-train, journal and receipt posts. */
+const MACHINE_NOTE = /^<!--\s*(merge-train|journal|receipt)\b/i;
 
 /** The lens letter a free-text review names ("Review A", "lens B"), or undefined. */
 export const lensOf = (body) => String(body ?? "").split("\n")[0].match(/\b(?:review(?:er)?|lens)[\s,:-]*(?:lens\s+)?\(?([ab])\b|\blens\s*\(([ab])\)/i)?.slice(1).find(Boolean)?.toUpperCase();
@@ -169,21 +164,25 @@ export const lensOf = (body) => String(body ?? "").split("\n")[0].match(/\b(?:re
 export function verdictsOf(pr, comments, reviews, trusted) {
   const items = [
     ...(comments ?? []).map((c) => ({ body: c.body, at: c.created_at, who: c.user?.login })),
-    ...(reviews ?? []).map((r) => ({ body: r.body, at: r.submitted_at, who: r.user?.login })),
+    ...(reviews ?? []).map((r) => ({ body: r.body, at: r.submitted_at, who: r.user?.login, state: r.state })),
   ].filter((i) => trusted.has(String(i.who ?? "").toLowerCase()));
   items.sort((a, b) => String(a.at).localeCompare(String(b.at)));
   const head = pr.head?.sha;
   const lens = [];
   let red;
   for (const i of items) {
+    // A GitHub "Request changes" review blocks whatever its body says (often empty, or "See inline comments.").
+    if (i.state === "CHANGES_REQUESTED") { lens.push({ verdict: "CHANGES REQUESTED", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false }); continue; }
     const r = parseVerdict(i.body);
     if (r) { red = { verdict: r.verdict, sha: r.sha, onHead: sameSha(r.sha, head) }; continue; }
     const c = countedPass(i.body);
     if (c) { lens.push({ ...c, onHead: sameSha(c.sha, head), counted: true }); continue; }
     const l = parseLens(i.body, pr.number);
     if (l) { lens.push({ ...l, lens: lensOf(i.body), onHead: sameSha(l.sha, head), counted: false }); continue; }
-    // Fail closed: a review-like comment the page cannot read is still kept, so it can raise a warning.
-    if (reviewLike(i.body)) lens.push({ verdict: "UNREAD", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false });
+    // Fail closed: every other trusted comment or review is kept as UNREAD so that, if it comes after
+    // the counted passes, it raises a warning. Only known machine notes are skipped; agent comments
+    // (<!-- agent:<handle> -->) are not, because an agent lane may post a review that way.
+    if (!MACHINE_NOTE.test(String(i.body ?? "").trimStart()) && String(i.body ?? "").trim()) lens.push({ verdict: "UNREAD", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false });
   }
   return { lens, red };
 }
@@ -217,15 +216,15 @@ export function buildModel(data, now) {
 
 /** One founder-class merge with its last two lens verdicts, checked against the merged head. */
 export function founderLine(p) {
-  const two = p.lens.slice(-2);
+  const two = p.lens.filter((v) => v.verdict !== "UNREAD").slice(-2); // shown; UNREAD only drives the warning
   // The two must be different lenses: the latest Review A and the latest Review B each count once,
   // only as a strict-format pass on the merged head (see countedPass). A later review the page can
   // attribute to the same lens replaces its earlier one, so a later FAIL cancels an earlier pass.
   const latest = new Map();
   p.lens.forEach((v, i) => { if (v.lens) latest.set(v.lens, { ...v, i }); });
   const passes = [...latest.values()].filter((v) => v.onHead && v.counted && PASSING.has(v.verdict));
-  // Fail closed: any later review-like comment that is not itself a counted pass (an unlabelled
-  // "Re-check: FAIL", a verdict the page cannot read) means a person must read it.
+  // Fail closed: any later trusted comment or review that is not itself a counted pass (an unlabelled
+  // "Re-check: FAIL", "Hold this PR", a "Request changes" review) means a person must read it.
   const first = passes.length ? Math.min(...passes.map((v) => v.i)) : Infinity;
   const unread = p.lens.some((v, i) => i > first && !v.counted);
   const warn = passes.length < 2 ? " (fewer than 2 counted passes on the merged head)" : unread ? " (a later review is not a counted pass: read it)" : "";
@@ -247,7 +246,7 @@ export function renderPage(m, { extraLines = [] } = {}) {
   out.push(`Merged in the last 24 h: ${m.merged24.length}${m.merged24.length ? `. ${nums(m.merged24, 8)}` : ""}.`);
   out.push(`Waiting for review: ${m.waiting.length} open PRs (not drafts), oldest first${m.waiting.length > CAP.waiting ? `, first ${CAP.waiting} shown` : ""}.`);
   for (const p of m.waiting.slice(0, CAP.waiting)) {
-    out.push(`- #${p.number}, ${p.age} d: lens ${word(p.lens.at(-1))}; red team ${word(p.red)}.`);
+    out.push(`- #${p.number}, ${p.age} d: lens ${word(p.lens.filter((v) => v.verdict !== "UNREAD").at(-1))}; red team ${word(p.red)}.`);
   }
   out.push(m.handoffs.length
     ? `Handoffs open over 48 h: ${m.handoffs.length}. ${m.handoffs.slice(0, 6).map((h) => `#${h.number} (${h.age} d, ${plural(h.comments, "comment")})`).join(", ")}${m.handoffs.length > 6 ? ", more" : ""}.`
