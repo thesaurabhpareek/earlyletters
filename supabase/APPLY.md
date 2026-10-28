@@ -29,6 +29,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 23 | `20261023040000_entries_machine_edits_check.sql` | **Pending** | A letter's `machine_edits` must be an array (section "File 23") |
 | 24 | `20261023050000_consent_grants_tightening.sql` | **Pending** | The consent tables' grants match their row security (section "File 24") |
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
+| 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -1128,3 +1129,44 @@ select has_table_privilege('anon', 'public.policy_versions', 'SELECT')
 Then "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21's `search_path` query gives 0 rows (this file adds no function). The deploy job's smoke: before step 8's versions are published it reports `none published`, which is expected; only `anonymous read refused` (401 or 403) means grants are missing, that is, file 25 is not applied. Advisors: none new expected.
 
 **Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. What a rollback would mean: on a project made with the old automatic grants (`early-letters`), granting SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN back on every table to all three roles, the 86 function grants to service_role and the old defaults, which reopens the TRUNCATE gap on 13 tables. On a new project there is nothing to go back to: its defaults never had those grants, and without this file the app cannot read or write at all.
+
+## File 26: pg_temp last on the escrow role, and purged photos stay purged (28 Oct 2026, data-architect)
+
+`20261028000000_pg_temp_last_and_purged_photos.sql`. Re-check of PR #51 (open, draft) against develop. Needs founder `approve-migration` (D-041). Apply after File 25. Idempotent; changes no row; no new column.
+
+- **pg_temp last.** Finding 1 of #51 is already closed in the end state: File 13 (`20261015000000`, section 7) re-pins every earlier function and every later file writes `pg_catalog, public, pg_temp`. No function is altered here. The one setting left was the role default of `escrow_svc`, now `pg_catalog, public, pg_temp`. `supabase/tests/pg_temp_search_path.test.mjs` reads `pg_proc.proconfig` for every definer function and every function a policy calls, and `pg_db_role_setting` for role defaults.
+- **Purged photos.** `public.photo_entry_is_purged(text)` (definer, `authenticated` only) answers true only for the author on record: the path's second folder must be the caller's own id, and the file name must start with a letter id that the caller erased (the caller's own `sync_private.entry_erasures` row or own `erased` held-draft marker). It inlines that rule and does not call `sync_private.erasure_recorded`. It differs from `entries_not_purged`, which refuses a letter write on the bare `purge_ledger`: `purge_ledger` has no author, so here it counts only for an id nobody else holds any trail of. `entry_photos_author_insert` and `entry_photos_author_update` (renames, moves, upserts) add `and not public.photo_entry_is_purged(name)` and refuse a path deeper than `{book}/{author}/{file}`. The uuid is matched as the start of the file name. A refused upload is a 403 from Storage.
+- **Residual, by design.** A letter id that is only in `purge_ledger` (no `entry_erasures` row, no entry, held draft or marker of any author) answers true to any signed-in person for a path in their own folder. That is a restore replay, and also an ordinary whole-book purge, an account purge, or the purge of a non-kept author's letters in a kept-book purge: the erasure record goes with the book and the author while the ledger keeps the id for 60 days. It reaches a stranger who already knows the uuid, for up to 60 days, and tells them no more than `sync_push` `entry.upsert` with that id already does (`SCDEL`, `gone: true`). After the 60 day trim the answer is false again, except for an author who still has their own record.
+- **Locks.** The two `alter policy ... on storage.objects` statements take ACCESS EXCLUSIVE on `storage.objects` for the whole transaction, and while they wait every Storage read and write queues behind them. The file therefore starts with `select set_config('lock_timeout', '5s', true);` (local to its transaction, as File 23 does). If it fails with `55P03` (`lock_not_available`, "canceling statement due to lock timeout"), nothing changed and nothing was recorded: retry the deploy a little later, when fewer uploads are running. Apply it at a quiet time.
+
+**Check after applying** (SQL Editor; expect one row whose array holds `search_path=pg_catalog, public, pg_temp` next to `statement_timeout=5s`, then two rows, both `true`):
+```sql
+select rolconfig from pg_roles where rolname = 'escrow_svc';
+select polname, pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%' as has_check
+  from pg_policy where polrelid = 'storage.objects'::regclass and polname in ('entry_photos_author_insert', 'entry_photos_author_update') order by 1;
+```
+Then repeat step 21's `search_path` query (expect 0 rows; the one new function is pinned `pg_catalog, public, pg_temp`). Advisors, expected and accepted: **0029** "authenticated can execute security definer function" for the new `photo_entry_is_purged`, a Storage policy helper like `backup_object_writable`: it answers only for the caller's own folder and the caller's own records (expected, not an error). Anything else new: stop and ask.
+
+**Rollback.** Prefer fixing forward: rolling back lets an author put a purged letter's photo back under its path again, and takes `pg_temp` off the escrow role's search path. If it must go, run this in the SQL Editor (one transaction). It restores the role setting and the two policies exactly as `20261003000000` and `20261005000000` leave them, then drops the function. The function goes last: dropping it while a policy still names it fails with `2BP01`.
+```sql
+begin;
+select set_config('lock_timeout', '5s', true);
+alter role escrow_svc set search_path = pg_catalog, public;
+alter policy entry_photos_author_insert on storage.objects with check (
+  bucket_id = 'entry-photos'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+  and public.is_child_member(((storage.foldername(name))[1])::uuid)
+  and public.child_is_live(((storage.foldername(name))[1])::uuid)
+  and public.can_write_content()
+);
+alter policy entry_photos_author_update on storage.objects
+  using (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text)
+  with check (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text
+              and public.is_child_member(((storage.foldername(name))[1])::uuid)
+              and public.child_is_live(((storage.foldername(name))[1])::uuid)
+              and public.can_write_content());
+drop function public.photo_entry_is_purged(text);
+commit;
+```
+
+The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
