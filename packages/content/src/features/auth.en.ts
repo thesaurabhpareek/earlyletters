@@ -3,30 +3,38 @@ import { en } from '../strings.en';
 
 /**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
- * PRD B, BRIEF decisions 4 and 11). Feature-local until the content agent
- * moves them into packages/content; the content rules test scans this file.
- * Placeholders: {child}, {app}. The public name is never typed here.
+ * PRD B, BRIEF decisions 4 and 11), as EXPERIENCE_PASS_2026-10 chapter 7 sets
+ * them (S52 to S56, package P8a). The content rules test scans this file, and
+ * test/server-surfaces-auth.test.ts pins chapter 7's rules on it: no "we" outside
+ * the registered disclosure keys, buttons of 22 characters or fewer, and every
+ * changed and new line word for word. Registered text (docs/legal/in-app-disclosures.md)
+ * is counsel's and changes only through counsel.
+ * Placeholders: {child}, {app}, {email}. The public name is never typed here.
  */
 export const authCopy = {
   sheet: {
     titles: {
       first_letter: "Keep {child}'s book on any phone",
-      invite: 'Sign in to join the family book',
+      // A book has at most two parents in v1.0, so "the book", not "the family book".
+      invite: 'Sign in to join the book',
       invite_create: 'Sign in to invite a co-parent',
       sign_in: 'Welcome back',
       settings: 'Sign in',
     },
     bodies: {
-      first_letter: 'Sign in so your co-parent can write too, and so your letters come with you to a new phone.',
-      invite: 'Sign in so you can write to your child together, each from your own phone.',
-      invite_create: 'Your co-parent joins from their own phone, so you both need an account.',
+      // What is true, in one sentence; never "sign in so". account.signedOutBody says the same, word for word.
+      first_letter: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+      invite: 'You each write from your own phone, in the same book.',
+      invite_create: 'You both sign in, each on your own phone.',
+      // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
-      settings: 'Sign in so your co-parent can write too, and so your letters come with you to a new phone.',
+      settings: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
     },
     google: 'Continue with Google',
     email: 'Continue with email',
     passkey: 'Use a passkey',
     later: 'Not now',
+    // Registered (in-app-disclosures.md 3a): word for word. Counsel's proposed line is C6.
     privacy: en.trust.signIn.privacy,
     why: en.trust.signIn.why,
     emailUse: en.trust.signIn.email,
@@ -36,7 +44,8 @@ export const authCopy = {
       email: 'Last time you used email.',
       passkey: 'Last time you used a passkey.',
     },
-    notConfigured: 'Signing in is not available in this build yet. Your letters are safe on this phone.',
+    // The kill path only (a build with no project settings).
+    notConfigured: 'Signing in is not available right now. Your letters are safe on this phone.',
     busy: 'Signing you in',
   },
 
@@ -86,18 +95,19 @@ export const authCopy = {
   },
 
   errors: {
-    network: "You're offline. Your letters are saved on this phone. Sign in when you're back online.",
-    expired: 'That link has expired. We can send a new one.',
+    // After an offline or failed attempt the reassurance comes first (VOICE, the Error row).
+    network: 'Your letters are safe on this phone. Sign in once you are back online.',
+    expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
-    code_paused: "Let's take a short break. Try again in 15 minutes.",
-    rate_limited: "That's a lot of emails for one hour. Try again a little later.",
+    code_paused: 'You can try a code again in 15 minutes.',
+    rate_limited: 'Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "This way of signing in isn't available right now. Try another way.",
-    provider: "That didn't work. Please try again, or try another way.",
-    session_expired: 'Sign in again to keep your book in sync. Your letters are safe on this phone.',
+    provider: 'That did not work this time. Try again, or try another way.',
+    session_expired: 'Your letters are safe on this phone. Sign in again to keep sharing them.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: "We couldn't finish setting up your account. Your letters are safe on this phone. Please try again.",
-    unknown: 'Something went wrong. Your letters are safe on this phone. Please try again.',
+    consent_unavailable: 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
+    unknown: 'That did not work this time. Your letters are safe on this phone.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
     // Any account, this one included. Sign-out drops this phone's pending request, so the same link
