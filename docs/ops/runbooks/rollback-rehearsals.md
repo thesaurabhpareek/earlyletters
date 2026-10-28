@@ -51,7 +51,7 @@ Header lines for the file: build and commit, phones used (tags only), rehearsal 
 
 **Preconditions.** The founder approved the scratch project's Pro compute (a spending decision, COORDINATION section 1). A scratch project in the staging organization, never staging while the family uses it. Test users `delivered+scratch-stop@resend.dev` and `delivered+scratch-stop2@resend.dev` only. Time: about 45 minutes. Needs a real Supabase project: not runnable here.
 
-**Steps.** `AL-10-rehearsals.md` AL-10.A1 to AL-10.A7. In short: create a named publishable key and a secret key and deactivate the legacy keys; check `curl -s -o /dev/null -w '%{http_code}\n' "https://<scratch-ref>.supabase.co/auth/v1/settings" -H "apikey: $KEY"` answers 200; turn sign-ups off and check a signup returns 4xx while the existing user stays; sign the user out and check the refresh token is refused; revoke the named key and poll every 10 s until the gateway refuses it (expected 401, unverified until now); create a new key and confirm 200; delete the project the same day.
+**Steps.** `AL-10-rehearsals.md` AL-10.A1 to AL-10.A7. Before running anything below, paste the project ref you are about to target and confirm it is the scratch or staging project, never production. In short: create a named publishable key and a secret key and deactivate the legacy keys; check `curl -s -o /dev/null -w '%{http_code}\n' "https://<scratch-ref>.supabase.co/auth/v1/settings" -H "apikey: $KEY"` answers 200; turn sign-ups off and check a signup returns 4xx while the existing user stays; sign the user out and check the refresh token is refused; revoke the named key and poll every 10 s until the gateway refuses it (expected 401, unverified until now); create a new key and confirm 200; delete the project the same day.
 
 **Evidence.** `docs/qa/evidence/<date>-rehearsal-staging-stop.md`. Status code per step, seconds from the sign-up switch to the refusal, seconds until the revoked key is refused.
 
@@ -109,7 +109,7 @@ OPS_OPERATOR=<handle> node scripts/ops/restore-drill.ts --mode drill --project-r
 | RH4.1 | A letter purged after the restore point is gone after replay (restore-drill.md step 3: otherwise deleted letters come back) |
 | RH4.2 | A kept letter survives the replay |
 | RH4.3 | Replaying the same ledger twice deletes nothing the second time |
-| RH4.4 | The kept letter's `raw_transcript` hash is unchanged (DATA-REQ-031 hash sample) |
+| RH4.4 | The kept letter's `raw_transcript` hash is unchanged by the replay. A same-database sanity check only: the DATA-REQ-031 hash sample compares restored data against the source, which this local slice does not do |
 | RH4.5, RH4.6 | After `sync_begin_epoch` a phone on the old epoch is told to start over, epoch +1 (restore-drill.md part 2 step 4) |
 | RH4.7 | Only the service role can begin an epoch |
 
@@ -135,7 +135,7 @@ Plants: `skip-replay`, `skip-epoch`, `over-delete`, `tamper-raw`. The script tak
 
 **Preconditions.** Staging with functions deployed (AF-13, #152 F16 and F17); a quiet hour; nothing else on staging changing. Agents never deploy (AUTOMATION 2.11). Time: about 20 minutes.
 
-**Steps.** AL-10.E1 to E3: note the commit the staging functions came from; on a scratch branch add one comment line to the `content` function and deploy it alone with the flags its `index.ts` names (`npx supabase functions deploy content --project-ref <staging-ref> --no-verify-jwt --use-api`; without `--no-verify-jwt` phones are refused); check `curl -s -o /dev/null -w '%{http_code}\n' "https://<staging-ref>.supabase.co/functions/v1/content/v1/bundle?locale=en"` answers 200; check out the noted commit, deploy the same function with the same command, repeat the check.
+**Steps.** AL-10.E1 to E3: Before running anything below, paste the project ref you are about to target and confirm it is the scratch or staging project, never production. note the commit the staging functions came from; on a scratch branch add one comment line to the `content` function and deploy it alone with the flags its `index.ts` names (`npx supabase functions deploy content --project-ref <staging-ref> --no-verify-jwt --use-api`; without `--no-verify-jwt` phones are refused); check `curl -s -o /dev/null -w '%{http_code}\n' "https://<staging-ref>.supabase.co/functions/v1/content/v1/bundle?locale=en"` answers 200; check out the noted commit, deploy the same function with the same command, repeat the check.
 
 **Evidence.** `docs/qa/evidence/<date>-rehearsal-function-redeploy.md`. UTC time and function name, status code after each deploy, minutes for the undo, the deployed version matching the noted commit.
 
