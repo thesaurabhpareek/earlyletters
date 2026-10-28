@@ -1,0 +1,1 @@
+{ "id": "new-function-grants", "class": "db", "source": "CLAUDE.md grants rule (default privileges reset since 20261023060000; PR #261 lens A on missing grants); model of supabase/tests/grants.mjs", "roles": ["data-architect", "writer"], "k": 3 }

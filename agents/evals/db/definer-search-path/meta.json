@@ -1,0 +1,1 @@
+{ "id": "definer-search-path", "class": "db", "source": "PR #51 finding 1 (fix(db): pg_temp last on definer functions): security definer functions with search_path set without pg_temp last, or not set", "roles": ["data-architect", "red-team"], "k": 3 }
