@@ -143,5 +143,8 @@ describe('[S2] the screens', () => {
     const hook = code('components/family/join-wait.tsx');
     expect(hook).toMatch(/void syncNow\(\)\s*\.then\(\(report\) => \{\s*if \(retryRestartsWait\(report\)\) joinWait\.restart\(\);\s*\}\)/);
     expect(hook).toMatch(/const left = wait\.since \+ JOIN_WAIT_MS - Date\.now\(\);/);
+    // One wake just after the wait runs out, cleared when the wait changes (Try again) or the welcome goes. J21j on the
+    // web proves the wake itself; this pins its time and its cleanup, which the web cannot see.
+    expect(hook).toMatch(/const id = setTimeout\(\(\) => setNow\(Date\.now\(\)\), left \+ 50\);\s*return \(\) => clearTimeout\(id\);\s*\}, \[wait\]\);/);
   });
 });
