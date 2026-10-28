@@ -18,7 +18,16 @@ Facts about code, prices and outside services are true as of the date of their s
 4. Still write the "Learned" line in your journal entry as usual; this file is where it is kept.
 5. Privacy rules apply here as everywhere (`CLAUDE.md`): no entry text, transcript, audio, child name or real family detail. Describe a security weakness by its class and fix, never with exploit steps.
 
-Not decided yet: whether per-agent `agents/<handle>/MEMORY.md` files are kept, and whether lessons are copied into them. That waits on the harness decision (retro IMP-35 and Round 3 package R3-05), so no `MEMORY.md` was changed here. Until then, `scripts/agents/memory.mjs` reads only `MEMORY.md`, so it will keep listing these lessons as "Carry into memory" in agent briefs. Open PR #338 proposes a separate error-class registry (`agents/lessons/REGISTRY.md`); how it relates to this file is for the coordinator to settle.
+Not decided yet: whether per-agent `agents/<handle>/MEMORY.md` files are kept, and whether lessons are copied into them. That waits on the harness decision (retro IMP-35 and Round 3 package R3-05), so no `MEMORY.md` was changed here. Until then, `scripts/agents/memory.mjs` reads only `MEMORY.md`, so it will keep listing these lessons as "Carry into memory" in agent briefs. See "Relation to the error registry" below for how this file and open PR #338 fit together.
+
+## Relation to the error registry
+
+Open PR #338 proposes `agents/lessons/REGISTRY.md`: one row per recurring error class (L-01 to L-12), each with a detector and a status. The two files do different jobs:
+
+- This file holds sourced lessons: what a session learned, and where.
+- The registry holds error classes. It, not this file, tracks each class's detector and status (open, eval, detected).
+- Once #338 merges, a lesson here that describes a recurring error class also carries that class id in brackets, for example `[L-06]`. Ids added before #338 merges say "(pending #338)". If #338 changes or drops an id, update the tag here.
+- A new lesson that shows a new recurring error class also gets a row in the registry (proposed there, per its own rules).
 
 ## 1. Check the base before you trust a result
 
@@ -42,11 +51,11 @@ Not decided yet: whether per-agent `agents/<handle>/MEMORY.md` files are kept, a
 ## 2. Scope and the source of truth
 
 - Docs written from the PRD kept missing brief decisions 5 (co-parent only) and 9 (no audio upload, no family playback). Check every doc PR against the brief of record, not the PRD or roadmap. ([#5, 3 Oct 19:49][j5b]; [#20, 3 Oct 16:30][j20a])
-- The 3 Oct brief and PRD 1.3 came from the same day and disagreed (Google sign-in, family scope, Family Sharing, audio upload, support cards). The newer one wins, and the copy flags the gap. ([#21, 3 Oct 16:56][j21a])
+- The 3 Oct brief and PRD 1.3 came from the same day and disagreed (Google sign-in, family scope, Family Sharing, audio upload, support cards). The newer one wins, and the copy flags the gap. ([#21, 3 Oct 16:56][j21a]) [L-06, pending #338]
 - Draft store and site copy promised things the 3 Oct brief moved out of v1.0 (grandparents writing, shared voices, word highlighting, mixed-language letters, backup). Check every public claim against the current decisions. ([#20, 3 Oct 16:30][j20a])
 - A scope limit makes some metrics read zero by design: under brief decisions 5 and 9, any contributor, approval or other-family metric was zero at v1.0. ([#18, 3 Oct 20:32][j18b])
-- A decision can be settled in one place and still marked open in another: brief decision 10 settled D-030 (the store never says "beta") while `DECISIONS.md` still marked D-030 Recommended. ([#17, 3 Oct 20:33][j17])
-- On 15 Oct two founder records of v1.0 scope conflicted: on-device (#127) and option B, server features on (#128). ([#171, 15 Oct][j171a]) [Resolved 17 Oct: option B was logged as D-100 ([#171, 17 Oct][j171c]); #127 is still open with 0 comments on 28 Oct.]
+- A decision can be settled in one place and still marked open in another: brief decision 10 settled D-030 (the store never says "beta") while `DECISIONS.md` still marked D-030 Recommended. ([#17, 3 Oct 20:33][j17]) [L-06, pending #338]
+- On 15 Oct two founder records of v1.0 scope conflicted: on-device (#127) and option B, server features on (#128). ([#171, 15 Oct][j171a]) [L-06, pending #338] [Resolved 17 Oct: option B was logged as D-100 ([#171, 17 Oct][j171c]); #127 is still open with 0 comments on 28 Oct.]
 - A process change can land as a docs PR with no D-id (#212, #224). Read merged docs PRs, not only `docs/DECISIONS.md`. ([#171, 18 Oct][j171d])
 - D-ids D-112 to D-117 came from docs PRs while `develop` moved 126 commits in 9 days; the checker's "missing" list is the fastest worklist. ([#171, 27 Oct][j171f])
 - "Open PR #n" wording goes stale after a merge and no checker catches it. Grep for "open PR" and check each one every run. ([#171, 23 Oct][j171e])
@@ -73,7 +82,7 @@ Not decided yet: whether per-agent `agents/<handle>/MEMORY.md` files are kept, a
 
 ## 5. Session tooling: git, worktrees, gh and web fetches
 
-- The worktrees share `/home/claude/earlyletters/.git`, so a `git fetch` in one moves `origin/develop` for all. Use `git ls-remote` when you only need to read a ref. ([#5, 3 Oct 21:02][j5d])
+- The worktrees share `/home/claude/earlyletters/.git`, so a `git fetch` in one moves `origin/develop` for all. Use `git ls-remote` when you only need to read a ref. ([#5, 3 Oct 21:02][j5d]) [L-12, pending #338]
 - A sparse partial clone with symlinked `node_modules` can run one PR's tests against another branch's copy. ([#5, 3 Oct 21:09][j5e])
 - Through this proxy, `gh api --paginate` and `gh api` on other owners' repos failed (3 Oct). Page by hand, and use `git ls-remote`. ([#5, 3 Oct 20:44][j5c]; [#22, 3 Oct 21:09][j22b])
 - WebFetch on a URL recalled from memory gets no permission. Run WebSearch first, then fetch the returned URL; the `.md` variants of the Expo and Supabase docs pages work well. ([#5, 15 Oct 00:59][j5j]; [#5, 3 Oct 19:49][j5b])
