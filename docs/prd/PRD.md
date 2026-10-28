@@ -1,5 +1,8 @@
 # Early Letters: Launch PRD (integrated)
 
+> **Superseded.** D-105: PRD V2 (`docs/prd/v2/`) is the requirements of record since PR #124 merged (16 Oct 2026). Requirement IDs keep their meaning.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: lead PM. Version 1.3, 3 Oct 2026. Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
 Codename `scribe`. Public name and publisher identity from `packages/brand` only.
 
