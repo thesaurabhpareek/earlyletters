@@ -1,0 +1,5 @@
+$ node tools/write-lanes.mjs scripts/agents/lanes.mjs && node --test scripts/agents/lanes.test.mjs && git add -A && git commit -m "feat(agents): lane counter" && git push -u origin wip/lanes
+(no output for 120 s; command moved to the background and never reported)
+$ git add scripts/agents/lanes.test.mjs docs/agents/hardening/lanes-and-review-churn.md && git commit -m "feat(agents): lane counter" && git push -u origin wip/lanes
+[wip/lanes c0ffee1] feat(agents): lane counter
+ 2 files changed, 29 insertions(+)

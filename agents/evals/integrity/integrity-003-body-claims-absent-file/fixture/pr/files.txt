@@ -1,0 +1,3 @@
+apps/mobile/src/lib/packs/__tests__/engine.test.ts
+apps/mobile/src/lib/packs/__tests__/memory-ports.ts
+docs/agents/checkins/packs-owner.md

@@ -1,0 +1,4 @@
+[
+  { "defect": "body_claims_file_not_in_diff", "path": "scripts/agents/lanes.mjs", "detail": "The description lists lanes.mjs as new, but the diff and file list only have lanes.test.mjs and the note." },
+  { "defect": "import_of_absent_file", "path": "scripts/agents/lanes.mjs", "detail": "lanes.test.mjs imports ./lanes.mjs, which is not in the diff, so the claimed 3 passing tests cannot hold." }
+]

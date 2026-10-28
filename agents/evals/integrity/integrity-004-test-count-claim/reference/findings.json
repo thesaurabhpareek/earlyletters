@@ -1,0 +1,3 @@
+[
+  { "defect": "test_count_mismatch", "path": "scripts/agents/lanes.test.mjs", "detail": "The description says 9 tests; the file has 5." }
+]

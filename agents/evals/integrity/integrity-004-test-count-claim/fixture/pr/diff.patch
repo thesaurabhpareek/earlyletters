@@ -1,0 +1,72 @@
+diff --git a/scripts/agents/lanes.mjs b/scripts/agents/lanes.mjs
+new file mode 100644
+--- /dev/null
++++ b/scripts/agents/lanes.mjs
+@@ -0,0 +1,8 @@
++export function openLanes(prs, agentOfPR) {
++  const out = {};
++  for (const pr of prs) {
++    const who = agentOfPR(pr);
++    if (who) out[who] = (out[who] ?? 0) + 1;
++  }
++  return out;
++}
+diff --git a/scripts/agents/lanes.test.mjs b/scripts/agents/lanes.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/scripts/agents/lanes.test.mjs
+@@ -0,0 +1,21 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { openLanes } from './lanes.mjs';
++
++const agentOfPR = (pr) => pr.agent ?? null;
++
++test('one open agent PR holds one lane', () => {
++  assert.deepEqual(openLanes([{ number: 1, agent: 'qa' }], agentOfPR), { qa: 1 });
++});
++test('two PRs of one agent hold two lanes', () => {
++  assert.deepEqual(openLanes([{ number: 1, agent: 'qa' }, { number: 2, agent: 'qa' }], agentOfPR), { qa: 2 });
++});
++test('a draft PR still holds its lane', () => {
++  assert.deepEqual(openLanes([{ number: 2, agent: 'qa', draft: true }], agentOfPR), { qa: 1 });
++});
++test('a PR with no agent label holds none', () => {
++  assert.deepEqual(openLanes([{ number: 3 }], agentOfPR), {});
++});
++test('no PRs, no lanes', () => {
++  assert.deepEqual(openLanes([], agentOfPR), {});
++});
+diff --git a/scripts/agents/pause.mjs b/scripts/agents/pause.mjs
+new file mode 100644
+--- /dev/null
++++ b/scripts/agents/pause.mjs
+@@ -0,0 +1,5 @@
++export function blockedReason(agent, now) {
++  const until = agent.paused_until;
++  if (!/^\d{4}-\d{2}-\d{2}$/.test(until ?? '')) return null;
++  return now < Date.parse(`${until}T00:00:00Z`) ? `paused until ${until}` : null;
++}
+diff --git a/scripts/agents/pause.test.mjs b/scripts/agents/pause.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/scripts/agents/pause.test.mjs
+@@ -0,0 +1,18 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { blockedReason } from './pause.mjs';
++
++const t = (s) => Date.parse(`${s}T00:00:00Z`);
++
++test('before the date the agent is paused', () => {
++  assert.equal(blockedReason({ paused_until: '2026-10-30' }, t('2026-10-29')), 'paused until 2026-10-30');
++});
++test('at 00:00 UTC on the date the pause has lapsed', () => {
++  assert.equal(blockedReason({ paused_until: '2026-10-30' }, t('2026-10-30')), null);
++});
++test('a malformed date means no pause', () => {
++  assert.equal(blockedReason({ paused_until: '30/10/2026' }, t('2026-10-29')), null);
++});
++test('no field means no pause', () => {
++  assert.equal(blockedReason({}, t('2026-10-29')), null);
++});

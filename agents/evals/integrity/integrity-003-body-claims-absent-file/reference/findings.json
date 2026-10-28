@@ -1,0 +1,3 @@
+[
+  { "defect": "body_claims_file_not_in_diff", "path": "docs/agents/BOARD.md", "detail": "The description lists docs/agents/BOARD.md as touched with one check-in line; the diff changes docs/agents/checkins/packs-owner.md instead." }
+]

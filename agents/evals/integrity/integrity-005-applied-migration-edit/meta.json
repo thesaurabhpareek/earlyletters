@@ -1,0 +1,9 @@
+{
+  "id": "integrity-005-applied-migration-edit",
+  "class": "integrity",
+  "kind": "writer",
+  "source": "synthetic: modelled on commit 37305517 (supabase/migrations/20261001000000_scribe_hardening.sql, section 3 edited into an applied migration, then split out as 20261002010000_entries_select_policy.sql). No run where the guard actually failed a PR was found in git history or in the 95 merged PR bodies; #248, #251, #254, #258 and #270 all report the guard as ok.",
+  "roles": ["writer"],
+  "k": 3,
+  "reference": "overlay"
+}
