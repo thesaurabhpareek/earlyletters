@@ -86,8 +86,9 @@ test('[J08d] in the morning the light stays; with Reduce Motion the evening ligh
   await app.clock.setFixedTime(EVENING);
   await app.reload();
   await expect(btn(app, 'Not much today')).toBeVisible();
-  // The morning's mark is today's: the evening room opens with its lights already down.
-  expect(await lampLevel(app)).toBeCloseTo(0.7, 2);
+  // The morning's mark is today's: the evening room opens with its lights already down. Polled, because the lamp may not be
+  // mounted yet when the button is (the read is null until it is); Reduce Motion means no fade, so it settles at 0.7 at once.
+  await expect.poll(() => lampLevel(app)).toBeCloseTo(0.7, 2);
 });
 
 test('[J08c] marks saved by older builds: the old sentence is never shown, and a mark can be removed', async ({ app, record }) => {

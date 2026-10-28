@@ -27,7 +27,9 @@ test('[J09b] the Book with many letters, a private one, a waiting one', async ({
   await seeded(app);
   await app.getByText('Book', { exact: true }).last().click();
   // Openers are one heading each, heard without the "·" separator.
-  await expect(app.getByRole('heading', { name: /^Month 6\. 2 letters, from Mama\. / })).toBeVisible();
+  // The seed's two letters of Month 6 (23 and 4 days ago) stay in it on every day of the calendar. From 31 Jan to 27 Feb
+  // the child is in Month 6 itself, so its opener is the lit one and reads "This month, Month 6. ...".
+  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. 2 letters, from Mama\. / })).toBeVisible();
   await expect(app.getByRole('heading', { name: /^This month, Month \d+\. / })).toBeVisible();
   await expect(app.getByText(/\w+ \d+ to \w+ \d+/).first()).toBeVisible();
   // Excerpts end in a fade, never an ellipsis glyph.

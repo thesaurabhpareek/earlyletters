@@ -6,7 +6,8 @@ const openRT = async (app: import('@playwright/test').Page) => {
 };
 /** Where Read together is: the hairline's spoken label ("Letter 1 of 5"); the screen shows no counter. */
 const at = (app: import('@playwright/test').Page, n: number, count = 5) => app.getByLabel(`Letter ${n} of ${count}`);
-const opener = (app: import('@playwright/test').Page) => app.getByRole('heading', { name: /^Month 6\. / });
+/** Month 6's opener; from 31 Jan to 27 Feb the seeded child is in that month, and it reads "This month, Month 6. ...". */
+const opener = (app: import('@playwright/test').Page) => app.getByRole('heading', { name: /^(This month, )?Month 6\. / });
 /** The header's Close, not "Close the book" on the end page (which may still be leaving after "Read it again"). */
 const close = (app: import('@playwright/test').Page) => app.getByRole('button', { name: 'Close', exact: true });
 

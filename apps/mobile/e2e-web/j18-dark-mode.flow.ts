@@ -41,7 +41,8 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
 
   await tab(app, 'Book').click();
   await expect(selectedTab(app, 'Book')).toBeVisible();
-  await expect(app.getByRole('heading', { name: /^Month 6\. 2 letters, from Mama\. / })).toBeVisible();
+  // "This month, " in front from 31 Jan to 27 Feb, when the seeded child is in Month 6 (see j09).
+  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. 2 letters, from Mama\. / })).toBeVisible();
   await expectDark(app);
   await step('happy', 'Book, dark', 'The Book at night: each month opened by its kicker, numeral and dates, with the letters as cards under it, on the dark page. (Seeded fictional family Asha.)');
 
