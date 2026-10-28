@@ -46,7 +46,8 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("## Review A at 1a2b3c4: don't merge", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review A at 1a2b3c4: not a pass, 2 issues", 310).verdict, "FAIL");
   assert.equal(parseLens("## Lens B verdict at 1a2b3c4: not mergeable", 310).verdict, "DO NOT MERGE");
-  assert.equal(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict, "PASS");
+  assert.equal(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict, "CONDITIONAL", "extra words after a pass are not trusted");
+  assert.equal(parseLens("## Review A at 1a2b3c4: PASS", 310).verdict, "PASS");
   const v = (t) => parseLens(`## Review A (accuracy) at 97b50e1: ${t}`, 310)?.verdict;
   for (const t of ["REQUEST CHANGES, then merge", "should not merge", "must not merge", "cannot merge yet", "not ready to merge", "merge blocked"]) {
     assert.ok(!PASSING.has(v(t)), `${t} must not pass`);
@@ -69,8 +70,22 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(v("DON\u2019T MERGE"), "DO NOT MERGE");
   assert.ok(!PASSING.has(v("PASS (blocked on #306)")), "negation in brackets");
   assert.equal(v("PASS (see notes)"), "PASS", "harmless brackets do not change a pass");
+  assert.equal(v("PASS (pending #306)"), "CONDITIONAL", "a condition in brackets is still a condition");
   // #358's habit: the verdict on a later line, after "Delta verdict:".
   assert.equal(parseLens("Review lens A, delta at fbf28ab.\n\n**Delta verdict: PASS WITH NOTES.**", 358).verdict, "PASS WITH NOTES");
+  // Lens B delta (28 Oct): allowlist, not blocklist. None of these may pass.
+  for (const t of ["DONT MERGE", "dont merge", "DON\u00b4T MERGE", "DON`T MERGE", "DON\uff07T MERGE", "PASS. DO NOT MERGE",
+    "PASS pending #306", "PASS once #306 lands", "PASS if the fix lands", "conditional PASS", "PASS, then request changes"]) {
+    assert.ok(!PASSING.has(v(t)), `${t} must not pass (got ${v(t)})`);
+  }
+  assert.equal(v("PASS. DO NOT MERGE"), "DO NOT MERGE", "a stop anywhere on the line wins");
+  assert.equal(v("PASS pending #306"), "CONDITIONAL");
+  assert.equal(v("**PASS WITH NOTES**"), "PASS WITH NOTES", "bold is not extra words");
+  // Real shapes from merged PRs (#355, #358), authors removed: these must still read as passes.
+  assert.equal(parseLens("**Lens A review (spec, design language): PASS WITH NOTES** at head 1b8ee6f (unchanged; develop has since moved).", 355).verdict, "PASS WITH NOTES");
+  assert.equal(parseLens("Delta review, lens A, final head 0afbbfd (my first pass was 2f572b3).\n\n**Delta verdict: PASS WITH NOTES.** My Must is cleared.", 358).verdict, "PASS WITH NOTES",
+    "a first line with no colon states no verdict, even if it says 'pass'");
+  assert.equal(v("**PASS** but do not merge"), "DO NOT MERGE");
 });
 
 test("verdict-on-head: latest lens and red-team verdicts against the current head", () => {

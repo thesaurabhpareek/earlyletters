@@ -40,29 +40,44 @@ export function sameSha(a, b) {
   return x.startsWith(y) || y.startsWith(x);
 }
 
-// Verdicts are read conservatively: any negation or request for changes in the verdict text
-// is not a pass, whatever positive word also appears ("should not merge", "REQUEST CHANGES,
-// then merge" and "cannot pass" are all blocking). Unknown wording is no verdict at all.
-const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|shouldn't|mustn't|unable|block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|request(ed|s)?\s+changes|changes\s+(requested|needed|required)|needs?\s+work|hold)\b/;
-const DONT_MERGE = /\b(do[\s-]+not|don't|should\s+not|shouldn't|must\s+not|mustn't|cannot|can't|won't|not\s+(ready\s+to\s+)?|not\s+yet)\s*merge|not\s+mergeable|merge\s+blocked/;
+// Verdicts are read with an allowlist. A review counts as passing only when its verdict clause
+// is exactly PASS, PASS WITH NOTES or MERGE (bold and trailing punctuation aside) and nothing on
+// the line asks not to merge. Anything else that names a verdict is not a pass: a negation, a
+// change request, a condition ("PASS pending #306", "PASS once the fix lands") or extra words.
+// A blocking review must never look like an approval; a pass that reads as CONDITIONAL only
+// adds a warning the coordinator can clear by hand.
+const APOSTROPHES = /[\u2018\u2019\u02bc\u00b4\u0060\uff07]/g; // curly, modifier, acute, grave, fullwidth
+const STOP_ANYWHERE = /\b(do[\s-]*not|don't|dont|should\s*not|shouldn't|must\s*not|mustn't|cannot|can't|won't|not\s+(yet\s+)?(ready\s+to\s+)?)\s*merge\b|\bnot\s+mergeable\b|\bmerge\s+blocked\b|\brequest(ed|s)?\s+changes\b|\bchanges\s+requested\b/;
+const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|dont|shouldn't|mustn't|unable|block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|changes|needs?\s+work|hold)\b/;
 export const PASSING = new Set(["PASS", "PASS WITH NOTES", "MERGE"]);
+const EXACT = new Map([["pass", "PASS"], ["passed", "PASS"], ["pass with notes", "PASS WITH NOTES"], ["merge", "MERGE"], ["merge after fix", "MERGE AFTER FIX"], ["merge-after-fix", "MERGE AFTER FIX"]]);
 export const verdictIn = (s) => {
-  const line = String(s).toLowerCase().replace(/[\u2018\u2019\u02bc]/g, "'"); // phone keyboards type curly apostrophes
-  // The verdict is the clause after "Verdict:" (else after the last colon), up to the first
-  // full stop or semicolon, so "Verdict: PASS WITH NOTES. No blocking finding." is a pass.
-  const after = line.match(/verdict\s*[:-]\s*(.*)$/)?.[1] ?? (line.includes(":") ? line.slice(line.lastIndexOf(":") + 1) : line);
-  const raw = after.split(/[.;]/)[0];
-  const t = raw.replace(/\([^)]*\)/g, " "); // bracketed text never makes a pass...
-  if (NEGATIVE.test(raw)) { // ...but a negation inside brackets still blocks ("PASS (blocked on #306)")
-    if (DONT_MERGE.test(raw)) return "DO NOT MERGE";
-    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(raw)) return "FAIL";
-    if (/changes|needs?\s+work/.test(raw)) return "CHANGES NEEDED";
+  const line = String(s).toLowerCase().replace(APOSTROPHES, "'");
+  // The verdict clause follows "Verdict:" (else the last colon) and ends at the first full stop or
+  // semicolon, so "Verdict: PASS WITH NOTES. No blocking finding." is a pass.
+  const after = line.match(/verdict\s*[:-]\s*(.*)$/)?.[1] ?? (line.includes(":") ? line.slice(line.lastIndexOf(":") + 1) : undefined);
+  if (after === undefined) return undefined; // no "Verdict:" and no colon: this line states no verdict
+  const clause = after
+    .replace(/^[\s*_]+/, "").split(/\*\*|__/)[0] // a bold verdict ends at its closing "**"
+    .split(/[.;]/)[0]
+    .replace(/\b(at|on)\s+(head\s+)?[0-9a-f]{7,40}\b.*$/, "") // "PASS WITH NOTES at head 1b8ee6f (...)"
+    .replace(/[*_`]/g, " ").replace(/\s+/g, " ").trim().replace(/[,!]+$/, "");
+  if (STOP_ANYWHERE.test(after) || STOP_ANYWHERE.test(clause)) {
+    return /request|changes/.test(after) && !/merge/.test(after.match(STOP_ANYWHERE)?.[0] ?? "") ? "CHANGES NEEDED" : "DO NOT MERGE";
+  }
+  if (NEGATIVE.test(clause)) {
+    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(clause)) return "FAIL";
+    if (/changes|needs?\s+work/.test(clause)) return "CHANGES NEEDED";
     return "BLOCKING";
   }
-  if (/\bpass\s+with\s+notes\b/.test(t)) return "PASS WITH NOTES";
-  if (/\bmerge[\s-]+after[\s-]+fix\b/.test(t)) return "MERGE AFTER FIX";
-  if (/\bpass(ed|es)?\b/.test(t)) return "PASS";
-  if (/\bmerge\b/.test(t)) return "MERGE";
+  if (EXACT.has(clause)) return EXACT.get(clause); // exact tokens first ("merge after fix" is not a condition)
+  // Brackets may hold a harmless aside ("PASS (see notes)"), never a condition ("PASS (pending #306)").
+  if (/\b(pending|once|if|until|unless|after|when|conditional(ly)?|provided|subject\s+to|assuming|but|except|tbd|wip)\b/.test(clause)) {
+    return /\b(pass|merge)\b/.test(clause) ? "CONDITIONAL" : undefined;
+  }
+  const bare = clause.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().replace(/[,!]+$/, "");
+  if (EXACT.has(bare)) return EXACT.get(bare);
+  if (/\b(pass|merge)\b/.test(clause)) return "CONDITIONAL"; // names a pass, but with words we do not trust
   return undefined;
 };
 const shaIn = (s) => s.match(/(?<![0-9a-z])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?![0-9a-z])/i)?.[0];
