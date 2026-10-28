@@ -48,7 +48,7 @@ test.describe('keyboard path through the form', () => {
     expect(button?.label).toBe(n.quietButton);
 
     await page.keyboard.press('Enter');
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await mock.contact(email)).toBeDefined();
   });
 
@@ -58,7 +58,7 @@ test.describe('keyboard path through the form', () => {
     await page.getByLabel(n.label).focus();
     await page.keyboard.type(email);
     await page.keyboard.press('Enter');
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await mock.contact(email)).toBeDefined();
   });
 
