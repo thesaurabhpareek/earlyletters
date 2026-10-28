@@ -217,6 +217,31 @@ describe('[S54] Check your email', () => {
     expect(codeStep).toMatch(/\{copy\.auth\.noEmailHelp\}/);
   });
 
+  it('[P8a critics S1] while the five-wrong-codes pause holds, a new email is not offered and the line says why', () => {
+    // The pause is S01's rule, read from the same in-memory list at each render, so it shows from the fifth wrong code.
+    expect(codeStep).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(address\), Date\.now\(\)\);\s*const paused = pause\.paused;/);
+    // Not offered while paused, and nor is its wait line; both come back when it lifts.
+    expect(codeStep).toMatch(/\{paused \? null : <QuietButton label=\{k\.resend\}/);
+    expect(codeStep).toMatch(/\{!paused && !canResend && \(/);
+    expect(codeStep).toMatch(/\{paused \? \(\s*<Text variant="subhead" tone="muted">\s*\{k\.pausedOtherWay\}/);
+    expect(codeStep).toMatch(/const message = authErrorMessage\(paused \? 'code_paused' : error\)/);
+    // It lifts on its own: a render is scheduled for the end of the pause, and the paused line goes then.
+    expect(codeStep).toMatch(/if \(pause\.until === null\) return;\s*const t = setTimeout\(\(\) => setNow\(Date\.now\(\)\)/);
+    expect(codeStep).toMatch(/if \(!paused && error === 'code_paused'\) setError\(null\)/);
+    expect(codeStep).toMatch(/editable=\{!busy && !paused\}/);
+    // The pause logic is not changed here: a send never clears the wrong-code list.
+    expect(codeStep).not.toMatch(/clearWrongCodes|noteWrongCode/);
+  });
+
+  it('[P8a critics S2] the code step has a way out, and says the letters are safe while waiting', () => {
+    // Not now under "Trouble signing in?", with S52's rule: it closes the sheet and does nothing else.
+    const tail = codeStep.slice(codeStep.indexOf('label={copy.auth.troubleButton}'));
+    expect(tail).toMatch(/<QuietButton label=\{authCopy\.sheet\.later\} onPress=\{close\} disabled=\{busy\} \/>/);
+    expect(codeStep).toMatch(/const close = useCloseSheet\(\);/);
+    // While waiting (no error line), errors.network's first sentence under the field.
+    expect(codeStep).toMatch(/\{message \? \(\s*<ErrorLine message=\{message\} \/>\s*\) : \(\s*<Text variant="subhead" tone="muted">\s*\{k\.lettersSafe\}/);
+  });
+
   it('opening the link shows "Signing you in" with the small spinner and nothing read twice', () => {
     expect(verify).toMatch(/<SheetTitle>\{refused \? v\.refusedTitle : v\.title\}<\/SheetTitle>/);
     expect(verify).toMatch(/accessibilityElementsHidden[^>]*>\s*<ActivityIndicator/);
@@ -308,6 +333,27 @@ describe('[S55] before your book syncs', () => {
   it('records answers only through the provider: the screen never starts sync itself', () => {
     expect(consent).not.toMatch(/lib\/sync|startSync|syncAllowed/);
     expect(consent).toMatch(/await auth\.recordConsent\(step, accepted\)/);
+  });
+});
+
+describe('[P8a critics S4] the account gate in the invite, join and leave sheets', () => {
+  const gate = between(ui, 'export function AccountGate', '\n}\n');
+
+  it('says why in the sheet\'s own words: inviting, or joining and leaving', () => {
+    expect(gate).toMatch(
+      /const reason = claiming \? authCopy\.claim\.waiting : trigger === 'invite_create' \? familyCopy\.card\.finishSetup : familyCopy\.errors\.consent_needed;/,
+    );
+    expect(gate).toMatch(/<SheetBody muted>\{reason\}<\/SheetBody>/);
+    // Account's row value stays on Account; the gate never says "Not set up yet".
+    expect(gate).not.toMatch(/sync\.waiting/);
+    expect(account).toMatch(/trailing=\{a\.sync\[view\.sync\]\}/);
+  });
+
+  it('after a decline, nothing above "Agree and sync": counsel\'s decline line is not shown as a status', () => {
+    expect(gate).not.toMatch(/declineHelp/);
+    const declined = between(gate, 'if (!offline) {', 'return (\n    <View className="gap-4">\n      <SheetBody muted>{authCopy.errors.network}');
+    expect(declined).not.toMatch(/<SheetBody|<Text\b/);
+    expect(declined).toMatch(/label=\{sc\.agreeButton\}/);
   });
 });
 

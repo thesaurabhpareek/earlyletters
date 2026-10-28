@@ -1,6 +1,9 @@
 // Moved from apps/mobile/src/lib/auth/copy.ts on 3 Oct 2026; that file now re-exports this one.
 import { en } from '../strings.en';
 
+/** errors.network's first sentence, also said under the code field while the email is on its way (S54, P8a critics S2). */
+const lettersSafe = 'Your letters are safe on this phone.';
+
 /**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
  * PRD B, BRIEF decisions 4 and 11), as EXPERIENCE_PASS_2026-10 chapter 7 sets
@@ -71,6 +74,13 @@ export const authCopy = {
     resendWait: 'You can send another in a minute.',
     resent: 'A new email is on its way.',
     differentEmail: 'Use a different email',
+    /** Under the code field while waiting for the email: errors.network's first sentence, the same words (P8a critics S2). */
+    lettersSafe,
+    /**
+     * Under `errors.code_paused` while the pause after five wrong codes holds (P8a critics S1): a new email does not
+     * end it, so "Send a new email" is not offered until it lifts; the other ways in are, as errors.rate_limited says.
+     */
+    pausedOtherWay: 'A new email does not end the wait. Use Apple or Google instead.',
   },
 
   verify: {
@@ -100,7 +110,7 @@ export const authCopy = {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say the letters are safe first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: 'Your letters are safe on this phone. Sign in once you are back online.',
+    network: `${lettersSafe} Sign in once you are back online.`,
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Your letters are safe. You can try a code again in 15 minutes.',

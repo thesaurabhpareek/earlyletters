@@ -124,6 +124,8 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await expect(app.getByRole('heading', { name: 'Check your email' })).toBeVisible();
   await expect(app.getByText(`A link and a code are on their way to ${EMAIL}.`)).toBeVisible();
   await expect(btn(app, 'Continue')).toBeDisabled();
+  await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
+  await expect(btn(app, 'Not now')).toBeVisible();
   await step('happy', 'Check your email', 'The address the email went to is on screen. Tap the link on this phone, or type the code: a full code goes on its own; Continue stays for VoiceOver and Switch Control (S54).');
 
   m.auth('verify', () => ({ status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } }));
@@ -286,4 +288,79 @@ test('[J22f] from an invite: sign in to join the book', async ({ app, record }) 
   await btn(app, 'Sign in').click();
   await expectSheet(app, 'Sign in to join the book', 'You each write from your own phone, in the same book.');
   await step('happy', 'Sign in to join', 'From an invite: "the book", since a book has at most two parents. Nothing about the invite is shown before sign-in (BL-322).');
+});
+
+/** From the welcome to the code step through the mocked server. */
+async function toCodeStep(page: Page) {
+  await openOn(page);
+  await passAgeGate(page);
+  await btn(page, 'I already have a book').click();
+  await btn(page, 'Continue with email').click();
+  await page.getByLabel('Email', { exact: true }).fill(EMAIL);
+  await btn(page, 'Send link').click();
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+}
+
+test('[J22g] the code step: the letters are safe while waiting, and Not now closes and asks nothing (P8a critics S2)', async ({ app, record }) => {
+  const step = journey(record, 'J22', 'sign-in', 70, 'J22-07');
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  await toCodeStep(app);
+  await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
+  await step('happy', 'Waiting for the email', 'Under the code field, the one thing that is true whatever the email does: "Your letters are safe on this phone." A quiet Not now sits at the foot.');
+  const before = m.serverCalls().length;
+  await btn(app, 'Not now').click();
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+  expect(m.serverCalls().length, 'Not now asks nothing of the server').toBe(before);
+  await step('unhappy', 'Not now, from the code step', 'Not now closes the whole sheet onto the welcome as it was, as on the first step (S52\'s rule). Nothing changes on this phone.');
+});
+
+test('[J22h] five wrong codes: while the pause holds a new email is not offered, and the line says why (P8a critics S1)', async ({ app, record }) => {
+  test.setTimeout(120_000);
+  const step = journey(record, 'J22', 'sign-in', 80, 'J22-08');
+  allowConsoleError(app, /status of 403/);
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  m.auth('verify', () => ({ status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } }));
+  await toCodeStep(app);
+  const field = app.getByLabel('Code', { exact: true });
+  for (const code of ['111111', '222222', '333333', '444444']) {
+    await field.fill(code);
+    await expect(app.getByText("That code didn't match. Check the newest email, or send a new one.")).toBeVisible();
+    await expect(field).toHaveValue('');
+  }
+  await field.fill('555555');
+  await expect(app.getByText('Your letters are safe. You can try a code again in 15 minutes.')).toBeVisible();
+  await expect(app.getByText('A new email does not end the wait. Use Apple or Google instead.')).toBeVisible();
+  await expect(btn(app, 'Send a new email')).toHaveCount(0);
+  await expect(app.getByText('You can send another in a minute.')).toHaveCount(0);
+  await expect(field).not.toBeEditable();
+  await expect(btn(app, 'Use a different email')).toBeVisible();
+  await expect(btn(app, 'Not now')).toBeVisible();
+  expect(m.calls.filter((c) => c.path === '/auth/v1/verify'), 'five codes asked, then nothing more').toHaveLength(5);
+  expect(m.calls.filter((c) => c.path === '/auth/v1/otp'), 'only the first email').toHaveLength(1);
+  await step('unhappy', 'Paused after five wrong codes', 'The field waits for 15 minutes. A new email would not end the wait, so it is not offered; the line says so and points at Apple or Google. Another address and Not now still work.');
+});
+
+test('[J22i] the invite sheet\'s gate says why in its own words, and nothing above Agree and sync after a decline (P8a critics S4)', async ({ app, record }) => {
+  test.setTimeout(120_000);
+  const step = journey(record, 'J22', 'sign-in', 90);
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  consentGate(m, { terms: false, age: false, sensitive: false });
+  await openOn(app, '/?seed=asha');
+  await tab(app, 'Family').click();
+  await btn(app, 'Invite a co-parent').click();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app);
+  await expect(app.getByRole('heading', { name: 'Before your book syncs' })).toBeVisible({ timeout: 15_000 });
+  await btn(app, 'Not now').last().click();
+  await expect(app.getByText('Finish setting up your account to invite someone.')).toBeVisible({ timeout: 15_000 });
+  await expect(btn(app, 'Finish setting up')).toBeVisible();
+  await expect(app.getByText('Not set up yet')).toHaveCount(0);
+  await step('unhappy', 'Invite, setup not finished', 'The invite sheet says why in its own words, as the Family tab\'s card does: "Finish setting up your account to invite someone." Account keeps "Not set up yet" as its row value.');
+
+  await btn(app, 'Finish setting up').click();
+  await btn(app, 'Agree and continue').click();
+  await btn(app, 'Keep on this phone').click();
+  await expect(btn(app, 'Agree and sync')).toBeVisible({ timeout: 15_000 });
+  await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.')).toHaveCount(0);
+  await step('unhappy', 'Invite, after a decline', 'Nothing above "Agree and sync": the decline was the person\'s own choice, and the step it opens shows every registered line before anything is recorded.');
 });

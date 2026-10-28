@@ -28,6 +28,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
+import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -292,6 +293,12 @@ export function LinkText({ label, onPress }: { label: string; onPress: () => voi
  * Shows `children` only when the account can use server features (signed in,
  * consent complete, sync on). Otherwise the one next step: sign in, finish
  * the consent sheets, turn sync back on, or retry when offline.
+ *
+ * The gate says why in the sheet's own words, as a sentence about what the person was doing (P8a critics S4):
+ * "Finish setting up your account to invite someone." in the invite sheet, "Finish setting up your account
+ * first." when joining or leaving. Account's row value ("Not set up yet") stays on Account. After a decline the
+ * gate shows nothing above "Agree and sync": counsel's decline line would read as a question about a choice
+ * already made, and the step it opens shows every registered line.
  */
 export function AccountGate({
   children,
@@ -324,9 +331,10 @@ export function AccountGate({
   // Consent still missing, or (BL-347) the claim screen was never answered: one way back to it.
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
   if (s.status === 'needsConsent' || claiming) {
+    const reason = claiming ? authCopy.claim.waiting : trigger === 'invite_create' ? familyCopy.card.finishSetup : familyCopy.errors.consent_needed;
     return (
       <View className="gap-4">
-        <SheetBody muted>{claiming ? authCopy.claim.waiting : g.sync.waiting}</SheetBody>
+        <SheetBody muted>{reason}</SheetBody>
         <Button size="lg" fullWidth label={g.finishSetup} onPress={() => router.push('/sign-in/consent')} />
       </View>
     );
@@ -337,10 +345,9 @@ export function AccountGate({
   const sc = copy.sensitiveConsent;
   if (!offline) {
     // Declined earlier ("Keep on this phone"): "Agree and sync" opens the sensitive-data step with its words
-    // (S55, LEGAL-REQ-006), where the answer is recorded; consent is never given here in one tap.
+    // (S55, LEGAL-REQ-006), where the answer is recorded; consent is never given here in one tap. Nothing above it.
     return (
       <View className="gap-4">
-        <SheetBody muted>{sc.declineHelp}</SheetBody>
         <Button size="lg" fullWidth label={sc.agreeButton} onPress={() => router.push({ pathname: '/sign-in/consent', params: { step: 'sensitive' } })} />
       </View>
     );

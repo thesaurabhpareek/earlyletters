@@ -14,6 +14,13 @@
  * "Open Mail" bordered, then the quiet buttons; "Trouble signing in?" opens its help line in place.
  * Motion: a wrong code clears and refocuses the field, and its line fades in (swapMs, ErrorLine);
  * no shake, no red, no haptic.
+ *
+ * While the email is on its way, "Your letters are safe on this phone." sits under the field, and a
+ * quiet "Not now" at the foot closes the sheet and changes nothing on this phone, as on the first step
+ * (P8a critics S2). After five wrong codes the pause (S01's rule, errors.logic codeEntryPause; the
+ * server's own limit still holds) is read here from the same in-memory list: while it holds, the field
+ * waits, "Send a new email" is not offered (a new email does not end the pause), and the line under
+ * the error says so and points at Apple or Google. When it lifts, all of it comes back (P8a critics S1).
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -25,12 +32,12 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { authCopy } from '@/lib/auth/copy';
 import { EMAIL_CODE_LENGTH, RESEND_WAIT_MS } from '@/lib/auth/email';
-import { looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
+import { codeEntryPause, looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
-import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
+import { getPendingEmail, setPendingEmail, wrongCodeTimes } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
-import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +60,7 @@ function SentTo({ email }: { email: string }) {
 
 export default function CodeStep() {
   const auth = useAuth();
+  const close = useCloseSheet();
   const c = useColors();
   const ready = useFontsReady();
   const k = authCopy.code;
@@ -82,7 +90,19 @@ export default function CodeStep() {
 
   const canResend = sentAt === null || now >= sentAt + RESEND_WAIT_MS;
   const address = email.trim();
-  const paused = error === 'code_paused';
+  // Read at every render, so the pause shows from the fifth wrong code on; `now` only schedules the render when it lifts.
+  const pause = codeEntryPause(wrongCodeTimes(address), Date.now());
+  const paused = pause.paused;
+
+  // Re-render when the pause lifts, so the field, the line and "Send a new email" come back on their own.
+  useEffect(() => {
+    if (pause.until === null) return;
+    const t = setTimeout(() => setNow(Date.now()), Math.max(0, pause.until - Date.now()) + 50);
+    return () => clearTimeout(t);
+  }, [pause.until]);
+  useEffect(() => {
+    if (!paused && error === 'code_paused') setError(null);
+  }, [paused, error]);
 
   const verify = async (value: string) => {
     if (busy || inFlight.current || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
@@ -143,7 +163,7 @@ export default function CodeStep() {
     }
   };
 
-  const message = authErrorMessage(error);
+  const message = authErrorMessage(paused ? 'code_paused' : error);
 
   return (
     <SheetFrame
@@ -235,7 +255,19 @@ export default function CodeStep() {
         </View>
       </View>
 
-      <ErrorLine message={message} />
+      {/* While waiting, the one thing that is true whatever happens with the email (errors.network's first sentence). */}
+      {message ? (
+        <ErrorLine message={message} />
+      ) : (
+        <Text variant="subhead" tone="muted">
+          {k.lettersSafe}
+        </Text>
+      )}
+      {paused ? (
+        <Text variant="subhead" tone="muted">
+          {k.pausedOtherWay}
+        </Text>
+      ) : null}
       {note && !message ? (
         <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">
           {note}
@@ -246,8 +278,9 @@ export default function CodeStep() {
         {Platform.OS === 'ios' && (
           <Button size="lg" fullWidth variant="outline" label={k.openMail} onPress={() => void Linking.openURL('message:').catch(() => {})} />
         )}
-        <QuietButton label={k.resend} onPress={() => void resend()} disabled={busy || !canResend} />
-        {!canResend && (
+        {/* While paused a new email cannot help, so it is not offered; it returns when the pause lifts. */}
+        {paused ? null : <QuietButton label={k.resend} onPress={() => void resend()} disabled={busy || !canResend} />}
+        {!paused && !canResend && (
           <Text variant="footnote" tone="muted" className="text-center">
             {k.resendWait}
           </Text>
@@ -267,6 +300,8 @@ export default function CodeStep() {
             {copy.auth.noEmailHelp}
           </Text>
         ) : null}
+        {/* S52's rule: Not now closes the sheet and changes nothing on this phone. It waits while a code is checked. */}
+        <QuietButton label={authCopy.sheet.later} onPress={close} disabled={busy} />
       </View>
     </SheetFrame>
   );

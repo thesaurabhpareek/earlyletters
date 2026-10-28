@@ -120,6 +120,15 @@ const KEPT: Record<string, string> = {
   'account.cancel': 'Cancel',
 };
 
+/**
+ * Added by the P8a critics' pass fixes (docs/design/reviews/P8A_CRITICS_PASS_2026-10-28.md S1 and S2, the coordinator's
+ * rulings; the spec lines are P7-7's to add). `lettersSafe` is errors.network's first sentence, the same words.
+ */
+const CRITICS: Record<string, string> = {
+  'code.lettersSafe': 'Your letters are safe on this phone.',
+  'code.pausedOtherWay': 'A new email does not end the wait. Use Apple or Google instead.',
+};
+
 /** RET in chapter 7: no longer shown, and every reader was a P8 file, so P8a deletes them (section 6). */
 const RETIRED = ['code.sentTo', 'consent.age.title', 'consent.age.help'];
 
@@ -186,6 +195,14 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
 
   it('keeps every KEEP row as it was', () => {
     for (const [key, words] of Object.entries(KEPT)) expect(at(key), key).toBe(words);
+  });
+
+  it('has the lines the critics\' fixes added, word for word; the waiting line is errors.network\'s first sentence', () => {
+    for (const [key, words] of Object.entries(CRITICS)) expect(at(key), key).toBe(words);
+    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(true);
+    // The pause line points at the same other ways in as the rate-limit line.
+    expect(authCopy.code.pausedOtherWay).toMatch(/Use Apple or Google/);
+    expect(authCopy.errors.rate_limited).toMatch(/Use Apple or Google/);
   });
 
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {
