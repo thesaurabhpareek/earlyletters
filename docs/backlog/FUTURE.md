@@ -1,5 +1,8 @@
 # Future roadmap: v1.0.1 to v1.3, one ranked list
 
+> **Superseded in part.** D-100 put sign-in, sync, co-parent sharing and recording backup in v1.0, and D-101 set the v1.0 scope in PRD V2 `docs/prd/v2/08-delivery.md`.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: backlog-consolidation PM (merged by the coordinator). Version 1, 3 Oct 2026 (evening). Proposal: nothing here changes a founder decision; where the ranking departs from one, it says so and the question is escalated (DEBATES Q-011).
 
 Built from the five lead files, which keep the detail (problem, evidence, solution, legal, metric) for every item:
