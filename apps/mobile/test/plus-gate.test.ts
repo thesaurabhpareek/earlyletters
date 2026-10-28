@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, keepSheetView, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -45,6 +45,30 @@ describe('[S22] what the Keep sheet says', () => {
     // A letter whose words arrived later (task #53): only its words wait, on the letter, signed in or not.
     for (const synced of [false, true]) expect(keepSheetView({ ...base, heldOn: 'letter', synced }).heldNote).toBe(k.heldNoteLetter);
     expect(keepSheetView({ ...base, lapsed: true }).body).toBe(k.lapsedBody);
+  });
+
+  it('the sheet draws the words keepSheetView chose, each in its own place (#296; lens B B2 on #312)', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    // Body under the title, the held note under it (trust copy, subhead), the note under See Plus: a swap fails here.
+    expect(gate).toMatch(/<Text variant="body">\{view\.body\}<\/Text>/);
+    expect(gate).toMatch(/<Text variant="subhead" tone="muted" testID="plusGate\.heldNote">\s*\{view\.heldNote\}\s*<\/Text>/);
+    expect(gate).toMatch(/testID="plusGate\.note">\s*\{view\.note\}\s*<\/Text>/);
+    for (const v of ['body', 'heldNote', 'note']) expect(gate.match(new RegExp(`\\{view\\.${v}\\}`, 'g')), v).toHaveLength(1);
+    // The sentences that depend on the state never come straight from the copy: only through keepSheetView.
+    expect(gate).not.toMatch(/\bk\.(body|lapsedBody|heldNote|heldNoteLetter|heldNoteSynced|offline|offlineLetter)\b/);
+    expect(gate).not.toMatch(/\bg\.(unavailable|needsNewerIos)\b|billingCopy\.gate\.(unavailable|needsNewerIos)|keepGate\.(body|lapsedBody|heldNote|offline)/);
+  });
+
+  it('the sheet renders only its own words: never a renewal line, a plan, a trial or a price (lens B B1 on #312)', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    const refs = [...new Set(gate.match(/\b(?:billingCopy|copy|k|g)\.[A-Za-z]+(?:\.[A-Za-z]+)*/g) ?? [])].sort();
+    expect(refs).toEqual(['billingCopy.gate.opening', 'billingCopy.keepGate', 'billingCopy.keepGate.heldChip', 'copy.common.continueButton', 'k.holdButton', 'k.redeemLink', 'k.seePlus', 'k.title']);
+    // One alias only (k is keepGate), no other way into the copy, and the plan is read for its state, never its words.
+    expect([...gate.matchAll(/=\s*billingCopy\b[^;]*;/g)].map((m) => m[0])).toEqual(['= billingCopy.keepGate;']);
+    expect(gate).not.toMatch(/billingCopy\s*\[|\}\s*=\s*billingCopy|\b(store|plan)\.(renewal|trial|monthly|yearly|annual|payment|promise|subtitle)\b|@scribe\/content/);
+    expect([...new Set(gate.match(/\bplan\.[A-Za-z]+/g) ?? [])].sort()).toEqual(['plan.plusOn', 'plan.storeSupport']);
+    // So the renewal and trial words exist in content, and the sheet cannot reach them.
+    expect(billingCopy.store.renewal.length).toBeGreaterThan(0);
   });
 
   it('offline keeps See Plus and says it needs a connection; with no store on the device only Keep it here is offered', () => {
@@ -78,16 +102,24 @@ describe('[S22] the held letter on the sheet is the person\'s own, read from thi
   it('shows its own first words, its dateline and signature, with the Waiting chip, as one VoiceOver element', () => {
     expect(heldWords(ASHA_SAID)).toBe('Asha, today you held the spoon by yourself. You mostly painted your face with it.');
     const label = heldCardLabel(HELD);
-    expect(label).toBe(`To Asha, Month 7. ${heldWords(ASHA_SAID)}. From Mama. ${k.heldChip}`);
+    // The words end in a full stop already: no second one ("too.. From Mama", lens B B6 on #312).
+    expect(label).toBe(`To Asha, Month 7. ${heldWords(ASHA_SAID)} From Mama. ${k.heldChip}.`);
+    expect(label).not.toMatch(/\.\./);
     expect(label).not.toMatch(/·/); // VoiceOver never reads the separator
+    // Words that end without one get one; a question or an exclamation keeps its own mark.
+    expect(heldCardLabel({ ...HELD, words: 'You found your toes' })).toBe(`To Asha, Month 7. You found your toes. From Mama. ${k.heldChip}.`);
+    expect(heldCardLabel({ ...HELD, words: 'Did you hear the rain?' })).toBe(`To Asha, Month 7. Did you hear the rain? From Mama. ${k.heldChip}.`);
+    expect(heldCardLabel({ ...HELD, words: 'You laughed!' })).not.toMatch(/!\./);
     expect(k.heldChip).toBe('Waiting');
     // Tilted on paper at default sizes; held still at accessibility sizes.
     expect(heldCardTilt(false)).toBe('-2deg');
     expect(heldCardTilt(true)).toBe('0deg');
   });
 
-  it('Review passes the letter as it would be kept, and the sheet draws its words in a two-line excerpt', () => {
-    expect(read('app/review.tsx')).toMatch(/held=\{\{ \.\.\.header, words: finalText \}\}/);
+  it('Review passes the words that wait as stored, never its own unsaved changes, and the sheet draws them in two lines', () => {
+    const review = code('app/review.tsx');
+    expect(review).toMatch(/held=\{\{ \.\.\.header, words: storedWords\(later \?\? getDraft\(draft\.id\) \?\? draft\) \}\}/);
+    expect(review).not.toMatch(/held=\{\{[^}]*finalText/);
     const gate = code('components/child/plus-gate.tsx');
     expect(gate).toMatch(/<ExcerptFade text=\{heldWords\(held\.words\)\} lines=\{2\} variant="letterBody"/);
     expect(gate).toMatch(/accessibilityLabel=\{heldCardLabel\(held\)\}/);
@@ -137,10 +169,16 @@ describe('[S22] Keep it here for now: the draft is held, and Tonight shows it wa
     const review = code('app/review.tsx');
     const hold = review.slice(review.indexOf('onHold={() => {'), review.indexOf('onPlus={'));
     expect(hold.match(/holdDraft\(/g)).toHaveLength(1);
-    expect(hold).toMatch(/if \(!later\) holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\);/);
+    expect(hold).toMatch(/const outcome = holdOnce\(holding, \(\) => \(later \? true : holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\)\)\);/);
+    // A second tap does nothing more; only a hold that took is counted; the sheet and Review close once.
+    expect(hold).toMatch(/if \(outcome === 'again'\) return;\s*if \(outcome === 'held'\) track\('letter_held', \{ letters_kept: Math\.min\(1000, gate\.lettersKept\) \}\);\s*router\.back\(\);/);
+    expect(hold.match(/router\.back\(\)/g)).toHaveLength(1);
+    expect(review).toMatch(/const holding = useRef\(false\);/);
     // The only analytics on Hold: the existing letter_held count (no words, no name).
     expect([...hold.matchAll(/track\(([^;]*)\);/g)].map((m) => m[1])).toEqual(["'letter_held', { letters_kept: Math.min(1000, gate.lettersKept) }"]);
     expect(hold.indexOf('holdDraft(')).toBeLessThan(hold.indexOf('router.back()'));
+    // Holding never lets the letter go (lens B B1 on #312): no discard, delete or clear on this path.
+    expect(hold).not.toMatch(/discard|Discard|delete|Delete|remove|clear|finishDiscard|setGate/);
     // The destination is the one save() was called with, set before the gate is asked.
     const save = review.slice(review.indexOf('const save = async'), review.indexOf('const keepRecordingOnly = async'));
     expect(save).toMatch(/heldInBook\.current = inBook;/);
@@ -168,6 +206,55 @@ describe('[S22] Keep it here for now: the draft is held, and Tonight shows it wa
     const typed = store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'Two teeth today.' });
     expect(store.holdDraft(typed.id, { inBookChoice: false })).toBe(true);
     expect(store.getDraft(typed.id)!.inBookChoice).toBe(false);
+  });
+
+  it('Keep it here for now runs once: a double tap closes once and counts once (lens B B3 on #312)', () => {
+    const guard = { current: false };
+    let holds = 0;
+    const hold = () => {
+      holds++;
+      return true;
+    };
+    expect(holdOnce(guard, hold)).toBe('held');
+    expect(holdOnce(guard, hold)).toBe('again');
+    expect(holdOnce(guard, hold)).toBe('again');
+    expect(holds).toBe(1);
+  });
+
+  it('a hold that does not take, or throws, still closes but is not counted, and the draft stays as it was (lens B B4)', () => {
+    expect(holdOnce({ current: false }, () => false)).toBe('not_held');
+    expect(
+      holdOnce({ current: false }, () => {
+        throw new Error('disk full');
+      }),
+    ).toBe('not_held');
+    // The store says false for a draft it no longer has; Tonight then has no card for it, and nothing was counted.
+    expect(store.holdDraft('0199a5b0-0000-7000-8000-999999999999', { inBookChoice: true })).toBe(false);
+    // A draft that was not marked held is Tonight's ordinary card, with its words, never "Waiting to be kept."
+    const d = store.createDraft({ childId: asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'You rolled over twice.' });
+    const card = draftCard(store.getDraft(d.id)!, new Date(2026, 9, 17, 20, 30));
+    expect(card.state).toBe('typed');
+    expect(card.line).not.toBe(en.tonight.draft.held);
+    expect(card.words).toBe('You rolled over twice.');
+  });
+
+  it('edited in Review, then held: the card shows the stored words, the ones Tonight shows (lens B B5 on #312)', () => {
+    const d = store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: 'file:///Documents/asha-spoon.m4a', audioDurationMs: 9000 });
+    store.setDraftTranscript(d.id, ASHA_SAID);
+    // Review's finalText after an edit in place: never stored by a hold.
+    const editedInReview = 'Asha, today you held the spoon all by yourself.';
+    expect(store.holdDraft(d.id, { inBookChoice: true })).toBe(true);
+    const held = store.getDraft(d.id)!;
+    expect(held.rawTranscript).toBe(ASHA_SAID); // the edit did not reach the draft
+    const words = storedWords(held);
+    expect(words).toBe(heldWords(ASHA_SAID));
+    expect(words).not.toContain('all by yourself');
+    expect(words).not.toBe(heldWords(editedInReview));
+    // The same words Tonight's held card shows, and the same a reopened Review starts from (its raw transcript).
+    expect(draftCard(held, new Date(2026, 9, 17, 20, 30)).words).toBe(words);
+    // A typed draft: its typed words; a letter whose words arrived later: its stored words (in typedText).
+    expect(storedWords({ typedText: 'Two teeth today.', rawTranscript: null })).toBe('Two teeth today.');
+    expect(storedWords({ typedText: null, rawTranscript: null })).toBe('');
   });
 
   it('signed out, holding queues nothing to leave the phone', () => {

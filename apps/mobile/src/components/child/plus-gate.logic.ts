@@ -15,10 +15,15 @@
  * Plus", which stays and tries again. Never a price, a trial, a countdown or a count of what is left (D-083).
  *
  * The held letter itself is drawn at the top (S22 Visual): its dateline, its own words in two lines that end in a
- * fade, "From Mama" and the "Waiting" chip. Its words are read from this phone; nothing is sent to show them.
+ * fade, "From Mama" and the "Waiting" chip. Its words are the ones stored on this phone (`storedWords`): what Tonight's
+ * card and a reopened Review start from, never this Review's unsaved changes. Nothing is sent to show them.
+ *
+ * "Keep it here for now" runs once (`holdOnce`): a second tap in the same moment does nothing, and a hold that fails
+ * still closes the sheet but is not counted as held.
  */
 import type { StoreViewSupport } from '../../../modules/scribe-store/types';
 import { billingCopy } from '@scribe/content';
+import { draftWords, spoken } from '@/components/tonight/draft-card.logic';
 
 export type HeldOn = 'tonight' | 'letter';
 
@@ -30,7 +35,7 @@ export type HeldLetter = {
   toSpoken: string;
   /** "From Mama". */
   from: string;
-  /** The letter's words as they would be kept (Review's finalText). */
+  /** The letter's words as stored on this phone (`storedWords`), the same words Tonight shows for it. */
   words: string;
 };
 
@@ -83,10 +88,37 @@ export function heldWords(words: string): string {
 
 /**
  * The held card is one element for VoiceOver: the dateline without its separator, every word of the letter (nothing
- * is cut for a screen reader), the signature and the chip, in reading order. No count, no date arithmetic.
+ * is cut for a screen reader), the signature and the chip, in reading order. No count, no date arithmetic. Joined the
+ * way Tonight's cards are (`spoken`): a part that already ends in a full stop, "!" or "?" gets no second one.
  */
 export function heldCardLabel(held: HeldLetter): string {
-  return [held.toSpoken, heldWords(held.words), held.from, k.heldChip].filter((part) => part.length > 0).join('. ');
+  return spoken([held.toSpoken, heldWords(held.words), held.from, k.heldChip]);
+}
+
+/**
+ * What waits, as stored: a typed draft's typed words, else the spoken draft's transcript; for a letter whose words
+ * arrived later, its stored words (later-words.logic puts them in `typedText`). Review's in-place edits, put-backs and
+ * view choice are not stored by a hold, so the card never shows them as if they waited.
+ */
+export function storedWords(d: { typedText?: string | null; rawTranscript?: string | null }): string {
+  return draftWords({ typedText: d.typedText ?? null, rawTranscript: d.rawTranscript ?? null }) ?? '';
+}
+
+export type HoldOutcome = 'held' | 'not_held' | 'again';
+
+/**
+ * "Keep it here for now", once. The guard is set before anything else runs, so a double tap is 'again' and the caller
+ * does nothing more (one close, one count). `hold` marks the draft held (store.holdDraft) and says whether it did; a
+ * false or a throw is 'not_held': the sheet still closes, the draft stays as it was, and nothing is counted.
+ */
+export function holdOnce(guard: { current: boolean }, hold: () => boolean): HoldOutcome {
+  if (guard.current) return 'again';
+  guard.current = true;
+  try {
+    return hold() ? 'held' : 'not_held';
+  } catch {
+    return 'not_held';
+  }
 }
 
 /**

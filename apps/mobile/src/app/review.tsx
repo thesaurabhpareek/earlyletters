@@ -100,6 +100,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -448,6 +449,8 @@ export default function Review() {
   // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
   // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
   const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
@@ -675,13 +678,17 @@ export default function Review() {
         lapsed={gate.decision.lapsed}
         lettersKept={gate.lettersKept}
         heldOn={later ? 'letter' : 'tonight'}
-        held={{ ...header, words: finalText }}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
         onHold={() => {
           // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
           // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
-          // only its words wait, on the letter, so there is no draft to hold.
-          if (!later) holdDraft(draft.id, { inBookChoice: heldInBook.current });
-          track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
           router.back();
         }}
         onPlus={() => setGate(null)} // the same Review again; the person taps Keep
