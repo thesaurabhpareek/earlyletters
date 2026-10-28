@@ -238,7 +238,7 @@ States: no empty, loading or error state.
 
 Acceptance:
 - [ ] The product name is never typed in a font on this screen; the lockup comes from the registry and its accessibility label is the brand name.
-- [ ] Exactly one serif line (the descriptor), one filled button and the two quiet doors; no line drawing. The one state with no filled button is a phone whose invite just joined a book that has not arrived: a line says the book is on its way in place of "Begin the book" (S59, as built in #375).
+- [ ] Exactly one serif line (the descriptor), one filled button and the two quiet doors; no line drawing. The one state with no filled button is a phone whose invite just joined a book that has not arrived: a line says the book is on its way in place of "Begin the book", until the book is here or 30 seconds pass (S59, as built in #375).
 - [ ] "I already have a book" opens S52 over the welcome, and "I was invited" opens S59; closing either without a book returns to the lit welcome with the lamp at the same level (a sheet over a lit room holds its light, section 5.8).
 - [ ] A sign-in that brings a book to this phone lands on the Book, where the letters that came back and the restore line show first (5.8 row 13), never on Tonight.
 - [ ] From the gate to the welcome there is no frame of unlit paper (the lamp keeps its state through `persistKey`).
@@ -1330,7 +1330,7 @@ Visual: `sentToEmail` with the address in `text` and the rest in `textMuted`. Th
 
 Motion: a wrong code clears and refocuses the field and the line cross-fades in (150 ms); no shake, no haptic.
 
-States: waiting; wrong code; expired; paused 15 minutes (the field waits, "Send a new email" is not offered, because a new email does not end the wait, and a second line points at Apple or Google: `code.pausedOtherWay`, "A new email does not end the wait. Use Apple or Google instead."; the P8a critics' pass S1, as built in #372); rate limited; offline; restarted (asks the address); the link opened.
+States: waiting; wrong code; expired; paused 15 minutes; rate limited; offline; restarted (asks the address); the link opened.
 
 Acceptance:
 - [ ] The address the email went to is on screen.
@@ -1469,7 +1469,7 @@ Visual: a sheet at the large detent; no lamp inside it. Paste: the title, the fi
 
 Motion: views replace each other with a 200 ms cross-fade, never a push. Joined: the cover fades in (200 ms), holds 300 ms, then opens as on S08 (front cross-fades to the flyleaf with an 8 pt shift on `standard`); `success` once, when the join returns. "Open the book": the sheet dismisses natively, the app opens the Book tab on this book, and the Book's lamp **rises from 0 to 0.6 over `arriveMs` (1200 ms)** with the header settle (5a): the one slow arrival outside first run, because this is the second parent's first evening in the book. Reduce Motion: the cover shown open at once, one 200 ms fade, the lamp at 0.6 at once.
 
-States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (`consentBody`, or `needsSync`); joining; joined, book still coming (Close hands over to the welcome, which says "Asha's book is on its way to this phone." in place of "Begin the book", so a fresh phone is not left at a door that starts a second book; after 30 seconds, or when sync cannot reach the server, it says "Asha's book has not reached this phone yet.", offers Try again when a sync can run, and "Begin the book" returns; once the book is here the welcome hands over to the Book; the P8b critics' pass S2, as built in #375); joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
+States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (`consentBody`, or `needsSync`); joining; joined, book still coming (on a fresh phone Close hands over to the first-run welcome, which says "Asha's book is on its way to this phone." in place of "Begin the book", so the person is not left at a door that starts a second book; after 30 seconds, or when sync cannot bring the book (it is not running on this phone, or it cannot reach the server), it says "Asha's book has not reached this phone yet.", offers Try again while a sync can run, and "Begin the book" returns; when the child's name could not be read the lines say "The book"; once the book is here the welcome hands over to the Book; the P8b critics' pass S2, as built in #375); joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
 
 Acceptance:
 - [ ] Before sign-in, neither the child's name nor the inviter is shown (BL-322).
