@@ -42,7 +42,8 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.notConfigured': 'Signing in is not available right now. Your letters are safe on this phone.',
   'errors.network': 'Your letters are safe on this phone. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
-  // Led with "Your letters are safe." by the coordinator's ruling on the spec-owner note (28 Oct); the table's words follow.
+  // Led with "Your letters are safe." as the S52 table now words them (amended 28 Oct, #360); the earlier words follow.
+  'errors.not_available': "Your letters are safe. This way of signing in isn't available right now. Try another way.",
   'errors.code_paused': 'Your letters are safe. You can try a code again in 15 minutes.',
   'errors.rate_limited': 'Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
   'errors.provider': 'Your letters are safe. That did not work this time. Try again, or try another way.',
@@ -77,7 +78,6 @@ const KEPT: Record<string, string> = {
   'sheet.lastMethod.apple': 'Last time you used Apple.',
   'errors.wrong_code': "That code didn't match. Check the newest email, or send a new one.",
   'errors.invalid_email': "That email doesn't look quite right.",
-  'errors.not_available': "Your letters are safe. This way of signing in isn't available right now. Try another way.",
   'errors.under_18': '{app} is currently for adults 18 and over.',
   'email.title': 'Continue with email',
   'email.label': 'Email',
@@ -206,10 +206,10 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
   });
 
   it('leads with the reassurance after every service- or network-caused failure; input errors keep the table words (S52)', () => {
-    // The rule (coordinator's ruling on #310's spec-owner note, 28 Oct; the founder may reverse it): an error the
-    // person did not cause (offline, the service, a lost session, setup) says the letters are safe as its first
-    // sentence. An error the person can fix by typing (a wrong or expired code, an address) keeps the table's words.
-    // `unknown` keeps the reassurance second. Every error is in exactly one list, so a new key must be placed.
+    // The rule, as the amended S52 table words it (28 Oct, #360): an error the person cannot fix by typing (offline,
+    // the provider, a lost session, setup, or a pause the service sets after too many emails or codes) says the
+    // letters are safe as its first sentence. An error fixed by typing again (a wrong or expired code, an address)
+    // keeps its words. `unknown` says it second. Every error is in exactly one list, so a new key must be placed.
     const SAFE = /^Your letters are safe(?: on this phone)?\./;
     const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'code_paused'];
     const SECOND = ['unknown'];

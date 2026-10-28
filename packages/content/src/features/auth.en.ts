@@ -97,10 +97,9 @@ export const authCopy = {
   },
 
   errors: {
-    // After an offline or failed attempt the reassurance comes first (VOICE, the Error row). The service- and
-    // network-caused sign-in errors lead with "Your letters are safe." (coordinator's ruling on #310's spec-owner
-    // note, 28 Oct; the founder may reverse it); the input errors (wrong_code, expired, invalid_email) keep the
-    // table's words, and unknown keeps the reassurance second.
+    // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
+    // network-caused errors say the letters are safe first (VOICE, the Error row); input errors (wrong_code,
+    // expired, invalid_email) keep their words; unknown says it second.
     network: 'Your letters are safe on this phone. Sign in once you are back online.',
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
