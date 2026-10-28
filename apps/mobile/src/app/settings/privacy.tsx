@@ -76,10 +76,10 @@ export default function PrivacySettings() {
 
         <NeverList />
 
+        {/* Only documents the website serves (P6b critics' M1): it took /health-privacy and /subprocessors down (#169), and
+            their content sits inside /privacy. Their content keys wait for S14 and #163. */}
         <ListSection title={p.documentsTitle}>
           <ListRow accessibilityRole="link" title={p.privacyPolicyLink} trailing="chevron" onPress={open(brand.web.privacy)} />
-          <ListRow accessibilityRole="link" title={p.healthPrivacyLink} trailing="chevron" onPress={open(brand.web.healthPrivacy)} />
-          <ListRow accessibilityRole="link" title={p.subprocessorsLink} trailing="chevron" onPress={open(brand.web.subprocessors)} />
           <ListRow accessibilityRole="link" title={p.termsLink} trailing="chevron" onPress={open(brand.web.terms)} />
         </ListSection>
       </ScrollView>
