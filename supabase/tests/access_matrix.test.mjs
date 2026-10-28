@@ -315,6 +315,7 @@ const HELPERS = {
   'is_child_member(uuid)': [`select public.is_child_member('${CHILD}') v`, [true, true, true, false, true, '42501']],
   'is_child_parent(uuid)': [`select public.is_child_parent('${CHILD}') v`, [true, true, false, false, false, '42501']],
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
+  'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/${uuid7()}.jpg') v`, [false, false, false, false, false, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],

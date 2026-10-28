@@ -29,6 +29,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 23 | `20261023040000_entries_machine_edits_check.sql` | **Pending** | A letter's `machine_edits` must be an array (section "File 23") |
 | 24 | `20261023050000_consent_grants_tightening.sql` | **Pending** | The consent tables' grants match their row security (section "File 24") |
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
+| 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -1127,3 +1128,12 @@ select has_table_privilege('anon', 'public.policy_versions', 'SELECT')
 Then "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21's `search_path` query gives 0 rows (this file adds no function). The deploy job's smoke: before step 8's versions are published it reports `none published`, which is expected; only `anonymous read refused` (401 or 403) means grants are missing, that is, file 25 is not applied. Advisors: none new expected.
 
 **Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. What a rollback would mean: on a project made with the old automatic grants (`early-letters`), granting SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN back on every table to all three roles, the 86 function grants to service_role and the old defaults, which reopens the TRUNCATE gap on 13 tables. On a new project there is nothing to go back to: its defaults never had those grants, and without this file the app cannot read or write at all.
+
+## File 26: pg_temp last on the escrow role, and purged photos stay purged (28 Oct 2026, data-architect)
+
+`20261028000000_pg_temp_last_and_purged_photos.sql`. Re-check of the closed PR #51 against develop. Needs founder `approve-migration` (D-041). Apply after File 25. Idempotent; changes no row; no new column.
+
+- **pg_temp last.** Finding 1 of #51 is already closed in the end state: File 13 (`20261015000000`, section 7) re-pins every earlier function and every later file writes `pg_catalog, public, pg_temp`. No function is altered here. The one setting left was the role default of `escrow_svc`, now `pg_catalog, public, pg_temp`. `supabase/tests/pg_temp_search_path.test.mjs` reads `pg_proc.proconfig` for every definer function and every function a policy calls, and `pg_db_role_setting` for role defaults.
+- **Purged photos.** `public.photo_entry_is_purged(text)` (definer, `authenticated` only) answers true when the path's file name is a letter id this author erased (`sync_private.erasure_recorded`). `entry_photos_author_insert` adds `and not public.photo_entry_is_purged(name)`. A refused upload is a 403 from Storage.
+- **Check after applying (SQL Editor):** `select rolconfig from pg_roles where rolname = 'escrow_svc';` shows `search_path=pg_catalog, public, pg_temp`; `select pg_get_expr(polwithcheck, polrelid) from pg_policy where polname = 'entry_photos_author_insert';` contains `photo_entry_is_purged`.
+- **Rollback:** `alter role escrow_svc set search_path = pg_catalog, public;` and restate the File 5 policy without the last condition; `drop function public.photo_entry_is_purged(text);` after the policy.
