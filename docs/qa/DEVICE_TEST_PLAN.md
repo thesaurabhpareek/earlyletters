@@ -269,7 +269,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - Focus lands on "Keep adding to Asha's book"; swiping back reaches the held letter as one element ("To Asha, Month 7", its words, "From Mama", "Waiting"); nothing of Review behind the sheet is reachable. The escape gesture returns to the letter in Review with nothing held or kept.
   - "Keep it here for now" closes the sheet and Review; Tonight's card for that letter reads "Waiting to be kept." and "Keep it".
   - Double-tap "Keep it here for now" quickly: you stay on Tonight, with one card for the letter. The second tap must not land on the tab bar under the sheet's bottom edge. On the web it lands on the Book tab. On iOS the sheet's dismiss animation probably swallows it, but that is unverified, so record where the second tap goes (#312 lens B delta).
-  - With StoreKit: See Plus opens Apple's subscription view over the sheet; after a sandbox purchase the purchase confirmation opens, the sheet goes and the same Review shows for the person to tap Keep. Offline: the offline line shows under See Plus, which stays. Record any presentation that does not open.
+  - With StoreKit: See Plus opens Apple's subscription view over the sheet; after a sandbox purchase the purchase confirmation opens, the sheet goes and the same Review shows for the person to tap Keep. Offline: See Plus stays, and the offline line appears. S1-23 runs at AX5, so the line is not under See Plus: it is a line of the words in the scroll, right after the held note. After the tap the sheet scrolls it into view, and VoiceOver announces it. At the default size it sits under See Plus in the footer (#370). Record any presentation that does not open.
 - **V-07 Apple's subscription sheet:** prices read with their periods (Apple's view, ASC doc D-10).
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
 - **V-09 Read together:** Previous, Next and Close reachable; playback state announced.
@@ -375,9 +375,9 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Steps:**
   - (a) With two books on the phone, open Settings > Avi's book > Hide this book, and confirm.
   - (b) Read Settings under Children.
-  - (c) Open Hidden books and tap "Show this book again".
+  - (c) Open Hidden books and tap "Show this book again". Then go back to Settings.
   - (d) Repeat (a) to (c) with VoiceOver on, then at AX5. With VoiceOver, set the rotor to Headings on Hidden books.
-  - (e) Hide the book that is open (the one the switcher shows), then show it again from Hidden books.
+  - (e) Hide the book that is open (the one the switcher shows), then show it again from Hidden books, without choosing another book in the switcher in between. Choosing one makes that book the open one, so this check would fail for the wrong reason.
   - (f) Month and birthday messages for a hidden book (the only reminders that follow a book's own switch; evening reminders are not per book). This is covered by the planner test in `apps/mobile/test/hidden-books.test.ts`: a hidden book leaves the reminders' book list, and comes back with "Show this book again". There is no phone step, because it needs a book whose month turns on the day of the run. If a drill book's month does turn tomorrow, hide it today and check that no message for it arrives.
 - **Expected:**
   - (a) Nothing is deleted.
@@ -394,7 +394,9 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Steps:** At AX3, then at AX5, on an SE 3 and on a 6.1-inch phone, open the Keep sheet from a letter's Keep in Review. Do it twice on each: once online, and once with Apple's store view unreachable (airplane mode, then tap See Plus so the sheet shows its offline note).
 - **Expected:**
   - "See Plus" and "Keep it here for now" are both fully on screen at the bottom and tappable, with nothing else pinned with them.
-  - The title and the line that says the letter is safe ("This one waits on this phone, on Tonight, exactly as it is, for as long as you like.") are on the first screen.
+  - At AX3, the title and the line that says the letter is safe ("This one waits on this phone, on Tonight, exactly as it is, for as long as you like.") are on the first screen, with both buttons.
+  - At AX5, the first lines of that line start on the first screen and the rest scrolls. On an SE the three-line "Keep it here for now" makes the footer more than half the screen.
+  - Offline, after tapping See Plus, the sheet scrolls the offline note into view, and VoiceOver announces it.
   - The offline note, the body, the held letter and "Redeem a code" scroll above the buttons.
   - Nothing is truncated.
   - VoiceOver reads the held note before either button.
