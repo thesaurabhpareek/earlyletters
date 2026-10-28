@@ -249,6 +249,56 @@ const RETIRED = [
 ];
 
 /**
+ * Deleted by P7 (38 RET-tracked keys, plus 2 approved unmarked ones that had no reader). RETIRED above is a keep-list,
+ * so nothing else would notice if a deleted word came back: this list does. Never reuse their words (strings.en.ts header).
+ */
+const DELETED = [
+  // RET, no reader on develop (P7)
+  'en.ageGate.body',
+  'en.ageGate.stopBody',
+  'en.ageGate.stopNote',
+  'en.onboarding.promise.body',
+  'en.onboarding.promise.recordingTitle',
+  'en.onboarding.promise.mishearTitle',
+  'en.onboarding.signsAs.body',
+  'en.onboarding.dictionary.languagesBody',
+  'features.speechConsent.note',
+  'features.speechConsent.footnote',
+  'en.tonight.subtitle',
+  'en.listen.ready.title',
+  'en.listen.ready.body',
+  'en.listen.ready.startButton',
+  'en.errors.storageLow.title',
+  'en.errors.storageLow.body',
+  'en.review.subtitle',
+  'en.review.trustLine',
+  'en.review.destination.privateHelp',
+  'en.book.empty.chapterTitle',
+  'en.book.empty.chapterBody',
+  'en.book.chapterSubtitle',
+  'en.reader.deletedBody',
+  'en.readTogether.endOfMonthAlt',
+  'en.familyTab.inviteNeedsSignIn',
+  // RET, freed by P6a, P6b and P8b (P7)
+  'en.onboarding.child.nameHelp',
+  'en.onboarding.child.birthdayHelp',
+  'en.children.add.body',
+  'en.childrenExtra.edit.born.offer',
+  'en.reader.preview',
+  'features.reminders.settings.eveningsHelp',
+  'features.reminders.settings.eveningHelp',
+  'en.settings.recordings.keepHelp',
+  'en.settings.export.body',
+  'features.export.screen.tooBigBody',
+  'en.settings.reminders.pauseLabel',
+  'en.familyTab.emptyTitle',
+  'en.familyTab.emptyBody',
+  // dead and unmarked, deleted with the coordinator's yes (P7)
+  'features.reminders.settings.pausedHelp',
+  'en.family.subtitle',
+];
+
+/**
  * Registered disclosure and claims text, word for word, as it stood on develop (P0 rule 3): every key that
  * docs/legal/in-app-disclosures.md quotes and that lives in packages/content. Sections 1 and 2, section 3
  * (billingCopy.store.*, every billingCopy.plan.* key, plus.legal.*), 3a (sign-in) and 3b (trust lines and the
@@ -431,6 +481,23 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     }
     // billingCopy.plan.annual sits beside plan.yearly until P7 (P0 rule 2).
     expect(typeof at('features.billing.plan.yearly')).toBe('string');
+  });
+
+  it('keeps the 40 keys P7 deleted deleted: a re-added leaf fails here', () => {
+    expect(DELETED).toHaveLength(40);
+    expect(new Set(DELETED).size).toBe(DELETED.length);
+    // A deleted key is in no keep-list, so the lists cannot disagree.
+    const kept = new Set([...RETIRED, ...CHANGED, ...ADDED, ...Object.keys(HELD), ...Object.keys(REGISTERED)]);
+    expect(DELETED.filter((k) => kept.has(k))).toEqual([]);
+    // errors.storageLow went as a whole block, so its parent is errors.
+    const WHOLE_BLOCK = 'en.errors.storageLow';
+    for (const key of DELETED) {
+      expect(at(key), key).toBeUndefined();
+      // The parent still exists, so a mistyped path cannot pass for a deleted one.
+      const parent = key.startsWith(`${WHOLE_BLOCK}.`) ? 'en.errors' : key.slice(0, key.lastIndexOf('.'));
+      expect(typeof at(parent), `${parent} for ${key}`).toBe('object');
+    }
+    expect(at(WHOLE_BLOCK)).toBeUndefined();
   });
 
   it('names who switches every held key', () => {

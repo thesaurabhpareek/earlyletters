@@ -3,7 +3,7 @@
  * Export words. `{app}` is the public name, filled from packages/brand by the export builder.
  *
  * Screen strings that already exist are reused from content:
- * `settings.export.title`, `.body`, `.button`, `.preparing`, `.ready`.
+ * `settings.export.title`, `.button`, `.preparing`, `.ready`.
  */
 export const exportCopy = {
   screen: {

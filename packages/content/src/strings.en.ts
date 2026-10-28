@@ -1245,7 +1245,7 @@ export const en = {
 // - settingsHome.helpLabel "Write to us" moved to settingsHome.helpValue; the row is "Help".
 // - storeListing beta paragraph and promotionalTextBeta: D-030, D-060.
 // - pendingCopy in apps/mobile/src/lib/copy.ts: every string now lives here; it is a thin re-export.
-// Still in use and due to retire when their screens change: settingsMore.remindersNotYet (reminders)
+// Unread today (no screen reads them), left for the dead-copy sweep: settingsMore.remindersNotYet (reminders)
 // and childrenExtra.plusNotYet (Plus gate).
 
 export type Strings = typeof en;
