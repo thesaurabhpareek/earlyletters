@@ -15,6 +15,8 @@ agents/evals/<class>/<task-id>/
   meta.json    { "id", "class", "source", "roles", "k" }
 ```
 
+A `reference/_remove.txt` lists files the reference deletes after the overlay, one path relative to the workdir per line; entries that resolve outside the workdir are ignored, and a typo'd entry deletes nothing silently, so check the grader still fails on the raw fixture. Candidates run as your user with your full environment and can write anywhere you can, so run them only on a machine you trust; graders get a minimal environment.
+
 `meta.id` and `meta.class` must match the directory names. `k` (1 to 50) is the number of trials. Symlinks in `fixture/` or `reference/` are rejected. A task with any problem is reported as malformed; it is never silently skipped.
 
 ## Commands

@@ -234,3 +234,27 @@ test("main exits 2 when no task matches, and the CLI file runs under node", asyn
     assert.equal(r.status, 0, r.stdout + r.stderr);
   } finally { rmSync(out, { recursive: true, force: true }); }
 });
+
+// Requirement: a reference may delete files via _remove.txt (drift-06 needs it), and an entry can never
+// reach outside the workdir. Without the deletion the task is unsolvable and validate reports it broken.
+test("validate: _remove.txt lets a deletion-only reference pass and cannot delete outside the workdir", () => {
+  const base = scratch();
+  const root = join(base, "tasks");
+  const dir = join(root, "toy", "rm-001");
+  mkdirSync(join(dir, "fixture"), { recursive: true });
+  mkdirSync(join(dir, "reference"), { recursive: true });
+  writeFileSync(join(dir, "task.md"), "Delete a.txt.\n");
+  writeFileSync(join(dir, "fixture", "a.txt"), "stale\n");
+  writeFileSync(join(dir, "reference", "_remove.txt"), "a.txt\n../outside.txt\n/etc/hostname\n");
+  writeFileSync(join(dir, "grader.mjs"),
+    'import { existsSync } from "node:fs"; import { join } from "node:path";\n' +
+    'export function grade({ workdir }) { return existsSync(join(workdir, "a.txt")) ? { pass: false, reason: "a.txt still there" } : { pass: true, reason: "removed" }; }\n');
+  writeFileSync(join(dir, "meta.json"), JSON.stringify({ id: "rm-001", class: "toy", source: "synthetic", roles: ["writer"], k: 1 }));
+  const outside = join(base, "outside.txt");
+  writeFileSync(outside, "keep\n");
+  const v = validateTask(discoverTasks(root, {})[0]);
+  assert.equal(v.status, "ok");
+  assert.deepEqual(v.reference.map((r) => r.outcome), ["pass", "pass", "pass"]);
+  assert.equal(readFileSync(outside, "utf8"), "keep\n");
+  rmSync(base, { recursive: true, force: true });
+});
