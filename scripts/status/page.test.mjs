@@ -271,7 +271,7 @@ test("fail closed: a later review the page cannot count raises a warning (Lens B
     `Review A at ${H7} (FAIL): see below`,
     `Lens B re-check at ${H7}\nM1 is not fixed.`,
     `Notes on the head\n\nDO NOT MERGE.`,
-  ]) assert.match(line([c(body, 1)]), /fewer than 2 counted passes|a later review is not a counted pass/, body);
+  ]) assert.match(line([c(body, 1)]), /fewer than 2 counted passes|read it\)/, body);
   // A machine note (another marker) is not a review and raises nothing.
   assert.doesNotMatch(line([c("<!-- merge-train -->\nQueued for the 14:00 window.", 1)]), /read it|fewer/);
 });
@@ -292,12 +292,31 @@ test("fail closed on any later trusted comment or 'Request changes' review (Lens
   for (const body of ["FAIL", "Blocking: data loss", "Hold this PR", "Not ready: M1 is open", "Changes needed", "Do not ship",
     "Found a data-loss bug in the purge path; fix first.", "Audit B: FAIL", "Critique (B): FAIL",
     "<!-- agent:security -->\nReview B: FAIL. Do not merge."]) {
-    assert.match(line([c(body, 1)]), /fewer than 2 counted passes|a later review is not a counted pass/, body);
+    assert.match(line([c(body, 1)]), /fewer than 2 counted passes|read it\)/, body);
   }
   for (const body of ["", "See inline comments."]) {
     const rc = { body, state: "CHANGES_REQUESTED", submitted_at: ago(1), user: { login: "owner" } };
-    assert.match(line([], [rc]), /fewer than 2 counted passes|a later review is not a counted pass/, `Request changes: "${body}"`);
+    assert.match(line([], [rc]), /fewer than 2 counted passes|read it\)/, `Request changes: "${body}"`);
   }
   // Known machine notes stay quiet, and an UNREAD note is never shown as a verdict.
   assert.doesNotMatch(line([c("<!-- journal -->\nRun 12 done.", 1), c("<!-- receipt run=3 -->", 1)]), /read it|fewer|UNREAD/);
+});
+
+test("Request changes in force anywhere, empty later reviews, and red team on head (Lens B, 28 Oct, at 89e9911)", () => {
+  const H7 = HEAD.slice(0, 7);
+  const pr = { number: 9, head: { sha: HEAD } };
+  const passes = [c(`## Review A at ${H7}: PASS`, 6), c(`## Review B at ${H7}: PASS`, 5)];
+  const rv = (state, h, body = "", who = "owner") => ({ body, state, submitted_at: ago(h), user: { login: who } });
+  const line = (reviews, later = []) => founderLine({ number: 9, classes: ["database"], ...verdictsOf(pr, [...passes, ...later], reviews, ME) });
+  // A Request changes review posted BEFORE the passes and never followed by an approval still blocks.
+  assert.match(line([rv("CHANGES_REQUESTED", 8)]), /Request changes review is still in force/);
+  // ...unless the same account later approves.
+  assert.doesNotMatch(line([rv("CHANGES_REQUESTED", 8), rv("APPROVED", 7)]), /read it|fewer/);
+  // A later review with an empty body (all inline comments) warns; an empty approval does not.
+  assert.match(line([rv("COMMENTED", 1)]), /a later review is not a counted pass/);
+  assert.doesNotMatch(line([rv("APPROVED", 1)]), /read it|fewer/);
+  // A red-team verdict on the merged head other than "ship" warns.
+  assert.match(line([rv("COMMENTED", 1, `<!-- red-team:${HEAD} -->\nVerdict: fix first`)]), /red team says fix first on the merged head/);
+  // A machine note that says do not merge is read.
+  assert.match(line([], [c("<!-- merge-train -->\nDo not merge: CI red.", 1)]), /read it/);
 });

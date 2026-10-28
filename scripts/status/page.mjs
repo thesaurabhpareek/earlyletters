@@ -170,21 +170,30 @@ export function verdictsOf(pr, comments, reviews, trusted) {
   const head = pr.head?.sha;
   const lens = [];
   let red;
+  // A "Request changes" review stays in force until the same account approves (or it is dismissed,
+  // which GitHub reports as state DISMISSED), wherever it falls in time.
+  const lastFormal = new Map();
+  for (const i of items) if (i.state === "APPROVED" || i.state === "CHANGES_REQUESTED") lastFormal.set(String(i.who).toLowerCase(), i.state);
+  const changesRequested = [...lastFormal.values()].includes("CHANGES_REQUESTED");
   for (const i of items) {
-    // A GitHub "Request changes" review blocks whatever its body says (often empty, or "See inline comments.").
-    if (i.state === "CHANGES_REQUESTED") { lens.push({ verdict: "CHANGES REQUESTED", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false }); continue; }
-    const r = parseVerdict(i.body);
+    const body = String(i.body ?? "");
+    if (i.state === "CHANGES_REQUESTED") { lens.push({ verdict: "CHANGES REQUESTED", sha: undefined, lens: lensOf(body), onHead: false, counted: false }); continue; }
+    const r = parseVerdict(body);
     if (r) { red = { verdict: r.verdict, sha: r.sha, onHead: sameSha(r.sha, head) }; continue; }
-    const c = countedPass(i.body);
+    const c = countedPass(body);
     if (c) { lens.push({ ...c, onHead: sameSha(c.sha, head), counted: true }); continue; }
-    const l = parseLens(i.body, pr.number);
-    if (l) { lens.push({ ...l, lens: lensOf(i.body), onHead: sameSha(l.sha, head), counted: false }); continue; }
+    const l = parseLens(body, pr.number);
+    if (l) { lens.push({ ...l, lens: lensOf(body), onHead: sameSha(l.sha, head), counted: false }); continue; }
     // Fail closed: every other trusted comment or review is kept as UNREAD so that, if it comes after
-    // the counted passes, it raises a warning. Only known machine notes are skipped; agent comments
-    // (<!-- agent:<handle> -->) are not, because an agent lane may post a review that way.
-    if (!MACHINE_NOTE.test(String(i.body ?? "").trimStart()) && String(i.body ?? "").trim()) lens.push({ verdict: "UNREAD", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false });
+    // the counted passes, it raises a warning. Skipped only: an approval with an empty body, and the
+    // known machine notes unless they hold a stop phrase. A review with an empty body (its content
+    // may be all inline comments, which this page does not fetch) is kept.
+    if (i.state === "APPROVED" && !body.trim()) continue;
+    if (MACHINE_NOTE.test(body.trimStart()) && !STOP_ANYWHERE.test(body.toLowerCase().replace(APOSTROPHES, "'"))) continue;
+    if (!body.trim() && !i.state) continue; // an empty issue comment says nothing
+    lens.push({ verdict: "UNREAD", sha: undefined, lens: lensOf(body), onHead: false, counted: false });
   }
-  return { lens, red };
+  return { lens, red, changesRequested };
 }
 
 const days = (from, now) => Math.floor((now - new Date(from)) / D);
@@ -227,7 +236,12 @@ export function founderLine(p) {
   // "Re-check: FAIL", "Hold this PR", a "Request changes" review) means a person must read it.
   const first = passes.length ? Math.min(...passes.map((v) => v.i)) : Infinity;
   const unread = p.lens.some((v, i) => i > first && !v.counted);
-  const warn = passes.length < 2 ? " (fewer than 2 counted passes on the merged head)" : unread ? " (a later review is not a counted pass: read it)" : "";
+  // The red-team verdict on the merged head must be "ship" if there is one; anything else is read by a person.
+  const redBlocks = p.red && p.red.onHead && String(p.red.verdict).toLowerCase() !== "ship";
+  const warn = passes.length < 2 ? " (fewer than 2 counted passes on the merged head)"
+    : p.changesRequested ? " (a Request changes review is still in force: read it)"
+    : redBlocks ? ` (red team says ${p.red.verdict} on the merged head: read it)`
+    : unread ? " (a later review is not a counted pass: read it)" : "";
   return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${warn}.`;
 }
 
