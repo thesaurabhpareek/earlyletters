@@ -119,7 +119,7 @@ Supabase > Authentication > Sign In / Providers > **Google**: enable.
 - **Skip nonce check: ON.** Required. The free Google sign-in library the app uses (`@react-native-google-signin/google-signin` 16.1.5, MIT) has no nonce parameter (Verified in its installed types), while Google's iOS SDK puts its own nonce in the ID token, which Supabase then cannot match. What still protects the exchange: Google's signature, the audience (only our client ids), and the token's one-hour life. The paid "Universal" module supports a nonce but is not open source, so it does not meet BRIEF decision 1. Revisit if the free module adds it.
 
 ### 3.5 Build settings
-Per EAS profile (section 8): `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the iOS client for that profile's bundle id). Without both, the Google button is hidden and the Google config plugin is left out of the build.
+Per EAS profile (section 8), not in the alpha profiles: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (the iOS client for that profile's bundle id). Without both, the Google button is hidden and the Google config plugin is left out of the build.
 
 ## 4. Email through Resend
 
@@ -251,14 +251,14 @@ If test 11.7 fails or Supabase changes the beta API, leave the flag off: that is
 
 ## 8. App build settings (environment variables)
 
-All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text") or in `eas.json` under `build.<profile>.env`. Locally, put them in `apps/mobile/.env.development.local` (git-ignored).
+All are public values, inlined at build time. Set them per profile as EAS environment variables (expo.dev > project > Environment variables, visibility "Plain text"), never in `eas.json` (the config tests and the preflight fail on a Supabase value there). For the alpha, follow `docs/release/TESTFLIGHT.md` step 9 for names and visibility: the `preview` environment, which both alpha builds read, holds only the Supabase URL, the publishable key and the code length, never a Google client id. Locally, for `expo start` or a development build only, put them in `apps/mobile/.env.development.local` (git-ignored), and move that file away before `preflight:testflight` or `preflight:alpha`: the preflight FAILs on any value in `apps/mobile/.env*` other than `EXPO_PUBLIC_APP_ENV`, `EXPO_PUBLIC_SERVER_FEATURES=off` and `EXPO_PUBLIC_ANALYTICS=off` (`apps/mobile/scripts/preflight-testflight.mjs` section 4).
 
 | Variable | Value | Without it |
 |---|---|---|
 | `EXPO_PUBLIC_SUPABASE_URL` | Project URL from 1.1 | App runs local-only; sign-in sheet says sign-in is not available in this build |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from 1.1 (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also accepted) | Same |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 | Google button hidden |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id | Google button hidden, Google plugin not in the build |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 (not in `preview` during the alpha) | Google button hidden |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id (not in `preview` during the alpha: it adds the Google plugin to both alpha builds) | Google button hidden, Google plugin not in the build |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | Same as 4.4 (default 6) | 6 |
 | `EXPO_PUBLIC_PASSKEYS` | `1` only after section 7 | Passkeys hidden |
 
@@ -306,7 +306,7 @@ The code for BL-347 and BL-330 is in PR #139. Nothing below can be done by an ag
 |---|---|---|---|
 | 1 | **FT-07** Apple identifiers, Team ID, Sign in with Apple key, email relay | 2.1, 2.2, 2.4, 2.5 (one `.p8` serves sign-in, capture and revocation; `docs/ops/SECURITY.md` 5) | 2, 4, the AASA Team ID, every Apple sign-in |
 | 2 | **FT-12** Supabase Auth | Section 1 (sign-ups on, manual linking on, anonymous off, confirm email on, JWT 900 s); 2.6 Apple provider client ids; 4.2 SMTP; 4.3 rate limits; 4.4 email provider (OTP expiry **900** seconds, the "15 minutes" every template says; the 3600 written earlier contradicted them, and review M4 recommends 900 too); 5.1 redirect URLs (exactly two); 6 templates as `supabase/templates/README.md` lists them. Code length stays 6 until the M4 work package (FT-04 item 8). PKCE needs no setting (4.6) | All sign-in; device checks 11 |
-| 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
+| 3 | **FT-15** Google client ids (cuttable: ROADMAP 2.1 cut 2; Google is WP-F02-04, wave 3) | 3.1 consent screen, 3.2 web client, 3.3 one iOS client per bundle id, 3.4 Supabase Google provider (web id first, Skip nonce check on); then `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` per EAS profile, not in the alpha profiles (FT-17, section 8) | Google sign-in only; Apple and email do not need it |
 | 4 | **FT-11** `apple-token` | Apply migration `20261004200000` through `deploy-db.yml` if it is not applied yet, and S02's `20261015000000` (the database half of the apple-token limit, `rate_hit('apple_token')`) when its PR merges; set `APPLE_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`, `TOKEN_KEK_V1` (2.7; the purge worker reads the same); leave `APPLE_EXTRA_CLIENT_IDS` unset (not read yet; see 2.7); `npx supabase functions deploy apple-token --use-api` | Apple token revocation at deletion (App Store 5.1.1(v)) |
 | 5 | Device checks on a switch-on preview build, founding family only | 11.1, 11.3, 11.9 (needs a production-bundle build until the purge worker reads `APPLE_EXTRA_CLIENT_IDS`), 11.10 | The R-17 sign-off |
 | 6 | Read and sign the R-17 auth items, with S02's items, in one shared review | `docs/security/REVIEW_R17_AUTH.md` | Anyone outside the family signing in (D-100) |
