@@ -64,6 +64,13 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("Review lens A (security), head a109a7b. Verdict: PASS WITH NOTES. No blocking finding.", 359).verdict, "PASS WITH NOTES");
   assert.equal(parseLens("Review lens B, delta at fbf28ab. Verdict: PASS WITH NOTES. No Must.", 359).verdict, "PASS WITH NOTES");
   assert.equal(parseLens("Review lens B, head a109a7b. Verdict: REQUEST CHANGES, then merge. Two Musts.", 359).verdict, "CHANGES NEEDED");
+  // Lens A delta (28 Oct): a curly apostrophe and a negation in brackets must still block.
+  assert.ok(!PASSING.has(v("DON\u2019T MERGE")), "curly apostrophe");
+  assert.equal(v("DON\u2019T MERGE"), "DO NOT MERGE");
+  assert.ok(!PASSING.has(v("PASS (blocked on #306)")), "negation in brackets");
+  assert.equal(v("PASS (see notes)"), "PASS", "harmless brackets do not change a pass");
+  // #358's habit: the verdict on a later line, after "Delta verdict:".
+  assert.equal(parseLens("Review lens A, delta at fbf28ab.\n\n**Delta verdict: PASS WITH NOTES.**", 358).verdict, "PASS WITH NOTES");
 });
 
 test("verdict-on-head: latest lens and red-team verdicts against the current head", () => {

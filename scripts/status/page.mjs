@@ -47,15 +47,16 @@ const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|shouldn't|mustn't|una
 const DONT_MERGE = /\b(do[\s-]+not|don't|should\s+not|shouldn't|must\s+not|mustn't|cannot|can't|won't|not\s+(ready\s+to\s+)?|not\s+yet)\s*merge|not\s+mergeable|merge\s+blocked/;
 export const PASSING = new Set(["PASS", "PASS WITH NOTES", "MERGE"]);
 export const verdictIn = (s) => {
-  const line = String(s).toLowerCase();
+  const line = String(s).toLowerCase().replace(/[\u2018\u2019\u02bc]/g, "'"); // phone keyboards type curly apostrophes
   // The verdict is the clause after "Verdict:" (else after the last colon), up to the first
   // full stop or semicolon, so "Verdict: PASS WITH NOTES. No blocking finding." is a pass.
   const after = line.match(/verdict\s*[:-]\s*(.*)$/)?.[1] ?? (line.includes(":") ? line.slice(line.lastIndexOf(":") + 1) : line);
-  const t = after.split(/[.;]/)[0];
-  if (NEGATIVE.test(t)) {
-    if (DONT_MERGE.test(t)) return "DO NOT MERGE";
-    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(t)) return "FAIL";
-    if (/changes|needs?\s+work/.test(t)) return "CHANGES NEEDED";
+  const raw = after.split(/[.;]/)[0];
+  const t = raw.replace(/\([^)]*\)/g, " "); // bracketed text never makes a pass...
+  if (NEGATIVE.test(raw)) { // ...but a negation inside brackets still blocks ("PASS (blocked on #306)")
+    if (DONT_MERGE.test(raw)) return "DO NOT MERGE";
+    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(raw)) return "FAIL";
+    if (/changes|needs?\s+work/.test(raw)) return "CHANGES NEEDED";
     return "BLOCKING";
   }
   if (/\bpass\s+with\s+notes\b/.test(t)) return "PASS WITH NOTES";
@@ -79,9 +80,11 @@ export function parseLens(body, prNumber) {
   if (!/review|re-check|lens|verdict|^\W*PR #\d+ at /i.test(first)) return undefined;
   const other = first.match(/\b(?:PR|of) #(\d+)/i);
   if (other && Number(other[1]) !== Number(prNumber)) return undefined; // a copy of another PR's verdict
-  let verdict = verdictIn(first.replace(/\([^)]*\)/g, " "));
+  // verdictIn reads only the clause after "Verdict:" or the last colon, so a title's brackets
+  // ("Review A (security)") never reach it, while brackets inside the verdict clause still can block.
+  let verdict = verdictIn(first);
   if (!verdict) {
-    const v = lines.slice(1, 10).find((l) => /^\W*verdict\W/i.test(l));
+    const v = lines.slice(1, 10).find((l) => /^\W*(delta\s+)?verdict\W/i.test(l));
     verdict = v && verdictIn(v);
   }
   if (!verdict) return undefined;
