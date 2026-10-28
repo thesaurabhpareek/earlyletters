@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); the next block starts at BL-457.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); the next block starts at BL-475.
 
 ---
 
@@ -1586,6 +1586,217 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Why: three backup tests scan what leaves the phone for the recording's plaintext: `apps/mobile/test/backup-e2e.test.ts:82-87`, `apps/mobile/test/backup-queue.test.ts:244-248` and `apps/mobile/test/backup-format.test.ts:119-125`. Since #362 (merged as a6519a4) each checks the recording's own 16-byte header, at every offset of every body or object, and one 64-byte window at a fixed byte (2000 in the e2e test, 4096 in the queue test, 1000 in the format test), and nothing else of the recording. Plaintext from the middle of a recording (bytes 100..164 or 65536..65600) planted in a body or object passes all three files. Not new to #362: the old 4-byte check had the same blindness. From the #362 review.
 - Scope: check several 16-byte shingles of the recording at strided offsets across the whole take, each against every offset of every body or object, as #362 does for the header.
 - Done when: a test that plants plaintext from bytes 100..164 and from bytes 65536..65600 of the recording in a body or object makes each of the three scans fail; the real upload still passes all three.
+
+## Review follow-ups, wave 2 (28 Oct 2026)
+
+Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #382 and the experience critics' passes) and filed here by the product agent from the coordinator's list, one entry per item, in the format of BL-446 to BL-456 (`Problem` and `Evidence` take the place of `Why`; `Gate` names the build the item must land before, or "none"). Every file:line cite was re-checked against `develop` at 4192a99, the tip when I last looked, and a moved line has the test title or key beside it; where a line is on an open PR's head, the entry says which PR. "Unverified" means the review said it and I could not find or run it. The brief's "later" is written as `blocked (PR #n merge)` where the PR was open when this was written; the status parser does not clear a PR blocker, so the product agent flips it when the PR merges. `needs-decision (...)` names who decides in the parenthetical (the BL-447 and BL-448 precedent) where no D-### or Q-### exists yet. Priorities are the product agent's call (none were given); the file tags only [Critical] and [High] in a heading, so these carry a `Priority:` line. Not entered: the P8a link-versus-pause decision (F02-U14), because #372 had not merged.
+
+#### BL-457 Pin the See Plus note effect's dependency array, and use `announce()` there
+- Status: ready. Mode: agent. Owner: mobile engineer (P6a: the Keep sheet), qa engineer. Milestone: M8. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem: the test for the See Plus note effect does not pin the effect's dependency array, so a missing or changed `[view.note]` passes. The test slices the source to the first `}, [view.note]);`, and a missing anchor makes `indexOf` return -1, which slices to almost the whole file, where every match still passes. Mutants n5, n5b and n5c survive (from the review of #370, not re-run here). The effect also calls `AccessibilityInfo.announceForAccessibility(note)` directly instead of the repo's `announce()`.
+- Evidence: `apps/mobile/test/plus-gate.test.ts:139-141` (the slice runs from `const openingNote = React.useRef(view.note);` to `}, [view.note]);`); `apps/mobile/src/components/child/plus-gate.tsx:127-140` (the effect; the direct call is at `:134`, the dependency array at `:140`); `apps/mobile/src/lib/a11y.ts:53` (`announce()` queues behind VoiceOver and is a no-op on Android, where the live region at `plus-gate.tsx:199` already reads the note). Review of #370 (merged as 86ff1e2).
+- Scope: add `expect(gate).toMatch(/\}, \[view\.note\]\);/)` and assert both slice indexes are >= 0 before slicing; change the effect to `announce()` from `@/lib/a11y` and update the test's match for the old direct call.
+- Done when: the test fails if the dependency array is removed or changed (n5, n5b and n5c are killed or shown irrelevant), and the effect uses `announce()`.
+
+#### BL-458 Pins for the refused-Save line and the shelf after a refused Erase, and the Book's first-mount subscribe window
+- Status: ready. Mode: agent. Owner: mobile engineer (P5: letter page, Book, Recently deleted), qa engineer. Milestone: M4. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem: (1) mutant S3-x survives: typing in the "Write the words" field no longer clears the "Your words are still here" refused-Save line, and no test notices. (2) Mutant S6-g survives: the review's "stale rows after a refused Erase when the card is gone" (the shelf's `setRows` after an erase). (3) The Book reads its letters in the `useState` initialiser and subscribes in an effect, so an `entries` event between the initialiser read and the subscribe is not picked up until the next event. Unverified on a device.
+- Evidence: (1) `apps/mobile/src/app/letter/[id].tsx:590-592` (`onChangeText` calls `setRefused(false)`), `:581`, `:599` (the line, `letter.writeWords.refused`), `:611` (`setRefused(true)`). (2) `apps/mobile/src/app/settings/recently-deleted.tsx:74-87` (`erase` reads the shelf again and calls `setRows(left)`, then `eraseOutcome` at `:84`); `apps/mobile/test/p5-critics.test.ts:278-292` pins `eraseOutcome` and the words, and `:294-298` source-pins the `const outcome = eraseOutcome(...)` line and the erased and kept toast branches. Not pinned: `setRows(left)` and the `gone` case (a refused erase when the card has already left, which shows no toast). (3) `apps/mobile/src/app/(tabs)/book.tsx:78` (initialiser) and `:102-105` (`reread` and `subscribe(reread)`; the comment says no second read at mount); `apps/mobile/src/lib/store.ts` has no change counter (its "version" mentions are schema and held-draft versions). Review of #373 (merged as 1ee20c8).
+- Scope: (1) a pin that the typed-words field's `onChangeText` calls `setRefused(false)`; (2) a pin for the shelf's `setRows(left)` after an erase and for the `gone` outcome at the screen (the exact S6-g mutation is not in the repo: unverified); (3) a store change counter and a compare in the Book's effect, or one read in the effect when the list differs from the initialiser's; the owner picks.
+- Done when: mutants S3-x and S6-g are killed; a test shows an `entries` event between the initialiser read and the subscribe is picked up at once.
+
+#### BL-459 Pin that a join wait started with no name does not inherit the previous book's name
+- Status: ready. Mode: agent. Owner: family owner (S04: the join wait), qa engineer. Milestone: M5. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem: `createJoinWaitStore().start()` called with a null name for a new book must not keep the previous book's name: production calls `start(childId, null)` and the name arrives later through `named()`. `start` writes the name as given, but no test pins it: the mutant `name: name ?? wait?.name ?? null` survives (review of #375, not re-run here).
+- Evidence: `apps/mobile/src/components/family/join-wait.logic.ts:92-96` (`start`); production call `apps/mobile/src/app/invite/index.tsx:174` and the name at `:177` (`joinWait.named`); `apps/mobile/test/join-wait.test.ts:107-114` is the only newer-join test and it passes a name ("Ravi"), so a null name is never tried. Review of #375 (merged as 7390a93).
+- Scope: add a test: `start('book-asha', 'Asha')`, then `start('book-other', null)`, and expect the wait to be `{ childId: 'book-other', name: null, since }`.
+- Done when: the mutant is killed.
+
+#### BL-460 Join wait and invite residuals from the #375 review
+- Status: ready. Mode: agent. Owner: family owner (S04), analytics engineer (point 8), qa engineer (points 4 and 6). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (review of #375, merged as 7390a93; points 2, 4 and 5 are from the review and unverified on a device):
+  1. Close (not Open) on the joined sheet at a later first-run step leaves no line and shows Continue, so a second book is possible: the wait is welcome-only (`apps/mobile/src/components/family/join-wait.logic.ts:75-77`, `joinWaitEnds`; `apps/mobile/src/components/family/join-wait.tsx:38-40`).
+  2. The joined sheet keeps "on its way" and the bar in a stall (not located in code: unverified).
+  3. A join with no name is still titled "Join a book": add a `joinedTitleUnknown` content key (`apps/mobile/src/app/invite/index.tsx:367` falls back to `a.title`; `packages/content/src/features/family.en.ts:78` and `:107`).
+  4. iOS Keychain can survive app deletion, so S1-28 (b) and (k) may skip steps on a reinstalled phone (`docs/qa/DEVICE_TEST_PLAN.md:321-348`): say so in the plan.
+  5. Offline Try again flickers (the phase flips to syncing for a moment), and Try again gives no feedback while the sync runs (`apps/mobile/src/components/family/join-wait.tsx:33` and `:36` hold the phase and its subscription, `join-wait.logic.ts:68` is the stall test, and `onRetry` at `join-wait.tsx:55-61` has no pending state).
+  6. The dismissed-share-sheet web test with a `navigator.share` stub exists only as a scratch copy (not in the repo: unverified); commit it as a flow, next to `apps/mobile/e2e-web/j17-family.flow.ts`.
+  7. A changed sign-off after a dismissed share makes a second invite: `draftFor` is keyed by the sign-off, so the draft is reused only while it is unchanged (`apps/mobile/src/app/invite/new.tsx:105-110`).
+  8. `invite_created` fires per share-sheet opening, not per invite (`apps/mobile/src/app/invite/new.tsx:127`; `packages/analytics/src/catalog.ts:622`): the analytics owner decides what to count.
+- Scope: take each point to a test or a one-line change, or record why it stays; point 7 and point 8 are decisions for the family and analytics owners.
+- Done when: each point is fixed with a test, or recorded here as left as it is.
+
+#### BL-461 Spec and test nits after the P7-7 corrections (#381): cover pin, `COVER_SIZES` comment, card-to-page wording, v1 PRD line, F13 enums
+- Status: ready. Mode: agent. Owner: design systems (points 1 to 3), analytics engineer (point 5), content (point 4). Milestone: M11. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (review of #381, merged as 1afb0d0):
+  1. S05's text says `book-cover.test.ts` pins the 96 pt case (`docs/design/EXPERIENCE_PASS_2026-10.md:311`), but no assertion pins Christopher and Alexandrina fading on the 96 pt (`thumb`) cover: `apps/mobile/test/book-cover.test.ts:150-157` cover `sm` and `:158` pins only "Wilhelmina Rose" at `thumb` (the test title at `:134` claims the 96 pt case).
+  2. The `COVER_SIZES` comment says `thumb` is for "Add a child (S47) and the Export thumbnail (S43)" (`apps/mobile/src/components/book/book-cover.logic.ts:20`), but Add a child uses `sm` (`apps/mobile/src/components/child/add-child-form.tsx:98`) and only `apps/mobile/src/app/settings/export.tsx:166` uses `thumb`.
+  3. `docs/design/EXPERIENCE_PASS_2026-10.md:3` and `:1761` say "card to page" without a build qualifier.
+  4. `docs/prd/B-first-run-and-family.md:315` says "0 of 104 prompts" (v1 history). A requirement document is not edited here: a proposed change goes in the PR body for the founder.
+  5. F13's `band_fit` and `prompt_shown` enums are in the spec (`docs/prd/v2/features/F13-prompts-reminders.md:339`, WP-F13-11 at `:378`) and in no code under `packages/` or `apps/mobile/src`.
+- Scope: pin the 96 pt case for the two names; correct the comment and the spec lines; for point 5 either add the enums to the analytics catalogue (WP-F13-11) or mark the spec rows as not built.
+- Done when: the 96 pt assertions exist and fail if the cover stops fading both names; points 2 and 3 are corrected; points 4 and 5 are settled by their owners.
+
+#### BL-462 Content rules guard: follow-ups to the fold into `rules.test.ts` (#380, P7-5)
+- Status: ready. Mode: agent. Owner: content, legal (point 6). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (review of #380, merged as 51c0c3e; lines on develop):
+  1. The SURFACES row's button-name regex `/(?:button|cta)$/i` (`packages/content/test/rules.test.ts:1029`, in the per-surface test "keeps every button label to 22 characters, as written and with the Asha fixtures") differs from the P0 regex `/(?:button|cta|action)(?:short)?$/i` (`:891`, in the P0 test of the same title), so a `...CtaShort` or `...Action` leaf over 22 characters can bypass the row's button list. Use the P0 regex.
+  2. The auth, family and deletion button lists (25, 17 and 8 entries: `packages/content/test/support/copy-surfaces.ts:290-317`, `:320-338`, `:340-349`) are not pinned by length or by set.
+  3. The guard reads `features` keys only (the test "has a row or an opt-out with a reason for every key of `features`, and keeps the three P8 rows" starts at `rules.test.ts:983`, the check is `:989`): a `packages/content/src/features/*.en.ts` file not wired into `features/index.ts` is invisible. Add a `readdirSync` check.
+  4. Opt-out reasons are length-checked only (`rules.test.ts:992`, the reason-length line of that same test). The `backup` and `billing` reasons (`copy-surfaces.ts:435`, `:436`) and the `reminders` reason (`:443`) should name their "we" lines (the reminders line has its own entry, BL-474). Billing's reason overstates "pinned word for word" (40 of 102 leaves, from the review: unverified). Six "Please try again" lines sit in opt-out files that the auth-only chat-bot-voice rule does not cover: `packages/content/src/features/export.en.ts:34`; `packs.en.ts:36`, `:38`, `:39`, `:40`; `billing.en.ts:116` (`restoreFailed`).
+  5. No rule checks that `{child}` is still present in the deletion `what.staysNone` line (`packages/content/src/features/account-deletion.en.ts:20`): mutant B07 survives (it survived before #380 too).
+  6. `docs/legal/in-app-disclosures.md:50` (v1.4.0) still quotes the old `billingCopy.store.promise` wording ("... are free, always."): a counsel note only.
+- Scope: points 1 to 5 are test changes in the files #380 added, plus the copy decision about the six "Please try again" lines in point 4 (the content owner's); point 6 goes to counsel's next read.
+- Done when: each point is fixed with a test that fails on its mutant, or recorded here as left as it is.
+
+#### BL-463 After #383 retired `en.plus.promise`: the guard's case-sensitive regex, `en.plus.legal`, and stale dated documents
+- Status: ready (#383 merged as 4192a99; this is what it did not do). Mode: agent. Owner: content, legal (point 2). Milestone: M11. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (the coordinator ruled the retirement of `en.plus.promise` and #383, merged as 4192a99, did it: key deleted, claims guard retargeted, `DELETED` at 42, three documents edited. From the delta review of #383):
+  1. The claims guard's `/Read together|more children|more books|free, always/` has no `i` flag (`packages/content/test/rules.test.ts:545`, the `PROMISES` loop in "promises only what Plus gates in v1.0 (D-085, D-082)"), so a lowercase "read together" passes. Add the flag.
+  2. `en.plus` is now `{ legal }` only and is read by no screen (`packages/content/src/strings.en.ts:945-958`, the `plus` object; the keys are registered text, which #383 left alone). Whether they stay as dead registered text, move, or go is a counsel decision.
+  3. Stale dated documents still name the old key or the old sheet: `docs/prd/v2/features/F21-store-web.md:219`, `docs/prd/C-habits-pricing-settings.md:306`, `docs/prd/v2/reviews/R4-privacy-trust.md:37`, `docs/design/reviews/P6B_CRITICS_PASS_2026-10-28.md:97`, and the rest of `docs/tdd/08-payments-entitlements.md:409-416`, which names `plus-sheet.tsx` and `plus.legal.renewTrial` and `plus.legal.links`; none of these exist (the sheet is `apps/mobile/src/components/child/plus-gate.tsx`, and the legal keys are `renewAnnual`, `renewMonthly`, `renewNoTrialAnnual`, `renewNoTrialMonthly` and the link labels). Not here: `docs/prd/PRD.md:892`, `docs/prd/v2/features/F14-plus.md:213` and `docs/tdd/08-payments-entitlements.md:413`, which #383 rewrote.
+- Scope: add the `i` flag with a mutant check (point 1); take point 2 to counsel; for point 3 the document owners add a correction line or update the text (requirement documents: a proposed change goes in the PR body).
+- Done when: a lowercase "read together" in the scanned Plus copy fails the guard; counsel's answer on `en.plus.legal` is recorded here; the listed documents no longer name keys or files that do not exist, or are marked as dated.
+
+#### BL-464 Find the cause of the web e2e boot flake `local_db_migration_failed:1`, then harden the seeded flows
+- Status: ready (#382 merged as 66e6d5a; the finding is in its body). Mode: agent. Owner: qa engineer, sync owner (S03: the migration). Milestone: M12. Size: M. Depends on: none.
+- Priority: Medium.
+- Gate: none.
+- Satisfies: none given.
+- Problem: an uncaught page error with a blank page on the first `seeded()` page load of the web e2e run: 3 of about 11 j18 runs at machine load 16 and above, never at low load, not reproduced (from the #382 write-up). `MigrationError` carries only the code, and `pageerror` does not show `error.cause`, so the report names no cause.
+- Evidence: PR #382's body, section "Finding for the backlog" (merged as 66e6d5a); `apps/mobile/src/lib/db/migrations.ts:61-62` (migration 1 is one large synchronous `db.exec`, the strongest candidate: unverified) and `:370-376` (`MigrationError`); `apps/mobile/src/dev/store-ready.web.ts`; `apps/mobile/e2e-web/support/journey.ts:36` (`seeded()`); `apps/mobile/e2e-web/j09-book.flow.ts:35` (`/\w+ \d+ to \w+ \d+/` presumes the en-US date order); `apps/mobile/e2e-web/j04-tonight.flow.ts:119` (J04g: a global fixed clock breaks it, so do not copy one into CI).
+- Scope: (1) log `error.cause` through an init script in the `app` fixture that listens for both `error` and `unhandledrejection`, using `console.log` and not `console.error`; (2) if the cause is `Sync operation timeout`, warm `scribe.db` itself and retry once in `store-ready.web.ts` (web preview only, never native); (3) if it is a lock, make `seeded()` do one `goto`; (4) if migration 1 is the cause, split its single `db.exec`; (5) make the j09 date assertion independent of the date order.
+- Done when: the next flake names its cause in the log, and the chosen fix runs 50 loaded boots without the error.
+
+#### BL-465 Rebase #161 (export consent history) and #163 (server-product legal set) onto develop
+- Status: ready. Mode: agent. Owner: export owner (#161), legal (#163). Milestone: M9. Size: M. Depends on: none.
+- Priority: Medium.
+- Gate: none named by the reviews; BL-323 (#161) satisfies LEGAL-REQ-034 for signed-in builds, so the coordinator sets the build.
+- Satisfies: LEGAL-REQ-034 (BL-323, through #161).
+- Problem: #161 (a draft) and #163 conflict with develop and need rebases (from the 28 Oct reviews; the independent review and I saw `mergeable: false`, state `dirty`, for both; GitHub reads it as null while it recomputes). #161's export goldens will also touch the e7 letter and the manifest hash that #373 changed, so its goldens must be regenerated after the rebase and not merged by hand.
+- Evidence: #161 (a draft, head 1087eac, `feat/export-consent-history`) and #163 (head 53a7622, `docs/legal-v1-server`), both open and based on develop; `apps/mobile/test/__golden__/export-asha/letters/Asha/2026-08/2026-08-10_e7.txt`, `manifest.json` and `manifest.sha256` changed in #373 (1ee20c8).
+- Scope: rebase each onto develop; regenerate #161's goldens and check the `account.json` consent-history fields still validate; re-read #163 against develop's docs.
+- Done when: both PRs are mergeable and their checks pass on the rebased head.
+
+#### BL-466 Repo hygiene in the journey scripts and `.gitignore`
+- Status: ready. Mode: agent. Owner: platform (point 1), qa engineer (points 2 and 3). Milestone: M12. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (from the 28 Oct reviews; this entry does not touch `docs/release/journey`):
+  1. `.gitignore` has `node_modules/` (`.gitignore:4`), which does not match a symlink named `node_modules`; a symlinked `node_modules` shows as untracked (I saw it in a worktree). Drop the trailing slash.
+  2. `apps/mobile/e2e-web/support/pack-journey.sh:28` zips `journey` leaving out dotfiles and `*.html` only, so the gitignored `INDEX.text-only.md` that `build-index.mjs --text-only` writes (`build-index.mjs:13-14`) travels in the zip. Exclude it.
+  3. `apps/mobile/e2e-web/support/build-index.mjs:72-78` checks `fs.existsSync(stepsDir)` and then `readdirSync`, so a `steps` that is a file ends in a raw ENOTDIR (code reading, not run). Check that it is a directory.
+- Scope: the three changes above, each with a test or a script check where one exists (`build-index` has a unit test).
+- Done when: a symlinked `node_modules` is ignored; the packed zip has no `INDEX.text-only.md`; `build-index` prints its own message for a `steps` file.
+
+#### BL-467 Pins and guards: recovery export re-entrancy, DrawingBoundary, the prompt library version, Android double announce, mutation survivors
+- Status: ready. Mode: agent. Owner: mobile engineer, qa engineer, content (point 3). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (from the 28 Oct reviews):
+  1. The recovery export button is already guarded in `PlainScreen`: `Pressable disabled={a.busy}` with `accessibilityState` busy and disabled (`apps/mobile/src/components/resilience/plain-screen.tsx:160-161`), pinned by `apps/mobile/test/plain-screen.test.ts:93-96` ("a busy button cannot be pressed twice"). Do not change that path. What remains is narrow: `exportReadable` itself has no guard (`apps/mobile/src/components/resilience/launch-recovery.tsx:25-32`), so a second press in the same frame, before `busy` has rendered, would start a second export (unverified). A ref guard inside `exportReadable` would close it.
+  2. `DrawingBoundary` (`apps/mobile/src/components/resilience/plain-screen.tsx:45`, mounted at `:127-129`) has a source-text pin only (`apps/mobile/test/plain-screen.test.ts:88`) and no test that a throwing drawing leaves the screen working.
+  3. `PROMPT_LIBRARY_VERSION` (`packages/content/src/prompts.ts:13`, value 3, read at `apps/mobile/src/app/(tabs)/index.tsx:223`) is named by no test, so a change to the library can ship without a bump.
+  4. Android double announce: `announce()` is a no-op on Android because a live region carries the line (`apps/mobile/src/lib/a11y.ts:46-54`), but direct `AccessibilityInfo.announceForAccessibility` calls bypass it: `plus-gate.tsx:134` (BL-457), `plain-screen.tsx:109`, `apps/mobile/src/components/gate/age-gate-screen.tsx:67`, `apps/mobile/src/app/settings/export.tsx:117` and `apps/mobile/src/app/listen.tsx:120`, `:167`, `:255`, `:259`. Which of these also sit beside a live region is unverified.
+  5. Mutation survivors of the "M3h" kind: the list is in the review reports and not in the repo (unverified). Ask the reviewer for it before starting this point.
+- Scope: a guard inside `exportReadable` and a test for point 1; a behaviour test for point 2; a test that pins the version against the library for point 3; point 4 moves each direct call to `announce()` or removes the live region, per spot; point 5 starts from the reviewer's list.
+- Done when: each point is fixed with a test that fails on its mutant, or recorded here as left as it is.
+
+#### BL-468 Device and layout checks: a deep arrival on a cold Book, and the stacking threshold
+- Status: ready. Mode: pair (device checks on a phone). Owner: qa engineer, design systems. Milestone: M11. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem and evidence (from the 28 Oct reviews):
+  1. Device check D2 is defined in `docs/design/reviews/P5_CRITICS_PASS_2026-10-28.md:196` ("The first letter's arrival (S1)": a fresh install, never open the Book tab, keep a typed letter from Write; does the new card wash on the Book, and is it in view?). It is not in `docs/qa/DEVICE_TEST_PLAN.md`. The scenario in this entry, a deep arrival in a long book on a cold launch, is a new check and is unverified anywhere. The code that scrolls: `apps/mobile/src/app/(tabs)/book.tsx:143` (`scrollToLocation`) and `:328` (`onScrollToIndexFailed`).
+  2. Two buttons stack at xxxLarge, and the repo documents both thresholds. For xxxLarge: `useIsLargeText()` at `apps/mobile/src/components/ui/button.tsx:239` (1.353 at `apps/mobile/src/lib/a11y.logic.ts:21-23`), whose doc comment at `button.tsx:233-237` cites COMPONENTS 2.18 and TDD 09 A11Y-F10, and `docs/design/COMPONENTS.md:17` ("stacks from xxxLarge text"). For accessibility sizes (AX1 is 1.786: `a11y.logic.ts:10`, `:16-18`): the S30 Visual text as the P5 critics' pass quotes it ("at accessibility sizes the two buttons stack, full width, Next letter first", `docs/design/reviews/P5_CRITICS_PASS_2026-10-28.md:160`, for `docs/design/EXPERIENCE_PASS_2026-10.md:884`; I could not find that exact sentence in the spec file: unverified).
+- Scope: add the deep-arrival check to the device test plan with its steps; give the spec owner both sources and ask which threshold applies to Read together's two buttons and which to `ButtonRow` generally, then pin it.
+- Done when: the plan has the check and a phone result is recorded; the threshold is decided and pinned in `a11y.logic.test.ts`.
+
+#### BL-469 The leave sheet has no way to close in the sheet when the sign-in gate replaces its buttons
+- Status: ready. Mode: agent. Owner: family owner (S04). Milestone: M5. Size: S. Depends on: BL-444.
+- Priority: Low.
+- Gate: none. Latent today: `LEAVE_BOOK_OFFERED` is false (`apps/mobile/src/lib/family/entry.logic.ts:46`, D-113), so `/invite/leave` shows "coming soon" in every build. BL-444 turns the leave flow on before build 3 and touches the same screen, so do this with or after BL-444.
+- Satisfies: none given.
+- Problem: on the leave sheet the Leave and Stay buttons are children of `AccountGate`, and in every state where the person cannot sync the gate shows one next-step button instead (Sign in, "Agree and sync" after a declined consent, Try again). The sheet's own Stay button is then not on screen, and this sheet is the one `SheetFrame` in the file without a header close. The join sheet does not have the same dead end: it passes `closeLabel` and has "Not now" on its sign-in view. From the 28 Oct reviews (the brief names it as the join sheet gate; the code shows it on the leave sheet).
+- Evidence: `apps/mobile/src/app/invite/leave.tsx:120-133` (`SheetFrame` without `closeLabel`, with the buttons inside `AccountGate`; the other three `SheetFrame`s in the file, at `:56`, `:80` and `:90`, pass `closeLabel`); `apps/mobile/src/lib/auth/ui.tsx:296-362` (`AccountGate` states); the join sheet at `apps/mobile/src/app/invite/index.tsx:302` and `:311`. Whether the system swipe closes the leave sheet is unverified.
+- Scope: give the leave sheet a close outside the gate (the same `closeLabel` the other sheets pass, or a quiet "Not now" under the gate's button), with the words in `packages/content`; fold it into BL-444's leave-flow work if that lands first.
+- Done when: after a declined consent the leave sheet has a visible way to close, with a test on the sheet's source or view.
+
+#### BL-470 Typed words for a recording with no words that has been sent, or that failed to send
+- Status: needs-decision (the sync owner and the data architect decide part 2; part 1 is client only and can be decided now; no D-### or Q-### exists yet, as with BL-447 and BL-448). Mode: pair. Owner: sync owner (S03), data architect (S02). Milestone: M5. Size: M. Depends on: none.
+- Priority: Medium.
+- Gate: none.
+- Satisfies: none given.
+- Problem: a spoken letter whose words came back empty can take typed words only while it has never been to the server: the rule needs `server_version IS NULL` and no outbox row with `sent_at` set or `attempts > 0`. Two questions follow, and they are independent:
+  1. Client only, decidable now: should a failed attempt (`attempts > 0` with no `sent_at`) close the offer? Nothing reached the server in that case, unless an attempt was accepted and its answer lost (unverified).
+  2. Server: a synced letter with no words has no way to receive the person's words, because the server's first raw is fixed once the letter is there. Does the server get an edit path for a letter's first words?
+- Evidence: `apps/mobile/src/lib/db/repos/entries.ts:261-264` (the condition) and `:288-295` (`canTypeWords`); `apps/mobile/src/lib/store.ts:527-539` (`setTypedWordsForWaitingEntry`); the page shows the card through `wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) })` (`apps/mobile/src/app/letter/[id].tsx:317`, rendered at `:393`; `apps/mobile/src/components/book/words-card.logic.ts:21-26`); P5 critics' pass S3 (`docs/design/reviews/P5_CRITICS_PASS_2026-10-28.md:54-59`); review of #373 (merged as 1ee20c8).
+- Scope: part 1: decide, and if a failed attempt should not close the offer, change the condition and test it with a never-sent letter after a failed attempt. Part 2: decide whether the server gets an edit path for a letter's first words. If yes, build it (a migration, `approve-migration`) and offer "Write the words" on a synced letter; if not, say so on the letter page.
+- Done when: both decisions are recorded here, and the offer matches what the client and the server can take.
+
+#### BL-471 Erase now in a build that syncs: pass `serverErase` once the server's erase reaches every system
+- Status: needs-decision (sync owner and data architect: is the reach of WP-F17-10 complete). Mode: pair. Owner: sync owner (S03), data architect (S02). Milestone: M9. Size: S. Depends on: none.
+- Priority: Medium.
+- Gate: none stated; in alpha build 2 (`preview`, servers on) a deleted letter waits its 30 days.
+- Satisfies: F17-REQ-025 (P0, `docs/prd/v2/features/F17-settings-privacy.md:393`: Erase now is hidden in a sync build until the server erase op ships), F16-REQ-024 (`docs/prd/v2/features/F16-sync.md:279`).
+- Problem: Recently deleted hides Erase now in a build that syncs, although the client and server halves of the erase are merged. The spec says to show it only once the server erase exists (S39 and S63).
+- Evidence: `apps/mobile/src/app/settings/recently-deleted.tsx:60` (`shelfActions({ sync: capabilities.sync })`, no `serverErase`); `apps/mobile/src/components/book/shelf.logic.ts:96-100`; the client half: `eraseEntry` (`apps/mobile/src/lib/store.ts:726`, doc comment at `:722-725`) queues `entry.erase` through `enqueueEntryErase` at `:758`; the server half in `supabase/migrations/20261016000000_sync_v1_server.sql` (header: WP-F16-13), although WP-F16-13 is still "Not built" in the work-package table (`docs/prd/v2/features/F16-sync.md:433`); the WP-F17-10 link is `docs/prd/v2/08-delivery.md:585` (S02: WP-F17-10 with the WP-F16-13 server erase, reaching every M14 system), and WP-F17-10's own row (`F17-settings-privacy.md:573`) lists consent and deletion pieces. P5 critics' pass S5 (`docs/design/reviews/P5_CRITICS_PASS_2026-10-28.md:68-73`). Whether the server's erase reaches every system F17 8.4 lists is unverified.
+- Scope: ask S03 and S02 whether WP-F17-10's reach (the backup object and every M14 system) is complete. If it is, pass `serverErase: true` (a one-line change in the screen and its test) and check S63's four acceptance lines on two phones; if not, write the date of the flip next to this entry.
+- Done when: the answer is recorded here; with a yes, Erase now shows in a sync build and the two-phone check is recorded.
+
+#### BL-472 A baby born early can leave the before-birth state only after the due date passes
+- Status: ready. Mode: agent. Owner: mobile engineer (S13: children). Milestone: M4. Size: M. Depends on: none.
+- Priority: Medium. B-REQ-005 is P0 (`docs/prd/B-first-run-and-family.md:167`), so Medium is the floor; raise it to High if expecting books are in the alpha (unverified: I do not know that).
+- Gate: none.
+- Satisfies: B-REQ-005, as PRD V2 F12-U16 cites it (`docs/prd/v2/features/F12-children.md:159`: "{child} is here?" sets the birth date; PRD B F2 step 3 promises the same row at `docs/prd/B-first-run-and-family.md:64`).
+- Problem: the only way from an expecting book to a born one is the Settings "Set the birthday" card, and it shows only after the due date has passed (`bornCardShown` requires `dueDatePassed`). A baby born before the due date has no row to say so. The specs promise a "{child} is here?" row on the child row; no string or screen for it exists in the app. From the 28 Oct reviews (the review is not named in the brief).
+- Evidence: `apps/mobile/src/components/child/child-settings.logic.ts:26-34` (`bornCardShown`), used at `apps/mobile/src/app/settings/children/[id].tsx:59`; `packages/content/src/strings.en.ts:1078` (`childrenExtra.edit.born.confirm`, "Set the birthday"); `docs/prd/v2/features/F12-children.md:159`; `docs/prd/v2/features/F13-prompts-reminders.md:180` (F13-U14: after the due date nothing asks whether the baby is here, and the parent sets the birth date in Settings by F12-U16); no match for "is here?" in `apps/mobile/src` or `packages/content/src`.
+- Scope: add the "{child} is here?" row to the child's settings while the book is expecting, leading to the birth date step the card uses, with the words in `packages/content` and no countdown or prompt (F09-REQ-021, F13-U14).
+- Done when: an expecting book shows the row before its due date, setting the birth date turns the book into a born one (letters before it stay in Before You), and a test covers the row's visibility.
+
+#### BL-473 The Family tab's dateline for a book that is not born yet
+- Status: ready. Mode: agent. Owner: mobile engineer (S04: the Family tab), design systems. Milestone: M5. Size: S. Depends on: none.
+- Priority: Low.
+- Gate: none.
+- Satisfies: none given.
+- Problem: for a book whose child is not born yet, the Family tab's dateline is only the day: `ageText` returns null without a birthday, so `tonightDateline` falls back to the date. Tonight shows the name and "Before You" for the same book (fixed in #376).
+- Evidence: `apps/mobile/src/app/(tabs)/family.tsx:191` (`tonightDateline(child, ageText(active, today), dayDate(today))`); `apps/mobile/src/lib/dates.ts:69-73` (`ageText`); `apps/mobile/src/components/tonight/draft-card.logic.ts:215-217` (the fallback); Tonight's label `tonightStageLabel` (`apps/mobile/src/components/tonight/prompt.logic.ts:33-36`, used at `apps/mobile/src/app/(tabs)/index.tsx:191`). From the 28 Oct reviews.
+- Scope: use `tonightStageLabel` on the Family tab so a not-yet-born book reads like Tonight's dateline (the spec says "the dateline as on Tonight": `docs/design/EXPERIENCE_PASS_2026-10.md:1409`), with a test beside the Tonight one. Also update the documented fallback ("With no age it is the day's date (the Family tab)": `apps/mobile/src/components/tonight/draft-card.logic.ts:211-213`) and the pin that holds it (`apps/mobile/test/draft-card.test.ts:253`), which is the fix site for the day-only fallback.
+- Done when: a before-birth book shows its name and "Before You" in the Family tab's dateline, and a test covers it.
+
+#### BL-474 Notification copy says "we will keep it": a "we" outside any sanctioned promise
+- Status: needs-decision (a VOICE ruling by the content owner and the coordinator: may notification copy say "we"; it needs a ruling and not just a fix because `packages/content/VOICE.md` has no rule on it, while the surface rules for auth, family and deletion allow "we" only on listed keys). Mode: pair. Owner: content. Milestone: M4. Size: S. Depends on: none.
+- Priority: Medium.
+- Gate: none.
+- Satisfies: none given.
+- Problem: the evening reminder titled "Tonight's letter" says "Say it out loud and we will keep it." The "we" is not one of the sanctioned promises, and the line is notification copy (the reviewer called it live). It is written twice.
+- Evidence: `packages/content/src/features/reminders.en.ts:15` (`neutral.evening[1].body`), duplicated at `packages/content/src/strings.en.ts:620` (`notifications.evening`); found in the review of #380 (merged as 51c0c3e) as pre-existing; the guard side is BL-462 point 4.
+- Scope: rule whether notification copy may say "we". If not, reword both lines the same way, through the content owner, and add a content rule that fails on a "we" in reminder copy outside the ruled list.
+- Done when: the ruling is recorded here, both lines match it, and the rule exists.
 
 ## Appendix: TDD proposal to BL mapping
 
