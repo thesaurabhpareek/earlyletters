@@ -1,5 +1,8 @@
 # Roadmap: the 30-day path to App Store submission
 
+> **Superseded.** D-101 (13 Oct 2026) replaced this plan's 2 Nov target; the plan of record is PRD V2 `docs/prd/v2/08-delivery.md`, and D-106 re-plans submission after the alpha.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: lead PM (coordinator merges). **Version 2.1, 3 Oct 2026 (evening)**, by the backlog-consolidation PM. Supersedes 2.0 of the same day: same target, reconciled with what the 3 Oct waves actually built (`docs/BACKLOG.md` v1.0, checked in code), the security review (`docs/reviews/2026-10-04-security-privacy.md`), legal-alignment's Q-003 memo, and one ordered founder list (`docs/FOUNDER_TASKS.md`). After v1.0: `docs/backlog/FUTURE.md`. Who is doing what right now: `docs/agents/BOARD.md`.
 
 **Target: submit to App Review in the week of Mon 2 Nov 2026 (Mon 2 Nov at the earliest, Fri 6 Nov at the latest). Release on approval, planned for Mon 16 Nov, with 9 to 20 Nov as the buffer for one rejection cycle.** The 30 days run from Mon 5 Oct to Wed 4 Nov.
