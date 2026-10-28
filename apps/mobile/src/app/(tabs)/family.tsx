@@ -36,7 +36,7 @@ import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import { inviteOpenUntil } from '@scribe/core/src/invite';
 import { tokens } from '@scribe/design-tokens';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { useChildren } from '@/components/child/use-children';
@@ -117,9 +117,9 @@ function FamilyShared() {
   const { active } = useChildren();
   const auth = useAuth();
   const [pending, setPending] = useState<PendingInviteRow[]>([]);
-  // The first list has been drawn: rows that come after it (an invite just shared) enter; the first ones do not.
-  const [listed, setListed] = useState(false);
-  const settled = useRef(false);
+  // The invites the first list held: a row that comes after it (an invite just shared) enters; these do not.
+  const [loadedOnce, setLoadedOnce] = useState(false);
+  const [firstListed, setFirstListed] = useState<ReadonlySet<string> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<InviteErrorKind | null>(null);
   // What Share again left open, when it did not end cleanly (lib/family/invites.ts ShareAgainOutcome).
@@ -139,7 +139,7 @@ function FamilyShared() {
   const load = useCallback(async () => {
     if (!childId || !client || !can) {
       setPending([]);
-      setListed(true);
+      setLoadedOnce(true);
       return;
     }
     try {
@@ -147,12 +147,13 @@ function FamilyShared() {
     } catch {
       // Keep what is shown; offline or not synced yet. The local view (you, and the last pull) always works.
     }
-    setListed(true);
+    setLoadedOnce(true);
   }, [childId, client, can]);
 
+  // Note the rows of the first list once it is drawn, so only rows that come later enter.
   useEffect(() => {
-    if (listed) settled.current = true;
-  }, [listed]);
+    if (loadedOnce) setFirstListed((s) => s ?? new Set(pending.map((p) => p.id)));
+  }, [loadedOnce, pending]);
 
   useFocusEffect(
     useCallback(() => {
@@ -286,7 +287,7 @@ function FamilyShared() {
             </Animated.View>
           ))}
           {visiblePendingRows(pending, state.full).map((p) => (
-            <Animated.View key={p.id} entering={settled.current ? motion.enter(0) : undefined} exiting={motion.exit()} layout={motion.layout('standard')}>
+            <Animated.View key={p.id} entering={firstListed && !firstListed.has(p.id) ? motion.enter(0) : undefined} exiting={motion.exit()} layout={motion.layout('standard')}>
               <MemberRow testID="family.pending" pending signature={pendingSignature()} status={p.status === 'open' ? openUntil(p.expiresAt) : f.members.expired}>
                 <View className="-ml-3 flex-row flex-wrap gap-1 pt-1">
                   {!state.full && (
