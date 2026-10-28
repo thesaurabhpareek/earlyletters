@@ -47,7 +47,7 @@ const RETIRED = [
 ];
 
 /**
- * Deleted by P7 (39 RET-tracked keys, plus 2 approved unmarked ones that had no reader). RETIRED above is a keep-list,
+ * Deleted by P7 (39 RET-tracked keys, plus 3 approved unmarked ones that no screen read). RETIRED above is a keep-list,
  * so nothing else would notice if a deleted word came back: this list does. Never reuse their words (strings.en.ts header).
  */
 const DELETED = [
@@ -93,6 +93,9 @@ const DELETED = [
   'en.familyTab.emptyBody',
   // RET, deleted once the one test that read it said "Paused" itself (P7-5)
   'features.reminders.settings.pausedSummary',
+  // read by no screen since #313, deleted on the coordinator's ruling; the claims guard in rules.test.ts now reads
+  // billingCopy.store.promise and settingsHome.planHelp (P7)
+  'en.plus.promise',
   // dead and unmarked, deleted with the coordinator's yes (P7)
   'features.reminders.settings.pausedHelp',
   'en.family.subtitle',
@@ -254,8 +257,8 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     expect(typeof at('features.billing.plan.yearly')).toBe('string');
   });
 
-  it('keeps the 41 keys P7 deleted deleted: a re-added leaf fails here', () => {
-    expect(DELETED).toHaveLength(41);
+  it('keeps the 42 keys P7 deleted deleted: a re-added leaf fails here', () => {
+    expect(DELETED).toHaveLength(42);
     expect(new Set(DELETED).size).toBe(DELETED.length);
     // A deleted key is in no keep-list, so the lists cannot disagree.
     const kept = new Set([...RETIRED, ...CHANGED, ...ADDED, ...Object.keys(HELD), ...Object.keys(REGISTERED)]);
