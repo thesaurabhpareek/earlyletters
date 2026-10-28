@@ -27,8 +27,6 @@ export const familyCopy = {
     title: 'Write this book together',
     body: "Invite {child}'s other parent. They write from their own phone, and you both read the whole book.",
     button: 'Invite a co-parent',
-    // retired by EXPERIENCE_PASS_2026-10 (S57: the sign-in sheet's title says it); P8b deletes it once no screen reads it
-    signedOutNote: "You'll sign in first, so they can join from their own phone.",
     finishSetup: 'Finish setting up your account to invite someone.',
     /** Review A1: says who the book is shared with, never who can read it (the founder's words, story.private.v2). */
     privacy: 'Shared only with the other parent, if you invite them.',

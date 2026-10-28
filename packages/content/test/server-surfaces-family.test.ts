@@ -129,6 +129,12 @@ describe('[P8b S57 to S59] familyCopy changes, word for word', () => {
   });
 });
 
+describe('[P8b] retired keys are gone with the screens that showed them (section 6: P8 deletes its own RETs)', () => {
+  it('card.signedOutNote (S57: the sign-in sheet says it)', () => {
+    expect('signedOutNote' in familyCopy.card).toBe(false);
+  });
+});
+
 describe('[P8b] rules over familyCopy', () => {
   it('says "we" or "our" only on the kill path (principle 2)', () => {
     // The share message is the parent's own voice, which they see and can change in the share sheet before they send
