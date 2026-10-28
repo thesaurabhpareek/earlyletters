@@ -218,7 +218,7 @@ function TermsStep({ busy, error, answer, onNotNow }: { busy: boolean; error: st
             size="lg"
             fullWidth
             loading={busy}
-            label={busy ? authCopy.consent.settingUp : t.agree}
+            label={t.agree}
             onPress={() => {
               haptic('tap');
               void answer('terms', true);

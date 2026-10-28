@@ -336,7 +336,7 @@ export function AccountGate({
         size="lg"
         fullWidth
         loading={busy}
-        label={busy ? authCopy.consent.settingUp : offline ? tryAgainLabel : sc.agreeButton}
+        label={offline ? tryAgainLabel : sc.agreeButton}
         onPress={async () => {
           setBusy(true);
           setError(null);
