@@ -18,7 +18,7 @@ import { readableInBook } from '../src/components/book/quiet-day.logic';
 import { eraseOutcome, restoredLine } from '../src/components/book/shelf.logic';
 import { turnControls } from '../src/components/book/turn-controls.logic';
 import { wordsCardKind, wordsCardState } from '../src/components/book/words-card.logic';
-import { pageProvenanceKey, provenanceLine } from '../src/lib/provenance';
+import { exactViewAvailable, pageProvenanceKey, provenanceLine } from '../src/lib/provenance';
 import type { Entry } from '../src/lib/store';
 
 const src = (f: string) => readFileSync(join(__dirname, '../src', f), 'utf8');
@@ -73,6 +73,22 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     expect(look(createArrivalGate(), { param: '', sections: book })).toEqual({ act: 'idle' });
   });
 
+  it('leaving the Book while the wash waits says a param is still to be cleared, once; a finished arrival leaves nothing', () => {
+    const gate = createArrivalGate();
+    expect(gate.leave()).toBe(false); // nothing running
+    expect(look(gate, { param: 'n1', sections: book }).act).toBe('run');
+    expect(gate.leave()).toBe(true); // left inside the dissolve: the param is cleared on the Book's own route
+    expect(gate.leave()).toBe(false);
+    const done = createArrivalGate();
+    expect(look(done, { param: 'n1', sections: book }).act).toBe('run');
+    done.finish(); // the wash ran and the param was cleared
+    expect(done.leave()).toBe(false);
+    // A param that is only waiting for its letters has started nothing to undo.
+    const waiting = createArrivalGate();
+    expect(look(waiting, { param: 'n1', sections: [], loaded: false }).act).toBe('wait');
+    expect(waiting.leave()).toBe(false);
+  });
+
   it('mounts the Book with a param and an empty first read: nothing runs, the param is kept, and the wash starts when the letters land', () => {
     // The Book's effect, step by step: render 1 has no letters read (the old state initialiser), render 2 has them.
     const gate = createArrivalGate();
@@ -93,6 +109,18 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     expect(acts).toEqual(['wait', 'run']);
   });
 
+  it('the first typed letter flow (j07) samples frames and asserts the wash starts within 1.5 s of the card appearing (source)', () => {
+    const j07 = flow('j07-typed.flow.ts');
+    const first = j07.slice(j07.indexOf("test('[J07]"), j07.indexOf("test('[J07d]"));
+    expect(first).toMatch(/await watchArrivalWash\(app\);\s*await btn\(app, \/\^Add to \.\*book\/\)\.click\(\);/);
+    expect(first).toMatch(/await expect\.poll\(\(\) => app\.evaluate\(\(\) => \(window as unknown as \{ __wash: \{ washAt: number \| null \} \}\)\.__wash\.washAt\)/);
+    expect(first).toMatch(/expect\(wash\.washAt - wash\.bookAt\)\.toBeLessThan\(1500\);/);
+    // The sampler finds the layer by what it is: touch-free, absolute, filling the card, drawn above 0.01.
+    const sampler = j07.slice(j07.indexOf('const watchArrivalWash'), j07.indexOf("test('[J07]"));
+    expect(sampler).toMatch(/cs\.pointerEvents === 'none' && cs\.position === 'absolute'/);
+    expect(sampler).toMatch(/Number\(cs\.opacity\) > 0\.01/);
+  });
+
   describe('the Book screen (source)', () => {
     const screen = code(src('app/(tabs)/book.tsx'));
 
@@ -109,7 +137,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
       const position = run.indexOf('scrollToArrival();');
       const timer = run.indexOf('setTimeout(');
       const wash = run.indexOf('wash([arrival.id])');
-      const clear = run.indexOf('router.setParams({ arrived: undefined, secondFree: undefined })');
+      const clear = run.indexOf('clearArrivalParams()');
       expect(position).toBeGreaterThan(-1);
       expect(timer).toBeGreaterThan(position);
       expect(wash).toBeGreaterThan(timer);
@@ -118,9 +146,24 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
       expect(screen).toMatch(/\}, \[params\.arrived, chapters, loaded\]\);/);
     });
 
-    it('lets the timer go with the screen, and the old immediate wash and clear are gone', () => {
-      expect(screen).toMatch(/useEffect\(\(\) => \(\) => \{\s*if \(arrivalTimer\.current\) clearTimeout\(arrivalTimer\.current\);\s*\}, \[\]\);/);
+    it('the old immediate wash and clear are gone', () => {
       expect(screen).not.toMatch(/arrivalOf\(/);
+    });
+
+    it('clears the param on the Book\'s own route, never the focused one, and drops the wait when the Book is left or closed', () => {
+      // `router.setParams` clears whichever route is focused by the time a delayed call lands (reproduced on the web).
+      expect(screen).not.toMatch(/router\.setParams/);
+      expect(screen).toMatch(/const navigation = useNavigation<\{ setParams: \(params: Record<string, unknown>\) => void \}>\(\);/);
+      expect(screen).toMatch(/const clearArrivalParams = useCallback\(\(\) => navigation\.setParams\(\{ arrived: undefined, secondFree: undefined \}\), \[navigation\]\);/);
+      // On blur and on unmount: the timer goes (no wash or toast over another screen) and a waiting param is cleared now.
+      expect(screen).toMatch(/useFocusEffect\(\s*useCallback\(\s*\(\) => \(\) => \{\s*if \(arrivalTimer\.current\) clearTimeout\(arrivalTimer\.current\);\s*arrivalTimer\.current = null;\s*if \(arrivalGate\.leave\(\)\) clearArrivalParams\(\);/);
+      // The timer tells the gate it is done, so leaving afterwards clears nothing twice.
+      expect(screen).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{\s*arrivalTimer\.current = null;\s*arrivalGate\.finish\(\);/);
+    });
+
+    it('reads the letters once at mount: the effect rereads only for another book, then on every store change', () => {
+      expect(screen).toMatch(/if \(read\.childId !== active\.id\) reread\(\);\s*return subscribe\(reread\);/);
+      expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });
 });
@@ -155,12 +198,38 @@ describe('[S3] "Write the words" on a recording with no words', () => {
   it('the letter page renders the card for both kinds, asks the store first, and opens the same sheet that leads to Review (source)', () => {
     const page = code(src('app/letter/[id].tsx'));
     expect(page).toMatch(/const wordsCard = wordsCardKind\(\{ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor\(entry\.id\) \}\);/);
-    expect(page).toMatch(/\{wordsCard && <WaitingCard entry=\{entry\} kind=\{wordsCard\} \/>\}/);
+    expect(page).toMatch(/\{wordsCard && <WaitingCard entry=\{entry\} kind=\{wordsCard\} onWrite=\{\(\) => setWriting\(true\)\} \/>\}/);
     expect(page).not.toMatch(/own && words === 'waiting' && <WaitingCard/);
     expect(page).toMatch(/const state = wordsCardState\(kind, job\);/);
     // One sheet, one way out: the typed words are stored, then Review opens for the letter.
     expect(page.match(/function WordsSheet\(/g)).toHaveLength(1);
-    expect(page).toMatch(/if \(!setTypedWordsForWaitingEntry\(entryId, text\)\) return;\s*onClose\(\);\s*router\.push\(\{ pathname: '\/review', params: \{ entryId \} \}\);/);
+    expect(page).toMatch(/if \(!setTypedWordsForWaitingEntry\(entryId, text\)\) return setRefused\(true\);\s*onClose\(\);\s*router\.push\(\{ pathname: '\/review', params: \{ entryId \} \}\);/);
+  });
+
+  it('the words sheet and its text outlive the card: the page holds the sheet, so a sync event that removes the card cannot unmount a person\'s typing (source)', () => {
+    const page = code(src('app/letter/[id].tsx'));
+    // The sheet is the page's, kept mounted while it is open, whether or not the card is still there.
+    expect(page).toMatch(/const \[writing, setWriting\] = useState\(false\);/);
+    expect(page).toMatch(/\{\(wordsCard \|\| writing\) && <WordsSheet entryId=\{entry\.id\} open=\{writing\} onClose=\{\(\) => setWriting\(false\)\} \/>\}/);
+    expect(page).toMatch(/<WaitingCard entry=\{entry\} kind=\{wordsCard\} onWrite=\{\(\) => setWriting\(true\)\} \/>/);
+    // The card owns neither the sheet nor its open state.
+    const card = page.slice(page.indexOf('function WaitingCard('), page.indexOf('function WordsSheet('));
+    expect(card).not.toMatch(/WordsSheet|setWriting|useState/);
+    expect(page.match(/<WordsSheet\b/g)).toHaveLength(1);
+  });
+
+  it('a refused Save keeps the text and the sheet open and says the words are still here; only an accepted Save closes it (source)', () => {
+    const page = code(src('app/letter/[id].tsx'));
+    const sheet = page.slice(page.indexOf('function WordsSheet('), page.indexOf('function ReadItBackCard('));
+    const refuse = sheet.indexOf('return setRefused(true);');
+    const close = sheet.indexOf('onClose();');
+    expect(refuse).toBeGreaterThan(-1);
+    expect(close).toBeGreaterThan(refuse);
+    // Nothing clears the typing, and the sheet is not closed on the refused path.
+    expect(sheet).not.toMatch(/setText\(''\)|setText\(""\)/);
+    expect(sheet.slice(0, close)).not.toMatch(/onClose\(\)/);
+    expect(sheet).toMatch(/\{refused \? \([\s\S]*?copy\.review\.saveFailed/);
+    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
   });
 
   it('the journey asserts it: j10e sees "Write the words" and neither retry nor "Get words ready", and the save goes to Review', () => {
@@ -291,6 +360,22 @@ describe('[S8] the letter page claims no fixes it cannot know', () => {
     expect(words.spokenFixed).toBe('Spoken, with small fixes');
     expect(words.spokenExact).toBe('Spoken, exactly as said');
     expect(words.typed).toBe('Typed');
+  });
+
+  it('"Exactly as said" is offered only where there are raw words on this phone to show (an empty page is not a view)', () => {
+    const own = { own: true, hasWords: true };
+    expect(exactViewAvailable(fixed, own)).toBe(true);
+    // Raw empty on this phone: the line says only "Spoken", and there is nothing to switch to.
+    expect(exactViewAvailable({ ...fixed, rawTranscript: '' }, own)).toBe(false);
+    expect(exactViewAvailable({ ...fixed, rawTranscript: '   ' }, own)).toBe(false);
+    // Untouched words have no second view; the other parent's letter, typed words and a letter without words have none.
+    expect(exactViewAvailable(exact, own)).toBe(false);
+    expect(exactViewAvailable(fixed, { own: false, hasWords: true })).toBe(false);
+    expect(exactViewAvailable({ ...fixed, captureMode: 'typed' }, own)).toBe(false);
+    expect(exactViewAvailable(fixed, { own: true, hasWords: false })).toBe(false);
+    const page = code(src('app/letter/[id].tsx'));
+    expect(page).toMatch(/const canShowOriginal = exactViewAvailable\(entry, \{ own, hasWords: words === 'words' \}\);/);
+    expect(page).not.toMatch(/entry\.rawTranscript !== entry\.finalText;/);
   });
 
   it('the page composes the line from lib/provenance (source)', () => {

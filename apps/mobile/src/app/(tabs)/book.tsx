@@ -12,7 +12,7 @@
  * its page (CardToPage, row 7) and the page goes back into it. A deleted card collapses out of its row, and Undo
  * puts it back with the wash (S36). Lamp: the still `book` scene, sharing the tabs' light.
  */
-import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
@@ -100,8 +100,10 @@ export default function Book() {
   useEffect(() => {
     if (!active) return;
     const reread = () => setRead({ childId: active.id, entries: listEntriesForChild(active.id) });
-    reread();
+    // The initialiser has just read this book: read again only for another book, or on a change (no second read at mount).
+    if (read.childId !== active.id) reread();
     return subscribe(reread);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
   const today = todayISO();
@@ -142,9 +144,21 @@ export default function Book() {
   }, []);
   const [arrivalGate] = useState(createArrivalGate);
   const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
-  }, []);
+  // The param is cleared on this screen's own route (`navigation`), never the focused one: a delayed `router.setParams`
+  // would clear whichever screen the person has moved to by then.
+  const navigation = useNavigation<{ setParams: (params: Record<string, unknown>) => void }>();
+  const clearArrivalParams = useCallback(() => navigation.setParams({ arrived: undefined, secondFree: undefined }), [navigation]);
+  // Leaving the Book, or closing it, while the wash waits: no wash or toast over another screen, and the param goes now.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
+        arrivalTimer.current = null;
+        if (arrivalGate.leave()) clearArrivalParams();
+      },
+      [arrivalGate, clearArrivalParams],
+    ),
+  );
   useEffect(() => {
     const step = arrivalGate.step({ param: params.arrived, sections: chapters, loaded, reduced });
     if (step.act !== 'run') return;
@@ -157,9 +171,11 @@ export default function Book() {
     }
     if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
     arrivalTimer.current = setTimeout(() => {
+      arrivalTimer.current = null;
+      arrivalGate.finish();
       if (arrival) wash([arrival.id]);
       if (secondFree) toast.show({ message: billingCopy.keepGate.secondFreeNote });
-      router.setParams({ arrived: undefined, secondFree: undefined });
+      clearArrivalParams();
     }, step.afterMs);
     // The gate runs each param once; only the param, the letters and the read decide when to ask it.
     // eslint-disable-next-line react-hooks/exhaustive-deps

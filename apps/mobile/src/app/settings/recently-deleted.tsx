@@ -35,7 +35,7 @@ import { bookCopy } from '@/components/book/copy';
  *
  * Every toast replaces the one on screen (components/ui/toast), so after Erase now no "Back in Asha's book." can sit
  * under "Letter erased.". Restore's toast carries "Open"; Erase now's carries no action, so it may time out. If the
- * recording's file cannot be removed, nothing is erased and the toast says so ("The letter was not erased. It is still
+ * recording's file cannot be removed, the letter was not erased and the toast says so ("The letter was not erased. It is still
  * in Recently deleted."); the card stays, with Erase now to try again.
  *
  * A build that syncs shows no Erase now until the server erase exists (S63, F17-REQ-025): the card shows its date

@@ -790,7 +790,7 @@ export const en = {
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
       erasedToast: "Letter erased.",
-      // Erase now when the recording's file could not be removed: nothing is erased, the row stays for another try
+      // Erase now when the recording's file could not be removed: the letter was not erased, the row stays for another try
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
       eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",

@@ -42,3 +42,12 @@ export function provenanceLine(
   const how = o.words[pageProvenanceKey(e, o)];
   return e.captureMode !== 'typed' && o.own ? `${how}. ${o.recordingOnPhone}.` : how;
 }
+
+/**
+ * Whether the letter page offers "Exactly as said": the author's own spoken letter, with words, whose raw words are on
+ * this phone and differ from the kept words. With no raw words here (the author's raw is empty on this phone), the view
+ * would be an empty page, and the provenance line says only "Spoken" (S8), so there is nothing to switch to.
+ */
+export function exactViewAvailable(e: { captureMode: string; finalText: string; rawTranscript: string }, o: { own: boolean; hasWords: boolean }): boolean {
+  return o.own && o.hasWords && e.captureMode !== 'typed' && e.rawTranscript.trim() !== '' && e.rawTranscript !== e.finalText;
+}

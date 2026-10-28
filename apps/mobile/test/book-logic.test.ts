@@ -35,7 +35,7 @@ describe('a kept letter arrives in the Book (5.8 row 5)', () => {
     // `secondFree` rides with `arrived` on the second kept letter (P4b, S21) and is cleared with it.
     expect(book).toMatch(/useLocalSearchParams<\{ arrived\?: string; secondFree\?: string \}>\(\)/);
     expect(book).toMatch(/if \(arrival\) wash\(\[arrival\.id\]\)/);
-    expect(book).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
+    expect(book).toMatch(/navigation\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
   });
 });
 

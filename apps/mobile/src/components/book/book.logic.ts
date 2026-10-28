@@ -62,7 +62,23 @@ export type ArrivalStep =
  */
 export function createArrivalGate() {
   let ran: string | null = null;
+  /** An arrival has run and its wash and param-clear are still waiting for the Book to be uncovered. */
+  let pending = false;
   return {
+    /** The wash and the param-clear have happened: nothing is waiting any more. */
+    finish() {
+      pending = false;
+    },
+    /**
+     * The Book is left (another screen takes the focus) or closed while the wash waits. Returns whether a param is
+     * still to be cleared: the caller drops the timer, so no wash or toast shows over another screen, and clears the
+     * param on the Book's own route.
+     */
+    leave(): boolean {
+      const was = pending;
+      pending = false;
+      return was;
+    },
     step(o: { param: string | string[] | undefined; sections: readonly Section[]; loaded: boolean; reduced: boolean }): ArrivalStep {
       const id = paramId(o.param);
       if (!id) {
@@ -72,6 +88,7 @@ export function createArrivalGate() {
       if (ran === id) return { act: 'idle' };
       if (!o.loaded) return { act: 'wait' };
       ran = id;
+      pending = true;
       return { act: 'run', arrival: arrivalOf(id, o.sections), afterMs: arrivalToastDelayMs(o.reduced) };
     },
   };

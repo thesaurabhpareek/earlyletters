@@ -113,7 +113,8 @@ export function restoredLine(words: { restoredToast: string; restoredToastNoName
  * What Erase now did, from what the store answered and what the shelf holds afterwards (P5 critics' pass, S6).
  *   erased  the letter and its recording are gone: "Letter erased."
  *   kept    the store refused (the recording's file could not be removed, so the row stays for another try, D-085) and the
- *           letter is still on the shelf: say so, and say that nothing was erased.
+ *           letter is still on the shelf: say so, and say that the letter was not erased (nothing about the file: part of it
+ *           may be gone).
  *   gone    refused, but the letter is no longer on the shelf either (restored or erased on another phone while the
  *           sheet was open): nothing to say, the card has already left.
  */
