@@ -8,6 +8,7 @@ import Link from 'next/link';
 import styles from '@/components/site/Unsubscribe.module.css';
 import { site } from '@/content/site';
 import { readUnsubscribeToken } from '@/lib/notify/unsubscribe';
+import { NoViewTransition } from '@/components/site/NoViewTransition';
 
 export const metadata: Metadata = {
   title: site.unsubscribe.title,
@@ -36,6 +37,7 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
 
   return (
     <main className={styles.page}>
+      <NoViewTransition />
       <h1 className={styles.line}>{title}</h1>
       <p className={styles.body} role={q.error ? 'alert' : undefined}>
         {body}
