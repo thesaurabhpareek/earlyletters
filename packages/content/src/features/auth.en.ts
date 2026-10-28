@@ -97,15 +97,17 @@ export const authCopy = {
   },
 
   errors: {
-    // After an offline or failed attempt the reassurance comes first (VOICE, the Error row).
+    // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
+    // network-caused errors say the letters are safe first (VOICE, the Error row); input errors (wrong_code,
+    // expired, invalid_email) keep their words; unknown says it second.
     network: 'Your letters are safe on this phone. Sign in once you are back online.',
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
-    code_paused: 'You can try a code again in 15 minutes.',
-    rate_limited: 'Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
+    code_paused: 'Your letters are safe. You can try a code again in 15 minutes.',
+    rate_limited: 'Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
     invalid_email: "That email doesn't look quite right.",
-    not_available: "This way of signing in isn't available right now. Try another way.",
-    provider: 'That did not work this time. Try again, or try another way.',
+    not_available: "Your letters are safe. This way of signing in isn't available right now. Try another way.",
+    provider: 'Your letters are safe. That did not work this time. Try again, or try another way.',
     session_expired: 'Your letters are safe on this phone. Sign in again to keep sharing them.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',

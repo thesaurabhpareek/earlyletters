@@ -65,6 +65,14 @@ describe('[S52] the sign-in sheet', () => {
     // track() stores and sends nothing before analytics consent (packages/analytics client; off in v1.0, D-088,
     // test/analytics-off-v1.test.ts), and close() is navigation. The sheet reaches no local store at all.
     expect(sheet).not.toMatch(/from '@\/lib\/(?:store|db)|setSetting|secureStorage/);
+    // close() is useCloseSheet (lib/auth/ui.tsx): it may only navigate. Every call in its body is a navigation call,
+    // so a write added there (a setting, the Keychain, the store) fails here.
+    const closeSheet = between(ui, 'export function useCloseSheet', 'export function SheetFrame');
+    const calls = [...closeSheet.matchAll(/([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]);
+    const NAVIGATION = new Set(['useCloseSheet', 'useNavigation', 'useCallback', 'getParent', 'canGoBack', 'goBack', 'back', 'replace', 'if']);
+    expect(calls.filter((c) => !NAVIGATION.has(c))).toEqual([]);
+    expect(calls).toEqual(expect.arrayContaining(['getParent', 'goBack']));
+    expect(ui).not.toMatch(/from '@\/lib\/(?:store|db)'|from '\.\.\/store'|secure-storage|setSetting/);
   });
 
   it('the kill path shows only its line, with no way in', () => {
@@ -256,11 +264,25 @@ describe('[S55] before your book syncs', () => {
     expect(terms).toMatch(/loading=\{busy\}\s+label=\{t\.agree\}/);
   });
 
+  it('"Keep on this phone" from Agree and sync sets the guard before it closes: Keep then Agree in one frame records no accept', () => {
+    const turnOn = between(consent, 'const answerTurnOn: Answer = async', '  };');
+    const keep = between(turnOn, 'if (!accepted) {', 'return;');
+    expect(keep).toMatch(/inFlight\.current = true;\s*close\(\);/);
+    // The accept path is after the Keep branch and behind the same guard.
+    expect(turnOn.indexOf('if (inFlight.current) return;')).toBeLessThan(turnOn.indexOf('if (!accepted) {'));
+    expect(turnOn.indexOf('if (!accepted) {')).toBeLessThan(turnOn.indexOf('await auth.turnOnSync()'));
+  });
+
+  it('Agree from "Agree and sync" sets the guard before its await and releases it in finally, so a failed Agree can be tried again', () => {
+    const turnOn = between(consent, 'const answerTurnOn: Answer = async', '  };');
+    expect(turnOn).toMatch(/inFlight\.current = true;\s*setBusy[\s\S]*await auth\.turnOnSync\(\)[\s\S]*finally \{\s*inFlight\.current = false;/);
+  });
+
   it('"Agree and sync" after a decline shows the sensitive-data step with its words, then records (LEGAL-REQ-006)', () => {
     expect(consent).toMatch(/const turningOn = params\.step === 'sensitive' && s\.status === 'ready' && s\.sync === 'off'/);
     expect(between(consent, 'if (turningOn) {', 'if (s.status !== \'needsConsent\')')).toMatch(/<SensitiveStep child=\{child\} busy=\{busy\} error=\{turnOnError\} answer=\{answerTurnOn\} \/>/);
     const turnOn = between(consent, 'const answerTurnOn: Answer = async', '  };');
-    expect(turnOn).toMatch(/if \(!accepted\) \{\s*close\(\);\s*return;\s*\}/);
+    expect(turnOn).toMatch(/if \(!accepted\) \{\s*inFlight\.current = true;\s*close\(\);\s*return;\s*\}/);
     expect(turnOn).toMatch(/await auth\.turnOnSync\(\)/);
     // Account and the invite sheets send the person here; neither records consent itself.
     for (const [name, src] of Object.entries({ account, gate: between(ui, 'export function AccountGate', '\n}\n') })) {

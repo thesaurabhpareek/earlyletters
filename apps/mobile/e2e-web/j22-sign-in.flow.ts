@@ -116,8 +116,8 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
 
   m.auth('otp', () => ({ status: 429, body: { code: 'over_email_send_rate_limit', error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' } }));
   await btn(app, 'Send link').click();
-  await expect(app.getByText('Sign-in emails are paused for an hour. Use Apple or Google, or try again later.')).toBeVisible();
-  await step('unhappy', 'Too many emails', 'The cause and a way forward, in the person\'s words, not the system\'s.');
+  await expect(app.getByText(`${SAFE.replace(' on this phone.', '.')} Sign-in emails are paused for an hour. Use Apple or Google, or try again later.`)).toBeVisible();
+  await step('unhappy', 'Too many emails', 'The letters are safe first, then the cause and a way forward, in the person\'s words, not the system\'s.');
 
   m.auth('otp', () => null);
   await btn(app, 'Send link').click();
