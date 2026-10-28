@@ -121,6 +121,30 @@ export function parseLens(body, prNumber) {
   return { verdict, sha: shaIn(first) ?? headLine };
 }
 
+/**
+ * A machine-countable pass, or undefined. Free text cannot be proved safe (four review rounds kept
+ * finding blocking wording that read as a pass), so only a strict first line counts toward the
+ * D-117 two:
+ *   ## Review A at <sha>: PASS            (or PASS WITH NOTES; "Review B", "Review A delta" too)
+ *   <!-- lens:a:<sha> -->  then  Verdict: PASS   (the marker format of open PR #353)
+ * with nothing else on that line, and no stop phrase ("do not merge", "request changes") or open
+ * Must anywhere in the first 15 lines. Every other review is shown, read best-effort, and marked
+ * "free text"; it never counts.
+ */
+const STRICT = /^#{0,3}\s*review\s+[ab](\s+delta)?\s+at\s+([0-9a-f]{7,40})\s*:\s*(pass|pass with notes)\s*$/i;
+const MARKER = /^<!--\s*lens:[ab]:([0-9a-f]{7,40})(\s+base:[0-9a-f]{7,40})?\s*-->\s*$/i;
+export function countedPass(body) {
+  const lines = String(body ?? "").replace(/\r\n/g, "\n").trim().split("\n");
+  const head = lines.slice(0, 15).join("\n").toLowerCase().replace(APOSTROPHES, "'");
+  if (STOP_ANYWHERE.test(head) || /\bmust[\s-]*fix\b|\bmusts?\s+(open|remain(ing)?|left)\b|\b(m\d+|must)\s+(is\s+)?open\b/.test(head)) return undefined;
+  const first = lines[0].trim();
+  const s = first.match(STRICT);
+  if (s) return { sha: s[2], verdict: s[3].toUpperCase() };
+  const m = first.match(MARKER);
+  const v = m && lines[1]?.trim().match(/^verdict:\s*(pass|pass with notes)\s*$/i);
+  return v ? { sha: m[1], verdict: v[1].toUpperCase() } : undefined;
+}
+
 /** Latest lens and red-team verdicts from a PR's comments and reviews, trusted authors only. */
 export function verdictsOf(pr, comments, reviews, trusted) {
   const items = [
@@ -134,14 +158,16 @@ export function verdictsOf(pr, comments, reviews, trusted) {
   for (const i of items) {
     const r = parseVerdict(i.body);
     if (r) { red = { verdict: r.verdict, sha: r.sha, onHead: sameSha(r.sha, head) }; continue; }
+    const c = countedPass(i.body);
+    if (c) { lens.push({ ...c, onHead: sameSha(c.sha, head), counted: true }); continue; }
     const l = parseLens(i.body, pr.number);
-    if (l) lens.push({ ...l, onHead: sameSha(l.sha, head) });
+    if (l) lens.push({ ...l, onHead: sameSha(l.sha, head), counted: false });
   }
   return { lens, red };
 }
 
 const days = (from, now) => Math.floor((now - new Date(from)) / D);
-const word = (v) => (v ? `${v.verdict}${v.onHead ? " on head" : " on an older head"}` : "none");
+const word = (v) => (v ? `${v.verdict}${v.onHead ? " on head" : " on an older head"}${v.counted === false ? " (free text)" : ""}` : "none");
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const nums = (list, max) => list.slice(0, max).map((n) => `#${n}`).join(", ") + (list.length > max ? `, +${list.length - max} more` : "");
 
@@ -170,8 +196,9 @@ export function buildModel(data, now) {
 /** One founder-class merge with its last two lens verdicts, checked against the merged head. */
 export function founderLine(p) {
   const two = p.lens.slice(-2);
-  const onHead = two.filter((v) => v.onHead && PASSING.has(v.verdict)).length; // only passing verdicts count toward the two
-  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 passing on the merged head)" : ""}.`;
+  // Only strict-format passes on the merged head count toward the two (see countedPass).
+  const onHead = two.filter((v) => v.onHead && v.counted && PASSING.has(v.verdict)).length;
+  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 counted passes on the merged head)" : ""}.`;
 }
 
 /** Pure: the weekly skim of D-117 merges, one line each, no line cap. */

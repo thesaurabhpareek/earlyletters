@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  founderClasses, sameSha, parseLens, PASSING, verdictsOf, buildModel, renderPage, renderFounderList, founderLine, collect, MAX_LINES, EXTRA_SLOTS,
+  founderClasses, sameSha, parseLens, countedPass, PASSING, verdictsOf, buildModel, renderPage, renderFounderList, founderLine, collect, MAX_LINES, EXTRA_SLOTS,
 } from "./page.mjs";
 
 const NOW = "2026-10-28T12:00:00Z";
@@ -116,7 +116,7 @@ test("verdict-on-head: latest lens and red-team verdicts against the current hea
   const reviews = [{ body: `<!-- red-team:${OLD} -->\nVerdict: ship`, submitted_at: ago(5), user: { login: "Owner" } }];
   const v = verdictsOf(pr, comments, reviews, ME);
   assert.equal(v.lens.length, 2, "untrusted author ignored");
-  assert.deepEqual(v.lens.at(-1), { verdict: "PASS WITH NOTES", sha: HEAD.slice(0, 7), onHead: true });
+  assert.deepEqual(v.lens.at(-1), { verdict: "PASS WITH NOTES", sha: HEAD.slice(0, 7), onHead: true, counted: false });
   assert.equal(v.lens[0].onHead, false);
   assert.deepEqual(v.red, { verdict: "ship", sha: OLD, onHead: false });
 });
@@ -183,12 +183,12 @@ test("collect only reads, and the page fits in 15 lines", () => {
   assert.ok(lines.length <= MAX_LINES, lines.join("\n"));
   const text = lines.join("\n");
   assert.match(text, /Merged in the last 24 h: 1\. #50\./);
-  assert.match(text, /- #40, 20 d: lens PASS on head; red team none\./);
+  assert.match(text, /- #40, 20 d: lens PASS on head \(free text\); red team none\./);
   assert.match(text, /6 open PRs \(not drafts\), oldest first, first 4 shown/);
   assert.doesNotMatch(text, /#41,/);
   assert.match(text, /Handoffs open over 48 h: 2\. #60 \(14 d, 0 comments\), #62 \(2 d, 2 comments\)\./);
   assert.match(text, /- #50 database: PASS on head; PASS WITH NOTES on head\.\n/);
-  assert.match(text, /- #52 payments, release config: PASS on an older head \(fewer than 2 passing on the merged head\)\./);
+  assert.match(text, /- #52 payments, release config: PASS on an older head \(fewer than 2 counted passes on the merged head\)\./);
   assert.match(text, /Open PRs older than 14 days: 2\.$/);
   assert.doesNotMatch(text, /[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/);
 });
@@ -215,11 +215,35 @@ test("founder list mode reads every thread and lists every founder-class merge",
 
 test("founder-class line counts only passing verdicts on the merged head toward the two", () => {
   const base = { number: 77, classes: ["database"] };
-  const pass = { verdict: "PASS", sha: "abcdef1", onHead: true };
-  const fail = { verdict: "FAIL", sha: "abcdef1", onHead: true };
-  const after = { verdict: "MERGE AFTER FIX", sha: "abcdef1", onHead: true };
+  const pass = { verdict: "PASS", sha: "abcdef1", onHead: true, counted: true };
+  const fail = { verdict: "FAIL", sha: "abcdef1", onHead: true, counted: false };
+  const after = { verdict: "MERGE AFTER FIX", sha: "abcdef1", onHead: true, counted: false };
   assert.doesNotMatch(founderLine({ ...base, lens: [pass, { ...pass, verdict: "PASS WITH NOTES" }] }), /fewer than 2/);
-  assert.match(founderLine({ ...base, lens: [pass, fail] }), /fewer than 2 passing on the merged head/, "a FAIL on head is not a pass");
-  assert.match(founderLine({ ...base, lens: [pass, after] }), /fewer than 2 passing/, "MERGE AFTER FIX is conditional, not a pass");
-  assert.match(founderLine({ ...base, lens: [pass, { ...pass, onHead: false }] }), /fewer than 2 passing/, "an older head does not count");
+  assert.match(founderLine({ ...base, lens: [pass, fail] }), /fewer than 2 counted passes on the merged head/, "a FAIL on head is not a pass");
+  assert.match(founderLine({ ...base, lens: [pass, after] }), /fewer than 2 counted passes/, "MERGE AFTER FIX is conditional, not a pass");
+  assert.match(founderLine({ ...base, lens: [pass, { ...pass, onHead: false }] }), /fewer than 2 counted passes/, "an older head does not count");
+  assert.match(founderLine({ ...base, lens: [pass, { ...pass, counted: false }] }), /fewer than 2 counted passes/, "a free-text pass does not count");
+  assert.match(founderLine({ ...base, lens: [pass, { ...pass, counted: false }] }), /PASS on head \(free text\)/);
+});
+
+test("only a strict-format review counts toward the two; free text never does", () => {
+  const H = "97b50e1";
+  // Counted: the strict line, or the lens marker plus a bare Verdict line.
+  assert.deepEqual(countedPass(`## Review A at ${H}: PASS`), { sha: H, verdict: "PASS" });
+  assert.deepEqual(countedPass(`Review B delta at ${H}: pass with notes`), { sha: H, verdict: "PASS WITH NOTES" });
+  assert.deepEqual(countedPass(`<!-- lens:b:${H} -->\nVerdict: PASS WITH NOTES\n\nNotes follow.`), { sha: H, verdict: "PASS WITH NOTES" });
+  // Never counted: every probe from Lens B's four rounds (28 Oct), plus the real free-text habit.
+  const never = [
+    `## Review A at ${H}: PASS. DO NOT MERGE`, `## Review A at ${H}: PASS pending #306`, `## Review A (do not merge yet) at ${H}: PASS`,
+    `## Review B at ${H}: CHANGES NEEDED. Then: PASS`, `## Review A at ${H}: FAIL. Old head 3539f6c: PASS`,
+    `## Review A at ${H}: PASS. Blocked on #306.`, `## Review A at ${H}: **PASS** pending #306`, `## Review A at ${H}: PASS at head 1234abc if #306 lands`,
+    `## Review A at ${H}: PASS (not on head)`, `## Review A at ${H}: PASS (stale head)`, `## Review A at ${H}: PASS. Must-fix: M1.`,
+    `## Review A at ${H}: PASS. 2 Musts.`, `## Review A at ${H}: PASS. Requires #306.`, `## Review A at ${H}: PASS WITH NOTES; M1 is open`,
+    `## Review A (blocked on #306) at ${H}: PASS`, `## Review A (FAIL) at ${H}: PASS`, `## Review A at ${H}, pending #306: PASS`,
+    `Review lens A, head ${H} (not the merged head). Verdict: PASS`,
+    `## Review A at ${H}: PASS\nMust fix M1 before merge.`, `## Review A at ${H}: PASS\n\nDO NOT MERGE`,
+    `<!-- lens:a:${H} -->\nVerdict: PASS\nRequest changes on M1.`, `<!-- lens:a:${H} -->\nVerdict: PASS pending #306`,
+    `## Review A (correctness and tests) at ${H}: PASS`, `Review lens B, head ${H}. Verdict: PASS WITH NOTES. No Must.`,
+  ];
+  for (const b of never) assert.equal(countedPass(b), undefined, b);
 });
