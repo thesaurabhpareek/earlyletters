@@ -4,7 +4,7 @@
 // apps/web/src/components/brand/lockup.generated.ts (registry logo.lockup.horizontal.ink 1.0.0)
 // or from apps/web/public/favicon/favicon.svg (approved symbol). Icons are Lanczos downscales of icon-512.png.
 import { chromium } from '../../../node_modules/playwright-core/index.mjs';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -48,14 +48,15 @@ const add = (file, w, h, th, body) => jobs.push({ file, w, h, html: page(w, h, T
 add('play/feature-graphic-1024x500.png', 1024, 500, 'paper', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">Exactly as you said it.</div></div>`);
 add('play/feature-graphic-1024x500-night.png', 1024, 500, 'night', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">Exactly as you said it.</div></div>`);
 // Link previews (Open Graph / Twitter large card), 1200x630. Safe area: content inside the centre 1000x500.
-const og = t => `<div class=c>${symbol(t.ink, 150)}<div style="font-size:84px;font-weight:500;margin-top:28px;letter-spacing:-.5px">Early Letters</div><div class=tag style="font-size:40px;margin-top:20px">Exactly as you said it.</div></div>`;
+const og = t => `<div class=c>${lockup(t.ink, 130)}<div class=tag style="font-size:40px;margin-top:34px">Exactly as you said it.</div></div>`;
 add('social/link-preview-paper-1200x630.png', 1200, 630, 'paper', og);
 add('social/link-preview-night-1200x630.png', 1200, 630, 'night', og);
 add('social/link-preview-category-1200x630.png', 1200, 630, 'paper', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-family:Literata;font-size:46px;font-weight:500;margin-top:44px">The baby memory book you fill by talking.</div><div class=tag style="font-size:34px;margin-top:18px">Your words. Your voice. Kept as said.</div></div>`);
 // App Store promotional artwork (type only; real-UI screenshots live in docs/store/screenshots)
-add('promo/promo-square-1080x1080-paper.png', 1080, 1080, 'paper', t => `<div class=c>${symbol(t.ink, 190)}<div style="font-size:92px;font-weight:500;margin-top:40px;line-height:1.12">Said once.<br>Heard for years.</div><div style="font-family:Mukta;font-size:34px;color:${t.muted};margin-top:36px">Early Letters, the baby memory book you fill by talking.</div></div>`);
-add('promo/promo-story-1080x1920-night.png', 1080, 1920, 'night', t => `<div class=c>${symbol(t.ink, 220)}<div style="font-size:104px;font-weight:500;margin-top:56px;line-height:1.12">Exactly as<br>you said it.</div><div style="font-family:Mukta;font-size:38px;color:${t.muted};margin-top:48px;max-width:760px">Early Letters, the baby memory book you fill by talking.</div></div>`);
+add('promo/promo-square-1080x1080-paper.png', 1080, 1080, 'paper', t => `<div class=c>${lockup(t.ink, 120)}<div style="margin-top:70px;font-size:92px;font-weight:500;line-height:1.12">Said once.<br>Heard for years.</div><div style="font-family:Mukta;font-size:34px;color:${t.muted};margin-top:36px">Early Letters, the baby memory book you fill by talking.</div></div>`);
+add('promo/promo-story-1080x1920-night.png', 1080, 1920, 'night', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-size:104px;font-weight:500;margin-top:90px;line-height:1.12">Exactly as<br>you said it.</div><div style="font-family:Mukta;font-size:38px;color:${t.muted};margin-top:48px;max-width:760px">Early Letters, the baby memory book you fill by talking.</div></div>`);
 
+mkdirSync(join(here, '_src'), { recursive: true });
 const b = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
 for (const j of jobs) {
   const p = await b.newPage({ viewport: { width: j.w, height: j.h }, deviceScaleFactor: 1 });

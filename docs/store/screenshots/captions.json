@@ -1,7 +1,7 @@
 [
   { "id": "01-tonight", "screen": "tonight", "headline": "A minute is plenty.", "sub": "Open it, say one thing about today, put the phone down.", "bg": "dusk" },
   { "id": "02-listening", "screen": "listening", "headline": "Just talk.", "sub": "Pause, laugh, lose your thread. It is listening.", "bg": "night" },
-  { "id": "03-review", "screen": "review", "headline": "Exactly as you said it.", "sub": "Only small slips get fixed. Nothing is added.", "bg": "paper" },
+  { "id": "03-review", "screen": "review", "headline": "Exactly as you said it.", "sub": "Small slips are marked for fixing. Nothing is added.", "bg": "paper" },
   { "id": "04-book", "screen": "book", "headline": "A book that grows by month.", "sub": "Every letter is filed by your child's age.", "bg": "paperwarm" },
   { "id": "05-letter", "screen": "letter", "headline": "Said once. Heard for years.", "sub": "Read it, and hear the voice that said it.", "bg": "dawn" },
   { "id": "06-letter-night", "screen": "letternight", "headline": "Bedtime, in your voice.", "sub": "Night mode for late reading.", "bg": "night" }

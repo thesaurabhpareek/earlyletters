@@ -10,7 +10,7 @@ import { LetterScreen } from '@/components/app-ui/screens/Letter';
 import { WORD_COUNT } from '@/film/letter';
 import captions from '../captions.json';
 
-const FIX = 1;
+const FIX = 0;
 const q = new URLSearchParams(location.search);
 const W = Number(q.get('w'));
 const H = Number(q.get('h'));
