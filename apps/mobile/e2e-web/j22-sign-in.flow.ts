@@ -6,7 +6,8 @@
  * What this proves in a browser: each entry point of the sign-in sheet says what is true for it, in one sentence, under
  * the registered privacy line; "Not now" closes and asks nothing of the server; after the first kept letter the sheet
  * rises over the Book, never in place of Review (5.8 row 5b); email asks only on submit, an offline or failed try says
- * the letters are safe first, the code screen shows the address and a wrong code clears the field; account setup shows
+ * the letters are safe first, the code screen shows the address and a wrong code clears the field, and after five wrong
+ * codes typing waits for 15 minutes (Playwright's clock) while the email's link, a new email and Not now still work; account setup shows
  * the registered Terms and sensitive-data words, the age step only as the gate's question, and a decline the same size
  * as an accept that leaves the person signed in with nothing synced; Account says how you signed in.
  * What it cannot prove: Apple's and Google's sheets, AutoFill offering an address or a code, the iOS sheet and its
@@ -25,6 +26,14 @@ const PRIVACY = 'Only you and the people you invite can read your letters. We ne
 const SAFE = 'Your letters are safe on this phone.';
 const BODY = `Your letters come with you to a new phone, and ${CHILD}'s other parent can write in the same book.`;
 const TOKEN = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
+const OTHER = 'papa@example.invalid';
+const WRONG = "That code didn't match. Check the newest email, or send a new one.";
+/** While the pause holds, one line: errors.code_paused, then the ways in that still work (code.pausedOtherWays). */
+const PAUSED = 'Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so does signing in with Apple or Google.';
+const RESENT = 'A new email is on its way.';
+const RESEND_WAIT = 'You can send another in a minute.';
+const BAD_CODE = { status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } };
+const MIN = 60_000;
 
 async function openOn(page: Page, path = '/') {
   await page.goto(`${ON()}${path}`);
@@ -124,9 +133,10 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await expect(app.getByRole('heading', { name: 'Check your email' })).toBeVisible();
   await expect(app.getByText(`A link and a code are on their way to ${EMAIL}.`)).toBeVisible();
   await expect(btn(app, 'Continue')).toBeDisabled();
-  await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
+  // No book on this phone yet, so no "safe on this phone" line: there are no letters here (lens A1).
+  await expect(app.getByText(SAFE, { exact: true })).toHaveCount(0);
   await expect(btn(app, 'Not now')).toBeVisible();
-  await step('happy', 'Check your email', 'The address the email went to is on screen. Tap the link on this phone, or type the code: a full code goes on its own; Continue stays for VoiceOver and Switch Control (S54).');
+  await step('happy', 'Check your email', 'The address the email went to is on screen. Tap the link on this phone, or type the code: a full code goes on its own; Continue stays for VoiceOver and Switch Control (S54). Not now sits top right.');
 
   m.auth('verify', () => ({ status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } }));
   await app.getByLabel('Code', { exact: true }).fill('111111');
@@ -296,48 +306,185 @@ async function toCodeStep(page: Page) {
   await passAgeGate(page);
   await btn(page, 'I already have a book').click();
   await btn(page, 'Continue with email').click();
-  await page.getByLabel('Email', { exact: true }).fill(EMAIL);
-  await btn(page, 'Send link').click();
-  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  await sendTo(page, EMAIL);
 }
 
-test('[J22g] the code step: the letters are safe while waiting, and Not now closes and asks nothing (P8a critics S2)', async ({ app, record }) => {
+/** From the email step: an address as typed, Send link, and the code step for it (the step trims what was typed). */
+async function sendTo(page: Page, typed: string) {
+  await page.getByLabel('Email', { exact: true }).fill(typed);
+  await btn(page, 'Send link').click();
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  await expect(page.getByText(`A link and a code are on their way to ${typed.trim()}.`, { exact: true })).toBeVisible();
+}
+
+/** Wrong codes, one after another; each clears the field. The fifth for one address starts the pause. */
+async function wrongCodes(page: Page, codes: string[]) {
+  const field = page.getByLabel('Code', { exact: true });
+  for (const code of codes) {
+    await field.fill(code);
+    await expect(page.getByText(WRONG).or(page.getByText(PAUSED))).toBeVisible();
+    await expect(field).toHaveValue('');
+  }
+}
+
+async function expectPaused(page: Page, why: string) {
+  await expect(page.getByText(PAUSED, { exact: true }), why).toBeVisible();
+  await expect(page.getByText(WRONG), why).toHaveCount(0);
+  await expect(page.getByLabel('Code', { exact: true }), why).not.toBeEditable();
+  await expect(btn(page, 'Continue'), why).toBeDisabled();
+  // A new email stays offered: its link signs in, and sending it never ends or shortens the pause (lens A2).
+  await expect(btn(page, 'Send a new email'), why).toBeVisible();
+}
+
+async function expectNotPaused(page: Page, why: string) {
+  await expect(page.getByText(PAUSED, { exact: true }), why).toHaveCount(0);
+  await expect(page.getByLabel('Code', { exact: true }), why).toBeEditable();
+}
+
+const codesAsked = (m: MockServer) => m.calls.filter((c) => c.path === '/auth/v1/verify');
+const emailsSent = (m: MockServer) => m.calls.filter((c) => c.path === '/auth/v1/otp');
+
+test('[J22g] the code step: Not now top right closes and asks nothing; the letters are safe only with a book here (P8a critics S2, lens A1, A3)', async ({ app, record }) => {
+  test.setTimeout(120_000);
   const step = journey(record, 'J22', 'sign-in', 70, 'J22-07');
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
   await toCodeStep(app);
-  await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
-  await step('happy', 'Waiting for the email', 'Under the code field, the one thing that is true whatever the email does: "Your letters are safe on this phone." A quiet Not now sits at the foot.');
+  // A fresh install: no letters on this phone, so nothing is said about them.
+  await expect(app.getByText(SAFE, { exact: true })).toHaveCount(0);
+  // Not now is in the header, above the field, so the number pad never covers it (lens A3; the phone check is S1-27 (h)).
+  const notNow = await btn(app, 'Not now').boundingBox();
+  const field = await app.getByLabel('Code', { exact: true }).boundingBox();
+  expect(notNow!.y + notNow!.height).toBeLessThanOrEqual(field!.y);
   const before = m.serverCalls().length;
   await btn(app, 'Not now').click();
   await expect(btn(app, 'Begin the book')).toBeVisible();
   expect(m.serverCalls().length, 'Not now asks nothing of the server').toBe(before);
-  await step('unhappy', 'Not now, from the code step', 'Not now closes the whole sheet onto the welcome as it was, as on the first step (S52\'s rule). Nothing changes on this phone.');
+  await step('unhappy', 'Not now, from the code step', 'Not now, top right where the number pad never covers it, closes the whole sheet onto the welcome as it was, as on the first step (S52\'s rule). Nothing changes on this phone.');
+
+  // With Asha's book on this phone, the one thing that is true whatever the email does.
+  await openOn(app, '/?seed=asha');
+  await openOn(app, '/settings/account?seed=asha');
+  await btn(app, 'Sign in').click();
+  await btn(app, 'Continue with email').click();
+  await sendTo(app, EMAIL);
+  await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
+  await step('happy', 'Waiting for the email, with a book here', 'Under the code field, only when this phone holds a book: "Your letters are safe on this phone." A fresh install has no letters to be safe, so it says nothing there.');
+  await btn(app, 'Not now').click();
+  await expect(app.getByRole('heading', { name: 'Not signed in' })).toBeVisible();
 });
 
-test('[J22h] five wrong codes: while the pause holds a new email is not offered, and the line says why (P8a critics S1)', async ({ app, record }) => {
+test('[J22h] five wrong codes: typing waits, the line says the email\'s link and Apple or Google still work, and a new email stays (P8a critics S1, lens A2)', async ({ app, record }) => {
   test.setTimeout(120_000);
   const step = journey(record, 'J22', 'sign-in', 80, 'J22-08');
   allowConsoleError(app, /status of 403/);
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
-  m.auth('verify', () => ({ status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } }));
+  m.auth('verify', () => BAD_CODE);
   await toCodeStep(app);
-  const field = app.getByLabel('Code', { exact: true });
-  for (const code of ['111111', '222222', '333333', '444444']) {
-    await field.fill(code);
-    await expect(app.getByText("That code didn't match. Check the newest email, or send a new one.")).toBeVisible();
-    await expect(field).toHaveValue('');
-  }
-  await field.fill('555555');
-  await expect(app.getByText('Your letters are safe. You can try a code again in 15 minutes.')).toBeVisible();
-  await expect(app.getByText('A new email does not end the wait. Use Apple or Google instead.')).toBeVisible();
-  await expect(btn(app, 'Send a new email')).toHaveCount(0);
-  await expect(app.getByText('You can send another in a minute.')).toHaveCount(0);
-  await expect(field).not.toBeEditable();
-  await expect(btn(app, 'Use a different email')).toBeVisible();
-  await expect(btn(app, 'Not now')).toBeVisible();
-  expect(m.calls.filter((c) => c.path === '/auth/v1/verify'), 'five codes asked, then nothing more').toHaveLength(5);
-  expect(m.calls.filter((c) => c.path === '/auth/v1/otp'), 'only the first email').toHaveLength(1);
-  await step('unhappy', 'Paused after five wrong codes', 'The field waits for 15 minutes. A new email would not end the wait, so it is not offered; the line says so and points at Apple or Google. Another address and Not now still work.');
+  await wrongCodes(app, ['111111', '222222', '333333', '444444']);
+  await expectNotPaused(app, 'four wrong codes');
+  await wrongCodes(app, ['555555']);
+  await expectPaused(app, 'the fifth wrong code');
+  // Within the email's first minute "Send a new email" waits, as it does at any time, with its own line.
+  await expect(btn(app, 'Send a new email')).toBeDisabled();
+  await expect(app.getByText(RESEND_WAIT)).toBeVisible();
+  await expect(btn(app, 'Use a different email')).toBeEnabled();
+  await expect(btn(app, 'Not now')).toBeEnabled();
+  expect(codesAsked(m), 'five codes asked, then nothing more').toHaveLength(5);
+  expect(emailsSent(m), 'only the first email').toHaveLength(1);
+  await step('unhappy', 'Paused after five wrong codes', 'Typing a code waits for 15 minutes. One line, read as one: the letters are safe, when a code can be tried again, and that the link in the newest email and Apple or Google still sign in. "Send a new email", another address and Not now still work.');
+});
+
+test('[J22j] the pause lifts on its own at 15 minutes: the field comes back and the paused line goes (lens B1)', async ({ app, record }) => {
+  test.setTimeout(180_000);
+  const step = journey(record, 'J22', 'sign-in', 81);
+  allowConsoleError(app, /status of 403/);
+  await app.clock.install();
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  m.auth('verify', () => BAD_CODE);
+  await toCodeStep(app);
+  await wrongCodes(app, ['111111', '222222', '333333', '444444']);
+  // The fifth wrong code happens between these two readings of the page's clock, so the pause ends between them plus 15 minutes.
+  const first = await app.evaluate(() => Date.now());
+  await wrongCodes(app, ['555555']);
+  await expectPaused(app, 'at once');
+  const last = await app.evaluate(() => Date.now());
+  const jumpTo = async (at: number) => app.clock.fastForward(Math.max(1, at - (await app.evaluate(() => Date.now()))));
+
+  await jumpTo(first + 15 * MIN - 3_000);
+  await expectPaused(app, '3 s before the pause can end');
+  await jumpTo(last + 15 * MIN + 3_000);
+  await expectNotPaused(app, '3 s after the pause has ended');
+  await expect(app.getByText(/try a code again/), 'the stale paused line is gone').toHaveCount(0);
+  await expect(app.getByText(WRONG)).toHaveCount(0);
+  await expect(app.getByText(SAFE, { exact: true }), 'still no book on this phone').toHaveCount(0);
+  await expect(btn(app, 'Send a new email')).toBeEnabled();
+  await expect(app.getByText(RESEND_WAIT)).toHaveCount(0);
+  await step('happy', 'The pause has ended', 'Fifteen minutes after the fifth wrong code the field takes a code again and the paused line goes, with nothing to tap (no countdown on screen).');
+
+  await wrongCodes(app, ['666666']);
+  await expect(app.getByText(WRONG)).toBeVisible();
+  await expectNotPaused(app, 'a sixth wrong code is an ordinary wrong code');
+  expect(codesAsked(m)).toHaveLength(6);
+});
+
+test('[J22k] the pause stands through a new email, another address and back, and is kept per address (lens A2, B2)', async ({ app }) => {
+  test.setTimeout(180_000);
+  allowConsoleError(app, /status of 403/);
+  await app.clock.install();
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  m.auth('verify', () => BAD_CODE);
+  await toCodeStep(app);
+  await wrongCodes(app, ['111111', '222222', '333333', '444444', '555555']);
+  await expectPaused(app, 'the fifth wrong code');
+
+  // A minute on, a new email: it goes, and the pause holds (the error state was cleared by the send; the pause is not).
+  await app.clock.fastForward(MIN + 1_000);
+  await btn(app, 'Send a new email').click();
+  await expect(app.getByText(RESENT)).toBeVisible();
+  expect(emailsSent(m)).toHaveLength(2);
+  await expectPaused(app, 'after a new email to the same address');
+
+  // Use a different email, then the same address again, typed with a space and capitals: the same list, so the pause holds.
+  await btn(app, 'Use a different email').click();
+  await sendTo(app, ' Mama@Example.invalid');
+  expect(emailsSent(m)).toHaveLength(3);
+  await expectPaused(app, 'the same address from the email step');
+
+  // Another address has its own list: nothing of the first address's five is counted for it.
+  await btn(app, 'Use a different email').click();
+  await sendTo(app, OTHER);
+  await expectNotPaused(app, 'another address');
+  await wrongCodes(app, ['666666']);
+  await expect(app.getByText(WRONG)).toBeVisible();
+  await expectNotPaused(app, 'another address after one wrong code');
+  expect(codesAsked(m), 'nothing was asked for the first address while paused').toHaveLength(6);
+});
+
+test('[J22l] Not now waits while a code is being checked, and changes nothing: the pause is there when the person comes back (lens B3)', async ({ app }) => {
+  test.setTimeout(120_000);
+  allowConsoleError(app, /status of 403/);
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  let release = () => {};
+  const held = new Promise<void>((done) => (release = done));
+  m.auth('verify', () => (codesAsked(m).length === 5 ? { ...BAD_CODE, hold: held } : BAD_CODE));
+  await toCodeStep(app);
+  await wrongCodes(app, ['111111', '222222', '333333', '444444']);
+  await app.getByLabel('Code', { exact: true }).fill('555555');
+  // The fifth code is with the server: Not now and the other ways off this step wait for it.
+  await expect(btn(app, 'Not now')).toBeDisabled();
+  await expect(btn(app, 'Use a different email')).toBeDisabled();
+  await expect(btn(app, 'Send a new email')).toBeDisabled();
+  release();
+  await expectPaused(app, 'the held fifth code came back wrong');
+  await expect(btn(app, 'Not now')).toBeEnabled();
+
+  await btn(app, 'Not now').click();
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+  await btn(app, 'I already have a book').click();
+  await btn(app, 'Continue with email').click();
+  await sendTo(app, EMAIL);
+  await expectPaused(app, 'after Not now and back to the same address');
+  expect(codesAsked(m)).toHaveLength(5);
 });
 
 test('[J22i] the invite sheet\'s gate says why in its own words, and nothing above Agree and sync after a decline (P8a critics S4)', async ({ app, record }) => {

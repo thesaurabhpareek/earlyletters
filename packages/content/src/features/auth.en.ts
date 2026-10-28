@@ -77,10 +77,11 @@ export const authCopy = {
     /** Under the code field while waiting for the email: errors.network's first sentence, the same words (P8a critics S2). */
     lettersSafe,
     /**
-     * Under `errors.code_paused` while the pause after five wrong codes holds (P8a critics S1): a new email does not
-     * end it, so "Send a new email" is not offered until it lifts; the other ways in are, as errors.rate_limited says.
+     * With `errors.code_paused`, in the same line, while the pause after five wrong codes holds (P8a critics S1, F02-U14):
+     * only typing a code is paused; the newest email's link still signs in (as `errors.wrong_code` says, the newest
+     * email is the one that counts), and so do Apple and Google. Calm facts, no count of minutes left.
      */
-    pausedOtherWay: 'A new email does not end the wait. Use Apple or Google instead.',
+    pausedOtherWays: 'The link in the newest email still works, and so does signing in with Apple or Google.',
   },
 
   verify: {

@@ -69,7 +69,9 @@ export function useCloseSheet(): () => void {
 
 /**
  * The frame of a sign-in or invite sheet. `closeLabel` adds the modal idiom's Close, top right
- * (lib/navigation.logic.ts); steps that have their own decision button ("Not now") leave it out.
+ * (lib/navigation.logic.ts), above the scroll and the keyboard: the code step puts its "Not now" there so it
+ * stays in reach with the number pad up (P8a lens A3). The first step, whose "Not now" is one of its
+ * decisions, leaves it out.
  * `onBack` adds Back, top left, for a step pushed inside the sheet (Continue with email).
  */
 export function SheetFrame({
