@@ -11,6 +11,7 @@ import { useFontsReady } from '@/components/ui/fonts';
 import { UIProvider } from '@/components/ui/provider';
 import { ToastHost } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
+import { copy } from '@/lib/copy';
 
 /**
  * Three tabs: Tonight, Book, Family (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
@@ -22,10 +23,12 @@ import { useTheme } from '@/lib/a11y';
  * - 25 pt icons; labels 13 pt Mukta Medium (the type floor), not scaled with Dynamic Type (HIG); on
  *   iOS a long press at accessibility sizes shows the Large Content Viewer instead.
  * - No haptics and no custom transition on tab change (MOTION 5i, 6).
+ * - The three titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
  * - UIProvider here is a no-op once the root layout mounts it; the ToastHost lifts toasts
  *   above the bar on tab screens.
  */
 const BAR = 58;
+const t = copy.tabs;
 
 export default function TabsLayout() {
   const { c } = useTheme();
@@ -63,9 +66,9 @@ export default function TabsLayout() {
               ...(fonts ? { fontFamily: tokens.fontFamily.sansMedium, fontWeight: 'normal' } : { fontWeight: '500' }),
             },
           }}>
-          <Tabs.Screen name="index" options={{ title: 'Tonight', tabBarIcon: icon(MoonStarsIcon), tabBarButton: button('Tonight') }} />
-          <Tabs.Screen name="book" options={{ title: 'Book', tabBarIcon: icon(BookOpenIcon), tabBarButton: button('Book') }} />
-          <Tabs.Screen name="family" options={{ title: 'Family', tabBarIcon: icon(UsersThreeIcon), tabBarButton: button('Family') }} />
+          <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
+          <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
+          <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
         </Tabs>
       </ToastHost>
     </UIProvider>

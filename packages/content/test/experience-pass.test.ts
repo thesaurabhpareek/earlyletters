@@ -271,6 +271,9 @@ const RETIRED = [
   'en.reader.preview',
   'features.reminders.settings.eveningsHelp',
   'features.reminders.settings.eveningHelp',
+  // P6 (S34): the master switch keeps every choice when off, so the Pause row went.
+  'en.settings.reminders.pauseLabel',
+  'features.reminders.settings.pausedSummary',
   'features.billing.plan.off',
   'features.billing.plan.yearly',
   'en.settings.recordings.keepHelp',
