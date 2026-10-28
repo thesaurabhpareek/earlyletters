@@ -21,7 +21,7 @@ async function expectBrandFaces(app: Page, title: string, body: string, button: 
 }
 
 // Fault injection: to see what a person would see if a screen threw, the page makes Intl.PluralRules throw (Review
-// pluralises its count of tidy-ups). This is the closest honest state to a crash and is labelled so in the step note;
+// pluralises its count of small fixes). This is the closest honest state to a crash and is labelled so in the step note;
 // it is not a path a person can take.
 test('[J20] a screen throws while rendering (fault injected)', async ({ app, record }) => {
   const step = journey(record, 'J20', 'crash', 1, 'J19-01');

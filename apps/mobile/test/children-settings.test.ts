@@ -145,9 +145,10 @@ describe('[S46] Write this book together', () => {
     expect(one).toEqual({ href: '/invite/new?childId=child-asha' });
     const two = bookRow({ serverFeatures: true, coParent: 'Papa', invite: inviteHref('settings_child', true, 'child-asha') });
     expect(two).toEqual({ value: 'Papa', href: FAMILY_TAB_HREF });
-    // The label is the same words P8's bookRow.label will carry; the screen reads it from content.
+    // The label: P8's bookRow.label with server features on, the kill path's settingsRow with them off (the same words).
     expect(familyCopy.soon.settingsRow).toBe('Write this book together');
-    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{familyCopy\.soon\.settingsRow\} value=\{row\.value\}/);
+    expect(familyCopy.bookRow.label).toBe('Write this book together');
+    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{serverFeaturesEnabled\(\) \? familyCopy\.bookRow\.label : familyCopy\.soon\.settingsRow\} value=\{row\.value\}/);
   });
 });
 

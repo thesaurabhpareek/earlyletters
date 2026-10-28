@@ -75,9 +75,118 @@ test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask
   await expect(app.getByText(`You're in ${CHILD}'s book`)).toBeVisible();
   await expect(app.getByTestId('invite.joined.cover')).toBeVisible();
   await expect(app.getByText("Your letters and Mama's sit side by side, each signed.")).toBeVisible();
-  await expect(app.getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
+  await expect(app.getByTestId('invite.joined').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
   expect(m.rpcCalls('accept_child_invite')).toHaveLength(1);
   await step('happy', 'Joined', 'One accept, after the tap. The book\'s cover appears for the first time, with the child\'s name, and opens to the flyleaf: the name is seen here first (BL-322). The book comes with the next sync, under a thin bar with no count; the open book does not change by itself (only "Open the book" opens it). Here sync is held, so it says the book is on its way.', undefined, { settle: 900 });
+
+  // Close before the book arrives, with sync held (critics' pass S2): no dead end. The welcome says the book has not
+  // reached this phone yet, offers Try again, and "Begin the book" stays. (J21i shows the quiet wait while sync runs.)
+  await btn(app, 'Close').click();
+  await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book has not reached this phone yet.`)).toBeVisible();
+  await expect(app.getByTestId('onboarding.joinWait.retry')).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+  await step('unhappy', 'Closed before the book came, sync held', 'The joined sheet closes onto first run\'s welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps "Begin the book". While sync is running it says the book is on its way and hides "Begin the book" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.');
+});
+
+/** Asha's book as sync_pull sends it to the joined parent (Papa). */
+const AT = '2026-10-20T09:00:00.000Z';
+const ASHA_META = {
+  role: 'parent',
+  name: CHILD,
+  nickname: null,
+  date_of_birth: '2026-03-20',
+  birthday_md: null,
+  due_date: null,
+  family_can_read: false,
+  created_by_me: false,
+  my_signs_as: 'Papa',
+  include_in_reminders: true,
+  members: [
+    { profile_id: MAMA, role: 'parent', is_me: false, joined_at: AT, signs_as: 'Mama' },
+    { profile_id: PAPA, role: 'parent', is_me: true, joined_at: AT, signs_as: 'Papa' },
+  ],
+};
+const pulled = (withBook: boolean) => ({
+  reset: false,
+  epoch: 1,
+  epoch_started_at: AT,
+  books: withBook ? [{ id: ASHA_BOOK, access: 'parent', repull: false, meta_hash: 'm1', meta: ASHA_META, rows: [], cursor: null, more: false }] : [],
+  gone: [],
+  more: false,
+});
+
+/**
+ * A fresh install joins while sync runs and answers, but the book is not in the pull until `server.hasBook` is set.
+ * Ends on the joined view, the book still on its way.
+ */
+async function joinWhileSyncRuns(app: Page, server: { hasBook: boolean }) {
+  const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
+  m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
+  m.rpc('accept_child_invite', () => ({ body: ASHA_BOOK }));
+  m.table('children', () => ({ body: { name: CHILD } }));
+  m.rpc('sync_push', () => ({ body: { results: [], paused: false, stopped: false } }));
+  m.rpc('sync_pull', () => ({ body: pulled(server.hasBook) }));
+  m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: server.hasBook ? [{ id: ASHA_BOOK, role: 'parent', name: CHILD, members: [], invites: [] }] : [] } }));
+  await openOn(app);
+  await passAgeGate(app);
+  await btn(app, 'I was invited').click();
+  await app.getByLabel('Invite link').fill(LINK);
+  await btn(app, 'Continue').click();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app, 'papa@example.invalid');
+  await btn(app, 'Join the book').click();
+  await expect(app.getByTestId('invite.joined').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
+  return m;
+}
+
+test('[J21i] invitee: Close before the book arrives while sync runs: the welcome says it is on its way, with no "Begin the book"', async ({ app }) => {
+  await joinWhileSyncRuns(app, { hasBook: false });
+  await btn(app, 'Close').click();
+  await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toHaveCount(0);
+  await expect(app.getByTestId('onboarding.joinWait.retry')).toHaveCount(0);
+});
+
+test('[J21j] invitee: the quiet wait runs out at 30 s (Try again and "Begin the book" come back), Try again starts it over, and a retry that finds the book hands over to the Book', async ({ app }) => {
+  // The page's clock is ours, so 30 s pass in a moment (critics' pass S2; components/family/join-wait.tsx).
+  await app.clock.install();
+  const server = { hasBook: false };
+  await joinWhileSyncRuns(app, server);
+  await btn(app, 'Close').click();
+  const wait = app.getByTestId('onboarding.joinWait');
+  const onItsWay = wait.getByText(`${CHILD}'s book is on its way to this phone.`);
+  const notYet = wait.getByText(`${CHILD}'s book has not reached this phone yet.`);
+  const retry = app.getByTestId('onboarding.joinWait.retry');
+  await expect(onItsWay).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toHaveCount(0);
+
+  // 20 s in: still quiet.
+  await app.clock.fastForward(20_000);
+  await expect(onItsWay).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toHaveCount(0);
+  await expect(retry).toHaveCount(0);
+
+  // Past 30 s since the join: the welcome wakes, with no dead end.
+  await app.clock.fastForward(15_000);
+  await expect(notYet).toBeVisible();
+  await expect(retry).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+
+  // Try again runs a sync, and the quiet wait starts over: 30 s more before it wakes again.
+  await retry.click();
+  await expect(onItsWay).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toHaveCount(0);
+  await expect(retry).toHaveCount(0);
+  await app.clock.fastForward(20_000);
+  await expect(onItsWay).toBeVisible();
+  await app.clock.fastForward(15_000);
+  await expect(notYet).toBeVisible();
+
+  // The book is on the server now: Try again brings it, and the welcome hands over to the Book.
+  server.hasBook = true;
+  await retry.click();
+  await expect(app).toHaveURL(/\/book/, { timeout: 15_000 });
+  await expect(app.getByText(`${CHILD}'s book`).first()).toBeVisible();
 });
 
 test('[J21e] invitee: a typed code is not read, and the link still works', async ({ app }) => {
@@ -129,28 +238,7 @@ async function joinWithTheBookArriving(app: Page) {
   m.table('children', () => ({ body: { name: CHILD } }));
   // The Family tab's pending list after the join: this parent's book, no invites.
   m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: accepted ? [{ id: ASHA_BOOK, role: 'parent', name: CHILD, members: [], invites: [] }] : [] } }));
-  const at = '2026-10-20T09:00:00.000Z';
-  const meta = {
-    role: 'parent',
-    name: CHILD,
-    nickname: null,
-    date_of_birth: '2026-03-20',
-    birthday_md: null,
-    due_date: null,
-    family_can_read: false,
-    created_by_me: false,
-    my_signs_as: 'Papa',
-    include_in_reminders: true,
-    members: [
-      { profile_id: MAMA, role: 'parent', is_me: false, joined_at: at, signs_as: 'Mama' },
-      { profile_id: PAPA, role: 'parent', is_me: true, joined_at: at, signs_as: 'Papa' },
-    ],
-  };
-  m.rpc('sync_pull', () => ({
-    body: accepted
-      ? { reset: false, epoch: 1, epoch_started_at: at, books: [{ id: ASHA_BOOK, access: 'parent', repull: false, meta_hash: 'm1', meta, rows: [], cursor: null, more: false }], gone: [], more: false }
-      : { reset: false, epoch: 1, epoch_started_at: at, books: [], gone: [], more: false },
-  }));
+  m.rpc('sync_pull', () => ({ body: pulled(accepted) }));
   await openOn(app);
   await passAgeGate(app);
   await btn(app, 'I was invited').click();
