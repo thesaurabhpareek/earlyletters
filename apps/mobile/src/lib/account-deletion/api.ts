@@ -72,8 +72,16 @@ export function requestDeletion(client: DeletionClient, hadActiveSubscription: b
   );
 }
 
-export function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
-  return call(() => client.rpc('cancel_account_deletion'), (d) => { if (d !== true) throw new Error('not_cancelled'); return true; });
+/**
+ * Cancels the open request. The server answers false when nothing was open to cancel, which is fine when the request
+ * was already cancelled (an earlier try whose answer was lost, or another phone) and not when it is still open or
+ * executing, so a false answer is checked against the status, read as the screen reads it.
+ */
+export async function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
+  const r = await call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
+  if (!r.ok || r.value) return r;
+  const s = await loadStatus(client);
+  return s.ok && s.value.state === 'none' ? { ok: true, value: true } : { ok: false, reason: s.ok ? 'failed' : s.reason };
 }
 
 /** Where the "forget my analytics ids" retry flag lives (device settings, L2). */
