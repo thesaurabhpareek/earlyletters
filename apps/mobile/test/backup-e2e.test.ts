@@ -71,9 +71,16 @@ describe('backup end to end against a fake bucket', () => {
 
     // [F08-REQ-018, F08-REQ-020] zero plaintext audio in any request, from any phone.
     const originals = [...all, papasLetter];
+    // The start of a recording is its MP4 `ftyp` box header: size, "ftyp", major brand, minor version (16 bytes).
+    // The four letters alone are no signature. A tus body is the whole object (112 bytes in clear, then AES-GCM
+    // ciphertext), so any 4 bytes of it equal "ftyp" by chance: about 1 in 2^32 per byte, about a million bytes
+    // per MB uploaded, and that scan failed on CI now and then. The same 16 bytes of the real recording, at any
+    // offset of any body, cannot be chance (2^-128), and a leak of just the start of a take is still caught.
+    const START = 16;
+    for (const r of originals) expect(r.plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     for (const req of backend.requests) {
-      expect(req.body.includes(Buffer.from('ftyp')), req.kind).toBe(false);
       for (const r of originals) {
+        expect(req.body.includes(r.plain.subarray(0, START)), `${req.kind} carries the start of a recording`).toBe(false);
         const at = Math.min(2000, r.plain.length - 64); // past the fixed ftyp box, inside even the shortest take
         expect(req.body.includes(r.plain.subarray(at, at + 64)), `${req.kind} carries part of a recording`).toBe(false);
         expect(req.body.includes(Buffer.from(sha256Hex(r.plain))), `${req.kind} carries an original's hash`).toBe(false);
