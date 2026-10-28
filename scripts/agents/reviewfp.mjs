@@ -11,8 +11,7 @@
 //   differs: the newest later head whose changes did not match (not fetched again).
 // One files call per PR per head (gh, one page of 100), and only for PRs that
 // already have state.reviewfp set or that are being assigned.
-// A match saves the red team's run. It is not a review of the new head: the merge
-// rule (docs/agents/COORDINATION.md section 6) reads reviews on the current head.
+// A match saves the red team's run. It is not a review of the new head: the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107).
 // Design, and what the fingerprint cannot see: docs/agents/hardening/lanes-and-review-churn.md.
 import { createHash } from "node:crypto";
 import { trustContext, isTrusted, startsWithMarker } from "./lib.mjs";
@@ -124,7 +123,7 @@ export function boardLines(ctx) {
       const c = rec.carried;
       const when = c.at ? ` on ${c.at}` : "";
       const verdict = c.verdict ? `, verdict "${c.verdict}"` : "";
-      rows.push(`- #${pr.number} (\`${agentOf(pr)}\`): head ${head.slice(0, 7)} has the same changes as ${rec.sha.slice(0, 7)}, which the red team reviewed${when}${verdict}; the red team is not re-assigned. Nothing is posted on ${head.slice(0, 7)}: the merge rule reads reviews on the current head (COORDINATION.md section 6).`);
+      rows.push(`- #${pr.number} (\`${agentOf(pr)}\`): head ${head.slice(0, 7)} has the same changes as ${rec.sha.slice(0, 7)}, which the red team reviewed${when}${verdict}; the red team is not re-assigned. Nothing is posted on ${head.slice(0, 7)}: the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107).`);
     }
     if (!rows.length) return [];
     return [

@@ -82,7 +82,7 @@ test("a match is recorded against the new head; the board names both heads and t
   ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed } };
   const lines = boardLines(ctx);
   assert.equal(lines[0], "## Same changes as a reviewed head");
-  assert.equal(lines[2], '- #38 (`ops`): head s2 has the same changes as s1, which the red team reviewed on 2026-10-16, verdict "ship"; the red team is not re-assigned. Nothing is posted on s2: the merge rule reads reviews on the current head (COORDINATION.md section 6).');
+  assert.equal(lines[2], '- #38 (`ops`): head s2 has the same changes as s1, which the red team reviewed on 2026-10-16, verdict "ship"; the red team is not re-assigned. Nothing is posted on s2: the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107).');
   assert.match(lines.at(-1), /not a review of the new head/);
   assert.deepEqual(ctx.state.reviewfp[38].carried, { sha: "s2", verdict: "ship", at: "2026-10-16" });
   assert.equal(calls.length, 1, "one files call");

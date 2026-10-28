@@ -45,9 +45,8 @@ review content it has already reviewed.
   reviewed head", with both heads. `boardLines` runs on every tick, so the record exists whether or
   not the red team was free. A head whose changes differ is recorded as `differs`, so its files call
   is not repeated. `pause.mjs` leaves a carried head out of "Awaiting re-review".
-- A match saves the red team's run only. Nothing is posted on the new head, and the merge rule
-  (`docs/agents/COORDINATION.md` section 6, D-107 and D-117) reads reviews on the current head, so
-  the board line is a fingerprint match, not a review.
+- A match saves the red team's run only. Nothing is posted on the new head, and the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107),
+  so the board line is a fingerprint match, not a review.
 
 What the fingerprint cannot see (a skipped head can still have changed behaviour):
 - Anything outside the PR's own diff against its merge base. A rebase or develop merge that changes
