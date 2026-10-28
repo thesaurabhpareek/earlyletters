@@ -4,11 +4,14 @@
 //
 // It REFUSES to write INDEX.md (exit 1, naming the steps) when any step it reads has no `shot`. A run without
 // JOURNEY_SHOTS=1 rewrites that flow's step files without `shot` and `full`, and an index built from them has no
-// Screen links: that is how 144 links were lost on 13 Oct 2026. The safe procedure is in docs/release/journey/README.md.
+// Screen links. The run committed on 13 Oct 2026 left 144 of 146 step files without `shot` (INDEX.md was not rebuilt
+// then, and still has its links), so rebuilding it from them would have dropped every one. It also refuses a step file
+// that is not valid JSON or has no id or journey, and names the file. The safe procedure is in
+// docs/release/journey/README.md (package P7 of docs/design/EXPERIENCE_PASS_2026-10.md, section 6).
 //
 // Options:
-//   --text-only   write the index anyway, from steps with no screenshots, under a banner that says so. For reading the
-//                 text of a local run. Never commit the result.
+//   --text-only   for reading the text of a local run that had no screenshots: write INDEX.text-only.md (gitignored, never
+//                 INDEX.md) from steps with no `shot`, under a banner that says so.
 //   --dir <path>  read <path>/steps and write <path>/INDEX.md instead of docs/release/journey (the unit test uses this)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +26,7 @@ const TITLES = {
   'children-and-books': 'More than one child, the switcher, and the Plus gate for a new book',
   'tonight-and-prompts': 'Tonight, prompts, and the usage-sharing ask',
   'voice-capture': 'Speaking a letter: listening, pause, mic denied, offline, very short, long',
-  'review-and-edits': 'Review: tidy-ups, put back, word for word, edit, save or keep private',
+  'review-and-edits': 'Review: small fixes, put back, word for word, change words, save or keep private',
   'typed-letter': 'Typing a letter: write, autosave, draft, review, save',
   'quiet-day': 'A quiet day: "Not much today"',
   'the-book': 'The Book: empty, one letter, many, waiting for words, nobody spoke',
@@ -71,11 +74,22 @@ function main(argv) {
     console.error(`build-index: no steps folder at ${stepsDir}. Run the flows first (npm run e2e:web:journey -w @scribe/mobile).`);
     return 1;
   }
-  const steps = fs
-    .readdirSync(stepsDir)
-    .filter((f) => f.endsWith('.json'))
-    .map((f) => JSON.parse(fs.readFileSync(path.join(stepsDir, f), 'utf8')))
-    .sort((a, b) => a.id.localeCompare(b.id));
+  const steps = [];
+  for (const f of fs.readdirSync(stepsDir).filter((f) => f.endsWith('.json')).sort()) {
+    let step;
+    try {
+      step = JSON.parse(fs.readFileSync(path.join(stepsDir, f), 'utf8'));
+    } catch (e) {
+      console.error(`build-index: ${path.join(stepsDir, f)} is not valid JSON (${e.message}). Nothing was written.`);
+      return 1;
+    }
+    if (typeof step?.id !== 'string' || typeof step?.journey !== 'string' || step.id === '' || step.journey === '') {
+      console.error(`build-index: ${path.join(stepsDir, f)} has no \`id\` or no \`journey\`. Nothing was written.`);
+      return 1;
+    }
+    steps.push(step);
+  }
+  steps.sort((a, b) => a.id.localeCompare(b.id));
   if (steps.length === 0) {
     console.error(`build-index: ${stepsDir} has no step files. Run the flows first (npm run e2e:web:journey -w @scribe/mobile).`);
     return 1;
@@ -94,7 +108,7 @@ function main(argv) {
         'and describes screens that may not exist any more. Nothing was written.',
         'Safe procedure (docs/release/journey/README.md): remove steps/, then run `npm run e2e:web:journey -w @scribe/mobile` on a fresh',
         'web export (E2E_WEB_REBUILD=1), then this script. Only the journey-record pull request commits steps/ and INDEX.md.',
-        'To read the text of a local run anyway (never commit it): node apps/mobile/e2e-web/support/build-index.mjs --text-only',
+        'To read the text of a local run anyway (writes INDEX.text-only.md, gitignored): node apps/mobile/e2e-web/support/build-index.mjs --text-only',
       ].join('\n'),
     );
     return 1;
@@ -112,7 +126,7 @@ function main(argv) {
 
   let md = '';
   if (noShot.length > 0) {
-    md += `> **TEXT ONLY. Do not commit this file.** Written with \`--text-only\`: ${noShot.length} of ${steps.length} steps have no screenshot, so their Screen cells are empty. Regenerate with the safe procedure in \`README.md\` before it goes anywhere.\n\n`;
+    md += `> **TEXT ONLY. Do not commit this file.** Written with \`--text-only\` to \`INDEX.text-only.md\`: ${noShot.length} of ${steps.length} steps have no screenshot, so their Screen cells are empty. \`INDEX.md\` was not touched. Regenerate it with the safe procedure in \`README.md\`.\n\n`;
   }
   md += `# Early Letters v1.0: customer journey, as the app really renders it
 
@@ -120,7 +134,7 @@ Generated from the web end-to-end flows (\`apps/mobile/e2e-web/*.flow.ts\`) by \
 
 - Builds, and which journeys use which:
   - **Server features off**, a clean phone (\`EXPO_PUBLIC_SERVER_FEATURES=off\`: on this phone only, no accounts, no sync). J01, J02, J03, J05 and J07 run entirely on it; other journeys begin some of their steps with a first run on it.
-  - **Server features off, seeded** (\`EXPO_PUBLIC_WEB_PREVIEW=1\`, \`?seed=asha\`): the fictional family Asha with letters filled in, because the web build has no speech model and cannot produce words from a recording. J04, J06 and J08 to J20 use it. They are the real screens with data filled in; each such step says so.
+  - **Server features off, seeded** (\`EXPO_PUBLIC_WEB_PREVIEW=1\`, \`?seed=asha\`): the fictional family Asha with letters filled in, because the web build has no speech model and cannot produce words from a recording. J04, J06 and J08 to J20 use it. They are the real screens with data filled in.
   - **Server features on, against a mock server** (\`apps/mobile/e2e-web/support/mock-server.ts\`: no real server, no real email, no real Apple account). J21, J22, and the Account step of J16.
 - Journeys: **${order.length}**, steps: **${steps.length}** (happy ${steps.filter((s) => s.kind === 'happy').length}, unhappy ${steps.filter((s) => s.kind === 'unhappy').length}), screenshots: **${shots}**, plus **${fulls}** full-length captures of scrolling screens (\`<id>-full.png\`).
 - Files: \`steps/<id>.json\` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines) and this index are tracked. \`screens/<id>.png\`, \`screens/<id>-full.png\` and the PDF are generated output and are not committed: the Screen links below resolve after a local run or inside the packed zip (\`apps/mobile/e2e-web/support/pack-journey.sh\`), not on GitHub. See \`README.md\` next to this file.
@@ -162,10 +176,11 @@ These exist in the iOS app and could not be shown by the web build. Where a clos
 - **A real server**: sign-in, Account, invites and joining are captured against a mock server (J21, J22), so a real email link or code, Sign in with Apple, a real sync and a second real phone are not. With server features off, co-parent entry points show "coming soon" (J17).
 - **Real family data**: never used; only the fictional family Asha.
 `;
-  fs.writeFileSync(path.join(out, 'INDEX.md'), md);
+  const target = textOnly ? 'INDEX.text-only.md' : 'INDEX.md';
+  fs.writeFileSync(path.join(out, target), md);
   for (const u of untitled) console.error(`build-index: warning: no title for journey "${u}"; add it to TITLES in build-index.mjs`);
-  if (noShot.length > 0) console.error(`build-index: --text-only: ${noShot.length} of ${steps.length} steps have no screenshot. Do not commit this INDEX.md.`);
-  console.log(`INDEX.md: ${order.length} journeys, ${steps.length} steps, ${shots} screenshots, ${fulls} full`);
+  if (textOnly) console.error(`build-index: --text-only: wrote ${target}, not INDEX.md (${noShot.length} of ${steps.length} steps have no screenshot). Do not commit it.`);
+  console.log(`${target}: ${order.length} journeys, ${steps.length} steps, ${shots} screenshots, ${fulls} full`);
   return 0;
 }
 

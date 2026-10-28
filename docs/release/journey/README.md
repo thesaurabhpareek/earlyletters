@@ -7,6 +7,7 @@ What the v1.0 app really renders, step by step, captured by the web end-to-end f
 | Path | In git | Made by |
 |---|---|---|
 | `INDEX.md` | yes | `npm run e2e:web:index -w @scribe/mobile` (reads `steps/` only) |
+| `INDEX.text-only.md` | no (gitignored) | `npm run e2e:web:index -w @scribe/mobile -- --text-only`, only to read a run that had no screenshots |
 | `steps/<id>.json` | yes | the flows: one small text file per recorded step (id, journey, kind, title, note, route, visible text) |
 | `critiques/*.md`, `critiques/*.json` | yes | hand-written reviews |
 | `screens/<id>.png`, `screens/<id>-full.png` | no (gitignored) | the flows, with `JOURNEY_SHOTS=1` |
@@ -18,14 +19,14 @@ The screens committed before 15 Oct 2026 stay in git history. Rewriting history 
 
 ## Regenerate safely
 
-**Only the journey-record pull request commits `steps/` and `INDEX.md`** (experience pass package P7, item P7-6). A feature PR never does, even when its flow changed: the record is one run of every flow on one commit, and a partial run corrupts it in two ways.
+**Only the journey-record pull request commits `steps/` and `INDEX.md`** (the journey record, package P7 of `docs/design/EXPERIENCE_PASS_2026-10.md`, section 6). A feature PR never does, even when its flow changed: the record is one run of every flow on one commit, and a partial run corrupts it in two ways.
 
-- A run without `JOURNEY_SHOTS=1` rewrites that flow's step files without `shot` and `full`. An `INDEX.md` built from them has no Screen links. That is how 144 links were lost in the run committed on 13 Oct 2026.
+- A run without `JOURNEY_SHOTS=1` rewrites that flow's step files without `shot` and `full`. An `INDEX.md` built from them has no Screen links. The run committed on 13 Oct 2026 (#103) left 144 of the 146 step files without `shot`; `INDEX.md` was not rebuilt then and still has its links, so rebuilding it from those steps would have dropped every one.
 - A branch runs only its own flows, so every other journey's steps stay as they were and `INDEX.md` is rebuilt from that stale text. The recorder also never deletes a step file, so a step a flow no longer writes (a renumbered id, a removed screen) stays in `steps/` for ever.
 
 If you ran a flow locally on a feature branch, throw the step files away before you commit: `git restore --source=HEAD --staged --worktree docs/release/journey/steps docs/release/journey/INDEX.md && git clean -fd docs/release/journey/steps`.
 
-The generator now enforces the first rule. `build-index.mjs` exits 1, names the steps and writes nothing when any step it reads has no `shot`. `--text-only` writes anyway, under a "do not commit" banner, for reading the text of a local run. The second rule is the procedure below.
+The generator now enforces the first rule. `build-index.mjs` exits 1, names the steps and writes nothing when any step it reads has no `shot`. `--text-only` is for reading the text of a local run that had no screenshots: it writes `INDEX.text-only.md` (gitignored, under a "do not commit" banner) and never touches `INDEX.md`, so an `add -A` cannot pick it up. The second rule is the procedure below.
 
 ### The procedure (the journey-record PR only)
 
@@ -45,6 +46,6 @@ git add docs/release/journey/INDEX.md docs/release/journey/steps # never screens
 - **A fresh web export** (`E2E_WEB_REBUILD=1`). The flows run against three exports (`apps/mobile/e2e-web/support/global-setup.ts`): server features off, server features off with the seeded family Asha, and server features on against the mock server. Each is built only when it is missing, so without `E2E_WEB_REBUILD=1` an export left over from another branch is reused without a word.
 - **Every flow must pass.** A failing test leaves a partial journey. Fix or report the file, then run it alone with shots (`npm run e2e:web:journey -w @scribe/mobile -- j01-first-run.flow.ts`; the existing exports are reused, so leave `E2E_WEB_REBUILD` off) before you build the index.
 - **Two workers.** Three workers with shots on have pushed a long flow past its 90 s limit; it passes alone.
-- **Before you push**: the step count equals the number of files in `steps/`, every file has `shot`, and the ids the design spec cites (`docs/design/EXPERIENCE_PASS_2026-10.md`) still point at the screens it means. Step ids are positional: a flow that adds a step renumbers every later one.
+- **Before you push**: the Playwright run ended with `N passed` and no `failed`, `flaky` or `skipped` (a failing test leaves a partial journey; the generator checks only that every step has `shot`), and the ids the design spec cites (`docs/design/EXPERIENCE_PASS_2026-10.md`) still point at the screens it means. Step ids are positional: a flow that adds a step renumbers every later one.
 
 The PDF (`apps/mobile/e2e-web/support/build-pdf.sh`) is optional and is never committed.

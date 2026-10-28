@@ -1,7 +1,8 @@
 /**
- * The journey index generator (apps/mobile/e2e-web/support/build-index.mjs; EXPERIENCE_PASS_2026-10 package P7, item P7-2).
- * It must never write docs/release/journey/INDEX.md from steps that have no screenshot: on 13 Oct 2026 a run made without
- * JOURNEY_SHOTS=1 was committed and an index built from it dropped 144 Screen links. Each test runs the script as a
+ * The journey index generator (apps/mobile/e2e-web/support/build-index.mjs; docs/design/EXPERIENCE_PASS_2026-10.md section 6,
+ * package P7). It must never write docs/release/journey/INDEX.md from steps that have no screenshot: on 13 Oct 2026 a run
+ * made without JOURNEY_SHOTS=1 was committed, leaving 144 of 146 step files without `shot`, and an index rebuilt from them
+ * would drop every Screen link (INDEX.md itself was not rebuilt then). Each test runs the script as a
  * process against a scratch folder (`--dir`), with fictional step files, so the real record is never read or written.
  */
 import { spawnSync } from 'node:child_process';
@@ -36,7 +37,7 @@ function run(...args: string[]) {
 }
 const index = () => readFileSync(join(dir, 'INDEX.md'), 'utf8');
 
-describe('[P7-2] the no-screenshot guard', () => {
+describe('[journey record] the no-screenshot guard', () => {
   it('refuses to write when every step has no shot, names the steps, and exits 1', () => {
     writeStep(noShot('J01-01', 'first-run'));
     writeStep(noShot('J01-02', 'first-run'));
@@ -81,6 +82,42 @@ describe('[P7-2] the no-screenshot guard', () => {
     expect(r.stderr).toMatch(/and 5 more/);
   }, SPAWN_TIMEOUT_MS);
 
+  it('names exactly 20 missing steps without a "more" line, and 21 with one', () => {
+    for (let n = 1; n <= 20; n++) writeStep(noShot(`J05-${String(n).padStart(2, '0')}`, 'voice-capture'));
+    const twenty = run();
+    expect(twenty.stderr).toMatch(/20 of 20 steps have no `shot`/);
+    expect(twenty.stderr).toContain('J05-20');
+    expect(twenty.stderr).not.toMatch(/and \d+ more/);
+    writeStep(noShot('J05-21', 'voice-capture'));
+    const twentyOne = run();
+    expect(twentyOne.stderr).toMatch(/21 of 21 steps have no `shot`/);
+    expect(twentyOne.stderr).not.toContain('J05-21');
+    expect(twentyOne.stderr).toMatch(/and 1 more/);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('names a step file that is not valid JSON, exits 1, and writes nothing', () => {
+    writeStep(withShot('J01-01', 'first-run'));
+    writeFileSync(join(dir, 'steps', 'J01-02.json'), '{ "id": "J01-02", "journey": ');
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(join(dir, 'steps', 'J01-02.json'));
+    expect(r.stderr).toMatch(/is not valid JSON/);
+    expect(r.stderr).not.toMatch(/SyntaxError/);
+    expect(existsSync(join(dir, 'INDEX.md'))).toBe(false);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('names a step file with no journey (or no id), exits 1, and writes nothing', () => {
+    writeStep(withShot('J01-01', 'first-run'));
+    writeFileSync(join(dir, 'steps', 'J01-02.json'), JSON.stringify({ id: 'J01-02', shot: 'screens/J01-02.png' }));
+    const noJourney = run();
+    expect(noJourney.status).toBe(1);
+    expect(noJourney.stderr).toContain(join(dir, 'steps', 'J01-02.json'));
+    expect(noJourney.stderr).toMatch(/no `id` or no `journey`/);
+    writeFileSync(join(dir, 'steps', 'J01-02.json'), JSON.stringify({ journey: 'first-run', shot: 'screens/J01-02.png' }));
+    expect(run().status).toBe(1);
+    expect(existsSync(join(dir, 'INDEX.md'))).toBe(false);
+  }, SPAWN_TIMEOUT_MS);
+
   it('refuses when there are no steps at all, or no steps folder', () => {
     const empty = run();
     expect(empty.status).toBe(1);
@@ -105,20 +142,32 @@ describe('[P7-2] the no-screenshot guard', () => {
     expect(md).not.toMatch(/TEXT ONLY/);
   }, SPAWN_TIMEOUT_MS);
 
-  it('--text-only writes anyway, under a banner that says not to commit it, and says so on stderr', () => {
+  it('--text-only writes INDEX.text-only.md under a do-not-commit banner, never INDEX.md, and says so on stderr', () => {
+    const before = '# the index a person committed\n';
+    writeFileSync(join(dir, 'INDEX.md'), before);
     writeStep(withShot('J01-01', 'first-run'));
     writeStep(noShot('J01-02', 'first-run'));
     const r = run('--text-only');
     expect(r.status, r.stderr).toBe(0);
-    expect(r.stderr).toMatch(/--text-only: 1 of 2 steps have no screenshot\. Do not commit/);
-    const md = index();
+    expect(r.stderr).toMatch(/--text-only: wrote INDEX\.text-only\.md, not INDEX\.md \(1 of 2 steps have no screenshot\)\. Do not commit it/);
+    expect(r.stdout).toMatch(/^INDEX\.text-only\.md: 1 journeys, 2 steps, 1 screenshots, 0 full$/m);
+    expect(index()).toBe(before);
+    const md = readFileSync(join(dir, 'INDEX.text-only.md'), 'utf8');
     expect(md.startsWith('> **TEXT ONLY. Do not commit this file.**')).toBe(true);
     expect(md).toContain('[png](screens/J01-01.png) |');
     expect(md).toMatch(/\| J01-02 \| happy \| \*\*Title J01-02\.\*\* Note J01-02 \| {2}\| {2}\|/);
   }, SPAWN_TIMEOUT_MS);
 
+  it('INDEX.text-only.md is gitignored, so an `add -A` or `commit -a` cannot take it', () => {
+    const ignored = spawnSync('git', ['check-ignore', '-q', 'docs/release/journey/INDEX.text-only.md'], { cwd: join(__dirname, '..', '..', '..') });
+    expect(ignored.status).toBe(0);
+    const tracked = spawnSync('git', ['check-ignore', '-q', 'docs/release/journey/INDEX.md'], { cwd: join(__dirname, '..', '..', '..') });
+    expect(tracked.status).toBe(1);
+  }, SPAWN_TIMEOUT_MS);
+
   it('--text-only still refuses when there are no steps', () => {
     expect(run('--text-only').status).toBe(1);
+    expect(existsSync(join(dir, 'INDEX.text-only.md'))).toBe(false);
     expect(existsSync(join(dir, 'INDEX.md'))).toBe(false);
   }, SPAWN_TIMEOUT_MS);
 
@@ -131,7 +180,7 @@ describe('[P7-2] the no-screenshot guard', () => {
   }, SPAWN_TIMEOUT_MS);
 });
 
-describe('[P7-2] headings and header come from the current data', () => {
+describe('[journey record] headings and header come from the current data', () => {
   it('titles the two server-on journeys, J21 and J22, with the code read from the step ids', () => {
     writeStep(withShot('J21-01', 'co-parent-sharing'));
     writeStep(withShot('J22-01', 'sign-in'));
@@ -158,6 +207,30 @@ describe('[P7-2] headings and header come from the current data', () => {
     const md = index();
     expect(md).toMatch(/^## J01 First run: age question, promise, child, signature, first letter$/m);
     expect(md).not.toMatch(/^## J00 /m);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('takes the code most steps carry when the odd one out comes last, not the last step or the highest code', () => {
+    writeStep(withShot('J05-01', 'voice-capture'));
+    writeStep(withShot('J05-02', 'voice-capture'));
+    writeStep(withShot('J06-01', 'voice-capture'));
+    expect(run().status).toBe(0);
+    expect(index()).toMatch(/^## J05 Speaking a letter: /m);
+    expect(index()).not.toMatch(/^## J06 /m);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('breaks a tie between codes toward the lowest', () => {
+    writeStep(withShot('J03-01', 'children-and-books'));
+    writeStep(withShot('J04-01', 'children-and-books'));
+    expect(run().status).toBe(0);
+    expect(index()).toMatch(/^## J03 More than one child/m);
+    expect(index()).not.toMatch(/^## J04 /m);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('says "small fixes", not the retired word, in the Review heading', () => {
+    writeStep(withShot('J06-01', 'review-and-edits'));
+    expect(run().status).toBe(0);
+    expect(index()).toMatch(/^## J06 Review: small fixes, put back, word for word, change words, save or keep private$/m);
+    expect(index()).not.toMatch(/tidy/i);
   }, SPAWN_TIMEOUT_MS);
 
   it('gives a journey with no title a heading with its code, and a warning, rather than a bare key', () => {
