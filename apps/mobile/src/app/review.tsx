@@ -100,6 +100,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -127,6 +128,7 @@ import {
   getDraft,
   getEntry,
   getSetting,
+  holdDraft,
   keepReviewedWords,
   listChildren,
   listEntriesForChild,
@@ -444,9 +446,15 @@ export default function Review() {
   };
 
   const saving = useRef(false);
+  // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
+  // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
+  const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
+    heldInBook.current = inBook;
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
@@ -660,30 +668,40 @@ export default function Review() {
     later: () => (router.canGoBack() ? router.back() : router.replace('/')),
   };
 
+  // The Keep sheet rises over this Review (S22, 5.8 row 5c), drawn last in its screen; the letter stays underneath.
+  let keepSheet: ReactNode = null;
   if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <PlusGate
-          variant="keep_letter"
-          childName={child.name}
-          lapsed={gate.decision.lapsed}
-          lettersKept={gate.lettersKept}
-          heldOn={later ? 'letter' : 'tonight'}
-          onHold={() => {
-            track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
-            router.back(); // the draft stays: Tonight shows "A letter is waiting"; a later letter's words stay on it
-          }}
-          onPlus={() => setGate(null)} // the same Review again; the person taps Keep
-          onContinueDev={
-            devShortcutsAllowed
-              ? () => {
-                  devPass.current = true;
-                  setGate(null);
-                }
-              : undefined
-          }
-        />
-      </SafeAreaView>
+    keepSheet = (
+      <PlusGate
+        variant="keep_letter"
+        childName={child.name}
+        lapsed={gate.decision.lapsed}
+        lettersKept={gate.lettersKept}
+        heldOn={later ? 'letter' : 'tonight'}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
+        onHold={() => {
+          // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
+          // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          router.back();
+        }}
+        onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+        onDismiss={() => setGate(null)} // back to the letter, nothing held or kept
+        onContinueDev={
+          devShortcutsAllowed
+            ? () => {
+                devPass.current = true;
+                setGate(null);
+              }
+            : undefined
+        }
+      />
     );
   }
 
@@ -996,6 +1014,7 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {keepSheet}
     </SafeAreaView>
   );
 }

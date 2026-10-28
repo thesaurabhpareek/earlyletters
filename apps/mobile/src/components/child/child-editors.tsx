@@ -1,6 +1,6 @@
 /**
  * Inline editors for one child's details (Settings > the child's book): name, birthday,
- * due date, signature, and "was born, set the birthday".
+ * due date, signature, and setting the birthday from the due-date card (EXPERIENCE_PASS S46).
  *
  * Rules come from packages/core (checkChildName, checkSignsAs, checkBirthday,
  * checkDueDate, bornPatch), the same ones first run uses. Saving writes only the child's
@@ -74,7 +74,7 @@ export function NameEditor({ child, onSave, onCancel }: EditorProps) {
         textContentType="givenName"
         returnKeyType="done"
         error={check.ok ? null : e.nameEmpty}
-        helper={nearLimit(textLength(draft), CHILD_NAME_MAX) ? fill(e.nameLimit, { n: CHILD_NAME_MAX }) : undefined}
+        helper={nearLimit(textLength(draft), CHILD_NAME_MAX) ? fill(e.nameTooLong, { n: CHILD_NAME_MAX }) : undefined}
       />
       <Actions canSave={changed} onCancel={onCancel} onSave={() => check.ok && onSave({ name: check.value })} />
     </Card>
@@ -97,7 +97,7 @@ export function SignsAsEditor({ child, onSave, onCancel }: EditorProps) {
         autoCorrect={false}
         returnKeyType="done"
         error={check.ok ? null : fill(e.signsAsEmpty, { child: child.name })}
-        helper={nearLimit(textLength(draft), SIGNS_AS_MAX) ? fill(e.signsAsLimit, { n: SIGNS_AS_MAX }) : e.signsAsNewOnly}
+        helper={nearLimit(textLength(draft), SIGNS_AS_MAX) ? fill(e.signsAsTooLong, { n: SIGNS_AS_MAX }) : e.signsAsNewOnly}
       />
       <Actions canSave={changed} onCancel={onCancel} onSave={() => check.ok && onSave({ signsAs: check.value })} />
     </Card>
@@ -128,7 +128,7 @@ export function DateEditor({ child, onSave, onCancel }: EditorProps) {
   );
 }
 
-/** "Asha was born, set the birthday": the due date becomes the birthday. */
+/** "Set the birthday" from the due-date card: the due date becomes the birthday. It never presumes a birth (S46). */
 export function BornEditor({ child, onSave, onCancel }: EditorProps) {
   const e = copy.childrenExtra.edit.born;
   const today = todayISO();
