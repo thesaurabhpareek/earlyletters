@@ -28,6 +28,7 @@ import { tokens, type TypeToken } from '@scribe/design-tokens';
 import { AnimatedPressable, usePressScale } from '@/components/motion/press';
 import { Text, TextClassContext, TextVariantContext } from '@/components/ui/text';
 import { haptic as playHaptic, type HapticIntent } from '@/lib/haptics';
+import { pressableState } from './button.logic';
 import { useIsLargeText, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
 
@@ -124,7 +125,8 @@ function Button({
 }: ButtonProps) {
   const variant = canonical(v);
   const size = canonicalSize(s);
-  const inactive = !!disabled || !!loading;
+  const state = pressableState(disabled, loading, accessibilityState);
+  const inactive = !state.pressable;
   const press = usePressScale('control', !inactive);
   const iconColor = useIconColor(variant, disabled);
   const filled = variant === 'primary' || variant === 'secondary';
@@ -137,9 +139,9 @@ function Button({
           className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && DISABLED_FILLED, className)}
           style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, press.animatedStyle, style]}
           role="button"
-          disabled={inactive}
+          disabled={state.disabled}
           accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityState={{ ...accessibilityState, disabled: !!disabled, busy: !!loading }}
+          accessibilityState={state.accessibilityState}
           onPressIn={(e) => {
             press.onPressIn();
             if (haptic && !inactive) playHaptic(haptic);
@@ -149,7 +151,9 @@ function Button({
             press.onPressOut();
             onPressOut?.(e);
           }}
-          onPress={onPress}
+          onPress={(e) => {
+            if (!inactive) onPress?.(e);
+          }}
           {...props}>
           {loading ? (
             <ActivityIndicator color={iconColor} accessibilityElementsHidden importantForAccessibility="no" />
