@@ -20,3 +20,9 @@
     width: min(13vw, 190px);
   }
 }
+
+@media (min-width: 900px) {
+  .copy {
+    transform: translateY(-62%);
+  }
+}

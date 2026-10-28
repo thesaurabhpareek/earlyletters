@@ -28,7 +28,7 @@ const copy = site.scenes.s01;
 
 export function S01Evening() {
   return (
-    <Scene id="evening" label={copy.label} tone="night" length={3}>
+    <Scene id="evening" label={copy.label} tone="night" length={3} rest={0.42}>
       <EveningStage />
     </Scene>
   );

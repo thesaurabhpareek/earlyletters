@@ -18,14 +18,21 @@ const TOTAL_SECONDS = 72;
 const LINE = 1.5; // line-height of the transcript, in em
 const LINES_SHOWN = 4;
 
-function Word({ i, words, text }: { i: number; words: MotionValue<number>; text: string }) {
-  const opacity = useTransform(words, [i, i + 0.7], [0, 1]);
-  const y = useTransform(words, [i, i + 0.7], [3, 0]);
+/** Each word reads one shared `--w` (the words value) and its own `--i`; the browser does the rest. */
+function Word({ i, text }: { i: number; text: string }) {
   return (
-    <motion.span style={{ opacity, y, display: 'inline-block', whiteSpace: 'pre' }}>
+    <span
+      style={{
+        ['--i' as string]: i,
+        display: 'inline-block',
+        whiteSpace: 'pre',
+        opacity: 'clamp(0, calc((var(--w) - var(--i)) * 1.4286), 1)',
+        transform: 'translateY(calc((1 - clamp(0, (var(--w) - var(--i)) * 1.4286, 1)) * 3px))',
+      }}
+    >
       {text}
       {i < WORD_COUNT - 1 ? ' ' : ''}
-    </motion.span>
+    </span>
   );
 }
 
@@ -55,6 +62,7 @@ export function ListeningScreen({ level = ZERO, words = ZERO }: ListeningScreenP
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  const w = useTransform(words, (v) => v);
   const scrollY = useTransform(words, (v) => {
     const i = Math.max(0, Math.min(WORD_COUNT - 1, Math.floor(v)));
     const top = tops.current[i] ?? 0;
@@ -126,17 +134,16 @@ export function ListeningScreen({ level = ZERO, words = ZERO }: ListeningScreenP
             fontSize: u(18),
             lineHeight: LINE,
             color: 'color-mix(in srgb, currentColor 86%, transparent)',
-            maskImage: 'linear-gradient(to bottom, transparent, black 32%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 32%)',
           }}
         >
-          <motion.div style={{ y: scrollY }}>
-            {heardWords.map((w, i) => (
+          <motion.div style={{ y: scrollY, ['--w' as string]: w }}>
+            {heardWords.map((text, i) => (
               <span key={i} data-w>
-                <Word i={i} words={words} text={w} />
+                <Word i={i} text={text} />
               </span>
             ))}
           </motion.div>
+          <div aria-hidden style={{ position: 'absolute', inset: '0 0 auto 0', height: '32%', background: 'linear-gradient(to bottom, var(--night), transparent)', pointerEvents: 'none' }} />
         </div>
 
         <div style={{ marginTop: 'auto', display: 'flex', gap: u(12), width: '100%' }}>

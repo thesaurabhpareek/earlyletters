@@ -4,7 +4,7 @@
  * success or error in a polite live region. The honeypot field `company` is hidden from people and
  * screen readers. Words from site.notify.
  */
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { site } from '@/content/site';
 import { submitNotify } from '@/lib/notify/client';
 import { track } from '@/lib/analytics';
@@ -20,6 +20,10 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
   const hintId = useId();
   const statusId = useId();
   const [state, setState] = useState<State>('idle');
+  const doneRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (state === 'done') doneRef.current?.focus();
+  }, [state]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,7 +39,7 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
 
   if (state === 'done') {
     return (
-      <p className={styles.success} role="status">
+      <p ref={doneRef} tabIndex={-1} className={styles.success}>
         {c.success}
       </p>
     );
@@ -71,7 +75,7 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
           aria-invalid={state === 'invalid' || undefined}
           className={styles.input}
         />
-        <button type="submit" className={styles.button} disabled={state === 'sending'}>
+        <button type="submit" className={styles.button} aria-disabled={state === 'sending' || undefined}>
           {state === 'sending' ? c.sending : quiet ? c.quietButton : c.button}
         </button>
       </div>

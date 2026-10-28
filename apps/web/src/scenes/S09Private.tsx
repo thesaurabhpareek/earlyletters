@@ -23,19 +23,18 @@ const copy = site.scenes.s09;
 
 export function S09Private() {
   return (
-    <Scene id="private" label={copy.label} tone="night" length={2}>
+    <Scene id="private" label={copy.label} tone="night" length={2.2} rest={0.8}>
       <PrivateStage />
     </Scene>
   );
 }
 
 function Point({ p, i, text }: { p: MotionValue<number>; i: number; text: string }) {
-  const s = 0.34 + i * 0.055;
+  const s = 0.4 + i * 0.055;
   const opacity = useTransform(p, [s, s + 0.05, 0.92, 0.98], [0, 1, 1, 0]);
   const y = useTransform(p, [s, s + 0.05], [12, 0]);
   return (
     <motion.li className={styles.point} style={{ opacity, y }}>
-      <span className={styles.tick} aria-hidden />
       {text}
     </motion.li>
   );
@@ -46,8 +45,8 @@ function PrivateStage() {
   const draw = useTransform(p, [0, 0.16], [0, 1]);
   const open = useTransform(p, [0.12, 0.3], [1, 0]);
   const envOpacity = useTransform(p, [0, 0.04, 0.92, 0.98], [0, 1, 1, 0]);
-  const headOpacity = useTransform(p, [0.26, 0.34, 0.92, 0.98], [0, 1, 1, 0]);
-  const headY = useTransform(p, [0.26, 0.34], [16, 0]);
+  const headOpacity = useTransform(p, [0.34, 0.4, 0.92, 0.98], [0, 1, 1, 0]);
+  const headY = useTransform(p, [0.34, 0.4], [16, 0]);
   const light = useTransform(p, [0.1, 0.4, 0.92, 1], [0, 0.55, 0.55, 0]);
 
   return (

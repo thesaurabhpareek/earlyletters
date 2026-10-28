@@ -33,6 +33,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-muted);
+  opacity: 1;
 }
 .below {
   position: absolute;
@@ -103,7 +104,7 @@
   font-size: 13px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  opacity: 0.75;
+  opacity: 0.92;
 }
 @media (max-width: 480px) {
   .from {

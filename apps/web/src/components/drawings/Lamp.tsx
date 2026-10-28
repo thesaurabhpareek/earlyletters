@@ -11,6 +11,7 @@
 import { motion, useTransform, type MotionValue } from 'motion/react';
 import { useId } from 'react';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 /** viewBox 160 x 240. Shade centre is at (80, 78); table top at y 195. */
 const STROKES: ReadonlyArray<readonly [string, number, number]> = [
@@ -35,20 +36,21 @@ const CONE = 'M 37 108 C 52 116 108 116 123 108 L 156 195 L 4 195 Z';
 function Line({ d, draw, from, to }: { d: string; draw: MotionValue<number>; from: number; to: number }) {
   const pathLength = useTransform(draw, [from, to], [0, 1]);
   const opacity = useTransform(pathLength, (v) => (v > 0.002 ? 1 : 0));
-  return <motion.path d={d} vectorEffect="non-scaling-stroke" style={{ pathLength, opacity }} />;
+  return <motion.path d={d} style={{ pathLength, opacity }} />;
 }
 
 export function Lamp({ draw, className, title, strokeWidth = 1.5, glow }: DrawingProps & { glow?: MotionValue<number> | number }) {
   const id = useId().replace(/:/g, '');
+  const hairline = useHairline(160, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 0 160 240"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ overflow: 'visible' }}
@@ -73,7 +75,7 @@ export function Lamp({ draw, className, title, strokeWidth = 1.5, glow }: Drawin
         </>
       ) : null}
       {STROKES.map(([d, from, to]) =>
-        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} vectorEffect="non-scaling-stroke" />,
+        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} />,
       )}
     </svg>
   );

@@ -5,8 +5,10 @@
   overflow: hidden;
   background: var(--dusk);
   color: var(--night-ink);
-  --room-lift: 6svh;
-  --s07-head: clamp(40px, 6.4vw, 104px);
+  --room-lift: 0svh;
+  --dateline-lift: -29svh;
+  --s07-head: clamp(40px, 5.6vw, 88px);
+  background: linear-gradient(to top, color-mix(in srgb, var(--night-accent) 14%, var(--dusk)), var(--dusk) 55%);
   --letter-accent: var(--accent);
   --letter-on-accent: var(--on-accent);
   --letter-pill: color-mix(in srgb, var(--ink) 7%, var(--surface-raised));
@@ -14,10 +16,27 @@
 .roomSlot {
   position: absolute;
   left: 50%;
-  bottom: 3svh;
-  width: min(96vw, 1100px);
-  margin-left: calc(min(96vw, 1100px) / -2);
+  bottom: 11svh;
+  width: 150vw;
+  margin-left: -75vw;
   z-index: 1;
+}
+.whenBig {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: 38svh;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--s07-head);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--lamp);
+  transform-origin: 50% 0%;
+  z-index: 3;
+  pointer-events: none;
 }
 .lampLight {
   position: absolute;
@@ -38,7 +57,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 47svh;
+  top: 37svh;
   display: flex;
   justify-content: center;
   z-index: 2;
@@ -65,7 +84,7 @@
   position: absolute;
   inset: 0;
   background: var(--night);
-  z-index: 5;
+  z-index: 0;
   pointer-events: none;
 }
 @media (min-width: 900px) {
@@ -80,7 +99,7 @@
     left: max(var(--gutter), calc(50vw - 640px));
     right: auto;
     top: 50%;
-    width: min(42vw, 600px);
+    width: min(52vw, 780px);
     text-align: left;
     transform: translateY(-60%);
   }
@@ -88,7 +107,19 @@
     margin-left: 0;
   }
   .roomSlot {
-    bottom: 0;
+    bottom: 4svh;
+    width: min(96vw, 1100px);
+    margin-left: calc(min(96vw, 1100px) / -2 + 8vw);
+  }
+  .whenBig {
+    text-align: left;
+    left: max(var(--gutter), calc(50vw - 640px));
+    right: auto;
+    width: min(52vw, 780px);
+    transform-origin: 0% 0%;
+  }
+  .frame {
+    --dateline-lift: -22svh;
   }
 }
 [data-resting].frame .night {

@@ -1,24 +1,26 @@
 .form {
   width: 100%;
-  max-width: 30rem;
+  max-width: 36rem;
   text-align: left;
+  padding: 20px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--night) 78%, transparent);
 }
 .label {
   display: block;
   margin-bottom: 8px;
   font-family: var(--font-sans);
   font-weight: 500;
-  font-size: 15px;
-  color: var(--night-ink-muted);
+  font-size: 16px;
+  color: color-mix(in srgb, var(--night-ink) 90%, transparent);
 }
 .row {
   display: flex;
   gap: 8px;
   padding: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--night-raised) 88%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 22%, transparent);
-  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--night-raised) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 24%, transparent);
 }
 .row:focus-within {
   box-shadow: inset 0 0 0 1.5px var(--night-accent);
@@ -26,8 +28,8 @@
 .input {
   flex: 1;
   min-width: 0;
-  height: 48px;
-  padding: 0 14px 0 16px;
+  height: 56px;
+  padding: 0 14px 0 18px;
   border: 0;
   background: transparent;
   color: var(--night-ink);
@@ -35,17 +37,17 @@
   outline: none;
 }
 .input::placeholder {
-  color: color-mix(in srgb, var(--night-ink) 42%, transparent);
+  color: color-mix(in srgb, var(--night-ink) 64%, transparent);
 }
 .button {
   flex: none;
-  height: 48px;
-  padding: 0 20px;
+  height: 56px;
+  padding: 0 22px;
   border: 0;
   border-radius: 999px;
   background: var(--night-accent);
   color: var(--night-on-accent);
-  font: 600 16px/1 var(--font-sans);
+  font: 600 17px/1 var(--font-sans);
   cursor: pointer;
   transition: transform 160ms var(--ease-standard), filter 160ms;
 }
@@ -55,7 +57,7 @@
 .button:active {
   transform: scale(0.97);
 }
-.button:disabled {
+.button[aria-disabled='true'] {
   opacity: 0.7;
   cursor: default;
 }
@@ -76,7 +78,7 @@
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.45;
-  color: var(--night-ink-muted);
+  color: color-mix(in srgb, var(--night-ink) 88%, transparent);
 }
 .error {
   min-height: 1.4em;
@@ -88,17 +90,36 @@
 }
 .success {
   margin: 0;
+  padding: 20px;
   font-family: var(--font-serif);
   font-size: clamp(20px, 1.8vw, 26px);
   color: var(--night-ink);
+  outline: none;
 }
-@media (max-width: 420px) {
+@media (max-width: 560px) {
   .row {
     flex-direction: column;
-    border-radius: 24px;
+    gap: 12px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .row:focus-within {
+    box-shadow: none;
+  }
+  .input {
+    height: 54px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--night-raised) 92%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 28%, transparent);
+  }
+  .input:focus {
+    box-shadow: inset 0 0 0 1.5px var(--night-accent);
   }
   .button {
     width: 100%;
+    height: 54px;
   }
 }
 

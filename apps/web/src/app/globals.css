@@ -115,3 +115,28 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The page behind the film follows the tone at the bottom edge (Film.tsx), so the iOS toolbar strip matches. */
+html[data-tone='paper'],
+html[data-tone='paper'] body {
+  background: var(--paper);
+}
+html[data-tone='dusk'],
+html[data-tone='dusk'] body {
+  background: var(--dusk);
+}
+
+/* Lenis (lenis/dist/lenis.css equivalent, inlined to avoid another stylesheet request). */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}

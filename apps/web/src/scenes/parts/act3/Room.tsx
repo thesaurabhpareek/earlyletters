@@ -8,6 +8,7 @@ import type { MotionValue } from 'motion/react';
 import { ReadingLamp } from '@/components/drawings/ReadingLamp';
 import { Shoes } from '@/components/drawings/Shoes';
 import { Stroke } from './stroke';
+import { useHairline } from '@/components/drawings/hairline';
 import styles from './Room.module.css';
 
 const FLOOR = 'M6 210.4 C70 209.6 150 210.9 214 210.2 M226.5 210.1 C290 209.5 350 210.8 394 210';
@@ -20,9 +21,10 @@ const BED_FOLD = 'M262.4 99.6 C266.1 121 262.9 146 267.6 171.4';
 const BED_LEG = 'M240.6 176.8 C240.9 188 240.2 198 240.8 209.2';
 
 export function Room({ draw, lampDraw, shoesDraw }: { draw?: MotionValue<number>; lampDraw?: MotionValue<number>; shoesDraw?: MotionValue<number> }) {
+  const hairline = useHairline(400, 1.5);
   return (
     <div className={styles.room} aria-hidden>
-      <svg viewBox="0 0 400 220" className={styles.lines} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <svg ref={hairline} viewBox="0 0 400 220" className={styles.lines} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         <Stroke d={FLOOR} draw={draw} from={0} to={0.4} />
         <Stroke d={BED} draw={draw} from={0.12} to={0.62} />
         <Stroke d={BED_FOLD} draw={draw} from={0.5} to={0.7} />
@@ -30,8 +32,8 @@ export function Room({ draw, lampDraw, shoesDraw }: { draw?: MotionValue<number>
         <Stroke d={NIGHTSTAND} draw={draw} from={0.3} to={0.86} />
         <Stroke d={KNOB} draw={draw} from={0.84} to={1} />
       </svg>
-      <ReadingLamp className={styles.lamp} draw={lampDraw} strokeWidth={1.6} />
-      <Shoes className={styles.shoes} draw={shoesDraw} strokeWidth={1.7} />
+      <ReadingLamp className={styles.lamp} draw={lampDraw} strokeWidth={1.5} />
+      <Shoes className={styles.shoes} draw={shoesDraw} strokeWidth={1.5} />
     </div>
   );
 }
