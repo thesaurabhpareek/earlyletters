@@ -86,3 +86,20 @@ test("table sorts oldest first and survives pipes in titles", () => {
   assert.equal(rows[0].number, 2);
   assert.ok(!/a \| b/.test(markdownTable(rows)));
 });
+
+test("RB-29: updated_at inside the 28 Oct backfill window is unknown, not ok, without a commit date", () => {
+  const reset = { ...pr(7, 0), updated_at: "2026-10-28T05:39:00Z" };
+  assert.equal(classify(reset, { now: "2026-10-29T00:00:00Z" }).state, "unknown");
+});
+
+test("RB-29: a real activity time overrides the reset updated_at", () => {
+  const reset = { ...pr(8, 0), updated_at: "2026-10-28T05:39:00Z", last_activity_at: "2026-09-20T00:00:00Z" };
+  assert.equal(classify(reset, { now: "2026-10-29T00:00:00Z" }).state, "close-candidate");
+  const fresh = { ...reset, last_activity_at: "2026-10-28T20:00:00Z" };
+  assert.equal(classify(fresh, { now: "2026-10-29T00:00:00Z" }).state, "ok");
+});
+
+test("RB-29: the backfill rule ends by itself once the reset has aged past the stale threshold", () => {
+  const reset = { ...pr(9, 0), updated_at: "2026-10-28T05:39:00Z" };
+  assert.equal(classify(reset, { now: "2026-11-11T05:39:00Z" }).state, "stale");
+});

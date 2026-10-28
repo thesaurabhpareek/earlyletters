@@ -16,12 +16,20 @@ import { fileURLToPath } from "node:url";
 
 export const THRESHOLDS = { stale: 14, decision: 21, close: 30 };
 export const EXEMPT_LABELS = ["needs:founder", "hold"];
+// The label backfill of 28 Oct 2026 touched every open PR (updated_at 04:03 to 05:39 UTC),
+// so an updated_at at or before this instant says nothing about real quiet time. Until a
+// PR is older than the stale threshold counted from here, "ok" would be a guess: such a PR
+// is reported "unknown" unless the caller passes a real activity time (pr.last_activity_at,
+// for example the head commit date). After that, updated_at is a safe lower bound on quiet
+// time, so the rule ends by itself and never produces a false "stale".
+export const BACKFILL_RESET_START = "2026-10-28T04:00:00Z";
+export const BACKFILL_RESET_END = "2026-10-28T05:40:00Z";
 const DAY_MS = 86_400_000;
 
 // Whole days since the last update. Floored, so day 14 starts at exactly 14 x 24h:
 // a PR updated 13d 23h ago is still fresh. A future updated_at (clock skew) is 0.
 export function ageDays(pr, now) {
-  const ms = new Date(now).getTime() - new Date(pr.updated_at).getTime();
+  const ms = new Date(now).getTime() - new Date(pr.last_activity_at ?? pr.updated_at).getTime();
   if (!Number.isFinite(ms)) throw new Error(`PR #${pr.number}: unreadable updated_at or now`);
   return Math.max(0, Math.floor(ms / DAY_MS));
 }
@@ -51,6 +59,11 @@ export function classify(pr, { now, held = [], openPrs = [pr] } = {}) {
   // Drafts are classified like any other PR: a quiet draft is still clutter in
   // the queue. The table marks them so a reviewer can weigh that.
   let state = "ok";
+  const upd = new Date(pr.updated_at).getTime();
+  const reset = !pr.last_activity_at && upd >= new Date(BACKFILL_RESET_START).getTime() && upd <= new Date(BACKFILL_RESET_END).getTime();
+  if (reset && age < THRESHOLDS.stale) {
+    return { ...row, state: "unknown", reason: "updated_at was reset by the 28 Oct label backfill and no commit date was given" };
+  }
   if (age >= THRESHOLDS.close) state = "close-candidate";
   else if (age >= THRESHOLDS.decision) state = "decision-needed";
   else if (age >= THRESHOLDS.stale) state = "stale";

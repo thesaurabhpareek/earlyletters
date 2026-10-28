@@ -15,6 +15,10 @@
 //      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
 //      HAS_OPENROUTER_KEY + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code),
 //      and whose comments count as agent messages: AGENTS_APP_CLIENT_ID, AGENTS_BOT_LOGINS.
+// Robustness switches (RB-29, docs/agents/hardening/integration.md), all safe when unset:
+//      AGENTS_GATES=warn|off|enforce  AGENTS_PROVENANCE=warn|off  AGENTS_SLA=report|off
+//      AGENTS_STALE=report|off        AGENTS_STALE_HELD=109,110  (PR numbers exempt from stale)
+//      --dry-run prints the board with these sections and writes nothing to GitHub.
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -28,6 +32,7 @@ import * as lane from "./lane.mjs";
 import * as reviewfp from "./reviewfp.mjs";
 import * as verdicts from "./verdicts.mjs";
 import * as pause from "./pause.mjs";
+import * as rb from "./robustness.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -106,7 +111,7 @@ for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(
   delete state.claims[h];
 }
 // Hardening hooks (docs/agents/hardening/). Each module is optional and removable.
-const hctx = () => ({ state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames });
+const hctx = () => ({ handoffs, trust, state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames });
 lane.recordTick(hctx());
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
@@ -175,6 +180,7 @@ function attentionReasons(pr) {
   else if (f.founderNew.length) reasons.push("founder commented after the last commit");
   if (f.redVerdict?.startsWith("fix")) reasons.push("red team: fix first");
   if (f.stewardFix.length) reasons.push(`steward fix first: ${f.stewardFix.join(", ")}`);
+  reasons.push(...rb.attentionReasons(hctx(), pr)); // enforce mode only
   return reasons;
 }
 
@@ -206,6 +212,7 @@ const rows = [];
 const assignments = [];
 const reviewTargets = openPRs
   .filter((pr) => agentOfPR(pr) && agentOfPR(pr) !== "red-team" && !pr.draft)
+  .filter((pr) => !rb.blocksReview(hctx(), pr))
   .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 const sensitive = (pr) => /supabase|auth|sign-?in|migration/i.test(`${pr.title} ${pr.head.ref}`);
 // D-041: any PR (agent or not) that touches the database, workflows or auth gets
@@ -430,7 +437,7 @@ function renderBoard() {
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
   // reviewfp before pause: pause leaves out heads that reviewfp has recorded as carried.
-  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
+  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), rb.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");
