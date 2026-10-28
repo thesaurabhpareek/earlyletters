@@ -129,19 +129,33 @@ export function heldCardTilt(accessibilitySize: boolean): string {
   return accessibilitySize ? '0deg' : '-2deg';
 }
 
-/** The parts of the Keep sheet, by where they sit: the scroll, or the footer that stays on screen. */
+/** The parts of the Keep sheet: the scroll's blocks, the lines inside its words block, and the footer's buttons. */
 export type KeepSheetBlock = 'card' | 'words' | 'seePlus' | 'note' | 'hold' | 'redeem';
+export type KeepSheetLine = 'title' | 'heldNote' | 'note' | 'body';
+
+export type KeepSheetLayout = {
+  /** The scroll, in order. */
+  scroll: KeepSheetBlock[];
+  /** The lines of the `words` block, in order. */
+  words: KeepSheetLine[];
+  /** The footer that stays on screen, in order. */
+  pinned: KeepSheetBlock[];
+};
 
 /**
- * Where each part of the sheet sits (P6a critics' pass S1, 28 Oct). At the default size the held card is at the top
- * and every button is in the footer. At accessibility text sizes the words alone fill the first screen (at AX3 the
- * title, the body and the held note reach about 780 pt), so "See Plus" and "Keep it here for now" stay in the footer,
- * always on screen; the held card moves below the words, where it no longer pushes them down; and "Redeem a code"
- * goes to the end of the scroll, so the footer holds only what gets the person on. The held note is always read
- * before any button (F14-REQ-028): the scroll comes first in reading order.
+ * Where each part of the sheet sits (P6a critics' pass S1, and both lenses on #370). At the default size the held card is
+ * at the top, then the title, the body and the held note, and every button with its note is in the footer.
+ *
+ * At accessibility text sizes the words alone fill the first screen (at AX3 the title, body and held note reach about
+ * 780 pt), so the footer holds the two buttons and nothing else: "See Plus" and "Keep it here for now", always on
+ * screen. Every line of text is in the scroll, because uncapped text in a footer can grow taller than the sheet (the
+ * 96-character offline note at AX5 on an SE made the footer about 865 pt in a 667 pt screen). The held note, the line
+ * that says the letter is safe, comes right after the title (F14-REQ-028: said before any offer), then the note about
+ * See Plus, then the body; the held card and "Redeem a code" follow. The scroll comes first in reading order, so the
+ * held note is read before any button at every size.
  */
-export function keepSheetLayout(accessibilitySize: boolean): { scroll: KeepSheetBlock[]; pinned: KeepSheetBlock[] } {
+export function keepSheetLayout(accessibilitySize: boolean): KeepSheetLayout {
   return accessibilitySize
-    ? { scroll: ['words', 'card', 'redeem'], pinned: ['seePlus', 'note', 'hold'] }
-    : { scroll: ['card', 'words'], pinned: ['seePlus', 'note', 'hold', 'redeem'] };
+    ? { scroll: ['words', 'card', 'redeem'], words: ['title', 'heldNote', 'note', 'body'], pinned: ['seePlus', 'hold'] }
+    : { scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] };
 }

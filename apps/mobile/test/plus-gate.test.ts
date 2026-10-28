@@ -50,8 +50,8 @@ describe('[S22] what the Keep sheet says', () => {
   it('the sheet draws the words keepSheetView chose, each in its own place (#296; lens B B2 on #312)', () => {
     const gate = code('components/child/plus-gate.tsx');
     // Body under the title, the held note under it (trust copy, subhead), the note under See Plus: a swap fails here.
-    expect(gate).toMatch(/<Text variant="body">\{view\.body\}<\/Text>/);
-    expect(gate).toMatch(/<Text variant="subhead" tone="muted" testID="plusGate\.heldNote">\s*\{view\.heldNote\}\s*<\/Text>/);
+    expect(gate).toMatch(/<Text key="body" variant="body">\{view\.body\}<\/Text>/);
+    expect(gate).toMatch(/<Text key="heldNote" variant="subhead" tone="muted" testID="plusGate\.heldNote">\s*\{view\.heldNote\}\s*<\/Text>/);
     expect(gate).toMatch(/testID="plusGate\.note">\s*\{view\.note\}\s*<\/Text>/);
     for (const v of ['body', 'heldNote', 'note']) expect(gate.match(new RegExp(`\\{view\\.${v}\\}`, 'g')), v).toHaveLength(1);
     // The sentences that depend on the state never come straight from the copy: only through keepSheetView.
@@ -98,30 +98,41 @@ describe('[S22] what the Keep sheet says', () => {
   });
 });
 
-describe('[S22] the way on is always on screen (P6a critics\' S1)', () => {
-  it('at accessibility sizes See Plus and Keep it here for now stay in the footer; the card and Redeem follow the words', () => {
+describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B on #370)', () => {
+  it('at accessibility sizes the footer holds the two buttons and nothing else; every line of text is in the scroll', () => {
     const ax = keepSheetLayout(true);
-    expect(ax.pinned).toEqual(['seePlus', 'note', 'hold']);
+    // Exactly the two buttons: no text in the footer, so it can never grow taller than the sheet (the 96-character
+    // offline note at AX5 on an SE made it about 865 pt in a 667 pt screen).
+    expect(ax.pinned).toEqual(['seePlus', 'hold']);
     expect(ax.scroll).toEqual(['words', 'card', 'redeem']);
-    // At the default size: the card on top, every button in the footer, as before.
-    expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
+    // The line that says the letter is safe comes right after the title, before the offer's note and the body.
+    expect(ax.words).toEqual(['title', 'heldNote', 'note', 'body']);
+    // At the default size: the card on top, then the title, the body and the held note; every button and its note
+    // in the footer, as before.
+    expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
     for (const l of [keepSheetLayout(true), keepSheetLayout(false)]) {
       // "Keep it here for now" is in the footer at every size, so it is on the first screen at AX3 and AX5.
       expect(l.pinned).toContain('hold');
       expect(l.scroll).not.toContain('hold');
-      // Every part once; the held note (in the words) is read before any button: the scroll comes first.
-      expect([...l.scroll, ...l.pinned].sort()).toEqual(['card', 'hold', 'note', 'redeem', 'seePlus', 'words']);
+      // Every part once, the note either a line of the words or in the footer, never both.
+      const parts = [...l.scroll.filter((b) => b !== 'words'), ...l.words, ...l.pinned];
+      expect([...parts].sort()).toEqual(['body', 'card', 'heldNote', 'hold', 'note', 'redeem', 'seePlus', 'title']);
+      // The scroll comes first in reading order, so the held note is read before any button.
       expect(l.scroll).toContain('words');
+      expect(l.words).toContain('heldNote');
     }
     // At accessibility sizes the words come before the card, so the card no longer pushes them down.
     expect(ax.scroll.indexOf('words')).toBeLessThan(ax.scroll.indexOf('card'));
   });
 
-  it('the sheet draws the scroll and the footer from keepSheetLayout, the footer outside the scroll', () => {
+  it('the sheet draws the words, the scroll and the footer from keepSheetLayout, the footer outside the scroll', () => {
     const gate = code('components/child/plus-gate.tsx');
     expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
+    expect(gate).toMatch(/<View key="words" style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
     expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
     expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
+    // The footer's note is drawn only where the layout puts it, so it is never in the footer and the words at once.
+    expect(gate).toMatch(/note: layout\.pinned\.includes\('note'\) \? line\.note : null,/);
     expect(gate).not.toMatch(/footerPlacement/);
   });
 });

@@ -18,8 +18,9 @@
  * Motion: the sheet rises on `standard` (useSheetMotion) over a scrim that fades in; the held card enters with
  * `motion.enter`; the buttons are there from the first frame (MOTION principle 2). Reduce Motion: everything fades.
  * Accessibility: modal for VoiceOver (the Review behind cannot be reached), focus on the title, the held card read as
- * one element, 44 pt targets. At accessibility text sizes "See Plus" and "Keep it here for now" stay in the footer, on
- * the first screen, and the held card and "Redeem a code" follow the words in the scroll (keepSheetLayout).
+ * one element, 44 pt targets. At accessibility text sizes the footer holds only "See Plus" and "Keep it here for now",
+ * on the first screen; every line of text is in the scroll, the held note right after the title; the held card and
+ * "Redeem a code" follow (keepSheetLayout).
  */
 import * as React from 'react';
 import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
@@ -37,7 +38,7 @@ import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { STANDARD_EASING, useMotion, useSheetMotion } from '@/lib/motion';
-import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, type HeldLetter, type HeldOn, type KeepSheetBlock } from './plus-gate.logic';
+import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, type HeldLetter, type HeldOn, type KeepSheetBlock, type KeepSheetLine } from './plus-gate.logic';
 
 export type { HeldLetter } from './plus-gate.logic';
 
@@ -158,29 +159,40 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const leaveSheet =
     sheet.kind === 'fade' ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never) : SlideOutDown.duration(M.exitMs).easing(STANDARD_EASING).reduceMotion(ReduceMotion.Never);
 
-  // One primary. Without Apple's store on this device, "Keep it here for now" is the only way on, so it is the primary.
-  const part: Record<KeepSheetBlock, React.ReactNode> = {
-    card: held ? <HeldCard key="card" held={held} entering={motion.enter(0)} tilt={heldCardTilt(ax)} surface={c.surfaceRaised} /> : null,
-    words: (
-      <View key="words" style={{ gap: tokens.space[3] }}>
-        <Text ref={title} variant="title1" asHeading>
-          {fill(k.title, { child: childName })}
-        </Text>
-        <Text variant="body">{view.body}</Text>
-        {/* Where the letter waits: trust copy, so never below subhead (P1's floor, lib/review-layout.logic.ts). */}
-        <Text variant="subhead" tone="muted" testID="plusGate.heldNote">
-          {view.heldNote}
-        </Text>
-      </View>
+  const line: Record<KeepSheetLine, React.ReactNode> = {
+    title: (
+      <Text key="title" ref={title} variant="title1" asHeading>
+        {fill(k.title, { child: childName })}
+      </Text>
     ),
-    seePlus: view.canOpenStore ? (
-      <Button key="seePlus" size="lg" fullWidth label={k.seePlus} onPress={() => void open()} disabled={opening} accessibilityHint={opening ? billingCopy.gate.opening : undefined} testID="plusGate.seePlus" />
-    ) : null,
+    body: (
+      <Text key="body" variant="body">{view.body}</Text>
+    ),
+    // Where the letter waits: trust copy, so never below subhead (P1's floor, lib/review-layout.logic.ts).
+    heldNote: (
+      <Text key="heldNote" variant="subhead" tone="muted" testID="plusGate.heldNote">
+        {view.heldNote}
+      </Text>
+    ),
     note: view.note ? (
       <Text key="note" variant="footnote" accessibilityLiveRegion="polite" className="px-2 pb-1 text-center" testID="plusGate.note">
         {view.note}
       </Text>
     ) : null,
+  };
+  // One primary. Without Apple's store on this device, "Keep it here for now" is the only way on, so it is the primary.
+  const part: Record<KeepSheetBlock, React.ReactNode> = {
+    card: held ? <HeldCard key="card" held={held} entering={motion.enter(0)} tilt={heldCardTilt(ax)} surface={c.surfaceRaised} /> : null,
+    words: (
+      <View key="words" style={{ gap: tokens.space[3] }}>
+        {layout.words.map((w) => line[w])}
+      </View>
+    ),
+    seePlus: view.canOpenStore ? (
+      <Button key="seePlus" size="lg" fullWidth label={k.seePlus} onPress={() => void open()} disabled={opening} accessibilityHint={opening ? billingCopy.gate.opening : undefined} testID="plusGate.seePlus" />
+    ) : null,
+    // At the default size the note sits under See Plus in the footer; at accessibility sizes it is a line of the words.
+    note: layout.pinned.includes('note') ? line.note : null,
     hold: <Button key="hold" size={view.canOpenStore ? 'md' : 'lg'} variant={view.canOpenStore ? 'quiet' : 'primary'} fullWidth label={k.holdButton} onPress={onHold} testID="plusGate.hold" />,
     redeem: (
       <React.Fragment key="redeem">

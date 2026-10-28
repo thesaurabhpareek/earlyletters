@@ -27,8 +27,10 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  *
  * EXPERIENCE_PASS_2026-10 S44 (package P6): the never-lines are a plain list on paper with a glyph each (NeverList),
  * not rows that look tappable; their words are registered claims, unchanged. The documents stay rows, rendered from
- * content. The Consumer Health Data notice row goes with S14 in the same merge that retires `healthPrivacyLink`,
- * after #163 and no later than #169, so no link ever points at a missing page (spec S44, counsel C9).
+ * content: the Privacy Policy and the Terms, the two pages the website serves. #169 took /health-privacy and
+ * /subprocessors off the site before #163 landed, so their rows went from here first (P6b critics' M1, #370); the
+ * content keys `healthPrivacyLink` and `subprocessorsLink` wait for S14 and #163 to retire (spec S44, counsel C9).
+ * test/privacy-documents.test.ts fails if a row opens a route the website removed.
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;

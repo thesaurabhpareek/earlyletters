@@ -25,6 +25,9 @@ describe('[S44] Privacy links only to pages the website serves', () => {
   const opened = [...screen.matchAll(/open\(brand\.web\.(\w+)\)/g)].map((m) => m[1]);
 
   it('no document row opens a route the website removed', () => {
+    // The mirror itself is pinned, so emptying it or dropping a route cannot make this test pass by itself. It mirrors
+    // REMOVED_ROUTES in apps/web/e2e/support/legal.ts on main: change both together.
+    expect(WEBSITE_REMOVED_ROUTES).toEqual(['/health-privacy', '/subprocessors', '/delete-account']);
     expect(opened.length).toBeGreaterThan(0);
     for (const key of opened) {
       const url = web[key];
