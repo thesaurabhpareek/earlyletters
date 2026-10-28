@@ -2,6 +2,8 @@
 
 Rules are in `COORDINATION.md`. This file is append-only except for your own claim line. Re-read it before you write to it.
 
+The agent harness is called Chakra, an internal name (`HARNESS.md`); nothing is renamed.
+
 ## Active claims
 | Agent | Area | Files (globs) | Since (UTC) | Status |
 |---|---|---|---|---|
@@ -82,6 +84,39 @@ Rules are in `COORDINATION.md`. This file is append-only except for your own cla
 | merged on 24 Oct with no claim row (coordination note) | pull requests that landed overnight without a claim line of their own | #270 (2876ff7: the preflight fails without the signed English pack, D-115), #276 (86b6e90: the launch-crash fix, billing files without a Metro platform suffix, and the platform-split guard), #275 (6ce6851: the TestFlight runbook follow-ups: push prompt off, App Manager key, the Family group first, eas-cli 24.10.0 pins), #278 (d49acf2: the platform-split guard widened; startup Keychain wiring test), #280 (bbd98d6: the merge rule in COORDINATION.md reads D-117, packs read D-115, release lows from #270 and #275, and the first armed kill-harness run in B2-11 and DEVICE_TEST_PLAN) | 2026-10-24 | done (merged; the files are develop's) |
 | founder steps open for the alpha (coordination note, Tue 27 Oct, 3:42 PM PT) | what only the founder can do now, from the merged work | Build 1: TESTFLIGHT.md steps 1 to 5 (Apple enrolment, the App Store Connect record and the Expo project, all unverified here; the signed English pack release, D-115; the build). The Mac kit run for ADR 0027 V3 and V4, `npm run adts-parity -w @scribe/experiments` (experiments/README.md section 8, #282 merged e292d3d), by Fri 30 Oct (the coordinator's date). Delete the scratch branch exp/plant-launch-throw (closed #285) by hand. AF-05 (develop as the default branch; B2-22). The answer on the proposed dates (freeze Tue 3 Nov 13:00 UTC, go/no-go Thu 5 Nov), overdue since Sat 24 Oct, 5:00 PM PT | 2026-10-27 (row added) | open (founder) |
 | merged on 27 Oct (coordination note) | pull requests that landed on Tue 27 Oct, after the 24 to 27 Oct session halt (Sat 24 Oct, 5:10 AM PT to Tue 27 Oct, 1:00 PM PT), by owner row | P4c #289 (c9bc6c0) and #292 (acbd108): the experience-p4 row; #290 (012d208): the S09 engine row; #281 (15279d7), #282 (e292d3d) and #291 (1c6795b): the S10 row; #288 (c6a5fd2): the S20 row; the ADR 0027 flip #293 (bbac5ec): the S10 row | 2026-10-27 | done (merged; the files are develop's) |
+
+## Build 2 merge sequence (coordinator, 28 Oct 2026)
+Every thread syncs to this order. PR state and heads are from the GitHub API at 06:04 UTC on 28 Oct (Tue 27 Oct, 11:04 PM PT); a push changes the head, so read it again before acting.
+
+**The experience packages merge in this order:**
+1. #310 P8a sign-in and Account (open, head 426ee3c).
+2. #312 P6a Keep sheet, Settings home, child settings (open, head ed17c05).
+3. #314 P8b Family tab, invite, joining (open, head 4fa48c5).
+4. #313 P6b Plan, Reminders, Recordings, Export, Privacy, Appearance (open, head 9e7dbbd).
+5. P6c, the not-found and resilience screens (no PR at write time).
+6. P7, clean-up and the journey record, last (no PR at write time).
+
+**Why:** readiness, and fewer conflicts on the shared files: docs/qa/DEVICE_TEST_PLAN.md row ids, auth strings, the settings stack, review.tsx. At these heads the only file more than one of the four changes is DEVICE_TEST_PLAN.md (#310, #312, #314), and #310 and #314 both add a row S1-27, so #314 renumbers its rows after #310 lands.
+
+**Merge rule:** two independent passing reviews on the current head, and green CI including the check "store-profile Release launch (testflight env, no seam, 20 s)". At write time every check on the four heads was green (the iOS simulator build skipped) and none had a GitHub review yet.
+
+**Independent of that order:**
+- #311, database pg_temp and purged photos (open, head c8e8b88, CI green, no review yet); the founder applies the migration.
+- The D-120 docs PR (not open at write time; D-120 is not yet in DECISIONS.md on develop).
+- The S01 sign-out logic PR, after #310 (not open at write time).
+- #306, typed invite codes: HELD for D-120 (open, head f54b6f2).
+
+**Held for the founder:**
+- #301 (open, head 4c76c46) and #302 (open, head 3ba0f73): the live website, a production deploy. #302 is merged with "Squash and merge" and a clean message.
+- #308 and #309, Vercel bot drafts: merge neither. #308 is already closed, not merged (04:34 UTC, 28 Oct); #309 is an open draft (head d974afc).
+
+**Internal targets (proposed, not confirmed by the founder):** the four UI PRs merged by Thu 29 Oct, 11:59 PM PT; P6c and P7 merged by Sat 31 Oct; the critics' pass and device checks Sun 1 Nov; buffer and gate prep Mon 2 Nov; proposed build 2 freeze Tue 3 Nov, 5:00 AM PT (13:00 UTC); go/no-go Thu 5 Nov.
+
+**Founder-only critical path:** the Apple, Expo and App Store Connect accounts (now); the pack key ceremony (before build 1); the Mac kit run (by Fri 30 Oct); the counsel relay (by Thu 29 Oct); staging (no date set).
+
+**Not verified here:** reviews held outside GitHub, readiness beyond CI, and the founder's agreement to any date above.
+
+**Vocabulary (working names, internal; doc vocabulary only, no script, workflow, check, file or branch is renamed):** Sarathi (charioteer) = the coordinator role; Drishti (sight) = the review lenses; Pariksha (test) = the kill-safety harness; Vaidya (physician) = the release doctor; Prasthana (setting out) = the preflight; Darpana (mirror) = the board; Dvara (gate) = the go/no-go gate; Nirnaya (decision) = decision records; Yatra (journey) = the journey record.
 
 ## Done this wave (2026-10-03). Each report sits with the coordinator.
 - research: `docs/research/competitors/us.md`, `global.md`, `adjacent-and-ux-benchmarks.md`
