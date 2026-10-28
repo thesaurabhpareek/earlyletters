@@ -33,7 +33,7 @@ if (process.env.SCRIBE_REGRESSION_RECORD === '1') {
 }
 
 /** Independent of src/meaning.ts on purpose: the test must not share a bug with the code it checks. */
-const norm = (s: string) => s.normalize('NFC').toLowerCase().replace(/’/g, "'");
+const norm = (s: string) => s.normalize('NFC').toLowerCase().replace(/\u2019/g, "'");
 const words = (s: string) => norm(s).split(/[^\p{L}\p{M}\p{N}']+/u).filter(Boolean);
 const NEGATIONS = new Set(['no', 'not', 'never', 'cannot', 'nothing', 'nobody', 'none', 'neither', 'nor', "didn't", "don't", "doesn't", "isn't", "wasn't", "can't", "won't", "couldn't", "wouldn't"]);
 const NUMBERS = new Set(['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'once', 'twice', 'first', 'second', 'third']);
@@ -70,7 +70,7 @@ describe('engine regression corpus: the corpus itself', () => {
   });
 
   it('uses only the fictional family and no content-rule characters', () => {
-    const bad = /[—–‘’“”…]|\p{Extended_Pictographic}/u;
+    const bad = /[\u2014\u2013\u2018\u2019\u201C\u201D\u2026]|\p{Extended_Pictographic}/u;
     for (const i of CORPUS) expect(bad.test(JSON.stringify(i)), i.id).toBe(false);
   });
 });
