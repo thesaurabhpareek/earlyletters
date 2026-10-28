@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { en, familyCopy } from '@scribe/content';
 import { addChildBlock, addChildCta, addChildValues, ADD_BUTTON_MAX } from '../src/components/child/add-child-form.logic';
 import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, FAMILY_TAB_HREF, hideFooter } from '../src/components/child/child-settings.logic';
+import { peopleRows } from '../src/components/family/family-tab.logic';
 import { inviteHref } from '../src/lib/family/entry.logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -128,8 +129,9 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
     expect(unsigned).toBe('Your co-parent');
     expect(hideFooter('Asha', unsigned)).toBe("Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Your co-parent still sees Asha's book as before.");
     expect(bookRow({ serverFeatures: true, coParent: unsigned, invite: inviteHref('settings_child', true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
-    // The same words the Family tab uses for a member with no signature.
-    expect(code('app/(tabs)/family.tsx')).toMatch(/m\.signsAs\.trim\(\) \|\| f\.members\.invitedName/);
+    // The same words the Family tab uses for a member with no signature (peopleRows draws the tab's rows).
+    const tabRows = peopleRows({ signsAs: 'Mama' }, [{ id: 'm2', role: 'parent', signsAs: '' }]);
+    expect(tabRows[1]?.signature).toBe(familyCopy.members.invitedName);
     // A contributor alone is not a co-parent, signed or not.
     expect(coParentOf([{ role: 'contributor', signsAs: '' }])).toBeNull();
   });
