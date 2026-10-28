@@ -1,10 +1,15 @@
 import { Stack } from 'expo-router';
 import { Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { licences } from '@scribe/content';
 import { copy } from '@/lib/copy';
 import { useTheme } from '@/lib/a11y';
 
-/** Settings stack (PRD C, C-REQ-016): every row at most 2 taps from Settings. */
+/**
+ * Settings stack (PRD C, C-REQ-016): every row at most 2 taps from Settings. Every page is a native push with the
+ * platform's own motion and no lamp (EXPERIENCE_PASS 5.8 row 9); "If you are struggling" and Licenses are pages too
+ * (S40), never accordions inside the list.
+ */
 export default function SettingsLayout() {
   const c = useTheme().c;
   return (
@@ -26,6 +31,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="recordings" options={{ title: copy.settings.recordings.title }} />
       <Stack.Screen name="children/new" options={{ title: copy.children.add.title }} />
       <Stack.Screen name="children/[id]" options={{ title: copy.children.settings.sectionTitle }} />
+      <Stack.Screen name="struggling" options={{ title: copy.struggling.title }} />
+      <Stack.Screen name="licenses" options={{ title: licences.title }} />
     </Stack>
   );
 }
