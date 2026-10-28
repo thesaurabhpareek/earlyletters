@@ -2,7 +2,7 @@
 
 Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
 
-- **Wave 0: 12 of 15 open, 1 partly done, 2 done.** Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 6 (secret scanning and push protection are on; Dependabot alerts could not be read).
+- **Wave 0: 11 of 15 open, 2 partly done, 2 done.** Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on) and item 6 (secret scanning and push protection are on; Dependabot alerts could not be read).
 - **What the repo can see today** (`node scripts/founder/check.mjs`, 28 Oct): default branch `main`; no branch protection on `develop` or `main` (`main` has only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 25 migration files recorded as applied.
 - **0 of 57 boxes** in `docs/FOUNDER_TASKS.md` are ticked. Steps done outside the repo (Apple, Expo, Supabase) are marked "unverified": tell the coordinator and the line changes.
 
@@ -29,7 +29,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 **W0-03 Pause the daily PRD update until after 5 Nov, then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
 
-**W0-04 Close #309 and turn off automatic Vercel Agent pull requests for the website project.** Open: #309 (author `vercel[bot]`, into `main`) is open (REST, 28 Oct). About 3 minutes. The Vercel setting's exact name is unverified.
+**W0-04 Close #309 and turn off automatic Vercel Agent pull requests for the website project.** Partly done: #309 (author `vercel[bot]`, into `main`) was closed unmerged on 28 Oct at 06:16 UTC (REST). Still open: turn off automatic Vercel Agent pull requests so another one does not arrive. About 3 minutes. The Vercel setting's exact name is unverified.
 - Why: #309 adds Vercel Web Analytics and flips the guard test in `legal.test.ts` from "must not mention" to "must mention" (retro synthesis section 1, row 21).
 - Verify: `gh api repos/thesaurabhpareek/earlyletters/pulls/309 --jq .state` prints `closed`.
 
