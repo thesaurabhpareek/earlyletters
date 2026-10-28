@@ -1,7 +1,8 @@
 // Review fingerprints: a develop merge does not queue a second red-team review. Run: node --test 'scripts/agents/*.test.mjs'
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fingerprint, normalizePatch, equivalentReviewed, recordAssigned } from "./reviewfp.mjs";
+import { fingerprint, normalizePatch, equivalentReviewed, recordAssigned, boardLines } from "./reviewfp.mjs";
+import { readFileSync } from "node:fs";
 
 // Fixture shaped like PR #38's files page (one Markdown file). After a develop
 // merge the hunk header moves (develop added lines above) but the PR's own lines do not.
@@ -15,17 +16,18 @@ const file = (filename, patch, extra = {}) => {
 const OWNER = { user: { login: "founder", type: "User" }, author_association: "OWNER" };
 const STRANGER = { user: { login: "someone", type: "User" }, author_association: "NONE" };
 
-function world({ files, comments = [], open = [38] }) {
+function world({ files, comments = [], open = [38], redTeam = false }) {
   const calls = [];
-  const facts = { all: comments };
+  const facts = { all: comments, redTeam };
   const ctx = {
     state: {},
     now: new Date("2026-10-18T12:00:00Z"),
     repo: "o/r",
     roster: { founder: "founder" },
     env: {},
-    openPRs: open.map((number) => ({ number })),
+    openPRs: open.map((p) => (typeof p === "number" ? { number: p } : p)),
     prFacts: () => facts,
+    agentOfPR: (p) => (p.number === 38 ? "ops" : undefined),
     gh: (path) => { calls.push(path); return typeof files === "function" ? files(path) : files; },
   };
   return { ctx, calls };
@@ -73,6 +75,47 @@ test("a develop merge with the same changes counts as reviewed", () => {
   assert.equal(calls.length, 1, "one files call per PR per run");
 });
 
+test("a match is recorded against the new head; the board names both heads and the review it inherits", () => {
+  const reviewed = fingerprint([file("docs/marketing/LAUNCH_PLAN.md", PATCH_A)]);
+  const review = { ...OWNER, body: "<!-- red-team:s1 -->\nVerdict: ship\n\nFine.", submitted_at: "2026-10-16T09:00:00Z" };
+  const { ctx, calls } = world({ files: [file("docs/marketing/LAUNCH_PLAN.md", PATCH_A_MOVED)], comments: [review], open: [pr("s2")] });
+  ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed } };
+  const lines = boardLines(ctx);
+  assert.equal(lines[0], "## Same changes as a reviewed head");
+  assert.equal(lines[2], '- #38 (`ops`): head s2 has the same changes as s1, which the red team reviewed on 2026-10-16, verdict "ship"; the red team is not re-assigned. Nothing is posted on s2: the merge rule reads reviews on the current head (COORDINATION.md section 6).');
+  assert.match(lines.at(-1), /not a review of the new head/);
+  assert.deepEqual(ctx.state.reviewfp[38].carried, { sha: "s2", verdict: "ship", at: "2026-10-16" });
+  assert.equal(calls.length, 1, "one files call");
+  // The next tick reads the record back from the board and answers without a files call.
+  const next = world({ files: null, comments: [review], open: [pr("s2")] });
+  next.ctx.state = JSON.parse(JSON.stringify(ctx.state));
+  assert.equal(equivalentReviewed(next.ctx, pr("s2")), true);
+  assert.equal(boardLines(next.ctx)[2], lines[2]);
+  assert.equal(next.calls.length, 0);
+  // A review assigned later (a new head with new changes) replaces the record.
+  recordAssigned(next.ctx, pr("s3"));
+  assert.equal(next.ctx.state.reviewfp[38].carried, undefined);
+});
+
+test("no fingerprint line when the head has its own review; a differing head is remembered", () => {
+  const reviewed = fingerprint([file("x.md", PATCH_A)]);
+  const review = { ...OWNER, body: "<!-- red-team:s1 -->\nVerdict: ship", submitted_at: "2026-10-16T09:00:00Z" };
+  const own = world({ files: [file("x.md", PATCH_A_MOVED)], comments: [review], open: [pr("s2")], redTeam: true });
+  own.ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed } };
+  assert.deepEqual(boardLines(own.ctx), []);
+  assert.equal(own.calls.length, 0, "a head with its own red-team review is not fetched");
+  const diff = world({ files: [file("x.md", PATCH_B)], comments: [review], open: [pr("s2")] });
+  diff.ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed } };
+  assert.deepEqual(boardLines(diff.ctx), []);
+  assert.equal(diff.ctx.state.reviewfp[38].differs, "s2");
+  assert.equal(diff.ctx.state.reviewfp[38].carried, undefined);
+  const again = world({ files: null, comments: [review], open: [pr("s2")] });
+  again.ctx.state = JSON.parse(JSON.stringify(diff.ctx.state));
+  assert.equal(equivalentReviewed(again.ctx, pr("s2")), false);
+  assert.equal(again.calls.length, 0, "a head already compared is not fetched again");
+  assert.deepEqual(boardLines(world({ files: null, open: [pr("s2")] }).ctx), [], "no state, no section");
+});
+
 test("new changes since the review mean a new review", () => {
   const { ctx } = world({ files: [file("docs/marketing/LAUNCH_PLAN.md", PATCH_B)], comments: [{ ...OWNER, body: "<!-- red-team:s1 -->\nVerdict: ship" }] });
   ctx.state.reviewfp = { 38: { sha: "s1", fp: fingerprint([file("docs/marketing/LAUNCH_PLAN.md", PATCH_A)]) } };
@@ -114,4 +157,12 @@ test("entries for PRs that are no longer open are pruned", () => {
   ctx.state.reviewfp[12] = { sha: "a", fp: "f" };
   recordAssigned(ctx, pr("s3"));
   assert.deepEqual(Object.keys(ctx.state.reviewfp), ["38"]);
+});
+
+test("dispatch.mjs writes the fingerprint section before the pause section, which reads its record", () => {
+  // dispatch.mjs runs against GitHub when imported, so the wiring is checked in its source.
+  const src = readFileSync(new URL("./dispatch.mjs", import.meta.url), "utf8");
+  const at = (needle) => src.indexOf(needle);
+  assert.ok(at("reviewfp.boardLines(hctx())") > 0, "the fingerprint section is on the board");
+  assert.ok(at("reviewfp.boardLines(hctx())") < at("pause.boardLines(hctx())"), "reviewfp before pause");
 });

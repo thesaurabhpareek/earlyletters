@@ -139,6 +139,17 @@ test("caches by head: one call per PR per head across ticks", () => {
   assert.equal(state.drift["41"].head, "d".repeat(40));
 });
 
+test("a head recorded as the same changes as a reviewed head is not awaiting re-review", () => {
+  const reviews = { 41: [founderReview(OLD, "ship", "2026-10-16T00:00:00Z")] };
+  const state = { reviewfp: { 41: { sha: OLD, fp: "f", carried: { sha: HEAD, verdict: "ship", at: "2026-10-16" } } } };
+  const { ctx, calls } = boardCtx({ prs: [pr(41, HEAD, ["review:red-team-ok"])], reviews, state });
+  assert.deepEqual(boardLines(ctx), []);
+  assert.deepEqual(calls, [], "no reviews call for a PR the red team is not re-assigned to");
+  // A newer head without a match is listed again.
+  const moved = boardCtx({ prs: [pr(41, "d".repeat(40), ["review:red-team-ok"])], reviews, state });
+  assert.match(boardLines(moved.ctx).join("\n"), /^- #41 .*head is now ddddddd/m);
+});
+
 test("prunes cache entries for PRs that are no longer open", () => {
   const state = { drift: { 7: { head: "x", prior: null }, 41: { head: HEAD, prior: null } } };
   const { ctx } = boardCtx({ prs: [pr(41, HEAD, [])], state });

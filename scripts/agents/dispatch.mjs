@@ -429,7 +429,8 @@ function renderBoard() {
   }
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
-  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
+  // reviewfp before pause: pause leaves out heads that reviewfp has recorded as carried.
+  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");

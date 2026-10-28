@@ -9,9 +9,13 @@
 // A founder-forced run (FORCE_TASK with ONLY_AGENT naming the agent) is not blocked.
 //
 // boardLines: an "Awaiting re-review" section listing open agent PRs whose head
-// has no red-team review but an older head does. Labels are shown as they are;
-// this module never changes labels. At most one reviews call per PR per head,
-// cached in ctx.state.drift, and at most MAX_FETCHES uncached calls per tick.
+// has no red-team review but an older head does. A PR whose current head is
+// recorded in state.reviewfp[<pr>].carried (reviewfp.mjs: the same changes as a
+// head the red team reviewed) is left out, because the red team is not
+// re-assigned to it; the board's fingerprint section shows it instead. Labels are
+// shown as they are; this module never changes labels. At most one reviews call
+// per PR per head, cached in ctx.state.drift, and at most MAX_FETCHES uncached
+// calls per tick.
 import { isTrusted, trustContext } from "./lib.mjs";
 
 const NEW_WORK = new Set(["task", "standing"]);
@@ -69,6 +73,7 @@ export function boardLines(ctx) {
   for (const pr of [...agentPRs].sort((a, b) => a.number - b.number)) {
     const sha = pr.head?.sha ?? "";
     if (!sha || ctx.prFacts(pr).redTeam) continue;
+    if (state.reviewfp?.[pr.number]?.carried?.sha === sha) continue; // same changes as a reviewed head: never re-assigned
     const key = String(pr.number);
     let entry = cache[key];
     if (!entry || entry.head !== sha) {

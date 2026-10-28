@@ -2,10 +2,12 @@
 // and, from the same hook context, optional { gh, roster, env } (gh for one bounded
 // closed-PR list call, roster and env for the trust check).
 //
-// The board shows the red team's verdict mix over its last 20 reviews, and warns
-// when 15 or more reviews in a row carry no "ship" verdict: a reviewer that never
-// passes anything is as uninformative as one that passes everything. The fix is
-// the calibration set planned in docs/agents/hardening/reviewer-calibration.md (not built yet).
+// The board shows the red team's verdict mix over its last 20 reviews, and adds a
+// calibration note for the founder when 15 or more reviews in a row carry no "ship"
+// verdict: a reviewer that never passes anything is as uninformative as one that
+// passes everything. The note states the count and is not a target for the
+// reviewer, which judges each PR on its own. What would settle it is the
+// calibration set planned in docs/agents/hardening/reviewer-calibration.md (not built yet).
 //
 // A red-team review is a PR review whose body starts with `<!-- red-team:<sha> -->`;
 // its verdict is the second line (`Verdict: ship | fix first | founder decision`).
@@ -117,7 +119,7 @@ export function formatLines(sum, unscanned = 0) {
   if (c.unclear) mix.push(`no verdict line ${c.unclear}`);
   const lines = [`- **Red-team verdicts, last ${sum.recent} of ${sum.total} seen:** ${mix.join(", ")}.`];
   if (sum.sinceShip >= WARN_AFTER) {
-    lines.push(`- **Warning:** no ship verdict in ${sum.sinceShip} reviews; see docs/agents/hardening/reviewer-calibration.md (the calibration set is not built yet).`);
+    lines.push(`- **Calibration note:** ${sum.sinceShip} red-team reviews in a row without a "ship" verdict. This is a signal for the founder, not a target for the reviewer: each PR is judged on its own. Only the calibration set (docs/agents/hardening/reviewer-calibration.md, not built yet) can tell a strict reviewer from a broken one.`);
   }
   if (unscanned) lines.push(`- Verdict cache still filling: ${unscanned} open PRs not scanned yet (${FETCH_BUDGET} per tick).`);
   return lines;

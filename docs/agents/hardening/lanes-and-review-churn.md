@@ -40,6 +40,25 @@ review content it has already reviewed.
   state at the current head, means no call; the review check reuses `prFacts`; only then the
   one files call. Results are cached per PR head for the run.
 - Entries for PRs that are no longer open are dropped on every call.
+- A match is recorded against the new head as `state.reviewfp[<pr>].carried = { sha, verdict, at }`
+  (the verdict and date of the review it inherits) and shown on the board under "Same changes as a
+  reviewed head", with both heads. `boardLines` runs on every tick, so the record exists whether or
+  not the red team was free. A head whose changes differ is recorded as `differs`, so its files call
+  is not repeated. `pause.mjs` leaves a carried head out of "Awaiting re-review".
+- A match saves the red team's run only. Nothing is posted on the new head, and the merge rule
+  (`docs/agents/COORDINATION.md` section 6, D-107 and D-117) reads reviews on the current head, so
+  the board line is a fingerprint match, not a review.
+
+What the fingerprint cannot see (a skipped head can still have changed behaviour):
+- Anything outside the PR's own diff against its merge base. A rebase or develop merge that changes
+  code the PR's lines depend on keeps the fingerprint unless the change falls inside a hunk's
+  context lines. This is by design: the fingerprint is the PR's own changes.
+- Where a hunk sits, when its context lines and section heading are identical, because the line
+  numbers are stripped: the same added line in the second of two identical blocks gives the same
+  fingerprint as in the first. A changed context line, added line, heading or extra file each
+  changes it.
+- File modes. The files API patch carries no `old mode` or `new mode` lines, and the blob sha
+  ignores the mode, so flipping an executable bit keeps the fingerprint.
 
 Checked against the live repo on 18 Oct 2026 (PR #38, one file, docs/marketing/LAUNCH_PLAN.md):
 - The fingerprint built from `git diff <merge-base>...<head>` for head fde5be3 matches the files

@@ -54,11 +54,12 @@ test("board shows the mix of the last 20 and warns after 15 or more without ship
   const g = fakeGh(byPr);
   const lines = boardLines(ctxFor(g, [1, 2, 3, 4, 5].map((n) => pr(n))));
   assert.equal(lines[0], "- **Red-team verdicts, last 20 of 25 seen:** ship 0, fix first 16, founder decision 4.");
-  assert.equal(lines[1], "- **Warning:** no ship verdict in 24 reviews; see docs/agents/hardening/reviewer-calibration.md (the calibration set is not built yet).");
+  assert.equal(lines[1], '- **Calibration note:** 24 red-team reviews in a row without a "ship" verdict. This is a signal for the founder, not a target for the reviewer: each PR is judged on its own. Only the calibration set (docs/agents/hardening/reviewer-calibration.md, not built yet) can tell a strict reviewer from a broken one.');
+  assert.doesNotMatch(lines[1], /should|must|too strict|pass more/i, "the note states facts and does not nudge the reviewer");
   assert.equal(lines.length, 2);
 });
 
-test("no warning when a recent review shipped, or when fewer than 15 reviews exist", () => {
+test("no calibration note when a recent review shipped, or when fewer than 15 reviews exist", () => {
   const recentShip = { 1: Array.from({ length: 18 }, (_, i) => review(sha(1), i === 10 ? "ship" : "fix first", i)) };
   const a = boardLines(ctxFor(fakeGh(recentShip), [pr(1)]));
   assert.equal(a.length, 1);
@@ -66,7 +67,7 @@ test("no warning when a recent review shipped, or when fewer than 15 reviews exi
   const few = { 1: Array.from({ length: 14 }, (_, i) => review(sha(1), "fix first", i)) };
   assert.equal(boardLines(ctxFor(fakeGh(few), [pr(1)])).length, 1);
   const fifteen = { 1: Array.from({ length: 15 }, (_, i) => review(sha(1), "fix first", i)) };
-  assert.match(boardLines(ctxFor(fakeGh(fifteen), [pr(1)]))[1], /no ship verdict in 15 reviews/);
+  assert.match(boardLines(ctxFor(fakeGh(fifteen), [pr(1)]))[1], /Calibration note:\*\* 15 red-team reviews in a row without a "ship" verdict/);
 });
 
 test("nothing to say when no red-team review is known", () => {
