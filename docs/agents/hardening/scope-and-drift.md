@@ -2,6 +2,8 @@
 
 Owner: `chief-of-staff`. Code: `scripts/agents/pause.mjs`, tests in `scripts/agents/pause.test.mjs`.
 
+Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`); any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
+
 ## Gap 1: the scope was too wide
 
 Writing agents produced launch plans, metric trees and help articles that nobody merged. They went stale while `develop` moved, and each one used a run and a review. The repo is in alpha stabilisation: the build 2 freeze planned for Tue 27 Oct was not applied, and the coordinator's proposal is a freeze on Tue 3 Nov and a go/no-go on Thu 5 Nov, until the founder confirms (`docs/release/AUTOMATION.md` section 6). New writing work has no reader before the go/no-go.

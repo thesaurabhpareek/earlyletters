@@ -4,7 +4,24 @@ Chakra: Sanskrit for wheel or circle; the name is internal; script names, workfl
 
 One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0018 (the harness) and ADR 0019 (open-weight models by default).
 
-Last updated: 27 Oct 2026.
+Last updated: 27 Oct 2026. Box below added 28 Oct 2026.
+
+## What actually runs (28 Oct 2026)
+
+> **Status: no autonomous agent lane is running.** The rest of this document describes the design. It does not describe what happened. Every agent run so far was a Claude session posting from the founder's account: interactive sessions acting as agents, or the scheduled daily docs run (journals #171, #172; disabled 28 Oct). This box was written for retro package R1-08 by a session commissioned by the session that built this harness, so it is stated without softening.
+
+| What the design says | What happened | Evidence |
+|---|---|---|
+| GitHub Actions runs the team every 30 minutes (sections 1, 5, 7). | Never ran. `agents.yml` is on `develop` only. The default branch is `main`, and a scheduled workflow registers only from the default branch. | `gh api repos/thesaurabhpareek/earlyletters`: `default_branch` is `main` (28 Oct). The workflows API lists 14 workflows, not `agents.yml` (`actions/workflows/agents.yml` returns 404). `origin/main` has no `agents.yml`. The `plan` job also needs `vars.AGENTS_ENABLED == 'true'` (`agents.yml:42`), an OpenRouter key and the agents App; whether those are set is unverified. Board #24 says "waiting for the OPENROUTER_API_KEY secret and the agents GitHub App". |
+| The 4-hourly scheduled task is a fallback lane. | It was scheduled six times a day from 1 Oct (task cron) and left no trace: no journal entry or receipt with its run id form `sched-YYYYMMDDHHMM`, and no "Lane sched-4h stopped" comment on #24 (its own STEP 7). Last run 28 Oct 04:45:46 to 04:46:45 UTC (59 s), status SUCCEEDED, no board write. **Disabled 28 Oct 06:05 UTC.** | Scheduled task "Early Letters: agent lane (every 4 hours)": created 1 Oct, `enabled: false`, `updated_at` 2026-10-28T06:05:39Z (task record read 28 Oct 06:10 UTC). Journal issues #5 to #23, #171, #172, #230 to #234 (all comments, collected 28 Oct). #24 `updated_at` 27 Oct 22:10:51 UTC; its 3 comments are from 14 and 15 Oct. |
+| Agents run on OpenCode with DeepSeek; the red team runs on GLM (section 3). | No OpenCode, DeepSeek or GLM run has happened. No `claude-code` engine run in Actions either. | All 31 run receipts on the journal issues have `sess-` (interactive) run ids; 28 name `claude-opus-5-5 (interactive subagent)`, 3 name no model. The scheduled tasks set `model: claude-opus-5-5` (task records). |
+| A red team on a different model family gives independent review (section 3, AIE-R19). | Never true. Red-team receipts name `claude-opus-5-5`, the authors' family. Since 15 Oct, review has been the build thread's two "lenses": two separate Claude review sessions per PR, with separate context but the same model family. The lens records do not say which model ran; "Claude" is inferred from the build thread being a Claude session whose commits are co-authored by Claude Sonnet 5.5 (c56d1158, 6bfb94a9). | Red-team receipts on #5 (3 to 15 Oct). #297 comments "Review A" and "Review B" (27 to 28 Oct); commit c56d1158 message. |
+| Agents act as the agents App; only the founder's comments instruct (sections 3, 11). | Every agent and thread post comes from the founder's account. The harness cannot tell the founder from a session. | All 7 comments on #297 and the 27 Oct comment on #22 ("Posted by the founder's release-coordination session") are by `thesaurabhpareek`. `isFounderComment` (`scripts/agents/lib.mjs`) treats any unmarked post from that account as a founder instruction. |
+| The Agent board issue is where you see everything (sections 1, 7). | Board #24 is the dispatcher's state store, not project status. Its status line is wrong for local runs, its rows are stale ("ready: review #38"; #38 closed 28 Oct 04:35 UTC), and its last write came from a dispatcher on #164's branch, not `develop`. | #24 body lists `decision-records` and `reference-docs`, which are not among the 24 handles in `develop`'s `agents/roster.json`; #164 (open) adds them. |
+
+What did run: interactive sessions acting as agents on 3, 13 to 15 and 18 Oct (receipts and journals above), and the daily docs run, which ran 16, 17, 18, 23 and 27 Oct on #164's unmerged branch (journals #171, #172) and was disabled 28 Oct 05:30 UTC. The daily PRD update was disabled 28 Oct 06:05 UTC. The product itself was built by the build thread's streams (`docs/agents/BOARD.md`), outside this harness.
+
+Ownership of `scripts/agents/**`: the founder (`.github/CODEOWNERS:31`). Any "owner" named in a `hardening/` note is the role the note was written as, not a second owner.
 
 ## 1. What it is
 
