@@ -40,44 +40,58 @@ export function sameSha(a, b) {
   return x.startsWith(y) || y.startsWith(x);
 }
 
-// Verdicts are read with an allowlist. A review counts as passing only when its verdict clause
-// is exactly PASS, PASS WITH NOTES or MERGE (bold and trailing punctuation aside) and nothing on
-// the line asks not to merge. Anything else that names a verdict is not a pass: a negation, a
-// change request, a condition ("PASS pending #306", "PASS once the fix lands") or extra words.
-// A blocking review must never look like an approval; a pass that reads as CONDITIONAL only
-// adds a warning the coordinator can clear by hand.
+// Verdicts are read with an allowlist, over the whole line, not just one clause.
+// A review counts as passing only when all of these hold:
+// - the verdict clause (after "Verdict:", else the first colon that is followed by a verdict
+//   word) is exactly PASS, PASS WITH NOTES or MERGE (bold, a harmless bracketed aside and an
+//   "at head <sha>" aside allowed);
+// - the line names one verdict only ("FAIL. Old head 3539f6c: PASS" is UNCLEAR);
+// - nothing on the line, title brackets included, asks not to merge or requests changes;
+// - nothing from the verdict onwards negates or conditions it ("PASS. Blocked on #306.",
+//   "PASS pending #306"), after a short list of harmless endings ("No Must.") is removed.
+// Anything else is not a pass. A blocking review must never look like an approval; a real pass
+// that reads as CONDITIONAL or UNCLEAR only adds a warning a person clears by reading it.
 const APOSTROPHES = /[\u2018\u2019\u02bc\u00b4\u0060\uff07]/g; // curly, modifier, acute, grave, fullwidth
 const STOP_ANYWHERE = /\b(do[\s-]*not|don't|dont|should\s*not|shouldn't|must\s*not|mustn't|cannot|can't|won't|not\s+(yet\s+)?(ready\s+to\s+)?)\s*merge\b|\bnot\s+mergeable\b|\bmerge\s+blocked\b|\brequest(ed|s)?\s+changes\b|\bchanges\s+requested\b/;
 const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|dont|shouldn't|mustn't|unable|block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|changes|needs?\s+work|hold)\b/;
+const CONDITION = /\b(pending|once|if|until|unless|after|before|when|conditional(ly)?|provided|subject\s+to|assuming|but|except|tbd|wip|then|must\s+fix|one\s+must|musts?\s+(open|remain(ing)?|left))\b/;
+// Endings real passing reviews use (#290 to #360); removed before the negation and condition checks.
+const HARMLESS = /\bno\s+must(,|\s+and)?\s+no\s+(open\s+)?should(\s+left)?\b|\bno\s+(blocking\s+)?(findings?|issues?|musts?)(\s+(left|findings?))?\b|\bno\s+open\s+should\b|\bnothing\s+new\s+blocks\s+build\s+\d+\b|\bmy\s+must\s*(\([^)]*\))?\s+is\s+cleared\b|\b(checked|verified)\s+against\s+the\s+code,?\s+not\s+the\s+report\b/g;
+// Inside brackets after the verdict only strong blockers count; "(unchanged, no file overlap)" is an aside.
+const STRONG = /\b(block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|hold|changes|needs?\s+work|cannot|can't|won't|unable)\b/;
+const VERDICT_WORD = /\b(pass(ed)?|fail(ed)?|merge|changes\s+(needed|required)|blocking)\b/g;
 export const PASSING = new Set(["PASS", "PASS WITH NOTES", "MERGE"]);
 const EXACT = new Map([["pass", "PASS"], ["passed", "PASS"], ["pass with notes", "PASS WITH NOTES"], ["merge", "MERGE"], ["merge after fix", "MERGE AFTER FIX"], ["merge-after-fix", "MERGE AFTER FIX"]]);
+const kind = (w) => (/^pass/.test(w) || w === "merge" ? "pass" : "not pass"); // "FAIL, 1 blocking issue" is one verdict
 export const verdictIn = (s) => {
   const line = String(s).toLowerCase().replace(APOSTROPHES, "'");
-  // The verdict clause follows "Verdict:" (else the last colon) and ends at the first full stop or
-  // semicolon, so "Verdict: PASS WITH NOTES. No blocking finding." is a pass.
-  const after = line.match(/verdict\s*[:-]\s*(.*)$/)?.[1] ?? (line.includes(":") ? line.slice(line.lastIndexOf(":") + 1) : undefined);
-  if (after === undefined) return undefined; // no "Verdict:" and no colon: this line states no verdict
-  const clause = after
-    .replace(/^[\s*_]+/, "").split(/\*\*|__/)[0] // a bold verdict ends at its closing "**"
-    .split(/[.;]/)[0]
-    .replace(/\b(at|on)\s+(head\s+)?[0-9a-f]{7,40}\b.*$/, "") // "PASS WITH NOTES at head 1b8ee6f (...)"
-    .replace(/[*_`]/g, " ").replace(/\s+/g, " ").trim().replace(/[,!]+$/, "");
-  if (STOP_ANYWHERE.test(after) || STOP_ANYWHERE.test(clause)) {
-    return /request|changes/.test(after) && !/merge/.test(after.match(STOP_ANYWHERE)?.[0] ?? "") ? "CHANGES NEEDED" : "DO NOT MERGE";
+  if (STOP_ANYWHERE.test(line)) return /request|changes/.test(line.match(STOP_ANYWHERE)[0]) ? "CHANGES NEEDED" : "DO NOT MERGE";
+  // Where the verdict starts: after "Verdict:", else after the first colon followed by a verdict word.
+  let at = line.search(/verdict\s*[:-]/);
+  if (at >= 0) at = line.indexOf(line.match(/verdict\s*[:-]/)[0], at) + line.match(/verdict\s*[:-]/)[0].length;
+  else {
+    const m = [...line.matchAll(/:/g)].find((c) => /^[\s*_]*(pass|fail|merge|changes|block|blocked|blocking|request|do\s*not|don't|dont|conditional|not|no|never|cannot|can't|won't|unable|should|must|needs?|reject|rejected|hold|lgtm)\b/.test(line.slice(c.index + 1)));
+    if (!m) return undefined; // this line states no verdict
+    at = m.index + 1;
   }
-  if (NEGATIVE.test(clause)) {
-    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(clause)) return "FAIL";
-    if (/changes|needs?\s+work/.test(clause)) return "CHANGES NEEDED";
+  const rest = line.slice(at).replace(HARMLESS, " ");
+  const words = [...rest.replace(/\bpass\s+with\s+notes\b/g, "pass").replace(/\bmerge[\s-]+after[\s-]+fix\b/g, "mergeafterfix").matchAll(VERDICT_WORD)].map((m) => kind(m[0]));
+  if (new Set(words).size > 1) return "UNCLEAR"; // two verdicts on one line
+  const brackets = (rest.match(/\([^)]*\)/g) ?? []).join(" ");
+  const outside = rest.replace(/\([^)]*\)/g, " ");
+  if (NEGATIVE.test(outside) || STRONG.test(brackets)) {
+    if (/\bfail|\b(not|cannot|can't|won't|unable\s+to)\s+(a\s+)?pass/.test(rest)) return "FAIL";
+    if (/changes|needs?\s+work/.test(rest)) return "CHANGES NEEDED";
     return "BLOCKING";
   }
-  if (EXACT.has(clause)) return EXACT.get(clause); // exact tokens first ("merge after fix" is not a condition)
-  // Brackets may hold a harmless aside ("PASS (see notes)"), never a condition ("PASS (pending #306)").
-  if (/\b(pending|once|if|until|unless|after|when|conditional(ly)?|provided|subject\s+to|assuming|but|except|tbd|wip)\b/.test(clause)) {
-    return /\b(pass|merge)\b/.test(clause) ? "CONDITIONAL" : undefined;
-  }
-  const bare = clause.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().replace(/[,!]+$/, "");
-  if (EXACT.has(bare)) return EXACT.get(bare);
-  if (/\b(pass|merge)\b/.test(clause)) return "CONDITIONAL"; // names a pass, but with words we do not trust
+  const clause = rest
+    .replace(/^[\s*_]+/, "").split(/\*\*|__/)[0] // a bold verdict ends at its closing "**"
+    .split(/[.;]/)[0]
+    .replace(/\b(at|on)\s+(head\s+)?[0-9a-f]{7,40}\b/g, " ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[*_`]/g, " ").replace(/\s+/g, " ").trim().replace(/[,!]+$/, "");
+  if (EXACT.has(clause) && !(CONDITION.test(rest) && !/^merge after fix$/.test(clause))) return EXACT.get(clause);
+  if (/\b(pass|merge)/.test(rest)) return CONDITION.test(rest) ? "CONDITIONAL" : "UNCLEAR";
   return undefined;
 };
 const shaIn = (s) => s.match(/(?<![0-9a-z])(?=[0-9a-f]*\d)[0-9a-f]{7,40}(?![0-9a-z])/i)?.[0];
@@ -95,8 +109,8 @@ export function parseLens(body, prNumber) {
   if (!/review|re-check|lens|verdict|^\W*PR #\d+ at /i.test(first)) return undefined;
   const other = first.match(/\b(?:PR|of) #(\d+)/i);
   if (other && Number(other[1]) !== Number(prNumber)) return undefined; // a copy of another PR's verdict
-  // verdictIn reads only the clause after "Verdict:" or the last colon, so a title's brackets
-  // ("Review A (security)") never reach it, while brackets inside the verdict clause still can block.
+  // verdictIn checks stop phrases on the whole line (title brackets included) and everything else
+  // from the verdict onwards, so a title's harmless brackets ("Review A (security)") do not matter.
   let verdict = verdictIn(first);
   if (!verdict) {
     const v = lines.slice(1, 10).find((l) => /^\W*(delta\s+)?verdict\W/i.test(l));

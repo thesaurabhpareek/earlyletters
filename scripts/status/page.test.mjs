@@ -46,7 +46,7 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("## Review A at 1a2b3c4: don't merge", 310).verdict, "DO NOT MERGE");
   assert.equal(parseLens("## Review A at 1a2b3c4: not a pass, 2 issues", 310).verdict, "FAIL");
   assert.equal(parseLens("## Lens B verdict at 1a2b3c4: not mergeable", 310).verdict, "DO NOT MERGE");
-  assert.equal(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict, "CONDITIONAL", "extra words after a pass are not trusted");
+  assert.ok(!PASSING.has(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict), "extra words after a pass are not trusted");
   assert.equal(parseLens("## Review A at 1a2b3c4: PASS", 310).verdict, "PASS");
   const v = (t) => parseLens(`## Review A (accuracy) at 97b50e1: ${t}`, 310)?.verdict;
   for (const t of ["REQUEST CHANGES, then merge", "should not merge", "must not merge", "cannot merge yet", "not ready to merge", "merge blocked"]) {
@@ -86,6 +86,24 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("Delta review, lens A, final head 0afbbfd (my first pass was 2f572b3).\n\n**Delta verdict: PASS WITH NOTES.** My Must is cleared.", 358).verdict, "PASS WITH NOTES",
     "a first line with no colon states no verdict, even if it says 'pass'");
   assert.equal(v("**PASS** but do not merge"), "DO NOT MERGE");
+  // Lens B (28 Oct, at 7d88f7d): the whole line counts, not one clause.
+  for (const [t, why] of [
+    ["CHANGES NEEDED. Then: PASS", "two verdicts"],
+    ["PASS. Blocked on #306.", "a blocker after the full stop"],
+    ["**PASS** pending #306", "a condition after the bold"],
+    ["PASS at head 1234abc if #306 lands", "a condition after the sha"],
+    ["PASS (pending #306)", "a condition in brackets"],
+    ["PASS (blocked on #306)", "a blocker in brackets"],
+  ]) assert.ok(!PASSING.has(v(t)), `${t}: ${why} (got ${v(t)})`);
+  assert.ok(!PASSING.has(parseLens("FAIL. Old head 3539f6c: PASS", 310)?.verdict), "two verdicts, the later one on an old head");
+  assert.equal(parseLens("## Review A (DO NOT MERGE) at 1a2b3c4: PASS", 310).verdict, "DO NOT MERGE", "a stop in the title brackets");
+  assert.equal(parseLens("## Review A (DO NOT MERGE) at 1a2b3c4\n\nVerdict: PASS", 310).verdict, "DO NOT MERGE", "a stop on the first line wins over a later verdict line");
+  assert.equal(v("Pass. Must fix M1 before merge"), "CONDITIONAL", "an open Must is a condition");
+  assert.equal(v("PASS WITH NOTES. One Must before build 2."), "CONDITIONAL");
+  // Harmless endings and asides real passing reviews use must still pass.
+  assert.equal(v("PASS WITH NOTES. No Must, no Should left."), "PASS WITH NOTES");
+  assert.equal(v("PASS WITH NOTES. No Must. Verified against the code, not the report."), "PASS WITH NOTES");
+  assert.equal(v("PASS WITH NOTES** at head 1b8ee6f (unchanged; develop moved, no file overlap)."), "PASS WITH NOTES");
 });
 
 test("verdict-on-head: latest lens and red-team verdicts against the current head", () => {
