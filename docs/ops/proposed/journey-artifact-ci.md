@@ -58,7 +58,7 @@ One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispat
 Notes for the CI owner:
 
 - `@playwright/test` is already a dependency of `@scribe/mobile` (it runs the flows) and ships the `playwright` CLI, so `npx playwright install` picks the matching browser build. `--with-deps` installs the system libraries Chromium needs on the runner.
-- The `git diff --exit-code` step turns a stale `INDEX.md` or `steps/` into a red run rather than a silent drift: a PR that changes a screen must commit the regenerated steps and index (small text), nothing else.
+- The `git diff --exit-code` step turns a stale `INDEX.md` or `steps/` into a red run rather than a silent drift. Feature PRs never commit `steps/` or `INDEX.md` (`docs/release/journey/README.md`, "Regenerate safely"), so a red run means the journey-record PR is due, not that a feature PR is wrong: run this job on the nightly schedule and on `workflow_dispatch`, and do not make it a gate on a `journey`-labelled feature PR. Only the journey-record PR commits the regenerated steps and index (small text), nothing else.
 - `if: always()` on the upload keeps the Playwright HTML report (`.results/report`) when a flow fails; `if-no-files-found: error` catches a packing failure.
 - Retention: 30 days covers a review wave. The nightly run gives a fresh record every day; a release should download the run's zip and attach it to the release notes if the record is wanted for longer.
 - Cost: the two web exports dominate. If the job is too slow, cache `apps/mobile/e2e-web/.web-dist*` keyed on the mobile source tree, and set `E2E_WEB_REBUILD=1` only when the key misses.
