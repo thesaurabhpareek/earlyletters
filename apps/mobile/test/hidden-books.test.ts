@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { en } from '@scribe/content';
+import { ENGINE_VERSION } from '@scribe/core';
 import { nodeDb } from './helpers/node-db';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
@@ -18,6 +19,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
+const { plannerChildren } = await import('../src/lib/reminders/prefs');
 const { HIDDEN_BOOKS_HREF, hiddenBooksPage, hiddenBooksRow } = await import('../src/components/settings/hidden-books.logic');
 
 const SRC = join(__dirname, '..', 'src');
@@ -38,12 +40,12 @@ describe('[P6d] the Hidden books row and page', () => {
     expect(hiddenBooksPage([])).toEqual({ title: s.hiddenTitle, empty: 'No hidden books.', books: [] });
     const page = hiddenBooksPage([
       { id: 'avi', name: 'Avi' },
-      { id: 'nila', name: 'Nila' },
+      { id: 'asha', name: 'Asha' },
     ]);
     expect(page.empty).toBeNull();
     expect(page.books).toEqual([
       { id: 'avi', name: 'Avi', button: 'Show this book again', buttonLabel: 'Show this book again, Avi' },
-      { id: 'nila', name: 'Nila', button: 'Show this book again', buttonLabel: 'Show this book again, Nila' },
+      { id: 'asha', name: 'Asha', button: 'Show this book again', buttonLabel: 'Show this book again, Asha' },
     ]);
     // The words were in content already, shown by nothing until now: no new line, no count.
     expect([s.hiddenTitle, s.showButton, s.hiddenEmpty]).toEqual(['Hidden books', 'Show this book again', 'No hidden books.']);
@@ -71,20 +73,42 @@ describe('[P6d] hiding and showing again, on the real store: nothing is deleted'
     store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
     const avi = store.addChild({ name: 'Avi', birthday: '2026-09-20', dueDate: null, signsAs: 'Mama' });
     const d = store.createDraft({ childId: avi.id, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'Avi, you held my finger all night.' });
-    const entriesBefore = store.listEntriesForChild(avi.id).length;
+    // One kept letter in Avi's book, so "the letters stay" compares something.
+    store.saveEntry({
+      id: '0199a5b0-0000-7000-8000-0000000000aa',
+      kind: 'letter',
+      occurredOn: '2026-10-16',
+      capturedAt: '2026-10-16T19:00:00.000Z',
+      captureMode: 'typed',
+      editLevel: 'verbatim',
+      promptKey: null,
+      engineVersion: ENGINE_VERSION,
+      rawTranscript: 'Avi, you found your hands today.',
+      machineEdits: [],
+      finalText: 'Avi, you found your hands today.',
+      inBook: true,
+      soundsLikeMe: null,
+      childId: avi.id,
+      authorSignsAs: 'Mama',
+    });
+    const lettersBefore = store.listEntriesForChild(avi.id).map((e) => [e.id, e.finalText]);
+    expect(lettersBefore).toEqual([['0199a5b0-0000-7000-8000-0000000000aa', 'Avi, you found your hands today.']]);
 
     store.hideChild(avi.id);
     expect(store.listChildren().map((c) => c.name)).toEqual(['Asha']);
     expect(store.listHiddenChildren().map((c) => c.name)).toEqual(['Avi']);
     expect(hiddenBooksRow(store.listHiddenChildren())).not.toBeNull();
     expect(store.getDraft(d.id)?.typedText).toBe('Avi, you held my finger all night.');
+    // Its month and birthday messages stop: the reminders plan only the books that are not hidden.
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha']);
 
     store.unhideChild(avi.id);
     expect(store.listChildren().map((c) => c.name).sort()).toEqual(['Asha', 'Avi']);
     expect(store.listHiddenChildren()).toEqual([]);
     expect(hiddenBooksRow(store.listHiddenChildren())).toBeNull();
     expect(store.getChild(avi.id)).toMatchObject({ name: 'Avi', birthday: '2026-09-20', signsAs: 'Mama' });
-    expect(store.listEntriesForChild(avi.id).length).toBe(entriesBefore);
+    expect(store.listEntriesForChild(avi.id).map((e) => [e.id, e.finalText])).toEqual(lettersBefore);
+    expect(plannerChildren().map((c) => c.name).sort()).toEqual(['Asha', 'Avi']);
     expect(store.getDraft(d.id)?.typedText).toBe('Avi, you held my finger all night.');
   });
 });
@@ -96,8 +120,10 @@ describe('[P6d] the screen', () => {
     const show = screen.slice(screen.indexOf('const show = '), screen.indexOf('return ('));
     expect(show).toMatch(/unhideChild\(id\);/);
     expect(show).not.toMatch(/delete|Delete|remove|discard|purge|Alert/);
-    // Which setting only, never the value, the same key "Hide this book" sends.
+    // Which setting only, never the value, the same key "Hide this book" sends; read after the book is back, so its
+    // ordinal is its own place among the listed books (before, it is not listed and reads as the first).
     expect(show).toMatch(/track\('child_setting_changed', \{ key: 'hidden', child_ordinal: ordinalOf\(id\) \}\);/);
+    expect(show.indexOf('unhideChild(id);')).toBeLessThan(show.indexOf('ordinalOf(id)'));
   });
 
   it('draws the page from the rules, in content\'s words only, and follows the store', () => {
@@ -108,8 +134,12 @@ describe('[P6d] the screen', () => {
     expect(screen).toMatch(/subscribe\(\(\) => setHidden\(listHiddenChildren\(\)\)\)/);
     // Every Text child is a lookup, never a literal sentence.
     expect(screen).not.toMatch(/<Text[^>]*>\s*[A-Za-z][^<{]*</);
-    // VoiceOver lands on what is next after a book comes back.
+    // VoiceOver lands on what is next after a book comes back; the ref is on the Text itself, so each name keeps its
+    // heading trait (no accessible View grouping it).
     expect(screen).toMatch(/useFocusOnMount\(first, shown > 0, shown\)/);
+    expect(screen).toMatch(/<Text ref=\{i === 0 \? first : undefined\} variant="headline" asHeading>/);
+    expect(screen).toMatch(/<Text ref=\{first\} variant="body" tone="muted" testID="hiddenBooks\.empty">/);
+    expect(screen).not.toMatch(/<View\b[^>]*\baccessible\b/);
   });
 
   it('Settings home has the row under Children, after Add a child, only while a book is hidden', () => {
@@ -125,5 +155,7 @@ describe('[P6d] the screen', () => {
     const seed = code('dev/asha-seed.ts');
     expect(seed).toMatch(/if \(opts\.hidden\) \{[\s\S]*addChild\(\{ name: 'Avi'[\s\S]*hideChild\(avi\.id\);/);
     expect(code('dev/store-ready.web.ts')).toMatch(/hidden: seed === 'asha-hidden'/);
+    // Only in a preview build, like every seed.
+    expect(code('dev/store-ready.web.ts')).toMatch(/if \(preview && \([^)]*seed === 'asha-hidden'\)\)/);
   });
 });

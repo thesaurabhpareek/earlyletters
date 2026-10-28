@@ -357,14 +357,14 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (b) **Reminders.** Turn reminders on and deny notifications. Tap Open Settings, allow, and come back. On a phone that had "Pause all reminders" on in an earlier build: read Settings home's Reminders row and the Reminders switch, then turn the switch on.
   - (c) **Recordings.** With English not on the phone, tap the language row. Let it download, then tap it again. Off Wi-Fi, and with the disk nearly full, read the row.
   - (d) **Export.** On a book with a twin, read the cover at the top. Fill the disk and export. On a book too big for one file, if a drill fixture has one, tap "Write to us".
-  - (e) **Privacy.** Read the three never-lines.
+  - (e) **Privacy.** Read the three never-lines. Then tap each of the two document rows, Privacy Policy and Terms of Service (critics' D6; #370 removed the two rows whose pages the website took down).
   - (f) **Appearance.** With a kept letter in the book, read the sample. With only a private letter, read it again. Change Reading size through every size.
 - **Expected:**
   - (a) After the purchase, the first row reads "Plus" with the plan name and its dates, and "Manage subscription" shows. No sentence and no date is said twice on the screen. After a restore that works, "Plus is on." is said once. With nothing to restore, the found-nothing line shows under the row. A shared plan reads "Shared with you through Apple Family Sharing."
   - (b) The card collapses and "Reminders are on." shows once. Coming back still denied shows no "Reminders are on.". A phone paused before reads Off on both the row and the switch, and the switch turns reminders back on with the cadence that was chosen.
   - (c) "Download" starts the download. The ring fills, and the words say "Getting ready, n%", never 100% before the download is done. "Remove" asks before it removes. The Wi-Fi wait and the low-space rows say why and offer nothing to tap.
   - (d) The cover is the active book's, with the twin behind it. The low-space failure names its cause and offers "Export again". "Write to us" opens Mail with the subject.
-  - (e) Each line has a LockSimple mark and does not look tappable.
+  - (e) Each line has a LockSimple mark and does not look tappable. Each document row opens its page in the in-app browser, never the website's not-found page, and only those two rows are listed.
   - (f) The sample is the first line of your newest kept letter, never a private letter, the other parent's, or a quiet day. With no kept letter it shows "Aa". Each Reading size label is in Literata at its own size.
   - At AX5, nothing on any of these screens is truncated.
   - With VoiceOver: Plan's first row reads its title, status and plan name; the restore result is read once; the Reminders card's title is a heading; the language row is one button with its hint, and its trailing word and ring are not read again; each never-line is one element with its mark hidden.
@@ -376,16 +376,30 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (a) With two books on the phone, open Settings > Avi's book > Hide this book, and confirm.
   - (b) Read Settings under Children.
   - (c) Open Hidden books and tap "Show this book again".
-  - (d) Repeat (a) to (c) with VoiceOver on, then at AX5.
-  - (e) With reminders on for Avi, hide and show the book again. Check the reminders that are scheduled (Settings > Reminders, or wait for the next one).
+  - (d) Repeat (a) to (c) with VoiceOver on, then at AX5. With VoiceOver, set the rotor to Headings on Hidden books.
+  - (e) Hide the book that is open (the one the switcher shows), then show it again from Hidden books.
+  - (f) Month and birthday messages for a hidden book (the only reminders that follow a book's own switch; evening reminders are not per book). This is covered by the planner test in `apps/mobile/test/hidden-books.test.ts`: a hidden book leaves the reminders' book list, and comes back with "Show this book again". There is no phone step, because it needs a book whose month turns on the day of the run. If a drill book's month does turn tomorrow, hide it today and check that no message for it arrives.
 - **Expected:**
   - (a) Nothing is deleted.
   - (b) Avi's book is not listed. A "Hidden books" row sits after "Add a child".
   - (c) The page lists Avi's book with "Show this book again". After the tap, the page says "No hidden books.", Avi's book is back in the switcher and under Children, and the Hidden books row is gone. Avi's letters and drafts are as they were.
-  - (d) Each button names its book ("Show this book again, Avi"), and focus moves to "No hidden books." after the tap. At AX5, nothing is truncated.
-  - (e) Avi's reminders stop while the book is hidden and resume after it is shown again.
-- **Record:** S1-32 rows (a) to (e), with the phone and iOS version; screenshots with the fictional family only.
+  - (d) Each button names its book ("Show this book again, Avi"), and focus moves to "No hidden books." after the tap. The rotor's Headings stop on each hidden book's name. At AX5, nothing is truncated.
+  - (e) While it is hidden, the switcher opens another book. After "Show this book again" the book is the open one again, as it was before the hide, because the phone still remembers it as the open book.
+  - (f) Not run on the phone (see Steps). If it is run, no month or birthday message for the hidden book arrives.
+- **Record:** S1-32 rows (a) to (e), and (f) when it can be run, with the phone and iOS version; screenshots with the fictional family only.
 - **Update:** F09-REQ-016 and F09-REQ-024 in `docs/prd/v2/features/F09-book.md` (WP-F09-09 status) where a result differs.
+
+### S1-33 The Keep sheet's buttons at large text (S22; #370, P6a critics' S1 and the #370 lenses)
+- **Needs:** a build where the next letter's Keep needs Plus: a phone past its free letters, without Plus.
+- **Steps:** At AX3, then at AX5, on an SE 3 and on a 6.1-inch phone, open the Keep sheet from a letter's Keep in Review. Do it twice on each: once online, and once with Apple's store view unreachable (airplane mode, then tap See Plus so the sheet shows its offline note).
+- **Expected:**
+  - "See Plus" and "Keep it here for now" are both fully on screen at the bottom and tappable, with nothing else pinned with them.
+  - The title and the line that says the letter is safe ("This one waits on this phone, on Tonight, exactly as it is, for as long as you like.") are on the first screen.
+  - The offline note, the body, the held letter and "Redeem a code" scroll above the buttons.
+  - Nothing is truncated.
+  - VoiceOver reads the held note before either button.
+- **Record:** S1-33 rows: phone, text size, online or offline, and yes or no for each line above; screenshots with Asha only.
+- **Update:** PR #370 and `docs/design/EXPERIENCE_PASS_2026-10.md` S22 (the AX layout, on the P7-7 spec list) where a result differs.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
