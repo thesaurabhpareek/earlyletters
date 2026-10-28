@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, keepSheetView } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, keepSheetView, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -37,8 +37,11 @@ const base = { lapsed: false, heldOn: 'tonight' as const, synced: false, offline
 describe('[S22] what the Keep sheet says', () => {
   it('says the letter is safe and where it waits, by where it is held and how the person is signed in', () => {
     expect(keepSheetView(base)).toEqual({ body: k.body, heldNote: k.heldNote, note: null, canOpenStore: true });
-    // Signed in with sync on, a held draft also goes up as an author-only row (store.holdDraft): the signed-in line.
-    expect(keepSheetView({ ...base, synced: true }).heldNote).toBe(k.heldNoteSynced);
+    // Signed in with sync on, a held draft also goes up as an author-only row (store.holdDraft), but the line that says
+    // so ("It syncs privately with your account") is held for counsel (C10): every case shows heldNote for build 2.
+    expect(SYNCED_HELD_NOTE_CLEARED).toBe(false);
+    expect(keepSheetView({ ...base, synced: true }).heldNote).toBe(k.heldNote);
+    expect(k.heldNoteSynced.length).toBeGreaterThan(0); // the key stays, for the switch after counsel
     // A letter whose words arrived later (task #53): only its words wait, on the letter, signed in or not.
     for (const synced of [false, true]) expect(keepSheetView({ ...base, heldOn: 'letter', synced }).heldNote).toBe(k.heldNoteLetter);
     expect(keepSheetView({ ...base, lapsed: true }).body).toBe(k.lapsedBody);
@@ -60,6 +63,8 @@ describe('[S22] what the Keep sheet says', () => {
       ),
     );
     const said = [...states.flatMap((v) => [v.body, v.heldNote, v.note ?? '']), k.title, k.seePlus, k.holdButton, k.redeemLink, k.heldChip, heldCardLabel(HELD)];
+    // Nothing the sheet shows today says the letter syncs (C10 hold).
+    for (const line of said) expect(line, line).not.toMatch(/sync/i);
     for (const line of said) {
       expect(line, line).not.toMatch(/\$|\bprice\b|free trial|free months?|\btrial\b|\d+\s*(?:days?|letters?)\s*(?:left|to go)/i);
       expect(line, line).not.toMatch(/[–—‘’“”…]/);

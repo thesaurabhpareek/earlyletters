@@ -99,7 +99,8 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
 
   useFocusOnMount(title);
 
-  // Signed in with sync on, a held draft also goes up as an author-only row (store.holdDraft), so the line says so.
+  // Signed in with sync on, a held draft also goes up as an author-only row (store.holdDraft). The line that says so is
+  // held for counsel (C10, plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED): until then the sheet shows heldNote.
   const synced = auth.configured && auth.state.status === 'ready' && auth.state.sync === 'on';
   const view = keepSheetView({ lapsed, heldOn, synced, offline, storeSupport: plan.storeSupport });
 

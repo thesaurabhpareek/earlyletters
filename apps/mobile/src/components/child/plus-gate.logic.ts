@@ -3,9 +3,11 @@
  * in Node; plus-gate.tsx draws it.
  *
  * What the sheet says follows where the held letter waits and how it is kept:
- *   heldOn 'tonight'  a draft: it waits on Tonight. Signed in with sync on, it also syncs as an author-only held row
- *                     (store.holdDraft queues it in the same transaction), so the signed-in line says so
- *                     (`keepGate.heldNoteSynced`); otherwise the line names this phone (`keepGate.heldNote`).
+ *   heldOn 'tonight'  a draft: it waits on Tonight, and the line names this phone (`keepGate.heldNote`). Signed in
+ *                     with sync on it also syncs as an author-only held row (store.holdDraft queues it in the same
+ *                     transaction), which `keepGate.heldNoteSynced` says; that sentence is a data-handling claim held
+ *                     for counsel (C10), so it shows only once SYNCED_HELD_NOTE_CLEARED is switched on, and until then
+ *                     every case shows `heldNote`, which is true and says nothing about sync.
  *   heldOn 'letter'   a letter whose words arrived later (task #53, #296): it is already in the book or private, and
  *                     only its words wait, on the letter itself (`heldNoteLetter`, `offlineLetter`). Never Tonight.
  * Lapsed members get `lapsedBody` instead of the body. With no StoreKit on the device the sheet offers only "Keep it
@@ -52,6 +54,12 @@ export type KeepSheetView = {
   canOpenStore: boolean;
 };
 
+/**
+ * Held for counsel (C10, the register row "Keep step and held letter"): "It syncs privately with your account" is a
+ * data-handling claim. Switch to true, in one line, once counsel has read `keepGate.heldNoteSynced`.
+ */
+export const SYNCED_HELD_NOTE_CLEARED = false;
+
 const k = billingCopy.keepGate;
 const g = billingCopy.gate;
 
@@ -62,7 +70,7 @@ export function keepSheetView({ lapsed, heldOn, synced, offline, storeSupport }:
     storeSupport === 'needs_ios_17' ? g.needsNewerIos : storeSupport === 'unsupported' ? g.unavailable : offline ? (onLetter ? k.offlineLetter : k.offline) : null;
   return {
     body: lapsed ? k.lapsedBody : k.body,
-    heldNote: onLetter ? k.heldNoteLetter : synced ? k.heldNoteSynced : k.heldNote,
+    heldNote: onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote,
     note,
     canOpenStore,
   };
