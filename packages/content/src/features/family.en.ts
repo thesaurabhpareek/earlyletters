@@ -115,6 +115,9 @@ export const familyCopy = {
      * while or sync cannot reach the server (critics' pass S2): said with Try again, and "Begin the book" back.
      */
     joinedNotYet: "{child}'s book has not reached this phone yet.",
+    /** The same two lines when the child's name could not be read after joining (the joined sheet and the welcome). */
+    joinedWaitingUnknown: 'The book is on its way to this phone.',
+    joinedNotYetUnknown: 'The book has not reached this phone yet.',
     open: 'Open the book',
     close: 'Close',
     tryAgain: 'Try again',

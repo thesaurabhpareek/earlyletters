@@ -154,10 +154,11 @@ export default function Onboarding() {
     return subscribe(done);
   }, [step, pathname]);
   // Closed the join sheet before the joined book arrived (S59, P8b, critics' pass S2): while it is on its way the welcome
-  // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back.
-  const joining = useWelcomeJoinWait();
-  const joinLine = step === 'welcome' ? joining.line : null;
-  const showContinue = step !== 'welcome' || joining.begin;
+  // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back. Leaving the
+  // welcome ends the wait.
+  const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
+  const joinLine = joining.line;
+  const showContinue = joining.begin;
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');

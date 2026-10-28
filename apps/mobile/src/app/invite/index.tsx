@@ -38,7 +38,7 @@ import { joinedArrival } from '@/components/family/family-notice';
 import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
-import { joinWait } from '@/components/family/join-wait.logic';
+import { joinWait, joinWaitLine } from '@/components/family/join-wait.logic';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -69,9 +69,16 @@ export default function JoinBookRoute() {
   return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
 }
 
+/** Where this sheet closes onto: first run's welcome step, or anywhere else (join-sheet.logic.ts openLanding), now. */
+function useLanding(): () => 'welcome' | 'book' {
+  const navigation = useNavigation();
+  return () => openLanding(navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [], firstRunWelcome.showing());
+}
+
 function JoinBook() {
   const auth = useAuth();
   const close = useCloseSheet();
+  const landing = useLanding();
   const a = familyCopy.accept;
   const [loaded, setLoaded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -156,11 +163,18 @@ function JoinBook() {
   // Only after a tap on Join (or for an invite this person already accepted).
   const accept = async (t: string) => {
     if (!auth.client) return;
+    // Over first run's welcome, the join leaves the welcome a wait for the book (critics' pass S2,
+    // components/family/join-wait.logic.ts): asked now, while the sheet is open, and started the moment the join goes
+    // through, so a Close while joining, or a name that cannot be read, still leaves it.
+    const leavesWait = landing() === 'welcome';
     setBusy('accept');
     try {
       const childId = await acceptInvite(auth.client, t);
+      const here = getChild(childId);
+      if (leavesWait && !here) joinWait.start(childId, null);
       await clearPendingInvite(t);
-      const name = getChild(childId)?.name ?? (await bookName(auth.client, childId).catch(() => null));
+      const name = here?.name ?? (await bookName(auth.client, childId).catch(() => null));
+      joinWait.named(childId, name);
       haptic('success');
       setJoined({ childId, name, inviter: preview?.inviter ?? null });
     } catch (e) {
@@ -327,7 +341,7 @@ function JoinBook() {
  */
 function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fallbackName: string | null; inviter: string | null; fade: boolean }) {
   const close = useCloseSheet();
-  const navigation = useNavigation();
+  const landing = useLanding();
   const a = familyCopy.accept;
   const ideas = copy.onboarding.signsAs;
   const [book, setBook] = useState(() => getChild(childId));
@@ -352,17 +366,11 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
   const heading = useRef<RNText>(null);
   const joinedTitle = child ? fill(a.joinedTitle, { child }) : a.title;
   useFocusOnMount(heading, true, joinedTitle);
-  const waitingLine = !book && child ? fill(a.joinedWaiting, { child }) : null;
+  // The same words first run's welcome under the sheet shows if Close is tapped (components/family/join-wait.logic.ts).
+  const waitingLine = book ? null : joinWaitLine(child || null, 'waiting');
   useEffect(() => {
     if (waitingLine) announce(waitingLine, { queue: true });
   }, [waitingLine]);
-  // While the book is not on this phone, first run's welcome under the sheet says so if Close is tapped (critics'
-  // pass S2, components/family/join-wait.logic.ts); once it is here, the wait is over.
-  const bookHere = !!book;
-  useEffect(() => {
-    if (bookHere) joinWait.clear();
-    else joinWait.start(childId, child || null);
-  }, [bookHere, childId, child]);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
@@ -378,8 +386,7 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
     joinedArrival.leave();
     // Over first run's welcome step the sheet only closes, and the welcome hands over to the Book and leaves the stack.
-    const under = navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [];
-    if (openLanding(under, firstRunWelcome.showing()) === 'welcome') close();
+    if (landing() === 'welcome') close();
     else router.dismissTo(JOINED_LANDING);
   };
 
@@ -409,7 +416,7 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
             {joinedTitle}
           </Text>
           <Text variant="body">{joinedBody(inviter)}</Text>
-          {!book && child ? (
+          {waitingLine ? (
             <View className="gap-2">
               <Text variant="footnote" accessibilityLiveRegion="polite">
                 {waitingLine}

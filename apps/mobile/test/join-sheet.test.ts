@@ -103,8 +103,9 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
     const bar = code('components/family/join-ask.tsx');
     expect(bar).toMatch(/if \(reduced \|\| width === 0\) \{\s*cancelAnimation\(x\);\s*x\.value = 0;/);
     expect(bar).not.toMatch(/percent|%|\{count\}/);
-    expect(code(SHEET)).toMatch(/const waitingLine = !book && child \? fill\(a\.joinedWaiting, \{ child \}\) : null;/);
-    expect(code(SHEET)).toMatch(/\{waitingLine\}[\s\S]{0,80}<WaitingBar \/>/);
+    // The welcome's own words (join-wait.logic.ts joinWaitLine), with the name, or "The book" when it could not be read.
+    expect(code(SHEET)).toMatch(/const waitingLine = book \? null : joinWaitLine\(child \|\| null, 'waiting'\);/);
+    expect(code(SHEET)).toMatch(/\{waitingLine \? \(\s*<View className="gap-2">\s*<Text variant="footnote" accessibilityLiveRegion="polite">\s*\{waitingLine\}[\s\S]{0,80}<WaitingBar \/>/);
   });
 });
 
@@ -120,7 +121,8 @@ describe('[S59] "Open the book" lands on the Book with the light rising once (5.
     expect(openLanding(['onboarding', 'invite'], false)).toBe('book');
     expect(JOINED_LANDING).toBe('/book');
     const sheet = code(SHEET);
-    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*const under = navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\];\s*if \(openLanding\(under, firstRunWelcome\.showing\(\)\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
+    expect(sheet).toMatch(/return \(\) => openLanding\(navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\], firstRunWelcome\.showing\(\)\);/);
+    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*if \(landing\(\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
     // Only "Open the book" leaves the mark: Close and every other view do not.
     expect(sheet.match(/joinedArrival\.leave\(/g)).toHaveLength(1);
   });
@@ -162,7 +164,7 @@ describe('[S59] the token and the steps (lens B mutation survivors on #314)', ()
   const sheet = () => code(SHEET);
 
   it('J9: a join that worked forgets the link, so the next launch never joins again', () => {
-    expect(sheet()).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\s*await clearPendingInvite\(t\);/);
+    expect(sheet()).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\s*const here = getChild\(childId\);\s*if \(leavesWait && !here\) joinWait\.start\(childId, null\);\s*await clearPendingInvite\(t\);/);
   });
 
   it('J22: "Paste another link" drops the dead token, so the sheet goes back to the paste field instead of looking again', () => {
