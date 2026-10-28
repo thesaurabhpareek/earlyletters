@@ -78,6 +78,37 @@ test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask
   await expect(app.getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
   expect(m.rpcCalls('accept_child_invite')).toHaveLength(1);
   await step('happy', 'Joined', 'One accept, after the tap. The book\'s cover appears for the first time, with the child\'s name, and opens to the flyleaf: the name is seen here first (BL-322). The book comes with the next sync, under a thin bar with no count; the open book does not change by itself (only "Open the book" opens it). Here sync is held, so it says the book is on its way.', undefined, { settle: 900 });
+
+  // Close before the book arrives, with sync held (critics' pass S2): no dead end. The welcome says the book has not
+  // reached this phone yet, offers Try again, and "Begin the book" stays. (J21i shows the quiet wait while sync runs.)
+  await btn(app, 'Close').click();
+  await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book has not reached this phone yet.`)).toBeVisible();
+  await expect(app.getByTestId('onboarding.joinWait.retry')).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+  await step('unhappy', 'Closed before the book came, sync held', 'The joined sheet closes onto first run\'s welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps "Begin the book". While sync is running it says the book is on its way and hides "Begin the book" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.');
+});
+
+test('[J21i] invitee: Close before the book arrives while sync runs: the welcome says it is on its way, with no "Begin the book"', async ({ app }) => {
+  const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
+  m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
+  m.rpc('accept_child_invite', () => ({ body: ASHA_BOOK }));
+  m.table('children', () => ({ body: { name: CHILD } }));
+  // Sync runs and answers, but the book is not in the pull yet.
+  m.rpc('sync_push', () => ({ body: { results: [], paused: false, stopped: false } }));
+  m.rpc('sync_pull', () => ({ body: { reset: false, epoch: 1, epoch_started_at: '2026-10-20T09:00:00.000Z', books: [], gone: [], more: false } }));
+  await openOn(app);
+  await passAgeGate(app);
+  await btn(app, 'I was invited').click();
+  await app.getByLabel('Invite link').fill(LINK);
+  await btn(app, 'Continue').click();
+  await btn(app, 'Sign in').click();
+  await signInWithEmail(app, 'papa@example.invalid');
+  await btn(app, 'Join the book').click();
+  await expect(app.getByTestId('invite.joined').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
+  await btn(app, 'Close').click();
+  await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
+  await expect(btn(app, 'Begin the book')).toHaveCount(0);
+  await expect(app.getByTestId('onboarding.joinWait.retry')).toHaveCount(0);
 });
 
 test('[J21e] invitee: a typed code is not read, and the link still works', async ({ app }) => {

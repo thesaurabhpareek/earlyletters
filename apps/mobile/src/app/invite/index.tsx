@@ -38,6 +38,7 @@ import { joinedArrival } from '@/components/family/family-notice';
 import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
+import { joinWait } from '@/components/family/join-wait.logic';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -355,6 +356,13 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
   useEffect(() => {
     if (waitingLine) announce(waitingLine, { queue: true });
   }, [waitingLine]);
+  // While the book is not on this phone, first run's welcome under the sheet says so if Close is tapped (critics'
+  // pass S2, components/family/join-wait.logic.ts); once it is here, the wait is over.
+  const bookHere = !!book;
+  useEffect(() => {
+    if (bookHere) joinWait.clear();
+    else joinWait.start(childId, child || null);
+  }, [bookHere, childId, child]);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });

@@ -69,6 +69,8 @@ import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
 import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
+import { useWelcomeJoinWait } from '@/components/family/join-wait';
+import { familyCopy } from '@/lib/family/copy';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -167,6 +169,11 @@ export default function Onboarding() {
     done();
     return subscribe(done);
   }, [step, pathname]);
+  // Closed the join sheet before the joined book arrived (S59, P8b, critics' pass S2): while it is on its way the welcome
+  // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back.
+  const joining = useWelcomeJoinWait();
+  const joinLine = step === 'welcome' ? joining.line : null;
+  const showContinue = step !== 'welcome' || joining.begin;
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
@@ -510,12 +517,22 @@ export default function Onboarding() {
 
           {/* Controls never animate in (MOTION principle 2). */}
           {block ? <ReasonLine text={block} raised={nudged} /> : null}
-          <View>
-            <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
-            {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
-                reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
-            {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
-          </View>
+          {joinLine ? (
+            <View className="items-center gap-1 pb-2" testID="onboarding.joinWait">
+              <Text variant="body" className="text-center" accessibilityLiveRegion="polite">
+                {joinLine}
+              </Text>
+              {joining.retry ? <Button variant="quiet" size="sm" label={familyCopy.accept.tryAgain} onPress={joining.onRetry} testID="onboarding.joinWait.retry" /> : null}
+            </View>
+          ) : null}
+          {showContinue ? (
+            <View>
+              <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
+              {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
+                  reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
+              {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
+            </View>
+          ) : null}
           {step === 'welcome' && (capabilities.signIn || doors.joinButton) && (
             // Two doors, not offers: quiet text, no icon, no border, no line about accounts (S03).
             <View className={largeText ? 'mt-2 items-center' : 'mt-2 flex-row flex-wrap justify-center'} style={{ columnGap: WELCOME.doorGap }}>

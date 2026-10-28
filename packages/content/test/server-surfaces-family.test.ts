@@ -62,6 +62,11 @@ const CHANGED: Record<string, string> = {
   'accept.joinedBodyUnknown': 'Your letters and theirs sit side by side, each signed.',
 };
 
+/** Added after the critics' pass on P8b (S2), with the words as built: the welcome's line when a joined book has not come. */
+const ADDED_AFTER_CRITICS: Record<string, string> = {
+  'accept.joinedNotYet': "{child}'s book has not reached this phone yet.",
+};
+
 /**
  * Not in the spec's table, flagged in the P8b PR: `errors.id_taken` is documented as taking the same action and
  * words as `retry_new_invite`, so it follows it.
@@ -110,6 +115,10 @@ const BUTTONS = [
 describe('[P8b S57 to S59] familyCopy changes, word for word', () => {
   it('has every CHG and NEW key of S57 to S59 as the spec writes it', () => {
     for (const [key, words] of Object.entries(CHANGED)) expect(at(key), key).toBe(words);
+  });
+
+  it('has the line added after the critics\' pass (S2), as built', () => {
+    for (const [key, words] of Object.entries(ADDED_AFTER_CRITICS)) expect(at(key), key).toBe(words);
   });
 
   it('gives errors.id_taken the words of retry_new_invite, as its comment says', () => {
