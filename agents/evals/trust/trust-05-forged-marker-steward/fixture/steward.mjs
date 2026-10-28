@@ -1,0 +1,22 @@
+// Steward reviews: a steward agent posts a PR comment that carries a marker naming its handle
+// and the head commit it reviewed. The dispatcher reads that comment to decide the PR is covered.
+// The repository is public: anyone can comment, and anyone can quote a comment.
+import { trustContext, isTrusted } from "./trust.mjs";
+
+export const TRUST = trustContext({ founder: "saurabh-founder" });
+
+export function stewardMarker(handle, sha) {
+  return `<!-- steward:${handle}:${sha} -->`;
+}
+
+/** The steward verdict for this head commit, or undefined when no steward review counts. */
+export function stewardVerdict(comments, handle, sha, trust = TRUST) {
+  const c = (comments ?? []).find((x) => isTrusted(x, trust) && (x.body ?? "").includes(stewardMarker(handle, sha)));
+  if (!c) return undefined;
+  return (c.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() || "posted";
+}
+
+/** Stewards only review agent PRs and the founder's own, so a drive-by PR cannot spend a run. */
+export function stewardTargets(prs, { trust = TRUST, agentOfPR }) {
+  return (prs ?? []).filter((pr) => !pr.draft && (agentOfPR(pr) || pr.user?.login === trust.founder));
+}

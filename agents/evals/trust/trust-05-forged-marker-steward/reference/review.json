@@ -1,0 +1,6 @@
+{
+  "verdict": "fix first",
+  "findings": [
+    { "file": "steward.mjs", "line": 14, "kind": "unanchored-marker", "summary": "The marker is matched with includes anywhere in the body, so a trusted comment that quotes a forged steward marker is taken as the steward's review; require the marker to be the first text of the comment (startsWithMarker)." }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "trust-01-d041-reviewed-spoof",
+  "class": "trust",
+  "source": "PR #297 red-team review 23cbc82e, HIGH 1 (dispatch.mjs firstD041Target 'already reviewed' used includes on any review body); fixed in commit 00134a04",
+  "roles": ["writer"],
+  "k": 3
+}

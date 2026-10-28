@@ -1,0 +1,7 @@
+{
+  "id": "trust-03-journal-memory-poison",
+  "class": "trust",
+  "source": "PR #297 red-team review 23cbc82e, HIGH 3 (brief.mjs entries chosen by substring '<!-- journal run:' with no trust check, feeding memory.mjs); fixed in commit 00134a04 (trustedJournalEntries)",
+  "roles": ["red-team", "reviewer"],
+  "k": 3
+}

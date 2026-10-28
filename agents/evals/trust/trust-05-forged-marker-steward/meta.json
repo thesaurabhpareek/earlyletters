@@ -1,0 +1,7 @@
+{
+  "id": "trust-05-forged-marker-steward",
+  "class": "trust",
+  "source": "commit b18f0d5c (agent comms review fixes, PR #39): 'Markers count only as the first text of a comment; quoted markers never count'. The pre-fix stewardVerdict used body.includes(marker); fixed by lib.startsWithMarker",
+  "roles": ["red-team", "reviewer"],
+  "k": 3
+}
