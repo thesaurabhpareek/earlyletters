@@ -87,7 +87,6 @@ const CHANGED = [
   'features.player.cannotPlay',
   'en.readTogether.autoplayLabel',
   'en.readTogether.endOfMonth',
-  'en.readTogether.endOfMonthAlt',
   'en.notMuch.savedToast',
   'features.reminders.settings.monthNotesLabel',
   'features.reminders.settings.monthNotesHelp',
@@ -240,52 +239,13 @@ const HELD: Record<string, string> = {
 
 /** RET: no longer shown once the screen package lands; the key stays until P7. */
 const RETIRED = [
-  'en.ageGate.body',
-  'en.ageGate.stopBody',
-  'en.ageGate.stopNote',
-  'en.onboarding.promise.body',
-  'en.onboarding.promise.recordingTitle',
-  'en.onboarding.promise.mishearTitle',
-  'en.onboarding.child.nameHelp',
-  'en.onboarding.child.birthdayHelp',
-  'en.onboarding.signsAs.body',
-  'en.onboarding.dictionary.languagesBody',
-  'features.speechConsent.note',
-  'features.speechConsent.footnote',
-  'en.tonight.subtitle',
-  'en.listen.ready.title',
-  'en.listen.ready.body',
-  'en.listen.ready.startButton',
-  'en.errors.storageLow.title',
-  'en.errors.storageLow.body',
-  'en.review.subtitle',
-  'en.review.trustLine',
-  'en.review.destination.privateHelp',
-  'en.book.empty.chapterTitle',
-  'en.book.empty.chapterBody',
-  'en.book.chapterSubtitle',
   'en.book.chapterNotes',
   'en.book.chapterNoteOne',
   'en.book.chapterMixed',
-  'en.reader.deletedBody',
-  'en.reader.preview',
-  'features.reminders.settings.eveningsHelp',
-  'features.reminders.settings.eveningHelp',
   // P6 (S34): the master switch keeps every choice when off, so the Pause row went.
-  'en.settings.reminders.pauseLabel',
   'features.reminders.settings.pausedSummary',
   'features.billing.plan.off',
   'features.billing.plan.yearly',
-  'en.settings.recordings.keepHelp',
-  'en.settings.export.body',
-  'features.export.screen.tooBigBody',
-  'en.childrenExtra.edit.born.offer',
-  'en.children.add.body',
-  'en.readTogether.endOfMonthAlt',
-  // Experience pass v1.1 (S57): the Family tab's coming-soon words.
-  'en.familyTab.emptyTitle',
-  'en.familyTab.emptyBody',
-  'en.familyTab.inviteNeedsSignIn',
 ];
 
 /**
@@ -454,7 +414,7 @@ const IN_APP: Leaf[] = [
 
 describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
   it('has every changed and added key, each in one list only', () => {
-    // A changed key may also be retired (endOfMonthAlt now equals endOfMonth); the other lists never overlap.
+    // A changed key may also be retired; the other lists never overlap.
     const all = [...CHANGED, ...ADDED, ...Object.keys(HELD)];
     expect(all.length).toBe(new Set(all).size);
     expect(RETIRED.filter((k) => ADDED.includes(k) || k in HELD)).toEqual([]);

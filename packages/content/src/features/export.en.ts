@@ -34,7 +34,6 @@ export const exportCopy = {
     failedBody: 'Your letters and recordings are all still here. Please try again.',
     // Too big: the title, then `settingsHome.helpValue` "Write to us" as the primary (S43).
     tooBigTitle: 'This book is too big for one file',
-    tooBigBody: 'This export is larger than one file can hold. Write to us and we will help you get every letter out.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the button says it)
     lowSpaceBody: 'This phone needs more free space first.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
   },
