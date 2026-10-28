@@ -1,5 +1,7 @@
 # Reviewer calibration: is the red team still discriminating?
 
+Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`); any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
+
 Gap: in the first weeks every red-team review ended "fix first" or "founder decision"; none said "ship". A reviewer that never passes anything tells the founder nothing, the same as one that passes everything.
 
 Built (scripts/agents/verdicts.mjs): the board shows the verdict mix over the last 20 red-team reviews and adds a calibration note when 15 or more in a row carry no "ship". The note is addressed to the founder and states the count; it is not a target for the reviewer, which judges each PR on its own (OPERATING_MODEL section 6). A review counts only if it starts with `<!-- red-team:<sha> -->`, has a `Verdict:` second line, and comes from a trusted identity.
