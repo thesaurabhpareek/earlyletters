@@ -35,7 +35,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
-import { JoinAsk, JoinedCover, WaitingBar } from '@/components/family/join-ask';
+import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -111,6 +111,13 @@ function JoinBook() {
     joinedChildId: joined?.childId ?? null,
     error,
   });
+
+  // The first step the sheet opens on adds no entrance; every later step fades in over the last (5.8 row 10).
+  const [steps, setSteps] = useState(0);
+  useEffect(() => {
+    if (plan.view !== 'loading') setSteps((n) => n + 1);
+  }, [plan.view]);
+  const fade = steps > 0;
 
   const fail = async (e: unknown, stage: 'peek' | 'accept', t: string) => {
     const kind = inviteErrorKind(e);
@@ -218,26 +225,28 @@ function JoinBook() {
       <SheetFrame
         closeLabel={a.close}
         footer={<Button testID="invite.paste.continue" size="lg" label={a.continue} onPress={() => void submitPaste()} disabled={pasted.trim().length === 0} />}>
-        <View testID="invite.screen" className="gap-5">
-          <SheetTitle>{joinTitle('paste', null)}</SheetTitle>
-          <TextField
-            testID="invite.paste.input"
-            label={a.pasteLabel}
-            helper={a.pasteHelp}
-            error={pasteError}
-            value={pasted}
-            onChangeText={(v) => {
-              setPasted(v);
-              setPasteError(null);
-            }}
-            placeholder={a.pastePlaceholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            textContentType="URL"
-            multiline
-          />
-        </View>
+        <JoinStep key="paste" fade={fade}>
+          <View testID="invite.screen" className="gap-5">
+            <SheetTitle>{joinTitle('paste', null)}</SheetTitle>
+            <TextField
+              testID="invite.paste.input"
+              label={a.pasteLabel}
+              helper={a.pasteHelp}
+              error={pasteError}
+              value={pasted}
+              onChangeText={(v) => {
+                setPasted(v);
+                setPasteError(null);
+              }}
+              placeholder={a.pastePlaceholder}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              textContentType="URL"
+              multiline
+            />
+          </View>
+        </JoinStep>
       </SheetFrame>
     );
   }
@@ -259,44 +268,48 @@ function JoinBook() {
             <QuietButton label={a.notNow} onPress={() => void notNow()} />
           </>
         }>
-        <JoinAsk inviter={preview.inviter} />
+        <JoinStep key="ask" fade={fade}>
+          <JoinAsk inviter={preview.inviter} />
+        </JoinStep>
       </SheetFrame>
     );
   }
 
   if (plan.view === 'joined' && joined) {
-    return <Joined childId={joined.childId} fallbackName={joined.name} inviter={joined.inviter} />;
+    return <Joined childId={joined.childId} fallbackName={joined.name} inviter={joined.inviter} fade={fade} />;
   }
 
   const failure = plan.view === 'failed' && error ? joinFailure(error) : null;
   return (
     <SheetFrame closeLabel={a.close}>
-      <View testID="invite.screen" className="gap-5">
-        <SheetTitle>{joinTitle(plan.view, null)}</SheetTitle>
-        {plan.view === 'signIn' || plan.view === 'account' ? (
-          // Sign in, finish consent, or turn sync back on; the sheet goes on by itself once it can.
-          <AccountGate trigger="invite" signInBody={a.signInBody}>
-            <Busy label={a.joining} />
-          </AccountGate>
-        ) : null}
-        {plan.view === 'signIn' ? <QuietButton label={a.notNow} onPress={() => void notNow()} /> : null}
-        {plan.view === 'peeking' ? <Busy label={a.peeking} /> : null}
-        {plan.view === 'joining' ? (
-          <View testID="invite.joining">
-            <Busy label={a.joining} />
-          </View>
-        ) : null}
-        {failure ? (
-          <View testID="invite.error" className="gap-3">
-            <ErrorLine message={failure.line} />
-            {failure.action === 'pasteAnother' ? (
-              <QuietButton label={a.pasteAnother} onPress={pasteAnother} />
-            ) : (
-              <Button size="lg" label={a.tryAgain} onPress={retry} />
-            )}
-          </View>
-        ) : null}
-      </View>
+      <JoinStep key={plan.view} fade={fade}>
+        <View testID="invite.screen" className="gap-5">
+          <SheetTitle>{joinTitle(plan.view, null)}</SheetTitle>
+          {plan.view === 'signIn' || plan.view === 'account' ? (
+            // Sign in, finish consent, or turn sync back on; the sheet goes on by itself once it can.
+            <AccountGate trigger="invite" signInBody={a.signInBody}>
+              <Busy label={a.joining} />
+            </AccountGate>
+          ) : null}
+          {plan.view === 'signIn' ? <QuietButton label={a.notNow} onPress={() => void notNow()} /> : null}
+          {plan.view === 'peeking' ? <Busy label={a.peeking} /> : null}
+          {plan.view === 'joining' ? (
+            <View testID="invite.joining">
+              <Busy label={a.joining} />
+            </View>
+          ) : null}
+          {failure ? (
+            <View testID="invite.error" className="gap-3">
+              <ErrorLine message={failure.line} />
+              {failure.action === 'pasteAnother' ? (
+                <QuietButton label={a.pasteAnother} onPress={pasteAnother} />
+              ) : (
+                <Button size="lg" label={a.tryAgain} onPress={retry} />
+              )}
+            </View>
+          ) : null}
+        </View>
+      </JoinStep>
     </SheetFrame>
   );
 }
@@ -308,7 +321,7 @@ function JoinBook() {
  * Open needs a sign-off, and a line says so while the field is empty (lib/family/join-flow.logic.ts joinedView).
  * Nothing switches by itself.
  */
-function Joined({ childId, fallbackName, inviter }: { childId: string; fallbackName: string | null; inviter: string | null }) {
+function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fallbackName: string | null; inviter: string | null; fade: boolean }) {
   const close = useCloseSheet();
   const a = familyCopy.accept;
   const ideas = copy.onboarding.signsAs;
@@ -363,49 +376,51 @@ function Joined({ childId, fallbackName, inviter }: { childId: string; fallbackN
           <Button testID="invite.close" size="lg" label={a.close} onPress={close} />
         )
       }>
-      <View testID="invite.joined" className="gap-5">
-        {/* The child's name appears here first, on the cover that opens (BL-322). */}
-        {child ? <JoinedCover child={child} inviter={inviter} /> : null}
-        <Text variant="title1" asHeading={1}>
-          {child ? fill(a.joinedTitle, { child }) : a.title}
-        </Text>
-        <Text variant="body">{joinedBody(inviter)}</Text>
-        {!book && child ? (
-          <View className="gap-2">
-            <Text variant="footnote" accessibilityLiveRegion="polite">
-              {fill(a.joinedWaiting, { child })}
-            </Text>
-            <WaitingBar />
-          </View>
-        ) : null}
-        {book ? (
-          <View className="gap-3">
-            <TextField
-              testID="invite.signsAs"
-              label={fill(a.signsAsLabel, { child })}
-              face="serif"
-              helper={a.signsAsHelp}
-              value={signsAs}
-              onChangeText={type}
-              placeholder={a.signsAsPlaceholder}
-              maxLength={SIGNS_AS_MAX}
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="done"
-            />
-            <ChipGroup label={ideas.examplesLabel}>
-              {ideas.examples.map((ex) => (
-                <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => type(ex)} />
-              ))}
-            </ChipGroup>
-            {view.needsSignsAs ? (
-              <Text testID="invite.signsAs.needed" variant="footnote" tone="default" accessibilityLiveRegion="polite">
-                {fill(a.signsAsNeeded, { child })}
+      <JoinStep fade={fade}>
+        <View testID="invite.joined" className="gap-5">
+          {/* The child's name appears here first, on the cover that opens (BL-322). */}
+          {child ? <JoinedCover child={child} inviter={inviter} /> : null}
+          <Text variant="title1" asHeading={1}>
+            {child ? fill(a.joinedTitle, { child }) : a.title}
+          </Text>
+          <Text variant="body">{joinedBody(inviter)}</Text>
+          {!book && child ? (
+            <View className="gap-2">
+              <Text variant="footnote" accessibilityLiveRegion="polite">
+                {fill(a.joinedWaiting, { child })}
               </Text>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+              <WaitingBar />
+            </View>
+          ) : null}
+          {book ? (
+            <View className="gap-3">
+              <TextField
+                testID="invite.signsAs"
+                label={fill(a.signsAsLabel, { child })}
+                face="serif"
+                helper={a.signsAsHelp}
+                value={signsAs}
+                onChangeText={type}
+                placeholder={a.signsAsPlaceholder}
+                maxLength={SIGNS_AS_MAX}
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+              />
+              <ChipGroup label={ideas.examplesLabel}>
+                {ideas.examples.map((ex) => (
+                  <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => type(ex)} />
+                ))}
+              </ChipGroup>
+              {view.needsSignsAs ? (
+                <Text testID="invite.signsAs.needed" variant="footnote" tone="default" accessibilityLiveRegion="polite">
+                  {fill(a.signsAsNeeded, { child })}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      </JoinStep>
     </SheetFrame>
   );
 }

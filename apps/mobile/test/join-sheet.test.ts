@@ -47,7 +47,7 @@ describe('[S59] before sign-in, neither the child\'s name nor the inviter is sho
     const file = code('components/family/join-ask.tsx');
     const ask = file.slice(file.indexOf('export function JoinAsk'), file.indexOf('export function JoinedCover'));
     expect(ask).toMatch(/variant=\{by\.signature \? 'signature' : 'body'\}/);
-    expect(ask).not.toMatch(/child/i);
+    expect(ask).not.toMatch(/\bchild\b/i);
     // The sheet hands the inviter to the ask and the joined view only.
     const sheet = code(SHEET);
     expect(sheet.match(/preview\.inviter|preview\?\.inviter/g)).toHaveLength(2);
@@ -120,6 +120,18 @@ describe('[S59] "Open the book" lands on the Book with the light rising once (5.
     expect(tokens.motion.lamp.arriveMs).toBe(1200);
     // Reduce Motion: the Book lit at once.
     expect(planLampMount(undefined, light, true, { arrive: true })).toEqual([{ light: { anchor: 'top', core: 'gold', tail: 'amber' }, from: 0.6, to: 0.6, ms: 0 }]);
+  });
+});
+
+describe('[S59 Motion] views replace each other in place, never a push (5.8 row 10)', () => {
+  it('every later view fades in over the last (200 ms); the view the sheet opens on adds no entrance', () => {
+    expect(tokens.motion.fadeMs).toBe(200);
+    const sheet = code(SHEET);
+    expect(sheet).toMatch(/if \(plan\.view !== 'loading'\) setSteps\(\(n\) => n \+ 1\);/);
+    expect(sheet).toMatch(/const fade = steps > 0;/);
+    expect(sheet).toMatch(/<JoinStep key=\{plan\.view\} fade=\{fade\}>/);
+    expect(sheet).not.toMatch(/router\.push\(/);
+    expect(code('components/family/join-ask.tsx')).toMatch(/<Animated\.View entering=\{fade \? COVER_IN : undefined\}>/);
   });
 });
 

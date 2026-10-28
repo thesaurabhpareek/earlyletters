@@ -6,6 +6,8 @@
  * signature face), then the safety line in `footnote`. Still no child name: the peek returns only the inviter's
  * sign-off (BL-322, D-111 item 8, D-113 item 3).
  *
+ * JoinStep: each view fades in over the last (200 ms), as one act in one sheet.
+ *
  * JoinedCover: the book cover (132 x 176) appears for the first time with the child's name and opens to the
  * flyleaf: it fades in (200 ms), holds 300 ms, then the front cross-fades to the flyleaf with an 8 pt shift on
  * `standard`, as on S08 (BookCover's own opening). The flyleaf's foot line carries the inviter's sign-off; the
@@ -15,7 +17,7 @@
  * WaitingBar: while the book is still coming down, a thin bar with no count under "{child}'s book is on its way
  * to this phone.". Indeterminate (sync reports no pull progress yet, a request to S03); still under Reduce Motion.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
@@ -39,6 +41,15 @@ export function JoinAsk({ inviter }: { inviter: string | null }) {
 }
 
 const COVER_IN = FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never);
+
+/**
+ * One step of the join sheet. Steps inside one sheet are one act, so a new step fades in over the last (fadeMs,
+ * 200 ms), never a push; the first step the sheet opens on adds no entrance (5.8 row 10). The caller keys it by
+ * its view, so each new view mounts and fades in.
+ */
+export function JoinStep({ fade, children }: { fade: boolean; children: ReactNode }) {
+  return <Animated.View entering={fade ? COVER_IN : undefined}>{children}</Animated.View>;
+}
 
 export function JoinedCover({ child, inviter }: { child: string; inviter: string | null }) {
   // BookCover holds the front, then opens it (tokens.motion.cover); under Reduce Motion it is open at once.
