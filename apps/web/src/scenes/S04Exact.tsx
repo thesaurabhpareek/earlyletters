@@ -25,7 +25,7 @@ const copy = site.scenes.s04;
 
 export function S04Exact() {
   return (
-    <Scene id="exactly" label={copy.label} tone="paper" length={3}>
+    <Scene id="exactly" label={copy.label} tone="paper" length={3} rest={0.75}>
       <ExactStage />
     </Scene>
   );
@@ -40,9 +40,13 @@ function ExactStage() {
   const fixes = useTransform(p, [0.2, 0.56], [0, EDIT_COUNT]);
   const note = useTransform(p, [0.5, 0.58, 0.86, 0.92], [0, 1, 1, 0]);
 
-  const down = narrow ? h * 0.13 : h * 0.12;
+  const down = narrow ? h * 0.1 : h * 0.05;
   const letterY = useTransform(p, [0.58, 0.7, 0.86, 0.96], [0, down, down, 0]);
-  const letterScale = useTransform(p, [0.58, 0.7, 0.86, 0.96], [1, narrow ? 0.84 : 0.86, narrow ? 0.84 : 0.86, 1]);
+  // A macro on the fix: the camera leans toward the first word while the name is set right, then eases back.
+  const macro = useTransform(p, [0.18, 0.3, 0.42], [1, narrow ? 1.1 : 1.16, 1]);
+  const settle = useTransform(p, [0.58, 0.7, 0.86, 0.96], [1, narrow ? 0.84 : 0.9, narrow ? 0.84 : 0.9, 1]);
+  const letterScale = useTransform([macro, settle], ([a, b]: number[]) => a * b);
+  const origin = useTransform(p, [0.42, 0.58], ['0% 0%', '50% 50%']);
 
   const headOpacity = useTransform(p, [0.6, 0.68, 0.86, 0.92], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.6, 0.68], [16, 0]);
@@ -52,7 +56,7 @@ function ExactStage() {
     <div className={stage.frame} data-resting={resting || undefined}>
       <PaperTexture />
       <div className={styles.letterStage}>
-        <motion.div style={{ y: letterY, scale: letterScale, position: 'relative' }}>
+        <motion.div style={{ y: letterY, scale: letterScale, transformOrigin: origin, position: 'relative' }}>
           <PaperLetter marks={marks} fixes={fixes} />
           <motion.p className={styles.note} style={{ opacity: note }}>
             <span className={styles.count}>{copy.appChanges}.</span> {copy.appTrust}

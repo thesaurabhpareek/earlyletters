@@ -8,14 +8,14 @@ import { Scene } from '@/film/Scene';
 import { Headline, Support } from '@/film/Copy';
 import { useStage } from '@/film/hooks';
 import { site } from '@/content/site';
-import { Grain, Vignette } from '@/components/atmosphere';
+import { Grain, LampLight, Vignette } from '@/components/atmosphere';
 import stage from '@/film/stage.module.css';
 
 const copy = site.scenes.s10;
 
 export function S10Pricing() {
   return (
-    <Scene id="pricing" label={copy.label} tone="night" length={1.5}>
+    <Scene id="pricing" label={copy.label} tone="night" length={1.5} rest={0.5}>
       <PricingStage />
     </Scene>
   );
@@ -28,13 +28,14 @@ function PricingStage() {
   const supOpacity = useTransform(p, [0.16, 0.3, 0.86, 0.98], [0, 1, 1, 0]);
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
+      <LampLight intensity={0.25} x="50%" y="64%" size="85vmax" warmth="lamp" />
       <div className={stage.copyCenter} style={{ color: 'var(--night-ink)' }}>
         <div>
           <motion.div style={{ opacity, y }}>
             <Headline style={{ fontSize: 'clamp(36px, 5vw, 80px)' }}>{copy.headline}</Headline>
           </motion.div>
           <motion.div style={{ opacity: supOpacity }}>
-            <Support>{copy.support}</Support>
+            <Support style={{ opacity: 0.92, fontSize: 'clamp(19px, 1.5vw, 22px)' }}>{copy.support}</Support>
           </motion.div>
         </div>
       </div>

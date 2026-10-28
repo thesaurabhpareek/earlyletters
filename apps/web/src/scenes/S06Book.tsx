@@ -31,7 +31,7 @@ const meta = (n: number) => copy.chapters.find((c) => c.month === label(n))?.met
 
 export function S06Book() {
   return (
-    <Scene id="the-book" label={copy.label} tone="paper" length={3}>
+    <Scene id="the-book" label={copy.label} tone="paper" length={3} rest={0.4} toneStops={[{ at: 0.78, tone: 'dusk' }]}>
       <BookStage />
     </Scene>
   );
@@ -46,11 +46,10 @@ function Cover({ n, offset, cw, enter }: { n: number; offset: MotionValue<number
   const d = useTransform(offset, (o) => Math.abs(n - 9 - o));
   const opacity = useTransform([d, enter], ([dd, e]: number[]) => {
     const fade = Math.max(0, 1 - Math.max(0, dd - 1.6) / 1.6);
-    const arrived = n <= 9 ? e : 1;
-    return fade * arrived;
+    return fade * e;
   });
   const scale = useTransform(d, (dd) => 1 - Math.min(dd, 3) * 0.06);
-  const y = useTransform(enter, [0, 1], [n <= 9 ? 40 : 0, 0]);
+  const y = useTransform(enter, [0, 1], [40, 0]);
   const m = meta(n);
   return (
     <motion.div className={styles.cover} style={{ x, opacity, scale, y, width: cw, height: cw * 1.32, marginLeft: -cw / 2, marginTop: (-cw * 1.32) / 2 }}>
@@ -79,7 +78,12 @@ function BookStage() {
   const filed = useTransform(p, [0.22, 0.3, 0.56, 0.62], [0, 1, 1, 0]);
   const bookY = useTransform(p, [0.24, 0.34], [0, narrow ? h * 0.08 : h * 0.06]);
   const bookOut = useTransform(p, [0.86, 0.95], [1, 0]);
-  const dusk = useTransform(p, [0.7, 0.95], [0, 1]);
+  // Time passing is a change of light: paper to golden hour to dusk, never through grey.
+  const golden = useTransform(p, [0.6, 0.78], [0, 1]);
+  const dusk = useTransform(p, [0.78, 0.95], [0, 1]);
+  const paperOut = useTransform(p, [0.6, 0.8], [1, 0]);
+  const sunX = useTransform(p, [0.58, 0.92], ['-40vw', '70vw']);
+  const sun = useTransform(p, [0.6, 0.7, 0.88, 0.94], [0, 0.55, 0.55, 0]);
 
   const headOpacity = useTransform(p, [0.3, 0.38, 0.56, 0.62], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.3, 0.38], [16, 0]);
@@ -89,7 +93,12 @@ function BookStage() {
 
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
-      <PaperTexture />
+      <motion.div className={stage.layer} style={{ opacity: paperOut }}>
+        <PaperTexture />
+      </motion.div>
+      <motion.div className={styles.golden} style={{ opacity: golden }} aria-hidden />
+      <motion.div className={styles.dusk} style={{ opacity: dusk }} aria-hidden />
+      <motion.div className={styles.sun} style={{ x: sunX, opacity: sun }} aria-hidden />
       <motion.div className={styles.book} style={{ y: bookY, opacity: bookOut }}>
         {covers.map((n) => (
           <Cover key={n} n={n} offset={months} cw={cw} enter={enter} />
@@ -114,8 +123,9 @@ function BookStage() {
         </motion.div>
       </div>
 
-      <motion.div className={styles.dusk} style={{ opacity: dusk }} aria-hidden />
-      <Vignette tone="paper" strength={0.8} />
+      <motion.div className={stage.layer} style={{ opacity: paperOut }}>
+        <Vignette tone="paper" strength={0.8} />
+      </motion.div>
       <Grain tone="paper" />
     </div>
   );

@@ -7,6 +7,7 @@
  */
 import { Stroke } from '@/scenes/parts/act3/stroke';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 const SHADE =
   'M38.6 30.9 C47.2 26.5 73.8 26.1 82.3 30.3 C74.1 35.1 47.4 35.4 38.6 30.9 C31.2 47.3 22.7 66.1 16.3 82.7 C31.4 91.9 89.6 92.2 104.1 82.1 C97.8 65.7 89.5 47.4 82.3 30.3';
@@ -15,15 +16,16 @@ const BASE = 'M35.6 178.6 C37.4 168.4 82.7 167.9 84.8 178.1 C70.1 180.2 49.6 180
 const CHAIN = 'M75.8 88.6 C76.1 94.2 75.7 99.3 76.2 104.1 M76.3 104.4 C73.4 104.6 73.5 109.6 76.4 109.5 C79.3 109.4 79.1 104.3 76.3 104.4';
 
 export function ReadingLamp({ draw, className, title, strokeWidth = 1.5 }: DrawingProps) {
+  const hairline = useHairline(120, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 0 120 190"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

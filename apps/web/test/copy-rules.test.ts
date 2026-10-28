@@ -136,8 +136,15 @@ describe('no fear, guilt or loss', () => {
 
 describe('no machine-writing claims', () => {
   // RULE: never imply software writes or improves anything (rules.test.ts AI list, case-insensitive except AI itself, plus a few synonyms).
-  it('never implies the app writes for you', () => {
-    expect(offenders(PROSE, /\b(AI|A\.I\.)\b/)).toEqual([]);
+  // Founder decision (2026-10): "AI" may be named, but only as something that listens, understands,
+  // keeps, or is never used on your words. Any sentence naming AI must contain one of those verbs and
+  // may never pair it with writing, improving or creating.
+  it('names AI only as something that listens and never writes', () => {
+    const named = PROSE.filter((l) => /\b(AI|A\.I\.)\b/.test(l.text));
+    const bad = named.filter(
+      (l) => !/\b(listen(s|ing)?|understands?|hears?|keeps?|never (used|rewrites?|adds?))\b/i.test(l.text) || /\b(writes?|writing|creates?|improves?|turns?|crafts?|tells?)\b/i.test(l.text),
+    );
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(
       offenders(
         PROSE,
