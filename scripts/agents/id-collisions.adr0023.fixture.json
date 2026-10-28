@@ -1,0 +1,45 @@
+{
+  "_about": "Real clash: #139, #146 and #150 each added an ADR numbered 0023 (docs/agents/BOARD.md coordination note, 15 Oct 2026). develop's docs/adr listing is the last five files at b1e11cfb^, the commit before the first of them landed. File names are the ones BOARD.md records.",
+  "develop": {
+    "files": {},
+    "adrFiles": [
+      "docs/adr/0021-engineering-compendium-and-stewards.md",
+      "docs/adr/0022-release-engineering.md",
+      "docs/adr/0026-release-automation-pipeline.md",
+      "docs/adr/0027-kill-safe-recording-container.md",
+      "docs/adr/0101-ui-component-library.md"
+    ]
+  },
+  "prs": [
+    {
+      "number": 139,
+      "title": "BL-347 and BL-330: email links bound to the asking phone",
+      "files": [
+        {
+          "filename": "docs/adr/0023-email-links-pkce.md",
+          "status": "added"
+        }
+      ]
+    },
+    {
+      "number": 146,
+      "title": "sync protocol v1 on the phone",
+      "files": [
+        {
+          "filename": "docs/adr/0023-sync-protocol-v1.md",
+          "status": "added"
+        }
+      ]
+    },
+    {
+      "number": 150,
+      "title": "encrypted recording backup, client half",
+      "files": [
+        {
+          "filename": "docs/adr/0023-owner-backup-v1.md",
+          "status": "added"
+        }
+      ]
+    }
+  ]
+}
