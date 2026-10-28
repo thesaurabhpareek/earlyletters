@@ -40,6 +40,13 @@ test("lens verdicts parse the repo's heading habits", () => {
   assert.equal(parseLens("<!-- merge-train -->\nPASS", 1), undefined);
   assert.equal(parseLens("Fixed in ea0affb: red-team findings 2 and 3.", 30), undefined);
   assert.equal(parseLens("## Review B (product fit, content and voice)", 170), undefined, "no verdict, no row");
+  // Negations must never read as approval (independent review of #339, 28 Oct).
+  assert.equal(parseLens("## Review A at 1a2b3c4: DO NOT MERGE", 310).verdict, "DO NOT MERGE");
+  assert.equal(parseLens("## Review B at 1a2b3c4: do not  merge until fixed", 310).verdict, "DO NOT MERGE");
+  assert.equal(parseLens("## Review A at 1a2b3c4: don't merge", 310).verdict, "DO NOT MERGE");
+  assert.equal(parseLens("## Review A at 1a2b3c4: not a pass, 2 issues", 310).verdict, "FAIL");
+  assert.equal(parseLens("## Lens B verdict at 1a2b3c4: not mergeable", 310).verdict, "DO NOT MERGE");
+  assert.equal(parseLens("## Review A at 1a2b3c4: PASS, ready to merge", 310).verdict, "PASS");
 });
 
 test("verdict-on-head: latest lens and red-team verdicts against the current head", () => {

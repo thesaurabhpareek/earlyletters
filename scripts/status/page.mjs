@@ -41,6 +41,9 @@ export function sameSha(a, b) {
 }
 
 const VERDICT_WORDS = [
+  // Negated phrases come first in the text, so the earliest-match rule below picks them over "merge" and "pass".
+  ["do not merge", "DO NOT MERGE"], ["don't merge", "DO NOT MERGE"], ["not mergeable", "DO NOT MERGE"],
+  ["not a pass", "FAIL"], ["not pass", "FAIL"], ["no pass", "FAIL"],
   ["pass with notes", "PASS WITH NOTES"], ["do-not-merge", "DO NOT MERGE"], ["merge-after-fix", "MERGE AFTER FIX"],
   ["changes needed", "CHANGES NEEDED"], ["blocking", "BLOCKING"], ["block", "BLOCKING"], ["fail", "FAIL"],
   ["pass", "PASS"], ["merge", "MERGE"],
@@ -49,7 +52,7 @@ const verdictIn = (s) => {
   const t = s.toLowerCase();
   let best; // the earliest verdict word wins ("FAIL, 1 blocking issue" is FAIL); ties go to the longer phrase
   for (const [w, v] of VERDICT_WORDS) {
-    const i = t.search(new RegExp(`(^|[^a-z-])${w}([^a-z-]|$)`));
+    const i = t.search(new RegExp(`(^|[^a-z-])${w.replace(/ /g, "\\s+")}([^a-z-]|$)`));
     if (i >= 0 && (!best || i < best.i)) best = { i, v };
   }
   return best?.v;
