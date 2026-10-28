@@ -120,6 +120,19 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
     expect(coParentOf([{ role: 'parent', signsAs: '  ' }, { role: 'parent', signsAs: 'Papa' }])).toBe('Papa');
     expect(code('app/settings/children/[id].tsx')).toMatch(/footer=\{hideFooter\(name, coParent\)\}/);
   });
+
+  it('a co-parent with no signature is still a co-parent: two parents, the shared line and the Family tab (lens A on #312)', () => {
+    // store.listMembers maps the server's null signs_as to '' and leaves me out, so this is a two-parent book.
+    const unsigned = coParentOf([{ role: 'parent', signsAs: '' }]);
+    expect(unsigned).toBe(familyCopy.members.invitedName);
+    expect(unsigned).toBe('Your co-parent');
+    expect(hideFooter('Asha', unsigned)).toBe("Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Your co-parent still sees Asha's book as before.");
+    expect(bookRow({ serverFeatures: true, coParent: unsigned, invite: inviteHref('settings_child', true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
+    // The same words the Family tab uses for a member with no signature.
+    expect(code('app/(tabs)/family.tsx')).toMatch(/m\.signsAs\.trim\(\) \|\| f\.members\.invitedName/);
+    // A contributor alone is not a co-parent, signed or not.
+    expect(coParentOf([{ role: 'contributor', signsAs: '' }])).toBeNull();
+  });
 });
 
 describe('[S46] Write this book together', () => {

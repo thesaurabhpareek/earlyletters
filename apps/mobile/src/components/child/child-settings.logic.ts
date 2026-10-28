@@ -42,10 +42,16 @@ export function bornCard(childName: string): { title: string; body: string; setB
 /** The other parents of a book, as the last pull listed them (store.listMembers). */
 export type CoParentLike = { role: 'parent' | 'contributor'; signsAs: string };
 
-/** The first other parent with a signature, or null for a book with one parent (or only on this phone). */
+/**
+ * The book's other parent, by their own signature, or null for a book with one parent (or only on this phone). The
+ * list holds the other members only (store.listMembers leaves me out), so any parent in it is a co-parent, signed or
+ * not: one who never set a signature (the server's signs_as is null) is "Your co-parent", as the Family tab names them.
+ */
 export function coParentOf(members: readonly CoParentLike[]): string | null {
-  const other = members.find((m) => m.role === 'parent' && m.signsAs.trim().length > 0);
-  return other ? other.signsAs.trim() : null;
+  const parents = members.filter((m) => m.role === 'parent');
+  if (parents.length === 0) return null;
+  const signed = parents.find((m) => m.signsAs.trim().length > 0);
+  return signed ? signed.signsAs.trim() : familyCopy.members.invitedName;
 }
 
 /** "Hide this book"'s footer: what hiding does, and, with a co-parent, that it is only for you. */
