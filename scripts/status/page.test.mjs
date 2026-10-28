@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  founderClasses, sameSha, parseLens, PASSING, verdictsOf, buildModel, renderPage, renderFounderList, collect, MAX_LINES, EXTRA_SLOTS,
+  founderClasses, sameSha, parseLens, PASSING, verdictsOf, buildModel, renderPage, renderFounderList, founderLine, collect, MAX_LINES, EXTRA_SLOTS,
 } from "./page.mjs";
 
 const NOW = "2026-10-28T12:00:00Z";
@@ -171,4 +171,15 @@ test("founder list mode reads every thread and lists every founder-class merge",
   const lines = renderFounderList(m);
   assert.equal(lines[0], "Founder-class merges in the 7 days to 2026-10-28 (D-117 paths): 2.");
   assert.deepEqual(lines.slice(1).map((l) => l.match(/^- #(\d+)/)[1]), ["50", "52"]);
+});
+
+test("founder-class line counts only passing verdicts on the merged head toward the two", () => {
+  const base = { number: 77, classes: ["database"] };
+  const pass = { verdict: "PASS", sha: "abcdef1", onHead: true };
+  const fail = { verdict: "FAIL", sha: "abcdef1", onHead: true };
+  const after = { verdict: "MERGE AFTER FIX", sha: "abcdef1", onHead: true };
+  assert.doesNotMatch(founderLine({ ...base, lens: [pass, { ...pass, verdict: "PASS WITH NOTES" }] }), /fewer than 2/);
+  assert.match(founderLine({ ...base, lens: [pass, fail] }), /fewer than 2 passing on the merged head/, "a FAIL on head is not a pass");
+  assert.match(founderLine({ ...base, lens: [pass, after] }), /fewer than 2 passing/, "MERGE AFTER FIX is conditional, not a pass");
+  assert.match(founderLine({ ...base, lens: [pass, { ...pass, onHead: false }] }), /fewer than 2 passing/, "an older head does not count");
 });
