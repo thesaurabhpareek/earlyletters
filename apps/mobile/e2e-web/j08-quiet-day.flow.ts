@@ -86,8 +86,19 @@ test('[J08d] in the morning the light stays; with Reduce Motion the evening ligh
   await app.clock.setFixedTime(EVENING);
   await app.reload();
   await expect(btn(app, 'Not much today')).toBeVisible();
-  // The morning's mark is today's: the evening room opens with its lights already down.
-  expect(await lampLevel(app)).toBeCloseTo(0.7, 2);
+  // The morning's mark is today's: the evening room opens with its lights already down. Wait until the lamp shows any light
+  // (the read is null before it is mounted and 0 before its opacity is applied), then require the FIRST light seen to be the
+  // dimmed level. With Reduce Motion there is no fade, so that is 0.7 at once; a fade, or a flash of the evening 1 first,
+  // would show another value first. (A poll for 0.7 alone would pass after any fade.)
+  const seen: number[] = [];
+  await expect
+    .poll(async () => {
+      const level = (await lampLevel(app)) ?? 0;
+      if (level > 0) seen.push(level);
+      return level;
+    })
+    .toBeGreaterThan(0);
+  expect(seen[0]).toBeCloseTo(0.7, 2);
 });
 
 test('[J08c] marks saved by older builds: the old sentence is never shown, and a mark can be removed', async ({ app, record }) => {
