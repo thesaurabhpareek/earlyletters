@@ -1,0 +1,7 @@
+{
+  "id": "drift-02-dangling-citations-repair",
+  "class": "drift",
+  "source": "commit 22db1daa (PR #300): the real repair of this exact drift, a pointer page at docs/release/ALPHA_PLAN.md; reviews FAILED twice (4d7b54d founder steps and hours, 4f35670 wrong section and file) before PASS at ce4048a, so the repair is easy to get subtly wrong",
+  "roles": ["writer"],
+  "k": 3
+}

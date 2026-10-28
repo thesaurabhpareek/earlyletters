@@ -1,0 +1,7 @@
+{
+  "id": "drift-03-release-schedules",
+  "class": "drift",
+  "source": "develop on the morning of 27 Oct 2026, before #294 (go/no-go refresh) and #295 (commit 002f421d, release record current for the alpha, BL-438): docs/ROADMAP.md (unchanged since d3a54d3b, #108, 15 Oct; still unchanged at 6bfb94a9) said freeze Mon 26 Oct and submit Mon 2 Nov; docs/release/1.0.0.md before 002f421d repeated it; docs/qa/ALPHA_GO_NO_GO.md before c3032e05 proposed freeze Tue 3 Nov and go/no-go Thu 5 Nov, with D-106's Tue 27 / Thu 29 Oct as the fallback. #295 repaired 1.0.0.md; ROADMAP.md was never repaired",
+  "roles": ["writer"],
+  "k": 3
+}

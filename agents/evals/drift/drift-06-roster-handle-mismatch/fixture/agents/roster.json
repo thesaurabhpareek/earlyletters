@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "$comment": "Slice for the eval. The roster is the source of truth for handles: agent:<handle>, from:<handle> and to:<handle> labels already exist for exactly these.",
+  "departments": { "engineering": "1d76db", "quality": "fbca04", "legal": "5319e7" },
+  "agents": [
+    { "handle": "mobile", "title": "Mobile Engineer", "department": "engineering", "backlog_owner_names": ["mobile engineer"] },
+    { "handle": "qa", "title": "Quality Engineer", "department": "quality", "backlog_owner_names": ["QA engineer"] },
+    { "handle": "sync", "title": "Sync Engineer", "department": "engineering", "backlog_owner_names": ["sync owner"] },
+    { "handle": "data-architect", "title": "Data Architect", "department": "engineering", "backlog_owner_names": ["data architect"] },
+    { "handle": "privacy", "title": "Privacy Engineer", "department": "legal", "backlog_owner_names": ["privacy engineer"] }
+  ]
+}

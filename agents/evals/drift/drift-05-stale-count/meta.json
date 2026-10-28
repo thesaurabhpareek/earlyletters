@@ -1,0 +1,7 @@
+{
+  "id": "drift-05-stale-count",
+  "class": "drift",
+  "source": "commit 2876ff78 (23 Oct 2026, 'release: the preflight fails without the signed English pack (D-115)...'): its parent's CLAUDE.md said `npm run test:db ... (15 files)` while supabase/tests held 32 *.test.mjs files (the text said 15 from 0ed286a7, 3 Oct, until 2876ff78); 2876ff78 changed the 15 to 32. The fixture is the parent's CLAUDE.md with that tree. The 24 agents and 103 prompts claims in the same file were correct and are decoys that must not change",
+  "roles": ["writer"],
+  "k": 3
+}
