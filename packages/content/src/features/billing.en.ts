@@ -56,6 +56,11 @@ export const billingCopy = {
     redeemLink: 'Redeem a code',
     lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
     offline: 'Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is.',
+    // A letter whose words arrived later reaches the sheet from its own page, through Review (task #53): it is already
+    // in the book or private, and only its words wait, on the letter itself, so neither line names Tonight or the
+    // phone. New for the content owner and counsel (C10), beside the "Keep step and held letter" register row.
+    heldNoteLetter: 'Your words stay with this letter, exactly as they are, for as long as you like.',
+    offlineLetter: 'Plus needs a connection to start. Your words stay with this letter, exactly as they are.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
   },
