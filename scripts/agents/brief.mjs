@@ -76,7 +76,7 @@ function assignmentSection() {
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
+    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) ?? pr.user?.login ?? "unknown" : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
     lines.push("Follow section 6 of the operating model. Read the diff with `gh pr diff " + prNum + "`. Your review body must start with `<!-- red-team:" + (pr?.head?.sha ?? "<sha>") + " -->`.");
   } else if (mode === "handoff") {
     lines.push(...handoffSection(String(taskId).replace(/^#/, "")));
