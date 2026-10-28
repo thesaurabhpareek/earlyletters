@@ -112,7 +112,7 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
   });
 
   it('loading never uses a spinner on the screens that moved', () => {
-    for (const f of ['app/review.tsx', 'components/ui/state-screen.tsx']) expect(read(f), f).not.toMatch(/ActivityIndicator/);
+    for (const f of ['app/review.tsx', 'components/ui/state-screen.tsx', 'components/resilience/plain-screen.tsx']) expect(read(f), f).not.toMatch(/ActivityIndicator/);
   });
 });
 

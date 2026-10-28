@@ -1,15 +1,27 @@
 /**
- * The calm full-screen card used when the normal app cannot be shown: the root error boundary and the
- * launch recovery screen. Deliberately plain React Native (View, Text, Pressable) and design tokens only:
- * no providers, no stores, no router, no fonts to wait for, so it still draws when everything above it
- * is what failed. Reads the saved appearance when it can and falls back to the system scheme.
+ * The calm full-screen state used when the normal app cannot be shown: the root error boundary (S50) and
+ * the launch recovery screen (S51). The same block as every other state (StateScreen, S49): the page
+ * drawing, the title, one sentence, the primary full width at the bottom and a quiet option beneath it.
+ *
+ * Deliberately plain React Native (View, Text, Pressable), react-native-svg and design tokens only: no
+ * providers, no theme context, no stores to subscribe to, no router, no motion and nothing to wait for, so
+ * it still draws when everything above it is what failed. The brand faces are embedded at build time
+ * (expo-font config plugin), so the title is Literata and the body Mukta from the first frame
+ * (plain-screen.styles.ts); `loadFonts` then resolves at once. In the web preview, where the faces arrive
+ * as @font-face rules, it registers them, because launch recovery draws before UIProvider would. It never
+ * throws and nothing waits for it. Reads the saved appearance when it can and falls back to the system scheme.
  * It never shows an error message, code or stack. Dynamic Type works (no fixed heights on text).
  */
-import { useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View, useColorScheme } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View, useColorScheme } from 'react-native';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
+import Svg, { Circle, Path } from 'react-native-svg';
+import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { tokens } from '@scribe/design-tokens';
+import { loadFonts } from '@/components/ui/fonts';
 import { getSetting } from '@/lib/store';
+import { PLAIN_LAYOUT, PLAIN_TYPE, plainArt, plainButton } from './plain-screen.styles';
 
 export type PlainAction = { label: string; onPress: () => void; kind?: 'primary' | 'quiet'; busy?: boolean };
 
@@ -24,59 +36,101 @@ export function useSchemeSafely(): 'light' | 'dark' {
   return system;
 }
 
+const ART = plainArt();
+
+/** The page drawing, complete and still, in the scheme's own colours. Decorative. */
+function PageDrawing({ wash, line }: { wash: string; line: string }) {
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants" aria-hidden>
+      <Svg width={ART.width} height={ART.height} viewBox={ART.viewBox}>
+        <Circle cx={ART.wash.cx} cy={ART.wash.cy} r={ART.wash.r} fill={wash} />
+        {ART.paths.map((d) => (
+          <Path key={d} d={d} fill="none" stroke={line} strokeWidth={ART.strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
 export function PlainScreen({ title, body, hint, note, actions }: { title: string; body: string; hint?: string; note?: string; actions: PlainAction[] }) {
   const scheme = useSchemeSafely();
   const c = tokens[scheme];
+  // The safe area as the app launched (a constant: no provider to read it from).
+  const insets = initialWindowMetrics?.insets;
+  const heading = useRef<Text>(null);
+
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
   }, [c.bg]);
+
+  useEffect(() => {
+    // Whatever brought this screen up, the splash must not stay over it: the launch recovery screen renders
+    // before the app's own hideAsync runs, and the router only hides the splash for a render error.
+    void SplashScreen.hideAsync().catch(() => {});
+    void loadFonts();
+    // VoiceOver starts on the title, not on whatever the failed screen had focused.
+    const id = setTimeout(() => {
+      try {
+        if (heading.current) AccessibilityInfo.sendAccessibilityEvent(heading.current as never, 'focus');
+      } catch {
+        // focus is a courtesy; the screen reads in order without it
+      }
+    }, 350);
+    return () => clearTimeout(id);
+  }, []);
+
+  const L = PLAIN_LAYOUT;
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
-        <View accessible={false} style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={{ color: c.text, fontSize: 28, lineHeight: 36, fontWeight: '600', fontFamily: 'Georgia' }}>
-            {title}
-          </Text>
-          <Text style={{ color: c.text, fontSize: 17, lineHeight: 26 }}>{body}</Text>
-          {hint ? <Text style={{ color: c.textMuted, fontSize: 15, lineHeight: 22 }}>{hint}</Text> : null}
-          {note ? (
-            <Text accessibilityLiveRegion="polite" style={{ color: c.textMuted, fontSize: 15, lineHeight: 22 }}>
-              {note}
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets?.top ?? 0, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space[3]) }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: L.gutter, paddingVertical: L.edge }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ alignItems: 'center', gap: L.gap }}>
+          <PageDrawing wash={c.accentSoft} line={c.textMuted} />
+          <View accessible={false} style={{ alignItems: 'center', gap: L.textGap }}>
+            <Text ref={heading} accessibilityRole="header" maxFontSizeMultiplier={PLAIN_TYPE.title.maxScale} style={{ ...PLAIN_TYPE.title.style, color: c.text, textAlign: 'center' }}>
+              {title}
             </Text>
-          ) : null}
-        </View>
-        <View style={{ gap: 8, marginTop: 28 }}>
-          {actions.map((a) => {
-            const primary = (a.kind ?? 'primary') === 'primary';
-            return (
-              <Pressable
-                key={a.label}
-                accessibilityRole="button"
-                accessibilityLabel={a.label}
-                accessibilityState={{ busy: !!a.busy, disabled: !!a.busy }}
-                disabled={a.busy}
-                onPress={a.onPress}
-                style={({ pressed }) => ({
-                  minHeight: 56,
-                  borderRadius: 14,
-                  paddingHorizontal: 20,
-                  paddingVertical: 14,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: primary ? c.accent : 'transparent',
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
-                {a.busy ? (
-                  <ActivityIndicator color={primary ? c.onAccent : c.accent} />
-                ) : (
-                  <Text style={{ color: primary ? c.onAccent : c.accent, fontSize: 17, lineHeight: 24, fontWeight: '600', textAlign: 'center' }}>{a.label}</Text>
-                )}
-              </Pressable>
-            );
-          })}
+            <Text maxFontSizeMultiplier={PLAIN_TYPE.body.maxScale} style={{ ...PLAIN_TYPE.body.style, color: c.textMuted, textAlign: 'center' }}>
+              {body}
+            </Text>
+            {hint ? (
+              <Text maxFontSizeMultiplier={PLAIN_TYPE.hint.maxScale} style={{ ...PLAIN_TYPE.hint.style, color: c.textMuted, textAlign: 'center' }}>
+                {hint}
+              </Text>
+            ) : null}
+            {note ? (
+              <Text accessibilityLiveRegion="polite" maxFontSizeMultiplier={PLAIN_TYPE.hint.maxScale} style={{ ...PLAIN_TYPE.hint.style, color: c.text, textAlign: 'center' }}>
+                {note}
+              </Text>
+            ) : null}
+          </View>
         </View>
       </ScrollView>
+      <View style={{ paddingHorizontal: L.gutter, paddingTop: tokens.space[2], gap: tokens.space[1] }}>
+        {actions.map((a, i) => {
+          const s = plainButton(a.kind ?? 'primary', c, !!a.busy);
+          return (
+            <Pressable
+              // By place, not by label: the export button's words change while it works, and a new key would
+              // remount it and drop VoiceOver focus.
+              key={i}
+              accessibilityRole="button"
+              accessibilityLabel={a.label}
+              accessibilityState={{ busy: !!a.busy, disabled: !!a.busy }}
+              disabled={a.busy}
+              onPress={a.onPress}
+              style={({ pressed }) => ({ ...s.container, opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text maxFontSizeMultiplier={PLAIN_TYPE.button.maxScale} style={s.label}>
+                {a.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
