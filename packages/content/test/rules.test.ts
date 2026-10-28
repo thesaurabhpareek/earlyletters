@@ -196,11 +196,12 @@ describe('prompts', () => {
     expect(new Set(PROMPTS.map((p) => p.key)).size).toBe(PROMPTS.length);
   });
 
-  it('covers every kind and every age band', () => {
+  it('covers every kind, every age band and the before-birth set', () => {
     for (const kind of ['opening', 'gap', 'hard', 'family', 'together']) {
       expect(PROMPTS.some((p) => p.kind === kind), kind).toBe(true);
     }
-    for (const band of ['0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
+    // `before` is the set for a book whose child is not born yet (P3 critics' pass S2); its rules are in prompts.preBirth.test.ts.
+    for (const band of ['before', '0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
       expect(PROMPTS.some((p) => p.band === band), band).toBe(true);
     }
   });
