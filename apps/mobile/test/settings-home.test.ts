@@ -8,7 +8,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { en, licences } from '@scribe/content';
+import { authCopy, en, licences } from '@scribe/content';
+import { accountSubtitle } from '../src/components/settings/settings-home.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -59,7 +60,21 @@ describe('[S40] Settings home', () => {
     expect(en.settingsHome.licencesLabel).toBe('Licenses');
   });
 
-  it('keeps the P8 seams as they were: Account, Back up my recordings and Delete account, each behind its capability', () => {
+  it('Account names the way the person signs in, once signed in (S40; P8a\'s request on #310)', () => {
+    for (const status of ['signedOut', 'restoring', 'signingIn', 'awaitingCode'] as const) {
+      expect(accountSubtitle({ status, provider: 'apple' }), status).toBe(en.settingsHome.accountHelp);
+    }
+    for (const status of ['checkingConsent', 'needsConsent', 'ready', 'signingOut'] as const) {
+      expect(accountSubtitle({ status, provider: 'apple' }), status).toBe('Signed in with Apple');
+    }
+    expect(accountSubtitle({ status: 'ready', provider: 'google' })).toBe(authCopy.account.signedInWith.google);
+    expect(accountSubtitle({ status: 'ready', provider: 'email' })).toBe(authCopy.account.signedInWith.email);
+    expect(accountSubtitle({ status: 'ready', provider: null })).toBe(authCopy.account.signedInWith.other);
+    expect(home).toMatch(/accountSubtitle\(\{ status: auth\.state\.status, provider: auth\.account\.provider \}\)/);
+    expect(home).toMatch(/<ListRow title=\{h\.accountLabel\} subtitle=\{account\}/);
+  });
+
+  it('keeps the P8 seams: Account, Back up my recordings and Delete account, each behind its capability', () => {
     expect(home).toMatch(/\{capabilities\.signIn \? <ListRow title=\{h\.accountLabel\}/);
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
     expect(home).toMatch(/\{capabilities\.signIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);

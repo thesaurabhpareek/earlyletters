@@ -6,6 +6,8 @@ import { Linking, ScrollView, View } from 'react-native';
 import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
+import { accountSubtitle } from '@/components/settings/settings-home.logic';
+import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
@@ -25,10 +27,10 @@ import { backupCopy } from '@scribe/content';
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling"
  * is always here, never behind a flag (D-034).
  *
- * Seams for P8 (option B): the Account row (top of the first section), the Back up my recordings row (Your data,
- * after Recordings) and Delete account (its own section above Help) are drawn here, each behind its capability, as
- * they were; P8 asks for their final shape (S40: the sign-in method as Account's subtitle, Delete account signed in
- * only) and P6 makes it in this file.
+ * Seams for P8 (option B): the Account row (top of the first section, signed in or out, with the way the person signs
+ * in as its subtitle, P8a's request on #310), the Back up my recordings row (Your data, after Recordings) and Delete
+ * account (its own section above Help) are drawn here, each behind its capability; P8 asks for anything more (S40:
+ * Delete account signed in only) and P6 makes it in this file.
  */
 const ROUTES = {
   account: '/settings/account',
@@ -66,6 +68,9 @@ export default function Settings() {
   useFocusEffect(useCallback(() => setS(read()), []));
 
   const h = copy.settingsHome;
+  // Signed in: "Signed in with Apple" (or Google, email) under Account; signed out: what the row is for (S40, #310).
+  const auth = useAuth();
+  const account = accountSubtitle({ status: auth.state.status, provider: auth.account.provider });
   const version = Constants.expoConfig?.version ?? '';
   const build = Constants.expoConfig?.ios?.buildNumber ?? '';
   const versionValue = build ? fill(h.versionValue, { version, build }) : version;
@@ -73,7 +78,7 @@ export default function Settings() {
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <ListSection title={capabilities.signIn ? h.sections.account : undefined}>
-        {capabilities.signIn ? <ListRow title={h.accountLabel} subtitle={h.accountHelp} trailing="chevron" onPress={go(ROUTES.account)} /> : null}
+        {capabilities.signIn ? <ListRow title={h.accountLabel} subtitle={account} trailing="chevron" onPress={go(ROUTES.account)} /> : null}
         <ListRow title={h.planLabel} subtitle={h.planHelp} trailing="chevron" onPress={go(ROUTES.plan)} />
       </ListSection>
 
