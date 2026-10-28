@@ -48,11 +48,14 @@ export function formatReminderTime(t: ReminderTime, locale?: string): string {
   }
 }
 
-/** Value for the Settings home row: "Off", "Paused" or "A few times a week, 8:30 PM". */
+/**
+ * Value for the Settings home row: "Off" or "A few times a week, 8:30 PM". A pause left from before the one switch
+ * (EXPERIENCE_PASS_2026-10 S34 retired "Pause all reminders") reads as Off, as the Reminders screen's switch does
+ * (components/settings/reminders.logic.ts remindersSwitchOn); turning the switch on clears it. No migration.
+ */
 export function remindersSummary(prefs: ReminderPrefs = readPrefs()): string {
   const r = copy.settings.reminders;
-  if (!prefs.enabled) return reminderCopy.settings.offSummary;
-  if (prefs.paused) return reminderCopy.settings.pausedSummary;
+  if (!prefs.enabled || prefs.paused) return reminderCopy.settings.offSummary;
   const cadence =
     prefs.cadence === 'weekly' ? r.weeklyLabel : prefs.cadence === 'everyEvening' ? r.everyEveningLabel : prefs.cadence === 'off' ? r.offLabel : r.fewTimesLabel;
   return `${cadence}, ${formatReminderTime(prefs.time)}`;
