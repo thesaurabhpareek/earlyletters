@@ -137,6 +137,16 @@ describe('[S58] states', () => {
     expect(sheet).toMatch(/<Chip\s+key=\{ex\}\s+label=\{ex\}\s+selected=\{signsAs === ex\}/);
   });
 
+  it('the primary is the frame\'s footer, above the keyboard, with the error line above it, once the account can invite (critics\' pass S3)', () => {
+    const sheet = code(SHEET);
+    expect(sheet).toMatch(/const footer =\s*view === 'form' && auth\.canSync \? \(\s*<>\s*<ErrorLine message=\{error \? fill\(familyCopy\.errors\[error\], \{ child \}\) : null\} \/>[\s\S]*?<Button testID="inviteNew\.share"[\s\S]*?<\/>\s*\) : undefined;/);
+    expect(sheet).toMatch(/<SheetFrame closeLabel=\{familyCopy\.accept\.close\} closeDisabled=\{busy\} footer=\{footer\}>/);
+    // One primary only, and not in the scrolling body.
+    expect(sheet.match(/testID="inviteNew\.share"/g)).toHaveLength(1);
+    const body = sheet.slice(sheet.indexOf('<SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy} footer={footer}>'));
+    expect(body).not.toMatch(/inviteNew\.share/);
+  });
+
   it('getting the link keeps the primary\'s size with its busy line inside it', () => {
     const sheet = code(SHEET);
     expect(sheet).toMatch(/<Button testID="inviteNew\.share" size="lg" loading=\{busy\} label=\{busy \? k\.working : k\.share\}/);

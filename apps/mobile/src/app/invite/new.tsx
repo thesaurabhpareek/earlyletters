@@ -143,8 +143,22 @@ function InviteCoParent() {
     }
   };
 
+  // The primary sits in the frame's footer, above the keyboard, with the error line above it (critics' pass S3). Only
+  // once the account can invite: until then the account step in the body is the way on.
+  const footer =
+    view === 'form' && auth.canSync ? (
+      <>
+        <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
+        {error === 'consent_needed' ? (
+          <QuietButton label={familyCopy.card.finishSetup} onPress={() => router.push('/sign-in/consent')} />
+        ) : null}
+        {/* While the link is made, the primary keeps its size and shows its busy line inside it. */}
+        <Button testID="inviteNew.share" size="lg" loading={busy} label={busy ? k.working : k.share} onPress={() => void share()} />
+      </>
+    ) : undefined;
+
   return (
-    <SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy}>
+    <SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy} footer={footer}>
       <View testID="inviteNew.screen" className="gap-5">
         {/* The invite is into this book: its cover, closed, with the name the parent gave it. Decorative: the title says it. */}
         <View className="items-center pb-1">
@@ -192,12 +206,6 @@ function InviteCoParent() {
                   <Text variant="footnote">{fill(k.oneBook, { child })}</Text>
                   <Text variant="footnote">{k.linkNote}</Text>
                 </View>
-                <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
-                {error === 'consent_needed' ? (
-                  <QuietButton label={familyCopy.card.finishSetup} onPress={() => router.push('/sign-in/consent')} />
-                ) : null}
-                {/* While the link is made, the primary keeps its size and shows its busy line inside it. */}
-                <Button testID="inviteNew.share" size="lg" loading={busy} label={busy ? k.working : k.share} onPress={() => void share()} />
               </View>
             </AccountGate>
           </>
