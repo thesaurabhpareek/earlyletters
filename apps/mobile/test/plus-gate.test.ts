@@ -128,12 +128,31 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
   it('the sheet draws the words, the scroll and the footer from keepSheetLayout, the footer outside the scroll', () => {
     const gate = code('components/child/plus-gate.tsx');
     expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
-    expect(gate).toMatch(/<View key="words" style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
+    expect(gate).toMatch(/<View key="words" [^\n]*style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
     expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
     expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
     // The footer's note is drawn only where the layout puts it, so it is never in the footer and the words at once.
     expect(gate).toMatch(/note: layout\.pinned\.includes\('note'\) \? line\.note : null,/);
     expect(gate).not.toMatch(/footerPlacement/);
+  });
+
+  it('a note that arrives after See Plus is scrolled into view and announced, its static words only (#370 delta)', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    const effect = gate.slice(gate.indexOf('const openingNote = React.useRef(view.note);'), gate.indexOf('}, [view.note]);'));
+    expect(effect.length).toBeGreaterThan(0);
+    // A new note only (one already there when the sheet opens is read in order), after layout, with no animation.
+    expect(effect).toMatch(/if \(!note \|\| note === openingNote\.current\) return;/);
+    expect(effect).toMatch(
+      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/,
+    );
+    expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
+    expect(gate).toMatch(/<ScrollView ref=\{scroll\}/);
+    expect(gate).toMatch(/onLayout=\{\(e\) => \(wordsY\.current = e\.nativeEvent\.layout\.y\)\}/);
+    expect(gate).toMatch(/onLayout=\{\(e\) => \(noteY\.current = e\.nativeEvent\.layout\.y\)\} testID="plusGate\.note"/);
+    // The note stays a polite live region (Android), and the title stays the focus target.
+    expect(gate).toMatch(/<Text key="note" variant="footnote" accessibilityLiveRegion="polite"/);
+    expect(gate).toMatch(/<Text key="title" ref=\{title\} variant="title1" asHeading>/);
+    expect(gate).toMatch(/useFocusOnMount\(title\);/);
   });
 });
 

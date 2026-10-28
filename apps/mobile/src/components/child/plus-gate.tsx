@@ -23,7 +23,7 @@
  * "Redeem a code" follow (keepSheetLayout).
  */
 import * as React from 'react';
-import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
+import { AccessibilityInfo, BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
@@ -118,6 +118,27 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
     if (plan.plusOn) carryOn();
   }, [plan.plusOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // A note that arrives after a tap (See Plus offline) is seen and heard: at accessibility sizes it is a line in the
+  // scroll, so scroll to it once it is laid out, and tell VoiceOver (iOS does not read accessibilityLiveRegion). The
+  // note is a copy string from packages/content. A note already there when the sheet opens is read in order instead.
+  const scroll = React.useRef<ScrollView>(null);
+  const wordsY = React.useRef(0);
+  const noteY = React.useRef(0);
+  const openingNote = React.useRef(view.note);
+  React.useEffect(() => {
+    const note = view.note;
+    if (!note || note === openingNote.current) return;
+    const id = setTimeout(() => {
+      try {
+        if (layout.words.includes('note')) scroll.current?.scrollTo({ y: Math.max(0, wordsY.current + noteY.current - tokens.space[4]), animated: false });
+        AccessibilityInfo.announceForAccessibility(note);
+      } catch {
+        // the note is still on the sheet, in reading order
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [view.note]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Android's back returns to the letter, as VoiceOver's escape does; it never holds or keeps anything.
   React.useEffect(() => {
     if (Platform.OS !== 'android' || !onDismiss) return;
@@ -175,7 +196,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
       </Text>
     ),
     note: view.note ? (
-      <Text key="note" variant="footnote" accessibilityLiveRegion="polite" className="px-2 pb-1 text-center" testID="plusGate.note">
+      <Text key="note" variant="footnote" accessibilityLiveRegion="polite" className="px-2 pb-1 text-center" onLayout={(e) => (noteY.current = e.nativeEvent.layout.y)} testID="plusGate.note">
         {view.note}
       </Text>
     ) : null,
@@ -184,7 +205,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const part: Record<KeepSheetBlock, React.ReactNode> = {
     card: held ? <HeldCard key="card" held={held} entering={motion.enter(0)} tilt={heldCardTilt(ax)} surface={c.surfaceRaised} /> : null,
     words: (
-      <View key="words" style={{ gap: tokens.space[3] }}>
+      <View key="words" onLayout={(e) => (wordsY.current = e.nativeEvent.layout.y)} style={{ gap: tokens.space[3] }}>
         {layout.words.map((w) => line[w])}
       </View>
     ),
@@ -227,7 +248,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
           overflow: 'hidden',
           ...(scheme === 'dark' ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line } : null),
         }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
+        <ScrollView ref={scroll} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
           {layout.scroll.map((b) => part[b])}
         </ScrollView>
         {/* The way on, always on screen: at every text size "Keep it here for now" is in this footer (keepSheetLayout). */}
