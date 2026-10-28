@@ -96,7 +96,7 @@ export default function ChildSettings() {
 
       {/* The due-date card: never presumes a birth, never celebrates, never counts days (S46). */}
       {showBorn && editing !== 'born' ? (
-        <Card variant="tinted" padding={5} testID="child.bornCard">
+        <Card variant="raised" padding={5} testID="child.bornCard">
           <View className="gap-1">
             <Text variant="headline" asHeading>
               {born.title}
