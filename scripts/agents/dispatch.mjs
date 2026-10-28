@@ -23,6 +23,11 @@ import {
   isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
+import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
+import * as lane from "./lane.mjs";
+import * as reviewfp from "./reviewfp.mjs";
+import * as verdicts from "./verdicts.mjs";
+import * as pause from "./pause.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -100,6 +105,9 @@ for (const [handle, c] of Object.entries(state.claims)) {
 for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
   delete state.claims[h];
 }
+// Hardening hooks (docs/agents/hardening/). Each module is optional and removable.
+const hctx = () => ({ state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames });
+lane.recordTick(hctx());
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
 // ---------- per-PR facts (lazy, cached) ----------
@@ -200,6 +208,32 @@ const reviewTargets = openPRs
   .filter((pr) => agentOfPR(pr) && agentOfPR(pr) !== "red-team" && !pr.draft)
   .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 const sensitive = (pr) => /supabase|auth|sign-?in|migration/i.test(`${pr.title} ${pr.head.ref}`);
+// D-041: any PR (agent or not) that touches the database, workflows or auth gets
+// an independent red-team review run. Oldest first; stops at the first match, and
+// remembers each head's answer in the board state so later ticks skip the lookup.
+state.d041 ??= {};
+function firstD041Target() {
+  const heads = new Set(openPRs.map((pr) => pr.head.sha));
+  for (const sha of Object.keys(state.d041)) if (!heads.has(sha)) delete state.d041[sha];
+  // A release PR (develop into main) carries work already reviewed PR by PR, so it is skipped.
+  const pool = d041Pool(openPRs, { trust, base: roster.base_branch, agentOfPR });
+  for (const pr of pool) {
+    const sha = pr.head.sha;
+    if (state.d041[sha] === undefined) {
+      const files = (ghAll(`/repos/${repo}/pulls/${pr.number}/files?per_page=100`, { allowFail: true }) ?? []).map((f) => f.filename);
+      state.d041[sha] = needsIndependentReview(files);
+    }
+    if (!state.d041[sha]) continue;
+    // Same trusted-marker test as everywhere else (prFacts is cached per run): a review
+    // from an outsider that mentions the sha must not count as the independent review.
+    if (!prFacts(pr).redTeam) return pr;
+  }
+  return undefined;
+}
+// Team limit: when this many agent PRs wait for review, agents only review and
+// fix; they start no new task or standing duty (open docs went stale unmerged).
+const teamOpen = openPRs.filter((pr) => agentOfPR(pr)).length;
+const teamCap = roster.limits.max_open_agent_prs ?? Infinity;
 
 // ONLY_AGENT: a comma-separated list of handles to assign; everyone else still appears on the board.
 const only = env.ONLY_AGENT ? new Set(env.ONLY_AGENT.split(",").map((s) => s.trim()).filter(Boolean)) : null;
@@ -231,6 +265,12 @@ for (const agent of roster.agents) {
     ? { mode: env.FORCE_MODE || "task", task: env.FORCE_TASK, label: `${env.FORCE_MODE || "task"} ${env.FORCE_TASK}` }
     : nextWork(agent, mine, queue);
   if (!work) { row.now = `idle: ${idleReason(agent, mine)}`; continue; }
+  const pauseWhy = pause.blockedReason(hctx(), agent, work);
+  if (pauseWhy) { row.now = `idle: ${pauseWhy}`; continue; }
+  if ((work.mode === "task" || work.mode === "standing") && teamOpen >= teamCap) {
+    row.now = `idle: team limit, ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
+    continue;
+  }
 
   const a = {
     agent: h,
@@ -250,6 +290,7 @@ for (const agent of roster.agents) {
   assignments.push(a);
   slots--;
   state.runs[h] = runsToday + 1;
+  if (a.mode === "review" && a.pr) reviewfp.recordAssigned(hctx(), openPRs.find((p) => String(p.number) === a.pr));
   if (CLAIM) {
     state.claims[h] = { mode: a.mode, task: a.task, pr: a.pr, at: now.toISOString(), run: runId, source: LOCAL ? "local" : "actions" };
   }
@@ -277,9 +318,9 @@ function nextWork(agent, mine, queue) {
     if (pick) return { mode: "steward-review", pr: pick.number, reason: pick.title, label: `steward review #${pick.number}` };
   }
   if (agent.kind === "reviewer") {
-    const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending);
-    const pick = candidates.find(sensitive) ?? candidates[0];
-    if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick)}: ${pick.title}`, label: `review #${pick.number}` };
+    const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending && !reviewfp.equivalentReviewed(hctx(), pr));
+    const pick = candidates.find(sensitive) ?? firstD041Target() ?? candidates[0];
+    if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick) ?? pick.user?.login ?? "pr"}: ${oneLine(pick.title)}`, label: `review #${pick.number}` };
   }
   if (agent.kind === "digest") {
     const due = state.lastDigest !== today && now.getUTCHours() >= (roster.limits.digest_hour_utc ?? 14);
@@ -388,6 +429,8 @@ function renderBoard() {
   }
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
+  // reviewfp before pause: pause leaves out heads that reviewfp has recorded as carried.
+  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");

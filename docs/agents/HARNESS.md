@@ -2,7 +2,7 @@
 
 One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0018 (the harness) and ADR 0019 (open-weight models by default).
 
-Last updated: 15 Oct 2026.
+Last updated: 27 Oct 2026.
 
 ## 1. What it is
 
@@ -42,6 +42,7 @@ flowchart LR
 | Agent conversations | `scripts/agents/handoff.mjs`, `docs/agents/AGENT-COMMS.md` | Handoffs and RFCs between agents (issues labelled `handoff`), replies, and the trust rules for whose words count. |
 | Activity ledger | `scripts/agents/ledger.mjs` | One JSON line per thing any agent did or said (journal entries, receipts, handoffs, replies, reviews), rebuilt from GitHub. |
 | Bootstrap and checks | `scripts/agents/bootstrap.mjs`, `check.mjs`, `lib.test.mjs` | Create labels, journals and the board; keep the team consistent; test the dispatcher. |
+| Hardening modules | `scripts/agents/lane.mjs`, `reviewfp.mjs`, `verdicts.mjs`, `pause.mjs`, `memory.mjs`; notes in `docs/agents/hardening/` | Lane ticks, review fingerprints, the verdict mix, the dated writer pause and the memory loop. Each sits behind one hook in `dispatch.mjs` or `brief.mjs` and can be removed on its own. |
 | Workflows | `.github/workflows/agents.yml`, `claude.yml`, `agents-check.yml` | Run the team; `@claude` for the founder; the consistency check on PRs. |
 | GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder`, `review:*`, `approve-migration`, `handoff`, `rfc`, `from:<handle>`, `to:<handle>`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
 
@@ -206,6 +207,15 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 | A journal entry says work was saved to `agent/<handle>/wip-...` | that branch | The run stopped early; the agent's next run continues from it. |
 | Receipts show $0.00 on a paid model | the runner stops these | The model is not in OpenCode's priced list; pick a listed model. |
 | Two agents changed the backlog at once | the PRs | Only `product` reorders; others change only their own status line. |
+| Agents say "team limit" | the board header | Ten or more agent PRs are open. Merge or close some; agents only review and fix until then. |
+| Two PRs used the same BL, D or ADR number | both PRs | One author did not run `scripts/agents/next-id.mjs`. Renumber the later PR. |
+| A post shows only a file path such as `@/tmp/...` | the post | Lowercase `-f body=@file` was used. Edit the post with the file's text (capital `-F`). |
+| A lane reads "quiet since ..." | the board's Lanes section | That scheduled task has not reached the dispatcher and written the board for 8 hours; check it (`docs/agents/hardening/lanes-and-review-churn.md`). |
+| A PR is under "Awaiting re-review" | the PR's reviews | Its head moved since the last red-team review and the changes differ, or were never compared (no fingerprint record). Labels stay as they are until the red team reviews the new head (`docs/agents/hardening/scope-and-drift.md`). |
+| A PR is under "Same changes as a reviewed head" | the board line | A develop merge kept the PR's own diff, so the red team is not re-assigned. The line names both heads and the review it inherits; it is a fingerprint match, not a review of the new head (`docs/agents/hardening/lanes-and-review-churn.md`). |
+| An agent is "idle: paused until ..." | `paused_until` in the roster | A dated pause on new task and standing work; fixes, reviews and handoffs still run. It lapses at 00:00 UTC on that date (`docs/agents/hardening/scope-and-drift.md`). |
+| The board shows a "Calibration note" | `docs/agents/hardening/reviewer-calibration.md` | 15 or more red-team reviews in a row without "ship". A signal for the founder, not a target for the reviewer; the calibration set is not built. |
+| A brief says "Carry into memory" | the agent's `MEMORY.md` | Journal "Learned" lines not yet in its memory file; the agent carries them in its own PR (`docs/agents/hardening/memory-loop.md`). |
 
 ## 15. Change log
 
@@ -213,3 +223,12 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 - 3 Oct 2026: agents talk to each other through handoffs and RFCs, stewards review PRs in their domains, and an activity ledger records every message (ADR 0020, `docs/agents/AGENT-COMMS.md`). Red-team and steward verdicts now count only from trusted authors, closing a gap where any GitHub user could post a verdict on this public repository.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
 - 15 Oct 2026: `agents.yml` is gated on the repository variable `AGENTS_ENABLED=true` (absent by default), so the schedule costs nothing and writes nothing until the founder switches it on; `claude.yml` already ends green without a credential. Owner names for threads outside the harness (`external_lanes`). Section 11 says plainly that deny lists are tripwires and branch protection is the guarantee.
+- 15 Oct 2026: what the first two weeks taught (3 to 15 Oct, 9 interactive waves, about 45 runs):
+  - **Reviews were worth the most.** The red team found the most valuable problems: a row-level-security bypass through `search_path`, migrations that undo each other, wrong prices in legal text, a release workflow that prints a secret, and a "private repo" premise repeated across five PRs. Most of these came from other threads' PRs. So the red team now reviews any PR that touches `supabase/`, `.github/workflows/` or auth code (D-041), whoever wrote it, oldest first, skipping release merges.
+  - **New documents went stale.** Four agent docs (CI report, two backlog PRs, a counsel pack) were overtaken by `develop` within days, because nothing merged them. A team limit (`max_open_agent_prs`, 10) now stops new tasks and standing duties while that many agent PRs are open.
+  - **Parallel ids collided.** ADR 0014 to 0017 were taken twice, and D-ids nearly were. `scripts/agents/next-id.mjs` counts `develop` and every open PR.
+  - **Usage limits cut runs short.** Agents now post a journal stub first and complete it last, so an interrupted run leaves a trace. Interactive waves stay at two or three agents.
+  - **Interactive posts came from the founder's account** and were read as founder instructions. Harness markers (receipt, journal, red-team, steward, handoff, agent) now exclude them, and every agent comment starts with `<!-- agent:<handle> -->`.
+  - **Other threads work in the same repo.** Briefs list live `BOARD.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
+  - **Interactive sessions cannot close PRs or comment on other threads' PRs** (the session safety check refuses). Agents recommend closing in their PR body and journal, and the founder or coordinator closes.
+- 27 Oct 2026: five hardening modules close the gaps of the 18 Oct assessment and the 27 Oct follow-up (#297; notes in `docs/agents/hardening/`): lane ticks on the board with an 8-hour "quiet since" flag; review fingerprints, so a develop merge that keeps a PR's own diff does not re-queue the red team (the board records the match against the new head, naming both heads and the review it inherits; it is not a review of the new head); the red-team verdict mix with a calibration note for the founder; a dated `paused_until` for writing agents and an "Awaiting re-review" section; uncarried "Learned" lines in the next brief. The session halt of Sat 24 Oct, 5:10 AM PT to Tue 27 Oct, 1:00 PM PT is a different thing from the roster's `paused_until` writer pause (`docs/agents/hardening/scope-and-drift.md`).

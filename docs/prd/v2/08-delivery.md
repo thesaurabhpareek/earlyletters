@@ -1069,7 +1069,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F14-18 | Not built | 4 | In 6.3, round 2 additions (waves 3 and 4, S20) |
 | WP-F14-19 | Not built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F14-20 | Not built | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct). Open problem (24 Oct 2026, #277): the letter page's Save words counts with no Keep gate, and its Read it back leaves words that arrived later uncounted; the fix is to route that keep through Review or hold the words (WP-F14-22), not a sheet on the letter page (F14 6.1, 6.4, WP-F14-21 note) |
+| WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct). The letter page's later words (open problem 24 Oct 2026, #277) are resolved (27 Oct 2026, task #53): Save words and Read it back open Review for the letter, whose Keep step asks the gate and counts; the letter page counts nothing and shows no Plus sheet (F14 6.1, 6.4, WP-F14-21 note) |
 | WP-F14-22 | Not built | 2 | In 6.3 as: Wave 2: S02 held-draft table, S03 held-draft sync op, S13 export `waiting/` |
 | WP-F15-01 | Partly built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F15-02 | Partly built | 7 | In 6.3, round 2 additions (before C1, S13) |

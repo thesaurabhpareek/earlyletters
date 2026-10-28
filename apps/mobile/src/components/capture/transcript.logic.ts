@@ -9,6 +9,21 @@
  * do not add up to the words shown, the cut is at the end of the mark's sentence instead.
  */
 
+/** Marks that close onto the word before them: no space ever goes in front of one. */
+const CLOSING = /^[,.;:!?)\]]/;
+
+/**
+ * The spaces drawn around words taken out, outside the strike, so the struck words never touch their neighbours
+ * ("Asha, ~~um,~~ today"), and never a space in front of closing punctuation: "spoon~~, um~~." and "then ~~um~~.",
+ * not "spoon ~~, um~~ ." (#290 lens B). `prev` and `next` are the words either side; `text` is what is struck.
+ * Display only: the letter kept is the engine's final text, which these spaces never touch.
+ */
+export function struckGaps(prev: string | undefined, text: string, next: string | undefined): [string, string] {
+  const before = prev && !/\s$/.test(prev) && !CLOSING.test(text) ? ' ' : '';
+  const after = next && !/^\s/.test(next) && !CLOSING.test(next) ? ' ' : '';
+  return [before, after];
+}
+
 /** A sentence ends at . ! or ?, with any closing quote or bracket, and then a space or the end. */
 const SENTENCE_END = /[.!?]+["')\]]*(\s+|$)/g;
 

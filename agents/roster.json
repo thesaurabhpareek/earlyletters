@@ -1,5 +1,5 @@
 {
-  "$comment": "The Early Letters agent team. Edit engines, models and caps here; the dispatcher reads this file on every tick. Structure and process: docs/agents/HARNESS.md. Rules agents follow: docs/agents/OPERATING_MODEL.md. Decisions: ADR 0018, ADR 0019.",
+  "$comment": "The Early Letters agent team. Edit engines, models and caps here; the dispatcher reads this file on every tick. Structure and process: docs/agents/HARNESS.md. Rules agents follow: docs/agents/OPERATING_MODEL.md. Decisions: ADR 0018, ADR 0019. Optional per agent: paused_until (\"YYYY-MM-DD\", UTC) and paused_reason stop new task and standing work until that date; fixes, reviews, handoffs and digests still run, and the pause lapses on its own (scripts/agents/pause.mjs, docs/agents/hardening/scope-and-drift.md).",
   "version": 1,
   "repo": "thesaurabhpareek/earlyletters",
   "base_branch": "develop",
@@ -11,11 +11,12 @@
     "owner_names": ["web lane"]
   },
   "limits": {
-    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap.",
+    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap. max_open_agent_prs: when this many agent PRs are open, agents only review and fix their PRs (no new tasks or standing work).",
     "max_runs_per_day_total": 30,
     "max_parallel": 6,
     "digest_hour_utc": 14,
-    "claim_grace_minutes": 20
+    "claim_grace_minutes": 20,
+    "max_open_agent_prs": 10
   },
   "engines": {
     "$comment": "opencode = OpenCode (MIT) driving open-weight models through OpenRouter; the default. claude-code = Claude Code via anthropics/claude-code-action; optional per agent. Models must be priced in the engine's model list, or the per-run spend cap cannot be enforced.",
@@ -303,6 +304,8 @@
     },
     {
       "handle": "decision-science",
+      "paused_until": "2026-10-30",
+      "paused_reason": "alpha stabilisation; metric work waits for a stable build",
       "title": "Decision Scientist",
       "department": "data",
       "backlog_owner_names": [],
@@ -311,6 +314,8 @@
     },
     {
       "handle": "legal",
+      "paused_until": "2026-10-30",
+      "paused_reason": "alpha stabilisation; new drafts wait, handoffs still answered",
       "title": "Legal Drafting (counsel-facing)",
       "department": "legal",
       "backlog_owner_names": [
@@ -321,6 +326,8 @@
     },
     {
       "handle": "marketing",
+      "paused_until": "2026-10-30",
+      "paused_reason": "alpha stabilisation; launch plans wait for a stable build",
       "title": "Growth and Marketing Lead",
       "department": "growth",
       "backlog_owner_names": [],
@@ -329,6 +336,8 @@
     },
     {
       "handle": "support",
+      "paused_until": "2026-10-30",
+      "paused_reason": "alpha stabilisation; help articles wait for a stable build",
       "title": "Customer Support Lead",
       "department": "support",
       "backlog_owner_names": [],
