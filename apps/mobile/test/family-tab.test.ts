@@ -112,6 +112,11 @@ describe('[S57] the invite card, the privacy line, and what shows with two paren
     expect(card).toMatch(/<LockSimpleIcon size=\{16\}/);
     expect(card).toMatch(/\{k\.privacy\}/);
     expect(card).toMatch(/<BookCover name=\{child\} size="sm"/);
+    // At accessibility sizes the cover steps aside and the button takes the width (critics' pass S4).
+    expect(card).toMatch(/const ax = useIsAccessibilitySize\(\);/);
+    expect(card).toMatch(/\{ax \? null : <BookCover name=\{child\} size="sm" animate=\{false\} \/>\}/);
+    expect(card).toMatch(/className=\{ax \? 'self-stretch' : 'self-start'\}/);
+    expect(code('app/(auth)/sign-in/index.tsx')).toMatch(/&& !ax \? active\.name : null/);
     expect(card).toMatch(/variant="outline"[^>]*icon=\{UserPlusIcon\}[^>]*label=\{k\.button\}/);
   });
 
