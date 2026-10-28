@@ -2,14 +2,14 @@
 
 Status: read-only inventory. Nothing in the product, the copy or the legal drafts was changed. This is an engineering reading of copy against code and the decision register. It is not legal advice and states no legal conclusion; it is input for counsel, the tester notice and the claims test (R2-07).
 
-Snapshot: `develop` at 6bfb94a9, `main` at b8b52d5e, open pull requests read through the GitHub API on 28 Oct 2026. Line numbers are for those commits.
+Snapshot: `develop` at 6bfb94a9, `main` at 3ce511e9 (after #317 merged at 06:14:17 UTC on 28 Oct 2026; the first version of this file read `main` at b8b52d5e), open pull requests read through the GitHub API on 28 Oct 2026. Line numbers are for those commits.
 
 ## 1. Headline numbers
 
-- 95 claim rows in sections 3 and 4 (some rows group the same claim made on several lines): 44 true, 28 false, 23 unverified, counted from the Verdict column. Section 5 adds 3 code-against-decision items; section 6 lists 18 pending claims in open PRs without verdicts.
+- 97 claim rows in sections 3 and 4 (some rows group the same claim made on several lines): 44 true, 28 false, 25 unverified, counted from the Verdict column. Section 5 adds 3 code-against-decision items; section 6 lists 18 pending claims in open PRs without verdicts.
 - The largest groups of false claims:
   - Plus terms in the legal drafts still describe the 3 Oct model: prices US $3.99 and $29.99, 3 free Read together sessions, Plus for more children's books, and "writing is free, always". D-082 and D-083 replaced all four on 4 Oct.
-  - Co-parent and seven-language claims are false in the two alpha build profiles: co-parent needs the server switch, which is off in `testflight` and `production`; both alpha profiles are English only (D-111 item 4).
+  - Co-parent claims are false in build 1 (`testflight`) and `production`, because co-parent needs the server switch and only `preview` (build 2) turns it on. Seven-language claims are false in both alpha profiles, which are English only (D-111 item 4).
   - PostHog is named as an analytics recipient in four legal drafts, but D-095 removed analytics from v1.0 and no profile turns it on.
   - The live website's pricing scene says Plus backs up recordings, opens Read together after free sessions, and lets the whole family add letters. All three contradict decisions of record.
 - Many claims are true for every build today only because a feature is switched off: "recordings stay on your phone" and "we do not receive purchase records" hold because `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` are off in every `eas.json` profile. D-100 puts both features in v1.0. These rows are marked true, with "conflicts" in the Decision column. They turn false the day either flag is turned on.
@@ -76,22 +76,26 @@ Snapshot: `develop` at 6bfb94a9, `main` at b8b52d5e, open pull requests read thr
 | W14 | Price "$4.99 a month, with the first month free, or $49.99 a year, with the first 2 months free"; first two letters free; Read together and export never locked (:126) | D-082 (:547), D-083 (:552), agree | `packages/content/src/pricing.ts:8-23`; `plan.ts:14` "Read together has no session limit" | true |
 | W15 | "Your letters come with you when you sign in." (:134) | D-100, agrees | Sign-in exists only in `preview` (`capabilities.ts:13-14, 143-145`); the claim is conditional on signing in | true |
 
-### 3c. Live website copy, `apps/web/src/content/site.ts` (main)
+### 3c. Live website copy, `apps/web/src/content/site.ts` (main at 3ce511e9)
+
+#317 (merged into `main` at 06:14:17 UTC) rewrote several lines and names "AI" for the first time. No D-id in `docs/DECISIONS.md` on develop or main covers naming AI. `apps/web/test/copy-rules.test.ts:139-141` on main cites "Founder decision (2026-10)" that AI may be named only as something that listens, understands or keeps. `packages/content/test/rules.test.ts:175-178` on develop bans the word "AI" in `packages/content`.
 
 | # | Claim | Decision | Code evidence | Verdict |
 |---|---|---|---|---|
 | M1 | "Private by design. Your letters stay on your phone" (:73); share text "private on your phone" (:79) | D-100 (:647): letters sync once signed in: conflicts | Letter text syncs in `preview` (eas.json:47, `capabilities.ts:146-149`) | false (`preview`) |
-| M2 | "Transcription runs on your phone by default and only clears the ums and misheard names." (:140) | D-086 (:566) | `types.ts:12-19` allows seven edit types, not two; model install blocked by `keys.ts:19-22` | unverified |
-| M3 | "Both parents write in the same book." (:157) | D-100, agrees | As S7 | false (`testflight`, `production`) |
-| M4 | Seven languages "each written in its own script" (:178) | D-111 item 4 (:739): conflicts for the alpha | As S8 | false (both alpha profiles) |
-| M5 | "Your letters are never used to train models." (:199); "No ads. We never sell your data." (:198) | D-061, agrees | Business practice | unverified |
-| M6 | Plus "backs up every recording" (:207) | D-111 item 6 (:741) and D-104 item 2: backup is free and not a Plus feature: conflicts | No profile turns backup on (`capabilities.ts:154-157`). Note `plan.ts:38,45` does gate `backup_upload`, matching this line and not D-111 | false |
-| M7 | Plus "opens Read together after the free sessions" (:207) | D-082 (:548) superseded D-053's session rule; D-083 (:552) "Read together is free": conflicts | `plan.ts:14` "Read together has no session limit" | false |
-| M8 | Plus covers every child's book "with the whole family adding letters" (:207) | D-055 (:371), D-099 (:612): two parents only; others later: conflicts | `capabilities.ts:150-153` co-parent only | false |
-| M9 | "$4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial" (:207) | D-082 (:547), agrees | `apps/web/src/content/pricing.ts:17-20` (main) | true |
-| M10 | "Every letter you have made stays yours to read, play and export, even if you stop." (:207, :200) | D-082, agrees | `plan.ts:15-18` | true |
-| M11 | "coming to iPhone in the US" (:212, :243, :259) | D-083 (:553) US storefront only, agrees | App Store Connect territories unverified | unverified |
-| M12 | Email list: a welcome email now, one more when ready, unsubscribe link in every email, address never sold (:221, :226) | none (website) | `apps/web/src/lib/notify/provider.ts:2-6` (address only), :59-64 (unsubscribed contacts left alone); `privacy-copy.ts:6-10` maps each claim to code | true |
+| M2 | "By default, AI on your phone listens, spells [the child's] name right, clears the ums and false starts. It never adds a word." (:139) | D-086 (:566), agrees on the fixes; no D-id for naming AI | Edit types `filler`, `false_start`, `stt_fix` (dictionary names only) in `types.ts:12-19`; `punctuation` adds marks, not words; model install blocked by `keys.ts:19-22` | unverified |
+| M3 | "Both parents write in the same book." (:156) | D-100, agrees | As S7 | false (`testflight`, `production`) |
+| M4 | "The AI understands English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, and keeps each in its own script." (:177) | D-111 item 4 (:739): conflicts for the alpha; no D-id for naming AI | As S8 | false (both alpha profiles) |
+| M5 | "Your letters are never used to train AI." (:198); "No ads. We never sell your data." (:197) | D-061, agrees | Business practice | unverified |
+| M6 | Plus "backs up every recording" (:206) | D-111 item 6 (:741) and D-104 item 2: backup is free and not a Plus feature: conflicts | No profile turns backup on (`capabilities.ts:154-157`). Note `plan.ts:38,45` does gate `backup_upload`, matching this line and not D-111 | false |
+| M7 | Plus "opens Read together after the free sessions" (:206) | D-082 (:548) superseded D-053's session rule; D-083 (:552) "Read together is free": conflicts | `plan.ts:14` "Read together has no session limit" | false |
+| M8 | Plus covers every child's book "with the whole family adding letters" (:206) | D-055 (:371), D-099 (:612): two parents only; others later: conflicts | `capabilities.ts:150-153` co-parent only | false |
+| M9 | "$4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial" (:206) | D-082 (:547), agrees | `apps/web/src/content/pricing.ts:17-20` (main) | true |
+| M10 | "Every letter you have made stays yours to read, play and export, even if you stop." (:206, :199) | D-082, agrees | `plan.ts:15-18` | true |
+| M11 | "coming to iPhone in the US" (:211, :242, :258) | D-083 (:553) US storefront only, agrees | App Store Connect territories unverified | unverified |
+| M12 | Email list: a welcome email now, one more when ready, unsubscribe link in every email, address never sold (:220, :225) | none (website) | `apps/web/src/lib/notify/provider.ts:2-6` (address only), :59-64 (unsubscribed contacts left alone); `privacy-copy.ts:6-10` maps each claim to code | true |
+| M13 | Meta description: "AI on your phone listens and keeps every word exactly as you said it, with your voice." (:60) | D-086 (:566): Word for word removes fillers by default, and "Exactly as said" is a choice; no D-id for naming AI | `raw_transcript` kept unchanged (CLAUDE.md constitution; trigger not opened); default fixes remove words such as "um" (`types.ts:13-14`); model install blocked by `keys.ts:19-22` | unverified |
+| M14 | "AI that listens to every word, and never rewrites one." (:72) | D-086 (:566), agrees on "never rewrites"; no D-id for naming AI | No rewrite edit type exists (`types.ts:12-19`); listening on device blocked by `keys.ts:19-22` | unverified |
 
 ### 3d. Website privacy page, `apps/web/src/lib/legal/privacy-copy.ts` (main)
 
@@ -101,7 +105,7 @@ Snapshot: `develop` at 6bfb94a9, `main` at b8b52d5e, open pull requests read thr
 | P2 | Only the email address is collected for the list; we do not ask for a name (:55) | none | `apps/web/src/lib/notify/provider.ts:6` "Only the address is sent" | true |
 | P3 | IP held in memory for up to 10 minutes to block automated requests, "We do not save it." (:57) | none | Logging carries no IP (`apps/web/src/lib/notify/log.ts:24-36`); the 10-minute window is set by callers of `rate-limit.ts:22`, not opened | unverified |
 | P4 | "We do not use cookies." (:68) | none | `git grep` finds no `document.cookie`, `localStorage` or `sessionStorage` in `apps/web/src` on main; hosting-layer cookies unverified | true |
-| P5 | "We do not use analytics, advertising or tracking tools, and the website loads nothing from other sites." (:69) | none (D-095 covers the app only) | Root layout mounts no analytics (`apps/web/src/app/layout.tsx:47`); `track()` is a no-op unless `NEXT_PUBLIC_ANALYTICS=vercel` (`apps/web/src/lib/analytics/index.ts:23`); CSP `default-src 'self'` (`apps/web/next.config.ts:25-30`). `@vercel/analytics` is a dependency (`apps/web/package.json:21`). The Vercel env value is unverified. Open #309 would change this line | true |
+| P5 | "We do not use analytics, advertising or tracking tools, and the website loads nothing from other sites." (:69) | none (D-095 covers the app only) | Root layout mounts no analytics (`apps/web/src/app/layout.tsx:47-49`); `track()` is a no-op unless `NEXT_PUBLIC_ANALYTICS=vercel` (`apps/web/src/lib/analytics/index.ts:23`); CSP `default-src 'self'` (`apps/web/next.config.ts:25-30`). `@vercel/analytics` is a dependency (`apps/web/package.json:21`). The Vercel env value is unverified. Open #309 would change this line | true |
 | P6 | Two providers only: Vercel and Resend (:29-32, :79-80) | none | `vercel.json`; `notify/provider.ts`; mail receiving through Resend per comment :15-17, not checked | true |
 | P7 | Unsubscribed addresses are kept marked unsubscribed, never emailed again (:88) | none | `notify/provider.ts:59-64` | true |
 | P8 | Deletion and access requests by email are honoured (:98-99) | none | A manual process; no request log in the repo (IMP-70) | unverified |
