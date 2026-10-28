@@ -150,7 +150,7 @@ select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
 select to_regclass('public.safety_events');
 -- Book creator deletion no longer cascades (expect 'n' = SET NULL).
 select confdeltype from pg_constraint where conname = 'children_created_by_fkey';
--- Policy documents seeded (expect 13).
+-- Policy documents seeded (expect 13 after file 4 alone; 14 once file 19, 20261023000000_backup_server.sql, adds 'backup').
 select count(*) from public.policy_documents;
 ```
 Then Dashboard > Advisors > Security and Performance. Expected and accepted:
@@ -643,7 +643,8 @@ select has_column_privilege('authenticated', 'public.children', 'date_of_birth',
 -- DB-01: the reading views are read-only.
 select has_table_privilege('authenticated', 'public.book_entries', 'update') upd,
        has_table_privilege('authenticated', 'public.book_entries', 'delete') del,
-       has_table_privilege('authenticated', 'public.book_entries', 'select') sel;                -- false, false, true
+       has_table_privilege('authenticated', 'public.book_entries', 'select') sel;                -- false, false, false
+-- (sel is true before file 25: 20261023060000_explicit_grants.sql grants book_entries to no API role on purpose, as no client path reads it.)
 -- G-10 and F11-REQ-011: no client writes receipts or memberships.
 select has_table_privilege('authenticated', 'public.sync_op_receipts', 'insert') receipts,
        has_table_privilege('authenticated', 'public.child_members', 'delete') leave_direct;     -- false, false
