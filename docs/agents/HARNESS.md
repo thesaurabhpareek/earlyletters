@@ -1,4 +1,6 @@
-# The Early Letters agent harness
+# Chakra, the Early Letters agent harness
+
+Chakra: Sanskrit for wheel or circle; the name is internal; script names, workflow names, roster ids, branch names and file paths do not change.
 
 One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0018 (the harness) and ADR 0019 (open-weight models by default).
 
