@@ -239,8 +239,12 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
     // Every byte that left the phone is ciphertext: no ftyp box, no window of the original, no plaintext hash.
+    // The ftyp box is the recording's own first 16 bytes (size, "ftyp", major brand, minor version), not the 4 letters:
+    // any 4 bytes of ciphertext equal "ftyp" by chance (1 in 2^32 per byte), 16 bytes cannot (2^-128).
+    const start = plain.subarray(0, 16);
+    expect(start.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
     for (const req of r.backend.requests) {
-      expect(req.body.includes(Buffer.from('ftyp')), req.kind).toBe(false);
+      expect(req.body.includes(start), `${req.kind} carries the start of the recording`).toBe(false);
       expect(req.body.includes(plain.subarray(4096, 4160)), req.kind).toBe(false);
       expect(req.body.includes(Buffer.from(sha256Hex(plain))), req.kind).toBe(false);
       expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
