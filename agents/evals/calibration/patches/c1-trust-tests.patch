@@ -1,0 +1,17 @@
+diff --git a/scripts/agents/lib.test.mjs b/scripts/agents/lib.test.mjs
+index ec522a2b..031c8608 100644
+--- a/scripts/agents/lib.test.mjs
++++ b/scripts/agents/lib.test.mjs
+@@ -223,6 +223,12 @@ test("trust: founder, owner, the agents app and listed bots only", () => {
+   assert.equal(isTrusted({ user: { login: "el-agents[bot]", type: "User" } }, TRUST), false);
+ });
+ 
++test("trust: another app's bot and a comment with no author are not trusted", () => {
++  assert.equal(isTrusted({ user: { login: "other[bot]", type: "Bot" }, performed_via_github_app: { client_id: "Iv1.other" } }, TRUST), false);
++  assert.equal(isTrusted({ user: null, author_association: "NONE" }, TRUST), false);
++  assert.equal(isTrusted({}, TRUST), false);
++});
++
+ test("handoff and reply markers parse", () => {
+   assert.deepEqual(parseHandoff("<!-- handoff from:data-steward to:privacy,legal kind:request -->\nbody"), { from: "data-steward", to: ["privacy", "legal"], kind: "request" });
+   assert.deepEqual(parseReply("<!-- handoff-reply from:privacy status:done -->\nPR #9"), { from: "privacy", status: "done" });

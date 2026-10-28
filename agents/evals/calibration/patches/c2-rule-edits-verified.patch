@@ -1,0 +1,21 @@
+diff --git a/packages/core/test/verify.test.ts b/packages/core/test/verify.test.ts
+index f5c19785..339ca1f4 100644
+--- a/packages/core/test/verify.test.ts
++++ b/packages/core/test/verify.test.ts
+@@ -310,3 +310,16 @@ describe('end to end: a hostile model changes nothing the rules would not', () =
+     expect(both.applied.filter((e) => e.source === 'model')).toEqual([]);
+   });
+ });
++
++describe('the verifier has no trusted source: rule edits are checked like model edits', () => {
++  // A rule table with a bad entry must be stopped by verifyEdits, not by trusting where the edit came from.
++  it('refuses a rule edit that adds a negation: "I can come" -> "I cannot come"', () => {
++    const raw = 'I can come.';
++    expect(verdict(raw, edit(raw, 'agreement', 'can', 'cannot', 0, 'rule'))).toBe('changes_negation');
++  });
++
++  it('refuses a rule edit that changes tense: "She is happy" -> "She was happy"', () => {
++    const raw = 'She is happy.';
++    expect(verdict(raw, edit(raw, 'agreement', 'is', 'was', 0, 'rule'))).toBe('changes_tense');
++  });
++});

@@ -1,0 +1,9 @@
+diff --git a/supabase/migrations/20261001000000_scribe_hardening.sql b/supabase/migrations/20261001000000_scribe_hardening.sql
+index fab49f91..4c25751f 100644
+--- a/supabase/migrations/20261001000000_scribe_hardening.sql
++++ b/supabase/migrations/20261001000000_scribe_hardening.sql
+@@ -21,3 +21,4 @@ create index if not exists child_invites_accepted_by_idx on public.child_invites
+ create index if not exists children_created_by_idx on public.children (created_by);
+ create index if not exists dictionary_terms_child_idx on public.dictionary_terms (child_id);
+ create index if not exists safety_events_author_idx on public.safety_events (author_id);
++create index if not exists entries_in_book_idx on public.entries (child_id) where in_book;

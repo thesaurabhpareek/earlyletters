@@ -1,0 +1,16 @@
+diff --git a/supabase/migrations/20261024000000_entries_select_book_perf.sql b/supabase/migrations/20261024000000_entries_select_book_perf.sql
+new file mode 100644
+index 00000000..aeb85738
+--- /dev/null
++++ b/supabase/migrations/20261024000000_entries_select_book_perf.sql
+@@ -0,0 +1,10 @@
++-- PENDING: not yet applied. Performance only: the book read path asks "is this letter in the book?"
++-- before it asks "is this person a member?", so the planner can use the in_book partial index.
++-- No change in who can read what: the author reads their own letters, and members read book letters.
++begin;
++drop policy if exists entries_select on public.entries;
++create policy entries_select on public.entries for select to authenticated using (
++  author_id = (select auth.uid())
++  or (in_book and deleted_at is null)
++);
++commit;

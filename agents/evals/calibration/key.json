@@ -1,0 +1,52 @@
+{
+  "base_sha": "6bfb94a9e8f24e47c092a5e920e2ec6e06e02b77",
+  "base_note": "origin/develop at 28 Oct 2026, 'docs: D-118 the website names the child ... (#307)'. Line numbers below are post-image lines (the file as it reads after the patch is applied).",
+  "verdicts": ["ship", "fix first"],
+  "severities": ["blocker", "major", "minor", "nit"],
+  "patches": {
+    "c1-trust-tests": { "verdict": "ship", "defects": [] },
+    "c2-rule-edits-verified": { "verdict": "ship", "defects": [] },
+    "d1-sql-policy-leak": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d1-a", "severity": "blocker", "file": "supabase/migrations/20261024000000_entries_select_book_perf.sql", "start": 6, "end": 9,
+          "description": "entries_select drops the is_child_member(child_id) check, so any signed-in user reads every family's in-book entries, including raw_transcript." }
+      ]
+    },
+    "d2-verify-bypass": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d2-a", "severity": "blocker", "file": "packages/core/src/verify.ts", "start": 1065, "end": 1066,
+          "description": "verifyEdits skips checkEdit for source 'rule', so a rule edit that adds meaning is applied unverified (constitution: no bypass)." }
+      ]
+    },
+    "d3-content-rule": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d3-a", "severity": "major", "file": "packages/content/src/strings.en.ts", "start": 69, "end": 69,
+          "description": "Onboarding copy promises a nightly rhythm and a streak; rules.test.ts fails on both the fear/guilt and the daily-rhythm rules." }
+      ]
+    },
+    "d4-trust-spoof": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d4-a", "severity": "blocker", "file": "scripts/agents/lib.mjs", "start": 284, "end": 284,
+          "description": "isTrusted accepts any account whose login ends in [bot] instead of checking user.type === 'Bot', so a human can register such a login and be trusted by the harness." }
+      ]
+    },
+    "d5-applied-migration-edit": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d5-a", "severity": "blocker", "file": "supabase/migrations/20261001000000_scribe_hardening.sql", "start": 24, "end": 24,
+          "description": "Edits a migration already applied to the live database; the change never reaches it. Must be a new migration (CLAUDE.md, migration-guard)." }
+      ]
+    },
+    "d6-privacy-leak": {
+      "verdict": "fix first",
+      "defects": [
+        { "id": "d6-a", "severity": "blocker", "file": "apps/mobile/src/lib/transcription-queue/index.ts", "start": 486, "end": 486,
+          "description": "console.warn writes the child's name to the device log (privacy rule: no child name in logs or crash reports)." }
+      ]
+    }
+  }
+}

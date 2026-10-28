@@ -1,0 +1,18 @@
+[
+  { "patch": "c1-trust-tests", "verdict": "ship", "findings": [] },
+  { "patch": "c2-rule-edits-verified", "verdict": "fix first", "findings": [
+    { "file": "packages/core/test/verify.test.ts", "line": 5, "severity": "major" } ] },
+  { "patch": "d1-sql-policy-leak", "verdict": "fix first", "findings": [
+    { "file": "supabase/migrations/20261024000000_entries_select_book_perf.sql", "line": 8, "severity": "blocker" } ] },
+  { "patch": "d2-verify-bypass", "verdict": "fix first", "findings": [
+    { "file": "packages/core/src/verify.ts", "line": 1066, "severity": "blocker" },
+    { "file": "packages/core/src/verify.ts", "line": 1066, "severity": "major" },
+    { "file": "packages/core/src/verify.ts", "line": 1200, "severity": "nit" } ] },
+  { "patch": "d3-content-rule", "verdict": "ship", "findings": [] },
+  { "patch": "d4-trust-spoof", "verdict": "fix first", "findings": [
+    { "file": "scripts/agents/lib.mjs", "line": 300, "severity": "major" } ] },
+  { "patch": "d5-applied-migration-edit", "verdict": "fix first", "findings": [
+    { "file": "supabase/migrations/20261001000000_scribe_hardening.sql", "line": 24, "severity": "blocker" } ] },
+  { "patch": "d6-privacy-leak", "verdict": "fix first", "findings": [
+    { "file": "apps/mobile/src/lib/transcription-queue/index.ts", "line": 485, "end_line": 487, "severity": "blocker" } ] }
+]

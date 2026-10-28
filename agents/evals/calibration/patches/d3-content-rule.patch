@@ -1,0 +1,13 @@
+diff --git a/packages/content/src/strings.en.ts b/packages/content/src/strings.en.ts
+index cb9dce4f..229ecfb2 100644
+--- a/packages/content/src/strings.en.ts
++++ b/packages/content/src/strings.en.ts
+@@ -66,7 +66,7 @@ export const en = {
+       title: "{app}",
+       subtitle: "The baby memory book you fill by talking.",
+       body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+-      freeLine: "Your first two letters are free.",
++      freeLine: "Your first two letters are free. Talk every night to build your streak.",
+       startButton: "Begin the book",
+       signInButton: "I already have a book",
+       joinButton: "I was invited",

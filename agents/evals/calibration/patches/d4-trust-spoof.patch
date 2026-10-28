@@ -1,0 +1,13 @@
+diff --git a/scripts/agents/lib.mjs b/scripts/agents/lib.mjs
+index 9b9de216..ed6e101d 100644
+--- a/scripts/agents/lib.mjs
++++ b/scripts/agents/lib.mjs
+@@ -281,7 +281,7 @@ export function isTrusted(c, trust) {
+   const login = c?.user?.login ?? "";
+   if (!login) return false;
+   if (login === trust.founder || c.author_association === "OWNER") return true;
+-  if (c.user.type !== "Bot") return false;
++  if (!login.endsWith("[bot]")) return false;
+   const app = c.performed_via_github_app;
+   if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
+   return trust.bots.has(login);

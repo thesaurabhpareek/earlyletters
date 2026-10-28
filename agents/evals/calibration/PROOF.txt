@@ -1,0 +1,64 @@
+Proof that each patch behaves as keyed. Base 6bfb94a9e8f24e47c092a5e920e2ec6e06e02b77, scratch worktrees
+(detached, node_modules symlinked), 28 Oct 2026. Every patch passed `git apply --check` on a fresh worktree at the base.
+Output below is copied from the runs, trimmed to the lines that matter.
+
+== d1-sql-policy-leak   (npm run test:db, all 26 migrations incl. the new one)
+FAILED: access_matrix.test.mjs, data_governance.test.mjs, rls.test.mjs, v1_wire_contract.test.mjs
+19 FAIL lines: access_matrix 12, data_governance 3, rls 2, v1_wire_contract 2. Examples:
+FAIL  read entries | outsider: expected 0
+FAIL  read entries | coparent: expected 0
+FAIL  no member of Asha's first book can see anything of another book
+FAIL  stranger sees nothing
+FAIL  co-parent cannot read the author's rows in the entries table
+FAIL  the other parent cannot read the row from entries
+FAIL  [B-REQ-011] with "Family can read" off, a contributor reads only own letters
+
+== d2-verify-bypass   (npm test -w packages/core)
+Test Files  14 failed | 19 passed (33);  Failed Tests 43. Examples:
+FAIL test/verify.r01.test.ts > [F06-REQ-006] ... never fixes a name inside low-high quotes
+FAIL test/verify.r01.test.ts > [F06-REQ-003] ... refuses a removal or dictionary fix that takes an invisible character with it
+FAIL test/verify.r01.fuzz.test.ts > [F06-REQ-021] zero accepted meaning changes ... 10000 synthetic letters (seed 20261015) ...
+Also, with c2 added on top of d2, c2's two new tests fail (see c2 below).
+
+== d3-content-rule   (npm test -w packages/content)
+FAIL  test/rules.test.ts > no fear, guilt or loss > never uses fear, guilt or loss-aversion language
+  + "en.onboarding.welcome.freeLine: Your first two letters are free. Talk every night to build your streak."
+FAIL  test/rules.test.ts > no daily rhythm, streaks or gap counts > [C-REQ-005] no string promises a daily rhythm
+  + "en.onboarding.welcome.freeLine: Your first two letters are free. Talk every night to build your streak."
+Test Files  1 failed | 5 passed (6)
+
+== d4-trust-spoof   (node --test scripts/agents/lib.test.mjs)
+not ok 16 - trust: founder, owner, the agents app and listed bots only
+  location: scripts/agents/lib.test.mjs:214:1   name: AssertionError (line 223: a User named "el-agents[bot]" must not be trusted)
+# pass 28   # fail 1
+
+== d5-applied-migration-edit   (node .github/scripts/migration-guard.mjs <base> HEAD, patch committed in the scratch tree)
+migration guard: 1 problem(s)
+- 20261001000000_scribe_hardening.sql: edited, but it has been applied. Write a new migration instead.
+exit 1
+
+== d6-privacy-leak   (grep; no automated test covers console output, so only a grep or a human catches this)
+base:    git grep -n "console\." -- apps/mobile/src            -> 0 matches
+patched: apps/mobile/src/lib/transcription-queue/index.ts:486:    if (child) console.warn(`transcribing for ${child.name}, ...ms, language ...`);
+
+== c1-trust-tests   (clean; node --test scripts/agents/*.test.mjs)
+base:    # tests 92  # pass 92  # fail 0
+patched: # tests 93  # pass 93  # fail 0   (new: "trust: another app's bot and a comment with no author are not trusted")
+
+== c2-rule-edits-verified   (clean; npm test -w packages/core)
+patched: Test Files 33 passed (33); Tests 1157 passed (1157)  (verify.test.ts alone: 80 passed)
+With d2 applied on top, the two new tests fail:
+FAIL test/verify.test.ts > the verifier has no trusted source ... > refuses a rule edit that adds a negation: "I can come" -> "I cannot come"
+FAIL test/verify.test.ts > the verifier has no trusted source ... > refuses a rule edit that changes tense: "She is happy" -> "She was happy"
+
+Scoring tool: node --test agents/evals/calibration/score.test.mjs -> 7 pass, 0 fail.
+
+Not run: the whole `npm test` (all workspaces) and the migration guard in CI for c1/c2. c1 and c2 touch only
+scripts/agents/lib.test.mjs and packages/core/test/verify.test.ts, and the workspaces that own them passed.
+
+Draft history, kept because it shows how easy a "clean" patch is to get wrong: my first clean SQL patches
+failed the repo's own tests, so they were replaced before commit. (1) A partial index on entries(in_book)
+failed perf.test.mjs (4 plan checks: the planner stopped using entries_book_page_idx); the base passes
+perf.test.mjs. (2) A COMMENT ON COLUMN entries.in_book failed classification.test.mjs ("every public column
+has an L1 to L4 comment") and ops_deletion_worker.test.mjs, because column comments carry the data
+classification. Neither is in the set.
