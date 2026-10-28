@@ -17,6 +17,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '../src/components/family/join-sheet.logic';
+import { joinedArrival } from '../src/components/family/family-notice';
 import { planLampMount } from '../src/components/ui/lamp.logic';
 import { FINAL_INVITE_ERRORS, inviteErrorKind } from '../src/lib/family/invite-errors.logic';
 import { joinPlan, type JoinInputs } from '../src/lib/family/join-flow.logic';
@@ -106,13 +107,26 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
 });
 
 describe('[S59] "Open the book" lands on the Book with the light rising once (5.8 row 12)', () => {
-  it('lands on the Book with the joined mark', () => {
-    expect(JOINED_LANDING).toEqual({ pathname: '/book', params: { joined: '1' } });
+  it('lands on the Book, and leaves the one-shot arrival mark just before', () => {
+    expect(JOINED_LANDING).toBe('/book');
+    expect(code(SHEET)).toMatch(/joinedArrival\.leave\(\);\s*router\.dismissTo\(JOINED_LANDING\);/);
+    // Only "Open the book" leaves it: Close and every other view do not.
+    expect(code(SHEET).match(/joinedArrival\.leave\(/g)).toHaveLength(1);
   });
 
-  it('the Book reads the mark once: its lamp comes up from unlit over arriveMs, then the mark is cleared', () => {
+  it('the mark is taken once, whether the Book comes up new or was already under the sheet', () => {
+    joinedArrival.leave();
+    expect(joinedArrival.waiting()).toBe(true);
+    expect(joinedArrival.take()).toBe(true);
+    expect(joinedArrival.waiting()).toBe(false);
+    expect(joinedArrival.take()).toBe(false);
     const book = code('app/(tabs)/book.tsx');
-    expect(book).toMatch(/if \(joined !== '1'\) return;\s*setJoinedAt\(Date\.now\(\)\);\s*router\.setParams\(\{ joined: undefined \}\);/);
+    expect(book).toMatch(/useState\(\(\) => \(joinedArrival\.waiting\(\) \? Date\.now\(\) : 0\)\)/);
+    expect(book).toMatch(/if \(joinedArrival\.take\(\)\) setJoinedAt\(\(t\) => t \|\| Date\.now\(\)\);/);
+  });
+
+  it('the Book\'s lamp then comes up from unlit over arriveMs, once; otherwise it shares the tabs\' light', () => {
+    const book = code('app/(tabs)/book.tsx');
     expect(book).toMatch(/\{joinedAt \? <Lamp key=\{joinedAt\} scene="book" arrive \/> : <Lamp scene="book" persistKey="tabs" \/>\}/);
     // A lamp with no memory that is asked to arrive rises from 0 to the Book's 0.6 over arriveMs.
     const light = { anchor: 'top' as const, core: 'gold' as const, tail: 'amber' as const, intensity: 0.6, breathe: false };

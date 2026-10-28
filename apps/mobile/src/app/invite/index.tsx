@@ -34,6 +34,7 @@ import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { joinedArrival } from '@/components/family/family-notice';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, readPasted } from '@/components/family/join-sheet.logic';
@@ -355,6 +356,7 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     // The one place the open book changes: the person tapped "Open the book" (BL-322).
     setActiveChildId(childId);
     // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
+    joinedArrival.leave();
     router.dismissTo(JOINED_LANDING);
   };
 

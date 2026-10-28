@@ -114,8 +114,11 @@ test('[J21f] invitee: a server that does not answer is said plainly, and Try aga
   expect(m.rpcCalls('peek_invite')).toHaveLength(2);
 });
 
-test('[J21g] invitee: once the book is on this phone, "Open the book" lands on the Book', async ({ app, record }) => {
-  const step = journey(record, 'J21', 'co-parent-sharing', 6);
+/**
+ * A joiner on a fresh install whose book comes down with the first pull after the join: sync's own sync_pull,
+ * answered by the mock with the book once accept_child_invite has run. Ends on the joined view, with the book here.
+ */
+async function joinWithTheBookArriving(app: Page) {
   const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
   let accepted = false;
   m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
@@ -141,7 +144,6 @@ test('[J21g] invitee: once the book is on this phone, "Open the book" lands on t
       { profile_id: PAPA, role: 'parent', is_me: true, joined_at: at, signs_as: 'Papa' },
     ],
   };
-  // The book comes down with the first pull after the join (sync's own call; the mock answers it).
   m.rpc('sync_pull', () => ({
     body: accepted
       ? { reset: false, epoch: 1, epoch_started_at: at, books: [{ id: ASHA_BOOK, access: 'parent', repull: false, meta_hash: 'm1', meta, rows: [], cursor: null, more: false }], gone: [], more: false }
@@ -155,15 +157,30 @@ test('[J21g] invitee: once the book is on this phone, "Open the book" lands on t
   await btn(app, 'Sign in').click();
   await signInWithEmail(app, 'papa@example.invalid');
   await btn(app, 'Join the book').click();
+  // The welcome under the sheet does not take the joiner away when the book arrives (S59; welcome-handoff.logic.ts).
   await expect(app.getByTestId('invite.joined.cover')).toBeVisible();
   await expect(btn(app, 'Open the book')).toBeEnabled({ timeout: 20_000 });
+  await expect(app.getByTestId('invite.joined.cover')).toBeVisible();
+  return m;
+}
+
+test('[J21g] invitee: once the book is on this phone, "Open the book" lands on the Book', async ({ app, record }) => {
+  const step = journey(record, 'J21', 'co-parent-sharing', 6);
+  await joinWithTheBookArriving(app);
   await expect(app.getByLabel(`What does ${CHILD} call you?`)).toHaveValue('Papa');
   await step('happy', 'Joined, the book is here', 'The cover has opened to the flyleaf. What the child calls this parent in the book is filled in with the inviter\'s suggestion and can be changed; "Open the book" is the one way the open book changes.', undefined, { settle: 900 });
   await btn(app, 'Open the book').click();
   await expect(app.getByText(`${CHILD}'s book`).first()).toBeVisible();
-  await expect(app).toHaveURL(/\/book(?![^?]*joined)/);
-  expect(new URL(app.url()).searchParams.get('joined'), 'the mark is cleared once read').toBeNull();
+  await expect(app).toHaveURL(/\/book/);
   await step('happy', 'The Book, lit for the second parent', 'The sheet closes onto the Book, on this book, and its light rises from unlit over 1.2 s, the one slow arrival outside first run (5.8 row 12).', undefined, { settle: 1400 });
+});
+
+test('[J21h] invitee: Close on the joined sheet, with the book here, hands over to the Book (no joined light: only Open leaves the mark)', async ({ app }) => {
+  await joinWithTheBookArriving(app);
+  await btn(app, 'Close').click();
+  // First run is over once a book is on this phone: the welcome hands over to the Book (5.8 row 12), with no mark.
+  await expect(app.getByText(`${CHILD}'s book`).first()).toBeVisible();
+  await expect(app).toHaveURL(/\/book/);
 });
 
 test('[J21b] invitee: a book that already has two parents is said plainly', async ({ app, record }) => {

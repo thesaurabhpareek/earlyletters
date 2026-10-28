@@ -58,5 +58,8 @@ export function joinedBody(inviter: string | null | undefined): string {
   return s ? renderTemplate(familyCopy.accept.joinedBody, { inviter: s }) : familyCopy.accept.joinedBodyUnknown;
 }
 
-/** Where "Open the book" lands: the Book, on this book, with the second parent's first light (5.8 row 12). */
-export const JOINED_LANDING = { pathname: '/book', params: { joined: '1' } } as const;
+/**
+ * Where "Open the book" lands: the Book, on this book. The second parent's first light there (5.8 row 12) is the
+ * one-shot mark the sheet leaves just before (family-notice.ts joinedArrival), not a route param.
+ */
+export const JOINED_LANDING = '/book' as const;

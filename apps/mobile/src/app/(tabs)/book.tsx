@@ -56,6 +56,7 @@ import { MonthOpener } from '@/components/book/month-opener';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
+import { joinedArrival } from '@/components/family/family-notice';
 import { ChildSwitcher } from '@/components/child/child-switcher';
 import { useChildren } from '@/components/child/use-children';
 
@@ -82,14 +83,13 @@ export default function Book() {
   const [firstView] = useState(firstBookViewThisSession);
   const [stagger, setStagger] = useState(firstView && !params.arrived);
   useEffect(() => setStagger(false), []);
-  // The second parent's first Book (S59, 5.8 row 12; the join sheet sets `joined`): its light rises from unlit over arriveMs, once.
-  const { joined } = useLocalSearchParams<{ joined?: string }>();
-  const [joinedAt, setJoinedAt] = useState(0);
-  useEffect(() => {
-    if (joined !== '1') return;
-    setJoinedAt(Date.now());
-    router.setParams({ joined: undefined });
-  }, [joined]);
+  // The second parent's first Book (S59, 5.8 row 12; the join sheet's "Open the book" leaves the mark): its light rises from unlit over arriveMs, once.
+  const [joinedAt, setJoinedAt] = useState(() => (joinedArrival.waiting() ? Date.now() : 0));
+  useFocusEffect(
+    useCallback(() => {
+      if (joinedArrival.take()) setJoinedAt((t) => t || Date.now());
+    }, []),
+  );
 
   useEffect(() => {
     if (!active) return;

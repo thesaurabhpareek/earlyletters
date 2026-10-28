@@ -18,3 +18,27 @@ export const familyNotice = {
     return m;
   },
 };
+
+/**
+ * "Open the book" on the join sheet (S59, 5.8 row 12): the Book that comes forward next raises its light from unlit
+ * over arriveMs, once, for the second parent's first evening in the book. A one-shot mark, not a route param, so it
+ * reaches the Book whether the tabs were already there under the sheet or come up new, and leaves nothing in the
+ * address. Nothing about the book or the person is kept: only that an arrival is waiting.
+ */
+let arrival = false;
+
+export const joinedArrival = {
+  leave(): void {
+    arrival = true;
+  },
+  /** Whether an arrival is waiting, without taking it (read while the Book first draws). */
+  waiting(): boolean {
+    return arrival;
+  },
+  /** The arrival, once: it is cleared as it is read. */
+  take(): boolean {
+    const a = arrival;
+    arrival = false;
+    return a;
+  },
+};
