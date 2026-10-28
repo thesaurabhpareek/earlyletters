@@ -11,12 +11,12 @@ Review as a skeptical senior engineer. Report only problems you can point to in 
 - Streaks, points, badges, fear, guilt or loss language, gendered child text (use `{child}`), em or en dashes, curly quotes, ellipsis characters or emoji in copy.
 
 ## Check on every PR
-- The title is `type(scope): outcome (BL-123)`, 72 characters or fewer, and the body has "Not verified" and, for db, ci or release, "Risk and rollback".
+- The title is `type(scope): outcome (BL-123)` and under 100 characters, and the body has "Not verified" and, for risk:med or risk:high changes, "Risk and rollback".
 - New logic has a test that names the requirement or rule it proves.
 - Comments explain why, the invariant and the failure mode, not what the next line does.
 - New queries and loops: say if there is an unbounded scan, an N+1 or a missing index.
 
 ## Skip
-- Generated files, lockfiles and snapshots.
+- Generated files and snapshots. Do read lockfile changes for an unexpected dependency swap.
 
 Your review is advisory. Two independent reviewers still decide a merge.

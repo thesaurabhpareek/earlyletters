@@ -71,9 +71,9 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.
 
 ## Pull requests (so a human, a tool and an agent can all find and read them)
-- Title: `type(scope): outcome in plain words (BL-123)`, 72 characters max. Types: `feat fix perf refactor test docs chore`. Scope is the area.
-- Body follows `.github/pull_request_template.md`. "Not verified" is on every PR. "Risk and rollback" is required for db, ci and release.
-- Labels: one `type:*`, one or more `area:*`, one `risk:*` (floor: `supabase/`, `.github/`, auth and `plan.ts` are at least `risk:med`; a migration is `risk:high`). Agent labels stay as they are.
+- Title: `type(scope): outcome in plain words (BL-123)`. Aim for 72 characters, never over 100 (the median merged title was about 110 on 28 Oct). Put the BL id in the title; the dispatcher reads it from there. Types: `feat fix perf refactor test docs chore`. Scope is the area and is free text.
+- Body follows `.github/pull_request_template.md`. "Not verified" is on every PR. "Risk and rollback" is required when the risk label is `med` or `high`, and always for migrations and workflows.
+- Labels: one `type:*` (from the title), one or more `area:*` (`core db harness mobile release web`; `core` covers `packages/*`), one `risk:*`. Risk floor by path: a migration is `risk:high`; `supabase/`, `.github/`, auth, payments, `eas.json`, `app.config.ts`, `packages/core/src/{plan,verify,pipeline,meaning,types}.ts` are at least `risk:med`; other code under `apps/` or `packages/` is `risk:med`; docs and tests only are `risk:low`. Agent labels stay as they are.
 - Comments say why, name the invariant and the failure mode. They never restate the next line. Tests name the requirement or rule they prove. A migration opens with its purpose, rollback and ordering.
-- A skill or Copilot run is advisory evidence: paste what it found. It never counts as one of the two independent reviews (D-107).
+- A skill or Copilot run is advisory evidence: paste what it found. It does not count as one of the two independent reviews that D-107 requires; this section sets that rule.
 - Optimised means measured: a new query gets `EXPLAIN` or a perf test, a size change is read against `docs/ops/APP_SIZE.md`. If nothing was measured, the template says `not-measured`.

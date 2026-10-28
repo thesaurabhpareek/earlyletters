@@ -54,9 +54,9 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 - **New ids** (BL-###, D-###, ADR numbers): run `node scripts/agents/next-id.mjs` and use what it prints. It counts `develop` and every open PR. Picking the next number by reading `develop` alone collided three times in the first two weeks.
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
-- PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
+- PR title: `type(scope): outcome (BL-###)` (CLAUDE.md "Pull requests"); the id stays in the title for backlog work. The `agent:<handle>` label says who made it. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
 - Any PR or issue comment you post starts with the line `<!-- agent:<handle> -->`, so it is never mistaken for the founder's words when a session posts from his account.
-- PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the founder should look at first.
+- PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the founder should look at first (the template's "Review notes").
 - One concern per PR. Keep PRs small enough to review in ten minutes. If the work is bigger, split it (backlog rule 5).
 - Run `npm test`, `npm run typecheck` and, if you touched `supabase/`, `npm run test:db` before every push. Never weaken, skip or delete a test to make it pass.
 - Open the PR as a draft only if it is blocked; otherwise ready for review.
