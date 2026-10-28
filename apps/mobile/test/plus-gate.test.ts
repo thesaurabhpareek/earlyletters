@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -95,6 +95,34 @@ describe('[S22] what the Keep sheet says', () => {
     }
     // The sheet types no number of its own: every word on it comes from packages/content.
     expect(code('components/child/plus-gate.tsx')).not.toMatch(/['"`][^'"`\n]*\$\{?\s*\d/);
+  });
+});
+
+describe('[S22] the way on is always on screen (P6a critics\' S1)', () => {
+  it('at accessibility sizes See Plus and Keep it here for now stay in the footer; the card and Redeem follow the words', () => {
+    const ax = keepSheetLayout(true);
+    expect(ax.pinned).toEqual(['seePlus', 'note', 'hold']);
+    expect(ax.scroll).toEqual(['words', 'card', 'redeem']);
+    // At the default size: the card on top, every button in the footer, as before.
+    expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
+    for (const l of [keepSheetLayout(true), keepSheetLayout(false)]) {
+      // "Keep it here for now" is in the footer at every size, so it is on the first screen at AX3 and AX5.
+      expect(l.pinned).toContain('hold');
+      expect(l.scroll).not.toContain('hold');
+      // Every part once; the held note (in the words) is read before any button: the scroll comes first.
+      expect([...l.scroll, ...l.pinned].sort()).toEqual(['card', 'hold', 'note', 'redeem', 'seePlus', 'words']);
+      expect(l.scroll).toContain('words');
+    }
+    // At accessibility sizes the words come before the card, so the card no longer pushes them down.
+    expect(ax.scroll.indexOf('words')).toBeLessThan(ax.scroll.indexOf('card'));
+  });
+
+  it('the sheet draws the scroll and the footer from keepSheetLayout, the footer outside the scroll', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
+    expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
+    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
+    expect(gate).not.toMatch(/footerPlacement/);
   });
 });
 

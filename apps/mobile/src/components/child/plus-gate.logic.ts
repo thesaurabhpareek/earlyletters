@@ -128,3 +128,20 @@ export function holdOnce(guard: { current: boolean }, hold: () => boolean): Hold
 export function heldCardTilt(accessibilitySize: boolean): string {
   return accessibilitySize ? '0deg' : '-2deg';
 }
+
+/** The parts of the Keep sheet, by where they sit: the scroll, or the footer that stays on screen. */
+export type KeepSheetBlock = 'card' | 'words' | 'seePlus' | 'note' | 'hold' | 'redeem';
+
+/**
+ * Where each part of the sheet sits (P6a critics' pass S1, 28 Oct). At the default size the held card is at the top
+ * and every button is in the footer. At accessibility text sizes the words alone fill the first screen (at AX3 the
+ * title, the body and the held note reach about 780 pt), so "See Plus" and "Keep it here for now" stay in the footer,
+ * always on screen; the held card moves below the words, where it no longer pushes them down; and "Redeem a code"
+ * goes to the end of the scroll, so the footer holds only what gets the person on. The held note is always read
+ * before any button (F14-REQ-028): the scroll comes first in reading order.
+ */
+export function keepSheetLayout(accessibilitySize: boolean): { scroll: KeepSheetBlock[]; pinned: KeepSheetBlock[] } {
+  return accessibilitySize
+    ? { scroll: ['words', 'card', 'redeem'], pinned: ['seePlus', 'note', 'hold'] }
+    : { scroll: ['card', 'words'], pinned: ['seePlus', 'note', 'hold', 'redeem'] };
+}
