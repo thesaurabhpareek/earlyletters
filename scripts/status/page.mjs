@@ -131,19 +131,30 @@ export function parseLens(body, prNumber) {
  * Must anywhere in the first 15 lines. Every other review is shown, read best-effort, and marked
  * "free text"; it never counts.
  */
-const STRICT = /^#{0,3}\s*review\s+[ab](\s+delta)?\s+at\s+([0-9a-f]{7,40})\s*:\s*(pass|pass with notes)\s*$/i;
-const MARKER = /^<!--\s*lens:[ab]:([0-9a-f]{7,40})(\s+base:[0-9a-f]{7,40})?\s*-->\s*$/i;
+const STRICT = /^#{0,3}\s*review\s+([ab])(\s+delta)?\s+at\s+([0-9a-f]{7,40})\s*:\s*(pass|pass with notes)\s*$/i;
+const MARKER = /^<!--\s*lens:([ab]):([0-9a-f]{7,40})(\s+base:[0-9a-f]{7,40})?\s*-->\s*$/i;
+// Near the verdict (its line and the next two) a strict pass may not mention a blocker or a Must
+// other than "No Must"; further down (to line 15) only stop phrases are checked, because review
+// notes routinely say things like "the test fails on the previous code".
+const NEAR = /\b(block(ed|ing|s)?|fail(ed|ing|s|ure)?|hold|reject(ed|s)?|revert(ed|s)?|pending|until|unless|conditional)\b/;
+const MUST = /\bmusts?\b/g;
 export function countedPass(body) {
-  const lines = String(body ?? "").replace(/\r\n/g, "\n").trim().split("\n");
-  const head = lines.slice(0, 15).join("\n").toLowerCase().replace(APOSTROPHES, "'");
-  if (STOP_ANYWHERE.test(head) || /\bmust[\s-]*fix\b|\bmusts?\s+(open|remain(ing)?|left)\b|\b(m\d+|must)\s+(is\s+)?open\b/.test(head)) return undefined;
+  const lines = String(body ?? "").replace(/\r\n?|\u2028|\u2029/g, "\n").trim().split("\n");
+  const norm = (t) => t.toLowerCase().replace(APOSTROPHES, "'");
+  if (STOP_ANYWHERE.test(norm(lines.slice(0, 15).join("\n")))) return undefined;
   const first = lines[0].trim();
   const s = first.match(STRICT);
-  if (s) return { sha: s[2], verdict: s[3].toUpperCase() };
-  const m = first.match(MARKER);
+  const m = !s && first.match(MARKER);
   const v = m && lines[1]?.trim().match(/^verdict:\s*(pass|pass with notes)\s*$/i);
-  return v ? { sha: m[1], verdict: v[1].toUpperCase() } : undefined;
+  if (!s && !v) return undefined;
+  const near = norm(lines.slice(s ? 1 : 2, s ? 3 : 4).join("\n"));
+  const musts = (near.match(MUST) ?? []).length - (near.match(/\bno\s+musts?\b/g) ?? []).length;
+  if (NEAR.test(near) || musts > 0) return undefined;
+  return s ? { lens: s[1].toUpperCase(), sha: s[3], verdict: s[4].toUpperCase() } : { lens: m[1].toUpperCase(), sha: m[2], verdict: v[1].toUpperCase() };
 }
+
+/** The lens letter a free-text review names ("Review A", "lens B"), or undefined. */
+export const lensOf = (body) => String(body ?? "").split("\n")[0].match(/\b(?:review(?:er)?|lens)\s*,?\s*(?:lens\s+)?([ab])\b/i)?.[1]?.toUpperCase();
 
 /** Latest lens and red-team verdicts from a PR's comments and reviews, trusted authors only. */
 export function verdictsOf(pr, comments, reviews, trusted) {
@@ -161,7 +172,7 @@ export function verdictsOf(pr, comments, reviews, trusted) {
     const c = countedPass(i.body);
     if (c) { lens.push({ ...c, onHead: sameSha(c.sha, head), counted: true }); continue; }
     const l = parseLens(i.body, pr.number);
-    if (l) lens.push({ ...l, onHead: sameSha(l.sha, head), counted: false });
+    if (l) lens.push({ ...l, lens: lensOf(i.body), onHead: sameSha(l.sha, head), counted: false });
   }
   return { lens, red };
 }
@@ -196,8 +207,12 @@ export function buildModel(data, now) {
 /** One founder-class merge with its last two lens verdicts, checked against the merged head. */
 export function founderLine(p) {
   const two = p.lens.slice(-2);
-  // Only strict-format passes on the merged head count toward the two (see countedPass).
-  const onHead = two.filter((v) => v.onHead && v.counted && PASSING.has(v.verdict)).length;
+  // The two must be different lenses: the latest Review A and the latest Review B each count once,
+  // only as a strict-format pass on the merged head (see countedPass). A later review from the same
+  // lens, of any kind, replaces its earlier one, so a later FAIL cancels an earlier pass.
+  const latest = new Map();
+  for (const v of p.lens) if (v.lens) latest.set(v.lens, v);
+  const onHead = [...latest.values()].filter((v) => v.onHead && v.counted && PASSING.has(v.verdict)).length;
   return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 counted passes on the merged head)" : ""}.`;
 }
 

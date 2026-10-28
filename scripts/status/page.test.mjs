@@ -116,7 +116,7 @@ test("verdict-on-head: latest lens and red-team verdicts against the current hea
   const reviews = [{ body: `<!-- red-team:${OLD} -->\nVerdict: ship`, submitted_at: ago(5), user: { login: "Owner" } }];
   const v = verdictsOf(pr, comments, reviews, ME);
   assert.equal(v.lens.length, 2, "untrusted author ignored");
-  assert.deepEqual(v.lens.at(-1), { verdict: "PASS WITH NOTES", sha: HEAD.slice(0, 7), onHead: true, counted: false });
+  assert.deepEqual(v.lens.at(-1), { verdict: "PASS WITH NOTES", sha: HEAD.slice(0, 7), lens: undefined, onHead: true, counted: false });
   assert.equal(v.lens[0].onHead, false);
   assert.deepEqual(v.red, { verdict: "ship", sha: OLD, onHead: false });
 });
@@ -215,25 +215,35 @@ test("founder list mode reads every thread and lists every founder-class merge",
 
 test("founder-class line counts only passing verdicts on the merged head toward the two", () => {
   const base = { number: 77, classes: ["database"] };
-  const pass = { verdict: "PASS", sha: "abcdef1", onHead: true, counted: true };
-  const fail = { verdict: "FAIL", sha: "abcdef1", onHead: true, counted: false };
-  const after = { verdict: "MERGE AFTER FIX", sha: "abcdef1", onHead: true, counted: false };
-  assert.doesNotMatch(founderLine({ ...base, lens: [pass, { ...pass, verdict: "PASS WITH NOTES" }] }), /fewer than 2/);
+  const pass = { lens: "A", verdict: "PASS", sha: "abcdef1", onHead: true, counted: true };
+  const passB = { ...pass, lens: "B" };
+  const fail = { lens: "B", verdict: "FAIL", sha: "abcdef1", onHead: true, counted: false };
+  const after = { lens: "B", verdict: "MERGE AFTER FIX", sha: "abcdef1", onHead: true, counted: false };
+  assert.doesNotMatch(founderLine({ ...base, lens: [pass, { ...passB, verdict: "PASS WITH NOTES" }] }), /fewer than 2/);
+  // Lens B (28 Oct, at a864b61): the two must be different lenses, and a later review replaces a lens's earlier one.
+  assert.match(founderLine({ ...base, lens: [pass, pass] }), /fewer than 2 counted passes/, "Review A twice is one lens");
+  assert.match(founderLine({ ...base, lens: [passB, pass, { ...pass }] }), /^(?!.*fewer)/, "A and B, with A repeated, is two");
+  assert.match(founderLine({ ...base, lens: [passB, pass, fail] }), /fewer than 2 counted passes/, "a later FAIL from B cancels B's pass");
+  assert.match(founderLine({ ...base, lens: [{ ...pass, lens: undefined }, passB] }), /fewer than 2 counted passes/, "a review with no lens letter does not count");
   assert.match(founderLine({ ...base, lens: [pass, fail] }), /fewer than 2 counted passes on the merged head/, "a FAIL on head is not a pass");
   assert.match(founderLine({ ...base, lens: [pass, after] }), /fewer than 2 counted passes/, "MERGE AFTER FIX is conditional, not a pass");
-  assert.match(founderLine({ ...base, lens: [pass, { ...pass, onHead: false }] }), /fewer than 2 counted passes/, "an older head does not count");
-  assert.match(founderLine({ ...base, lens: [pass, { ...pass, counted: false }] }), /fewer than 2 counted passes/, "a free-text pass does not count");
-  assert.match(founderLine({ ...base, lens: [pass, { ...pass, counted: false }] }), /PASS on head \(free text\)/);
+  assert.match(founderLine({ ...base, lens: [pass, { ...passB, onHead: false }] }), /fewer than 2 counted passes/, "an older head does not count");
+  assert.match(founderLine({ ...base, lens: [pass, { ...passB, counted: false }] }), /fewer than 2 counted passes/, "a free-text pass does not count");
+  assert.match(founderLine({ ...base, lens: [pass, { ...passB, counted: false }] }), /PASS on head \(free text\)/);
 });
 
 test("only a strict-format review counts toward the two; free text never does", () => {
   const H = "97b50e1";
   // Counted: the strict line, or the lens marker plus a bare Verdict line.
-  assert.deepEqual(countedPass(`## Review A at ${H}: PASS`), { sha: H, verdict: "PASS" });
-  assert.deepEqual(countedPass(`Review B delta at ${H}: pass with notes`), { sha: H, verdict: "PASS WITH NOTES" });
-  assert.deepEqual(countedPass(`<!-- lens:b:${H} -->\nVerdict: PASS WITH NOTES\n\nNotes follow.`), { sha: H, verdict: "PASS WITH NOTES" });
-  // Never counted: every probe from Lens B's four rounds (28 Oct), plus the real free-text habit.
+  assert.deepEqual(countedPass(`## Review A at ${H}: PASS`), { lens: "A", sha: H, verdict: "PASS" });
+  assert.deepEqual(countedPass(`Review B delta at ${H}: pass with notes`), { lens: "B", sha: H, verdict: "PASS WITH NOTES" });
+  assert.deepEqual(countedPass(`<!-- lens:b:${H} -->\nVerdict: PASS WITH NOTES\n\nNotes follow.`), { lens: "B", sha: H, verdict: "PASS WITH NOTES" });
+  // Notes further down may say "fails"; near the verdict a blocker or a Must stops it counting.
+  assert.ok(countedPass(`## Review A at ${H}: PASS\nNo Must.\n\nChecks\n- mutation: the test fails on the previous code`));
+  // Never counted: every probe from Lens B's five rounds (28 Oct), plus the real free-text habit.
   const never = [
+    `## Review A at ${H}: PASS\nOne Must before build 2 (M1).`, `## Review A at ${H}: PASS\n**Must:** M1`, `## Review A at ${H}: PASS\nMusts: 1`,
+    `## Review A at ${H}: PASS\nBlocked on #306.`, `## Review A at ${H}: PASS\n\nActually FAIL.`,
     `## Review A at ${H}: PASS. DO NOT MERGE`, `## Review A at ${H}: PASS pending #306`, `## Review A (do not merge yet) at ${H}: PASS`,
     `## Review B at ${H}: CHANGES NEEDED. Then: PASS`, `## Review A at ${H}: FAIL. Old head 3539f6c: PASS`,
     `## Review A at ${H}: PASS. Blocked on #306.`, `## Review A at ${H}: **PASS** pending #306`, `## Review A at ${H}: PASS at head 1234abc if #306 lands`,
