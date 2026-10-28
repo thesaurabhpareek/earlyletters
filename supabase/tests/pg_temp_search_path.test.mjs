@@ -133,8 +133,33 @@ check('the policy texts carry the purged check',
   (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_insert', 'entry_photos_author_update')
                and pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%'`)).rows[0].n === 2);
 
-// The helper does not tell anyone else whether a letter was erased.
+// The helper does not tell anyone else whether a letter was erased, even from their own folder (D2).
+const own = (u, id) => `${CHILD}/${u}/${id}.jpg`;
 check('the other parent and a stranger get false for the author\'s erased path; the author gets true',
   (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false && (await purgedFn(A, p1)) === true);
+check('the other parent and a stranger get false for the erased id even in their OWN folder (no one-bit leak)',
+  (await purgedFn(B, own(B, L1))) === false && (await purgedFn(C, own(C, L1))) === false);
+check('one person\'s erasure never refuses another person\'s upload: the co-parent can use the erased id as a file name in their own folder',
+  (await codeOf(() => upload(B, own(B, L1)))) === 'ok');
+check('the author still gets true for the same id in the author\'s own folder after that',
+  (await purgedFn(A, p1)) === true);
+// Held-draft marker 'erased' answers for its author only.
+const LH = id7();
+await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'erased')`, [LH, A, CHILD]);
+check('an \'erased\' held-draft marker answers true for its author and false for the co-parent',
+  (await purgedFn(A, own(A, LH))) === true && (await purgedFn(B, own(B, LH))) === false);
+// Ledger-only id (restore replay: no author trail anywhere). Documented residual: any signed-in person in
+// their own folder gets true. The author is still refused, which is what the ledger is for.
+const LR = id7();
+await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', $1)`, [LR]);
+check('(residual, documented) a ledger-only id answers true to the author and to any signed-in person in their own folder',
+  (await purgedFn(A, own(A, LR))) === true && (await purgedFn(B, own(B, LR))) === true);
+check('a ledger-only id is still refused to the author on upload (42501)', (await codeOf(() => upload(A, own(A, LR)))) === '42501');
+// Another author's trail beats the bare ledger: once B has a record of the id, A is not told it is purged.
+const LT = id7();
+await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', $1)`, [LT]);
+await sys(`insert into sync_private.entry_erasures (entry_id, child_id, author_id) values ($1, $2, $3)`, [LT, CHILD, B]);
+check('an id erased by B answers true for B only (not A, not C)',
+  (await purgedFn(B, own(B, LT))) === true && (await purgedFn(A, own(A, LT))) === false && (await purgedFn(C, own(C, LT))) === false);
 
 done();
