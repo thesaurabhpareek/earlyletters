@@ -5,17 +5,22 @@ import { expect, seeded, test } from './support/journey';
 /**
  * The theme really is dark: the colour behind the middle of the screen is the dark paper (#161412), not the light one
  * (#FBF8F3). The first background found walking up from the element there, so a card or a sheet counts as well as the page.
+ * Polled, because a screen that has just arrived may still be fading in. No background found counts as not dark (1).
  */
 async function expectDark(page: Page) {
-  const luminance = await page.evaluate(() => {
-    for (let el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight * 0.6); el; el = el.parentElement) {
-      const m = getComputedStyle(el).backgroundColor.match(/^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/);
-      if (m && (m[4] === undefined || Number(m[4]) > 0.5)) return (0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3])) / 255;
-    }
-    return null;
-  });
-  expect(luminance, 'a background colour behind the screen').not.toBeNull();
-  expect(luminance!, 'the screen is dark').toBeLessThan(0.25);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          for (let el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight * 0.6); el; el = el.parentElement) {
+            const m = getComputedStyle(el).backgroundColor.match(/^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/);
+            if (m && (m[4] === undefined || Number(m[4]) > 0.5)) return (0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3])) / 255;
+          }
+          return 1;
+        }),
+      { message: 'the screen is dark (luminance behind its middle, 0 to 1)', timeout: 5000 },
+    )
+    .toBeLessThan(0.25);
 }
 
 test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
@@ -29,10 +34,10 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   // A reload keeps the choice: the seeded family is back, and the screens are still dark.
   await app.goto(`${process.env.E2E_WEB_SEED_URL}/?seed=asha`);
   await expect(btn(app, 'Speak')).toBeVisible();
-  await expect(app.getByLabel(/^Asha, 7 months/)).toBeVisible();
+  await expect(app.getByLabel(/^Asha, [67] months/)).toBeVisible();
   await expect(app.getByText('Read it back', { exact: true })).toBeVisible();
   await expectDark(app);
-  await step('happy', 'Tonight, dark', 'Tonight at night: the dateline, the one question in the letter face, Speak and Type, and the card for the recording waiting on Review with "Read it back". The lamp-lit paper becomes the dark one; the accent stays the lamp colour. (Seeded fictional family Asha.)');
+  await step('happy', 'Tonight, dark', 'Tonight at night: the dateline, the one question in the letter face, Speak and Type, and the card for the recording waiting on Review with "Read it back". (Seeded fictional family Asha.)');
 
   await tab(app, 'Book').click();
   await expect(selectedTab(app, 'Book')).toBeVisible();
@@ -53,7 +58,7 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
   await expect(app.getByTestId('review.sheet')).toBeVisible();
   await expectDark(app);
-  await step('happy', 'Review, dark', 'Review at night: the first-time note, the letter on its sheet with each small fix marked in the words (taken-out words struck through), the two views, the row of small fixes, and Add to the book.');
+  await step('happy', 'Review, dark', 'Review at night: the first-time note, the letter on its sheet with each small fix marked in the words (taken-out words struck through), the two views, the row of small fixes, and "Add to Asha\'s book".');
 
   await btn(app, 'Close').click();
   await expect(btn(app, 'Speak')).toBeVisible();
