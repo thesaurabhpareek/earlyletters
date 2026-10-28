@@ -32,6 +32,7 @@ import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
 import { copy } from '@/lib/copy';
+import { cn } from '@/lib/utils';
 
 /** The code is set at title1's size (28 pt), so it takes title1's Dynamic Type cap: six digits stay on one line. */
 const CODE_TYPE = { fontSize: tokens.type.title1.fontSize, letterSpacing: 6, maxScale: tokens.type.title1.maxScale } as const;
@@ -62,6 +63,7 @@ export default function CodeStep() {
   const [error, setError] = useState<AuthErrorKind | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const sentAt = auth.state.status === 'awaitingCode' ? auth.state.sentAt : null;
   const [now, setNow] = useState(Date.now());
   const submitted = useRef('');
@@ -169,33 +171,53 @@ export default function CodeStep() {
         <Text variant="labelSmall" tone="muted">
           {k.label}
         </Text>
-        <TextInput
-          ref={field}
-          value={code}
-          onChangeText={onCode}
-          keyboardType="number-pad"
-          textContentType="oneTimeCode"
-          autoComplete="one-time-code"
-          maxLength={EMAIL_CODE_LENGTH + 4}
-          editable={!busy && !paused}
-          accessibilityLabel={k.label}
-          autoFocus={!!known}
-          maxFontSizeMultiplier={CODE_TYPE.maxScale ?? undefined}
-          selectionColor={c.accent}
-          cursorColor={c.accent}
-          className="bg-card text-center text-foreground"
-          style={{
-            minHeight: tokens.target.capture,
-            borderRadius: tokens.radius.md,
-            borderWidth: tokens.stroke.control,
-            borderColor: c.controlBorder,
-            paddingHorizontal: tokens.space[4],
-            fontSize: CODE_TYPE.fontSize,
-            letterSpacing: CODE_TYPE.letterSpacing,
-            fontVariant: ['tabular-nums'],
-            ...(ready ? { fontFamily: tokens.fontFamily.sansSemiBold, fontWeight: 'normal' as const } : { fontWeight: '600' as const }),
-          }}
-        />
+        <View>
+          {/* The shared field's focus ring (TextField): 2 pt in `focus`, drawn outside the edge so nothing shifts. */}
+          {focused ? (
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: -3,
+                left: -3,
+                right: -3,
+                bottom: -3,
+                borderRadius: tokens.radius.md + 3,
+                borderWidth: tokens.focusRing.width,
+                borderColor: c.focus,
+              }}
+            />
+          ) : null}
+          <TextInput
+            ref={field}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            value={code}
+            onChangeText={onCode}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete="one-time-code"
+            maxLength={EMAIL_CODE_LENGTH + 4}
+            editable={!busy && !paused}
+            accessibilityLabel={k.label}
+            autoFocus={!!known}
+            maxFontSizeMultiplier={CODE_TYPE.maxScale ?? undefined}
+            selectionColor={c.accent}
+            cursorColor={c.accent}
+            className={cn('bg-card text-center text-foreground', Platform.select({ web: 'outline-none' }))}
+            style={{
+              minHeight: tokens.target.capture,
+              borderRadius: tokens.radius.md,
+              borderWidth: tokens.stroke.control,
+              borderColor: c.controlBorder,
+              paddingHorizontal: tokens.space[4],
+              fontSize: CODE_TYPE.fontSize,
+              letterSpacing: CODE_TYPE.letterSpacing,
+              fontVariant: ['tabular-nums'],
+              ...(ready ? { fontFamily: tokens.fontFamily.sansSemiBold, fontWeight: 'normal' as const } : { fontWeight: '600' as const }),
+            }}
+          />
+        </View>
       </View>
 
       <ErrorLine message={message} />

@@ -177,9 +177,9 @@ export function Busy({ label }: { label: string }) {
 export function PrivacyLine({ text }: { text: string }) {
   const c = useColors();
   return (
-    <View accessible accessibilityLabel={text} className="flex-row items-start justify-center gap-2">
-      <LockSimpleIcon size={16} color={c.textMuted} style={{ marginTop: 2 }} />
-      <Text variant="subhead" tone="muted" className="shrink text-center">
+    <View accessible accessibilityLabel={text} className="flex-row items-start gap-2">
+      <LockSimpleIcon size={16} color={c.textMuted} style={{ marginTop: 3 }} />
+      <Text variant="subhead" tone="muted" className="shrink">
         {text}
       </Text>
     </View>
