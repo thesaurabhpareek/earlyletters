@@ -82,6 +82,7 @@ export function backlogTasks(text, file = "docs/BACKLOG.md") {
       blockers: t.blockers ?? [],
       doneWhen: done ? done[1].trim() : "",
       links: [],
+      paths: [],
       block: t.block,
     };
   });
@@ -161,6 +162,8 @@ export function workPackageTasks(text, file) {
         blockers: [],
         doneWhen: cell("doneWhen"),
         links: ids(`${cell("bl")} ${modeText}`, BL_ID),
+        // Code-quoted paths from "Owns files", for a path check such as H2's freeze.
+        paths: [...cell("paths").matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((x) => /[/.]/.test(x)),
         block: lines[j],
       });
     }
@@ -210,7 +213,7 @@ export function clauseCloses(text, id) {
 // ---------- staleness flags ----------
 
 const RANGE = /\b(?:BL-\d{3}|WP-F\d{2}-[A-Za-z0-9]+)\s+(?:to|-)\s+(?:BL-\d{3}|WP-F\d{2}-[A-Za-z0-9]+|-?\d+)\b/g;
-const DELIVERS = /\b(implement\w*|port(?:s|ed)?|ship(?:s|ped)?|clos(?:e|es|ed)|fix(?:es|ed)?|resolv\w*|deliver\w*)\b/i;
+const DELIVERS = /\b(implement(?:s|ed|ing)?|port(?:s|ed)?|ship(?:s|ped)?|clos(?:e|es|ed)|fix(?:es|ed)?|resolve[sd]?|deliver(?:s|ed)?)\b/i;
 
 /** True for a task the dispatcher could hand out now if nothing else stops it. */
 export function looksReady(t) {

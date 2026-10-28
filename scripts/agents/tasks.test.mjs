@@ -117,6 +117,8 @@ test("WP rows parse from a real F16 excerpt by column name", () => {
   assert.equal(looksReady(w01), true);
   assert.equal(byId(tasks, "WP-F16-02").status, "removed");
   assert.deepEqual(byId(tasks, "WP-F16-13").dependsOn, ["WP-F16-06"]);
+  assert.deepEqual(byId(tasks, "WP-F16-13").paths, ["store.ts", "lib/sync/outbox.ts"]);
+  assert.deepEqual(w00.paths, ["experiments/sync-watermark/"]);
 });
 
 test("tables without a Status column (F14) and with a BL column (F06) parse", () => {
@@ -188,7 +190,7 @@ test("BL-342, shipped via #121, is flagged strong from the body sentence that po
 test("a body mention without a delivery verb is weak; a title or branch id is strong; a range is weak", () => {
   const tasks = allTasks();
   const pr = (o) => ({ number: 9, merged_at: "2026-10-20T00:00:00Z", title: "x", body: "", head: { ref: "docs/x" }, ...o });
-  const weak = staleFlags(tasks, { mergedPRs: [pr({ body: "Related: BL-342 stays on the device plan" })] });
+  const weak = staleFlags(tasks, { mergedPRs: [pr({ body: "Related: BL-342 stays on the device plan.\n- On a device: delivery of the plan reminders and BL-342." })] });
   assert.equal(weak.find((f) => f.id === "BL-342").strength, "weak");
   const title = staleFlags(tasks, { mergedPRs: [pr({ title: "WP-F16-01: sync contract in packages/api" })] });
   assert.equal(title.find((f) => f.id === "WP-F16-01").strength, "strong");
