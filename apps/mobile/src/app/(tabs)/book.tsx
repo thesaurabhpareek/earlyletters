@@ -82,6 +82,14 @@ export default function Book() {
   const [firstView] = useState(firstBookViewThisSession);
   const [stagger, setStagger] = useState(firstView && !params.arrived);
   useEffect(() => setStagger(false), []);
+  // The second parent's first Book (S59, 5.8 row 12; the join sheet sets `joined`): its light rises from unlit over arriveMs, once.
+  const { joined } = useLocalSearchParams<{ joined?: string }>();
+  const [joinedAt, setJoinedAt] = useState(0);
+  useEffect(() => {
+    if (joined !== '1') return;
+    setJoinedAt(Date.now());
+    router.setParams({ joined: undefined });
+  }, [joined]);
 
   useEffect(() => {
     if (!active) return;
@@ -260,7 +268,7 @@ export default function Book() {
 
   return (
     <View className="flex-1 bg-background" {...behind}>
-      <Lamp scene="book" persistKey="tabs" />
+      {joinedAt ? <Lamp key={joinedAt} scene="book" arrive /> : <Lamp scene="book" persistKey="tabs" />}
       <Animated.View key={active.id} className="flex-1" entering={switched ? FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never) : undefined}>
         {chapters.length === 0 ? (
           <View className="flex-1">
