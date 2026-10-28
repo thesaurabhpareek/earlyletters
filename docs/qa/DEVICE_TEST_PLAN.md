@@ -22,6 +22,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | Item | Needs | When (`08-delivery.md` 10.2) |
 |---|---|---|
 | S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
@@ -296,6 +297,20 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
+
+### S1-27 Sign-in and Account screens (EXPERIENCE_PASS S52 to S56, package P8a; PR #310)
+- **Needs:** a switch-on build against staging (build 2), a drill account, the fictional family Asha. What the web build cannot show: the native sheet, AutoFill, VoiceOver, Dynamic Type, the native confirm.
+- **Steps:**
+  - (a) **Row 5b.** On a fresh install, run first run and keep the first letter. The Book appears with the letter in its month, and about 600 ms later the sign-in sheet ("Keep Asha's book on any phone") rises over the Book. It never replaces Review, and no frame of Tonight shows between them. Tap Not now: the Book stays as it was.
+  - (b) **Sensitive data at AX3 and AX5.** Sign in on an account with no sensitive-data answer. On the sensitive-data step at AX3 and at AX5, on an SE 3 and a 6.1-inch phone, "Agree and sync" and "Keep on this phone" are the same height and width. If one wraps, the other grows with it. Both are reachable.
+  - (c) **Terms at AX5.** On a new account, the Terms step at AX5: the agree line ("By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.") is fully visible, never cut, and sits right above "Agree and continue" (in the scroll at accessibility sizes).
+  - (d) **VoiceOver on the sign-in sheet.** On the sheet from Account (cover beside the title), focus lands on the title. The small book cover is not read. The privacy line is read once, as one element. A busy Google button is announced as busy, not dimmed. An error line is announced once.
+  - (e) **VoiceOver on Account.** The way-in mark (Apple, Google or envelope) is not read. "Signed in with email" and the address are read. With a letter queued (airplane mode, keep a letter, turn airplane mode off and sign out at once), the Sign out row says "Your newest letters are still on their way. This phone signs out once they are sent." with a spinner, and it is spoken once.
+  - (f) **AutoFill.** Continue with email offers the phone's addresses, and the code screen offers the code from Mail (S1-08 covers the mail apps). After a wrong code the field is empty and the keyboard is up again.
+  - (g) **Agree and sync, later.** On an account that chose "Keep on this phone", Settings > Account > "Agree and sync" opens the sensitive-data step with all its lines. Nothing is recorded until "Agree and sync" is tapped there.
+- **Expected:** All seven hold, with no truncation, no trapped focus and no element read twice.
+- **Record:** S1-27 rows (a) to (g), with the phone, iOS version and text size; screenshots with Asha only.
+- **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
 
 ### S1-29 A child's book with two parents: the book row and the hide footer (S46; P6a, #312)
 - **Needs:** a switch-on build on both phones, with Mama and Papa joined to Asha's book (S1-22's setup).
