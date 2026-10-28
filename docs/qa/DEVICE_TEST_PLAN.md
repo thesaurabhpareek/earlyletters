@@ -349,6 +349,27 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
 - **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
+### S1-31 Settings: Plan, Reminders, Recordings, Export, Privacy and Appearance (S34, S41 to S45; P6b, #313)
+- **Needs:** a development build with StoreKit sandbox (S2-01's setup) for (a); any build for (b) to (f).
+- **Steps:**
+  - (a) **Plan.** With Plus off: the first row is "See what Plus adds", and it opens Apple's subscription view. Buy in the sandbox, then come back. With the plan note open (inside its window): the renewal date is said once, and in a trial the free-until date is said once. Tap Restore purchases on an account with Plus, then on one without. A family-shared plan, if a drill family has one.
+  - (b) **Reminders.** Turn reminders on and deny notifications. Tap Open Settings, allow, and come back. On a phone that had "Pause all reminders" on in an earlier build: read Settings home's Reminders row and the Reminders switch, then turn the switch on.
+  - (c) **Recordings.** With English not on the phone, tap the language row. Let it download, then tap it again. Off Wi-Fi, and with the disk nearly full, read the row.
+  - (d) **Export.** On a book with a twin, read the cover at the top. Fill the disk and export. On a book too big for one file, if a drill fixture has one, tap "Write to us".
+  - (e) **Privacy.** Read the three never-lines.
+  - (f) **Appearance.** With a kept letter in the book, read the sample. With only a private letter, read it again. Change Reading size through every size.
+- **Expected:**
+  - (a) After the purchase, the first row reads "Plus" with the plan name and its dates, and "Manage subscription" shows. No sentence and no date is said twice on the screen. After a restore that works, "Plus is on." is said once. With nothing to restore, the found-nothing line shows under the row. A shared plan reads "Shared with you through Apple Family Sharing."
+  - (b) The card collapses and "Reminders are on." shows once. Coming back still denied shows no "Reminders are on.". A phone paused before reads Off on both the row and the switch, and the switch turns reminders back on with the cadence that was chosen.
+  - (c) "Download" starts the download. The ring fills, and the words say "Getting ready, n%", never 100% before the download is done. "Remove" asks before it removes. The Wi-Fi wait and the low-space rows say why and offer nothing to tap.
+  - (d) The cover is the active book's, with the twin behind it. The low-space failure names its cause and offers "Export again". "Write to us" opens Mail with the subject.
+  - (e) Each line has a LockSimple mark and does not look tappable.
+  - (f) The sample is the first line of your newest kept letter, never a private letter, the other parent's, or a quiet day. With no kept letter it shows "Aa". Each Reading size label is in Literata at its own size.
+  - At AX5, nothing on any of these screens is truncated.
+  - With VoiceOver: Plan's first row reads its title, status and plan name; the restore result is read once; the Reminders card's title is a heading; the language row is one button with its hint, and its trailing word and ring are not read again; each never-line is one element with its mark hidden.
+- **Record:** S1-31 rows (a) to (f), with the phone, iOS version, text size and VoiceOver yes or no; screenshots with Asha only.
+- **Update:** PR #313's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S34 and S41 to S45 where a result differs.
+
 ### S1-32 Hidden books: the way back from "Hide this book" (P6d, #361; B-REQ-014)
 - **Steps:**
   - (a) With two books on the phone, open Settings > Avi's book > Hide this book, and confirm.
