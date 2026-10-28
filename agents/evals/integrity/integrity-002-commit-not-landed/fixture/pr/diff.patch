@@ -1,0 +1,39 @@
+diff --git a/docs/agents/hardening/lanes-and-review-churn.md b/docs/agents/hardening/lanes-and-review-churn.md
+index 3b1c0de..9a4f7e2 100644
+--- a/docs/agents/hardening/lanes-and-review-churn.md
++++ b/docs/agents/hardening/lanes-and-review-churn.md
+@@ -1,5 +1,13 @@
+ # Lanes and review churn
+ 
+ Owner: `chief-of-staff`. Code: `scripts/agents/lanes.mjs`.
+ 
+ A lane is one stream of work with at most one open agent PR.
++
++## Rules
++
++1. One open agent PR holds one lane.
++2. A draft PR still holds its lane.
++3. A PR with no agent label holds none.
+diff --git a/scripts/agents/lanes.test.mjs b/scripts/agents/lanes.test.mjs
+new file mode 100644
+index 0000000..5d2e8a1
+--- /dev/null
++++ b/scripts/agents/lanes.test.mjs
+@@ -0,0 +1,21 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { openLanes } from './lanes.mjs';
++
++const agentOfPR = (pr) => pr.agent ?? null;
++
++test('one open agent PR holds one lane', () => {
++  assert.deepEqual(openLanes([{ number: 1, agent: 'qa' }], agentOfPR), { qa: 1 });
++});
++
++test('a draft PR still holds its lane', () => {
++  assert.deepEqual(openLanes([{ number: 2, agent: 'qa', draft: true }], agentOfPR), { qa: 1 });
++});
++
++test('a PR with no agent label holds none', () => {
++  assert.deepEqual(openLanes([{ number: 3 }], agentOfPR), {});
++});

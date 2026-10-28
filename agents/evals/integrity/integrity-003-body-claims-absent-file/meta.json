@@ -1,0 +1,9 @@
+{
+  "id": "integrity-003-body-claims-absent-file",
+  "class": "integrity",
+  "kind": "reviewer",
+  "source": "PR #223 (fix(packs): run the interrupted-install matrix on in-memory ports). The description says 'Files touched: ... docs/agents/BOARD.md (one check-in line)'; the diff has docs/agents/checkins/packs-owner.md and no BOARD.md. Found by scanning the bodies of the 95 merged PRs against their file lists with gh api. Body and diff are the real ones.",
+  "roles": ["red-team", "reviewer"],
+  "k": 3,
+  "reference": "overlay"
+}

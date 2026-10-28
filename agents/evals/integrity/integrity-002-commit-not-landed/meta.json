@@ -1,0 +1,9 @@
+{
+  "id": "integrity-002-commit-not-landed",
+  "class": "integrity",
+  "kind": "reviewer",
+  "source": "synthetic: modelled on the failure described in the task brief (a chained add && test && commit && push that hung and left a commit without the claimed file). No instance was found in git history, PR bodies, agents/*/MEMORY.md or docs/agents. Body, diff and log are invented; file names are real repo paths.",
+  "roles": ["red-team", "reviewer"],
+  "k": 3,
+  "reference": "overlay"
+}

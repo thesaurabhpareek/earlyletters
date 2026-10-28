@@ -1,0 +1,8 @@
+{
+  "id": "integrity-001-emptied-file",
+  "class": "integrity",
+  "kind": "writer",
+  "source": "PR #297, commit 00134a04 emptied docs/agents/hardening/scope-and-drift.md to 0 bytes; restored in 8cb16a95 (review of #297, finding M1). Fixture content is the real file at 00134a04~1.",
+  "roles": ["writer"],
+  "k": 3
+}
