@@ -75,4 +75,4 @@ Verified (V): the repo locations and quotes in sections 1 and 2; Apple's definit
 
 Inferred (I): that crashes/sessions approximates crash-free sessions; the gaps listed in section 3; the label outcome of B and C; MetricKit and native-module effort.
 
-Unverified (U): `MXCrashDiagnostic` contents; Apple's definition of "Crash Data" for labels; whether Organizer shows a crash rate; whether ASC crashes include non-crash terminations; whether the 2018-era Xcode 8.3 sharing rules still hold; the 40% consent figure; whether `ALPHA_GO_NO_GO.md` should carry a crash-free row (it has none today).
+Unverified (U): `MXCrashDiagnostic` contents; Apple's definition of "Crash Data" for labels; whether Organizer shows a crash rate; whether ASC crashes include non-crash terminations; whether the Xcode 8.3 help-page sharing rules still hold; the 40% consent figure; whether `ALPHA_GO_NO_GO.md` should carry a crash-free row (it has none today).
