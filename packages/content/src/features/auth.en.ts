@@ -148,7 +148,8 @@ export const authCopy = {
   account: {
     title: 'Account',
     signedOutTitle: 'Not signed in',
-    signedOutBody: 'Sign in so your co-parent can write too, and so your letters come with you to a new phone. Your letters are safe on this phone either way.',
+    // S52's body, word for word.
+    signedOutBody: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
     signIn: 'Sign in',
     signedInWith: {
       apple: 'Signed in with Apple',
@@ -157,11 +158,11 @@ export const authCopy = {
       other: 'Signed in',
     },
     syncTitle: 'Sync',
-    syncLabel: 'Sync and family sharing',
+    syncLabel: 'Sync and sharing',
     sync: {
       on: 'On',
       off: 'Off, kept on this phone',
-      waiting: 'Waiting for your answer',
+      waiting: 'Not set up yet',
       unknown: 'Waiting for a connection',
     },
     finishSetup: 'Finish setting up',
@@ -179,8 +180,10 @@ export const authCopy = {
     signOutOthersDone: 'Other devices are signed out.',
     signOut: 'Sign out',
     signOutTitle: 'Sign out on this phone?',
-    signOutBody: 'Your letters stay on this phone. Sign in again any time to sync.',
-    signOutWaiting: 'Your newest letters are still syncing. We will sign you out as soon as they are done.',
+    // True: signing out leaves this phone's letters in place (one of the three keys allowed to say so).
+    signOutBody: 'Your letters stay on this phone. Sign in again any time.',
+    // Shown while the outbox drains (F16, A-REQ-033): sign-out never drops a queued letter.
+    signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
     cancel: 'Cancel',
   },
 } as const;
