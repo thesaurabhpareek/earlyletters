@@ -96,7 +96,9 @@ describe('[P6A S2] at accessibility text sizes the cover sits under the heading,
   });
 
   it('the name step, the signature step and Add a child all draw their heading and cover through it', () => {
-    const wrapped = (f: string) => (code(f).match(/<CoverHeading [^>]*>\s*<BookCover/g) ?? []).length;
+    // Each one is given the place the rule computes, never a fixed one.
+    const wrapped = (f: string) => (code(f).match(/<CoverHeading title=\{[^}]+\} headingRef=\{heading\} place=\{coverPlace\}>\s*<BookCover/g) ?? []).length;
+    for (const f of ['app/onboarding.tsx', 'components/child/add-child-form.tsx']) expect(code(f), f).toMatch(/const coverPlace = useCoverPlace\(\);/);
     expect(wrapped('app/onboarding.tsx')).toBe(2);
     expect(wrapped('components/child/add-child-form.tsx')).toBe(1);
     // Nothing lays a heading and a cover out in a row by hand any more.

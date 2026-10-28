@@ -252,7 +252,7 @@ export default function Onboarding() {
   };
 
   // Controls never animate in (MOTION principle 2). On every step but the last they follow the step's content in the scroll;
-  // on "The book is open." they are pinned below it (S08), which is also the step whose content is tallest.
+  // on "The book is open." they are pinned below it (S08): the cover, the line and the speech card scroll above one button.
   const pinned = step === 'finish';
   const controls = (
     <>
