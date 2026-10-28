@@ -1003,6 +1003,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Severity: major. Raised by: quality (1 findings). Steps: J05-01.
 - Satisfies: PRD 7.4 durability; TDD 03 risk R-4; extends BL-134, proves part of BL-135.
 - Scope: At launch the sweep opens each non-empty M4A with `AVAudioFile` and marks unreadable files `unrecoverable` while keeping them. If the 500-kill gate (BL-135) fails, fall back to ADTS plus remux.
+- Update, 27 Oct (ADR 0027): the fallback came before the gate, without the remux. No killed M4A take opened on the simulator (0 of 70), so every iOS build cut from develop from #293 on records ADTS (`.aac`), and 100 of 100 killed ADTS takes played. The sweep's check (`capture/probe.ts`, `test/sweep.playable.test.ts`) stays for every take: M4A on Android and from before the flip, and any take that still does not open.
 - Done when: A sweep fixture with a truncated M4A is marked unrecoverable and the file is kept and counted in Recordings. Readable files stay ready.
 - Test: Truncated-M4A fixture in `apps/mobile/test/sweep.test.ts`; device run BL-135.
 
