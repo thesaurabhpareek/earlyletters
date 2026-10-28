@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { blockedReason, boardLines, olderRedTeam, pauseDate, MAX_FETCHES } from "./pause.mjs";
+import { equivalentReviewed, boardLines as fingerprintLines, fingerprint } from "./reviewfp.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -148,6 +149,27 @@ test("a head recorded as the same changes as a reviewed head is not awaiting re-
   // A newer head without a match is listed again.
   const moved = boardCtx({ prs: [pr(41, "d".repeat(40), ["review:red-team-ok"])], reviews, state });
   assert.match(boardLines(moved.ctx).join("\n"), /^- #41 .*head is now ddddddd/m);
+});
+
+test("a later head whose changes differ is recorded as differs, not carried, and stays awaiting re-review", () => {
+  const textFile = (patch) => ({ filename: "x.md", status: "added", additions: 1, deletions: 0, changes: 1, sha: "b", patch });
+  const A = "@@ -0,0 +1,1 @@\n+the reviewed line";
+  const C = "@@ -0,0 +1,1 @@\n+a line the red team has not seen";
+  const LATER = "d".repeat(40);
+  const review = founderReview(OLD, "ship", "2026-10-16T00:00:00Z");
+  // Head HEAD was carried (same changes as OLD). Now head LATER changes the PR's own lines.
+  const state = { reviewfp: { 41: { sha: OLD, fp: fingerprint([textFile(A)]), carried: { sha: HEAD, verdict: "ship", at: "2026-10-16" } } } };
+  const { ctx } = boardCtx({ prs: [pr(41, LATER, ["review:red-team-ok"])], reviews: { 41: [review] }, state });
+  ctx.prFacts = () => ({ redTeam: false, all: [review] });
+  ctx.gh = () => [textFile(C)];
+
+  assert.equal(equivalentReviewed(ctx, ctx.openPRs[0]), false, "not the same changes");
+  assert.equal(state.reviewfp[41].differs, LATER, "recorded as differs");
+  assert.equal(state.reviewfp[41].carried.sha, HEAD, "not carried to the later head");
+  assert.deepEqual(fingerprintLines(ctx), [], "no fingerprint line for it");
+  const awaiting = boardLines(ctx).join("\n");
+  assert.match(awaiting, /^## Awaiting re-review/m);
+  assert.match(awaiting, /^- #41 .*last red-team review on c5cfa0c.*head is now ddddddd/m);
 });
 
 test("prunes cache entries for PRs that are no longer open", () => {

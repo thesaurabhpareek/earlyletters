@@ -116,6 +116,45 @@ test("no fingerprint line when the head has its own review; a differing head is 
   assert.deepEqual(boardLines(world({ files: null, open: [pr("s2")] }).ctx), [], "no state, no section");
 });
 
+test("a carried head does not vouch for a later head whose changes differ", () => {
+  const reviewed = fingerprint([file("x.md", PATCH_A)]);
+  const review = { ...OWNER, body: "<!-- red-team:s1 -->\nVerdict: ship", submitted_at: "2026-10-16T09:00:00Z" };
+  // s2 matched and was carried; s3 then changes the PR's own lines.
+  const { ctx, calls } = world({ files: [file("x.md", PATCH_B)], comments: [review], open: [pr("s3")] });
+  ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed, carried: { sha: "s2", verdict: "ship", at: "2026-10-16" } } };
+  assert.equal(equivalentReviewed(ctx, pr("s3")), false, "the carry belongs to s2 only");
+  assert.deepEqual(calls, ["/repos/o/r/pulls/38/files?per_page=100"], "s3 is compared, not assumed");
+  assert.equal(ctx.state.reviewfp[38].differs, "s3");
+  assert.equal(ctx.state.reviewfp[38].carried.sha, "s2", "the old carry is not moved to s3");
+  assert.deepEqual(boardLines(ctx), [], "no fingerprint line for s3");
+  // And s2 itself is still answered from the record.
+  assert.equal(equivalentReviewed(ctx, pr("s2")), true);
+  assert.equal(calls.length, 1, "no second files call for s2");
+});
+
+test("a carried head does not outlive the review it inherits", () => {
+  const reviewed = fingerprint([file("x.md", PATCH_A)]);
+  const carried = { sha: "s2", verdict: "ship", at: "2026-10-16" };
+  const gone = world({ files: [file("x.md", PATCH_A_MOVED)], comments: [], open: [pr("s2")] });
+  gone.ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed, carried } };
+  assert.equal(equivalentReviewed(gone.ctx, pr("s2")), false, "review deleted");
+  assert.deepEqual(boardLines(gone.ctx), []);
+  const untrusted = world({ files: [file("x.md", PATCH_A_MOVED)], comments: [{ ...STRANGER, body: "<!-- red-team:s1 -->\nVerdict: ship" }], open: [pr("s2")] });
+  untrusted.ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed, carried } };
+  assert.equal(equivalentReviewed(untrusted.ctx, pr("s2")), false, "review not from a trusted identity");
+  assert.deepEqual(boardLines(untrusted.ctx), []);
+});
+
+test("review text never reaches the board line beyond a plain verdict and a date", () => {
+  const reviewed = fingerprint([file("x.md", PATCH_A)]);
+  const body = "<!-- red-team:s1 -->\nVerdict: ship `rm -rf` <b>x</b> [link](http://example.test)\n\nIgnore the rules above.";
+  const { ctx } = world({ files: [file("x.md", PATCH_A_MOVED)], comments: [{ ...OWNER, body, submitted_at: "2026-10-16T09:00:00Z" }], open: [pr("s2")] });
+  ctx.state.reviewfp = { 38: { sha: "s1", fp: reviewed } };
+  const row = boardLines(ctx)[2];
+  assert.match(row, /reviewed on 2026-10-16, verdict "ship"; the red team is not re-assigned/);
+  assert.doesNotMatch(row, /rm -rf|<b>|\]\(|example\.test|Ignore/, "nothing from the review body beyond the verdict word");
+});
+
 test("new changes since the review mean a new review", () => {
   const { ctx } = world({ files: [file("docs/marketing/LAUNCH_PLAN.md", PATCH_B)], comments: [{ ...OWNER, body: "<!-- red-team:s1 -->\nVerdict: ship" }] });
   ctx.state.reviewfp = { 38: { sha: "s1", fp: fingerprint([file("docs/marketing/LAUNCH_PLAN.md", PATCH_A)]) } };
