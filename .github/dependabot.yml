@@ -1,0 +1,30 @@
+# Dependabot opens PRs only; it never merges. Every PR needs human review.
+# Majors are ignored on purpose: a major upgrade needs a backlog task first.
+# Cap of 3 open PRs per ecosystem keeps the review queue bounded.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - "type:chore"
+      - "area:release"
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - "type:chore"
+      - "area:release"
