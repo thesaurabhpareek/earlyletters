@@ -10,7 +10,7 @@ Conflict of interest: the session that commissioned this brief built the harness
 ## Evidence of what failed
 - The default branch is `main` (GitHub API, 28 Oct). The workflows API lists 14 workflows; `agents.yml` is not one of them, so its schedule ([agents.yml:21](../../../.github/workflows/agents.yml#L21)) has never fired. Once registered, every tick still skips unless `vars.AGENTS_ENABLED == 'true'` ([agents.yml:42](../../../.github/workflows/agents.yml#L42)).
 - `agents/roster.json` lists 24 agents; 4 carry `paused_until`. The retro panels report 13 never ran (retro IMP-11; not rechecked here).
-- The 4-hourly scheduled lane left no journal entry in four weeks (retro spot-check 23). Its prompt still cites #127 (retro spot-check 7).
+- The 4-hourly scheduled lane left no journal entry in four weeks (retro spot-check 23). Its prompt still cites #127 (retro spot-check 7). The task, and the PRD daily task, were disabled 28 Oct 06:05 UTC; the docs run at 05:30 UTC (retro reviewer's read of the task list; not rechecked here). Their connectors are a separate step (Wave 0 item 1).
 - Agents post through the founder's account, so trust checks cannot tell an agent from the founder (retro IMP-06; unverified here).
 - `develop` has no branch protection and no required checks (retro spot-check 3); the scheduled tasks carry write-capable connectors (retro spot-check 12).
 

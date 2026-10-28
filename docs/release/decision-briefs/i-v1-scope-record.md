@@ -1,18 +1,18 @@
 # Brief (i): which record states v1.0 scope
 
 Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go), because build 2 is the servers-on build and the tester notice and legal pages depend on the answer.
-Default if unanswered: D-100 governs on paper. #127 stays open, and any lane that reads it acts on the reversed scope. The production profile stays off.
+Default if unanswered: D-100 governs on paper. #127 stays open, and any lane re-enabled with a prompt that cites it would act on the reversed scope. The production profile stays off.
 Conflict of interest: #127 was written by the session that commissioned this brief.
 
 ## The four records
 | Record | Date | What it says | Where it still acts |
 |---|---|---|---|
-| Issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) item 1 | 14 Oct | "v1.0 is the on-device release that is already built"; the server scope becomes the next release | Open, 0 comments. The live 4-hourly lane prompt cites it as "Decisions in force" (scheduled-task record, retro spot-check 7; not in the repo) |
+| Issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) item 1 | 14 Oct | "v1.0 is the on-device release that is already built"; the server scope becomes the next release | Open, 0 comments. The 4-hourly lane prompt cites it as "Decisions in force" (scheduled-task record, retro spot-check 7; not in the repo). That task was disabled 28 Oct 06:05 UTC (Tue 27 Oct 11:05 PM PT), per the retro reviewer's read of the task list; not rechecked here |
 | D-100 ([DECISIONS.md:644](../../DECISIONS.md#L644)) | 13 Oct, confirmed 15 Oct | Server features on in v1.0; "the release build profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`"; supersedes the on-device assumption where they conflict. D-101 moves the date (week of 3 May 2027, about 40% confidence) | The decision log of record |
 | Alpha go/no-go ([ALPHA_GO_NO_GO.md:1](../../qa/ALPHA_GO_NO_GO.md#L1), [:14](../../qa/ALPHA_GO_NO_GO.md#L14)) | current | Build 1 servers off; build 2 servers on against staging, backup and status report off. Build 2 is no-go today (B2-12) | `preview` profile: server on, backup off ([eas.json:47 to 49](../../../apps/mobile/eas.json#L47)) |
 | `production` profile ([eas.json:61](../../../apps/mobile/eas.json#L61)) | last set 14 Oct (`4183844c`) | `EXPO_PUBLIC_SERVER_FEATURES` is `off` | Contradicts D-100's "release build profiles". The store lane has not started ([1.0.0.md:9](../1.0.0.md#L9)) |
 
-Public copy shows the same split: [site.en.ts:83](../../../packages/content/src/site.en.ts#L83) "Your recordings stay on your phone" sits next to [:93](../../../packages/content/src/site.en.ts#L93) "your letters sync to our servers".
+Public copy is on the on-device side: the live website copy (`apps/web/src/content/site.ts` on `main`, line 73 at `3ce511e9`, checked 28 Oct) says "Your letters stay on your phone", which D-100 makes untrue once sign-in and sync ship. The full claim list is in the retro claims inventory (#329).
 
 ## Options
 | Option | What it changes | Cost or risk |
@@ -22,4 +22,4 @@ Public copy shows the same split: [site.en.ts:83](../../../packages/content/src/
 | C. Keep D-100, settle the store scope after the alpha | Alpha runs as the go/no-go says; #127 is closed as superseded anyway; `production` profile and copy wait for a dated decision after the go/no-go | Copy contradictions last through the alpha; the tester notice must say which build a tester has |
 
 ## Recommendation (a recommendation, not a decision)
-Option A, and close #127 now: it is the only record that contradicts the decision log, and an unattended lane still reads it. The `production` profile and copy changes follow the go/no-go, not before.
+Option A, and close #127 now: it is the only record that reverses the decision log's scope, and any lane re-enabled with a prompt that cites it would act on it. The `production` profile and copy changes follow the go/no-go, not before.

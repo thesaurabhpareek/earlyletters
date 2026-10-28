@@ -16,7 +16,7 @@ Confirm that D-111 item 6 still holds (backup is free, never a Plus feature), so
 ## Options
 | Option | What it changes | Cost or risk |
 |---|---|---|
-| 1. Fix code to match D-111 item 6 | Move `backup_upload` from gated to free-forever; update `plan.test.ts` rows 1 to 7 and `family-rules.test.ts:143, 149` | One small PR on the billing path with two reviews. Low risk, since no build reaches it today. Best after the go/no-go to keep the freeze clear |
+| 1. Fix code to match D-111 item 6 | Move `backup_upload` from gated to free-forever; update `plan.test.ts` rows 1 to 7, 9 and 10 (`decide()` throws for a feature that is not gated, [plan.ts:199](../../../packages/core/src/plan.ts#L199)) and `family-rules.test.ts:143, 149` | One small PR on the billing path with two reviews. Low risk, since no build reaches it today. Best after the go/no-go to keep the freeze clear |
 | 2. Change D-111 item 6: backup becomes Plus | Code stays; the record, backup screen copy and legal text change | Reverses a founder decision of 17 Oct; copy and counsel work; pricing story changes |
 | 3. Leave it (the default) | Nothing | The gate ships silently whenever backup turns on, contradicting the record |
 

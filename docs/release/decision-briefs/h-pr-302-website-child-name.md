@@ -1,11 +1,11 @@
 # Brief (h): PR #302, what is still open after D-118
 
 Status: open, not decided. D-118 itself is decided and recorded: the founder chose to name the child on the website, and #307 put D-118 and the guard exception on `develop` (merged 28 Oct 05:40 UTC, Tue 27 Oct 10:40 PM PT, `6bfb94a9`). This brief does not reopen that. It covers what is left.
-Needed by: before the website is promoted or the alpha link is shared beyond the family (D-118's own review point, [DECISIONS.md:831](../../DECISIONS.md#L831)); at the latest Thu 5 Nov if Friends get the link with build 2.
+Needed by: before the website is promoted or the alpha link is shared beyond the family (the review point in the D-118 entry, labelled a coordinator proposal, not the founder's: [DECISIONS.md:831](../../DECISIONS.md#L831)); at the latest Thu 5 Nov if Friends get the link with build 2.
 Default if unanswered: #302 stays open. `site.ts` on `main` keeps the fictional family (D-111 item 1; checked 28 Oct); nothing new is exposed.
 
 ## What is still open
-1. Merging [#302](https://github.com/thesaurabhpareek/earlyletters/pull/302) into `main`. It is a production deploy that the founder merges ([DECISIONS.md:830](../../DECISIONS.md#L830)). State on 28 Oct: open, head `3ba0f736`, mergeable, 9 files; the author's comment reports 212 of 212 web end-to-end tests passing.
+1. Merging [#302](https://github.com/thesaurabhpareek/earlyletters/pull/302) into `main`. It is a production deploy that the founder merges ([DECISIONS.md:830](../../DECISIONS.md#L830)). State at 28 Oct 06:38 UTC: open, head `3ba0f736`, 9 files, GitHub reports `mergeable: false`, `mergeable_state: dirty` (it conflicts with `main` since `main` moved to `3ce511e9`), so it needs a rebase before any merge; the author's comment reports 212 of 212 web end-to-end tests passing.
 2. No privacy or counsel review is on record. #307 had two lens reviews and 0 GitHub reviews (retro spot-check 15).
 3. The change to F21-REQ-017 is proposed, not made ([DECISIONS.md:828](../../DECISIONS.md#L828)).
 4. `CLAUDE.md` (the privacy rule), `.github/pull_request_template.md` line 19 and `docs/agents/OPERATING_MODEL.md` section 8 still state the rule without the exception; D-118 leaves them to the founder ([DECISIONS.md:830](../../DECISIONS.md#L830)).
