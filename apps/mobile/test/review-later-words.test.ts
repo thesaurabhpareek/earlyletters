@@ -237,7 +237,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
 
   it('Save words stores the typed words, then opens Review for the letter', () => {
     const sheet = between(page, 'function WordsSheet(', 'function ReadItBackCard(');
-    const write = sheet.indexOf('if (!setTypedWordsForWaitingEntry(entryId, text)) return;');
+    const write = sheet.indexOf('if (!setTypedWordsForWaitingEntry(entryId, text)) return setRefused(true);');
     const open = sheet.search(/router\.push\(\{ pathname: '\/review', params: \{ entryId \} \}\)/);
     expect(write).toBeGreaterThan(-1);
     expect(open).toBeGreaterThan(write);
