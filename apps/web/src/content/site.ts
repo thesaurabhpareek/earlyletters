@@ -70,7 +70,7 @@ export const site = {
 
   comingSoon: {
     line: 'A baby book you fill by talking. Tell your child about today, and we keep it exactly as you said it.',
-    trust: 'Private, always. Your letters stay on your phone, in your own words.',
+    trust: 'Private by default. Your letters stay on your phone, in your own words.',
     shareButton: 'Share with friends and family',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
@@ -231,12 +231,12 @@ export const site = {
           'The whole family can add letters',
         ],
       },
-      promise: 'If you ever stop, every letter you have made stays yours to read, play and export.',
+      promise: 'Every letter you have made stays yours to read, play and export, whatever you choose.',
     },
     s11: {
       label: 'Start tonight',
       headline: 'Tell Asha about today.',
-      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will send one note when it is ready.`,
+      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will tell you when it is ready.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
   },
@@ -260,6 +260,10 @@ export const site = {
     error: 'That email does not look quite right. Could you check it and try again?',
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
+    empty: 'Please add your email address first.',
+    network: 'We could not reach the internet just now. Please check your connection and try once more.',
+    sendingStatus: 'Sending your address.',
+    retry: 'Try again',
     honeypotLabel: 'Company',
     /** The pages a native form post lands on (app/signup). */
     thanksTitle: 'Thank you.',

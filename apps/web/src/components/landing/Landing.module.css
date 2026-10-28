@@ -103,8 +103,8 @@
   text-wrap: balance;
   font-size: clamp(21px, 2.3vw, 32px);
   line-height: 1.45;
-  color: color-mix(in srgb, var(--night-ink) 84%, transparent);
-  animation: rise 1.4s var(--ease-standard) 0.5s both;
+  color: color-mix(in srgb, var(--night-ink) 94%, transparent);
+  animation: rise 0.8s var(--ease-standard) 0.3s both;
 }
 .trust {
   margin: 14px auto 0;
@@ -112,8 +112,8 @@
   text-wrap: balance;
   font-size: clamp(17px, 1.6vw, 22px);
   line-height: 1.5;
-  color: color-mix(in srgb, var(--night-ink) 86%, transparent);
-  animation: rise 1.4s var(--ease-standard) 0.7s both;
+  color: color-mix(in srgb, var(--night-ink) 92%, transparent);
+  animation: rise 0.8s var(--ease-standard) 0.4s both;
 }
 .actions {
   display: flex;
@@ -137,7 +137,7 @@
   background: linear-gradient(110deg, var(--night-accent) 0%, #f3c98b 45%, var(--night-accent) 100%);
   background-size: 220% 100%;
   box-shadow: 0 10px 40px -12px rgba(243, 201, 139, 0.55);
-  animation: heroSheen 7s ease-in-out infinite;
+  animation: heroSheen 7s ease-in-out 3;
   transition: transform 160ms var(--ease-standard), filter 160ms;
 }
 .heroCta:hover {
@@ -155,7 +155,7 @@
   font: 500 14px/1 var(--font-sans);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--lamp);
+  color: #f8dcb0;
 }
 @keyframes heroSheen {
   0%, 100% { background-position: 0% 0; }
@@ -180,7 +180,7 @@
   font: 600 13px/1 var(--font-sans);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--night-accent);
+  color: #f0c4a0;
 }
 .h2 {
   margin: 0;
@@ -295,6 +295,12 @@
   color: var(--night-ink-muted);
   text-decoration: none;
 }
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+}
 .links a:hover,
 .links a:focus-visible,
 .contact:hover,
@@ -312,10 +318,10 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: sheen 11s ease-in-out infinite alternate;
+  animation: sheen 11s ease-in-out 2 alternate;
 }
 .title.sheen {
-  animation: rise 1.4s var(--ease-standard) 0.2s both, sheen 11s ease-in-out 1.6s infinite alternate;
+  animation: rise 1.4s var(--ease-standard) 0.2s both, sheen 11s ease-in-out 1.6s 2 alternate;
 }
 @keyframes sheen {
   from {
@@ -486,4 +492,8 @@
   .big {
     font-size: clamp(72px, 19vw, 176px);
   }
+}
+
+@media (forced-colors: active) {
+  .heroCta { border: 2px solid ButtonText; forced-color-adjust: none; }
 }

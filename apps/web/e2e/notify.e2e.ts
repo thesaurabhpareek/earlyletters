@@ -50,6 +50,23 @@ test.describe('sign-up form', () => {
     expect((await mock.state()).calls.filter((c) => JSON.stringify(c.body).includes('asha-at-example'))).toHaveLength(0);
   });
 
+  test('a wrong address puts the cursor back in the field, and typing clears the message', async ({ page }) => {
+    await page.goto('/');
+    await signUp(page, 'asha-at-example.com');
+    await expect(status(page)).toHaveText(n.error);
+    await expect(page.getByLabel(n.label)).toBeFocused();
+    await page.getByLabel(n.label).pressSequentially('x');
+    await expect(status(page)).toHaveText('');
+    await expect(page.getByLabel(n.label)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('an empty submit asks for the address in plain words', async ({ page }) => {
+    await page.goto('/');
+    await signUp(page, '');
+    await expect(status(page)).toHaveText(n.empty);
+    await expect(page.getByLabel(n.label)).toBeFocused();
+  });
+
   test.describe('server says invalid', () => {
     test.use({ strictConsole: false }); // the 400 is logged by the browser as a failed resource
 

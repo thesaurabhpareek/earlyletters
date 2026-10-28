@@ -12,7 +12,8 @@ import { tap } from '@/lib/haptics';
 import styles from './NotifyForm.module.css';
 
 const c = site.notify;
-type State = 'idle' | 'sending' | 'done' | 'already' | 'invalid' | 'rate_limited' | 'server';
+type State = 'idle' | 'sending' | 'done' | 'already' | 'invalid' | 'empty' | 'rate_limited' | 'server' | 'network';
+const ERROR_STATES: State[] = ['invalid', 'empty', 'rate_limited', 'server', 'network'];
 
 export const NOTIFY_INPUT_ID = 'notify-email';
 
@@ -22,6 +23,11 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
   const statusId = useId();
   const [state, setState] = useState<State>('idle');
   const doneRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // After a problem with the address, put the cursor back in the field so the fix is one keystroke away.
+  useEffect(() => {
+    if (state === 'invalid' || state === 'empty') inputRef.current?.focus();
+  }, [state]);
   useEffect(() => {
     if (state === 'done' || state === 'already') {
       doneRef.current?.focus();
@@ -36,10 +42,14 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
     const form = new FormData(e.currentTarget);
     const email = String(form.get('email') ?? '').trim();
     const company = String(form.get('company') ?? '');
+    if (!email) {
+      setState('empty');
+      return;
+    }
     setState('sending');
     const res = await submitNotify(email, { company });
     track({ name: 'notify_submit', result: res.ok ? 'ok' : res.error });
-    setState(res.ok ? (res.already ? 'already' : 'done') : res.error);
+    setState(res.ok ? (res.already ? 'already' : 'done') : res.error === 'server' && res.network ? 'network' : res.error);
   }
 
   if (state === 'done' || state === 'already') {
@@ -55,7 +65,21 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
     );
   }
 
-  const message = state === 'invalid' ? c.error : state === 'rate_limited' ? c.rateLimited : state === 'server' ? c.server : '';
+  const message =
+    state === 'invalid'
+      ? c.error
+      : state === 'empty'
+        ? c.empty
+        : state === 'rate_limited'
+          ? c.rateLimited
+          : state === 'server'
+            ? c.server
+            : state === 'network'
+              ? c.network
+              : state === 'sending'
+                ? c.sendingStatus
+                : '';
+  const problem = ERROR_STATES.includes(state);
 
   // method and action only matter before the script loads or with it off: a native submit then POSTs to the
   // endpoint instead of putting the address in the page URL (history, logs, Referer).
@@ -82,7 +106,10 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
           required
           placeholder={c.placeholder}
           aria-describedby={`${hintId} ${statusId}`}
-          aria-invalid={state === 'invalid' || undefined}
+          aria-invalid={state === 'invalid' || state === 'empty' || undefined}
+          aria-errormessage={state === 'invalid' || state === 'empty' ? statusId : undefined}
+          ref={inputRef}
+          onChange={() => problem && setState('idle')}
           className={styles.input}
         />
         <button type="submit" className={styles.button} aria-disabled={state === 'sending' || undefined}>

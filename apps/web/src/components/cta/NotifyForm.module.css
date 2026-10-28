@@ -50,7 +50,7 @@
   color: var(--night-on-accent);
   font: 600 17px/1 var(--font-sans);
   cursor: pointer;
-  animation: buttonSheen 7s ease-in-out infinite;
+  animation: buttonSheen 7s ease-in-out 3;
   transition: transform 160ms var(--ease-standard), filter 160ms;
 }
 .button:hover {
@@ -225,12 +225,20 @@
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 30%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 55%, transparent);
   flex-direction: row;
 }
 .quiet .row:focus-within {
-  box-shadow: none;
+  box-shadow: 0 1px 0 0 var(--night-accent);
   border-bottom-color: var(--night-accent);
+}
+.quiet .input:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.quiet .error {
+  padding: 0;
 }
 .quiet .input {
   height: 48px;
@@ -239,6 +247,7 @@
 }
 .quiet .button {
   width: auto;
+  min-width: 8.4rem;
   padding: 0 2px;
   background: transparent;
   animation: none;
@@ -288,4 +297,10 @@
     height: 48px;
     padding: 0 2px;
   }
+}
+
+/* Windows high contrast: keep the button edge and a clear focus ring. */
+@media (forced-colors: active) {
+  .button { border: 2px solid ButtonText; forced-color-adjust: none; }
+  .input:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
 }
