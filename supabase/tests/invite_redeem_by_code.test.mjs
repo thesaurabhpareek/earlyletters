@@ -3,6 +3,7 @@
 // (person 10, device 10, address 30, service 1,000 per rolling hour); service role only.
 // Contract: packages/api/src/server/family.ts (RedeemByCodeArgs, RedeemRpcResultSchema).
 // Fictional family "Asha" only (CLAUDE.md).
+import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
@@ -152,5 +153,36 @@ check('rows older than 2 hours are removed as new failures are recorded',
   (await sys(`select count(*)::int n from invite_redeem_failures where subject = 'ancient'`)).rows[0].n === 0);
 check('only hashes are stored: no profile id appears in any row',
   (await sys(`select count(*)::int n from invite_redeem_failures where subject in ($1, $2, $3)`, [A, S, V])).rows[0].n === 0);
+
+// ── Review fixes on #306 (A03 F1, A04 F1/F3) ─────────────────────────────
+// The harness is one connection, so a real deadlock cannot be reproduced here. These prove the
+// definition carries the guard and the observable behaviour is unchanged.
+const def = (await sys(`select pg_get_functiondef('public.invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])'::regprocedure) d`)).rows[0].d;
+check('[A03 F1] the housekeeping delete picks its rows with for update skip locked (no wait, so no lock cycle)',
+  /interval '2 hours'[^;]*order by at limit 200\s+for update skip locked\)/.test(def));
+await sys(`delete from invite_redeem_failures`);
+await sys(`insert into invite_redeem_failures (scope, subject, at) select 'user', 'old-' || g, now() - interval '3 hours' from generate_series(1, 250) g`);
+await redeem(S, 'peek', unknown);
+check('[A03 F1] a purge pass still removes at most 200 stale rows and the new failure is counted',
+  (await sys(`select count(*)::int n from invite_redeem_failures where subject like 'old-%'`)).rows[0].n === 50
+  && (await failures('global')) === 1);
+const migrationText = readFileSync(new URL('../migrations/20261027000000_invite_redeem_by_code.sql', import.meta.url), 'utf8');
+check('[A04 F3] the migration header states its rollback (CLAUDE.md, pull requests)',
+  /^-- ROLLBACK: drop function public\.invite_redeem_by_code\(uuid, text, bytea, text\[\], text\[\], text\[\]\);/m.test(migrationText)
+  && /drop table public\.invite_redeem_failures/.test(migrationText));
+
+// SCDEL (deleted book) and SCRAT (invite rate limit) are raised by create_child_invite and the
+// entry triggers, never by accept_child_invite_by_code, which answers SCINV for a deleted book.
+// So they stay out of the `refused` list: a deleted book is a counted `unusable`, never a 503.
+const DEL = await newChild(A, 'Asha', '2025-04-12');
+await create(A, DEL, 'parent', 'GONE2345');
+const goneHash = await hashOf('GONE2345');
+await sys(`update children set deleted_at = now() where id = $1`, [DEL]);
+const gb = await failures('global');
+const goneAccept = await redeem(V, 'accept', goneHash);
+const gonePeek = await redeem(V, 'peek', goneHash);
+check('[A03 F5 / A04 F2] a code for a deleted book is unusable (counted) in accept and peek, not an error and not refused',
+  goneAccept.outcome === 'unusable' && gonePeek.outcome === 'unusable' && (await failures('global')) === gb + 2
+  && (await roleOf(DEL, V)) === null);
 
 await done();
