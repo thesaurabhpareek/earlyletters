@@ -312,6 +312,9 @@ describe('[S22] Keep it here for now: the draft is held, and Tonight shows it wa
     expect(draftCard(held, new Date(2026, 9, 17, 20, 30)).words).toBe(words);
     // A typed draft: its typed words; a letter whose words arrived later: its stored words (in typedText).
     expect(storedWords({ typedText: 'Two teeth today.', rawTranscript: null })).toBe('Two teeth today.');
+    // Typed words come first when a draft has both (a mixed draft: Tonight shows what was typed), as draftWords does.
+    expect(storedWords({ typedText: 'a', rawTranscript: 'b' })).toBe('a');
+    expect(storedWords({ typedText: '  ', rawTranscript: 'b' })).toBe('b');
     expect(storedWords({ typedText: null, rawTranscript: null })).toBe('');
   });
 

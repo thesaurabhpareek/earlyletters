@@ -77,7 +77,20 @@ describe('[S40] Settings home', () => {
   it('keeps the P8 seams: Account, Back up my recordings and Delete account, each behind its capability', () => {
     expect(home).toMatch(/\{capabilities\.signIn \? <ListRow title=\{h\.accountLabel\}/);
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
-    expect(home).toMatch(/\{capabilities\.signIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
+    expect(home).toMatch(/\{capabilities\.signIn && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
+  });
+
+  it('shows Delete account only while signed in, and never with server features off (#358 review)', () => {
+    // The row's own condition, read from the screen and run for each case, so a change to it fails here.
+    const m = home.match(/\{([^{}?]+)\?\s*\(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
+    expect(m, 'the Delete account row and its condition').not.toBeNull();
+    const shown = new Function('capabilities', 'auth', `return Boolean(${m![1]});`) as (c: { signIn: boolean }, a: { signedIn: boolean }) => boolean;
+    expect(shown({ signIn: true }, { signedIn: true })).toBe(true); // signed in: the row
+    expect(shown({ signIn: true }, { signedIn: false })).toBe(false); // signed out: no row
+    expect(shown({ signIn: false }, { signedIn: false })).toBe(false); // server features off: no row
+    expect(shown({ signIn: false }, { signedIn: true })).toBe(false);
+    // `auth` is the session the screen already reads for the Account row.
+    expect(home).toMatch(/const auth = useAuth\(\);/);
   });
 });
 
