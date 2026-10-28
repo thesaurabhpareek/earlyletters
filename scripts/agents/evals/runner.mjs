@@ -82,7 +82,19 @@ function prepareTrial(task, { overlayReference = false, tmpBase } = {}) {
   const trialDir = mkdtempSync(join(tmpBase || tmpdir(), "evaltrial-"));
   const workdir = join(trialDir, "work");
   cpSync(task.fixtureDir, workdir, { recursive: true });
-  if (overlayReference) cpSync(task.referenceDir, workdir, { recursive: true, force: true });
+  if (overlayReference) {
+    cpSync(task.referenceDir, workdir, { recursive: true, force: true });
+    // A reference that must delete files (drift-06) lists them, one relative path per line, in _remove.txt.
+    // Without this a deletion-only fix cannot be proven solvable and the task validates as BROKEN.
+    const rm = join(workdir, "_remove.txt");
+    if (existsSync(rm)) {
+      for (const line of readFileSync(rm, "utf8").split("\n").map((l) => l.trim()).filter(Boolean)) {
+        const target = resolve(workdir, line);
+        if (target !== workdir && target.startsWith(workdir + "/")) rmSync(target, { recursive: true, force: true });
+      }
+      rmSync(rm, { force: true });
+    }
+  }
   // task.md lives beside, not inside, the workdir so the candidate cannot alter what the grader tree sees.
   const taskMd = join(trialDir, "task.md");
   cpSync(task.taskMd, taskMd);
