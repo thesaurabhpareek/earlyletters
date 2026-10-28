@@ -40,6 +40,7 @@ import {
   initialAuthState,
   isSignedIn,
   shouldFinishSignOut,
+  shouldRecheckGate,
   type AuthErrorKind,
   type AuthMethod,
   type AuthState,
@@ -92,6 +93,11 @@ export interface AuthApi {
   refreshGate(): Promise<void>;
   /** 'waiting' when letters are still uploading; sign-out finishes on its own when they are done. */
   signOut(): Promise<'done' | 'waiting'>;
+  /**
+   * "Stay signed in" while a sign-out the person asked for waits for uploads: back to signed in,
+   * nothing deleted, nothing sent (S01). No screen calls it yet.
+   */
+  cancelSignOutWait(): void;
   signOutOtherDevices(): Promise<Outcome>;
   /** The Supabase client for screens in lib/family and lib/auth; null when not configured. */
   client: SupabaseClient | null;
@@ -231,8 +237,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
-      const cur = stateRef.current;
-      if (cur.status === 'ready' && (cur.sync === 'unknown' || Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
+      if (shouldRecheckGate(stateRef.current, Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
     });
     return () => sub.remove();
   }, [checkGate]);
@@ -263,6 +268,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       clearInterval(poll);
     };
   }, [waiting]);
+
+  // S01: a wait that began before the gate was ever read (offline at launch) reads it now. GATE_LOADED then
+  // lets the outbox drain or ends the wait; still offline, the foreground re-check above tries again.
+  const waitingBlind = state.status === 'signingOut' && shouldRecheckGate(state, false);
+  useEffect(() => {
+    if (waitingBlind) void checkGate();
+  }, [waitingBlind, checkGate]);
 
   const finishing = shouldFinishSignOut(state);
   useEffect(() => {
@@ -469,6 +481,10 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         const pending = await pendingUploads();
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending });
         return pending > 0 && syncing ? 'waiting' : 'done';
+      },
+
+      cancelSignOutWait() {
+        dispatch({ type: 'SIGN_OUT_WAIT_CANCELLED' });
       },
 
       async signOutOtherDevices() {
