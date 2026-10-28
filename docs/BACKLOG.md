@@ -1580,10 +1580,10 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: no unused `accountScheduledBody` remains; the Maestro flow finds every `deleteAccount.*` id it uses; a test fails if `held` is treated as cancelled; the PR body says what was checked for point 2.
 
 #### BL-456 Backup tests' plaintext-leak scans see only the start of a recording
-- Status: blocked (PR #362 merge; the fix is in the three files that PR changes). Mode: agent. Owner: sync owner (S05: backup). Milestone: M5. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: sync owner (S05: backup). Milestone: M5. Size: S. Depends on: none.
 - Priority: Low.
 - Satisfies: none given.
-- Why: three backup tests scan what leaves the phone for the recording's plaintext: `apps/mobile/test/backup-e2e.test.ts:75-78`, `apps/mobile/test/backup-queue.test.ts:241-244` and `apps/mobile/test/backup-format.test.ts:117-121`. On develop each checks the 4 bytes `ftyp` and one 64-byte window at a fixed byte (2000 in the e2e test, 4096 in the queue test, 1000 in the format test); PR #362 (open) swaps the 4-byte check for the recording's own 16-byte header at every offset. Either way the scans see only one fixed window and the header: plaintext from the middle of a recording (bytes 100..164 or 65536..65600) planted in a body or object passes all three files. Not new to #362: the old 4-byte check had the same blindness. From the #362 review.
+- Why: three backup tests scan what leaves the phone for the recording's plaintext: `apps/mobile/test/backup-e2e.test.ts:82-87`, `apps/mobile/test/backup-queue.test.ts:244-248` and `apps/mobile/test/backup-format.test.ts:119-125`. Since #362 (merged as a6519a4) each checks the recording's own 16-byte header, at every offset of every body or object, and one 64-byte window at a fixed byte (2000 in the e2e test, 4096 in the queue test, 1000 in the format test), and nothing else of the recording. Plaintext from the middle of a recording (bytes 100..164 or 65536..65600) planted in a body or object passes all three files. Not new to #362: the old 4-byte check had the same blindness. From the #362 review.
 - Scope: check several 16-byte shingles of the recording at strided offsets across the whole take, each against every offset of every body or object, as #362 does for the header.
 - Done when: a test that plants plaintext from bytes 100..164 and from bytes 65536..65600 of the recording in a body or object makes each of the three scans fail; the real upload still passes all three.
 
