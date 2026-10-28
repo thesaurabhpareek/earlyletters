@@ -20,6 +20,12 @@
 --    would ever look for it. The policy now refuses a path whose file name is an erased letter id, using the
 --    same rule the letter itself is refused by (sync_private.erasure_recorded). The function reads ids only
 --    and answers false for any path without a uuid file name (no cast error).
+--    Red-team round on #311 closed four holes in the first cut: (a) a rename: Storage upsert and move go
+--    through UPDATE, so entry_photos_author_update gets the same condition; (b) odd file names: the uuid is
+--    matched as the start of the file name (so `{id}`, `{id}.x.jpg` and `{id}-1.jpg` are caught), and a path
+--    deeper than {book}/{author}/{file} is refused on insert and update; (c) the helper answered for any
+--    path, so any signed-in person could ask whether a given letter id was erased: it now answers false
+--    unless the path's second folder is the caller's own id.
 --
 -- New SQLSTATEs: none (a Storage policy refusal is a 403 to the client, as for consent). No new column, so no
 -- classification label. Fictional family "Asha" only.
@@ -31,19 +37,31 @@ alter role escrow_svc set search_path = pg_catalog, public, pg_temp;
 create or replace function public.photo_entry_is_purged(p_name text)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select coalesce(
-    sync_private.erasure_recorded(
-      (substring(p_name from '^[^/]+/[^/]+/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.[A-Za-z0-9]+$'))::uuid,
+    split_part(p_name, '/', 2) = auth.uid()::text
+    and sync_private.erasure_recorded(
+      (substring(p_name from '^[^/]+/[^/]+/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'))::uuid,
       auth.uid()), false);
 $$;
 revoke execute on function public.photo_entry_is_purged(text) from public, anon;
 grant execute on function public.photo_entry_is_purged(text) to authenticated;
 
--- The policy of 20261003000000, restated with one more condition.
+-- The insert policy of 20261003000000, restated with two more conditions.
 alter policy entry_photos_author_insert on storage.objects with check (
   bucket_id = 'entry-photos'
   and (storage.foldername(name))[2] = (select auth.uid())::text
+  and array_length(storage.foldername(name), 1) = 2
   and public.is_child_member(((storage.foldername(name))[1])::uuid)
   and public.child_is_live(((storage.foldername(name))[1])::uuid)
   and public.can_write_content()
   and not public.photo_entry_is_purged(name)
 );
+
+-- The update policy of 20261005000000 (renames, moves and upserts), restated with the same two conditions.
+alter policy entry_photos_author_update on storage.objects
+  using (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text)
+  with check (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text
+              and array_length(storage.foldername(name), 1) = 2
+              and public.is_child_member(((storage.foldername(name))[1])::uuid)
+              and public.child_is_live(((storage.foldername(name))[1])::uuid)
+              and public.can_write_content()
+              and not public.photo_entry_is_purged(name));

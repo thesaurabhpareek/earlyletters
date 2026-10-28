@@ -3,7 +3,7 @@
 //   1. Reads pg_proc.proconfig: every SECURITY DEFINER function, and every function an RLS policy calls
 //      (found from pg_depend on pg_policy, not by name), in every schema the migrations create, has
 //      search_path with pg_catalog first and pg_temp last, or empty. The same check runs on role defaults.
-//   2. A stranger's temp table named like ours changes nothing for the photo helper.
+//   2. The shadowing probe itself lives in v1_gate_search_path.test.mjs (a temp table shadows child_members).
 //   3. After Erase now, the photo cannot be put back under the erased letter's path.
 import { createDb, users, uuid7 } from './harness.mjs';
 
@@ -17,7 +17,8 @@ const CHILD = await newChild(A, 'Asha', '2025-04-12');
 await join(B, 'parent', CHILD, A);
 
 // ── 1. proconfig sweep ───────────────────────────────────────────────────
-const SQL_SCHEMAS = `('public', 'ops', 'insights', 'sync_private')`;
+// Every schema except the system ones and those owned by Supabase extensions/services.
+const SQL_SCHEMAS = `(select nspname::text from pg_namespace where nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'auth', 'storage', 'vault', 'extensions') and nspname not like 'pg_temp%' and nspname not like 'pg_toast_temp%')`;
 const pinned = (cfgs) => {
   const sp = (cfgs ?? []).find((c) => c.startsWith('search_path='));
   if (!sp) return false;
@@ -27,7 +28,7 @@ const pinned = (cfgs) => {
 const definers = (await sys(`
   select n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as sig, p.proconfig
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where p.prosecdef and n.nspname in ${SQL_SCHEMAS}`)).rows;
+   where p.prosecdef and n.nspname::text in ${SQL_SCHEMAS}`)).rows;
 const badDefiners = definers.filter((f) => !pinned(f.proconfig));
 for (const f of badDefiners) console.log(`      definer without pg_temp last: ${f.sig} ${JSON.stringify(f.proconfig)}`);
 check(`every security definer function pins search_path with pg_catalog first and pg_temp last (${definers.length} functions)`,
@@ -38,7 +39,7 @@ const helpers = (await sys(`
   select distinct n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as sig, p.proconfig, p.prosecdef
     from pg_policy pol join pg_depend d on d.classid = 'pg_policy'::regclass and d.objid = pol.oid and d.refclassid = 'pg_proc'::regclass
     join pg_proc p on p.oid = d.refobjid join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname in ${SQL_SCHEMAS}`)).rows;
+   where n.nspname::text in ${SQL_SCHEMAS}`)).rows;
 const badHelpers = helpers.filter((f) => !pinned(f.proconfig));
 for (const f of badHelpers) console.log(`      RLS helper without pg_temp last: ${f.sig} ${JSON.stringify(f.proconfig)}`);
 check(`every function an RLS policy calls pins search_path with pg_temp last (${helpers.length} functions)`, helpers.length > 5 && badHelpers.length === 0);
@@ -107,11 +108,33 @@ check('a path without a uuid file name answers false, with no cast error',
 check('the other parent still cannot upload into the author\'s folder (42501)', (await codeOf(() => upload(B, `${CHILD}/${A}/${id7()}.jpg`))) === '42501');
 check('a stranger cannot upload into the book (42501)', (await codeOf(() => upload(C, `${CHILD}/${C}/${id7()}.jpg`))) === '42501');
 
-// A stranger's temp tables named like ours do not move the answer (pg_temp is last).
-await as(C, `create temp table purge_ledger (entity_type text, entity_id text, purged_at timestamptz default now())`);
-await as(C, `create temp table entry_erasures (entry_id uuid, author_id uuid)`);
-check('a temp purge_ledger in another session changes nothing: the helper still says true for the erased path', (await purgedFn(A, p1)) === true);
-await as(C, `drop table pg_temp.purge_ledger`);
-await as(C, `drop table pg_temp.entry_erasures`);
+// Rename, odd file names, nesting (red team on #311). Storage upsert and move go through UPDATE.
+const tmp = `${CHILD}/${A}/${id7()}.jpg`;
+await upload(A, tmp);
+const rename = (uid, from, to) => as(uid, `update storage.objects set name = $2 where bucket_id = 'entry-photos' and name = $1`, [from, to]);
+check('renaming an object onto an erased letter\'s path is refused (42501)', (await codeOf(() => rename(A, tmp, p1))) === '42501');
+check('renaming onto a nested path is refused (42501)', (await codeOf(() => rename(A, tmp, `${CHILD}/${A}/sub/${id7()}.jpg`))) === '42501');
+const L3 = id7();
+check('renaming onto a fresh letter path works', (await codeOf(() => rename(A, tmp, `${CHILD}/${A}/${L3}.jpg`))) === 'ok');
+for (const [label, name] of [
+  ['an extra extension', `${CHILD}/${A}/${L1}.x.jpg`],
+  ['no extension', `${CHILD}/${A}/${L1}`],
+  ['a suffix', `${CHILD}/${A}/${L1}-1.jpg`],
+  ['a nested folder', `${CHILD}/${A}/sub/${L1}.jpg`],
+  ['an upper-case id', `${CHILD}/${A}/${L1.toUpperCase()}.jpg`],
+]) {
+  check(`uploading under the erased id with ${label} is refused (42501)`, (await codeOf(() => upload(A, name))) === '42501');
+  const t = `${CHILD}/${A}/${id7()}.jpg`;
+  await upload(A, t);
+  check(`renaming onto the erased id with ${label} is refused (42501)`, (await codeOf(() => rename(A, t, name))) === '42501');
+}
+check('a nested path for a never-erased id is refused too (42501)', (await codeOf(() => upload(A, `${CHILD}/${A}/sub/${id7()}.jpg`))) === '42501');
+check('the policy texts carry the purged check',
+  (await sys(`select count(*)::int n from pg_policy where polname in ('entry_photos_author_insert', 'entry_photos_author_update')
+               and pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%'`)).rows[0].n === 2);
+
+// The helper does not tell anyone else whether a letter was erased.
+check('the other parent and a stranger get false for the author\'s erased path; the author gets true',
+  (await purgedFn(B, p1)) === false && (await purgedFn(C, p1)) === false && (await purgedFn(A, p1)) === true);
 
 done();
