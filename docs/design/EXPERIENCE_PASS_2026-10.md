@@ -1275,13 +1275,14 @@ Copy (`authCopy`, `packages/content/src/features/auth.en.ts`):
 | `sheet.notConfigured` | Signing in is not available right now. Your letters are safe on this phone. | CHG ("in this build" is our word, not theirs; kill path only) |
 | `errors.network` | Your letters are safe on this phone. Sign in once you are back online. | CHG (reassure first, VOICE Error row) |
 | `errors.expired` | That link has expired. Send a new email for a fresh one. | CHG |
-| `errors.code_paused` | You can try a code again in 15 minutes. | CHG (one sentence, without the system's voice) |
-| `errors.rate_limited` | Sign-in emails are paused for an hour. Use Apple or Google, or try again later. | CHG (the cause and a way forward) |
-| `errors.provider` | That did not work this time. Try again, or try another way. | CHG (VOICE's own error line) |
+| `errors.code_paused` | Your letters are safe. You can try a code again in 15 minutes. | CHG (one sentence, without the system's voice; amended 28 Oct, #360: a service- or network-caused error says the letters are safe first) |
+| `errors.rate_limited` | Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later. | CHG (the cause and a way forward; amended 28 Oct, #360, as `code_paused`) |
+| `errors.provider` | Your letters are safe. That did not work this time. Try again, or try another way. | CHG (VOICE's own error line; amended 28 Oct, #360, as `code_paused`) |
 | `errors.session_expired` | Your letters are safe on this phone. Sign in again to keep sharing them. | CHG |
 | `errors.consent_unavailable` | Your letters are safe on this phone. Setting up your account did not finish. Try again. | CHG |
 | `errors.unknown` | That did not work this time. Your letters are safe on this phone. | CHG |
-| `errors.wrong_code`, `invalid_email`, `not_available`, `under_18` | as today | KEEP |
+| `errors.not_available` | Your letters are safe. This way of signing in isn't available right now. Try another way. | CHG (amended 28 Oct, #360, as `code_paused`; the words after the first sentence as before) |
+| `errors.wrong_code`, `invalid_email`, `under_18` | as today | KEEP (input errors keep their words) |
 
 Visual: a native sheet, fit to contents (large at accessibility sizes). With a book on this phone (`first_letter`, `settings`, `invite_create`), the small closed book cover (88 x 116, the child's name) sits at the right of the title row, as on S05: the sheet is about that book. Under the body, the providers stacked full width, 56 pt, 12 pt apart: Sign in with Apple (Apple's own button, as HIG Sign in with Apple requires), "Continue with Google" (bordered, Google's mark as its branding rules allow), "Continue with email" (bordered, EnvelopeSimple 20 pt). "Use a passkey" as a quiet button only when enabled. "Last time you used Apple." in `footnote` under them. The privacy line and "Not now" at the foot. No illustration.
 
@@ -1291,7 +1292,7 @@ States: kill path (`notConfigured`, no buttons); offline; busy; each error; open
 
 Acceptance:
 - [ ] One title, one body sentence, the providers, the privacy line and "Not now".
-- [ ] Every error after an offline or failed attempt says the letters are safe before anything else.
+- [ ] Service- or network-caused errors say the letters are safe first; input errors keep their words; unknown says it second.
 - [ ] No "we" on the sheet outside the registered privacy line.
 - [ ] "Not now" always closes and changes nothing on this phone.
 - [ ] After the first kept letter it rises over the Book, never in place of Review (S21).

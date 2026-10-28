@@ -87,7 +87,6 @@ const CHANGED = [
   'features.player.cannotPlay',
   'en.readTogether.autoplayLabel',
   'en.readTogether.endOfMonth',
-  'en.readTogether.endOfMonthAlt',
   'en.notMuch.savedToast',
   'features.reminders.settings.monthNotesLabel',
   'features.reminders.settings.monthNotesHelp',
@@ -240,14 +239,27 @@ const HELD: Record<string, string> = {
 
 /** RET: no longer shown once the screen package lands; the key stays until P7. */
 const RETIRED = [
+  'en.book.chapterNotes',
+  'en.book.chapterNoteOne',
+  'en.book.chapterMixed',
+  // P6 (S34): the master switch keeps every choice when off, so the Pause row went.
+  'features.reminders.settings.pausedSummary',
+  'features.billing.plan.off',
+  'features.billing.plan.yearly',
+];
+
+/**
+ * Deleted by P7 (38 RET-tracked keys, plus 2 approved unmarked ones that had no reader). RETIRED above is a keep-list,
+ * so nothing else would notice if a deleted word came back: this list does. Never reuse their words (strings.en.ts header).
+ */
+const DELETED = [
+  // RET, no reader on develop (P7)
   'en.ageGate.body',
   'en.ageGate.stopBody',
   'en.ageGate.stopNote',
   'en.onboarding.promise.body',
   'en.onboarding.promise.recordingTitle',
   'en.onboarding.promise.mishearTitle',
-  'en.onboarding.child.nameHelp',
-  'en.onboarding.child.birthdayHelp',
   'en.onboarding.signsAs.body',
   'en.onboarding.dictionary.languagesBody',
   'features.speechConsent.note',
@@ -264,25 +276,26 @@ const RETIRED = [
   'en.book.empty.chapterTitle',
   'en.book.empty.chapterBody',
   'en.book.chapterSubtitle',
-  'en.book.chapterNotes',
-  'en.book.chapterNoteOne',
-  'en.book.chapterMixed',
   'en.reader.deletedBody',
+  'en.readTogether.endOfMonthAlt',
+  'en.familyTab.inviteNeedsSignIn',
+  // RET, freed by P6a, P6b and P8b (P7)
+  'en.onboarding.child.nameHelp',
+  'en.onboarding.child.birthdayHelp',
+  'en.children.add.body',
+  'en.childrenExtra.edit.born.offer',
   'en.reader.preview',
   'features.reminders.settings.eveningsHelp',
   'features.reminders.settings.eveningHelp',
-  'features.billing.plan.off',
-  'features.billing.plan.yearly',
   'en.settings.recordings.keepHelp',
   'en.settings.export.body',
   'features.export.screen.tooBigBody',
-  'en.childrenExtra.edit.born.offer',
-  'en.children.add.body',
-  'en.readTogether.endOfMonthAlt',
-  // Experience pass v1.1 (S57): the Family tab's coming-soon words.
+  'en.settings.reminders.pauseLabel',
   'en.familyTab.emptyTitle',
   'en.familyTab.emptyBody',
-  'en.familyTab.inviteNeedsSignIn',
+  // dead and unmarked, deleted with the coordinator's yes (P7)
+  'features.reminders.settings.pausedHelp',
+  'en.family.subtitle',
 ];
 
 /**
@@ -451,7 +464,7 @@ const IN_APP: Leaf[] = [
 
 describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
   it('has every changed and added key, each in one list only', () => {
-    // A changed key may also be retired (endOfMonthAlt now equals endOfMonth); the other lists never overlap.
+    // A changed key may also be retired; the other lists never overlap.
     const all = [...CHANGED, ...ADDED, ...Object.keys(HELD)];
     expect(all.length).toBe(new Set(all).size);
     expect(RETIRED.filter((k) => ADDED.includes(k) || k in HELD)).toEqual([]);
@@ -468,6 +481,23 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     }
     // billingCopy.plan.annual sits beside plan.yearly until P7 (P0 rule 2).
     expect(typeof at('features.billing.plan.yearly')).toBe('string');
+  });
+
+  it('keeps the 40 keys P7 deleted deleted: a re-added leaf fails here', () => {
+    expect(DELETED).toHaveLength(40);
+    expect(new Set(DELETED).size).toBe(DELETED.length);
+    // A deleted key is in no keep-list, so the lists cannot disagree.
+    const kept = new Set([...RETIRED, ...CHANGED, ...ADDED, ...Object.keys(HELD), ...Object.keys(REGISTERED)]);
+    expect(DELETED.filter((k) => kept.has(k))).toEqual([]);
+    // errors.storageLow went as a whole block, so its parent is errors.
+    const WHOLE_BLOCK = 'en.errors.storageLow';
+    for (const key of DELETED) {
+      expect(at(key), key).toBeUndefined();
+      // The parent still exists, so a mistyped path cannot pass for a deleted one.
+      const parent = key.startsWith(`${WHOLE_BLOCK}.`) ? 'en.errors' : key.slice(0, key.lastIndexOf('.'));
+      expect(typeof at(parent), `${parent} for ${key}`).toBe('object');
+    }
+    expect(at(WHOLE_BLOCK)).toBeUndefined();
   });
 
   it('names who switches every held key', () => {

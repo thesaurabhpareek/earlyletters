@@ -8,8 +8,13 @@ test('[J13] reminders: off, on, how often', async ({ app, record }) => {
   await expect(app.getByRole('switch')).toBeVisible();
   await step('happy', 'Reminders, off', 'One switch and one plain line: a gentle nudge a few evenings a week, never late at night. Nothing is asked of the phone until the switch is turned on.');
   await app.getByRole('switch').first().click();
+  await expect(app.getByText('Notifications are off')).toBeVisible();
+  await expect(app.getByText('Turn them on in Settings to get these reminders.')).toBeVisible();
   await expect(app.getByText('Open Settings')).toBeVisible();
-  await step('unhappy', 'On, but notifications are not allowed', 'With the switch on and the phone\'s notification permission not granted, the screen explains it and offers "Open Settings" (native; it does nothing on web). The choices below stay editable. On iOS, the first time, a priming sheet comes before the iOS alert; the web build has no notification permission, so it skips straight to this state.');
+  // S34: one switch per decision. The master switch keeps every choice when off, so there is no Pause row.
+  await expect(app.getByText('Pause all reminders')).toHaveCount(0);
+  await expect(app.getByText('Month and birthday messages')).toBeVisible();
+  await step('unhappy', 'On, but notifications are not allowed', 'With the switch on and the phone\'s notification permission not granted, a card with the warning mark says "Notifications are off" and offers "Open Settings" (native; it does nothing on web). The choices below stay editable. When the person comes back from Settings with notifications allowed, the card collapses and "Reminders are on." shows (a phone check). On iOS, the first time, a priming sheet comes before the iOS alert; the web build has no notification permission, so it skips straight to this state. There is one switch for reminders: no separate Pause.');
   await app.getByText('Every evening', { exact: true }).click();
   await step('happy', 'Every evening', 'Choosing a cadence updates the evenings and the time (7 AM to 9:30 PM; quiet on a day already written). The time picker is a native control and does not open on web.');
 });

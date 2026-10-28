@@ -82,8 +82,10 @@ test('[J06e] Keep needs Plus past the free letters: the letter is held, never lo
   await expect(app.getByText(/\$\d|free trial|email you/i)).toHaveCount(0);
   await step('unhappy', 'Keep needs Plus', 'Pressing Keep after the first two letters opens one calm sheet: "Keep adding to Asha\'s book", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple\'s own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no "See Plus" or "Redeem a code" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.');
   await btn(app, 'Keep it here for now').click();
-  await expect(app.getByText('Read it back').first()).toBeVisible();
-  await step('happy', 'Kept here for now', 'The letter stays a draft: its card is still on Tonight with the words exactly as they were. It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
+  // S22: the draft is marked held (store.holdDraft), so Tonight's card says so (S09), with its words as they were.
+  await expect(app.getByText('Waiting to be kept.').first()).toBeVisible();
+  await expect(btn(app, /Keep it/).first()).toBeVisible();
+  await step('happy', 'Kept here for now', 'The letter stays a draft, marked held: its card on Tonight says "Waiting to be kept." with the words exactly as they were and "Keep it". It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
 });
 
 test('[J06d] a Review link with no draft', async ({ app, record }) => {

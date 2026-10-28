@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); the next block starts at BL-445.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); the next block starts at BL-457.
 
 ---
 
@@ -296,7 +296,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: done (`src/components/child/child-switcher.tsx`, "Whose book" copy in `packages/content`).
 
 #### BL-035 Per-child settings
-- Status: done (`src/app/settings/children/[id].tsx`, `new.tsx`).
+- Status: done in part (`src/app/settings/children/[id].tsx`, `new.tsx`). The undo for "Hide this book", `unhideChild` (`apps/mobile/src/lib/store.ts:340`), has no caller in any screen on develop at 8301ac8; PR #361 (P6d, Show this book again) adds one and was open on 28 Oct. Done once #361 merges.
 
 #### BL-023 Ask sequencer and analytics consent sheet
 - Status: done (mobile-polish, this wave: `src/lib/analytics/ask-sequencer.logic.ts` with `ask-sequencer.logic.test.ts`, `src/components/consent/consent-ask.tsx` mounted in `_layout.tsx`, the sheet on `ui/Sheet`). The sequencer lives in the app's `.logic.ts` layer, not `packages/core`; that is enough for v1.0.
@@ -367,6 +367,12 @@ All database files below are **written and tested but not applied** to any remot
 - Satisfies: PRD V2 F11 6.2 D step 4, F11-REQ-011, DATA-REQ-016.
 - Scope: after `leave_child`, `src/lib/sync/merge.ts` marks the book `left` and `src/lib/db/repos/children.ts` (`LISTED`) hides it, so the leaver's own letters stay on the phone with no screen. List left books under "Letters to {child}" with read, export and delete. Then set `LEAVE_BOOK_OFFERED` in `src/lib/family/entry.logic.ts` and bring the Leave row back (F11 6.2 D step 1), with a variant the lamp rule allows on that screen.
 - Why: D-113 hides Leave in build 2 until this ships (PR #184).
+
+#### BL-445 Typed invite codes: a code-registration route, the S04 client and #306's fix list (D-120) [Critical]
+- Status: blocked (after the alpha, needed before the App Store release: build 2 invites are link-only, D-120). Mode: agent. Owner: data architect (S02, the route, #306 and the alert), family owner (S04, the client).
+- Satisfies: F11-REQ-001 (Show code), F11-REQ-002, F11-REQ-007 (with its alert), A-REQ-029 (the code field).
+- Scope: (1) a code-registration route: the device makes the 8-character code (`packages/core/src/invite.ts` has the helpers; the app does not use them yet) and the server stores its HMAC under `INVITE_CODE_PEPPER`, which only the Edge Functions hold, so `create_child_invite` stops getting `p_code_hash` null (`CreateInviteArgs` in `packages/api/src/server/family.ts`, `apps/mobile/src/lib/family/invites.ts`). (2) PR #306 (`invite_redeem_by_code`) resumes with the fix list on the PR (issuecomment-6460527733) worked through before any merge. (3) The S04 client: Show code on the invite sheet and a code field on the join sheet that redeems through `invite-redeem` (`INVITE_REDEEM_PATH`), with the words in `packages/content`. (4) The F11-REQ-007 alert: when code redemption reaches the global limit (1,001 failed codes in an hour across devices) and answers `SCRAT` for everyone, an alert fires within 15 minutes, and links keep working.
+- Why: D-120. Until this ships those four P0 lines are unmet on the phone, and the F11-REQ-007 alert is not built (#306's hold comment).
 
 #### BL-178 Profile settings and shared dictionary terms
 - Status: deferred (v1.2, CVL-03).
@@ -1462,6 +1468,124 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
   - `apps/mobile/test/config.test.ts`: warm `getConfig` in a `beforeAll` (the first call pays the cold `@expo/config` load).
   - `packages/content/test/no-real-family-data.test.ts`: skip non-text files with `git ls-files --eol` instead of reading each one.
 - Done when: `npm test` and `npm run test:coverage` each pass three times in a row on a 2-core runner, and the coverage-only skip in `apps/mobile/vitest.coverage.config.ts` is removed.
+
+## Review follow-ups (28 Oct 2026)
+
+Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362) and filed here by the product agent from the coordinator's list. File and line references were checked against `develop` at 8301ac8; where a line is on an open PR's head and not on `develop`, the entry says which PR. "Unverified" means the review read the code and did not run or reproduce it. This file tags only [Critical] and [High] in a heading, so Medium and Low items carry a `Priority:` line instead. In an Owner line, S## is a stream of PRD V2 `08-delivery.md` 3.3 and P8a is the experience pass package for the account view.
+
+#### BL-446 Export includes the letters and books an account-deletion request moved to Recently deleted [Critical]
+- Status: ready. Gate: the first build real families use with sign-in on. Not an alpha build 2 blocker: build 2 (the `preview` profile) is the first build with sign-in on, but PR #358 removed the export promise from the scheduled page and the request email, and its testers are family and invited friends (coordinator's call, 28 Oct 2026; the founder can overrule it). Mode: agent. Owner: sync owner (S03: lib/db, store.ts, lib/sync; listed first because the wire-change route starts there), export owner (S13: lib/export), mobile engineer (S14: lib/account-deletion). Milestone: M9. Size: M. Depends on: none.
+- Satisfies: DATA-REQ-053 (P0, `docs/legal/DELETION_AND_EXPORT_SPEC.md:376`: "Export works for everything not yet purged, including letters tombstoned by the request").
+- Why: `request_account_deletion` sets `entries.deleted_at` with `deleted_reason = 'account_deletion'` and tombstones sole-parent books (`supabase/migrations/20261005000000_family_cap_language_idempotency.sql:435-443`). The next sync moves those letters to Recently deleted and unlists the books: `sync_pull` has no `deleted_reason` in the pull row (`supabase/migrations/20261016000000_sync_v1_server.sql:1485-1495`), so the phone sees them as ordinary deletions (`apps/mobile/src/lib/sync/merge.ts:644`, `:844-845`). Export skips both. Its letters filter is `deleted_at IS NULL` (`apps/mobile/src/lib/db/repos/entries.ts:167`, in `listForChild`) and its books come from `listChildren` and `listHiddenChildren` (`apps/mobile/src/lib/export/device.ts:102-103`), which leave out left and deleted books (`apps/mobile/src/lib/db/repos/children.ts:29`); the comment at `apps/mobile/src/lib/export/build.logic.ts:9` says Recently deleted letters are left out by design (D-085). A person in the 30-day grace period who taps Export gets a file without those letters. Found in the review of #358, lens A: code reading, not reproduced on a phone.
+- Where it can happen: in `preview` (alpha build 2), the only profile with `EXPO_PUBLIC_SERVER_FEATURES` on (`apps/mobile/eas.json:47`), and in the first release that turns sign-in and sync on. Not in a server-off store build: `production` and `testflight` are off (`apps/mobile/eas.json:61`, `:75`), and `apps/mobile/src/lib/capabilities.ts:8-9` and `:17` say store profiles stay off and the Delete account row is not offered when off. D-121 (proposed in PR #340, not on develop) would make the first store build server-off, with submission targeted Tue 1 Dec 2026; `docs/release/1.0.0.md:15` has App Store 1.0.0 as not started and re-planned. For build 2, PR #358 (merged as 8301ac8) removed the export promise from the scheduled page and the request email; this task is the real fix.
+- Scope: make Export complete while a request is open, covering the letters the request tombstoned and the books it unlisted. Two ways; the owner picks one in the PR and says why: a wire change (put `deleted_reason` in the `sync_pull` row, which is a new migration and needs the founder's `approve-migration` label), or an export that reads Recently deleted and the unlisted books while a request is open. Reproduce first. Overlap: BL-323 and PR #161 ask whether Recently deleted letters belong in an export at all (spec 4.1 says only when "Include recently deleted" is ticked; D-085 leaves them out). That question is the founder's and is not decided here; this task covers only what an open request moved.
+- Done when: an export taken during the grace period holds every letter the request tombstoned and every book it unlisted; a test runs the real merge and export path on the Asha fixture (request, sync, export); after Cancel the letters and books are back where they were and export as before.
+
+#### BL-447 A deletion request under a legal hold: what the scheduled page tells the person [High]
+- Status: needs-decision (counsel; counsel relay doc, item 11 addendum, not in the repo; gate: the first build real families use with sign-in on, same as BL-446). Mode: pair. Owner: legal (the question for counsel), mobile engineer (S14: `stepFor`). Milestone: M9. Size: S. Depends on: none.
+- Satisfies: none given. Cited: `docs/legal/data-policy.md:221` (a hold pauses purge and account-deletion execution; "the user is told only what the law allows").
+- Why: `held` is set only on or after `scheduled_for` (`supabase/migrations/20261023020000_purge_legal_holds.sql:210-214`, `:294`), and `stepFor` maps `held` to the scheduled page (`apps/mobile/src/lib/account-deletion/logic.ts:104`). A person whose request is under a legal hold therefore sees the scheduled page with a date that has already passed. Cancel still works while held. Only a build with sign-in on can show it (see BL-446 for the profiles).
+- Scope: counsel decides what such a person is told. The question is in the counsel relay doc (not in the repo), under item 11 as an addendum ("Also for counsel"), not in item 11's own two lines. Then S14 changes `stepFor` and the page to say it, with the words in `packages/content`. Not a build 2 blocker: only the founder or counsel place holds (unverified that none exists on staging).
+- Done when: counsel's answer is recorded here; a held request shows what the answer says and not a past date; a test covers `held` in `stepFor`.
+
+#### BL-448 Deletion words and docs agree with the S64 page: emails, website page, register rows, spec, run sheets
+- Status: needs-decision (counsel for the website page and register rows; the spec owner for the spec and run-sheet points; BL-361 for the co-parent notice). Mode: pair. Owner: legal (counsel draft, website page, register rows, Privacy Policy, spec), content (the emails), qa engineer (run sheets and test plans). Milestone: M9. Size: M. Depends on: BL-361 (item 1 only).
+- Priority: Medium.
+- Satisfies: none given. DATA-REQ-053 is cited in item 5. S64 is the Delete account page of `docs/design/EXPERIENCE_PASS_2026-10.md`.
+- Why: six places say something the app does not do (from the review of #358, lens A, and its delta; checked on develop at 8301ac8, after #358 merged and fixed AL-07.3, AL-07.5 and E2E-09 steps 1 and 4):
+  1. The request email no longer promises an export or says a co-parent is told (`packages/content/src/emails/account.en.ts:43-45`, `:52`; #358 did that). It can say a co-parent is told only once a notice is sent: the `coparent-left` template exists (`account.en.ts:188`) but nothing sends it (BL-361 is blocked), and no screen shows the in-app `coParentLeft` card (`packages/content/src/strings.en.ts:1257`).
+  2. The book-deletion email promises an export during the grace period: its preheader "Until then you can export it, or change your mind." and its body "You can export everything in it first, free." (`packages/content/src/emails/account.en.ts:108` and `:112`). No book-deletion screen backs it: `request_book_deletion` appears in TypeScript only in `packages/core/src/family-rules.ts`.
+  3. The website Delete account page (`packages/content/src/pages.en.ts` lines 199, 223, 225, 240, 248; counsel's draft is `docs/legal/delete-account-page.md` in PR #163) still says "Settings, then Your data, then Delete account", "we let them know", "You can also still export", lists photos and says "we send a receipt". It is counsel's draft, so counsel decides.
+  4. PR #163's register row (`docs/legal/in-app-disclosures.md:37`) and Privacy Policy line 97 put Delete account under "Settings, Your data" and list "what we keep and why" on the screen. Both exist only on #163's head (53a7622), not on develop. Settings has Delete account in its own section (`docs/design/EXPERIENCE_PASS_2026-10.md:1029`) and the S64 page has no such list. Counsel and the spec owner reconcile.
+  5. The spec disagrees with S64. `docs/legal/DELETION_AND_EXPORT_SPEC.md` 2.6.1 step 7 (line 202) says the phone signs out by itself, where S64 has a "Sign out of this phone" button; step 1 (line 196) puts the row under Settings > Your data, where the app has it in its own section. AL-07.1 (`docs/qa/run-sheets/AL-07-account-deletion.md:20`) says Export is "the main action" and DATA-REQ-053 says Export is "the primary action on the step before Confirm", but the S64 page makes Export and Continue both outline (S64 says bordered). The spec owner decides.
+  6. Docs still say "sign in again" before cancelling, although the app stays signed in: `docs/tdd/07-quality-test-strategy.md:336` (E2E-09 step 5), `docs/qa/DEVICE_TEST_PLAN.md:371` (S2-13), `docs/qa/run-sheets/2026-10-30-T11-session-1.md:63`.
+- Scope: each point has an owner who decides first (counsel for 3 and 4, the spec owner for 5, counsel and content for 1 and 2); the words or the doc then change in the file the point names. A requirement document is not edited here: a proposed change goes in the PR body for the founder.
+- Done when: each of the six points is settled in the file it names, or recorded here as left as it is; the book-deletion email and the website page say only what the app does, and the request email says a co-parent is told only if a notice is sent.
+
+#### BL-449 A sign-out wait ends when the queued letters belong to another account [High]
+- Status: ready. Mode: agent. Owner: auth owner (S01), sync owner (S03). Milestone: M5. Size: S. Depends on: none.
+- Satisfies: none given.
+- Why: `pendingCount` has no owner filter (`apps/mobile/src/lib/sync/outbox.ts:786-792`), and the engine does not start when the signed-in account differs from the account that owns the queue (`apps/mobile/src/lib/sync/index.ts:186`, `:206`). Account A signs out with letters queued, account B signs in with sync on, and B's sign-out waits on A's rows forever. The same on develop. From the #359 review (lens A S3): code reading, not run.
+- Scope: end the wait when the queue is not the signed-in account's, for example by counting only that account's rows in the sign-out check, or by not waiting when the engine will not start on a mismatch. The owner picks one in the PR. A's queued rows are left as they are.
+- Done when: a test with two accounts (A queues and signs out, B signs in with sync on and signs out) shows B's sign-out does not wait on A's rows, and A's rows are still queued.
+
+#### BL-450 An Apple revocation noticed at launch waits for unsynced letters before signing out
+- Status: ready. Mode: agent. Owner: auth owner (S01). Milestone: M5. Size: S. Depends on: none.
+- Priority: Medium.
+- Satisfies: A-REQ-033 (P0, `docs/prd/v2/features/F02-account.md:213`: "Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync").
+- Why: an Apple revocation noticed at launch signs out without waiting for unsynced letters. The state at that point is `checkingConsent`, and the sign-out request maps it to sync off (`apps/mobile/src/lib/auth/machine.logic.ts:181-183`), so no wait starts. A-REQ-033 is not met for that case. Letters are kept, not sent. Pre-existing. From the #359 review (lens A N1).
+- Scope: meet A-REQ-033 for a revocation noticed at launch. If that needs a change to the requirement, the PR body drafts it for the founder; the requirement is not edited here.
+- Done when: a test of a revoked credential at launch with letters queued shows sign-out happens only after they sync, or the PR body states why it cannot and the founder has decided.
+
+#### BL-451 The sign-out wait tells the person when it ends early, can be cancelled, and shows the real sync state
+- Status: ready. Mode: agent. Owner: mobile engineer (P8a: account view), auth owner (S01). Milestone: M5. Size: M. Depends on: none.
+- Priority: Medium. A build 2 follow-up.
+- Satisfies: none given.
+- Why and where (from the #359 reviews and the #360 review; #359 merged as ab97b1c, #360 as 925a67f):
+  1. When the wait ends early, the waiting row (`packages/content/src/features/auth.en.ts:188`, shown at `apps/mobile/src/app/settings/account.tsx:242`) vanishes and the signed-out view has no line saying the newest letters stayed on the phone and upload at the next sign-in to the same account. The confirm before the tap (`auth.en.ts:186`) says only that the letters stay on this phone; it does not mention letters not yet sent.
+  2. No screen calls `cancelSignOutWait()` yet (`apps/mobile/src/lib/auth/session-provider.tsx:102`, `:489`; `apps/mobile/src/lib/auth/machine.logic.ts:80`, `:194`). A "Stay signed in" button should: show it only when `state.reason === 'user'`, and hide it when the account view says closing, because `cancelSignOutWait()` gives no outcome and is a silent no-op once a gate answer has ended the wait.
+  3. The Account waiting row shows a hard "On" instead of `s.sync` (`apps/mobile/src/components/auth/account-view.logic.ts:32-33`).
+- Scope: add the signed-out line (1), the button (2) and `s.sync` in the row (3), with the words in `packages/content`.
+- Done when: each of the three has a test in `account-view.logic` or the screen test; the button is absent when the reason is not `user` and when the view says closing.
+
+#### BL-452 Sign-in error words match the cause
+- Status: ready. Mode: agent. Owner: auth owner (S01: `errors.logic.ts`), content (the words, `VOICE.md`), qa engineer (the scan). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Priority: Low.
+- Satisfies: none given.
+- Why and where (from the #360 reviews, the review reports and not the posted PR comments; #360 merged as 925a67f). Points 1 and 2 are true in code:
+  1. `errors.expired` is also returned for `webauthn_challenge_expired` and `flow_state_expired` (`apps/mobile/src/lib/auth/errors.logic.ts:37-39`), where its words ("That link has expired. Send a new email for a fresh one.", `packages/content/src/features/auth.en.ts:104`) are wrong for a passkey.
+  2. The `rate_limited` and provider lines also show on Account for passkey (`apps/mobile/src/app/settings/account.tsx:136`) and sign-out-others (`:167`), where their words are about email and sign-in.
+  3. The "on this phone" lines (`network`, `unknown`, `consent_unavailable`, `session_expired`) are wrong on a zero-letter phone: journey step j22 shows `network` on a fresh install.
+  4. The `useCloseSheet` scan in `apps/mobile/test/server-surfaces-auth-screens.test.ts` misses writes through an aliased receiver, optional-call syntax, subpath store imports and transitive writes.
+  5. `packages/content/VOICE.md` has no "Error row", although the spec cites one (`docs/design/EXPERIENCE_PASS_2026-10.md:633`, `:1276`).
+- Scope: a cause that has no honest line gets its own; the lines that talk about letters on the phone say so only when there are letters; the scan covers the four misses; VOICE.md gets the Error row the spec cites.
+- Done when: each point has a test or a content-rule case, and `npm test --workspace packages/content` passes.
+
+#### BL-453 Database photo policy follow-ups after #311
+- Status: ready. Mode: agent (a migration needs the founder's `approve-migration` label). Owner: data architect (S02), legal (point 6). Milestone: M9. Size: M (one PR per point is fine). Depends on: none.
+- Priority: Low. No live impact today: v1.0 has no photo feature (PRD V2 F46 is "later", `docs/prd/v2/05-feature-map.md:64`).
+- Satisfies: none given.
+- Why and where (#311 merged as 91c0785; migration `20261028000000_pg_temp_last_and_purged_photos.sql`):
+  1. A letter purge queues only the exact `photo_path`: a second object under the same id with another extension is neither queued nor deleted.
+  2. The helper `photo_entry_is_purged` answers true for a ledger-only id to an anonymous session where `sync_push` refuses (`SCANO`). Anonymous sign-ins are off (`supabase/config.toml:29`); if they are ever turned on, add `and not public.is_anonymous()`.
+  3. Signed or resumable (TUS) upload URLs issued before an erasure are not covered. A purge-worker sweep for erased ids is the backstop.
+  4. The 61-day test does not move `entry_erasures.erased_at`: mutant S04 (an erasure record that expires 60 days after `erased_at`) survives. Fix: back-date `erased_at` by 61 days before the checks after the trim.
+  5. If PR #306 is revived, it must become `supabase/APPLY.md` File 27, with a migration timestamp later than `20261028000000`.
+  6. `docs/legal/ENGINEERING_REQUIREMENTS.md:11` and the consumer-health notice attribute "no photos" to D-059, which does not mention photos. Use PRD V2 F46 (`docs/prd/v2/05-feature-map.md:64`). ENGINEERING_REQUIREMENTS.md is a requirement document, so the change is proposed in the PR body; the notice is legal's.
+- Scope: points 1 and 3 close the gaps named; point 2 only if anonymous sign-ins are on; point 4 is a test change; point 5 is a note that holds until #306 is revived; point 6 is legal's.
+- Done when: points 1, 3 and 4 have tests that fail before the change (point 4 kills mutant S04); points 2, 5 and 6 are done or recorded here as waiting on their condition.
+
+#### BL-454 Keep sheet and Settings follow-ups from #312
+- Status: ready (points 1 and 2 wait for an answer; points 3 and 4 can be done now). Mode: agent. Owner: mobile engineer, qa engineer (point 3). Milestone: M8. Size: S. Depends on: none.
+- Priority: Low.
+- Satisfies: none given.
+- Why and where:
+  1. `settings.neverRewrite` (`packages/content/src/strings.en.ts:854`) is rendered nowhere in `apps/mobile/src`. The line shown is `settings.tidyHelp` (`apps/mobile/src/app/settings/recordings.tsx:70`; its last sentence is "Either way, we never rewrite your words."). Counsel relay doc, item 15 (not in the repo).
+  2. The held card now shows the stored raw transcript, fillers included, matching Tonight's card. This is a design consequence of the stored-words rule; the spec owner confirms.
+  3. A double tap on "Keep it here for now" can land on the Book tab under the sheet's bottom edge on web (from the #312 review; unverified here, and unverified on iOS). `docs/qa/DEVICE_TEST_PLAN.md` V-06 gets a double-tap row.
+  4. A test pins the order in `storedWords` (`apps/mobile/src/components/child/plus-gate.logic.ts:103`): typed words over the transcript.
+- Scope: do points 3 and 4. For points 1 and 2, put the question in the PR body for counsel (relay doc, item 15) and the spec owner; change nothing until they answer.
+- Done when: V-06 has the double-tap row; the `storedWords` order test exists and fails if the order is swapped; the answers to points 1 and 2 are recorded here.
+
+#### BL-455 Delete account page clean-up from the #358 review
+- Status: ready. Mode: agent. Owner: mobile engineer (S14: the page and its hook), content (the strings and the purge-worker copy). Milestone: M9. Size: S. Depends on: none.
+- Priority: Medium. Point 4 is Low.
+- Satisfies: none given.
+- Why and where (from the #358 lens A delta and lens B; #358 merged as 8301ac8):
+  1. `packages/content/src/strings.en.ts:820`, `settings.delete.accountScheduledBody` ("Until then you can export everything, or cancel and keep your account just as it is."), has no consumer. Retire it.
+  2. `supabase/functions/purge-worker/copy.ts:16` (the contributor notice) points contributors to Export everything after the book is tombstoned. That follows the same code path as the account-deletion export gap (BL-446). Contributors are hidden in v1.0, so it matters when they ship (unverified).
+  3. The E2E-09 Maestro flow needs `deleteAccount.*` test ids the page does not have (`apps/mobile/e2e/TESTID_REQUESTS.md:149`).
+  4. A surviving mutant from #358's lens B: no test pins that a request in `held` counts as not cancelled in `cancelDeletion` (`apps/mobile/src/lib/account-deletion/api.ts:80-84`, where only the status `none` counts as cancelled).
+- Scope: retire the string (1); after BL-446 ships, check the contributor notice's promise against it (2); add the test ids the request file lists (3); add the test that kills the mutant (4).
+- Done when: no unused `accountScheduledBody` remains; the Maestro flow finds every `deleteAccount.*` id it uses; a test fails if `held` is treated as cancelled; the PR body says what was checked for point 2.
+
+#### BL-456 Backup tests' plaintext-leak scans see only the start of a recording
+- Status: ready. Mode: agent. Owner: sync owner (S05: backup). Milestone: M5. Size: S. Depends on: none.
+- Priority: Low.
+- Satisfies: none given.
+- Why: three backup tests scan what leaves the phone for the recording's plaintext: `apps/mobile/test/backup-e2e.test.ts:82-87`, `apps/mobile/test/backup-queue.test.ts:244-248` and `apps/mobile/test/backup-format.test.ts:119-125`. Since #362 (merged as a6519a4) each checks the recording's own 16-byte header, at every offset of every body or object, and one 64-byte window at a fixed byte (2000 in the e2e test, 4096 in the queue test, 1000 in the format test), and nothing else of the recording. Plaintext from the middle of a recording (bytes 100..164 or 65536..65600) planted in a body or object passes all three files. Not new to #362: the old 4-byte check had the same blindness. From the #362 review.
+- Scope: check several 16-byte shingles of the recording at strided offsets across the whole take, each against every offset of every body or object, as #362 does for the header.
+- Done when: a test that plants plaintext from bytes 100..164 and from bytes 65536..65600 of the recording in a body or object makes each of the three scans fail; the real upload still passes all three.
 
 ## Appendix: TDD proposal to BL mapping
 

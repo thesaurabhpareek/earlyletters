@@ -1,8 +1,8 @@
 // TestFlight texts for testers (RA-16-01, docs/release/AUTOMATION.md section 5, S16; AF-11, B1-11, B2-20), aligned
 // with S17's tester notice (RA-17-04, docs/legal/TESTFLIGHT_TESTERS.md on #195, sections 5.1 to 5.4).
 // The one place these words live: docs/release/TESTFLIGHT.md links here, and `what-to-test.mjs` and the testers
-// workflow read them (RA-20-06, RA-20-07). The words go to Apple and to testers, not into the app, so like the emails
-// they carry the public name from packages/brand in template literals.
+// workflow will read them (RA-20-06, RA-20-07; neither is built yet). The words go to Apple and to testers, not
+// into the app, so like the emails they carry the public name from packages/brand in template literals.
 //
 // The alpha (D-106, D-100; ALPHA_PLAN on #152):
 // - Build 1, the `testflight` profile: servers off. For "Family" (internal) and "Friends" (external, after Beta App

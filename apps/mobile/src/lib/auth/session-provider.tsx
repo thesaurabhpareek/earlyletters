@@ -39,7 +39,10 @@ import {
   canSync,
   initialAuthState,
   isSignedIn,
+  readGateInOrder,
   shouldFinishSignOut,
+  shouldRecheckGate,
+  signOutWouldWait,
   type AuthErrorKind,
   type AuthMethod,
   type AuthState,
@@ -92,6 +95,11 @@ export interface AuthApi {
   refreshGate(): Promise<void>;
   /** 'waiting' when letters are still uploading; sign-out finishes on its own when they are done. */
   signOut(): Promise<'done' | 'waiting'>;
+  /**
+   * "Stay signed in" while a sign-out the person asked for waits for uploads: back to signed in,
+   * nothing deleted, nothing sent (S01). No screen calls it yet.
+   */
+  cancelSignOutWait(): void;
   signOutOtherDevices(): Promise<Outcome>;
   /** The Supabase client for screens in lib/family and lib/auth; null when not configured. */
   client: SupabaseClient | null;
@@ -211,15 +219,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
 
+  // Only the newest of overlapping gate reads may answer (machine.logic readGateInOrder).
+  const gateSeq = useRef(0);
   const checkGate = useCallback(async () => {
     if (!sb) return;
     lastGateCheck.current = Date.now();
-    try {
-      const { gate, sensitiveDeclined } = await withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS);
-      dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
-    } catch {
-      dispatch({ type: 'GATE_UNAVAILABLE' });
-    }
+    await readGateInOrder(gateSeq, () => withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS), dispatch);
   }, [sb]);
 
   // Consent check whenever a session appears; again on foreground when stale or unknown.
@@ -231,8 +236,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
-      const cur = stateRef.current;
-      if (cur.status === 'ready' && (cur.sync === 'unknown' || Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
+      if (shouldRecheckGate(stateRef.current, Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
     });
     return () => sub.remove();
   }, [checkGate]);
@@ -257,12 +261,23 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     if (!waiting) return;
     const done = () => dispatch({ type: 'UPLOADS_DRAINED' });
     const off = onUploadsDrained(done);
-    const poll = setInterval(() => void pendingUploads().then((n) => n === 0 && done()), 10_000);
+    const poll = setInterval(() => {
+      // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
+      if (shouldRecheckGate(stateRef.current, false)) void checkGate();
+      void pendingUploads().then((n) => n === 0 && done());
+    }, 10_000);
     return () => {
       off();
       clearInterval(poll);
     };
-  }, [waiting]);
+  }, [waiting, checkGate]);
+
+  // S01: a wait that began before the gate was ever read (offline at launch) reads it now. GATE_LOADED then
+  // lets the outbox drain or ends the wait; still offline, the poll above and the foreground re-check try again.
+  const waitingBlind = state.status === 'signingOut' && shouldRecheckGate(state, false);
+  useEffect(() => {
+    if (waitingBlind) void checkGate();
+  }, [waitingBlind, checkGate]);
 
   const finishing = shouldFinishSignOut(state);
   useEffect(() => {
@@ -465,10 +480,14 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       refreshGate: checkGate,
 
       async signOut() {
-        const syncing = canSync(stateRef.current);
         const pending = await pendingUploads();
+        const waits = signOutWouldWait(stateRef.current, pending);
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending });
-        return pending > 0 && syncing ? 'waiting' : 'done';
+        return waits ? 'waiting' : 'done';
+      },
+
+      cancelSignOutWait() {
+        dispatch({ type: 'SIGN_OUT_WAIT_CANCELLED' });
       },
 
       async signOutOtherDevices() {
