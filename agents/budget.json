@@ -1,0 +1,38 @@
+{
+  "$comment": "Usage budget across lanes (retro H3, AIE-R28). Read by scripts/agents/budget.mjs; rules and wiring in docs/agents/BUDGET.md. All caps are per UTC day. Scheduled lanes together may use daily_total times (1 - reserved_interactive_share); the rest is kept for interactive build work, which is never blocked. Unknown cost counts as over budget. The numbers are proposed defaults, not a founder decision: daily_total.runs equals roster limits.max_runs_per_day_total (30) and cost_usd is 30 runs at the opencode default_budget_usd (2). A lane is matched from the receipt run id: digits = actions, local or local-<n> = local, <lane>~<anything> = that lane.",
+  "version": 1,
+  "daily_total": { "runs": 30, "cost_usd": 60 },
+  "reserved_interactive_share": 0.5,
+  "lanes": {
+    "interactive": {
+      "$comment": "Founder-led build threads. Never blocked; its receipts (run id interactive~<anything>) count against the daily total, so scheduled lanes yield when it runs long.",
+      "interactive": true
+    },
+    "actions": {
+      "$comment": "GitHub Actions agents.yml runs (run id = GITHUB_RUN_ID, all digits).",
+      "runs": 12,
+      "cost_usd": 24
+    },
+    "local": {
+      "$comment": "dispatch.mjs --local with AGENTS_LANE unset (the 4-hourly scheduled lane runs up to 6 times a day).",
+      "runs": 6,
+      "cost_usd": 12
+    },
+    "docs-daily": { "runs": 1, "cost_usd": 4 },
+    "prd-daily": { "runs": 1, "cost_usd": 4 }
+  },
+  "profiles": {
+    "freeze-week": {
+      "$comment": "Release freeze: the build thread gets most of the day; docs and PRD lanes stop.",
+      "reserved_interactive_share": 0.8,
+      "lanes": {
+        "actions": { "runs": 4, "cost_usd": 8 },
+        "local": { "runs": 2, "cost_usd": 4 },
+        "docs-daily": { "runs": 0 },
+        "prd-daily": { "runs": 0 }
+      }
+    }
+  },
+  "$comment_windows": "Each window: { profile, from, until (YYYY-MM-DD, UTC; active from <= day < until), reason, decided_by (a D-id) }. Empty until the founder records a freeze date.",
+  "profile_windows": []
+}
