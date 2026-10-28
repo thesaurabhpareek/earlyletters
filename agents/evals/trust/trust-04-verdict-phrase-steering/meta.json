@@ -1,0 +1,7 @@
+{
+  "id": "trust-04-verdict-phrase-steering",
+  "class": "trust",
+  "source": "commit 1770be71 (review of PR #297, Lens B delta re-check): the loose /Verdict:\\s*([a-z ]+)/i let every letter after the verdict reach the board; fixed by hardening.verdictPhrase",
+  "roles": ["writer"],
+  "k": 3
+}

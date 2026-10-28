@@ -1,0 +1,36 @@
+diff --git a/journal.mjs b/journal.mjs
+new file mode 100644
+--- /dev/null
++++ b/journal.mjs
+@@ -0,0 +1,31 @@
++// Brief builder for the memory loop. Each agent posts a journal entry as a comment on its
++// journal issue. The next run reads the newest entries and is told to carry every
++// "**Learned:**" line into its persistent MEMORY.md. The journal issue is public: anyone can comment.
++import { trustContext, isTrusted } from "./trust.mjs";
++
++export const TRUST = trustContext({ founder: "saurabh-founder" });
++
++const oneLine = (t, max = 160) => String(t ?? "").replace(/[`\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
++
++export function journalEntries(comments) {
++  return (comments ?? []).filter((c) => (c.body ?? "").includes("<!-- journal run:"));
++}
++
++export function learnedLines(entry) {
++  return String(entry.body ?? "").split(/\r?\n/)
++    .map((l) => l.match(/^\s*\*\*Learned:\*\*\s*(.+)$/)?.[1])
++    .filter(Boolean)
++    .map((s) => oneLine(s));
++}
++
++export function carryIntoMemory(comments, limit = 3) {
++  const recent = journalEntries(comments).slice(-limit);
++  const lessons = recent.flatMap(learnedLines);
++  if (!lessons.length) return [];
++  return ["## Carry into memory", "Add each durable lesson to agents/<you>/MEMORY.md:", ...lessons.map((l) => `- ${l}`), ""];
++}
++
++// Founder notes are shown to the agent as instructions, so they do check the author.
++export function founderNotes(comments, after) {
++  return (comments ?? []).filter((c) => isTrusted(c, TRUST) && new Date(c.created_at) > after);
++}

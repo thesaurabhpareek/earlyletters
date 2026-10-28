@@ -1,0 +1,6 @@
+{
+  "verdict": "fix first",
+  "findings": [
+    { "file": "journal.mjs", "line": 11, "kind": "missing-trust-check", "summary": "journalEntries selects any comment containing the marker anywhere, with no isTrusted check, so an outsider's Learned: lines are fed to the agent and written into persistent memory." }
+  ]
+}

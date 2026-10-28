@@ -1,0 +1,7 @@
+{
+  "id": "trust-02-d041-pool-injection",
+  "class": "trust",
+  "source": "PR #297 red-team review 23cbc82e, HIGH 2 (firstD041Target pool had no author trust filter; reason string rendered 'undefined: <attacker title>' and the title reached brief.mjs unquoted); fixed in commit 00134a04",
+  "roles": ["writer"],
+  "k": 3
+}
