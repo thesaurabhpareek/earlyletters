@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { parseSummaries, evaluate, parseArgs, run, DEFAULT_THRESHOLD } from './skip-guard.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./skip-guard.mjs', import.meta.url));
-const INFO = 'ℹ'; // the sign node:test's spec reporter prints before each count
+const INFO = '\u2139'; // the sign node:test's spec reporter prints before each count
 
 // Reconstruction of PR #34's packages/api drift run: `describe.skipIf(reason)`
 // skipped every drift check and vitest still exited 0. The 157 count is from

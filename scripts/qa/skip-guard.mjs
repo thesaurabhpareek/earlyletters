@@ -51,7 +51,7 @@ import { fileURLToPath } from 'node:url';
 export const DEFAULT_THRESHOLD = 0.2;
 
 const ANSI = /\u001b\[[0-9;?]*[ -\/]*[@-~]/g;
-const NODE_LINE = /^\s*(#|ℹ)\s+(tests|suites|pass|fail|cancelled|skipped|todo|duration_ms)\s+(\d+(?:\.\d+)?)\s*$/;
+const NODE_LINE = /^\s*(#|\u2139)\s+(tests|suites|pass|fail|cancelled|skipped|todo|duration_ms)\s+(\d+(?:\.\d+)?)\s*$/;
 const VITEST_LINE = /^\s*Tests\s+(.+?)\s+\((\d+)\)\s*$/;
 const VITEST_PART = /^(\d+)\s+(passed|failed|skipped|todo)$/;
 const NPM_HEADER = /^> (\S*@\S*)\s+\S+\s*$/; // "> @scribe/core@0.1.0 test", not "> vitest run"
