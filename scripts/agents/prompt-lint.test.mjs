@@ -121,6 +121,29 @@ test("connector names fail; GitHub and lowercase repository paths pass", () => {
   assert.equal(rules(`${PROMPT}Use GitHub only. Run npm run test:db when you touched \`supabase/\`.\n`).has("connector"), false);
 });
 
+test("each lane prompt sets one AGENTS_LANE on every harness command and writes a receipt", () => {
+  const want = { "agent-lane": "sched-4h", "prd-daily": "prd-daily", "docs-run": "docs-daily" };
+  for (const n of LANES) {
+    const cmds = lane(n).match(/`[^`]*node scripts\/agents\/[^`]*`/g);
+    assert.ok(cmds.length > 0, n);
+    for (const c of cmds) assert.ok(c.includes(`AGENTS_LANE=${want[n]} `), `${n}: ${c}`);
+    assert.ok(cmds.some((c) => c.includes("scripts/agents/receipt.mjs")), `${n} writes a receipt`);
+  }
+  assert.match(lane("prd-daily"), /--run-id prd-daily~<UTC YYYYMMDD>/);
+  assert.match(lane("docs-run"), /receipt\.mjs [^`]*--run-id sched-<UTC YYYYMMDD>`/);
+});
+
+test("harness commands without AGENTS_LANE, with two lanes, or with no receipt fail", () => {
+  const run = "`AGENTS_LANE=prd-daily node scripts/agents/prompt-lint.mjs --preflight x`";
+  const receipt = "`AGENTS_LANE=prd-daily node scripts/agents/receipt.mjs --agent prd-daily --run-id prd-daily~<UTC YYYYMMDD>`";
+  assert.deepEqual(lintPrompt(`${PROMPT}Run ${run}.\nThen ${receipt}.\n`), []);
+  assert.ok(rules(`${PROMPT}Run ${run}.\n`).has("lane-receipt"));
+  assert.ok(rules(`${PROMPT}Run \`node scripts/agents/dispatch.mjs --local\`.\nThen ${receipt}.\n`).has("lane-env"));
+  assert.ok(rules(`${PROMPT}Run \`AGENTS_LANE=other node scripts/agents/dispatch.mjs\`.\nThen ${receipt}.\n`).has("lane-env"));
+  assert.deepEqual(lintPrompt(`${PROMPT}No harness here; run \`npm test\`.\n`), []);
+  assert.ok(rules(LIVE_AGENT_LANE).has("lane-env"));
+});
+
 test("the Reviewed on line must appear once, in the fixed form", () => {
   assert.ok(rules("Read docs/DECISIONS.md.\n").has("reviewed-on"));
   assert.ok(rules("Reviewed on: 28 Oct, through D-119\n").has("reviewed-on"));

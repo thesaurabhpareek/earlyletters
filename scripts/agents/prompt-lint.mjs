@@ -7,7 +7,9 @@
 //   - a decision id (D-123) anywhere but that line; decisions live in docs/DECISIONS.md
 //   - an issue or PR number (#123) on a line that talks about decisions, scope or freezes
 //   - the name of a connector other than GitHub
-// and when the "Reviewed on:" line is missing or malformed.
+// and when the "Reviewed on:" line is missing or malformed. A prompt that runs
+// harness scripts (`node scripts/agents/*.mjs`) must also set one AGENTS_LANE
+// on every such command and run receipt.mjs, so the usage budget sees the run.
 //
 //   node scripts/agents/prompt-lint.mjs docs/agents/lanes/*.prompt.md
 //   node scripts/agents/prompt-lint.mjs --preflight docs/agents/lanes/agent-lane.prompt.md --reviewed-through D-119
@@ -56,6 +58,27 @@ export function lintPrompt(text) {
     if (ISSUE_REF.test(line) && DECISION_WORDS.test(line)) problems.push({ line: at, rule: "issue-as-decision", text: line });
     if (CONNECTOR_RE.test(line)) problems.push({ line: at, rule: "connector", text: line });
   });
+  problems.push(...laneProblems(lines));
+  return problems;
+}
+
+/** Harness commands must carry one AGENTS_LANE value, and a receipt must be written. */
+function laneProblems(lines) {
+  const problems = [];
+  const lanes = new Set();
+  let runsHarness = false;
+  let receipt = false;
+  lines.forEach((line, i) => {
+    for (const cmd of line.match(/`[^`]*\bnode scripts\/agents\/[^`]*`/g) ?? []) {
+      runsHarness = true;
+      const lane = cmd.match(/\bAGENTS_LANE=([A-Za-z0-9._-]+)\s/);
+      if (!lane) problems.push({ line: i + 1, rule: "lane-env", text: `harness command without AGENTS_LANE: ${cmd}` });
+      else lanes.add(lane[1]);
+      if (/scripts\/agents\/receipt\.mjs/.test(cmd)) receipt = true;
+    }
+  });
+  if (lanes.size > 1) problems.push({ line: 0, rule: "lane-env", text: `more than one AGENTS_LANE value: ${[...lanes].join(", ")}` });
+  if (runsHarness && !receipt) problems.push({ line: 0, rule: "lane-receipt", text: "runs harness scripts but never runs scripts/agents/receipt.mjs" });
   return problems;
 }
 

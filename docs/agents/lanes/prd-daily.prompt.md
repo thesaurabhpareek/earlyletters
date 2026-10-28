@@ -8,7 +8,8 @@ STEP 0. Tools.
 STEP 1. Get the code and run the preflight.
 - Run add_repo for thesaurabhpareek/earlyletters with push access, then clone it with enough history to diff the last two weeks. If that fails, send a two-line message saying the repository is not reachable, and stop.
 - Check out `origin/develop` in a directory called `run`. Every script in this run executes from `run`, at that commit, never from a pull request branch. Run `npm install` there only if a script you need fails without it.
-- Copy the D-id from the "Reviewed on" line at the top of this prompt, then run, from `run`: `node scripts/agents/prompt-lint.mjs --preflight docs/agents/lanes/prd-daily.prompt.md --reviewed-through <that D-id>`. If it exits with anything but 0, send its reasons in two lines and stop.
+- Copy the D-id from the "Reviewed on" line at the top of this prompt, then run, from `run`: `AGENTS_LANE=prd-daily node scripts/agents/prompt-lint.mjs --preflight docs/agents/lanes/prd-daily.prompt.md --reviewed-through <that D-id>`. If it exits with anything but 0, send its reasons in two lines and stop.
+- Every shell command that runs a harness script (`scripts/agents/*.mjs`) sets `AGENTS_LANE=prd-daily`, as written in this prompt. Take the UTC date once now as the run stamp `<UTC YYYYMMDD>`. The usage budget reads the lane from the receipt run id `prd-daily~<UTC YYYYMMDD>`.
 
 STEP 2. Find the PRD of record. Read `docs/DECISIONS.md` on `develop` and find the newest decision that names the product spec of record. Use that path. If no decision names one, or the path is missing on `develop`, send one line saying so and stop.
 
@@ -32,6 +33,8 @@ STEP 7. Rules for every edit.
 - Before every push run the PRD's own lint if it has one (must be clean) and `npm test -w packages/content`. Push after each logical step: a usage limit can stop this run at any moment.
 
 STEP 8. Pull request body. At the top, under a heading with today's date (Pacific): "Synced to: <develop short sha>", what changed and why (one line each, with the D-id or pull request number), errors corrected (file, before, after, source), "Open conflicts" for the founder, and anything you could not verify. Keep older sections below. Write per `docs/agents/COORDINATION.md` section 9.
+
+STEP 9. Receipt. Every run that got past the preflight writes exactly one receipt, last, on the rolling pull request (or, with no pull request, on the issue titled "Agent board"; find its number with `gh api "repos/thesaurabhpareek/earlyletters/issues?state=open&per_page=100" --jq '.[] | select(.title=="Agent board") | .number'`): `AGENTS_LANE=prd-daily node scripts/agents/receipt.mjs --agent prd-daily --journal <that number> --mode standing --outcome <success or failure> --run-id prd-daily~<UTC YYYYMMDD>`. Write it also when the run stops early or changes nothing.
 
 If nothing changed on `develop` since the sync point and the error check finds nothing, do not push; send one line saying so, and stop.
 
