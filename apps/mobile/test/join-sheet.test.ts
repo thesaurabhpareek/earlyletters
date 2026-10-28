@@ -91,7 +91,7 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
     expect(tokens.motion.cover.holdMs).toBe(300);
     const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
     expect(joined.indexOf('<JoinedCover')).toBeGreaterThan(-1);
-    expect(joined.indexOf('<JoinedCover')).toBeLessThan(joined.indexOf('a.joinedTitle'));
+    expect(joined.indexOf('<JoinedCover')).toBeLessThan(joined.indexOf('{joinedTitle}'));
   });
 
   it('the line under it is the flyleaf in words, with the inviter\'s sign-off or without one', () => {
@@ -103,7 +103,8 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
     const bar = code('components/family/join-ask.tsx');
     expect(bar).toMatch(/if \(reduced \|\| width === 0\) \{\s*cancelAnimation\(x\);\s*x\.value = 0;/);
     expect(bar).not.toMatch(/percent|%|\{count\}/);
-    expect(code(SHEET)).toMatch(/fill\(a\.joinedWaiting, \{ child \}\)[\s\S]{0,80}<WaitingBar \/>/);
+    expect(code(SHEET)).toMatch(/const waitingLine = !book && child \? fill\(a\.joinedWaiting, \{ child \}\) : null;/);
+    expect(code(SHEET)).toMatch(/\{waitingLine\}[\s\S]{0,80}<WaitingBar \/>/);
   });
 });
 
@@ -196,6 +197,20 @@ describe('[S59] the token and the steps (lens B mutation survivors on #314)', ()
   it('J13: nothing is joined until the tap: wantsJoin starts false', () => {
     expect(sheet()).toMatch(/const \[wantsJoin, setWantsJoin\] = useState\(false\);/);
     expect(joinPlan({ ...BASE, signedIn: true, canSync: true, preview: MAMA })).toEqual({ view: 'ask', next: 'none' });
+  });
+});
+
+describe('[S59] VoiceOver hears the joined moment (critics\' pass S5; code-read, a phone check)', () => {
+  it('focus moves to "You\'re in {child}\'s book" as the joined view shows, as SheetTitle does on every other step', () => {
+    const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
+    expect(joined).toMatch(/const heading = useRef<RNText>\(null\);\s*const joinedTitle = child \? fill\(a\.joinedTitle, \{ child \}\) : a\.title;\s*useFocusOnMount\(heading, true, joinedTitle\);/);
+    expect(joined).toMatch(/<Text ref=\{heading\} variant="title1" asHeading=\{1\}>\s*\{joinedTitle\}/);
+    expect(code('lib/auth/ui.tsx')).toMatch(/useFocusOnMount\(ref, true, children\);/);
+  });
+
+  it('while the book is still coming, the line that says so is spoken once, after the title', () => {
+    const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
+    expect(joined).toMatch(/useEffect\(\(\) => \{\s*if \(waitingLine\) announce\(waitingLine, \{ queue: true \}\);\s*\}, \[waitingLine\]\);/);
   });
 });
 

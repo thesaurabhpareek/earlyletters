@@ -33,7 +33,7 @@
 import { brand } from '@scribe/brand';
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { View, type Text as RNText } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
 import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
@@ -56,6 +56,7 @@ import { acceptInvite, bookName, peekInvite } from '@/lib/family/invites';
 import { joinedView, joinPlan } from '@/lib/family/join-flow.logic';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
+import { announce, useFocusOnMount } from '@/lib/a11y';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store';
 
@@ -345,6 +346,15 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
 
   const child = book?.name ?? fallbackName ?? '';
   const view = joinedView(book, signsAs);
+  // VoiceOver: focus moves to "You're in {child}'s book" as the joined view shows, as SheetTitle does on every other
+  // step, and while the book is still coming the line that says so is spoken once, after it (critics' pass S5).
+  const heading = useRef<RNText>(null);
+  const joinedTitle = child ? fill(a.joinedTitle, { child }) : a.title;
+  useFocusOnMount(heading, true, joinedTitle);
+  const waitingLine = !book && child ? fill(a.joinedWaiting, { child }) : null;
+  useEffect(() => {
+    if (waitingLine) announce(waitingLine, { queue: true });
+  }, [waitingLine]);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
@@ -387,14 +397,14 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
         <View testID="invite.joined" className="gap-5">
           {/* The child's name appears here first, on the cover that opens (BL-322). */}
           {child ? <JoinedCover child={child} inviter={inviter} /> : null}
-          <Text variant="title1" asHeading={1}>
-            {child ? fill(a.joinedTitle, { child }) : a.title}
+          <Text ref={heading} variant="title1" asHeading={1}>
+            {joinedTitle}
           </Text>
           <Text variant="body">{joinedBody(inviter)}</Text>
           {!book && child ? (
             <View className="gap-2">
               <Text variant="footnote" accessibilityLiveRegion="polite">
-                {fill(a.joinedWaiting, { child })}
+                {waitingLine}
               </Text>
               <WaitingBar />
             </View>
