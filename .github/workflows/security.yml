@@ -1,0 +1,82 @@
+# Security scanning (RB-14a). Three independent jobs; none is a required
+# check (branch protection requires only CI's `required` job), and none is
+# wired into ci.yml, so a slow or red scan never blocks or slows a merge.
+# Scheduled workflows run only from the default branch (currently main), so
+# the weekly run starts working once this file reaches main. See
+# docs/ops/SECURITY_SCANNING.md. Every `uses:` is pinned to a full commit SHA:
+# a moved tag must not be able to run new code with our token.
+name: Security
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+  schedule:
+    - cron: "17 5 * * 1" # Mondays 05:17 UTC, off the hour to avoid the scheduler rush
+
+concurrency:
+  group: security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning; only this job gets it
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:javascript-typescript
+
+  dependency-review:
+    name: dependency review
+    # Needs the base and head commits of a pull request; meaningless elsewhere.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never # no pull-request write permission, by design
+
+  npm-audit:
+    name: npm audit (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      # Reports, never gates: advisories land daily against code we did not
+      # change, and a red check on every unrelated PR trains people to ignore
+      # it. Findings go to the job summary; the weekly run is the triage cue.
+      # audit reads package-lock.json, so no install is needed.
+      - name: npm audit (production dependencies, high and above)
+        continue-on-error: true
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high | tee audit.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo "## npm audit --omit=dev --audit-level=high"
+            echo "Exit status: $status (0 clean, non-zero means findings or an audit service error; this job never fails the build)."
+            echo '```'
+            cat audit.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
