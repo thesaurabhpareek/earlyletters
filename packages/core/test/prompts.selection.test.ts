@@ -196,7 +196,10 @@ describe('[S2] selectPrompt: a book before the birth gets the before set, and on
         }
       }
     }
-    // even when nothing else is left to fall back on: a library of any-age openings and before prompts
+    // even at the last resort, when no opening fits a born child at all: the before prompts are openings too, and are
+    // still not what a child who is here is offered
+    const gapOnly: Prompt[] = [LIB[5], ...BEFORE];
+    for (let d = 0; d < 40; d++) expect(selectPrompt({ ...base, ageMonths: 70, seed: `s${d}` }, gapOnly).key).toBe('g.any.1');
     const lean: Prompt[] = [LIB[0], ...BEFORE];
     for (let d = 0; d < 40; d++) expect(selectPrompt({ ...base, ageMonths: 70, seed: `s${d}` }, lean).key).toBe('o.any.1');
   });
@@ -213,6 +216,14 @@ describe('[S2] selectPrompt: a book before the birth gets the before set, and on
     for (let d = 0; d < 20; d++) {
       const p = selectPrompt({ ...preBirth, seed: `s${d}` }, LIB);
       expect(['any', '0-3']).toContain(p.band);
+    }
+  });
+
+  it('a before prompt of another kind is served on that kind of night: the set may grow its own gap prompts', () => {
+    const lib: Prompt[] = [...WITH_BEFORE, { key: 'b.gap', text: 'Tell {child} one small thing.', band: 'before', kind: 'gap' }];
+    for (let d = 0; d < 20; d++) {
+      expect(selectPrompt({ ...preBirth, daysSinceLastEntry: 9, seed: `s${d}` }, lib).key).toBe('b.gap');
+      expect(selectPrompt({ ...preBirth, daysSinceLastEntry: 1, seed: `s${d}` }, lib).kind).toBe('opening');
     }
   });
 
@@ -332,6 +343,18 @@ describe('[S4] selectPrompt: a press of "Another thought" never shows the prompt
     expect([...keys].sort()).toEqual(['g.2', 'o.13', 'o.any']);
     // The first draw of a night (no exclusion) is not widened: a pool of 2 is still the gap kind
     for (let d = 0; d < 40; d++) expect(selectPrompt({ ...input, seed: `d${d}` }, small).kind).toBe('gap');
+  });
+
+  it(`${MIN_ALTERNATIVES - 1} left is still fewer than ${MIN_ALTERNATIVES}: widened with the openings that fit`, () => {
+    const three: Prompt[] = [
+      ...Array.from({ length: 3 }, (_, i): Prompt => ({ key: `g.${i}`, text: 'g', band: 'any', kind: 'gap' })),
+      { key: 'o.any', text: 'c', band: 'any', kind: 'opening' },
+      { key: 'o.13', text: 'd', band: '13-18', kind: 'opening' },
+      { key: 'o.0', text: 'e', band: '0-3', kind: 'opening' },
+    ];
+    const keys = new Set<string>();
+    for (let d = 0; d < 120; d++) keys.add(selectPrompt({ ...base, ageMonths: 16, daysSinceLastEntry: 9, seed: `d${d}`, excludeKeys: ['g.0'] }, three).key);
+    expect([...keys].sort()).toEqual(['g.1', 'g.2', 'o.13', 'o.any']);
   });
 
   it(`exactly ${MIN_ALTERNATIVES} left is enough: nothing is widened`, () => {

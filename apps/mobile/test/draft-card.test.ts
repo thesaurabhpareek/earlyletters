@@ -575,6 +575,10 @@ describe('[S2] a book that is not born yet: the dateline names the child, and th
     expect(tonightDateline('Asha', tonightStageLabel('2026-03-28', TODAY), dayDate(TODAY))).toEqual({ text: `Asha ${DOT} 7 months`, a11y: 'Asha, 7 months' });
     expect(tonightStageLabel('2026-10-28', TODAY)).toBe('0 days');
     expect(tonightStageLabel('2026-10-29', TODAY)).toBe('Before You');
+    // The label and the stage agree on every kind of birthday: "Before You" exactly when the stage is before the birth.
+    for (const birthday of [null, '2027-01-01', '2026-10-29', '2026-10-28', '2026-10-27', '2026-09-01', '2026-03-28', '2024-01-10']) {
+      expect(tonightStageLabel(birthday, TODAY) === 'Before You', String(birthday)).toBe(tonightStage(birthday, TODAY).beforeBirth);
+    }
   });
 
   it('probe: 14 presses of "Another thought" on a book before the birth show no prompt about a born child', () => {

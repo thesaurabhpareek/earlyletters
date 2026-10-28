@@ -31,7 +31,8 @@ export function tonightStage(birthday: string | null, today: string): TonightSta
 
 /** What the dateline puts after the name: "7 months", or "Before You" for a book whose child is not born yet. */
 export function tonightStageLabel(birthday: string | null, today: string): string {
-  return tonightStage(birthday, today).beforeBirth ? copy.book.beforeYouChapter : (ageText({ birthday }, today) ?? copy.book.beforeYouChapter);
+  // ageText is null exactly when the child is not born yet (no birthday, or one after today): isBeforeBirth's rule.
+  return ageText({ birthday }, today) ?? copy.book.beforeYouChapter;
 }
 
 /**

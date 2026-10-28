@@ -113,7 +113,7 @@ export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Pr
   // The audience first: the pre-birth set for a book before the birth, everything else for a born child.
   const audience = live.filter((p) => (p.band === 'before') === preBirth);
   const shown = audience.length ? audience : live;
-  const fits = (p: Prompt) => p.band === band || (!preBirth && p.band === 'any');
+  const fits = (p: Prompt) => p.band === 'any' || p.band === band;
   const openings = (p: Prompt) => p.kind === 'opening' && fits(p);
 
   let pool = shown.filter((p) => p.kind === kind && fits(p));
