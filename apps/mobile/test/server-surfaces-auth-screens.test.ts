@@ -62,6 +62,9 @@ describe('[S52] the sign-in sheet', () => {
   it('"Not now" only notes the deferral and closes: it changes nothing on this phone', () => {
     const notNow = between(sheet, 'label={s.later}', '/>');
     expect(notNow).toMatch(/onPress=\{\(\) => \{\s*track\('auth_deferred', \{ trigger \}\);\s*close\(\);\s*\}\}/);
+    // track() stores and sends nothing before analytics consent (packages/analytics client; off in v1.0, D-088,
+    // test/analytics-off-v1.test.ts), and close() is navigation. The sheet reaches no local store at all.
+    expect(sheet).not.toMatch(/from '@\/lib\/(?:store|db)|setSetting|secureStorage/);
   });
 
   it('the kill path shows only its line, with no way in', () => {
@@ -73,6 +76,13 @@ describe('[S52] the sign-in sheet', () => {
   it('a provider tap disables the others and keeps a sign-out still closing from racing a new sign-in', () => {
     expect(sheet).toMatch(/const blocked = busy !== null \|\| auth\.state\.status === 'signingOut'/);
     expect(sheet.match(/disabled=\{blocked\}/g)!.length).toBeGreaterThanOrEqual(4);
+    // A second tap in the same frame starts nothing: the guard is a ref, set before the first await.
+    expect(between(sheet, 'const run = async', 'router.replace')).toMatch(/if \(inFlight\.current\) return;\s*inFlight\.current = true;/);
+    expect(between(sheet, 'const run = async', 'router.replace')).toMatch(/finally \{\s*inFlight\.current = false;/);
+  });
+
+  it('Not now waits while a sign-in runs (a cancelled Apple sheet would otherwise land on a closed sheet)', () => {
+    expect(between(sheet, 'label={s.later}', '/>')).toMatch(/disabled=\{busy !== null\}/);
   });
 
   it('the cover sits beside the title only for a sheet about this book, and is not read twice', () => {
@@ -111,6 +121,19 @@ describe('[S52] [5.8 row 10] the sheet frame and its steps', () => {
     expect(line).not.toMatch(/tone="(?:caution|destructive)"|translateX|withSequence|haptic/);
   });
 
+  it('a busy provider button says busy to VoiceOver through Button\'s own loading, and is not "dimmed"', () => {
+    const provider = between(ui, 'export function ProviderButton', 'export function QuietButton');
+    expect(provider).toMatch(/disabled=\{busy \? false : disabled\}/);
+    expect(provider).toMatch(/loading=\{busy\}/);
+    expect(provider).not.toMatch(/accessibilityState=/);
+  });
+
+  it('the error line is never red and never moves: no red class or colour, no Vibration, no shake', () => {
+    const line = between(ui, 'export function ErrorLine', 'export function Busy');
+    expect(line).not.toMatch(/destructive|recording|c\.destructive|c\.recording|text-red|bg-red/);
+    for (const [name, src] of Object.entries({ ui, codeStep, email, consent })) expect(src, name).not.toMatch(/Vibration|translateX|withSequence|withRepeat/);
+  });
+
   it('provider buttons are all 56 pt, so no way in looks smaller (A-REQ-016)', () => {
     expect(ui).toMatch(/button: tokens\.target\.primary/);
     expect(between(ui, 'export function AppleButton', 'function GoogleMark')).toMatch(/height: SHEET\.button/);
@@ -139,6 +162,13 @@ describe('[S53] Continue with email', () => {
     expect(email).toMatch(/onChangeText=\{\(v\) => \{\s*setEmail\(v\);\s*if \(error\) setError\(null\);/);
   });
 
+  it('sends one email per tap: busy and a synchronous ref guard, released in finally', () => {
+    const send = between(email, 'const send = async', 'if (r.ok)');
+    expect(send).toMatch(/if \(busy \|\| inFlight\.current\) return;/);
+    expect(send).toMatch(/inFlight\.current = true;[\s\S]*finally \{\s*inFlight\.current = false;/);
+    expect(email).toMatch(/loading=\{busy\}/);
+  });
+
   it('"Send link" is outlined until the text looks like an address', () => {
     expect(email).toMatch(/variant=\{ready \? 'primary' : 'outline'\}/);
     expect(email).toMatch(/const ready = looksLikeEmail\(value\)/);
@@ -157,6 +187,14 @@ describe('[S54] Check your email', () => {
     expect(codeStep).toMatch(/textContentType="oneTimeCode"/);
     expect(codeStep).toMatch(/fontVariant: \['tabular-nums'\]/);
     expect(between(codeStep, 'footer={', '}>')).toMatch(/label=\{busy \? authCopy\.sheet\.busy : k\.verify\}/);
+  });
+
+  it('asks once per code: a ref guard covers the auto-submit and Continue in the same frame; Continue holds the busy state', () => {
+    const verifyFn = between(codeStep, 'const verify = async', 'if (r.ok)');
+    expect(verifyFn).toMatch(/if \(busy \|\| inFlight\.current \|\|/);
+    expect(verifyFn).toMatch(/inFlight\.current = true;[\s\S]*finally \{\s*inFlight\.current = false;/);
+    expect(between(codeStep, 'const resend = async', 'if (r.ok)')).toMatch(/if \(inFlight\.current\) return;/);
+    expect(between(codeStep, 'footer={', '}>')).toMatch(/loading=\{busy\}/);
   });
 
   it('a wrong code clears and refocuses the field; it never shakes, flashes red or buzzes', () => {
@@ -193,11 +231,46 @@ describe('[S55] before your book syncs', () => {
     expect(consent).toMatch(/import \{ AgeAnswers \} from '@\/components\/gate\/age-gate-screen'/);
   });
 
-  it('"Keep on this phone" is the same size and width as "Agree and sync" (a no as easy as a yes, LEGAL-REQ-006)', () => {
-    const agree = /<Button size="lg" fullWidth loading=\{busy\?\.accepted === true\}[^>]*label=\{sc\.agreeButton\}/;
-    const decline = /<Button size="lg" fullWidth variant="outline" loading=\{busy\?\.accepted === false\}[^>]*label=\{sc\.declineButton\}/;
-    expect(sensitive).toMatch(agree);
-    expect(sensitive).toMatch(decline);
+  it('"Keep on this phone" is the same size and width as "Agree and sync" at every text size (a no as easy as a yes, LEGAL-REQ-006)', () => {
+    const agree = between(sensitive, '<Button', 'label={sc.agreeButton}');
+    const decline = between(sensitive, 'label={sc.agreeButton}', 'label={sc.declineButton}');
+    for (const b of [agree, decline]) {
+      expect(b).toMatch(/size="lg"\s+fullWidth/);
+      // One shared minHeight: if one answer wraps at an accessibility size, the other grows with it.
+      expect(b).toMatch(/style=\{pair\}/);
+      expect(b).toMatch(/onLayout=\{\(e\) => measure\(e\.nativeEvent\.layout\.height\)\}/);
+    }
+    expect(sensitive).toMatch(/const pair = \{ minHeight: tallest \}/);
+    expect(sensitive).toMatch(/<SensitiveAnswers key=\{scale\}/);
+    // While one answer is recorded, the other waits.
+    expect(agree).toMatch(/disabled=\{busy\?\.accepted === false\}/);
+    expect(decline).toMatch(/disabled=\{busy\?\.accepted === true\}/);
+  });
+
+  it('records one answer per tap: Agree then Keep in the same frame records nothing twice', () => {
+    for (const fn of ['const answer: Answer = async', 'const answerTurnOn: Answer = async']) {
+      const body = between(consent, fn, '};');
+      expect(body, fn).toMatch(/if \(inFlight\.current\) return;/);
+    }
+    expect(between(consent, 'const answer: Answer = async', '};')).toMatch(/inFlight\.current = true;[\s\S]*finally \{\s*inFlight\.current = false;/);
+    expect(terms).toMatch(/loading=\{busy\}\s+label=\{t\.agree\}/);
+  });
+
+  it('"Agree and sync" after a decline shows the sensitive-data step with its words, then records (LEGAL-REQ-006)', () => {
+    expect(consent).toMatch(/const turningOn = params\.step === 'sensitive' && s\.status === 'ready' && s\.sync === 'off'/);
+    expect(between(consent, 'if (turningOn) {', 'if (s.status !== \'needsConsent\')')).toMatch(/<SensitiveStep child=\{child\} busy=\{busy\} error=\{turnOnError\} answer=\{answerTurnOn\} \/>/);
+    const turnOn = between(consent, 'const answerTurnOn: Answer = async', '  };');
+    expect(turnOn).toMatch(/if \(!accepted\) \{\s*close\(\);\s*return;\s*\}/);
+    expect(turnOn).toMatch(/await auth\.turnOnSync\(\)/);
+    // Account and the invite sheets send the person here; neither records consent itself.
+    for (const [name, src] of Object.entries({ account, gate: between(ui, 'export function AccountGate', '\n}\n') })) {
+      expect(src, name).not.toMatch(/turnOnSync/);
+      expect(src, name).toMatch(/router\.push\(\{ pathname: '\/sign-in\/consent', params: \{ step: 'sensitive' \} \}\)/);
+    }
+  });
+
+  it('a step that replaces another fades once; the first step takes only the route\'s fade', () => {
+    expect(between(consent, 'function StepFade', 'type Answer')).toMatch(/entering=\{changed \? STEP_IN : undefined\}/);
   });
 
   it('shows every registered sentence of each step (no consent sentence dropped)', () => {
@@ -225,7 +298,10 @@ describe('[S56] Account', () => {
   });
 
   it('while the outbox drains, the Sign out row says so with a small spinner, and VoiceOver hears it once', () => {
-    expect(account).toMatch(/const waitingToSignOut = s\.status === 'signingOut' && s\.waitingForUploads/);
+    // When it is waiting is account-view.logic.ts (test/account-view.test.ts); the page shows what it says.
+    expect(account).toMatch(/const view = accountView\(s, auth\.claimPending\)/);
+    expect(account).toMatch(/const waitingToSignOut = view\.signOut === 'waiting'/);
+    expect(account).toMatch(/\{waitingToSignOut \? \(/);
     expect(account).toMatch(/<ListRow title=\{a\.signOutWaiting\} leading=\{<ActivityIndicator/);
     expect(account).toMatch(/if \(waitingToSignOut\) announce\(a\.signOutWaiting\)/);
   });
@@ -236,6 +312,12 @@ describe('[S56] Account', () => {
     expect(out).toMatch(/\{a\.signedOutTitle\}/);
     expect(out).toMatch(/fill\(a\.signedOutBody, \{ child: active\?\.name \?\? authCopy\.consent\.childFallback \}\)/);
     expect(out).toMatch(/errors\.session_expired/);
+  });
+
+  it('nothing fades in on a visit; only signing out on this page fades to signed out (MOTION principle 2)', () => {
+    expect(account.match(/entering=/g)).toHaveLength(1);
+    expect(account).toMatch(/entering=\{signedOutHere \? PAGE_IN : undefined\}/);
+    expect(account).toMatch(/const signedOutHere = wasSignedIn\.current && !auth\.signedIn/);
   });
 
   it('signed in: the way in with its mark, headline and the address in footnote', () => {

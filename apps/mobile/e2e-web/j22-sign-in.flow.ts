@@ -131,6 +131,8 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await expect(app.getByText("That code didn't match. Check the newest email, or send a new one.")).toBeVisible();
   await expect(app.getByLabel('Code', { exact: true })).toHaveValue('');
   await expect(app.getByLabel('Code', { exact: true })).toBeFocused();
+  const verifies = () => m.calls.filter((c) => c.path === '/auth/v1/verify');
+  expect(verifies(), 'a full-length code is asked once, with no tap').toHaveLength(1);
   await step('unhappy', 'A wrong code', 'Six digits went on their own; the wrong code clears and the field takes focus again, with the line beside a mark. No shake, no red.');
 
   await btn(app, 'Trouble signing in?').click();
@@ -140,6 +142,7 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   m.auth('verify', () => null);
   await app.getByLabel('Code', { exact: true }).fill('123456');
   await expect(app.getByRole('heading', { name: 'No book here yet' })).toBeVisible({ timeout: 15_000 });
+  expect(verifies(), 'each full-length code is asked once').toHaveLength(2);
   await expect(btn(app, 'Try another way')).toBeVisible();
   await step('unhappy', 'No book here yet', 'Signed in, but this account has no book: the sheet asks whether another way was used last time. "Start a book" closes onto the lit welcome (5.8 row 13).');
 
@@ -239,7 +242,24 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await expect(app.getByText('Agree and sync')).toBeVisible();
   expect(m.rpcCalls('sync_push'), 'nothing syncs after a decline').toHaveLength(0);
   expect(m.rpcCalls('sync_pull'), 'nothing syncs after a decline').toHaveLength(0);
+  const acts = () => m.rpcCalls('record_policy_act').map((c) => `${(c.body as { p_document: string }).p_document}:${(c.body as { p_action: string }).p_action}`);
+  expect(acts()).toEqual(['terms:accept', 'sensitive-data:decline']);
   await step('happy', 'Kept on this phone, still signed in', 'The decline is recorded and the person stays signed in with sync off; Account offers "Agree and sync" for later. Nothing synced.');
+
+  await app.getByText('Agree and sync').click();
+  await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.').last()).toBeVisible();
+  await expect(app.getByText(/^Letters can hold private things, like health details about you or Asha\./).last()).toBeVisible();
+  await expect(btn(app, 'Keep on this phone')).toBeVisible();
+  expect(acts(), 'opening the step records nothing').toEqual(['terms:accept', 'sensitive-data:decline']);
+  await step('happy', 'Agree and sync, later', 'From Account, "Agree and sync" opens the sensitive-data step with every registered line; nothing is recorded until the person answers there (LEGAL-REQ-006).');
+
+  // `.last()`: the Account row of the same name stays in the tree under the sheet on the web.
+  await btn(app, 'Agree and sync').last().click();
+  await expect(app.getByRole('heading', { name: 'Keep your letters in this account?' })).toBeVisible({ timeout: 15_000 });
+  expect(acts()).toEqual(['terms:accept', 'sensitive-data:decline', 'sensitive-data:accept']);
+  await btn(app, 'Keep them here').click();
+  await expect(app.getByText('Sync and sharing')).toBeVisible({ timeout: 15_000 });
+  await expect(app.getByText('On', { exact: true })).toBeVisible();
 });
 
 test('[J22e] from the Family tab: sign in to invite', async ({ app, record }) => {

@@ -204,12 +204,23 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     expect(authCopy.sheet.bodies.settings).toBe(authCopy.sheet.bodies.first_letter);
   });
 
-  it('says the letters are safe before anything else after an offline or failed attempt (S52)', () => {
+  it('leads with the reassurance for the offline, lost-session and setup errors; has it in unknown and the kill path (S52)', () => {
     const SAFE = 'Your letters are safe on this phone.';
     for (const kind of ['network', 'session_expired', 'consent_unavailable'] as const) expect(authCopy.errors[kind].startsWith(SAFE), kind).toBe(true);
     // The table's own words for `unknown` put "That did not work this time." first; the reassurance is its second sentence.
+    expect(authCopy.errors.unknown.startsWith(SAFE)).toBe(false);
     expect(authCopy.errors.unknown).toContain(SAFE);
     expect(authCopy.sheet.notConfigured).toContain(SAFE);
+    // The rest say nothing about the letters, as the table words them. The first six follow a failed attempt and are
+    // listed for the spec owner (PR #310) to rule what "failed attempt" covers; the other four are a typo in the
+    // address, the age answer and the two refused links. A change to either list shows here.
+    const without = Object.entries(authCopy.errors)
+      .filter(([, text]) => !text.includes(SAFE))
+      .map(([kind]) => kind)
+      .sort();
+    const FOR_THE_SPEC_OWNER = ['provider', 'not_available', 'rate_limited', 'expired', 'code_paused', 'wrong_code'];
+    const NOT_A_FAILED_ATTEMPT = ['invalid_email', 'under_18', 'other_phone', 'already_signed_in'];
+    expect(without).toEqual([...FOR_THE_SPEC_OWNER, ...NOT_A_FAILED_ATTEMPT].sort());
   });
 
   it('the age step has only the question and its two answers (S55, LEGAL-REQ-002: nothing explains or hints)', () => {
