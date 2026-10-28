@@ -48,10 +48,8 @@ export const speechConsentCopy = {
   title: 'Get your words ready',
   // Says where the words are written down, never that letters stay on the phone (they sync, D-100).
   body: 'Spoken letters are written down on this phone. One download of {size}, on Wi-Fi.',
-  note: 'It waits for Wi-Fi, and carries on where it left off if it is interrupted.', // retired by EXPERIENCE_PASS_2026-10; delete in P7
   downloadButton: 'Download on Wi-Fi',
   laterButton: 'Not now',
-  footnote: 'You can do this later in Settings, Recordings. Your voice is always kept.', // retired by EXPERIENCE_PASS_2026-10; delete in P7
   lowSpace: 'This phone needs {size} of free space first.',
   chosenYes: 'Getting ready. It waits for Wi-Fi.',
   chosenLater: 'Your voice is kept either way.',
