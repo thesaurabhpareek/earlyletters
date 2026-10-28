@@ -13,8 +13,8 @@
  * so nothing is clipped (as Review's footer, lib/review-layout.logic.ts).
  * The privacy line and every error line are trust copy, so they sit at `subhead`,
  * never below it (P1's floor, the P4 critics' A10). An error is a line with
- * WarningCircle in `caution`: words and an icon, never red text alone, never a
- * shake; it fades in over `swapMs` and is announced politely.
+ * WarningCircle in `caution` on its own chip: words and an icon, never red text
+ * alone, never a shake; it fades in over `swapMs` and is announced politely.
  * No lamp in a sheet (5.2). The content adds no entrance (MOTION 5i).
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -133,7 +133,11 @@ export function SheetBody({ children, muted }: { children: string; muted?: boole
   );
 }
 
-/** Icon and words, never colour alone (DESIGN_LANGUAGE 2); announced politely when it appears; no shake, no haptic. */
+/**
+ * Icon and words, never colour alone (DESIGN_LANGUAGE 2); announced politely when it appears; no shake, no haptic.
+ * The warning mark sits on its own `secondary` chip with the words, so it never touches lit paper (D-110: the Family
+ * tab is a lit room and shows this line too; test/lamp.test.ts holds the rule).
+ */
 export function ErrorLine({ message }: { message: string | null }) {
   const c = useColors();
   useEffect(() => {
@@ -141,7 +145,13 @@ export function ErrorLine({ message }: { message: string | null }) {
   }, [message]);
   if (!message) return null;
   return (
-    <Animated.View key={message} entering={LINE_IN} accessible accessibilityLabel={message} accessibilityLiveRegion="polite" className="flex-row items-start gap-2">
+    <Animated.View
+      key={message}
+      entering={LINE_IN}
+      accessible
+      accessibilityLabel={message}
+      accessibilityLiveRegion="polite"
+      className="flex-row items-start gap-2 rounded-2xl bg-secondary px-4 py-3">
       <WarningCircleIcon size={20} color={c.caution} style={{ marginTop: 1 }} />
       <Text variant="subhead" className="flex-1">
         {message}
