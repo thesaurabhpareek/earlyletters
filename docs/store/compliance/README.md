@@ -90,6 +90,7 @@ Each item says who must answer. "Founder" means the product owner and account ho
 | OPEN-26 | Live Supabase state. I could not see the live project. `supabase/APPLY.md` shows migrations 3 to 7 pending as of 3 Oct; `safety_events` still exists live until migration 4 runs. | Profile B labels | Founder |
 | OPEN-27 | Photos on letters. Migrations have an `entry-photos` bucket but the mobile app has no photo picker. Does v1.0.0 ship photo attach? | Labels, permission strings | Founder |
 | OPEN-28 | Which Project docs were meant to be consulted? The attached Project lists IP and infra memos (`ip/L2-copyright-licence.md`, `infra/...`); this session had no Project read tool, so they were not read. Anything in them that changes content rights or privacy answers should override this pack. | Content rights | Founder |
+| OPEN-29 | On-device deletion does not erase anything: `deleteEntry` only sets `deleted_at`, the text and recording stay in SQLite and Documents, and there is no Recently deleted screen or local 30-day purge, while `settings.delete.entryBody` promises "undo for 30 days from Recently deleted". Build the local purge, or change the copy and the policy to match | Privacy policy accuracy, Apple 5.1.1 | Founder |
 
 ## Method and limits
 
