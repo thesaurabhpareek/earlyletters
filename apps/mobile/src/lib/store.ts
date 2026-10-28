@@ -539,6 +539,14 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
 }
 
 /**
+ * Whether "Write the words" can take words for this letter now: a letter still waiting, or a recording whose words
+ * came back empty and that the server does not have yet. Read only; the same rows `setTypedWordsForWaitingEntry` writes.
+ */
+export function canTypeWordsFor(id: string): boolean {
+  return entries.canTypeWords(ctx(), id);
+}
+
+/**
  * The author kept words that arrived later (the machine's, or typed on the letter page), with them on screen in
  * Review (M17: the counting moment, F14 6.2 B2). The review mark, the count and, when given, the place the
  * author chose (`inBook`) are written in one transaction. The words are not changed here (an edit is a

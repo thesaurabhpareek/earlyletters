@@ -16,8 +16,9 @@
  * signature, so a retry or a second tap is one invite (F11-U15, G-07). Typed codes are not made: build 2 invites
  * are links only (the coordinator's ruling on F11-REQ-001 and -002, 28 Oct 2026).
  *
- * When the share sheet closes, this sheet closes too, and the Family tab says "The invite waits on the Family tab
- * until they join." as its toast (components/family/family-notice.ts), with the pending row entering there.
+ * When the share sheet closes after the link was sent, this sheet closes too, and the Family tab says "The invite
+ * waits on the Family tab until they join." as its toast (components/family/family-notice.ts), with the pending row
+ * entering there. When it was dismissed without sending, this sheet stays at Share with the same draft (afterShare).
  *
  * A book that already has two parents (D-069) shows "{child}'s book has two parents." instead of Share, from the
  * last pull or from the server's SCCAP (F11-REQ-004, F11-REQ-026).
@@ -31,7 +32,7 @@ import { View } from 'react-native';
 import { authCopy } from '@scribe/content';
 import { BookCover } from '@/components/book/book-cover';
 import { familyNotice } from '@/components/family/family-notice';
-import { inviteSheetView } from '@/components/family/invite-sheet.logic';
+import { afterShare, inviteSheetView } from '@/components/family/invite-sheet.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
@@ -124,9 +125,12 @@ function InviteCoParent() {
       }
       const shared = await shareInviteLink(invite.url, child, s || null);
       trackInviteCreated({ role: 'parent', channel: 'share_sheet', shared: shared === 'shared', childIndex: childIndexOf(book.id) });
+      // Dismissed without sending: the sheet stays at Share with the same draft, no tick and no toast (afterShare).
+      const after = afterShare(shared);
+      if (!after.close) return;
       haptic('success');
       draft.current = null; // the next invite from this sheet is a new one
-      // The share sheet has closed: so does this one, and the Family tab says where the invite waits.
+      // The link went out: this sheet closes, and the Family tab says where the invite waits.
       familyNotice.leave(k.done);
       close();
     } catch (e) {
@@ -139,8 +143,22 @@ function InviteCoParent() {
     }
   };
 
+  // The primary sits in the frame's footer, above the keyboard, with the error line above it (critics' pass S3). Only
+  // once the account can invite: until then the account step in the body is the way on.
+  const footer =
+    view === 'form' && auth.canSync ? (
+      <>
+        <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
+        {error === 'consent_needed' ? (
+          <QuietButton label={familyCopy.card.finishSetup} onPress={() => router.push('/sign-in/consent')} />
+        ) : null}
+        {/* While the link is made, the primary keeps its size and shows its busy line inside it. */}
+        <Button testID="inviteNew.share" size="lg" loading={busy} label={busy ? k.working : k.share} onPress={() => void share()} />
+      </>
+    ) : undefined;
+
   return (
-    <SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy}>
+    <SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy} footer={footer}>
       <View testID="inviteNew.screen" className="gap-5">
         {/* The invite is into this book: its cover, closed, with the name the parent gave it. Decorative: the title says it. */}
         <View className="items-center pb-1">
@@ -188,12 +206,6 @@ function InviteCoParent() {
                   <Text variant="footnote">{fill(k.oneBook, { child })}</Text>
                   <Text variant="footnote">{k.linkNote}</Text>
                 </View>
-                <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
-                {error === 'consent_needed' ? (
-                  <QuietButton label={familyCopy.card.finishSetup} onPress={() => router.push('/sign-in/consent')} />
-                ) : null}
-                {/* While the link is made, the primary keeps its size and shows its busy line inside it. */}
-                <Button testID="inviteNew.share" size="lg" loading={busy} label={busy ? k.working : k.share} onPress={() => void share()} />
               </View>
             </AccountGate>
           </>

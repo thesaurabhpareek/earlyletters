@@ -469,6 +469,9 @@ export const en = {
     provenance: {
       spokenFixed: "Spoken, with small fixes",
       spokenExact: "Spoken, exactly as said",
+      // Another parent's letter: this phone never holds their raw words (book_entries leaves them out), so it cannot
+      // know whether any fix was made and says only that the letter was spoken (P5 critics' pass, S8).
+      spokenOther: "Spoken",
       typed: "Typed",
     },
     hearLink: "Hear it in {signsAs}'s voice",
@@ -780,10 +783,16 @@ export const en = {
       eraseNowBody: "The letter and its recording are erased for good.",
       // After Restore (S38), with "Open"; {child} is the restored letter's book.
       restoredToast: "Back in {child}'s book.",
+      // Restore when no book can be named (the letter's book is gone and none is open): the same line without a name,
+      // so the toast never reads "Back in 's book." (P5 critics' pass, L9).
+      restoredToastNoName: "Back in the book.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
       erasedToast: "Letter erased.",
+      // Erase now when the recording's file could not be removed: the letter was not erased, the row stays for another try
+      // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
+      eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",
       bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",

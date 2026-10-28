@@ -31,7 +31,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
-import { announce, useTheme } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
@@ -40,6 +40,7 @@ import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
+import { turnControls } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
 /** "Keep playing" is remembered across sessions (S30). A setting on this phone, never synced. */
@@ -57,6 +58,8 @@ export default function ReadTogether() {
   // "Keep playing": after a recording ends, turn the page and start the next voice.
   const [autoNext, setAutoNext] = useState(() => getSetting(KEEP_PLAYING) === '1');
   const [startNext, setStartNext] = useState(false);
+  // At accessibility text sizes the two page buttons stack, full width, "Next letter" first (S4).
+  const turn = turnControls(useIsAccessibilitySize());
   useUnlitRoom();
 
   const letters = useMemo(() => (child ? readableInBook(listEntriesForChild(child.id)).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -156,9 +159,24 @@ export default function ReadTogether() {
         />
 
         {!done && (
-          <View className="flex-row gap-3 px-5 pb-2 pt-3">
-            <Button variant="secondary" size="lg" className="flex-1 px-4" disabled={index === 0} onPress={() => go(index - 1)} label={rt.previousButton} testID="readTogether.back" />
-            <Button size="lg" className="flex-1 px-4" onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
+          <View className={turn.stacked ? 'gap-3 px-5 pb-2 pt-3' : 'flex-row gap-3 px-5 pb-2 pt-3'}>
+            {turn.order.map((which) =>
+              which === 'back' ? (
+                <Button
+                  key="back"
+                  variant="secondary"
+                  size="lg"
+                  className={turn.stacked ? 'px-4' : 'flex-1 px-4'}
+                  fullWidth={turn.stacked}
+                  disabled={index === 0}
+                  onPress={() => go(index - 1)}
+                  label={rt.previousButton}
+                  testID="readTogether.back"
+                />
+              ) : (
+                <Button key="next" size="lg" className={turn.stacked ? 'px-4' : 'flex-1 px-4'} fullWidth={turn.stacked} onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
+              ),
+            )}
           </View>
         )}
       </SafeAreaView>
