@@ -37,7 +37,7 @@ An open work package that names a done BL task is not flagged: work packages are
 ## Numbers today
 Run on Wed 28 Oct 2026 against `develop` at 6bfb94a9, with the 203 merged PRs into `develop` and `main` that `--gh` fetched:
 - Backlog: 241 tasks; 83 ready for an agent; 60 of those 83 have a Done-when line.
-- Work packages: 301 rows in 21 feature files; 140 ready for an agent. 108 rows have no status the parser can read, mostly because F01, F02, F03, F14, F18, F19, F20 and F21 have no Status column. Those rows are never offered.
+- Work packages: 301 rows in 21 feature files; 140 ready for an agent. 106 rows have no status the parser can read: 105 because F01, F02, F03, F14, F18, F19, F20 and F21 have no Status column, and WP-F17-11 ("Worker built ..."). Those rows are never offered.
 - Flags: 31 strong (30 merged PR, 1 reversed premise) on 27 tasks, and 61 weak.
 - BL-342 is flagged strong by #121 ("Ported from ... BL-342"). BL-440 is flagged strong by its premise (D-100).
 - Strong flags on work packages match what open PR #239 records as built, for example WP-F16-01, WP-F16-13, WP-F16-14 and WP-F16-17 (#138, #208).
