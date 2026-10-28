@@ -1,8 +1,9 @@
-// scripts/release/doctor.ts: the read-only check of the release connections. Nothing here calls Apple, Expo or
-// GitHub; the token is verified against a key generated in the test, and the answers are fake.
+// scripts/release/doctor.ts: the read-only check of the alpha release connections. Nothing here calls Apple, Expo
+// or GitHub; the token is verified against a key generated in the test, and every answer is fake. Values are
+// fictional.
 import { generateKeyPairSync, verify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { appLookupPath, ascToken, interpretAppLookup, redact, render, repoFindings } from '../../../scripts/release/doctor';
+import { appLookupPath, ascToken, checkApple, checkExpo, interpretAppLookup, PREVIEW_BUNDLE_ID, redact, render, repoFindings, signingKeyIds } from '../../../scripts/release/doctor';
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
 const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
@@ -27,13 +28,17 @@ describe('App Store Connect token (Apple: ES256, aud appstoreconnect-v1, at most
 });
 
 describe('reading an app lookup', () => {
-  it('names the bundle id in the request and escapes it', () => {
+  it('puts the bundle id in the request, and escapes characters that would change the query', () => {
     expect(appLookupPath('com.example.app')).toBe('/v1/apps?filter[bundleId]=com.example.app');
+    expect(appLookupPath('a b&c=d')).toBe('/v1/apps?filter[bundleId]=a%20b%26c%3Dd');
   });
-  it('passes when the app exists, and says where its Apple id goes', () => {
+  it('passes when the app exists, and names both submit profiles for its Apple id', () => {
     const f = interpretAppLookup(200, { data: [{ id: '123456789' }] }, 'com.x.y');
     expect(f.level).toBe('PASS');
-    expect(f.message).toContain('ascAppId');
+    expect(f.message).toContain('submit.testflight.ios.ascAppId');
+    expect(f.message).toContain('submit.preview.ios.ascAppId');
+    expect(f.message).toContain('123456789');
+    expect(f.message).toMatch(/role.*not checked/);
   });
   it('fails when the key works but the record does not exist', () => {
     expect(interpretAppLookup(200, { data: [] }, 'com.x.y').level).toBe('FAIL');
@@ -44,39 +49,150 @@ describe('reading an app lookup', () => {
     expect(interpretAppLookup(500, null, 'com.x.y').level).toBe('FAIL');
     expect(interpretAppLookup(200, { data: 'nope' }, 'com.x.y').message).toMatch(/cannot be read/);
   });
+  it('says "cannot be read" for a list that holds null or an app with no id, instead of a signing failure', () => {
+    for (const data of [[null], [{}], [{ id: 5 }], [7]]) {
+      const f = interpretAppLookup(200, { data }, 'com.x.y');
+      expect(f.level).toBe('FAIL');
+      expect(f.message).toMatch(/cannot be read/);
+    }
+  });
+});
+
+describe('signing keys, read like the preflight reads them', () => {
+  it('ignores line and block comments', () => {
+    expect(signingKeyIds("[\n  // { keyId: 'el-1', publicKey: 'x' },\n  /* { keyId: 'b' } */\n]")).toEqual([]);
+    expect(signingKeyIds("[{ keyId: 'el-2026-10', publicKey: 'x' }, { keyId: \"el-2026-10-backup\", publicKey: 'y' }]")).toEqual(['el-2026-10', 'el-2026-10-backup']);
+  });
 });
 
 describe('the repository wiring', () => {
+  const key = (id: string) => `{ keyId: '${id}', publicKey: 'x' }`;
   const good = {
     appConfig: "owner: 'someone',\nextra: { eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } }",
-    easJson: JSON.stringify({ submit: { testflight: { ios: { ascAppId: '1' } }, preview: { ios: { ascAppId: '2' } }, production: { ios: { ascAppId: '3' } } } }),
-    keysTs: "export const T = [{ keyId: 'a', publicKey: 'b' }];",
+    easJson: JSON.stringify({ submit: { testflight: { ios: { ascAppId: '1' } }, preview: { ios: { ascAppId: '2' } }, production: {} } }),
+    keysTs: `[${key('a')}, ${key('a-backup')}]`,
   };
-  it('passes everything when the founder steps are done', () => {
-    expect(repoFindings(good).every((f) => f.level === 'PASS')).toBe(true);
+  const lvl = (f: ReturnType<typeof repoFindings>, text: string) => f.find((x) => x.message.includes(text))?.level;
+
+  it('an alpha-ready repo has no FAIL, so the doctor can exit 0, and production is NOT NEEDED, not a failure', () => {
+    const f = repoFindings(good);
+    expect(f.filter((x) => x.level === 'FAIL')).toEqual([]);
+    expect(lvl(f, 'submit.production')).toBe('NOT NEEDED');
   });
-  it('fails each missing founder step, as develop is today', () => {
+  it('fails each missing founder step, as develop is today (no production line fails)', () => {
     const f = repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: { production: {}, preview: {}, testflight: {} } }), keysTs: '[ ]' });
-    expect(f.filter((x) => x.level === 'FAIL').length).toBe(6);
+    expect(f.filter((x) => x.level === 'FAIL').length).toBe(5);
+    expect(lvl(f, 'submit.production')).toBe('NOT NEEDED');
   });
-  it('does not count the commented example key line as a signing key', () => {
-    const f = repoFindings({ ...good, keysTs: "export const T = [\n  // { keyId: 'el-2026-10', publicKey: 'x' },\n  /* { keyId: 'b' } */\n];" });
-    expect(f.find((x) => x.message.includes('keys.ts'))?.level).toBe('FAIL');
+  it('fails an ascAppId that is not numeric', () => {
+    const f = repoFindings({ ...good, easJson: JSON.stringify({ submit: { testflight: { ios: { ascAppId: 'abc' } }, preview: { ios: { ascAppId: '2' } } } }) });
+    expect(f.filter((x) => x.level === 'FAIL').map((x) => x.message)[0]).toContain('submit.testflight');
+  });
+  it('treats signing keys as the preflight does: none FAIL, one WARN, a repeated id FAIL, two PASS', () => {
+    expect(lvl(repoFindings({ ...good, keysTs: '[]' }), 'keys.ts')).toBe('FAIL');
+    expect(lvl(repoFindings({ ...good, keysTs: `[${key('a')}]` }), 'keys.ts')).toBe('WARN');
+    expect(lvl(repoFindings({ ...good, keysTs: `[${key('a')}, ${key('a')}]` }), 'keys.ts')).toBe('FAIL');
+    expect(lvl(repoFindings({ ...good, keysTs: `[${key('a')}, ${key('b')}]` }), 'keys.ts')).toBe('PASS');
   });
   it('fails, and does not throw, on broken eas.json', () => {
     expect(repoFindings({ ...good, easJson: '{' }).some((f) => f.level === 'FAIL' && /not valid JSON/.test(f.message))).toBe(true);
   });
 });
 
-describe('output', () => {
-  it('lists failures first and counts each level', () => {
-    const out = render([{ level: 'PASS', area: 'repo', message: 'a' }, { level: 'FAIL', area: 'expo', message: 'b' }, { level: 'UNVERIFIED', area: 'apple', message: 'c' }]);
-    expect(out.indexOf('FAIL')).toBeLessThan(out.indexOf('UNVERIFIED'));
-    expect(out.indexOf('UNVERIFIED')).toBeLessThan(out.indexOf('PASS'));
-    expect(out).toContain('1 pass, 1 unverified, 1 fail.');
+describe('the Expo login', () => {
+  it('is UNVERIFIED without a token, FAIL with --live, and does not run anything', () => {
+    let ran = false;
+    expect(checkExpo({}, false, () => { ran = true; }).level).toBe('UNVERIFIED');
+    expect(checkExpo({}, true, () => { ran = true; }).level).toBe('FAIL');
+    expect(ran).toBe(false);
   });
-  it('hides a secret that reaches an error message, and ignores short strings', () => {
-    expect(redact('bad token abcdef123456 here', ['abcdef123456'])).toBe('bad token [hidden] here');
+  it('passes when whoami succeeds', () => {
+    expect(checkExpo({ EXPO_TOKEN: 'fictional-token-123456' }, false, () => {}).level).toBe('PASS');
+  });
+  it('keeps only the first line of an error and hides the token wherever it appears', () => {
+    const f = checkExpo({ EXPO_TOKEN: 'fictional-token-123456' }, false, () => {
+      throw new Error('Command failed: fictional-token-123456 whoami\nsecond line fictional-token-123456 stderr dump');
+    });
+    expect(f.level).toBe('FAIL');
+    expect(f.message).not.toContain('fictional-token-123456');
+    expect(f.message).not.toContain('second line');
+    expect(f.message).toContain('Command failed');
+  });
+});
+
+describe('the App Store Connect key', () => {
+  const env = { ASC_API_KEY_ID: 'KEY1234567', ASC_API_ISSUER_ID: '11111111-2222-3333-4444-555555555555', ASC_API_KEY_P8_PATH: '/fictional/AuthKey_KEY1234567.p8' };
+  const io = (over: Partial<Parameters<typeof checkApple>[2]> = {}) => ({
+    readKey: () => pem,
+    get: async () => ({ status: 200, body: { data: [{ id: '999' }] } }),
+    nowSeconds: () => 1_800_000_000,
+    ...over,
+  });
+
+  it('names the missing variables: UNVERIFIED, or FAIL with --live', async () => {
+    const a = await checkApple({ ASC_API_KEY_ID: 'KEY1234567' }, false, io());
+    expect(a[0].level).toBe('UNVERIFIED');
+    expect(a[0].message).toContain('ASC_API_ISSUER_ID, ASC_API_KEY_P8_PATH are not set');
+    expect((await checkApple({}, true, io()))[0].level).toBe('FAIL');
+  });
+  it('asks for the .preview record only, with a scoped bearer token, and passes', async () => {
+    const seen: { url: string; token: string }[] = [];
+    const out = await checkApple(env, false, io({ get: async (url, token) => { seen.push({ url, token }); return { status: 200, body: { data: [{ id: '999' }] } }; } }));
+    expect(out.map((f) => f.level)).toEqual(['PASS']);
+    expect(seen.length).toBe(1);
+    expect(seen[0].url).toBe(`https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=${PREVIEW_BUNDLE_ID}`);
+    expect(decode(seen[0].token.split('.')[1]).scope).toEqual([`GET /v1/apps?filter[bundleId]=${PREVIEW_BUNDLE_ID}`]);
+  });
+  it('turns an unreadable key file, or a folder, into a clean FAIL that shows no path and does not throw', async () => {
+    for (const message of ['EACCES: permission denied, open \'/fictional/AuthKey_KEY1234567.p8\'', 'EISDIR: illegal operation on a directory, read']) {
+      const out = await checkApple(env, false, io({ readKey: () => { throw new Error(message); } }));
+      expect(out.length).toBe(1);
+      expect(out[0].level).toBe('FAIL');
+      expect(out[0].message).toContain('could not be read');
+      expect(out[0].message).not.toContain('AuthKey_');
+      expect(out[0].message).not.toContain('/fictional');
+    }
+  });
+  it('hides the bearer token, the key id, the issuer id and the key text when a request error echoes them', async () => {
+    let sent = '';
+    const out = await checkApple(env, false, io({
+      get: async (_url, token) => {
+        sent = token;
+        throw new Error(`fetch failed: Authorization: Bearer ${token} kid=KEY1234567 iss=${env.ASC_API_ISSUER_ID}\nsecond line ${pem}`);
+      },
+    }));
+    expect(out[0].level).toBe('FAIL');
+    for (const secret of [sent, 'KEY1234567', env.ASC_API_ISSUER_ID, 'BEGIN PRIVATE KEY', 'second line']) expect(out[0].message).not.toContain(secret);
+    expect(out[0].message).toContain('Could not sign or send');
+  });
+  it('fails cleanly when the key text is not a key, and sends nothing', async () => {
+    let sentAny = false;
+    const out = await checkApple(env, false, io({ readKey: () => 'CANARY-KEY-CONTENT', get: async () => { sentAny = true; return { status: 200, body: {} }; } }));
+    expect(out[0].level).toBe('FAIL');
+    expect(out[0].message).not.toContain('CANARY-KEY-CONTENT');
+    expect(sentAny).toBe(false);
+  });
+});
+
+describe('output', () => {
+  it('lists failures first, then warnings, unverified, not needed and passes, and counts each', () => {
+    const out = render([
+      { level: 'PASS', area: 'repo', message: 'a' },
+      { level: 'NOT NEEDED', area: 'repo', message: 'n' },
+      { level: 'FAIL', area: 'expo', message: 'b' },
+      { level: 'UNVERIFIED', area: 'apple', message: 'c' },
+      { level: 'WARN', area: 'repo', message: 'w' },
+    ]);
+    const at = (l: string) => out.indexOf(`${l.padEnd(10)} [`);
+    expect(at('FAIL')).toBeLessThan(at('WARN'));
+    expect(at('WARN')).toBeLessThan(at('UNVERIFIED'));
+    expect(at('UNVERIFIED')).toBeLessThan(at('NOT NEEDED'));
+    expect(at('NOT NEEDED')).toBeLessThan(at('PASS'));
+    expect(out).toContain('1 pass, 1 warn, 1 unverified, 1 not needed, 1 fail.');
+  });
+  it('hides every occurrence of a secret, ignores short strings, and hides any bearer token', () => {
+    expect(redact('bad token abcdef123456 and again abcdef123456', ['abcdef123456'])).toBe('bad token [hidden] and again [hidden]');
     expect(redact('abc stays', ['abc'])).toBe('abc stays');
+    expect(redact('sent Authorization: Bearer eyJhbGci.eyJpc3Mi.c2ln failed', [])).toBe('sent Authorization: Bearer [hidden] failed');
   });
 });
