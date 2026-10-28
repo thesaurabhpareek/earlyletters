@@ -81,7 +81,9 @@ describe('the repository wiring', () => {
   });
   it('fails each missing founder step, as develop is today (no production line fails)', () => {
     const f = repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: { production: {}, preview: {}, testflight: {} } }), keysTs: '[ ]' });
-    expect(f.filter((x) => x.level === 'FAIL').length).toBe(5);
+    expect(f.filter((x) => x.level === 'FAIL').length).toBe(3);
+    expect(f.filter((x) => x.level === 'WARN').length).toBe(2);
+    expect(repoFindings({ appConfig: 'export default {}', easJson: JSON.stringify({ submit: {} }), keysTs: '[ ]' }, true).filter((x) => x.level === 'FAIL').length).toBe(5);
     expect(lvl(f, 'submit.production')).toBe('NOT NEEDED');
   });
   it('fails an ascAppId that is not numeric', () => {
@@ -193,6 +195,7 @@ describe('output', () => {
   it('hides every occurrence of a secret, ignores short strings, and hides any bearer token', () => {
     expect(redact('bad token abcdef123456 and again abcdef123456', ['abcdef123456'])).toBe('bad token [hidden] and again [hidden]');
     expect(redact('abc stays', ['abc'])).toBe('abc stays');
+    expect(redact('sent eyJhbGci.eyJpc3Mi.c2ln failed', ['eyJhbGci.eyJpc3Mi.c2ln'])).toBe('sent [hidden] failed');
     expect(redact('sent Authorization: Bearer eyJhbGci.eyJpc3Mi.c2ln failed', [])).toBe('sent Authorization: Bearer [hidden] failed');
   });
 });

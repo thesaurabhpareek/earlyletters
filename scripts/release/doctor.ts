@@ -13,6 +13,8 @@
 //   npx tsx scripts/release/doctor.ts          # static checks, plus each live check whose variables are set
 //   npx tsx scripts/release/doctor.ts --live   # as above, and a live check whose variable is missing is FAIL
 //
+// A missing ascAppId is a WARN (a submit from your own computer does not need it, as the preflight says) and a FAIL
+// only under --live, which checks the GitHub workflow path.
 // A live check RUNS whenever its variables are set, with or without --live, and the output says so. --live only
 // changes what a missing variable counts as: UNVERIFIED without it, FAIL with it.
 //
@@ -100,7 +102,7 @@ export function signingKeyIds(keysTs: string): string[] {
 }
 
 /** Static checks of the repository's own wiring. `files` is injected so tests need no disk. */
-export function repoFindings(files: { appConfig: string; easJson: string; keysTs: string }): Finding[] {
+export function repoFindings(files: { appConfig: string; easJson: string; keysTs: string }, live = false): Finding[] {
   const out: Finding[] = [];
   const add = (level: Level, message: string) => out.push({ level, area: 'repo', message });
   const hasProject = /projectId\s*:\s*['"][0-9a-f-]{36}['"]/i.test(files.appConfig);
@@ -118,7 +120,7 @@ export function repoFindings(files: { appConfig: string; easJson: string; keysTs
     const id = eas.submit?.[profile]?.ios?.ascAppId;
     if (id && /^\d+$/.test(String(id))) add('PASS', `eas.json submit.${profile} has ios.ascAppId.`);
     else if (id) add('FAIL', `eas.json submit.${profile} ios.ascAppId is not the numeric Apple id of the app record.`);
-    else add('FAIL', `eas.json submit.${profile} has no ios.ascAppId. Set it from the .preview record's Apple id (App Information). The GitHub workflow cannot submit without it; a submit from your computer asks instead.`);
+    else add(live ? 'FAIL' : 'WARN', `eas.json submit.${profile} has no ios.ascAppId. Needed only for the GitHub workflow's non-interactive submit (TESTFLIGHT.md step 2.4); not needed to submit from your own computer, which asks instead. Set it from the .preview record's Apple id (App Information).${live ? ' FAIL because --live checks the workflow path.' : ''}`);
   }
   add('NOT NEEDED', 'eas.json submit.production and the production app record (com.earlyletters.scribe) are not used by either alpha build.');
 
@@ -206,7 +208,7 @@ async function main(argv: string[]) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const read = (p: string) => (existsSync(join(root, p)) ? readFileSync(join(root, p), 'utf8') : '');
   const env: Env = { EXPO_TOKEN: process.env.EXPO_TOKEN, ASC_API_KEY_ID: process.env.ASC_API_KEY_ID, ASC_API_ISSUER_ID: process.env.ASC_API_ISSUER_ID, ASC_API_KEY_P8_PATH: process.env.ASC_API_KEY_P8_PATH };
-  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts') });
+  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts') }, live);
 
   const ran = [env.EXPO_TOKEN ? 'Expo (EXPO_TOKEN is set)' : '', env.ASC_API_KEY_ID && env.ASC_API_ISSUER_ID && env.ASC_API_KEY_P8_PATH ? 'Apple (the ASC_* variables are set)' : ''].filter(Boolean);
   console.log(ran.length ? `Running live checks because their variables are set: ${ran.join(', ')}.\n` : 'No live check variables are set: static checks only.\n');
