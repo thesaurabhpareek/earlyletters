@@ -292,7 +292,7 @@
 }
 .links a,
 .contact {
-  color: var(--night-ink-muted);
+  color: #d3cbbf;
   text-decoration: none;
 }
 .links a {
@@ -339,7 +339,7 @@
 }
 .dateline {
   margin-left: 10px;
-  color: var(--night-ink-muted);
+  color: #d3cbbf;
   letter-spacing: 0.08em;
 }
 .big {
@@ -370,7 +370,7 @@
   margin: 8px 0 0;
   font-size: clamp(18px, 1.8vw, 24px);
   line-height: 1.55;
-  color: var(--night-ink-muted);
+  color: #d3cbbf;
 }
 .split {
   display: grid;
@@ -403,7 +403,7 @@
   margin: 14px 0 0;
   font-size: clamp(18px, 1.6vw, 22px);
   line-height: 1.55;
-  color: var(--night-ink-muted);
+  color: #d3cbbf;
 }
 .timeline {
   list-style: none;
@@ -445,7 +445,7 @@
 }
 .monthMeta {
   font-size: 17px;
-  color: var(--night-ink-muted);
+  color: #d3cbbf;
 }
 .filed {
   position: absolute;
