@@ -181,6 +181,24 @@ describe('recordings', () => {
   });
 });
 
+describe('[P5 critics S8] the "How" line says nothing it cannot know about another person\'s letter', () => {
+  const how = (e: SnapshotEntry) => planExport(snapshot([e])).textFiles.find((f) => f.path.endsWith(`_${e.id}.txt`))!.text.split(/\r?\n/).find((l) => l.startsWith('How: '));
+
+  it('the exporter\'s own letters keep the two honest lines, as the letter page says them', () => {
+    expect(how(entry({ id: 'fixed', occurredOn: '2026-10-01' }))).toBe('How: Spoken, with small fixes');
+    expect(how(entry({ id: 'exact', occurredOn: '2026-10-02', rawTranscript: 'Asha, you laughed.' }))).toBe('How: Spoken, exactly as said');
+    expect(how(entry({ id: 'typed', occurredOn: '2026-10-03', captureMode: 'typed', audioUri: null }))).toBe('How: Typed');
+  });
+
+  it('another person\'s spoken letter says only "Spoken", whatever raw words the snapshot happens to hold (this phone never has them)', () => {
+    expect(how(entry({ id: 'theirs1', occurredOn: '2026-10-04', own: false }))).toBe('How: Spoken');
+    expect(how(entry({ id: 'theirs2', occurredOn: '2026-10-05', own: false, rawTranscript: '' }))).toBe('How: Spoken');
+    expect(how(entry({ id: 'theirs3', occurredOn: '2026-10-06', own: false, rawTranscript: 'Asha, you laughed.' }))).toBe('How: Spoken');
+    // Their typed words are known to be typed.
+    expect(how(entry({ id: 'theirs4', occurredOn: '2026-10-07', own: false, captureMode: 'typed', audioUri: null }))).toBe('How: Typed');
+  });
+});
+
 describe('the plan', () => {
   it('[D-085] a letter of a book that is not in the snapshot (deleted) is left out; a hidden book is exported', () => {
     const plan = planExport(snapshot([entry({ id: 'a', occurredOn: '2026-10-01' }), entry({ id: 'z', occurredOn: '2026-10-02', childId: 'child-gone' }), entry({ id: 'd', occurredOn: '2026-10-02', childId: DEV.id })], [ASHA, DEV]));

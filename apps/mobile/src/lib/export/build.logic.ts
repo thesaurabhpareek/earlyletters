@@ -28,7 +28,7 @@ import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
 import { copy } from '../copy';
-import { provenanceKey } from '../provenance';
+import { pageProvenanceKey } from '../provenance';
 import { dayDate, letterDateline } from '../dates';
 import type { Child, Entry } from '../store';
 import { exportCopy } from './copy';
@@ -191,9 +191,13 @@ const printable = (e: Entry) => e.inBook && !quiet(e) && !waiting(e) && e.finalT
 /** The words an exported row carries. A quiet-day mark has none, whatever an old row stored. */
 const wordsOf = (e: Entry) => (quiet(e) ? '' : e.finalText);
 
-/** The one rule for what a letter's words may be called (lib/provenance.ts, D-086). */
-function provenance(e: Entry): string {
-  return copy.book.provenance[provenanceKey(e)];
+/**
+ * The one rule for what a letter's words may be called (lib/provenance.ts, D-086), the letter page's rule: another
+ * person's letter has no raw words on this phone, so the file says only that it was spoken and never guesses at fixes
+ * (P5 critics' pass, S8).
+ */
+function provenance(e: SnapshotEntry): string {
+  return copy.book.provenance[pageProvenanceKey(e, { own: e.own })];
 }
 
 /** Month of age (0 = the first weeks), or null before birth or with no birthday ("Before You"). */
