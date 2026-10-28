@@ -24,6 +24,11 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  * - What we never do, then the full documents.
  * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown;
  * no analytics either (capabilities.analytics, 15 Oct), so the usage switch is not shown.
+ *
+ * EXPERIENCE_PASS_2026-10 S44 (package P6): the never-lines are a plain list on paper with a glyph each (NeverList),
+ * not rows that look tappable; their words are registered claims, unchanged. The documents stay rows, rendered from
+ * content. The Consumer Health Data notice row goes with S14 in the same merge that retires `healthPrivacyLink`,
+ * after #163 and no later than #169, so no link ever points at a missing page (spec S44, counsel C9).
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;
