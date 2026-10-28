@@ -1,1 +1,11 @@
-{ "id": "photo-rename-bypass", "class": "db", "source": "PR #311 red-team finding 1 (head 86d30dd6): entry_photos_author_update WITH CHECK lacked not photo_entry_is_purged(name), so a rename bypassed the purged-photo block", "roles": ["data-architect", "red-team"], "k": 3 }
+{
+  "id": "photo-rename-bypass",
+  "class": "db",
+  "source": "PR #311 red-team finding 1 (head 86d30dd6): entry_photos_author_update WITH CHECK lacked not photo_entry_is_purged(name), so a rename bypassed the purged-photo block",
+  "roles": [
+    "data-architect",
+    "red-team"
+  ],
+  "k": 3,
+  "schema_checked": "2026-10-28 against 20261005000000_family_cap_language_idempotency.sql (update policy), 20261003000000_security_and_family.sql (insert policy), 20261002020000_data_governance.sql (purge_ledger), 20261016000000_sync_v1_server.sql (entry_erasures, held_drafts_gone), 20261028000000_pg_temp_last_and_purged_photos.sql on wip/fix-311-oracle (547d3186)"
+}

@@ -1,3 +1,4 @@
+// Real shapes: the erased id is in purge_ledger(entity_type, entity_id) and the author in sync_private.entry_erasures (seeded by the fixture).
 // Outcome grader. Probe: the author uploads a photo under a scratch name, then renames it onto the path of an
 // erased letter. The rename must be refused and nothing may exist at the erased path. Two controls keep a
 // blanket "deny every update" from passing: an ordinary upload and an ordinary rename must still work.
