@@ -1,33 +1,38 @@
 // android: same
 /**
- * "Continue with email" (PRD A F4): one labelled field with the email
- * keyboard and autofill. Sends one email holding a link and a code
- * (A-REQ-018). The address stays in memory only (PRD A F6.2).
+ * "Continue with email" (PRD A F4; EXPERIENCE_PASS S53): one labelled field with the email
+ * keyboard and AutoFill, and one email holding a link and a code (A-REQ-018). The address stays
+ * in memory only (PRD A F6.2).
+ *
+ * Visual (S53): pushed inside the sheet, with Back. The title, the field (56 pt, `body` size,
+ * focused on arrival), the help under it in `footnote`, and "Send link" full width above the
+ * keyboard, in the outline style until the text looks like an address. "That email doesn't look
+ * quite right." shows on submit only, never while typing, and goes as soon as the person types.
  */
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
 import { authCopy } from '@/lib/auth/copy';
 import { looksLikeEmail } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth } from '@/lib/auth/session-provider';
-import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { ErrorLine, SheetFrame, SheetTitle } from '@/lib/auth/ui';
 
 export default function EmailStep() {
   const auth = useAuth();
-  const c = useColors();
   const e = authCopy.email;
   const [email, setEmail] = useState(getPendingEmail() ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AuthErrorKind | null>(null);
+  const value = email.trim();
+  const ready = looksLikeEmail(value);
 
   const send = async () => {
-    const value = email.trim();
-    if (!looksLikeEmail(value)) {
+    if (busy) return;
+    if (!ready) {
       setError('invalid_email');
       return;
     }
@@ -43,44 +48,37 @@ export default function EmailStep() {
     }
   };
 
+  // The field's own error is the address; anything else (offline, paused) is the sheet's line.
+  const fieldError = error === 'invalid_email' ? authErrorMessage(error) : null;
+  const sheetError = error && error !== 'invalid_email' ? authErrorMessage(error) : null;
+
   return (
-    <SheetFrame footer={<QuietButton label={authCopy.sheet.later} onPress={() => router.back()} disabled={busy} />}>
+    <SheetFrame
+      onBack={busy ? undefined : () => router.back()}
+      footer={<Button size="lg" fullWidth variant={ready ? 'primary' : 'outline'} loading={busy} disabled={value.length === 0} label={e.send} onPress={() => void send()} />}>
       <SheetTitle>{e.title}</SheetTitle>
-      <SheetBody muted>{e.help}</SheetBody>
-      <View className="gap-2">
-        <Text nativeID="email-label" className="text-base font-medium text-muted-foreground">
-          {e.label}
-        </Text>
-        <TextInput
-          className="min-h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground"
-          value={email}
-          onChangeText={(v) => {
-            setEmail(v);
-            if (error) setError(null);
-          }}
-          placeholder={e.placeholder}
-          placeholderTextColor={c.textMuted}
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          autoComplete="email"
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="send"
-          onSubmitEditing={() => void send()}
-          editable={!busy}
-          accessibilityLabel={e.label}
-          accessibilityLabelledBy="email-label"
-          autoFocus
-        />
-      </View>
-      <ErrorLine message={authErrorMessage(error)} />
-      {busy ? (
-        <Busy label={e.send} />
-      ) : (
-        <Button size="lg" onPress={() => void send()} disabled={email.trim().length === 0}>
-          <Text>{e.send}</Text>
-        </Button>
-      )}
+      <TextField
+        label={e.label}
+        helper={e.help}
+        error={fieldError}
+        value={email}
+        onChangeText={(v) => {
+          setEmail(v);
+          if (error) setError(null);
+        }}
+        placeholder={e.placeholder}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="send"
+        onSubmitEditing={() => void send()}
+        editable={!busy}
+        inputClassName="min-h-14"
+        autoFocus
+      />
+      <ErrorLine message={sheetError} />
     </SheetFrame>
   );
 }

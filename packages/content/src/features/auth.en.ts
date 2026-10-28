@@ -53,7 +53,7 @@ export const authCopy = {
     title: 'Continue with email',
     label: 'Email',
     placeholder: 'you@example.com',
-    help: 'We will send you a link and a code. There is no password to remember.',
+    help: 'A link and a code arrive by email. No password to remember.',
     send: 'Send link',
   },
 
