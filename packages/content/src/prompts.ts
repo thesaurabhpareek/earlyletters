@@ -1,10 +1,15 @@
 // Prompt library (English).
 // Hand-written prompts, picked by rules. Keys are stable: never reuse a key for new wording.
 // Placeholders: {child}. No gendered pronouns for the child.
+// Band `before` is for a book whose child is not born yet (a due date, no birthday). Those prompts assume no birth:
+// no hands, no first day home, no visitors; they ask about the days now, the name, the home and what is hoped for.
+// They name no hour, no week count and no feeling. The openings for any age assume a child who is here, so a book
+// before the birth is never offered them (selectPrompt in @scribe/core).
 
 import type { Prompt } from '@scribe/core';
 export type { Prompt, PromptBand, PromptKind } from '@scribe/core';
-export const PROMPT_LIBRARY_VERSION = 2;
+// 3: added the `before` band, eight openings for a book whose child is not born yet (P3 critics' pass S2).
+export const PROMPT_LIBRARY_VERSION = 3;
 
 export const PROMPTS: Prompt[] = [
   // Openings, any age
@@ -86,6 +91,16 @@ export const PROMPTS: Prompt[] = [
   { key: "opening.37-60.school", text: "What did {child} tell you about school or play group today?", band: "37-60", kind: "opening" },
   { key: "opening.37-60.rules", text: "What rule did {child} make up for a game?", band: "37-60", kind: "opening" },
   { key: "opening.37-60.proud", text: "What is {child} proud of right now?", band: "37-60", kind: "opening" },
+
+  // Openings, before the birth: the weeks now, the name, the home, what is hoped for. Band `before`.
+  { key: "opening.before.ordinary-day", text: "What does an ordinary day look like in your home these weeks?", band: "before", kind: "opening" },
+  { key: "opening.before.name", text: "Where did the name {child} come from? Who said it out loud first?", band: "before", kind: "opening" },
+  { key: "opening.before.hope", text: "What is one thing you hope {child} gets to love?", band: "before", kind: "opening" },
+  { key: "opening.before.room", text: "What is changing in your home to make room for {child}?", band: "before", kind: "opening" },
+  { key: "opening.before.talks", text: "Who talks to {child} these days? What do they say?", band: "before", kind: "opening" },
+  { key: "opening.before.sounds", text: "What does your home sound like these days?", band: "before", kind: "opening" },
+  { key: "opening.before.here", text: "Where are you today, and what is around you? Tell {child}.", band: "before", kind: "opening" },
+  { key: "opening.before.find", text: "What do you want {child} to find in this book one day?", band: "before", kind: "opening" },
 
   // Gap: easy ways back in, never about time away
   { key: "gap.any.right-now", text: "What is {child} doing right now, this very minute?", band: "any", kind: "gap" },

@@ -49,8 +49,12 @@ export function textProblems(s: string): string[] {
 
 const text = (max: number) => v.pipe(v.string(), v.maxLength(max), v.check((s) => textProblems(s).length === 0, 'text_rules'));
 
-/** Mirrors `PromptBand` and `PromptKind` in @scribe/core (test/content.test.ts asserts they stay equal). */
-export const PROMPT_BANDS = ['any', '0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60'] as const;
+/**
+ * Mirrors `PromptBand` and `PromptKind` in @scribe/core (test/content.test.ts asserts they stay equal).
+ * `before` (a book whose child is not born yet) was added in library version 3: additive, because parsing is
+ * lenient per block, so an app built before it skips such a prompt and keeps the rest.
+ */
+export const PROMPT_BANDS = ['any', 'before', '0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60'] as const;
 export const PROMPT_KINDS = ['opening', 'gap', 'hard', 'family', 'together'] as const;
 
 export const TIP_PLACEMENTS = ['tonight', 'review', 'book', 'settings'] as const;
