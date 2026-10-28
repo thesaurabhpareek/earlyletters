@@ -774,6 +774,10 @@ describe('glossary (BRAND.md)', () => {
     expect(en.book.provenance.spokenFixed).toBe('Spoken, with small fixes');
   });
 
+  it('calls a month section of the book a month, never a chapter (BRAND.md; P6b critics\' S1)', () => {
+    expect(offenders(EVERY, /\bchapters?\b/i)).toEqual([]); // content, emails and feature-local app copy
+  });
+
   it('names the subscription Plus only', () => {
     expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
     expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);
