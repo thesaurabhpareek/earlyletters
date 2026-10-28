@@ -1,28 +1,42 @@
-import { dueDatePassed } from '@scribe/core';
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { getChild, hideChild, listChildren, subscribe, todayISO, updateChild } from '@/lib/store';
+import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
+import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { ordinalOf, track } from '@/lib/analytics/track';
 
-/** One child's book settings (PRD B F2): each child is managed separately. */
+/**
+ * One child's book settings (PRD B F2; EXPERIENCE_PASS_2026-10 S46, package P6): each child is managed separately.
+ * Editing a name, a date or a signature writes only the child's own row; no letter ever changes
+ * (child-editors.tsx, test/store.child-edit.test.ts). The rules for the due-date card, the hide footer and the
+ * "Write this book together" row are components/child/child-settings.logic.ts.
+ */
 export default function ChildSettings() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [child, setChild] = useState(() => getChild(id));
   const doors = visibleCoParentDoors(serverFeaturesEnabled());
   const [editing, setEditing] = useState<'name' | 'date' | 'signsAs' | 'born' | null>(null);
-  useEffect(() => subscribe(() => setChild(getChild(id))), [id]);
+  const [hiddenFor, setHiddenFor] = useState(() => readHidden(id));
+  const [members, setMembers] = useState(() => (id ? listMembers(id) : []));
+  useEffect(
+    () =>
+      subscribe(() => {
+        setChild(getChild(id));
+        setMembers(id ? listMembers(id) : []);
+      }),
+    [id],
+  );
 
   if (!child) return null;
   const s = copy.children.settings;
@@ -41,16 +55,32 @@ export default function ChildSettings() {
     haptic('success');
     setEditing(null);
   };
-  const e = copy.childrenExtra.edit;
-  const offerBorn = !child.birthday && dueDatePassed(child.dueDate, todayISO());
+  const born = bornCard(name);
+  const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
+  const coParent = coParentOf(members);
+  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), child.id) });
 
+  /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */
+  const hideBornCard = () => {
+    if (!child.dueDate) return;
+    writeHidden(child.id, child.dueDate);
+    setHiddenFor(child.dueDate);
+  };
+  const openDate = () => {
+    if (hiddenFor !== null) {
+      writeHidden(child.id, null);
+      setHiddenFor(null);
+    }
+    setEditing('date');
+  };
+
+  // Nothing is deleted, so the confirm is a plain choice, not a destructive one (S46).
   const hide = () => {
-    haptic('warning');
     Alert.alert(s.hideLabel, fill(s.hideBody, { child: name }), [
       { text: copy.common.cancelButton, style: 'cancel' },
       {
         text: s.hideLabel,
-        style: 'destructive',
+        style: 'default',
         onPress: () => {
           track('child_setting_changed', { key: 'hidden', child_ordinal: ordinalOf(child.id) });
           hideChild(child.id);
@@ -64,18 +94,27 @@ export default function ChildSettings() {
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: fill(s.title, { child: name }) }} />
 
-      {offerBorn && editing !== 'born' ? (
-        <Card variant="tinted" padding={5}>
-          <Text variant="body">{e.born.offerBody}</Text>
-          <Button variant="secondary" label={fill(e.born.offer, { child: name })} onPress={() => setEditing('born')} />
+      {/* The due-date card: never presumes a birth, never celebrates, never counts days (S46). */}
+      {showBorn && editing !== 'born' ? (
+        <Card variant="tinted" padding={5} testID="child.bornCard">
+          <View className="gap-1">
+            <Text variant="headline" asHeading>
+              {born.title}
+            </Text>
+            <Text variant="body">{born.body}</Text>
+          </View>
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" label={born.setButton} onPress={() => setEditing('born')} testID="child.bornCard.set" />
+            <Button variant="quiet" size="sm" label={born.hideButton} onPress={hideBornCard} testID="child.bornCard.hide" />
+          </View>
         </Card>
       ) : null}
       {editing === 'born' ? <BornEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection title={s.detailsLabel}>
-        <ListRow title={e.nameLabel} trailing={name} onPress={() => setEditing('name')} accessibilityHint={e.rowHint} />
-        <ListRow title={dateRow.title} trailing={dateRow.value} onPress={() => setEditing('date')} accessibilityHint={e.rowHint} />
-        <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={e.rowHint} />
+        <ListRow title={x.edit.nameLabel} trailing={name} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
+        <ListRow title={dateRow.title} trailing={dateRow.value} onPress={openDate} accessibilityHint={x.edit.rowHint} />
+        <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>
       {editing === 'name' ? <NameEditor child={child} onSave={save('display_name')} onCancel={() => setEditing(null)} /> : null}
       {editing === 'date' ? <DateEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
@@ -92,14 +131,11 @@ export default function ChildSettings() {
         />
       </ListSection>
 
-      {/* Co-parent sharing: v1.0 opens the coming-soon sheet; v1.1 opens the invite (lib/family/entry.logic.ts). */}
-      <ListSection footer={serverFeaturesEnabled() ? undefined : familyCopy.soon.settingsRowHelp}>
-        <ListRow
-          title={familyCopy.soon.settingsRow}
-          value={serverFeaturesEnabled() ? undefined : familyCopy.soon.status}
-          trailing="chevron"
-          onPress={() => router.push(inviteHref('settings_child', serverFeaturesEnabled(), child.id) as Href)}
-        />
+      {/* "Write this book together": coming soon with server features off; the invite with one parent, the Family tab
+          with two (child-settings.logic.ts bookRow). P8 switches the label to familyCopy.bookRow.label (the same words)
+          when it adds the key. */}
+      <ListSection footer={row.footer}>
+        <ListRow title={familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
       </ListSection>
 
       {/* A switch that cannot be turned on is hidden until co-parent sharing exists (D-087). */}
@@ -110,11 +146,28 @@ export default function ChildSettings() {
       )}
 
       {listChildren().length > 1 && (
-        <ListSection footer={fill(s.hideBody, { child: name })}>
-          <ListRow title={s.hideLabel} variant="destructive" onPress={hide} />
+        <ListSection footer={hideFooter(name, coParent)}>
+          <ListRow title={s.hideLabel} onPress={hide} testID="child.hide" />
         </ListSection>
       )}
     </ScrollView>
   );
 }
 
+function readHidden(childId: string | undefined): string | null {
+  if (!childId) return null;
+  try {
+    return getSetting(bornCardHiddenKey(childId));
+  } catch {
+    return null;
+  }
+}
+
+function writeHidden(childId: string, dueDate: string | null): void {
+  try {
+    if (dueDate) setSetting(bornCardHiddenKey(childId), dueDate);
+    else deleteSetting(bornCardHiddenKey(childId));
+  } catch {
+    // A courtesy: if it cannot be kept, the card shows again next time.
+  }
+}
