@@ -6,7 +6,7 @@
  * Sends `company` (the hidden honeypot field, empty for people) and `t`, the milliseconds since the page
  * loaded, which the server uses to ignore submissions no person could have made. Neither changes the signature.
  */
-export type NotifyResult = { ok: true } | { ok: false; error: 'invalid' | 'rate_limited' | 'server' };
+export type NotifyResult = { ok: true; already?: true } | { ok: false; error: 'invalid' | 'rate_limited' | 'server' };
 
 const REQUEST_TIMEOUT_MS = 15000;
 

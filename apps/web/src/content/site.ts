@@ -75,6 +75,10 @@ export const site = {
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
+    shareHeading: 'Know another parent who would love this?',
+    shareWhatsapp: 'WhatsApp',
+    shareMessages: 'Messages',
+    shareEmail: 'Email',
     shareTitle: `${NAME}, the baby memory book`,
     shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, private on your phone.',
   },
@@ -203,7 +207,31 @@ export const site = {
     s10: {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
-      support: `Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child's book, with the whole family adding letters. ${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.`,
+      // The whole offer as one sentence: it names the plans for screen readers (the plans group is labelled with it)
+      // and is what test/pricing.test.ts holds to the constants in pricing.ts.
+      support: `${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial.`,
+      free: {
+        name: 'Free',
+        title: 'Your first two letters',
+        note: 'So you can try it before you decide.',
+      },
+      plus: {
+        name: 'Plus',
+        title: 'For every letter after',
+        plans: [
+          { name: 'Monthly', price: plusPricing.monthly.price, per: 'a month', trial: `${plusPricing.monthly.trialMonths} month free` },
+          { name: 'Yearly', price: plusPricing.annual.price, per: 'a year', trial: `${plusPricing.annual.trialMonths} months free` },
+        ],
+        trialNote: 'to start',
+        includes: [
+          'Keep adding letters',
+          'Every recording backed up',
+          'Read together, after the free sessions',
+          "Every child's book covered",
+          'The whole family adding letters',
+        ],
+      },
+      promise: 'Every letter you have made stays yours to read, play and export, even if you stop.',
     },
     s11: {
       label: 'Start tonight',
@@ -222,7 +250,13 @@ export const site = {
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
     sending: 'Sending',
+    successTitle: 'Thank you, you are on the list.',
+    successBody: `Look out for a short hello from us, and we will write once more, when ${NAME} is ready.`,
     success: `Thank you, you are on the list. Look out for a short hello from us, and we will write once more, when ${NAME} is ready.`,
+    /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
+    alreadyTitle: 'You are already on the list.',
+    alreadyBody: `We will write once more, when ${NAME} is ready.`,
+    already: `You are already on the list. We will write once more, when ${NAME} is ready.`,
     error: 'That did not go through. Please check your email and try again.',
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',

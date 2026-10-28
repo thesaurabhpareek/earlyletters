@@ -45,10 +45,12 @@
   padding: 0 22px;
   border: 0;
   border-radius: 999px;
-  background: var(--night-accent);
+  background: linear-gradient(110deg, var(--night-accent) 0%, #f3c98b 45%, var(--night-accent) 100%);
+  background-size: 220% 100%;
   color: var(--night-on-accent);
   font: 600 17px/1 var(--font-sans);
   cursor: pointer;
+  animation: buttonSheen 7s ease-in-out infinite;
   transition: transform 160ms var(--ease-standard), filter 160ms;
 }
 .button:hover {
@@ -89,12 +91,88 @@
   color: var(--night-recording);
 }
 .success {
-  margin: 0;
-  padding: 20px;
-  font-family: var(--font-serif);
-  font-size: clamp(20px, 1.8vw, 26px);
+  position: relative;
+  margin: 0 auto;
+  max-width: 30rem;
+  padding: clamp(22px, 3vw, 32px);
+  border-radius: 24px;
+  text-align: center;
   color: var(--night-ink);
   outline: none;
+  isolation: isolate;
+  background:
+    linear-gradient(color-mix(in srgb, var(--night-raised) 88%, transparent), color-mix(in srgb, var(--night) 82%, transparent)) padding-box,
+    linear-gradient(120deg, rgba(243, 201, 139, 0.75), rgba(176, 142, 214, 0.55), rgba(217, 164, 126, 0.75), rgba(243, 201, 139, 0.75)) border-box;
+  background-size: 100% 100%, 300% 300%;
+  border: 1px solid transparent;
+  animation: successRise 900ms var(--ease-standard) both, borderDrift 9s ease-in-out 900ms infinite;
+}
+.success::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 120%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 50% 0%, rgba(243, 201, 139, 0.28), transparent 70%);
+  animation: glowBreathe 6s ease-in-out infinite;
+}
+.check {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  display: block;
+  fill: none;
+  stroke: var(--lamp);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.check circle {
+  stroke-dasharray: 70;
+  stroke-dashoffset: 70;
+  animation: drawIn 900ms var(--ease-standard) 150ms forwards;
+}
+.check path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: drawIn 600ms var(--ease-standard) 750ms forwards;
+}
+.successTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.2;
+}
+.successBody {
+  margin: 10px 0 0;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.5;
+  color: var(--night-ink-muted);
+}
+@keyframes buttonSheen {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+@keyframes successRise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes borderDrift {
+  0%, 100% { background-position: 0 0, 0% 50%; }
+  50% { background-position: 0 0, 100% 50%; }
+}
+@keyframes glowBreathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+@keyframes drawIn {
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .success, .success::before, .button { animation: none; }
+  .check circle, .check path { animation: none; stroke-dashoffset: 0; }
 }
 @media (max-width: 560px) {
   .row {
@@ -123,7 +201,13 @@
   }
 }
 
-/* Quiet variant: one underlined field, a text button, no pill or fill. */
+/* Quiet variant: one underlined field, a text button, no pill or fill. It must also undo the phone layout above
+   (stacked pill field, full-width button), or the field draws a pill inside the underline. */
+.quiet {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .quiet .label {
   position: absolute;
   width: 1px;
@@ -155,6 +239,7 @@
   width: auto;
   padding: 0 2px;
   background: transparent;
+  animation: none;
   color: var(--night-accent);
   font-size: 17px;
   white-space: nowrap;
@@ -165,4 +250,40 @@
 }
 .quiet .note {
   padding: 0;
+}
+.quiet .row,
+.quiet .input,
+.quiet .button {
+  box-sizing: border-box;
+}
+.quiet .row {
+  align-items: center;
+}
+.quiet .input {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.quiet .input:focus {
+  box-shadow: none;
+}
+.quiet .button {
+  height: 48px;
+  width: auto;
+}
+@media (max-width: 560px) {
+  .quiet .row {
+    flex-direction: row;
+    gap: 12px;
+  }
+  .quiet .input {
+    height: 48px;
+    padding: 0;
+    font-size: 17px;
+  }
+  .quiet .button {
+    width: auto;
+    height: 48px;
+    padding: 0 2px;
+  }
 }

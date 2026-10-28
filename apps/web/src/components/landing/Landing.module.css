@@ -19,8 +19,7 @@
 }
 .brand {
   pointer-events: auto;
-  font-family: var(--font-serif);
-  font-size: 20px;
+  display: block;
   color: var(--night-ink);
   text-decoration: none;
 }
@@ -121,9 +120,49 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 16px;
   margin-top: 36px;
   animation: rise 1.4s var(--ease-standard) 0.95s both;
+}
+.heroCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 32px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--night-on-accent);
+  font: 600 18px/1 var(--font-sans);
+  background: linear-gradient(110deg, var(--night-accent) 0%, #f3c98b 45%, var(--night-accent) 100%);
+  background-size: 220% 100%;
+  box-shadow: 0 10px 40px -12px rgba(243, 201, 139, 0.55);
+  animation: heroSheen 7s ease-in-out infinite;
+  transition: transform 160ms var(--ease-standard), filter 160ms;
+}
+.heroCta:hover {
+  filter: brightness(1.07);
+}
+.heroCta:active {
+  transform: scale(0.97);
+}
+.heroCta:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 3px;
+}
+.status {
+  margin: 0;
+  font: 500 14px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lamp);
+}
+@keyframes heroSheen {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heroCta { animation: none; }
 }
 .pill {
   margin: 0;

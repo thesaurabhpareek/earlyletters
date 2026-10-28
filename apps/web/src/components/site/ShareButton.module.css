@@ -1,6 +1,51 @@
 .wrap {
-  margin-top: 18px;
+  margin-top: clamp(28px, 4vw, 44px);
   text-align: center;
+}
+.heading {
+  margin: 0 0 14px;
+  font: 400 clamp(16px, 1.5vw, 19px)/1.4 var(--font-sans);
+  color: var(--night-ink-muted);
+}
+.channels {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.channel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  color: var(--night-ink);
+  text-decoration: none;
+  font: 500 16px/1 var(--font-sans);
+  isolation: isolate;
+  /* a slow-moving warm gradient edge, the same family as the sign-up card */
+  background:
+    linear-gradient(color-mix(in srgb, var(--night-raised) 90%, transparent), color-mix(in srgb, var(--night) 85%, transparent)) padding-box,
+    linear-gradient(120deg, rgba(243, 201, 139, 0.65), rgba(176, 142, 214, 0.5), rgba(217, 164, 126, 0.65), rgba(243, 201, 139, 0.65)) border-box;
+  background-size: 100% 100%, 300% 300%;
+  border: 1px solid transparent;
+  animation: edgeDrift 10s ease-in-out infinite;
+  transition: transform 160ms var(--ease-standard), filter 160ms;
+}
+.channel:hover {
+  filter: brightness(1.12);
+}
+.channel:active {
+  transform: scale(0.97);
+}
+.channel:focus-visible,
+.button:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 2px;
 }
 .button {
   padding: 10px 18px;
@@ -20,13 +65,16 @@
 .button:active {
   transform: scale(0.97);
 }
-.button:focus-visible {
-  outline: 2px solid var(--night-ink);
-  outline-offset: 2px;
-}
 .status {
   min-height: 1.4em;
   margin: 8px 0 0;
   font: 400 14px/1.4 var(--font-sans);
   color: var(--night-accent);
+}
+@keyframes edgeDrift {
+  0%, 100% { background-position: 0 0, 0% 50%; }
+  50% { background-position: 0 0, 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .channel { animation: none; }
 }

@@ -11,19 +11,22 @@ import { track } from '@/lib/analytics';
 import styles from './NotifyForm.module.css';
 
 const c = site.notify;
-type State = 'idle' | 'sending' | 'done' | 'invalid' | 'rate_limited' | 'server';
+type State = 'idle' | 'sending' | 'done' | 'already' | 'invalid' | 'rate_limited' | 'server';
 
 export const NOTIFY_INPUT_ID = 'notify-email';
 
 /** `quiet` is the understated variant: a single underlined field with a text button, for pages where this is the only ask. */
-export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
+export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?: () => void }) {
   const hintId = useId();
   const statusId = useId();
   const [state, setState] = useState<State>('idle');
-  const doneRef = useRef<HTMLParagraphElement>(null);
+  const doneRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (state === 'done') doneRef.current?.focus();
-  }, [state]);
+    if (state === 'done' || state === 'already') {
+      doneRef.current?.focus();
+      onDone?.();
+    }
+  }, [state, onDone]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,14 +37,19 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
     setState('sending');
     const res = await submitNotify(email, { company });
     track({ name: 'notify_submit', result: res.ok ? 'ok' : res.error });
-    setState(res.ok ? 'done' : res.error);
+    setState(res.ok ? (res.already ? 'already' : 'done') : res.error);
   }
 
-  if (state === 'done') {
+  if (state === 'done' || state === 'already') {
     return (
-      <p ref={doneRef} tabIndex={-1} role="status" className={styles.success}>
-        {c.success}
-      </p>
+      <div ref={doneRef} tabIndex={-1} role="status" className={styles.success} data-kind={state}>
+        <svg className={styles.check} viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10.5" />
+          <path d="M7.2 12.4l3.2 3.2 6.4-6.6" />
+        </svg>
+        <p className={styles.successTitle}>{state === 'already' ? c.alreadyTitle : c.successTitle}</p>
+        <p className={styles.successBody}>{state === 'already' ? c.alreadyBody : c.successBody}</p>
+      </div>
     );
   }
 
