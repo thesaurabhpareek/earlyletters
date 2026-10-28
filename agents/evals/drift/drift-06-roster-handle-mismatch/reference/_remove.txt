@@ -1,0 +1,2 @@
+.claude/agents/sync-engineer.md
+agents/sync-engineer

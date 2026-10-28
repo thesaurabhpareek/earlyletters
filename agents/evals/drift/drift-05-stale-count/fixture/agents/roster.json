@@ -1,0 +1,101 @@
+{
+  "$comment": "Slice for the eval: handles only.",
+  "agents": [
+    {
+      "handle": "red-team",
+      "title": "Principal Reviewer (red team)"
+    },
+    {
+      "handle": "product",
+      "title": "Product Manager"
+    },
+    {
+      "handle": "qa",
+      "title": "Quality Engineer"
+    },
+    {
+      "handle": "mobile",
+      "title": "Mobile Engineer (iOS first, Expo)"
+    },
+    {
+      "handle": "data-architect",
+      "title": "Data Architect (Supabase)"
+    },
+    {
+      "handle": "security",
+      "title": "Security Engineer"
+    },
+    {
+      "handle": "privacy",
+      "title": "Privacy Engineer"
+    },
+    {
+      "handle": "speech",
+      "title": "Speech and Applied Science Engineer"
+    },
+    {
+      "handle": "sync",
+      "title": "Sync and Backend Engineer"
+    },
+    {
+      "handle": "payments",
+      "title": "Payments Engineer (StoreKit)"
+    },
+    {
+      "handle": "design-systems",
+      "title": "Design Systems and Accessibility Lead"
+    },
+    {
+      "handle": "analytics",
+      "title": "Analytics Engineer"
+    },
+    {
+      "handle": "content",
+      "title": "Brand and Content Lead"
+    },
+    {
+      "handle": "principal-architect",
+      "title": "Principal Architect"
+    },
+    {
+      "handle": "data-steward",
+      "title": "Data Steward"
+    },
+    {
+      "handle": "security-architect",
+      "title": "Identity and Security Architect"
+    },
+    {
+      "handle": "compliance-engineer",
+      "title": "Privacy and Compliance Engineer"
+    },
+    {
+      "handle": "ai-eng-lead",
+      "title": "AI-Assisted Engineering Lead"
+    },
+    {
+      "handle": "decision-science",
+      "title": "Decision Scientist"
+    },
+    {
+      "handle": "legal",
+      "title": "Legal Drafting (counsel-facing)"
+    },
+    {
+      "handle": "marketing",
+      "title": "Growth and Marketing Lead"
+    },
+    {
+      "handle": "support",
+      "title": "Customer Support Lead"
+    },
+    {
+      "handle": "ops",
+      "title": "Release and Operations Engineer"
+    },
+    {
+      "handle": "chief-of-staff",
+      "title": "Chief of Staff"
+    }
+  ]
+}

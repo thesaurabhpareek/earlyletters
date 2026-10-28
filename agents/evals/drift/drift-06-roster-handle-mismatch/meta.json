@@ -1,0 +1,8 @@
+{
+  "id": "drift-06-roster-handle-mismatch",
+  "class": "drift",
+  "source": "synthetic. At develop 6bfb94a9 `node scripts/agents/check.mjs` reports the 24-agent team consistent, and no real handle mismatch exists in the tree or in the history of agents/roster.json (checked at cb8fa72e, 0c71ea93, d1b23ce9, c56d1158^). The injected drift (a handle that differs between roster and charter, memory directory, chapter owner, backlog owner and prose count) follows the invariants scripts/agents/check.mjs enforces and the count-growth of PR #42 (19 to 24 agents)",
+  "roles": ["writer"],
+  "k": 3,
+  "reference_removes": "reference/_remove.txt lists paths to delete after the reference is overlaid on fixture/"
+}

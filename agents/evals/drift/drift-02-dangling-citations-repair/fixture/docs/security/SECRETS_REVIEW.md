@@ -1,0 +1,4 @@
+Excerpt of docs/security/SECRETS_REVIEW.md as of develop 22db1daa^ (27 Oct 2026). Only lines near the citation are kept.
+
+**Dates.** Each "By" is a day in Pacific time from the alpha calendar: AUTOMATION.md 0.2 and section 6, and #152 section 2.2 (`docs/release/ALPHA_PLAN.md`, open). Where a gate exists, the "By" names it, because the calendar can move. A planned day that has passed is marked overdue unless the repository records it as done; its gate still holds. The calendar is itself under review: build 2 freeze is planned for Tue 27 Oct, 5:00 AM PDT (12:00 UTC). The coordinator's proposal of 23 Oct, not in the repo, moves it to Tue 3 Nov, 5:00 AM PST, which is 13:00 UTC: daylight time ends Sun 1 Nov, so 12:00 UTC that day would be 4:00 AM PST. The founder decides by Sat 24 Oct, 5:00 PM PT. "After the alpha" means after the go/no-go (planned Thu 29 Oct); those items get a day in the post-alpha re-plan (D-106). Facts marked [R, 23 Oct] were read on Fri 23 Oct.
+

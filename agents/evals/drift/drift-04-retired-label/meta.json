@@ -1,0 +1,7 @@
+{
+  "id": "drift-04-retired-label",
+  "class": "drift",
+  "source": "decision D-117 (founder blanket approval, 23 Oct 2026; docs/DECISIONS.md) retired the approve-migration label; its Effects line names docs/ops/DEPLOY.md, which now says the label is no longer used (line 93); at 6bfb94a9 five .claude/agents charters, five agents/*/MEMORY.md files and docs/engineering/06 SEC-R13 still require the label. The fixture takes four of them at their 6bfb94a9 text",
+  "roles": ["writer"],
+  "k": 3
+}

@@ -1,0 +1,53 @@
+{
+  "missing_document": "docs/release/ALPHA_PLAN.md",
+  "citations": [
+    {
+      "file": "docs/DECISIONS.md",
+      "line": 3
+    },
+    {
+      "file": "docs/legal/TESTFLIGHT_TESTERS.md",
+      "line": 3
+    },
+    {
+      "file": "docs/legal/TESTFLIGHT_TESTERS.md",
+      "line": 5
+    },
+    {
+      "file": "docs/qa/ALPHA_GO_NO_GO.md",
+      "line": 3
+    },
+    {
+      "file": "docs/qa/ALPHA_GO_NO_GO.md",
+      "line": 5
+    },
+    {
+      "file": "docs/qa/run-sheets/AL-04-sign-in.md",
+      "line": 3
+    },
+    {
+      "file": "docs/qa/run-sheets/AL-08-server-kill-switch.md",
+      "line": 3
+    },
+    {
+      "file": "docs/qa/run-sheets/README.md",
+      "line": 3
+    },
+    {
+      "file": "docs/qa/run-sheets/README.md",
+      "line": 5
+    },
+    {
+      "file": "docs/qa/run-sheets/README.md",
+      "line": 7
+    },
+    {
+      "file": "docs/security/SECRETS_REVIEW.md",
+      "line": 3
+    },
+    {
+      "file": "packages/content/src/release/testflight.en.ts",
+      "line": 3
+    }
+  ]
+}

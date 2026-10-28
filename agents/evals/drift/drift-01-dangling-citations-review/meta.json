@@ -1,0 +1,7 @@
+{
+  "id": "drift-01-dangling-citations-review",
+  "class": "drift",
+  "source": "commit 22db1daa (PR #300): at its parent, 8 files on develop cited docs/release/ALPHA_PLAN.md, which was never merged (PR #152 closed unmerged, 23 Oct); the tree is those 8 files' citing lines",
+  "roles": ["red-team", "qa"],
+  "k": 3
+}
