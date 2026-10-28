@@ -10,6 +10,7 @@
  * (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
  * serves earlyletters.com once the domain is attached.
  */
+import Link from 'next/link';
 import { site } from '@/content/site';
 import { Lockup } from '@/components/brand/Lockup';
 import { NotifyForm } from '@/components/cta/NotifyForm';
@@ -194,9 +195,9 @@ export function Landing() {
       <footer className={styles.footer}>
         <nav aria-label="Legal" className={styles.links}>
           {site.footer.links.map((link) => (
-            <a key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} prefetch={false}>
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
       </footer>
