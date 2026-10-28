@@ -10,9 +10,8 @@
 // (laneOfRun): all digits is a GitHub Actions run (lane `actions`), `local` or
 // `local-<n>` is the dispatcher's local default (lane `local`),
 // `sched-<YYYYMMDDHHMM>` is the 4-hourly scheduled lane (lane `sched-4h`),
-// `sched-prd-<YYYYMMDD>` is the daily PRD run (lane `prd-daily`),
 // `sched-<YYYYMMDD>` is the daily docs run (lane `docs-daily`), and
-// `<lane>~<anything>` names its lane. Anything else is "unattributed": it counts
+// `<lane>~<anything>` names its lane (the daily PRD run uses prd-daily~<YYYYMMDD>). Anything else is "unattributed": it counts
 // against the shared pool but against no single lane.
 //
 // Unknown cost is over budget: a lane with any receipt today whose cost is
@@ -122,9 +121,8 @@ export function laneOfRun(runId, cfg) {
   if (/^\d+$/.test(id) && lanes.actions) return "actions";
   if (/^local(-\d+)?$/.test(id) && lanes.local) return "local";
   // Scheduled prompts (PR #328, docs/agents/lanes/*.prompt.md): the 4-hourly lane stamps
-  // sched-<UTC YYYYMMDDHHMM> and sets AGENTS_LANE=sched-4h; the docs run stamps sched-<UTC YYYYMMDD>;
-  // the PRD run stamps sched-prd-<UTC YYYYMMDD> (checked first, before the generic sched- shapes).
-  if (/^sched-prd-\d{8}$/.test(id)) return lanes["prd-daily"] ? "prd-daily" : UNATTRIBUTED;
+  // sched-<UTC YYYYMMDDHHMM> and sets AGENTS_LANE=sched-4h; the docs run stamps sched-<UTC YYYYMMDD>
+  // for each of its agents (one receipt per agent).
   if (/^sched-\d{12}$/.test(id) && lanes["sched-4h"]) return "sched-4h";
   if (/^sched-\d{8}$/.test(id) && lanes["docs-daily"]) return "docs-daily";
   return UNATTRIBUTED;

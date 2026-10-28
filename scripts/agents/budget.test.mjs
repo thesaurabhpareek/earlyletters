@@ -93,20 +93,25 @@ test("sched-4h: its receipts count against its own cap, and AGENTS_LANE=sched-4h
   _resetTick();
 });
 
-test("sched-prd-<YYYYMMDD> is prd-daily, checked before the generic sched-<YYYYMMDD> docs shape", () => {
+test("prd-daily~<YYYYMMDD> is prd-daily; the docs run's per-agent receipts each count", () => {
   const c = cfg();
-  assert.equal(laneOfRun("sched-prd-20261028", c), "prd-daily");
-  assert.equal(laneOfRun("sched-20261028", c), "docs-daily", "the docs shape is unchanged");
-  const noPrd = { ...c, lanes: { ...c.lanes } };
-  delete noPrd.lanes["prd-daily"];
-  assert.equal(laneOfRun("sched-prd-20261028", noPrd), "unattributed", "never falls through to docs-daily");
-  assert.equal(laneOfRun("sched-prd-2026102", c), "unattributed");
-
-  const rows = [row("sched-prd-20261028", 0.4)];
-  const v = verdict("prd-daily", rows);
+  assert.equal(laneOfRun("prd-daily~20261028", c), "prd-daily");
+  assert.equal(laneOfRun("sched-prd-20261028", c), "unattributed", "the retired sched-prd- shape is not mapped");
+  const prd = [row("prd-daily~20261028", 0.4, undefined, "prd-daily")];
+  const v = verdict("prd-daily", prd);
   assert.equal(v.ok, false);
   assert.match(v.reason, /lane prd-daily: 1 of 1 runs used today/);
-  assert.equal(verdict("docs-daily", rows).ok, true, "the docs lane is not charged for the PRD run");
+  assert.equal(verdict("docs-daily", prd).ok, true, "the docs lane is not charged for the PRD run");
+
+  // The docs run uses one stamp for both agents; each agent's receipt is a run.
+  const docs2 = { ...c, lanes: { ...c.lanes, "docs-daily": { runs: 2, cost_usd: 4 } } };
+  const one = [row("sched-20261028", 0.5, undefined, "decision-records")];
+  assert.equal(canRun("docs-daily", { config: docs2, usage: usageFromRows(one, docs2, DAY), now: NOW }).ok, true);
+  const two = [...one, row("sched-20261028", 0.5, undefined, "reference-docs")];
+  const u = usageFromRows(two, docs2, DAY);
+  assert.equal(u.lanes["docs-daily"].runs, 2);
+  assert.match(canRun("docs-daily", { config: docs2, usage: u, now: NOW }).reason, /lane docs-daily: 2 of 2 runs used today/);
+
   const freeze = { ...c, profile_windows: [{ profile: "freeze-week", from: "2026-11-02", until: "2026-11-09", reason: "release freeze", decided_by: "D-120" }] };
   const inWeek = new Date("2026-11-03T13:00:00Z");
   const f = canRun("prd-daily", { config: freeze, usage: usageFromRows([], freeze, "2026-11-03"), now: inWeek });
@@ -114,12 +119,14 @@ test("sched-prd-<YYYYMMDD> is prd-daily, checked before the generic sched-<YYYYM
   assert.match(f.reason, /lane prd-daily: 0 of 0 runs used today \(freeze-week profile\)/);
 });
 
-test("the committed budget runs prd-daily once a day, 0 in freeze week, and maps its run ids", () => {
+test("the committed budget: prd-daily once a day, docs-daily twice, both 0 in freeze week", () => {
   const b = loadBudget();
   assert.equal(b.lanes["prd-daily"].runs, 1);
   assert.ok(b.lanes["prd-daily"].cost_usd <= 2, "conservative cost cap");
   assert.equal(b.profiles["freeze-week"].lanes["prd-daily"].runs, 0);
-  assert.equal(laneOfRun("sched-prd-20261028", b), "prd-daily");
+  assert.equal(laneOfRun("prd-daily~20261028", b), "prd-daily");
+  assert.equal(b.lanes["docs-daily"].runs, 2, "the docs run writes one receipt per agent, up to 2 a day");
+  assert.equal(b.profiles["freeze-week"].lanes["docs-daily"].runs, 0);
 });
 
 test("the committed budget names the sched-4h lane that PR #328's agent-lane prompt sets", () => {
