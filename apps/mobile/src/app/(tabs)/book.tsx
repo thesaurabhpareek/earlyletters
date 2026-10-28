@@ -48,13 +48,13 @@ import { isReadItBack } from '@/lib/read-it-back';
 import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
-import { arrivalOf, arrivalToastDelayMs, bookHandoff, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
+import { bookHandoff, createArrivalGate, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { MonthOpener } from '@/components/book/month-opener';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
-import { isQuietMark } from '@/components/book/quiet-day.logic';
+import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
 import { joinedArrival } from '@/components/family/family-notice';
 import { startJoinedArrival } from '@/components/family/joined-arrival.logic';
@@ -72,7 +72,12 @@ export default function Book() {
   const { enter, reduced } = useMotion();
   const { children, active } = useChildren();
   const params = useLocalSearchParams<{ arrived?: string; secondFree?: string }>();
-  const [entries, setEntries] = useState<Entry[]>([]);
+  // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
+  // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
+  // these are, so the arrival waits for the right book.
+  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listEntriesForChild(active.id) : [] }));
+  const entries = read.entries;
+  const loaded = read.childId === (active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
   const [washes, setWashes] = useState<Record<string, number>>({});
   const behind = useHiddenBehindCardPage();
@@ -94,9 +99,9 @@ export default function Book() {
 
   useEffect(() => {
     if (!active) return;
-    const read = () => setEntries(listEntriesForChild(active.id));
-    read();
-    return subscribe(read);
+    const reread = () => setRead({ childId: active.id, entries: listEntriesForChild(active.id) });
+    reread();
+    return subscribe(reread);
   }, [active?.id]);
 
   const today = todayISO();
@@ -120,8 +125,10 @@ export default function Book() {
     if (value !== raw) setSetting(SEEN_KEY, value);
   }, [entries, active, wash]);
 
-  // A kept letter arrives (5.8 row 5, P4 sets `arrived`): position the list on it under its opener, wash it once,
-  // and clear the param so Back and tab taps never replay it.
+  // A kept letter arrives (5.8 row 5, P4 sets `arrived`): position the list on it under its opener at once, then, when
+  // the Book is uncovered (Review dissolves away over it), wash it once and clear the param, so Back and tab taps
+  // never replay it. The param stays until this book's letters are read and the card is found (P5 critics' pass, S1):
+  // a Book that mounts with it, which is every first letter, must not lose the wash.
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const scrollToArrival = useCallback(() => {
     const at = pendingScroll.current;
@@ -133,26 +140,30 @@ export default function Book() {
     if (at.sectionIndex === 0 && at.itemIndex < 3) return; // already in view at the top of the book
     list.scrollToLocation({ ...target, animated: false });
   }, []);
-  const arrival = arrivalOf(params.arrived, chapters);
-  const secondFreeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [arrivalGate] = useState(createArrivalGate);
+  const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
-    if (secondFreeTimer.current) clearTimeout(secondFreeTimer.current);
+    if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
   }, []);
   useEffect(() => {
-    if (!params.arrived) return;
+    const step = arrivalGate.step({ param: params.arrived, sections: chapters, loaded, reduced });
+    if (step.act !== 'run') return;
+    const { arrival } = step;
+    // The second kept letter (S21, D-082): one calm line once the landing is done, no action, no count of what is left.
+    const secondFree = secondFreeOnArrival(params.secondFree);
     if (arrival) {
-      wash([arrival.id]);
       pendingScroll.current = { sectionIndex: arrival.sectionIndex, itemIndex: arrival.itemIndex };
       scrollToArrival();
     }
-    // The second kept letter (S21, D-082): one calm line once the landing is done, no action, no count of what is left.
-    if (secondFreeOnArrival(params.secondFree)) {
-      secondFreeTimer.current = setTimeout(() => toast.show({ message: billingCopy.keepGate.secondFreeNote }), arrivalToastDelayMs(reduced));
-    }
-    router.setParams({ arrived: undefined, secondFree: undefined });
-    // Only a new param is an arrival.
+    if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
+    arrivalTimer.current = setTimeout(() => {
+      if (arrival) wash([arrival.id]);
+      if (secondFree) toast.show({ message: billingCopy.keepGate.secondFreeNote });
+      router.setParams({ arrived: undefined, secondFree: undefined });
+    }, step.afterMs);
+    // The gate runs each param once; only the param, the letters and the read decide when to ask it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.arrived]);
+  }, [params.arrived, chapters, loaded]);
 
   // Back on the Book after a letter was deleted from its page (S36): the card leaves its row, and one toast with
   // Undo sits above the tab bar until Undo, Close or leaving the Book. No timer: it carries an action.
@@ -240,7 +251,8 @@ export default function Book() {
         <Text variant="display" asHeading={1}>
           {title}
         </Text>
-        {entries.some((e) => e.inBook && !isQuietMark(e)) && (
+        {/* Only what Read together can read: kept letters with words, as the screen itself reads them (L4). */}
+        {readableInBook(entries).length > 0 && (
           <Button
             variant="secondary"
             size="sm"

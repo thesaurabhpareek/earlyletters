@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
-import { shelfActions, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
+import { eraseOutcome, restoredLine, shelfActions, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,7 +34,9 @@ import { bookCopy } from '@/components/book/copy';
  * November 12."). Calm on purpose: no countdown, no count of what is left.
  *
  * Every toast replaces the one on screen (components/ui/toast), so after Erase now no "Back in Asha's book." can sit
- * under "Letter erased.". Restore's toast carries "Open"; Erase now's carries no action, so it may time out.
+ * under "Letter erased.". Restore's toast carries "Open"; Erase now's carries no action, so it may time out. If the
+ * recording's file cannot be removed, nothing is erased and the toast says so ("The letter was not erased. It is still
+ * in Recently deleted."); the card stays, with Erase now to try again.
  *
  * A build that syncs shows no Erase now until the server erase exists (S63, F17-REQ-025): the card shows its date
  * line, from the server's deleted_at plus 30 days, and the letter goes at the server purge.
@@ -64,7 +66,7 @@ function Shelf() {
     setRows(read());
     const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
     toast.show({
-      message: fill(d.restoredToast, { child: child?.name ?? '' }),
+      message: restoredLine(d, child?.name),
       action: { label: d.openButton, testID: 'shelf.open', onPress: () => router.push({ pathname: '/letter/[id]', params: { id: e.id } }) },
     });
   };
@@ -75,8 +77,13 @@ function Shelf() {
     if (!id) return;
     haptic('warning');
     const done = eraseDeletedLetter(id);
-    setRows(read());
-    if (done) toast.show({ message: d.erasedToast });
+    const left = read();
+    setRows(left);
+    // The recording's file could not be removed: the store keeps the row for another try. Say so (what did not
+    // happen, then what is true), so the person is never left to guess whether it worked (P5 critics' pass, S6).
+    const outcome = eraseOutcome(done, left.some((r) => r.id === id));
+    if (outcome === 'erased') toast.show({ message: d.erasedToast });
+    else if (outcome === 'kept') toast.show({ message: d.eraseFailedToast });
   };
 
   if (rows.length === 0) {

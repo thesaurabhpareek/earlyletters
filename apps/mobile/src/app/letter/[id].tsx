@@ -58,6 +58,7 @@ import {
   getEntry,
   listDeleted,
   setEntryInBook,
+  canTypeWordsFor,
   setTypedWordsForWaitingEntry,
   subscribeTo,
   undeleteEntry,
@@ -72,9 +73,11 @@ import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-wo
 import { AppNote } from '@/components/book/app-note';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf, shortDateline } from '@/components/book/chapters';
+import { provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { wordsCardKind, wordsCardState, type WordsCardKind } from '@/components/book/words-card.logic';
 import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
@@ -305,9 +308,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const own = isOwnEntry(entry);
   const canShowOriginal = own && spoken && words === 'words' && entry.rawTranscript !== entry.finalText;
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
-  // recording is on their phone, which the player's place says (D-073), so the line names only how it was made.
-  const provenance = copy.book.provenance[provenanceOf(entry)];
-  const provenanceLine = spoken && own ? `${provenance}. ${copy.book.recordingOnPhone}.` : provenance;
+  // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
+  // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
+  const provenanceLine = provenanceLineOf(entry, { own, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
+  // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
+  const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
   const aa = (
     <Pressable
@@ -383,7 +388,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         <Animated.View style={[{ gap: 28 }, restBody]}>
         {spoken && <AudioPlayer entryId={entry.id} />}
 
-        {own && words === 'waiting' && <WaitingCard entry={entry} />}
+        {wordsCard && <WaitingCard entry={entry} kind={wordsCard} />}
         {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
           <ReadItBackCard
             typed={typedWords}
@@ -514,22 +519,23 @@ function NotFoundBody({ onShelf }: { onShelf: boolean }) {
 }
 
 /**
- * A saved letter still waiting for its words (D-086): the reason, then one primary action. The reason lines reuse
- * the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are Try again or Get words ready when that is what
- * would help, and Write the words, which opens the words sheet (S28). The recording itself is never touched.
+ * A saved letter still waiting for its words (D-086), or a recording whose words came back empty (S28): the reason,
+ * then one primary action. The reason lines reuse the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are
+ * Try again or Get words ready when that is what would help (a waiting letter only), and Write the words, which opens
+ * the words sheet. A recording with no words has no reason and no other action (words-card.logic). The recording
+ * itself is never touched.
  */
-function WaitingCard({ entry }: { entry: Entry }) {
+function WaitingCard({ entry, kind }: { entry: Entry; kind: WordsCardKind }) {
   const language = languageFor(entry.id);
   const job = useWordsJob(entry.id);
-  const download = useSpeechDownload(job?.phase === 'waiting_for_pack' ? language : null);
+  const state = wordsCardState(kind, job);
+  const download = useSpeechDownload(state.packWait ? language : null);
   const [writing, setWriting] = useState(false);
   const w = wordsCopy.waiting;
 
-  const failed = job?.phase === 'failed';
-  const retryable = failed && job.failure !== 'file_missing' && job.failure !== 'unsupported';
-  const packWait = job?.phase === 'waiting_for_pack';
+  const { failed, retryable, packWait } = state;
   // D-111 item 4: a language this build does not hear yet; the letter waits for its language (from the job, no read).
-  const languageWait = waitingForLanguageNote(job);
+  const languageWait = state.languageWait ? waitingForLanguageNote(job) : null;
   const p = download.progress;
   const reason = failed
     ? copy.errors.transcriptionFailed.body

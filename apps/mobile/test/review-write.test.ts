@@ -244,8 +244,10 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(arrivalToastDelayMs(false)).toBe(tokens.motion.route.dissolveMs);
     expect(arrivalToastDelayMs(true)).toBe(tokens.motion.fadeMs);
     const book = code(src('app/(tabs)/book.tsx'));
-    const arrival = book.slice(book.indexOf('const arrival = arrivalOf('), book.indexOf('router.setParams({ arrived: undefined, secondFree: undefined });') + 80);
-    expect(arrival).toMatch(/if \(secondFreeOnArrival\(params\.secondFree\)\) \{\s*secondFreeTimer\.current = setTimeout\(\(\) => toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\), arrivalToastDelayMs\(reduced\)\);/);
+    const arrival = book.slice(book.indexOf('const [arrivalGate] = useState(createArrivalGate)'), book.indexOf('router.setParams({ arrived: undefined, secondFree: undefined });') + 140);
+    // It waits with the wash: the gate's `afterMs` is arrivalToastDelayMs(reduced), the route's dissolve (book.logic, p5-critics.test.ts).
+    expect(arrival).toMatch(/const secondFree = secondFreeOnArrival\(params\.secondFree\);/);
+    expect(arrival).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{[\s\S]*?if \(secondFree\) toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\);[\s\S]*?\}, step\.afterMs\);/);
     // No action, so it leaves on its own; cleared with `arrived`, so Back and tab taps never replay it.
     expect(arrival).not.toMatch(/secondFreeNote[^)]*action/);
     expect(arrival).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);

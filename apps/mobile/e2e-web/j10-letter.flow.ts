@@ -112,8 +112,11 @@ test('[J10c] a letter waiting for words', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 9, 'J10-01');
   await seeded(app, 'asha-waiting');
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByText(/waiting for its words/i).first().click();
+  // The Tonight screen stays in the page under the Book on the web, and its draft card carries the same words, so the
+  // Book's own card is picked by its test id (as the other cards are).
+  await app.getByTestId('book.card').filter({ hasText: /waiting for its words/i }).first().click();
   await expect(app.getByText(/waiting for its words/i).last()).toBeVisible();
+  await expect(btn(app, 'Write the words')).toBeVisible();
   await step('unhappy', 'A letter waiting for its words', 'The page shows the app\'s own small, muted note instead of an empty page, with no signature under it, and "Write the words" opens the words sheet; the recording is there.');
 });
 
@@ -125,7 +128,14 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
   // The Book stays mounted behind the page, so look at the page's own (last) copy of the note.
   await expect(app.getByText('No words in this one. The recording is kept just as it is.').last()).toBeVisible();
   await expect(app.getByRole('button', { name: 'Record again' })).toHaveCount(0);
-  await step('unhappy', 'A recording with no words', 'The page shows the app\'s own small note instead of words, and no "From Mama" signature under it (the signature is only under words a person said); the recording is still there and can be kept. "Record again" is gone from this page: it started a separate letter.');
+  // S28: the same words card as a waiting letter, with "Write the words" only (nothing to try again or fetch).
+  await expect(btn(app, 'Write the words')).toBeVisible();
+  await expect(btn(app, 'Try again')).toHaveCount(0);
+  await expect(btn(app, 'Get words ready')).toHaveCount(0);
+  await step('unhappy', 'A recording with no words', 'The page shows the app\'s own small note instead of words, and no "From Mama" signature under it (the signature is only under words a person said); the recording is still there and can be kept, and "Write the words" opens the words sheet so the person can put the words with it. "Record again" is gone from this page: it started a separate letter.');
+  await btn(app, 'Write the words').click();
+  await expect(app.getByText('Words for this recording').first()).toBeVisible();
+  await expect(app.getByTestId('letter.writeWords.save')).toBeDisabled();
 });
 
 test('[J10d] a letter that does not exist', async ({ app, record }) => {

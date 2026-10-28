@@ -30,11 +30,11 @@ describe('a kept letter arrives in the Book (5.8 row 5)', () => {
     expect(arrivalOf('', sections)).toBeNull();
   });
 
-  it('the Book washes the card once and clears the param, so Back and tab taps never replay it (source)', () => {
+  it('the Book washes the card once and clears the param, so Back and tab taps never replay it (source; the gate is pinned in p5-critics.test.ts)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
     // `secondFree` rides with `arrived` on the second kept letter (P4b, S21) and is cleared with it.
     expect(book).toMatch(/useLocalSearchParams<\{ arrived\?: string; secondFree\?: string \}>\(\)/);
-    expect(book).toMatch(/wash\(\[arrival\.id\]\)/);
+    expect(book).toMatch(/if \(arrival\) wash\(\[arrival\.id\]\)/);
     expect(book).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
   });
 });
@@ -217,7 +217,9 @@ describe('the letter page (S27, S28, source)', () => {
   });
 
   it('one provenance line, no lamp, no "Record again" on a letter with no words', () => {
-    expect(page).toMatch(/`\$\{provenance\}\. \$\{copy\.book\.recordingOnPhone\}\.`/);
+    // The line is composed in lib/provenance.ts (provenanceLine, tested in p5-critics.test.ts) so the other parent's phone claims no fixes.
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
+    expect(src('lib/provenance.ts')).toMatch(/`\$\{how\}\. \$\{o\.recordingOnPhone\}\.`/);
     expect(page).toMatch(/useUnlitRoom\(\)/);
     expect(page).not.toMatch(/<Lamp/);
     expect(page).not.toMatch(/recordAgainButton/);
