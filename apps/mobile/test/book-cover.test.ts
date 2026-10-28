@@ -131,7 +131,7 @@ describe('a long first name is never broken in two (P2 S2)', () => {
     }
   }
 
-  it('the 96 pt, 132 pt and 160 pt covers hold all three names whole, closed and open', () => {
+  it('the 132 pt and 160 pt covers hold all three names whole, closed and open (the 96 pt one fades Christopher and Alexandrina)', () => {
     for (const name of NAMES) {
       for (const size of ['md', 'lg'] as const) {
         for (const state of STATES) expect(coverName(name, size, state), `${name} ${size} ${state}`).toMatchObject({ lines: [name], truncated: false });
@@ -164,6 +164,55 @@ describe('a long first name is never broken in two (P2 S2)', () => {
         const set = coverName(name, size);
         const words = new Set(name.split(' '));
         for (const line of set.lines.slice(0, set.truncated ? -1 : undefined)) for (const w of line.split(' ')) expect(words.has(w), `${name} / ${size}: ${w}`).toBe(true);
+      }
+    }
+  });
+});
+
+/**
+ * The fade ends a name at the edge of the cover, so the cut is wherever the width runs out. It must land between whole
+ * letters: never between a letter and its accent, never inside a surrogate pair, a flag or a joined emoji, never leave a
+ * trailing space, and the name kept for the accessible label is always the whole of it. The width is swept so the cut
+ * visits every position of each name. Fictional names only (Asha) and typed test strings.
+ */
+describe('the cut is always between whole letters, and the whole name is always kept (P2 S2)', () => {
+  const NAMES = [
+    'Zoe\u0301'.repeat(12), // Zoe with the e written as e plus a combining acute, one word
+    'A\u{1F1EE}\u{1F1F3}'.repeat(10), // A and a two-part flag, one word
+    '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}Asha'.repeat(5), // a joined family emoji, then a name, one word
+    'Asha Zoe\u0301 Nin\u0303a Ame\u0301lie Ravi Mae\u0301 Lena Jo\u0303ao Christopher', // several words, accents, a long last word
+    'Asha  \u{1F1EE}\u{1F1F3} Nila Mae\u0301 Rose', // a run of spaces, a flag
+  ];
+
+  it('every line is the start of the name in whole letters, none starts or ends with a space, and `full` is the whole name', () => {
+    let faded = 0;
+    for (const name of NAMES) {
+      const all = graphemes(displayName(name));
+      for (let width = 12; width <= 170; width += 1.5) {
+        for (const maxLines of [1, 2, 3]) {
+          const set = setText(name, { size: 13, maxWidth: width, maxLines });
+          const where = `${JSON.stringify(name)} width ${width} lines ${maxLines}`;
+          const rebuilt = set.lines.join(' ');
+          expect(all.slice(0, graphemes(rebuilt).length).join(''), where).toBe(rebuilt);
+          for (const line of set.lines) {
+            expect(line.length, where).toBeGreaterThan(0);
+            expect(line, where).toBe(line.trim());
+            expect(line, where).not.toMatch(ELLIPSIS);
+          }
+          expect(set.lines.length, where).toBeLessThanOrEqual(maxLines);
+          expect(set.full, where).toBe(displayName(name));
+          if (set.truncated) faded++;
+        }
+      }
+    }
+    expect(faded).toBeGreaterThan(300); // the sweep really did cut names at the edge
+  });
+
+  it('a name cut by the fade fits the width it was set for, at every width (nothing runs past the cover)', () => {
+    for (const name of NAMES) {
+      for (let width = 30; width <= 170; width += 5) {
+        const set = setText(name, { size: 13, maxWidth: width, maxLines: 3 });
+        for (const line of set.lines) expect(measure(line, 13), `${JSON.stringify(name)} ${width}: ${line}`).toBeLessThanOrEqual(width * 0.97);
       }
     }
   });

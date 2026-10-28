@@ -51,8 +51,8 @@ describe('[P2 S1] the cover hides when the keyboard leaves under 480 pt of free 
     expect(coverFitsAboveKeyboard(874, 874 - 479)).toBe(false);
   });
 
-  it('with the keyboard down the cover always shows, whatever the window', () => {
-    for (const windowHeight of [480, 568, 667, 874, 956]) expect(coverFitsAboveKeyboard(windowHeight, 0), String(windowHeight)).toBe(true);
+  it('with the keyboard down the cover always shows, whatever the window (even one under 480 pt, as in landscape)', () => {
+    for (const windowHeight of [320, 375, 400, 479, 480, 568, 667, 874, 956]) expect(coverFitsAboveKeyboard(windowHeight, 0), String(windowHeight)).toBe(true);
   });
 
   it('is never the old 640 pt: a 17 Pro with its keyboard up (538 free) is not hidden', () => {
@@ -80,6 +80,17 @@ describe('[P6A S2] at accessibility text sizes the cover sits under the heading,
     expect(coverPlace({ windowHeight: 874, keyboardHeight: 336, accessibilitySize: true })).toBe('below');
   });
 
+  it('useCoverPlace feeds the rule the window height, the keyboard height and the accessibility size, nothing dropped', () => {
+    const hook = code('components/child/cover-heading.tsx');
+    expect(hook).toMatch(/const keyboardHeight = useKeyboardHeight\(\);/);
+    expect(hook).toMatch(/const \{ height: windowHeight \} = useWindowDimensions\(\);/);
+    expect(hook).toMatch(/const accessibilitySize = useIsAccessibilitySize\(\);/);
+    expect(hook).toMatch(/return coverPlace\(\{ windowHeight, keyboardHeight, accessibilitySize \}\);/);
+    // The keyboard height is the live one: set by the show event and cleared by the hide event.
+    expect(hook).toMatch(/'keyboardWillShow' : 'keyboardDidShow', \(e\) => setHeight\(e\.endCoordinates\.height\)/);
+    expect(hook).toMatch(/'keyboardWillHide' : 'keyboardDidHide', \(\) => setHeight\(0\)/);
+  });
+
   it('the switch is the accessibility sizes (AX1 and up), not large text: xxxLarge keeps the cover beside', () => {
     expect(isAccessibilitySize(FONT_SCALE.xxxLarge)).toBe(false);
     expect(isLargeText(FONT_SCALE.xxxLarge)).toBe(true);
@@ -96,6 +107,14 @@ describe('[P6A S2] at accessibility text sizes the cover sits under the heading,
     expect(heading).toMatch(/place === 'hidden' \? null/);
     // Decorative: the name is real text in the field and the heading.
     expect(heading).not.toMatch(/accessibilityLabel/);
+  });
+
+  it('the heading takes the ref it is given, so VoiceOver focus lands on it as each step arrives', () => {
+    expect(code('components/child/cover-heading.tsx')).toMatch(/<Text ref=\{headingRef\} variant="title1" asHeading=\{1\}/);
+    // And the screens move focus to that ref on arrival.
+    expect(code('app/onboarding.tsx')).toMatch(/useFocusOnMount\(heading, step !== 'welcome', step\);/);
+    expect(code('components/child/add-child-form.tsx')).toMatch(/useFocusOnMount\(heading\);/);
+    for (const f of ['app/onboarding.tsx', 'components/child/add-child-form.tsx']) expect(code(f), f).toMatch(/const heading = (useRef|React\.useRef)<RNText>\(null\);/);
   });
 
   it('the name step, the signature step and Add a child all draw their heading and cover through it', () => {
@@ -127,11 +146,12 @@ describe('[P2 S3] the name is typed in the book\'s title face', () => {
   });
 
   it('the placeholder fits the field on the narrowest iPhone, so it is never clipped or given an ellipsis', () => {
-    // Measured in Chromium on the web build at 375 pt: the field leaves 302 pt for text (375 less 24 pt of margin on each
-    // side, the 1 pt edge and 16 pt of padding each side). The old line, "First name, or the name you use at home", was
-    // 421 pt in Literata Regular 22 pt and read "First name, or the name you u". The widths here are Literata Medium's,
-    // which are wider than Regular's, so this is the safe side of the same bound (278 against 272 pt measured).
-    const room = 302;
+    // The field on a 375 pt phone leaves 293 pt for text: 375 less 24 pt of margin on each side, the 1 pt edge on each side
+    // and 16 pt of padding on each side (the web measured 302, so 293 is the stricter, native figure). The old line,
+    // "First name, or the name you use at home", was 421 pt in Literata Regular 22 pt and read "First name, or the name you u".
+    // The widths here are Literata Medium's, wider than Regular's, so this is the safe side (278 against 272 pt measured).
+    const room = 375 - 24 - 24 - 2 - 32;
+    expect(room).toBe(293);
     expect(tokens.type.nameField.fontSize).toBe(22);
     const text = en.onboarding.child.namePlaceholder;
     expect(measure(text, tokens.type.nameField.fontSize)).toBeLessThanOrEqual(room);
