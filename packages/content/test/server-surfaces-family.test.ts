@@ -16,7 +16,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
-import { familyCopy } from '../src';
+import { en, familyCopy } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -118,9 +118,11 @@ describe('[P8b S57 to S59] familyCopy changes, word for word', () => {
 
   it('keeps the words the acceptance boxes quote', () => {
     for (const [key, words] of Object.entries(QUOTED)) {
-      if (key.includes('strings.en.ts')) continue; // P0's file; read by the Family tab, pinned there by P0's test
+      if (key.includes('strings.en.ts')) continue; // P0's file, checked on its own below
       expect(at(key), key).toBe(words);
     }
+    // The Family tab's one literary line lives in P0's strings.en.ts (S57 KEEP); the tab reads it.
+    expect(en.familyTab.membersTitle).toBe(QUOTED['familyTab.membersTitle (strings.en.ts)']);
   });
 
   it('says who the book is shared with and never who can read it (S57, review A1)', () => {

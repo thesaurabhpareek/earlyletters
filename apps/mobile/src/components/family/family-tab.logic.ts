@@ -40,6 +40,14 @@ export function rowLabel(signature: string, line: string): string {
   return signature === line ? line : `${signature}, ${line}`;
 }
 
+/**
+ * The line under a row's signature, or none when it would only repeat the signature: a parent with no sign-off yet
+ * (a joined book before they set one) reads "You" once, not "You" over "You".
+ */
+export function rowLine(signature: string, line: string): string | null {
+  return line && line !== signature ? line : null;
+}
+
 /** You, then the other parent the last pull listed (at most one, D-069). */
 export function peopleRows(you: { signsAs: string }, coParents: readonly MemberLike[]): PersonRow[] {
   const m = familyCopy.members;

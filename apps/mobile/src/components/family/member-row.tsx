@@ -16,7 +16,7 @@ import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } 
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
-import { rowLabel } from './family-tab.logic';
+import { rowLabel, rowLine } from './family-tab.logic';
 
 interface Props {
   /** "From Mama", or the role word when the person set no sign-off. */
@@ -34,6 +34,7 @@ interface Props {
 
 export function MemberRow({ signature, role, status, pending, wash, testID, children }: Props) {
   const line = status ?? role ?? '';
+  const under = rowLine(signature, line);
   return (
     <View testID={testID} className="py-3">
       <Wash run={wash} />
@@ -41,7 +42,7 @@ export function MemberRow({ signature, role, status, pending, wash, testID, chil
         <Text variant="signature" tone={pending ? 'muted' : 'default'}>
           {signature}
         </Text>
-        {line ? <Text variant="footnote">{line}</Text> : null}
+        {under ? <Text variant="footnote">{under}</Text> : null}
       </View>
       {children}
     </View>

@@ -23,8 +23,10 @@ import {
   pendingSignature,
   peopleRows,
   rowLabel,
+  rowLine,
   signatureLine,
 } from '../src/components/family/family-tab.logic';
+import { familyNotice } from '../src/components/family/family-notice';
 import { lampAllowed, resolveLamp } from '../src/components/ui/lamp.logic';
 import { LEAVE_BOOK_OFFERED } from '../src/lib/family/entry.logic';
 import { decodeSeen, encodeSeen, familyTabState } from '../src/lib/family/members.logic';
@@ -51,6 +53,18 @@ describe('[S57] people are signatures, and never more than two parents (D-069)',
   it('[F11-REQ-023] a co-parent with no sign-off is "Your co-parent"; you with none is "You", read once', () => {
     expect(peopleRows({ signsAs: ' ' }, [{ ...PAPA, signsAs: '  ' }]).map((r) => r.signature)).toEqual(['You', familyCopy.members.invitedName]);
     expect(rowLabel('You', 'You')).toBe('You');
+  });
+
+  it('a parent with no sign-off reads "You" once, not "You" over "You" (lens A and B on #314)', () => {
+    const [you] = peopleRows({ signsAs: '' }, []);
+    expect(you.signature).toBe('You');
+    expect(rowLine(you.signature, you.role)).toBeNull();
+    expect(rowLine('From Mama', 'You')).toBe('You');
+    expect(rowLine('Your co-parent', 'Invited, open until Thu, Oct 22')).toBe('Invited, open until Thu, Oct 22');
+    expect(rowLine('From Mama', '')).toBeNull();
+    const row = code('components/family/member-row.tsx');
+    expect(row).toMatch(/const under = rowLine\(signature, line\);/);
+    expect(row).toMatch(/\{under \? <Text variant="footnote">\{under\}<\/Text> : null\}/);
   });
 
   it('shows at most one co-parent, whatever the pull holds, and never a family contributor', () => {
@@ -107,6 +121,18 @@ describe('[S57] the invite card, the privacy line, and what shows with two paren
     expect(code(TAB)).not.toMatch(/signedOutNote/);
   });
 
+  it('the room\'s one literary line is "Who writes to {child}" (S57 KEEP)', () => {
+    expect(en.familyTab.membersTitle).toBe('Who writes to {child}');
+  });
+
+  it('Cancel invite keeps its confirm: the link stops only after "Cancel invite" in the alert, never on the first tap', () => {
+    expect(code(TAB)).toMatch(
+      /const cancel = \(row: PendingInviteRow\) => \{\s*if \(!client\) return;\s*Alert\.alert\(f\.pending\.cancelTitle, f\.pending\.cancelBody, \[\s*\{ text: f\.pending\.keep, style: 'cancel' \},\s*\{\s*text: f\.pending\.cancel,\s*style: 'destructive',\s*onPress: async \(\) => \{/,
+    );
+    const before = code(TAB).slice(code(TAB).indexOf('const cancel = '), code(TAB).indexOf('Alert.alert('));
+    expect(before).not.toMatch(/revokeInvite/);
+  });
+
   it('shows no words P0 retired or the layout left out: the old empty lines and the settings-voice subtitle', () => {
     const tab = code(TAB);
     expect(tab).not.toMatch(/familyTab\.(?:emptyTitle|emptyBody|inviteNeedsSignIn)|copy\.family\.(?:title|subtitle)/);
@@ -156,6 +182,14 @@ describe('[S57 Motion] the co-parent\'s row arrives once', () => {
     expect(tokens.motion.newMarkMs).toBe(1600);
     expect(code('components/family/member-row.tsx')).toMatch(/withTiming\(0, \{ duration: tokens\.motion\.newMarkMs/);
     expect(code(TAB)).toMatch(/exiting=\{motion\.exit\(\)\} layout=\{motion\.layout\('standard'\)\}/);
+  });
+
+  it('a sheet\'s closing line shows once: it is cleared as the tab reads it, and a newer line replaces an older one', () => {
+    expect(familyNotice.take()).toBeNull();
+    familyNotice.leave('first');
+    familyNotice.leave(familyCopy.create.done);
+    expect(familyNotice.take()).toBe(familyCopy.create.done);
+    expect(familyNotice.take()).toBeNull();
   });
 
   it('a sheet\'s closing line and "Invite cancelled." show as the tab\'s toast, which VoiceOver hears', () => {
