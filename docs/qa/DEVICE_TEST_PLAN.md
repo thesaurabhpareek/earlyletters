@@ -341,6 +341,22 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
 - **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
+### S1-32 Hidden books: the way back from "Hide this book" (P6d, #361; B-REQ-014)
+- **Steps:**
+  - (a) With two books on the phone, open Settings > Avi's book > Hide this book, and confirm.
+  - (b) Read Settings under Children.
+  - (c) Open Hidden books and tap "Show this book again".
+  - (d) Repeat (a) to (c) with VoiceOver on, then at AX5.
+  - (e) With reminders on for Avi, hide and show the book again. Check the reminders that are scheduled (Settings > Reminders, or wait for the next one).
+- **Expected:**
+  - (a) Nothing is deleted.
+  - (b) Avi's book is not listed. A "Hidden books" row sits after "Add a child".
+  - (c) The page lists Avi's book with "Show this book again". After the tap, the page says "No hidden books.", Avi's book is back in the switcher and under Children, and the Hidden books row is gone. Avi's letters and drafts are as they were.
+  - (d) Each button names its book ("Show this book again, Avi"), and focus moves to "No hidden books." after the tap. At AX5, nothing is truncated.
+  - (e) Avi's reminders stop while the book is hidden and resume after it is shown again.
+- **Record:** S1-32 rows (a) to (e), with the phone and iOS version; screenshots with the fictional family only.
+- **Update:** F09-REQ-016 and F09-REQ-024 in `docs/prd/v2/features/F09-book.md` (WP-F09-09 status) where a result differs.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

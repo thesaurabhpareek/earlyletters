@@ -6,13 +6,14 @@ import { Linking, ScrollView, View } from 'react-native';
 import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
+import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
 import { accountSubtitle } from '@/components/settings/settings-home.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
-import { listChildren, subscribe, type Child } from '@/lib/store';
+import { listChildren, listHiddenChildren, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -61,7 +62,7 @@ function backupRowValue(): string | undefined {
 const openWeb = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 
 export default function Settings() {
-  const read = () => ({ children: listChildren(), appearance: getAppearance(), reminders: remindersSummary() });
+  const read = () => ({ children: listChildren(), hidden: hiddenBooksRow(listHiddenChildren()), appearance: getAppearance(), reminders: remindersSummary() });
   const [s, setS] = useState(read);
   useEffect(() => subscribe(() => setS(read())), []);
   // Reminders and appearance change on their own screens: re-read when Settings comes back.
@@ -92,6 +93,8 @@ export default function Settings() {
           />
         ))}
         <ListRow title={copy.children.switcher.addButton} trailing="chevron" onPress={() => router.push('/settings/children/new')} />
+        {/* The way back from "Hide this book" (P6d), only while a book is hidden on this phone. */}
+        {s.hidden ? <ListRow title={s.hidden.title} trailing="chevron" onPress={() => router.push(s.hidden!.href)} testID="settings.hiddenBooks" /> : null}
       </ListSection>
 
       <ListSection title={h.sections.writing}>

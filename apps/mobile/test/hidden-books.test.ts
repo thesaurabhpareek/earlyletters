@@ -112,6 +112,15 @@ describe('[P6d] the screen', () => {
     expect(screen).toMatch(/useFocusOnMount\(first, shown > 0, shown\)/);
   });
 
+  it('Settings home has the row under Children, after Add a child, only while a book is hidden', () => {
+    const home = code('app/settings/index.tsx');
+    expect(home).toMatch(/hidden: hiddenBooksRow\(listHiddenChildren\(\)\)/);
+    expect(home).toMatch(/\{s\.hidden \? <ListRow title=\{s\.hidden\.title\} trailing="chevron" onPress=\{\(\) => router\.push\(s\.hidden!\.href\)\}/);
+    const section = home.slice(home.indexOf('<ListSection title={copy.children.settings.sectionTitle}>'));
+    expect(section.indexOf('copy.children.switcher.addButton')).toBeLessThan(section.indexOf('s.hidden.title'));
+    expect(section.indexOf('s.hidden.title')).toBeLessThan(section.indexOf('</ListSection>'));
+  });
+
   it('the web preview can show it: ?seed=asha-hidden adds Avi\'s book, hidden', () => {
     const seed = code('dev/asha-seed.ts');
     expect(seed).toMatch(/if \(opts\.hidden\) \{[\s\S]*addChild\(\{ name: 'Avi'[\s\S]*hideChild\(avi\.id\);/);
