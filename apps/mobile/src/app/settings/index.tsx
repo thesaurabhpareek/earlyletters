@@ -113,7 +113,8 @@ export default function Settings() {
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
-      {capabilities.signIn ? (
+      {/* Delete account only while signed in: signed out there is no account here to delete (#358 review). */}
+      {capabilities.signIn && auth.signedIn ? (
         <ListSection>
           <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
         </ListSection>
