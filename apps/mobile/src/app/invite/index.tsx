@@ -35,6 +35,7 @@ import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
+import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
@@ -358,9 +359,9 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     setActiveChildId(childId);
     // The Book on this book, whose light rises once for the second parent's first evening in it (5.8 row 12).
     joinedArrival.leave();
-    // Over first run's welcome the sheet only closes, and the welcome hands over to the Book and leaves the stack.
+    // Over first run's welcome step the sheet only closes, and the welcome hands over to the Book and leaves the stack.
     const under = navigation.getParent()?.getState()?.routes.map((r) => r.name) ?? [];
-    if (openLanding(under) === 'welcome') close();
+    if (openLanding(under, firstRunWelcome.showing()) === 'welcome') close();
     else router.dismissTo(JOINED_LANDING);
   };
 

@@ -68,7 +68,7 @@ import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
 import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
-import { welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
+import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -167,6 +167,11 @@ export default function Onboarding() {
     done();
     return subscribe(done);
   }, [step, pathname]);
+  // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
+  useEffect(() => {
+    firstRunWelcome.set(step === 'welcome');
+    return () => firstRunWelcome.set(false);
+  }, [step]);
 
   useEffect(() => {
     if (names[0]?.trim()) setDateShown(true);

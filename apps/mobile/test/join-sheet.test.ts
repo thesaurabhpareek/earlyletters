@@ -110,13 +110,16 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
 describe('[S59] "Open the book" lands on the Book with the light rising once (5.8 row 12)', () => {
   afterEach(() => lampMemory.clear());
 
-  it('over the welcome the sheet only closes, and the welcome hands over and leaves the stack; over the tabs it dismisses to the Book', () => {
-    expect(openLanding(['onboarding', 'invite'])).toBe('welcome');
-    expect(openLanding(['(tabs)', 'invite'])).toBe('book');
-    expect(openLanding([])).toBe('book');
+  it('over the welcome step the sheet only closes, and the welcome hands over and leaves the stack; over a later first-run step or the tabs it dismisses to the Book', () => {
+    expect(openLanding(['onboarding', 'invite'], true)).toBe('welcome');
+    expect(openLanding(['(tabs)', 'invite'], false)).toBe('book');
+    expect(openLanding(['(tabs)', 'invite'], true)).toBe('book');
+    expect(openLanding([], false)).toBe('book');
+    // An invite link opened part-way through first run: that step never hands over, so Open goes to the Book itself.
+    expect(openLanding(['onboarding', 'invite'], false)).toBe('book');
     expect(JOINED_LANDING).toBe('/book');
     const sheet = code(SHEET);
-    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*const under = navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\];\s*if \(openLanding\(under\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
+    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*const under = navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\];\s*if \(openLanding\(under, firstRunWelcome\.showing\(\)\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
     // Only "Open the book" leaves the mark: Close and every other view do not.
     expect(sheet.match(/joinedArrival\.leave\(/g)).toHaveLength(1);
   });
