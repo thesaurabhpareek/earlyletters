@@ -137,7 +137,7 @@ const MARKER = /^<!--\s*lens:([ab]):([0-9a-f]{7,40})(\s+base:[0-9a-f]{7,40})?\s*
 // other than "No Must"; further down (to line 15) only stop phrases are checked, because review
 // notes routinely say things like "the test fails on the previous code".
 const NEAR = /\b(block(ed|ing|s)?|fail(ed|ing|s|ure)?|hold|reject(ed|s)?|revert(ed|s)?|pending|until|unless|conditional)\b/;
-const MUST = /\bmusts?\b/g;
+const MUST = /\bmusts?\b/;
 export function countedPass(body) {
   const lines = String(body ?? "").replace(/\r\n?|\u2028|\u2029/g, "\n").trim().split("\n");
   const norm = (t) => t.toLowerCase().replace(APOSTROPHES, "'");
@@ -147,14 +147,23 @@ export function countedPass(body) {
   const m = !s && first.match(MARKER);
   const v = m && lines[1]?.trim().match(/^verdict:\s*(pass|pass with notes)\s*$/i);
   if (!s && !v) return undefined;
-  const near = norm(lines.slice(s ? 1 : 2, s ? 3 : 4).join("\n"));
-  const musts = (near.match(MUST) ?? []).length - (near.match(/\bno\s+musts?\b/g) ?? []).length;
-  if (NEAR.test(near) || musts > 0) return undefined;
+  const near = norm(lines.slice(s ? 1 : 2).filter((l) => l.trim()).slice(0, 2).join("\n"));
+  // "No Must." counts as harmless only when nothing follows it on that clause ("No Must except M1" does not).
+  const bare = near.replace(/\bno\s+musts?(?=\s*([.;]|$))/gm, " ");
+  if (NEAR.test(near) || MUST.test(bare) || /\bmust[\s-]*fix\b|\bm\d+\b/.test(bare)) return undefined;
   return s ? { lens: s[1].toUpperCase(), sha: s[3], verdict: s[4].toUpperCase() } : { lens: m[1].toUpperCase(), sha: m[2], verdict: v[1].toUpperCase() };
 }
 
+/** True for a comment that looks like a review: a review word near the top, or a stop phrase. Machine notes (other markers) are not. */
+export function reviewLike(body) {
+  const lines = String(body ?? "").replace(/\r\n?|\u2028|\u2029/g, "\n").trim().split("\n");
+  if (/^<!--/.test(lines[0]) && !MARKER.test(lines[0].trim())) return false;
+  const top = lines.slice(0, 3).join("\n").toLowerCase().replace(APOSTROPHES, "'");
+  return /\b(review(er)?|lens|re-?check|verdict|second\s+look)\b/.test(top) || STOP_ANYWHERE.test(lines.slice(0, 15).join("\n").toLowerCase().replace(APOSTROPHES, "'"));
+}
+
 /** The lens letter a free-text review names ("Review A", "lens B"), or undefined. */
-export const lensOf = (body) => String(body ?? "").split("\n")[0].match(/\b(?:review(?:er)?|lens)\s*,?\s*(?:lens\s+)?([ab])\b/i)?.[1]?.toUpperCase();
+export const lensOf = (body) => String(body ?? "").split("\n")[0].match(/\b(?:review(?:er)?|lens)[\s,:-]*(?:lens\s+)?\(?([ab])\b|\blens\s*\(([ab])\)/i)?.slice(1).find(Boolean)?.toUpperCase();
 
 /** Latest lens and red-team verdicts from a PR's comments and reviews, trusted authors only. */
 export function verdictsOf(pr, comments, reviews, trusted) {
@@ -172,7 +181,9 @@ export function verdictsOf(pr, comments, reviews, trusted) {
     const c = countedPass(i.body);
     if (c) { lens.push({ ...c, onHead: sameSha(c.sha, head), counted: true }); continue; }
     const l = parseLens(i.body, pr.number);
-    if (l) lens.push({ ...l, lens: lensOf(i.body), onHead: sameSha(l.sha, head), counted: false });
+    if (l) { lens.push({ ...l, lens: lensOf(i.body), onHead: sameSha(l.sha, head), counted: false }); continue; }
+    // Fail closed: a review-like comment the page cannot read is still kept, so it can raise a warning.
+    if (reviewLike(i.body)) lens.push({ verdict: "UNREAD", sha: undefined, lens: lensOf(i.body), onHead: false, counted: false });
   }
   return { lens, red };
 }
@@ -208,12 +219,17 @@ export function buildModel(data, now) {
 export function founderLine(p) {
   const two = p.lens.slice(-2);
   // The two must be different lenses: the latest Review A and the latest Review B each count once,
-  // only as a strict-format pass on the merged head (see countedPass). A later review from the same
-  // lens, of any kind, replaces its earlier one, so a later FAIL cancels an earlier pass.
+  // only as a strict-format pass on the merged head (see countedPass). A later review the page can
+  // attribute to the same lens replaces its earlier one, so a later FAIL cancels an earlier pass.
   const latest = new Map();
-  for (const v of p.lens) if (v.lens) latest.set(v.lens, v);
-  const onHead = [...latest.values()].filter((v) => v.onHead && v.counted && PASSING.has(v.verdict)).length;
-  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${onHead < 2 ? " (fewer than 2 counted passes on the merged head)" : ""}.`;
+  p.lens.forEach((v, i) => { if (v.lens) latest.set(v.lens, { ...v, i }); });
+  const passes = [...latest.values()].filter((v) => v.onHead && v.counted && PASSING.has(v.verdict));
+  // Fail closed: any later review-like comment that is not itself a counted pass (an unlabelled
+  // "Re-check: FAIL", a verdict the page cannot read) means a person must read it.
+  const first = passes.length ? Math.min(...passes.map((v) => v.i)) : Infinity;
+  const unread = p.lens.some((v, i) => i > first && !v.counted);
+  const warn = passes.length < 2 ? " (fewer than 2 counted passes on the merged head)" : unread ? " (a later review is not a counted pass: read it)" : "";
+  return `- #${p.number} ${p.classes.join(", ")}: ${two.length ? two.map(word).join("; ") : "no lens verdict found"}${warn}.`;
 }
 
 /** Pure: the weekly skim of D-117 merges, one line each, no line cap. */

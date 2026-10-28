@@ -257,3 +257,29 @@ test("only a strict-format review counts toward the two; free text never does", 
   ];
   for (const b of never) assert.equal(countedPass(b), undefined, b);
 });
+
+test("fail closed: a later review the page cannot count raises a warning (Lens B, 28 Oct, at 44b7333)", () => {
+  const H7 = HEAD.slice(0, 7);
+  const pr = { number: 9, head: { sha: HEAD } };
+  const passes = [c(`## Review A at ${H7}: PASS`, 6), c(`## Review B at ${H7}: PASS`, 5)];
+  const line = (later) => founderLine({ number: 9, classes: ["database"], ...verdictsOf(pr, [...passes, ...later], [], ME) });
+  assert.doesNotMatch(line([]), /fewer|read it/, "two strict passes from A and B, nothing later");
+  for (const body of [
+    "Lens-B check: FAIL",
+    "Second lens (B): FAIL",
+    "Re-check: FAIL",
+    `Review A at ${H7} (FAIL): see below`,
+    `Lens B re-check at ${H7}\nM1 is not fixed.`,
+    `Notes on the head\n\nDO NOT MERGE.`,
+  ]) assert.match(line([c(body, 1)]), /fewer than 2 counted passes|a later review is not a counted pass/, body);
+  // A machine note (another marker) is not a review and raises nothing.
+  assert.doesNotMatch(line([c("<!-- merge-train -->\nQueued for the 14:00 window.", 1)]), /read it|fewer/);
+});
+
+test("near-verdict window skips blank lines; 'No Must' does not hide a named Must (Lens B, 28 Oct)", () => {
+  const H = "97b50e1";
+  for (const b of [`## Review A at ${H}: PASS\n\n\nBlocked on #306.`, `## Review A at ${H}: PASS\nNo Must except M1.`, `## Review A at ${H}: PASS\nNo must-fix: M1 remains.`]) {
+    assert.equal(countedPass(b), undefined, b);
+  }
+  assert.ok(countedPass(`## Review A at ${H}: PASS\n\nNo Must.\n\nNotes below.`));
+});
