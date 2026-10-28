@@ -75,7 +75,7 @@
 - A due-date countdown or due-date push (B-REQ-015).
 - Letter text, transcript or audio reference in any notification (LEGAL-REQ-054).
 - Email or SMS letter reminders. One channel by default (R2 F13 row; R1-S15). The transactional plan reminder emails in `docs/emails/CATALOG.md` section 7 are F14's, carry no letter prompt and are not reminders to write.
-- Notifications that change behaviour from the server without a release (B14: never server-driven if it changes data collection; 2.3.1(a) no hidden features, R4-S55).
+- Notifications that change behaviour from the server without a release (B14: never server-driven if it changes data collection; 2.5.19 no hidden features, R4-S55).
 
 ## 5. Market reference
 

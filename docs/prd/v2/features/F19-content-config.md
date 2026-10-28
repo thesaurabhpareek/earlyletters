@@ -17,7 +17,7 @@
 
 - [D] Prompts, tips, onboarding story cards, announcements, remote config, flags, kill switches and pack manifests are server-delivered as typed, schema-validated, signed, cached blocks; the app always works from its last good copy; nothing that changes data collection or the paywall, or that could slip past App Review, is server-driven (B14, brief item 16).
 - [D] Remote config has one source: ADR 0016's signed config document. D-035's `app_config` table is superseded and not built (D-068, M12).
-- [F] App Review 2.3.1(a) forbids hidden or undocumented features and asks that every feature be described in the review notes; 2.5.2 forbids downloaded code that changes features (R4 section 5, R4-S55). Kill switches that turn a reviewed feature off are allowed; flags that turn an unreviewed one on are not (R4 section 5).
+- [F] App Review 2.5.19 forbids hidden or undocumented features and 2.3.1(a) asks that every feature be described in the review notes (Apple moved the hidden-features text to 2.5.19; checked 28 Oct 2026); 2.5.2 forbids downloaded code that changes features (R4 section 5, R4-S55). Kill switches that turn a reviewed feature off are allowed; flags that turn an unreviewed one on are not (R4 section 5).
 - [F] LEGAL-REQ-040 requires remote, audited switches that take effect within 5 minutes, while local recording, reading and export keep working.
 - [D] The app download stays under 40 MB; speech models and every non-English pack download on demand, checked by SHA-256 against a signed manifest (B13, brief item 15). Model files sit on a zero-egress or free-egress host, never Supabase egress (D-046).
 - [F] Most of it is built: contracts and Ed25519 signing in `packages/api`, the document client in `apps/mobile/src/lib/remote`, the pack engine in `apps/mobile/src/lib/packs`, four block components in `apps/mobile/src/components/content-blocks`, two Edge Functions (`supabase/functions/config`, `content`) and the offline publisher `scripts/packs/publish.ts`. The trusted key list ships empty (`packages/api/src/keys.ts`), so the app trusts nothing yet (BL-335), and nothing is published (`supabase/functions/config/published.ts` holds `null`).
@@ -68,7 +68,7 @@
 - Any key that turns off recording, typing, saving, reading, playback or export (LEGAL-REQ-040).
 - Any key for analytics, consent, sampling or anything else that changes what is collected (B14; F18-REQ-010).
 - Any key for paywall layout, prices, copy, triggers or the order of Plus offers (B14). The only Plus-adjacent key is `freeLettersAllowance`, which may only raise the reviewed 2 (M1).
-- A flag that enables a feature the reviewed build did not show (2.3.1(a)); a `child-input` flag (LEGAL-REQ-059: no such key exists).
+- A flag that enables a feature the reviewed build did not show (2.5.19, 2.3.1(a)); a `child-input` flag (LEGAL-REQ-059: no such key exists).
 - Machine rewriting turned on by config (F06-REQ-039).
 
 ## 5. Market reference
@@ -79,7 +79,7 @@
 | Day One | Daily prompts and templates on the free plan [F] R1-S23 | 4.8 | n/a | **Match** [R] |
 | From, Mama | Daily curated Reflect tab [F] R1-S20 | 4.9 (48) | n/a | Neutral |
 | Apple SpeechAnalyzer | Apple manages model downloads in system storage; no app size cost [F] R1-S70 | Arabic asset download failures in a beta [S] R1-S27 | n/a | **Match** a visible download state and retry [R] |
-| Apple rules | 2.3.1 no hidden features; 2.5.2 no downloaded code that changes features [F] R1-S49 | n/a | n/a | **Match**: words and data only |
+| Apple rules | 2.5.19 no hidden features (cited as 2.3.1 before 28 Oct 2026); 2.5.2 no downloaded code that changes features [F] R1-S49 | n/a | n/a | **Match**: words and data only |
 | Competitor internals | How competitors deliver remote config | **Unverified** (not observable from public pages, R1 F19) | n/a | n/a |
 
 ## 6. Experience
