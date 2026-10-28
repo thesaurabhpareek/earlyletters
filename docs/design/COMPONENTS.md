@@ -405,7 +405,7 @@ Added after the QA journey critique (J05-03, J05-04, J06-13, J10-11, J11-07 and 
 - **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off, a crash). Content scrolls, actions stay put, so nothing clips at AX5. A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
 - **`InlineState`:** the same words as a calm card for one region of a screen that has other content (Review while words are on their way, a failed transcription). `children` hold a progress line.
 - **`loading`:** the drawing breathes (the slowest loop we own, off under Reduce Motion) and the region is announced as busy. It never carries a primary action; a way out (Type instead) is quiet.
-- **Root:** `app/+not-found.tsx` and the root `ErrorBoundary` use it (`StateScreenView`, which reads nothing from navigation because the navigator is what crashed). The error text is never shown or logged.
+- **Root:** `app/+not-found.tsx` uses `StateScreen` with the window drawing (S49). The root `ErrorBoundary` and launch recovery use `PlainScreen` (`components/resilience/plain-screen.tsx`, S50, S51). It draws the same block without providers, motion or navigation, because those may be what failed. The error text is never shown or logged.
 - **Copy:** no new wording. Titles and bodies come from `errors.*`, `reader.*`, `wordsCopy`, `pendingCopy` as before.
 
 ### 2.1a ModalHeader and BackButton (one back/close idiom per context)
