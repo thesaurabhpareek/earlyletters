@@ -12,8 +12,9 @@ test('[J04] Tonight: one question, another thought, a card for the waiting lette
   // One question on screen: the prompt. No subtitle, no caps label (its words are now only the prompt's hint).
   await expect(app.getByText('A thought to start with', { exact: false })).toHaveCount(0);
   await expect(app.getByText(/to know about today\?/)).toHaveCount(0);
-  // The dateline is read without its separator ("Asha, 7 months"); the card shows the first words and its action.
-  await expect(app.getByLabel(/^Asha, 7 months/)).toBeVisible();
+  // The dateline is read without its separator ("Asha, 7 months"); the card shows the first words and its action. The seed
+  // dates the birthday 214 days before now, so the age is 6 months in some runs (31 Jan to 27 Feb) and 7 in the rest.
+  await expect(app.getByLabel(/^Asha, [67] months/)).toBeVisible();
   await expect(app.getByText(SEEDED_WORDS)).toBeVisible();
   await expect(app.getByText('Read it back', { exact: true })).toBeVisible();
   await expect(app.getByRole('button', { name: /Asha, um, today you you held the spoon.*Read it back\.$/ })).toHaveCount(1);
