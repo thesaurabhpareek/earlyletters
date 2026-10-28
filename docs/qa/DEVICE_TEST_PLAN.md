@@ -22,6 +22,8 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | Item | Needs | When (`08-delivery.md` 10.2) |
 |---|---|---|
 | S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
+| S1-28 the Family tab, invite and joining a book (P8b) | Switch on; staging; two iPhones on two Apple Accounts (a fresh install for the joiner) | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
@@ -292,11 +294,25 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
 
-### S1-27 The Family tab, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
+### S1-27 Sign-in and Account screens (EXPERIENCE_PASS S52 to S56, package P8a; PR #310)
+- **Needs:** a switch-on build against staging (build 2), a drill account, the fictional family Asha. What the web build cannot show: the native sheet, AutoFill, VoiceOver, Dynamic Type, the native confirm.
+- **Steps:**
+  - (a) **Row 5b.** On a fresh install, run first run and keep the first letter. The Book appears with the letter in its month, and about 600 ms later the sign-in sheet ("Keep Asha's book on any phone") rises over the Book. It never replaces Review, and no frame of Tonight shows between them. Tap Not now: the Book stays as it was.
+  - (b) **Sensitive data at AX3 and AX5.** Sign in on an account with no sensitive-data answer. On the sensitive-data step at AX3 and at AX5, on an SE 3 and a 6.1-inch phone, "Agree and sync" and "Keep on this phone" are the same height and width. If one wraps, the other grows with it. Both are reachable.
+  - (c) **Terms at AX5.** On a new account, the Terms step at AX5: the agree line ("By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.") is fully visible, never cut, and sits right above "Agree and continue" (in the scroll at accessibility sizes).
+  - (d) **VoiceOver on the sign-in sheet.** On the sheet from Account (cover beside the title), focus lands on the title. The small book cover is not read. The privacy line is read once, as one element. A busy Google button is announced as busy, not dimmed. An error line is announced once.
+  - (e) **VoiceOver on Account.** The way-in mark (Apple, Google or envelope) is not read. "Signed in with email" and the address are read. With a letter queued (airplane mode, keep a letter, turn airplane mode off and sign out at once), the Sign out row says "Your newest letters are still on their way. This phone signs out once they are sent." with a spinner, and it is spoken once.
+  - (f) **AutoFill.** Continue with email offers the phone's addresses, and the code screen offers the code from Mail (S1-08 covers the mail apps). After a wrong code the field is empty and the keyboard is up again.
+  - (g) **Agree and sync, later.** On an account that chose "Keep on this phone", Settings > Account > "Agree and sync" opens the sensitive-data step with all its lines. Nothing is recorded until "Agree and sync" is tapped there.
+- **Expected:** All seven hold, with no truncation, no trapped focus and no element read twice.
+- **Record:** S1-27 rows (a) to (g), with the phone, iOS version and text size; screenshots with Asha only.
+- **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
+
+### S1-28 The Family tab, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
 - **Needs:** a switch-on build on two phones and two Apple Accounts (Mama on A with Asha's book; Papa on B, a fresh install), as S1-22.
 - **Steps:** (a) On A, open the Family tab at the default size and at AX5, in light and dark, and with Increase Contrast. Then Invite a co-parent, type "Papa" and Share invite link through Messages to B. (b) On B, fresh install: open the link, pass the age question, sign in, read the ask, tap Join the book, and wait on the joined sheet until the book is on the phone. (c) Then Open the book. (d) Repeat (b) with a new invite, and tap Close on the joined sheet once the book is there. (e) With Reduce Motion on, repeat (b) and (c).
 - **Expected:** (a) The tab is lit low and still, and switching tabs never re-arrives the light; with Increase Contrast it is plain paper. People read as signatures ("From Mama", "You"), with no avatar or email; the privacy line reads "Shared only with the other parent, if you invite them."; nothing truncated at AX5. When the share sheet closes, the invite sheet closes too, "The invite waits on the Family tab until they join." shows above the tab bar, and the pending row is in the list. (b) Before sign-in, no child name and no inviter on screen. The ask shows only "Invited by Mama". **The joined sheet stays up while the book comes down** (P8b's onboarding guard: on the web the welcome's hand-off to the Book would otherwise replace the sheet as soon as the book arrives, and that `router.replace` acting on the focused modal on iOS is an inference from the web build, checked only here). The cover appears with "Asha" and opens. (c) The sheet closes onto the Book on Asha's book, and its light rises from unlit over about 1.2 s, once. (d) Close lands on the Book with its usual light, with no second rise. (e) The cover is shown open at once, and the Book is lit at once.
-- **Record:** S1-27 row per sub-step a to e, with the phone, iOS version and build: the joined sheet stayed until Open the book or Close (yes, no; for no, what showed instead); the light rose once on (c) and not on (d) (yes, no).
+- **Record:** S1-28 row per sub-step a to e, with the phone, iOS version and build: the joined sheet stayed until Open the book or Close (yes, no; for no, what showed instead); the light rose once on (c) and not on (d) (yes, no).
 - **Update:** a "no" on (b) is a stop for S59 and goes to the coordinator and P8b the same day (`apps/mobile/src/components/family/welcome-handoff.logic.ts`, `apps/mobile/src/app/onboarding.tsx`).
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
