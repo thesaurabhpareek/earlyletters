@@ -104,7 +104,8 @@ export function effective(cfg, now, profileName) {
     share,
     total,
     // What all scheduled (non-interactive) lanes may use together.
-    pool: { runs: Math.floor(total.runs * (1 - share)), cost_usd: Math.round(total.cost_usd * (1 - share) * 100) / 100 },
+    // Rounded to 6 places before flooring: 1 - 0.8 is 0.19999999999999996 in floating point.
+    pool: { runs: Math.floor(Math.round(total.runs * (1 - share) * 1e6) / 1e6), cost_usd: Math.round(total.cost_usd * (1 - share) * 100) / 100 },
     lanes,
   };
 }
