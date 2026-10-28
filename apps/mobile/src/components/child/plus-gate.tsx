@@ -18,10 +18,12 @@
  * Motion: the sheet rises on `standard` (useSheetMotion) over a scrim that fades in; the held card enters with
  * `motion.enter`; the buttons are there from the first frame (MOTION principle 2). Reduce Motion: everything fades.
  * Accessibility: modal for VoiceOver (the Review behind cannot be reached), focus on the title, the held card read as
- * one element, 44 pt targets; at accessibility text sizes the buttons move into the scroll, under the words.
+ * one element, 44 pt targets. At accessibility text sizes the footer holds only "See Plus" and "Keep it here for now",
+ * on the first screen; every line of text is in the scroll, the held note right after the title; the held card and
+ * "Redeem a code" follow (keepSheetLayout).
  */
 import * as React from 'react';
-import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
+import { AccessibilityInfo, BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
@@ -36,8 +38,7 @@ import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { STANDARD_EASING, useMotion, useSheetMotion } from '@/lib/motion';
-import { footerPlacement } from '@/lib/review-layout.logic';
-import { heldCardLabel, heldCardTilt, heldWords, keepSheetView, type HeldLetter, type HeldOn } from './plus-gate.logic';
+import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, type HeldLetter, type HeldOn, type KeepSheetBlock, type KeepSheetLine } from './plus-gate.logic';
 
 export type { HeldLetter } from './plus-gate.logic';
 
@@ -90,7 +91,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const sheet = useSheetMotion();
   const insets = useSafeAreaInsets();
   const ax = useIsAccessibilitySize();
-  const inline = footerPlacement(ax) === 'inline';
+  const layout = keepSheetLayout(ax);
   const title = React.useRef<RNText>(null);
   const [opening, setOpening] = React.useState(false);
   const [offline, setOffline] = React.useState(false);
@@ -116,6 +117,27 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   React.useEffect(() => {
     if (plan.plusOn) carryOn();
   }, [plan.plusOn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A note that arrives after a tap (See Plus offline) is seen and heard: at accessibility sizes it is a line in the
+  // scroll, so scroll to it once it is laid out, and tell VoiceOver (iOS does not read accessibilityLiveRegion). The
+  // note is a copy string from packages/content. A note already there when the sheet opens is read in order instead.
+  const scroll = React.useRef<ScrollView>(null);
+  const wordsY = React.useRef(0);
+  const noteY = React.useRef(0);
+  const openingNote = React.useRef(view.note);
+  React.useEffect(() => {
+    const note = view.note;
+    if (!note || note === openingNote.current) return;
+    const id = setTimeout(() => {
+      try {
+        if (layout.words.includes('note')) scroll.current?.scrollTo({ y: Math.max(0, wordsY.current + noteY.current - tokens.space[4]), animated: false });
+        AccessibilityInfo.announceForAccessibility(note);
+      } catch {
+        // the note is still on the sheet, in reading order
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [view.note]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Android's back returns to the letter, as VoiceOver's escape does; it never holds or keeps anything.
   React.useEffect(() => {
@@ -158,22 +180,48 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const leaveSheet =
     sheet.kind === 'fade' ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never) : SlideOutDown.duration(M.exitMs).easing(STANDARD_EASING).reduceMotion(ReduceMotion.Never);
 
+  const line: Record<KeepSheetLine, React.ReactNode> = {
+    title: (
+      <Text key="title" ref={title} variant="title1" asHeading>
+        {fill(k.title, { child: childName })}
+      </Text>
+    ),
+    body: (
+      <Text key="body" variant="body">{view.body}</Text>
+    ),
+    // Where the letter waits: trust copy, so never below subhead (P1's floor, lib/review-layout.logic.ts).
+    heldNote: (
+      <Text key="heldNote" variant="subhead" tone="muted" testID="plusGate.heldNote">
+        {view.heldNote}
+      </Text>
+    ),
+    note: view.note ? (
+      <Text key="note" variant="footnote" accessibilityLiveRegion="polite" className="px-2 pb-1 text-center" onLayout={(e) => (noteY.current = e.nativeEvent.layout.y)} testID="plusGate.note">
+        {view.note}
+      </Text>
+    ) : null,
+  };
   // One primary. Without Apple's store on this device, "Keep it here for now" is the only way on, so it is the primary.
-  const actions = (
-    <View className="gap-1" testID="plusGate.actions">
-      {view.canOpenStore ? (
-        <Button size="lg" fullWidth label={k.seePlus} onPress={() => void open()} disabled={opening} accessibilityHint={opening ? billingCopy.gate.opening : undefined} testID="plusGate.seePlus" />
-      ) : null}
-      {view.note ? (
-        <Text variant="footnote" accessibilityLiveRegion="polite" className="px-2 pb-1 text-center" testID="plusGate.note">
-          {view.note}
-        </Text>
-      ) : null}
-      <Button size={view.canOpenStore ? 'md' : 'lg'} variant={view.canOpenStore ? 'quiet' : 'primary'} fullWidth label={k.holdButton} onPress={onHold} testID="plusGate.hold" />
-      {view.canOpenStore ? <Button variant="quiet" size="sm" label={k.redeemLink} onPress={() => void redeem()} disabled={opening} className="self-center" testID="plusGate.redeem" /> : null}
-      {devShortcutsAllowed && onContinueDev ? <Button variant="outline" fullWidth label={copy.common.continueButton} onPress={onContinueDev} /> : null}
-    </View>
-  );
+  const part: Record<KeepSheetBlock, React.ReactNode> = {
+    card: held ? <HeldCard key="card" held={held} entering={motion.enter(0)} tilt={heldCardTilt(ax)} surface={c.surfaceRaised} /> : null,
+    words: (
+      <View key="words" onLayout={(e) => (wordsY.current = e.nativeEvent.layout.y)} style={{ gap: tokens.space[3] }}>
+        {layout.words.map((w) => line[w])}
+      </View>
+    ),
+    seePlus: view.canOpenStore ? (
+      <Button key="seePlus" size="lg" fullWidth label={k.seePlus} onPress={() => void open()} disabled={opening} accessibilityHint={opening ? billingCopy.gate.opening : undefined} testID="plusGate.seePlus" />
+    ) : null,
+    // At the default size the note sits under See Plus in the footer; at accessibility sizes it is a line of the words.
+    note: layout.pinned.includes('note') ? line.note : null,
+    hold: <Button key="hold" size={view.canOpenStore ? 'md' : 'lg'} variant={view.canOpenStore ? 'quiet' : 'primary'} fullWidth label={k.holdButton} onPress={onHold} testID="plusGate.hold" />,
+    redeem: (
+      <React.Fragment key="redeem">
+        {view.canOpenStore ? <Button variant="quiet" size="sm" label={k.redeemLink} onPress={() => void redeem()} disabled={opening} className="self-center" testID="plusGate.redeem" /> : null}
+        {devShortcutsAllowed && onContinueDev ? <Button variant="outline" fullWidth label={copy.common.continueButton} onPress={onContinueDev} /> : null}
+      </React.Fragment>
+    ),
+  };
 
   return (
     // Modal for VoiceOver: everything of Review's behind this layer is out of reach while it is up.
@@ -200,21 +248,13 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
           overflow: 'hidden',
           ...(scheme === 'dark' ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line } : null),
         }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
-          {held ? <HeldCard held={held} entering={motion.enter(0)} tilt={heldCardTilt(ax)} surface={c.surfaceRaised} /> : null}
-          <View style={{ gap: tokens.space[3] }}>
-            <Text ref={title} variant="title1" asHeading>
-              {fill(k.title, { child: childName })}
-            </Text>
-            <Text variant="body">{view.body}</Text>
-            {/* Where the letter waits: trust copy, so never below subhead (P1's floor, lib/review-layout.logic.ts). */}
-            <Text variant="subhead" tone="muted" testID="plusGate.heldNote">
-              {view.heldNote}
-            </Text>
-          </View>
-          {inline ? <View style={{ paddingTop: tokens.space[2] }}>{actions}</View> : null}
+        <ScrollView ref={scroll} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
+          {layout.scroll.map((b) => part[b])}
         </ScrollView>
-        {inline ? null : <View style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: Math.max(insets.bottom, tokens.space[3]) }}>{actions}</View>}
+        {/* The way on, always on screen: at every text size "Keep it here for now" is in this footer (keepSheetLayout). */}
+        <View className="gap-1" testID="plusGate.actions" style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: Math.max(insets.bottom, tokens.space[3]) }}>
+          {layout.pinned.map((b) => part[b])}
+        </View>
       </Animated.View>
     </View>
   );

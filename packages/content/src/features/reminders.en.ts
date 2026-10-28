@@ -20,15 +20,17 @@ export const reminderCopy = {
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Whatever today held, it belongs in the book.' },
     ],
-    monthOpen: { title: 'Month {month} begins', body: 'A new chapter in the book is open.' },
+    // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
+    monthOpen: { title: 'Month {month} begins', body: 'A new month in the book is open.' },
     birthday: { title: 'A birthday today', body: 'A year of letters. Want to read them together today?' },
     birthdays: { title: 'Birthdays today', body: 'A year of letters. Want to read them together today?' },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {
-    monthTitle: 'New chapters today',
-    monthBodyNames: 'New chapters for {child} are open.',
-    monthBodyNeutral: 'A new chapter is open in each book.',
+    // Each book's own new month (BRAND.md glossary: month, never chapter); the title is used when the month numbers differ.
+    monthTitle: 'A new month begins',
+    monthBodyNames: 'A new month is open for {child}.',
+    monthBodyNeutral: 'A new month is open in each book.',
   },
   /**
    * The sheet before the iOS permission alert (Apple HIG, Privacy, pre-alert
