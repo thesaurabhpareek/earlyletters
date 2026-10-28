@@ -14,7 +14,7 @@ import { checkChildName, clampText, CHILD_NAME_MAX, latestDueDate, nearLimit, te
 import { router } from 'expo-router';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import * as React from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type Text as RNText, type TextInput } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
@@ -28,13 +28,12 @@ import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
+import { CoverHeading, useCoverPlace } from './cover-heading';
 import { DateField, type DateFieldHandle } from './date-field';
 import { addChildBlock, addChildCta, addChildValues } from './add-child-form.logic';
 
 /** The cover takes a typed name after this pause, with no motion per letter (S05, as first run). */
 const COVER_PAUSE_MS = 300;
-/** With the keyboard up and less free height than this (iPhone SE), the cover steps aside (S05, as first run). */
-const COVER_MIN_FREE_HEIGHT = 640;
 
 function useSettled<T>(value: T, ms: number): T {
   const [settled, setSettled] = React.useState(value);
@@ -43,19 +42,6 @@ function useSettled<T>(value: T, ms: number): T {
     return () => clearTimeout(id);
   }, [value, ms]);
   return settled;
-}
-
-function useKeyboardHeight(): number {
-  const [height, setHeight] = React.useState(0);
-  React.useEffect(() => {
-    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return height;
 }
 
 export function AddChildForm() {
@@ -72,9 +58,8 @@ export function AddChildForm() {
   const [dateShown, setDateShown] = React.useState(false);
   const [nudged, setNudged] = React.useState(false);
   const coverName = useSettled(name, COVER_PAUSE_MS);
-  const keyboard = useKeyboardHeight();
-  const { height: windowHeight } = useWindowDimensions();
-  const showCover = keyboard === 0 || windowHeight - keyboard >= COVER_MIN_FREE_HEIGHT;
+  // Beside the heading, under it at accessibility text sizes, or away while the keyboard leaves under 480 pt (S05, S47).
+  const coverPlace = useCoverPlace();
 
   useFocusOnMount(heading);
   React.useEffect(() => {
@@ -109,20 +94,14 @@ export function AddChildForm() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
       <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-6 pt-4" keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic">
-        <View className="flex-row items-start gap-4">
-          <Text ref={heading} variant="title1" asHeading={1} className="flex-1">
-            {o.title}
-          </Text>
-          {showCover ? (
-            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}>
-              <BookCover name={coverName} size="sm" />
-            </Animated.View>
-          ) : null}
-        </View>
+        <CoverHeading title={o.title} headingRef={heading} place={coverPlace}>
+          <BookCover name={coverName} size="sm" />
+        </CoverHeading>
 
         <TextField
           ref={nameField}
           label={o.nameLabel}
+          face="serif"
           value={name}
           onChangeText={(v) => setName(clampText(v, CHILD_NAME_MAX))}
           placeholder={o.namePlaceholder}
