@@ -96,10 +96,10 @@ describe('[S41] Plan', () => {
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
       for (const date of ['November 13, 2026', 'November 12, 2026']) expect(said.filter((x) => x.includes(date)).length, date).toBeLessThanOrEqual(1);
     }
-    // The promise sits where plan.off and plus.promise once both said "Your first two letters are free.".
+    // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
     expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise\}>/);
-    expect(plan).not.toMatch(/copy\.plus\.promise|p\.off\b/);
+    expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
 
