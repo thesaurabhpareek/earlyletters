@@ -1,6 +1,7 @@
 // Moved from apps/mobile/src/lib/account-deletion/copy.ts on 3 Oct 2026; that file now re-exports this one.
 // Account deletion screens (PRD C-REQ-019, DELETION_AND_EXPORT_SPEC 2.6.1, LEGAL-REQ-029).
-// Words as EXPERIENCE_PASS_2026-10 S64 writes them (package P8c), tested in test/server-surfaces-account-deletion.test.ts.
+// Words as EXPERIENCE_PASS_2026-10 S64 writes them (package P8c), pinned in test/server-surfaces-account-deletion.test.ts
+// and held to the content rules by rules.test.ts (the `accountDeletionCopy` row of test/support/copy-surfaces.ts).
 // Content rules apply: no em or en dashes, curly quotes, ellipsis or emoji; calm, no fear or
 // loss language; never gender the child. Placeholders: {child}, {coParent}, {count}, {date}.
 

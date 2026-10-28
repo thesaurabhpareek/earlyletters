@@ -7,16 +7,15 @@
  *    it keeps today's words, and S64's words wait beside it as `what.introProposed` until counsel clears them;
  *  - the KEEP words the spec's Visual quotes;
  *  - failures say that nothing has changed (offline says it first);
- *  - no "we" or "our" outside the held intro (deletion disclosure, C8) and `what.deletedFamily` (KEEP; never shown
- *    in v1.0: family contributors come in v1.1, D-055);
- *  - no "photos" outside the held intro; no receipt and no "we sent";
- *  - buttons of 22 characters or fewer; only the placeholders this file may use;
- *  - no "only you", "only your family's keys" or "end-to-end"; "stays on this phone" only on the kill path;
- *  - US spellings.
+ *
+ * The content rules over this file (no "we" or "our" outside the held intro and `what.deletedFamily`, no "photos"
+ * outside the held intro, no receipt, buttons of 22 characters or fewer, the placeholders it may use, no "only you",
+ * "only your family's keys" or "end-to-end", "stays on this phone" only on the kill path, US spelling, the app
+ * named only through brand) run in rules.test.ts, from the row for `accountDeletionCopy` in
+ * test/support/copy-surfaces.ts.
  * The page that shows these words is pinned in apps/mobile/test/delete-account.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { brand } from '@scribe/brand';
 import { accountDeletionCopy, accountEmails } from '../src';
 
 type Leaf = { path: string; text: string };
@@ -34,9 +33,6 @@ function at(path: string): unknown {
 }
 
 const ALL = leaves(accountDeletionCopy, '');
-
-const ASHA: Record<string, string> = { child: 'Asha', coParent: 'Papa', count: '12', date: 'November 27, 2026' };
-const fill = (text: string) => text.replace(/\{(\w+)\}/g, (m, k: string) => ASHA[k] ?? m);
 
 /** S64's CHG rows that ship now, as the spec writes them. */
 const CHANGED: Record<string, string> = {
@@ -72,22 +68,6 @@ const QUOTED: Record<string, string> = {
   'scheduled.cancelled': 'Deletion cancelled. Your letters and books are back, just as they were.',
 };
 
-const BUTTONS = [
-  'exportFirst.button',
-  'subscription.button',
-  'continueButton',
-  'confirm.button',
-  'confirm.back',
-  'scheduled.cancelButton',
-  'scheduled.doneButton',
-  'signedOut.button',
-];
-
-const DISCLOSURE = new Set([HELD.key, HELD.proposedKey]);
-/** KEEP, never shown in v1.0 (logic.ts adds it only for a book with family contributors, v1.1). */
-const NOT_IN_V1 = new Set(['what.deletedFamily']);
-const KILL_PATH = new Set(['notConfigured']);
-
 describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
   it('has every CHG that ships now as the spec writes it', () => {
     for (const [key, words] of Object.entries(CHANGED)) expect(at(key), key).toBe(words);
@@ -111,48 +91,6 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
     expect(accountDeletionCopy.errors.offline.startsWith('Nothing has changed.')).toBe(true);
     // No blame on the person: the line says what the request needs, never "you are offline".
     expect(ALL.filter((l) => /\byou are offline\b|\bplease try again\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-  });
-});
-
-describe('[P8c S64] rules over accountDeletionCopy', () => {
-  it('says "we" or "our" only in the held deletion disclosure and the v1.1 family note (principle 2)', () => {
-    const bad = ALL.filter((l) => !DISCLOSURE.has(l.path) && !NOT_IN_V1.has(l.path) && /\b(?:we|our|us)\b/i.test(l.text));
-    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('never mentions photos outside the held intro, and never promises a receipt', () => {
-    expect(ALL.filter((l) => l.path !== HELD.key && /\bphotos?\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-    expect(ALL.filter((l) => /\breceipt\b|\bwe sent\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-  });
-
-  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
-    for (const key of BUTTONS) {
-      const label = at(key);
-      expect(typeof label, key).toBe('string');
-      expect((label as string).length, key).toBeLessThanOrEqual(22);
-      expect(fill(label as string).length, key).toBeLessThanOrEqual(22);
-    }
-  });
-
-  it('uses only the placeholders this file may use', () => {
-    const allowed = new Set(['child', 'coParent', 'count', 'date']);
-    const used = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => ({ path: l.path, name: m[1] })));
-    expect(used.filter((u) => !allowed.has(u.name)).map((u) => `${u.path}: {${u.name}}`)).toEqual([]);
-    expect(fill(accountDeletionCopy.confirm.body)).not.toMatch(/[{}]/);
-  });
-
-  it('makes no "only you", "only your family\'s keys" or "end-to-end" claim', () => {
-    expect(ALL.filter((l) => /\bonly you\b|\bonly your family'?s keys\b|\bend[- ]to[- ]end\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-  });
-
-  it('says "stays on this phone" only on the kill path (option B, D-100)', () => {
-    expect(ALL.filter((l) => !KILL_PATH.has(l.path) && /\bstays? on (?:this|your|the) phone\b/i.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('spells for the US storefront and names the app only through brand', () => {
-    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i, /\bcolour/i, /\bfavourite/i, /\borganis/i, /\brecognis/i];
-    expect(ALL.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-    expect(ALL.filter((l) => l.text.includes(brand.name)).map((l) => l.path)).toEqual([]);
   });
 });
 
