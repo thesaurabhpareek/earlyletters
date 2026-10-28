@@ -1,18 +1,24 @@
 /**
- * Settings, Plan (PRD C-REQ-016, LEGAL-REQ-048; ADR 0013). The path the
- * Subscription Terms and `plus.legal.cancel` name: Settings, Plan, Manage
- * subscription. Everything that touches money opens Apple's own sheet; this
- * screen only says what StoreKit reports on this phone.
+ * Settings, Plan (PRD C-REQ-016, LEGAL-REQ-048; ADR 0013; EXPERIENCE_PASS_2026-10 S41, package P6). The path the
+ * Subscription Terms and `plus.legal.cancel` name: Settings, Plan, Manage subscription. Everything that touches
+ * money opens Apple's own sheet; this screen only says what StoreKit reports on this phone, and never types a price.
  *
- * Route: /settings/plus. The Settings home row that opens it is wired by the
- * screen's owner.
+ * An iOS Settings list (components/settings/plan.logic.ts): section Plus with "See what Plus adds" (or, with Plus
+ * on, "Plus", its plan and dates) and the registered promise as its footer, once; then Manage subscription (only
+ * with a subscription), Restore purchases with its result inline under it, Redeem a code, and the payment line as
+ * the footer. No lamp. Registered words are today's; the held switches after counsel are `HELD` in plan.logic.ts.
+ *
+ * Route: /settings/plus.
  */
 import { Stack } from 'expo-router';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Linking, ScrollView, Share, View } from 'react-native';
 import { brand } from '@scribe/brand';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
+import { planScreen, restoreResult } from '@/components/settings/plan.logic';
+import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import {
   askPlanReminderPermission,
@@ -20,6 +26,7 @@ import {
   canAskForReminders,
   getPlanReminderPermission,
   manageSubscription,
+  noteLines,
   PlanNoteBody,
   presentPlusStore,
   purchaseConfirmation,
@@ -28,34 +35,12 @@ import {
   restorePurchases,
   usePlan,
   usePlanNote,
-  type PlanLine,
 } from '@/lib/billing';
 import { copy, fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 
 const p = billingCopy.plan;
-
-function statusText(line: PlanLine): string {
-  switch (line.kind) {
-    case 'trial':
-      return [fill(p.trial, { date: longDate(line.until) }), line.cancelBy ? fill(p.trialCancelBy, { cancelBy: longDate(line.cancelBy) }) : '']
-        .filter(Boolean)
-        .join(' ');
-    case 'renews':
-      return fill(p.renews, { date: longDate(line.on) });
-    case 'ends':
-      return fill(p.ends, { date: longDate(line.on) });
-    case 'grace':
-      return p.grace;
-    case 'retry':
-      return p.retry;
-    case 'on':
-      return p.on;
-    default:
-      return p.off;
-  }
-}
 
 type Busy = null | 'store' | 'redeem' | 'manage' | 'restore' | 'refund';
 
@@ -86,9 +71,12 @@ function useNotificationsAllowed(): { allowed: boolean | null; askable: boolean;
 }
 
 export default function PlanSettings() {
+  const { c } = useTheme();
   const plan = usePlan();
   const [busy, setBusy] = useState<Busy>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Restore's answer, shown under its own row (S41); a failure carries the warning mark.
+  const [restored, setRestored] = useState<ReturnType<typeof restoreResult>>(null);
   // Set when Apple's offer code sheet was shown: a redeemed code arrives as an entitlement update,
   // so Plus turning on afterwards is the redemption (D-081). A number-free event, no code is ever read.
   const awaitingCode = useRef(false);
@@ -105,6 +93,7 @@ export default function PlanSettings() {
     haptic('tap');
     setBusy(what);
     setNotice(null);
+    setRestored(null);
     try {
       setNotice(await action());
     } finally {
@@ -112,12 +101,18 @@ export default function PlanSettings() {
     }
   };
 
-  const shared = plan.plusOn && plan.details.ownership === 'familyShared';
   const ownPurchase = plan.details.ownership === 'purchased' && plan.details.status !== 'none';
-  const period = plan.plusOn ? (plan.details.period === 'month' ? p.monthly : plan.details.period === 'year' ? p.yearly : null) : null;
-  const storeNote = plan.storeSupport === 'needs_ios_17' ? p.needsNewerIos : plan.storeSupport === 'unsupported' ? p.unavailable : null;
   // Plan reminders (G-15, a courtesy): the note open now, and a quiet row when notifications are off.
   const note = usePlanNote(plan);
+  const screen = planScreen({
+    line: plan.line,
+    details: plan.details,
+    plusOn: plan.plusOn,
+    storeSupport: plan.storeSupport,
+    // The note says the date already: the row leaves that sentence out, so nothing is said twice (S41).
+    noteLines: note ? noteLines(note, billingCopy.note, { timeZone: timeZone(), formatDay: (ymd) => longDate(ymd) }) : [],
+    longDate: (ymd) => longDate(ymd),
+  });
   const notifications = useNotificationsAllowed();
   const remindable = plan.plusOn && plan.details.ownership === 'purchased' && plan.details.willAutoRenew !== false && (plan.details.status === 'trial' || plan.details.status === 'active');
   const showNotificationsOff = remindable && notifications.allowed === false;
@@ -151,20 +146,26 @@ export default function PlanSettings() {
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: p.title }} />
 
-      <ListSection title={p.statusTitle} footer={copy.plus.promise}>
-        <View accessible className="gap-1 px-4 py-3">
-          <View className="flex-row items-start gap-3">
-            <Text variant="body" className="flex-1">
-              {statusText(plan.line)}
-            </Text>
-            {period && (
-              <Text variant="body" tone="muted">
-                {period}
-              </Text>
-            )}
-          </View>
-          {shared && <Text variant="footnote">{p.shared}</Text>}
-        </View>
+      <ListSection title={p.statusTitle} footer={screen.promise}>
+        {screen.status ? <ListRow title={screen.status.title} subtitle={screen.status.subtitle ?? undefined} value={screen.status.value ?? undefined} testID="plan.status" /> : null}
+        {screen.seePlans?.kind === 'open' ? (
+          <ListRow
+            title={screen.seePlans.title}
+            trailing="chevron"
+            disabled={busy !== null}
+            testID="plan.seePlans"
+            onPress={() =>
+              run('store', async () => {
+                track('plus_offer_viewed', { trigger: 'settings' });
+                const outcome = await presentPlusStore();
+                if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'settings', outcome });
+                return outcome === 'purchased' ? billingCopy.gate.isOn : null;
+              })
+            }
+          />
+        ) : screen.seePlans ? (
+          <ListRow title={screen.seePlans.title} testID="plan.unavailable" />
+        ) : null}
       </ListSection>
 
       {note && (
@@ -183,27 +184,50 @@ export default function PlanSettings() {
 
       <View className="gap-2">
         <ListSection footer={p.payment}>
-          {!plan.plusOn && plan.storeSupport === 'available' && (
+          {screen.manage ? (
             <ListRow
-              title={p.seePlans}
+              title={p.manage}
+              subtitle={p.manageHelp}
               trailing="chevron"
               disabled={busy !== null}
+              testID="plan.manage"
               onPress={() =>
-                run('store', async () => {
-                  track('plus_offer_viewed', { trigger: 'settings' });
-                  const outcome = await presentPlusStore();
-                  if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'settings', outcome });
-                  return outcome === 'purchased' ? billingCopy.gate.isOn : null;
+                run('manage', async () => {
+                  await manageSubscription();
+                  return null;
                 })
               }
             />
-          )}
-          {!plan.plusOn && plan.storeSupport === 'available' && (
+          ) : null}
+          <ListRow
+            title={p.restore}
+            subtitle={busy === 'restore' ? p.restoring : p.restoreHelp}
+            disabled={busy !== null}
+            testID="plan.restore"
+            onPress={() =>
+              run('restore', async () => {
+                const r = await restorePurchases();
+                track('restore_result', { outcome: r });
+                setRestored(restoreResult(r));
+                return null;
+              })
+            }
+          />
+          {restored ? (
+            <View accessible accessibilityLiveRegion="polite" className="flex-row items-start gap-2 px-4 py-3" testID="plan.restoreResult">
+              {restored.failed ? <WarningCircleIcon size={18} color={c.caution} weight="bold" style={{ marginTop: 2 }} /> : null}
+              <Text variant="subhead" className="flex-1">
+                {restored.text}
+              </Text>
+            </View>
+          ) : null}
+          {screen.redeem ? (
             <ListRow
               title={p.redeem}
               subtitle={p.redeemHelp}
               trailing="chevron"
               disabled={busy !== null}
+              testID="plan.redeem"
               onPress={() =>
                 run('redeem', async () => {
                   awaitingCode.current = true;
@@ -214,34 +238,8 @@ export default function PlanSettings() {
                 })
               }
             />
-          )}
-          <ListRow
-            title={p.manage}
-            subtitle={p.manageHelp}
-            trailing="chevron"
-            disabled={busy !== null}
-            onPress={() =>
-              run('manage', async () => {
-                await manageSubscription();
-                return null;
-              })
-            }
-          />
-          <ListRow
-            title={busy === 'restore' ? p.restoring : p.restore}
-            subtitle={p.restoreHelp}
-            disabled={busy !== null}
-            onPress={() =>
-              run('restore', async () => {
-                const r = await restorePurchases();
-                track('restore_result', { outcome: r });
-                return r === 'restored' ? p.restored : r === 'nothing' ? p.restoreNothing : r === 'cancelled' ? null : p.restoreFailed;
-              })
-            }
-          />
-          {ownPurchase && plan.plusOn && (
-            <ListRow title={p.saveCopy} subtitle={p.saveCopyHelp} disabled={busy !== null}  onPress={() => run('manage', saveCopy)} />
-          )}
+          ) : null}
+          {ownPurchase && plan.plusOn && <ListRow title={p.saveCopy} subtitle={p.saveCopyHelp} disabled={busy !== null} onPress={() => run('manage', saveCopy)} />}
           {ownPurchase && (
             <ListRow
               title={p.refund}
@@ -255,11 +253,6 @@ export default function PlanSettings() {
         {notice && (
           <Text variant="footnote" tone="default" accessibilityLiveRegion="polite" className="px-4">
             {notice}
-          </Text>
-        )}
-        {storeNote && (
-          <Text variant="footnote" className="px-4">
-            {storeNote}
           </Text>
         )}
       </View>
