@@ -39,7 +39,7 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
 
   if (state === 'done') {
     return (
-      <p ref={doneRef} tabIndex={-1} className={styles.success}>
+      <p ref={doneRef} tabIndex={-1} role="status" className={styles.success}>
         {c.success}
       </p>
     );
