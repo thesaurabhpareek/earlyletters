@@ -955,8 +955,6 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    // D-085 (amends D-073): no backup is claimed in v1.0.
-    promise: "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters.",
   },
 
   errors: {

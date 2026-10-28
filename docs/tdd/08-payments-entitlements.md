@@ -410,7 +410,7 @@ The Plus sheet is one component, `apps/mobile/src/components/plus/plus-sheet.tsx
 
 **Content (before the button)**
 1. What Plus adds, matching the Subscription Terms list exactly. The list is one string set in `packages/content`, and a test asserts equality with `subscription-terms.md` (Apple 3.1.2(c); counsel note in Subscription Terms).
-2. The promise line `plus.promise`: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (K-11)
+2. The promise line `billingCopy.store.promise` (registered; it was `plus.promise`, deleted in P7): "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus." (K-11)
 3. Two plan options. **Neither is preselected** (C-REQ-022). Each leads with the billed amount ("$29.99 a year") from `StoreProduct.priceString`; any free period is secondary text. A per-month equivalent of the annual price is not shown in v1 (Rec: it only adds review risk).
 4. Under the chosen plan: `plus.legal.renewTrial` when the store reports intro eligibility (`checkTrialOrIntroductoryPriceEligibility`), otherwise `plus.legal.renewNoTrial`. `{trialLength}` comes from the product's intro offer and `{cancelByDate}` is computed from it. No "free" word appears unless eligible (C-REQ-022, H2).
 5. `plus.legal.cancel`, then `plus.legal.agree` directly above the button (H3). The links `plus.legal.links` (Terms, Privacy, Subscription terms, Restore) open in-app.
