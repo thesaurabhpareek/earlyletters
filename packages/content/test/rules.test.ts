@@ -532,12 +532,17 @@ describe('brand name and v1.0 claims', () => {
     // The registered promise (billingCopy.store.promise) is the Plan screen's footer and the store line; it carries the
     // first two sentences that `plus.promise` repeated. `plus.promise` is deleted (P7).
     const promise = features.billing.store.promise;
+    // The Plan help line must stay in the sweep below: deleting it from the array above would let a claim into it.
+    expect(plus.map((l) => l.path)).toContain('settingsHome.planHelp');
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
-    expect(promise).not.toMatch(/backup/);
+    // The two lines that carry the Plus promise (the registered sentences 1 and 2, and the Plan help line with sentence 3)
+    // never claim backup, and never claim what Plus no longer gates (D-085, D-082, D-083).
+    const PROMISES = [promise, en.settingsHome.planHelp];
+    for (const line of PROMISES) expect(line, line).not.toMatch(/backup/i);
     expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
     expect(promise).toMatch(/first two letters are free/);
     expect(en.settingsHome.planHelp).toMatch(/keep adding letters/);
-    expect(promise).not.toMatch(/Read together|more children|more books|free, always/);
+    for (const line of PROMISES) expect(line, line).not.toMatch(/Read together|more children|more books|free, always/);
     // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
     expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
     // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
