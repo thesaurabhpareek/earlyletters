@@ -8,6 +8,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { site } from '@/content/site';
 import { submitNotify } from '@/lib/notify/client';
 import { track } from '@/lib/analytics';
+import { tap } from '@/lib/haptics';
 import styles from './NotifyForm.module.css';
 
 const c = site.notify;
@@ -24,6 +25,7 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
   useEffect(() => {
     if (state === 'done' || state === 'already') {
       doneRef.current?.focus();
+      tap('success');
       onDone?.();
     }
   }, [state, onDone]);
