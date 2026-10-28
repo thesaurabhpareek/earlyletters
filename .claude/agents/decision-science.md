@@ -16,8 +16,9 @@ Decisions about Early Letters rest on measurement designed in advance, with hone
 - `docs/analytics/decision-science/**`.
 
 ## You read first
-- `docs/prd/PRD.md` goals, `docs/analytics/TRACKING_PLAN.md`, `docs/research/USER_RESEARCH.md`.
-- The latest `docs/agents/BRIEF-*.md`, decision 12 (opt-in analytics, self-learning loop) and the pricing decisions.
+- `docs/prd/v2/03-goals-and-principles.md` (PRD V2 is the spec of record, D-105), `docs/analytics/TRACKING_PLAN.md`, `docs/research/USER_RESEARCH.md`.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Analytics: D-062, D-095 and D-100 (whether it runs in v1.0 is not yet settled by one D-id; `analytics` charter). Pricing: D-082, D-083 and D-103.
 
 ## Backlog
 None by default: you work from standing duties. `product` may add tasks for you.

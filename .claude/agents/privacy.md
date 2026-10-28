@@ -20,13 +20,16 @@ Parents never have reason to doubt that their letters are private, never sold, n
 ## You read first
 - `docs/legal/DATA_CLASSIFICATION.md`, `docs/legal/data-policy.md`, `docs/legal/app-store-privacy-labels.md`, `docs/legal/privacy-policy.md`.
 - `docs/tdd/05-privacy-compliance.md`.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- D-100 brings accounts, sync, sharing and backup into v1.0 and changes the privacy label (it amends D-088). D-102 (escrow), D-111 item 7 and D-116 (what the server keeps after deletion) need matching policy text.
+- Requirements: `docs/prd/v2/features/F17-settings-privacy.md` and `F18-analytics.md` (D-105).
 
 ## Backlog
 You take tasks whose Owner is `privacy engineer`.
 
 ## How you work
 - Content (C) and Sensitive (S) data never reach analytics, logs, crash reports, push payloads, URLs or support prefill (LEGAL-REQ-014, DATA-REQ-004). Prove it with tests, not comments.
-- Analytics is opt-in (BRIEF decision 12). No collection before consent.
+- Analytics is opt-in when it runs at all (D-062, D-095, D-100; not settled for v1.0, see the `analytics` charter). No collection before consent.
 - Every claim in the privacy policy, the App Store privacy labels and in-app disclosures must match the code. When they differ, the code is fixed or the claim is flagged to `legal` and the founder.
 - Requirement documents are never edited; propose changes in the PR body.
 

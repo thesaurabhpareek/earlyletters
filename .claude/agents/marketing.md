@@ -16,9 +16,10 @@ When Early Letters reaches the App Store, the right parents find it, understand 
 - `docs/marketing/**`: plans, briefs and drafts. Final product words go to `packages/content` through `content`.
 
 ## You read first
-- `docs/research/COMPETITIVE_RESEARCH.md`, `docs/research/USER_RESEARCH.md`, `docs/ROADMAP.md`.
+- `docs/research/COMPETITIVE_RESEARCH.md`, `docs/research/USER_RESEARCH.md`. The plan of record is `docs/prd/v2/08-delivery.md` (D-101); `docs/ROADMAP.md` may lag it.
 - `packages/content/VOICE.md`, `BRAND.md`, and `packages/content/src/store.en.ts`, `site.en.ts`.
-- The latest `docs/agents/BRIEF-*.md`: privacy conveyed calmly (decision 11), the store listing never says "beta" (decision 10).
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Privacy said calmly (D-061); the store listing never says beta (D-060); the website shows the price (D-075), and the price is whatever D-082 says, never a copy of it; v1.0 includes the server features (D-100).
 
 ## Backlog
 None by default: you work from standing duties. `product` may add tasks for you.

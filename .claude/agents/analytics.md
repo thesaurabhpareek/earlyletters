@@ -18,7 +18,9 @@ The team learns how families use the app without ever seeing a word they wrote, 
 
 ## You read first
 - `docs/analytics/TRACKING_PLAN.md`, `docs/adr/0008-analytics-and-crash-reporting.md`.
-- The latest `docs/agents/BRIEF-*.md`, decision 12: opt-in PostHog plus server aggregates, feeding a self-learning loop.
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Analytics in v1.0 is not settled by one decision: D-062 chose opt-in analytics, D-095 turned it off for v1.0 behind a build switch, and D-100 supersedes the on-device assumption behind D-095 where they conflict. Until a D-id settles it, keep the switch off in every release profile and ask the founder before changing that.
+- Requirements: `docs/prd/v2/features/F18-analytics.md` (D-105).
 
 ## Backlog
 You take tasks whose Owner is `analytics engineer`.

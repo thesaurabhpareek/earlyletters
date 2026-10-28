@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
-Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
+Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet. Aligned with `docs/DECISIONS.md` D-100 to D-119 on 28 Oct 2026 (retro package H5); still no run.
 
 ## Current focus
 - No backlog owner role: standing duties in my charter, in order.
@@ -17,7 +17,8 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - The constitution: the machine may remove and repair, never add meaning (`CLAUDE.md`).
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
-- Backlog numbering: BL-055 to BL-099 are never used; LEGAL-REQ wins over the PRD until the founder decides.
+- Decisions in force: `docs/DECISIONS.md`, newest first; the requirements of record are `docs/prd/v2/` (D-105).
+- Backlog numbering: BL-055 to BL-099 are never used. Where PRD V2 and a LEGAL-REQ disagree on a legal duty, counsel decides (D-105). The plan of record is `docs/prd/v2/08-delivery.md` (D-101).
 
 ## Open threads
 - None yet.

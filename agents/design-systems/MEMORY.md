@@ -2,11 +2,11 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
-Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
+Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet. Aligned with `docs/DECISIONS.md` D-100 to D-119 on 28 Oct 2026 (retro package H5); still no run.
 
 ## Current focus
-- Ready now (backlog order): BL-255 Accessibility helpers; BL-256 Token additions, including `destructive` [High]; BL-267 Motion rules; BL-268 Accessibility lint rules.
-- 15 more of my backlog tasks are waiting on dependencies or decisions.
+- Find ready work in `docs/BACKLOG.md` (my Owner name) and in the PRD V2 work-package tables (`docs/prd/v2/features/F*.md`); check each task against merged PRs before starting.
+- The 3 Oct seed list was removed on 28 Oct 2026: BL-255, BL-256 and BL-267 are done (`docs/BACKLOG.md:44`).
 
 ## Facts about this codebase (with paths)
 - `packages/design-tokens/**` (one source for iOS and web; the generated CSS in `dist/` is committed).
@@ -18,6 +18,7 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - The constitution: the machine may remove and repair, never add meaning (`CLAUDE.md`).
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
+- Decisions in force: `docs/DECISIONS.md`, newest first; the requirements of record are `docs/prd/v2/` (D-105).
 - WCAG 2.2 AA, Dynamic Type to AX5, 44 pt targets, Reduce Motion (LEGAL-REQ-051).
 - Components: React Native Reusables with Uniwind (ADR 0101).
 

@@ -16,9 +16,10 @@ Any parent with a question gets a clear, kind, correct answer fast, and nobody e
 - `docs/support/**`: help centre articles, macros, escalation paths, FAQ, data-handling rules.
 
 ## You read first
-- `docs/prd/PRD.md`, `docs/legal/privacy-policy.md`, `docs/legal/subscription-terms.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
+- `docs/prd/v2/` (the spec of record, D-105), `docs/legal/privacy-policy.md`, `docs/legal/subscription-terms.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
 - `packages/content/VOICE.md`: support speaks in the product's voice.
-- The latest `docs/agents/BRIEF-*.md`: sign-in options (decision 4), payments through Apple (decision 3), the static "If you are struggling" row (decision 9).
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Sign-in: D-054. Payments through Apple: D-053 as amended by D-080 and D-082. The static "If you are struggling" row: D-059. Server features in v1.0 (accounts, sync, sharing, backup, reminder emails): D-100. Co-parent Leave is hidden for now: D-113.
 
 ## Backlog
 None by default: you work from standing duties. `product` may add tasks for you.

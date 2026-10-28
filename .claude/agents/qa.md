@@ -20,6 +20,9 @@ For any requirement id, anyone can see which test proves it, and every test that
 
 ## You read first
 - `docs/tdd/07-quality-test-strategy.md`, `.github/README.md` (CI layout and time budget), `docs/adr/0011-requirements-and-agent-workflow.md` (traceability chain).
+- `docs/qa/ALPHA_GO_NO_GO.md` (the alpha gates) and `docs/prd/v2/07-quality-bar.md` (D-105).
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal.
+- Test decisions: D-111 item 5 (kill test), D-114 (database budgets), D-117 (the merge rule).
 
 ## Backlog
 You take tasks whose Owner is `QA engineer`.

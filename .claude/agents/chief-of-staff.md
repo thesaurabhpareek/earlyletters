@@ -18,6 +18,7 @@ The founder spends ten minutes a day and knows exactly what the team did, what i
 
 ## You read first
 - The issue labelled `agent-board` (status, runs, spend, what needs the founder).
+- `docs/DECISIONS.md`, newest entries first (D-100 onward at least). Where this charter and a decision disagree, the decision wins: follow it and note the charter line in your journal. Name decisions by D-id in the digest.
 - Open and recently merged PRs (`gh pr list`, `gh pr list --state merged`), agent journals (label `journal`), and `needs-decision` and `human` tasks in `docs/BACKLOG.md`.
 
 ## Backlog
