@@ -2,6 +2,8 @@
 
 Owner: qa engineer (S19 for the device and kill-harness rows). Status: **proposed policy, not yet enforced.** Nothing in CI reads this file today; section 6 lists what would enforce it and is not built. Drafted 28 Oct 2026 against `develop` 6bfb94a9 for RB-34.
 
+Until the guard script in section 6 exists and the coordinator or founder signs this policy off, quarantine by skipping a test is NOT permitted: `docs/agents/OPERATING_MODEL.md` ("Never weaken, skip or delete a test to make it pass") and `docs/engineering/PRINCIPLES.md` rule 2 ("Never delete, skip or loosen a test") stand. Section 3 is a proposal for what may replace them.
+
 It builds on two rules that already exist and does not replace them:
 - TDD 07 section 9.2: "a flaky test may be quarantined for at most 7 days with an owner; quarantined tests still run and report; a P0 requirement may never be left with only quarantined coverage at G3 or later."
 - `apps/mobile/e2e/README.md` ("Flake policy", TDD 07 3.2): a nightly Maestro flow may retry once and a pass on retry files a flake issue; release-candidate runs never retry.
@@ -107,7 +109,7 @@ Extending an expiry is allowed once, by 7 days, by the owner, with a new line on
 ## 5. What is never allowed
 
 1. **Deleting or weakening a test to get to green.** That includes loosening an assertion, widening a tolerance, or removing the line that fails. A test is removed only when its requirement no longer exists (a decision says so) or another test now proves it, named in the PR.
-2. **Fixing a content rule test.** `packages/content/test/rules.test.ts` is never edited, skipped or quarantined to pass; the copy is fixed (CLAUDE.md). The same holds for `no-real-family-data.test.ts`.
+2. **Editing a content rule test to make it pass.** `packages/content/test/rules.test.ts` is never edited, skipped or quarantined to pass; the copy is fixed (CLAUDE.md). The same holds for `no-real-family-data.test.ts`.
 3. **Quarantining, retrying or loosening** any never-waived row: the R-01 and verifier suites, access-rule and leak suites (`npm run test:db`), the kill harness, export completeness, the 18+ gate, consent-before-send (`SCCON`), the no-synthetic-speech check (07 section 5.3). If one of these is unstable, the instability is the defect.
 4. **An open-ended skip.** No `skip` with no owner and no expiry for something that failed.
 5. **Rerunning until green** and calling the last run the result. Each rerun is recorded; the first red stays on the record.
