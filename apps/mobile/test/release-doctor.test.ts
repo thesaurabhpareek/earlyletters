@@ -167,6 +167,20 @@ describe('the App Store Connect key', () => {
     for (const secret of [sent, 'KEY1234567', env.ASC_API_ISSUER_ID, 'BEGIN PRIVATE KEY', 'second line']) expect(out[0].message).not.toContain(secret);
     expect(out[0].message).toContain('Could not sign or send');
   });
+  it('hides the signed token itself when an error echoes it with no "Bearer " in front (the list, not the pattern, must catch it)', async () => {
+    let sent = '';
+    const out = await checkApple(env, false, io({
+      get: async (_url, token) => {
+        sent = token;
+        throw new Error(`proxy said bad request for token ${token} and again ${token}`);
+      },
+    }));
+    expect(sent.split('.').length).toBe(3);
+    expect(out[0].level).toBe('FAIL');
+    expect(out[0].message).not.toContain(sent);
+    expect(out[0].message).not.toContain(sent.split('.')[1]);
+    expect(out[0].message).toContain('[hidden]');
+  });
   it('fails cleanly when the key text is not a key, and sends nothing', async () => {
     let sentAny = false;
     const out = await checkApple(env, false, io({ readKey: () => 'CANARY-KEY-CONTENT', get: async () => { sentAny = true; return { status: 200, body: {} }; } }));

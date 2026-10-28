@@ -11,12 +11,13 @@
 // password: a failure names the variable and the reason, never the value.
 //
 //   npx tsx scripts/release/doctor.ts          # static checks, plus each live check whose variables are set
-//   npx tsx scripts/release/doctor.ts --live   # as above, and a live check whose variable is missing is FAIL
+//   npx tsx scripts/release/doctor.ts --live   # as above; a live check whose variable is missing, or a missing ascAppId, is FAIL
 //
 // A missing ascAppId is a WARN (a submit from your own computer does not need it, as the preflight says) and a FAIL
 // only under --live, which checks the GitHub workflow path.
 // A live check RUNS whenever its variables are set, with or without --live, and the output says so. --live only
-// changes what a missing variable counts as: UNVERIFIED without it, FAIL with it.
+// changes two things: a missing variable is UNVERIFIED without it and FAIL with it, and a missing ascAppId is WARN
+// without it and FAIL with it.
 //
 // Exit code: 0 when nothing is FAIL (WARN, UNVERIFIED and NOT NEEDED never fail the run); 1 when anything is FAIL.
 //
