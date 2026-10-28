@@ -26,7 +26,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!veil) return;
-    const done = window.setTimeout(() => setVeil(false), 1000);
+    const done = window.setTimeout(() => setVeil(false), 800);
     return () => window.clearTimeout(done);
   }, [veil]);
 

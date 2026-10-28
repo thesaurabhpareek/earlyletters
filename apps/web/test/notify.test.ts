@@ -450,7 +450,7 @@ describe('client helper', () => {
     stubFetch(async () => {
       throw new TypeError('network down');
     });
-    expect(await submitNotify(EMAIL)).toEqual({ ok: false, error: 'server' });
+    expect(await submitNotify(EMAIL)).toEqual({ ok: false, error: 'server', network: true });
   });
 });
 

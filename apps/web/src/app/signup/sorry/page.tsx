@@ -19,6 +19,9 @@ export default async function SorryPage({ searchParams }: { searchParams: Promis
       <NoViewTransition />
       <h1 className={styles.line}>{n.sorryTitle}</h1>
       <p className={styles.body}>{body}</p>
+      <Link className={styles.home} href="/#early-access">
+        {n.retry}
+      </Link>
       <Link className={styles.home} href="/">
         {n.home}
       </Link>

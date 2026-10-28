@@ -33,7 +33,7 @@
     linear-gradient(120deg, rgba(243, 201, 139, 0.65), rgba(176, 142, 214, 0.5), rgba(217, 164, 126, 0.65), rgba(243, 201, 139, 0.65)) border-box;
   background-size: 100% 100%, 300% 300%;
   border: 1px solid transparent;
-  animation: edgeDrift 10s ease-in-out infinite;
+  animation: edgeDrift 10s ease-in-out 2;
   transition: transform 160ms var(--ease-standard), filter 160ms;
 }
 .channel:hover {
