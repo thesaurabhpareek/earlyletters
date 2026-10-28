@@ -1,0 +1,224 @@
+# iOS store-lane release pipeline (ADR 0022, D-089; runbook docs/ops/RELEASE.md). Preview-lane TestFlight
+# builds (C0, C1) are testflight.yml and docs/release/TESTFLIGHT.md, not this file.
+#
+#   tag ios-v<x.y.z>-rc.<n>   checks, then an EAS production build uploaded to internal TestFlight
+#   tag ios-v<x.y.z>          the released RC: checks an RC tag sits on the same commit, then the GitHub Release
+#   manual run, job=metadata  pushes store text (apps/mobile/store.config.json) with the review contact
+#   manual run, job=checks    a dry run: the same RC checks on the ref you pick, with no tag, no environment, no secret
+#                             and no build. Run it on `develop` or a release branch to see what would stop an RC
+#                             today, before the first real tag. It cannot build or submit anything.
+#
+# The gate (ADR 0022 decision 8; the repository is public, so GitHub Free includes all of this):
+# - `build` and `metadata` run in the environment `app-store`: its only required reviewer is the approver account
+#   (ADR 0026 decision 1; not the owner account agent sessions use), prevent self-review on, admin bypass off; it
+#   allows only tags ios-v* and branches release/*, and holds the secrets EXPO_TOKEN and ASC_REVIEW_CONTACT_JSON.
+#   A run on any other ref never receives them, and every RC build and metadata push waits for the approver.
+# - Rulesets with no bypass keep ios-v* tags and release/* branches immutable; they do not decide who creates a
+#   tag (SECURITY SR-3). Create the environment before this file merges, or a run creates it unprotected (SR-11):
+#   `npx tsx scripts/release/github-settings.ts --approver <login>` (FT-20, #236).
+# - Jobs that hold secrets install with a fresh `npm ci` and setup-node pinned by SHA, never a restored cache.
+# Builds run on EAS (--no-wait), so this workflow uses a few Actions minutes per release.
+# Needs (docs/release/1.0.0.md section 1): the `app-store` environment and its two secrets (FT-20);
+# `owner` and `extra.eas.projectId` in app.config.ts (BL-339); the production App Store Connect record with
+# `submit.production.ascAppId` in eas.json; production signing credentials and the App Store Connect API key in EAS.
+name: Release iOS
+
+on:
+  push:
+    tags: ['ios-v*']
+  workflow_dispatch:
+    inputs:
+      job:
+        description: What to run
+        type: choice
+        options: [metadata, checks]
+        required: true
+
+concurrency:
+  group: release-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  EAS_CLI_VERSION: 24.10.0
+
+jobs:
+  classify:
+    name: classify tag
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      kind: ${{ steps.tag.outputs.kind }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: tag
+        name: Tag, version.json and branch agree
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse "$GITHUB_SHA^{commit}")
+          if [[ "$TAG" =~ ^ios-v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then kind=rc; version="${BASH_REMATCH[1]}"
+          elif [[ "$TAG" =~ ^ios-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then kind=release; version="${BASH_REMATCH[1]}"
+          else echo "::error::$TAG is not ios-v<x.y.z>-rc.<n> or ios-v<x.y.z>"; exit 1; fi
+          file_version=$(node -p "require('./apps/mobile/version.json').version")
+          if [ "$file_version" != "$version" ]; then
+            echo "::error::tag says $version but apps/mobile/version.json says $file_version"; exit 1
+          fi
+          major_minor="${version%.*}"
+          if ! git branch -r --contains "$sha" | grep -qE "origin/release/${major_minor//./\\.}$"; then
+            echo "::error::$TAG must point at a commit on release/$major_minor"; exit 1
+          fi
+          if [ "$kind" = release ]; then
+            if ! git tag --points-at "$sha" | grep -qE "^ios-v${version//./\\.}-rc\.[0-9]+$"; then
+              echo "::error::no ios-v$version-rc.<n> tag on this commit: release only a built and tested RC"; exit 1
+            fi
+            test -f "docs/release/$version.md" || { echo "::error::docs/release/$version.md is missing"; exit 1; }
+          fi
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: checks (G2)
+    needs: classify
+    # classify is skipped on a manual run, so a status function is needed or this job is skipped with it. A tag
+    # whose classify failed has no kind and does not run. `build` below still needs a successful classify, so a
+    # manual dry run can never reach it.
+    if: ${{ !cancelled() && (needs.classify.outputs.kind == 'rc' || (github.event_name == 'workflow_dispatch' && inputs.job == 'checks')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm test
+      - run: npm run typecheck
+      - name: Store metadata matches packages/content
+        run: npx tsx scripts/release/store-config.ts --check
+      - name: Listing promises nothing the build switches off (BL-440; enforced by the metadata job, reported here)
+        continue-on-error: true
+        run: npx tsx scripts/release/store-config.ts --assert-shippable
+      - name: No placeholder identity in the build
+        run: |
+          set -euo pipefail
+          if grep -rnE "example\.com|com\.example\." packages/brand/index.ts apps/mobile/app.config.ts; then
+            echo "::error::placeholder domain or bundle id"; exit 1
+          fi
+      - name: No e2e seam in the production bundle (B-8, #210)
+        run: |
+          set -euo pipefail
+          if [ -f .github/scripts/seam-guard.mjs ]; then
+            node .github/scripts/seam-guard.mjs --profile production
+          else
+            echo "::warning::.github/scripts/seam-guard.mjs is not on this commit (#210 not merged): the e2e seam check did not run"
+            echo "Seam guard (B-8) did not run: #210 is not merged on this commit." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: The RC can verify signed documents (speech, language packs, kill switches)
+        run: |
+          set -euo pipefail
+          keys=$(npx tsx -e "import { TRUSTED_SIGNING_KEYS } from './packages/api/src/keys'; console.log(TRUSTED_SIGNING_KEYS.length)")
+          if [ "$keys" -eq 0 ]; then
+            echo "::error::TRUSTED_SIGNING_KEYS in packages/api/src/keys.ts is empty (FT-16): the RC would have no words from speech, no language packs and no kill switches"; exit 1
+          fi
+          url=$(node -p "require('./apps/mobile/eas.json').build.production.env?.EXPO_PUBLIC_DOCS_BASE_URL ?? ''")
+          if [ -z "$url" ]; then
+            echo "::warning::EXPO_PUBLIC_DOCS_BASE_URL is not in the production profile of eas.json. Check it is set in the EAS production environment, or the RC cannot download packs or config"
+            echo "EXPO_PUBLIC_DOCS_BASE_URL is not in eas.json production env: confirm it is set in the EAS production environment." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    name: EAS build to TestFlight (internal)
+    needs: [classify, checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: app-store
+    steps:
+      - name: EXPO_TOKEN is set
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: '[ -n "$EXPO_TOKEN" ] || { echo "::error::Add EXPO_TOKEN to the app-store environment (FT-20, docs/ops/RELEASE.md section 3.5)"; exit 1; }'
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install from the lockfile, no cache
+        run: npm ci --no-audit --no-fund
+      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
+        with:
+          eas-version: ${{ env.EAS_CLI_VERSION }}
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build and auto-submit
+        working-directory: apps/mobile
+        env:
+          TAG: ${{ github.ref_name }}
+        run: >
+          eas build --platform ios --profile production --non-interactive --freeze-credentials
+          --no-wait --auto-submit --message "$TAG"
+          --what-to-test "Release candidate $TAG. Smoke test: first run, a spoken and a typed letter, the Book, Read together, Plus."
+
+  github-release:
+    name: GitHub Release
+    needs: classify
+    if: needs.classify.outputs.kind == 'release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.classify.outputs.version }}
+        run: gh release create "$TAG" --verify-tag --title "iOS $VERSION" --notes-file "docs/release/$VERSION.md"
+
+  metadata:
+    name: push store metadata
+    # Only from a release branch; the app-store environment allows no other ref either.
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'metadata' && startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: app-store
+    env:
+      # metadata:push reads the submit profile, not the build profile's env; without this the app config
+      # resolves to the development bundle id once an unset APP_ENV means development (PR #27).
+      EXPO_PUBLIC_APP_ENV: production
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install from the lockfile, no cache
+        run: npm ci --no-audit --no-fund
+      - name: Store metadata matches packages/content
+        run: npx tsx scripts/release/store-config.ts --check
+      - name: The listing promises nothing the build switches off (BL-440)
+        run: npx tsx scripts/release/store-config.ts --assert-shippable
+      - name: Add the App Review contact and copyright from the secret (never committed)
+        env:
+          REVIEW: ${{ secrets.ASC_REVIEW_CONTACT_JSON }}
+        run: npx tsx scripts/release/with-review-contact.ts
+      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
+        with:
+          eas-version: ${{ env.EAS_CLI_VERSION }}
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: eas metadata:push
+        working-directory: apps/mobile
+        run: eas metadata:push --profile production --non-interactive
