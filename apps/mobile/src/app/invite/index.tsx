@@ -39,7 +39,7 @@ import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { joinWait, joinWaitLine } from '@/components/family/join-wait.logic';
-import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '@/components/family/join-sheet.logic';
+import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '@/components/family/join-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
@@ -369,7 +369,9 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
   // The same words first run's welcome under the sheet shows if Close is tapped (components/family/join-wait.logic.ts).
   const waitingLine = book ? null : joinWaitLine(child || null, 'waiting');
   useEffect(() => {
-    if (waitingLine) announce(waitingLine, { queue: true });
+    if (!waitingLine) return;
+    const id = setTimeout(() => announce(waitingLine, { queue: true }), SPEAK_AFTER_FOCUS_MS);
+    return () => clearTimeout(id);
   }, [waitingLine]);
   const saveSignature = () => {
     const s = signsAs.trim().slice(0, SIGNS_AS_MAX);

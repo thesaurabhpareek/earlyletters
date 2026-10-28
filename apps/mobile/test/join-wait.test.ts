@@ -134,6 +134,11 @@ describe('[S2] the screens', () => {
     expect(hook).toMatch(/const view = welcomeJoinView\(\{ wait, onWelcome, bookHere, syncOn, phase, now \}\);/);
   });
 
+  it('VoiceOver: the welcome speaks its line when it appears in front and when it changes (a live region is Android\'s only)', () => {
+    const hook = code('components/family/join-wait.tsx');
+    expect(hook).toMatch(/const spoken = inFront \? view\.line : null;\s*useEffect\(\(\) => \{\s*if \(spoken\) announce\(spoken, \{ queue: true \}\);\s*\}, \[spoken\]\);/);
+  });
+
   it('Try again runs a sync, and starts the quiet wait over only if one ran; the timer wakes the welcome when the wait runs out', () => {
     const hook = code('components/family/join-wait.tsx');
     expect(hook).toMatch(/void syncNow\(\)\s*\.then\(\(report\) => \{\s*if \(retryRestartsWait\(report\)\) joinWait\.restart\(\);\s*\}\)/);

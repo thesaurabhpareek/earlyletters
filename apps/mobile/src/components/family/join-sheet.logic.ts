@@ -76,6 +76,13 @@ export function openLanding(routesUnderSheet: readonly string[], welcomeShowing:
 }
 
 /**
+ * VoiceOver on the joined view (critics' pass S5): focus moves to the heading 350 ms after it shows (lib/a11y.ts
+ * useFocusOnMount), and VoiceOver starts reading it. The line that the book is on its way is spoken after that, queued
+ * behind the heading, so the focus move does not cut it off.
+ */
+export const SPEAK_AFTER_FOCUS_MS = 700;
+
+/**
  * Try again after a failure. A look (peek) that failed looks again, so its old answer is dropped; a join (accept)
  * that failed keeps the answer it had and joins again, without asking the server to look a second time.
  */

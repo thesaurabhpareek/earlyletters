@@ -8,6 +8,7 @@
  * step showing, and when first run leaves.
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { announce } from '@/lib/a11y';
 import { getAuthSnapshot, subscribeAuth, syncAllowed } from '@/lib/auth/auth-store';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { getChild, subscribe } from '@/lib/store';
@@ -60,7 +61,12 @@ export function useWelcomeJoinWait(where: {
   }, []);
 
   const view = welcomeJoinView({ wait, onWelcome, bookHere, syncOn, phase, now });
-  void inFront;
+  // VoiceOver: the line is spoken when it appears in front (the sheet over the welcome closed), and again when it
+  // changes to "has not reached this phone yet" and back; a live region is Android's only. As the reason line is.
+  const spoken = inFront ? view.line : null;
+  useEffect(() => {
+    if (spoken) announce(spoken, { queue: true });
+  }, [spoken]);
 
   return { ...view, onRetry };
 }

@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '../src/components/family/join-sheet.logic';
+import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '../src/components/family/join-sheet.logic';
 import { startJoinedArrival } from '../src/components/family/joined-arrival.logic';
 import { joinedArrival } from '../src/components/family/family-notice';
 import { lampMemory, planLampMount, resolveLamp } from '../src/components/ui/lamp.logic';
@@ -210,9 +210,14 @@ describe('[S59] VoiceOver hears the joined moment (critics\' pass S5; code-read,
     expect(code('lib/auth/ui.tsx')).toMatch(/useFocusOnMount\(ref, true, children\);/);
   });
 
-  it('while the book is still coming, the line that says so is spoken once, after the title', () => {
+  it('while the book is still coming, the line that says so is spoken once, after the focus moves to the title', () => {
     const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
-    expect(joined).toMatch(/useEffect\(\(\) => \{\s*if \(waitingLine\) announce\(waitingLine, \{ queue: true \}\);\s*\}, \[waitingLine\]\);/);
+    expect(joined).toMatch(
+      /useEffect\(\(\) => \{\s*if \(!waitingLine\) return;\s*const id = setTimeout\(\(\) => announce\(waitingLine, \{ queue: true \}\), SPEAK_AFTER_FOCUS_MS\);\s*return \(\) => clearTimeout\(id\);\s*\}, \[waitingLine\]\);/,
+    );
+    // After useFocusOnMount's move (350 ms after the view shows), with time for VoiceOver to start the heading.
+    expect(code('lib/a11y.ts')).toMatch(/AccessibilityInfo\.sendAccessibilityEvent\(node, 'focus'\);[\s\S]{0,80}\}, 350\);/);
+    expect(SPEAK_AFTER_FOCUS_MS).toBeGreaterThanOrEqual(350 + 300);
   });
 });
 
