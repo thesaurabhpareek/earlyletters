@@ -738,7 +738,7 @@ export const en = {
       onPhoneBodyBackupOff: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Our encrypted backup can keep them too, so they come back on a new phone.",
       backedUpTitle: "Kept on this phone and backed up",
       // Disclosure text with "we" (D-102, counsel item C7): it names the recovery key we hold. Counsel must approve it
-      // before any screen shows it; experience-pass.test.ts allows its "we" for that reason only.
+      // before any screen shows it; `P0_WE_ALLOWED` in test/support/copy-surfaces.ts (enforced by rules.test.ts) allows its "we" for that reason only.
       backedUpBody: "Recordings are kept on this phone and in our encrypted backup. We hold a recovery key under strict, logged access, so they can come back on a new phone. We never listen to them, sell them or use them to train models.",
       exportFooter: "Export any time to keep a copy of your own.",
       storageUsed: "{count} MB used on this phone",

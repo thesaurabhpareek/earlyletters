@@ -5,29 +5,16 @@
  *
  * - every CHG and NEW of chapter 7, word for word, and every RET key gone (P8 deletes its own RET keys);
  * - registered disclosure text (docs/legal/in-app-disclosures.md 3a; S55's `consent.terms.*`) word for word;
- * - no "we" or "our" outside the disclosure keys chapter 7 keeps verbatim;
- * - buttons of 22 characters or fewer, as written and with the Asha fixtures;
- * - only the placeholders this file may use;
- * - no "photos", no "only you" (outside the registered privacy line), "only your family's keys" or
- *   "end-to-end";
- * - "stay on this phone" or "stays on this phone" only where it is true (`account.signOutBody`);
- * - US spelling.
- * rules.test.ts already runs every content rule (dashes, quotes, emoji, gendering, streaks) over this file.
+ * - the words around the sign-in sheet's reassurance and the age step.
+ * The content rules over this file (no "we" outside the disclosure keys, buttons of 22 characters or fewer, the
+ * placeholders it may use, no "photos", "only you", "only your family's keys" or "end-to-end", "stays on this phone"
+ * only where it is true, US spelling) run in rules.test.ts, from the row for `authCopy` in
+ * test/support/copy-surfaces.ts, together with every other content rule (dashes, quotes, emoji, gendering, streaks).
  */
 import { describe, expect, it } from 'vitest';
-import { brand } from '@scribe/brand';
 import { authCopy, en } from '../src';
+import { AUTH_WE_ALLOWED, SURFACES } from './support/copy-surfaces';
 
-type Leaf = { path: string; text: string };
-
-function leaves(value: unknown, path = ''): Leaf[] {
-  if (typeof value === 'string') return [{ path, text: value }];
-  if (Array.isArray(value)) return value.flatMap((v, i) => leaves(v, `${path}[${i}]`));
-  if (value && typeof value === 'object') return Object.entries(value).flatMap(([k, v]) => leaves(v, path ? `${path}.${k}` : k));
-  return [];
-}
-
-const ALL: Leaf[] = leaves(authCopy);
 const at = (path: string): unknown =>
   path.split('.').reduce<unknown>((node, key) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[key] : undefined), authCopy);
 
@@ -142,43 +129,6 @@ const REGISTERED: Record<string, string> = {
   'consent.terms.notNow': 'Not now',
 };
 
-/** The disclosure keys chapter 7 keeps verbatim, the only ones that may say "we" (S52 `sheet.privacy`, S55 `consent.terms.*`). */
-const WE_ALLOWED = new Set(['sheet.privacy', 'sheet.emailUse', 'consent.terms.body']);
-
-/** Every string these screens put on a button (the file names its keys by meaning, not by a Button suffix). */
-const BUTTONS = [
-  'sheet.google',
-  'sheet.email',
-  'sheet.passkey',
-  'sheet.later',
-  'email.send',
-  'code.verify',
-  'code.openMail',
-  'code.resend',
-  'code.differentEmail',
-  'verify.typeCode',
-  'verify.newEmail',
-  'verify.close',
-  'claim.keep',
-  'claim.notMine',
-  'consent.terms.agree',
-  'consent.terms.notNow',
-  'consent.age.yes',
-  'consent.age.no',
-  'consent.noBook.tryAnother',
-  'consent.noBook.startBook',
-  'account.signIn',
-  'account.signOut',
-  'account.cancel',
-  'account.removePasskey',
-  // Shown inside a busy button.
-  'sheet.busy',
-];
-
-/** The Asha fixtures (CLAUDE.md: tests use the fictional family "Asha"). */
-const ASHA: Record<string, string> = { app: brand.name, child: 'Asha', email: 'mama@example.invalid' };
-const fill = (text: string) => text.replace(/\{(\w+)\}/g, (m, k: string) => ASHA[k] ?? m);
-
 describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
   it('has every CHG and NEW row of S52 to S56, word for word', () => {
     for (const [key, words] of Object.entries(CHAPTER_7)) expect(at(key), key).toBe(words);
@@ -195,6 +145,15 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
 
   it('leaves registered disclosure text word for word, and the privacy line is trust.signIn.privacy itself', () => {
     for (const [key, words] of Object.entries(REGISTERED)) expect(at(key), key).toBe(words);
+    // The only keys rules.test.ts lets say "we" are registered text, and the sign-in row widens no exception by prefix.
+    for (const key of AUTH_WE_ALLOWED) expect(key in REGISTERED, key).toBe(true);
+    const row = SURFACES.find((s) => s.feature === 'auth')!;
+    expect(row.we.allowed).toEqual([...AUTH_WE_ALLOWED]);
+    expect(row.we.allowedPrefixes).toBeUndefined();
+    for (const b of row.banned) {
+      expect(b.allowedPrefixes, b.name).toBeUndefined();
+      for (const key of b.allowed ?? []) expect(key in REGISTERED, `${b.name}: ${key}`).toBe(true);
+    }
     expect(authCopy.sheet.privacy).toBe(en.trust.signIn.privacy);
     expect(authCopy.sheet.emailUse).toBe(en.trust.signIn.email);
     expect(authCopy.sheet.why).toBe(en.trust.signIn.why);
@@ -233,49 +192,5 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     expect(authCopy.consent.age.body).toBe(en.ageGate.title);
     expect(authCopy.consent.age.yes).toBe(en.ageGate.yesButton);
     expect(authCopy.consent.age.no).toBe(en.ageGate.noButton);
-  });
-});
-
-describe('[EXPERIENCE_PASS_2026-10 P8a] rules on every string in authCopy', () => {
-  it('says "we" or "our" only in the disclosure keys chapter 7 keeps verbatim', () => {
-    const bad = ALL.filter((l) => !WE_ALLOWED.has(l.path) && /\b(?:we|our|us)\b/i.test(l.text));
-    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-    for (const key of WE_ALLOWED) expect(key in REGISTERED, key).toBe(true);
-  });
-
-  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
-    for (const key of BUTTONS) {
-      const text = at(key);
-      expect(typeof text, key).toBe('string');
-      expect((text as string).length, key).toBeLessThanOrEqual(22);
-      expect(fill(text as string).length, key).toBeLessThanOrEqual(22);
-    }
-  });
-
-  it('uses only {child}, {app} and {email}', () => {
-    const used = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => `${l.path}: ${m[1]}`));
-    expect(used.filter((u) => !/: (?:child|app|email)$/.test(u))).toEqual([]);
-    // {email} only where an address is shown: the code screen and the claim screen (a masked address).
-    expect(ALL.filter((l) => l.text.includes('{email}')).map((l) => l.path).sort()).toEqual(['claim.body', 'code.sentToEmail']);
-  });
-
-  it('never says photos, end-to-end, "only your family\'s keys", or "only you" outside the registered privacy line', () => {
-    const bad = ALL.filter((l) => /\bphotos?\b|end-to-end|only your family'?s keys/i.test(l.text) || (l.path !== 'sheet.privacy' && /\bonly you\b/i.test(l.text)));
-    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('says letters stay on this phone only where it is true (signing out leaves them in place)', () => {
-    const STAY = /\bstays? on (?:this|your|the) phone\b/i;
-    expect(ALL.filter((l) => STAY.test(l.text)).map((l) => l.path)).toEqual(['account.signOutBody']);
-  });
-
-  it('never says "in this build", and no error sounds like a chat bot', () => {
-    expect(ALL.filter((l) => /in this build|let's|that's a lot|something went wrong|please\b/i.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('spells for the US storefront', () => {
-    const UK =
-      /\b(?:colour|favour|behaviour|honour|organis|recognis|realis|apologis|authoris|centre|licence|cancelled|travelling|programme|catalogue|whilst|amongst|learnt|spelt|enrol|mobile data|straight away|full stops?)/i;
-    expect(ALL.filter((l) => UK.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
 });

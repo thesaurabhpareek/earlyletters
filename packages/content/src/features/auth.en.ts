@@ -4,11 +4,12 @@ import { en } from '../strings.en';
 /**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
  * PRD B, BRIEF decisions 4 and 11), as EXPERIENCE_PASS_2026-10 chapter 7 sets
- * them (S52 to S56, package P8a). The content rules test scans this file, and
- * test/server-surfaces-auth.test.ts pins chapter 7's rules on it: no "we" outside
- * the registered disclosure keys, buttons of 22 characters or fewer, and every
- * changed and new line word for word. Registered text (docs/legal/in-app-disclosures.md)
- * is counsel's and changes only through counsel.
+ * them (S52 to S56, package P8a). test/rules.test.ts runs the content rules on
+ * this file, and chapter 7's own, from the `authCopy` row of
+ * test/support/copy-surfaces.ts: no "we" outside the registered disclosure keys,
+ * buttons of 22 characters or fewer, the placeholders below. test/server-surfaces-auth.test.ts
+ * pins every changed and new line word for word. Registered text
+ * (docs/legal/in-app-disclosures.md) is counsel's and changes only through counsel.
  * Placeholders: {child}, {app}, {email}. The public name is never typed here.
  */
 export const authCopy = {

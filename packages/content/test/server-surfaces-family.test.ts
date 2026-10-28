@@ -5,17 +5,14 @@
  * Over P8b's one copy file, `familyCopy` (src/features/family.en.ts):
  *  - every CHG and NEW of S57 to S59, word for word (S60 changes no word: every `leave.*` key is KEEP);
  *  - the retired keys P8b stopped showing are gone (P8 deletes its own RETs, section 6);
- *  - no "we" or "our" outside the kill path's `soon.*` (principle 2);
- *  - buttons of 22 characters or fewer, as written and with the Asha fixtures;
- *  - only the placeholders this file may use;
- *  - no "photos"; no "only you", "only your family's keys" or "end-to-end";
- *  - no "stay on this phone" or "stays on this phone" outside the kill path (the three keys where it is true are in
- *    the auth and backup files, not here);
- *  - US spellings.
+ *
+ * The content rules over this file (no "we" or "our" outside the kill path's `soon.*`, buttons of 22 characters or
+ * fewer, the placeholders it may use, no "photos", "only you", "only your family's keys" or "end-to-end", no "stays
+ * on this phone" outside the kill path, no child named before joining, US spelling) run in rules.test.ts, from the
+ * row for `familyCopy` in test/support/copy-surfaces.ts.
  * S04's coparent-soon.test.ts keeps pinning the kill path itself.
  */
 import { describe, expect, it } from 'vitest';
-import { brand } from '@scribe/brand';
 import { en, familyCopy } from '../src';
 
 type Leaf = { path: string; text: string };
@@ -36,9 +33,6 @@ const ALL = leaves(familyCopy, 'familyCopy');
 /** The kill path (server features off): the coming-soon presentation, unchanged by this pass (S48, S57). */
 const KILL_PATH = (l: Leaf) => l.path.startsWith('familyCopy.soon.');
 const LIVE = ALL.filter((l) => !KILL_PATH(l));
-
-const ASHA: Record<string, string> = { app: brand.name, child: 'Asha', signsAs: 'Papa', inviter: 'Mama', coParent: 'Papa', date: 'October 23' };
-const fill = (text: string) => text.replace(/\{(\w+)\}/g, (m, k: string) => ASHA[k] ?? m);
 
 /** Section 4 chapter 7, S57 to S59: every CHG and NEW in family.en.ts, as the spec writes it. */
 const CHANGED: Record<string, string> = {
@@ -96,27 +90,6 @@ const QUOTED: Record<string, string> = {
   'leave.cancel': 'Stay',
 };
 
-/** Every label P8b's screens put on a button (the keys do not end in "Button", so they are listed). */
-const BUTTONS = [
-  'card.button',
-  'pending.shareAgain',
-  'pending.cancel',
-  'pending.keep',
-  'create.share',
-  'accept.continue',
-  'accept.join',
-  'accept.notNow',
-  'accept.signIn',
-  'accept.open',
-  'accept.close',
-  'accept.tryAgain',
-  'accept.pasteAnother',
-  'leave.confirm',
-  'leave.cancel',
-  'soon.notify.button',
-  'soon.close',
-];
-
 describe('[P8b S57 to S59] familyCopy changes, word for word', () => {
   it('has every CHG and NEW key of S57 to S59 as the spec writes it', () => {
     for (const [key, words] of Object.entries(CHANGED)) expect(at(key), key).toBe(words);
@@ -148,53 +121,5 @@ describe('[P8b S57 to S59] familyCopy changes, word for word', () => {
 describe('[P8b] retired keys are gone with the screens that showed them (section 6: P8 deletes its own RETs)', () => {
   it('card.signedOutNote (S57: the sign-in sheet says it)', () => {
     expect('signedOutNote' in familyCopy.card).toBe(false);
-  });
-});
-
-describe('[P8b] rules over familyCopy', () => {
-  it('says "we" or "our" only on the kill path (principle 2)', () => {
-    // The share message is the parent's own voice, which they see and can change in the share sheet before they send
-    // it (S58 KEEP, D-113 item 3): its "we" is the two parents, never the app.
-    const PARENTS_OWN = new Set(['familyCopy.create.shareMessage', 'familyCopy.create.shareMessageNamed']);
-    expect(LIVE.filter((l) => !PARENTS_OWN.has(l.path) && /\b(?:we|our)\b/i.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
-    for (const key of BUTTONS) {
-      const label = at(key);
-      expect(typeof label, key).toBe('string');
-      expect((label as string).length, key).toBeLessThanOrEqual(22);
-      expect(fill(label as string).length, key).toBeLessThanOrEqual(22);
-    }
-  });
-
-  it('uses only the placeholders this file may use', () => {
-    const allowed = new Set(['child', 'signsAs', 'inviter', 'coParent', 'date']);
-    const used = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => `${l.path}: {${m[1]}}`));
-    expect(used.filter((u) => !allowed.has(/\{(\w+)\}$/.exec(u)![1]))).toEqual([]);
-  });
-
-  it('never mentions photos, and makes no "only you", "only your family\'s keys" or "end-to-end" claim', () => {
-    expect(ALL.filter((l) => /\bphotos?\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-    expect(ALL.filter((l) => /\bonly you\b|\bonly your family'?s keys\b|\bend[- ]to[- ]end\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
-  });
-
-  it('never says letters stay on this phone outside the kill path (option B, D-100)', () => {
-    expect(LIVE.filter((l) => /\bstays? on (?:this|your|the) phone\b/i.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('spells for the US storefront', () => {
-    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i, /\bcolour/i, /\bfavourite/i, /\borganis/i, /\brecognis/i];
-    expect(ALL.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('never names the child in a line shown before joining (BL-322, D-113)', () => {
-    // The invitee's lines before the join returns: paste, signed out, peeking, ask, account, joining and the errors.
-    const beforeJoin = ['title', 'pasteLabel', 'pasteHelp', 'pastePlaceholder', 'continue', 'notRecognised', 'invitedTitle', 'signInBody', 'signIn', 'peeking', 'askTitle', 'invitedBy', 'invitedByUnknown', 'askBody', 'join', 'notNow', 'needsSync', 'joining', 'tryAgain', 'pasteAnother', 'tryLater'] as const;
-    for (const k of beforeJoin) expect(familyCopy.accept[k], `accept.${k}`).not.toMatch(/\{child\}/);
-    for (const [k, v] of Object.entries(familyCopy.errors)) {
-      if (k === 'not_parent' || k === 'last_parent') continue; // the inviter's and the leaver's lines, never shown to an invitee
-      expect(v, `errors.${k}`).not.toMatch(/\{child\}/);
-    }
   });
 });

@@ -61,7 +61,6 @@ export const reminderCopy = {
     // After returning from Settings with permission granted (S34).
     onToast: 'Reminders are on.',
     offSummary: 'Off',
-    pausedSummary: 'Paused', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (a pause from before reads as Off)
     channelName: 'Reminders',
   },
   /** For VoiceOver and chips. Index = Date.getDay(). */
