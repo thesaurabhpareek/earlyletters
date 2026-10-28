@@ -43,7 +43,7 @@ Used only while the Listening screen is open, to record the letter the parent sp
 ITEMS THAT ARE INTENTIONALLY OFF IN THIS VERSION
 Settings shows Account ("Not signed in"), Export, Backup, Terms, and family invites as not available yet, with an honest line saying so. Plus is not purchasable in this version, so there are no in-app purchases to test.
 
-There is a small "Beta" label in Settings, About. Reminders can be chosen in Settings, but this version schedules none and requests no notification permission.
+There is a small "Beta" label at the top of Settings. Reminders can be chosen in Settings, but this version schedules none and requests no notification permission.
 
 Contact: hello@earlyletters.com
 ```
@@ -131,7 +131,7 @@ Open points that change this text:
 | What they see | Truth |
 |---|---|
 | Stop screen after tapping No on the age question | Intended; lasts 24 hours unless "I answered by mistake" is tapped |
-| "Beta" label in Settings, About | Intended until the founder ends the beta (D-011); the store listing carries no beta wording (D-030, OPEN-21) |
+| "Beta" label at the top of Settings | Intended until the founder ends the beta (D-011); the store listing carries no beta wording (D-030, OPEN-21). Its body says "Export a copy of your letters now and then", but Export is disabled in Profile A; fix that copy before submitting (`strings.en.ts` `settings.about.beta.body`) |
 | Speak ends at "Your voice is kept" (Profile A) | Speech model not included yet (OPEN-12) |
 | Disabled rows in Settings (Profile A) | Features not available yet, labelled honestly |
 | Reminder choice saved but no notifications (Profile A) | Scheduling not built; no permission requested |
