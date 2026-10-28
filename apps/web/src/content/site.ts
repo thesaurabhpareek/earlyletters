@@ -7,7 +7,7 @@
  *
  * v1.0 truth only (docs/agents/BRIEF-2026-10-03.md; claims audit in docs/web/copy/BR1-audit.md):
  * no grandparents writing, no mixing two languages in one letter, no word highlighting, no print,
- * no Android, no backup promise. The child in the film is Lina, the fictional family every test and fixture uses (CLAUDE.md). Papa writes;
+ * no Android, no backup promise. The child in the film is the founder's daughter, named here on the founder's own decision (D-118, 28 Oct 2026, "for now"); tests, fixtures and docs still use the fictional family (CLAUDE.md). Papa writes;
  * Mama is the co-parent. The public name comes from packages/brand (CLAUDE.md).
  *
  * In-app strings shown inside the phone are the app's own words, copied from
@@ -31,15 +31,15 @@ const INVITE_BY_HAND = `Go back to the message, press and hold the link and copy
  * dictionary (stt_fix, the type's own example), a filler, a false start. Nothing is added.
  */
 export const sampleLetter = {
-  to: 'Lina',
+  to: 'Meera',
   from: 'Papa',
   month: 9,
   dateline: 'Month 9, Tuesday night',
   duration: '1:12',
   text:
-    'Lina, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
+    'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
   heard: [
-    { text: 'Lena', becomes: 'Lina', kind: 'name' },
+    { text: 'Maria', becomes: 'Meera', kind: 'name' },
     { text: ', ' },
     { text: 'um, ', becomes: '', kind: 'filler' },
     {
@@ -97,20 +97,20 @@ export const site = {
     s01: {
       label: 'Evening',
       dateline: '9:41 pm',
-      headline: 'Lina is asleep.',
+      headline: 'Meera is asleep.',
       support: 'The house is quiet for the first time today.',
     },
     s02: {
       label: 'A minute',
       headline: 'A minute is plenty.',
-      support: `Open ${NAME} and tell Lina about today. One sentence counts.`,
+      support: `Open ${NAME} and tell Meera about today. One sentence counts.`,
       /** strings.en.ts tonight.greeting.night with {name} = Papa */
       appGreeting: 'The house is quiet, Papa.',
       /** tonight.subtitle */
-      appSubtitle: 'What do you want Lina to know about today?',
+      appSubtitle: 'What do you want Meera to know about today?',
       /** tonight.promptLabel */
       appPromptLabel: 'A thought to start with',
-      appPrompt: 'What made Lina laugh today?',
+      appPrompt: 'What made Meera laugh today?',
       /** tonight.newPromptButton */
       appAnother: 'Another thought',
       appDateline: 'Month 9, Week 2, Tuesday',
@@ -124,8 +124,8 @@ export const site = {
     s03: {
       label: 'Just talk',
       headline: 'Just talk.',
-      support: 'Say it the way you would say it to Lina. Pauses are fine.',
-      appTo: 'To Lina',
+      support: 'Say it the way you would say it to Meera. Pauses are fine.',
+      appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
       appHint: 'Say it however it comes.',
@@ -147,15 +147,15 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice stays with it.',
-      support: 'The recording is kept with every letter you speak. One day Lina can hear how you sounded tonight.',
+      support: 'The recording is kept with every letter you speak. One day Meera can hear how you sounded tonight.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
     s06: {
       label: 'The book',
       headline: 'A book that grows by month.',
-      support: "Each letter is filed under Lina's age that month and signed with your name. Both parents write in the same book.",
-      appTitle: "Lina's Book",
+      support: "Each letter is filed under Meera's age that month and signed with your name. Both parents write in the same book.",
+      appTitle: "Meera's Book",
       chapters: [
         { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
         { month: 'Month 8', meta: '11 letters, from Papa and Mama' },
@@ -208,7 +208,7 @@ export const site = {
     },
     s11: {
       label: 'Start tonight',
-      headline: 'Tell Lina about today.',
+      headline: 'Tell Meera about today.',
       supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write once, when it is ready.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
@@ -242,11 +242,11 @@ export const site = {
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US, and we will write once more, when it is ready.`,
     letterLabel: 'What a letter looks like',
-    letterTo: 'To Lina',
+    letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',
     letterFrom: 'From Papa',
     /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
-    letterExcerpt: 'Lina, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
+    letterExcerpt: 'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
     letterNote: 'A minute of talking. Every word kept exactly as it was said.',
     promisesTitle: 'What we are building',
     promises: [

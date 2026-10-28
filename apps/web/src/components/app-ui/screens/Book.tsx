@@ -1,6 +1,6 @@
 'use client';
 /**
- * The Book screen in light mode: "Lina's Book" and month chapter covers, newest first.
+ * The Book screen in light mode: "[child]'s Book" and month chapter covers, newest first.
  * `arrive` 0..1 settles the new letter into Month 9 (a soft accentSoft wash on that chapter).
  */
 import { motion, useTransform } from 'motion/react';
