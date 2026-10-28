@@ -57,7 +57,7 @@ export type HeardSegment = { text: string; becomes?: string; kind?: 'name' | 'fi
 export const site = {
   meta: {
     title: `${NAME}: the baby memory book you fill by talking`,
-    description: `Talk to your child for a minute at the end of the day. AI on your phone listens and keeps every word exactly as you said it, with your voice.`,
+    description: `Tell your child about today, out loud. ${NAME} keeps every word just as you said it, and your voice with it.`,
   },
 
   brand: {
@@ -69,14 +69,18 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'The baby memory book you fill by talking. AI that listens to every word, and never rewrites one.',
-    trust: 'Private by design. Your letters stay on your phone, and we never rewrite your words.',
+    line: 'A baby book you fill by talking. Tell your child about today, and we keep it exactly as you said it.',
+    trust: 'Private, always. Your letters stay on your phone, in your own words.',
     shareButton: 'Share with friends and family',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
+    shareHeading: 'Know a parent who would love this?',
+    shareWhatsapp: 'WhatsApp',
+    shareMessages: 'Messages',
+    shareEmail: 'Email',
     shareTitle: `${NAME}, the baby memory book`,
-    shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, private on your phone.',
+    shareText: 'A baby book you fill by talking. A minute at the end of the day, kept exactly as you said it.',
   },
 
   cta: {
@@ -124,7 +128,7 @@ export const site = {
     s03: {
       label: 'Just talk',
       headline: 'Just talk.',
-      support: 'Say it the way you would say it to Asha. Pause, laugh, lose your thread. It is listening.',
+      support: 'Say it the way you would say it to Asha. Pause, laugh, lose your thread. None of it has to be tidy.',
       appTo: 'To Asha',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
@@ -136,7 +140,7 @@ export const site = {
     s04: {
       label: 'Exactly as you said it',
       headline: 'Exactly as you said it.',
-      support: "By default, AI on your phone listens, spells Asha's name right, clears the ums and false starts. It never adds a word.",
+      support: "Your phone listens, spells Asha's name right, and clears the ums and false starts. It never adds a word, and every fix can be put back.",
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -174,7 +178,7 @@ export const site = {
     s08: {
       label: 'Your language',
       headline: 'Say it in your language.',
-      support: 'The AI understands English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, and keeps each in its own script.',
+      support: 'Your phone understands English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, and keeps each one in its own script.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
@@ -203,12 +207,36 @@ export const site = {
     s10: {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
-      support: `Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child's book, with the whole family adding letters. ${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.`,
+      // The whole offer as one sentence: it names the plans for screen readers (the plans group is labelled with it)
+      // and is what test/pricing.test.ts holds to the constants in pricing.ts.
+      support: `${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial.`,
+      free: {
+        name: 'Free',
+        title: 'Your first two letters',
+        note: 'So you can try it before you decide.',
+      },
+      plus: {
+        name: 'Plus',
+        title: 'When you want to keep going',
+        plans: [
+          { name: 'Monthly', price: plusPricing.monthly.price, per: 'a month', trial: `${plusPricing.monthly.trialMonths} month free` },
+          { name: 'Yearly', price: plusPricing.annual.price, per: 'a year', trial: `${plusPricing.annual.trialMonths} months free` },
+        ],
+        trialNote: 'to start',
+        includes: [
+          'Keep adding letters',
+          'Every recording safely backed up',
+          'Read together, after the free sessions',
+          "Every child's book covered",
+          'The whole family can add letters',
+        ],
+      },
+      promise: 'If you ever stop, every letter you have made stays yours to read, play and export.',
     },
     s11: {
       label: 'Start tonight',
       headline: 'Tell Asha about today.',
-      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write once, when it is ready.`,
+      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will send one note when it is ready.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
   },
@@ -222,8 +250,14 @@ export const site = {
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
     sending: 'Sending',
-    success: `Thank you, you are on the list. Look out for a short hello from us, and we will write once more, when ${NAME} is ready.`,
-    error: 'That did not go through. Please check your email and try again.',
+    successTitle: 'Thank you, you are on the list.',
+    successBody: `A short hello is on its way, and we will write once more when ${NAME} is ready.`,
+    success: `Thank you, you are on the list. A short hello is on its way, and we will write once more when ${NAME} is ready.`,
+    /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
+    alreadyTitle: 'You are already on the list.',
+    alreadyBody: `Nothing more to do. We will write when ${NAME} is ready.`,
+    already: `You are already on the list. Nothing more to do. We will write when ${NAME} is ready.`,
+    error: 'That email does not look quite right. Could you check it and try again?',
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
     honeypotLabel: 'Company',

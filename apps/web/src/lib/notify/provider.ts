@@ -51,7 +51,7 @@ function outcomeFor(error: ProviderError): SubscribeOutcome {
 export async function subscribe(
   email: string,
   config: { apiKey: string; segmentId: string },
-): Promise<{ outcome: SubscribeOutcome; contactId?: string; existing?: boolean }> {
+): Promise<{ outcome: SubscribeOutcome; contactId?: string; existing?: boolean; alreadyOnList?: boolean }> {
   const resend = clientFor(config.apiKey);
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
@@ -65,7 +65,8 @@ export async function subscribe(
         const added = await resend.contacts.segments.add({ email, segmentId: config.segmentId }, { signal });
         if (added.error && !isAlreadyExists(added.error)) return { outcome: outcomeFor(added.error) };
       }
-      return { outcome: 'ok', contactId: found.data.id, existing: true };
+      // Only an address that is still subscribed is told it is already on the list; one that unsubscribed is left alone and answered like a new one.
+      return { outcome: 'ok', contactId: found.data.id, existing: true, alreadyOnList: !found.data.unsubscribed };
     }
   } catch {
     // A failed lookup falls through to create, which is idempotent for the list.

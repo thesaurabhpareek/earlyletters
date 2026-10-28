@@ -5,7 +5,8 @@
  */
 import { motion, useTransform } from 'motion/react';
 import { Scene } from '@/film/Scene';
-import { Headline, Support } from '@/film/Copy';
+import { Headline } from '@/film/Copy';
+import { PricingPlans } from '@/components/site/PricingPlans';
 import { useStage } from '@/film/hooks';
 import { site } from '@/content/site';
 import { Grain, LampLight, Vignette } from '@/components/atmosphere';
@@ -30,12 +31,12 @@ function PricingStage() {
     <div className={stage.frame} data-resting={resting || undefined}>
       <LampLight intensity={0.25} x="50%" y="64%" size="85vmax" warmth="lamp" />
       <div className={stage.copyCenter} style={{ color: 'var(--night-ink)' }}>
-        <div>
+        <div style={{ maxWidth: '52rem' }}>
           <motion.div style={{ opacity, y }}>
             <Headline style={{ fontSize: 'clamp(36px, 5vw, 80px)' }}>{copy.headline}</Headline>
           </motion.div>
           <motion.div style={{ opacity: supOpacity }}>
-            <Support style={{ opacity: 0.92, fontSize: 'clamp(19px, 1.5vw, 22px)' }}>{copy.support}</Support>
+            <PricingPlans />
           </motion.div>
         </div>
       </div>

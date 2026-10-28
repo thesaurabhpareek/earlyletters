@@ -533,6 +533,8 @@ describe('welcome email unsubscribe link', () => {
     resend.get.mockResolvedValue({ data: { id: 'contact-0001-existing', unsubscribed: false }, error: null, headers: null });
     const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
     expect(response.status).toBe(200);
+    // The visitor is told it is saved already, instead of being left unsure.
+    expect(await response.json()).toEqual({ ok: true, already: true });
     expect(resend.create).not.toHaveBeenCalled();
     expect(resend.segmentsAdd).toHaveBeenCalledTimes(1);
     expect(resend.send).not.toHaveBeenCalled();

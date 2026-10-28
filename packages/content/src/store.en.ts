@@ -50,7 +50,7 @@ HOW IT WORKS
 
 Early Letters is for parents of children from birth to five, and for the grandparents, aunts, uncles and close friends who love them. Written early. Kept for good. Read again and again.
 
-Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Subscriptions renew automatically until you cancel, at least 24 hours before they renew, and you can cancel any time in your Apple Account settings. One membership covers the whole family book. Every letter you have made stays yours to read, play and export, even if you stop.
+Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. Subscriptions renew automatically until you cancel, at least 24 hours before they renew, and you can cancel any time in your Apple Account settings. One membership covers the whole family book. Every letter you have made stays yours to read, play and export, even if you stop.
 
 Early Letters is in beta. We are still building, and some things may change. Your letters are yours to export.`,
   // Optional App Store promotional text while the beta label is on (in-app-disclosures.md section 4).
