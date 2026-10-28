@@ -50,13 +50,15 @@ A receipt names a run, not a lane, so the lane comes from the run id (`laneOfRun
 |---|---|
 | all digits (a `GITHUB_RUN_ID`, as `agents.yml` passes it) | `actions` |
 | `local` or `local-<n>` (receipt.mjs and dispatch.mjs defaults) | `local` |
+| `sched-<UTC YYYYMMDDHHMM>` (the 4-hourly lane's receipts, PR #328 `docs/agents/lanes/agent-lane.prompt.md` line 31) | `sched-4h` |
+| `sched-<UTC YYYYMMDD>` (the daily docs run, PR #328 `docs/agents/lanes/docs-run.prompt.md` line 18) | `docs-daily` |
 | `<lane>~<anything>`, for example `docs-daily~2026-10-28` | that lane, if configured |
 | anything else | unattributed: counts against the pool and the daily total, no single lane |
 
 `~` cannot appear in a lane name (`lane.mjs` cleans names to `[A-Za-z0-9._-]`), so the split is unambiguous. No receipt format change is needed: `receipt.mjs` already takes `--run-id`.
 
 Limits, stated plainly:
-- Today only `agents.yml` calls `receipt.mjs` (`.github/workflows/agents.yml` line 208), and that workflow has never run (retro EVIDENCE.md). Scheduled tasks and interactive threads post no receipts that I could find, so the budget sees none of their use until they post a receipt with a `<lane>~` run id. Unverified: whether any scheduled prompt posts receipts.
+- On `develop`, only `agents.yml` calls `receipt.mjs` (`.github/workflows/agents.yml` line 208), and that workflow has never run (retro EVIDENCE.md). The 4-hourly lane's prompt posts a receipt with a `sched-<YYYYMMDDHHMM>` run id (the coordinator checked the live prompt, 28 Oct; PR #328, open, line 31). In #328 the docs run uses `sched-<YYYYMMDD>` only as a brief run id, with no receipt step, so the budget does not see its use. The PRD prompt sets no run id. Interactive threads post no receipts that I could find; they count only once they post one with an `interactive~` run id.
 - The subscription's own usage limit is not visible to the repo. Run counts and estimated cost are a proxy for it, not a measure.
 
 ## Config: `agents/budget.json`
@@ -72,11 +74,11 @@ Limits, stated plainly:
 The committed numbers are **proposed defaults, not a founder decision**:
 - `daily_total.runs` 30 equals `limits.max_runs_per_day_total` in `agents/roster.json`; a test keeps the budget at or under it.
 - `daily_total.cost_usd` 60 is 30 runs at the opencode `default_budget_usd` of 2 (`agents/roster.json`).
-- Reserve 50%. Lanes: `actions` 12 runs and $24, `local` 6 runs and $12 (the 4-hourly lane runs 6 times a day per the retro's scheduled-tasks list), `docs-daily` and `prd-daily` 1 run and $4 each.
-- `freeze-week` profile: reserve 80%, `actions` 4 runs, `local` 2 runs, docs and PRD lanes 0.
+- Reserve 50%. Lanes: `actions` 12 runs and $24; `sched-4h` 3 runs and $6 (it fires 6 times a day per the retro's scheduled-tasks list; the cap is kept at half of that on purpose); `local` (AGENTS_LANE unset, ad hoc) 2 runs and $4; `docs-daily` and `prd-daily` 1 run and $4 each.
+- `freeze-week` profile: reserve 80%, `actions` 4 runs, `sched-4h` 1 run, `local` 1 run, docs and PRD lanes 0.
 - `profile_windows` is empty. The freeze is proposed for Tue 3 Nov, 5:00 AM PT (`docs/qa/ALPHA_GO_NO_GO.md` line 7) and not confirmed, so no window is set. When the founder records the date, add a window with its D-id.
 
-The 4-hourly scheduled lane's actual `AGENTS_LANE` value is unverified; if it sets one, that name must be added under `lanes`, or the lane is refused as unbudgeted.
+The 4-hourly scheduled lane sets `AGENTS_LANE=sched-4h` (the coordinator checked the live prompt, 28 Oct; #328's `agent-lane.prompt.md` lines 13, 22 and 32 use the same value). Any other `AGENTS_LANE` must be added under `lanes`, or that lane is refused as unbudgeted.
 
 ## Wiring into `dispatch.mjs` (for the integrator, A29)
 

@@ -17,6 +17,7 @@ const cfg = () => ({
     interactive: { interactive: true },
     actions: { runs: 4, cost_usd: 8 },
     local: { runs: 3, cost_usd: 6 },
+    "sched-4h": { runs: 3, cost_usd: 6 },
     "docs-daily": { runs: 1, cost_usd: 2 },
   },
   profiles: {
@@ -60,7 +61,43 @@ test("run ids map to lanes; unknown shapes are unattributed", () => {
   assert.equal(laneOfRun("docs-daily~2026-10-28", c), "docs-daily");
   assert.equal(laneOfRun("interactive~session-a", c), "interactive");
   assert.equal(laneOfRun("nolane~x", c), "unattributed");
+  assert.equal(laneOfRun("sched-12345", c), "unattributed", "a sched- stamp that is neither shape is unattributed");
   assert.equal(laneOfRun("abc", c), "unattributed");
+});
+
+test("scheduled run ids: sched-<YYYYMMDDHHMM> is sched-4h, sched-<YYYYMMDD> is docs-daily", () => {
+  const c = cfg();
+  assert.equal(laneOfRun("sched-202610281345", c), "sched-4h");
+  assert.equal(laneOfRun("sched-20261028", c), "docs-daily");
+  const noLanes = { ...c, lanes: { actions: c.lanes.actions } };
+  assert.equal(laneOfRun("sched-202610281345", noLanes), "unattributed", "only mapped when the lane is configured");
+  assert.equal(laneOfRun("sched-20261028", noLanes), "unattributed");
+});
+
+test("sched-4h: its receipts count against its own cap, and AGENTS_LANE=sched-4h is that lane", () => {
+  const rows = [row("sched-202610280145", 0.5), row("sched-202610280545", 0.5), row("sched-202610280945", 0.5)];
+  const v = verdict("sched-4h", rows);
+  assert.equal(v.ok, false);
+  assert.match(v.reason, /lane sched-4h: 3 of 3 runs used today/);
+  assert.equal(verdict("local", rows).ok, true, "the local lane is not charged for sched-4h runs");
+  const docs = verdict("docs-daily", [row("sched-20261028", 1)]);
+  assert.equal(docs.ok, false);
+  assert.match(docs.reason, /lane docs-daily: 1 of 1 runs used today/);
+
+  _resetTick();
+  const ctx = { now: NOW, runId: "local-9", LOCAL: true, env: { AGENTS_LANE: "sched-4h" }, repo: "o/r", roster: { founder: "founder" },
+    ghAll: () => [{ user: { login: "founder", type: "User" }, created_at: `${DAY}T05:46:00Z`, html_url: "u",
+      body: "<!-- receipt run:sched-202610280545 agent:qa cost:unknown --> Run receipt." }] };
+  assert.match(blockedReason(ctx, { handle: "qa" }, { mode: "task" }, { config: cfg() }), /^budget: lane sched-4h: 1 run\(s\) today with unknown cost/);
+  _resetTick();
+});
+
+test("the committed budget names the sched-4h lane that PR #328's agent-lane prompt sets", () => {
+  const b = loadBudget();
+  assert.ok(b.lanes["sched-4h"] && !b.lanes["sched-4h"].interactive);
+  assert.ok(b.lanes["sched-4h"].runs <= 6, "conservative: at most one run per 4-hourly firing");
+  assert.equal(laneOfRun("sched-202610281345", b), "sched-4h");
+  assert.equal(laneOfRun("sched-20261028", b), "docs-daily");
 });
 
 test("usage counts today's receipts once each and splits scheduled from all", () => {

@@ -1,5 +1,5 @@
 {
-  "$comment": "Usage budget across lanes (retro H3, AIE-R28). Read by scripts/agents/budget.mjs; rules and wiring in docs/agents/BUDGET.md. All caps are per UTC day. Scheduled lanes together may use daily_total times (1 - reserved_interactive_share); the rest is kept for interactive build work, which is never blocked. Unknown cost counts as over budget. The numbers are proposed defaults, not a founder decision: daily_total.runs equals roster limits.max_runs_per_day_total (30) and cost_usd is 30 runs at the opencode default_budget_usd (2). A lane is matched from the receipt run id: digits = actions, local or local-<n> = local, <lane>~<anything> = that lane.",
+  "$comment": "Usage budget across lanes (retro H3, AIE-R28). Read by scripts/agents/budget.mjs; rules and wiring in docs/agents/BUDGET.md. All caps are per UTC day. Scheduled lanes together may use daily_total times (1 - reserved_interactive_share); the rest is kept for interactive build work, which is never blocked. Unknown cost counts as over budget. The numbers are proposed defaults, not a founder decision: daily_total.runs equals roster limits.max_runs_per_day_total (30) and cost_usd is 30 runs at the opencode default_budget_usd (2). A lane is matched from the receipt run id: digits = actions, local or local-<n> = local, sched-<YYYYMMDDHHMM> = sched-4h, sched-<YYYYMMDD> = docs-daily, <lane>~<anything> = that lane.",
   "version": 1,
   "daily_total": { "runs": 30, "cost_usd": 60 },
   "reserved_interactive_share": 0.5,
@@ -14,11 +14,20 @@
       "cost_usd": 24
     },
     "local": {
-      "$comment": "dispatch.mjs --local with AGENTS_LANE unset (the 4-hourly scheduled lane runs up to 6 times a day).",
-      "runs": 6,
-      "cost_usd": 12
+      "$comment": "dispatch.mjs --local with AGENTS_LANE unset (ad hoc local runs).",
+      "runs": 2,
+      "cost_usd": 4
     },
-    "docs-daily": { "runs": 1, "cost_usd": 4 },
+    "sched-4h": {
+      "$comment": "The 4-hourly scheduled agent lane: AGENTS_LANE=sched-4h, receipt run ids sched-<UTC YYYYMMDDHHMM> (PR #328, docs/agents/lanes/agent-lane.prompt.md). It fires 6 times a day; the cap is kept at 3 on purpose.",
+      "runs": 3,
+      "cost_usd": 6
+    },
+    "docs-daily": {
+      "$comment": "Daily docs run: run ids sched-<UTC YYYYMMDD>, no AGENTS_LANE (PR #328, docs/agents/lanes/docs-run.prompt.md).",
+      "runs": 1,
+      "cost_usd": 4
+    },
     "prd-daily": { "runs": 1, "cost_usd": 4 }
   },
   "profiles": {
@@ -27,7 +36,8 @@
       "reserved_interactive_share": 0.8,
       "lanes": {
         "actions": { "runs": 4, "cost_usd": 8 },
-        "local": { "runs": 2, "cost_usd": 4 },
+        "local": { "runs": 1, "cost_usd": 2 },
+        "sched-4h": { "runs": 1, "cost_usd": 2 },
         "docs-daily": { "runs": 0 },
         "prd-daily": { "runs": 0 }
       }

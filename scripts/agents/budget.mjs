@@ -8,7 +8,9 @@
 //   <!-- receipt run:<run id> agent:<handle> cost:<usd>|unknown -->
 // A receipt names a run, not a lane, so the lane comes from the run id
 // (laneOfRun): all digits is a GitHub Actions run (lane `actions`), `local` or
-// `local-<n>` is the dispatcher's local default (lane `local`), and
+// `local-<n>` is the dispatcher's local default (lane `local`),
+// `sched-<YYYYMMDDHHMM>` is the 4-hourly scheduled lane (lane `sched-4h`),
+// `sched-<YYYYMMDD>` is the daily docs run (lane `docs-daily`), and
 // `<lane>~<anything>` names its lane. Anything else is "unattributed": it counts
 // against the shared pool but against no single lane.
 //
@@ -118,6 +120,10 @@ export function laneOfRun(runId, cfg) {
   if (named) return lanes[named[1]] ? named[1] : UNATTRIBUTED;
   if (/^\d+$/.test(id) && lanes.actions) return "actions";
   if (/^local(-\d+)?$/.test(id) && lanes.local) return "local";
+  // Scheduled prompts (PR #328, docs/agents/lanes/*.prompt.md): the 4-hourly lane stamps
+  // sched-<UTC YYYYMMDDHHMM> and sets AGENTS_LANE=sched-4h; the docs run stamps sched-<UTC YYYYMMDD>.
+  if (/^sched-\d{12}$/.test(id) && lanes["sched-4h"]) return "sched-4h";
+  if (/^sched-\d{8}$/.test(id) && lanes["docs-daily"]) return "docs-daily";
   return UNATTRIBUTED;
 }
 
