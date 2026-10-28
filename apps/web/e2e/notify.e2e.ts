@@ -14,7 +14,7 @@ test.describe('sign-up form', () => {
     await page.goto('/');
     await signUp(page, email.toUpperCase().replace('@EXAMPLE.COM', '@example.com'));
 
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     // The form is replaced by the message (nothing left to submit twice).
     await expect(page.getByLabel(n.label)).toHaveCount(0);
 
@@ -72,7 +72,7 @@ test.describe('sign-up form', () => {
     await trap.fill('Acme Bots', { force: true });
     await page.getByLabel(n.label).fill(email);
     await page.getByRole('button', { name: n.button }).click();
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await mock.callsFor(email)).toEqual([]);
   });
 
@@ -161,7 +161,7 @@ test.describe('sign-up form', () => {
       await mock.setMode(email, { emailsSend: 'error' });
       await page.goto('/');
       await signUp(page, email);
-      await expect(page.getByText(n.success)).toBeVisible();
+      await expect(page.getByText(n.successTitle)).toBeVisible();
       expect(await mock.contact(email)).toBeDefined();
     });
   });
