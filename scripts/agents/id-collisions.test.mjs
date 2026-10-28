@@ -105,3 +105,20 @@ test("the CLI reads a fixture, prints the clash and exits 1, and --json gives th
   })();
   assert.deepEqual(json.collisions.map((c) => c.id), ["0023"]);
 });
+
+test("a stacked PR does not clash with its own parent: ids an ancestor adds belong to the ancestor", () => {
+  const develop = developIds({ "docs/DECISIONS.md": "### D-100 x\n" }, []);
+  const add = (id) => ({ filename: "docs/DECISIONS.md", status: "modified", patch: `@@ -1 +1,2 @@\n+### ${id} new` });
+  const prs = [
+    { number: 164, files: [add("D-130")] },
+    // #167 is stacked on #164 and compared with develop, so its diff repeats #164's D-130.
+    { number: 167, parent: 164, files: [add("D-130"), add("D-131")] },
+    // #168 is stacked on #167: it repeats both ancestors' ids.
+    { number: 168, parent: 167, files: [add("D-130"), add("D-131"), add("D-132")] },
+    // An unrelated PR that really does add D-131 still clashes with #167.
+    { number: 200, files: [add("D-131")] },
+  ];
+  const r = findCollisions({ develop, prs });
+  assert.deepEqual(r.collisions, [{ kind: "D", id: "D-131", prs: [167, 200], onDevelop: false }]);
+  assert.deepEqual(r.added.map((a) => [a.pr, a.ids]), [[164, ["D-130"]], [167, ["D-131"]], [168, ["D-132"]], [200, ["D-131"]]]);
+});

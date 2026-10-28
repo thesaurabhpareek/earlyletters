@@ -93,7 +93,7 @@ export function developIds(files, adrFiles = []) {
 }
 
 /**
- * prs: [{number, title, files}]. Returns {added, collisions, unchecked}.
+ * prs: [{number, title, files, parent?}]. Returns {added, collisions, unchecked}.
  * A collision is {kind, id, prs: [numbers], onDevelop: bool}: either two or more
  * open PRs add the id, or one does and develop already has it.
  */
@@ -101,12 +101,26 @@ export function findCollisions({ develop, prs }) {
   const added = [];
   const unchecked = [];
   const byId = new Map();
-  for (const pr of [...(prs ?? [])].sort((a, b) => a.number - b.number)) {
-    const r = addedIds(pr.files);
+  const list = [...(prs ?? [])].sort((a, b) => a.number - b.number);
+  const scanned = new Map(list.map((pr) => [pr.number, addedIds(pr.files)]));
+  const byNumber = new Map(list.map((pr) => [pr.number, pr]));
+  // A stacked PR (one with `parent`) is compared with develop, so its diff also holds
+  // what its parent PRs add. Ids an ancestor adds belong to the ancestor alone.
+  const fromAncestor = (pr, k, id) => {
+    const seen = new Set();
+    for (let up = byNumber.get(pr.parent); up && !seen.has(up.number); up = byNumber.get(up.parent)) {
+      seen.add(up.number);
+      if (scanned.get(up.number).ids[k].has(id)) return true;
+    }
+    return false;
+  };
+  for (const pr of list) {
+    const r = scanned.get(pr.number);
     for (const f of r.unchecked) unchecked.push({ pr: pr.number, file: f });
     const flat = [];
     for (const k of KINDS) {
       for (const id of [...r.ids[k]].sort((a, b) => a - b)) {
+        if (fromAncestor(pr, k, id)) continue;
         flat.push(`${k === "ADR" ? "ADR " : k === "APPLY" ? "File " : ""}${pad(k, id)}`);
         const key = `${k}:${id}`;
         if (!byId.has(key)) byId.set(key, { kind: k, n: id, prs: [] });
@@ -227,9 +241,11 @@ async function main(argv) {
     const d = loadDevelop(ROOT, arg("--ref") ?? "origin/develop");
     develop = developIds(d.files, d.adrFiles);
     const open = ghAll(`/repos/${repo}/pulls?state=open`);
+    const parentOf = (pr) => open.find((o) => o.head?.ref === pr.base?.ref && o.number !== pr.number)?.number;
     prs = (argv.includes("--all-bases") ? open : selectPrs(open)).map((pr) => ({
       number: pr.number,
       title: pr.title,
+      parent: pr.base.ref === "develop" ? undefined : parentOf(pr),
       // A stacked PR's own diff is against a branch that may be far behind develop
       // (#167 lists 1,094 files), so compare its head with develop instead.
       files:
