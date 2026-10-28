@@ -28,7 +28,7 @@
  * trigger `sign_in`, "I was invited" opens /invite. Both are hidden with server features off. Once sign-in or
  * joining brings a book to this phone, first run is over and the person lands on the Book, never on Tonight.
  */
-import { router, type Href } from 'expo-router';
+import { router, usePathname, type Href } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
@@ -68,6 +68,7 @@ import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
 import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
+import { welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -155,14 +156,16 @@ export default function Onboarding() {
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this phone, first run is
   // over (no second book is made by mistake), and the person lands on the Book, where the letters that came back
   // are, never on Tonight (EXPERIENCE_PASS 5.8 rows 12 and 13).
+  // While the join sheet is in front it waits: the joiner lands on the Book from "Open the book" (S59, P8b).
+  const pathname = usePathname();
   useEffect(() => {
-    if (step !== 'welcome') return;
+    if (!welcomeMayLeave(step, pathname)) return;
     const done = () => {
       if (listChildren().length > 0) router.replace('/book');
     };
     done();
     return subscribe(done);
-  }, [step]);
+  }, [step, pathname]);
 
   useEffect(() => {
     if (names[0]?.trim()) setDateShown(true);
