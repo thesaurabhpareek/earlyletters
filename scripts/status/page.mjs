@@ -52,7 +52,7 @@ export function sameSha(a, b) {
 // Anything else is not a pass. A blocking review must never look like an approval; a real pass
 // that reads as CONDITIONAL or UNCLEAR only adds a warning a person clears by reading it.
 const APOSTROPHES = /[\u2018\u2019\u02bc\u00b4\u0060\uff07]/g; // curly, modifier, acute, grave, fullwidth
-const STOP_ANYWHERE = /\b(do[\s-]*not|don't|dont|should\s*not|shouldn't|must\s*not|mustn't|cannot|can't|won't|not\s+(yet\s+)?(ready\s+to\s+)?)\s*merge\b|\bnot\s+mergeable\b|\bmerge\s+blocked\b|\brequest(ed|s)?\s+changes\b|\bchanges\s+requested\b/;
+const STOP_ANYWHERE = /\b(do[\s-]*not|don't|dont|should[\s-]*not|shouldn't|must[\s-]*not|mustn't|cannot|can't|won't|not[\s-]+(yet[\s-]+)?(ready[\s-]+to[\s-]+)?)[\s-]*merge\b|\bnot[\s-]+mergeable\b|\bmerge[\s-]+blocked\b|\brequest(ed|s)?\s+changes\b|\bchanges\s+requested\b/;
 const NEGATIVE = /\b(not|never|no|cannot|can't|won't|don't|dont|shouldn't|mustn't|unable|block(ed|ing|s)?|reject(ed|s)?|fail(ed|ing|s|ure)?|changes|needs?\s+work|hold)\b/;
 const CONDITION = /\b(pending|once|if|until|unless|after|before|when|conditional(ly)?|provided|subject\s+to|assuming|but|except|tbd|wip|then|must\s+fix|one\s+must|musts?\s+(open|remain(ing)?|left))\b/;
 // Endings real passing reviews use (#290 to #360); removed before the negation and condition checks.

@@ -282,6 +282,8 @@ test("near-verdict window skips blank lines; 'No Must' does not hide a named Mus
     assert.equal(countedPass(b), undefined, b);
   }
   assert.ok(countedPass(`## Review A at ${H}: PASS\n\nNo Must.\n\nNotes below.`));
+  // Lens A (28 Oct): hyphenated stop phrases count too.
+  for (const b of [`## Review A at ${H}: PASS\ndo-not-merge`, `## Review A at ${H}: PASS\nnot-ready-to-merge`, `## Review A at ${H}: PASS\nmerge-blocked`]) assert.equal(countedPass(b), undefined, b);
 });
 
 test("fail closed on any later trusted comment or 'Request changes' review (Lens B, 28 Oct, at 2a18fa0)", () => {
