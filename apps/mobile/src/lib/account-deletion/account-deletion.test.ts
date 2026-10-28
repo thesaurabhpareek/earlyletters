@@ -143,6 +143,13 @@ describe('server calls', () => {
     expect(await cancelDeletion(f.client)).toEqual({ ok: true, value: true });
   });
 
+  it('a cancel the server did not make is a failure, so the page never says the letters are back', async () => {
+    // cancel_account_deletion() returns false when there is nothing to cancel, for example once the request is executing.
+    for (const data of [false, null, 'true']) {
+      expect(await cancelDeletion(fakeClient({ rpc: { cancel_account_deletion: { data, error: null } } }).client), String(data)).toEqual({ ok: false, reason: 'failed' });
+    }
+  });
+
   it('tells offline from other failures, and never throws', async () => {
     expect(await requestDeletion(fakeClient({ throwRpc: new TypeError('Network request failed') }).client, null)).toEqual({ ok: false, reason: 'offline' });
     expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: null, error: { message: 'SCDEL' } } } }).client, null)).toEqual({ ok: false, reason: 'failed' });

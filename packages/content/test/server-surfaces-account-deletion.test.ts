@@ -17,7 +17,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
-import { accountDeletionCopy } from '../src';
+import { accountDeletionCopy, accountEmails } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -69,6 +69,7 @@ const QUOTED: Record<string, string> = {
   'confirm.back': 'Keep my account',
   'scheduled.cancelButton': 'Cancel deletion',
   'scheduled.doneButton': 'Sign out of this phone',
+  'scheduled.cancelled': 'Deletion cancelled. Your letters and books are back, just as they were.',
 };
 
 const BUTTONS = [
@@ -152,5 +153,33 @@ describe('[P8c S64] rules over accountDeletionCopy', () => {
     const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i, /\bcolour/i, /\bfavourite/i, /\borganis/i, /\brecognis/i];
     expect(ALL.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(ALL.filter((l) => l.text.includes(brand.name)).map((l) => l.path)).toEqual([]);
+  });
+});
+
+/**
+ * The emails around an account deletion say only what the app and the server do today (#358 review, lens A M1):
+ * no export after the request (DATA-REQ-053 is open), no notice to the co-parent (nothing sends coparent-left or
+ * shows the coParentLeft card yet, BL-361), and the app's real place for Delete account.
+ */
+describe('[P8c S64] the deletion emails match the app', () => {
+  const scheduled = accountEmails['account-deletion-scheduled'];
+  const text = (e: { subject: string; preheader: string; body: readonly string[]; safety?: string }) => [e.subject, e.preheader, ...e.body, e.safety ?? ''].join('\n');
+
+  it('the request receipt offers no export and says how to cancel, where Delete account is', () => {
+    expect(text(scheduled)).not.toMatch(/\bexport|\bsave a copy\b|\bkeep a copy\b/i);
+    expect(scheduled.body).toContain('Until then, you can sign in and cancel the request in Settings, Delete account.');
+    expect(scheduled.preheader).toBe('On {deletionDate}. Until then you can change your mind.');
+  });
+
+  it('the request receipt never says the co-parent was told', () => {
+    expect(text(scheduled)).not.toMatch(/let them know|told them|we (?:have )?(?:emailed|notified|told)/i);
+    expect(scheduled.body).toContain('If you share a book with a co-parent, your letters and recordings have left it, so they can no longer read them. The book stays with them.');
+  });
+
+  it('no account email puts Delete account inside Your data', () => {
+    const all = Object.values(accountEmails).map((e) => text(e as Parameters<typeof text>[0])).join('\n');
+    expect(all).not.toMatch(/Your data,? (?:then )?Delete account|delete your account[^.]*in Settings, Your data/i);
+    expect(accountEmails['deletion-request-received'].body).toContain('If you can open the app, you can also do this yourself: Settings, Delete account.');
+    expect(accountEmails['policy-update'].body).toContain('You can export everything at any time in Settings, Your data, and delete your account in Settings, Delete account.');
   });
 });

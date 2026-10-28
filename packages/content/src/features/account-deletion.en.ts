@@ -55,6 +55,9 @@ export const accountDeletionCopy = {
   scheduled: {
     heading: 'Deletion scheduled',
     body: 'Your account will be deleted on {date}. You can cancel any time before then, here or by signing in again.',
+    // KEEP (S64) but shown nowhere: after the request, the phone's next sync moves the person's own letters to Recently
+    // deleted, which Export leaves out (DATA-REQ-053, S03 with S14). The scheduled page shows it again once Export
+    // includes letters tombstoned by the request.
     exportNote: 'You can still export everything until then.',
     // The purge worker sends the request email on its next run (every 15 minutes), so it is on its way, not sent.
     emailNote: 'A confirmation is on its way to your email.',

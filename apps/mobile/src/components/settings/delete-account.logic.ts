@@ -9,7 +9,7 @@
  *   from our servers. ..."). Then `introProposed` moves into `what.intro` in packages/content and the key goes.
  */
 import { accountDeletionCopy as c } from '@scribe/content';
-import { confirmationMatches } from '@/lib/account-deletion/logic';
+import { confirmationMatches, expectedDeletionDate, localDay } from '@/lib/account-deletion/logic';
 
 export const HELD = {
   intro: c.what.intro,
@@ -37,6 +37,26 @@ export function whatHappens(lines: readonly string[] | null): WhatHappens {
     else books.push({ line, note: null });
   }
   return { known: true, books, empty, copies };
+}
+
+/** What VoiceOver reads for one book: its line, then its family note when it has one (the row is one element). */
+export function bookRowLabel(b: BookLine): string {
+  return b.note ? `${b.line} ${b.note}` : b.line;
+}
+
+/** A stable key per row: two books can read the same (two children both called Asha), so the place comes first. */
+export function bookRowKey(b: BookLine, i: number): string {
+  return `${i}:${b.line}`;
+}
+
+/** Step 2's date: the local calendar day a request made at `now` would be carried out (the server sets the real one). */
+export function confirmDay(now: Date): string {
+  return localDay(expectedDeletionDate(now));
+}
+
+/** The scheduled page's date: the local calendar day of the server's `scheduled_for`. */
+export function scheduledDay(status: { scheduledFor: string }): string {
+  return localDay(status.scheduledFor);
 }
 
 /** The failure line. Each one says that nothing has changed (S64). */

@@ -73,7 +73,7 @@ export function requestDeletion(client: DeletionClient, hadActiveSubscription: b
 }
 
 export function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
-  return call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
+  return call(() => client.rpc('cancel_account_deletion'), (d) => { if (d !== true) throw new Error('not_cancelled'); return true; });
 }
 
 /** Where the "forget my analytics ids" retry flag lives (device settings, L2). */

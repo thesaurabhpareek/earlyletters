@@ -12,27 +12,31 @@
  *  Step 2, Confirm: the heading in title2, the body with the date, the typed field, "Delete account" filled in the
  *    destructive colour and enabled only when "delete" is typed (it plays `warning` once), "Keep my account" quiet
  *    and the default (VoiceOver's escape gesture takes it).
- *  Scheduled: the date in title2, Cancel deletion bordered, Sign out of this phone; a cancel says so in a toast.
+ *  Scheduled: the date in title2, Cancel deletion bordered, Sign out of this phone; a cancel says so in a toast. No
+ *    export here: once the phone syncs after the request, Export no longer holds the person's own letters
+ *    (DATA-REQ-053, S03 with S14), so the page offers it only before the request, on step 1.
  *  Executing explains; signed out offers Sign in; the kill path says only its line.
  * A failure is one line with WarningCircle (lib/auth/ui ErrorLine) that says nothing has changed, next to the button
  * that can try again; a page that could not load offers Try again.
  * The steps swap in place, as S14 built them (one deletion state for the page); see the P8c PR for the native push.
+ * Each state has its own ScrollView (a new step starts at its top), and VoiceOver starts at step 2's and the
+ * scheduled page's heading.
  * Completes in-app, without email or support (Apple 5.1.1(v)).
  */
 import { Redirect, Stack, router } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
-import { canDelete, failureLine, HELD, whatHappens } from '@/components/settings/delete-account.logic';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
+import { bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
-import { useTheme } from '@/lib/a11y';
-import { accountDeletionCopy as c, expectedDeletionDate, localDay, stepFor, useAccountDeletion } from '@/lib/account-deletion';
+import { useFocusOnMount, useTheme } from '@/lib/a11y';
+import { accountDeletionCopy as c, stepFor, useAccountDeletion } from '@/lib/account-deletion';
 import { ErrorLine } from '@/lib/auth/ui';
 import { manageSubscription } from '@/lib/billing';
 import { capabilities } from '@/lib/capabilities';
@@ -60,7 +64,15 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
   const d = useAccountDeletion();
   const [wanted, setWanted] = useState<'review' | 'confirm'>('review');
   const [typed, setTyped] = useState('');
+  // Step 2 shows a failure only from its own Delete press: S14's hook keeps the last error until the next request,
+  // so without this an old line would come back (and be announced again) on a later visit to step 2.
+  const [tried, setTried] = useState(false);
   const step = stepFor(d.status, wanted);
+  // Each step is its own page: VoiceOver starts at its heading (as onboarding's steps do, TDD 09 A11Y-F09).
+  const confirmHeading = useRef<RNText>(null);
+  const scheduledHeading = useRef<View>(null);
+  useFocusOnMount(confirmHeading, step === 'confirm', step);
+  useFocusOnMount(scheduledHeading, step === 'scheduled', step);
 
   useEffect(() => {
     if (d.signedIn && first) d.trackStage('started');
@@ -71,9 +83,10 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
   const failure = <ErrorLine message={failureLine(d.error)} />;
   const tryAgain = <Button variant="outline" size="lg" className="self-start" label={copy.common.tryAgainButton} onPress={onRetry} />;
 
+  // Each state's ScrollView has its own key, so a new step starts at its top instead of keeping the last one's offset.
   if (!d.configured || !d.signedIn) {
     return (
-      <ScrollView contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="signed-out" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
         <Text variant="body">{d.configured ? c.signedOut.body : c.notConfigured}</Text>
         {d.configured ? <Button size="lg" className="self-start" label={c.signedOut.button} onPress={() => router.push('/settings/account')} /> : null}
@@ -83,7 +96,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   if (step === 'loading') {
     return (
-      <ScrollView contentContainerClassName={cn(PAGE, 'flex-grow justify-center')} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="loading" contentContainerClassName={cn(PAGE, 'flex-grow justify-center')} contentInsetAdjustmentBehavior="automatic">
         {header}
         {d.error ? (
           <>
@@ -99,7 +112,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   if (step === 'executing') {
     return (
-      <ScrollView contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="executing" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
         <Text variant="body">{c.executing}</Text>
       </ScrollView>
@@ -107,12 +120,12 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
   }
 
   if (step === 'scheduled' && d.status && d.status.state !== 'none' && d.status.state !== 'executing') {
-    const date = longDate(localDay(d.status.scheduledFor));
+    const date = longDate(scheduledDay(d.status));
     return (
-      <ScrollView contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="scheduled" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
         <View className="gap-2">
-          <View accessible accessibilityRole="header" className="gap-1">
+          <View ref={scheduledHeading} accessible accessibilityRole="header" className="gap-1">
             <Text variant="subhead" tone="muted">
               {c.scheduled.heading}
             </Text>
@@ -138,29 +151,24 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
           />
           <Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => void d.signOut()} />
         </View>
-        <View className="gap-2">
-          <Text variant="subhead" tone="muted">
-            {c.scheduled.exportNote}
-          </Text>
-          <Button variant="quiet" className="self-start" label={c.exportFirst.button} onPress={() => router.push('/settings/export')} />
-        </View>
       </ScrollView>
     );
   }
 
   if (step === 'confirm') {
-    const date = longDate(localDay(expectedDeletionDate(new Date())));
+    const date = longDate(confirmDay(new Date()));
     const ready = canDelete(typed, d.busy);
-    const keep = () => (setWanted('review'), setTyped(''));
+    const keep = () => (setWanted('review'), setTyped(''), setTried(false));
     return (
       <ScrollView
+        key="confirm"
         contentContainerClassName={PAGE}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         onAccessibilityEscape={() => (d.busy ? undefined : keep())}>
         {header}
         <View className="gap-2">
-          <Text variant="title2" asHeading>
+          <Text ref={confirmHeading} variant="title2" asHeading>
             {c.confirm.heading}
           </Text>
           <Text variant="body">{fill(c.confirm.body, { date })}</Text>
@@ -176,7 +184,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
           returnKeyType="done"
           editable={!d.busy}
         />
-        {failure}
+        {tried ? failure : null}
         <View className="gap-2">
           {/* Filled in the destructive colour only when it will act; until then, and while the request is on its way, the
               outline of a filled button that waits, with the spinner inside it. */}
@@ -189,6 +197,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
             accessibilityLabel={c.confirm.button}
             className={ready ? 'bg-destructive' : 'border border-input'}
             onPress={async () => {
+              setTried(true);
               haptic('warning');
               if (await d.request()) keep();
             }}>
@@ -202,7 +211,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   const list = whatHappens(d.lines);
   return (
-    <ScrollView contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+    <ScrollView key="review" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
       {header}
       <View className="gap-4">
         <Text variant="title2" asHeading>
@@ -210,7 +219,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
         </Text>
         <Text variant="body">{HELD.intro}</Text>
         {list.books.map((b, i) => (
-          <View key={`${i}:${b.line}`} accessible accessibilityLabel={b.note ? `${b.line} ${b.note}` : b.line} className="flex-row items-start gap-3">
+          <View key={bookRowKey(b, i)} accessible accessibilityLabel={bookRowLabel(b)} className="flex-row items-start gap-3">
             <BookOpenIcon size={20} color={colors.textMuted} style={{ marginTop: 2 }} />
             <View className="flex-1 gap-1">
               <Text variant="body">{b.line}</Text>
