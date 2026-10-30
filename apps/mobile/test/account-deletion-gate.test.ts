@@ -588,21 +588,49 @@ const SRC = join(__dirname, '..', 'src');
 const code = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const read = (...p: string[]) => code(readFileSync(join(SRC, ...p), 'utf8'));
 
-describe('the hook feeds the pure decision, and the stores are written where the flow says', () => {
+describe('[A2] decideGate remembers the deletion screen only until something else is the answer', () => {
+  it('the deletion screen sets it; the welcome and the paper forget it; the app and the leave keep it', () => {
+    const mine: OpenRequest = { ...SCHEDULED, userId: MAMA_ID };
+    expect(decideGate({ ...gateBase, note: mine }).wasDeletion).toBe(true);
+    expect(decideGate({ ...gateBase, note: null, wasDeletion: true }).wasDeletion).toBe(false); // the note is gone: the welcome
+    expect(decideGate({ ...gateBase, note: null, hasDeletedBook: true, wasDeletion: true }).wasDeletion).toBe(false); // the paper
+    expect(decideGate({ ...gateBase, hasBook: true, wasDeletion: true }).wasDeletion).toBe(true); // the book is back: still leaving
+    expect(decideGate({ ...gateBase, hasBook: true, wasDeletion: false }).wasDeletion).toBe(false);
+  });
+
+  it('a book the person makes after the note ended is not followed to the Book', () => {
+    const mine: OpenRequest = { ...SCHEDULED, userId: MAMA_ID };
+    let was = false;
+    const step = (over: Partial<GateInputs>) => {
+      const d = decideGate({ ...gateBase, ...over, wasDeletion: was });
+      was = d.wasDeletion;
+      return d;
+    };
+    expect(step({ note: mine }).screen).toBe('deletion');
+    expect(step({ note: null }).screen).toBe('welcome'); // the read said none and the note was cleared
+    expect(step({ note: null, hasBook: true })).toMatchObject({ screen: 'app', leave: false }); // "Begin the book"
+  });
+});
+
+describe('the wiring that is read off the source (the behaviour is run in account-deletion-gate-hook.test.ts and open-deletion-press.test.ts)', () => {
   it('[S-2] the gate hook passes the stored note, the session user and the route to decideGate, and acts on its answer', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
     expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
     expect(s).toContain('const userId = authUserId(auth.state);');
     expect(s).toContain('const note = useMemo(() => parseOpenRequest(raw), [raw]);');
-    expect(s).toContain('if (gate.deletionShown) wasDeletion.current = true;');
+    expect(s).toContain('wasDeletion.current = gate.wasDeletion;');
     expect(s).toContain('return { screen: gate.screen, request: gate.request };');
     // The leave is the guarded one: the effect runs on gate.leave, which decideGate answers with welcomeMayLeave.
     expect(s).toMatch(/const leave = gate\.leave;\s*useEffect\(\(\) => \{\s*if \(leave\) router\.replace\('\/book'\);\s*\}, \[leave\]\);/);
     expect(s.match(/router\.replace\(/g)).toHaveLength(1);
     // Writes are in effects, not in render: the dead note is removed there, with the value that was judged.
     expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear\) clearDeadNote\(raw\);\s*\}, \[clear, raw\]\);/);
+    // A read is asked as the account signed in at render time, and the answer counts for that account only.
     expect(s).toContain('if (s.ok) recordStatus(s.value, askedAs);');
-    expect(s).toContain('recordBookBack()');
+    expect(s).toContain('const checked = answer.for === userId && answer.checked;');
+    expect(s).toContain('const confirmed = answer.for === userId && answer.confirmed;');
+    expect(s).toContain('}, [client, hasBook, userId]);');
+    expect(s).toContain('}, [client, refreshWithBook, userId]);');
   });
 
   it('[S-C] decideGate reuses the welcome\'s own allow-list for the replace', () => {
@@ -618,19 +646,21 @@ describe('the hook feeds the pure decision, and the stores are written where the
     expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf('await withdrawAnalytics()'));
     expect(s).toContain('recordCancelled();');
     expect(s.indexOf('const r = await cancelDeletion(client);')).toBeLessThan(s.indexOf('recordCancelled();'));
-    expect(s).toContain('recordStatus(s.value, askedAs);');
-    expect(s.indexOf('const askedAs = signedInUserId();')).toBeLessThan(s.indexOf('await Promise.all([loadStatus(client)'));
+    // Asked as the user at render time, which is known on the first read of a sign-in (the auth snapshot is not yet).
+    expect(s).toContain('const userId = authUserId(auth.state);');
+    expect(s).toContain('recordStatus(s.value, userId);');
   });
 
-  it('[M-A, S-1, notes 3 and 4] the deletion screen answers a press, speaks it, shows no failure before one, and exits from executing', () => {
+  it('[S-1] the deletion screen draws the press state, speaks a failed cancel and the change to "cancelled", and has the controller do the rest', () => {
     const s = read('components', 'settings', 'open-deletion.tsx');
     expect(s).toContain("kind={working ? 'loading' : failure ? 'error' : 'empty'}");
-    expect(s).toContain('const failure = acted ? failureLine(d.error) : null;');
-    expect(s).toContain('announce(c.open.cancelling);');
+    expect(s).toContain('const failure = press.acted ? failureLine(d.error) : null;');
     expect(s).toContain('announce(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
-    expect(s).toContain('announce(failure);');
-    expect(s).toContain('announce(c.open.notYet);');
+    expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
+    expect(s).toContain('cancel: () => ctl.cancel(),');
+    expect(s).toContain('retry: () => ctl.retry(),');
     expect(s).toContain('const [first, ...rest] = working ? [] : view.actions;');
+    expect(s).toContain('words: { cancelling: c.open.cancelling, notYet: c.open.notYet },');
     expect(s).toContain('accessibilityLabel={c.open.checking}');
   });
 });
@@ -658,8 +688,8 @@ describe('the routes use the gate', () => {
 
   it('the gate hook is quiet at launch: one read of the open request, only signed in with no book, never awaited by a screen', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toContain('if (!client || !wantRead) return;');
-    expect(s).toContain('const wantRead = !hasBook || gate.refreshWithBook;');
+    expect(s).toContain('if (!client || hasBook || !userId) return;');
+    expect(s).toContain('const refreshWithBook = gate.refreshWithBook;');
     expect(s.match(/loadStatus\(/g)).toHaveLength(1);
     expect(s).toContain('void loadStatus(client)');
     expect(s).not.toMatch(/\bawait\b/);

@@ -13,6 +13,10 @@
  *  - `refreshWithBook`    a book is listed, an open request is still noted, and an account is signed in: ask the server
  *    once, in the background, so a note whose request was cancelled elsewhere does not sit there unseen until the day
  *    the book is lost (a plain sync brought it back; recordBookBack clears only a cancelled wait).
+ *  - `wasDeletion`        the value to remember for the next render: the deletion screen has been up and nothing since
+ *    has ended that. It is what makes a book that arrives "the book is back after a cancel". It is forgotten whenever
+ *    the welcome or the paper is the answer (the note was cleared, the wait ran out, another account signed in): a book
+ *    that then arrives is a book the person made ("Begin the book"), and is not followed to the Book by this gate.
  */
 import { welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { chooseScreen, countedNote, noteIsDead, type OpenRequest, type PhoneScreen } from './open-request';
@@ -30,7 +34,7 @@ export interface GateInputs {
   checked: boolean;
   /** The server said, since this screen opened, that the request is open. */
   confirmed: boolean;
-  /** The deletion screen has been up since this screen opened. */
+  /** The value `wasDeletion` returned on the previous render (false on the first). */
   wasDeletion: boolean;
   pathname: string;
 }
@@ -41,8 +45,8 @@ export interface GateDecision {
   leave: boolean;
   clear: boolean;
   refreshWithBook: boolean;
-  /** The deletion screen is up on this render (the caller remembers it for the next). */
-  deletionShown: boolean;
+  /** What to remember for the next render (see the header). */
+  wasDeletion: boolean;
 }
 
 export function decideGate(i: GateInputs): GateDecision {
@@ -61,6 +65,6 @@ export function decideGate(i: GateInputs): GateDecision {
     leave: leaving && welcomeMayLeave('welcome', i.pathname),
     clear: noteIsDead({ note: i.note, nowMs: i.nowMs, signedIn: i.signedIn, userId: i.userId, checked: i.checked, confirmed: i.confirmed }),
     refreshWithBook: i.hasBook && i.signedIn && open,
-    deletionShown: base === 'deletion',
+    wasDeletion: base === 'deletion' ? true : base === 'welcome' || base === 'checking' ? false : i.wasDeletion,
   };
 }
