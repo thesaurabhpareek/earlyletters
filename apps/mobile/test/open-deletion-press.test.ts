@@ -44,6 +44,21 @@ describe('the reducer', () => {
     expect(pressReducer(a, { type: 'press', action: 'retry' })).toBe(a);
   });
 
+  it('[BL-496] only a cancel press sets acted: a retry press leaves it false, so the hook\'s passive failure stays hidden', () => {
+    expect(IDLE.acted).toBe(false);
+    const retry = pressReducer(IDLE, { type: 'press', action: 'retry' });
+    expect(retry).toMatchObject({ working: 'retry', id: 1, acted: false, notYet: false });
+    expect(pressReducer(retry, { type: 'pulled', stillOnItsWay: true, id: 1 })).toMatchObject({ working: null, acted: false, notYet: true });
+    expect(pressReducer(retry, { type: 'giveUp', id: 1 })).toMatchObject({ working: null, acted: false });
+    expect(pressReducer(IDLE, { type: 'press', action: 'cancel' })).toMatchObject({ working: 'cancel', id: 1, acted: true });
+  });
+
+  it('[BL-496] a retry after a cancel leaves acted as the cancel set it (it never clears it either)', () => {
+    const cancelled = pressReducer(pressReducer(IDLE, { type: 'press', action: 'cancel' }), { type: 'cancelled', ok: true, id: 1 });
+    expect(cancelled.acted).toBe(true);
+    expect(pressReducer(cancelled, { type: 'press', action: 'retry' })).toMatchObject({ working: 'retry', id: 2, acted: true });
+  });
+
   it('an answer is for its own press only', () => {
     const a = pressReducer(IDLE, { type: 'press', action: 'cancel' });
     expect(pressReducer(a, { type: 'cancelled', ok: false, id: 7 })).toBe(a);
@@ -130,13 +145,24 @@ describe('Try again', () => {
   it('is a pull, answered by working and then by the line "Still on their way" (spoken) when the book has not come', async () => {
     const t = setup();
     t.ctl.retry();
-    expect(t.ctl.get()).toMatchObject({ working: 'retry', acted: true, notYet: false });
+    expect(t.ctl.get()).toMatchObject({ working: 'retry', acted: false, notYet: false });
     t.ctl.retry();
     expect(t.calls.pull).toBe(1);
     t.finishPull();
     await settle();
-    expect(t.ctl.get()).toMatchObject({ working: null, notYet: true });
+    expect(t.ctl.get()).toMatchObject({ working: null, acted: false, notYet: true });
     expect(t.calls.announce).toEqual([c.open.notYet]);
+  });
+
+  it('[BL-496] a whole Try again press, answered or given up, never lets a failure be shown', async () => {
+    const t = setup();
+    t.ctl.retry();
+    t.finishPull();
+    await settle();
+    expect(t.ctl.get().acted).toBe(false);
+    t.ctl.retry();
+    await vi.advanceTimersByTimeAsync(WORKING_CAP_MS);
+    expect(t.ctl.get()).toMatchObject({ working: null, acted: false });
   });
 
   it('says nothing about "still on their way" when the pull has just brought the book back', async () => {

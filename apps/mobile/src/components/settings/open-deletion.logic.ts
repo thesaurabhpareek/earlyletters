@@ -17,7 +17,10 @@ export interface PressState {
   working: 'cancel' | 'retry' | null;
   /** The number of the last press; an answer for an older one is not this press's. */
   id: number;
-  /** The person has pressed something: only now may a failure be shown (a passive read that failed says nothing). */
+  /**
+   * The person has pressed Cancel deletion: only now may the hook's failure be shown (a passive read that failed says
+   * nothing). Try again never sets it: its own outcome is the "still on their way" line, never the hook's error.
+   */
   acted: boolean;
   /** Cancels that did not go through; each one is spoken. */
   failedPresses: number;
@@ -36,7 +39,7 @@ export type PressEvent =
 export function pressReducer(s: PressState, e: PressEvent): PressState {
   switch (e.type) {
     case 'press':
-      return s.working ? s : { ...s, working: e.action, id: s.id + 1, acted: true, notYet: false };
+      return s.working ? s : { ...s, working: e.action, id: s.id + 1, acted: s.acted || e.action === 'cancel', notYet: false };
     case 'cancelled':
       if (e.id !== s.id) return s;
       return { ...s, working: null, failedPresses: e.ok ? s.failedPresses : s.failedPresses + 1 };
