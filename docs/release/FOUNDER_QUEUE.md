@@ -15,6 +15,23 @@ Never paste a secret into a chat, an issue, the repo or an email (`docs/FOUNDER_
 
 ---
 
+## 0. Dated steps from the CTO run (Fri 30 Oct 2026)
+
+The coordinator's proposed order for the weekend, from `docs/release/TESTFLIGHT.md` ("Where build 1 stands"). Dates are proposals; the freeze is Tue 3 Nov 5:00 AM PT and the go/no-go Thu 5 Nov (both proposed, `docs/release/AUTOMATION.md` section 6). Minutes are your hands-on time as the named steps give them; the waits are not yours. Never paste a secret into a chat.
+
+| # | By | Step | Minutes | Unblocks |
+|---|---|---|---|---|
+| 1 | Fri 30 Oct | Check whether Porkbun DNSSEC is on for `earlyletters.app`; if it is, turn it off, remove its DS record and start the 24 to 48 hour wait. Then open the Cloudflare account (TESTFLIGHT step 4 item 1) | 15 to 60 | Everything in step 4; it is the only multi-day wait |
+| 2 | Sat 31 Oct | Expo account and `eas init`; send the project id and the account name (step 3.1) | 20 | Every `eas build`; the one-line project-id PR |
+| 3 | Sat 31 Oct | App Store Connect: the `.preview` App ID, the app record, internal testers, the "Family" group with automatic distribution off; send the app record's numeric Apple ID (step 2 items 1 to 4) | 45 | Build 1 upload; builds from GitHub |
+| 4 | Sat 31 Oct | Forward the counsel relay document (items 26 to 28 are new) to counsel | 5 | The Delete account lines, before the Delete account row is shown to testers |
+| 5 | Sun 1 Nov | Step 4 items 2 to 4 once the Cloudflare zone is Active: R2 bucket and custom domain, `keygen` twice, `publish release`, `upload`, the one PR with the keys | 150 | Words from speech; clears the two preflight FAILs |
+| 6 | Sun 1 to Mon 2 Nov | Build 1: `doctor`, `preflight` (expect 0 FAIL), `eas build`, `eas submit`, add to "Family" (step 5) | 30 | Testers on build 1 |
+| 7 | Mon 2 Nov | GitHub settings: the second approver account (AF-02), Environments `testflight` and `staging`, branch protection (AF-03, AF-07), by `scripts/release/github-settings.ts` (FT-20) | 50 | Builds from GitHub; any agent harness; `AGENTS_ENABLED` |
+| 8 | Mon 2 Nov | Build 2 setup: steps 6 to 9, 11 and 12 of TESTFLIGHT.md (staging, auth, Apple sign-in, EAS variables, purge worker) | about 420 | Build 2; the Delete account row |
+
+The questions only you can answer (spend, the Privacy row, the Delete account row in build 2, the dates) were put to you in chat on 30 Oct with the CTO's recommendation and a default; the rulings behind them are in `docs/agents/cto/RULINGS.md`.
+
 ## 1. Wave 0: this week, smallest first
 
 Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for these; only you can do them.
