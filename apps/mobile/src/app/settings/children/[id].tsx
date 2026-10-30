@@ -132,10 +132,10 @@ export default function ChildSettings() {
       </ListSection>
 
       {/* "Write this book together": coming soon with server features off; the invite with one parent, the Family tab
-          with two (child-settings.logic.ts bookRow). P8 switches the label to familyCopy.bookRow.label (the same words)
-          when it adds the key. */}
+          with two (child-settings.logic.ts bookRow). The label is familyCopy.bookRow.label with server features on, and
+          the kill path's familyCopy.soon.settingsRow with them off (the same words, S46). */}
       <ListSection footer={row.footer}>
-        <ListRow title={familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
+        <ListRow title={serverFeaturesEnabled() ? familyCopy.bookRow.label : familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
       </ListSection>
 
       {/* A switch that cannot be turned on is hidden until co-parent sharing exists (D-087). */}

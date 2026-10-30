@@ -48,15 +48,17 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await step('happy', 'Licenses', 'Its own page: the speech models and icons, the language data word for word, then every bundled library, font and vendored file grouped by licence. A row opens its notice, one at a time.');
 });
 
-test('[J16b] settings with server features on: Account and Delete account', async ({ app, record }) => {
+test('[J16b] settings with server features on, signed out: Account, and no Delete account', async ({ app, record }) => {
   const step = journey(record, 'J16', 'settings-and-help', 20, 'J16-01');
   await mockServer(app, { user: MAMA });
   await app.goto(`${process.env.E2E_WEB_ON_URL}/?seed=asha`);
   await expect(app.locator('body')).not.toBeEmpty();
   await app.goto(`${process.env.E2E_WEB_ON_URL}/settings?seed=asha`);
   await expect(btn(app, /^Account/)).toBeVisible();
-  await expect(btn(app, /^Delete account/)).toBeVisible();
+  // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
+  // runs the row's condition for signed in, signed out and server features off).
+  await expect(btn(app, /^Delete account/)).toHaveCount(0);
   await expect(app.getByTestId('settings.about.beta').getByText(EARLY, { exact: true })).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
-  await step('happy', 'Settings, server features on', 'With sign-in in the build, Account sits at the top of the first section and Delete account in its own section above Help (S40; their final shape is P8\'s). The early-version note is still only under About.');
+  await step('happy', 'Settings, server features on', 'With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });

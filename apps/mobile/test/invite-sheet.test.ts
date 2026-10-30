@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { authCopy, familyCopy } from '@scribe/content';
 import { INVITE_TTL_DAYS } from '@scribe/core/src/invite';
-import { inviteSheetView } from '../src/components/family/invite-sheet.logic';
+import { afterShare, inviteSheetView } from '../src/components/family/invite-sheet.logic';
 import { newInviteDraft } from '../src/lib/family/invite-draft.logic';
 import { createCoParentInvite, type FamilyClient } from '../src/lib/family/invites';
 import { setFamilyKillSourceForTests } from '../src/lib/family/invites-switch';
@@ -64,6 +64,34 @@ describe('[S58] the link carries no child name and works once for 7 days', () =>
   });
 });
 
+describe('[S58] a share sheet dismissed without sending (critics\' pass S1)', () => {
+  beforeAll(() => setFamilyKillSourceForTests({ on: () => false }));
+  afterAll(() => setFamilyKillSourceForTests(null));
+
+  it('shared: one tick, the sheet closes and the tab says the invite waits; dismissed: the sheet stays, no tick, no toast', () => {
+    expect(afterShare('shared')).toEqual({ close: true, tick: true, notice: true, keepDraft: false });
+    expect(afterShare('dismissed')).toEqual({ close: false, tick: false, notice: false, keepDraft: true });
+    expect(code(SHEET)).toMatch(/const after = afterShare\(shared\);\s*if \(!after\.close\) return;\s*haptic\('success'\);\s*draft\.current = null;\s*familyNotice\.leave\(k\.done\);\s*close\(\);/);
+    // The share sheet's answer is the one that tells the two apart.
+    expect(code('lib/family/share.ts')).toMatch(/return res\?\.action === Share\.dismissedAction \? 'dismissed' : 'shared';/);
+  });
+
+  it('a second tap after a dismissed sheet shares the same invite: the same draft, the same link, one invite', async () => {
+    const { client, calls } = fakeServer();
+    const draft = await newInviteDraft({
+      randomBytes: (n) => new Uint8Array(randomBytes(n)),
+      sha256Hex: async (t) => createHash('sha256').update(t, 'utf8').digest('hex'),
+      newId: () => randomUUID(),
+    });
+    const first = await createCoParentInvite(client, ASHA_BOOK, 'Papa', draft);
+    const again = await createCoParentInvite(client, ASHA_BOOK, 'Papa', draft);
+    expect(again).toEqual(first);
+    expect(new Set(calls.map((c) => c.args.p_invite_id)).size).toBe(1);
+    // The sheet keeps the draft while the sign-off is unchanged (draftFor), and drops it only after a send.
+    expect(code(SHEET)).toMatch(/if \(!fresh && draft\.current && draft\.current\.signsAs === s\) return draft\.current\.draft;/);
+  });
+});
+
 describe('[S58] the app sends nothing itself', () => {
   it('the link goes only to the system share sheet; the sheet opens no mail, message or web request of its own', () => {
     const sheet = code(SHEET);
@@ -107,6 +135,16 @@ describe('[S58] states', () => {
     expect(sheet).toMatch(/const COVER_PAUSE_MS = 300;/);
     expect(sheet).toMatch(/<TextField[\s\S]*?face="serif"/);
     expect(sheet).toMatch(/<Chip\s+key=\{ex\}\s+label=\{ex\}\s+selected=\{signsAs === ex\}/);
+  });
+
+  it('the primary is the frame\'s footer, above the keyboard, with the error line above it, once the account can invite (critics\' pass S3)', () => {
+    const sheet = code(SHEET);
+    expect(sheet).toMatch(/const footer =\s*view === 'form' && auth\.canSync \? \(\s*<>\s*<ErrorLine message=\{error \? fill\(familyCopy\.errors\[error\], \{ child \}\) : null\} \/>[\s\S]*?<Button testID="inviteNew\.share"[\s\S]*?<\/>\s*\) : undefined;/);
+    expect(sheet).toMatch(/<SheetFrame closeLabel=\{familyCopy\.accept\.close\} closeDisabled=\{busy\} footer=\{footer\}>/);
+    // One primary only, and not in the scrolling body.
+    expect(sheet.match(/testID="inviteNew\.share"/g)).toHaveLength(1);
+    const body = sheet.slice(sheet.indexOf('<SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy} footer={footer}>'));
+    expect(body).not.toMatch(/inviteNew\.share/);
   });
 
   it('getting the link keeps the primary\'s size with its busy line inside it', () => {

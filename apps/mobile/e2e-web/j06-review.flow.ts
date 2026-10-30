@@ -10,7 +10,7 @@ async function openReview(app: import('@playwright/test').Page, kind: 'asha' | '
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
 }
 
-test('[J06] review: what the machine tidied, put back, word for word, save to the book', async ({ app, record }) => {
+test('[J06] review: the small fixes, put back, word for word, save to the book', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 1, 'J05-03');
   await openReview(app);
   await expect(app.getByTestId('review.sheet')).toBeVisible();
@@ -31,7 +31,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await expect(app.getByText(/put back/i).first()).toBeVisible();
   await step('happy', 'Put back', 'The original words return, marked for a moment, with Undo beside them.');
   await app.getByRole('button', { name: 'Undo', exact: true }).click();
-  await step('happy', 'Undo the put-back', 'Undo re-applies the tidy-up. Every edit is reversible both ways.');
+  await step('happy', 'Undo the put-back', 'Undo re-applies the small fix. Every edit is reversible both ways.');
 
   await app.getByRole('radio', { name: 'Exactly as said' }).click();
   await expect(app.getByText('Exactly as you said it.')).toBeVisible();

@@ -12,7 +12,8 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await app.getByRole('textbox').nth(1).fill('Nila');
   await step('happy', 'Two names in first run', 'Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.');
   await btn(app, 'Continue').click();
-  await expect(app.getByText(/call you/)).toBeVisible();
+  // The heading, not the text: the reason line under the field also says "call you" (strict mode matched both once).
+  await expect(app.getByRole('heading', { name: /call you/ })).toBeVisible();
   await step('happy', 'One signature for both', 'The title asks what both children call the parent, so one signature covers every book made here.');
   await app.getByText('Mama', { exact: true }).click();
   await btn(app, 'Sign my letters').click();

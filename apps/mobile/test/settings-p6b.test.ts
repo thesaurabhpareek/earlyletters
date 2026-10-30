@@ -96,10 +96,10 @@ describe('[S41] Plan', () => {
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
       for (const date of ['November 13, 2026', 'November 12, 2026']) expect(said.filter((x) => x.includes(date)).length, date).toBeLessThanOrEqual(1);
     }
-    // The promise sits where plan.off and plus.promise once both said "Your first two letters are free.".
+    // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
     expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise\}>/);
-    expect(plan).not.toMatch(/copy\.plus\.promise|p\.off\b/);
+    expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
 
@@ -163,7 +163,6 @@ describe('[S34] Reminders', () => {
     expect(screen).toMatch(/<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
     // The master switch keeps every choice when off, and on clears a pause: run through lib/reminders' public API
     // in test/reminders-switch.test.ts (lens A f6 on #313 asked for behaviour, not another stream's source).
-    expect(en.settings.reminders.pauseLabel).toBe('Pause all reminders'); // retired, kept until P7
   });
 
   it('the notifications-off card shows only while reminders are on and iOS says no; back from Settings it collapses with "Reminders are on."', () => {

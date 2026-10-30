@@ -217,6 +217,71 @@ describe('[S54] Check your email', () => {
     expect(codeStep).toMatch(/\{copy\.auth\.noEmailHelp\}/);
   });
 
+  it('[P8a critics S1, lens A2] the pause is read from the wrong-code list, says the ways in that still work, and keeps a new email', () => {
+    // S01's rule, read from the same in-memory list at each render, never from the error state, so it shows from the
+    // fifth wrong code and holds whatever the error line says.
+    expect(codeStep).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(address\), Date\.now\(\)\);\s*const paused = pause\.paused;/);
+    expect(codeStep.match(/\bpaused =/g), 'one place decides the pause').toHaveLength(1);
+    // That read is Date.now() at each render, so the React Compiler must leave the component as written.
+    expect(codeStep).toMatch(/export default function CodeStep\(\) \{\s*'use no memo';/);
+    // One line in one live region: the pause, then the ways in that still work (VoiceOver hears both).
+    expect(codeStep).toMatch(/const message = paused \? `\$\{authErrorMessage\('code_paused'\)\} \$\{k\.pausedOtherWays\}` : authErrorMessage\(error\);/);
+    expect(codeStep.match(/<ErrorLine /g), 'one error line').toHaveLength(1);
+    expect(codeStep).not.toMatch(/k\.pausedOtherWay\b/);
+    // "Send a new email" stays offered while paused (its link signs in, F02-U14), with its own minute's wait, and the send
+    // neither reads nor touches the pause.
+    // On a line of its own: a child of the button group, not inside any condition.
+    expect(codeStep).toMatch(/^\s*<QuietButton label=\{k\.resend\} onPress=\{\(\) => void resend\(\)\} disabled=\{busy \|\| !canResend\} \/>$/m);
+    expect(codeStep).toMatch(/\{!canResend && \(\s*<Text variant="footnote" tone="muted" className="text-center">\s*\{k\.resendWait\}/);
+    expect(between(codeStep, 'const resend = async', 'const message')).not.toMatch(/paused|pause\.|WrongCode/);
+    // "A new email is on its way." shows while paused too: the new email's link works then.
+    expect(codeStep).toMatch(/\{note && \(!message \|\| paused\) \? \(/);
+    // While paused, typing waits and Continue cannot ask.
+    expect(codeStep).toMatch(/editable=\{!busy && !paused\}/);
+    expect(between(codeStep, 'footer={', '}>')).toMatch(/disabled=\{code\.length !== EMAIL_CODE_LENGTH \|\| !looksLikeEmail\(address\) \|\| paused\}/);
+    // The screen neither adds to the list nor clears it.
+    expect(codeStep).not.toMatch(/clearWrongCodes|noteWrongCode/);
+  });
+
+  it('[P8a lens B1] the pause lifts on its own: one render at its end, re-armed if it fires early, and the stale line goes', () => {
+    expect(codeStep).toMatch(
+      /useEffect\(\(\) => \{\s*if \(pause\.until === null\) return;\s*const t = setTimeout\(\(\) => setNow\(Date\.now\(\)\), Math\.max\(0, pause\.until - Date\.now\(\)\) \+ 50\);\s*return \(\) => clearTimeout\(t\);\s*\}, \[pause\.until, now\]\);/,
+    );
+    expect(codeStep).toMatch(/useEffect\(\(\) => \{\s*if \(!paused && error === 'code_paused'\) setError\(null\);\s*\}, \[paused, error\]\);/);
+  });
+
+  it('[P8a lens B2] S01\'s side: only a wrong code adds to the list and only a code sign-in clears it, per address; a link never reads it', () => {
+    const provider = read('lib', 'auth', 'session-provider.tsx');
+    const pending = read('lib', 'auth', 'pending.ts');
+    expect(between(provider, 'async sendEmailLink(email)', 'async verifyEmailCode(')).not.toMatch(/WrongCode|codeEntryPause/);
+    const byCode = between(provider, 'async verifyEmailCode(', 'async verifyEmailLink(');
+    expect(byCode).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(email\), Date\.now\(\)\);\s*if \(pause\.paused\) \{/);
+    expect(byCode).toMatch(/const userId = await verifyCode\(sb, email, code\);\s*clearWrongCodes\(email\);/);
+    expect(byCode).toMatch(/if \(error === 'wrong_code'\) noteWrongCode\(email, Date\.now\(\)\);/);
+    expect(provider.match(/clearWrongCodes\(/g), 'cleared only by a code sign-in').toHaveLength(1);
+    // F02-U14: the link in an email never reads the pause, which is why the code step can point at it.
+    expect(between(provider, 'async verifyEmailLink(', 'async recordConsent(')).not.toMatch(/codeEntryPause|wrongCodeTimes|code_paused/);
+    // One list per address, trimmed and lower-cased: the same address typed again meets the same pause.
+    expect(pending).toMatch(/return wrongCodes\.get\(email\.trim\(\)\.toLowerCase\(\)\) \?\? \[\];/);
+    expect(pending).toMatch(/const k = email\.trim\(\)\.toLowerCase\(\);\s*wrongCodes\.set\(k, /);
+    // No screen, the email step included, adds to the list or clears it.
+    for (const [name, src] of Object.entries(SCREENS)) expect(src, name).not.toMatch(/clearWrongCodes|noteWrongCode/);
+  });
+
+  it('[P8a critics S2, lens A1 and A3] Not now sits top right, in reach with the number pad up; the safe line only with a book here', () => {
+    // Not now is the frame's header button (outside the scroll, above the keyboard), held while a code is being asked,
+    // and closes the sheet with S52's rule: nothing else, so the wrong-code list stays as it was.
+    expect(codeStep).toMatch(/<SheetFrame\s+closeLabel=\{authCopy\.sheet\.later\}\s+closeDisabled=\{busy\}\s+footer=\{/);
+    expect(codeStep).not.toMatch(/label=\{authCopy\.sheet\.later\}|useCloseSheet/);
+    const frame = between(ui, 'export function SheetFrame(', 'export function');
+    expect(frame).toMatch(/\{closeLabel \? \(\s*<ModalHeader onClose=\{close\} closeLabel=\{closeLabel\} closeDisabled=\{closeDisabled\}/);
+    expect(frame.indexOf('<ModalHeader'), 'the header is outside the keyboard-avoiding scroll').toBeLessThan(frame.indexOf('<KeyboardAvoidingView'));
+    // "Your letters are safe on this phone." only while waiting, and only when this phone holds a book (the sheet's own
+    // has-a-book signal): a fresh install has no letters here.
+    expect(codeStep).toMatch(/const \{ active \} = useChildren\(\);/);
+    expect(codeStep).toMatch(/\{message \? \(\s*<ErrorLine message=\{message\} \/>\s*\) : active \? \(\s*<Text variant="subhead" tone="muted">\s*\{k\.lettersSafe\}\s*<\/Text>\s*\) : null\}/);
+  });
+
   it('opening the link shows "Signing you in" with the small spinner and nothing read twice', () => {
     expect(verify).toMatch(/<SheetTitle>\{refused \? v\.refusedTitle : v\.title\}<\/SheetTitle>/);
     expect(verify).toMatch(/accessibilityElementsHidden[^>]*>\s*<ActivityIndicator/);
@@ -308,6 +373,27 @@ describe('[S55] before your book syncs', () => {
   it('records answers only through the provider: the screen never starts sync itself', () => {
     expect(consent).not.toMatch(/lib\/sync|startSync|syncAllowed/);
     expect(consent).toMatch(/await auth\.recordConsent\(step, accepted\)/);
+  });
+});
+
+describe('[P8a critics S4] the account gate in the invite, join and leave sheets', () => {
+  const gate = between(ui, 'export function AccountGate', '\n}\n');
+
+  it('says why in the sheet\'s own words: inviting, or joining and leaving', () => {
+    expect(gate).toMatch(
+      /const reason = claiming \? authCopy\.claim\.waiting : trigger === 'invite_create' \? familyCopy\.card\.finishSetup : familyCopy\.errors\.consent_needed;/,
+    );
+    expect(gate).toMatch(/<SheetBody muted>\{reason\}<\/SheetBody>/);
+    // Account's row value stays on Account; the gate never says "Not set up yet".
+    expect(gate).not.toMatch(/sync\.waiting/);
+    expect(account).toMatch(/trailing=\{a\.sync\[view\.sync\]\}/);
+  });
+
+  it('after a decline, nothing above "Agree and sync": counsel\'s decline line is not shown as a status', () => {
+    expect(gate).not.toMatch(/declineHelp/);
+    const declined = between(gate, 'if (!offline) {', 'return (\n    <View className="gap-4">\n      <SheetBody muted>{authCopy.errors.network}');
+    expect(declined).not.toMatch(/<SheetBody|<Text\b/);
+    expect(declined).toMatch(/label=\{sc\.agreeButton\}/);
   });
 });
 

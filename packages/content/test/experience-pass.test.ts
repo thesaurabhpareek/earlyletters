@@ -1,229 +1,28 @@
 /**
- * Experience pass, October 2026: package P0, copy only (docs/design/EXPERIENCE_PASS_2026-10.md, section 6).
+ * Experience pass, October 2026: package P0 and P7, the key lists (docs/design/EXPERIENCE_PASS_2026-10.md, section 6).
  *
- * Rule checks only. The words themselves are in section 4 of the spec and in the copy files, and a later copy
- * fix may change them freely as long as these rules hold; no string touched by the pass is pinned word for word.
- * What is pinned word for word is registered disclosure and claims text (docs/legal/in-app-disclosures.md), which
- * changes only through counsel. At P7, with the RET keys gone, fold the rule checks into rules.test.ts.
+ * What this file pins: which keys the pass retired and deleted, which it holds for a later package, and the
+ * registered disclosure and claims text (docs/legal/in-app-disclosures.md), which is pinned word for word and
+ * changes only through counsel. No string touched by the pass is pinned word for word apart from those.
  *
- * The rules, on every string the pass touched: no "we" outside the sanctioned promises, no glossary-banned words,
- * buttons of 22 characters or fewer with the Asha fixtures, error titles without a full stop, plural agreement for
- * twins, US spelling in in-app copy, the App Store plan names, and option B (D-100: sign-in, sync between two
- * phones, co-parent sharing and encrypted backup ship in v1.0, so nothing may say or imply that letters never leave
- * the phone, that there are no accounts, or that nothing is shared).
+ * The content rules over the touched keys (the sanctioned "we", the glossary words, button length, error titles,
+ * twins, option B, US spelling, plan names, `story.private.v2`, the promise sample) and over each feature's copy
+ * file now live in rules.test.ts, which reads their data from test/support/copy-surfaces.ts. If one fails, fix the
+ * copy, not the test.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { brand } from '@scribe/brand';
-import { faithfulClean, finalText, withoutEdit } from '@scribe/core';
-import { en, features, onboardingStories, permissions, STORY_VISUALS } from '../src';
-import { alternateStories } from '../src/stories.en';
+import { en, features } from '../src';
+import { ADDED, at, CHANGED, TOUCHED } from './support/copy-surfaces';
 
 type Text = string | readonly string[];
-type Leaf = { path: string; text: string };
-
-const ROOT = { en, features, permissions } as const;
-
-/** The value at a dotted path such as "en.review.noChanges" or "features.billing.plan.annual". */
-function at(path: string): unknown {
-  return path
-    .split('.')
-    .reduce<unknown>((node, key) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[key] : undefined), ROOT);
-}
-
-function leaves(value: unknown, path = ''): Leaf[] {
-  if (typeof value === 'string') return [{ path, text: value }];
-  if (Array.isArray(value)) return value.flatMap((v, i) => leaves(v, `${path}[${i}]`));
-  if (value && typeof value === 'object') return Object.entries(value).flatMap(([k, v]) => leaves(v, path ? `${path}.${k}` : k));
-  return [];
-}
 
 // ---------------------------------------------------------------------------
 // Keys, never words. `en.*` is strings.en.ts; `features.*` the feature files (features.speech is
 // speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
-
-/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held in P0), and the held keys switched since. */
-const CHANGED = [
-  // Switched by P2 with the stop screen that shows it alone (S02).
-  'en.ageGate.stopTitle',
-  // Switched by P4 with Listen telling off, in use and full apart (S13).
-  'en.errors.micDenied.title',
-  'en.errors.micDenied.body',
-  'en.onboarding.child.nameLabel',
-  'en.onboarding.child.expectingHelp',
-  'en.onboarding.child.addAnotherHelp',
-  'en.childrenExtra.edit.birthdayFuture',
-  'en.onboarding.signsAs.examples',
-  'features.language.picker.searchPlaceholder',
-  'features.language.picker.none',
-  'features.speechConsent.body',
-  'features.speechConsent.chosenLater',
-  // Changed after P2 landed (#220 review R5, spec v1.3): the promise body is the sanctioned promise word for word (S04).
-  'en.onboarding.promise.body2',
-  'features.words.pack.stoppedInBackground',
-  'en.review.waiting.body',
-  'features.words.pack.mobileDataButton',
-  'en.errors.transcriptionFailed.title',
-  'en.errors.transcriptionFailed.body',
-  'features.words.noSpeech.title',
-  'features.words.noSpeech.body',
-  'en.review.noChanges',
-  'en.review.noChangesAfterUndo',
-  'en.review.edits.filler.explain',
-  'en.review.edits.falseStart.explain',
-  'en.review.edits.repeat.explain',
-  'en.review.edits.misheardName.explain',
-  'en.review.edits.punctuation.explain',
-  'en.review.edits.grammarSlip.explain',
-  'en.review.edits.paragraph.explain',
-  'en.review.edits.script.explain',
-  'features.billing.keepGate.body',
-  'features.billing.keepGate.lapsedBody',
-  'en.book.empty.bookBody',
-  'en.book.quietDay.removedToast',
-  'features.player.cannotPlay',
-  'en.readTogether.autoplayLabel',
-  'en.readTogether.endOfMonth',
-  'en.readTogether.endOfMonthAlt',
-  'en.notMuch.savedToast',
-  'features.reminders.settings.monthNotesLabel',
-  'features.reminders.settings.monthNotesHelp',
-  'features.reminders.settings.lateNightClamp',
-  'features.reminders.settings.deniedTitle',
-  'features.reminders.settings.deniedBody',
-  'en.settings.delete.entryBody',
-  'en.reader.notFoundTitle',
-  'en.settings.delete.shelfEmpty',
-  'en.settings.delete.erasesOn',
-  'en.settings.delete.eraseNowBody',
-  'en.settingsHome.planHelp',
-  'en.settingsHome.licencesLabel',
-  'features.licences.title',
-  'features.licences.rowLabel',
-  'features.billing.store.subtitle',
-  'features.speech.footer',
-  'en.settings.tidyHelp',
-  'features.packs.cellularTitle',
-  'features.language.status.downloadNow',
-  'features.export.screen.offlineNote',
-  'features.export.screen.includesLetters',
-  'features.export.screen.lowSpaceBody',
-  'features.export.screen.cancelled',
-  'en.settings.privacy.analyticsOffNote',
-  'en.children.settings.remindersHelp',
-  'en.children.settings.hideBody',
-  'en.childrenExtra.edit.born.offerBody',
-  'en.childrenExtra.edit.signsAsNewOnly',
-  'en.childrenExtra.edit.nameTooLong',
-  'en.childrenExtra.edit.signsAsTooLong',
-  'en.errors.notFoundPage.title',
-  'en.errors.notFoundPage.body',
-  'en.errors.crash.title',
-  'en.errors.crash.body',
-  'en.errors.launch.title',
-  'en.errors.launch.body',
-  'en.errors.launch.hint',
-  'en.errors.launch.exportNothing',
-  'en.errors.launch.exportFailed',
-  // Not in section 4: changed in review on #181 (the old line named four licences; #175 lists every one).
-  'features.licences.libraries',
-  // Held in #181, switched by P5 with the screens that build all three datelines and fill {child} (spec section 6).
-  'en.readTogether.nowReading',
-  'en.settings.delete.restoredToast',
-  // Switched by P3 with Tonight's card for every draft (section 6, P3 switches; counsel C10 for the keepGate lines).
-  'en.tonight.draftWaiting.title',
-  'features.billing.keepGate.heldNote',
-  'features.billing.keepGate.offline',
-];
-
-/** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
-const ADDED = [
-  'en.onboarding.promise.sampleLabel',
-  'en.onboarding.promise.sampleRaw',
-  'en.onboarding.promise.sampleHint',
-  'en.onboarding.child.nameLabelMore',
-  'en.onboarding.signsAs.needSignsAsMany',
-  'en.tonight.draft.held',
-  'en.tonight.draft.swept',
-  'en.tonight.draft.typedA11y',
-  'en.tonight.draft.pickUpButton',
-  'en.tonight.draft.openButton',
-  'en.tonight.draft.keepButton',
-  'en.tonight.resurfaced.kicker',
-  'en.tonight.resurfaced.a11y',
-  'en.listen.ready.hint',
-  'en.listen.ready.startA11y',
-  'en.errors.micBusy.title',
-  'en.errors.micBusy.body',
-  'en.errors.phoneFull.title',
-  'en.errors.phoneFull.body',
-  'en.review.waitingLong',
-  'en.review.laterButton',
-  'features.words.pack.stoppedInterruption',
-  'features.words.pack.stoppedClosed',
-  'en.review.missingFile.title',
-  'en.review.emptyTake.title',
-  'en.review.emptyTake.body',
-  'en.review.headerTo',
-  'en.review.headerToNewborn',
-  'en.review.headerToBefore',
-  'en.review.destination.addButtonShort',
-  'en.review.saveFailed',
-  'en.write.notSaved',
-  'en.review.destination.filedChip',
-  'en.review.destination.filedChipNewborn',
-  'en.review.destination.filedChipBefore',
-  'features.billing.keepGate.heldChip',
-  'en.review.noDraft.title',
-  'en.review.noDraft.button',
-  'en.book.monthKicker',
-  'en.book.monthRange',
-  'en.book.waitingReady',
-  'en.readTogether.nowReadingNewborn',
-  'en.readTogether.nowReadingBefore',
-  'en.readTogether.positionA11y',
-  'features.reminders.settings.onToast',
-  'en.reader.notFoundDeleted',
-  'en.reader.openShelfButton',
-  'en.settings.delete.openButton',
-  'en.settings.delete.erasedToast',
-  'features.billing.plan.annual',
-  'features.billing.plan.restoring',
-  'features.billing.plan.restoreNone',
-  'features.speech.downloadButton',
-  'features.export.screen.emptyNote',
-  'features.export.screen.tooBigTitle',
-  'en.reader.previewEmpty',
-  'en.childrenExtra.edit.born.title',
-  'en.childrenExtra.edit.born.hideButton',
-  'en.children.add.ctaShort',
-  // Experience pass v1.1 (spec section 6, P0 table): option B and the tab titles.
-  'en.book.fromTwo',
-  'en.book.recordingBackedUp',
-  'en.settings.recordings.onPhoneBodyBackupOff',
-  'en.settings.recordings.backedUpTitle',
-  'en.settings.recordings.backedUpBody',
-  'en.settings.recordings.exportFooter',
-  'en.children.settings.hideShared',
-  'en.tabs.tonight',
-  'en.tabs.book',
-  'en.tabs.family',
-  // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
-  'features.billing.keepGate.heldNoteSynced',
-];
-
-/**
- * Touched keys whose "we" or "our" is allowed although they are not one of the sanctioned promises. Disclosure text
- * only, about our encrypted backup and the recovery key we hold (D-102, counsel item C7). Counsel must approve each
- * one before any screen shows it; until then it is not registered and may still change.
- */
-const WE_ALLOWED = new Set([
-  'en.settings.recordings.backedUpBody', // D-102, C7: no screen shows it until counsel approves it
-  'en.settings.recordings.onPhoneBodyBackupOff', // D-102, C7: no screen shows it until counsel approves it
-]);
 
 /**
  * Section 4 CHG keys that keep their old words for now, and who switches them. Screen holds: today's screen would
@@ -240,14 +39,25 @@ const HELD: Record<string, string> = {
 
 /** RET: no longer shown once the screen package lands; the key stays until P7. */
 const RETIRED = [
+  'en.book.chapterNotes',
+  'en.book.chapterNoteOne',
+  'en.book.chapterMixed',
+  'features.billing.plan.off',
+  'features.billing.plan.yearly',
+];
+
+/**
+ * Deleted by P7 (39 RET-tracked keys, plus 3 approved unmarked ones that no screen read). RETIRED above is a keep-list,
+ * so nothing else would notice if a deleted word came back: this list does. Never reuse their words (strings.en.ts header).
+ */
+const DELETED = [
+  // RET, no reader on develop (P7)
   'en.ageGate.body',
   'en.ageGate.stopBody',
   'en.ageGate.stopNote',
   'en.onboarding.promise.body',
   'en.onboarding.promise.recordingTitle',
   'en.onboarding.promise.mishearTitle',
-  'en.onboarding.child.nameHelp',
-  'en.onboarding.child.birthdayHelp',
   'en.onboarding.signsAs.body',
   'en.onboarding.dictionary.languagesBody',
   'features.speechConsent.note',
@@ -264,28 +74,31 @@ const RETIRED = [
   'en.book.empty.chapterTitle',
   'en.book.empty.chapterBody',
   'en.book.chapterSubtitle',
-  'en.book.chapterNotes',
-  'en.book.chapterNoteOne',
-  'en.book.chapterMixed',
   'en.reader.deletedBody',
+  'en.readTogether.endOfMonthAlt',
+  'en.familyTab.inviteNeedsSignIn',
+  // RET, freed by P6a, P6b and P8b (P7)
+  'en.onboarding.child.nameHelp',
+  'en.onboarding.child.birthdayHelp',
+  'en.children.add.body',
+  'en.childrenExtra.edit.born.offer',
   'en.reader.preview',
   'features.reminders.settings.eveningsHelp',
   'features.reminders.settings.eveningHelp',
-  // P6 (S34): the master switch keeps every choice when off, so the Pause row went.
-  'en.settings.reminders.pauseLabel',
-  'features.reminders.settings.pausedSummary',
-  'features.billing.plan.off',
-  'features.billing.plan.yearly',
   'en.settings.recordings.keepHelp',
   'en.settings.export.body',
   'features.export.screen.tooBigBody',
-  'en.childrenExtra.edit.born.offer',
-  'en.children.add.body',
-  'en.readTogether.endOfMonthAlt',
-  // Experience pass v1.1 (S57): the Family tab's coming-soon words.
+  'en.settings.reminders.pauseLabel',
   'en.familyTab.emptyTitle',
   'en.familyTab.emptyBody',
-  'en.familyTab.inviteNeedsSignIn',
+  // RET, deleted once the one test that read it said "Paused" itself (P7-5)
+  'features.reminders.settings.pausedSummary',
+  // read by no screen since #313, deleted on the coordinator's ruling; the claims guard in rules.test.ts now reads
+  // billingCopy.store.promise and settingsHome.planHelp (P7)
+  'en.plus.promise',
+  // dead and unmarked, deleted with the coordinator's yes (P7)
+  'features.reminders.settings.pausedHelp',
+  'en.family.subtitle',
 ];
 
 /**
@@ -423,38 +236,9 @@ function consentNeverLines(): { neverTitle?: string; never?: string[] } {
   return out;
 }
 
-/** The current words of every key the pass touched (held keys keep old words, so they are left out). */
-const TOUCHED: Leaf[] = [...CHANGED, ...ADDED].flatMap((key) => leaves(at(key), key));
-
-/** The Asha fixtures (CLAUDE.md: tests use the fictional family "Asha"). */
-const ASHA: Record<string, string> = {
-  app: brand.name,
-  child: 'Asha',
-  signsAs: 'Mama',
-  month: '7',
-  n: '60',
-  count: '5',
-  date: 'October 13',
-  size: '575 MB',
-  a: 'September 13',
-  b: 'October 12',
-};
-const fill = (text: string, vars: Record<string, string> = ASHA) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
-
-/** Words that say letters never leave the phone, that there are no accounts, or that nothing is shared. */
-const ON_DEVICE_ONLY =
-  /\b(?:stays? on (?:this|your|the) phone|stays? on it|never leaves?|only on (?:this|your) phone|from this phone|no accounts?|without an account|only you can read|no one else|nobody else)\b|\bnothing is sent anywhere\b/i;
-
-const IN_APP: Leaf[] = [
-  ...leaves(en, 'en'),
-  ...leaves(permissions, 'permissions'),
-  ...leaves(features, 'features'),
-  ...leaves([...onboardingStories, ...alternateStories], 'stories'),
-];
-
 describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
   it('has every changed and added key, each in one list only', () => {
-    // A changed key may also be retired (endOfMonthAlt now equals endOfMonth); the other lists never overlap.
+    // A changed key may also be retired; the other lists never overlap.
     const all = [...CHANGED, ...ADDED, ...Object.keys(HELD)];
     expect(all.length).toBe(new Set(all).size);
     expect(RETIRED.filter((k) => ADDED.includes(k) || k in HELD)).toEqual([]);
@@ -471,6 +255,23 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     }
     // billingCopy.plan.annual sits beside plan.yearly until P7 (P0 rule 2).
     expect(typeof at('features.billing.plan.yearly')).toBe('string');
+  });
+
+  it('keeps the 42 keys P7 deleted deleted: a re-added leaf fails here', () => {
+    expect(DELETED).toHaveLength(42);
+    expect(new Set(DELETED).size).toBe(DELETED.length);
+    // A deleted key is in no keep-list, so the lists cannot disagree.
+    const kept = new Set([...RETIRED, ...CHANGED, ...ADDED, ...Object.keys(HELD), ...Object.keys(REGISTERED)]);
+    expect(DELETED.filter((k) => kept.has(k))).toEqual([]);
+    // errors.storageLow went as a whole block, so its parent is errors.
+    const WHOLE_BLOCK = 'en.errors.storageLow';
+    for (const key of DELETED) {
+      expect(at(key), key).toBeUndefined();
+      // The parent still exists, so a mistyped path cannot pass for a deleted one.
+      const parent = key.startsWith(`${WHOLE_BLOCK}.`) ? 'en.errors' : key.slice(0, key.lastIndexOf('.'));
+      expect(typeof at(parent), `${parent} for ${key}`).toBe('object');
+    }
+    expect(at(WHOLE_BLOCK)).toBeUndefined();
   });
 
   it('names who switches every held key', () => {
@@ -493,113 +294,5 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
   it('leaves the consentCopy never-lines in apps/mobile untouched (P0 rule 3), read without importing the app', () => {
     expect(existsSync(CONSENT_COPY_FILE), CONSENT_COPY_FILE).toBe(true);
     expect(consentNeverLines()).toEqual(CONSENT_NEVER);
-  });
-});
-
-describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
-  it('says "we" or "our" only inside the sanctioned promises (principle 2)', () => {
-    const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
-    const bad = TOUCHED.filter(
-      (l) => !WE_ALLOWED.has(l.path) && /\b(?:we|our)\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
-    );
-    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-    // Every allowed key is a touched key, so the list cannot hide a stale exception.
-    for (const key of WE_ALLOWED) expect(ADDED.includes(key) || CHANGED.includes(key), key).toBe(true);
-  });
-
-  it('never says tidy, clean, correct, edit or improve (BRAND.md glossary)', () => {
-    const BANNED = /\btid(?:y|ied|ies|ying|ier)\b|\bclean\w*|\bcorrect\w*|\bedit\w*|\bimprov\w*/i;
-    expect(TOUCHED.filter((l) => BANNED.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
-    const buttons = TOUCHED.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!));
-    expect(buttons.length).toBeGreaterThan(10);
-    for (const b of buttons) {
-      expect(b.text.length, b.path).toBeLessThanOrEqual(22);
-      expect(fill(b.text).length, b.path).toBeLessThanOrEqual(22);
-    }
-  });
-
-  it('writes error and state titles without a full stop', () => {
-    const titles = [
-      ...leaves(en.errors, 'en.errors').filter((l) => l.path.endsWith('.title')),
-      ...TOUCHED.filter((l) => /^en\.review\.(missingFile|emptyTake|noDraft)\.title$|^en\.reader\.notFoundTitle$/.test(l.path)),
-    ];
-    expect(titles.length).toBeGreaterThan(10);
-    expect(titles.filter((l) => /\.\s*$/.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('agrees in number for twins: the plural keys use the plural verb (S06)', () => {
-    expect(en.onboarding.signsAs.titleMany).toMatch(/\{child\} call\b/);
-    expect(en.onboarding.signsAs.needSignsAsMany).toMatch(/\{child\} call\b/);
-    expect(en.onboarding.signsAs.needSignsAs).toMatch(/\{child\} calls\b/);
-  });
-
-  it('never says or implies that letters stay on the phone, that there are no accounts, or no sharing (option B, D-100)', () => {
-    expect(TOUCHED.filter((l) => ON_DEVICE_ONLY.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-});
-
-describe('[EXPERIENCE_PASS_2026-10 P0] rules across in-app copy', () => {
-  it('spells for the US storefront (D-087)', () => {
-    // The spec's list, plus the lowercase noun since `licences.libraries` changed (code names keep "licences").
-    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
-    expect(IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
-  });
-
-  it('names the plans Plus Monthly and Plus Annual, as App Store Connect does (D-077)', () => {
-    expect(features.billing.plan.annual).toBe('Plus Annual');
-    expect(features.billing.confirmation.planMonthly).toBe('Plus Monthly');
-    expect(features.billing.confirmation.planAnnual).toBe('Plus Annual');
-    const named = IN_APP.flatMap((l) => [...l.text.matchAll(/\bPlus (?:Monthly|Annual|Yearly|Year|Month)\w*/g)].map((m) => `${l.path}: ${m[0]}`));
-    expect(named.filter((n) => !/: Plus (?:Monthly|Annual)$/.test(n))).toEqual([]);
-  });
-});
-
-describe('[EXPERIENCE_PASS_2026-10 P0] story.private.v2 (P0 rule 4, option B)', () => {
-  const v1 = onboardingStories.find((c) => c.id === 'story.private.v1');
-  const v2 = alternateStories.find((c) => c.id === 'story.private.v2');
-
-  it('sits beside v1 in the same slot, and the packaged deck still serves v1', () => {
-    expect(v1).toBeDefined();
-    expect(v2).toBeDefined();
-    expect(v2!.order).toBe(v1!.order);
-    expect(v2!.visual).toBe(v1!.visual);
-    expect(onboardingStories.map((c) => c.id)).not.toContain('story.private.v2');
-  });
-
-  it('follows the story card and reassurance rules', () => {
-    const ids = [...onboardingStories, ...alternateStories].map((c) => c.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const c of alternateStories) {
-      expect(c.type).toBe('story');
-      expect(c.id).toMatch(/^story\.[a-z-]+\.v\d+$/);
-      expect(c.headline.length, c.id).toBeLessThanOrEqual(80);
-      expect(c.line.length, c.id).toBeLessThanOrEqual(160);
-      expect((c.line.match(/[.!?](\s|$)/g) ?? []).length, c.id).toBeLessThanOrEqual(2);
-      expect(STORY_VISUALS).toContain(c.visual);
-      for (const m of `${c.headline} ${c.line}`.matchAll(/\{(\w+)\}/g)) expect(['child', 'app', 'signsAs']).toContain(m[1]);
-      expect(`${c.headline} ${c.line}`).not.toMatch(/\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i);
-    }
-  });
-
-  it('makes no claim about where letters are kept or who can read them, and has no "we"', () => {
-    const text = `${v2!.headline} ${v2!.line}`;
-    expect(text).not.toMatch(ON_DEVICE_ONLY);
-    expect(text).not.toMatch(/\bcan read\b|\bwe\b/i);
-  });
-});
-
-describe('[EXPERIENCE_PASS_2026-10 P0] the promise sample (S04)', () => {
-  it('gets exactly one filler and one repeat from the real engine, and puts back to the raw words', () => {
-    const raw = en.onboarding.promise.sampleRaw;
-    expect(raw).not.toMatch(/\{\w+\}/);
-    const out = faithfulClean(raw, { level: 'clean', dictionary: [] });
-    expect(out.rejected).toEqual([]);
-    expect(out.applied.map((e) => e.type).sort()).toEqual(['filler', 'repeat']);
-    let applied = out.applied;
-    while (applied.length) applied = withoutEdit(raw, applied, 0).applied;
-    expect(finalText(raw, applied)).toBe(raw);
   });
 });

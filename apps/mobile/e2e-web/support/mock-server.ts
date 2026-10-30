@@ -28,8 +28,11 @@ export interface MockCall {
   body: unknown;
 }
 
-/** `abort`: no answer at all, as when the phone is offline (the request fails before any response). */
-export type Answer = { status?: number; body: unknown; headers?: Record<string, string>; abort?: boolean };
+/**
+ * `abort`: no answer at all, as when the phone is offline (the request fails before any response).
+ * `hold`: the answer waits until this settles, as on a slow network, so a flow can look at the screen mid-request.
+ */
+export type Answer = { status?: number; body: unknown; headers?: Record<string, string>; abort?: boolean; hold?: Promise<unknown> };
 type Handler = (call: MockCall) => Answer;
 
 export interface MockServer {
@@ -85,8 +88,9 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
   rpcs.set('sync_push', () => ({ body: { results: [], paused: false, stopped: true } }));
   rpcs.set('sync_pull', () => ({ body: { epoch: 1, books: [], gone: [] } }));
 
-  const reply = (route: Route, a: Answer) =>
-    a.abort
+  const reply = async (route: Route, a: Answer) => {
+    if (a.hold) await a.hold;
+    return a.abort
       ? route.abort('internetdisconnected')
       : route.fulfill({
           status: a.status ?? 200,
@@ -94,6 +98,7 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
           headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', ...a.headers },
           body: a.body === undefined ? '' : JSON.stringify(a.body),
         });
+  };
 
   await page.route(`${MOCK_SUPABASE_URL}/**`, async (route) => {
     const req = route.request();

@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview } from '../src/components/family/join-sheet.logic';
+import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '../src/components/family/join-sheet.logic';
 import { startJoinedArrival } from '../src/components/family/joined-arrival.logic';
 import { joinedArrival } from '../src/components/family/family-notice';
 import { lampMemory, planLampMount, resolveLamp } from '../src/components/ui/lamp.logic';
@@ -91,7 +91,7 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
     expect(tokens.motion.cover.holdMs).toBe(300);
     const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
     expect(joined.indexOf('<JoinedCover')).toBeGreaterThan(-1);
-    expect(joined.indexOf('<JoinedCover')).toBeLessThan(joined.indexOf('a.joinedTitle'));
+    expect(joined.indexOf('<JoinedCover')).toBeLessThan(joined.indexOf('{joinedTitle}'));
   });
 
   it('the line under it is the flyleaf in words, with the inviter\'s sign-off or without one', () => {
@@ -103,20 +103,26 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
     const bar = code('components/family/join-ask.tsx');
     expect(bar).toMatch(/if \(reduced \|\| width === 0\) \{\s*cancelAnimation\(x\);\s*x\.value = 0;/);
     expect(bar).not.toMatch(/percent|%|\{count\}/);
-    expect(code(SHEET)).toMatch(/fill\(a\.joinedWaiting, \{ child \}\)[\s\S]{0,80}<WaitingBar \/>/);
+    // The welcome's own words (join-wait.logic.ts joinWaitLine), with the name, or "The book" when it could not be read.
+    expect(code(SHEET)).toMatch(/const waitingLine = book \? null : joinWaitLine\(child \|\| null, 'waiting'\);/);
+    expect(code(SHEET)).toMatch(/\{waitingLine \? \(\s*<View className="gap-2">\s*<Text variant="footnote" accessibilityLiveRegion="polite">\s*\{waitingLine\}[\s\S]{0,80}<WaitingBar \/>/);
   });
 });
 
 describe('[S59] "Open the book" lands on the Book with the light rising once (5.8 row 12)', () => {
   afterEach(() => lampMemory.clear());
 
-  it('over the welcome the sheet only closes, and the welcome hands over and leaves the stack; over the tabs it dismisses to the Book', () => {
-    expect(openLanding(['onboarding', 'invite'])).toBe('welcome');
-    expect(openLanding(['(tabs)', 'invite'])).toBe('book');
-    expect(openLanding([])).toBe('book');
+  it('over the welcome step the sheet only closes, and the welcome hands over and leaves the stack; over a later first-run step or the tabs it dismisses to the Book', () => {
+    expect(openLanding(['onboarding', 'invite'], true)).toBe('welcome');
+    expect(openLanding(['(tabs)', 'invite'], false)).toBe('book');
+    expect(openLanding(['(tabs)', 'invite'], true)).toBe('book');
+    expect(openLanding([], false)).toBe('book');
+    // An invite link opened part-way through first run: that step never hands over, so Open goes to the Book itself.
+    expect(openLanding(['onboarding', 'invite'], false)).toBe('book');
     expect(JOINED_LANDING).toBe('/book');
     const sheet = code(SHEET);
-    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*const under = navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\];\s*if \(openLanding\(under\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
+    expect(sheet).toMatch(/return \(\) => openLanding\(navigation\.getParent\(\)\?\.getState\(\)\?\.routes\.map\(\(r\) => r\.name\) \?\? \[\], firstRunWelcome\.showing\(\)\);/);
+    expect(sheet).toMatch(/joinedArrival\.leave\(\);\s*if \(landing\(\) === 'welcome'\) close\(\);\s*else router\.dismissTo\(JOINED_LANDING\);/);
     // Only "Open the book" leaves the mark: Close and every other view do not.
     expect(sheet.match(/joinedArrival\.leave\(/g)).toHaveLength(1);
   });
@@ -158,7 +164,7 @@ describe('[S59] the token and the steps (lens B mutation survivors on #314)', ()
   const sheet = () => code(SHEET);
 
   it('J9: a join that worked forgets the link, so the next launch never joins again', () => {
-    expect(sheet()).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\s*await clearPendingInvite\(t\);/);
+    expect(sheet()).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\s*const here = getChild\(childId\);\s*if \(leavesWait && !here\) joinWait\.start\(childId, null\);\s*await clearPendingInvite\(t\);/);
   });
 
   it('J22: "Paste another link" drops the dead token, so the sheet goes back to the paste field instead of looking again', () => {
@@ -193,6 +199,27 @@ describe('[S59] the token and the steps (lens B mutation survivors on #314)', ()
   it('J13: nothing is joined until the tap: wantsJoin starts false', () => {
     expect(sheet()).toMatch(/const \[wantsJoin, setWantsJoin\] = useState\(false\);/);
     expect(joinPlan({ ...BASE, signedIn: true, canSync: true, preview: MAMA })).toEqual({ view: 'ask', next: 'none' });
+  });
+});
+
+describe('[S59] VoiceOver hears the joined moment (critics\' pass S5; code-read, a phone check)', () => {
+  it('focus moves to "You\'re in {child}\'s book" as the joined view shows, as SheetTitle does on every other step', () => {
+    const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
+    expect(joined).toMatch(/const heading = useRef<RNText>\(null\);\s*const joinedTitle = child \? fill\(a\.joinedTitle, \{ child \}\) : a\.title;\s*useFocusOnMount\(heading, true, joinedTitle\);/);
+    expect(joined).toMatch(/<Text ref=\{heading\} variant="title1" asHeading=\{1\}>\s*\{joinedTitle\}/);
+    expect(code('lib/auth/ui.tsx')).toMatch(/useFocusOnMount\(ref, true, children\);/);
+  });
+
+  it('while the book is still coming, the line that says so is spoken once, after the focus moves to the title', () => {
+    const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
+    expect(joined).toMatch(
+      /useEffect\(\(\) => \{\s*if \(!waitingLine\) return;\s*const id = setTimeout\(\(\) => announce\(waitingLine, \{ queue: true \}\), SPEAK_AFTER_FOCUS_MS\);\s*return \(\) => clearTimeout\(id\);\s*\}, \[waitingLine\]\);/,
+    );
+    // After useFocusOnMount's move (350 ms after the view shows), with time for VoiceOver to start the heading, and
+    // soon enough that the line still belongs to the moment the view showed.
+    expect(code('lib/a11y.ts')).toMatch(/AccessibilityInfo\.sendAccessibilityEvent\(node, 'focus'\);[\s\S]{0,80}\}, 350\);/);
+    expect(SPEAK_AFTER_FOCUS_MS).toBeGreaterThanOrEqual(350 + 300);
+    expect(SPEAK_AFTER_FOCUS_MS).toBeLessThanOrEqual(1500);
   });
 });
 

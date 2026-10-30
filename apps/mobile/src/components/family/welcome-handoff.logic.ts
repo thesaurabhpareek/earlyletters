@@ -15,3 +15,20 @@
 export function welcomeMayLeave(step: string, pathname: string): boolean {
   return step === 'welcome' && (pathname === '/onboarding' || pathname === '/sign-in' || pathname.startsWith('/sign-in/'));
 }
+
+/**
+ * Whether first run's welcome step is the one showing, under any sheet (app/onboarding.tsx sets it as its step
+ * changes, and clears it when first run leaves). The join sheet asks it before "Open the book": over the welcome
+ * the sheet only closes and the welcome hands over to the Book; over a later first-run step (an invite link opened
+ * part-way through first run) it dismisses to the Book itself, because that step never hands over.
+ */
+let welcomeShowing = false;
+
+export const firstRunWelcome = {
+  set(showing: boolean): void {
+    welcomeShowing = showing;
+  },
+  showing(): boolean {
+    return welcomeShowing;
+  },
+};

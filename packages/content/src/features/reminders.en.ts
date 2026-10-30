@@ -20,15 +20,17 @@ export const reminderCopy = {
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Whatever today held, it belongs in the book.' },
     ],
-    monthOpen: { title: 'Month {month} begins', body: 'A new chapter in the book is open.' },
+    // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
+    monthOpen: { title: 'Month {month} begins', body: 'A new month in the book is open.' },
     birthday: { title: 'A birthday today', body: 'A year of letters. Want to read them together today?' },
     birthdays: { title: 'Birthdays today', body: 'A year of letters. Want to read them together today?' },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {
-    monthTitle: 'New chapters today',
-    monthBodyNames: 'New chapters for {child} are open.',
-    monthBodyNeutral: 'A new chapter is open in each book.',
+    // Each book's own new month (BRAND.md glossary: month, never chapter); the title is used when the month numbers differ.
+    monthTitle: 'A new month begins',
+    monthBodyNames: 'A new month is open for {child}.',
+    monthBodyNeutral: 'A new month is open in each book.',
   },
   /**
    * The sheet before the iOS permission alert (Apple HIG, Privacy, pre-alert
@@ -44,8 +46,6 @@ export const reminderCopy = {
     enabledLabel: 'Reminders',
     howOftenTitle: 'How often',
     eveningsTitle: 'Which evenings',
-    eveningsHelp: 'Pick the evenings that suit you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the chips speak for themselves)
-    eveningHelp: 'Pick the evening that suits you.', // retired by EXPERIENCE_PASS_2026-10; delete in P7
     timeTitle: 'Time',
     timeLabel: 'Reminder time',
     lateNightClamp: 'Late nights stay quiet.',
@@ -55,14 +55,12 @@ export const reminderCopy = {
     monthNotesHelp: 'A short message on the day a new month begins in each book, and on birthdays.',
     namesHelpOff: 'Notifications say "your little one" and show no names on the lock screen.',
     namesHelpOn: 'Notifications can show names on the lock screen.',
-    pausedHelp: 'Nothing is sent while reminders are paused. Your choices are kept.',
     deniedTitle: 'Notifications are off',
     deniedBody: 'Turn them on in Settings to get these reminders.',
     openSettingsButton: 'Open Settings',
     // After returning from Settings with permission granted (S34).
     onToast: 'Reminders are on.',
     offSummary: 'Off',
-    pausedSummary: 'Paused', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (a pause from before reads as Off)
     channelName: 'Reminders',
   },
   /** For VoiceOver and chips. Index = Date.getDay(). */

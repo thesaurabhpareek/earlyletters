@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -50,8 +50,8 @@ describe('[S22] what the Keep sheet says', () => {
   it('the sheet draws the words keepSheetView chose, each in its own place (#296; lens B B2 on #312)', () => {
     const gate = code('components/child/plus-gate.tsx');
     // Body under the title, the held note under it (trust copy, subhead), the note under See Plus: a swap fails here.
-    expect(gate).toMatch(/<Text variant="body">\{view\.body\}<\/Text>/);
-    expect(gate).toMatch(/<Text variant="subhead" tone="muted" testID="plusGate\.heldNote">\s*\{view\.heldNote\}\s*<\/Text>/);
+    expect(gate).toMatch(/<Text key="body" variant="body">\{view\.body\}<\/Text>/);
+    expect(gate).toMatch(/<Text key="heldNote" variant="subhead" tone="muted" testID="plusGate\.heldNote">\s*\{view\.heldNote\}\s*<\/Text>/);
     expect(gate).toMatch(/testID="plusGate\.note">\s*\{view\.note\}\s*<\/Text>/);
     for (const v of ['body', 'heldNote', 'note']) expect(gate.match(new RegExp(`\\{view\\.${v}\\}`, 'g')), v).toHaveLength(1);
     // The sentences that depend on the state never come straight from the copy: only through keepSheetView.
@@ -95,6 +95,64 @@ describe('[S22] what the Keep sheet says', () => {
     }
     // The sheet types no number of its own: every word on it comes from packages/content.
     expect(code('components/child/plus-gate.tsx')).not.toMatch(/['"`][^'"`\n]*\$\{?\s*\d/);
+  });
+});
+
+describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B on #370)', () => {
+  it('at accessibility sizes the footer holds the two buttons and nothing else; every line of text is in the scroll', () => {
+    const ax = keepSheetLayout(true);
+    // Exactly the two buttons: no text in the footer, so it can never grow taller than the sheet (the 96-character
+    // offline note at AX5 on an SE made it about 865 pt in a 667 pt screen).
+    expect(ax.pinned).toEqual(['seePlus', 'hold']);
+    expect(ax.scroll).toEqual(['words', 'card', 'redeem']);
+    // The line that says the letter is safe comes right after the title, before the offer's note and the body.
+    expect(ax.words).toEqual(['title', 'heldNote', 'note', 'body']);
+    // At the default size: the card on top, then the title, the body and the held note; every button and its note
+    // in the footer, as before.
+    expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
+    for (const l of [keepSheetLayout(true), keepSheetLayout(false)]) {
+      // "Keep it here for now" is in the footer at every size, so it is on the first screen at AX3 and AX5.
+      expect(l.pinned).toContain('hold');
+      expect(l.scroll).not.toContain('hold');
+      // Every part once, the note either a line of the words or in the footer, never both.
+      const parts = [...l.scroll.filter((b) => b !== 'words'), ...l.words, ...l.pinned];
+      expect([...parts].sort()).toEqual(['body', 'card', 'heldNote', 'hold', 'note', 'redeem', 'seePlus', 'title']);
+      // The scroll comes first in reading order, so the held note is read before any button.
+      expect(l.scroll).toContain('words');
+      expect(l.words).toContain('heldNote');
+    }
+    // At accessibility sizes the words come before the card, so the card no longer pushes them down.
+    expect(ax.scroll.indexOf('words')).toBeLessThan(ax.scroll.indexOf('card'));
+  });
+
+  it('the sheet draws the words, the scroll and the footer from keepSheetLayout, the footer outside the scroll', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
+    expect(gate).toMatch(/<View key="words" [^\n]*style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
+    expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
+    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
+    // The footer's note is drawn only where the layout puts it, so it is never in the footer and the words at once.
+    expect(gate).toMatch(/note: layout\.pinned\.includes\('note'\) \? line\.note : null,/);
+    expect(gate).not.toMatch(/footerPlacement/);
+  });
+
+  it('a note that arrives after See Plus is scrolled into view and announced, its static words only (#370 delta)', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    const effect = gate.slice(gate.indexOf('const openingNote = React.useRef(view.note);'), gate.indexOf('}, [view.note]);'));
+    expect(effect.length).toBeGreaterThan(0);
+    // A new note only (one already there when the sheet opens is read in order), after layout, with no animation.
+    expect(effect).toMatch(/if \(!note \|\| note === openingNote\.current\) return;/);
+    expect(effect).toMatch(
+      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/,
+    );
+    expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
+    expect(gate).toMatch(/<ScrollView ref=\{scroll\}/);
+    expect(gate).toMatch(/onLayout=\{\(e\) => \(wordsY\.current = e\.nativeEvent\.layout\.y\)\}/);
+    expect(gate).toMatch(/onLayout=\{\(e\) => \(noteY\.current = e\.nativeEvent\.layout\.y\)\} testID="plusGate\.note"/);
+    // The note stays a polite live region (Android), and the title stays the focus target.
+    expect(gate).toMatch(/<Text key="note" variant="footnote" accessibilityLiveRegion="polite"/);
+    expect(gate).toMatch(/<Text key="title" ref=\{title\} variant="title1" asHeading>/);
+    expect(gate).toMatch(/useFocusOnMount\(title\);/);
   });
 });
 
@@ -254,6 +312,9 @@ describe('[S22] Keep it here for now: the draft is held, and Tonight shows it wa
     expect(draftCard(held, new Date(2026, 9, 17, 20, 30)).words).toBe(words);
     // A typed draft: its typed words; a letter whose words arrived later: its stored words (in typedText).
     expect(storedWords({ typedText: 'Two teeth today.', rawTranscript: null })).toBe('Two teeth today.');
+    // Typed words come first when a draft has both (a mixed draft: Tonight shows what was typed), as draftWords does.
+    expect(storedWords({ typedText: 'a', rawTranscript: 'b' })).toBe('a');
+    expect(storedWords({ typedText: '  ', rawTranscript: 'b' })).toBe('b');
     expect(storedWords({ typedText: null, rawTranscript: null })).toBe('');
   });
 

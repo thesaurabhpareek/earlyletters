@@ -14,3 +14,16 @@ export function inviteSheetView(i: { hasBook: boolean; full: boolean }): InviteS
   if (!i.hasBook) return 'missing';
   return i.full ? 'full' : 'form';
 }
+
+/**
+ * What the sheet does once the system share sheet closes (S58; critics' pass S1). `shareInviteLink` tells the two
+ * apart (lib/family/share.ts):
+ *  - `shared`: the link went out. One success tick, the sheet closes, and the Family tab says the invite waits there;
+ *    the next invite from this sheet is a new one.
+ *  - `dismissed`: nothing was sent. The sheet stays at "Share invite link" with the same draft, with no tick and no
+ *    toast, so a second tap shares the same invite again (the server takes a repeat of one draft as one invite)
+ *    instead of making a second one. Chosen over closing quietly because the person is still in the act of sending.
+ */
+export function afterShare(outcome: 'shared' | 'dismissed'): { close: boolean; tick: boolean; notice: boolean; keepDraft: boolean } {
+  return outcome === 'shared' ? { close: true, tick: true, notice: true, keepDraft: false } : { close: false, tick: false, notice: false, keepDraft: true };
+}

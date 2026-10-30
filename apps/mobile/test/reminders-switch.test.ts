@@ -73,7 +73,7 @@ describe('[S34] the one switch keeps every choice, and a pause from before reads
   it('Settings home reads a left-over pause as Off, never "Paused" (lens A f3, lens B f1 on #313)', () => {
     reminders.writePrefs({ enabled: true, paused: true, cadence: 'fewTimes' });
     expect(reminders.remindersSummary()).toBe('Off');
-    expect(reminders.remindersSummary()).not.toBe(reminderCopy.settings.pausedSummary);
+    expect(reminders.remindersSummary()).not.toBe('Paused');
     reminders.writePrefs({ paused: false });
     expect(reminders.remindersSummary()).toMatch(/^A few times a week, /);
     reminders.writePrefs({ enabled: false });
