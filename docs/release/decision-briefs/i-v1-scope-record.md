@@ -1,6 +1,6 @@
 # Brief (i): which record states v1.0 scope
 
-Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go), because build 2 is the servers-on build and the tester notice and legal pages depend on the answer.
+Status: open, not decided. Needed by Mon 9 Nov (the go/no-go, D-130), because build 2 is the servers-on build and the tester notice and legal pages depend on the answer.
 Default if unanswered: D-100 governs on paper. #127 stays open, and any lane re-enabled with a prompt that cites it would act on the reversed scope. The production profile stays off.
 Conflict of interest: #127 was written by the session that commissioned this brief.
 

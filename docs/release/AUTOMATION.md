@@ -527,7 +527,7 @@ Fri 23  R1: kill-path drill (B2-14), packDownloads drill; ios-compile green on #
 Mon 26  R-17 sign-off (#152 F21)
 Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (proposed: freeze Tue 3 Nov 5:00 AM PT, which is 13:00 UTC because daylight saving time ends Sun 1 Nov; DECISIONS.md D-089, until the founder confirms)
 Wed 28  green nightly within 24 h of build 2 (B2-22); TestFlight expiry check
-Thu 29  go/no-go (proposed by the coordinator: Thu 5 Nov, until the founder confirms)
+Thu 29  go/no-go (Mon 9 Nov, confirmed by the founder on 30 Oct, D-130; it was proposed as Thu 5 Nov)
 after   RA-20-01, RA-20-03a/b/c, AF-20 (before Mon 2 Nov), RA-20-05/06/07/08/09/10/11/12, RA-07-*, AF-21 to AF-28
 ```
 

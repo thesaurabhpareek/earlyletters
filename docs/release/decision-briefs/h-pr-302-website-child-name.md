@@ -1,7 +1,7 @@
 # Brief (h): PR #302, what is still open after D-118
 
 Status: open, not decided. D-118 itself is decided and recorded: the founder chose to name the child on the website, and #307 put D-118 and the guard exception on `develop` (merged 28 Oct 05:40 UTC, Tue 27 Oct 10:40 PM PT, `6bfb94a9`). This brief does not reopen that. It covers what is left.
-Needed by: before the website is promoted or the alpha link is shared beyond the family (the review point in the D-118 entry, labelled a coordinator proposal, not the founder's: [DECISIONS.md:832](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/DECISIONS.md#L832)); at the latest Thu 5 Nov if Friends get the link with build 2.
+Needed by: before the website is promoted or the alpha link is shared beyond the family (the review point in the D-118 entry, labelled a coordinator proposal, not the founder's: [DECISIONS.md:832](https://github.com/thesaurabhpareek/earlyletters/blob/e7d96d588c37ef1661ec21c6474302125cf2b851/docs/DECISIONS.md#L832)); at the latest Mon 9 Nov if Friends get the link with build 2.
 Default if unanswered: #302 stays open. `site.ts` on `main` keeps the fictional family (D-111 item 1; checked 28 Oct); nothing new is exposed.
 
 ## What is still open

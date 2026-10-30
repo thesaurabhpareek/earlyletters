@@ -1,6 +1,6 @@
 # Brief (e): sync conflict note, build it or descope and tell testers
 
-Status: open, not decided. Needed by Fri 30 Oct to build it before the proposed freeze (Tue 3 Nov, 5:00 AM PT); by Thu 5 Nov to descope it, so the tester notice can say so before build 2 goes out.
+Status: open, not decided. Needed by Fri 30 Oct to build it before the proposed freeze (Tue 3 Nov, 5:00 AM PT); by Mon 9 Nov to descope it, so the tester notice can say so before build 2 goes out.
 Default if unanswered: build 2 ships with conflict copies kept on the phone and in the export, never shown on screen, and testers are not told. That falls short of D-111 item 10, which says the author can pick.
 Owner of the work either way: the build thread (retro section 5.6).
 

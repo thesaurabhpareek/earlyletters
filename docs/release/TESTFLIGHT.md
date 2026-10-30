@@ -2,7 +2,7 @@
 
 Status: 30 Oct 2026. Apple Developer Program membership has been Active since 29 Oct 2026 (step 1 is done). Build 1 now waits on steps 3 and 4 and on the app record (step 2); the numeric Apple ID (`ios.ascAppId`) is needed only for builds from GitHub. "Where build 1 stands (30 Oct 2026)", the last section, has the preflight result and the order. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
 
-D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned are proposed until the founder confirms (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date) and go/no-go Thu 5 Nov, proposed by the coordinator; build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089). It comes in two builds:
+D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date); build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089); go/no-go Mon 9 Nov. The freeze and the go/no-go were confirmed by the founder on 30 Oct (D-130). It comes in two builds:
 
 | | Alpha build 1 | Alpha build 2 |
 |---|---|---|

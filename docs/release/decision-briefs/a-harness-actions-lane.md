@@ -1,6 +1,6 @@
 # Brief (a): how and when to turn on the rebuilt harness
 
-Status: open, not decided. The question is no longer whether to keep the harness but when unattended runs start. Needed by Thu 5 Nov (proposed go/no-go). Brief (b) depends on this one.
+Status: answered 30 Oct for the spend (D-127: no paid inference; the GitHub-hosted harness stays off); the preconditions below still hold if one is ever switched on. Earlier status: open, not decided. The question is no longer whether to keep the harness but when unattended runs start. Needed by Mon 9 Nov (the go/no-go, D-130). Brief (b) depends on this one.
 Default if unanswered: the rebuild packages proceed, and unattended runs stay off, because `agents.yml` is unregistered and `AGENTS_ENABLED` is unset.
 Conflict of interest: the session that commissioned this brief built the harness.
 

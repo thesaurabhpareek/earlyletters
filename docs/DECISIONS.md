@@ -641,6 +641,10 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-118 | The website names the founder's child by the child's first name for now. Only `apps/web/src/content/site.ts` may carry it, enforced by one narrow exception in both copies of the real-family guard. Tests, fixtures, docs, `packages/content` and the mobile app keep the fictional family "Asha". Supersedes D-111 item 1 for that one file, and reverses F21-REQ-017 for it (the requirement change is proposed, for the founder or its owner to make) | Decided by the founder, 27 Oct 2026 (Pacific; 28 Oct UTC); scope, guard design and wording by the coordinator | Yes | 2026-10-27 |
 | D-119 | Logo round 4: the approved mark (D-071) stays the primary and the two-tone version (B) is the alternate. The website header carries the approved lockup (#301, a production deploy the founder merges). Options C and D are rejected. Picked on the founder's delegation | Delegated call by the design lead (founder may reverse) | Yes | 2026-10-27 |
 | D-120 | Build 2 invites are link-only: the phone shares and opens invite links and makes, shows and reads no typed code, because the code's HMAC needs a pepper that only the Edge Functions hold, no client calls `invite-redeem` and no route registers a code. F11-REQ-001 (Show code), F11-REQ-002 (the 8-character code), F11-REQ-007 (redeem by code through `invite-redeem`) and A-REQ-029 (the code field) stay unmet on the phone in build 2. PR #306 (`invite_redeem_by_code`) is held, not merged into the alpha queue, until a code-registration route and an S04 client exist (BL-445). Its two lens reviews, at f54b6f2, are recorded in the coordinator's hold comment (issuecomment-6460527733), not posted as GitHub reviews; its head later moved to fc67104, which is unreviewed | Delegated call by the coordinator (founder may reverse) | Yes | 2026-10-27 |
+| D-127 | The agent harness gets no paid inference. The GitHub-hosted harness stays off (the repository variable `AGENTS_ENABLED` unset); agent work continues from the coordinator session on the existing Claude subscription; a zero-cost open-weight route is tried only after the go/no-go and only if it needs no payment card. | Decided (founder) | Yes | 2026-10-30 |
+| D-128 | Build 2: Settings > Privacy's "Sync and family sharing" row shows On or Off for a signed-in person (BL-485 option (b)); the withdrawal control and its server function are built before any friend outside the family signs in. | Decided (founder) | Yes | 2026-10-30 |
+| D-129 | The Delete account row is hidden in both alpha builds unless the build is explicitly switched on (`EXPO_PUBLIC_ACCOUNT_DELETION`), and it is switched on only if the purge worker runs on staging and the sole-parent drill passes by Mon 2 Nov noon PT. | Decided (founder) | Yes | 2026-10-30 |
+| D-130 | Dates: the build 2 freeze is Tue 3 Nov 2026, 5:00 AM PT (13:00 UTC); the go/no-go is Mon 9 Nov 2026. | Decided (founder) | Yes | 2026-10-30 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -864,3 +868,44 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Effects:** no code field and no code key in build 2: `familyCopy` in `packages/content/src/features/family.en.ts` has words for a link only, and #314 keeps it that way. The F11 and A-REQ-029 lines are not edited: agents do not edit requirement documents (`docs/agents/OPERATING_MODEL.md` section 8), so the F11 note is proposed in the body of the PR that adds this entry, for the founder or the requirement's owner to make. BL-445 in `docs/BACKLOG.md` carries the route, the client and #306's fix list.
 - **Reverses:** nothing. The four requirement lines stand; this call defers them past build 2 on the phone.
 - **Owner:** coordinator; founder for reversal; S02 and S04 for BL-445.
+
+### D-127 The agent harness gets no paid inference (founder, 30 Oct 2026)
+- **Status:** Decided by the founder, 30 Oct 2026. The founder had asked earlier that day "Enable for me." (the GitHub-hosted harness); asked when it should start and told that the setup doc's own assumptions are about $2.40 a day typical, $17 heavy and $64 at the cap, the founder answered: "Use an open source version. Why pay for things that good open source versions exist."
+- **Source:** the founder's chat of 30 Oct 2026 (the four answers to the CTO's questions); `docs/agents/HARNESS.md` sections 3 and 10; `docs/release/decision-briefs/a-harness-actions-lane.md`.
+- **Context:** the harness already is open source software on open-weight models (OpenCode, MIT; DeepSeek and GLM, MIT, through one OpenRouter key). What costs money is the model API, which `HARNESS.md` puts at about $70 to $510 a month at the full cap (the author's assumptions, unverified). The coordinator session cannot set repository variables or secrets, and nothing protects `main` or `develop` with a pull request requirement or required checks.
+- **Decision:**
+  1. No money is spent on inference for the agent harness.
+  2. The GitHub-hosted harness stays off: `AGENTS_ENABLED` is not set; the held PR #398 (the pinned `agents.yml` for `main`) is not merged.
+  3. Agent work continues from the coordinator session, on the founder's existing Claude subscription.
+  4. After the go/no-go (Mon 9 Nov) the coordinator tries a zero-cost route (free hosted open-weight models, or a local one on the founder's Mac) only if it needs no payment card; until one is proven nothing is bought. Any harness that is ever switched on needs branch protection on `main` and `develop` first.
+- **Rationale:** the founder's words; fail closed; the release path needs the review capacity more than a second lane.
+- **Effects:** brief (a) of `docs/release/decision-briefs/` is answered (off); `docs/agents/cto/RULINGS.md` CR-5.
+- **Reverses:** nothing. The harness stays built, not run.
+- **Owner:** founder; coordinator.
+
+### D-128 Build 2 shows the Privacy row's On or Off; withdrawal comes before any friend (founder, 30 Oct 2026)
+- **Status:** Decided by the founder, 30 Oct 2026, by choosing "Show On or Off now; withdrawal before any friend (Recommended)" from the CTO's three options for BL-485.
+- **Source:** `docs/BACKLOG.md` BL-485; LEGAL-REQ-006 and LEGAL-REQ-008 (P0); F17 section 6.2 B.
+- **Context:** in a sign-in build the row reads "Not signed in" for a signed-in person because nothing registers a source (`apps/mobile/src/lib/analytics/privacy-sources.ts`), and nothing can withdraw the sensitive-data consent. Build 2 is family-only until the R-17 gate passes (D-100).
+- **Decision:** (1) before the freeze the row tells the truth (On, Off, or the existing wording when the state cannot be read), with no withdrawal control; (2) the withdrawal sheet and the server function `withdraw_sensitive_data` (a migration, needing the founder's `approve-migration` label, and counsel's read of the withdrawal mode, F17 Q4) are built before any friend outside the family signs in; (3) nothing in build 2 offers withdrawal.
+- **Rationale:** the smallest change that stops the row stating something untrue, while the P0 requirement stays open for the family-only alpha.
+- **Reverses:** nothing.
+- **Owner:** founder; mobile and auth owners; privacy engineer and data architect for the follow-up; legal for the withdrawal mode.
+
+### D-129 The Delete account row is hidden in the alpha builds unless switched on (founder, 30 Oct 2026)
+- **Status:** Decided by the founder, 30 Oct 2026, by choosing "Hide unless the worker and drill pass by Mon noon (Recommended)".
+- **Source:** the second review of #393 and the critics' pass of 30 Oct; `docs/release/FOUNDER_QUEUE.md` Q2-07; `docs/qa/DEVICE_TEST_PLAN.md` S1-35, S2-13, AL-07.6a.
+- **Context:** the purge worker that performs the deletion on day 30 is not confirmed running on staging, counsel has not read the deletion lines, and nobody has run the sole-parent drill on a phone. Whether Apple's in-app deletion rule applies to a TestFlight build is unverified.
+- **Decision:** (1) both alpha builds (`testflight`, `preview`) hide the Delete account row and keep its route unreachable unless the build variable `EXPO_PUBLIC_ACCOUNT_DELETION` is `on`, which is set in the EAS `preview` environment (not in `eas.json`, so the freeze rule is not touched); (2) it is set to `on` only if, by Mon 2 Nov noon PT, the purge worker runs on staging (Q2-07) and the sole-parent drill passes; otherwise the row stays hidden through the go/no-go; (3) a phone whose account already has an open request keeps its Cancel path.
+- **Rationale:** a deletion promise the server may not keep (30 days) must not be offered to testers; reversible.
+- **Reverses:** nothing.
+- **Owner:** founder; mobile engineer for the switch; QA for the drill.
+
+### D-130 Dates: freeze Tue 3 Nov, go/no-go Mon 9 Nov (founder, 30 Oct 2026)
+- **Status:** Decided by the founder, 30 Oct 2026, by choosing "Freeze Tue 3 Nov, go/no-go Mon 9 Nov (Recommended)".
+- **Source:** the founder's chat of 30 Oct 2026; `docs/release/AUTOMATION.md` section 6 (the earlier proposals).
+- **Context:** build 2 needs about 6 hours of the founder's setup on Mon 2 Nov, no build exists yet and nothing has run on a phone. The coordinator had proposed the go/no-go for Thu 5 Nov.
+- **Decision:** the build 2 code freeze is Tue 3 Nov 2026, 5:00 AM PT (13:00 UTC; DST ends Sun 1 Nov); the go/no-go is Mon 9 Nov 2026. Device checks (S1-34, S1-35, the T11 day) run between build 2 and the go/no-go.
+- **Supersedes:** the proposed Thu 5 Nov go/no-go wherever it is written (swept in the same change, except in dated records).
+- **Reverses:** nothing.
+- **Owner:** founder; coordinator.

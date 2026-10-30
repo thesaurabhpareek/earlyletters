@@ -28,7 +28,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 **W0-02 Disable the agent lane.** Done 28 Oct 06:05 UTC (11:05 PM PT Tue 27 Oct) by the retro session: `enabled: false`, `updated_at` 06:05:39 UTC (list_triggers, read 28 Oct). Its connectors are still attached (W0-01).
 - Re-enable only after a supervised run leaves a journal entry and a board tick, with the procedure-only prompt from retro package R1-04. The live prompt still cites issue #127 as "Decisions in force".
 
-**W0-03 Pause the daily PRD update until after 5 Nov, then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
+**W0-03 Pause the daily PRD update until after the go/no-go (Mon 9 Nov; it was 5 Nov), then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
 
 **W0-04 Close #309 and turn off automatic Vercel Agent pull requests for the website project.** Partly done: #309 (author `vercel[bot]`, into `main`) was closed unmerged on 28 Oct at 06:16 UTC (REST). Still open: turn off automatic Vercel Agent pull requests so another one does not arrive. About 3 minutes. The Vercel setting's exact name is unverified.
 - Why: #309 adds Vercel Web Analytics and flips the guard test in `legal.test.ts` from "must not mention" to "must mention" (retro synthesis section 1, row 21).
@@ -67,7 +67,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 **W0-11 Confirm or amend D-117's operating rule in one line.** Open. 5 minutes. The question: may the coordinator keep merging `supabase/**`, auth, payments and `.github/**` after two review passes (`docs/DECISIONS.md:810`)? Synthesis recommendation: yes, plus a weekly skim of a list of those merges (R1-03 prints it).
 
-**W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by 5 Nov. Briefs: R1-09.
+**W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by the go/no-go (Mon 9 Nov). Answered 30 Oct for the spend: no paid harness, `agents.yml` is not provisioned (D-127); trimming the roster is still open. Briefs: R1-09.
 
 **W0-13 Engage counsel and send one packet built from #163.** Open: #163 and #136 are open (REST, 28 Oct). Hours. Ask which texts apply to the alpha and the "Friends" group.
 - Unblocks: legal pages in final form, Friends signing in, submission.
@@ -106,7 +106,7 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 85 |
 | Q2-14 | R-17 sign-off: read `docs/security/REVIEW_R17_CHECKLIST.md` and the staging `test:db` evidence; record "R-17 passed" | 30 min | Friends may sign in (D-100) | open; a D-id records it | F21 |
 | Q2-15 | Friends: build 1 to Beta App Review for "Friends", invite by email (AF-11 replaces F26's route of adding friends as App Store Connect users, AUTOMATION section 4 intro) | 30 min plus review | friends on build 1 | unverified | AF-11, F26 |
-| Q2-16 | Answer the proposed dates (freeze Tue 3 Nov 13:00 UTC, go/no-go Thu 5 Nov), overdue since Sat 24 Oct (BOARD line 85); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
+| Q2-16 | Dates answered 30 Oct (D-130: freeze Tue 3 Nov 13:00 UTC, go/no-go Mon 9 Nov); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
 | Q2-17 | Upgrade Vercel to Pro (Hobby is non-commercial; AUTOMATION 0.1 item 10) | 10 min | commercial use of the site | unverified; price unverified | AF-15 |
 
 ---
