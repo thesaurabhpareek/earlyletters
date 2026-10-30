@@ -98,6 +98,8 @@ Open PR #338 proposes `agents/lessons/REGISTRY.md`: one row per recurring error 
 - The board's spend figure read $0.00 because interactive-session receipts say "cost not reported". Report spend as unknown until receipts carry cost. ([#23, 3 Oct 19:28][j23a])
 - Lessons did not reach memory: sessions were told not to edit `MEMORY.md`, and on 23 Oct the scheduled run could not, because the file was outside that run's files. ([#20, 3 Oct 16:30][j20a]; [#21, 3 Oct 16:56][j21a]; [#23, 3 Oct 19:28][j23a]; [#171, 23 Oct][j171e]; [#172, 23 Oct][j172e])
 - Finding, not a Learned line: `scripts/agents/dispatch.mjs` and `brief.mjs` had no tests of their own because they run network calls at import. ([#7, 15 Oct][j7a])
+- A machine cannot safely read a review verdict from free text. Over six independent review rounds of the founder status page (PR #339, 28 Oct), each round fixed the listed wordings and the next probe found new blocking text that read as a pass ("PASS. Blocked on #306.", "PASS pending #306", "DON'T MERGE" typed with a curly apostrophe, "Review A" posted twice). The fix was a strict counted format (`## Review A at <sha>: PASS`, one per lens, on the merged head) and failing closed on any later comment. Free-text verdicts are shown but never counted. ([#339][pr339])
+- Where a review is recorded decides whether anyone can check it. On 30 Oct two auth-path merges (#372, #388) recorded their lens findings only in the PR body, with no verdict comment, so the status page showed "no lens verdict found" for both. A verdict that is not a separate comment in the strict format cannot be counted toward D-117's two reviews. ([#339][pr339]; [#372][pr372]; [#388][pr388])
 
 ## 7. Docs that describe code
 
@@ -226,3 +228,6 @@ Read on 28 Oct 2026 through `gh api repos/thesaurabhpareek/earlyletters/issues?l
 [j172d]: https://github.com/thesaurabhpareek/earlyletters/issues/172#issuecomment-6246012903
 [j172e]: https://github.com/thesaurabhpareek/earlyletters/issues/172#issuecomment-6365587589
 [j172f]: https://github.com/thesaurabhpareek/earlyletters/issues/172#issuecomment-6454963298
+[pr339]: https://github.com/thesaurabhpareek/earlyletters/pull/339
+[pr372]: https://github.com/thesaurabhpareek/earlyletters/pull/372
+[pr388]: https://github.com/thesaurabhpareek/earlyletters/pull/388
