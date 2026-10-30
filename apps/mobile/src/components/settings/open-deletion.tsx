@@ -33,8 +33,9 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   // The press state (Cancel deletion, Try again) is open-deletion.logic.ts's: a press is answered by the loading state, with
   // no buttons to press twice, and the buttons come back if it never settles. StateScreen's primary has no `loading` of
   // its own (components/ui is design-systems'), so the whole state says it. `acted`: nothing is shown as a failure until
-  // the person has pressed something: the passive read on a cold launch with no connection sets the hook's error, and
-  // "Nothing has changed. Deleting an account needs a connection." would be an answer to a question nobody asked.
+  // the person has pressed Cancel deletion: the passive read on a cold launch with no connection sets the hook's error,
+  // and "Nothing has changed. Deleting an account needs a connection." would be an answer to a question nobody asked
+  // (a Try again does not count: it is a pull, and says "still on their way" when it finds nothing).
   const latest = useRef(d);
   latest.current = d;
   const controller = useRef<PressController | null>(null);

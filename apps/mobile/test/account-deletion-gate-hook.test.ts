@@ -104,6 +104,11 @@ const answer = async (i: number, value: unknown) => {
   reads[i]({ ok: true, value });
   await vi.advanceTimersByTimeAsync(0);
 };
+/** A read that ends without an answer (offline, or the server failed). */
+const fail = async (i: number) => {
+  reads[i]({ ok: false, reason: 'offline' });
+  await vi.advanceTimersByTimeAsync(0);
+};
 const open = { state: 'scheduled' as const, requestId: 'req-1', scheduledFor: WHEN };
 const none = { state: 'none' as const };
 
@@ -338,6 +343,124 @@ describe('[A4] what the server said belongs to the account that was asked', () =
     h.books = [];
     notify();
     expect(h.loadStatus).toHaveBeenCalledTimes(1);
+    run.unmount();
+  });
+});
+
+describe('[BL-496] a late answer from an earlier account is not the next account\'s', () => {
+  const lateEnds: Array<[string, (i: number) => Promise<void>]> = [
+    ['an open request', (i) => answer(i, open)],
+    ['none', (i) => answer(i, none)],
+    ['a failure (offline)', (i) => fail(i)],
+  ];
+
+  it.each(lateEnds)('Mama\'s read stalls, Papa signs in on the same mount and is told none, then Mama\'s read ends with %s: Papa still has the welcome, and keeps it', async (_name, end) => {
+    h.closedBook = true; // a closed book is still local: signed in with no book, so an unanswered read means paper
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking');
+    signIn(PAPA);
+    run.rerender();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await end(0); // Mama's read ends, after Papa's answer
+    expect(run.result.current.screen).toBe('welcome'); // Papa's `checked` is still true
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS * 2);
+    expect(run.result.current.screen).toBe('welcome'); // and nothing brings the paper back
+    expect(note()).toBeNull(); // her open request is not written as his note
+    run.unmount();
+  });
+
+  it('the with-book read has no cleanup of its own: Mama\'s ends late, after Papa (whose book is gone) was told none, and Papa still has the welcome', async () => {
+    h.books = [ASHA];
+    put(mine(MAMA));
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the with-book read
+    h.books = [];
+    h.closedBook = true;
+    signIn(PAPA);
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2); // Papa has no book: his own read
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await answer(0, none);
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('the with-book read\'s cap stays armed (no cleanup) and Mama\'s read never answers: her cap going off does not take the slot from Papa, who was told none', async () => {
+    h.books = [ASHA];
+    put(mine(MAMA));
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the with-book read, which stalls for good
+    h.books = [];
+    h.closedBook = true; // Papa's closed book is local
+    signIn(PAPA);
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS * 2); // Mama's cap goes off in here; the effect that made it was never torn down
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('Mama\'s read ending before Papa\'s says nothing about Papa: the paper stays for his own answer, and his answer is taken', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    signIn(PAPA);
+    run.rerender();
+    await answer(0, none);
+    expect(run.result.current.screen).toBe('checking');
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('what Mama\'s read confirmed is not Papa\'s: her open request does not make his past-date note count when his own read runs out of time', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion'); // confirmed, for Mama
+    signIn(PAPA);
+    run.rerender();
+    put(mine(PAPA, { scheduledFor: new Date(NOW_MS - NOTE_GRACE_MS - 1000).toISOString() })); // as in [A4], a note of his past its date
+    run.rerender();
+    expect(run.result.current.screen).toBe('checking'); // his own answer is awaited
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS); // it never comes: the cap ends the wait, saying only `checked`
+    expect(run.result.current.screen).toBe('welcome'); // `confirmed` was Mama's, not inherited
+    expect(note()).toBeNull();
+    run.unmount();
+  });
+});
+
+describe('[BL-496] a read that is torn down takes its cap with it', () => {
+  it('a book appears and goes while Mama is asked: the read made after it gets its own CHECK_CAP_MS, not what was left of the first', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking'); // read 1, cap due at 3000 ms
+    await vi.advanceTimersByTimeAsync(2000);
+    h.books = [ASHA]; // a pull lists a book: read 1 is torn down
+    notify();
+    expect(run.result.current.screen).toBe('app');
+    await vi.advanceTimersByTimeAsync(500);
+    h.books = []; // and it is gone again (2500 ms): read 2, cap due at 5500 ms
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    expect(run.result.current.screen).toBe('checking');
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS - 1); // 5499 ms: read 1's cap, if it had been left, went off at 3000
+    expect(run.result.current.screen).toBe('checking');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(run.result.current.screen).toBe('welcome');
     run.unmount();
   });
 });
