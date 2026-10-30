@@ -7,7 +7,7 @@ export const site = {
     subhead:
       "Early Letters is the baby memory book you fill by talking. Private by design: your letters stay on your phone, and every word is kept exactly as you said it, ready to read together for years.",
   },
-  primaryCta: "Keep me informed",
+  primaryCta: "Tell me at launch",
   benefits: [
     {
       title: "Exactly as you said it",
@@ -105,7 +105,7 @@ export const site = {
   },
   waitlist: {
     label: "Your email",
-    button: "Keep me informed",
+    button: "Tell me at launch",
     success: "Thank you. We will write when Early Letters is ready for you.",
     error: "That did not go through. Please check your email address and try again.",
   },

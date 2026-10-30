@@ -14,7 +14,7 @@ test.describe('A-U2: sign-up without JavaScript', () => {
   test('a native submit saves the address, sends the welcome and lands the person on a readable page, not raw JSON', async ({ page, mock, email }) => {
     await page.goto('/');
     await page.getByLabel(n.label).fill(email);
-    const [response] = await Promise.all([page.waitForResponse((r) => r.url().endsWith('/api/notify')), page.getByRole('button', { name: n.button }).click()]);
+    const [response] = await Promise.all([page.waitForResponse((r) => r.url().endsWith('/api/notify')), page.getByRole('button', { name: n.quietButton }).click()]);
     await page.waitForLoadState('load');
 
     // The post is answered with a redirect, and the person ends on a page of the site, never the machine's JSON.
