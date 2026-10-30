@@ -1323,18 +1323,22 @@ No journey step yet (j22). Package P8a. Logic: **S01** (the link opens only on t
 | `code.sentToEmail` | A link and a code are on their way to {email}. | NEW |
 | `code.emailLabel` | Your email address | CHG ("Which email did we send it to?"; shown only when the app restarted in between) |
 | `code.label`, `verify`, `openMail`, `resend`, `resendWait`, `resent`, `differentEmail` | Code / Continue / Open Mail / Send a new email / You can send another in a minute. / A new email is on its way. / Use a different email | KEEP |
+| `code.lettersSafe` | Your letters are safe on this phone. | NEW (P8a critics S2, #372). Under the field while the email is on its way, and only when this phone holds a book; the same words as `errors.network`'s first sentence |
+| `code.pausedOtherWays` | The link in the newest email still works, and so does signing in with Apple or Google. | NEW (P8a critics S1, #372). Said straight after `errors.code_paused`, in the same line, while the pause holds |
 | `verify.title`, `typeCode`, `newEmail` | Signing you in / Type the code instead / Send a new email | KEEP |
 | `en.auth.troubleButton`, `noEmailHelp` | Trouble signing in? / as today | KEEP (P0's file, unchanged); a quiet button at the foot that opens the help line in place |
 
-Visual: `sentToEmail` with the address in `text` and the rest in `textMuted`. The code is one field in tabular figures, Mukta SemiBold 28 pt, tracking 6, centred, `textContentType="oneTimeCode"` so iOS offers the code from Mail, submitting at full length; "Continue" stays for VoiceOver and Switch Control. "Open Mail" bordered, then "Send a new email" and "Use a different email" quiet. Opening the link shows "Signing you in" with the small spinner, then S55 or closes.
+Visual: `sentToEmail` with the address in `text` and the rest in `textMuted`. The code is one field in tabular figures, Mukta SemiBold 28 pt, tracking 6, centred, `textContentType="oneTimeCode"` so iOS offers the code from Mail, submitting at full length; "Continue" stays for VoiceOver and Switch Control. "Open Mail" bordered, then "Send a new email" and "Use a different email" quiet. Opening the link shows "Signing you in" with the small spinner, then S55 or closes. "Not now" (`sheet.later`, S52's key) is the sheet frame's header button, top right, outside the scroll and above the keyboard, so it stays in reach with the number pad up at every text size; it closes the sheet and changes nothing on this phone, and it waits while a code is being checked or a new email is being sent (#372). While the email is on its way, and only when this phone holds a book, `lettersSafe` sits under the field (a fresh install has no letters here to be safe); "A new email is on its way." shows under that line, and under the paused line while the pause holds.
 
 Motion: a wrong code clears and refocuses the field and the line cross-fades in (150 ms); no shake, no haptic.
 
-States: waiting; wrong code; expired; paused 15 minutes; rate limited; offline; restarted (asks the address); the link opened.
+States: waiting; wrong code; expired; paused 15 minutes (S01's rule, unchanged: five wrong codes in 15 minutes pause typing a code for 15 minutes, and the server's own limit still holds. The field and Continue wait, and one polite line says `errors.code_paused` and then `code.pausedOtherWays`. "Send a new email" stays offered after its usual minute, because the newest email's link works too; sending never clears or shortens the pause. When the pause ends the field comes back and the line goes on its own; #372); rate limited; offline; restarted (asks the address); the link opened.
 
 Acceptance:
 - [ ] The address the email went to is on screen.
 - [ ] A full-length code submits without a tap; a wrong one never shakes or flashes red.
+- [ ] "Not now" is in the header and closes the sheet; it changes nothing on this phone, and it waits while a code is being checked or a new email is being sent.
+- [ ] After five wrong codes the field waits, one line says the letters are safe and that the link and Apple or Google still work, and "Send a new email" is still offered; sending does not end the pause.
 
 #### S55 Before your book syncs (terms, the age step, sensitive data)
 No journey step yet (j22). Package P8a. Logic: **S01** (`record_policy_act`, `my_sync_gate`, claim after consent), **S14** (the sensitive-data step moves to `app/consent/sensitive.tsx` in WP-F02-07; until it moves it is this file's third step), S17 and counsel (every word).
@@ -1377,7 +1381,7 @@ Problem: the signed-out body is two reasons and a reassurance; "Sync and family 
 | `account.signOutBody` | Your letters stay on this phone. Sign in again any time. | CHG. True (signing out leaves this phone's letters in place), so it is one of the three keys P8's test allows to say "stay on this phone" (section 6). |
 | `account.signOutWaiting` | Your newest letters are still on their way. This phone signs out once they are sent. | CHG (no "we will") |
 
-Visual: an iOS Settings page, no lamp. Signed in: a header on paper with the method's mark at 28 pt (Apple's logo as Apple allows, Google's G, or EnvelopeSimple), "Signed in with email" in `headline` and the address in `footnote` `textMuted`. Then Sync (one row with its value, or "Finish setting up" as a row), Passkeys, Devices, and "Sign out" as a row in `text`, not red: nothing is deleted (Delete account is on Settings home, S64). Signed out: the small closed cover, the title, the body and "Sign in".
+Visual: an iOS Settings page, no lamp. Signed in: a header on paper with the method's mark at 28 pt (Apple's logo as Apple allows, Google's G, or EnvelopeSimple), "Signed in with email" in `headline` and the address in `footnote` `textMuted`. Then Sync (one row with its value, or "Finish setting up" as a row), Passkeys, Devices, and "Sign out" as a row in `text`, not red: nothing is deleted (Delete account is on Settings home, S64). Signed out: the small closed cover, the title, the body and "Sign in". In a sheet that needs the account (Invite a co-parent, Joining a book, Leave the book) the not-set-up-yet state is drawn by `AccountGate` (`lib/auth/ui.tsx`; signed out, it shows the sheet's sign-in body and "Sign in" instead): its line is a sentence about what the person was doing, not Account's row value (`account.sync.waiting` stays on Account): "Finish setting up your account to invite someone." (`familyCopy.card.finishSetup`) when inviting, "Finish setting up your account first." (`familyCopy.errors.consent_needed`) when joining or leaving, and `claim.waiting` while the claim screen is unanswered, each with "Finish setting up" under it. After a decline ("Keep on this phone") the gate shows nothing above "Agree and sync": `sensitiveConsent.declineHelp` would read as a question about a choice already made, and the step that button opens shows every registered line (P8a critics S4, #372).
 
 Motion: native push. The sign-out confirm is a native alert. While the outbox drains, the Sign out row shows `signOutWaiting` with a small spinner; then the page cross-fades (200 ms) to signed out.
 
@@ -1437,7 +1441,7 @@ Visual: a sheet at the large detent. The book cover (132 x 176, closed, the chil
 
 Motion: the foot line cross-fades after each 300 ms typing pause (200 ms), as S05. When the share sheet closes, this sheet dismisses; the Family tab's pending row enters with `enter` and `create.done` shows as a toast.
 
-States: getting the link; two parents already (`full`, no Share); consent missing; signed out (S52 first); rate limited; not a parent; offline.
+States: getting the link; two parents already (`full`, no Share); consent missing (the gate, S56); signed out (S52 first); rate limited; not a parent; offline.
 
 Acceptance:
 - [ ] The link carries no child name (BL-348, #165) and works once for 7 days.
@@ -1457,7 +1461,7 @@ Problem: the second parent's arrival, their "The book is open.", is a plain shee
 | `accept.peeking` | Opening the invite | NEW (the busy line while `peek_invite` runs) |
 | `accept.askTitle`, `invitedBy`, `invitedByUnknown`, `askBody`, `join`, `notNow` | Join this book as a parent? / Invited by {inviter} / You were invited to write a book together. / You will both read every letter in the book. Join only if you know who sent you this link. / Join the book / Not now | KEEP (on `feat/coparent-alpha`; `askBody` is the safety line) |
 | `accept.needsSync` | To join, turn on sync and sharing in Settings, Privacy. | CHG (one instruction) |
-| `accept.signIn`, `consentBody`, `consentButton`, `joining` | as today | KEEP |
+| `accept.signIn`, `joining` | as today | KEEP |
 | `accept.signsAsLabel`, `signsAsHelp`, `signsAsPlaceholder` | What does {child} call you? / It signs your letters in this book. / Mama, Papa, Amma, Baba | KEEP (on `feat/coparent-alpha`) |
 | `accept.joinedTitle`, `joinedWaiting`, `open`, `close`, `tryAgain` | You're in {child}'s book / {child}'s book is on its way to this phone. / Open the book / Close / Try again | KEEP |
 | `accept.joinedBody` | Your letters and {inviter}'s sit side by side, each signed. | CHG (the flyleaf, in words) |
@@ -1469,7 +1473,7 @@ Visual: a sheet at the large detent; no lamp inside it. Paste: the title, the fi
 
 Motion: views replace each other with a 200 ms cross-fade, never a push. Joined: the cover fades in (200 ms), holds 300 ms, then opens as on S08 (front cross-fades to the flyleaf with an 8 pt shift on `standard`); `success` once, when the join returns. "Open the book": the sheet dismisses natively, the app opens the Book tab on this book, and the Book's lamp **rises from 0 to 0.6 over `arriveMs` (1200 ms)** with the header settle (5a): the one slow arrival outside first run, because this is the second parent's first evening in the book. Reduce Motion: the cover shown open at once, one 200 ms fade, the lamp at 0.6 at once.
 
-States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (`consentBody`, or `needsSync`); joining; joined, book still coming (on a fresh phone Close hands over to the first-run welcome, which says "Asha's book is on its way to this phone." in place of "Begin the book", so the person is not left at a door that starts a second book; after 30 seconds, or when sync cannot bring the book (it is not running on this phone, or it cannot reach the server), it says "Asha's book has not reached this phone yet.", offers Try again while a sync can run, and "Begin the book" returns; when the child's name could not be read the lines say "The book"; once the book is here the welcome hands over to the Book; the P8b critics' pass S2, as built in #375); joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
+States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (the gate after "Join the book", S56: "Finish setting up your account first."; and `needsSync`, the line for the server's own `consent_needed` on the join call); joining; joined, book still coming (on a fresh phone Close hands over to the first-run welcome, which says "Asha's book is on its way to this phone." in place of "Begin the book", so the person is not left at a door that starts a second book; after 30 seconds, or when sync cannot bring the book (it is not running on this phone, or it cannot reach the server), it says "Asha's book has not reached this phone yet.", offers Try again while a sync can run, and "Begin the book" returns; when the child's name could not be read the lines say "The book"; once the book is here the welcome hands over to the Book; the P8b critics' pass S2, as built in #375); joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
 
 Acceptance:
 - [ ] Before sign-in, neither the child's name nor the inviter is shown (BL-322).
