@@ -681,6 +681,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `sync.ownerId` | L3 | Person id that owns the local rows |
 | `sync.epoch`, `sync.epochStartedAt`, `sync.restoreAt`, `sync.pausedFor`, `sync.lastSyncedAt`, `sync.lastVerifyAt` | L2 | Sync state |
 | `accountDeletion.forgetPending` | L2 | Flag: analytics ids still to send to `analytics-forget` |
+| `accountDeletion.openRequest` | L3 | While a request to delete the account is open: its state (`scheduled`, `held`, `executing`, or `cancelled` while the book comes back), the server's request id and its date, so a phone with no book shows the deletion screen and not the first-run welcome. Copied from the server's own answers (`deletion_requests`, the person's own rows). No name, letter or child. Stays on the phone, never sent, cleared on a cancel or when the server finds none open |
 | `scribe.analytics.consent` | L2 | Analytics choice: unknown, granted, denied |
 | `scribe.analytics.id`, `scribe.analytics.retired_ids` | L2 | Random analytics id and up to 20 retired ids, kept only for deletion (TRACKING_PLAN 7). Never sent anywhere except PostHog (after a yes) and `analytics-forget` |
 | `scribe.analytics.first_launch_at`, `scribe.analytics.last_active_at` | L2 | Device times used only to compute buckets (`days_since_install`, `days_since_last_open`); never sent raw |

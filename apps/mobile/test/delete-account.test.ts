@@ -148,6 +148,19 @@ describe('[S64] the page', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
+  it('step 1 says what happens to the letters on this phone (critics\' pass S4), only what the code does, and only when there are books', () => {
+    const s = STATE.review();
+    expect(s).toContain('{list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}');
+    expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf('{c.what.onThisPhone}'));
+    expect(s.indexOf('{c.what.onThisPhone}')).toBeLessThan(s.indexOf('{list.copies}'));
+    // The next pull moves the account's letters to Recently deleted and the phone keeps them there. In a sync build the
+    // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date and no
+    // erase are promised: a later pull that says the server no longer holds it is what erases it, and after the purge
+    // the account is gone, so whether the phone gets that signal is unverified (S03).
+    expect(c.what.onThisPhone).toBe('On this phone, your letters move to Recently deleted and are kept there.');
+    expect(c.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bon the day\b|\bafter\b|\b30 days\b|\berase/i);
+  });
+
   it('step 1: "Keep a copy first" is a card with FileText and "Export everything" bordered', () => {
     const card = between('<FileTextIcon', '</Card>');
     expect(card).toContain('{c.exportFirst.heading}');
@@ -231,7 +244,9 @@ describe('[S64] the page', () => {
     expect(s).toContain('fill(c.scheduled.body, { date })');
     expect(s).toContain('{c.scheduled.emailNote}');
     expect(s).toMatch(/variant="outline"\s+size="lg"\s+fullWidth\s+loading=\{d\.busy\}\s+label=\{c\.scheduled\.cancelButton\}/);
-    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => void d.signOut()} />');
+    // Sign out is confirmed first, and the confirm says the request stays open (critics' pass S3).
+    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => confirmSignOut(date, () => void d.signOut())} />');
+    expect(s.match(/d\.signOut\(\)/g)).toHaveLength(1); // the only call is the confirm's button
     // After the request, the phone's next sync leaves Export without the person's own letters: no export line or row here.
     expect(s).not.toMatch(/exportNote|exportFirst|\/settings\/export/);
     expect(page).not.toMatch(/c\.scheduled\.exportNote/);

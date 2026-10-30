@@ -25,6 +25,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
 | S1-28 the Family tab, invite and joining a book (P8b) | Switch on; staging; two iPhones on two Apple Accounts (a fresh install for the joiner) | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
+| S1-34 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
 | S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
@@ -437,6 +438,27 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-33 rows: phone, text size, online or offline, and yes or no for each line above; screenshots with Asha only.
 - **Update:** PR #370 and `docs/design/EXPERIENCE_PASS_2026-10.md` S22 (the AX layout, on the P7-7 spec list) where a result differs.
 
+### S1-34 Delete account as a sole parent: the deletion screen and Cancel deletion (S64, B2-10, M1; critics' pass 30 Oct 2026)
+- **Needs:** the switch-on build pointed at staging; a drill account (`run-sheets/README.md` "Drill identities") with exactly one book, no co-parent and at least two kept letters, signed in on one iPhone (phone A); for (f) a second iPhone (phone B) signed in to the same drill account. Never an account that has been in a real family book.
+- **Steps:**
+  - (a) Phone A: Settings > Delete account, read step 1, Continue, type the word, Delete account. Note the clock time and the date on the page.
+  - (b) Force-quit the app and reopen it. Then go to the home screen for a minute with the app open, and reopen it. Then wait for the next sync (pull down on Tonight, or foreground the app and wait a minute). After each, note what Tonight and the Book tab show, and every button on screen.
+  - (c) On whatever screen it is, tap "Sign out of this phone". Note what it says. Tap Cancel on the alert. Tap Sign out of this phone again and confirm. Note the screen, then sign in again with the same drill account.
+  - (d) Tap "Cancel deletion". Note how long it takes for the Book to open with the book and the letters back (a stopwatch from the tap).
+  - (e) Settings > Recently deleted, and the Book.
+  - (f) Phone B (same account, already signed in, with the book on it): foreground it after (a) and wait for a sync. Note the screen. On a fresh install of the app, sign in with "I already have a book" while the request is open, and note the screen after the sheet closes.
+  - (g) Repeat (a) and (b) with VoiceOver on, then at AX5.
+- **Expected:**
+  - (a) Scheduled page: "Deletion scheduled", the date 30 days out, Cancel deletion, Sign out of this phone.
+  - (b) After the next sync Tonight and the Book tab show one screen: "Deletion scheduled", the date, "Cancel deletion" and "Sign out of this phone", and nothing else. Never "Begin the book", "I already have a book" or "I was invited". There is no way to Settings, and no way to start a book.
+  - (c) Sign out asks first and says "Your deletion stays scheduled for {date}. Sign in again any time to cancel it." Cancel leaves her signed in. After a confirmed sign out the screen still says the account will be deleted on the date and offers Sign in, and after signing in again the screen offers Cancel deletion again.
+  - (d) A toast or a success haptic, then "Deletion cancelled" and "Your letters and books are on their way back to this phone.", then the Book opens with the book and the letters. Never the welcome in between. The time is the number to record.
+  - (e) Recently deleted is empty of the account's letters; the Book lists them again.
+  - (f) Phone B shows the same deletion screen after its sync (a moment of blank paper at most; never "Begin the book"). The fresh install, after "I already have a book" and the sign-in, lands on the deletion screen too; the sheet's "No book here yet" text may show first (unverified: it comes from the sign-in sheet, not from this fix).
+  - (g) The title is read first, each button by its words, nothing truncated at AX5, and the two buttons stay on screen.
+- **Record:** S1-34 rows (a) to (g): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
+- **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64 (acceptance: a sole parent can reach Cancel deletion after the phone's next sync) and `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` M1 where a result differs.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
@@ -456,10 +478,18 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.
 
 ### S2-13 Account deletion on a real account (C-REQ-019, LEGAL-REQ-029)
-- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7).
-- **Expected:** Export offered first; the subscription notice appears only when Plus will renew; the co-parent's copy of a shared book stays (DATA-REQ-012); cancel restores everything; after completion nothing remains but pseudonymised acceptances.
-- **Record:** S2-13 row.
-- **Update:** `docs/ops/runbooks/stuck-deletion.md` if a step stalls. Note (F, board 20:56): the `apple-token` Edge Function that revokes Apple's token on deletion is not built yet (SECURITY.md 5).
+- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7). The sole parent's request and cancel are S1-34.
+  - (a) The Settings row: absent when signed out; after signing in it appears in its own section, in the destructive style; after signing out it goes. Check at AX5.
+  - (b) Step 1 reads the line about this phone ("On this phone, your letters move to Recently deleted and are kept there.") under the book lines, only when the account has a book.
+  - (c) VoiceOver on step 2: focus lands on "Delete your account?", the field is read as "Type delete to confirm", "Delete account" is announced dimmed until the word is typed, and the two-finger Z gesture takes "Keep my account". On the scheduled page the date and title read as one heading and the buttons read in order.
+  - (d) Dynamic Type AX3 and AX5 on steps 1 and 2 and the scheduled page, on an SE 3 and on a 6.1-inch phone: nothing truncated, the buttons reachable.
+  - (e) Haptics: one `warning` at the final press and none at Continue; none repeated on an offline retry (known: it plays on each press, see the critics' pass L10); a success haptic on Cancel deletion.
+  - (f) The iOS keyboard on step 2 on an SE 3: the field, "Delete account" and "Keep my account" stay visible above the keyboard; the return key says done; autocorrect and capitalization are off.
+  - (g) A co-parent's phone after the request (account with a co-parent, as AL-07.4): after one sync the Book and Tonight stay (Settings reachable); Recently deleted lists the account's letters with the date line; note what Restore does on one of them while the request is open.
+  - (h) Sign out of this phone on the scheduled page asks first and says the deletion stays scheduled for the date; after a confirmed sign out the page says "Sign in to delete your account, or to cancel a deletion you started."
+- **Expected:** Export offered first; the subscription notice appears only when Plus will renew; the co-parent's copy of a shared book stays (DATA-REQ-012); cancel restores everything; after completion nothing remains but pseudonymised acceptances. Every failure line says that nothing has changed, and a request whose answer was lost shows the scheduled page, not a failure (the page re-reads the request once).
+- **Record:** S2-13 rows (a) to (h).
+- **Update:** `docs/ops/runbooks/stuck-deletion.md` if a step stalls. Note (F, board 20:56): the `apple-token` Edge Function that revokes Apple's token on deletion is not built yet (SECURITY.md 5). What the phone does with a letter the server has erased after the purge is S03's to confirm (unverified): the account's auth user is gone by then, so the phone may never get the signal.
 
 ### S2-14 Sign out and Apple revocation (A-REQ-033, AUTH_SETUP 11.8)
 - **Steps:** Airplane mode, save a letter (unsynced), Settings > Account > Sign out. Then online: iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using; relaunch.

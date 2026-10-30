@@ -27,8 +27,8 @@ import type { ServerStatus } from './logic';
 export const OPEN_REQUEST_KEY = 'accountDeletion.openRequest';
 
 export type OpenRequest =
-  | { state: 'scheduled' | 'held'; requestId: string; scheduledFor: string }
-  | { state: 'executing'; requestId: string }
+  | { state: 'scheduled' | 'held'; requestId: string; scheduledFor: string; userId?: string }
+  | { state: 'executing'; requestId: string; userId?: string }
   /** Cancelled at `at`, and the book has not come back yet: the next pull brings it, and until then this is not the welcome. */
   | { state: 'cancelled'; at: string };
 
@@ -49,9 +49,10 @@ export function parseOpenRequest(raw: string | null): OpenRequest | null {
   if (!v || typeof v !== 'object') return null;
   const o = v as Record<string, unknown>;
   if (o.state === 'cancelled' && typeof o.at === 'string' && !Number.isNaN(Date.parse(o.at))) return { state: 'cancelled', at: o.at };
-  if (o.state === 'executing' && isId(o.requestId)) return { state: 'executing', requestId: o.requestId };
+  const who = isId(o.userId) ? { userId: o.userId } : {};
+  if (o.state === 'executing' && isId(o.requestId)) return { state: 'executing', requestId: o.requestId, ...who };
   if ((o.state === 'scheduled' || o.state === 'held') && isId(o.requestId) && typeof o.scheduledFor === 'string' && !Number.isNaN(Date.parse(o.scheduledFor))) {
-    return { state: o.state, requestId: o.requestId, scheduledFor: o.scheduledFor };
+    return { state: o.state, requestId: o.requestId, scheduledFor: o.scheduledFor, ...who };
   }
   return null;
 }
@@ -71,26 +72,36 @@ export function writeOpenRequest(store: FlagStore, next: OpenRequest | null): vo
   if (before !== raw) store.set(OPEN_REQUEST_KEY, raw);
 }
 
-/** What the server says about the person's open request, as a note. */
-export function openRequestOf(status: ServerStatus): OpenRequest | null {
+/**
+ * What the server says about the person's open request, as a note. `userId` is the account that was asked (when it is
+ * known), so a different account that signs in on this phone does not inherit the note.
+ */
+export function openRequestOf(status: ServerStatus, userId?: string | null): OpenRequest | null {
+  const who = userId ? { userId } : {};
   if (status.state === 'none') return null;
-  if (status.state === 'executing') return { state: 'executing', requestId: status.requestId };
-  return { state: status.state, requestId: status.requestId, scheduledFor: status.scheduledFor };
+  if (status.state === 'executing') return { state: 'executing', requestId: status.requestId, ...who };
+  return { state: status.state, requestId: status.requestId, scheduledFor: status.scheduledFor, ...who };
 }
 
 /**
  * The note after a read of the server's open request that succeeded.
  *  - A request found replaces the note.
- *  - None found, and the note said a request was open: it was closed since (cancelled on another phone). A phone with a
+ *  - None found, and the note said a request was open for this account: it was closed since (cancelled on another phone). A phone with a
  *    book has nothing more to wait for. A phone without one has its book coming back with the next pull, so it waits,
  *    as it does after its own cancel, and is never the welcome in between.
  *  - None found, and no open note: nothing (a cancelled note is left to the wait that it is).
  */
-export function noteAfterRead(current: OpenRequest | null, status: ServerStatus, phone: { hasBook: boolean; nowIso: string }): OpenRequest | null {
-  const open = openRequestOf(status);
+export function noteAfterRead(
+  current: OpenRequest | null,
+  status: ServerStatus,
+  phone: { hasBook: boolean; nowIso: string; userId?: string | null },
+): OpenRequest | null {
+  const open = openRequestOf(status, phone.userId);
   if (open) return open;
   if (current?.state === 'cancelled') return current;
-  if (current?.state === 'scheduled' || current?.state === 'held') return noteAfterCancel({ hasBook: phone.hasBook }, phone.nowIso);
+  // A note made for another account (this person signed in on a phone that was asked about someone else) says nothing about her.
+  const hers = !current || !('userId' in current) || !current.userId || !phone.userId || current.userId === phone.userId;
+  if (hers && (current?.state === 'scheduled' || current?.state === 'held')) return noteAfterCancel({ hasBook: phone.hasBook }, phone.nowIso);
   return null;
 }
 
@@ -174,7 +185,8 @@ export function deletionView(
         ? { title: c.scheduled.heading, body: fillDate(c.scheduled.body, o.date), actions: ['cancel', 'signOut'], labels }
         : { title: c.scheduled.heading, body: fillDate(c.signedOut.scheduledBody, o.date), actions: ['signIn'], labels };
     case 'executing':
-      return { title: c.open.executingTitle, body: c.executing, actions: o.signedIn ? ['signOut'] : [], labels };
+      // Nothing can be cancelled any more, and the page offers nothing either: it only explains.
+      return { title: c.open.executingTitle, body: c.executing, actions: [], labels };
     case 'cancelled':
       return { title: c.open.restoringTitle, body: c.open.restoringBody, actions: [o.signedIn ? 'retry' : 'signIn'], labels };
   }

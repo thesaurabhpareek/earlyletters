@@ -96,6 +96,19 @@ describe('the note: what the phone remembers of an open request', () => {
     expect(noteAfterRead(SCHEDULED, { state: 'none' }, { hasBook: true, nowIso: NOW })).toBeNull();
   });
 
+  it('a note belongs to the account that was asked: another account signing in on the phone does not inherit it', () => {
+    const mine = { state: 'scheduled' as const, requestId: 'req-1', scheduledFor: WHEN, userId: 'user-mama' };
+    expect(openRequestOf({ state: 'scheduled', requestId: 'req-1', scheduledFor: WHEN }, 'user-mama')).toEqual(mine);
+    expect(parseOpenRequest(JSON.stringify(mine))).toEqual(mine);
+    // The same account finds its request gone: cancelled elsewhere, so the phone waits for its book.
+    expect(noteAfterRead(mine, { state: 'none' }, { hasBook: false, nowIso: NOW, userId: 'user-mama' })).toEqual({ state: 'cancelled', at: NOW });
+    // Another account finds nothing open for itself: the note was never about it, so it goes (no "your book is coming back").
+    expect(noteAfterRead(mine, { state: 'none' }, { hasBook: false, nowIso: NOW, userId: 'user-papa' })).toBeNull();
+    // An account that does have a request open replaces the note.
+    expect(noteAfterRead(mine, { state: 'scheduled', requestId: 'req-7', scheduledFor: WHEN }, { hasBook: false, nowIso: NOW, userId: 'user-papa' }))
+      .toEqual({ state: 'scheduled', requestId: 'req-7', scheduledFor: WHEN, userId: 'user-papa' });
+  });
+
   it('a cancel leaves a sole parent waiting for her book and a co-parent with nothing', () => {
     expect(noteAfterCancel({ hasBook: false }, NOW)).toEqual({ state: 'cancelled', at: NOW });
     expect(noteAfterCancel({ hasBook: true }, NOW)).toBeNull();
@@ -177,8 +190,8 @@ describe('the deletion screen: one title, the date, Cancel deletion, a way to si
     expect(v.labels.signIn).toBe(c.signedOut.button);
   });
 
-  it('executing: it only explains (nothing can be cancelled any more), and signed in may sign out', () => {
-    expect(deletionView(EXECUTING, o)).toMatchObject({ title: c.open.executingTitle, body: c.executing, actions: ['signOut'] });
+  it('executing: it only explains (nothing can be cancelled any more), as the Delete account page does', () => {
+    expect(deletionView(EXECUTING, o)).toMatchObject({ title: c.open.executingTitle, body: c.executing, actions: [] });
     expect(deletionView(EXECUTING, { ...o, signedIn: false }).actions).toEqual([]);
   });
 

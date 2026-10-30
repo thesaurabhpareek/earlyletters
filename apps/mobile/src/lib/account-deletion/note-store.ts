@@ -3,6 +3,7 @@
  * One place, so the Delete account page, the deletion screen and the first-run gate all write it the same way.
  * Needs the app's store and sync (React Native), so it is not in the Node-tested pure module.
  */
+import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { deleteSetting, getSetting, listChildren, setSetting } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
 import type { FlagStore } from './api';
@@ -22,14 +23,15 @@ function pullIfWaiting(before: OpenRequest | null, after: OpenRequest | null): v
 /** A read of the server's open request that succeeded. */
 export function recordStatus(status: ServerStatus): void {
   const before = readOpenRequest(deviceFlags);
-  const after = noteAfterRead(before, status, { hasBook: hasBook(), nowIso: new Date().toISOString() });
+  const after = noteAfterRead(before, status, { hasBook: hasBook(), nowIso: new Date().toISOString(), userId: currentAuthUserId() });
   writeOpenRequest(deviceFlags, after);
   pullIfWaiting(before, after);
 }
 
 /** The server answered a request: it is open until the date. */
 export function recordRequested(r: { requestId: string; scheduledFor: string }): void {
-  writeOpenRequest(deviceFlags, { state: 'scheduled', requestId: r.requestId, scheduledFor: r.scheduledFor });
+  const userId = currentAuthUserId();
+  writeOpenRequest(deviceFlags, { state: 'scheduled', requestId: r.requestId, scheduledFor: r.scheduledFor, ...(userId ? { userId } : {}) });
 }
 
 /** A cancel went through. */
