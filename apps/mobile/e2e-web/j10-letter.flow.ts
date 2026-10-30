@@ -101,7 +101,8 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
 });
 
 test('[J10b] a typed letter has no player', async ({ app, record }) => {
-  const step = journey(record, 'J10', 'letter-detail', 8, 'J10-01');
+  // Ids 1 to 15 are taken (J10 runs 1 to 9, and the spec cites J10-08 to J10-15), so J10b and J10c take the next free ones.
+  const step = journey(record, 'J10', 'letter-detail', 16, 'J10-01');
   await open(app, /Bath time/);
   await expect(app.getByText(/Bath time/).last()).toBeVisible();
   await expect(app.getByTestId('player.pill')).toHaveCount(0);
@@ -109,7 +110,7 @@ test('[J10b] a typed letter has no player', async ({ app, record }) => {
 });
 
 test('[J10c] a letter waiting for words', async ({ app, record }) => {
-  const step = journey(record, 'J10', 'letter-detail', 9, 'J10-01');
+  const step = journey(record, 'J10', 'letter-detail', 17, 'J10-01');
   await seeded(app, 'asha-waiting');
   await app.getByText('Book', { exact: true }).last().click();
   // The Tonight screen stays in the page under the Book on the web, and its draft card carries the same words, so the

@@ -5,6 +5,7 @@
   "title": "Typing instead",
   "note": "The person lands on the Write page for the same prompt.",
   "from": "J05-04",
+  "shot": "screens/J05-05.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -21,11 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "text": "Close Asha · 0 days Who came to meet Asha this week? What did they say? Add to Asha's book Keep private",
   "lines": [
     "Close",
     "Asha · 0 days",
-    "Tell Asha how the name was chosen.",
-    "Save"
+    "Who came to meet Asha this week? What did they say?",
+    "Add to Asha's book",
+    "Keep private"
   ]
 }
