@@ -958,11 +958,11 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 
 #### BL-376 A letter waiting for its words has a way forward: write the words, try again, a reason [High]
 - Status: ready. Mode: agent. Owner: mobile engineer, speech engineer. Milestone: M-JR. Size: M.
-- Severity: major. Raised by: product, design, quality (10 findings). Steps: J09-04, J09-05, J10-01, J10-09, J10-10.
+- Severity: major. Raised by: product, design, quality (10 findings). Steps: J09-04, J09-05, J10-01, J10-10, J10-17.
 - Satisfies: CLAUDE.md constitution (typed words are the person's own; raw stays immutable); D-056.
-- Scope: The waiting card in Book (J09-04) and the letter page (J10-09) get "Write the words yourself" (typed under the recording, stored as the person's words), "Try again" or "Download English", and a one-line reason. A "Nobody spoke" letter gets "Try writing it down again" (re-enqueue) and "Record again"; Delete is the lower-emphasis action on a silent recording. The letter page subscribes to the store so words appear without reopening.
+- Scope: The waiting card in Book (J09-04) and the letter page (J10-17) get "Write the words yourself" (typed under the recording, stored as the person's words), "Try again" or "Download English", and a one-line reason. A "Nobody spoke" letter gets "Try writing it down again" (re-enqueue) and "Record again"; Delete is the lower-emphasis action on a silent recording. The letter page subscribes to the store so words appear without reopening.
 - Done when: From a waiting letter the person can type the words and it becomes a normal letter. Try again re-enqueues and sets words once. A letter open on screen updates when words arrive. A no-speech letter offers Record again.
-- Test: Journeys J09 (J09-04, J09-05) and J10 (J10-09, J10-10, J10-01); retry-sets-words-once case in `apps/mobile/test/transcription-queue.test.ts`; `apps/mobile/test/store.entries.test.ts`.
+- Test: Journeys J09 (J09-04, J09-05) and J10 (J10-17, J10-10, J10-01); retry-sets-words-once case in `apps/mobile/test/transcription-queue.test.ts`; `apps/mobile/test/store.entries.test.ts`.
 
 #### BL-377 Review keeps what the person changed: autosave edits, warn on Close, mark person edits [High]
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
@@ -1260,11 +1260,11 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 
 #### BL-413 The words of a saved letter can be changed by the person, and background words are read first [High]
 - Status: ready. Mode: agent. Owner: speech engineer, mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
-- Severity: major. Raised by: quality (2 findings). Steps: J01-04, J10-09.
+- Severity: major. Raised by: quality (2 findings). Steps: J01-04, J10-17.
 - Satisfies: CLAUDE.md constitution (edits stored and reversible); the promise line "read each letter and fix anything we got wrong"; BL-148.
 - Scope: "Change words" on the letter page, stored as a person edit with raw untouched and a per-edit put-back. A letter whose words arrived in the background is marked "words arrived, please read" and opens in Review. If this is not built, the promise line must change (BL-393 owns wording).
 - Done when: A saved letter can be edited and every edit can be put back. A background-words letter opens in Review and the flag clears after it is read.
-- Test: Journeys J10 (J10-09) and J01 (J01-04); `apps/mobile/test/store.entries.test.ts`; words-set-once in `apps/mobile/test/transcription-queue.test.ts`.
+- Test: Journeys J10 (J10-17) and J01 (J01-04); `apps/mobile/test/store.entries.test.ts`; words-set-once in `apps/mobile/test/transcription-queue.test.ts`.
 
 #### BL-414 App code only contacts allowlisted hosts (CI test), and the speech model has a mirror [High]
 - Status: ready. Mode: agent. Owner: privacy engineer, platform. Milestone: M-JR. Size: M.
