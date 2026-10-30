@@ -13,7 +13,7 @@
  *
  * The H1 fix (BL-347, F02-REQ-019): a session is released to that contract
  * only once consent is complete (`canSync`) AND, when this phone's letters
- * belong to no account yet, the person has tapped "Keep them here" on the
+ * belong to no account yet, the person has tapped "Keep in this account" on the
  * claim screen that shows the masked account email (account-claim.logic.ts).
  * Until then `currentAuthUserId()` is null, `syncAllowed()` is false and
  * `onSignedIn` has not fired, so lib/sync never runs `takeOwnership` and
@@ -27,7 +27,7 @@ let snapshot: AuthState = initialAuthState;
 const listeners = new Set<(s: AuthState) => void>();
 const signedInListeners = new Set<(userId: string) => void>();
 const acceptedListeners = new Set<(childId: string) => void>();
-/** Users who tapped "Keep them here" in this process. Cleared at sign-out. */
+/** Users who tapped "Keep in this account" in this process. Cleared at sign-out. */
 const confirmed = new Set<string>();
 /** The user the signed-in listeners last heard about (null after sign-out). */
 let announced: string | null = null;
@@ -88,7 +88,7 @@ function released(): string | null {
 /**
  * The signed-in user's id once the session is released to sync (consent
  * complete, and the claim confirmed or not needed), or null: local-only,
- * still consenting, consent declined, or waiting for "Keep them here".
+ * still consenting, consent declined, or waiting for "Keep in this account".
  */
 export function currentAuthUserId(): string | null {
   return released();
@@ -119,7 +119,7 @@ export function setClaimReaders(next: ClaimReaders | null): void {
   readers = next ?? ASK_FIRST;
 }
 
-/** Provider only: the person tapped "Keep them here" for the signed-in account. */
+/** Provider only: the person tapped "Keep in this account" for the signed-in account. */
 export function confirmAccountClaim(userId: string): void {
   if (authUserId(snapshot) !== userId) return;
   confirmed.add(userId);

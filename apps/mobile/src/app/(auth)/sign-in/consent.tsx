@@ -14,8 +14,8 @@
  *   can turn sync on later in Settings, Privacy.
  * - Then, when this phone's letters belong to no account yet: the claim screen
  *   (BL-347, F02 6.2 step 6, F02-REQ-019). "Your letters on this phone will be
- *   kept in the account a***@example.com", "Keep them here" and "Not my
- *   account". Nothing is claimed or uploaded before "Keep them here"; "Not my
+ *   kept in the account a***@example.com", "Keep in this account" and "Not my
+ *   account". Nothing is claimed or uploaded before "Keep in this account"; "Not my
  *   account" ends the session and leaves the phone as it was.
  *
  * Also the "Finish setting up" target from Family and Account, including for

@@ -69,11 +69,11 @@ export interface AuthApi {
   canSync: boolean;
   /**
    * This phone's letters belong to no account yet and the person has not
-   * confirmed this one: show the claim screen (masked email, "Keep them here")
+   * confirmed this one: show the claim screen (masked email, "Keep in this account")
    * before anything syncs (BL-347, F02-REQ-019).
    */
   claimPending: boolean;
-  /** "Keep them here": this phone's letters may now join the signed-in account. */
+  /** "Keep in this account": this phone's letters may now join the signed-in account. */
   keepLettersHere(): void;
   /** "Not my account": ends this session on this phone; nothing was claimed or uploaded. */
   notMyAccount(): Promise<void>;

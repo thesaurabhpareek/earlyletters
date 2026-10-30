@@ -337,7 +337,7 @@ test('[J21c] inviter: the Family tab is live, and an invite goes out with only i
   await btn(app, 'Sign in').click();
   await signInWithEmail(app, 'mama@example.invalid');
   // This phone already holds letters, so the claim screen asks whose they are (BL-347, #139).
-  await btn(app, 'Keep them here').click();
+  await btn(app, 'Keep in this account').click();
   await expect(app.getByLabel(`What does ${CHILD} call them?`)).toBeVisible();
   await app.getByLabel(`What does ${CHILD} call them?`).fill('Papa');
   await expect(app.getByText('From Papa').first()).toBeVisible();
