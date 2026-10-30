@@ -1518,7 +1518,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: a test of a revoked credential at launch with letters queued shows sign-out happens only after they sync, or the PR body states why it cannot and the founder has decided.
 
 #### BL-451 The sign-out wait tells the person when it ends early, can be cancelled, and shows the real sync state
-- Status: ready. Mode: agent. Owner: mobile engineer (P8a: account view), auth owner (S01). Milestone: M5. Size: M. Depends on: none.
+- Status: done (PR #388, e3dbbe2: the signed-out line, "Stay signed in" and the real sync state in the waiting row; phone checks S1-27 (e) and (j); the follow-ups are BL-478 and BL-479). Mode: agent. Owner: mobile engineer (P8a: account view), auth owner (S01). Milestone: M5. Size: M. Depends on: none.
 - Priority: Medium. A build 2 follow-up.
 - Satisfies: none given.
 - Why and where (from the #359 reviews and the #360 review; #359 merged as ab97b1c, #360 as 925a67f):
