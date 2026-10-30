@@ -78,13 +78,17 @@ export function localDay(iso: string): string {
 export type ServerStatus =
   | { state: 'none' }
   | { state: 'scheduled' | 'held'; requestId: string; scheduledFor: string }
-  | { state: 'executing'; requestId: string };
+  /** `scheduledFor` is the request's own date (the server's row always has one); it dates the phone's note (open-request.ts). */
+  | { state: 'executing'; requestId: string; scheduledFor?: string };
 
 /** The caller's open account request (deletion_requests is readable for your own rows only). */
 export function parseStatus(rows: unknown): ServerStatus {
   const r = Array.isArray(rows) ? (rows[0] as { id?: unknown; status?: unknown; scheduled_for?: unknown } | undefined) : undefined;
   if (!r || typeof r.id !== 'string') return { state: 'none' };
-  if (r.status === 'executing') return { state: 'executing', requestId: r.id };
+  if (r.status === 'executing') {
+    const dated = typeof r.scheduled_for === 'string' && !Number.isNaN(Date.parse(r.scheduled_for));
+    return dated ? { state: 'executing', requestId: r.id, scheduledFor: r.scheduled_for as string } : { state: 'executing', requestId: r.id };
+  }
   if ((r.status === 'scheduled' || r.status === 'held') && typeof r.scheduled_for === 'string') {
     return { state: r.status, requestId: r.id, scheduledFor: r.scheduled_for };
   }

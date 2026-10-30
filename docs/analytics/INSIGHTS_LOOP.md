@@ -1,5 +1,8 @@
 # Insights loop
 
+> **Superseded for v1.0.** D-095: no analytics SDK or consent sheet in v1.0; opt-in analytics returns, with consent, in v1.1.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: analytics engineer. Status: Draft 1, 3 Oct 2026. Decision source: founder decision 12 (`docs/agents/BRIEF-2026-10-03.md`): "Opt-in PostHog plus server aggregates, feeding a self-learning loop: agents regularly read the data, write findings and propose backlog items."
 
 Labels: **Fact**, **Decision** (made here, reviewable), **Unverified**, **Founder** (a step only the founder can do).

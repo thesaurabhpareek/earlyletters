@@ -5,6 +5,8 @@
   "title": "Settings, with both children listed",
   "note": "Each child has a row; \"Add a child\" sits below them.",
   "from": "J03-05",
+  "shot": "screens/J03-06.png",
+  "full": "screens/J03-06-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,
@@ -21,13 +23,11 @@
     }
   },
   "scrolls": true,
-  "text": "Settings Early version Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then. Plan Your first two letters are free. Plus lets you keep adding. Children Asha Nila Add a child Writing Spoken language The language you speak your letters in. Reminders Off Appearance Match this phone Your data Privacy Export your book Every letter and recording, free, any time. Recently deleted Letters you delete wait here for 30 days. Recordings Storage Language packs and space on this phone. Private by default. Never sold, never used for ads. Help and legal Help Write to us If you are struggling Terms of Service Privacy Policy Licences About Version 1.0.0 We never rewrite your words. We only fix what the microphone got wrong, and mark every fix. Private by default. Never sold, never used for ads.",
+  "text": "Settings Plan Your first two letters are free. Plus lets you keep adding letters. Children Asha Nila Add a child Writing Spoken language The language you speak your letters in. Reminders Off Appearance Match this phone Your data Privacy Export your book Every letter and recording, free, any time. Recently deleted Letters you delete wait here for 30 days. Recordings Storage Language packs and space on this phone. Private by default. Never sold, never used for ads. Help and legal Help Write to us If you are struggling Terms of Service Privacy Policy Licenses About Version 1.0.0 Early version Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
   "lines": [
     "Settings",
-    "Early version",
-    "Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
     "Plan",
-    "Your first two letters are free. Plus lets you keep adding.",
+    "Your first two letters are free. Plus lets you keep adding letters.",
     "Children",
     "Asha",
     "Nila",
@@ -55,10 +55,11 @@
     "If you are struggling",
     "Terms of Service",
     "Privacy Policy",
-    "Licences",
+    "Licenses",
     "About",
     "Version",
     "1.0.0",
-    "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix. Private by default. Never sold, never used for ads."
+    "Early version",
+    "Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then."
   ]
 }

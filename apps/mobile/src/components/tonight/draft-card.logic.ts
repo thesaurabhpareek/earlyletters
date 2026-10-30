@@ -209,7 +209,8 @@ export function resurfaced(
 
 /**
  * The dateline ("Asha · 7 months"), and what VoiceOver reads instead ("Asha, 7 months"): the separator is never read
- * aloud. Before a birthday it is the day's date.
+ * aloud. With no age it is the day's date (the Family tab). Tonight always passes a stage, the age or, before the birth,
+ * "Before You" (prompt.logic tonightStageLabel), so its dateline always names the child.
  */
 export function tonightDateline(child: string, age: string | null, dayFallback: string): { text: string; a11y: string } {
   return age ? { text: `${child} · ${age}`, a11y: `${child}, ${age}` } : { text: dayFallback, a11y: dayFallback };

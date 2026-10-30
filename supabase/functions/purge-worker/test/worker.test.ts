@@ -295,7 +295,9 @@ Deno.test('request and cancellation receipts use the content package words and a
   await run(w, testConfig());
   const requested = w.emails.find((e) => e.subject === 'Your account is set to be deleted')!;
   assert.match(requested.text, /December 5, 2026/);
-  assert.match(requested.text, /or to cancel the request\. Both are in Settings/);
+  assert.match(requested.text, /sign in and cancel the request in Settings, Delete account\./);
+  // No export after the request (DATA-REQ-053 is open) and no claim that the co-parent was told (#358).
+  assert.doesNotMatch(requested.text, /export a copy|export yours|let them know/i);
   assert.match(requested.text, /aaaaaaaa-0000-4000-8000-000000000001/);
   assert.equal(requested.idempotencyKey, 'deletion-requested:aaaaaaaa-0000-4000-8000-000000000001');
   const cancelled = w.emails.find((e) => e.subject === 'Your account is staying')!;

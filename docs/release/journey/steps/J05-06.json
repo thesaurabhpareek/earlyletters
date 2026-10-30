@@ -5,6 +5,7 @@
   "title": "Listening with no connection",
   "note": "The device is offline. Nothing changes: recording, words and the book are all on the phone, and there is no \"offline\" banner anywhere in v1.0. The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
   "from": "J05-01",
+  "shot": "screens/J05-06.png",
   "route": "/listen",
   "viewport": {
     "width": 402,
@@ -21,10 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha Only you, until you add it to the book. 0:02 Listening. Say it however it comes. Pause Finish Let it go",
+  "text": "To Asha Only you, until you add it to the book. Who came to meet Asha this week? What did they say? 0:02 Listening. Say it however it comes. Pause Finish Let it go",
   "lines": [
     "To Asha",
     "Only you, until you add it to the book.",
+    "Who came to meet Asha this week? What did they say?",
     "0:02",
     "Listening.",
     "Say it however it comes.",

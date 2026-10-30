@@ -22,9 +22,13 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | Item | Needs | When (`08-delivery.md` 10.2) |
 |---|---|---|
 | S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
+| S1-28 the Family tab, invite and joining a book (P8b) | Switch on; staging; two iPhones on two Apple Accounts (a fresh install for the joiner) | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
+| S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
+| S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
 | S1-09 invite links, push | Switch on; AASA on Apple's CDN; APNs key | W7 |
 | S2-14 sign out and revocation | Switch on | W14 |
 
@@ -262,17 +266,26 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - When a row opens its card, note where focus goes: the card opens inside the letter, under the mark's line, and nothing moves focus to it (lens B B7). Record whether the card's "Put it back" can be reached without hunting.
   - Keep, then listen: "Kept in Month N. Added to Asha's book." is said once, in full, before the Book; the Book comes as the sentence ends (at least 3 s, at most about 8 s). Record whether iOS's `announcementFinished` fires for that sentence word for word: if every save waits the full 8 s, it does not (S6, lens A A3).
   - Start "Hear it", then Keep while it plays: the same sentence is said at once, not held until the Book (S6, lens B B4).
-- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes.
+- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review:
+  - Focus lands on "Keep adding to Asha's book". At the default text size, swiping back reaches the held letter, which sits above the title. At accessibility sizes the held letter follows the words, so swiping forward reaches it after the body (#370). Either way it is one element ("To Asha, Month 7", its words, "From Mama", "Waiting"). Nothing of Review behind the sheet is reachable. The escape gesture returns to the letter in Review with nothing held or kept.
+  - "Keep it here for now" closes the sheet and Review; Tonight's card for that letter reads "Waiting to be kept." and "Keep it".
+  - Double-tap "Keep it here for now" quickly: you stay on Tonight, with one card for the letter. The second tap must not land on the tab bar under the sheet's bottom edge. On the web it lands on the Book tab. On iOS the sheet's dismiss animation probably swallows it, but that is unverified, so record where the second tap goes (#312 lens B delta).
+  - With StoreKit: See Plus opens Apple's subscription view over the sheet; after a sandbox purchase the purchase confirmation opens, the sheet goes and the same Review shows for the person to tap Keep. Offline: See Plus stays, and the offline line appears. S1-23 runs at AX5, so the line is not under See Plus: it is a line of the words in the scroll, right after the held note. After the tap the sheet scrolls it into view, and VoiceOver announces it. At the default size it sits under See Plus in the footer (#370). Record any presentation that does not open.
 - **V-07 Apple's subscription sheet:** prices read with their periods (Apple's view, ASC doc D-10).
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
 - **V-09 Read together:** Previous, Next and Close reachable; playback state announced.
-- **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable.
+- **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable. P6a (S40, S46, S47): "If you are struggling" and Licenses push their own pages; each support line reads its name and how to reach it and starts a call; the early-version note is read once, after Version; Add a child reads its heading first, the waiting "Add this book" as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to the empty field; the due-date card's "Set the birthday" and "Hide" are reachable, and "Hide this book" opens a plain confirm.
 - **Expected:** All ten pass with no unlabelled element, no trapped focus and no truncated text at AX5 (letter text never capped, D-027).
 - **Record:** S1-23 rows V-01 to V-10.
 - **Update:** TDD 09 section 2 findings table (status), `docs/design/COMPONENT_LIBRARY.md` for component fixes.
 
 ### S1-24 Display settings and the network check
 - **Steps:** (a) On SE 3 at AX5 with Bold Text and Increase Contrast, in Dark mode, walk Tonight, Review, Book, Settings, Plus gate, then Write and Listen (P4c, #289, #292), each also on a 6.1-inch phone:
+  - The Keep needs Plus sheet (P6a, S22; #370), with nothing truncated at any size:
+    - At AX5 the held card is not tilted. Only "See Plus" and "Keep it here for now" are pinned at the bottom. The scroll holds the title, the held note right after it, any note about See Plus, the body, the card and "Redeem a code".
+    - At the default size the card is tilted and on top, and every button is pinned with its note.
+    - Reduce Motion fades the sheet in instead of sliding it.
+  - Add a child (S47) and a child's book settings (S46) at AX5: the date row and "Born today" wrap, the reason line sits above the primary.
   - Review: every mark in the letter (a struck "um,", a struck repeat, the heard word and the kept name, a word put back) is in the letter's serif at the letter's size, at every Dynamic Type size from the default to AX5, with a plain space outside each strike (M1).
   - Write with the keyboard up, then down. Emulated on the web at AX5 on an SE: "Add to Asha's book" is 260 pt tall, "Keep private" ends 18 pt below the screen, and the letter gets 0 pt with no keyboard; on a 402 by 874 screen the letter gets about 200 pt (lens B B2). Record the room the letter gets on each phone; if it is too small to read what is typed, the AX5 Write layout needs a follow-up (the destinations in the scroll after the letter, or the autosave line folded into the header).
   - Listen during a take started from a prompt. Emulated on an SE: the room's window is 63 pt, under one 114 pt prompt line; on 402 by 874 it is 270 pt (lens B B3). Record whether the whole prompt can be read by scrolling the room while recording. (b) Settings > Privacy & Security > App Privacy Report on (A: shows the domains each app contacted). Fresh install, first letter, Keep the book Not now, open Settings; read the report. Then turn Usage and crash reports on and off in Settings > Privacy and read it again.
@@ -291,6 +304,182 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
+
+### S1-27 Sign-in and Account screens (EXPERIENCE_PASS S52 to S56, package P8a; PR #310)
+- **Needs:** a switch-on build against staging (build 2), a drill account, the fictional family Asha. What the web build cannot show: the native sheet, AutoFill, VoiceOver, Dynamic Type, the native confirm.
+- **Steps:**
+  - (a) **Row 5b.** On a fresh install, run first run and keep the first letter. The Book appears with the letter in its month, and about 600 ms later the sign-in sheet ("Keep Asha's book on any phone") rises over the Book. It never replaces Review, and no frame of Tonight shows between them. Tap Not now: the Book stays as it was.
+  - (b) **Sensitive data at AX3 and AX5.** Sign in on an account with no sensitive-data answer. On the sensitive-data step at AX3 and at AX5, on an SE 3 and a 6.1-inch phone, "Agree and sync" and "Keep on this phone" are the same height and width. If one wraps, the other grows with it. Both are reachable.
+  - (c) **Terms at AX5.** On a new account, the Terms step at AX5: the agree line ("By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.") is fully visible, never cut, and sits right above "Agree and continue" (in the scroll at accessibility sizes).
+  - (d) **VoiceOver on the sign-in sheet.** On the sheet from Account (cover beside the title), focus lands on the title. The small book cover is not read. The privacy line is read once, as one element. A busy Google button is announced as busy, not dimmed. An error line is announced once.
+  - (e) **VoiceOver on Account.** The way-in mark (Apple, Google or envelope) is not read. "Signed in with email" and the address are read. With a letter queued (airplane mode on, keep a letter, then Sign out and confirm while airplane mode is still on, so the wait holds), the Sign out row is replaced by the waiting row, "Your newest letters are still on their way. This phone signs out once they are sent.", with a spinner, and it is spoken once. "Stay signed in" is under it (PR #388), and Sync and sharing keeps the value it had before the tap.
+  - (f) **AutoFill.** Continue with email offers the phone's addresses, and the code screen offers the code from Mail (S1-08 covers the mail apps). After a wrong code the field is empty and the keyboard is up again. On an SE 3 with the keyboard up on the email screen, the longest sign-in error ("Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.", about 100 characters) wraps whole, with "Send link" still in view.
+  - (g) **Agree and sync, later.** On an account that chose "Keep on this phone", Settings > Account > "Agree and sync" opens the sensitive-data step with all its lines. Nothing is recorded until "Agree and sync" is tapped there.
+  - (h) **Not now with the number pad up (PR #372, lens A3).** On an SE 3 at the default text size and at AX3, on Check your email with the number pad up: "Not now" is top right, fully visible, and one tap closes the whole sheet without closing the keyboard first. With Asha's book on the phone, "Your letters are safe on this phone." is under the field; on a fresh install it is not there.
+  - (i) **The pause (PR #372, lens A2).** Five wrong codes: one line, read once by VoiceOver as one element: "Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so does signing in with Apple or Google." After a minute, "Send a new email": the new email's link signs in on this phone while the code field still waits. When the 15 minutes end the field takes a code again; nothing is announced then (known).
+  - (j) **Stay signed in, and a wait that ends as it should (PR #388, BL-451).** Hold the wait as in (e). Tap "Stay signed in": the waiting row and "Stay signed in" go, "Sign out" is back, and the page still says how you signed in. Turn airplane mode off and let the letter sync, then sign out: the page fades to signed out with no line about letters kept on this phone. Hold a wait again and turn airplane mode off during it: the letter goes, then the page fades to signed out, again with no such line. With VoiceOver on, record what is heard and where focus lands after "Stay signed in" (known: nothing is announced and focus is not moved).
+    - Unit-tested only, with no phone step: the early-end line ("Your newest letters are kept on this phone. They are sent the next time you sign in to this account."). A wait ends early only when the session ends, or a gate answer turns sync off, during it (`apps/mobile/test/account-view.test.ts`). Neither can be made to happen on demand on a phone:
+      - "Sign out other devices" from another phone ends this phone's session only at its next token refresh, so the queued letter usually uploads first.
+      - An Apple revocation during a wait cannot be produced: it is checked once when the session is set, a second sign-out is ignored while one waits, and at launch there is no wait (BL-450).
+      - No screen turns sync off during a wait: Settings > Privacy's sync row has no owner yet.
+- **Expected:** All ten hold, with no truncation, no trapped focus and no element read twice.
+- **Record:** S1-27 rows (a) to (j), with the phone, iOS version and text size; screenshots with Asha only.
+- **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
+
+### S1-28 The Family tab, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
+- **Needs:** a switch-on build on two phones and two Apple Accounts (Mama on A with Asha's book; Papa on B), as S1-22, plus an iPhone SE for (i), VoiceOver for (h), and airplane mode (Control Center) for (g). An invite link works once, so every run of (b), (d), (e), (g), (h) and (k) needs a new invite from A and a fresh install on B (delete the app, then install it again).
+- **Steps:**
+  - (a) On A, open the Family tab at the default size and at AX5, in light and dark, and with Increase Contrast. Then Invite a co-parent, type "Papa" and Share invite link through Messages to B.
+  - (b) On B, fresh install: open the link, pass the age question, sign in, read the ask, tap Join the book, and wait on the joined sheet until the book is on the phone.
+  - (c) Then Open the book.
+  - (d) Repeat (b) with a new invite, and tap Close on the joined sheet once the book is there.
+  - (e) With Reduce Motion on, repeat (b) and (c).
+  - (f) On A, Invite a co-parent and dismiss the share sheet by tapping outside it. Tap Share invite link again and this time send it through Messages. Then look at the Family tab.
+  - (g) Repeat (b) to the joined view, and tap Close while the sheet still says the book is on its way (the thin bar keeps moving; it never ends). The book usually arrives within seconds, so this is a race: if the welcome hands over to the Book first, note it and run (g) again with a new invite and a fresh install. To see the stall, turn on airplane mode from Control Center as soon as the joined view shows, then tap Close. Then turn airplane mode off and tap Try again.
+  - (h) With VoiceOver on, repeat (b) to the joined view and listen, then tap Close and listen again. The waiting line is heard only while the book is still coming: if it arrives first, note it and run (h) again with a new invite and a fresh install, in airplane mode as in (g).
+  - (i) On an iPhone SE, Invite a co-parent and type the sign-off with the keyboard up.
+  - (j) The invite card on A's Family tab at AX5, light and dark.
+  - (k) On B, fresh install with a new invite: start first run and go on to the child step without opening the link. Then open the link from Messages, sign in, Join the book, wait for the book, and tap Open the book. Swipe back and use the back gesture.
+- **Expected:**
+  - (a) The tab is lit low and still, and switching tabs never re-arrives the light; with Increase Contrast it is plain paper. People read as signatures ("From Mama", "You"), with no avatar or email; the privacy line reads "Shared only with the other parent, if you invite them."; nothing truncated at AX5. When the share sheet closes, the invite sheet closes too, "The invite waits on the Family tab until they join." shows above the tab bar, and the pending row is in the list.
+  - (b) Before sign-in, no child name and no inviter on screen. The ask shows only "Invited by Mama". **The joined sheet stays up while the book comes down:** first run's welcome under it hands over to the Book only while it, or the sign-in sheet over it, is in front, so nothing replaces the join sheet when the book arrives. The cover appears with "Asha" and opens.
+  - (c) The sheet closes onto the Book on Asha's book, and its light rises from unlit over about 1.2 s, once. Record whether the welcome shows for a moment between Open and the Book, and which transition plays (5.8 row 12: the tabs come forward on the new book). Then Tonight, the Family tab and Settings (the Book's gear) each stay where they are: nothing pulls back to the Book, and no swipe or back gesture reaches the welcome.
+  - (d) Close lands on the Book with its usual light, with no second rise.
+  - (e) The cover is shown open at once, and the Book is lit at once.
+  - (f) After the dismissed share sheet, the invite sheet stays open at "Share invite link" with "Papa" still in the field, with no tick and no toast. The second tap opens the share sheet with the same link; once it is sent, the sheet closes, the toast shows, and the Family tab lists one pending invite, not two.
+  - (g) The welcome says "Asha's book is on its way to this phone." with no "Begin the book"; when the book arrives it hands over to the Book. In airplane mode, or after about 30 s, it says "Asha's book has not reached this phone yet." with Try again, and "Begin the book" is back. Try again with the network back brings the book, and the welcome hands over to the Book.
+  - (h) Focus moves to "You're in Asha's book", and "Asha's book is on its way to this phone." is spoken once, after the heading and not over it. After Close, the welcome speaks its line once; in airplane mode, "Asha's book has not reached this phone yet." is spoken when it shows.
+  - (i) "Share invite link" stays visible above the keyboard, with any error line above it.
+  - (j) The cover steps aside, "Write this book together" never breaks a word, and the button takes the card's width.
+  - (k) Open the book goes to the Book on Asha's book (the child step does not hand over by itself, so the sheet takes the person there), and no back gesture returns to first run's child step.
+  - Known, and not a failure: the wait is held in memory, so if B is closed and opened again while the book is on its way, the welcome shows "Begin the book" with no line (backlog). Not checkable on the web and noted here for the phone: the sheets' presentation (P1's route options), the room keeping its light under a sheet (5.8 row 10), the Book's header settle on the first arrival (row 12), and the co-parent's first-row wash on A's Family tab when Papa joins.
+- **Record:** S1-28 row per sub-step a to k, with the phone, iOS version and build: the joined sheet stayed until Open the book or Close (yes, no; for no, what showed instead); the light rose once on (c) and not on (d) (yes, no); after (c), Tonight, Family and Settings stayed put and the welcome could not be reached (yes, no); (f) the sheet stayed with the sign-off after the dismissed share sheet, and the tab listed one invite (yes, no); (g) which state was seen (on its way, then the Book; or not here yet, then Try again, then the Book) and whether the book won the race; (h) the heading, then the line, each heard once, on the sheet and on the welcome (yes, no; what was heard); (i) the button stayed above the keyboard on the SE (yes, no); (j) the card at AX5 (cover aside, no broken word, full-width button: yes, no); (k) Open landed on the Book and back did not reach first run (yes, no).
+- **Update:** a "no" on (b) or (k) is a stop for S59 and goes to the coordinator and P8b the same day (`apps/mobile/src/components/family/welcome-handoff.logic.ts`, `apps/mobile/src/components/family/join-sheet.logic.ts`, `apps/mobile/src/app/onboarding.tsx`).
+
+### S1-29 A child's book with two parents: the book row and the hide footer (S46; P6a, #312)
+- **Needs:** a switch-on build on both phones, with Mama and Papa joined to Asha's book (S1-22's setup).
+- **Steps:**
+  - (a) On Mama's phone, open Settings > Asha's book. Read the "Write this book together" row, then tap it.
+  - (b) Read the footer under "Hide this book". Tap Hide this book, read the confirm, then Cancel. A confirmed hide is safe on a build with P6d (#361): Settings > Hidden books brings the book back (S1-32). On a build without it, do not confirm the hide on a drill phone.
+  - (c) Only if a drill book has a co-parent whose member row has no signature: repeat (a) and (b) for that book. The server's `signs_as` is null there; the app does not let anyone save an empty signature.
+  - (d) Turn VoiceOver on and swipe through the row and the footer.
+- **Expected:**
+  - (a) The row's value is Papa's own signature ("Papa"). The tap opens the Family tab, not the invite sheet.
+  - (b) The footer reads "Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Papa still sees Asha's book as before." The confirm is not styled as destructive.
+  - (c) The value and the footer say "Your co-parent", and the row still opens the Family tab.
+  - (d) VoiceOver reads the row's label and value, and reads the footer once.
+- **Record:** S1-29 row: (a) to (d) yes or no, or "not run" for (c), with the phones and iOS versions. Take a screenshot of the row and the footer, fictional names only.
+- **Update:** the S46 checkbox in `docs/design/EXPERIENCE_PASS_2026-10.md` (evidence column). Open an issue for any difference.
+
+### S1-30 Licenses: the page opens and scrolls, and cold start does not move (S40; P6a, #312)
+- **Steps:**
+  - (a) On the SE 3, with the S1-03 method, run 10 cold starts on the build before the Licenses page (develop at 49e3d93) and 10 on this one.
+  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the 565 KB list there and only there.
+  - (c) Fling to the end of the list and back. Open one notice and close it.
+  - (d) Repeat (c) at AX5, then with VoiceOver on: the group headings are headings, and each package row reads its name and its licence.
+- **Expected:**
+  - (a) Cold start p50 and p90 are within 50 ms of the build before, and inside the S1-03 budget, because nothing reads the list at launch.
+  - (b) The page opens with no visible stall. Over about 300 ms on the SE 3 is a finding; its follow-up, already listed on #312, is to move `licences.json` to an on-demand asset.
+  - (c) The list scrolls smoothly, with no blank rows after a fling.
+  - (d) Nothing is truncated.
+- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
+- **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
+
+### S1-31 Settings: Plan, Reminders, Recordings, Export, Privacy and Appearance (S34, S41 to S45; P6b, #313)
+- **Needs:** a development build with StoreKit sandbox (S2-01's setup) for (a); any build for (b) to (f).
+- **Steps:**
+  - (a) **Plan.** With Plus off: the first row is "See what Plus adds", and it opens Apple's subscription view. Buy in the sandbox, then come back. With the plan note open (inside its window): the renewal date is said once, and in a trial the free-until date is said once. Tap Restore purchases on an account with Plus, then on one without. A family-shared plan, if a drill family has one.
+  - (b) **Reminders.** Turn reminders on and deny notifications. Tap Open Settings, allow, and come back. On a phone that had "Pause all reminders" on in an earlier build: read Settings home's Reminders row and the Reminders switch, then turn the switch on.
+  - (c) **Recordings.** With English not on the phone, tap the language row. Let it download, then tap it again. Off Wi-Fi, and with the disk nearly full, read the row.
+  - (d) **Export.** On a book with a twin, read the cover at the top. Fill the disk and export. On a book too big for one file, if a drill fixture has one, tap "Write to us".
+  - (e) **Privacy.** Read the three never-lines. Then tap each of the two document rows, Privacy Policy and Terms of Service (critics' D6; #370 removed the two rows whose pages the website took down).
+  - (f) **Appearance.** With a kept letter in the book, read the sample. With only a private letter, read it again. Change Reading size through every size.
+- **Expected:**
+  - (a) After the purchase, the first row reads "Plus" with the plan name and its dates, and "Manage subscription" shows. No sentence and no date is said twice on the screen. After a restore that works, "Plus is on." is said once. With nothing to restore, the found-nothing line shows under the row. A shared plan reads "Shared with you through Apple Family Sharing."
+  - (b) The card collapses and "Reminders are on." shows once. Coming back still denied shows no "Reminders are on.". A phone paused before reads Off on both the row and the switch, and the switch turns reminders back on with the cadence that was chosen.
+  - (c) "Download" starts the download. The ring fills, and the words say "Getting ready, n%", never 100% before the download is done. "Remove" asks before it removes. The Wi-Fi wait and the low-space rows say why and offer nothing to tap.
+  - (d) The cover is the active book's, with the twin behind it. The low-space failure names its cause and offers "Export again". "Write to us" opens Mail with the subject.
+  - (e) Each line has a LockSimple mark and does not look tappable. Each document row opens its page in the in-app browser, never the website's not-found page, and only those two rows are listed.
+  - (f) The sample is the first line of your newest kept letter, never a private letter, the other parent's, or a quiet day. With no kept letter it shows "Aa". Each Reading size label is in Literata at its own size.
+  - At AX5, nothing on any of these screens is truncated.
+  - With VoiceOver: Plan's first row reads its title, status and plan name; the restore result is read once; the Reminders card's title is a heading; the language row is one button with its hint, and its trailing word and ring are not read again; each never-line is one element with its mark hidden.
+- **Record:** S1-31 rows (a) to (f), with the phone, iOS version, text size and VoiceOver yes or no; screenshots with Asha only.
+- **Update:** PR #313's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S34 and S41 to S45 where a result differs.
+
+### S1-32 Hidden books: the way back from "Hide this book" (P6d, #361; B-REQ-014)
+- **Steps:**
+  - (a) With two books on the phone, open Settings > Avi's book > Hide this book, and confirm.
+  - (b) Read Settings under Children.
+  - (c) Open Hidden books and tap "Show this book again". Then go back to Settings.
+  - (d) Repeat (a) to (c) with VoiceOver on, then at AX5. With VoiceOver, set the rotor to Headings on Hidden books.
+  - (e) Hide the book that is open (the one the switcher shows), then show it again from Hidden books, without choosing another book in the switcher in between. Choosing one makes that book the open one, so this check would fail for the wrong reason.
+  - (f) Month and birthday messages for a hidden book (the only reminders that follow a book's own switch; evening reminders are not per book). This is covered by the planner test in `apps/mobile/test/hidden-books.test.ts`: a hidden book leaves the reminders' book list, and comes back with "Show this book again". There is no phone step, because it needs a book whose month turns on the day of the run. If a drill book's month does turn tomorrow, hide it today and check that no message for it arrives.
+- **Expected:**
+  - (a) Nothing is deleted.
+  - (b) Avi's book is not listed. A "Hidden books" row sits after "Add a child".
+  - (c) The page lists Avi's book with "Show this book again". After the tap, the page says "No hidden books.", Avi's book is back in the switcher and under Children, and the Hidden books row is gone. Avi's letters and drafts are as they were.
+  - (d) Each button names its book ("Show this book again, Avi"), and focus moves to "No hidden books." after the tap. The rotor's Headings stop on each hidden book's name. At AX5, nothing is truncated.
+  - (e) While it is hidden, the switcher opens another book. After "Show this book again" the book is the open one again, as it was before the hide, because the phone still remembers it as the open book.
+  - (f) Not run on the phone (see Steps). If it is run, no month or birthday message for the hidden book arrives.
+- **Record:** S1-32 rows (a) to (e), and (f) when it can be run, with the phone and iOS version; screenshots with the fictional family only.
+- **Update:** F09-REQ-016 and F09-REQ-024 in `docs/prd/v2/features/F09-book.md` (WP-F09-09 status) where a result differs.
+
+### S1-33 The Keep sheet's buttons at large text (S22; #370, P6a critics' S1 and the #370 lenses)
+- **Needs:** a build where the next letter's Keep needs Plus: a phone past its free letters, without Plus.
+- **Steps:** At AX3, then at AX5, on an SE 3 and on a 6.1-inch phone, open the Keep sheet from a letter's Keep in Review. Do it twice on each: once online, and once with Apple's store view unreachable (airplane mode, then tap See Plus so the sheet shows its offline note).
+- **Expected:**
+  - "See Plus" and "Keep it here for now" are both fully on screen at the bottom and tappable, with nothing else pinned with them.
+  - At AX3, the title and the line that says the letter is safe ("This one waits on this phone, on Tonight, exactly as it is, for as long as you like.") are on the first screen, with both buttons.
+  - At AX5, the first lines of that line start on the first screen and the rest scrolls. On an SE the three-line "Keep it here for now" makes the footer more than half the screen.
+  - Offline, after tapping See Plus, the sheet scrolls the offline note into view, and VoiceOver announces it.
+  - The offline note, the body, the held letter and "Redeem a code" scroll above the buttons.
+  - Nothing is truncated.
+  - VoiceOver reads the held note before either button.
+- **Record:** S1-33 rows: phone, text size, online or offline, and yes or no for each line above; screenshots with Asha only.
+- **Update:** PR #370 and `docs/design/EXPERIENCE_PASS_2026-10.md` S22 (the AX layout, on the P7-7 spec list) where a result differs.
+
+### S1-34 The crash screen and the launch recovery screen on a development build (S50 and S51; #355, P6c critics' S1 and S2)
+- **Needs:** an EAS `development` build (a development client), which is the only kind that can reach these screens: a store build has no fault switch by design (B-8). Run (a) to (e) on the simulator or on a phone. A phone needs Xcode's Devices and Simulators window (Download Container and Replace Container). Keep a copy of the good `scribe.db` first, and use a book of fictional letters only (Asha).
+- **Steps:**
+  - (a) Make the open fail. Quit the app. In the app's container, replace `Documents/SQLite/scribe.db` with a file that is not a database (for example 4 KB of random bytes, `head -c 4096 /dev/urandom > scribe.db`), and delete `scribe.db-wal` and `scribe.db-shm` beside it. On the simulator: `xcrun simctl get_app_container booted <the development bundle id> data`, then that folder. On a phone: Download Container, edit the copy, Replace Container. Open the app.
+  - (b) Tap Try again, and watch the screen. Wait for the answer, then tap Try again a second time, and a third.
+  - (c) Tap Export what's readable. Open the ZIP on a Mac. Compare its `database/scribe.db` with the file you put in place (`shasum`). Download the container again and compare the app's own `scribe.db` with the same file.
+  - (d) Simulator only (a phone's container cannot be replaced while the app runs): with the app still open on the recovery screen, put the good `scribe.db` back in its folder (and its `-wal` file if you kept one), then tap Try again.
+  - (e) Repeat (a) and (b) with VoiceOver on, with Reduce Motion on, and at AX5 on an SE 3. Put the good file back afterwards.
+  - (f) S50 on a throwaway local change that is never committed: add `throw new Error('drill')` as the first line of a screen's component (for example `apps/mobile/src/app/settings/index.tsx`), build a development client, and open that screen. If the red error box covers the screen, close it. Tap Try again, and record what Try again shows, including nothing at all (this change leaves S50's Try again as it is, so with the throw still in place it may look like nothing happened). Then tap Go to Tonight.
+  - (g) In quick turns on the recovery screen: tap Export what's readable and, before the share sheet comes up, tap Try again (and the other way round: Try again, then Export during the half second). Then close the share sheet. Record which line is on screen after each answer: the newest answer must be the one shown, and Export must not start twice on a double tap.
+- **Expected:**
+  - (a) A screen titled "The book could not open", with the line "Export saves a copy of the recordings and book files it can read, exactly as they are.", the hint "Try again, or restart the phone.", and exactly two buttons: Try again and Export what's readable. No error text, code or number.
+  - (b) Within about a second of each tap the button reads "Trying again" and looks busy (an outline, no fill), and it ignores a second tap. After about half a second it reads "Try again" again and the line "It did not open this time either." appears under the hint. On the second and third tap the line goes while the button is busy, and comes back. Each tap has a visible answer, and nothing counts the taps. With the file still broken the screen never opens the book.
+  - (c) The share sheet opens. Choose Save to Files, or AirDrop to the Mac: the app deletes its own copy of the ZIP as soon as the share call returns, so a copy exists only where you put it. The ZIP holds `database/scribe.db` (and `recordings/` if there are recordings) and `README.txt`. The ZIP's `scribe.db` is byte for byte the file you put in place, and the app's own file has not changed. If the share sheet does not open and the line reads "That export did not work. Your files are still on this phone.", the export failed (the share sheet was not available, or the ZIP could not be written): record it, and the phone's iOS version. If it does not open and the line reads "Export has nothing to put in a file right now.", neither folder could be read: record that too.
+  - (d) "Trying again" shows, then the book opens, with the letters as they were. A phone is not run for (d); its first launch after the good file is back is the same code.
+  - (e) VoiceOver reads "It did not open this time either." once after each tap, and reads the button as busy while it works. With Reduce Motion nothing differs, because nothing here moves. At AX5 the title and the line can be reached by scrolling, and nothing is cut off mid-word. Record what shows first, and whether anything suggests the words continue below the buttons.
+  - (f) A screen titled "This page did not open", with "Your letters and recordings are safe on this phone.", Try again and Go to Tonight. No result is expected from Try again; record what it shows. Go to Tonight leaves for Tonight while the fault is still in place. This is the one place the S50 line is unverified for the letters (claims inventory 3f): do not read it as a check that the letters are safe.
+- **Record:** S1-34 rows (a) to (g), with the phone or simulator, iOS version, text size, VoiceOver yes or no, and the yes or no for each Expected line; the `shasum` pair for (c); screenshots with Asha only.
+- **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S50 and S51 (the launch body and the Export empty line, with the 30 Oct rulings), and `docs/reviews/2026-10-claims-inventory.md` section 3f where a result differs.
+
+### S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (S64, B2-10, M1; critics' pass 30 Oct 2026)
+- **Needs:** the switch-on build pointed at staging; a drill account (`run-sheets/README.md` "Drill identities") with exactly one book, no co-parent and at least two kept letters, signed in on one iPhone (phone A); for (f) a second iPhone (phone B) signed in to the same drill account, and a third phone or phone B after deleting the app and installing it again. Never an account that has been in a real family book.
+- **Steps:**
+  - (a) Phone A: Settings > Delete account, read step 1, Continue, type the word, Delete account. Note the clock time and the date on the page.
+  - (b) Force-quit the app and reopen it. Then send the app to the background (home screen) for a minute and reopen it: the app syncs when it comes to the foreground (there is no pull to refresh). Wait a minute after the reopen. After each, note what the screen shows, and every button on it (with no book listed the Tonight, Book and Family tabs are not on screen; the one screen stands in for all of them).
+  - (c) On whatever screen it is, tap "Sign out of this phone". Note what it says and the names of its two buttons. Tap "Stay signed in" on the alert. Tap Sign out of this phone again and confirm. Note the screen, then sign in again with the same drill account.
+  - (d) Tap "Cancel deletion". Note how long it takes for the Book to open with the book and the letters back (a stopwatch from the tap). The Try again and 15-minute checks need a cancel that goes through and a pull that fails, and on a healthy network `recordCancelled` pulls within about a second, so the Book simply opens and they read n/a. To stage them (founder, staging only, never production): in the SQL editor run `revoke execute on function public.sync_pull(jsonb, int) from authenticated;` before the tap, tap Cancel deletion (the cancel goes through, the pull fails), tap "Try again" and note what the screen does (it should show that it is working, then say "Still on their way. Try again in a moment."), leave it for 15 minutes and note what the screen shows then (it should become the welcome by itself), and then run `grant execute on function public.sync_pull(jsonb, int) to authenticated;` (the grant of `20261004100000_sync_engine.sql`) and the phone's next sync brings the book back. Do not forget the grant: every phone on staging stops syncing without it.
+  - (e) Settings > Recently deleted, and the Book.
+  - (f) Phone B (same account, already signed in, with the book on it): foreground it after (a) and wait for a sync. Note the screen. Then on the third phone, or phone B after deleting the app and installing it again, sign in with "I already have a book" while the request is open, and note the screen after the sheet closes.
+  - (g) Repeat (a) and (b) with VoiceOver on, then at AX5. While that second request is still open: first switch airplane mode on and tap Cancel deletion (a failed cancel) and note what is spoken at the tap, what is spoken for the failure, and that the buttons come back; then switch airplane mode off and tap Cancel deletion again (a cancel that goes through) and note what is spoken at the tap, while it works, and when the screen changes. The failed cancel must come first: once a cancel has gone through nothing is open to fail on. At AX5 note whether the date is reachable: it sits in the scrolled words while the two buttons are pinned below.
+  - (h) The day after the date (founder, staging, with AL-07.7: phone B signed in, the request executing, then purged). The executing state is a race with the purge worker if left to chance, so stage it: pause the purge-worker schedule on staging first (AL-07's stop rule names the job), then in the SQL editor run `update public.deletion_requests set status = 'executing', executing_at = now() where id = '<the drill row>' and status = 'scheduled';`, open the app and note the screen, then revert with `update public.deletion_requests set status = 'scheduled', executing_at = null where id = '<the drill row>' and status = 'executing';` and resume the schedule. Then, after a real purge, open the app again, signed out by the app itself. Optional on a spare phone, signed out: switch off Set Automatically in Settings > General > Date & Time, set the date three days past the date on the screen, reopen the app, then switch Set Automatically back on.
+- **Expected:**
+  - (a) Scheduled page: "Deletion scheduled", the date 30 days out, Cancel deletion, Sign out of this phone.
+  - (b) After the next sync the phone shows one screen: "Deletion scheduled", the date, "Cancel deletion" and "Sign out of this phone", and nothing else. Never "Begin the book", "I already have a book" or "I was invited". There is no way to Settings, and no way to start a book.
+  - (c) Sign out asks first and says "Your deletion stays scheduled for {date}. Sign in again any time before then to cancel it." Its buttons are "Stay signed in" and "Sign out"; Stay signed in leaves her signed in. After a confirmed sign out the screen still says the account will be deleted on the date and offers Sign in, and after signing in again the screen offers Cancel deletion again.
+  - (d) A success haptic, the screen shows that it is working, then "Deletion cancelled" and "Your letters and books are on their way back to this phone.", then the Book opens with the book and the letters. Never the welcome in between. The time is the number to record. After Try again: it shows that it is working and then "Still on their way. Try again in a moment." (or the Book opens). After 15 minutes with no book the screen becomes the welcome by itself, with no touch.
+  - (e) Recently deleted is empty of the account's letters; the Book lists them again.
+  - (f) Phone B shows the same deletion screen after its sync (a moment of blank paper at most; never "Begin the book"). The fresh install, after "I already have a book" and the sign-in, lands on the deletion screen too; the sheet's "No book here yet" text may show first (unverified: it comes from the sign-in sheet, not from this fix).
+  - (g) The title is read first, each button by its words, nothing truncated at AX5, and the two buttons stay on screen. Tapping Cancel deletion is spoken ("Cancelling the deletion."), and so are the failed cancel (its line) and the change to "Deletion cancelled" and its sentence. Record whether the date can be reached at AX5.
+  - (h) While the request is executing the screen reads "Deletion in progress" and "Your account is being deleted now. This can take up to a day.", with "Sign out of this phone" (no alert) or, signed out, "Sign in": never a screen without a button. After the purge the phone opens on the welcome ("Begin the book" works) once 48 hours have passed since the date; until then a signed-out phone still shows the date and Sign in. With the clock set three days past the date and the phone signed out: the welcome.
+- **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
+- **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64 (acceptance: a sole parent can reach Cancel deletion after the phone's next sync) and `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` M1 where a result differs.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
@@ -311,10 +500,18 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.
 
 ### S2-13 Account deletion on a real account (C-REQ-019, LEGAL-REQ-029)
-- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7).
-- **Expected:** Export offered first; the subscription notice appears only when Plus will renew; the co-parent's copy of a shared book stays (DATA-REQ-012); cancel restores everything; after completion nothing remains but pseudonymised acceptances.
-- **Record:** S2-13 row.
-- **Update:** `docs/ops/runbooks/stuck-deletion.md` if a step stalls. Note (F, board 20:56): the `apple-token` Edge Function that revokes Apple's token on deletion is not built yet (SECURITY.md 5).
+- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7). The sole parent's request and cancel are S1-35.
+  - (a) The Settings row: absent when signed out; after signing in it appears in its own section, in the destructive style; after signing out it goes. Check at AX5.
+  - (b) Step 1 reads the line about this phone ("On this phone, your letters stay. The ones already saved to your account move to Recently deleted.") under the book lines, only when the account has a book.
+  - (c) VoiceOver on step 2: focus lands on "Delete your account?", the field is read as "Type delete to confirm", "Delete account" is announced dimmed until the word is typed, and the two-finger Z gesture takes "Keep my account". On the scheduled page the date and title read as one heading and the buttons read in order.
+  - (d) Dynamic Type AX3 and AX5 on steps 1 and 2 and the scheduled page, on an SE 3 and on a 6.1-inch phone: nothing truncated, the buttons reachable.
+  - (e) Haptics: one `warning` at the final press and none at Continue; none repeated on an offline retry (known: it plays on each press, see the critics' pass L10); a success haptic on Cancel deletion.
+  - (f) The iOS keyboard on step 2 on an SE 3: the field, "Delete account" and "Keep my account" stay visible above the keyboard; the return key says done; autocorrect and capitalization are off.
+  - (g) A co-parent's phone after the request (account with a co-parent, as AL-07.4): after one sync the Book and Tonight stay (Settings reachable); Recently deleted lists the account's letters with the date line; note what Restore does on one of them while the request is open.
+  - (h) Sign out of this phone on the scheduled page asks first and says the deletion stays scheduled for the date, with "Stay signed in" and "Sign out" as its buttons; after a confirmed sign out the page says "Sign in to delete your account, or to cancel a deletion you started."
+- **Expected:** Export offered first; the subscription notice appears only when Plus will renew; the co-parent's copy of a shared book stays (DATA-REQ-012); cancel restores everything; after completion nothing remains but pseudonymised acceptances. Every failure line says that nothing has changed. (A request whose answer was lost shows the scheduled page, not a failure: the page re-reads the request once. That is proved by the unit tests in `apps/mobile/src/lib/account-deletion/account-deletion.test.ts` only; no phone step can drop a reply after the server has committed.)
+- **Record:** S2-13 rows (a) to (h).
+- **Update:** `docs/ops/runbooks/stuck-deletion.md` if a step stalls. Note (F, board 20:56): the `apple-token` Edge Function that revokes Apple's token on deletion is not built yet (SECURITY.md 5). What the phone does with a letter the server has erased after the purge is S03's to confirm (unverified): the account's auth user is gone by then, so the phone may never get the signal.
 
 ### S2-14 Sign out and Apple revocation (A-REQ-033, AUTH_SETUP 11.8)
 - **Steps:** Airplane mode, save a letter (unsynced), Settings > Account > Sign out. Then online: iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using; relaunch.

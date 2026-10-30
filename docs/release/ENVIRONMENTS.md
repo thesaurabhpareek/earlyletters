@@ -55,7 +55,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Supabase | `supabase start` or PGlite for `npm run test:db` | `scribe-staging` (not created yet) | `scribe-prod` (not created yet) |
 | Schema changes | The developer | CI only (D-041), from `develop` only: a push to `develop` that changes migrations, or the manual catch-up run on `develop`, through the GitHub Environment `staging`; a push to `main` deploys nothing | CI on a `db-v*` tag on a commit on `main`, through the GitHub Environment `db-production` |
 | App builds | `expo start`, `development` | `testflight` (build 1, switch off), `preview` (build 2, switch on) | `production` |
-| Distribution | Simulator or dev client | TestFlight internal groups: "Family" (build 2), "Friends" (build 1 until the R-17 gate) | TestFlight external, then the App Store |
+| Distribution | Simulator or dev client | TestFlight: internal group "Family" (builds 1 and 2); external group "Friends" (build 1 until the R-17 gate, after Beta App Review, AF-11) | TestFlight external, then the App Store |
 | Universal links | none | `https://earlyletters.com` serves the `.preview` id too | `https://earlyletters.com` |
 | Email sender | the CLI's mail viewer | Resend through Supabase Auth SMTP, `hello@earlyletters.com` | Same, production key |
 | Analytics and crash reporting | Off | Off | Off (the analytics switch returns with consent later) |

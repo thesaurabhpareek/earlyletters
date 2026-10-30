@@ -33,7 +33,7 @@ export type StepMeta = {
  * v1.0 has no usage-sharing ask (EXPO_PUBLIC_ANALYTICS=off, decision of 15 Oct 2026), so nothing covers the
  * screen. `keepConsent` is kept for the v1.1 flows, when the ask returns behind the switch.
  */
-export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
+export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' | 'asha-hidden' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
   const base = process.env.E2E_WEB_SEED_URL;
   await page.goto(`${base}/?seed=${kind}`);
   await expect(page.locator('body')).not.toBeEmpty();
