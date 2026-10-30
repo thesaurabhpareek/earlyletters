@@ -1012,9 +1012,11 @@ export const en = {
       body: "Your book is right where you left it.",
       button: "Back to Tonight",
     },
-    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
-    // Every line here is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f): the body says
-    // what Export does (recovery-export.logic.ts copies the files byte for byte); it does not say the letters are safe.
+    // The book could not be opened at launch (database open or update step failed). No button here deletes anything.
+    // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,
+    // rows E1, E3 and E4): the body says what Export does (recovery-export.logic.ts copies the files byte for byte); it does not
+    // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was
+    // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book could not open",
       body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",

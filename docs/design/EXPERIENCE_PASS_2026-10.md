@@ -1234,8 +1234,8 @@ Copy:
 | `errors.launch.body` | Export saves a copy of the recordings and book files it can read, exactly as they are. | CHG. Revised 30 Oct (coordinator's ruling on the P6c critics' pass, S2; `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md`): the 16 Oct line, "Your letters and recordings are safe on this phone.", made a promise the build cannot check (claims inventory 3f, E2; A2) on the one screen where it knows least. This line says what the screen's Export does, which the code backs (E1), and adds no "nothing was changed" (B6 stands). S50 keeps "safe on this phone", so `rules.test.ts` still finds it in `en.errors`. |
 | `errors.launch.hint` | Try again, or restart the phone. | CHG |
 | `errors.launch.tryAgainButton` | Try again | KEEP |
-| `errors.launch.tryingAgainButton` | Trying again | ADDED 30 Oct (S1). The Try again button's words while it opens the book again (busy, about half a second, then the answer). |
-| `errors.launch.stillClosed` | It did not open this time either. | ADDED 30 Oct (S1). The one line under the hint after a Try again that did not work, announced each time. No count, no "nothing was changed" (B6). |
+| `errors.launch.tryingAgainButton` | Trying again | NEW (added 30 Oct, S1). The Try again button's words while it opens the book again (busy, about half a second, then the answer). |
+| `errors.launch.stillClosed` | It did not open this time either. | NEW (added 30 Oct, S1). The one line under the hint after a Try again that did not work, announced each time. No count, no "nothing was changed" (B6). |
 | `errors.launch.exportButton` | Export what's readable | KEEP (22 characters; the States lens's "Save a copy of the files" is 24 and over the budget, rejected) |
 | `errors.launch.exportingTitle` | Gathering your files | KEEP |
 | `errors.launch.exportNothing` | Export has nothing to put in a file right now. | CHG. Revised 30 Oct (S2): the 16 Oct line, "This phone has no recordings or files to export.", counted what the phone lacks and read as loss. This one says what Export does and is true whenever no file was listed (claims inventory 3f, E3). |
