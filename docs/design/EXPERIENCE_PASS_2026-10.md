@@ -193,14 +193,14 @@ Light: L (lamp scene, section 5.2), none, or dusk. Motion names refer to section
 | 18 | Microphone is off (S13) | J05-04 | The microphone is off | none | 200 ms fade | none |
 | 19 | Deleted, Undo (S36) | J10-08 | Letter deleted. | (Book's own) | card collapses out of its row | warning on confirm |
 | 20 | Crash, launch recovery (S50, S51) | J20-01, J20-02 | This page did not open / The book could not open | none | none | none |
-| 21 | Sign in (S52 to S55) | none yet (P8 adds j22) | Keep Asha's book on any phone | none (sheet over the Book) | native sheet; steps cross-fade | none |
-| 22 | Family tab (S57) | J17-01, J17-02, J17-03 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
-| 23 | Invite a co-parent (S58) | none yet (P8 adds j21) | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
-| 24 | Joined (S59) | none yet (j21) | You're in Asha's book | none in the sheet; the Book's lamp rises after | the cover opens | success once |
+| 21 | Sign in (S52 to S55) | J22-01 to J22-10, J22-20, J22-21, J22-31, J22-32, J22-40 to J22-43, J22-50, J22-60, J22-70, J22-71, J22-80, J22-81 | Keep Asha's book on any phone | none (sheet over the Book) | native sheet; steps cross-fade | none |
+| 22 | Family tab (S57) | J17-01, J17-02, J17-03, J21-20 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
+| 23 | Invite a co-parent (S58) | J21-21 to J21-23, J21-30, J22-90, J22-91 | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
+| 24 | Joined (S59) | J21-05 to J21-08 | You're in Asha's book | none in the sheet; the Book's lamp rises after | the cover opens | success once |
 | 25 | Back up my recordings (S61) | none yet (P8 adds j23) | Back up your recordings | none | the turn-on card folds into the On rows | tap |
 | 26 | A new phone (S62) | none yet (j23) | Bringing your recordings to this phone. | (Book's own) | a thin determinate line, no count | success once when done |
 
-The "before" for rows 1 to 20 is in the scratchpad contact sheets (sheets 01 to 09, labelled by step id; path in the files table above). Row 22's "before" is the coming-soon Family tab (`screens/J17-01.png`, sheet 08). Rows 21 and 23 to 26 have no "before": the journey record was made with server features off. P8's flows add them and P7's regenerated journey shows them.
+The "before" for rows 1 to 20 is in the scratchpad contact sheets (sheets 01 to 09, labelled by step id; path in the files table above). Row 22's "before" is the coming-soon Family tab (`screens/J17-01.png`, sheet 08). Rows 21 and 23 to 26 have no "before": the record the sheets were cut from was made with server features off. P8's flows added rows 21 to 24, and the regenerated record (run with server features on, against the mock server) shows them at the steps above; rows 25 and 26 have no step yet (no j23 flow).
 
 ---
 
@@ -246,7 +246,7 @@ Acceptance:
 - [ ] Reduce Motion: the lamp holds still at 1.0, and the content appears with one 200 ms fade.
 
 #### S04 The promise
-Step J01-04. Before: `screens/J01-04.png`, `screens/J01-04-full.png`. Verdict: redesign. Package P2.
+Step J01-04. Before: `screens/J01-04.png`. Verdict: redesign. Package P2.
 
 Problem: about 110 words in three cards and a footnote, three "we" sentences, and mechanics explained before the person has said a word. The mishear card repeats what the first Review note and Settings already say (those are the two places `docs/legal/in-app-disclosures.md` section 2 registers for it; first run is not one of them).
 
@@ -362,7 +362,7 @@ Acceptance:
 - [ ] Seven languages, one check; no download starts from this sheet (D-087).
 
 #### S08 The book is open, with the one-time speech download
-Steps J01-16, J01-17, J03-03. Before: `screens/J01-16.png`, `screens/J01-16-full.png`, `screens/J01-17.png`, `screens/J03-03.png`. Verdict: redesign. Package P2 (and `components/speech/speech-consent-card.tsx`).
+Steps J01-16, J01-17, J03-03. Before: `screens/J01-16.png`, `screens/J01-17.png`, `screens/J03-03.png`. Verdict: redesign. Package P2 (and `components/speech/speech-consent-card.tsx`).
 
 Problem: the emotional peak of first run carries a five-line help-centre card with its own filled button, so two primary buttons compete, and after "Not now" the screen says the voice is kept twice.
 
@@ -399,7 +399,7 @@ Acceptance:
 ### Chapter 2. The first evening
 
 #### S09 Tonight
-Steps J01-18, J04-01, J04-02, J04-03, J04-05, J06-12, J06-15, J07-05, J07-10, J08-01, J18-02. Before: `screens/J01-18.png`, `screens/J04-01.png`, `screens/J18-02.png`; PR #99 after: `docs/design/calm-brand/after/tonight-*.png` on `feat/mobile-calm-brand`. Verdict: redesign. Package P3.
+Steps J01-18, J04-01, J04-02, J04-03, J04-05, J04-06, J04-08, J04-09, J04-10, J05-12, J06-12, J06-15, J07-05, J07-10, J08-01, J18-02. Before: `screens/J01-18.png`, `screens/J04-01.png`, `screens/J18-02.png`; PR #99 after: `docs/design/calm-brand/after/tonight-*.png` on `feat/mobile-calm-brand`. Verdict: redesign. Package P3.
 
 Problem: two questions stack (the subtitle "What do you want Asha to know about today?" over the prompt), a caps label explains the prompt, the prompt sits in a card like every other card, and every unfinished thing shows the same generic line. Tonight lists only the first draft: `listDrafts(childId)` in `lib/store.ts` already returns every draft, and the `[0]` is in `app/(tabs)/index.tsx` line 57, so the fix is in P3's own file and `store.ts` (S03) is not touched.
 
@@ -458,7 +458,7 @@ Acceptance:
 - [ ] No count, days-since or streak anywhere on Tonight.
 
 #### S10 Usage-sharing ask
-Step J04-04. Before: `screens/J04-04.png` (stale: on `develop` the sheet never shows, because #118 turns analytics off in every profile). Verdict: keep, not built in this pass. Package: none.
+Step J04-04, now titled "A later session: no usage-sharing ask". Before: `screens/J04-04.png` (it shows what `develop` does: Tonight with no sheet, because #118 turns analytics off in every profile; the old capture of the sheet is not in the regenerated record). Verdict: keep, not built in this pass. Package: none.
 
 When the sheet returns in v1.1, these words are recorded for that work, with LEGAL-REQ-003 and counsel: title "Share usage reports?", body "Which screens you open and when something breaks. Never your letters, recordings or anyone's names.", equal buttons "Don't share" and "Share usage". No copy changes in v1.0.
 
@@ -496,7 +496,7 @@ Acceptance:
 - [ ] VoiceOver reads "Start recording, button".
 
 #### S13 Microphone is off, busy, or the phone is full
-Step J05-04 (busy and full are native only and judged from code). Before: `screens/J05-04.png`. Verdict: redesign. Package P4.
+Steps J05-04, J05-10 (the phone being full is native only and judged from code). Before: `screens/J05-04.png`. Verdict: redesign. Package P4.
 
 Problem: "We can't hear you yet" is a "we" line, and its body explains the two buttons. Worse, in `listen.tsx` `begin()` any error from `start()` shows this screen, so a microphone held by a call, a refused audio session or a full phone all say "allow the microphone in Settings", which cannot help. `errors.storageLow` exists and is never used.
 
@@ -526,7 +526,7 @@ Acceptance:
 - [ ] Returning from Settings with permission granted lands on idle Listening.
 
 #### S14 Review while the words are being written down
-Steps J05-03, J05-07, J05-08. Before: `screens/J05-03.png`, `screens/J05-08.png`. Verdict: polish. Package P4.
+Steps J05-03, J05-07, J05-08, J05-11. Before: `screens/J05-03.png`, `screens/J05-08.png`. Verdict: polish. Package P4.
 
 Copy:
 
@@ -655,7 +655,7 @@ Acceptance:
 - [ ] No web-form rectangle inside the letter while editing; the person's edits are stored as theirs.
 
 #### S19 Write
-Steps J05-05, J07-01, J07-02, J07-06. Before: `screens/J07-02.png`. Verdict: polish. Package P4.
+Steps J04-07, J05-05, J07-01, J07-02, J07-06. Before: `screens/J07-02.png`. Verdict: polish. Package P4.
 
 Copy: `write.autosaved` "Saved on this phone" KEEP; `write.label` KEEP; `tonight.typing.placeholder` "Write it the way you would say it." KEEP; `write.notSaved` NEW "Not saved yet" (autosave failure, caution, in the same place; retried on the next pause). The single "Save" is replaced by the destination pair (S20).
 
@@ -666,7 +666,7 @@ Acceptance:
 - [ ] Typed words are never touched by the machine.
 
 #### S20 A typed letter: no Review step
-Step J07-03. Before: `screens/J07-03.png`. Verdict: redesign. Package P4.
+Step J07-03 (now titled "Saved to the book, no Review": the regenerated record shows the saved moment of a typed letter, so the old Review screen for a typed letter is not in it and there is no "before"). Verdict: redesign. Package P4.
 
 Decision: typed letters skip Review. A typed letter has no fixes and no recording, so "Read it back" is one extra screen between typing and keeping. Content and States wanted to keep it; Product wanted to skip it. Skipping wins: HIG Modality "keep modal tasks simple, short, and streamlined" (*verified by the product lens*); Apple Notes and Bear save without a review step (*memory, unverified*). The Keep step is still the only gate (D-082): tapping "Add to Asha's book" or "Keep private" on Write runs `decideKeepLetter()` exactly where Review does today, and the Plus gate (S22) opens from that tap.
 
@@ -675,7 +675,7 @@ Acceptance:
 - [ ] The third kept letter without Plus opens the gate from Write, and the letter waits as a draft (D-082, D-083).
 
 #### S21 The saved moment
-Steps J06-09, J06-10, J06-11, J07-04, J07-07, J07-08. Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
+Steps J06-09, J06-11, J07-07 (the saved screens on the Review route; the Book just after a save is in S26). Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
 
 Problem: the letter fades to about 10 to 15 percent opacity and stays there behind a green line. The captures read as a rendering bug, and nothing shows where the letter went.
 
@@ -772,7 +772,7 @@ Acceptance:
 - [ ] Each row shows a month line; the current book has the check.
 
 #### S26 Book with letters
-Steps J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J11-06, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
+Steps J06-10, J07-04, J07-08 (the Book on arrival after a save, 5.8 rows 5 and 5a), J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
 
 Problem: it reads as a feed. The current month is a tinted box that explains the filing system on every visit and takes the hero position from the newest letter. Excerpts end in a cut-off glyph. A letter opens with a generic push.
 
@@ -823,7 +823,7 @@ Acceptance:
 - [ ] The month range reads "{a} to {b}" filled with real dates, never a raw placeholder.
 
 #### S27 A letter, as a page
-Steps J10-01, J10-02, J10-05, J10-07, J10-09, J18-04. Before: `screens/J10-01.png`, `screens/J18-04.png`. Verdict: polish. Package P5.
+Steps J10-01, J10-02, J10-05, J10-07, J10-16, J18-04. Before: `screens/J10-01.png`, `screens/J18-04.png`. Verdict: polish. Package P5.
 
 Copy:
 
@@ -850,7 +850,7 @@ Acceptance:
 - [ ] Nothing loops on the letter page.
 
 #### S28 A letter with no words
-Step J10-10. Before: `screens/J10-10.png`. Verdict: polish. Package P5.
+Steps J10-10, J10-17. Before: `screens/J10-10.png`. Verdict: polish. Package P5.
 
 Copy: `bookCopy.nobodySpoke` KEEP; primary `wordsCopy.waiting.writeButton` "Write the words" (opens the existing sheet: `wordsCopy.waiting.writeLabel` "Words for this recording", `saveButton` "Save words", `cancelButton` "Not now"). "Record again" is removed from this page (it starts a separate letter and can meet the gate). "Add to book" and "Delete" stay.
 
@@ -960,7 +960,7 @@ Step J10-06. Before: `screens/J10-06.png`. Verdict: polish. Package P5.
 Copy: `settings.delete.entryTitle` "Delete this letter?" KEEP; `settings.delete.entryBody` CHG "It waits in Recently deleted for 30 days."; `settings.delete.keepButton` "Keep it" KEEP (primary, the default); `settings.delete.entryConfirm` "Delete letter" KEEP (quiet, destructive, with the Trash icon). The header Close is removed: "Keep it" and a swipe down are the ways out. D-085 chose a light confirm for letters; it stays, although HIG Alerts would not ask for an undoable delete. The `warning` haptic plays only on the confirm.
 
 #### S36 Letter deleted, with Undo
-Step J10-08. Before: `screens/J10-08.png`. Verdict: redesign. Package P5.
+Steps J10-08, J10-09. Before: `screens/J10-08.png`. Verdict: redesign. Package P5.
 
 Problem: a blank page says "Letter deleted." and explains the buttons while a toast says the same thing.
 
@@ -1013,7 +1013,7 @@ Copy: `settings.delete.eraseNowTitle` "Erase this letter now?" KEEP; `settings.d
 ### Settings, Plus and the rest
 
 #### S40 Settings home, with If you are struggling and Licenses
-Steps J03-06, J03-09, J16-01, J16-05, J16-06. Before: `screens/J16-01.png`, `screens/J16-01-full.png`, `screens/J16-05-full.png`, `screens/J16-06-full.png`. Verdict: polish. Package P6.
+Steps J03-06, J03-10, J16-01, J16-05, J16-06, J16-20. Before: `screens/J16-01.png`, `screens/J16-01-full.png` (J16-05 and J16-06 are now their own pages, `/settings/struggling` and `/settings/licenses`, so the two captures that showed the accordions open, `J16-05-full` and `J16-06-full`, are not in the regenerated record). Verdict: polish. Package P6.
 
 Problem: the early-version note is the first thing on every visit, in a tinted card, although `in-app-disclosures.md` section 1 registers it for Settings, About. The privacy short line appears twice. "If you are struggling" and the licenses open as accordions in the middle of the list.
 
@@ -1153,7 +1153,7 @@ Acceptance:
 - [ ] No sentence the app wrote is shown in the letter face.
 
 #### S46 A child's book settings
-Steps J03-07, J03-20, J03-21, J03-22, J03-23, J03-24, J03-25, J03-26, J03-27, J03-30, J03-31, J03-32, J03-33. Before: `screens/J03-07.png`, `screens/J03-31.png`. Verdict: polish. Package P6.
+Steps J03-07, J03-20, J03-21, J03-22, J03-23, J03-24, J03-25, J03-26, J03-27, J03-30, J03-31, J03-32, J03-33, J03-34, J03-40, J03-41 (J03-40 and J03-41 are the Hidden books page, the way back from "Hide this book"). Before: `screens/J03-07.png`, `screens/J03-31.png`. Verdict: polish. Package P6.
 
 Copy:
 
@@ -1185,7 +1185,7 @@ Acceptance:
 - [ ] With server features on, "Write this book together" opens the invite sheet (one parent) or the Family tab (two parents); with them off, the coming-soon row shows as today.
 
 #### S47 Add a child
-Step J03-08. Before: `screens/J03-08.png`. Verdict: redesign. Package P6 (consuming P2's `date-field.tsx`).
+Steps J03-08, J03-09. Before: `screens/J03-08.png`. Verdict: redesign. Package P6 (consuming P2's `date-field.tsx`).
 
 Problem: it prefills today as the birthday (the "0 days" trap first run removed) and its helper prints the placeholder as a name ("We sort letters by Their name's month of age.").
 
@@ -1255,7 +1255,7 @@ Option B puts these surfaces in v1.0 (D-100; D-109 item 6). The streams built th
 **One sheet frame for the chapter**: `lib/auth/ui.tsx` (`SheetFrame`, `SheetTitle`, `SheetBody`, `QuietButton`, `Busy`, `ErrorLine`; P8a's file, consumed unchanged by P8b and P8c). `bg` paper, 24 pt top padding, 20 pt gutters. Title in `title2` (Literata Medium 22/28), body in `body` `textMuted`. One filled primary, 56 pt, at the bottom; quiet buttons as `accent` text, 44 pt. The privacy line in `footnote` `textMuted` with LockSimple 16 pt. An error is a `footnote` line with WarningCircle in `caution`, announced politely, never red text alone and never a shake. While busy, the primary keeps its size and shows its busy line with a small spinner inside it.
 
 #### S52 Sign in, the sheet
-Entry points: the welcome's "I already have a book" (trigger `sign_in`), the first kept letter (`first_letter`, over the Book, S21), Account signed out (`settings`), the Family tab's invite (`invite_create`), joining (`invite`). No journey step yet; P8a adds `j22-sign-in.flow.ts`. Verdict: polish. Package P8a. Logic: **S01** (`lib/auth/**` except `ui.tsx`, `lib/supabase/**`, `supabase/functions/apple-token`; links bound to the asking phone and claim after consent, #139).
+Entry points: the welcome's "I already have a book" (trigger `sign_in`), the first kept letter (`first_letter`, over the Book, S21), Account signed out (`settings`), the Family tab's invite (`invite_create`), joining (`invite`). Steps J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60 (J22-31 is this sheet opened from Account). Verdict: polish. Package P8a. Logic: **S01** (`lib/auth/**` except `ui.tsx`, `lib/supabase/**`, `supabase/functions/apple-token`; links bound to the asking phone and claim after consent, #139).
 
 Problem: each body is one long sentence of reasons ("Sign in so your co-parent can write too, and so ..."); the unavailable line says "in this build"; errors put the problem before the reassurance, and two sound like a chat bot ("Let's take a short break.", "That's a lot of emails for one hour.").
 
@@ -1298,7 +1298,7 @@ Acceptance:
 - [ ] After the first kept letter it rises over the Book, never in place of Review (S21).
 
 #### S53 Continue with email
-No journey step yet (j22). Package P8a. Logic: **S01** (`lib/auth/email.ts`: one email with a link and a code).
+Steps J22-03, J22-04, J22-05, J22-06. Package P8a. Logic: **S01** (`lib/auth/email.ts`: one email with a link and a code).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1314,7 +1314,7 @@ Acceptance:
 - [ ] AutoFill offers the person's addresses; no error shows before the first submit.
 
 #### S54 Check your email, and opening the link
-No journey step yet (j22). Package P8a. Logic: **S01** (the link opens only on the phone that asked, #139; codes last 900 s, #159; `EMAIL_CODE_LENGTH` 6).
+Steps J22-07, J22-08, J22-09, J22-70, J22-71, J22-80, J22-81. Package P8a. Logic: **S01** (the link opens only on the phone that asked, #139; codes last 900 s, #159; `EMAIL_CODE_LENGTH` 6).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1341,7 +1341,7 @@ Acceptance:
 - [ ] After five wrong codes the field waits, one line says the letters are safe and that the link and Apple or Google still work, and "Send a new email" is still offered; sending does not end the pause.
 
 #### S55 Before your book syncs (terms, the age step, sensitive data)
-No journey step yet (j22). Package P8a. Logic: **S01** (`record_policy_act`, `my_sync_gate`, claim after consent), **S14** (the sensitive-data step moves to `app/consent/sensitive.tsx` in WP-F02-07; until it moves it is this file's third step), S17 and counsel (every word).
+Steps J22-10, J22-32, J22-40, J22-41, J22-42, J22-43. Package P8a. Logic: **S01** (`record_policy_act`, `my_sync_gate`, claim after consent), **S14** (the sensitive-data step moves to `app/consent/sensitive.tsx` in WP-F02-07; until it moves it is this file's third step), S17 and counsel (every word).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1364,7 +1364,7 @@ Acceptance:
 - [ ] P8 changes no registered sentence.
 
 #### S56 Account
-No journey step (the record ran signed out). Package P8a. Logic: **S01** (session, passkeys, sign out of other devices), **S03** (the sync state and the outbox drain before sign-out, `lib/sync/**`).
+Steps J22-30, J22-33 (the sign-out wait and "Stay signed in" have no step: no web flow reaches them). Package P8a. Logic: **S01** (session, passkeys, sign out of other devices), **S03** (the sync state and the outbox drain before sign-out, `lib/sync/**`).
 
 Problem: the signed-out body is two reasons and a reassurance; "Sync and family sharing" names a role v1.0 does not have; the sign-out lines say "we will sign you out".
 
@@ -1394,7 +1394,7 @@ Acceptance:
 - [ ] Sign out is not styled as destructive; no "we" on the page.
 
 #### S57 Family tab
-Steps J17-01, J17-02, J17-03 (moved from S48; the record shows the coming-soon tab). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
+Steps J17-01, J17-02, J17-03, J21-20 (J17-01 to J17-03 moved from S48 and show the coming-soon tab; J21-20 is the live tab with one parent). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
 
 Problem: the tab is a list in a settings voice, the invite card explains equality and sign-in in three sentences, and its privacy line ("Only the people you invite can read Asha's book.") claims who can read, which option B does not keep (review A1).
 
@@ -1426,7 +1426,7 @@ Acceptance:
 - [ ] The three tab titles come from `packages/content`.
 
 #### S58 Invite a co-parent
-No journey step yet; P8b adds `j21-coparent.flow.ts` (on `feat/coparent-alpha`). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
+Steps J21-21, J21-22, J21-23, J21-30, J22-90, J22-91 (J22-90 and J22-91 are the sheet's gate text). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1450,7 +1450,7 @@ Acceptance:
 - [ ] The app sends nothing itself; the person sends the link from the share sheet.
 
 #### S59 Joining a book
-The welcome's "I was invited" (S03) or an invite link opens it; no journey step yet (j21). Package P8b. Logic: **S04** (`join-flow.logic.ts`: views `paste`, `signIn`, `peeking`, `ask`, `account`, `joining`, `joined`, `failed`; `pending-invite.ts`), **S01** (`+native-intent.tsx` keeps the token; sign-in from here), S02 (`peek_invite` returns the inviter's sign-off only; `accept_child_invite`), **S03** (pulling the book to this phone).
+The welcome's "I was invited" (S03) or an invite link opens it. Steps J21-01, J21-02, J21-03, J21-04, J21-05, J21-06, J21-07, J21-08, J21-10 (J21i and J21j, the quiet wait while sync runs and its end, record no step). Package P8b. Logic: **S04** (`join-flow.logic.ts`: views `paste`, `signIn`, `peeking`, `ask`, `account`, `joining`, `joined`, `failed`; `pending-invite.ts`), **S01** (`+native-intent.tsx` keeps the token; sign-in from here), S02 (`peek_invite` returns the inviter's sign-off only; `accept_child_invite`), **S03** (pulling the book to this phone).
 
 Problem: the second parent's arrival, their "The book is open.", is a plain sheet that says "Your letters and your co-parent's will be together in one book."
 
@@ -1594,7 +1594,7 @@ Acceptance:
 - [ ] No toast shows on a phone where nobody tapped Erase now.
 
 #### S64 Delete account
-No journey step (the record ran signed out). Package P8c. Logic: **S14** (`lib/account-deletion/**`: the two steps, the 30-day window, cancel), **S01** (the session, signing out of this phone), S02 and S07 (the purge across every system in F17 section 8.4: `prepare_account_purge`, the purge worker), **S05** (backup objects and keys in that purge), S06 (the Apple billing notice).
+No journey step (no web flow reaches it). Package P8c. Logic: **S14** (`lib/account-deletion/**`: the two steps, the 30-day window, cancel), **S01** (the session, signing out of this phone), S02 and S07 (the purge across every system in F17 section 8.4: `prepare_account_purge`, the purge worker), **S05** (backup objects and keys in that purge), S06 (the Apple billing notice).
 
 Problem: it promises to remove "photos", which v1.0 never makes; the export line lists photos; two lines say "we"; the errors put the failure before the reassurance.
 
@@ -2029,7 +2029,7 @@ Files: P0's content files, `packages/content/src/strings.en.ts`, `stories.en.ts`
 
 Acceptance:
 - [ ] No retired key remains; `npm test` and `npm run typecheck` green.
-- [ ] The regenerated journey has one screenshot per step for every journey, including j21 to j23, and every "after" in this spec can be checked against it.
+- [ ] The regenerated journey has one screenshot per step for every journey, including j21 and j22 (there is no j23 flow), and every "after" in this spec can be checked against it.
 - [ ] The transitions in 5.8 are checked on the regenerated journey and on one device run (no unlit frame between lit rooms).
 
 ---
@@ -2126,4 +2126,4 @@ Nothing in this pass is irreversible: every change is code or copy and can be re
 
 ## Appendix C. Step coverage
 
-Every one of the 147 journey steps is placed in exactly one screen entry in section 4 (S01 to S64). S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S56 and S58 to S64 have no step in the journey record, which ran with server features off; P8 adds flows j21 to j23, and P7's regenerated journey gives them steps.
+Every one of the 203 journey steps (22 journeys, `docs/release/journey/steps/`, regenerated in #389) is placed in exactly one screen entry in section 4 (S01 to S64); no step is left without an entry. The 57 steps that no entry cited when the record was regenerated are placed in: S09 J04-06, J04-08, J04-09, J04-10, J05-12; S13 J05-10; S14 J05-11; S19 J04-07; S27 J10-16; S28 J10-17; S40 J03-10, J16-20; S46 J03-34, J03-40, J03-41; S52 J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60; S53 J22-03 to J22-06; S54 J22-07 to J22-09, J22-70, J22-71, J22-80, J22-81; S55 J22-10, J22-32, J22-40 to J22-43; S56 J22-30, J22-33; S57 J21-20; S58 J21-21 to J21-23, J21-30, J22-90, J22-91; S59 J21-01 to J21-08, J21-10. S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S59 have steps (J22 for S52 to S56, J21 for S57 to S59). S60 to S64 have none: there is no leave flow (S60), no j23 flow (S61 backup, S62 a new phone), no step for the synced erase (S63), and Delete account (S64) has no flow.
