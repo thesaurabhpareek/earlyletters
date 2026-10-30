@@ -1,7 +1,8 @@
 /**
  * Launch recovery screen: the local database could not be opened or updated, so the app cannot show
  * the book. Says what Export does, and offers Try again and Export what is readable.
- * This screen has no action that deletes, resets or rebuilds anything: Export only reads, and Try again only opens again.
+ * This screen has no action that deletes, resets or rebuilds the book's data: Export reads the originals and writes only its own
+ * ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
  *
  * Every tap on Try again is answered: the button turns busy ("Trying again") for a beat, then either the app opens
  * or one calm line says it did not. The line is announced each time, not only the first. The line is one slot shared

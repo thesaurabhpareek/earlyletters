@@ -1012,7 +1012,7 @@ export const en = {
       body: "Your book is right where you left it.",
       button: "Back to Tonight",
     },
-    // The book could not be opened at launch (database open or update step failed). No button here deletes anything.
+    // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
     // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,
     // rows E1, E3 and E4): the body says what Export does (recovery-export.logic.ts copies the files byte for byte); it does not
     // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was

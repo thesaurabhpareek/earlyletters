@@ -403,7 +403,7 @@ describe('[S51] what the hook sets after an open (fix round, lens A)', () => {
     expect(set.mock.calls).toEqual([['recovery'], ['recovery']]);
   });
 
-  it('a failed open after a success would still say so, and a success after failures opens the app', () => {
+  it('two failures say so each time, and a success after them opens the app', () => {
     let status: LaunchStatus | 'pending' = 'pending';
     const set = (next: LaunchStatus) => { status = next; };
     openForLaunch(opens.failed, set);
@@ -493,9 +493,9 @@ describe('[S51] the launch lines say only what the code can back (S2)', () => {
 
   it('no update step drops a table or deletes a letter, a draft, a book or a recording (a cheap scan of the source text)', () => {
     // What the update steps do, read from db/migrations.ts: v1, v4 and v6 only create tables and columns. Five steps write
-    // data: v2 (the old single-child family becomes the first book, and its `family` setting is deleted), v3 (the 18+ Yes moves
+    // data: v2 (the old single-child family becomes the first book, letters without a book are attached to it, and its `family` setting is deleted), v3 (the 18+ Yes moves
     // to `ageGate.passed`; the old `ageAttested` and `ageAttestedAt` settings are deleted, and the time is dropped, not moved),
-    // v5 (blanks the template sentence of quiet-day marks and queues the change), v7 (moves per-person book choices) and v8
+    // v5 (blanks the template sentence of quiet-day marks and queues the change), v7 (moves per-person book choices, clears `children.hidden_at` and sets `created_by`) and v8
     // (queues waiting letters for upload). No step has a DROP, or a DELETE FROM any table but `settings`.
     //
     // This is the weaker guard. It reads the source text: it catches DROP, TRUNCATE and a DELETE FROM a table other than
