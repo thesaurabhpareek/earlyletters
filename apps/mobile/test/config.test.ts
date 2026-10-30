@@ -169,6 +169,14 @@ const PROFILE_VARIABLES = [
 const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY'] as const;
 const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
 
+/**
+ * The opposite of ALPHA_ONLY_VARIABLES: written (`on`) in every profile EXCEPT the two alpha ones (founder, 30 Oct 2026). The alpha
+ * profiles leave it unwritten on purpose, so the EAS "preview" environment on expo.dev can set it after the freeze without a change
+ * to eas.json or app.config.ts, and a build made without it hides the Delete account row (lib/capabilities.ts; pinned per profile
+ * in account-deletion-switch.test.ts).
+ */
+const NON_ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ACCOUNT_DELETION'] as const;
+
 /** Project values that come only from EAS environment variables (docs/release/TESTFLIGHT.md step 7). */
 const FROM_EAS_ONLY = [
   'EXPO_PUBLIC_SUPABASE_URL',
@@ -187,7 +195,7 @@ const FROM_EAS_ONLY = [
  */
 function configForProfile(name: string, opts: { easBuild?: boolean; extra?: Record<string, string> } = {}): ExpoConfig {
   const env = { ...(easFile.build[name]?.env ?? {}), ...(opts.extra ?? {}), ...(opts.easBuild ? { EAS_BUILD_PROFILE: name } : {}) };
-  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
@@ -224,8 +232,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       it(`${name}: names only the build switches, writes each one out, and keeps project values in EAS`, () => {
         const env = eas.build[name].env ?? {};
         const alpha = ALPHA_PROFILES.includes(name);
-        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(alpha ? ALPHA_ONLY_VARIABLES : [])].sort());
+        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(alpha ? ALPHA_ONLY_VARIABLES : NON_ALPHA_ONLY_VARIABLES)].sort());
         expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(alpha ? 'on' : undefined);
+        expect(env.EXPO_PUBLIC_ACCOUNT_DELETION, name).toBe(alpha ? undefined : 'on');
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();
         expect(env.EXPO_PUBLIC_DOCS_BASE_URL).toBe('https://packs.earlyletters.app');
         expect(env.EXPO_PUBLIC_ANALYTICS).toBe('off');
@@ -240,6 +249,8 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         expect(exp.extra?.serverFeatures).toBe(on);
         expect(exp.extra?.backup).toBe(false);
         expect(exp.extra?.statusReport).toBe(false);
+        // Needs the server switch too, so it reads false wherever servers are off; in preview it is false because the profile leaves it unwritten.
+        expect(exp.extra?.accountDeletion).toBe(false);
       });
     }
   });
@@ -268,6 +279,14 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       expect(exp.extra?.serverFeatures).toBe(true);
       expect(exp.extra?.backup).toBe(false);
       expect(exp.extra?.statusReport).toBe(false);
+      expect(exp.extra?.accountDeletion).toBe(false);
+    });
+
+    it('takes the Delete account switch from the environment alone: the EAS "preview" variable turns it on with no change to eas.json or app.config.ts (founder, 30 Oct 2026)', () => {
+      expect(configForProfile('preview', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'on' } }).extra?.accountDeletion).toBe(true);
+      expect(configForProfile('preview', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'off' } }).extra?.accountDeletion).toBe(false);
+      // Build 1 shares that environment; with servers off the variable changes nothing.
+      expect(configForProfile('testflight', { extra: { EXPO_PUBLIC_ACCOUNT_DELETION: 'on' } }).extra?.accountDeletion).toBe(false);
     });
 
     it('a build flag set on its own in the shell cannot turn on backup in an off profile', () => {
@@ -395,8 +414,9 @@ describe('e2e seams stay out of every uploadable build (TESTID_REQUESTS.md B-1, 
 
   it('e2e names the build switches plus EXPO_PUBLIC_E2E=1, with the development app env and servers off', () => {
     const env = eas.build[E2E_PROFILE].env ?? {};
-    expect(Object.keys(env).sort()).toEqual([...PROFILE_VARIABLES, 'EXPO_PUBLIC_E2E'].sort());
+    expect(Object.keys(env).sort()).toEqual([...PROFILE_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, 'EXPO_PUBLIC_E2E'].sort());
     expect(env.EXPO_PUBLIC_E2E).toBe('1');
+    expect(env.EXPO_PUBLIC_ACCOUNT_DELETION).toBe('on'); // the Delete account row stays as it was in the simulator build (founder, 30 Oct 2026)
     expect(env[KEY]).toBe('development');
     expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
     for (const k of FROM_EAS_ONLY) expect(env[k], k).toBeUndefined();
@@ -476,7 +496,7 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
 });
 
 describe('.env.development', () => {
-  it('sets development and nothing else (the server-features and analytics switches may only be off)', () => {
+  it('sets development and nothing else (the server-features and analytics switches may only be off; the Delete account switch on)', () => {
     const lines = fs
       .readFileSync(path.join(ROOT, '.env.development'), 'utf8')
       .split('\n')
@@ -485,7 +505,9 @@ describe('.env.development', () => {
       // Co-parent coming soon (v1.0 on-device only) adds this one line, and only ever as off.
       .filter((l) => l !== 'EXPO_PUBLIC_SERVER_FEATURES=off')
       // v1.0 collects no data (D-088, 15 Oct): the analytics switch, and only ever as off.
-      .filter((l) => l !== 'EXPO_PUBLIC_ANALYTICS=off');
+      .filter((l) => l !== 'EXPO_PUBLIC_ANALYTICS=off')
+      // The Delete account row is shown in development (founder, 30 Oct 2026), and only ever as on, and only in this file.
+      .filter((l) => l !== 'EXPO_PUBLIC_ACCOUNT_DELETION=on');
     expect(lines).toEqual([`${KEY}=development`]);
   });
 });

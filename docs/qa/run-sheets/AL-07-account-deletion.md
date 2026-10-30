@@ -9,7 +9,7 @@
 | Plan | Drill Mama: Plus renewing in the sandbox for AL-07.2 (AL-09.2 first), else record AL-07.2 as n/a. Drill Papa: Free, **exactly 1** letter of his own kept, in Asha's book (`Asha from Papa 1`, from AL-05.9, or from AL-07.0 if AL-05.9 has not run). Drill D: Free, 2 letters kept |
 | Phones and accounts | Drill phones only. Phone A: Drill Mama (Mailbox 1), in the drill book for Asha with Drill Papa still a parent. Phone C: Drill Papa (Mailbox 2), with his one letter in Asha's book. Phone B: Drill D (Mailbox 4), its own drill book with 2 letters and no co-parent, for the sole-parent cancel (AL-07.6a) and then the run to completion |
 | Time | about 55 min on the phones (AL-07.6a adds about 15), plus about 30 min for the founder on staging [E] |
-| Needs first | AL-04 and AL-05.1 to AL-05.14 done, with Drill Papa still in the drill book (run AL-05.15, the leave step, after this sheet); staging function secrets set and `purge-worker` deployed and scheduled (F17); the consent pepper set on staging (APPLY.md step 6, R-17 checklist 5.5) |
+| Needs first | `EXPO_PUBLIC_ACCOUNT_DELETION=on` in the build under test (the alpha builds hide Delete account without it; `docs/release/TESTFLIGHT.md` step 9); AL-04 and AL-05.1 to AL-05.14 done, with Drill Papa still in the drill book (run AL-05.15, the leave step, after this sheet); staging function secrets set and `purge-worker` deployed and scheduled (F17); the consent pepper set on staging (APPLY.md step 6, R-17 checklist 5.5) |
 | Record in | the session's evidence file, rows AL-07.0 to AL-07.10, with AL-07.6a |
 
 ## Steps

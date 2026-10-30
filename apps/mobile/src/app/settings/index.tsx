@@ -113,8 +113,9 @@ export default function Settings() {
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
-      {/* Delete account only while signed in: signed out there is no account here to delete (#358 review). */}
-      {capabilities.signIn && auth.signedIn ? (
+      {/* Delete account only while signed in: signed out there is no account here to delete (#358 review). And only in a build
+          with EXPO_PUBLIC_ACCOUNT_DELETION=on (founder, 30 Oct 2026; it implies server features): without it the row is absent. */}
+      {capabilities.accountDeletion && auth.signedIn ? (
         <ListSection>
           <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
         </ListSection>

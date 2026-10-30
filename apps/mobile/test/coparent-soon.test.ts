@@ -55,7 +55,8 @@ describe('every invite entry point leads to coming soon when server features are
   it('sign-in is never offered with the switch off', () => {
     expect(src('app/(auth)/_layout.tsx')).toMatch(/capabilities\.signIn \? <AuthStack \/> : <Redirect href="\/" \/>/);
     expect(src('app/settings/account.tsx')).toMatch(/capabilities\.signIn \? <AccountSettings \/> : <Redirect href="\/settings" \/>/);
-    expect(src('app/settings/delete-account.tsx')).toMatch(/capabilities\.signIn \? <DeleteAccount \/> : <Redirect href="\/settings" \/>/);
+    // The Delete account page also needs its own switch (capabilities.accountDeletion, which includes this one); see account-deletion-switch.test.ts.
+    expect(src('app/settings/delete-account.tsx')).toMatch(/capabilities\.accountDeletion \? <DeleteAccount \/> : <Redirect href="\/settings" \/>/);
     expect(src('app/onboarding.tsx')).toMatch(/capabilities\.signIn \? \(\s*<Button[^>]*signInButton/);
     // The first-letter offer reads `auth.configured`, which is false when no client exists.
     expect(src('app/review.tsx')).toMatch(/offerSignIn\.current = firstLetter && auth\.configured/);

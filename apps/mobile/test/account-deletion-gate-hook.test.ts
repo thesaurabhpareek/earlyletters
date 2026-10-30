@@ -73,6 +73,7 @@ vi.mock('../src/lib/account-deletion/note-store', async (orig) => {
   };
 });
 
+import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 import { CHECK_CAP_MS, useFirstRunGate } from '../src/lib/account-deletion/use-first-run-gate';
 import { CANCELLED_WAIT_MS, NOTE_GRACE_MS, OPEN_REQUEST_KEY, parseOpenRequest, type OpenRequest } from '../src/lib/account-deletion/open-request';
 import { renderHook } from './helpers/mini-react';
@@ -548,5 +549,54 @@ describe('the answer of the server is taken as it is', () => {
     const again = renderHook(() => useFirstRunGate());
     expect(h.bookBackCalls).toBe(0);
     again.unmount();
+  });
+});
+
+describe('the gate does not read the Delete account switch (founder, 30 Oct 2026): a request opened elsewhere still shows Cancel deletion', () => {
+  afterEach(() => {
+    setServerFeaturesForTests(null);
+    setBuildFlagForTests('accountDeletion', null);
+  });
+
+  it('switch off, servers on (alpha build 2 as the freeze leaves it): no book and an open request is the deletion screen, the server\'s answer keeps it, and a returning book still leaves for the Book', async () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('accountDeletion', false);
+    expect(capabilities.accountDeletion).toBe(false);
+    signIn(MAMA);
+    put(mine(MAMA));
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('deletion');
+    expect(run.result.current.request).toMatchObject({ state: 'scheduled', requestId: 'req-1' });
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // it still asks the server, in the background
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion');
+    expect(note()).toMatchObject({ state: 'scheduled', userId: MAMA });
+    h.books = [ASHA]; // cancelled on another phone: the book comes back by a plain sync
+    notify();
+    expect(h.replace).toHaveBeenCalledWith('/book');
+    run.unmount();
+  });
+
+  it('switch off, a phone that learns of the open request only from the server (a sign-in on another phone): the deletion screen, not the welcome', async () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('accountDeletion', false);
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking');
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion');
+    expect(note()).toMatchObject({ state: 'scheduled', userId: MAMA });
+    run.unmount();
+  });
+
+  it('servers off and the switch off (alpha build 1): a note on the phone still gets its deletion screen, with nothing asked of a server', () => {
+    setServerFeaturesForTests(false);
+    setBuildFlagForTests('accountDeletion', false);
+    put({ state: 'cancelled', at: NOW, userId: MAMA });
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('deletion');
+    expect(h.loadStatus).not.toHaveBeenCalled();
+    run.unmount();
   });
 });

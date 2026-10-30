@@ -197,6 +197,19 @@ if (prof) {
     else if (v === 'on') warn(`${PROFILE} profile: ${flag}=on. This build flag turns on ${what}; it needs that feature merged, its kill switch consumer, and the founder's approval.`);
     else fail(`${PROFILE} profile: ${flag} is ${JSON.stringify(v)}; write "off" explicitly (F19-REQ-025).`);
   }
+  // The Delete account row (founder, 30 Oct 2026): hidden in both alpha builds unless EXPO_PUBLIC_ACCOUNT_DELETION is on. It comes
+  // from the EAS "preview" environment (TESTFLIGHT.md step 9), so the profile leaves it unwritten; the preflight reports the state
+  // and never FAILs on it. It sees eas.json and this shell, not expo.dev, so it says so (UNVERIFIED) where the row could be drawn.
+  {
+    const written = profEnv.EXPO_PUBLIC_ACCOUNT_DELETION;
+    const seen = written ?? process.env.EXPO_PUBLIC_ACCOUNT_DELETION;
+    const deletionOn = String(seen ?? '').trim().toLowerCase() === 'on';
+    if (written !== undefined) warn(`${PROFILE} profile writes EXPO_PUBLIC_ACCOUNT_DELETION=${JSON.stringify(written)} in eas.json. Leave it out of the alpha profiles: the value belongs in the EAS "preview" environment (TESTFLIGHT.md step 9), so it can change after the freeze without touching eas.json.`);
+    if (!deletionOn) pass('Delete account row: hidden (EXPO_PUBLIC_ACCOUNT_DELETION is not on)');
+    else if (!SERVER_ON) pass('Delete account row: hidden (this build has server features off, so it has no account to delete; EXPO_PUBLIC_ACCOUNT_DELETION=on changes nothing here)');
+    else warn('Delete account row: shown (EXPO_PUBLIC_ACCOUNT_DELETION=on in the profile or this shell). Switch it on only when the purge worker runs on staging (TESTFLIGHT.md step 12) and the sole-parent drill has passed (DEVICE_TEST_PLAN S1-35, S2-13, AL-07.6a).');
+    if (SERVER_ON) unverified(`the EAS "${prof.environment ?? PROFILE}" environment on expo.dev may hold EXPO_PUBLIC_ACCOUNT_DELETION (this script cannot read it): with it set to on, build 2 draws the Delete account row; unset or off, it does not. Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof.environment ?? PROFILE}\` in apps/mobile.`);
+  }
   check(prof.autoIncrement === true && eas.cli?.appVersionSource === 'remote', 'build number: EAS owns it (appVersionSource remote, autoIncrement true)', 'Build numbers are not auto-incremented by EAS: a second upload would be rejected as a duplicate build number.');
 }
 {
@@ -350,10 +363,12 @@ try {
       if (k === 'EXPO_PUBLIC_APP_ENV') continue;
       if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
       if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
+      // The Delete account row is shown in development (founder, 30 Oct 2026); no other .env file may name it, so none can reach a store bundle.
+      if (f === '.env.development' && k === 'EXPO_PUBLIC_ACCOUNT_DELETION' && v.join('=').trim() === 'on') continue;
       bad.push(`${f}: ${k}`);
     }
   }
-  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
+  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off, plus ACCOUNT_DELETION=on in .env.development (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
   check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
@@ -697,7 +712,7 @@ if (SERVER_ON) {
   step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
   step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
   step(11, 'check', 'this run is the preflight for build 2');
-  step(12, 'check', 'before anyone tries Delete account: RESEND_API_KEY and the purge worker on staging');
+  step(12, 'check', 'before EXPO_PUBLIC_ACCOUNT_DELETION is set to on in the EAS "preview" environment (until then build 2 hides Delete account): RESEND_API_KEY and the purge worker on staging');
 }
 const needed = SERVER_ON ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5];
 

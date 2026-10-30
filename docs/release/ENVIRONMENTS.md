@@ -22,7 +22,7 @@ Every switch is written out in every profile of `apps/mobile/eas.json`; `apps/mo
 
 Both alpha profiles share the update channel `preview`. Nothing uses it today (`expo-updates` is not installed); give each profile its own channel before adding over-the-air updates, or an update made for build 2 would reach build 1 with build 2's switches.
 
-`<id>` is `bundleId()` from `packages/brand` (`com.earlyletters.scribe`). An unset `EXPO_PUBLIC_APP_ENV` means development and an unknown value fails the config (`src/lib/build-env.ts`), so no build gets the production id by accident. Local `expo start` reads `apps/mobile/.env.development` (development, every switch off); personal overrides go in the git-ignored `.env.development.local`.
+`<id>` is `bundleId()` from `packages/brand` (`com.earlyletters.scribe`). An unset `EXPO_PUBLIC_APP_ENV` means development and an unknown value fails the config (`src/lib/build-env.ts`), so no build gets the production id by accident. Local `expo start` reads `apps/mobile/.env.development` (development, every switch off except `EXPO_PUBLIC_ACCOUNT_DELETION=on`, which shows the Delete account row once server features are on); personal overrides go in the git-ignored `.env.development.local`.
 
 ## Where each value lives
 

@@ -10,6 +10,7 @@ D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build wit
 | Server features | **off**: no accounts, nothing leaves the phone | **on**: sign-in, sync and co-parent sharing against **staging** |
 | Recording backup, status report | off (build flags `EXPO_PUBLIC_BACKUP`, `EXPO_PUBLIC_STATUS_REPORT`) | off (same) |
 | Analytics | off (`EXPO_PUBLIC_ANALYTICS`) | off |
+| Delete account row | no accounts, so none | **hidden** unless `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` in the EAS `preview` environment (founder, 30 Oct 2026; step 9) |
 | App id | `com.earlyletters.scribe.preview` | `com.earlyletters.scribe.preview` (same App Store Connect record) |
 | Who | anyone you invite | **the family only** until the R-17 gate passes (D-100, see "Who may have which build") |
 | When | built as soon as steps 1, 2, 3.1 and 4 are done (step 4 is the signed pack, D-115); to testers when `docs/qa/ALPHA_GO_NO_GO.md` B1-1 to B1-9 and B1-11 pass | when steps 6 to 9 are done as well |
@@ -99,6 +100,9 @@ The build number is the EAS remote counter; the version comes from `app.config.t
 | `EXPO_PUBLIC_SUPABASE_URL` | the staging Project URL, `https://<ref>.supabase.co` | Sensitive |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the staging **publishable** (anon) key, `sb_publishable_...` or the legacy anon key. **Never** the secret or `service_role` key | Sensitive |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | only if step 7's OTP length is not 6 | Plain text |
+| `EXPO_PUBLIC_ACCOUNT_DELETION` | `on`, and **only** when the purge worker (step 12) runs on staging and the sole-parent drill (`docs/qa/DEVICE_TEST_PLAN.md` S1-35, S2-13; `docs/qa/run-sheets/AL-07-account-deletion.md` AL-07.6a) has passed. Leave it out until then: build 2 hides the Delete account row (founder, 30 Oct 2026) | Plain text (not a secret) |
+
+`EXPO_PUBLIC_ACCOUNT_DELETION` is deliberately not in `eas.json` or `app.config.ts`: the two alpha profiles do not write it, and the app reads an unset value as off, so a build made without it has no Delete account row and `/settings/delete-account` goes back to Settings. It can therefore be added after the freeze (Tue 3 Nov, 5:00 AM PT) from the dashboard alone, and takes effect in the next build. A request already open on an account still shows its Cancel deletion screen with the variable off. Build 1 shares the environment and has no accounts, so the variable changes nothing there. The preflight prints which state it sees in `eas.json` and your shell (`Delete account row: hidden (EXPO_PUBLIC_ACCOUNT_DELETION is not on)`) and never fails on it; it cannot read the dashboard.
 
 Expo dashboard > the project > Environment variables > Add, environment **preview** (or, in `apps/mobile`, `npx eas-cli@24.10.0 env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value <url> --visibility sensitive`). Both values are public by design (row-level security is the authority), and every `EXPO_PUBLIC_` value is inlined into the app, so "Sensitive" only keeps them out of logs. To check them: `npx eas-cli@24.10.0 env:list --environment preview --include-sensitive` in `apps/mobile` (it needs the project id, so after step 3's PR; without `--include-sensitive` it shows the names only, and Sensitive values as `*****`), or export them in your shell and run `npm run preflight:alpha -w @scribe/mobile`: it checks their shape and fails on a secret key. Build 1 shares this environment and so carries the same two public values, but with the switch off it never constructs a Supabase client (`apps/mobile/test/capabilities.test.ts`, "boot with server features off").
 **Never add `EXPO_PUBLIC_E2E` here, or in any EAS environment a store profile uses.** It turns on the e2e test seams, which belong only to the `e2e` simulator profile. `app.config.ts` refuses any EAS build of another profile that carries it, and the preflight fails if your shell has it set (B-9, `apps/mobile/e2e/TESTID_REQUESTS.md` section 4).
@@ -115,15 +119,15 @@ curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com  # what
 Add the build to the **Family** internal group only (below).
 *Unblocks:* the alpha with servers.
 
-**Step 12. Staging function secrets: the purge worker and the Resend key (FT-11).** About 1 hour; do it before anyone tries Delete account in build 2. A second sending-only Resend key as the staging secret `RESEND_API_KEY` (not the SMTP key), the purge worker deployed and scheduled (`docs/ops/SECURITY.md` 1.1, `docs/ops/runbooks/purge-failing.md`). The status and reminder emails (D-080) will use the same function key when they ship; build 2 sends none (`EXPO_PUBLIC_STATUS_REPORT` is off).
-*Unblocks:* account deletion in build 2; later, status emails.
+**Step 12. Staging function secrets: the purge worker and the Resend key (FT-11).** About 1 hour; do it before `EXPO_PUBLIC_ACCOUNT_DELETION` is set to `on` (step 9), which is what shows Delete account in build 2. A second sending-only Resend key as the staging secret `RESEND_API_KEY` (not the SMTP key), the purge worker deployed and scheduled (`docs/ops/SECURITY.md` 1.1, `docs/ops/runbooks/purge-failing.md`). The status and reminder emails (D-080) will use the same function key when they ship; build 2 sends none (`EXPO_PUBLIC_STATUS_REPORT` is off).
+*Unblocks:* switching on account deletion in build 2; later, status emails.
 
 ### What each build needs
 
 | | Needs | Optional |
 |---|---|---|
 | Build 1 | Steps 1, 2 (with 2.4 and 2.6 for GitHub Actions), 3.1 (the project id PR; 3.2 only for builds from GitHub), 4 (words from speech, D-115), 5, and iOS credentials in EAS | Plus products (step 2.5) |
-| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), Plus products |
+| Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before `EXPO_PUBLIC_ACCOUNT_DELETION` is set to `on`), Plus products |
 
 Your hands-on time [A]: about 5 hours for build 1 (2.5 without step 4, which D-115 requires) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. The plan to start by Mon 19 Oct and fit both builds before Thu 29 Oct predates the proposed dates at the top of this page.
 
@@ -174,7 +178,7 @@ Both builds, from `develop`: first run (the 18+ question, the promise, a child, 
 
 Build 1 only: no accounts, no sign-in, no sync, no co-parent sharing (the Family tab shows coming soon), no delete-account.
 
-Build 2 adds: Sign in with Apple and email sign-in (link or code) on Welcome and at the Keep the book moment, the consent sheets, sync of letters to staging, co-parent invite and join through the Family tab, Account and Delete account (needs step 12). Recordings are not uploaded (backup is off), no Google sign-in, no analytics in either build.
+Build 2 adds: Sign in with Apple and email sign-in (link or code) on Welcome and at the Keep the book moment, the consent sheets, sync of letters to staging, co-parent invite and join through the Family tab, Account, and Delete account only once `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` (needs step 12; the row is hidden otherwise). Recordings are not uploaded (backup is off), no Google sign-in, no analytics in either build.
 
 ## What to check on a real phone (nobody has)
 
@@ -198,6 +202,7 @@ If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can hap
 - **Both builds:** a FAIL if any `EXPO_PUBLIC_` variable exported in the shell holds a Supabase secret (`sb_secret_...`) or `service_role` key. Both profiles read the EAS "preview" environment, so export its values before either preflight to have them checked.
 - **Submit:** a WARN until the submit profile names `ios.ascAppId` (step 2.4); only the GitHub workflow needs it.
 - **Project id:** a WARN until step 3's PR adds `extra.eas.projectId`; no `eas build` can start before that.
+- **Delete account row:** a PASS line, `Delete account row: hidden (EXPO_PUBLIC_ACCOUNT_DELETION is not on)`, when `eas.json` and your shell do not set it to `on`; a WARN, `Delete account row: shown`, when they do in build 2; an UNVERIFIED line in build 2 because the EAS `preview` environment on expo.dev cannot be read from here; and a WARN if an alpha profile writes the variable in `eas.json` (it belongs in the EAS environment). Never a FAIL.
 - **Google and analytics:** a FAIL if a Google client id is in the profile or the shell (neither alpha build offers Google sign-in), and a FAIL unless the profile sets `EXPO_PUBLIC_ANALYTICS=off`.
 - **Build 2 only:** the invite link check, which PASSes on `develop` since #165 (`/j#t=<token>`, the token in the fragment, B-NFR-002) and would FAIL only if the app wrote `/i/<token>` again. Step 6 is a CHECK: confirm staging has every migration on `develop` (step 6 item 3); if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; the privacy manifest PASSes: it declares the five types this build keeps on our servers (Name, EmailAddress, SensitiveInfo, OtherUserContent, UserID; BL-349), the generated `PrivacyInfo.xcprivacy` equals the config, and App Store Connect's App Privacy answers must say the same.
 - **Packs:** the docs base, the signing key and a published manifest (step 4); a FAIL in both builds without the key or the manifest (D-115).
