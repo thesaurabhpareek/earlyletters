@@ -22,9 +22,12 @@ import { children, settings } from '../src/lib/db/repos';
 import { applyPullPage } from '../src/lib/sync/merge';
 import type { PullResponse, PulledRow } from '../src/lib/sync/types';
 import {
-  CANCELLED_WAIT_MS, chooseScreen, deletionView, liveNote, noteAfterCancel, noteAfterRead, noteWithBook, OPEN_REQUEST_KEY,
+  CANCELLED_WAIT_MS, chooseScreen, countedNote, deletionView, liveNote, NOTE_GRACE_MS, noteAfterCancel, noteAfterRead, noteExpiresAtMs,
+  noteIsDead, noteIsStale, noteOfAccount, noteWithBook, OPEN_REQUEST_KEY,
   openRequestOf, parseOpenRequest, readOpenRequest, writeOpenRequest, type OpenRequest, type PhoneScreen,
 } from '../src/lib/account-deletion/open-request';
+import { decideGate, type GateInputs } from '../src/lib/account-deletion/first-run-gate.logic';
+import { parseStatus } from '../src/lib/account-deletion/logic';
 import type { FlagStore } from '../src/lib/account-deletion/api';
 import { fixture } from './helpers/store-fixture';
 
@@ -41,6 +44,8 @@ const WHEN = '2026-11-29T09:00:00.000Z';
 const SCHEDULED: OpenRequest = { state: 'scheduled', requestId: 'req-1', scheduledFor: WHEN };
 const HELD: OpenRequest = { state: 'held', requestId: 'req-1', scheduledFor: WHEN };
 const EXECUTING: OpenRequest = { state: 'executing', requestId: 'req-1' };
+/** An executing request as the server's row now gives it: with the request's own date. */
+const EXECUTING_DATED: OpenRequest = { state: 'executing', requestId: 'req-1', scheduledFor: WHEN };
 const CANCELLED: OpenRequest = { state: 'cancelled', at: NOW };
 
 function memoryFlags(): FlagStore & { map: Map<string, string> } {
@@ -50,7 +55,9 @@ function memoryFlags(): FlagStore & { map: Map<string, string> } {
 
 describe('the note: what the phone remembers of an open request', () => {
   it('round-trips each shape, and reads nothing else', () => {
-    for (const n of [SCHEDULED, HELD, EXECUTING, CANCELLED]) expect(parseOpenRequest(JSON.stringify(n))).toEqual(n);
+    for (const n of [SCHEDULED, HELD, EXECUTING, EXECUTING_DATED, CANCELLED, { ...CANCELLED, userId: 'user-mama' }, { ...EXECUTING_DATED, userId: 'user-mama' }]) {
+      expect(parseOpenRequest(JSON.stringify(n))).toEqual(n);
+    }
     for (const bad of [null, '', 'x', '{}', '[]', '{"state":"scheduled"}', '{"state":"scheduled","requestId":"r"}', '{"state":"scheduled","requestId":"r","scheduledFor":"soon"}',
       '{"state":"open","requestId":"r","scheduledFor":"2026-11-29T09:00:00.000Z"}', '{"state":"cancelled"}', '{"state":"executing"}']) {
       expect(parseOpenRequest(bad), String(bad)).toBeNull();
@@ -76,11 +83,14 @@ describe('the note: what the phone remembers of an open request', () => {
   });
 
   it('follows what the server says about the open request', () => {
-    const phone = { hasBook: false, nowIso: NOW };
+    const phone = { hasBook: false, hasDeletedBook: true, nowIso: NOW };
     const open = { state: 'scheduled' as const, requestId: 'req-2', scheduledFor: WHEN };
     expect(openRequestOf({ state: 'none' })).toBeNull();
     expect(openRequestOf(open)).toEqual({ state: 'scheduled', requestId: 'req-2', scheduledFor: WHEN });
     expect(openRequestOf({ state: 'executing', requestId: 'req-2' })).toEqual({ state: 'executing', requestId: 'req-2' });
+    // An executing row carries the request's own date, which is what dates the note.
+    expect(openRequestOf({ state: 'executing', requestId: 'req-2', scheduledFor: WHEN })).toEqual({ state: 'executing', requestId: 'req-2', scheduledFor: WHEN });
+    expect(parseStatus([{ id: 'req-2', status: 'executing', scheduled_for: WHEN }])).toEqual({ state: 'executing', requestId: 'req-2', scheduledFor: WHEN });
     // A request found replaces whatever was remembered (a second phone, a sign-in again).
     expect(noteAfterRead(null, open, phone)).toEqual({ state: 'scheduled', requestId: 'req-2', scheduledFor: WHEN });
     expect(noteAfterRead(CANCELLED, open, phone)).toEqual({ state: 'scheduled', requestId: 'req-2', scheduledFor: WHEN });
@@ -89,11 +99,21 @@ describe('the note: what the phone remembers of an open request', () => {
     expect(noteAfterRead(CANCELLED, { state: 'none' }, phone)).toEqual(CANCELLED);
   });
 
-  it('a request that was open and is gone (cancelled on another phone) leaves a phone with no book waiting for it, and never the welcome', () => {
-    expect(noteAfterRead(SCHEDULED, { state: 'none' }, { hasBook: false, nowIso: NOW })).toEqual({ state: 'cancelled', at: NOW });
-    expect(noteAfterRead(HELD, { state: 'none' }, { hasBook: false, nowIso: NOW })).toEqual({ state: 'cancelled', at: NOW });
+  it('[S-B] a request that was open and is gone (cancelled on another phone) leaves a phone whose book the server closed waiting for it, and never the welcome', () => {
+    const closed = { hasBook: false, hasDeletedBook: true, nowIso: NOW };
+    expect(noteAfterRead(SCHEDULED, { state: 'none' }, closed)).toEqual({ state: 'cancelled', at: NOW });
+    expect(noteAfterRead(HELD, { state: 'none' }, closed)).toEqual({ state: 'cancelled', at: NOW });
     // A phone that still lists a book has nothing to wait for.
-    expect(noteAfterRead(SCHEDULED, { state: 'none' }, { hasBook: true, nowIso: NOW })).toBeNull();
+    expect(noteAfterRead(SCHEDULED, { state: 'none' }, { ...closed, hasBook: true })).toBeNull();
+  });
+
+  it('[S-B] with no closed book on the phone nothing is coming back: a none-read clears the note and the screen is the welcome, never "on their way back"', () => {
+    const nothingToRestore = { hasBook: false, hasDeletedBook: false, nowIso: NOW };
+    expect(noteAfterRead(SCHEDULED, { state: 'none' }, nothingToRestore)).toBeNull();
+    expect(noteAfterRead(HELD, { state: 'none' }, nothingToRestore)).toBeNull();
+    expect(chooseScreen({ hasBook: false, note: noteAfterRead(SCHEDULED, { state: 'none' }, nothingToRestore), nowMs: NOW_MS, signedIn: true, hasDeletedBook: false, checked: true })).toBe('welcome');
+    // An executing note whose request is gone is over, not cancelled.
+    expect(noteAfterRead(EXECUTING_DATED, { state: 'none' }, { ...nothingToRestore, hasDeletedBook: true })).toBeNull();
   });
 
   it('a note belongs to the account that was asked: another account signing in on the phone does not inherit it', () => {
@@ -101,16 +121,18 @@ describe('the note: what the phone remembers of an open request', () => {
     expect(openRequestOf({ state: 'scheduled', requestId: 'req-1', scheduledFor: WHEN }, 'user-mama')).toEqual(mine);
     expect(parseOpenRequest(JSON.stringify(mine))).toEqual(mine);
     // The same account finds its request gone: cancelled elsewhere, so the phone waits for its book.
-    expect(noteAfterRead(mine, { state: 'none' }, { hasBook: false, nowIso: NOW, userId: 'user-mama' })).toEqual({ state: 'cancelled', at: NOW });
+    const closed = { hasBook: false, hasDeletedBook: true, nowIso: NOW };
+    expect(noteAfterRead(mine, { state: 'none' }, { ...closed, userId: 'user-mama' })).toEqual({ state: 'cancelled', at: NOW, userId: 'user-mama' });
     // Another account finds nothing open for itself: the note was never about it, so it goes (no "your book is coming back").
-    expect(noteAfterRead(mine, { state: 'none' }, { hasBook: false, nowIso: NOW, userId: 'user-papa' })).toBeNull();
+    expect(noteAfterRead(mine, { state: 'none' }, { ...closed, userId: 'user-papa' })).toBeNull();
     // An account that does have a request open replaces the note.
-    expect(noteAfterRead(mine, { state: 'scheduled', requestId: 'req-7', scheduledFor: WHEN }, { hasBook: false, nowIso: NOW, userId: 'user-papa' }))
+    expect(noteAfterRead(mine, { state: 'scheduled', requestId: 'req-7', scheduledFor: WHEN }, { ...closed, userId: 'user-papa' }))
       .toEqual({ state: 'scheduled', requestId: 'req-7', scheduledFor: WHEN, userId: 'user-papa' });
   });
 
   it('a cancel leaves a sole parent waiting for her book and a co-parent with nothing', () => {
     expect(noteAfterCancel({ hasBook: false }, NOW)).toEqual({ state: 'cancelled', at: NOW });
+    expect(noteAfterCancel({ hasBook: false, userId: 'user-mama' }, NOW)).toEqual({ state: 'cancelled', at: NOW, userId: 'user-mama' });
     expect(noteAfterCancel({ hasBook: true }, NOW)).toBeNull();
     expect(noteWithBook(CANCELLED)).toBeNull();
     expect(noteWithBook(SCHEDULED)).toEqual(SCHEDULED); // an open request is still open, and can still be cancelled
@@ -145,11 +167,16 @@ describe('the screen choice (welcome vs the app vs the deletion screen)', () => 
 
   it('PIN: the welcome, and so "Begin the book", is never the answer while a request is open and no book is listed', () => {
     const answers = new Set<PhoneScreen>();
-    for (const note of [SCHEDULED, HELD, EXECUTING, CANCELLED]) {
+    for (const note of [SCHEDULED, HELD, EXECUTING, EXECUTING_DATED, CANCELLED]) {
       for (const signedIn of [true, false]) {
         for (const hasDeletedBook of [true, false]) {
           for (const checked of [true, false]) {
-            answers.add(chooseScreen({ hasBook: false, note, nowMs: NOW_MS, signedIn, hasDeletedBook, checked }));
+            for (const confirmed of [true, false]) {
+              // The note names the account signed in, so it is hers and counts.
+              const userId = signedIn ? 'user-mama' : null;
+              answers.add(chooseScreen({ hasBook: false, note: { ...note, userId: 'user-mama' }, nowMs: NOW_MS, signedIn, hasDeletedBook, checked, userId, confirmed }));
+              answers.add(chooseScreen({ hasBook: false, note, nowMs: NOW_MS, signedIn, hasDeletedBook, checked }));
+            }
           }
         }
       }
@@ -190,9 +217,18 @@ describe('the deletion screen: one title, the date, Cancel deletion, a way to si
     expect(v.labels.signIn).toBe(c.signedOut.button);
   });
 
-  it('executing: it only explains (nothing can be cancelled any more), as the Delete account page does', () => {
-    expect(deletionView(EXECUTING, o)).toMatchObject({ title: c.open.executingTitle, body: c.executing, actions: [] });
-    expect(deletionView(EXECUTING, { ...o, signedIn: false }).actions).toEqual([]);
+  it('[M-A] executing: it only explains (nothing can be cancelled any more) but is never a dead end: Sign out, or Sign in when signed out', () => {
+    expect(deletionView(EXECUTING, o)).toMatchObject({ title: c.open.executingTitle, body: c.executing, actions: ['signOut'] });
+    expect(deletionView(EXECUTING, { ...o, signedIn: false })).toMatchObject({ actions: ['signIn'] });
+    expect(deletionView(EXECUTING_DATED, o).actions).toEqual(['signOut']);
+    expect(deletionView(EXECUTING, o).labels.signOut).toBe(c.scheduled.doneButton);
+    expect(deletionView(EXECUTING, { ...o, signedIn: false }).labels.signIn).toBe(c.signedOut.button);
+  });
+
+  it('[M-A] PIN: no state of the deletion screen, signed in or out, is without a button', () => {
+    for (const note of [SCHEDULED, HELD, EXECUTING, EXECUTING_DATED, CANCELLED]) {
+      for (const signedIn of [true, false]) expect(deletionView(note, { ...o, signedIn }).actions.length, `${note.state} signedIn=${signedIn}`).toBeGreaterThan(0);
+    }
   });
 
   it('cancelled: it says the book is coming back and offers Try again (a pull), or Sign in when signed out', () => {
@@ -201,7 +237,7 @@ describe('the deletion screen: one title, the date, Cancel deletion, a way to si
   });
 
   it('never offers a way to a book, Settings or the welcome, and its words obey the content rules', () => {
-    for (const note of [SCHEDULED, HELD, EXECUTING, CANCELLED]) {
+    for (const note of [SCHEDULED, HELD, EXECUTING, EXECUTING_DATED, CANCELLED]) {
       for (const signedIn of [true, false]) {
         const v = deletionView(note, { ...o, signedIn });
         expect(v.actions.every((a) => ['cancel', 'signOut', 'signIn', 'retry'].includes(a))).toBe(true);
@@ -293,7 +329,7 @@ describe('[M1] merge.ts: a sole parent\'s book closed by her request', () => {
     f.db.transaction(() => applyPullPage(f.db, gonePage([ownRow(L1, NOW), ownRow(L2, NOW)]), NOW));
     expect(screen()).toBe('checking'); // never the welcome while it is not known
     // The server answers that a request is open: noted, deletion screen.
-    writeOpenRequest(flags, noteAfterRead(readOpenRequest(flags), { state: 'scheduled', requestId: 'req-1', scheduledFor: WHEN }, { hasBook: false, nowIso: NOW }));
+    writeOpenRequest(flags, noteAfterRead(readOpenRequest(flags), { state: 'scheduled', requestId: 'req-1', scheduledFor: WHEN }, { hasBook: false, hasDeletedBook: true, nowIso: NOW }));
     expect(screen({ checked: true })).toBe('deletion');
     f.close();
   });
@@ -301,7 +337,7 @@ describe('[M1] merge.ts: a sole parent\'s book closed by her request', () => {
   it('a phone whose server read finds nothing open (the book was deleted on its own, not with the account) goes on to the welcome', () => {
     const { f, flags, L1, L2, screen } = mamasPhone();
     f.db.transaction(() => applyPullPage(f.db, gonePage([ownRow(L1, NOW), ownRow(L2, NOW)]), NOW));
-    writeOpenRequest(flags, noteAfterRead(readOpenRequest(flags), { state: 'none' }, { hasBook: false, nowIso: NOW }));
+    writeOpenRequest(flags, noteAfterRead(readOpenRequest(flags), { state: 'none' }, { hasBook: false, hasDeletedBook: true, nowIso: NOW }));
     expect(screen({ checked: true })).toBe('welcome');
     f.close();
   });
@@ -347,11 +383,257 @@ describe('[M1] merge.ts: a cancelled request brings the book back', () => {
   });
 });
 
+const MAMA_ID = '11111111-1111-1111-1111-111111111111';
+const PAPA_ID = '22222222-2222-2222-2222-222222222222';
+const gateBase: GateInputs = {
+  hasBook: false, hasDeletedBook: false, note: null, nowMs: NOW_MS, signedIn: true, userId: MAMA_ID, checked: false, confirmed: false,
+  wasDeletion: false, pathname: '/onboarding',
+};
+
+// ── M-A: a note whose date has long passed ────────────────────────────────────────────────────────────────────────────
+
+const DAY = 86_400_000;
+/** The request's day (WHEN is 29 Nov 09:00 UTC) and the instants around the end of the grace. */
+const DATE_MS = Date.parse(WHEN);
+const END_OF_GRACE = DATE_MS + NOTE_GRACE_MS;
+
+describe('[M-A] after day 30 a sole parent\'s phone is not left on the deletion screen for good', () => {
+  const phone = { hasBook: false, hasDeletedBook: true, checked: true };
+
+  it('the grace is 48 hours, twice the execution window the screen itself names ("up to a day")', () => {
+    expect(NOTE_GRACE_MS).toBe(48 * 3_600_000);
+    expect(c.executing).toMatch(/up to a day/);
+  });
+
+  it('a note is stale only once its date has passed by MORE than the grace; a cancelled wait and an undated note never are', () => {
+    expect(noteIsStale(SCHEDULED, DATE_MS - 1)).toBe(false);
+    expect(noteIsStale(SCHEDULED, DATE_MS + 1)).toBe(false); // the date has passed, the purge is running or has not run: still open
+    expect(noteIsStale(SCHEDULED, END_OF_GRACE)).toBe(false);
+    expect(noteIsStale(SCHEDULED, END_OF_GRACE + 1)).toBe(true);
+    expect(noteIsStale(HELD, END_OF_GRACE + 1)).toBe(true);
+    expect(noteIsStale(EXECUTING_DATED, END_OF_GRACE + 1)).toBe(true);
+    expect(noteIsStale(EXECUTING, END_OF_GRACE + 365 * DAY)).toBe(false); // no date, nothing to measure from (it still has its exit)
+    expect(noteIsStale(CANCELLED, NOW_MS + 365 * DAY)).toBe(false); // has its own wait
+    expect(noteIsStale(null, END_OF_GRACE + 1)).toBe(false);
+    expect(noteExpiresAtMs(SCHEDULED)).toBe(END_OF_GRACE);
+    expect(noteExpiresAtMs(EXECUTING_DATED)).toBe(END_OF_GRACE);
+    expect(noteExpiresAtMs(CANCELLED)).toBe(NOW_MS + CANCELLED_WAIT_MS);
+    expect(noteExpiresAtMs(EXECUTING)).toBeNull();
+    expect(noteExpiresAtMs(null)).toBeNull();
+  });
+
+  it('THE PROBE: signed out, no book, a scheduled note with a past date: not the deletion screen (the account no longer exists), the welcome', () => {
+    const past = { ...SCHEDULED, scheduledFor: new Date(NOW_MS - 12 * DAY).toISOString() };
+    expect(chooseScreen({ ...phone, note: past, nowMs: NOW_MS, signedIn: false })).toBe('welcome');
+    // The same note, before the grace has run out: still the screen that says Sign in to cancel.
+    const justPast = { ...SCHEDULED, scheduledFor: new Date(NOW_MS - 47 * 3_600_000).toISOString() };
+    expect(chooseScreen({ ...phone, note: justPast, nowMs: NOW_MS, signedIn: false })).toBe('deletion');
+    expect(deletionView(justPast, { signedIn: false, date: 'x', tryAgainLabel: 'Try again' }).actions).toEqual(['signIn']);
+  });
+
+  it('every dated state is dead after the grace when signed out, whatever the phone holds', () => {
+    for (const note of [SCHEDULED, HELD, EXECUTING_DATED]) {
+      for (const hasDeletedBook of [true, false]) {
+        expect(chooseScreen({ ...phone, hasDeletedBook, note, nowMs: END_OF_GRACE + 1, signedIn: false }), `${note.state} deleted=${hasDeletedBook}`).toBe('welcome');
+        expect(chooseScreen({ ...phone, hasDeletedBook, note, nowMs: END_OF_GRACE, signedIn: false }), `${note.state} at the end of the grace`).toBe('deletion');
+      }
+    }
+  });
+
+  it('a request still before its date is untouched, signed in or out, asked or not: what a live request shows does not change', () => {
+    for (const signedIn of [true, false]) {
+      for (const checked of [true, false]) {
+        for (const note of [SCHEDULED, HELD, EXECUTING_DATED]) {
+          expect(chooseScreen({ ...phone, note, nowMs: NOW_MS, signedIn, checked }), `${note.state} signedIn=${signedIn} checked=${checked}`).toBe('deletion');
+          expect(chooseScreen({ ...phone, note, nowMs: DATE_MS + 3_600_000, signedIn, checked }), `${note.state} an hour past the date`).toBe('deletion');
+        }
+      }
+    }
+  });
+
+  it('signed in, a note past the grace waits on paper while the server is asked, then follows the answer: dead unless it says the request is open (a held request)', () => {
+    const at = END_OF_GRACE + 1;
+    expect(chooseScreen({ ...phone, note: HELD, nowMs: at, signedIn: true, checked: false })).toBe('checking');
+    expect(chooseScreen({ ...phone, note: HELD, nowMs: at, signedIn: true, checked: true, confirmed: false })).toBe('welcome'); // unreadable, or none
+    expect(chooseScreen({ ...phone, note: HELD, nowMs: at, signedIn: true, checked: true, confirmed: true })).toBe('deletion');
+    expect(chooseScreen({ ...phone, hasDeletedBook: false, note: HELD, nowMs: at, signedIn: true, checked: false })).toBe('checking');
+  });
+
+  it('a read that finds nothing open after the grace clears the note, even on a phone holding a closed book (no "on their way back" for a purged account)', () => {
+    expect(noteAfterRead(SCHEDULED, { state: 'none' }, { hasBook: false, hasDeletedBook: true, nowIso: new Date(END_OF_GRACE + 1).toISOString() })).toBeNull();
+    expect(noteAfterRead(EXECUTING_DATED, { state: 'none' }, { hasBook: false, hasDeletedBook: true, nowIso: new Date(END_OF_GRACE + 1).toISOString() })).toBeNull();
+    // Within the grace the same read is a request cancelled elsewhere, as before.
+    expect(noteAfterRead(SCHEDULED, { state: 'none' }, { hasBook: false, hasDeletedBook: true, nowIso: new Date(END_OF_GRACE).toISOString() })).toEqual({ state: 'cancelled', at: new Date(END_OF_GRACE).toISOString() });
+  });
+
+  it('the dead note is removed by the caller (an effect), decided here: signed out at once, signed in only after the server was asked and did not confirm', () => {
+    const dead = { note: SCHEDULED, nowMs: END_OF_GRACE + 1, userId: null as string | null };
+    expect(noteIsDead({ ...dead, signedIn: false, checked: false, confirmed: false })).toBe(true);
+    expect(noteIsDead({ ...dead, signedIn: true, userId: 'u', note: { ...SCHEDULED, userId: 'u' }, checked: false, confirmed: false })).toBe(false); // the answer may confirm it
+    expect(noteIsDead({ ...dead, signedIn: true, userId: 'u', note: { ...SCHEDULED, userId: 'u' }, checked: true, confirmed: false })).toBe(true);
+    expect(noteIsDead({ ...dead, signedIn: true, userId: 'u', note: { ...SCHEDULED, userId: 'u' }, checked: true, confirmed: true })).toBe(false);
+    // Before the end of the grace, and a note that is not there, are never dead.
+    expect(noteIsDead({ ...dead, nowMs: END_OF_GRACE, signedIn: false, checked: true, confirmed: false })).toBe(false);
+    expect(noteIsDead({ ...dead, note: null, signedIn: false, checked: true, confirmed: false })).toBe(false);
+    // A cancelled wait that has run out is dead too (it was only ever hidden by liveNote).
+    expect(noteIsDead({ note: CANCELLED, nowMs: NOW_MS + CANCELLED_WAIT_MS + 1, signedIn: false, userId: null, checked: false, confirmed: false })).toBe(true);
+    expect(noteIsDead({ note: CANCELLED, nowMs: NOW_MS + CANCELLED_WAIT_MS, signedIn: false, userId: null, checked: false, confirmed: false })).toBe(false);
+  });
+
+  it('the first render never writes: decideGate only says what to clear', () => {
+    const d = decideGate({ ...gateBase, note: SCHEDULED, nowMs: END_OF_GRACE + 1, signedIn: false, userId: null });
+    expect(d).toMatchObject({ screen: 'welcome', request: null, clear: true, leave: false });
+  });
+});
+
+// ── S-A: a note belongs to the account that was asked ─────────────────────────────────────────────────────────────────
+
+describe('[S-A] account A asks for deletion and signs out; account B signs in on the same phone', () => {
+  const notesA: OpenRequest = { ...SCHEDULED, userId: MAMA_ID };
+
+  it('a note counts only for the account that was asked; signed out it stands; one that names no account counts for no signed-in account', () => {
+    expect(noteOfAccount(notesA, MAMA_ID)).toEqual(notesA);
+    expect(noteOfAccount(notesA, PAPA_ID)).toBeNull();
+    expect(noteOfAccount(notesA, null)).toEqual(notesA); // signed out: "Sign in to cancel"
+    expect(noteOfAccount(SCHEDULED, PAPA_ID)).toBeNull(); // names no one (none is written without one)
+    expect(noteOfAccount({ ...CANCELLED, userId: MAMA_ID }, PAPA_ID)).toBeNull();
+    expect(noteOfAccount(null, PAPA_ID)).toBeNull();
+    expect(countedNote(notesA, PAPA_ID, NOW_MS)).toBeNull();
+    expect(countedNote({ ...CANCELLED, userId: MAMA_ID }, MAMA_ID, NOW_MS + CANCELLED_WAIT_MS + 1)).toBeNull();
+  });
+
+  it('THE RACE: the status answer lands for B before B\'s consent or claim is done; the note is A\'s, so it is not B\'s, and B is never told her book is on its way back', () => {
+    // userId is the session's own user (known during checkingConsent), not currentAuthUserId() (null until consent).
+    const closed = { hasBook: false, hasDeletedBook: true, nowIso: NOW };
+    expect(noteAfterRead(notesA, { state: 'none' }, { ...closed, userId: PAPA_ID })).toBeNull();
+    // What the first-run gate had before this fix: the read was fed null, and A's note counted as B's.
+    expect(noteAfterRead({ ...SCHEDULED, userId: MAMA_ID }, { state: 'none' }, { ...closed, userId: null })).toEqual({ state: 'cancelled', at: NOW });
+  });
+
+  it('B sees neither A\'s date nor A\'s Cancel deletion button: not the deletion screen, and the note is cleared', () => {
+    const d = decideGate({ ...gateBase, note: notesA, userId: PAPA_ID });
+    expect(d.screen).toBe('welcome');
+    expect(d.request).toBeNull();
+    expect(d.clear).toBe(true);
+    // A cancelled wait of A's is not B's either.
+    const w = decideGate({ ...gateBase, note: { ...CANCELLED, userId: MAMA_ID }, userId: PAPA_ID });
+    expect(w).toMatchObject({ screen: 'welcome', request: null, clear: true });
+    // With a book on the phone the note is still cleared (it would otherwise come back the day the book is lost).
+    expect(decideGate({ ...gateBase, hasBook: true, note: notesA, userId: PAPA_ID })).toMatchObject({ screen: 'app', clear: true });
+  });
+
+  it('A, signed in again, still has her own note and her own screen; signed out, the note stands', () => {
+    expect(decideGate({ ...gateBase, note: notesA, userId: MAMA_ID })).toMatchObject({ screen: 'deletion', request: notesA, clear: false });
+    expect(decideGate({ ...gateBase, note: notesA, userId: null, signedIn: false })).toMatchObject({ screen: 'deletion', request: notesA, clear: false });
+  });
+});
+
+// ── S-B: a note must not go stale unseen ──────────────────────────────────────────────────────────────────────────────
+
+describe('[S-B] a book is listed and a request is still noted: ask once in the background', () => {
+  const mine: OpenRequest = { ...SCHEDULED, userId: MAMA_ID };
+
+  it('a signed-in phone with a book and an open note asks the server; nothing else does', () => {
+    expect(decideGate({ ...gateBase, hasBook: true, note: mine }).refreshWithBook).toBe(true);
+    expect(decideGate({ ...gateBase, hasBook: true, note: { ...HELD, userId: MAMA_ID } }).refreshWithBook).toBe(true);
+    expect(decideGate({ ...gateBase, hasBook: true, note: { ...EXECUTING_DATED, userId: MAMA_ID } }).refreshWithBook).toBe(true);
+    expect(decideGate({ ...gateBase, hasBook: true, note: null }).refreshWithBook).toBe(false);
+    expect(decideGate({ ...gateBase, hasBook: true, note: { ...CANCELLED, userId: MAMA_ID } }).refreshWithBook).toBe(false); // the book is back: recordBookBack
+    expect(decideGate({ ...gateBase, hasBook: true, note: mine, signedIn: false, userId: null }).refreshWithBook).toBe(false);
+    expect(decideGate({ ...gateBase, hasBook: true, note: mine, userId: PAPA_ID }).refreshWithBook).toBe(false); // another account's: cleared, not asked about
+  });
+
+  it('with the book back after a cancel elsewhere, the read finds none and the note is gone, not "cancelled": no false "on their way back" the day the book is lost', () => {
+    const afterRead = noteAfterRead(mine, { state: 'none' }, { hasBook: true, hasDeletedBook: false, nowIso: NOW, userId: MAMA_ID });
+    expect(afterRead).toBeNull();
+    // She loses her only book later: the first frame is the welcome, not a deletion screen with a button that cancels nothing.
+    expect(chooseScreen({ hasBook: false, note: afterRead, nowMs: NOW_MS, signedIn: true, hasDeletedBook: false, checked: false, userId: MAMA_ID })).toBe('welcome');
+  });
+});
+
+// ── S-C: the gate's replace to the Book keeps the join sheet ───────────────────────────────────────────────────────────
+
+describe('[S-C] the book arrives while the deletion screen was up: to the Book, but never over the invite and join sheet', () => {
+  const back = { ...gateBase, hasBook: true, wasDeletion: true };
+
+  it('goes to the Book from the screen itself and from the sign-in sheet over it', () => {
+    for (const pathname of ['/onboarding', '/sign-in', '/sign-in/code']) {
+      expect(decideGate({ ...back, pathname }), pathname).toMatchObject({ leave: true, screen: 'deletion' });
+    }
+  });
+
+  it('does not replace anything while the invite, join or any other route is on top', () => {
+    for (const pathname of ['/invite', '/invite/accept', '/book', '/settings', '/settings/delete-account', '/', '/write']) {
+      const d = decideGate({ ...back, pathname });
+      expect(d.leave, pathname).toBe(false);
+      // The screen under the sheet holds still, and the person can still see the restoring state when the sheet closes.
+      expect(d.screen, pathname).toBe('deletion');
+    }
+  });
+
+  it('nothing leaves unless the deletion screen was up and a book is listed', () => {
+    expect(decideGate({ ...back, wasDeletion: false }).leave).toBe(false);
+    expect(decideGate({ ...back, hasBook: false }).leave).toBe(false);
+  });
+
+  it('a book that arrives while the sheet is on top is followed to the Book once the sheet closes onto the screen', () => {
+    expect(decideGate({ ...back, pathname: '/invite' }).leave).toBe(false);
+    expect(decideGate({ ...back, pathname: '/onboarding' }).leave).toBe(true);
+  });
+});
+
 // ── The screens' source ───────────────────────────────────────────────────────────────────────────────────────────
 
 const SRC = join(__dirname, '..', 'src');
 const code = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const read = (...p: string[]) => code(readFileSync(join(SRC, ...p), 'utf8'));
+
+describe('the hook feeds the pure decision, and the stores are written where the flow says', () => {
+  it('[S-2] the gate hook passes the stored note, the session user and the route to decideGate, and acts on its answer', () => {
+    const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
+    expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
+    expect(s).toContain('const userId = authUserId(auth.state);');
+    expect(s).toContain('const note = useMemo(() => parseOpenRequest(raw), [raw]);');
+    expect(s).toContain('if (gate.deletionShown) wasDeletion.current = true;');
+    expect(s).toContain('return { screen: gate.screen, request: gate.request };');
+    // The leave is the guarded one: the effect runs on gate.leave, which decideGate answers with welcomeMayLeave.
+    expect(s).toMatch(/const leave = gate\.leave;\s*useEffect\(\(\) => \{\s*if \(leave\) router\.replace\('\/book'\);\s*\}, \[leave\]\);/);
+    expect(s.match(/router\.replace\(/g)).toHaveLength(1);
+    // Writes are in effects, not in render: the dead note is removed there, with the value that was judged.
+    expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear\) clearDeadNote\(raw\);\s*\}, \[clear, raw\]\);/);
+    expect(s).toContain('if (s.ok) recordStatus(s.value, askedAs);');
+    expect(s).toContain('recordBookBack()');
+  });
+
+  it('[S-C] decideGate reuses the welcome\'s own allow-list for the replace', () => {
+    const s = read('lib', 'account-deletion', 'first-run-gate.logic.ts');
+    expect(s).toContain("import { welcomeMayLeave } from '@/components/family/welcome-handoff.logic';");
+    expect(s).toContain("leave: leaving && welcomeMayLeave('welcome', i.pathname),");
+  });
+
+  it('[S-2] the Delete account hook notes the request when the server answers it, before anything that can wait or fail, and notes a cancel', () => {
+    const s = read('lib', 'account-deletion', 'use-account-deletion.ts');
+    expect(s).toContain('recordRequested(r.value);');
+    expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf("analytics.track('account_deletion'"));
+    expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf('await withdrawAnalytics()'));
+    expect(s).toContain('recordCancelled();');
+    expect(s.indexOf('const r = await cancelDeletion(client);')).toBeLessThan(s.indexOf('recordCancelled();'));
+    expect(s).toContain('recordStatus(s.value, askedAs);');
+    expect(s.indexOf('const askedAs = signedInUserId();')).toBeLessThan(s.indexOf('await Promise.all([loadStatus(client)'));
+  });
+
+  it('[M-A, S-1, notes 3 and 4] the deletion screen answers a press, speaks it, shows no failure before one, and exits from executing', () => {
+    const s = read('components', 'settings', 'open-deletion.tsx');
+    expect(s).toContain("kind={working ? 'loading' : failure ? 'error' : 'empty'}");
+    expect(s).toContain('const failure = acted ? failureLine(d.error) : null;');
+    expect(s).toContain('announce(c.open.cancelling);');
+    expect(s).toContain('announce(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
+    expect(s).toContain('announce(failure);');
+    expect(s).toContain('announce(c.open.notYet);');
+    expect(s).toContain('const [first, ...rest] = working ? [] : view.actions;');
+    expect(s).toContain('accessibilityLabel={c.open.checking}');
+  });
+});
 
 describe('the routes use the gate', () => {
   it('the first-run route asks the gate before it draws the welcome, and draws the deletion screen or paper when told to', () => {
@@ -367,7 +649,8 @@ describe('the routes use the gate', () => {
 
   it('the deletion screen offers only Cancel deletion, a confirmed sign out, Sign in and Try again: no book, no Settings', () => {
     const s = read('components', 'settings', 'open-deletion.tsx');
-    expect(s).toContain('signOut: () => confirmSignOut(date, () => void d.signOut()),');
+    // Scheduled and held say first that the request stays open; executing has nothing to promise and signs out at once.
+    expect(s).toContain("signOut: () => (request.state === 'executing' ? void d.signOut() : confirmSignOut(date, () => void d.signOut())),");
     expect(s).toContain("signIn: () => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } }),");
     expect(s).not.toMatch(/'\/settings|addChild|\/onboarding|\/book'/);
     expect(s).toContain('<StateScreen');
@@ -375,7 +658,8 @@ describe('the routes use the gate', () => {
 
   it('the gate hook is quiet at launch: one read of the open request, only signed in with no book, never awaited by a screen', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toContain('if (!client || hasBook) return;');
+    expect(s).toContain('if (!client || !wantRead) return;');
+    expect(s).toContain('const wantRead = !hasBook || gate.refreshWithBook;');
     expect(s.match(/loadStatus\(/g)).toHaveLength(1);
     expect(s).toContain('void loadStatus(client)');
     expect(s).not.toMatch(/\bawait\b/);

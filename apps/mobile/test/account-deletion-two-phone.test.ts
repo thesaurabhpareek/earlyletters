@@ -192,7 +192,7 @@ describe('Delete account on the real SQL: the sole parent and the co-parent', ()
     expect(second.screen({ checked: true })).toBe('welcome');
     const rows = await openStatus(MAMA);
     const status = { state: 'scheduled' as const, requestId: String(rows[0].id), scheduledFor: new Date(String(rows[0].scheduled_for)).toISOString() };
-    second.store.setSetting(OPEN_REQUEST_KEY, JSON.stringify(noteAfterRead(null, status, { hasBook: false, nowIso: iso() })));
+    second.store.setSetting(OPEN_REQUEST_KEY, JSON.stringify(noteAfterRead(null, status, { hasBook: false, hasDeletedBook: false, nowIso: iso() })));
     expect(second.screen({ checked: true })).toBe('deletion');
   }, 60_000);
 

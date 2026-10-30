@@ -25,12 +25,14 @@ describe('[S3] the confirm before Sign out of this phone', () => {
     expect(alert).toHaveBeenCalledTimes(1);
     const [title, body, buttons] = alert.mock.calls[0] as [string, string, Button[]];
     expect(title).toBe(authCopy.account.signOutTitle);
-    expect(body).toBe('Your deletion stays scheduled for November 29, 2026. Sign in again any time to cancel it.');
-    expect(buttons.map((b) => b.text)).toEqual([authCopy.account.cancel, authCopy.account.signOut]);
+    expect(body).toBe('Your deletion stays scheduled for November 29, 2026. Sign in again any time before then to cancel it.');
+    // The dismiss button is not called Cancel: the sentence above it is about cancelling the deletion.
+    expect(buttons.map((b) => b.text)).toEqual([authCopy.account.staySignedIn, authCopy.account.signOut]);
+    expect(buttons.map((b) => b.text)).not.toContain('Cancel');
     expect(buttons[0].style).toBe('cancel');
     expect(buttons[1].style).not.toBe('destructive'); // signing out deletes nothing
     buttons[0].onPress?.();
-    expect(signOut).not.toHaveBeenCalled(); // Cancel leaves her signed in
+    expect(signOut).not.toHaveBeenCalled(); // Stay signed in leaves her signed in
     buttons[1].onPress?.();
     expect(signOut).toHaveBeenCalledTimes(1);
   });
@@ -38,7 +40,7 @@ describe('[S3] the confirm before Sign out of this phone', () => {
   it('the words say the request stays open and how to cancel it, in the content rules\' voice', () => {
     expect(c.scheduled.signOutBody).toContain('{date}');
     expect(c.scheduled.signOutBody).toMatch(/stays scheduled/);
-    expect(c.scheduled.signOutBody).toMatch(/Sign in again any time to cancel it\.$/);
+    expect(c.scheduled.signOutBody).toMatch(/Sign in again any time before then to cancel it\.$/); // the undo window ends at the date (LEGAL-REQ-029)
     expect(c.scheduled.signOutBody).not.toMatch(/\b(we|our|us)\b/i);
   });
 

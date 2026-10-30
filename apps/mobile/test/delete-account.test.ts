@@ -153,11 +153,12 @@ describe('[S64] the page', () => {
     expect(s).toContain('{list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}');
     expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf('{c.what.onThisPhone}'));
     expect(s.indexOf('{c.what.onThisPhone}')).toBeLessThan(s.indexOf('{list.copies}'));
-    // The next pull moves the account's letters to Recently deleted and the phone keeps them there. In a sync build the
+    // The next pull moves the letters the account holds to Recently deleted; a letter that never reached the server is
+    // not touched, and a sole parent's closed book is hidden, not emptied (merge.ts closeBook). In a sync build the
     // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date and no
     // erase are promised: a later pull that says the server no longer holds it is what erases it, and after the purge
-    // the account is gone, so whether the phone gets that signal is unverified (S03).
-    expect(c.what.onThisPhone).toBe('On this phone, your letters move to Recently deleted and are kept there.');
+    // the account is gone, so whether the phone gets that signal is unverified (S03). The line is true of both kinds.
+    expect(c.what.onThisPhone).toBe('On this phone, your letters stay. The ones already saved to your account move to Recently deleted.');
     expect(c.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bon the day\b|\bafter\b|\b30 days\b|\berase/i);
   });
 
