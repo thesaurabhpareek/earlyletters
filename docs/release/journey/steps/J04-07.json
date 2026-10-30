@@ -1,0 +1,34 @@
+{
+  "id": "J04-07",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "Picking it up",
+  "note": "The page reopens with the words exactly as left.",
+  "from": "J04-06",
+  "shot": "screens/J04-07.png",
+  "route": "/write",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha · 7 months What was cooking in your kitchen today? You found your toes this morning and Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Asha · 7 months",
+    "What was cooking in your kitchen today?",
+    "You found your toes this morning and",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

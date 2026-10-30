@@ -1,0 +1,37 @@
+{
+  "id": "J21-07",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "The Book, lit for the second parent",
+  "note": "The sheet closes onto the welcome, which hands over to the Book and leaves first run behind; the Book is on this book, and its light rises from unlit over 1.2 s, the one slow arrival outside first run (5.8 row 12).",
+  "from": "J21-06",
+  "shot": "screens/J21-07.png",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Asha From Papa The first page is waiting. Tell Asha one thing about today. Write a letter Tonight Book Family",
+  "lines": [
+    "Asha's book",
+    "Asha",
+    "From Papa",
+    "The first page is waiting.",
+    "Tell Asha one thing about today.",
+    "Write a letter",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

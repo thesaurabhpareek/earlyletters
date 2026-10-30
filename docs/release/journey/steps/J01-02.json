@@ -3,8 +3,9 @@
   "journey": "first-run",
   "kind": "happy",
   "title": "Yes is chosen",
-  "note": "The person taps Yes. Continue turns on. Only a yes/no flag is stored on the phone, never an age.",
+  "note": "The person taps Yes. It fills softly with a check, and Continue turns on. Only a yes/no flag is stored on the phone, never an age.",
   "from": "J01-01",
+  "shot": "screens/J01-02.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,10 +22,9 @@
     }
   },
   "scrolls": false,
-  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "text": "Are you 18 or older? Yes No Continue",
   "lines": [
     "Are you 18 or older?",
-    "We ask everyone the same question.",
     "Yes",
     "No",
     "Continue"
