@@ -113,7 +113,7 @@ Prices and trials (from `apps/web/src/content/pricing.ts` only): Plus Monthly $4
 | # | Line | Status | Evidence and gap | Owner |
 |---|---|---|---|---|
 | 6.1 | Price source of truth | DONE for the website | `pricing.ts`; `apps/web/test/pricing.test.ts` fails on any other dollar amount or trial length under `apps/web/src`, and on the old prices. | E1 |
-| 6.2 | Stale prices outside the guarded folder | BLOCKED | The old figures $3.99 and $29.99 still appear in `packages/content/src/store.en.ts` (App Store description, line 53), `packages/content/src/site.en.ts` (FAQ, line 94), `docs/legal/subscription-terms.md`, `docs/legal/terms-of-service.md` (14.2), `docs/DECISIONS.md` D-012, `docs/adr/0013`, `docs/tdd/08`, `docs/prd/C-habits-pricing-settings.md` and others. The store description is what Apple and users read; a mismatch with the price in App Store Connect is a metadata-accuracy and consent problem. Needs an owner to update, plus a test that scans `packages/content` the way the web test scans `apps/web/src`. | Content |
+| 6.2 | Stale prices outside the guarded folder | BLOCKED (partly fixed on main after this audit: `packages/content/src/store.en.ts` and `site.en.ts` now carry $4.99 and $49.99) | The old figures $3.99 and $29.99 still appear in `packages/content/src/store.en.ts` (App Store description, line 53), `packages/content/src/site.en.ts` (FAQ, line 94), `docs/legal/subscription-terms.md`, `docs/legal/terms-of-service.md` (14.2), `docs/DECISIONS.md` D-012, `docs/adr/0013`, `docs/tdd/08`, `docs/prd/C-habits-pricing-settings.md` and others. The store description is what Apple and users read; a mismatch with the price in App Store Connect is a metadata-accuracy and consent problem. Needs an owner to update, plus a test that scans `packages/content` the way the web test scans `apps/web/src`. | Content |
 | 6.3 | Product ids | BLOCKED (decision) | BL-103 and TDD 08 name `el_plus_monthly_399` and `el_plus_annual_2999`, which encode the old prices. Apple product ids are permanent once created (re-check Apple's rule before creating). Decide the ids against $4.99 and $49.99 before anyone creates them, and update `docs/tdd/08`, BL-103 and `docs/ops/OFFER_CODES.md` in the same change. | Founder, payments engineer |
 | 6.4 | Subscription group and products in App Store Connect | UNKNOWN | BL-103 `blocked (BL-100, BL-101, BL-102)`. Scope: group "Plus", monthly with 1-month free intro offer, annual with 2-month free intro offer, Family Sharing off, territory US only, Billing Grace Period 16 days (D-048), experiment-arm products created but not offered. Whether Apple offers the exact $4.99 and $49.99 price points in the US is not in the repo; check when creating. | Founder |
 | 6.5 | Introductory offer eligibility wording | READY (draft) | `docs/legal/in-app-disclosures.md` keeps "2 free letters" and "free trial" apart. Must be re-read against Apple 3.1.2 at submission (flagged in `docs/legal/memos/pricing-change-2026-10-04.md` section 4 as unverified). | Counsel |
@@ -392,3 +392,17 @@ Slip risk, from the roadmap itself: moderate confidence; the most likely slip is
 | Photos | Privacy label draft: photos uploaded to `entry-photos` | ROADMAP section 6: photos under per-book keys later (BL-314) | Align label and scope for 1.0. |
 | Microphone string | Mentions cloud transcription | ROADMAP: server transcription out of v1.0 | Align after D-032. |
 | Beta label | `store.en.ts`, Settings card: beta | D-030 recommends none in the store listing | Founder. |
+
+---
+
+## 16. Known issues in the store art and screenshots
+
+Every PNG under `docs/store/art` and `docs/store/screenshots` was viewed before this pack was opened for review. No wrong prices, clipped text or placeholder text were found. The text of the listing, captions and compliance pages has no dashes, curly quotes, ellipsis characters or emoji, and the only family name is the fictional Asha. Remaining cosmetic points, not fixed:
+
+| Item | Where | Note |
+|---|---|---|
+| Large empty lower half | `03-review` (all sizes) | The phone screen is about 40 percent blank below the letter text. A fuller review screen (the "put it back" control, the confirm button) would carry more of the story. |
+| Empty space inside cards | `04-book` (all sizes) | Month cards have blank space under the count line, where a cover or first line would sit. |
+| One-word last line | `promo-story-1080x1920-night.png` | The subline wraps so "talking." sits alone. |
+| Fixed fictional data | all screenshots | "Papa", "Mama" and Asha, month 9, letter counts 12, 11, 9. These are mock data and must match the build that is submitted. |
+| Screenshots show an app that is not built | all screenshots | They come from `screenshots/src/entry.tsx`, not from the running app. Replace with real captures before submission (see 10.3). |
