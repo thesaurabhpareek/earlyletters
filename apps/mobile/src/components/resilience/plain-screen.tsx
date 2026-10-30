@@ -66,7 +66,11 @@ function PageDrawing({ wash, line }: { wash: string; line: string }) {
   );
 }
 
-export function PlainScreen({ title, body, hint, note, actions }: { title: string; body: string; hint?: string; note?: string; actions: PlainAction[] }) {
+/**
+ * `noteKey` tells a new note from the last one when the words are the same (a second failed Try again says what the first
+ * did): a different key is a new line, announced again. Never shown.
+ */
+export function PlainScreen({ title, body, hint, note, noteKey, actions }: { title: string; body: string; hint?: string; note?: string; noteKey?: number; actions: PlainAction[] }) {
   const scheme = useSchemeSafely();
   const c = tokens[scheme];
   // The safe area as the app launched (a constant: no provider to read it from).
@@ -112,7 +116,7 @@ export function PlainScreen({ title, body, hint, note, actions }: { title: strin
       }
     }, 100);
     return () => clearTimeout(id);
-  }, [note]);
+  }, [note, noteKey]);
 
   const L = PLAIN_LAYOUT;
   return (
@@ -140,7 +144,7 @@ export function PlainScreen({ title, body, hint, note, actions }: { title: strin
               </Text>
             ) : null}
             {note ? (
-              <Text accessibilityLiveRegion="polite" maxFontSizeMultiplier={PLAIN_TYPE.hint.maxScale} style={{ ...PLAIN_TYPE.hint.style, color: c.text, textAlign: 'center' }}>
+              <Text key={noteKey} accessibilityLiveRegion="polite" maxFontSizeMultiplier={PLAIN_TYPE.hint.maxScale} style={{ ...PLAIN_TYPE.hint.style, color: c.text, textAlign: 'center' }}>
                 {note}
               </Text>
             ) : null}
