@@ -174,9 +174,61 @@ describe('server calls', () => {
   });
 
   it('tells offline from other failures, and never throws', async () => {
-    expect(await requestDeletion(fakeClient({ throwRpc: new TypeError('Network request failed') }).client, null)).toEqual({ ok: false, reason: 'offline' });
-    expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: null, error: { message: 'SCDEL' } } } }).client, null)).toEqual({ ok: false, reason: 'failed' });
-    expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: [{}], error: null } } }).client, null)).toEqual({ ok: false, reason: 'failed' });
+    // With nothing open on the server (the status read finds none), a failed request stays a failure, as it was.
+    const none: Answer = { data: [], error: null };
+    expect(await requestDeletion(fakeClient({ throwRpc: new TypeError('Network request failed'), status: none }).client, null)).toEqual({ ok: false, reason: 'offline' });
+    expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: null, error: { message: 'SCDEL' } } }, status: none }).client, null)).toEqual({ ok: false, reason: 'failed' });
+    expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: [{}], error: null } }, status: none }).client, null)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  // The server can commit a request and the answer be lost (a dropped connection, a reply that cannot be read). The
+  // screen must never say "Nothing has changed" while a request is open, so a failed request is checked against the
+  // status once, as a cancel is.
+  describe('a request whose answer was lost', () => {
+    const OPEN: Answer = { data: [{ id: 'req-9', status: 'scheduled', scheduled_for: '2026-11-29T09:00:00Z' }], error: null };
+    const NONE: Answer = { data: [], error: null };
+    const lost = (status: Answer) => ({ throwRpc: new TypeError('Network request failed'), status });
+
+    it('is a success when the status read finds the request open: the page shows it scheduled, not a failure', async () => {
+      const f = fakeClient(lost(OPEN));
+      expect(await requestDeletion(f.client, null)).toEqual({ ok: true, value: { requestId: 'req-9', scheduledFor: '2026-11-29T09:00:00Z' } });
+      expect(f.query).toEqual(['deletion_requests', 'id,status,scheduled_for', 'kind=account', 'status in scheduled,held,executing']);
+    });
+
+    it('is a success whatever the failure looked like: offline, a server error, or an answer that cannot be read', async () => {
+      const refused = fakeClient({ rpc: { request_account_deletion: { data: null, error: { message: 'SCRAT' } } }, status: OPEN });
+      expect(await requestDeletion(refused.client, null)).toMatchObject({ ok: true });
+      const unreadable = fakeClient({ rpc: { request_account_deletion: { data: [{}], error: null } }, status: OPEN });
+      expect(await requestDeletion(unreadable.client, null)).toMatchObject({ ok: true });
+    });
+
+    it('a held request is open too', async () => {
+      const held: Answer = { data: [{ id: 'req-9', status: 'held', scheduled_for: '2026-11-29T09:00:00Z' }], error: null };
+      expect(await requestDeletion(fakeClient(lost(held)).client, null)).toMatchObject({ ok: true, value: { requestId: 'req-9' } });
+    });
+
+    it('reads the status once, and only after a failure: a request that went through is not read back', async () => {
+      const ok = fakeClient({ rpc: { request_account_deletion: { data: [{ request_id: 'req-1', scheduled_for: '2026-11-02T00:00:00Z' }], error: null } }, status: OPEN });
+      await requestDeletion(ok.client, null);
+      expect(ok.query).toEqual([]);
+      const failed = fakeClient(lost(NONE));
+      await requestDeletion(failed.client, null);
+      expect(failed.query.filter((q) => q === 'deletion_requests')).toHaveLength(1);
+    });
+
+    it('is still a failure, and a true "nothing has changed", when the read finds nothing open', async () => {
+      expect(await requestDeletion(fakeClient(lost(NONE)).client, null)).toEqual({ ok: false, reason: 'offline' });
+    });
+
+    it('is still the original failure when the read cannot be made either (and a repeat of the request is safe: it is idempotent)', async () => {
+      expect(await requestDeletion(fakeClient(lost({ data: null, error: { message: 'Network request failed' } })).client, null)).toEqual({ ok: false, reason: 'offline' });
+      expect(await requestDeletion(fakeClient({ rpc: { request_account_deletion: { data: null, error: { message: 'SCDEL' } } }, status: { data: null, error: { message: 'x' } } }).client, null)).toEqual({ ok: false, reason: 'failed' });
+    });
+
+    it('an executing request is not offered back as a new one (it cannot be cancelled and has no date)', async () => {
+      const executing: Answer = { data: [{ id: 'req-9', status: 'executing' }], error: null };
+      expect(await requestDeletion(fakeClient(lost(executing)).client, null)).toEqual({ ok: false, reason: 'offline' });
+    });
   });
 });
 
