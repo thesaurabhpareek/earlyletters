@@ -397,8 +397,9 @@ describe('[P8a critics S4] the account gate in the invite, join and leave sheets
     expect(declined).toMatch(/label=\{sc\.agreeButton\}/);
   });
 
-  it('offline at launch while signed in: the connection is named, and the person is never told to sign in (BL-488)', () => {
-    // The offline branch is the gate's last return: a `ready` session (signed in) whose sync could not be read.
+  it('signed in with the gate unread: the connection is named, never the sign-in, and the phone is not assumed offline (BL-488)', () => {
+    // This branch is the gate's last return: a `ready` session (signed in) whose gate could not be read at launch for
+    // any reason (offline, a server error, the 10 second timeout), so `s.sync === 'unknown'` does not mean no connection.
     expect(gate).toMatch(/const offline = s\.sync === 'unknown';/);
     const offlineBranch = gate.slice(gate.lastIndexOf('return ('));
     expect(offlineBranch).toMatch(/<SheetBody muted>\{g\.gateOffline\}<\/SheetBody>/);
@@ -410,6 +411,7 @@ describe('[P8a critics S4] the account gate in the invite, join and leave sheets
     // The words: the connection, never the sign-in.
     expect(authCopy.account.gateOffline).toMatch(/connection/);
     expect(authCopy.account.gateOffline).not.toMatch(/\bsign in\b/i);
+    expect(authCopy.account.gateOffline).not.toMatch(/offline|back online|\bonline\b/i);
     expect(authCopy.account.gateOffline).not.toBe(authCopy.errors.network);
   });
 });

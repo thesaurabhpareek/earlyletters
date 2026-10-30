@@ -129,12 +129,13 @@ const BL_451: Record<string, string> = {
 
 /**
  * BL-488 (P8a critics L6 and L7): the claim step's primary names the account, not the phone ("Keep them here" could be read
- * as this phone, and the choice is this account), and AccountGate's offline branch, for a phone that is signed in, names
- * the connection instead of telling a signed-in person to sign in (`errors.network` ends "Sign in once you are back online").
+ * as this phone, and the choice is this account), and AccountGate's branch for a signed-in phone whose gate could not be
+ * read (offline, a server error or the 10 second timeout), which names the connection instead of telling a signed-in person
+ * to sign in (`errors.network` ends "Sign in once you are back online") or assuming the phone is offline.
  */
 const BL_488: Record<string, string> = {
   'claim.keep': 'Keep in this account',
-  'account.gateOffline': "You're signed in. This needs a connection. Try again once you are back online.",
+  'account.gateOffline': "You're signed in. This needs a connection. Try again in a moment.",
 };
 
 /**
@@ -186,7 +187,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const [key, words] of Object.entries(BL_451)) expect(at(key), key).toBe(words);
   });
 
-  it('has the BL-488 lines word for word: the claim label names the account and fits a button, the offline gate line names the connection', () => {
+  it('has the BL-488 lines word for word: the claim label names the account and fits a button, the gate line for a signed-in phone names the connection', () => {
     for (const [key, words] of Object.entries(BL_488)) expect(at(key), key).toBe(words);
     // A button may have 22 characters (the rule in rules.test.ts, from the AUTH_BUTTONS row of copy-surfaces.ts).
     expect(authCopy.claim.keep.length).toBeLessThanOrEqual(22);
@@ -198,6 +199,9 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // The gate line is for a person who is signed in: it never says to sign in, and it is not the signed-out network line.
     expect(authCopy.account.gateOffline).toMatch(/connection/);
     expect(authCopy.account.gateOffline).not.toMatch(/\bsign in\b/i);
+    // The gate is also unread after a server error or the 10 second timeout on a live connection, so the line never
+    // says the phone is offline or that it should come back online.
+    expect(authCopy.account.gateOffline).not.toMatch(/offline|back online|\bonline\b/i);
     expect(authCopy.account.gateOffline).not.toBe(authCopy.errors.network);
     expect(authCopy.errors.network).toMatch(/Sign in once you are back online\.$/);
   });

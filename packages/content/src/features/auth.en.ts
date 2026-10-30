@@ -180,10 +180,12 @@ export const authCopy = {
       waiting: 'Not set up yet',
       unknown: 'Waiting for a connection',
     },
-    // BL-488: AccountGate's offline branch (invite, join and leave sheets), for a phone that IS signed in and launched
-    // without a connection. Names the connection, never the sign-in: errors.network ends "Sign in once you are back
+    // BL-488: AccountGate's branch for a phone that IS signed in but whose account settings could not be read at launch
+    // (invite, join and leave sheets). That is any failed read, not only a missing connection: offline, a server error or
+    // the 10 second timeout (session-provider.tsx GATE_TIMEOUT_MS), so the line never says the phone is offline or asks
+    // for it to be back online. Names the connection, never the sign-in: errors.network ends "Sign in once you are back
     // online", which is for a person who is signed out. Says nothing about where the letters are (BL-475 point 1).
-    gateOffline: "You're signed in. This needs a connection. Try again once you are back online.",
+    gateOffline: "You're signed in. This needs a connection. Try again in a moment.",
     finishSetup: 'Finish setting up',
     passkeysTitle: 'Passkeys',
     passkeysHelp: 'Sign in next time with Face ID or Touch ID, on this phone or your other Apple devices.',
