@@ -310,6 +310,8 @@ const AUTH_BUTTONS = [
   'consent.noBook.startBook',
   'account.signIn',
   'account.signOut',
+  // BL-451: a ListRow the person taps, like Sign out.
+  'account.staySignedIn',
   'account.cancel',
   'account.removePasskey',
   // Shown inside a busy button.

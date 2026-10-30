@@ -121,6 +121,12 @@ const CRITICS: Record<string, string> = {
 /** RET in chapter 7: no longer shown, and every reader was a P8 file, so P8a deletes them (section 6). */
 const RETIRED = ['code.sentTo', 'consent.age.title', 'consent.age.help'];
 
+/** BL-451 (the sign-out wait's follow-ups, after #359): words for "Stay signed in" and a wait that ended early. */
+const BL_451: Record<string, string> = {
+  'account.staySignedIn': 'Stay signed in',
+  'account.signOutEarly': 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
+};
+
 /**
  * Registered disclosure text, word for word (in-app-disclosures.md 3a, and S55's `consent.terms.*`, KEEP verbatim under
  * LEGAL-REQ-001 and -006). `consent.terms.healthLink` stays until #163 lands (the coordinator's ruling, 28 Oct).
@@ -164,6 +170,10 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {
     for (const key of RETIRED) expect(at(key), key).toBeUndefined();
     expect(Object.keys(authCopy.consent.age).sort()).toEqual(['body', 'no', 'yes']);
+  });
+
+  it('has the BL-451 lines word for word', () => {
+    for (const [key, words] of Object.entries(BL_451)) expect(at(key), key).toBe(words);
   });
 
   it('leaves registered disclosure text word for word, and the privacy line is trust.signIn.privacy itself', () => {
