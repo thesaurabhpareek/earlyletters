@@ -9,6 +9,8 @@
 # Apple accounts, so every assumption below is UNVERIFIED until the first real run. Builds, submits and store
 # actions run here or on the founder's own computer, never in an agent sandbox (it cannot reach expo.dev or
 # App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
+# The pull_request trigger (paths: this file only) builds nothing: the job's if skips every pull request run before the
+# environment or a secret is read. The run only registers the workflow, so the API can dispatch it on develop before AF-05.
 #
 # What it expects, by name (nothing else; no value is ever in this repository):
 #   GitHub Environment         testflight, its environment secret EXPO_TOKEN (read only by the build step); the
@@ -33,6 +35,9 @@
 name: testflight
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/testflight.yml
   workflow_dispatch:
     inputs:
       profile:
@@ -48,8 +53,10 @@ on:
 permissions:
   contents: read
 
+# A pull request run (it only registers the workflow) gets a group of its own: GitHub keeps one waiting run per group,
+# so in the shared group it could replace a waiting build.
 concurrency:
-  group: testflight
+  group: ${{ github.event_name == 'pull_request' && format('testflight-pr-{0}', github.ref) || 'testflight' }}
   cancel-in-progress: false
 
 env:
