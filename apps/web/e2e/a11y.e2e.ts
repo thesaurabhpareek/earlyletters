@@ -92,13 +92,13 @@ test.describe('axe sees the form states too', () => {
     await page.goto('/');
     await page.waitForFunction(() => performance.now() > 1800);
     await page.getByLabel('Your email').fill('asha-at-example.com');
-    await page.getByRole('button', { name: 'Keep me informed' }).click();
+    await page.getByRole('button', { name: /save my place/i }).click();
     await expect(page.locator('form [role="status"]').first()).not.toBeEmpty();
     let violations = await runAxe(page, { skipContrast: false });
     expect(violations, describe(violations)).toEqual([]);
 
     await page.getByLabel('Your email').fill(email);
-    await page.getByRole('button', { name: 'Keep me informed' }).click();
+    await page.getByRole('button', { name: /save my place/i }).click();
     await expect(page.getByText('Thank you, you are on the list')).toBeVisible();
     violations = await runAxe(page, { skipContrast: false });
     expect(violations, describe(violations)).toEqual([]);

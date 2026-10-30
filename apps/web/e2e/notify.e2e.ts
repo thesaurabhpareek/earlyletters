@@ -1,5 +1,5 @@
 /**
- * The "Keep me informed" sign-up, through the real page and the real server, with Resend mocked.
+ * The "Save my place" sign-up, through the real page and the real server, with Resend mocked.
  * Rules under test: src/lib/notify/handler.ts (order of checks), client.ts, components/cta/NotifyForm.tsx.
  */
 import { TEST_ENV } from './support/env';
@@ -88,7 +88,7 @@ test.describe('sign-up form', () => {
     await expect(page.locator('#notify-company').locator('xpath=ancestor::div[@aria-hidden="true"]')).toHaveCount(1);
     await trap.fill('Acme Bots', { force: true });
     await page.getByLabel(n.label).fill(email);
-    await page.getByRole('button', { name: n.button }).click();
+    await page.getByRole('button', { name: n.quietButton }).click();
     await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await mock.callsFor(email)).toEqual([]);
   });
@@ -103,7 +103,7 @@ test.describe('sign-up form', () => {
       });
       await page.goto('/');
       await page.getByLabel(n.label).fill(email);
-      await page.getByRole('button', { name: n.button }).click();
+      await page.getByRole('button', { name: n.quietButton }).click();
       await expect(status(page)).toHaveText(n.rateLimited);
       expect(await mock.callsFor(email)).toEqual([]);
       // The person can simply try again: the form is still there.
@@ -217,7 +217,7 @@ test.describe('without JavaScript', () => {
   test('a native submit never puts the address in the page address (history, logs, Referer)', async ({ page, email }) => {
     await page.goto('/');
     await page.getByLabel(n.label).fill(email);
-    await page.getByRole('button', { name: n.button }).click();
+    await page.getByRole('button', { name: n.quietButton }).click();
     await page.waitForLoadState('load');
     expect(page.url()).not.toContain(encodeURIComponent(email));
     expect(page.url()).not.toContain(email);

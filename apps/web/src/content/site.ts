@@ -57,7 +57,7 @@ export type HeardSegment = { text: string; becomes?: string; kind?: 'name' | 'fi
 export const site = {
   meta: {
     title: `${NAME}: the baby memory book you fill by talking`,
-    description: `Tell your child about today, out loud. ${NAME} keeps every word just as you said it, and your voice with it.`,
+    description: `Tell your child about today, out loud. ${NAME} keeps every word exactly as you said it, and your voice with it.`,
   },
 
   brand: {
@@ -69,8 +69,8 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'A baby book you fill by talking. Tell your child about today, and we keep it exactly as you said it.',
-    trust: 'Private by default. Your letters stay on your phone, in your own words.',
+    line: 'A baby book you fill by talking. Tell your child about today, and it stays exactly as you said it.',
+    trust: 'Your letters stay on your phone, and only the people you invite ever see them.',
     shareButton: 'Share with friends and family',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
@@ -80,15 +80,15 @@ export const site = {
     shareMessages: 'Messages',
     shareEmail: 'Email',
     shareTitle: `${NAME}, the baby memory book`,
-    shareText: 'A baby book you fill by talking. A minute at the end of the day, kept exactly as you said it.',
+    shareText: `${NAME}, a baby book you fill by talking. A minute at the end of the day, kept exactly as you said it.`,
   },
 
   cta: {
     /** Before the App Store link exists (src/lib/launch.ts decides the mode). */
     prelaunch: {
       eyebrow: 'Coming soon to iPhone',
-      button: "Keep me informed",
-      pill: "Keep me informed",
+      button: 'Tell me at launch',
+      pill: 'Tell me at launch',
     },
     live: {
       eyebrow: 'On iPhone',
@@ -140,7 +140,7 @@ export const site = {
     s04: {
       label: 'Exactly as you said it',
       headline: 'Exactly as you said it.',
-      support: "Your phone listens, spells Asha's name right, and clears the ums and false starts. It never adds a word, and every fix can be put back.",
+      support: "Your phone listens and clears the ums and false starts. If it mishears Asha's name, it fixes that too. It never adds a word, and every fix can be put back.",
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -157,7 +157,7 @@ export const site = {
     s06: {
       label: 'The book',
       headline: 'A book that grows by month.',
-      support: "Each letter is filed under Asha's age that month and signed with your name. Both parents write in the same book.",
+      support: "Each letter goes under the month Asha was that age, signed with your name. You and Mama add to the same book.",
       appTitle: "Asha's Book",
       chapters: [
         { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
@@ -170,7 +170,7 @@ export const site = {
       label: 'Years later',
       dateline: 'Years from now',
       headline: 'Said once. Heard for years.',
-      support: 'Open a spoken letter and hear it in the voice that said it, with the words right there on the page.',
+      support: 'Years from now, press play and there you are, with the words right on the page beside you.',
       appFrom: 'From Papa',
       /** Optional tap-to-hear. Hidden until a released recording exists (docs/web/STORYBOARD.md). */
       hear: 'Hear this letter',
@@ -197,10 +197,10 @@ export const site = {
       label: 'Private',
       headline: 'Private by default.',
       points: [
-        'Your letters are shared only with the people you invite.',
-        'No ads. We never sell your data.',
+        'Only the people you invite can see your letters.',
+        'No ads, and we never sell your data.',
         'Your letters are never used to train AI.',
-        'Every letter you have made stays yours to export, any time.',
+        'Export your letters any time. They are yours.',
         'Delete a letter or a recording whenever you like.',
       ],
     },
@@ -213,7 +213,7 @@ export const site = {
       free: {
         name: 'Free',
         title: 'Your first two letters',
-        note: 'So you can try it before you decide.',
+        note: 'Enough to see if it feels right.',
       },
       plus: {
         name: 'Plus',
@@ -224,10 +224,10 @@ export const site = {
         ],
         trialNote: 'to start',
         includes: [
-          'Keep adding letters',
+          'Add letters as often as you like',
           'Every recording safely backed up',
           'Read together, after the free sessions',
-          "Every child's book covered",
+          'One price for every child in the family',
           'The whole family can add letters',
         ],
       },
@@ -246,9 +246,9 @@ export const site = {
     placeholder: 'you@example.com',
     hint: 'Just your email address, nothing else.',
     note: `A welcome email now, and one more when ${NAME} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
-    button: "Keep me informed",
+    button: 'Tell me at launch',
     /** The single, quiet sign-up on the home page (components/landing). */
-    quietButton: 'Keep me informed',
+    quietButton: 'Save my place',
     sending: 'Sending',
     successTitle: 'Thank you, you are on the list.',
     successBody: `A short hello is on its way, and we will write once more when ${NAME} is ready.`,
