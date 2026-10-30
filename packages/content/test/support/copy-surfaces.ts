@@ -213,6 +213,10 @@ export const ADDED = [
   'en.settings.delete.eraseFailedToast',
   'en.book.provenance.spokenOther',
   'en.settings.delete.restoredToastNoName',
+  // P6c critics' pass (30 Oct, S1): Try again's busy words, and the line after an open that did not work. Neither is
+  // registered or held text. (`launch.body` and `launch.exportNothing` are in CHANGED: S2 reworded them.)
+  'en.errors.launch.tryingAgainButton',
+  'en.errors.launch.stillClosed',
 ];
 
 /**

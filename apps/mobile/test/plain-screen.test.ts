@@ -98,13 +98,15 @@ describe('PlainScreen look (S50, S51)', () => {
 
   it('a note that arrives scrolls into view after layout and is read by VoiceOver, its static words only (lens A on #355)', () => {
     const src = code(read('components/resilience/plain-screen.tsx'));
-    const effect = src.slice(src.indexOf('useEffect(() => {\n    if (!note) return;'), src.indexOf('}, [note]);'));
+    const effect = src.slice(src.indexOf('useEffect(() => {\n    if (!note) return;'), src.indexOf('}, [note, noteKey]);'));
     expect(effect.length).toBeGreaterThan(0);
     expect(effect).toMatch(/setTimeout\(\(\) => \{\s*try \{\s*scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/);
     expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
     expect(src).toMatch(/<ScrollView\s+ref=\{scroll\}/);
-    // The note is copy from packages/content (LaunchRecovery passes exportNothing or exportFailed), never an error.
-    expect(code(read('components/resilience/launch-recovery.tsx'))).toMatch(/note=\{note === 'nothing' \? e\.exportNothing : note === 'failed' \? e\.exportFailed : undefined\}/);
+    // The note is copy from packages/content (LaunchRecovery passes stillClosed, exportNothing or exportFailed), never an error.
+    const launch = code(read('components/resilience/launch-recovery.tsx'));
+    expect(launch).toMatch(/const words: Record<RecoveryLine, string \| undefined> = \{ none: undefined, stillClosed: e\.stillClosed, exportNothing: e\.exportNothing, exportFailed: e\.exportFailed \};/);
+    expect(launch).toMatch(/note=\{words\[view\.line\]\}/);
   });
 
   it('pill buttons: the primary is 56 pt and filled, the quiet one 44 pt with no fill', () => {
@@ -155,6 +157,7 @@ describe('nothing that can throw before render (S50)', () => {
     '@/components/ui/fonts', // loadFonts: resolves at once on a phone (embedded faces), never throws
     '@/lib/store', // getSetting, wrapped in try
     '@/lib/copy',
+    '@/lib/resilience/launch.logic', // pure: RecoveryView, its steps and the tap sequencing (a type-only import of the store)
     '@/lib/resilience/recover-to-tonight',
     '@/lib/resilience/recovery-export',
     '@/components/ui/line-art.data',
@@ -181,6 +184,12 @@ describe('nothing that can throw before render (S50)', () => {
     for (const f of ['components/ui/line-art.data.ts', 'components/ui/state-screen.logic.ts']) {
       for (const m of imports(read(f))) expect(['@scribe/design-tokens', '@/components/ui/line-art.data'], `${f} imports ${m}`).toContain(m);
     }
+  });
+
+  it('launch.logic.ts, which the launch screen reads for its view and its taps, imports only a type', () => {
+    const src = read('lib/resilience/launch.logic.ts');
+    expect(imports(src)).toEqual(['../store']);
+    expect(src).toMatch(/^import type \{ OpenStoreResult \} from '\.\.\/store';$/m);
   });
 
   it('the faces module is plain too, and loading never throws', () => {
@@ -213,20 +222,23 @@ describe('launch recovery offers no way to delete (S51, D-085)', () => {
   it('two actions only: Try again and Export what is readable', () => {
     const src = code(read('components/resilience/launch-recovery.tsx'));
     const labels = [...src.matchAll(/label: ([^,]+),/g)].map((m) => m[1].trim());
-    expect(labels).toEqual(['e.tryAgainButton', 'busy ? e.exportingTitle : e.exportButton']);
+    expect(labels).toEqual(['view.trying ? e.tryingAgainButton : e.tryAgainButton', 'view.exporting ? e.exportingTitle : e.exportButton']);
     expect(src).not.toMatch(/delete|reset|rebuild|erase|wipe|remove|clear|purge/i);
   });
 
-  it('the words are the S51 table, and no title ends with a full stop', () => {
+  it('the words are the S51 table with the 30 Oct rulings (S1, S2), and no title ends with a full stop', () => {
     const l = en.errors.launch;
     expect(l.title).toBe('The book could not open');
-    expect(l.body).toBe('Your letters and recordings are safe on this phone.');
+    expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, exactly as they are.');
     expect(l.hint).toBe('Try again, or restart the phone.');
+    expect(l.tryingAgainButton).toBe('Trying again');
+    expect(l.stillClosed).toBe('It did not open this time either.');
     expect(l.exportButton).toBe("Export what's readable");
     expect(l.exportButton.length).toBeLessThanOrEqual(22);
     expect(en.errors.crash.title).toBe('This page did not open');
     expect(en.errors.notFoundPage.title).toBe('Nothing at this link');
     for (const t of [l.title, en.errors.crash.title, en.errors.notFoundPage.title]) expect(t).not.toMatch(/\.$/);
+    // Nothing a person can tap or is told to do here names deleting, resetting or erasing (D-085).
     for (const s of Object.values(l)) expect(s).not.toMatch(/delete|reset|erase/i);
   });
 });

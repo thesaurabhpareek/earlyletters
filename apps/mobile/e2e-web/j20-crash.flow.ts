@@ -79,21 +79,21 @@ test('[J20] the book cannot be opened at launch (fault injected)', async ({ app,
   // Preview-only switch (src/lib/resilience/launch-fault.web.ts): the first open of the database fails, Try again works.
   await app.goto(`${base}/?seed=asha&fault=launch-once`);
   await expect(app.getByRole('heading', { name: 'The book could not open' })).toBeVisible();
-  await expect(app.getByText('Your letters and recordings are safe on this phone.')).toBeVisible();
+  await expect(app.getByText('Export saves a copy of the recordings and book files it can read, exactly as they are.')).toBeVisible();
   await expect(app.getByText('Try again, or restart the phone.')).toBeVisible();
   await expect(app.getByRole('button', { name: 'Try again' })).toBeVisible();
   await expect(app.getByRole('button', { name: "Export what's readable" })).toBeVisible();
   // Nothing on this screen deletes, resets or rebuilds anything (D-085): exactly two buttons.
   await expect(app.getByRole('button', { name: /delete|reset|erase|start over|remove|rebuild/i })).toHaveCount(0);
   await expect(app.getByRole('button')).toHaveCount(2);
-  await expectBrandFaces(app, 'The book could not open', 'Your letters and recordings are safe on this phone.', 'Try again');
-  await step('unhappy', 'The book cannot be opened (fault injected)', 'If opening the database or updating it throws, a recovery screen replaces the app, in the same plain block as the crash screen: "The book could not open", the letters are safe on this phone, "Try again, or restart the phone.", and two actions: Try again and Export what\'s readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.');
+  await expectBrandFaces(app, 'The book could not open', 'Export saves a copy of the recordings and book files it can read, exactly as they are.', 'Try again');
+  await step('unhappy', 'The book cannot be opened (fault injected)', 'If opening the database or updating it throws, a recovery screen replaces the app, in the same plain block as the crash screen: "The book could not open", one line on what Export does (it copies the files exactly as they are, and does not say the letters are safe), "Try again, or restart the phone.", and two actions: Try again and Export what\'s readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.');
 
   // At a short height (as at large text sizes) the export's result is still seen: the screen scrolls to it, above the
   // buttons that stay put (lens A on #355). The web has no files to export, so the result is one of the two notes.
   await app.setViewportSize({ width: 402, height: 360 });
   await app.getByRole('button', { name: "Export what's readable" }).click();
-  const note = app.getByText(/^(This phone has no recordings or files to export\.|That export did not work\. Your files are still on this phone\.)$/);
+  const note = app.getByText(/^(Export has nothing to put in a file right now\.|That export did not work\. Your files are still on this phone\.)$/);
   await expect(note).toBeVisible();
   await expect
     .poll(async () => {
@@ -106,4 +106,29 @@ test('[J20] the book cannot be opened at launch (fault injected)', async ({ app,
 
   await app.getByRole('button', { name: 'Try again' }).click();
   await expect(app.getByRole('button', { name: 'Speak' }).or(app.getByText('Begin the book')).first()).toBeVisible();
+});
+
+// S1 (critics' pass, 30 Oct): with the fault still in place, every tap on Try again is answered. The button says
+// "Trying again" while it works, then one calm line says it did not open, and the line comes back on the second tap.
+// Not a recorded step: the screen is J20-02, and a second copy of it would add a step to the journey record.
+test('[J20] Try again answers every tap while the book still cannot open (fault injected)', async ({ app }) => {
+  allowConsoleError(app, /./);
+  const base = process.env.E2E_WEB_SEED_URL;
+  await app.goto(`${base}/?seed=asha&fault=launch`);
+  await expect(app.getByRole('heading', { name: 'The book could not open' })).toBeVisible();
+  const line = app.getByText('It did not open this time either.');
+  await expect(line).toHaveCount(0);
+  for (let tap = 1; tap <= 2; tap += 1) {
+    await app.getByRole('button', { name: 'Try again' }).click();
+    // At once: the button says what it is doing, and the last answer has gone.
+    await expect(app.getByRole('button', { name: 'Trying again' })).toBeVisible();
+    await expect(line).toHaveCount(0);
+    // Then the answer, in the page's live region, and the button is back.
+    await expect(line).toBeVisible();
+    await expect(app.getByRole('button', { name: 'Try again' })).toBeVisible();
+    expect(await line.getAttribute('aria-live')).toBe('polite');
+  }
+  // Still the same two buttons, and still no way to delete anything (D-085).
+  await expect(app.getByRole('button')).toHaveCount(2);
+  await expect(app.getByText(/\d/)).toHaveCount(0);
 });
