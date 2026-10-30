@@ -2105,7 +2105,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: (1) a hook-level test with the stand-in (`apps/mobile/test/helpers/mini-react.ts`) shows A's late answer after B's leaves B's `checked` true, and it fails on the two mutations the review says survive today (the tag reset in `say` removed; the `askServer` cleanup removed); (2) a reducer test shows a `retry` press leaves `acted` false and a `cancel` press sets it.
 
 #### BL-497 Device plan and run sheet fixes after #393: the S1-35 (d) wait, the S2-13 time, and the S1-35 Update line
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M9. Size: S. Depends on: none.
+- Status: done (docs only, branch `docs/qa-bl497-device-plan`: S1-35 (d) and its Update line in `docs/qa/DEVICE_TEST_PLAN.md`; block 8's time, the close, the end and the total in the T11 sheet; none of it run on a phone). Mode: agent. Owner: qa engineer. Milestone: M9. Size: S. Depends on: none.
 - Priority: Low. The founder runs these checks on staging; point 1 is Medium if the check is run before it is fixed.
 - Gate: the build 2 checks session (`docs/qa/run-sheets/README.md:58`).
 - Satisfies: none given.
