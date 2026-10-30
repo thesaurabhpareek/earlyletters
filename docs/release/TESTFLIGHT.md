@@ -1,6 +1,6 @@
 # TestFlight: the alpha in two builds (option B, D-106)
 
-Status: 28 Oct 2026. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
+Status: 30 Oct 2026. Apple Developer Program membership has been Active since 29 Oct 2026 (step 1 is done). Build 1 now waits on steps 3 and 4 and on the app record's Apple ID (step 2); "Where build 1 stands (30 Oct 2026)", the last section, has the preflight result and the order. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
 
 D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned are proposed until the founder confirms (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date) and go/no-go Thu 5 Nov, proposed by the coordinator; build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089). It comes in two builds:
 
@@ -26,6 +26,7 @@ Each step names what it unblocks. The preflight prints the open ones by these na
 
 **Step 1. Apple Developer Program enrolment (FT-01).** About 45 minutes, then Apple's identity check (often a day or two for an individual [A]; it can take longer). US $99 a year. Enrol as an individual with your two-factor Apple Account; when it says Active, accept the latest agreements.
 *Unblocks:* every Apple step (2, 5, 8, 11). Nothing Apple-side can start before it, so do it first.
+*Status: done, Active as of 29 Oct 2026.* This comes from the founder's own confirmation emails from Apple. No agent can see developer.apple.com, so the preflight keeps its CHECK line for this step. No account identifiers are recorded in this repository, and the Team ID is not known to it: step 2.1 has you note the Team ID in your password manager. Not confirmed from the emails: that the latest agreements are accepted (the step says to do that once it says Active).
 
 **Step 2. App Store Connect: the `.preview` App ID, the app record and testers (FT-07, FT-08).** About 45 minutes.
 1. Certificates, Identifiers & Profiles > Identifiers: register `com.earlyletters.scribe.preview` with **Sign in with Apple**, **Associated Domains** and **Data Protection** ticked (level "Protected Until First User Authentication", the app's `NSFileProtectionCompleteUntilFirstUserAuthentication`, `app.config.ts` `DATA_PROTECTION_CLASS`; EAS may do all three at the first build when it manages credentials, *unverified*; ticking them yourself does no harm). Note your 10-character **Team ID** (Membership details): steps 8 and 10 need it.
@@ -201,3 +202,33 @@ If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can hap
 - **Packs:** the docs base, the signing key and a published manifest (step 4); a FAIL in both builds without the key or the manifest (D-115).
 - **No real family data** in the tree; the native project generates in a temporary copy, and its entitlements have data protection and no `aps-environment` (no remote push).
 - **At the end:** the founder steps above that are missing, or that it cannot see, by number and name.
+
+## Where build 1 stands (30 Oct 2026)
+
+Step 1 is done (Apple Developer Program, Active as of 29 Oct 2026). No build has been made and nothing has been uploaded. What is left for build 1 is what steps 2, 3 and 4 hand over, and then step 5.
+
+**The preflight on `develop` at f04456e** (`npm run preflight:testflight -w @scribe/mobile`, run on 30 Oct in a clean worktree; it never goes online and needs no secret; exit code 1): 53 PASS, 2 FAIL, 4 WARN, 2 UNVERIFIED, 2 founder steps MISSING, 3 to CHECK.
+
+| Line | What it says | Step |
+|---|---|---|
+| FAIL | `packages/api/src/keys.ts` has no trusted signing key (`TRUSTED_SIGNING_KEYS` is empty) | 4 |
+| FAIL | no signed pack manifest is published (`PACK_MANIFEST` in `supabase/functions/config/published.ts` is null) | 4 |
+| MISSING | no `extra.eas.projectId` in `apps/mobile/app.config.ts` | 3 |
+| MISSING | the pack signing keys and the R2 bucket `early-letters-packs` at `packs.earlyletters.app` (the two FAILs above) | 4 |
+| CHECK | Apple Developer Program membership Active; the preflight cannot see Apple, and this page records it as done | 1 |
+| CHECK | the testflight submit profile has no `ios.ascAppId`; send the `.preview` app record's Apple ID | 2 |
+| CHECK | this run is the preflight for build 1; the build runs on your computer or in GitHub Actions | 5 |
+
+The 4 WARN are: no `ios.ascAppId` (step 2.4; only the GitHub workflow needs it); no `extra.eas.projectId` (step 3); Apple's processing email after the upload, the final check of the required-reason declarations (ITMS-91053, go/no-go B1-10); and the precompiled `ExpoFileSystem.framework`, which has no privacy manifest (act only if the upload email names it). The 2 UNVERIFIED are what the EAS `preview` environment holds (no `EXPO_PUBLIC_E2E`, no Google client id), which only `eas env:list` can show, and it needs step 3. The other 53 lines pass: the profile, bundle id, icons, privacy manifest, the generated native project and its entitlements.
+
+**What to hand over or do next, in order.** Minutes are your hands-on time as the named steps give them; the waits are not yours.
+
+1. **Step 4, item 1, today.** The Cloudflare account with two-factor and the `earlyletters.app` zone. It holds the only multi-day wait, so start it first: if Porkbun DNSSEC is on, turn it off, remove its DS record and wait 24 to 48 hours, then allow up to a day for the nameservers. Step 4 is about 2.5 hours in all; item 4 below is the rest of it.
+2. **Step 3.1, the same sitting, about 20 minutes.** An Expo account with two-factor, then `eas init` in `apps/mobile` (its error about dynamic configuration is expected). Hand over the **project id** and your **Expo account name**; neither is a secret. S20 adds `extra.eas.projectId` and `owner` in a small PR the same day. That clears the MISSING for step 3.
+3. **Step 2, items 1 to 4, about 45 minutes, plus about 5 for each internal tester.** Register `com.earlyletters.scribe.preview`, create the app record, add the testers. Hand over the numeric **Apple ID** of the record (App Information; not a secret) for `ios.ascAppId`. Note the Team ID in your password manager and not in the repository: build 2's steps 8 and 10 need it.
+4. **Step 4, items 2 to 4, once the zone is Active (the rest of the 2.5 hours).** The R2 bucket and its custom domain, then `node scripts/packs/keygen.mjs` and `node scripts/packs/keygen.mjs --backup` (the secret lines stay in your password manager and `signing.env`), `publish.ts release`, `upload`, and the one PR that carries the two public key lines in `packages/api/src/keys.ts` and the published versions. Merged, it clears both FAILs and the MISSING for step 4.
+5. **Step 5, about 30 minutes of yours, after the PRs of steps 3 and 4 are merged.** In App Store Connect first create the "Family" internal group with automatic distribution off. Then, on your computer: `npx tsx scripts/release/doctor.ts`, `git switch develop && git pull`, `npm ci`, `npm run preflight:testflight -w @scribe/mobile` (expect 0 FAIL), `npx eas-cli@24.10.0 build --platform ios --profile testflight` (the first time it asks for credentials; running `eas credentials` first takes about 10 minutes), `npx eas-cli@24.10.0 submit --platform ios --profile testflight --latest`, then add the build to "Family". The EAS queue and Apple's processing add an hour or more.
+
+Build 1 does not need step 3.2 (`EXPO_TOKEN` and the GitHub Environment `testflight`), step 2.6 (the App Store Connect API key, 15 minutes), steps 6 to 12 (build 2), the Plus products (step 2.5) or any workflow on `main`. Those matter only for a build from GitHub Actions: the Run workflow button for `testflight.yml` needs AF-05 or the interim `chore/workflows-to-main` PR (`docs/release/AUTOMATION.md` section 0.1 item 3), plus steps 2.4, 2.6 and 3.2.
+
+By this page's own estimate build 1 takes about 5 hours of your time, of which step 1's 45 minutes are now spent, so about 4 hours 15 minutes remain, plus the DNS, EAS and Apple waits. One order is unconfirmed: step 4 item 4 says only the upload can go before or after the build, while the runbook (`docs/ops/PACKS_HOSTING.md` steps 7 and 8) uploads before it commits `published.ts`. If the DNS wait is what holds you up, ask the owner of that runbook (platform) whether the PR may merge before the upload.
