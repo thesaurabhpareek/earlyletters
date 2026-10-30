@@ -392,6 +392,25 @@ describe('[BL-496] a late answer from an earlier account is not the next account
     run.unmount();
   });
 
+  it('the with-book read\'s cap stays armed (no cleanup) and Mama\'s read never answers: her cap going off does not take the slot from Papa, who was told none', async () => {
+    h.books = [ASHA];
+    put(mine(MAMA));
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the with-book read, which stalls for good
+    h.books = [];
+    h.closedBook = true; // Papa's closed book is local
+    signIn(PAPA);
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS * 2); // Mama's cap goes off in here; the effect that made it was never torn down
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
   it('Mama\'s read ending before Papa\'s says nothing about Papa: the paper stays for his own answer, and his answer is taken', async () => {
     h.closedBook = true;
     signIn(MAMA);
