@@ -2,7 +2,7 @@
 
 Status: 30 Oct 2026. Apple Developer Program membership has been Active since 29 Oct 2026 (step 1 is done). Build 1 now waits on steps 3 and 4 and on the app record (step 2); the numeric Apple ID (`ios.ascAppId`) is needed only for builds from GitHub. "Where build 1 stands (30 Oct 2026)", the last section, has the preflight result and the order. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
 
-D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date); build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089); go/no-go Mon 9 Nov. The freeze and the go/no-go were confirmed by the founder on 30 Oct (D-130). It comes in two builds:
+D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date); build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089); go/no-go Mon 9 Nov. The freeze and the go/no-go were confirmed by the founder on 30 Oct (D-130; the freeze hour, 5:00 AM PT, is the coordinator's). It comes in two builds:
 
 | | Alpha build 1 | Alpha build 2 |
 |---|---|---|
@@ -125,7 +125,7 @@ Add the build to the **Family** internal group only (below).
 | Build 1 | Steps 1, 2 (with 2.4 and 2.6 for GitHub Actions), 3.1 (the project id PR; 3.2 only for builds from GitHub), 4 (words from speech, D-115), 5, and iOS credentials in EAS | Plus products (step 2.5) |
 | Build 2 | Everything build 1 needs, plus steps 6, 7, 8, 9 and 11 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), Plus products |
 
-Your hands-on time [A]: about 5 hours for build 1 (2.5 without step 4, which D-115 requires) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. The plan to start by Mon 19 Oct and fit both builds before Thu 29 Oct predates the proposed dates at the top of this page.
+Your hands-on time [A]: about 5 hours for build 1 (2.5 without step 4, which D-115 requires) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. The plan to start by Mon 19 Oct and fit both builds before Thu 29 Oct predates the dates at the top of this page (the freeze and the go/no-go confirmed on 30 Oct, D-130; build 1's date still proposed).
 
 ## Who may have which build, and the internal-tester flow
 

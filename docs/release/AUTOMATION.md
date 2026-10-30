@@ -32,7 +32,7 @@ Agents in this sandbox cannot reach expo.dev, docs.expo.dev, appstoreconnect.app
 
 ### 0.2 The alpha critical path (Thu 29 Oct)
 
-Dates are #152's (section 2.2 there); "window" is the founder's daily merge window. Each row's proof is a row of `docs/qa/ALPHA_GO_NO_GO.md` on #176. Anything not in this table lands after Thu 29. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates now proposed, until the founder confirms, are at the top of `docs/release/TESTFLIGHT.md` and `docs/qa/ALPHA_GO_NO_GO.md`.
+Dates are #152's (section 2.2 there); "window" is the founder's daily merge window. Each row's proof is a row of `docs/qa/ALPHA_GO_NO_GO.md` on #176. Anything not in this table lands after Thu 29. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates now planned are at the top of `docs/release/TESTFLIGHT.md` and `docs/qa/ALPHA_GO_NO_GO.md` (the freeze Tue 3 Nov and the go/no-go Mon 9 Nov were confirmed by the founder on 30 Oct, D-130; build 1's date is still a proposal).
 
 | # | Item | Owner | Date | Proof |
 |---|---|---|---|---|
@@ -512,7 +512,7 @@ RA-01-01, before any secret is added: the approver account and environment setti
 
 ## 6. Order and dependencies
 
-Dates follow #152 section 2.2. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the proposed dates written inline and at the top of `docs/release/TESTFLIGHT.md` stand until the founder confirms.
+Dates follow #152 section 2.2. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates written inline and at the top of `docs/release/TESTFLIGHT.md` stand: the freeze Tue 3 Nov and the go/no-go Mon 9 Nov were confirmed by the founder on 30 Oct (D-130), and build 1's date is still a proposal.
 
 ```
 Fri 16  window 1: #145 (with RA-20-06a if ready), the project-id PR. AF-02, AF-03, AF-04
@@ -525,7 +525,7 @@ Thu 22  window 5: RA-20-10a + RA-19-04 + RA-20-18 kill harness, RA-20-19 nightly
         AF-13 seeding and functions; first scheduled nightly; staging stop and functions rehearsals done
 Fri 23  R1: kill-path drill (B2-14), packDownloads drill; ios-compile green on #150
 Mon 26  R-17 sign-off (#152 F21)
-Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (proposed: freeze Tue 3 Nov 5:00 AM PT, which is 13:00 UTC because daylight saving time ends Sun 1 Nov; DECISIONS.md D-089, until the founder confirms)
+Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (freeze Tue 3 Nov, confirmed by the founder on 30 Oct, D-130; 5:00 AM PT, which is 13:00 UTC because daylight saving time ends Sun 1 Nov, is the coordinator's hour; DECISIONS.md D-089 had proposed the move)
 Wed 28  green nightly within 24 h of build 2 (B2-22); TestFlight expiry check
 Thu 29  go/no-go (Mon 9 Nov, confirmed by the founder on 30 Oct, D-130; it was proposed as Thu 5 Nov)
 after   RA-20-01, RA-20-03a/b/c, AF-20 (before Mon 2 Nov), RA-20-05/06/07/08/09/10/11/12, RA-07-*, AF-21 to AF-28

@@ -27,7 +27,7 @@ Conflict of interest: the session that commissioned this brief built the harness
 ## Options (when unattended runs start)
 | Option | What it takes | Cost or risk |
 |---|---|---|
-| 1. After four preconditions | Branch protection with required checks on `develop` and `main` (Wave 0 item 8); the GitHub App identity (H1); write connectors removed from scheduled tasks (Wave 0 item 1); and the 5 Nov go/no-go has passed | Unattended runs start after 5 Nov. The founder's setup is about 1 to 2 hours plus API spend |
+| 1. After four preconditions | Branch protection with required checks on `develop` and `main` (Wave 0 item 8); the GitHub App identity (H1); write connectors removed from scheduled tasks (Wave 0 item 1); and the go/no-go has passed (Mon 9 Nov, D-130; it was Thu 5 Nov when this brief was written) | Unattended runs start after Mon 9 Nov. The founder's setup is about 1 to 2 hours plus API spend (D-127: no money is spent on inference, so this waits for a zero-cost route) |
 | 2. Sooner, before the preconditions | Default branch to `develop`, an API key, `AGENTS_ENABLED=true` now | An unattended lane writes to a public repo as the founder, with no required checks, in freeze week (Tue 3 Nov, 5:00 AM PT); production connectors still attached |
 | 3. Interactive orchestration only until H1 to H8 land | Threads keep doing the work as now (H8 writes it down) | No unattended capacity until the rebuild lands; the date depends on H1 to H8 review time |
 
