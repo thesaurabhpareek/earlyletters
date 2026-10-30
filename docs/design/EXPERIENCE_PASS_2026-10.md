@@ -1611,7 +1611,11 @@ Copy (`accountDeletionCopy`, `packages/content/src/features/account-deletion.en.
 | `exportFirst.body` | Export everything, free: the book as a PDF, your letters as text and your recordings. | CHG (no photos) |
 | `subscription.*`, `continueButton`, `confirm.*` | as today | KEEP ("Type delete to confirm" stays: the one irreversible act in the app) |
 | `scheduled.emailNote` | A confirmation is on its way to your email. | CHG (no "we sent"; a receipt is for a purchase) |
-| other `scheduled.*`, `executing`, `signedOut.*` | as today | KEEP |
+| `signedOut.body` | Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app. | CHG (30 Oct 2026, critics' pass S3: true for a person who never asked and for one who signed out after asking) |
+| `scheduled.signOutBody` | Your deletion stays scheduled for {date}. Sign in again any time before then to cancel it. | NEW (30 Oct 2026, S3: the native confirm before "Sign out of this phone"; its buttons are `authCopy.account.staySignedIn` and `signOut`; "before then" because the undo window ends at the date, LEGAL-REQ-029) |
+| `what.onThisPhone` | On this phone, your letters stay. The ones already saved to your account move to Recently deleted. | NEW (30 Oct 2026, critics' pass S4; only what the code does, no date and no erase; counsel's relay list) |
+| `signedOut.scheduledBody`, `open.executingTitle`, `open.restoringTitle`, `open.restoringBody`, `open.cancelling`, `open.notYet`, `open.checking` | Your account will be deleted on {date}. Sign in to cancel the deletion. / Deletion in progress / Deletion cancelled / Your letters and books are on their way back to this phone. / Cancelling the deletion. / Still on their way. Try again in a moment. / One moment. | NEW (30 Oct 2026, D-117 M1: the deletion screen a phone with no book shows while a request is open, in place of the welcome; `cancelling`, `notYet` and `checking` are spoken or answer a press) |
+| other `scheduled.*`, `executing`, `signedOut.button` | as today | KEEP |
 | `notConfigured` | Accounts are not available right now. Everything stays on this phone, and deleting the app removes it. | CHG (kill path only) |
 | `errors.offline` | Nothing has changed. Deleting an account needs a connection. | CHG (reassure first) |
 | `errors.failed` | That did not work this time. Nothing has changed. | CHG |
