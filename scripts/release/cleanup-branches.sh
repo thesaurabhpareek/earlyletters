@@ -29,6 +29,10 @@ done < "$LIST"
 echo "candidates: ${#ok[@]}  kept: $skipped" | tee -a "$LOG"
 [[ "$APPLY" == "--apply" ]] || { printf '%s\n' "${ok[@]}" | sed 's/^/WOULD archive+delete /'; exit 0; }
 
+# 0. CR-14 runs only after CR-11's "archive tags are kept" ruleset is active on refs/tags/archive/**/*
+gh api "repos/$REPO/rulesets" --jq '.[]|select(.name=="archive tags are kept" and .enforcement=="active")|.id' | grep -q . \
+  || { echo "Stopped: the 'archive tags are kept' ruleset is not active yet (run scripts/release/apply-branch-settings.sh --apply first)." | tee -a "$LOG"; exit 1; }
+
 # 1. annotated archive tags, pushed in batches of 50 (tag pushes trigger no workflow: only db-v* is a tag trigger)
 refs=()
 git ls-remote --tags origin > $W/tags-before.txt
