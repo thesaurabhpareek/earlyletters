@@ -61,7 +61,8 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 
 ## Week 1: Mon 5 Oct to Sun 11 Oct
 
-- [ ] **FT-01 Apple Developer Program enrolment (individual), and accept the latest agreements**
+- [x] **FT-01 Apple Developer Program enrolment (individual), and accept the latest agreements**
+  - Status: Active 29 Oct 2026 (founder's confirmation emails). Whether the latest agreements are accepted is not in the emails.
   - Time: 45 minutes, then Apple's identity check (often a day or two for individuals [A]; it can take longer, and nothing Apple-side can start before it).
   - Cost: US $99 a year.
   - Steps: enrol at developer.apple.com/programs/enroll with your two-factor Apple Account as an **individual** (D-004, D-064). Your legal name becomes the seller name on the App Store (D-004 point 1). An individual account can publish this app and future apps. When Active, accept the latest Program License Agreement in the developer account.
