@@ -164,6 +164,19 @@ describe('[BL-485] the row, on the real auth store (the hook Settings > Privacy 
     row.unmount();
   });
 
+  it('a screen that mounted before the provider registered the source still follows the auth state', () => {
+    const row = renderHook(() => useSensitiveDataStatus());
+    registerSensitiveDataRow();
+    expect(row.result.current.status).toBe('signed_out');
+    publishAuth(STATES.checkingConsent);
+    expect(row.result.current.status).toBe('unknown');
+    publishAuth(STATES.on);
+    expect(row.result.current.status).toBe('on');
+    publishAuth(STATES.declined);
+    expect(row.result.current.status).toBe('off');
+    row.unmount();
+  });
+
   it('a screen opened after sign-in reads the current state at once', () => {
     registerSensitiveDataRow();
     publishAuth(STATES.on);

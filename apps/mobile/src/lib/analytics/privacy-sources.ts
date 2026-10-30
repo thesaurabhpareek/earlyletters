@@ -49,12 +49,18 @@ export function sensitiveStatusWords(status: SensitiveDataStatus): string {
 export function useSensitiveDataStatus(): { status: SensitiveDataStatus; open?: () => void } {
   const [status, setStatus] = useState<SensitiveDataStatus>(() => source.read());
   useEffect(() => {
-    const refresh = () => setStatus(source.read());
-    listeners.add(refresh);
-    const unsub = source.subscribe?.(refresh);
-    refresh();
+    let unsub: (() => void) | undefined;
+    // Runs now and again whenever the owner registers a source, so a screen that mounted first (a deep link straight to
+    // Privacy, a provider remount) still follows the new source instead of staying on the one it started with.
+    const attach = () => {
+      unsub?.();
+      unsub = source.subscribe?.(() => setStatus(source.read()));
+      setStatus(source.read());
+    };
+    listeners.add(attach);
+    attach();
     return () => {
-      listeners.delete(refresh);
+      listeners.delete(attach);
       unsub?.();
     };
   }, []);
