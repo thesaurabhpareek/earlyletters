@@ -213,7 +213,7 @@ test('[J22c] Account: signed out, then in from Settings, with the age step and w
   await btn(app, 'Continue').click();
   await expect(app.getByRole('heading', { name: 'Keep your letters in this account?' })).toBeVisible({ timeout: 15_000 });
   expect(m.rpcCalls('record_policy_act')).toHaveLength(1);
-  await btn(app, 'Keep them here').click();
+  await btn(app, 'Keep in this account').click();
   await expect(app.getByText('Signed in with email')).toBeVisible({ timeout: 15_000 });
   await expect(app.getByText(EMAIL)).toBeVisible();
   await expect(app.getByText('Sync and sharing')).toBeVisible();
@@ -269,7 +269,7 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await btn(app, 'Agree and sync').last().click();
   await expect(app.getByRole('heading', { name: 'Keep your letters in this account?' })).toBeVisible({ timeout: 15_000 });
   expect(acts()).toEqual(['terms:accept', 'sensitive-data:decline', 'sensitive-data:accept']);
-  await btn(app, 'Keep them here').click();
+  await btn(app, 'Keep in this account').click();
   await expect(app.getByText('Sync and sharing')).toBeVisible({ timeout: 15_000 });
   await expect(app.getByText('On', { exact: true })).toBeVisible();
 });

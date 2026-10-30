@@ -1,3 +1,4 @@
+import { AuthRetryableFetchError, createClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 import {
   authReducer,
@@ -12,6 +13,7 @@ import {
   type SyncGate,
 } from '../src/lib/auth/machine.logic';
 import { authErrorKind, codeEntryPause, looksLikeEmail, normaliseCode } from '../src/lib/auth/errors.logic';
+import { authErrorMessage } from '../src/lib/auth/messages';
 
 const U = '0192f0aa-0000-7000-8000-000000000001';
 const OTHER = '0192f0aa-0000-7000-8000-000000000002';
@@ -228,6 +230,76 @@ describe('auth error kinds', () => {
     expect(authErrorKind(new TypeError('Network request failed'), 'provider')).toBe('network');
     expect(authErrorKind({ code: 'something_new' }, 'provider')).toBe('provider');
     expect(authErrorKind({ code: 'something_new' }, 'code')).toBe('unknown');
+  });
+});
+
+describe('auth error kinds: a server that answered is not a connection that failed (BL-488, A-REQ-031)', () => {
+  // The statuses @supabase/auth-js 2.117.2 wraps in AuthRetryableFetchError
+  // (node_modules/@supabase/auth-js/src/lib/fetch.ts, NETWORK_ERROR_CODES): 500 to 504 and 520 to 530.
+  const SERVER_ERRORS = [500, 501, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530];
+  const CONTEXTS = ['send', 'code', 'link', 'provider', 'passkey'] as const;
+  const retryable = (status: number) => new AuthRetryableFetchError(`HTTP ${status}`, status);
+
+  it('a thrown error with a 5xx status is never "network": the person is online and the server said no', () => {
+    for (const status of SERVER_ERRORS) {
+      for (const context of CONTEXTS) {
+        expect(authErrorKind(retryable(status), context), `${status} in ${context}`).not.toBe('network');
+        // The plain shape too (what a screen test or another client library throws).
+        expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'x', status }, context), `${status} shape in ${context}`).not.toBe('network');
+      }
+    }
+  });
+
+  it('it reads as "That did not work this time", the provider kind for Apple, Google and passkeys, unknown for the email steps', () => {
+    for (const status of SERVER_ERRORS) {
+      expect(authErrorKind(retryable(status), 'provider'), String(status)).toBe('provider');
+      expect(authErrorKind(retryable(status), 'passkey'), String(status)).toBe('provider');
+      for (const context of ['send', 'code', 'link'] as const) expect(authErrorKind(retryable(status), context), `${status} in ${context}`).toBe('unknown');
+    }
+    for (const context of CONTEXTS) expect(authErrorMessage(authErrorKind(retryable(503), context))).toContain('That did not work this time.');
+    // The old reading, which a 503 must no longer get.
+    expect(authErrorMessage(authErrorKind(retryable(503), 'send'))).not.toMatch(/back online|Sign in/);
+  });
+
+  it('a failed fetch is still "network": status 0 (what auth-js gives it) or no status at all', () => {
+    for (const context of CONTEXTS) {
+      expect(authErrorKind(retryable(0), context), `status 0 in ${context}`).toBe('network');
+      expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'Failed to fetch', status: 0 }, context), `plain 0 in ${context}`).toBe('network');
+      expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'Failed to fetch' }, context), `no status in ${context}`).toBe('network');
+      expect(authErrorKind(new TypeError('Network request failed'), context), `TypeError in ${context}`).toBe('network');
+    }
+    expect(authErrorMessage(authErrorKind(retryable(0), 'send'))).toContain('back online');
+    // The line is exactly 500 (BL-488): a status below it keeps the reading it had.
+    expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'x', status: 499 }, 'send')).toBe('network');
+  });
+
+  it('holds against the pinned auth-js itself: a 503 answer is not "network", a rejected fetch is, a 429 stays rate_limited', async () => {
+    const auth = (fetchImpl: typeof fetch) =>
+      createClient('https://asha-fixture.supabase.co', 'sb_publishable_asha_fixture', {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        global: { fetch: fetchImpl },
+      }).auth;
+    const email = 'asha.parent@example.com';
+    const answered = (status: number) => auth(async () => new Response(JSON.stringify({ message: 'Service unavailable' }), { status, headers: { 'content-type': 'application/json' } }));
+    const rejected = auth(async () => {
+      throw new TypeError('Network request failed');
+    });
+
+    const server = (await answered(503).signInWithOtp({ email })).error;
+    expect(server).toBeInstanceOf(AuthRetryableFetchError);
+    expect(server?.status).toBe(503);
+    expect(authErrorKind(server, 'send')).toBe('unknown');
+
+    const gateway = (await answered(502).signInWithOtp({ email })).error;
+    expect(authErrorKind(gateway, 'send')).toBe('unknown');
+
+    const offline = (await rejected.signInWithOtp({ email })).error;
+    expect(offline).toBeInstanceOf(AuthRetryableFetchError);
+    expect(offline?.status).toBe(0);
+    expect(authErrorKind(offline, 'send')).toBe('network');
+
+    const limited = (await answered(429).signInWithOtp({ email })).error;
+    expect(authErrorKind(limited, 'send')).toBe('rate_limited');
   });
 });
 

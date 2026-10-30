@@ -103,7 +103,8 @@ export const authCopy = {
     body: 'Your letters on this phone will be kept in the account {email}.',
     noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
-    keep: 'Keep them here',
+    // BL-488: 'Keep them here' read as this phone; the choice is this account. Names it, 20 characters (a button may have 22).
+    keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
   },
@@ -179,6 +180,10 @@ export const authCopy = {
       waiting: 'Not set up yet',
       unknown: 'Waiting for a connection',
     },
+    // BL-488: AccountGate's offline branch (invite, join and leave sheets), for a phone that IS signed in and launched
+    // without a connection. Names the connection, never the sign-in: errors.network ends "Sign in once you are back
+    // online", which is for a person who is signed out. Says nothing about where the letters are (BL-475 point 1).
+    gateOffline: "You're signed in. This needs a connection. Try again once you are back online.",
     finishSetup: 'Finish setting up',
     passkeysTitle: 'Passkeys',
     passkeysHelp: 'Sign in next time with Face ID or Touch ID, on this phone or your other Apple devices.',

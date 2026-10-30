@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { authCopy } from '@scribe/content';
 
 const SRC = join(__dirname, '..', 'src');
 /** Source without comments, so a rule is checked against code, not against what a comment says. */
@@ -391,9 +392,25 @@ describe('[P8a critics S4] the account gate in the invite, join and leave sheets
 
   it('after a decline, nothing above "Agree and sync": counsel\'s decline line is not shown as a status', () => {
     expect(gate).not.toMatch(/declineHelp/);
-    const declined = between(gate, 'if (!offline) {', 'return (\n    <View className="gap-4">\n      <SheetBody muted>{authCopy.errors.network}');
+    const declined = between(gate, 'if (!offline) {', 'return (\n    <View className="gap-4">\n      <SheetBody muted>{g.gateOffline}');
     expect(declined).not.toMatch(/<SheetBody|<Text\b/);
     expect(declined).toMatch(/label=\{sc\.agreeButton\}/);
+  });
+
+  it('offline at launch while signed in: the connection is named, and the person is never told to sign in (BL-488)', () => {
+    // The offline branch is the gate's last return: a `ready` session (signed in) whose sync could not be read.
+    expect(gate).toMatch(/const offline = s\.sync === 'unknown';/);
+    const offlineBranch = gate.slice(gate.lastIndexOf('return ('));
+    expect(offlineBranch).toMatch(/<SheetBody muted>\{g\.gateOffline\}<\/SheetBody>/);
+    expect(offlineBranch).toMatch(/label=\{tryAgainLabel\}/);
+    // errors.network ends "Sign in once you are back online"; it is not drawn by the gate at all, and the offline branch
+    // draws no sign-in button and no error line of its own.
+    expect(gate).not.toMatch(/errors\.network/);
+    expect(offlineBranch).not.toMatch(/g\.signIn|authCopy\.errors|\/sign-in/);
+    // The words: the connection, never the sign-in.
+    expect(authCopy.account.gateOffline).toMatch(/connection/);
+    expect(authCopy.account.gateOffline).not.toMatch(/\bsign in\b/i);
+    expect(authCopy.account.gateOffline).not.toBe(authCopy.errors.network);
   });
 });
 

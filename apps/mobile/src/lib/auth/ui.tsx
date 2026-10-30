@@ -354,9 +354,11 @@ export function AccountGate({
       </View>
     );
   }
+  // Signed in, and the gate could not be read because the phone launched without a connection: say that. Not
+  // errors.network, which ends "Sign in once you are back online" and so tells a signed-in person to sign in (BL-488).
   return (
     <View className="gap-4">
-      <SheetBody muted>{authCopy.errors.network}</SheetBody>
+      <SheetBody muted>{g.gateOffline}</SheetBody>
       <Button
         size="lg"
         fullWidth

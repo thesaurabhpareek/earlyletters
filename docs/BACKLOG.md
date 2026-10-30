@@ -1980,7 +1980,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: the ruling is recorded here; with (b) the words are in `packages/content` and a test shows a No on an account with a book needs the second tap; with (a) S55's acceptance records the reason.
 
 #### BL-488 Sign-in words that say the wrong thing for the person's situation: a server error, an offline signed-in phone, and "Keep them here"
-- Status: ready. Mode: agent. Owner: auth owner (S01: point 1), mobile engineer (P8a: point 2), content (the words, points 2 and 3). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Status: done (all three points: `authErrorKind` in `apps/mobile/src/lib/auth/errors.logic.ts`, `account.gateOffline` in `AccountGate`, `claim.keep` is "Keep in this account"; tests in `apps/mobile/test/auth-machine.test.ts`, `apps/mobile/test/server-surfaces-auth-screens.test.ts`, `packages/content/test/server-surfaces-auth.test.ts`). Mode: agent. Owner: auth owner (S01: point 1), mobile engineer (P8a: point 2), content (the words, points 2 and 3). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Medium for point 1, Low for the others.
 - Gate: none. The sheets exist only in a build with sign-in on.
 - Satisfies: none given. Cited: A-REQ-031 (P0, `docs/prd/v2/features/F02-account.md:211`, "Specific errors") and F02-REQ-019 (`:234`, the claim step).
