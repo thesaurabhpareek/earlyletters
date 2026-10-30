@@ -105,8 +105,8 @@ describe('PlainScreen look (S50, S51)', () => {
     expect(src).toMatch(/<ScrollView\s+ref=\{scroll\}/);
     // The note is copy from packages/content (LaunchRecovery passes stillClosed, exportNothing or exportFailed), never an error.
     const launch = code(read('components/resilience/launch-recovery.tsx'));
-    expect(launch).toMatch(/const line = retry\.stillClosed \? e\.stillClosed : note === 'nothing' \? e\.exportNothing : note === 'failed' \? e\.exportFailed : undefined;/);
-    expect(launch).toMatch(/note=\{line\}/);
+    expect(launch).toMatch(/const words: Record<RecoveryLine, string \| undefined> = \{ none: undefined, stillClosed: e\.stillClosed, exportNothing: e\.exportNothing, exportFailed: e\.exportFailed \};/);
+    expect(launch).toMatch(/note=\{words\[view\.line\]\}/);
   });
 
   it('pill buttons: the primary is 56 pt and filled, the quiet one 44 pt with no fill', () => {
@@ -157,7 +157,7 @@ describe('nothing that can throw before render (S50)', () => {
     '@/components/ui/fonts', // loadFonts: resolves at once on a phone (embedded faces), never throws
     '@/lib/store', // getSetting, wrapped in try
     '@/lib/copy',
-    '@/lib/resilience/launch.logic', // pure: RetryView and its steps (a type-only import of the store)
+    '@/lib/resilience/launch.logic', // pure: RecoveryView, its steps and the tap sequencing (a type-only import of the store)
     '@/lib/resilience/recover-to-tonight',
     '@/lib/resilience/recovery-export',
     '@/components/ui/line-art.data',
@@ -186,7 +186,7 @@ describe('nothing that can throw before render (S50)', () => {
     }
   });
 
-  it('launch.logic.ts, which the launch screen reads for its retry view, imports only a type', () => {
+  it('launch.logic.ts, which the launch screen reads for its view and its taps, imports only a type', () => {
     const src = read('lib/resilience/launch.logic.ts');
     expect(imports(src)).toEqual(['../store']);
     expect(src).toMatch(/^import type \{ OpenStoreResult \} from '\.\.\/store';$/m);
@@ -222,7 +222,7 @@ describe('launch recovery offers no way to delete (S51, D-085)', () => {
   it('two actions only: Try again and Export what is readable', () => {
     const src = code(read('components/resilience/launch-recovery.tsx'));
     const labels = [...src.matchAll(/label: ([^,]+),/g)].map((m) => m[1].trim());
-    expect(labels).toEqual(['retry.trying ? e.tryingAgainButton : e.tryAgainButton', 'busy ? e.exportingTitle : e.exportButton']);
+    expect(labels).toEqual(['view.trying ? e.tryingAgainButton : e.tryAgainButton', 'view.exporting ? e.exportingTitle : e.exportButton']);
     expect(src).not.toMatch(/delete|reset|rebuild|erase|wipe|remove|clear|purge/i);
   });
 

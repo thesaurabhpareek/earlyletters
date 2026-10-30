@@ -10,7 +10,7 @@ import { nodeDb } from './helpers/node-db';
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({ openNativeDb: () => { throw new Error('native opener must not run in tests'); } }));
 
-import { attemptOpen, launchStatus, RETRY_START, retryResult, retryTapped } from '../src/lib/resilience/launch.logic';
+import { attemptOpen, launchStatus, RECOVERY_START, retryResult, retryTapped } from '../src/lib/resilience/launch.logic';
 import { isCaptureRoute, routePathOf, TONIGHT_HREF } from '../src/lib/resilience/not-found.logic';
 import { folderFor, planRecoveryExport, README_PATH, writeRecoveryZip, type FoundFile } from '../src/lib/resilience/recovery-export.logic';
 import { goToTonightAfterRetry } from '../src/lib/resilience/recover-to-tonight';
@@ -49,7 +49,7 @@ describe('launch failure (J20)', () => {
 
   it('Try again that fails twice answers both taps with a different state each time, then a success opens the book (S1)', () => {
     const broken = () => store.openStore({ open: () => { throw new Error('x'); } });
-    let view = RETRY_START;
+    let view = RECOVERY_START;
     const answers: unknown[] = [];
     for (let tap = 0; tap < 2; tap += 1) {
       view = retryTapped(view);
@@ -63,7 +63,7 @@ describe('launch failure (J20)', () => {
     view = retryTapped(view);
     const found = attemptOpen(() => store.openStore({ open: () => ({ db: h.db, close: () => {} }) }));
     expect(found).toBe('ok');
-    expect(retryResult(view, found)).toMatchObject({ trying: false, stillClosed: false });
+    expect(retryResult(view, found)).toMatchObject({ trying: false, line: 'none' });
     h.close();
   });
 

@@ -4,25 +4,32 @@
  * Never deletes, resets or rebuilds anything, on its own or by a button: there is no such action here.
  *
  * Every tap on Try again is answered: the button turns busy ("Trying again") for a beat, then either the app opens
- * or one calm line says it did not (launch.logic.ts `RetryView`). The line is announced each time, not only the first.
+ * or one calm line says it did not. The line is announced each time, not only the first. The line is one slot shared
+ * with the export's result, so the newest answer is the one on screen. The order of it all (the guard against a second
+ * tap, the beat, the open, the check that the screen is still here) lives in launch.logic.ts `createRecoveryActions`,
+ * where a test runs it; this file only connects it to React.
  */
 import { useEffect, useRef, useState } from 'react';
 import { copy } from '@/lib/copy';
-import { RETRY_BEAT_MS, RETRY_START, retryLineTaken, retryResult, retryTapped, type LaunchStatus } from '@/lib/resilience/launch.logic';
+import { createRecoveryActions, RECOVERY_START, type LaunchStatus, type RecoveryLine } from '@/lib/resilience/launch.logic';
 import { runRecoveryExport } from '@/lib/resilience/recovery-export';
 import { PlainScreen } from './plain-screen';
 
-type Note = 'none' | 'nothing' | 'failed';
-
-const beat = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
-
 export function LaunchRecovery({ onTryAgain }: { onTryAgain: () => LaunchStatus }) {
   const e = copy.errors.launch;
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<Note>('none');
-  const [retry, setRetry] = useState(RETRY_START);
+  const [view, setView] = useState(RECOVERY_START);
   const live = useRef(true);
-  const tapped = useRef(false); // two taps inside one frame run one retry; the busy state is not drawn yet
+  const open = useRef(onTryAgain);
+  open.current = onTryAgain;
+  const [actions] = useState(() =>
+    createRecoveryActions({
+      wait: (ms) => new Promise<void>((done) => setTimeout(done, ms)),
+      open: () => open.current(),
+      runExport: runRecoveryExport,
+      isLive: () => live.current,
+      update: setView,
+    }),
+  );
   useEffect(
     () => () => {
       live.current = false;
@@ -30,41 +37,18 @@ export function LaunchRecovery({ onTryAgain }: { onTryAgain: () => LaunchStatus 
     [],
   );
 
-  const exportReadable = async () => {
-    setBusy(true);
-    setNote('none');
-    setRetry(retryLineTaken);
-    const outcome = await runRecoveryExport();
-    if (!live.current) return;
-    setBusy(false);
-    setNote(outcome === 'nothing' ? 'nothing' : outcome === 'failed' ? 'failed' : 'none');
-  };
-
-  const tryAgain = async () => {
-    if (tapped.current) return;
-    tapped.current = true;
-    setNote('none');
-    setRetry(retryTapped);
-    await beat(RETRY_BEAT_MS);
-    tapped.current = false;
-    if (!live.current) return;
-    const status = onTryAgain(); // 'ok' lets the app take over, and this screen goes
-    if (!live.current) return;
-    setRetry((view) => retryResult(view, status));
-  };
-
-  const line = retry.stillClosed ? e.stillClosed : note === 'nothing' ? e.exportNothing : note === 'failed' ? e.exportFailed : undefined;
+  const words: Record<RecoveryLine, string | undefined> = { none: undefined, stillClosed: e.stillClosed, exportNothing: e.exportNothing, exportFailed: e.exportFailed };
 
   return (
     <PlainScreen
       title={e.title}
       body={e.body}
       hint={e.hint}
-      note={line}
-      noteKey={retry.round}
+      note={words[view.line]}
+      noteKey={view.round}
       actions={[
-        { label: retry.trying ? e.tryingAgainButton : e.tryAgainButton, busy: retry.trying, onPress: () => void tryAgain() },
-        { label: busy ? e.exportingTitle : e.exportButton, kind: 'quiet', busy, onPress: () => void exportReadable() },
+        { label: view.trying ? e.tryingAgainButton : e.tryAgainButton, busy: view.trying, onPress: () => void actions.tryAgain() },
+        { label: view.exporting ? e.exportingTitle : e.exportButton, kind: 'quiet', busy: view.exporting, onPress: () => void actions.exportReadable() },
       ]}
     />
   );

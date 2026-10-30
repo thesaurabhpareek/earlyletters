@@ -7,19 +7,19 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { openStore } from '../store';
-import { attemptOpen, type LaunchStatus } from './launch.logic';
+import { openForLaunch, type LaunchStatus } from './launch.logic';
 import { launchFaultForPreview } from './launch-fault';
 
 export function useLaunch(storeReady: boolean): { status: LaunchStatus | 'pending'; retry: () => LaunchStatus } {
   const [status, setStatus] = useState<LaunchStatus | 'pending'>('pending');
-  const open = useCallback((): LaunchStatus => {
-    const found = attemptOpen(() => {
-      if (launchFaultForPreview()) throw new Error('preview_fault');
-      return openStore();
-    });
-    setStatus(found);
-    return found;
-  }, []);
+  const open = useCallback(
+    (): LaunchStatus =>
+      openForLaunch(() => {
+        if (launchFaultForPreview()) throw new Error('preview_fault');
+        return openStore();
+      }, setStatus),
+    [],
+  );
   useEffect(() => {
     if (storeReady) open();
   }, [storeReady, open]);
