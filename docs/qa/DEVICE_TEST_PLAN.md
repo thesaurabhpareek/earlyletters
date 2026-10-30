@@ -25,7 +25,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
 | S1-28 the Family tab, invite and joining a book (P8b) | Switch on; staging; two iPhones on two Apple Accounts (a fresh install for the joiner) | Build 2 (B2-10) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
-| S1-34 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
+| S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
 | S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
@@ -438,7 +438,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-33 rows: phone, text size, online or offline, and yes or no for each line above; screenshots with Asha only.
 - **Update:** PR #370 and `docs/design/EXPERIENCE_PASS_2026-10.md` S22 (the AX layout, on the P7-7 spec list) where a result differs.
 
-### S1-34 Delete account as a sole parent: the deletion screen and Cancel deletion (S64, B2-10, M1; critics' pass 30 Oct 2026)
+### S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (S64, B2-10, M1; critics' pass 30 Oct 2026)
 - **Needs:** the switch-on build pointed at staging; a drill account (`run-sheets/README.md` "Drill identities") with exactly one book, no co-parent and at least two kept letters, signed in on one iPhone (phone A); for (f) a second iPhone (phone B) signed in to the same drill account. Never an account that has been in a real family book.
 - **Steps:**
   - (a) Phone A: Settings > Delete account, read step 1, Continue, type the word, Delete account. Note the clock time and the date on the page.
@@ -456,7 +456,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (e) Recently deleted is empty of the account's letters; the Book lists them again.
   - (f) Phone B shows the same deletion screen after its sync (a moment of blank paper at most; never "Begin the book"). The fresh install, after "I already have a book" and the sign-in, lands on the deletion screen too; the sheet's "No book here yet" text may show first (unverified: it comes from the sign-in sheet, not from this fix).
   - (g) The title is read first, each button by its words, nothing truncated at AX5, and the two buttons stay on screen.
-- **Record:** S1-34 rows (a) to (g): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
+- **Record:** S1-35 rows (a) to (g): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64 (acceptance: a sole parent can reach Cancel deletion after the phone's next sync) and `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` M1 where a result differs.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
@@ -478,7 +478,7 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.
 
 ### S2-13 Account deletion on a real account (C-REQ-019, LEGAL-REQ-029)
-- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7). The sole parent's request and cancel are S1-34.
+- **Steps:** Signed in with Plus renewing (sandbox): Settings > Delete account. Read the per-book lines, Export first, the Apple billing notice with Manage subscription; type the word; confirm. Sign in again within the 30 days and Cancel deletion. Then, on staging, let one fixture account run to completion and run `scripts/ops/verify-deletion.ts` (ops README step 7). The sole parent's request and cancel are S1-35.
   - (a) The Settings row: absent when signed out; after signing in it appears in its own section, in the destructive style; after signing out it goes. Check at AX5.
   - (b) Step 1 reads the line about this phone ("On this phone, your letters move to Recently deleted and are kept there.") under the book lines, only when the account has a book.
   - (c) VoiceOver on step 2: focus lands on "Delete your account?", the field is read as "Type delete to confirm", "Delete account" is announced dimmed until the word is typed, and the two-finger Z gesture takes "Keep my account". On the scheduled page the date and title read as one heading and the buttons read in order.
