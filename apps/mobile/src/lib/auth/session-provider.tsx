@@ -97,7 +97,7 @@ export interface AuthApi {
   signOut(): Promise<'done' | 'waiting'>;
   /**
    * "Stay signed in" while a sign-out the person asked for waits for uploads: back to signed in,
-   * nothing deleted, nothing sent (S01). No screen calls it yet.
+   * nothing deleted, nothing sent (S01). Settings > Account's "Stay signed in" row calls it (BL-451).
    */
   cancelSignOutWait(): void;
   signOutOtherDevices(): Promise<Outcome>;

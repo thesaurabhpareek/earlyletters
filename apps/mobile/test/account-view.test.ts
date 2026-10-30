@@ -8,7 +8,7 @@
  * sensitive-data step (account.tsx); it is never a one-tap consent.
  */
 import { describe, expect, it } from 'vitest';
-import { accountView, waitEndedEarly } from '../src/components/auth/account-view.logic';
+import { accountView, nextEndedEarly, waitEndedEarly } from '../src/components/auth/account-view.logic';
 import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SyncGate } from '../src/lib/auth/machine.logic';
 
 const U = '11111111-1111-4111-8111-111111111111';
@@ -106,6 +106,16 @@ describe('[BL-451] "Stay signed in"', () => {
     expect(accountView(revoked, false).staySignedIn).toBe(false);
   });
 
+  it('a drain that lands just after "Stay signed in" changes nothing: the person stays signed in', () => {
+    // The 10 s poll's in-flight pendingUploads() or the drain listener can answer right after the tap.
+    const waiting = authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 1 });
+    const stayed = authReducer(waiting, { type: 'SIGN_OUT_WAIT_CANCELLED' });
+    const late = authReducer(stayed, { type: 'UPLOADS_DRAINED' });
+    expect(late).toEqual({ status: 'ready', userId: U, sync: 'on' });
+    expect(accountView(late, false)).toMatchObject({ signOut: 'ready', staySignedIn: false });
+    expect(waitEndedEarly(stayed, late)).toBe(false);
+  });
+
   it('is not offered while the sign-out is closing, where cancelling does nothing', () => {
     const waiting = authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 1 });
     const drained = authReducer(waiting, { type: 'UPLOADS_DRAINED' });
@@ -129,6 +139,14 @@ describe('[BL-451] a wait that ends before the letters are sent is said on the s
     expect(waitEndedEarly(w, authReducer(w, { type: 'SESSION_LOST' }))).toBe(true);
   });
 
+  it('SIGNED_OUT during the wait (what "Sign out other devices" and a lost session give the provider) ends it early, with no error', () => {
+    // The provider never dispatches SESSION_LOST; Supabase's SIGNED_OUT event is what arrives.
+    const w = waiting();
+    const out = authReducer(w, { type: 'SIGNED_OUT' });
+    expect(out).toEqual({ status: 'signedOut' });
+    expect(waitEndedEarly(w, out)).toBe(true);
+  });
+
   it('a drained outbox is the wait ending as it should, and so is everything after it', () => {
     const w = waiting();
     const drained = authReducer(w, { type: 'UPLOADS_DRAINED' });
@@ -141,5 +159,60 @@ describe('[BL-451] a wait that ends before the letters are sent is said on the s
     expect(waitEndedEarly(w, authReducer(w, { type: 'SIGN_OUT_WAIT_CANCELLED' }))).toBe(false);
     expect(waitEndedEarly(ready(), w)).toBe(false);
     expect(waitEndedEarly(w, w)).toBe(false);
+  });
+});
+
+describe('[BL-451] the signed-out page\'s early-end line, one state change at a time (nextEndedEarly, as account.tsx calls it)', () => {
+  /** Each event through the real machine, then the line's step, as the Account page sees it: [shown, announced]. */
+  const walk = (from: AuthState, events: AuthEvent[], shown = false) => {
+    let s = from;
+    let on = shown;
+    return events.map((e) => {
+      const next = authReducer(s, e);
+      const step = nextEndedEarly(s, next, on);
+      s = next;
+      on = step.shown;
+      return [step.shown, step.announce] as const;
+    });
+  };
+  const waiting = () => authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+  const LOST: AuthEvent = { type: 'SIGNED_OUT' };
+
+  it.each([
+    ['a wait that drains, then signs out: no line', [{ type: 'UPLOADS_DRAINED' }, LOST], [[false, false], [false, false]]],
+    ['the session ends during the wait: the line, said once', [LOST], [[true, true]]],
+    ['SESSION_LOST during the wait: the same', [{ type: 'SESSION_LOST' }], [[true, true]]],
+    [
+      'the gate turns sync off during the wait: the line waits for the signed-out page, then is said once',
+      [DECLINED_GATE, LOST],
+      [[true, false], [true, true]],
+    ],
+    ['"Stay signed in": no line', [{ type: 'SIGN_OUT_WAIT_CANCELLED' }, { type: 'UPLOADS_DRAINED' }], [[false, false], [false, false]]],
+  ] as [string, AuthEvent[], (readonly [boolean, boolean])[]][])('%s', (_name, events, steps) => {
+    expect(walk(waiting(), events)).toEqual(steps);
+  });
+
+  it('stays while signed out and while signing in, is never said twice, and goes once signed in again', () => {
+    const steps = walk(waiting(), [
+      LOST,
+      { type: 'START', method: 'email' },
+      { type: 'CANCELLED' },
+      { type: 'START', method: 'email' },
+      { type: 'SIGNED_IN', userId: U, method: 'email' },
+    ]);
+    expect(steps).toEqual([
+      [true, true],
+      [true, false],
+      [true, false],
+      [true, false],
+      [false, false],
+    ]);
+  });
+
+  it('a re-run with no change says nothing again, and a visit while signed out shows nothing', () => {
+    const out = authReducer(waiting(), LOST);
+    expect(nextEndedEarly(out, out, true)).toEqual({ shown: true, announce: false });
+    expect(nextEndedEarly(out, out, false)).toEqual({ shown: false, announce: false });
+    expect(nextEndedEarly(ready(), ready(), false)).toEqual({ shown: false, announce: false });
   });
 });

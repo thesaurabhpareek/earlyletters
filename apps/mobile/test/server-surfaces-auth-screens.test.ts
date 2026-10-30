@@ -429,13 +429,17 @@ describe('[S56] Account', () => {
   });
 
   it('[BL-451] a wait that ended before the letters were sent is said once on the signed-out page', () => {
-    expect(account).toMatch(/if \(waitEndedEarly\(previous\.current, s\)\) setEndedEarly\(true\);/);
-    expect(account).toMatch(/previous\.current = s;/);
+    // What the line does is nextEndedEarly's (account-view.test.ts). The page's part: each state change goes through it
+    // with the state before it, `previous` moves on only after, the effect runs on every change, and it announces.
+    expect(account).toMatch(
+      /useEffect\(\(\) => \{\s*const step = nextEndedEarly\(previous\.current, s, endedEarly\);\s*previous\.current = s;\s*if \(step\.shown !== endedEarly\) setEndedEarly\(step\.shown\);\s*if \(step\.announce\) announce\(a\.signOutEarly\);\s*\}, \[s, endedEarly, a\.signOutEarly\]\);/,
+    );
+    expect(account).toMatch(/const previous = useRef\(s\);/);
+    expect(account.match(/previous\.current = /g), 'moved on in one place').toHaveLength(1);
+    expect(account.match(/setEndedEarly\(/g), 'set in one place').toHaveLength(1);
+    // Between the body and "Sign in" on the signed-out page.
     const out = between(account, 'if (!auth.signedIn) {', 'const provider');
-    expect(out).toMatch(/\{endedEarly \? \(\s*<Text variant="body" testID="account\.signOutEarly">\s*\{a\.signOutEarly\}/);
-    expect(account).toMatch(/if \(endedEarly && !auth\.signedIn\) announce\(a\.signOutEarly\)/);
-    // Signing in again clears it.
-    expect(account).toMatch(/if \(auth\.signedIn && s\.status !== 'signingOut'\) setEndedEarly\(false\);/);
+    expect(out).toMatch(/fill\(a\.signedOutBody[\s\S]*\{endedEarly \? \(\s*<Text variant="body" testID="account\.signOutEarly">\s*\{a\.signOutEarly\}[\s\S]*label=\{a\.signIn\}/);
   });
 
   it('nothing fades in on a visit; only signing out on this page fades to signed out (MOTION principle 2)', () => {

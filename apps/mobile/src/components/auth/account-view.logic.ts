@@ -18,8 +18,12 @@
  * `waitEndedEarly(prev, next)`: a wait that ended before the queued letters were sent (a gate answer turned sync off,
  * or the session was lost), so the signed-out page can say they are kept on this phone (BL-451). A drained outbox is
  * the wait ending as it should, not early.
+ *
+ * `nextEndedEarly(prev, next, shown)`: the signed-out page's early-end line, one state change at a time (account.tsx
+ * calls it on each change). It turns on when the wait ends early, stays through the end of the sign-out and while
+ * signed out, goes once the person is signed in again, and is announced once, when it first shows signed out.
  */
-import type { AuthState } from '@/lib/auth/machine.logic';
+import { isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 
 export type AccountSyncValue = 'on' | 'off' | 'unknown' | 'waiting';
 
@@ -54,4 +58,12 @@ export function waitEndedEarly(prev: AuthState, next: AuthState): boolean {
   if (prev.status !== 'signingOut' || !prev.waitingForUploads) return false;
   if (next.status === 'signedOut') return true;
   return next.status === 'signingOut' && !next.waitingForUploads && next.sync !== 'on';
+}
+
+export function nextEndedEarly(prev: AuthState, next: AuthState, shown: boolean): { shown: boolean; announce: boolean } {
+  const signedIn = isSignedIn(next);
+  const now = signedIn && next.status !== 'signingOut' ? false : shown || waitEndedEarly(prev, next);
+  // Already on the signed-out page before this change: said then, not again.
+  const seen = shown && !isSignedIn(prev);
+  return { shown: now, announce: now && !signedIn && !seen };
 }
