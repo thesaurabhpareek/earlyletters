@@ -94,9 +94,16 @@ case "$MODE" in
     say "(CR-2 of 30 Oct makes that a condition of switching the default branch)."
     read -r -p "Is the Vercel Production Branch main? Type yes to go on: " ok
     [[ "$ok" == "yes" ]] || { say "Stopped. Nothing changed."; exit 1; }
+    read -r -p "Is the repository variable AGENTS_ENABLED unset or not 'true' (Settings, Secrets and variables, Actions, Variables)? Type yes: " ok2
+    [[ "$ok2" == "yes" ]] || { say "Stopped. Nothing changed. Leave AGENTS_ENABLED off (CR-5) and run again."; exit 1; }
     mkdir -p "$SNAP"
-    gh api $R > "$SNAP/repo.json"; gh api $R/rulesets > "$SNAP/rulesets.json"; gh api $R/rulesets/$COPILOT_RULESET > "$SNAP/copilot.json"
-    say "Snapshot in $SNAP"
+    if [[ -f "$SNAP/repo.json" ]]; then
+      # Keep the first snapshot: it holds the state before any run, so --undo stays a true way back after a partial run.
+      say "Keeping the snapshot from an earlier run in $SNAP (taken $(date -r "$SNAP/repo.json" 2>/dev/null || echo earlier))."
+    else
+      gh api $R > "$SNAP/repo.json"; gh api $R/rulesets > "$SNAP/rulesets.json"; gh api $R/rulesets/$COPILOT_RULESET > "$SNAP/copilot.json"
+      say "Snapshot in $SNAP"
+    fi
     say "CR-6"; gh api -X PATCH $R -F allow_squash_merge=true -F allow_merge_commit=true -F allow_rebase_merge=false \
       -F delete_branch_on_merge=true -F allow_auto_merge=false -F allow_update_branch=true \
       -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=COMMIT_MESSAGES --jq .full_name
@@ -128,7 +135,7 @@ case "$MODE" in
     jq '{name,target,enforcement,bypass_actors,conditions,rules}' "$SNAP/copilot.json" | gh api -X PUT $R/rulesets/$COPILOT_RULESET --input - --jq '"Copilot ruleset restored"'
     for b in develop main; do gh api -X DELETE $R/branches/$b/protection >/dev/null 2>&1 && say "protection removed: $b" || true; done
     say "The three new rulesets stay (they block nothing today). Delete any with: gh api -X DELETE $R/rulesets/<id>"
-    gh workflow enable agents.yml -R $REPO >/dev/null 2>&1 || true
+    say "agents.yml stays disabled (CR-5). Snapshot kept in $SNAP; delete it once you are happy, so a later --apply takes a fresh one."
     ;;
   *) say "Usage: $0 [--dry-run|--apply|--verify|--undo]"; exit 2 ;;
 esac
