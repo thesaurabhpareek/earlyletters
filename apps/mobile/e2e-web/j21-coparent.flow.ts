@@ -85,7 +85,9 @@ test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask
   await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book has not reached this phone yet.`)).toBeVisible();
   await expect(app.getByTestId('onboarding.joinWait.retry')).toBeVisible();
   await expect(btn(app, 'Begin the book')).toBeVisible();
-  await step('unhappy', 'Closed before the book came, sync held', 'The joined sheet closes onto first run\'s welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps "Begin the book". While sync is running it says the book is on its way and hides "Begin the book" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.');
+  // J21g takes ids 6 and 7 (the P8b critics cite them), so this step takes the next free id.
+  const stepClosed = journey(record, 'J21', 'co-parent-sharing', 8, 'J21-05');
+  await stepClosed('unhappy', 'Closed before the book came, sync held', 'The joined sheet closes onto first run\'s welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps "Begin the book". While sync is running it says the book is on its way and hides "Begin the book" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.');
 });
 
 /** Asha's book as sync_pull sends it to the joined parent (Papa). */
