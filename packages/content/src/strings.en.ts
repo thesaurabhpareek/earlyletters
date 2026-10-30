@@ -1012,15 +1012,22 @@ export const en = {
       body: "Your book is right where you left it.",
       button: "Back to Tonight",
     },
-    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
+    // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
+    // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,
+    // rows E1, E3 and E4): the body says what Export does (recovery-export.logic.ts copies the files byte for byte); it does not
+    // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was
+    // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book could not open",
-      body: "Your letters and recordings are safe on this phone.",
+      body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
+      // The Try again button's words while it opens the book again, and the line after an open that did not work.
+      tryingAgainButton: "Trying again",
+      stillClosed: "It did not open this time either.",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "This phone has no recordings or files to export.",
+      exportNothing: "Export has nothing to put in a file right now.",
       exportFailed: "That export did not work. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
