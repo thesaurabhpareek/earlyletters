@@ -13,6 +13,7 @@ import {
   type AnalyticsIds, type DeletionClient, type FlagStore,
 } from './api';
 import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, type SyncBook } from './logic';
+import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
 const flags: FlagStore = { get: getSetting, set: setSetting, remove: deleteSetting };
 const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds };
@@ -40,8 +41,12 @@ export function useAccountDeletion() {
   const refresh = useCallback(async () => {
     if (!client || !auth.signedIn) return;
     const [s, b] = await Promise.all([loadStatus(client), loadBooks(client)]);
-    if (s.ok) setStatus(s.value);
-    else setError(s.reason);
+    if (s.ok) {
+      setStatus(s.value);
+      // What the server says about the open request is remembered on this phone, so a phone that lists no book
+      // (a sole parent's book goes with the request) shows the deletion screen and never the welcome (open-request.ts).
+      recordStatus(s.value);
+    } else setError(s.reason);
     if (b.ok) setBooks(b.value);
     // A forget that failed earlier (offline at request time) is finished here.
     void retryForget(client, ids, flags, uuidv7());
@@ -64,6 +69,8 @@ export function useAccountDeletion() {
       setError(r.reason);
       return false;
     }
+    // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
+    recordRequested(r.value);
     // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
     // then PostHog deletes this phone's persons through analytics-forget.
     analytics.track('account_deletion', { stage: 'confirmed' });
@@ -84,6 +91,9 @@ export function useAccountDeletion() {
       setError(r.reason);
       return false;
     }
+    // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
+    // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
+    recordCancelled();
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;

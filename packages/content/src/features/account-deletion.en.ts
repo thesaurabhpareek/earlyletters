@@ -29,6 +29,11 @@ export const accountDeletionCopy = {
     noBooks: 'You have no books on your account yet.',
     // v1.0 has no family listening, so no recording ever sits on a family member's phone.
     copies: 'A copy you exported stays wherever you saved it.',
+    // What the phone does with the person's own letters (critics' pass 30 Oct 2026, S4), and no more than the code
+    // does: the next pull moves the letters the account holds to Recently deleted, where they stay. No date and no
+    // erase are promised, because in a sync build the phone's own sweep leaves a letter the server holds alone (a later
+    // pull that says the server no longer holds it is the only thing that erases it there). Counsel's relay list.
+    onThisPhone: 'On this phone, your letters move to Recently deleted and are kept there.',
   },
   exportFirst: {
     heading: 'Keep a copy first',
@@ -64,13 +69,28 @@ export const accountDeletionCopy = {
     emailNote: 'A confirmation is on its way to your email.',
     cancelButton: 'Cancel deletion',
     doneButton: 'Sign out of this phone',
+    // The native confirm before "Sign out of this phone" (critics' pass S3): the request stays open.
+    signOutBody: 'Your deletion stays scheduled for {date}. Sign in again any time to cancel it.',
     cancelled: 'Deletion cancelled. Your letters and books are back, just as they were.',
   },
   executing: 'Your account is being deleted now. This can take up to a day.',
 
+  // Signed out. `body` is true in both situations: a person who never asked, and one who signed out after asking
+  // (critics' pass S3). `scheduledBody` is for a phone that knows a request is open.
   signedOut: {
-    body: 'Sign in to delete your account. Letters that are only on this phone stay here until you delete the app.',
+    body: 'Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app.',
+    scheduledBody: 'Your account will be deleted on {date}. Sign in to cancel the deletion.',
     button: 'Sign in',
+  },
+
+  // The screen a phone with no book shows while a deletion request is open, in place of the first-run welcome (D-117,
+  // critics' pass M1). A sole parent's book goes with the request, so without it the phone looks new. The title and the
+  // date line are the scheduled page's own words (`scheduled.heading`, `scheduled.body`); the cancel path is
+  // `scheduled.cancelButton`.
+  open: {
+    executingTitle: 'Deletion in progress',
+    restoringTitle: 'Deletion cancelled',
+    restoringBody: 'Your letters and books are on their way back to this phone.',
   },
   // The kill path only (no server client in this build): the one place these words may say "stays on this phone".
   notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
