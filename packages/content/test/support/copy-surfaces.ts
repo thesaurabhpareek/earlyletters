@@ -424,7 +424,10 @@ export const SURFACES: readonly Surface[] = [
       { ...PHOTOS, allowed: ['what.intro'] },
       E2E_OR_FAMILY_KEYS,
       ONLY_YOU,
-      { ...STAYS_ON_PHONE, allowed: ['notConfigured'] },
+      // `notConfigured` is the kill path's own sentence. `what.onThisPhone` ("On this phone, your letters stay. ...") says it in a
+      // word order the pattern does not match; it is a recorded decision, not a slip: it is the one line on this page that tells
+      // the person what happens to the letters on her phone (critics' pass S4, counsel's relay list).
+      { ...STAYS_ON_PHONE, allowed: ['notConfigured', 'what.onThisPhone'] },
       { name: 'a receipt', re: /\breceipt\b|\bwe sent\b/i },
       { name: 'the app named in words, not through brand', re: new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) },
     ],

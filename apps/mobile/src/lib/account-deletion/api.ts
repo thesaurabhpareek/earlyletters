@@ -60,9 +60,17 @@ export function loadBooks(client: DeletionClient): Promise<ApiOutcome<SyncBook[]
   });
 }
 
-/** Idempotent on the server: a second call returns the open request. */
-export function requestDeletion(client: DeletionClient, hadActiveSubscription: boolean | null): Promise<ApiOutcome<{ requestId: string; scheduledFor: string }>> {
-  return call(
+/**
+ * Idempotent on the server: a second call returns the open request.
+ *
+ * A request that failed here may still have been made: the server can commit and the answer be lost (a dropped
+ * connection, a reply that cannot be read). So a failed call is checked against the open request once, as a cancel is
+ * (cancelDeletion): the screen must never say that nothing has changed while a request is open. If the check finds the
+ * request, this is a success. If it finds none, the failure stands, and it is true. If the check cannot be made either,
+ * the failure stands as it was.
+ */
+export async function requestDeletion(client: DeletionClient, hadActiveSubscription: boolean | null): Promise<ApiOutcome<{ requestId: string; scheduledFor: string }>> {
+  const r = await call(
     () => client.rpc('request_account_deletion', { p_source: 'ios', p_had_active_subscription: hadActiveSubscription }),
     (d) => {
       const row = (Array.isArray(d) ? d[0] : d) as { request_id?: unknown; scheduled_for?: unknown } | null;
@@ -70,6 +78,12 @@ export function requestDeletion(client: DeletionClient, hadActiveSubscription: b
       return { requestId: row.request_id, scheduledFor: row.scheduled_for };
     },
   );
+  if (r.ok) return r;
+  const s = await loadStatus(client);
+  if (s.ok && (s.value.state === 'scheduled' || s.value.state === 'held')) {
+    return { ok: true, value: { requestId: s.value.requestId, scheduledFor: s.value.scheduledFor } };
+  }
+  return r;
 }
 
 /**

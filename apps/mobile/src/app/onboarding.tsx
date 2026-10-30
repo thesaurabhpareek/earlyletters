@@ -70,6 +70,8 @@ import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
 import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
+import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
+import { useFirstRunGate } from '@/lib/account-deletion';
 import { useWelcomeJoinWait } from '@/components/family/join-wait';
 import { familyCopy } from '@/lib/family/copy';
 
@@ -102,7 +104,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-export default function Onboarding() {
+function FirstRun() {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -572,4 +574,17 @@ function ReasonLine({ text, raised }: { text: string; raised: boolean }) {
       )}
     </Animated.View>
   );
+}
+
+/**
+ * The route every "no book" path ends at: a cold launch with no book, Tonight, the Book tab and the Family tab (each
+ * redirects here), and a sign-in on another phone. While a request to delete the account is open it is never the
+ * welcome: the deletion screen takes its place, so "Begin the book" is not offered and a book cannot be made over the
+ * request (lib/account-deletion/open-request.ts chooseScreen; critics' pass 30 Oct 2026, M1).
+ */
+export default function Onboarding() {
+  const gate = useFirstRunGate();
+  if (gate.screen === 'deletion' && gate.request) return <OpenDeletionScreen request={gate.request} />;
+  if (gate.screen === 'checking') return <CheckingScreen />;
+  return <FirstRun />;
 }

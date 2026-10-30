@@ -95,6 +95,51 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
 });
 
 /**
+ * The lines added after the critics' pass of 30 October 2026 (docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md,
+ * M1, S3, S4; coordinator D-117). They are not S64 text, so they are pinned here apart from CHANGED above.
+ * `what.onThisPhone` is for counsel's relay list: it says only what the code does (the next pull moves the letters the
+ * account holds to Recently deleted; a letter that never reached the server is not touched); no date and no erase are
+ * promised, because in a sync build the phone's own sweep leaves a letter the server holds alone.
+ */
+describe('[critics pass 30 Oct 2026] the lines for the deletion screen, the sign-out confirm and the phone', () => {
+  const ADDED_LINES: Record<string, string> = {
+    'what.onThisPhone': 'On this phone, your letters stay. The ones already saved to your account move to Recently deleted.',
+    'scheduled.signOutBody': 'Your deletion stays scheduled for {date}. Sign in again any time before then to cancel it.',
+    'signedOut.body': 'Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app.',
+    'signedOut.scheduledBody': 'Your account will be deleted on {date}. Sign in to cancel the deletion.',
+    'open.executingTitle': 'Deletion in progress',
+    'open.restoringTitle': 'Deletion cancelled',
+    'open.restoringBody': 'Your letters and books are on their way back to this phone.',
+    'open.cancelling': 'Cancelling the deletion.',
+    'open.notYet': 'Still on their way. Try again in a moment.',
+    'open.checking': 'One moment.',
+  };
+
+  it('has each line, word for word', () => {
+    for (const [key, words] of Object.entries(ADDED_LINES)) expect(at(key), key).toBe(words);
+  });
+
+  it('the phone line promises no date and no erase', () => {
+    expect(accountDeletionCopy.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bafter\b|\b30 days\b|\berase|\bon the day\b/i);
+  });
+
+  it('the deletion screen reuses the scheduled page\'s title, date line, Cancel deletion and sign-out words, so it cannot drift from them', () => {
+    expect(accountDeletionCopy.scheduled.heading).toBe('Deletion scheduled');
+    expect(accountDeletionCopy.scheduled.body).toContain('{date}');
+    expect(accountDeletionCopy.scheduled.cancelButton).toBe('Cancel deletion');
+    expect(accountDeletionCopy.scheduled.doneButton).toBe('Sign out of this phone');
+  });
+
+  it('none of them gender the child, count a gap or use fear, guilt or loss words', () => {
+    for (const key of Object.keys(ADDED_LINES)) {
+      const text = at(key) as string;
+      expect(text, key).not.toMatch(/\b(she|he|her|him|his|hers)\b/i);
+      expect(text, key).not.toMatch(/\b(lose|lost|forever|gone|too late|last chance|never see)\b/i);
+    }
+  });
+});
+
+/**
  * The emails around an account deletion say only what the app and the server do today (#358 review, lens A M1):
  * no export after the request (DATA-REQ-053 is open), no notice to the co-parent (nothing sends coparent-left or
  * shows the coParentLeft card yet, BL-361), and the app's real place for Delete account.

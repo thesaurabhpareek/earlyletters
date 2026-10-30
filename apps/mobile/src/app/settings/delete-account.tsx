@@ -12,7 +12,8 @@
  *  Step 2, Confirm: the heading in title2, the body with the date, the typed field, "Delete account" filled in the
  *    destructive colour and enabled only when "delete" is typed (it plays `warning` once), "Keep my account" quiet
  *    and the default (VoiceOver's escape gesture takes it).
- *  Scheduled: the date in title2, Cancel deletion bordered, Sign out of this phone; a cancel says so in a toast. No
+ *  Scheduled: the date in title2, Cancel deletion bordered, Sign out of this phone (a native confirm first: it says the
+ *    request stays open); a cancel says so in a toast. No
  *    export here: once the phone syncs after the request, Export no longer holds the person's own letters
  *    (DATA-REQ-053, S03 with S14), so the page offers it only before the request, on step 1.
  *  Executing explains; signed out offers Sign in; the kill path says only its line.
@@ -37,6 +38,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { accountDeletionCopy as c, stepFor, useAccountDeletion } from '@/lib/account-deletion';
+import { confirmSignOut } from '@/lib/account-deletion/confirm-sign-out';
 import { ErrorLine } from '@/lib/auth/ui';
 import { manageSubscription } from '@/lib/billing';
 import { capabilities } from '@/lib/capabilities';
@@ -149,7 +151,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
               }
             }}
           />
-          <Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => void d.signOut()} />
+          <Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => confirmSignOut(date, () => void d.signOut())} />
         </View>
       </ScrollView>
     );
@@ -232,6 +234,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
           </View>
         ))}
         {list.empty ? <Text variant="body">{list.empty}</Text> : null}
+        {list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}
         {list.copies ? (
           <Text variant="subhead" tone="muted">
             {list.copies}
