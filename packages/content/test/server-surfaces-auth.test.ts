@@ -107,6 +107,17 @@ const KEPT: Record<string, string> = {
   'account.cancel': 'Cancel',
 };
 
+/**
+ * Added by the P8a critics' pass fixes (docs/design/reviews/P8A_CRITICS_PASS_2026-10-28.md S1 and S2, the coordinator's
+ * rulings, then the lens fixes A1 and A2; the spec lines are P7-7's to add). `lettersSafe` is errors.network's first
+ * sentence, the same words. `pausedOtherWays` replaces S1's `pausedOtherWay`, which said a new email does not help:
+ * the new email's link does sign in (verifyEmailLink never reads the pause, F02-U14).
+ */
+const CRITICS: Record<string, string> = {
+  'code.lettersSafe': 'Your letters are safe on this phone.',
+  'code.pausedOtherWays': 'The link in the newest email still works, and so does signing in with Apple or Google.',
+};
+
 /** RET in chapter 7: no longer shown, and every reader was a P8 file, so P8a deletes them (section 6). */
 const RETIRED = ['code.sentTo', 'consent.age.title', 'consent.age.help'];
 
@@ -136,6 +147,18 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
 
   it('keeps every KEEP row as it was', () => {
     for (const [key, words] of Object.entries(KEPT)) expect(at(key), key).toBe(words);
+  });
+
+  it('has the lines the critics\' fixes added, word for word; the waiting line is errors.network\'s first sentence', () => {
+    for (const [key, words] of Object.entries(CRITICS)) expect(at(key), key).toBe(words);
+    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(true);
+    // The pause line (lens A2): only typing a code waits. The email's link and Apple or Google still sign in, and it
+    // neither blames nor counts down (code_paused already says 15 minutes, once, as a fact).
+    expect(authCopy.code.pausedOtherWays).toMatch(/link in the newest email still works/);
+    expect(authCopy.code.pausedOtherWays).toMatch(/Apple or Google/);
+    expect(authCopy.code.pausedOtherWays).not.toMatch(/\d|minute|second|wrong|too many|you /i);
+    expect(authCopy.errors.code_paused).toMatch(/try a code again/);
+    expect(authCopy.errors.rate_limited).toMatch(/Use Apple or Google/);
   });
 
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {
