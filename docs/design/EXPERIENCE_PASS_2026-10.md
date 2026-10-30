@@ -19,7 +19,7 @@ This document is the one spec an engineer builds from. It merges four critiques 
 | `docs/design/experience-pass/critiques/03-visual-motion.json` | Visual and motion lens (46 screens) |
 | `docs/design/experience-pass/critiques/04-states-errors.json` | States, errors and empathy lens (50 screens) |
 
-The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8 keeps screenshots in the session scratchpad. They are at `/tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/experience-pass/before/` (`01-first-run-1.jpg` to `09-errors-empty.jpg`), cut from the journey record on `origin/chore/journey-refresh` (b7afe42), which stays the source every screen entry cites.
+The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8 keeps screenshots in the session scratchpad. They are at `/tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/experience-pass/before/` (`01-first-run-1.jpg` to `09-errors-empty.jpg`), cut from the journey record on `origin/chore/journey-refresh` (b7afe42), the source of the "before" images that the entries cite by their old step ids. The regenerated record (#389) reuses those ids, so a `screens/<id>.png` file now shows the build after P2 to P6, not the "before".
 
 **Sources added for v1.1.** On `origin/develop` (17d6319, merged into this branch): `docs/DECISIONS.md` D-100 to D-109 (D-109 from #173, merged as `b22876b`; D-110 is added by this PR), `docs/agents/COORDINATION.md`, PRD V2 `08-delivery.md` section 3 (streams S01 to S20 and the files each owns), `features/F08-recordings.md` (6.5 and 6.7), `F11`, `F16`, `F17`, the sign-in, Account, Family, invite and delete-account code and copy. Open pull requests read at their heads: #181 (P0, read at `7d3b507`, `bcf301e` and `de2b916`), #150 (backup client, `5c32ad1`), #151 (backup server, `ad222eb`), #148 (`946b14a`) and `feat/coparent-alpha` (`a39094f`) for invite, join and leave, #146 and #182 (sync, held drafts), #163 (server-product legal set). Both reviews of this PR (B, comment 6218727236; A, comment 6218750279).
 
@@ -73,7 +73,7 @@ Ten rules, merged from the four lenses. Each names its benchmark and how it was 
 
 ### 2.1 What the law and our decisions require
 
-The journey record labels the gate "A-REQ-030". That is a mislabel: A-REQ-030 in `docs/prd/PRD.md` and `docs/prd/A-entry-and-auth.md` is "Offline entry". The age question's real sources are:
+The journey record used to label the gate "A-REQ-030" (corrected in the regenerated record, #389). That was a mislabel: A-REQ-030 in `docs/prd/PRD.md` and `docs/prd/A-entry-and-auth.md` is "Offline entry". The age question's real sources are:
 
 - **LEGAL-REQ-002 (P0)**, `docs/legal/ENGINEERING_REQUIREMENTS.md`, revised 2 Oct 2026, sourced to CR-001, CR-004 (Texas SB 2420 in force; Apple Declared Age Range), CR-005, CR-006. It requires: the app "asks before first use (an entry gate before first run, invites and sign-in)", "presented neutrally (no pre-selected answer, no hint that one answer is 'right')"; acceptance criterion 1: "When the user takes any first action (start a book, I was invited, sign in, or an invite link), Then the age question appears first, with nothing preselected"; a stop screen that "explains the app is currently for adults 18 and over"; nothing stored but the gate state; closed for 24 hours after an under-18 answer; the Declared Age Range API called where required and used in memory only.
 - **PRD-REQ-019 (P0)** and **K-07**, `docs/prd/PRD.md`: "Before any first-run screen, story 4 action or invite flow, a neutral 'Are you 18 or older?' (Yes, No, nothing preselected)". Yes is stored as a boolean only.
@@ -184,7 +184,7 @@ Light: L (lamp scene, section 5.2), none, or dusk. Motion names refer to section
 | 9 | Review, waiting (S14) | J05-03 | Writing down what you said. | none | moon breath 8 s | none |
 | 10 | Review, letter (S17) | J06-01 to J06-07 | the letter | none | inline card expands; put back cross-fades | selection on put back |
 | 11 | Saved (S21) | J06-09, J07-07 | Added to Asha's book. | none | file into month chip, dismiss to the Book | success on commit |
-| 12 | Book, new letter (S26) | J09-02 | Month 7 | L book 0.6, still; returns over 280 ms | lands scrolled to the card, arrival wash 1.6 s | none |
+| 12 | Book, new letter (S26) | J06-10, J07-04, J09-02 | Month 7 | L book 0.6, still; returns over 280 ms | lands scrolled to the card, arrival wash 1.6 s | none |
 | 13 | A letter (S27) | J10-01 | the letter | none (the Book's lamp fades as the card grows) | card grows into page | none |
 | 14 | Read together (S30) | J11-01 to J11-03 | the letter | dusk at night, still | page turn | none |
 | 15 | End of the book (S31) | J11-04 | That is every letter so far. | dusk, dims | moon draws on, then still | none |
@@ -194,8 +194,8 @@ Light: L (lamp scene, section 5.2), none, or dusk. Motion names refer to section
 | 19 | Deleted, Undo (S36) | J10-08 | Letter deleted. | (Book's own) | card collapses out of its row | warning on confirm |
 | 20 | Crash, launch recovery (S50, S51) | J20-01, J20-02 | This page did not open / The book could not open | none | none | none |
 | 21 | Sign in (S52 to S55) | J22-01 to J22-10, J22-20, J22-21, J22-31, J22-32, J22-40 to J22-43, J22-50, J22-60, J22-70, J22-71, J22-80, J22-81 | Keep Asha's book on any phone | none (sheet over the Book) | native sheet; steps cross-fade | none |
-| 22 | Family tab (S57) | J17-01, J17-02, J17-03, J21-20 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
-| 23 | Invite a co-parent (S58) | J21-21 to J21-23, J21-30, J22-90, J22-91 | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
+| 22 | Family tab (S57) | J17-01, J17-02, J17-03, J21-20, J21-23 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
+| 23 | Invite a co-parent (S58) | J21-21, J21-22, J21-30, J22-90, J22-91 | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
 | 24 | Joined (S59) | J21-05 to J21-08 | You're in Asha's book | none in the sheet; the Book's lamp rises after | the cover opens | success once |
 | 25 | Back up my recordings (S61) | none yet (P8 adds j23) | Back up your recordings | none | the turn-on card folds into the On rows | tap |
 | 26 | A new phone (S62) | none yet (j23) | Bringing your recordings to this phone. | (Book's own) | a thin determinate line, no count | success once when done |
@@ -675,7 +675,7 @@ Acceptance:
 - [ ] The third kept letter without Plus opens the gate from Write, and the letter waits as a draft (D-082, D-083).
 
 #### S21 The saved moment
-Steps J06-09, J06-11, J07-07 (the saved screens on the Review route; the Book just after a save is in S26). Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
+Steps J06-09, J06-11, J07-07, J07-08 (J06-09, J06-11 and J07-07 are the saved screens on the Review route; J07-08 is the Book after the second kept letter, with the toast this entry owns; the Book just after a save is in S26). Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
 
 Problem: the letter fades to about 10 to 15 percent opacity and stays there behind a green line. The captures read as a rendering bug, and nothing shows where the letter went.
 
@@ -772,7 +772,7 @@ Acceptance:
 - [ ] Each row shows a month line; the current book has the check.
 
 #### S26 Book with letters
-Steps J06-10, J07-04, J07-08 (the Book on arrival after a save, 5.8 rows 5 and 5a), J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
+Steps J06-10, J07-04 (the Book on arrival after a save, 5.8 rows 5 and 5a), J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
 
 Problem: it reads as a feed. The current month is a tinted box that explains the filing system on every visit and takes the hero position from the newest letter. Excerpts end in a cut-off glyph. A letter opens with a generic push.
 
@@ -1013,7 +1013,7 @@ Copy: `settings.delete.eraseNowTitle` "Erase this letter now?" KEEP; `settings.d
 ### Settings, Plus and the rest
 
 #### S40 Settings home, with If you are struggling and Licenses
-Steps J03-06, J03-10, J16-01, J16-05, J16-06, J16-20. Before: `screens/J16-01.png`, `screens/J16-01-full.png` (J16-05 and J16-06 are now their own pages, `/settings/struggling` and `/settings/licenses`, so the two captures that showed the accordions open, `J16-05-full` and `J16-06-full`, are not in the regenerated record). Verdict: polish. Package P6.
+Steps J03-06, J03-10, J16-01, J16-05, J16-06, J16-20. Before: `screens/J16-01.png`, `screens/J16-01-full.png` (J16-05 and J16-06 are now their own pages, `/settings/struggling` and `/settings/licenses`, so the two captures that showed the accordions open are gone: `J16-05-full` is not in the regenerated record and `J16-06-full` is now the Licenses page). Verdict: polish. Package P6.
 
 Problem: the early-version note is the first thing on every visit, in a tinted card, although `in-app-disclosures.md` section 1 registers it for Settings, About. The privacy short line appears twice. "If you are struggling" and the licenses open as accordions in the middle of the list.
 
@@ -1394,7 +1394,7 @@ Acceptance:
 - [ ] Sign out is not styled as destructive; no "we" on the page.
 
 #### S57 Family tab
-Steps J17-01, J17-02, J17-03, J21-20 (J17-01 to J17-03 moved from S48 and show the coming-soon tab; J21-20 is the live tab with one parent). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
+Steps J17-01, J17-02, J17-03, J21-20, J21-23 (J17-01 to J17-03 moved from S48 and show the coming-soon tab; J21-20 is the live tab with one parent; J21-23 is the tab with an invite open). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
 
 Problem: the tab is a list in a settings voice, the invite card explains equality and sign-in in three sentences, and its privacy line ("Only the people you invite can read Asha's book.") claims who can read, which option B does not keep (review A1).
 
@@ -1426,7 +1426,7 @@ Acceptance:
 - [ ] The three tab titles come from `packages/content`.
 
 #### S58 Invite a co-parent
-Steps J21-21, J21-22, J21-23, J21-30, J22-90, J22-91 (J22-90 and J22-91 are the sheet's gate text). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
+Steps J21-21, J21-22, J21-30, J22-90, J22-91 (J22-90 and J22-91 are the sheet's gate text). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
 
 | Key | After | Mark |
 |---|---|---|
@@ -2126,4 +2126,4 @@ Nothing in this pass is irreversible: every change is code or copy and can be re
 
 ## Appendix C. Step coverage
 
-Every one of the 203 journey steps (22 journeys, `docs/release/journey/steps/`, regenerated in #389) is placed in exactly one screen entry in section 4 (S01 to S64); no step is left without an entry. The 57 steps that no entry cited when the record was regenerated are placed in: S09 J04-06, J04-08, J04-09, J04-10, J05-12; S13 J05-10; S14 J05-11; S19 J04-07; S27 J10-16; S28 J10-17; S40 J03-10, J16-20; S46 J03-34, J03-40, J03-41; S52 J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60; S53 J22-03 to J22-06; S54 J22-07 to J22-09, J22-70, J22-71, J22-80, J22-81; S55 J22-10, J22-32, J22-40 to J22-43; S56 J22-30, J22-33; S57 J21-20; S58 J21-21 to J21-23, J21-30, J22-90, J22-91; S59 J21-01 to J21-08, J21-10. S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S59 have steps (J22 for S52 to S56, J21 for S57 to S59). S60 to S64 have none: there is no leave flow (S60), no j23 flow (S61 backup, S62 a new phone), no step for the synced erase (S63), and Delete account (S64) has no flow.
+Every one of the 203 journey steps (22 journeys, `docs/release/journey/steps/`, regenerated in #389) is placed in exactly one screen entry in section 4 (S01 to S64); no step is left without an entry. The 57 steps that no entry cited when the record was regenerated are placed in: S09 J04-06, J04-08, J04-09, J04-10, J05-12; S13 J05-10; S14 J05-11; S19 J04-07; S27 J10-16; S28 J10-17; S40 J03-10, J16-20; S46 J03-34, J03-40, J03-41; S52 J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60; S53 J22-03 to J22-06; S54 J22-07 to J22-09, J22-70, J22-71, J22-80, J22-81; S55 J22-10, J22-32, J22-40 to J22-43; S56 J22-30, J22-33; S57 J21-20, J21-23; S58 J21-21, J21-22, J21-30, J22-90, J22-91; S59 J21-01 to J21-08, J21-10. S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S59 have steps (J22 for S52 to S56 and the gate text in S58, J21 for S57 to S59). S60 to S64 have none: there is no leave flow (S60), no j23 flow (S61 backup, S62 a new phone), no step for the synced erase (S63), and Delete account (S64) has no flow.
