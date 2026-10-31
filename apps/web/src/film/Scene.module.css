@@ -13,7 +13,7 @@
  * Backgrounds live on the stage, never on the section, so an arriving section paints nothing.
  */
 .scene + .scene {
-  margin-top: -100svh;
+  margin-top: calc(-100svh - var(--scene-handoff, 0) * 100svh);
 }
 
 .stage {

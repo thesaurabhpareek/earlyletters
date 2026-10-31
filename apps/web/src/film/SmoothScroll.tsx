@@ -12,7 +12,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
   const resting = useResting();
   if (resting) return <>{children}</>;
   return (
-    <ReactLenis root options={{ lerp: 0.085, smoothWheel: true, syncTouch: false, anchors: false, autoRaf: true }}>
+    <ReactLenis root options={{ lerp: 0.11, smoothWheel: true, syncTouch: false, anchors: false, autoRaf: true }}>
       {children}
     </ReactLenis>
   );
