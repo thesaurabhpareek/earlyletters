@@ -122,12 +122,14 @@ export const test = base.extend<Fixtures & Options>({
   problems: [
     async ({ context, strictConsole }, use) => {
       const problems: string[] = [];
-      const origin = new URL(baseUrl()).origin;
+      // The site, and the film's own server (also ours, on this machine).
+      const origins = new Set([new URL(baseUrl()).origin]);
+      if (process.env.E2E_FILM_URL) origins.add(new URL(process.env.E2E_FILM_URL).origin);
 
       // Nothing may leave the machine. Report it and block it.
       await context.route('**/*', async (route) => {
         const url = new URL(route.request().url());
-        if (url.origin === origin) return route.continue();
+        if (origins.has(url.origin)) return route.continue();
         problems.push(`external request blocked: ${route.request().method()} ${url.origin}${url.pathname}`);
         return route.abort('blockedbyclient');
       });

@@ -4,7 +4,8 @@
  *   2. `next build` in its own distDir (.next-e2e, so a dev server or the normal .next is untouched) as the
  *      launch-day coming-soon site, with dummy Resend credentials so the sign-up form is present;
  *   3. `next start` on another free port, with RESEND_BASE_URL pointing at the mock.
- * It hands the two addresses to the workers through E2E_BASE_URL and E2E_MOCK_URL.
+ * It hands the two addresses to the workers through E2E_BASE_URL and E2E_MOCK_URL. The film home page (not the
+ * launch-day page) is built the same way into .next-e2e-film and served on a third port: E2E_FILM_URL.
  *
  * E2E_SKIP_BUILD=1 reuses the last build (the build reads RESEND_*, SITE_MODE at build time, so only reuse a build
  * made by this setup). Build and server output go to e2e/.results/ for debugging.
@@ -20,6 +21,8 @@ import { TEST_ENV } from './env';
 const webDir = resolve(__dirname, '../..');
 const resultsDir = join(webDir, 'e2e/.results');
 const DIST_DIR = '.next-e2e';
+/** A second build of the scroll film (SITE_MODE=film), for the specs that need the film's own page. */
+const FILM_DIST_DIR = '.next-e2e-film';
 
 async function freePort(): Promise<number> {
   return new Promise((res, rej) => {
@@ -93,16 +96,31 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   const server = run(['start', '-p', String(sitePort), '-H', '127.0.0.1'], env, 'server.log', true);
   const url = `http://127.0.0.1:${sitePort}`;
   await waitForSite(url, server);
+
+  // The film: its own build and server, because SITE_MODE is read when the page is built.
+  const filmEnv: NodeJS.ProcessEnv = { ...env, NEXT_DIST_DIR: FILM_DIST_DIR, SITE_MODE: 'film' };
+  if (!(process.env.E2E_SKIP_BUILD === '1' && existsSync(join(webDir, FILM_DIST_DIR, 'BUILD_ID')))) {
+    console.log('[e2e] next build (film) ...');
+    const filmBuild = run(['build'], filmEnv, 'build-film.log');
+    const filmCode = await new Promise<number | null>((res) => filmBuild.once('exit', res));
+    if (filmCode !== 0) throw new Error(`next build (film) failed (exit ${filmCode}); see ${join(resultsDir, 'build-film.log')}`);
+  }
+  const filmPort = await freePort();
+  const filmServer = run(['start', '-p', String(filmPort), '-H', '127.0.0.1'], filmEnv, 'server-film.log', true);
+  const filmUrl = `http://127.0.0.1:${filmPort}`;
+  await waitForSite(filmUrl, filmServer);
+  process.env.E2E_FILM_URL = filmUrl;
   process.env.E2E_BASE_URL = url;
   process.env.E2E_MOCK_URL = mock.url;
   console.log(`[e2e] site ${url}, mock Resend ${mock.url}`);
 
   return async () => {
-    if (server.pid) {
+    for (const child of [server, filmServer]) {
+      if (!child.pid) continue;
       try {
-        process.kill(-server.pid, 'SIGTERM');
+        process.kill(-child.pid, 'SIGTERM');
       } catch {
-        server.kill('SIGTERM');
+        child.kill('SIGTERM');
       }
     }
     await mock.close();

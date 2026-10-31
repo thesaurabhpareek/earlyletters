@@ -7,6 +7,7 @@ import { CtaPill, Header, SkipLink } from '@/components/cta/Header';
 import { useToneAt } from '@/components/cta/useTone';
 import { Footer } from '@/components/site/Footer';
 import { SmoothScroll } from './SmoothScroll';
+import { AmbientSound } from './sound/AmbientSound';
 
 /** Paints the page behind the stages in the tone at the bottom edge, so the iOS toolbar strip matches. */
 function PageTone() {
@@ -31,6 +32,7 @@ export function Film() {
           ))}
         </main>
         <CtaPill />
+        <AmbientSound />
         <Footer />
       </SmoothScroll>
     </MotionConfig>
