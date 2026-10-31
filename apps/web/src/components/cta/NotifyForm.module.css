@@ -90,6 +90,9 @@
   font-size: 15px;
   color: var(--night-recording);
 }
+.pending {
+  color: var(--lamp);
+}
 .success {
   position: relative;
   margin: 0 auto;

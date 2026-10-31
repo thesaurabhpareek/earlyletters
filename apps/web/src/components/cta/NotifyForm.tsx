@@ -123,7 +123,7 @@ export function NotifyForm({ quiet = false, onDone }: { quiet?: boolean; onDone?
       <p id={hintId} className={styles.note}>
         {c.note}
       </p>
-      <p id={statusId} className={styles.error} role="status" aria-live="polite">
+      <p id={statusId} className={`${styles.error} ${state === 'sending' ? styles.pending : ''}`} role="status" aria-live="polite">
         {message}
       </p>
     </form>

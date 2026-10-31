@@ -249,7 +249,7 @@ export const site = {
     button: 'Tell me at launch',
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Save my place',
-    sending: 'Sending',
+    sending: 'Saving',
     successTitle: 'Thank you, you are on the list.',
     successBody: `A short hello is on its way, and we will write once more when ${NAME} is ready.`,
     success: `Thank you, you are on the list. A short hello is on its way, and we will write once more when ${NAME} is ready.`,
@@ -262,7 +262,7 @@ export const site = {
     server: 'That did not go through on our side. Please try again in a moment.',
     empty: 'Please add your email address first.',
     network: 'We could not reach the internet just now. Please check your connection and try once more.',
-    sendingStatus: 'Sending your address.',
+    sendingStatus: 'Saving your place on the list.',
     retry: 'Try again',
     honeypotLabel: 'Company',
     /** The pages a native form post lands on (app/signup). */
