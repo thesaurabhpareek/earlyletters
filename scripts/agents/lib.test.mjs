@@ -100,11 +100,12 @@ test("the first agent owner wins and founder is skipped", () => {
   assert.equal(primaryOwner(byId.get("BL-103"), owners), "payments");
 });
 
-test("open PR branches and titles mark tasks as taken", () => {
+test("open agent PR branches and titles mark tasks as taken", () => {
+  const agent = { labels: [{ name: "agent:qa" }] };
   const taken = takenIds([
-    { head: { ref: "fix/db-bl-112-invite-roles" }, title: "BL-112: Fix" },
-    { head: { ref: "agent/qa/trace" }, title: "BL-004: CI" },
-    { head: { ref: "feat/x" }, title: "unrelated" },
+    { ...agent, head: { ref: "fix/db-bl-112-invite-roles" }, title: "BL-112: Fix" },
+    { ...agent, head: { ref: "agent/qa/trace" }, title: "BL-004: CI" },
+    { ...agent, head: { ref: "feat/x" }, title: "unrelated" },
   ]);
   assert.deepEqual([...taken].sort(), ["BL-004", "BL-112"]);
 });
