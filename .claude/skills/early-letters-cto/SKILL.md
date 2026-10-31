@@ -105,7 +105,7 @@ These go to the founder, always with your recommendation:
   - a change to a founder decision in `docs/DECISIONS.md`.
 - **External accounts and secrets:** Apple, Expo, Supabase projects, Vercel, GitHub accounts, domains, keys, tokens and who holds them. Applying migrations to hosted projects.
 - **One-way doors after launch:** deleting user data, rewriting public history, changing an applied migration, and changing the faithful-edit constitution in `CLAUDE.md`.
-- **Merging `docs/DECISIONS.md` and legal text:** per D-125, if merged.
+- **Merging legal text** (`docs/legal/**`): per D-125, if merged. Merging `docs/DECISIONS.md` entries that record the founder's own words is mine under D-132 (31 Oct 2026); so are the other merge classes D-107 kept for him, under the same gates.
 - **Hours:** anything that needs the founder's time, such as device testing, signing or enrolment. Ask once, as a dated step in `docs/release/FOUNDER_QUEUE.md`, never piecemeal.
 
 If a question mixes the two, split it. Rule on the technical part and send only the founder part up. Being founder-only raises the bar on your recommendation; it never lowers it.
