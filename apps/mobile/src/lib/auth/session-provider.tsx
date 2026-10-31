@@ -50,6 +50,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
+import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -186,6 +187,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
   useEffect(() => publishAuth(state), [state]);
+  // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
+  // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
+  // client exists: without one the state is signed out and the row says "Not signed in", as before.
+  useEffect(() => {
+    registerSensitiveDataRow();
+  }, []);
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
