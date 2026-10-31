@@ -125,3 +125,10 @@ Compared by reading only; W4's branch is not edited.
 ## Rollback
 
 Remove `pathguard` from required checks in branch protection (founder), then delete `.github/workflows/pathguard.yml`. The scripts are inert on their own; nothing else imports them. To loosen one lane, edit `agents/lanes.json`.
+
+## Round 4 and 5 changes (31 Oct 2026, UNVERIFIED in a workflow: none runs this script yet)
+
+- Identity does not rest on labels. `--labels` now requires `--branch <head ref>` and `--author <login>` (add `--author-type Bot` for an App account); missing either exits 2, never 0. `--agent <handle>` also requires them unless `--offline` is passed (a local check with no PR). When branch or author are present with `--agent`, identity is still checked. Exit 1 when a branch prefix `agent/<handle>/` or a bot author has no `agent:*` label, or when the label and branch handle disagree. The workflow step in the section above must pass `--branch "$HEAD_REF" --author "$AUTHOR"`; the YAML there is not updated (frozen `.github/**`).
+- Every commit in `base..head` is checked, not only the net diff, so a forbidden path added in one commit and removed in the next fails. Caps (flags, defaults from the lane proposal): `--max-commits 10`, `--max-files 40` (distinct paths over all commits), `--max-bytes 5242880` (sum of blob sizes of added or changed files). A merge commit in the range fails.
+- Hard rules are matched at any depth and cover `.claude/**`, `.husky/**`, `AGENTS.md`, `opencode.json`, `opencode.jsonc`, `.opencode/**`, `.npmrc`, `.yarnrc*`, `.pnpmfile.cjs`, `bunfig.toml`, `.gitattributes`, and `.git` (also as a file). Case, trailing dots and spaces and backslashes are normalised before matching.
+- Bot-authored PRs with no `agent:*` label (for example Dependabot) now exit 1. The workflow must decide whether to skip known bots before calling the script.

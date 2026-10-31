@@ -364,20 +364,9 @@ export function handoffSettled(issue, comments, trust, now = new Date(), minAgeM
 
 // ---------- steward reviews ----------
 
-/** Minimal glob: `**` any path, `*` any run inside one segment, `?` one character. */
-export function globToRegExp(glob) {
-  let re = "";
-  for (let i = 0; i < glob.length; i++) {
-    const ch = glob[i];
-    if (ch === "*" && glob[i + 1] === "*") {
-      re += glob[i + 2] === "/" ? "(?:.*/)?" : ".*";
-      i += glob[i + 2] === "/" ? 2 : 1;
-    } else if (ch === "*") re += "[^/]*";
-    else if (ch === "?") re += "[^/]";
-    else re += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-  }
-  return new RegExp(`^${re}$`);
-}
+/** Minimal glob (glob.mjs, shared with pathguard.mjs). */
+export { globToRegExp } from "./glob.mjs";
+import { globToRegExp } from "./glob.mjs";
 
 export function matchingPaths(files, globs) {
   const res = (globs ?? []).map(globToRegExp);

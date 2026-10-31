@@ -74,6 +74,12 @@ const FORBIDDEN = [
   ["opencode.json", "opencode-config"],
   ["AGENTS.md", "agents-md"],
   [".git/config", "git-dir"],
+  ["sub/.git", "git-dir"],
+  [".yarnrc.yml", "yarnrc"],
+  [".pnpmfile.cjs", "pnpmfile"],
+  ["bunfig.toml", "bunfig"],
+  ["opencode.jsonc", "opencode-config"],
+  [".opencode/agent/x.md", "opencode-config"],
 ];
 for (const [p, rule] of FORBIDDEN) {
   test(`forbidden: ${p}`, () => {
@@ -224,7 +230,9 @@ function git(cwd, ...args) {
 }
 function cli(cwd, ...args) {
   const lanesFile = path.join(cwd, "lanes.test.json");
-  return spawnSync("node", [SCRIPT, "--lanes", lanesFile, "--cwd", cwd, ...args], { encoding: "utf8" });
+  // --agent callers say --offline (no PR identity to check); --labels callers must give --branch and --author.
+  const extra = args.includes("--agent") && !args.includes("--labels") ? ["--offline"] : [];
+  return spawnSync("node", [SCRIPT, "--lanes", lanesFile, "--cwd", cwd, ...extra, ...args], { encoding: "utf8" });
 }
 function repo() {
   const d = mkdtempSync(path.join(tmpdir(), "pathguard-"));
@@ -338,14 +346,14 @@ test("CLI --labels: two agent labels fail closed in either order; none is out of
     writeFileSync(path.join(d, "docs/BACKLOG.md"), "# Backlog\n".repeat(20) + "x\n");
     commit(d);
     for (const labels of ["agent:product,agent:ops", "agent:ops,agent:product"]) {
-      const r = cli(d, "--labels", labels, "--base", "develop", "--head", "HEAD");
+      const r = cli(d, "--labels", labels, "--branch", "fix/x", "--author", "someone", "--base", "develop", "--head", "HEAD");
       assert.equal(r.status, 1, labels);
       assert.match(r.stderr, /more than one agent:\* label/);
     }
-    const none = cli(d, "--labels", "bug,from:agent", "--base", "develop", "--head", "HEAD");
+    const none = cli(d, "--labels", "bug,from:agent", "--branch", "fix/x", "--author", "someone", "--base", "develop", "--head", "HEAD");
     assert.equal(none.status, 0);
     assert.match(none.stdout, /not an agent PR/);
-    const one = cli(d, "--labels", "bug,agent:product", "--base", "develop", "--head", "HEAD");
+    const one = cli(d, "--labels", "bug,agent:product", "--branch", "agent/product/x", "--author", "claude[bot]", "--base", "develop", "--head", "HEAD");
     assert.equal(one.status, 0, one.stderr);
     assert.equal(cli(d, "--labels", "agent:product", "--agent", "product").status, 2);
   } finally { rmSync(d, { recursive: true, force: true }); }

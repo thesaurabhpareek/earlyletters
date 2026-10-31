@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { identityOf } from "./identity.mjs";
+import { globToRegExp as sharedGlob } from "./glob.mjs";
 
 const LOCKFILES = [
   "package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock",
@@ -28,13 +29,19 @@ export const HARD_RULES = [
   { id: "supabase", glob: "supabase/**", why: "database schema and access rules (supabase/**)" },
   { id: "roster", glob: "agents/roster.json", why: "the agent roster" },
   { id: "lanes", glob: "agents/lanes.json", why: "the lane definitions themselves" },
-  { id: "claude-config", glob: ".claude/**", why: "agent identities and settings (.claude/**)" },
+  { id: "claude-config", glob: "**/.claude/**", why: "agent identities and settings (.claude/**, any depth)" },
   { id: "npmrc", glob: "**/.npmrc", why: "npm config can run code at install (.npmrc)" },
+  { id: "yarnrc", glob: "**/.yarnrc*", why: "yarn config can run code at install (.yarnrc*)" },
+  { id: "pnpmfile", glob: "**/.pnpmfile.cjs", why: "pnpm hook file runs at install (.pnpmfile.cjs)" },
+  { id: "bunfig", glob: "**/bunfig.toml", why: "bun config (bunfig.toml)" },
   { id: "gitattributes", glob: "**/.gitattributes", why: "git filters and attributes (.gitattributes)" },
-  { id: "husky", glob: ".husky/**", why: "git hooks (.husky/**)" },
-  { id: "opencode-config", glob: "opencode.json", why: "the OpenCode runner config (opencode.json)" },
-  { id: "agents-md", glob: "AGENTS.md", why: "agent instructions (AGENTS.md)" },
-  { id: "git-dir", glob: ".git/**", why: "git internals (.git/**)" },
+  { id: "husky", glob: "**/.husky/**", why: "git hooks (.husky/**, any depth)" },
+  { id: "opencode-config", glob: "**/opencode.json", why: "the OpenCode runner config (opencode.json)" },
+  { id: "opencode-config", glob: "**/opencode.jsonc", why: "the OpenCode runner config (opencode.jsonc)" },
+  { id: "opencode-config", glob: "**/.opencode/**", why: "the OpenCode project directory (.opencode/**)" },
+  { id: "agents-md", glob: "**/AGENTS.md", why: "agent instructions (AGENTS.md, any depth)" },
+  { id: "git-dir", glob: "**/.git", why: "git internals (.git, also as a file)" },
+  { id: "git-dir", glob: "**/.git/**", why: "git internals (.git/**, any depth)" },
   { id: "agent-docs", glob: "docs/agents/**", why: "agent harness docs (docs/agents/**)" },
   { id: "manifest", glob: "**/package.json", why: "package manifest (package.json)" },
   { id: "manifest", glob: ".gitmodules", why: "submodule config (.gitmodules)" },
@@ -48,21 +55,7 @@ export const HARD_RULES = [
 ];
 
 /** Convert a small glob (`*`, `**`, `?`) to an anchored RegExp. Input is matched lower-case. */
-export function globToRegExp(glob) {
-  let re = "";
-  const g = glob.toLowerCase();
-  for (let i = 0; i < g.length; i++) {
-    const c = g[i];
-    if (c === "*") {
-      if (g[i + 1] === "*") {
-        i++;
-        if (g[i + 1] === "/") { i++; re += "(?:.*/)?"; } else re += ".*";
-      } else re += "[^/]*";
-    } else if (c === "?") re += "[^/]";
-    else re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-  }
-  return new RegExp(`^${re}$`);
-}
+export const globToRegExp = (glob) => sharedGlob(glob, { ignoreCase: true });
 const matches = (globs, p) => globs.some((g) => globToRegExp(g).test(p));
 
 /**
@@ -165,23 +158,74 @@ export function formatResult(agent, r) {
 }
 
 /** Parse `git diff --raw -z` output into file entries (handles renames and copies). */
-export function parseRawZ(out) {
+export function parseRawZ(out, { withSha = false } = {}) {
   const parts = out.split("\0");
   const files = [];
   for (let i = 0; i < parts.length; i++) {
-    const m = /^:(\d{6}) (\d{6}) [0-9a-f]+ [0-9a-f]+ ([A-Z])\d*$/.exec(parts[i]);
+    const m = /^:(\d{6}) (\d{6}) [0-9a-f]+ ([0-9a-f]+) ([A-Z])\d*$/.exec(parts[i]);
     if (!m) continue;
-    const [, oldMode, mode, status] = m;
+    const [, oldMode, mode, newSha, status] = m;
+    const extra = withSha ? { newSha } : {};
     if (status === "R" || status === "C") {
-      files.push({ status, oldPath: parts[i + 1], path: parts[i + 2], oldMode, mode });
+      files.push({ status, oldPath: parts[i + 1], path: parts[i + 2], oldMode, mode, ...extra });
       i += 2;
     } else {
       // A deletion reports mode 000000 as the new mode: keep the old one.
-      files.push({ status, path: parts[i + 1], oldMode, mode: status === "D" ? oldMode : mode });
+      files.push({ status, path: parts[i + 1], oldMode, mode: status === "D" ? oldMode : mode, ...extra });
       i += 1;
     }
   }
   return files;
+}
+
+export const DEFAULT_MAX_COMMITS = 10;
+export const DEFAULT_MAX_FILES = 40;
+export const DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
+
+const sh = (cwd, args) => {
+  const r = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  if (r.status !== 0) throw new Error(`git ${args[0]} failed: ${(r.stderr || "").trim() || r.status}`);
+  return r.stdout;
+};
+
+/**
+ * Every commit in base..head, checked one by one: a path added in one commit and removed in the
+ * next is invisible in the net diff but is in the history. Returns the changed files of ALL
+ * commits, plus count, size and merge-commit facts for the caps.
+ */
+export function gitHistory(base, head, cwd) {
+  const revs = sh(cwd, ["rev-list", "--reverse", "--parents", `${base}..${head}`]).split("\n").filter(Boolean).map((l) => l.split(" "));
+  const files = [];
+  const merges = [];
+  const shas = new Set();
+  for (const [sha, ...parents] of revs) {
+    if (parents.length > 1) { merges.push(sha); continue; }
+    const out = sh(cwd, ["diff-tree", "-r", "--raw", "-z", "-M", "--no-abbrev", "--root", "--no-commit-id", sha]);
+    for (const f of parseRawZ(out, { withSha: true })) {
+      files.push(f);
+      if (f.newSha && !/^0+$/.test(f.newSha) && f.mode !== "160000") shas.add(f.newSha);
+    }
+  }
+  return { commits: revs.length, files, merges, shas: [...shas] };
+}
+
+/** Sum of blob sizes for these object ids (one git call). */
+export function blobBytes(shas, cwd) {
+  if (!shas.length) return 0;
+  const r = spawnSync("git", ["cat-file", "--batch-check=%(objectsize)"], { cwd, encoding: "utf8", input: shas.join("\n") + "\n", maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0) throw new Error(`git cat-file failed: ${(r.stderr || "").trim() || r.status}`);
+  return r.stdout.split("\n").reduce((n, l) => n + (Number(l) || 0), 0);
+}
+
+/** Violations for the history-wide caps. Pure: facts in, violations out. */
+export function checkCaps({ commits, merges, fileCount, bytes }, { maxCommits = DEFAULT_MAX_COMMITS, maxFiles = DEFAULT_MAX_FILES, maxBytes = DEFAULT_MAX_BYTES } = {}) {
+  const out = [];
+  const v = (rule, reason) => out.push({ path: "", side: "-", rule, reason });
+  for (const m of merges ?? []) v("merge-commit", `merge commit ${m.slice(0, 12)} in the range: rebase instead, an agent PR has linear history`);
+  if (commits > maxCommits) v("too-many-commits", `${commits} commits, the limit is ${maxCommits}`);
+  if (fileCount > maxFiles) v("too-many-files", `${fileCount} files changed across the commits, the limit is ${maxFiles}`);
+  if (bytes > maxBytes) v("too-large", `the changes are too large: ${bytes} bytes added or changed, the limit is ${maxBytes}`);
+  return out;
 }
 
 export function gitChanged(base, head, cwd) {
@@ -195,6 +239,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (!k.startsWith("--")) throw new Error(`unexpected argument ${k}`);
+    if (k === "--offline") { a.offline = "1"; continue; }
     const val = argv[++i];
     if (val === undefined) throw new Error(`${k} needs a value`);
     a[k.slice(2)] = val;
@@ -208,28 +253,41 @@ export function main(argv = process.argv.slice(2), out = console) {
   try { args = parseArgs(argv); } catch (e) { out.error(`pathguard: ${e.message}`); return 2; }
   if (args.agent && args.labels !== undefined) { out.error("pathguard: give --agent or --labels, not both"); return 2; }
   if (!args.agent && args.labels === undefined) { out.error("pathguard: --agent <handle> or --labels <a,b,...> is required"); return 2; }
-  if (args.labels !== undefined) {
-    const labels = args.labels.split(",");
-    // Identity does not rest on labels: a branch prefix agent/<handle>/ or a bot author counts too.
+  // Identity must not rest on labels, so the PR's branch and author are required. Only an explicit
+  // --offline run with --agent (a local check with no PR) may leave them out.
+  const needIdentity = !(args.agent && args.offline !== undefined);
+  if (needIdentity && (args.branch === undefined || args.author === undefined)) {
+    out.error("pathguard: --branch and --author are required (identity does not rest on labels). A local check with no PR may pass --agent <handle> --offline instead.");
+    return 2;
+  }
+  if (args.branch !== undefined || args.author !== undefined || args.labels !== undefined) {
+    const labels = args.labels !== undefined ? args.labels.split(",") : [`agent:${args.agent}`];
     const logins = String(args["app-logins"] ?? process.env.AGENTS_BOT_LOGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
     const ident = identityOf({ labels, head: { ref: args.branch ?? "" }, user: { login: args.author ?? "", type: args["author-type"] ?? "" } }, { appLogins: logins });
     if (ident.status === "conflict" || ident.status === "unlabelled") { out.error(`pathguard: FAIL, agent identity is inconsistent: ${ident.reasons.join("; ")}. Fail closed: fix the labels or the branch name.`); return 1; }
-    const id = agentFromLabels(labels);
-    if (id.status === "none") { out.log("pathguard: no agent:* label, not an agent PR; out of scope for this check (human review and branch protection apply)."); return 0; }
-    if (id.status === "many") { out.error(`pathguard: FAIL, more than one agent:* label (${id.labels.join(", ")}). Label order can be changed by anyone with triage permission, so no lane is chosen. Remove all but one.`); return 1; }
-    args.agent = id.agent;
+    if (args.labels !== undefined) {
+      const id = agentFromLabels(labels);
+      if (id.status === "none") { out.log("pathguard: no agent:* label, branch prefix or bot author, not an agent PR; out of scope for this check (human review and branch protection apply)."); return 0; }
+      args.agent = id.agent;
+    }
   }
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const lanes = JSON.parse(readFileSync(args.lanes ?? path.join(here, "..", "..", "agents", "lanes.json"), "utf8"));
     let files;
+    let caps = [];
     if (args.files) {
       const j = JSON.parse(readFileSync(args.files, "utf8"));
       files = Array.isArray(j) ? j : j.files;
     } else {
-      files = gitChanged(args.base ?? "origin/develop", args.head ?? "HEAD", args.cwd);
+      const h = gitHistory(args.base ?? "origin/develop", args.head ?? "HEAD", args.cwd);
+      files = h.files;
+      const num = (name, d) => { const n = Number(args[name] ?? d); if (!Number.isInteger(n) || n < 0) throw new Error(`--${name} must be a non-negative integer`); return n; };
+      caps = checkCaps({ commits: h.commits, merges: h.merges, fileCount: new Set(h.files.flatMap((f) => [f.path, f.oldPath].filter(Boolean))).size, bytes: blobBytes(h.shas, args.cwd) },
+        { maxCommits: num("max-commits", DEFAULT_MAX_COMMITS), maxFiles: num("max-files", DEFAULT_MAX_FILES), maxBytes: num("max-bytes", DEFAULT_MAX_BYTES) });
     }
     const r = checkPaths({ agent: args.agent, files, lanes });
+    if (caps.length) { r.violations.push(...caps); r.ok = false; }
     (r.ok ? out.log : out.error)(formatResult(args.agent, r));
     return r.ok ? 0 : 1;
   } catch (e) {
