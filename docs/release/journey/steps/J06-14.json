@@ -5,7 +5,6 @@
   "title": "Keep needs Plus",
   "note": "Pressing Keep after the first two letters opens one calm sheet: \"Keep adding to Asha's book\", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple's own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no \"See Plus\" or \"Redeem a code\" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.",
   "from": "J06-02",
-  "shot": "screens/J06-14.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -22,7 +21,7 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha · Month 7 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. From Mama Waiting Keep adding to Asha's book Your first two letters are kept for good. Plus lets you keep adding letters. This one waits on this phone, on Tonight, exactly as it is, for as long as you like. Plus is not available on this device yet. Keep it here for now",
+  "text": "To Asha · Month 7 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. From Mama Waiting Keep adding to Asha's book Your first two letters are kept for good. Plus lets you keep adding letters. This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like. Plus is not available on this device yet. Keep it here for now",
   "lines": [
     "To Asha · Month 7",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
@@ -30,7 +29,7 @@
     "Waiting",
     "Keep adding to Asha's book",
     "Your first two letters are kept for good. Plus lets you keep adding letters.",
-    "This one waits on this phone, on Tonight, exactly as it is, for as long as you like.",
+    "This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.",
     "Plus is not available on this device yet.",
     "Keep it here for now"
   ]

@@ -5,7 +5,6 @@
   "title": "A very long name",
   "note": "The field stops at 60 and says so softly; nothing is cut without a word.",
   "from": "J03-21",
-  "shot": "screens/J03-22.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Name and birthday Name Asha Birthday October 30, 2026 Sign my letters to Asha as Mama Name Up to 60 characters. Cancel Save Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "text": "Asha's book Name and birthday Name Asha Birthday October 31, 2026 Sign my letters to Asha as Mama Name Up to 60 characters. Cancel Save Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
     "Name and birthday",
     "Name",
     "Asha",
     "Birthday",
-    "October 30, 2026",
+    "October 31, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Name",

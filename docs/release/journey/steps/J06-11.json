@@ -5,7 +5,6 @@
   "title": "Kept private",
   "note": "The letter is saved outside the book, with the lock chip \"Kept just for you.\", then lands on the Book with its Private chip, as a kept letter does (S21).",
   "from": "J06-02",
-  "shot": "screens/J06-11.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -22,10 +21,11 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha · Month 7 From Mama Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+  "text": "To Asha · Month 7 From Mama Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Kept just for you.",
   "lines": [
     "To Asha · Month 7",
     "From Mama",
-    "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too."
+    "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Kept just for you."
   ]
 }

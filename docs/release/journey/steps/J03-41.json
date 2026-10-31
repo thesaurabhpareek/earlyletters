@@ -5,7 +5,6 @@
   "title": "The book is back",
   "note": "Avi's book is back on this phone, as it was. With no book hidden, the page says \"No hidden books.\"",
   "from": "J03-40",
-  "shot": "screens/J03-41.png",
   "route": "/settings/children/hidden",
   "viewport": {
     "width": 402,

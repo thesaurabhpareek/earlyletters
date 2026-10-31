@@ -5,7 +5,6 @@
   "title": "An empty name",
   "note": "Save stays off and a line says why: \"Add a name to save.\" A book can never lose its name.",
   "from": "J03-20",
-  "shot": "screens/J03-21.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Name and birthday Name Asha Birthday October 30, 2026 Sign my letters to Asha as Mama Name Add a name to save. Cancel Save Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "text": "Asha's book Name and birthday Name Asha Birthday October 31, 2026 Sign my letters to Asha as Mama Name Add a name to save. Cancel Save Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
     "Name and birthday",
     "Name",
     "Asha",
     "Birthday",
-    "October 30, 2026",
+    "October 31, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Name",

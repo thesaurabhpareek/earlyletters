@@ -5,8 +5,6 @@
   "title": "Review, with a first-time note",
   "note": "The letter on a sheet with its header, \"TO ASHA · MONTH N\" and \"FROM MAMA\", each small fix marked in the words, in the letter's own face (taken-out words struck through, a name spelled your way shown after the word heard), the fixes behind one row (open from the start while a screen reader is on, which the web build always reports), and the registered one-time note. No reassurance line under the title (S17). Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).",
   "from": "J05-03",
-  "shot": "screens/J06-01.png",
-  "full": "screens/J06-01-full.png",
   "route": "/review",
   "viewport": {
     "width": 402,

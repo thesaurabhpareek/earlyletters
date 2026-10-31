@@ -5,7 +5,6 @@
   "title": "Review with no connection",
   "note": "Review opens as usual; nothing waits on the network.",
   "from": "J05-06",
-  "shot": "screens/J05-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,

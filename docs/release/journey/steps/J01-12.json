@@ -5,7 +5,6 @@
   "title": "A second name left empty",
   "note": "Twins or more: a second row (\"Another child's name\") and a second cover fanned behind the first. An empty second field keeps Continue waiting, and the line says to fill it in or remove it.",
   "from": "J01-07",
-  "shot": "screens/J01-12.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

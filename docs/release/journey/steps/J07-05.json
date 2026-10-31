@@ -5,7 +5,6 @@
   "title": "Closed before finishing",
   "note": "Closing keeps the words as a draft. Tonight now shows its card with the first words and \"Pick it up\".",
   "from": "J07-01",
-  "shot": "screens/J07-05.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 0 days Good afternoon, Mama. Who came to meet Asha this week? What did they say? Another thought Friday You were so sleepy and then Pick it up Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 0 days Good morning, Mama. Tell Asha how the name was chosen. Another thought Saturday You were so sleepy and then Pick it up Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 0 days",
-    "Good afternoon,",
+    "Good morning,",
     "Mama.",
-    "Who came to meet Asha this week? What did they say?",
+    "Tell Asha how the name was chosen.",
     "Another thought",
-    "Friday",
+    "Saturday",
     "You were so sleepy and then",
     "Pick it up",
     "Speak",

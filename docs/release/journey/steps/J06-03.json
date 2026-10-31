@@ -5,8 +5,6 @@
   "title": "Why was this changed?",
   "note": "Tapping a mark in the letter, or its row behind \"N small fixes\", opens a card under the mark's own line: what kind of fix it was, the exact words said and how it reads now, and an offer to put it back.",
   "from": "J06-02",
-  "shot": "screens/J06-03.png",
-  "full": "screens/J06-03-full.png",
   "route": "/review",
   "viewport": {
     "width": 402,

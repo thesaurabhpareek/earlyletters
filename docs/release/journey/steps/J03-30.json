@@ -5,7 +5,6 @@
   "title": "Before the due date: no offer",
   "note": "While the due date is still ahead, settings show the due date and nothing else is asked.",
   "from": "J03-07",
-  "shot": "screens/J03-30.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Name and birthday Name Asha Due date November 9, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "text": "Asha's book Name and birthday Name Asha Due date November 10, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
     "Name and birthday",
     "Name",
     "Asha",
     "Due date",
-    "November 9, 2026",
+    "November 10, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Include Asha in my reminders",

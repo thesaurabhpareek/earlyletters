@@ -5,7 +5,6 @@
   "title": "Tonight with a letter waiting",
   "note": "One question: the prompt, large, on the lamp-lit paper. Under it, the recording waiting on Review has its own card: the day it was made and its length, the first words as spoken, and \"Read it back\". (Seeded fictional family Asha, 7 months.)",
   "from": "J01-14",
-  "shot": "screens/J04-01.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good morning, Mama. What is Asha's favorite thing in the house this week? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "Good afternoon,",
+    "Good morning,",
     "Mama.",
-    "What was cooking in your kitchen today?",
+    "What is Asha's favorite thing in the house this week?",
     "Another thought",
-    "Friday",
+    "Saturday",
     "0:31",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
     "Read it back",

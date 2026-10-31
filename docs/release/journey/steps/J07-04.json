@@ -5,7 +5,6 @@
   "title": "On the Book",
   "note": "The person lands on the Book, on the new letter in its month (5.8 row 5a).",
   "from": "J07-03",
-  "shot": "screens/J07-04.png",
   "route": "/book",
   "viewport": {
     "width": 402,
@@ -22,19 +21,12 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Read together This month The first weeks 1 letter · From Mama October 30 to November 29 Friday, October 30, 2026 You put both hands on the window today and watched the rain. From Mama Tonight Book Family",
+  "text": "A gentle nudge, now and then? A couple of evenings a week, at a time you pick. Never late at night. Yes, evenings Pick a time No reminders",
   "lines": [
-    "Asha's book",
-    "Read together",
-    "This month",
-    "The first weeks",
-    "1 letter · From Mama",
-    "October 30 to November 29",
-    "Friday, October 30, 2026",
-    "You put both hands on the window today and watched the rain.",
-    "From Mama",
-    "Tonight",
-    "Book",
-    "Family"
+    "A gentle nudge, now and then?",
+    "A couple of evenings a week, at a time you pick. Never late at night.",
+    "Yes, evenings",
+    "Pick a time",
+    "No reminders"
   ]
 }

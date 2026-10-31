@@ -5,7 +5,6 @@
   "title": "Two names in first run",
   "note": "Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.",
   "from": "J01-06",
-  "shot": "screens/J03-01.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

@@ -158,10 +158,9 @@ describe('decide: rule order when several rules apply (TDD 08 2.2)', () => {
     expect(decide(input({ surface: 'normal', online: false }))).toEqual({ kind: 'quiet', reason: 'offline' });
   });
 
-  it('[C-REQ-023] the background uploader in a Free book is quiet before every suppression, and allowed once the book has Plus', () => {
+  it('[C-REQ-023] the background uploader in a Free book is quiet before every suppression, and allowed with the person\'s own Plus', () => {
     expect(decide(input({ initiatedBy: 'background', surface: 'first_run', isBirthday: true }))).toEqual({ kind: 'quiet', reason: 'free_background' });
     expect(decide(input({ initiatedBy: 'background', viewer: { own: plan() } }))).toEqual({ kind: 'allow', via: 'plus_own' });
-    expect(decide(input({ initiatedBy: 'background', book: { coveredByOtherParent: true } }))).toEqual({ kind: 'allow', via: 'plus_book' });
   });
 
   it('only backups have a background path: a theme asked for "in the background" is an ordinary offer', () => {

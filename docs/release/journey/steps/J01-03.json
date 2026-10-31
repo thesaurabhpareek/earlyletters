@@ -5,7 +5,6 @@
   "title": "Welcome",
   "note": "The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about the voice, and \"Your first two letters are free.\" (D-082). One button: Begin the book. (\"I already have a book\" and \"I was invited\" sit under it in builds with sign-in; this build has server features off, so both are hidden.)",
   "from": "J01-02",
-  "shot": "screens/J01-03.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
