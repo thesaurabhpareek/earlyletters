@@ -4,6 +4,8 @@ Status: proposed plan, revision 2 of Fri 16 Oct 2026, after the S19 QA review (P
 
 The founder's ask: "setup proper actions and journey to automate everything." This file is the plan only. Nothing here changes a workflow, a secret or a setting; the work packages in section 5 do, each in its owning stream's files, one concern per PR.
 
+**Withdrawn 31 Oct 2026 (`docs/agents/cto/RULINGS.md` CR-19, CR-20):** the approver account (AF-02) was a second personal GitHub account for the founder, which GitHub's Terms do not allow for free (one free personal account, plus one machine account used only for automated tasks). Every mention of it below is history. Until PR authors are an identity other than the founder's account, no required approval above 0 can be met (CR-20).
+
 **Read this sentence first.** Every agent session acts through the founder's GitHub account, so GitHub cannot tell an agent's approval from the founder's. Until the approver account in AF-02 exists and is the only required reviewer, **every "the founder approves" in this file is a policy, not an enforced control.**
 
 Labels:
