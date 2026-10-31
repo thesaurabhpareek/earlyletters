@@ -234,11 +234,21 @@ function sourceFiles(dir = join(WEB, 'src')): string[] {
 
 describe('the claims hold in the code', () => {
   // RULE: "We do not use cookies" and nothing is kept in the browser.
+  // The one exception, by the founder's request (ambient sound PR): the sound button remembers a single value, "on" or
+  // "off", in localStorage on the visitor's own device. It is never sent anywhere and is not a cookie. Any other file
+  // using browser storage still fails here. Whether the Privacy page should say so is the founder's and legal's call.
+  const STORAGE_ALLOWED = new Set(['src/film/sound/AmbientSound.tsx']);
   it('no code sets a cookie or uses browser storage', () => {
-    const offenders = sourceFiles().filter((file) =>
-      /document\.cookie|\bcookies\(\)|set-cookie|localStorage|sessionStorage|indexedDB/i.test(readFileSync(file, 'utf8')),
-    );
+    const offenders = sourceFiles()
+      .filter((file) => !STORAGE_ALLOWED.has(file.slice(file.indexOf('src/')).replaceAll('\\', '/')))
+      .filter((file) => /document\.cookie|\bcookies\(\)|set-cookie|localStorage|sessionStorage|indexedDB/i.test(readFileSync(file, 'utf8')));
     expect(offenders).toEqual([]);
+  });
+  it('the sound button stores only its one on/off value', () => {
+    const src = readFileSync(join(WEB, 'src/film/sound/AmbientSound.tsx'), 'utf8');
+    expect(src.match(/localStorage/g)?.length).toBe(1);
+    expect(src).not.toMatch(/document\.cookie|sessionStorage|indexedDB/);
+    expect(read('src/film/sound/ambient-map.ts')).toMatch(/v === 'on' \? true : v === 'off' \? false : null/);
   });
 
   // RULE: "We do not use analytics". Turning analytics on means changing the Privacy page first.
