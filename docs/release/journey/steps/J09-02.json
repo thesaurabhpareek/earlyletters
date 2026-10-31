@@ -5,6 +5,7 @@
   "title": "One letter",
   "note": "The first letter sits under its month, whose opener is lit: \"THIS MONTH\", the month, \"1 letter · From Mama\" and its dates. Read together appears once there is at least one letter in the book.",
   "from": "J09-01",
+  "shot": "screens/J09-02.png",
   "route": "/book",
   "viewport": {
     "width": 402,
@@ -21,12 +22,19 @@
     }
   },
   "scrolls": false,
-  "text": "A gentle nudge, now and then? A couple of evenings a week, at a time you pick. Never late at night. Yes, evenings Pick a time No reminders",
+  "text": "Asha's book Read together This month The first weeks 1 letter · From Mama October 30 to November 29 Friday, October 30, 2026 You laughed at the dog today, a whole belly laugh. From Mama Tonight Book Family",
   "lines": [
-    "A gentle nudge, now and then?",
-    "A couple of evenings a week, at a time you pick. Never late at night.",
-    "Yes, evenings",
-    "Pick a time",
-    "No reminders"
+    "Asha's book",
+    "Read together",
+    "This month",
+    "The first weeks",
+    "1 letter · From Mama",
+    "October 30 to November 29",
+    "Friday, October 30, 2026",
+    "You laughed at the dog today, a whole belly laugh.",
+    "From Mama",
+    "Tonight",
+    "Book",
+    "Family"
   ]
 }

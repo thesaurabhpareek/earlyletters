@@ -1,6 +1,6 @@
 # TDD 08: Payments and entitlements
 
-> **Superseded in part (31 Oct 2026).** D-053 and D-080 replaced the server entitlement model described here: Plus is checked on the device (StoreKit 2), and it covers only the person who holds it. A co-parent gets Plus only through Apple Family Sharing (Terms 14.12). Rules below that say a book inherits Plus from any parent (K-28, R-3, `book_has_plus`, `coveredByOtherParent`) do not apply to the 1.0 line. The app follows this rule in `apps/mobile/src/lib/billing/plan.ts`.
+> **Superseded in part (31 Oct 2026).** D-053 and D-080 replaced the server entitlement model described here: Plus is checked on the device (StoreKit 2), and it covers only the person who holds it. A co-parent gets Plus only through Apple Family Sharing (Terms 14.12). Rules below that say a book inherits Plus from any parent (K-28, R-3, `book_has_plus`, `coveredByOtherParent`) do not apply to the 1.0 line. The app follows this rule in `packages/core/src/plan.ts` (and `apps/mobile/src/lib/billing/plan.logic.ts`).
 
 Owner: staff engineer, payments and entitlements. Draft 1, 3 Oct 2026. Branch `develop`. Status: for founder, data architect (TDD 02), privacy (TDD 05) and counsel review.
 

@@ -5,6 +5,7 @@
   "title": "Agree and sync, later",
   "note": "From Account, \"Agree and sync\" opens the sensitive-data step with every registered line; nothing is recorded until the person answers there (LEGAL-REQ-006).",
   "from": "J22-42",
+  "shot": "screens/J22-43.png",
   "route": "/sign-in/consent",
   "viewport": {
     "width": 402,

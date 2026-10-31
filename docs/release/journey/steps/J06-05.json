@@ -5,6 +5,7 @@
   "title": "Undo the put-back",
   "note": "Undo re-applies the small fix. Every edit is reversible both ways.",
   "from": "J06-04",
+  "shot": "screens/J06-05.png",
   "route": "/review",
   "viewport": {
     "width": 402,

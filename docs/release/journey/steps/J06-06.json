@@ -5,6 +5,7 @@
   "title": "Exactly as said",
   "note": "One tap shows the words exactly as spoken, with their \"um\" and repeats; the screen says so. This is the view and the choice for this letter, until it is saved.",
   "from": "J06-05",
+  "shot": "screens/J06-06.png",
   "route": "/review",
   "viewport": {
     "width": 402,

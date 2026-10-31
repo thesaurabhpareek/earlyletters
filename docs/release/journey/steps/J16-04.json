@@ -5,6 +5,7 @@
   "title": "Large print reading size",
   "note": "The sample line grows to the largest size.",
   "from": "J16-03",
+  "shot": "screens/J16-04.png",
   "route": "/settings/appearance",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "Name entered, no birthday chosen yet",
   "note": "The cover takes the name as typed. The date block arrives with the first letter, empty: on a phone it says \"Choose a date\", and \"Born today\" is a chip beside it. Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as \"0 days\" by an unseen default.",
   "from": "J01-05",
+  "shot": "screens/J01-07.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Asha Name Add another child Born Not here yet Birthday Born today Choose Asha's birthday to continue.",
+  "text": "Back Who is this book for? Asha Name Add another child Birthday Not here yet Birthday Born today Choose Asha's birthday to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
     "Asha",
     "Name",
     "Add another child",
-    "Born",
+    "Birthday",
     "Not here yet",
     "Birthday",
     "Born today",

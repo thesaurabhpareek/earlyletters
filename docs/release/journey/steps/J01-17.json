@@ -5,6 +5,7 @@
   "title": "Not now is a calm answer",
   "note": "The card folds to one line: \"Your voice is kept either way.\" The first Review will offer the same button if words are waiting.",
   "from": "J01-16",
+  "shot": "screens/J01-17.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

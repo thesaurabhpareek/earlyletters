@@ -5,6 +5,7 @@
   "title": "The held letter on Tonight",
   "note": "The Keep sheet said the letter waits on Tonight, and it does: its own card, with the words as typed, says \"Waiting to be kept.\" and \"Keep it\".",
   "from": "J04-01",
+  "shot": "screens/J04-08.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,22 +22,22 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 0 days Good morning, Mama. What does Asha's face do while sleeping? Another thought Saturday You waved at the dog on the corner. Waiting to be kept. Keep it Speak Type Tonight Book Family You can write whenever you like.",
+  "text": "Asha · 0 days Good afternoon, Mama. What do you want Asha to know about today? Another thought Friday You waved at the dog on the corner. Waiting to be kept. Keep it Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 0 days",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "What does Asha's face do while sleeping?",
+    "What do you want Asha to know about today?",
     "Another thought",
-    "Saturday",
+    "Friday",
     "You waved at the dog on the corner.",
     "Waiting to be kept.",
     "Keep it",
     "Speak",
     "Type",
+    "Not much today",
     "Tonight",
     "Book",
-    "Family",
-    "You can write whenever you like."
+    "Family"
   ]
 }

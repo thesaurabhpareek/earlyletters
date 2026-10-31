@@ -13,6 +13,8 @@
  *  - A co-parent gets Plus through Apple Family Sharing. That arrives as their
  *    own (familyShared) entitlement, so `coveredByOtherParent` is always false:
  *    no server tells one parent's phone about the other parent's purchase.
+ *    This follows D-053 ("A co-parent gets Plus through Family Sharing") and
+ *    Terms of Service 14.12 ("Who Plus covers").
  *  - Sandbox and Xcode transactions count (`isTester`). On the device a
  *    verified sandbox transaction exists only in TestFlight, a development
  *    build, or App Review, which buys in the sandbox; refusing it would show

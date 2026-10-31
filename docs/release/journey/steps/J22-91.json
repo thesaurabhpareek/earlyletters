@@ -5,6 +5,7 @@
   "title": "Invite, after a decline",
   "note": "Nothing above \"Agree and sync\": the decline was the person's own choice, and the step it opens shows every registered line before anything is recorded.",
   "from": "J22-90",
+  "shot": "screens/J22-91.png",
   "route": "/invite/new",
   "viewport": {
     "width": 402,

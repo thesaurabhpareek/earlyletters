@@ -3,8 +3,9 @@
   "journey": "sign-in",
   "kind": "unhappy",
   "title": "Too many emails",
-  "note": "The letters are safe first, then the cause and a way forward, in the person's words, not the system's. It names no length the app cannot know and no provider the build may not offer (SIGN-01).",
+  "note": "The letters are safe first, then the cause and a way forward, in the person's words, not the system's.",
   "from": "J22-05",
+  "shot": "screens/J22-06.png",
   "route": "/sign-in/email",
   "viewport": {
     "width": 402,
@@ -21,13 +22,13 @@
     }
   },
   "scrolls": false,
-  "text": "Back Sign in with email Email A link and a code arrive by email. No password to remember. Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again. Send link",
+  "text": "Back Continue with email Email A link and a code arrive by email. No password to remember. Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later. Send link",
   "lines": [
     "Back",
-    "Sign in with email",
+    "Continue with email",
     "Email",
     "A link and a code arrive by email. No password to remember.",
-    "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    "Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.",
     "Send link"
   ]
 }

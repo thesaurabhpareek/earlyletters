@@ -5,6 +5,7 @@
   "title": "Not now",
   "note": "Not now closes the sheet onto the welcome as it was. Nothing is asked of the server and nothing on this phone changes (local-first).",
   "from": "J22-01",
+  "shot": "screens/J22-02.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

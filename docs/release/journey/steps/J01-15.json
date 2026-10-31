@@ -5,6 +5,7 @@
   "title": "Choose the spoken language",
   "note": "A sheet lists the seven languages letters can be spoken in, each in its own script, with one check. Choosing one only stores it: nothing downloads from this sheet (D-087).",
   "from": "J01-14",
+  "shot": "screens/J01-15.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

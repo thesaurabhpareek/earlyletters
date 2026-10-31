@@ -5,6 +5,7 @@
   "title": "Sign in to join",
   "note": "From an invite: \"the book\", since a book has at most two parents. Nothing about the invite is shown before sign-in (BL-322).",
   "from": "J21-02",
+  "shot": "screens/J22-60.png",
   "route": "/sign-in",
   "viewport": {
     "width": 402,
@@ -21,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Sign in to join the book You each write from your own phone, in the same book. Sign in with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
+  "text": "Sign in to join the book You each write from your own phone, in the same book. Continue with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
   "lines": [
     "Sign in to join the book",
     "You each write from your own phone, in the same book.",
-    "Sign in with email",
+    "Continue with email",
     "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
     "Not now"
   ]

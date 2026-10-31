@@ -5,6 +5,7 @@
   "title": "Next letter",
   "note": "Next letter turns the page sideways (24 pt, a fade, no curl); Back one turns it back, and a swipe does the same. The dateline names the month first, then who wrote it: \"Month 2 · From Mama\".",
   "from": "J11-01",
+  "shot": "screens/J11-02.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,

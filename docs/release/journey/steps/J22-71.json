@@ -5,6 +5,7 @@
   "title": "Waiting for the email, with a book here",
   "note": "Under the code field, only when this phone holds a book: \"Your letters are safe on this phone.\" A fresh install has no letters to be safe, so it says nothing there.",
   "from": "J22-70",
+  "shot": "screens/J22-71.png",
   "route": "/sign-in/code",
   "viewport": {
     "width": 402,

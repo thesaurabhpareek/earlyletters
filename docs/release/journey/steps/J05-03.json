@@ -5,6 +5,7 @@
   "title": "Finished: Review opens at once",
   "note": "The take is kept first, then Review opens. It says it is writing down what was said. The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
   "from": "J05-02",
+  "shot": "screens/J05-03.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,12 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Hear it Close Read it back Writing down what you said. 0:07",
+  "text": "Hear it Close Read it back Writing down what you said. 0:05",
   "lines": [
     "Hear it",
     "Close",
     "Read it back",
     "Writing down what you said.",
-    "0:07"
+    "0:05"
   ]
 }

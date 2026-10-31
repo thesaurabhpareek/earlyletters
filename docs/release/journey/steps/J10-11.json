@@ -5,6 +5,7 @@
   "title": "Letter not found",
   "note": "A letter that is not on this phone (a stale link) shows \"This letter is not in the book\" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.",
   "from": "J10-01",
+  "shot": "screens/J10-11.png",
   "route": "/letter/does-not-exist",
   "viewport": {
     "width": 402,

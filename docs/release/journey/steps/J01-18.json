@@ -5,6 +5,7 @@
   "title": "Tonight, for the first time",
   "note": "The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and \"Not much today\" for quiet days.",
   "from": "J01-17",
+  "shot": "screens/J01-18.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,12 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 6 months and 3 weeks Good morning, Mama. Who gets the biggest smile from Asha these days? Another thought Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 6 months and 3 weeks Good afternoon, Mama. What do you want Asha to know about today? Another thought Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 6 months and 3 weeks",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "Who gets the biggest smile from Asha these days?",
+    "What do you want Asha to know about today?",
     "Another thought",
     "Speak",
     "Type",

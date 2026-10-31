@@ -5,6 +5,7 @@
   "title": "A later session: no usage-sharing ask",
   "note": "v1.0 collects no data (D-088, \"Data Not Collected\"), so the \"Help us make it better?\" sheet never appears and Settings, Privacy has no usage switch. Analytics returns with consent in v1.1.",
   "from": "J04-02",
+  "shot": "screens/J04-04.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good morning, Mama. What is Asha's favorite thing in the house this week? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "What is Asha's favorite thing in the house this week?",
+    "What was cooking in your kitchen today?",
     "Another thought",
-    "Saturday",
+    "Friday",
     "0:31",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
     "Read it back",

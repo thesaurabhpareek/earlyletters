@@ -5,6 +5,8 @@
   "title": "Export with an empty book",
   "note": "Nothing has been written yet, so \"Export everything\" waits, in the outline style, under the line \"You can export once the book has a letter.\" The page still says what an export would hold. There is no empty-export error to reach.",
   "from": "J15-01",
+  "shot": "screens/J15-03.png",
+  "full": "screens/J15-03-full.png",
   "route": "/settings/export",
   "viewport": {
     "width": 402,

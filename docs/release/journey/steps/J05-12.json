@@ -5,6 +5,7 @@
   "title": "Back on Tonight, waiting for its words",
   "note": "Review closes and the queue carries on. Tonight shows the recording as a card waiting for its words, with Open.",
   "from": "J05-11",
+  "shot": "screens/J05-12.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,15 +22,15 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 0 days Good morning, Mama. Tell Asha how the name was chosen. Another thought Saturday 0:03 A recording, waiting for its words. Open Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 0 days Good afternoon, Mama. Who came to meet Asha this week? What did they say? Another thought Friday 0:02 A recording, waiting for its words. Open Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 0 days",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "Tell Asha how the name was chosen.",
+    "Who came to meet Asha this week? What did they say?",
     "Another thought",
-    "Saturday",
-    "0:03",
+    "Friday",
+    "0:02",
     "A recording, waiting for its words.",
     "Open",
     "Speak",

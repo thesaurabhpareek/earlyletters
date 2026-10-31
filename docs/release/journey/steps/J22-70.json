@@ -5,6 +5,7 @@
   "title": "Not now, from the code step",
   "note": "Not now, top right where the number pad never covers it, closes the whole sheet onto the welcome as it was, as on the first step (S52's rule). Nothing changes on this phone.",
   "from": "J22-07",
+  "shot": "screens/J22-70.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

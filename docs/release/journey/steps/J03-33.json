@@ -5,6 +5,7 @@
   "title": "A birthday that has not come yet",
   "note": "Refused in words; the button stays off. Letters written before the birthday stay in Before You.",
   "from": "J03-32",
+  "shot": "screens/J03-33.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -21,7 +22,7 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Asha's birthday Choose today or an earlier day. Cancel Set the birthday Name and birthday Name Asha Due date November 10, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "text": "Asha's book Asha's birthday Choose today or an earlier day. Cancel Set the birthday Name and birthday Name Asha Due date November 9, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
     "Asha's birthday",
@@ -32,7 +33,7 @@
     "Name",
     "Asha",
     "Due date",
-    "November 10, 2026",
+    "November 9, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Include Asha in my reminders",

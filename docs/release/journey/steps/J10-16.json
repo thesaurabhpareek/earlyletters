@@ -5,6 +5,7 @@
   "title": "A typed letter",
   "note": "Typed letters have the words and the signature, with \"Typed\" provenance, and no player or recording line.",
   "from": "J10-01",
+  "shot": "screens/J10-16.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Aa Tuesday, October 27, 2026 Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw. From Mama Typed Make private Delete",
+  "text": "Aa Monday, October 26, 2026 Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw. From Mama Typed Make private Delete",
   "lines": [
     "Aa",
-    "Tuesday, October 27, 2026",
+    "Monday, October 26, 2026",
     "Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw.",
     "From Mama",
     "Typed",

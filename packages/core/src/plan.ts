@@ -10,7 +10,10 @@
  *    D-080): it reaches a co-parent only through Apple Family Sharing, which
  *    arrives on their phone as their own (familyShared) entitlement. One
  *    parent's Plus never covers another member of a shared book; a co-parent
- *    outside the Apple family group needs their own subscription.
+ *    outside the Apple family group needs their own subscription. This follows
+ *    D-053 ("A co-parent gets Plus through Family Sharing") and Terms of
+ *    Service 14.12 ("Who Plus covers"); it is not an open choice. The old
+ *    `plus_book` route (TDD 08 K-28, R-3) is superseded by those two.
  *  - Membership (D-082, D-083, 4 Oct 2026): the first 2 letters kept per
  *    account are free, across every book; after that, keeping another letter
  *    needs Plus. Books are free to start (one pool of letters, not one gate

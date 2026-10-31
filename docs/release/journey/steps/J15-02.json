@@ -5,6 +5,8 @@
   "title": "The export did not finish",
   "note": "On a phone Export builds a ZIP in the cache and opens the iOS share sheet. The web build has no file system, so it lands on the honest failure card, with the warning mark, and \"Export again\". Every failure names its cause and has an action that can work: a book too big for one file leads to \"Write to us\" instead (a phone check).",
   "from": "J15-01",
+  "shot": "screens/J15-02.png",
+  "full": "screens/J15-02-full.png",
   "route": "/settings/export",
   "viewport": {
     "width": 402,

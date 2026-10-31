@@ -5,6 +5,7 @@
   "title": "No \"I was invited\" door",
   "note": "No invite can exist without a server, so the button that could only open a coming-soon sheet is gone. It is back when server features are on (J21). An invite link that is opened still lands on the coming-soon sheet.",
   "from": "J01-03",
+  "shot": "screens/J17-04.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

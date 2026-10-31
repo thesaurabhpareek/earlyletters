@@ -5,6 +5,7 @@
   "title": "A very long name stops at 60 characters, and says so",
   "note": "The person pastes 90 letters. The field keeps the first 60 and a quiet line explains the limit, so nothing is cut without a word. The cover sets the name in three lines and fades it, never an ellipsis.",
   "from": "J01-05",
+  "shot": "screens/J01-06.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,7 +22,7 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? AAAAAAA Name A name can have up to 60 characters. Add another child Born Not here yet Birthday Born today Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue.",
+  "text": "Back Who is this book for? AAAAAAA Name A name can have up to 60 characters. Add another child Birthday Not here yet Birthday Born today Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -29,7 +30,7 @@
     "Name",
     "A name can have up to 60 characters.",
     "Add another child",
-    "Born",
+    "Birthday",
     "Not here yet",
     "Birthday",
     "Born today",

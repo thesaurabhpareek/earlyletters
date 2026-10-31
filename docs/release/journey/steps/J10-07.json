@@ -5,6 +5,7 @@
   "title": "Keep it",
   "note": "Choosing \"Keep it\" closes the sheet and changes nothing: the letter is still on its page.",
   "from": "J10-06",
+  "shot": "screens/J10-07.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Aa Monday, August 31, 2026 So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:42 Spoken, with small fixes. Recording kept on this phone. Private Exactly as said Add to book Delete",
+  "text": "Aa Sunday, August 30, 2026 So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:42 Spoken, with small fixes. Recording kept on this phone. Private Exactly as said Add to book Delete",
   "lines": [
     "Aa",
-    "Monday, August 31, 2026",
+    "Sunday, August 30, 2026",
     "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
     "From Mama",
     "Hear Mama",

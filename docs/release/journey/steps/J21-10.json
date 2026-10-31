@@ -5,6 +5,7 @@
   "title": "The book is full",
   "note": "At most two parents per book (D-069). The server says SCCAP and the sheet says so in one calm line; the link is forgotten and nothing is retried (F11-REQ-026).",
   "from": "J21-03",
+  "shot": "screens/J21-10.png",
   "route": "/invite",
   "viewport": {
     "width": 402,

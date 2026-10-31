@@ -5,6 +5,7 @@
   "title": "Picking the draft back up",
   "note": "Tapping the card reopens the page with the words exactly as left.",
   "from": "J07-05",
+  "shot": "screens/J07-06.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -21,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Tell Asha how the name was chosen. You were so sleepy and then Add to Asha's book Keep private",
+  "text": "Close Asha · 0 days Who came to meet Asha this week? What did they say? You were so sleepy and then Add to Asha's book Keep private",
   "lines": [
     "Close",
     "Asha · 0 days",
-    "Tell Asha how the name was chosen.",
+    "Who came to meet Asha this week? What did they say?",
     "You were so sleepy and then",
     "Add to Asha's book",
     "Keep private"

@@ -5,6 +5,7 @@
   "title": "Add a child starts with no date",
   "note": "The birthday starts empty, so a seven-month-old is never saved as a newborn by a default nobody saw. \"Born today\" is a chip beside the date, one tap. The small book cover takes the name.",
   "from": "J03-08",
+  "shot": "screens/J03-09.png",
   "route": "/settings/children/new",
   "viewport": {
     "width": 402,

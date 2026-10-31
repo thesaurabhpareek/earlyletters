@@ -5,6 +5,7 @@
   "title": "Closed before the book came, sync held",
   "note": "The joined sheet closes onto first run's welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps \"Begin the book\". While sync is running it says the book is on its way and hides \"Begin the book\" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.",
   "from": "J21-05",
+  "shot": "screens/J21-08.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

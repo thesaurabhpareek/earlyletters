@@ -5,6 +5,7 @@
   "title": "Change words",
   "note": "The person may change any word themselves, in place on the same sheet: no box inside the letter, the sheet's edge turns to the accent line, and Done sits in the header (S18).",
   "from": "J06-07",
+  "shot": "screens/J06-08.png",
   "route": "/review",
   "viewport": {
     "width": 402,

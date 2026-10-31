@@ -5,6 +5,7 @@
   "title": "Sensitive data",
   "note": "Every registered line, then \"Agree and sync\" and \"Keep on this phone\" at the same height and width: a no as easy as a yes (LEGAL-REQ-006).",
   "from": "J22-40",
+  "shot": "screens/J22-41.png",
   "route": "/sign-in/consent",
   "viewport": {
     "width": 402,

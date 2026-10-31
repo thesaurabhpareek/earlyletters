@@ -5,6 +5,7 @@
   "title": "The stop screen",
   "note": "One line in the same lit room: the app is currently for adults 18 and over. No way to continue or go back. No child, letter or recording exists; only the time of the No is stored.",
   "from": "J02-01",
+  "shot": "screens/J02-02.png",
   "route": "/",
   "viewport": {
     "width": 402,

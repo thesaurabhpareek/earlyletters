@@ -5,6 +5,7 @@
   "title": "Trouble signing in?",
   "note": "The help line opens in place: where the email may be, and the other ways in.",
   "from": "J22-08",
+  "shot": "screens/J22-09.png",
   "route": "/sign-in/code",
   "viewport": {
     "width": 402,

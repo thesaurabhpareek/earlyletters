@@ -5,6 +5,7 @@
   "title": "Yes is chosen",
   "note": "The person taps Yes. It fills softly with a check, and Continue turns on. Only a yes/no flag is stored on the phone, never an age.",
   "from": "J01-01",
+  "shot": "screens/J01-02.png",
   "route": "/",
   "viewport": {
     "width": 402,

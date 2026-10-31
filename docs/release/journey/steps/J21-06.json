@@ -4,6 +4,7 @@
   "kind": "happy",
   "title": "Joined, the book is here",
   "note": "The cover has opened to the flyleaf. What the child calls this parent in the book is filled in with the inviter's suggestion and can be changed; \"Open the book\" is the one way the open book changes.",
+  "shot": "screens/J21-06.png",
   "route": "/invite",
   "viewport": {
     "width": 402,

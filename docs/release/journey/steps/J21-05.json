@@ -5,6 +5,7 @@
   "title": "Joined",
   "note": "One accept, after the tap. The book's cover appears for the first time, with the child's name, and opens to the flyleaf: the name is seen here first (BL-322). The book comes with the next sync, under a thin bar with no count; the open book does not change by itself (only \"Open the book\" opens it). Here sync is held, so it says the book is on its way.",
   "from": "J21-04",
+  "shot": "screens/J21-05.png",
   "route": "/invite",
   "viewport": {
     "width": 402,

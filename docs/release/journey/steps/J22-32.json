@@ -5,6 +5,7 @@
   "title": "The age step",
   "note": "When Terms are current without the attestation, the gate's own question: the question, Yes and No with nothing selected, and Continue. Nothing else (LEGAL-REQ-002, PRD-REQ-019).",
   "from": "J22-31",
+  "shot": "screens/J22-32.png",
   "route": "/sign-in/consent",
   "viewport": {
     "width": 402,

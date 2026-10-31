@@ -5,6 +5,7 @@
   "title": "The held letter waits on Tonight",
   "note": "Tonight shows the waiting letter with its words as typed (5.8 row 5c).",
   "from": "J07-09",
+  "shot": "screens/J07-10.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 0 days Good morning, Mama. What does Asha's face do while sleeping? Another thought Saturday You waved at the dog. Waiting to be kept. Keep it Speak Type Tonight Book Family That was your second free letter.",
+  "text": "Asha · 0 days Good afternoon, Mama. What do you want Asha to know about today? Another thought Friday You waved at the dog. Waiting to be kept. Keep it Speak Type Tonight Book Family That was your second free letter.",
   "lines": [
     "Asha · 0 days",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "What does Asha's face do while sleeping?",
+    "What do you want Asha to know about today?",
     "Another thought",
-    "Saturday",
+    "Friday",
     "You waved at the dog.",
     "Waiting to be kept.",
     "Keep it",

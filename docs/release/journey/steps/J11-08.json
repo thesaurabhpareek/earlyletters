@@ -5,6 +5,7 @@
   "title": "Read together skips quiet days",
   "note": "A quiet-day mark is not a letter: it is never a page, never played and never read aloud, even a row an older build moved into the book. Only letters are pages. (Seeded fictional family Asha, with older-build rows.)",
   "from": "J11-01",
+  "shot": "screens/J11-08.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "Terms",
   "note": "The registered words as they are, each document a row that opens in the in-app browser, and the agree line right above \"Agree and continue\" (LEGAL-REQ-001).",
   "from": "J22-31",
+  "shot": "screens/J22-40.png",
   "route": "/sign-in/consent",
   "viewport": {
     "width": 402,

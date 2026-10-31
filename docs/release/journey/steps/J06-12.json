@@ -5,6 +5,7 @@
   "title": "Close without saving",
   "note": "Closing leaves the draft where it was: its card is still on Tonight with \"Read it back\". Nothing is deleted. (\"Let it go\", the only delete, is a native confirm dialog that does not appear on web.)",
   "from": "J06-02",
+  "shot": "screens/J06-12.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good morning, Mama. What is Asha's favorite thing in the house this week? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "What is Asha's favorite thing in the house this week?",
+    "What was cooking in your kitchen today?",
     "Another thought",
-    "Saturday",
+    "Friday",
     "0:31",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
     "Read it back",

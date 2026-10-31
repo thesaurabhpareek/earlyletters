@@ -5,6 +5,7 @@
   "title": "An empty book",
   "note": "The closed cover named and signed in first run, one plain sentence, one action: \"Write a letter\". No counts, no gaps, nothing to fill in. With one book there is no \"For Asha\" row: \"Asha's book\" already says the name.",
   "from": "J07-04",
+  "shot": "screens/J09-01.png",
   "route": "/book",
   "viewport": {
     "width": 402,

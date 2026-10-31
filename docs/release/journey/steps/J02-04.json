@@ -5,6 +5,7 @@
   "title": "After 24 hours: \"I answered by mistake\"",
   "note": "Only once a day has passed does the stop screen offer a way back, one quiet pill under the line. (Browser clock moved forward 25 hours; the logic is the app's own.)",
   "from": "J02-03",
+  "shot": "screens/J02-04.png",
   "route": "/",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "Microphone is off",
   "note": "One calm state with the microphone glyph: \"The microphone is off\". Type instead first, Open Settings quiet, Close at the top right. Only a refused permission lands here (S13). The browser denial is simulated by refusing getUserMedia; on a phone it is iOS's permission state, and \"Open Settings\" is native and does nothing on web.",
   "from": "J05-01",
+  "shot": "screens/J05-04.png",
   "route": "/listen",
   "viewport": {
     "width": 402,

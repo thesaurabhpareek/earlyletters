@@ -5,6 +5,7 @@
   "title": "Tonight on day 0",
   "note": "A new book: the dateline reads \"Asha, 0 days\", no card, one prompt chosen for a newborn.",
   "from": "J04-02",
+  "shot": "screens/J04-03.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,12 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 0 days Good morning, Mama. Tell Asha how the name was chosen. Another thought Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 0 days Good afternoon, Mama. Who came to meet Asha this week? What did they say? Another thought Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 0 days",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "Tell Asha how the name was chosen.",
+    "Who came to meet Asha this week? What did they say?",
     "Another thought",
     "Speak",
     "Type",

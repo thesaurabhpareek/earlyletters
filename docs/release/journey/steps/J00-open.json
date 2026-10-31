@@ -4,6 +4,7 @@
   "kind": "happy",
   "title": "The first thing anyone sees: one plain question",
   "note": "The same neutral question for everyone, in the launch screen's lit room, with nothing preselected (LEGAL-REQ-002, PRD-REQ-019).",
+  "shot": "screens/J00-open.png",
   "route": "/",
   "viewport": {
     "width": 402,

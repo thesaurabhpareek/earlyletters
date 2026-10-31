@@ -5,6 +5,7 @@
   "title": "If you are struggling",
   "note": "Always available, never behind a flag, one tap from Settings: its own page with the three free, confidential lines (each row starts a call) and the 911 line, word for word. No drawing, no light, no motion.",
   "from": "J16-04",
+  "shot": "screens/J16-05.png",
   "route": "/settings/struggling",
   "viewport": {
     "width": 402,

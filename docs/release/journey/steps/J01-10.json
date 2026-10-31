@@ -5,6 +5,7 @@
   "title": "Not born yet: due date not chosen",
   "note": "Choosing \"Not here yet\" turns the date into a due date, which is not filled in either. Continue waits and says why.",
   "from": "J01-09",
+  "shot": "screens/J01-10.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Asha Name Add another child Born Not here yet Due date Letters written before the birth go in Before You. Choose the due date to continue.",
+  "text": "Back Who is this book for? Asha Name Add another child Birthday Not here yet Due date Letters written before the birth go in Before You. Choose the due date to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
     "Asha",
     "Name",
     "Add another child",
-    "Born",
+    "Birthday",
     "Not here yet",
     "Due date",
     "Letters written before the birth go in Before You.",

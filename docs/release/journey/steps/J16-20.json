@@ -5,6 +5,8 @@
   "title": "Settings, server features on",
   "note": "With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.",
   "from": "J16-01",
+  "shot": "screens/J16-20.png",
+  "full": "screens/J16-20-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,

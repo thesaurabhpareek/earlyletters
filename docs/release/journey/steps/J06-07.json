@@ -5,6 +5,7 @@
   "title": "Back to small fixes",
   "note": "The same control returns to the words with each small fix marked. Every choice is reversible both ways.",
   "from": "J06-06",
+  "shot": "screens/J06-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,

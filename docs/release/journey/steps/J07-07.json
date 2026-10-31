@@ -5,6 +5,7 @@
   "title": "Kept private",
   "note": "Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.",
   "from": "J07-03",
+  "shot": "screens/J07-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,

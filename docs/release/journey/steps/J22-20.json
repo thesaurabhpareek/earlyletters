@@ -2,10 +2,11 @@
   "id": "J22-20",
   "journey": "sign-in",
   "kind": "happy",
-  "title": "After the first letter: the reminder card",
-  "note": "The first ask after the first letter is the reminder card over the Book (C-REQ-001 Rev, F13-REQ-023). The account sheet does not open (DR-12 B).",
+  "title": "Keep the book on any phone",
+  "note": "After the first kept letter the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b). It is about this book, so its cover sits beside the title.",
   "from": "J07-03",
-  "route": "/book",
+  "shot": "screens/J22-20.png",
+  "route": "/sign-in",
   "viewport": {
     "width": 402,
     "height": 874
@@ -21,12 +22,13 @@
     }
   },
   "scrolls": false,
-  "text": "A gentle nudge, now and then? A couple of evenings a week, at a time you pick. Never late at night. Yes, evenings Pick a time No reminders",
+  "text": "Keep Asha's book on any phone Your letters come with you to a new phone, and Asha's other parent can write in the same book. Asha Continue with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
   "lines": [
-    "A gentle nudge, now and then?",
-    "A couple of evenings a week, at a time you pick. Never late at night.",
-    "Yes, evenings",
-    "Pick a time",
-    "No reminders"
+    "Keep Asha's book on any phone",
+    "Your letters come with you to a new phone, and Asha's other parent can write in the same book.",
+    "Asha",
+    "Continue with email",
+    "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+    "Not now"
   ]
 }

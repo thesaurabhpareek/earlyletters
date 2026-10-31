@@ -5,6 +5,8 @@
   "title": "Settings, with both children listed",
   "note": "Each child has a row; \"Add a child\" sits below them.",
   "from": "J03-05",
+  "shot": "screens/J03-06.png",
+  "full": "screens/J03-06-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "Welcome, with \"I was invited\"",
   "note": "With server features on the door is back (D-100 amends D-087): Begin the book, and a quiet \"I was invited\" for a parent whose partner already started one.",
   "from": "J01-02",
+  "shot": "screens/J21-01.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

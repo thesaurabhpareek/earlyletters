@@ -5,6 +5,7 @@
   "title": "Read it back later",
   "note": "The moon breathes over \"Writing down what you said.\" and the recording's length. After 8 seconds one line says long recordings take a little more time; after 15 seconds with no progress a quiet \"Read it back later\" appears (S14). The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
   "from": "J05-03",
+  "shot": "screens/J05-11.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Hear it Close Read it back Writing down what you said. Long recordings take a little more time. 0:03 Read it back later",
+  "text": "Hear it Close Read it back Writing down what you said. Long recordings take a little more time. 0:02 Read it back later",
   "lines": [
     "Hear it",
     "Close",
     "Read it back",
     "Writing down what you said.",
     "Long recordings take a little more time.",
-    "0:03",
+    "0:02",
     "Read it back later"
   ]
 }

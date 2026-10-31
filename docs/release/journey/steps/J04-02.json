@@ -5,6 +5,7 @@
   "title": "Another thought",
   "note": "The prompt leaves and a different one rises in its place. There is no limit and nothing is counted.",
   "from": "J04-01",
+  "shot": "screens/J04-02.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good morning, Mama. Describe Asha's face at the end of peekaboo. Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What food did Asha try this week? What was the face? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "Good morning,",
+    "Good afternoon,",
     "Mama.",
-    "Describe Asha's face at the end of peekaboo.",
+    "What food did Asha try this week? What was the face?",
     "Another thought",
-    "Saturday",
+    "Friday",
     "0:31",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
     "Read it back",

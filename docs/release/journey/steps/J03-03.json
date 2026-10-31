@@ -5,6 +5,7 @@
   "title": "The book is open, for two",
   "note": "The closing screen names both children.",
   "from": "J03-02",
+  "shot": "screens/J03-03.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

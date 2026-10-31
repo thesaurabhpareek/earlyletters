@@ -5,6 +5,7 @@
   "title": "A screen crashes (fault injected)",
   "note": "The root error boundary shows a calm screen instead of a blank page: a still page drawing, \"This page did not open\" in Literata and \"Your letters and recordings are safe on this phone.\" in Mukta, with Try again and Go to Tonight as pill buttons. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here.",
   "from": "J19-01",
+  "shot": "screens/J20-01.png",
   "route": "/",
   "viewport": {
     "width": 402,

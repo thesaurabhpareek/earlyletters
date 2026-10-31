@@ -5,6 +5,7 @@
   "title": "Privacy",
   "note": "No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.",
   "from": "J16-01",
+  "shot": "screens/J16-02.png",
   "route": "/settings/privacy",
   "viewport": {
     "width": 402,

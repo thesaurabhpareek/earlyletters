@@ -5,6 +5,7 @@
   "title": "Child step with no name",
   "note": "Nothing typed yet. Continue waits, and a quiet line above it says why: \"Add a name to continue.\" The book cover beside the heading is blank. An empty name can never be saved.",
   "from": "J01-04",
+  "shot": "screens/J01-05.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

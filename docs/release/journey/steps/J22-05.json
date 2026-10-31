@@ -5,6 +5,7 @@
   "title": "Offline",
   "note": "The line says the letters are safe before anything else, then what to do (VOICE, the Error row).",
   "from": "J22-04",
+  "shot": "screens/J22-05.png",
   "route": "/sign-in/email",
   "viewport": {
     "width": 402,
@@ -21,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Back Sign in with email Email A link and a code arrive by email. No password to remember. Your letters are safe on this phone. Sign in once you are back online. Send link",
+  "text": "Back Continue with email Email A link and a code arrive by email. No password to remember. Your letters are safe on this phone. Sign in once you are back online. Send link",
   "lines": [
     "Back",
-    "Sign in with email",
+    "Continue with email",
     "Email",
     "A link and a code arrive by email. No password to remember.",
     "Your letters are safe on this phone. Sign in once you are back online.",

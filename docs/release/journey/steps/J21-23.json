@@ -5,6 +5,7 @@
   "title": "Invite open",
   "note": "The member list shows the open invite with the day it stops working, Share again and Cancel invite (F11-REQ-019). The invite card steps aside while an invite is open.",
   "from": "J21-22",
+  "shot": "screens/J21-23.png",
   "route": "/family",
   "viewport": {
     "width": 402,

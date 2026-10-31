@@ -5,6 +5,7 @@
   "title": "Child settings: every detail row opens",
   "note": "Name, birthday and \"Sign my letters to Asha as\" each open to change. Before this they were read-only.",
   "from": "J03-07",
+  "shot": "screens/J03-20.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -21,14 +22,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Name and birthday Name Asha Birthday October 31, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "text": "Asha's book Name and birthday Name Asha Birthday October 30, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
     "Name and birthday",
     "Name",
     "Asha",
     "Birthday",
-    "October 31, 2026",
+    "October 30, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Include Asha in my reminders",

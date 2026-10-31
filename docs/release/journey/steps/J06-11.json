@@ -5,6 +5,7 @@
   "title": "Kept private",
   "note": "The letter is saved outside the book, with the lock chip \"Kept just for you.\", then lands on the Book with its Private chip, as a kept letter does (S21).",
   "from": "J06-02",
+  "shot": "screens/J06-11.png",
   "route": "/review",
   "viewport": {
     "width": 402,

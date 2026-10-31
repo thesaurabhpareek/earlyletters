@@ -5,6 +5,7 @@
   "title": "An address that does not look right",
   "note": "Said on submit only, under the field, with a mark beside the words; it goes as soon as the person types again.",
   "from": "J22-03",
+  "shot": "screens/J22-04.png",
   "route": "/sign-in/email",
   "viewport": {
     "width": 402,
@@ -21,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Back Sign in with email Email That email doesn't look quite right. Send link",
+  "text": "Back Continue with email Email That email doesn't look quite right. Send link",
   "lines": [
     "Back",
-    "Sign in with email",
+    "Continue with email",
     "Email",
     "That email doesn't look quite right.",
     "Send link"

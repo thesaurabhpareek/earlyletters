@@ -5,6 +5,7 @@
   "title": "First note dismissed",
   "note": "\"Got it\" collapses the note for good.",
   "from": "J06-01",
+  "shot": "screens/J06-02.png",
   "route": "/review",
   "viewport": {
     "width": 402,

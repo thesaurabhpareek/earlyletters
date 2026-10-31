@@ -5,6 +5,7 @@
   "title": "Keep playing",
   "note": "A quiet chip under the player, a switch to VoiceOver: when a recording ends the page turns and the next voice starts. It is remembered next time.",
   "from": "J11-02",
+  "shot": "screens/J11-03.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "The microphone is in use",
   "note": "A start that fails while permission is granted names the real cause: \"The microphone is in use. A call or another app has it right now.\" Try again first, Type instead quiet. It never says the microphone is off, which Settings could not fix (S13).",
   "from": "J05-01",
+  "shot": "screens/J05-10.png",
   "route": "/listen",
   "viewport": {
     "width": 402,
