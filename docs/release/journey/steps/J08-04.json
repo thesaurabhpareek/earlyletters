@@ -5,7 +5,6 @@
   "title": "Undo on the kept line",
   "note": "Undo takes the mark back at once: the quiet link returns, the lamp comes back up, and nothing is left behind.",
   "from": "J08-02",
-  "shot": "screens/J08-04.png",
   "route": "/",
   "viewport": {
     "width": 402,
