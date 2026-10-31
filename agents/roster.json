@@ -358,6 +358,24 @@
       "daily_runs": 1,
       "wip_limit": 0,
       "max_turns": 40
+    },
+    {
+      "handle": "regulatory-affairs",
+      "title": "Regulatory Affairs and Policy Lead",
+      "department": "legal",
+      "backlog_owner_names": [],
+      "kind": "reviewer",
+      "daily_runs": 0,
+      "wip_limit": 1
+    },
+    {
+      "handle": "user-research",
+      "title": "User Researcher",
+      "department": "product",
+      "backlog_owner_names": [],
+      "kind": "worker",
+      "daily_runs": 0,
+      "wip_limit": 1
     }
   ]
 }
