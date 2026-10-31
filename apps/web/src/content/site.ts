@@ -14,7 +14,7 @@
  * packages/content/src/strings.en.ts (keys noted beside each).
  */
 import { brand } from '@scribe/brand';
-import { plusPricing } from './pricing';
+import { annualSavings, plusPricing } from './pricing';
 
 const NAME = brand.name;
 
@@ -206,23 +206,19 @@ export const site = {
     },
     s10: {
       label: 'Pricing',
-      headline: 'Two letters free. Then Plus.',
+      headline: 'Your first two letters are free.',
+      // Said plainly, to a tired parent: what is free, then what Plus is for.
+      lede: 'Enough to see if it feels right. Plus is for when you want to keep going.',
       // The whole offer as one sentence: it names the plans for screen readers (the plans group is labelled with it)
       // and is what test/pricing.test.ts holds to the constants in pricing.ts.
       support: `${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial.`,
-      free: {
-        name: 'Free',
-        title: 'Your first two letters',
-        note: 'Enough to see if it feels right.',
-      },
       plus: {
         name: 'Plus',
-        title: 'When you want to keep going',
+        // The free trial leads each card; the price follows it.
         plans: [
-          { name: 'Monthly', price: plusPricing.monthly.price, per: 'a month', trial: `${plusPricing.monthly.trialMonths} month free` },
-          { name: 'Yearly', price: plusPricing.annual.price, per: 'a year', trial: `${plusPricing.annual.trialMonths} months free` },
+          { name: 'Monthly', trial: `${plusPricing.monthly.trialMonths} month free`, then: 'then', price: plusPricing.monthly.price, per: 'a month', note: '' },
+          { name: 'Yearly', trial: `${plusPricing.annual.trialMonths} months free`, then: 'then', price: plusPricing.annual.price, per: 'a year', note: `Save ${annualSavings.price} a year` },
         ],
-        trialNote: 'to start',
         includes: [
           'Add letters as often as you like',
           'One price for every child in the family',
