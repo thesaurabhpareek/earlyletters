@@ -33,6 +33,9 @@
 }
 .mark {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--h-ink);
   text-decoration: none;
   font-size: 21px;

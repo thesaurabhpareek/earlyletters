@@ -114,7 +114,7 @@ function TalkStage() {
       <Vignette strength={1} />
       <Grain tone="night" />
 
-      <motion.div className={styles.paper} style={{ opacity: cleanup }}>
+      <motion.div className={styles.paper} style={{ opacity: cleanup }} aria-hidden>
         <PaperLetter />
       </motion.div>
     </div>

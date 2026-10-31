@@ -29,13 +29,13 @@ export function Film() {
         <PageTone />
         <SkipLink />
         <Header />
+        <AmbientSound />
         <main>
           {scenes.map((SceneComponent, i) => (
             <SceneComponent key={i} />
           ))}
         </main>
         <CtaPill />
-        <AmbientSound />
         <ScrollNav />
         <SceneTick />
         <ScrollProgress />

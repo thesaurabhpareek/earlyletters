@@ -98,6 +98,8 @@ export function AmbientSound() {
     if (!wanted || playing) return;
     const onGesture = (e: Event) => {
       if (e.target instanceof Element && e.target.closest('[data-ambient-toggle]')) return; // the button decides for itself
+      // Someone filling in the sign-up form, or pressing its button, did not ask for sound: it starts on the next plain tap.
+      if (e.target instanceof Element && e.target.closest('form, input, textarea, select, [data-ambient-ignore]')) return;
       if (e.type === 'keydown' && IGNORED_KEYS.has((e as KeyboardEvent).key)) return;
       begin();
     };
