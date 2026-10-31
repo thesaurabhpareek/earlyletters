@@ -328,7 +328,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Ruling: (c), plus the prose rule in OPERATING_MODEL section 8 and CODEOWNERS for the human owner.
   - `compliance/` holds the fence (`FENCE.json`, `fence/`) and, after #424, the scripts.
   - Code that tools need elsewhere (migrations, DB tests, skills, the workflow) is protected by name and, for `supabase/`, by what its diff mentions.
-  - Two tiers. Protected: assigned agents (`regulatory-affairs`, `compliance-engineer`, `security-architect`, `data-architect`) plus CCO and Karma approvals on the head. CCO review: the age gate and consent SQL, any owning agent, CCO approval on the head.
+  - Two tiers. Protected: assigned agents (`regulatory-affairs`, `compliance-engineer`, `security-architect`, `data-architect`) plus CCO (citing `CCO-<n>`) and Karma (citing `CR-<n>`) approvals on the head, from the owner's login only. The `infosec` skill is the CISO's and stays outside this fence (COUNCIL section 2.4). CCO review: the age gate and consent SQL, any owning agent, CCO approval on the head.
   - The CCO is the executive council's Chief Compliance Officer (`early-letters-cco`, #421), with `regulatory-affairs` (CR-26) doing the working-level review. It is a Claude role, not counsel, and legal judgments still go to counsel.
 - Why: a check that reads its rules from the base cannot be loosened by the PR it judges. Approvals bound to the head SHA go stale on every push. The CCO tier came from the CCO's own review, so `mobile` keeps ownership of the age gate.
 - Debate (CCO alignment review, 31 Oct): concurred with changes, all accepted.
@@ -338,11 +338,12 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - The workflow header was fixed.
   - The CCO-review tier was added, and two checklist items: a test for each door path, and DB-IP attribution.
   - The CCO declined to fence `docs/legal/**`, which `legal` owns.
+- Second review round (lenses A and B), all accepted: GitHub takes `pull_request_target` workflows from the default branch since 8 Dec 2025 (github.blog changelog 2025-11-07), so the workflow must also reach `main` before it runs or can be required; `edited` re-runs on a base change; markers ignore case; bots cannot approve; CCO approvals cite `CCO-<n>`; the infosec skill left the fence.
 - Limits, said plainly:
-  - Advisory until `compliance-fence` is a required check. `develop` has no protection today.
+  - Runs only once the workflow is on `main`, and advisory until `compliance-fence` is a required check. `develop` has no protection today.
   - The label and approvals prove the procedure ran, not who ran it (CR-20).
   - The founder merges the fence PR itself by hand.
 - Door: two-way.
 - Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
 - Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
-- Founder decisions: make `compliance-fence` a required check on `develop` and `main`. Merge this PR by hand. Karma
+- Sequence (Karma, under the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`; bring the workflow file to `main` in a small PR; then make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma

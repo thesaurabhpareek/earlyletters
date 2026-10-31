@@ -31,7 +31,7 @@ test('a PR that touches nothing protected passes without labels or approval', ()
 test('every protected path is caught', () => {
   for (const f of ['compliance/README.md', 'compliance/FENCE.json', 'compliance/scripts/regulatory-watch.mjs',
     'supabase/migrations/20261031000000_compliance_gates.sql', 'supabase/tests/compliance_gates.test.mjs',
-    '.claude/skills/regulatory-compliance/SKILL.md', '.claude/skills/infosec/SKILL.md',
+    '.claude/skills/regulatory-compliance/SKILL.md',
     '.claude/agents/regulatory-affairs.md', '.github/workflows/compliance-fence.yml']) {
     assert.deepEqual(protectedPaths(config, [{ filename: f }]), [f], f);
   }
@@ -124,4 +124,18 @@ test('policy_acceptances SQL needs the CCO; jurisdiction SQL needs the full fenc
 
 test('scripts/compliance and docs/compliance are protected until the move lands', () => {
   for (const f of ['scripts/compliance/load-geo-ip.mjs', 'docs/compliance/WATCH.md']) assert.equal(protectedPaths(config, [{ filename: f }]).length, 1, f);
+});
+
+test('content markers ignore case', () => {
+  const f = { filename: 'supabase/migrations/20261201000000_x.sql', patch: '+DROP TABLE ops.RESTRICTED_JURISDICTIONS;' };
+  assert.deepEqual(protectedPaths(config, [f]), [f.filename]);
+});
+
+test('the CCO may cite a CCO ruling; Karma cites a CR ruling', () => {
+  const comments = [{ login: OWNER, body: `## CCO approval at ${SHA}: APPROVED (CCO-1)` }, approval()];
+  assert.equal(pr(['compliance/README.md'], { labels: ['agent:regulatory-affairs'], comments }).pass, true);
+});
+
+test('the infosec skill is the CISO\'s, not fenced here', () => {
+  assert.equal(protectedPaths(config, [{ filename: '.claude/skills/infosec/SKILL.md' }]).length, 0);
 });

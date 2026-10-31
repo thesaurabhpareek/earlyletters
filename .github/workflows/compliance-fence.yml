@@ -3,10 +3,14 @@
 # approval and a Karma approval bound to the current head commit. CCO-review paths (the age gate, consent
 # SQL) need the CCO approval on the head. Migrations are also caught by what their diff mentions.
 #
-# Runs on pull_request_target so the copy of this workflow on the base branch is used. It never checks out
-# or runs pull request code: the changed files, labels and comments come from the API, and the rules
-# (compliance/FENCE.json) and the checker (compliance/fence/fence.mjs) come from the BASE commit through the
-# API, so a pull request cannot loosen its own fence. Any API error fails closed.
+# Runs on pull_request_target. Since 8 Dec 2025 GitHub always takes a pull_request_target workflow file from
+# the DEFAULT branch (main), whatever the PR's base (github.blog changelog 2025-11-07). So this file must be on
+# main for the check to run on PRs into develop, and edits to it take effect only once they reach main. It
+# never checks out or runs pull request code: the changed files, labels and comments come from the API, and
+# the rules (compliance/FENCE.json) and the checker (compliance/fence/fence.mjs) come from the PR's BASE
+# commit through the API, so a pull request cannot loosen its own fence. Any API error fails closed.
+# Approvals count only from the repository owner's login, never from a bot, so an unattended agent run
+# cannot approve its own PR.
 #
 # Limits, stated plainly:
 # - Advisory until branch protection on develop and main lists `compliance-fence` as a required check
@@ -20,7 +24,8 @@ name: Compliance fence
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+    # edited: a change of base branch re-runs the check against the new base's fence.
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
 
 permissions:
   contents: read
@@ -71,13 +76,14 @@ jobs:
             fi
             echo "no compliance fence on the base and no compliance path changed"; exit 0
           fi
-          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename, patch}]' | jq -s 'add')" \
+          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename, patch}]' | jq -s 'add // []')" \
             || fail "could not list files; failing closed"
+          # The files API lists at most 3000 files; a larger PR cannot be checked, so it fails.
+          [ "$(jq length <<<"$files")" -lt 3000 ] || fail "too many files to check (3000 or more); split the PR"
           labels="$(jq '[.labels[].name]' <<<"$pr_json")"
           comments="$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '[.[] | {body, login: .user.login}]' | jq -s 'add // []')" \
             || fail "could not read comments; failing closed"
-          trusted="$(gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/agents/roster.json?ref=$base_sha" \
-            | jq --arg o "$OWNER" '[$o] + (.trusted_bots // [])')" || fail "could not read trusted logins; failing closed"
+          trusted="$(jq -n --arg o "$OWNER" '[$o]')"
           jq -n --slurpfile c "$dir/FENCE.json" --argjson files "$files" --argjson labels "$labels" \
             --argjson comments "$comments" --argjson trusted "$trusted" --arg head "$head_sha" \
             '{config: $c[0], files: $files, labels: $labels, comments: $comments, trustedLogins: $trusted, headSha: $head}' \

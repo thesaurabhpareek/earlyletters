@@ -38,8 +38,9 @@ export function classify(config, files) {
       if (anyMatch(config.protected, p)) { tiers.protected.add(p); continue; }
       if (anyMatch(cm.paths, p)) {
         if (typeof f.patch !== 'string') { if ('patch' in f) tiers.protected.add(p); continue; }
-        if ((cm.protected ?? []).some((m) => f.patch.includes(m))) { tiers.protected.add(p); continue; }
-        if ((cm.cco_review ?? []).some((m) => f.patch.includes(m))) { tiers.cco_review.add(p); continue; }
+        const patch = f.patch.toLowerCase(); // SQL names are case-insensitive unless quoted
+        if ((cm.protected ?? []).some((m) => patch.includes(m.toLowerCase()))) { tiers.protected.add(p); continue; }
+        if ((cm.cco_review ?? []).some((m) => patch.includes(m.toLowerCase()))) { tiers.cco_review.add(p); continue; }
       }
       if (anyMatch(config.cco_review, p)) tiers.cco_review.add(p);
     }
