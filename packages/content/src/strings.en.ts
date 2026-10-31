@@ -174,7 +174,7 @@ export const en = {
     invite: {
       title: "Writing this with someone?",
       body: "Invite {child}'s other parent to add letters of their own, each one signed.",
-      privacyNote: "Your private letters stay yours until you add them to the book.",
+      privacyNote: "Letters you keep private are for you alone. Only the ones you add to the book are shared.",
       addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
@@ -219,7 +219,7 @@ export const en = {
       paused: "Paused.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
-      saving: "Keeping your words safe.",
+      saving: "Saving your words.",
       saved: "Saved, in your words.",
       savedLetter: "Signed and kept.",
       transcribing: "Writing down what you said.",
@@ -617,13 +617,13 @@ export const en = {
   notifications: {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
-      { title: "Tonight's letter", body: "What made you smile today? Say it out loud and we will keep it." },
-      { title: "Dear {child},", body: "Your words, kept for {child}. Today, and long after." },
+      { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
+      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
       { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
-      { title: "A page for {weekday}", body: "Whatever today held, it belongs in {child}'s book." },
+      { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
@@ -632,7 +632,7 @@ export const en = {
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
       title: "A letter from {signsAs}",
-      body: "{signsAs} wrote something for {child}. Have a read.",
+      body: "{signsAs} wrote something for {child}. Take a look.",
     },
     familyAdded: {
       title: "Your letter is in the book",
@@ -659,19 +659,19 @@ export const en = {
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty small moments, kept in your own voice.",
+      body: "Fifty letters, kept in your words.",
     },
     letters100: {
       title: "100 letters.",
-      body: "A hundred times you stopped to tell {child} something. That is love, written down.",
+      body: "A hundred letters to {child}, every one in your words.",
     },
     letters365: {
       title: "365 letters.",
-      body: "A year's worth of your words for {child}. All the work, all the love, kept.",
+      body: "365 letters for {child}, in your words.",
     },
     firstMonthComplete: {
       title: "Month {month} is in the book now.",
-      body: "{count} letters and notes, ready for {child} to read one day.",
+      body: "{count} letters, there for {child} to read one day.",
       cta: "Read this month",
     },
     // v1.1.
@@ -685,7 +685,7 @@ export const en = {
     },
     monthSummary: "{count} letters this month",
     monthSummaryFamily: "{count} letters from family this month", // v1.1
-    dismissButton: "Lovely",
+    dismissButton: "Close",
   },
 
   settings: {
@@ -815,7 +815,7 @@ export const en = {
       weeklyLabel: "Weekly",
       fewTimesLabel: "A few times a week",
       everyEveningLabel: "Every evening",
-      help: "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
+      help: "A nudge in the evening, as often as you choose. Never late at night.",
     },
     privacyLine: "Private by default. You decide what goes in the book.",
     help: {
@@ -836,7 +836,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix.",
+    neverRewrite: "We never rewrite your words. We only take out small slips and mark each one, so you can put it back.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
@@ -996,7 +996,7 @@ export const en = {
     },
     generic: {
       title: "Something went wrong",
-      body: "Your words are safe. Please try again.",
+      body: "Please try again. Nothing you saved has changed.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.

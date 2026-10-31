@@ -64,7 +64,8 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ACCOUNT_DELETION": "on"
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
       }
     },
     "testflight": {
