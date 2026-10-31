@@ -1,0 +1,141 @@
+# DRAFT, not in the repository. Design: ../02-runtime-and-lane.md section 2.
+# The one narrow unattended lane: add one test file per run for the least
+# covered eligible source file, and open one PR as the agents GitHub App.
+#
+# Four jobs, so that the model never holds a GitHub credential:
+#   pick     plain code: coverage, then one target (no issue or PR text is read)
+#   write    the model, with no GitHub token and no network tools; output is a patch artifact
+#   gate     plain code: the patch on a fresh checkout, gate.mjs, tests three times, coverage up
+#   publish  plain code: mints the App token (lane `worker`, H1 #349), pushes, opens the PR
+#
+# Off unless BOTH repository variables are exactly `true`: AGENTS_ENABLED and
+# LANE_TESTS_ENABLED. Every job re-checks them. Stop at once: kill procedure in
+# the design doc section 2.8.
+name: Lane tests
+
+on:
+  schedule:
+    - cron: "41 11 * * 1-5" # 11:41 UTC weekdays (04:41 PT): one run a day, outside 06:00 to 09:00 PT
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: lane-tests
+  cancel-in-progress: false
+
+env:
+  LANE_ON: ${{ vars.AGENTS_ENABLED == 'true' && vars.LANE_TESTS_ENABLED == 'true' }}
+
+jobs:
+  pick:
+    if: vars.AGENTS_ENABLED == 'true' && vars.LANE_TESTS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      target: ${{ steps.pick.outputs.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: develop, persist-credentials: false }
+      - uses: ./.github/actions/setup
+      - name: One open lane PR at a time (the founder's review is the throughput limit)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          n=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&base=develop&per_page=100" \
+                --jq '[.[] | select(.head.ref | startswith("agent/tests/"))] | length')
+          if [ "$n" -gt 0 ]; then echo "lane PR still open; nothing to do"; echo "SKIP=1" >> "$GITHUB_ENV"; fi
+      - name: Coverage, then pick
+        id: pick
+        if: env.SKIP != '1'
+        run: |
+          npm run test:coverage -- api analytics design-tokens emails || true
+          echo "target=$(node scripts/agents/lane/pick.mjs --repo .)" >> "$GITHUB_OUTPUT"
+
+  write:
+    needs: pick
+    if: needs.pick.outputs.target != '' && needs.pick.outputs.target != '{}' && vars.LANE_TESTS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: develop, persist-credentials: false }
+      - uses: ./.github/actions/setup
+      - name: Brief (code-written; holds only the target path and its uncovered lines)
+        env: { TARGET: "${{ needs.pick.outputs.target }}" }
+        run: node scripts/agents/lane/brief.mjs --target "$TARGET" --out .agent-run/brief.md
+      - name: Model (no GitHub token in this job; edits limited to the lane folder)
+        env:
+          AGENTS_LLM_BASE_URL: ${{ vars.AGENTS_LLM_BASE_URL }}
+          AGENTS_LLM_API_KEY: ${{ secrets.AGENTS_LLM_API_KEY }}
+          AGENTS_LLM_MODEL: ${{ vars.AGENTS_LLM_MODEL }}
+          AGENTS_LLM_CONTEXT: ${{ vars.AGENTS_LLM_CONTEXT }}
+          OPENCODE_VERSION: "1.18.34"
+        run: |
+          npm install -g --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}"
+          node scripts/agents/run-opencode.mjs --agent lane-tests --model endpoint/default --profile lane \
+            --no-github --max-tokens 600000 --max-turns 25 --stall-minutes 6 \
+            --out "$RUNNER_TEMP/agent-exec.json" || echo "MODEL_FAILED=1" >> "$GITHUB_ENV"
+      - name: Patch
+        run: |
+          git add -N .
+          git diff --binary > "$RUNNER_TEMP/lane.patch"
+          cp "$RUNNER_TEMP/agent-exec.json" "$RUNNER_TEMP/receipt.json" 2>/dev/null || echo '[]' > "$RUNNER_TEMP/receipt.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (pin to verify)
+        with:
+          name: lane
+          path: |
+            ${{ runner.temp }}/lane.patch
+            ${{ runner.temp }}/receipt.json
+          retention-days: 14
+
+  gate:
+    needs: [pick, write]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: develop, persist-credentials: false }
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (pin to verify)
+        with: { name: lane, path: "${{ runner.temp }}/lane" }
+      - name: Apply and gate
+        env: { TARGET: "${{ needs.pick.outputs.target }}" }
+        run: |
+          git apply --index "$RUNNER_TEMP/lane/lane.patch"
+          ws=$(node -e 'const t=JSON.parse(process.env.TARGET);console.log(t.workspace+":"+t.file)')
+          node scripts/agents/lane/gate.mjs --repo . --base HEAD --target "$ws"
+      - name: Tests pass three times, typecheck, content rules, family-data guard
+        run: |
+          for i in 1 2 3; do npm test; done
+          npm run typecheck
+      - name: Coverage of the target went up
+        env: { TARGET: "${{ needs.pick.outputs.target }}" }
+        run: node scripts/agents/lane/coverage-delta.mjs --target "$TARGET" --min-lines 5
+
+  publish:
+    needs: [pick, gate]
+    if: vars.AGENTS_ENABLED == 'true' && vars.LANE_TESTS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: develop, persist-credentials: false, fetch-depth: 1 }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (pin to verify)
+        with: { name: lane, path: "${{ runner.temp }}/lane" }
+      - name: Agent identity, lane worker only (H1 #349)
+        env:
+          AGENTS_APP_CLIENT_ID: ${{ vars.AGENTS_APP_CLIENT_ID }}
+          AGENTS_APP_PRIVATE_KEY: ${{ secrets.AGENTS_APP_PRIVATE_KEY }}
+        run: node scripts/agents/app-token.mjs --lane worker --require-app --github-env
+      - name: Push and open the PR (body written by code, not the model)
+        env: { TARGET: "${{ needs.pick.outputs.target }}" }
+        run: node scripts/agents/lane/publish.mjs --patch "$RUNNER_TEMP/lane/lane.patch" --receipt "$RUNNER_TEMP/lane/receipt.json" --target "$TARGET" --run-id "$GITHUB_RUN_ID"

@@ -1,0 +1,71 @@
+# Lane probe on GitHub Actions. Manual runs only; it never writes to any repository.
+# Put this file at .github/workflows/lane-probe.yml in a repository that also holds the eval folder at eval/
+# (a separate repository of the founder's during the freeze; after the freeze, the founder may move both into
+# earlyletters under scripts/agents/evals/lane-probe/, which is a founder-owned path).
+# Needs one Actions secret, EVAL_API_KEY, unless the endpoint needs no key.
+name: lane-probe
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: OpenAI-compatible base URL, for example https://openrouter.ai/api/v1
+        required: true
+      model:
+        description: Model id at that endpoint
+        required: true
+      tasks:
+        description: Comma-separated task ids (empty for all)
+        required: false
+        default: ''
+      trials:
+        description: Trials per task
+        required: false
+        default: '3'
+permissions:
+  contents: read
+concurrency:
+  group: lane-probe
+  cancel-in-progress: false
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4 # pin by SHA before use, as the earlyletters workflows do (PR #403)
+        with:
+          path: probe
+      - uses: actions/checkout@v4 # pin by SHA before use
+        with:
+          repository: thesaurabhpareek/earlyletters
+          ref: develop
+          fetch-depth: 0
+          path: earlyletters
+          persist-credentials: false
+      - uses: actions/setup-node@v4 # pin by SHA before use
+        with:
+          node-version: '22'
+      - name: Validate the eval set (no model)
+        run: node probe/eval/run.mjs --repo earlyletters --validate
+        env:
+          EVAL_WORK_DIR: ${{ runner.temp }}/work
+          EVAL_CACHE_DIR: ${{ runner.temp }}/cache
+      - name: Run the probe
+        run: |
+          if [ -n "$TASKS" ]; then set -- --tasks "$TASKS"; fi
+          node probe/eval/run.mjs --repo earlyletters --trials "$TRIALS" --out results "$@"
+        env:
+          TASKS: ${{ inputs.tasks }}
+          TRIALS: ${{ inputs.trials }}
+          EVAL_BASE_URL: ${{ inputs.base_url }}
+          EVAL_MODEL: ${{ inputs.model }}
+          EVAL_API_KEY: ${{ secrets.EVAL_API_KEY }}
+          EVAL_WORK_DIR: ${{ runner.temp }}/work
+          EVAL_CACHE_DIR: ${{ runner.temp }}/cache
+      - name: Summary
+        if: always()
+        run: test -f results/summary.md && cat results/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4 # pin by SHA before use
+        if: always()
+        with:
+          name: lane-probe-results
+          path: results/

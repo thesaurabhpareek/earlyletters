@@ -1,0 +1,569 @@
+diff --git a/.github/workflows/agents.yml b/.github/workflows/agents.yml
+index 3f21462..2647e11 100644
+--- a/.github/workflows/agents.yml
++++ b/.github/workflows/agents.yml
+@@ -1,9 +1,10 @@
+ # The agent team. Every 30 minutes the dispatcher (plain code, no model)
+-# decides what each agent works on next and starts up to six agents in
+-# parallel. Each agent runs on its roster engine:
+-#   opencode    OpenCode (MIT) on an open-weight model through OpenRouter,
+-#               acting as the agents GitHub App (the default, low cost);
+-#   claude-code Claude Code acting as the Claude GitHub App (optional).
++# decides what each agent works on next and starts one agent at a time
++# (free endpoints are rate limited per key). Each agent runs on its roster engine:
++#   opencode    OpenCode (MIT) on an open-weight model behind a free
++#               OpenAI-compatible endpoint (D-127: no paid inference),
++#               acting as the agents GitHub App (the default);
++#   claude-code Claude Code acting as the Claude GitHub App (paid; unused under D-127).
+ # Either way its pull requests come from a bot, run CI, and wait for the founder.
+ #
+ # Off until switched on: the plan job runs only when the repository variable
+@@ -11,7 +12,9 @@
+ # every scheduled tick is skipped before any runner starts, so an unconfigured
+ # repository spends no minutes and writes no labels, issues or comments.
+ #
+-# Needs for opencode: OPENROUTER_API_KEY secret (a key with a budget), the
++# Needs for opencode: the AGENTS_LLM_BASE_URL and AGENTS_LLM_MODEL variables
++# (AGENTS_LLM_REVIEW_MODEL and AGENTS_LLM_CONTEXT optional), the
++# AGENTS_LLM_API_KEY secret if the endpoint needs one, the
+ # AGENTS_APP_CLIENT_ID variable and AGENTS_APP_PRIVATE_KEY secret. For
+ # claude-code: ANTHROPIC_API_KEY. Pause: repository variable AGENTS_PAUSED=true.
+ # Structure and process: docs/agents/HARNESS.md. Decisions: ADR 0018, ADR 0019.
+@@ -65,7 +68,7 @@ jobs:
+         id: dispatch
+         env:
+           GH_TOKEN: ${{ github.token }}
+-          HAS_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY != '' }}
++          HAS_LLM_ENDPOINT: ${{ vars.AGENTS_LLM_BASE_URL != '' && vars.AGENTS_LLM_MODEL != '' }}
+           HAS_AGENTS_APP: ${{ vars.AGENTS_APP_CLIENT_ID != '' && secrets.AGENTS_APP_PRIVATE_KEY != '' }}
+           HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+           AGENTS_PAUSED: ${{ vars.AGENTS_PAUSED }}
+@@ -84,7 +87,7 @@ jobs:
+     timeout-minutes: ${{ matrix.timeout }}
+     strategy:
+       fail-fast: false
+-      max-parallel: 6
++      max-parallel: 1
+       matrix:
+         include: ${{ fromJSON(needs.plan.outputs.assignments) }}
+     concurrency:
+@@ -156,19 +159,26 @@ jobs:
+           client-id: ${{ vars.AGENTS_APP_CLIENT_ID }}
+           private-key: ${{ secrets.AGENTS_APP_PRIVATE_KEY }}
+ 
+-      # OpenCode on an open-weight model. The runner enforces the per-run
+-      # dollar cap and step cap; the OpenRouter key's own budget is the
+-      # monthly hard stop.
++      # OpenCode on an open-weight model behind a free OpenAI-compatible
++      # endpoint. The runner enforces the per-run token cap, step cap and a
++      # stall watchdog (OpenCode waits out any Retry-After), and stops the run
++      # if the route ever reports a cost (D-127).
+       - name: Agent (OpenCode)
+         id: opencode
+         if: matrix.engine == 'opencode'
+         env:
+           GH_TOKEN: ${{ steps.app.outputs.token }}
+           APP_SLUG: ${{ steps.app.outputs.app-slug }}
+-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
++          AGENTS_LLM_BASE_URL: ${{ vars.AGENTS_LLM_BASE_URL }}
++          AGENTS_LLM_API_KEY: ${{ secrets.AGENTS_LLM_API_KEY }}
++          AGENTS_LLM_MODEL: ${{ vars.AGENTS_LLM_MODEL }}
++          AGENTS_LLM_REVIEW_MODEL: ${{ vars.AGENTS_LLM_REVIEW_MODEL }}
++          AGENTS_LLM_CONTEXT: ${{ vars.AGENTS_LLM_CONTEXT }}
+           AGENT: ${{ matrix.agent }}
+           MODEL: ${{ matrix.model }}
+           BUDGET: ${{ matrix.budget }}
++          MAX_TOKENS: ${{ matrix.max_tokens }}
++          STALL_MINUTES: ${{ matrix.stall_minutes }}
+           MAX_TURNS: ${{ matrix.max_turns }}
+           EFFORT: ${{ matrix.effort }}
+           OPENCODE_VERSION: ${{ matrix.engine_version }}
+@@ -179,6 +189,7 @@ jobs:
+           gh auth setup-git
+           npm install -g --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}"
+           node scripts/agents/run-opencode.mjs --agent "$AGENT" --model "$MODEL" --budget "$BUDGET" \
++            --max-tokens "$MAX_TOKENS" --stall-minutes "$STALL_MINUTES" \
+             --max-turns "$MAX_TURNS" --variant "$EFFORT" --out "$RUNNER_TEMP/agent-exec.json"
+ 
+       # Whatever stopped the run (cap, timeout, error, provider limit), push
+diff --git a/agents/roster.json b/agents/roster.json
+index 390ef0a..ea34327 100644
+--- a/agents/roster.json
++++ b/agents/roster.json
+@@ -11,20 +11,22 @@
+     "owner_names": ["web lane"]
+   },
+   "limits": {
+-    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap. max_open_agent_prs: when this many agent PRs are open, agents only review and fix their PRs (no new tasks or standing work).",
+-    "max_runs_per_day_total": 30,
+-    "max_parallel": 6,
++    "$comment": "max_runs_per_day_total is the team-wide daily cap. No money is spent on inference (D-127): every opencode run uses a free OpenAI-compatible endpoint, capped per run by max_tokens and max_turns (the runner stops a free route that reports any cost), and by this daily cap. max_parallel is 1 because free tiers are rate limited per key. max_open_agent_prs: when this many agent PRs are open, agents only review and fix their PRs (no new tasks or standing work).",
++    "max_runs_per_day_total": 6,
++    "max_parallel": 1,
+     "digest_hour_utc": 14,
+     "claim_grace_minutes": 20,
+     "max_open_agent_prs": 10
+   },
+   "engines": {
+-    "$comment": "opencode = OpenCode (MIT) driving open-weight models through OpenRouter; the default. claude-code = Claude Code via anthropics/claude-code-action; optional per agent. Models must be priced in the engine's model list, or the per-run spend cap cannot be enforced.",
++    "$comment": "opencode = OpenCode (MIT) driving open-weight models through any OpenAI-compatible endpoint; the default. The endpoint and model ids are repository variables (AGENTS_LLM_BASE_URL, AGENTS_LLM_MODEL, AGENTS_LLM_REVIEW_MODEL, AGENTS_LLM_CONTEXT), so switching route needs no PR; endpoint/default and endpoint/review are aliases for them. claude-code = Claude Code via anthropics/claude-code-action; paid, so unused under D-127.",
+     "opencode": {
+       "version": "1.18.34",
+-      "secret": "OPENROUTER_API_KEY",
+-      "default_model": "openrouter/deepseek/deepseek-v4.1-flash",
+-      "default_budget_usd": 2
++      "secret": "AGENTS_LLM_API_KEY",
++      "default_model": "endpoint/default",
++      "default_budget_usd": 0,
++      "default_max_tokens": 600000,
++      "stall_minutes": 8
+     },
+     "claude-code": {
+       "secret": "ANTHROPIC_API_KEY",
+@@ -33,8 +35,8 @@
+     }
+   },
+   "defaults": {
+-    "max_turns": 80,
+-    "timeout_minutes": 50,
++    "max_turns": 25,
++    "timeout_minutes": 40,
+     "daily_runs": 1,
+     "wip_limit": 1,
+     "$comment": "An agent without engine, model or max_budget_usd takes the engine's defaults. effort is optional and passed to the engine (OpenCode --variant, Claude Code --effort).",
+@@ -64,8 +66,8 @@
+       "daily_runs": 4,
+       "wip_limit": 1,
+       "max_turns": 60,
+-      "model": "openrouter/z-ai/glm-5.2",
+-      "max_budget_usd": 3
++      "model": "endpoint/review",
++      "max_tokens": 400000
+     },
+     {
+       "handle": "product",
+diff --git a/scripts/agents/check.mjs b/scripts/agents/check.mjs
+index f5f21e2..f93c58c 100644
+--- a/scripts/agents/check.mjs
++++ b/scripts/agents/check.mjs
+@@ -10,6 +10,8 @@ import { ROOT, loadRoster, ownerMap, externalOwners, parseBacklog, readText } fr
+ 
+ const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
+ const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
++// D-127: free OpenAI-compatible endpoint aliases (run-opencode.mjs resolves them from repository variables).
++const ENDPOINT_MODEL = /^endpoint\/(default|review)$/;
+ const KINDS = new Set(["worker", "reviewer", "planner", "digest", "steward"]);
+ 
+ export function check(root = ROOT) {
+@@ -26,12 +28,15 @@ export function check(root = ROOT) {
+     if (!roster.departments?.[a.department]) errors.push(`${where}: department "${a.department}" is not in roster.departments`);
+     if (!roster.engines?.[a.engine]) errors.push(`${where}: engine "${a.engine}" is not defined in roster.engines`);
+     else if (a.engine === "claude-code" && !CLAUDE_MODELS.has(a.model)) errors.push(`${where}: model "${a.model}" is not one of ${[...CLAUDE_MODELS].join(", ")}`);
+-    else if (a.engine === "opencode" && !OPENCODE_MODEL.test(a.model ?? "")) errors.push(`${where}: OpenCode model "${a.model}" must look like openrouter/<maker>/<model>`);
++    else if (a.engine === "opencode" && !OPENCODE_MODEL.test(a.model ?? "") && !ENDPOINT_MODEL.test(a.model ?? "")) errors.push(`${where}: OpenCode model "${a.model}" must be endpoint/default, endpoint/review or openrouter/<maker>/<model>`);
+     if (!KINDS.has(a.kind)) errors.push(`${where}: kind "${a.kind}" is not one of ${[...KINDS].join(", ")}`);
+     for (const k of ["daily_runs", "wip_limit", "max_turns", "timeout_minutes"]) {
+       if (!Number.isInteger(a[k]) || a[k] < 0) errors.push(`${where}: ${k} must be a whole number`);
+     }
+-    if (!(typeof a.max_budget_usd === "number" && a.max_budget_usd > 0)) errors.push(`${where}: max_budget_usd must be a positive number (set it on the agent or as the engine default)`);
++    // D-127: a free endpoint reports no cost, so it needs a token cap instead of a dollar cap.
++    if (String(a.model).startsWith("endpoint/")) {
++      if (!(Number.isInteger(a.max_tokens) && a.max_tokens > 0)) errors.push(`${where}: max_tokens must be a positive whole number on a free endpoint (set it on the agent or as the engine's default_max_tokens)`);
++    } else if (!(typeof a.max_budget_usd === "number" && a.max_budget_usd > 0)) errors.push(`${where}: max_budget_usd must be a positive number (set it on the agent or as the engine default)`);
+     if (a.paused_until !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(a.paused_until))) errors.push(`${where}: paused_until must be YYYY-MM-DD, or the pause silently ends`);
+     if (a.effort && !["low", "medium", "high", "xhigh", "max"].includes(a.effort)) errors.push(`${where}: effort "${a.effort}" is not low, medium, high, xhigh or max`);
+     if (a.kind === "steward") {
+diff --git a/scripts/agents/dispatch.mjs b/scripts/agents/dispatch.mjs
+index 559c422..ee41b9d 100644
+--- a/scripts/agents/dispatch.mjs
++++ b/scripts/agents/dispatch.mjs
+@@ -13,7 +13,7 @@
+ //
+ // Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT, AGENTS_PAUSED,
+ //      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
+-//      HAS_OPENROUTER_KEY + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code),
++//      HAS_LLM_ENDPOINT + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code),
+ //      and whose comments count as agent messages: AGENTS_APP_CLIENT_ID, AGENTS_BOT_LOGINS.
+ import { appendFileSync } from "node:fs";
+ import { join } from "node:path";
+@@ -193,7 +193,9 @@ const yes = (v) => String(v ?? "").toLowerCase() === "true";
+ // What each engine still needs before it can run (empty = ready). The local
+ // lane runs inside a Claude session, so engines do not apply there.
+ const engineNeeds = {
+-  opencode: [!yes(env.HAS_OPENROUTER_KEY) && "the OPENROUTER_API_KEY secret", !yes(env.HAS_AGENTS_APP) && "the agents GitHub App"].filter(Boolean),
++  // D-127: the endpoint is a free OpenAI-compatible route named by the
++  // AGENTS_LLM_BASE_URL variable; a key is optional (a local Ollama has none).
++  opencode: [!yes(env.HAS_LLM_ENDPOINT) && "the AGENTS_LLM_BASE_URL and AGENTS_LLM_MODEL variables", !yes(env.HAS_AGENTS_APP) && "the agents GitHub App"].filter(Boolean),
+   "claude-code": [!yes(env.HAS_ANTHROPIC_KEY) && "the ANTHROPIC_API_KEY secret"].filter(Boolean),
+ };
+ const needsFor = (agent) => (LOCAL && !BOARD_ONLY ? [] : engineNeeds[agent.engine] ?? [`engine ${agent.engine}`]);
+@@ -285,6 +287,8 @@ for (const agent of roster.agents) {
+     max_turns: agent.max_turns,
+     timeout: agent.timeout_minutes,
+     budget: agent.max_budget_usd,
++    max_tokens: agent.max_tokens,
++    stall_minutes: agent.stall_minutes,
+     effort: agent.effort,
+   };
+   assignments.push(a);
+diff --git a/scripts/agents/lib.mjs b/scripts/agents/lib.mjs
+index 9b9de21..6ef1a80 100644
+--- a/scripts/agents/lib.mjs
++++ b/scripts/agents/lib.mjs
+@@ -27,6 +27,9 @@ export function loadRoster(root = ROOT) {
+       daily_runs: a.daily_runs ?? d.daily_runs,
+       wip_limit: a.wip_limit ?? d.wip_limit,
+       max_budget_usd: a.max_budget_usd ?? e.default_budget_usd,
++      // Free routes (D-127) report no cost, so tokens are the cap that works.
++      max_tokens: a.max_tokens ?? e.default_max_tokens ?? 0,
++      stall_minutes: a.stall_minutes ?? e.stall_minutes ?? 8,
+       effort: a.effort ?? d.effort ?? "",
+       priority: i,
+     };
+diff --git a/scripts/agents/lib.test.mjs b/scripts/agents/lib.test.mjs
+index ec522a2..02fb715 100644
+--- a/scripts/agents/lib.test.mjs
++++ b/scripts/agents/lib.test.mjs
+@@ -176,12 +176,14 @@ test("OpenCode config never shares sessions and denies founder-only actions", ()
+   assert.equal(Object.keys(c.permission.bash)[0], "*", "catch-all first so specific denies win");
+ });
+ 
+-test("every agent resolves to an engine, a model and a spend cap", () => {
++test("every agent resolves to an engine, a model and a cap that can see its usage", () => {
+   const roster = loadRoster();
+   for (const a of roster.agents) {
+     assert.ok(roster.engines[a.engine], `${a.handle} engine`);
+     assert.ok(a.model, `${a.handle} model`);
+-    assert.ok(a.max_budget_usd > 0, `${a.handle} budget`);
++    // A free route (D-127) reports no cost, so it needs a token cap; a paid one a dollar cap.
++    if (String(a.model).startsWith("endpoint/")) assert.ok(a.max_tokens > 0, `${a.handle} token cap`);
++    else assert.ok(a.max_budget_usd > 0, `${a.handle} budget`);
+   }
+ });
+ 
+diff --git a/scripts/agents/run-opencode.mjs b/scripts/agents/run-opencode.mjs
+index 76beffe..55ce294 100644
+--- a/scripts/agents/run-opencode.mjs
++++ b/scripts/agents/run-opencode.mjs
+@@ -1,37 +1,101 @@
+ #!/usr/bin/env node
+-// Runs one agent assignment with OpenCode (MIT) on an open-weight model via
+-// OpenRouter, with two hard stops the engine itself does not provide:
+-// a dollar cap per run and a step cap. It writes a result summary in the same
+-// shape as Claude Code's execution log, so receipts work for both engines.
++// Runs one agent assignment with OpenCode (MIT) on an open-weight model behind
++// any OpenAI-compatible endpoint (D-127: free routes only), with the hard stops
++// the engine itself does not provide: a token cap, a step cap, a stall
++// watchdog, and a cost tripwire. It writes a result summary in the same shape
++// as Claude Code's execution log, so receipts work for both engines.
+ //
+-//   node scripts/agents/run-opencode.mjs --agent qa --model openrouter/deepseek/deepseek-v4.1-flash \
+-//        --budget 2 --max-turns 80 [--variant high] --out "$RUNNER_TEMP/agent-exec.json"
++//   node scripts/agents/run-opencode.mjs --agent qa --model endpoint/default \
++//        --max-tokens 600000 --max-turns 25 --stall-minutes 6 --out "$RUNNER_TEMP/agent-exec.json"
+ //
+-// Needs: `opencode` on PATH, OPENROUTER_API_KEY, GH_TOKEN (the agents GitHub App).
++// The endpoint is chosen by configuration, not code, so the lane can move
++// between GitHub Models, a free hosted tier, or Ollama on a runner or a Mac:
++//   AGENTS_LLM_BASE_URL  OpenAI-compatible base URL, ending in /v1 (or the provider's equivalent)
++//   AGENTS_LLM_API_KEY   key for that endpoint; may be empty for a local Ollama
++//   AGENTS_LLM_MODEL     model id at that endpoint, used when --model is endpoint/default
++//   AGENTS_LLM_CONTEXT   the endpoint's per-request input limit in tokens (OpenCode compacts below it)
++//   AGENTS_LLM_OUTPUT    max output tokens per request
++// `--model openrouter/...` still works as before (paid route; off under D-127).
++//
++// Needs: `opencode` on PATH. GH_TOKEN only when the agent itself must call
++// GitHub; --no-github strips every GitHub token from the agent's environment.
+ import { spawn } from "node:child_process";
+ import { writeFileSync, mkdirSync } from "node:fs";
+ import { createInterface } from "node:readline";
+ import { dirname, join } from "node:path";
+ import { tmpdir } from "node:os";
+ 
+-/** Permissions: everything an agent needs, minus the actions only the founder takes. */
+-export function opencodeConfig() {
++export const ENDPOINT_PROVIDER = "endpoint";
++
++// Roster aliases, so the roster never names a provider's model id: the
++// founder switches models with a repository variable, not a PR.
++const ALIASES = { default: "AGENTS_LLM_MODEL", review: "AGENTS_LLM_REVIEW_MODEL" };
++
++/** Resolve `endpoint/default` and `endpoint/review` to configured model ids; other ids pass through. */
++export function resolveModel(model, env = process.env) {
++  const m = String(model ?? "");
++  const alias = m.startsWith(`${ENDPOINT_PROVIDER}/`) ? m.slice(ENDPOINT_PROVIDER.length + 1) : "";
++  const name = ALIASES[alias];
++  if (name) {
++    const id = String(env[name] ?? "").trim();
++    if (!id) throw new Error(`model ${m} needs the ${name} variable`);
++    return `${ENDPOINT_PROVIDER}/${id}`;
++  }
++  return m;
++}
++
++/** A free route reports no cost, so the dollar cap is blind and the token cap rules. */
++export function costMode(model) {
++  return String(model).startsWith(`${ENDPOINT_PROVIDER}/`) || String(model).endsWith(":free") ? "free" : "paid";
++}
++
++/**
++ * Permissions: everything an agent needs, minus the actions only the founder
++ * takes. OpenCode applies the LAST matching rule, so the catch-all comes first.
++ * Under `--auto`, anything not denied is approved, including the two kinds
++ * that default to "ask" (external_directory, doom_loop), so both are denied here.
++ */
++export function opencodeConfig({ model = "", env = process.env } = {}) {
+   const deny = [
+     "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*",
+     "gh pr merge*", "gh pr close*", "gh pr review*--approve*", "gh issue close*",
+     "gh secret*", "gh variable*", "gh repo delete*", "gh repo edit*", "gh api*-X DELETE*", "gh api*--method DELETE*",
++    "gh api*/merge*", "gh api*-X PUT*", "gh api*--method PUT*",
++    "curl*", "wget*", "env", "printenv*", "cat /proc/*",
+   ];
+-  return {
++  const cfg = {
+     $schema: "https://opencode.ai/config.json",
+     share: "disabled",
+     autoupdate: false,
+     provider: { openrouter: { options: { apiKey: "{env:OPENROUTER_API_KEY}" } } },
+     permission: {
+       edit: "allow",
+-      webfetch: "allow",
++      webfetch: "deny",
++      websearch: "deny",
++      external_directory: "deny",
++      doom_loop: "deny",
+       bash: Object.fromEntries([["*", "allow"], ...deny.map((p) => [p, "deny"])]),
+     },
+   };
++  const m = String(model);
++  if (m.startsWith(`${ENDPOINT_PROVIDER}/`)) {
++    const id = m.slice(ENDPOINT_PROVIDER.length + 1);
++    cfg.provider[ENDPOINT_PROVIDER] = {
++      npm: "@ai-sdk/openai-compatible",
++      name: "Free OpenAI-compatible endpoint (D-127)",
++      options: { baseURL: "{env:AGENTS_LLM_BASE_URL}", apiKey: "{env:AGENTS_LLM_API_KEY}" },
++      models: {
++        [id]: {
++          name: id,
++          limit: {
++            context: Number(env.AGENTS_LLM_CONTEXT) || 32768,
++            output: Number(env.AGENTS_LLM_OUTPUT) || 4096,
++          },
++        },
++      },
++    };
++  }
++  return cfg;
+ }
+ 
+ /** Fold one JSON event from `opencode run --format json` into the running totals. */
+@@ -47,11 +111,38 @@ export function tally(totals, event) {
+       totals.tokens.cacheRead += t.cache?.read ?? 0;
+     }
+   }
++  // OpenCode retries 429s and 5xx itself (up to 5 times, honouring Retry-After).
++  // Whether `run --format json` surfaces those retries is unverified; count any
++  // event whose type names a retry so receipts show rate-limit pressure if it does.
++  if (typeof event?.type === "string" && /retry/i.test(event.type)) totals.retries += 1;
+   return totals;
+ }
+ 
+ export function newTotals() {
+-  return { steps: 0, cost: 0, tokens: { input: 0, output: 0, cacheRead: 0 } };
++  return { steps: 0, cost: 0, retries: 0, tokens: { input: 0, output: 0, cacheRead: 0 } };
++}
++
++/** Total tokens the run has sent and received, for the token cap. Cached reads count: free tiers meter them. */
++export function tokensUsed(t) {
++  return t.tokens.input + t.tokens.output + t.tokens.cacheRead;
++}
++
++/** Why the run must stop now, or "" to continue. Pure, so it is tested without a model. */
++export function stopReason(t, { budget, maxTurns, maxTokens, mode }) {
++  if (mode === "free" && t.cost > 0) return "error_unexpected_cost"; // D-127: a free route that bills is a misconfiguration
++  if (mode === "paid" && t.cost > budget) return "error_max_budget_usd";
++  if (maxTokens > 0 && tokensUsed(t) > maxTokens) return "error_max_tokens";
++  if (t.steps > maxTurns) return "error_max_turns";
++  // A paid model that reports no cost would make the dollar cap blind: stop early.
++  if (mode === "paid" && t.steps >= 5 && t.cost === 0) return "error_cost_not_reported";
++  return "";
++}
++
++/** The agent's environment: never a GitHub token when the wrapper does the GitHub writes. */
++export function childEnv(env, { cfgPath, noGithub }) {
++  const out = { ...env, OPENCODE_CONFIG: cfgPath, OPENCODE_DISABLE_AUTOUPDATE: "1" };
++  if (noGithub) for (const k of ["GH_TOKEN", "GITHUB_TOKEN", "AGENTS_APP_PRIVATE_KEY", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_RUNTIME_TOKEN"]) delete out[k];
++  return out;
+ }
+ 
+ function args() {
+@@ -63,8 +154,11 @@ function args() {
+   return {
+     agent: opt("agent"),
+     model: opt("model"),
+-    budget: Number(opt("budget", "2")),
++    budget: Number(opt("budget", "0")),
+     maxTurns: Number(opt("max-turns", "80")),
++    maxTokens: Number(opt("max-tokens", "0")),
++    stallMinutes: Number(opt("stall-minutes", "8")),
++    noGithub: argv.includes("--no-github"),
+     variant: opt("variant"),
+     out: opt("out", join(tmpdir(), "agent-exec.json")),
+     prompt: opt("prompt") || `You are the Early Letters agent "${opt("agent")}". Read .agent-run/brief.md now and follow it exactly. It holds your identity, memory, founder instructions, your one assignment for this run, and how to finish.`,
+@@ -73,18 +167,25 @@ function args() {
+ 
+ async function main() {
+   const a = args();
++  const model = resolveModel(a.model);
++  const mode = costMode(model);
++  if (mode === "free" && !(a.maxTokens > 0)) {
++    console.error("a free route needs --max-tokens: the dollar cap cannot see free usage");
++    process.exit(2);
++  }
+   const cfgPath = join(process.env.RUNNER_TEMP || tmpdir(), "opencode.json");
+-  writeFileSync(cfgPath, JSON.stringify(opencodeConfig(), null, 2));
++  writeFileSync(cfgPath, JSON.stringify(opencodeConfig({ model }), null, 2));
+ 
+-  const cmd = ["run", "--format", "json", "--model", a.model, "--auto"];
++  const cmd = ["run", "--format", "json", "--model", model, "--auto"];
+   if (a.variant) cmd.push("--variant", a.variant);
+   cmd.push(a.prompt);
+ 
+   const started = Date.now();
+   const totals = newTotals();
+   let subtype = "success";
++  let lastProgress = Date.now();
+   const child = spawn("opencode", cmd, {
+-    env: { ...process.env, OPENCODE_CONFIG: cfgPath },
++    env: childEnv(process.env, { cfgPath, noGithub: a.noGithub }),
+     stdio: ["ignore", "pipe", "inherit"],
+   });
+ 
+@@ -94,6 +195,13 @@ async function main() {
+     setTimeout(() => child.kill("SIGKILL"), 15_000).unref();
+   };
+ 
++  // OpenCode honours a provider's Retry-After with no upper bound, so a daily
++  // quota 429 can park a run until the job timeout. Stop it instead.
++  const watchdog = setInterval(() => {
++    if (Date.now() - lastProgress > a.stallMinutes * 60_000) stop("error_provider_stalled");
++  }, 15_000);
++  watchdog.unref();
++
+   const rl = createInterface({ input: child.stdout });
+   rl.on("line", (line) => {
+     let ev;
+@@ -103,31 +211,33 @@ async function main() {
+       return;
+     }
+     tally(totals, ev);
++    if (ev.type === "step_finish") lastProgress = Date.now();
+     // Keep public Actions logs short: step totals and the agent's own text only.
+-    if (ev.type === "step_finish") console.log(`step ${totals.steps}: $${totals.cost.toFixed(4)} so far`);
++    if (ev.type === "step_finish") console.log(`step ${totals.steps}: ${tokensUsed(totals)} tokens so far`);
+     else if (ev.type === "text" && ev.part?.text) console.log(ev.part.text.trim().slice(0, 2000));
+-    if (totals.cost > a.budget) stop("error_max_budget_usd");
+-    else if (totals.steps > a.maxTurns) stop("error_max_turns");
+-    // A paid model that reports no cost would make the cap blind: stop early.
+-    else if (totals.steps >= 5 && totals.cost === 0 && !a.model.endsWith(":free")) stop("error_cost_not_reported");
++    const why = stopReason(totals, { budget: a.budget, maxTurns: a.maxTurns, maxTokens: a.maxTokens, mode });
++    if (why) stop(why);
+   });
+ 
+   const code = await new Promise((res) => child.on("close", res));
++  clearInterval(watchdog);
+   if (code !== 0 && subtype === "success") subtype = "error_during_execution";
+ 
+   const result = {
+     type: "result",
+     engine: "opencode",
+-    model: a.model,
++    model,
++    cost_mode: mode,
+     subtype,
+     total_cost_usd: Number(totals.cost.toFixed(6)),
+     num_turns: totals.steps,
+     duration_ms: Date.now() - started,
+     tokens: totals.tokens,
++    retries: totals.retries,
+   };
+   mkdirSync(dirname(a.out), { recursive: true });
+   writeFileSync(a.out, JSON.stringify([result], null, 2));
+-  console.log(`run ${subtype}: ${totals.steps} steps, $${totals.cost.toFixed(4)} (cap $${a.budget})`);
++  console.log(`run ${subtype}: ${totals.steps} steps, ${tokensUsed(totals)} tokens (cap ${a.maxTokens || "none"}), $${totals.cost.toFixed(4)}`);
+   process.exit(subtype === "success" ? 0 : 1);
+ }
+ 
+diff --git a/scripts/agents/run-opencode.test.mjs b/scripts/agents/run-opencode.test.mjs
+new file mode 100644
+index 0000000..c621742
+--- /dev/null
++++ b/scripts/agents/run-opencode.test.mjs
+@@ -0,0 +1,66 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { opencodeConfig, resolveModel, costMode, stopReason, newTotals, tally, childEnv, tokensUsed } from "./run-opencode.mjs";
++
++test("endpoint/default resolves from AGENTS_LLM_MODEL and fails closed without it", () => {
++  assert.equal(resolveModel("endpoint/default", { AGENTS_LLM_MODEL: "qwen3-coder" }), "endpoint/qwen3-coder");
++  assert.equal(resolveModel("endpoint/llama-x", {}), "endpoint/llama-x");
++  assert.throws(() => resolveModel("endpoint/default", {}), /AGENTS_LLM_MODEL/);
++});
++
++test("free and paid routes are told apart", () => {
++  assert.equal(costMode("endpoint/qwen3-coder"), "free");
++  assert.equal(costMode("openrouter/x/y:free"), "free");
++  assert.equal(costMode("openrouter/deepseek/deepseek-v4.1-flash"), "paid");
++});
++
++test("the endpoint provider is OpenAI-compatible, keyed by env, with the context limit", () => {
++  const c = opencodeConfig({ model: "endpoint/m1", env: { AGENTS_LLM_CONTEXT: "16000", AGENTS_LLM_OUTPUT: "2048" } });
++  const p = c.provider.endpoint;
++  assert.equal(p.npm, "@ai-sdk/openai-compatible");
++  assert.equal(p.options.baseURL, "{env:AGENTS_LLM_BASE_URL}");
++  assert.equal(p.options.apiKey, "{env:AGENTS_LLM_API_KEY}");
++  assert.deepEqual(p.models.m1.limit, { context: 16000, output: 2048 });
++  assert.ok(!JSON.stringify(c).match(/sk-|ghp_|ghs_/), "no literal keys in the config");
++});
++
++test("--auto cannot approve the ask-by-default kinds, the web, or a merge through the API", () => {
++  const c = opencodeConfig({ model: "endpoint/m1", env: {} });
++  for (const k of ["external_directory", "doom_loop", "webfetch", "websearch"]) assert.equal(c.permission[k], "deny", k);
++  for (const p of ["gh api*/merge*", "gh api*-X PUT*", "curl*"]) assert.equal(c.permission.bash[p], "deny", p);
++  assert.equal(Object.keys(c.permission.bash)[0], "*", "last match wins in OpenCode, so the catch-all goes first");
++});
++
++test("a free route stops on tokens, on any cost, and never on the zero-cost heuristic", () => {
++  const t = newTotals();
++  for (let i = 0; i < 6; i++) tally(t, { type: "step_finish", part: { cost: 0, tokens: { input: 1000, output: 100 } } });
++  const free = { budget: 0, maxTurns: 25, maxTokens: 10_000, mode: "free" };
++  assert.equal(stopReason(t, free), "", "6 zero-cost steps are fine on a free route");
++  tally(t, { type: "step_finish", part: { cost: 0, tokens: { input: 5000, output: 0 } } });
++  assert.equal(tokensUsed(t), 11_600);
++  assert.equal(stopReason(t, free), "error_max_tokens");
++  const billed = newTotals();
++  tally(billed, { type: "step_finish", part: { cost: 0.0001, tokens: { input: 10 } } });
++  assert.equal(stopReason(billed, free), "error_unexpected_cost");
++});
++
++test("a paid route keeps the old dollar cap and the blind-cost stop", () => {
++  const t = newTotals();
++  for (let i = 0; i < 5; i++) tally(t, { type: "step_finish", part: { cost: 0, tokens: { input: 10 } } });
++  assert.equal(stopReason(t, { budget: 2, maxTurns: 80, maxTokens: 0, mode: "paid" }), "error_cost_not_reported");
++});
++
++test("retry events are counted if the stream carries them", () => {
++  const t = newTotals();
++  tally(t, { type: "session.retry.scheduled" });
++  assert.equal(t.retries, 1);
++});
++
++test("--no-github strips every GitHub credential from the agent", () => {
++  const env = childEnv({ GH_TOKEN: "a", GITHUB_TOKEN: "b", ACTIONS_ID_TOKEN_REQUEST_TOKEN: "c", AGENTS_LLM_API_KEY: "k", PATH: "/bin" }, { cfgPath: "/x", noGithub: true });
++  assert.equal(env.GH_TOKEN, undefined);
++  assert.equal(env.GITHUB_TOKEN, undefined);
++  assert.equal(env.ACTIONS_ID_TOKEN_REQUEST_TOKEN, undefined);
++  assert.equal(env.AGENTS_LLM_API_KEY, "k");
++  assert.equal(env.OPENCODE_CONFIG, "/x");
++});
