@@ -83,7 +83,10 @@ We never:
 - use your letters, recordings or names to train machine learning models;
 - imitate your voice or anyone's voice;
 - put letter text in a notification or an email;
-- build profiles of you or your child.
+- build profiles of you or your child;
+- use what you put in your book, such as your letters, recordings, names or dates, in our marketing, on our website or in the App Store, unless you ask us to and agree in writing for that one use.
+
+[COUNSEL: the last bullet is new in 2.2.0. It is a drafted, narrower "never for marketing" line, limited to what families put in their books. Neither the founder nor counsel has confirmed it. Remove this note before publication.]
 
 Reminders on your phone show your child's name only if you turn that on. An invitation to share a book names the parent who sent it.
 
