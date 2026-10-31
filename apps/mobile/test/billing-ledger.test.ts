@@ -86,7 +86,7 @@ const PLUS: PlanView = { state: 'active', effectiveUntil: '2026-12-01T00:00:00Z'
 const NOW = '2026-10-03T12:00:00Z';
 
 /**
- * What Review does at Keep (lib/billing/gates.ts keepLetterGate, review.tsx save): decide first, and only
+ * What Review does at a Keep with words on screen (lib/billing/gates.ts keepGateFor, review.tsx save): decide first, and only
  * when allowed write the letter. Returns whether it was kept.
  */
 async function pressKeep(id: string, plan: PlanView, allowance?: unknown): Promise<'kept' | 'held'> {
@@ -171,9 +171,10 @@ describe('ledger repository: counted inside the save transaction', () => {
     expect(ledger.countPresent(f.ctx)).toBe(3);
   });
 
-  it('a voice letter kept without words counts (it is a letter)', () => {
+  it('[F14-REQ-037] a voice letter kept without words does not count until its words are kept (D-103 amends D-083)', () => {
     keep(draft().id, { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' });
-    expect(ledger.readState(f.ctx).n).toBe(1);
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
   });
 
   it('a quiet-day mark is not a letter: it never counts', () => {

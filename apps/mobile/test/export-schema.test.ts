@@ -13,9 +13,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
-async function ashaZip(): Promise<Record<string, Uint8Array>> {
+async function ashaZip(snapshot = ashaSnapshot()): Promise<Record<string, Uint8Array>> {
   const chunks: Uint8Array[] = [];
-  await packExport(ashaSnapshot(), {
+  await packExport(snapshot, {
     readFile: async (uri) => ASHA_AUDIO[uri] ?? Promise.reject(new Error('missing')),
     sha256: async (d) => sha256Hex(d),
     renderPdf: async () => new TextEncoder().encode('%PDF-1.4\n%%EOF\n'),
@@ -40,7 +40,7 @@ describe('export schema', () => {
   it('is a valid JSON Schema and versioned as semver', () => {
     expect(EXPORT_SCHEMA_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
     expect(EXPORT_FORMAT).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*-export$/);
-    for (const def of ['entriesFile', 'childrenFile', 'accountFile', 'manifest']) expect(validator(def), def).toBeTypeOf('function');
+    for (const def of ['entriesFile', 'childrenFile', 'accountFile', 'otherVersionsFile', 'manifest']) expect(validator(def), def).toBeTypeOf('function');
   });
 
   it('every data file in the Asha export matches it', async () => {
@@ -59,6 +59,29 @@ describe('export schema', () => {
     }
   });
 
+  it('[F16-REQ-023] a conflict copy is in the export word for word, in a file that matches the schema', async () => {
+    const snap = ashaSnapshot();
+    const own = snap.entries.find((e) => e.own)!;
+    snap.otherVersions = [{
+      entryId: own.id,
+      finalText: 'You stood at the sofa and grinned.',
+      editLevel: 'clean',
+      machineEdits: [{ type: 'filler', start: 0, end: 3, original: 'um ', replacement: '', source: 'rule' }],
+      keptAt: '2026-10-20T19:00:00.000Z',
+    }];
+    const files = await ashaZip(snap);
+    const other = json(files, 'data/other-versions.json');
+    const validate = validator('otherVersionsFile');
+    expect(validate(other), JSON.stringify(validate.errors)).toBe(true);
+    expect(other.versions).toEqual([expect.objectContaining({ entry_id: own.id, reason: 'conflict_copy', final_text: 'You stood at the sofa and grinned.' })]);
+    const manifest = json(files, 'manifest.json') as { files: { path: string }[] };
+    expect(manifest.files.map((f) => f.path)).toContain('data/other-versions.json');
+  });
+
+  it('writes no other-versions file when the phone keeps none', async () => {
+    expect(Object.keys(await ashaZip())).not.toContain('data/other-versions.json');
+  });
+
   it('[G-19] rejects a consent block with a server field or an unknown answer', async () => {
     const account = json(await ashaZip(), 'data/account.json');
     const validate = validator('accountFile');
@@ -66,7 +89,7 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  for (const version of ['1.0.0', '1.1.0']) {
+  for (const version of ['1.0.0', '1.1.0', '1.2.0']) {
     it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
       const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
       const cases: [string, string][] = [
@@ -86,7 +109,7 @@ describe('export schema', () => {
     });
   }
 
-  describe('[BL-323, LEGAL-REQ-034] consent_history (1.2.0)', () => {
+  describe('[BL-323, LEGAL-REQ-034] consent_history (1.3.0)', () => {
     const act = {
       id: 'a1',
       document: 'terms',
@@ -135,7 +158,14 @@ describe('export schema', () => {
       const account = json(await ashaZip(), 'data/account.json');
       const validate = validator('accountFile');
       expect(validate({ ...account, consent_history: included }), JSON.stringify(validate.errors)).toBe(true);
-      expect(validate({ ...account, dictionary: [{ child_id: null, term: '', kind: 'word', heard_as: [], source: 'server' }] })).toBe(false);
+      const word = { child_id: null, term: 'Nani', kind: 'family', heard_as: [], forms: null, source: 'server' };
+      expect(validate({ ...account, dictionary: [word] }), JSON.stringify(validate.errors)).toBe(true);
+      const form = { script: 'devanagari', text: '\u0928\u093e\u0928\u0940', heard_as: [], offer_only: [] };
+      expect(validate({ ...account, dictionary: [{ ...word, forms: [form] }] }), JSON.stringify(validate.errors)).toBe(true);
+      expect(validate({ ...account, dictionary: [{ ...word, term: '' }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, forms: [] }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, forms: [{ ...form, script: 'klingon' }] }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, forms: [{ ...form, heardAs: [] }] }] })).toBe(false);
       expect(validate({ ...account, memberships: [{ child_id: 'c', role: 'owner', signs_as: 'Mama' }] })).toBe(false);
     });
   });

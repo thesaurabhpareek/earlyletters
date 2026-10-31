@@ -5,6 +5,7 @@
   "title": "Name changed (trimmed)",
   "note": "The new name shows in the row and in the title. Letters already written are not touched.",
   "from": "J03-22",
+  "shot": "screens/J03-23.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -21,22 +22,20 @@
     }
   },
   "scrolls": false,
-  "text": "Asha Rose's book Name and birthday Name Asha Rose Birthday October 13, 2026 Sign my letters to Asha Rose as Mama Include Asha Rose in my reminders Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha Rose's book Family see the letters you add to Asha Rose's book. This starts once family can join.",
+  "text": "Asha Rose's book Name and birthday Name Asha Rose Birthday October 30, 2026 Sign my letters to Asha Rose as Mama Include Asha Rose in my reminders Month and birthday messages for Asha Rose follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha Rose's book",
     "Name and birthday",
     "Name",
     "Asha Rose",
     "Birthday",
-    "October 13, 2026",
+    "October 30, 2026",
     "Sign my letters to Asha Rose as",
     "Mama",
     "Include Asha Rose in my reminders",
-    "Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch.",
+    "Month and birthday messages for Asha Rose follow this switch.",
     "Write this book together",
     "Coming soon",
-    "Sharing a book with a co-parent is coming in a later update.",
-    "Family can read Asha Rose's book",
-    "Family see the letters you add to Asha Rose's book. This starts once family can join."
+    "Sharing a book with a co-parent is coming in a later update."
   ]
 }

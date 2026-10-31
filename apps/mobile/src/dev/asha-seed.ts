@@ -4,7 +4,7 @@
  * Idempotent: does nothing if a child already exists.
  */
 import { ENGINE_VERSION, faithfulClean } from '@scribe/core';
-import { addChild, createDraft, dictionaryFor, listChildren, saveEntry, setDraftTranscript, setSetting, todayISO, uuidv7 } from '@/lib/store';
+import { addChild, createDraft, dictionaryFor, hideChild, listChildren, saveEntry, setDraftTranscript, setSetting, todayISO, uuidv7 } from '@/lib/store';
 import { PLAN_CACHE_KEY } from '@/lib/billing/config';
 import { serializePlanCache } from '@/lib/billing/plan.logic';
 
@@ -70,7 +70,7 @@ export const ASHA_REVIEW_RAW =
  * keeps StoreKit's last answer), so Keep is not gated. Without it this phone is Free,
  * and with 5 letters already it is past the 2 free ones (D-082): Keep shows the gate.
  */
-export function seedAsha(opts: { waiting?: boolean; quiet?: boolean; marks?: boolean; plus?: boolean } = {}): { draftId: string } | null {
+export function seedAsha(opts: { waiting?: boolean; quiet?: boolean; marks?: boolean; plus?: boolean; hidden?: boolean } = {}): { draftId: string } | null {
   if (listChildren().length > 0) return null;
   const now = Date.now();
   const child = addChild({ name: 'Asha', birthday: todayISO(new Date(now - 214 * DAY)), dueDate: null, signsAs: 'Mama' });
@@ -195,6 +195,11 @@ export function seedAsha(opts: { waiting?: boolean; quiet?: boolean; marks?: boo
         authorSignsAs: 'Mama',
       });
     }
+  }
+  if (opts.hidden) {
+    // A second book, hidden on this phone (Settings, Hidden books): Avi, from the fictional family.
+    const avi = addChild({ name: 'Avi', birthday: todayISO(new Date(now - 30 * DAY)), dueDate: null, signsAs: 'Mama' });
+    hideChild(avi.id);
   }
   setSetting('preview.draftId', draft.id);
   return { draftId: draft.id };

@@ -12,9 +12,11 @@ import { basename, join, relative } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
+import { faithfulClean, finalText, withoutEdit } from '@scribe/core';
 import {
   accountEmails,
   authEmails,
+  backupEmails,
   billingEmails,
   book,
   emailChrome,
@@ -31,6 +33,8 @@ import {
   STORY_VISUALS,
   storeListing,
 } from '../src';
+import { alternateStories } from '../src/stories.en';
+import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
 
 type Leaf = { path: string; text: string };
 
@@ -119,7 +123,7 @@ const ALL: Leaf[] = [
 ];
 /** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
 const EMAIL: Leaf[] = leaves(
-  { authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
+  { authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
   'email',
 );
 /** Everything the rules below apply to: content, email copy and feature-local app copy. */
@@ -195,11 +199,12 @@ describe('prompts', () => {
     expect(new Set(PROMPTS.map((p) => p.key)).size).toBe(PROMPTS.length);
   });
 
-  it('covers every kind and every age band', () => {
+  it('covers every kind, every age band and the before-birth set', () => {
     for (const kind of ['opening', 'gap', 'hard', 'family', 'together']) {
       expect(PROMPTS.some((p) => p.kind === kind), kind).toBe(true);
     }
-    for (const band of ['0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
+    // `before` is the set for a book whose child is not born yet (P3 critics' pass S2); its rules are in prompts.preBirth.test.ts.
+    for (const band of ['before', '0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
       expect(PROMPTS.some((p) => p.band === band), band).toBe(true);
     }
   });
@@ -517,13 +522,27 @@ describe('brand name and v1.0 claims', () => {
   // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
   // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
   it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
-    const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
+    // The Plan row's help line is scanned with the rest: it is where "keep adding letters" is said (settingsHome.planHelp).
+    const plus = [
+      ...leaves(features.billing, 'billing'),
+      ...leaves(en.plus, 'plus'),
+      ...leaves({ planHelp: en.settingsHome.planHelp }, 'settingsHome'),
+      ...leaves(storeListing, 'store'),
+    ];
+    // The registered promise (billingCopy.store.promise) is the Plan screen's footer and the store line; it carries the
+    // first two sentences that `plus.promise` repeated. `plus.promise` is deleted (P7).
+    const promise = features.billing.store.promise;
+    // The Plan help line must stay in the sweep below: deleting it from the array above would let a claim into it.
+    expect(plus.map((l) => l.path)).toContain('settingsHome.planHelp');
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
-    expect(en.plus.promise).not.toMatch(/backup/);
+    // The two lines that carry the Plus promise (the registered sentences 1 and 2, and the Plan help line with sentence 3)
+    // never claim backup, and never claim what Plus no longer gates (D-085, D-082, D-083).
+    const PROMISES = [promise, en.settingsHome.planHelp];
+    for (const line of PROMISES) expect(line, line).not.toMatch(/backup/i);
     expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
-    expect(en.plus.promise).toMatch(/first two letters are free/);
-    expect(en.plus.promise).toMatch(/keep adding letters/);
-    expect(en.plus.promise).not.toMatch(/Read together|more children|more books|free, always/);
+    expect(promise).toMatch(/first two letters are free/);
+    expect(en.settingsHome.planHelp).toMatch(/keep adding letters/);
+    for (const line of PROMISES) expect(line, line).not.toMatch(/Read together|more children|more books|free, always/);
     // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
     expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
     // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
@@ -629,7 +648,7 @@ describe('onboarding story cards (server fallback, D-066)', () => {
 });
 
 describe('emails', () => {
-  const MAILS = [authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
+  const MAILS = [authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
 
   it('has a subject, preview and heading for every email, and short subjects', () => {
     expect(MAILS.length).toBeGreaterThan(0);
@@ -675,6 +694,14 @@ describe('feature-local app copy files', () => {
     expect(file).toBeDefined();
     const texts = stringsIn(file!).map((l) => l.text);
     expect(texts).toContain(permissions.microphone);
+  });
+});
+
+describe('English-only notices (D-111 item 4)', () => {
+  it('the picker line and the waiting-for-its-language line are in-app copy, so every rule here reads them', () => {
+    const paths = IN_APP.map((l) => l.path);
+    expect(paths).toContain('features.language.picker.englishOnly');
+    expect(paths).toContain('features.language.waitingForLanguage');
   });
 });
 
@@ -765,6 +792,10 @@ describe('glossary (BRAND.md)', () => {
     expect(en.book.provenance.spokenFixed).toBe('Spoken, with small fixes');
   });
 
+  it('calls a month section of the book a month, never a chapter (BRAND.md; P6b critics\' S1)', () => {
+    expect(offenders(EVERY, /\bchapters?\b/i)).toEqual([]); // content, emails and feature-local app copy
+  });
+
   it('names the subscription Plus only', () => {
     expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
     expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);
@@ -805,5 +836,226 @@ describe('glossary (BRAND.md)', () => {
   it('uses one descriptor', () => {
     expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
     expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The experience pass's rules, over the keys it touched (P0) and over each feature's copy file (P8a, P8b, P8c).
+// Their data is in test/support/copy-surfaces.ts. The scope of the P0 rules stays CHANGED + ADDED: widening "no we"
+// or "no on-device-only" to every string would fail on registered text, which only counsel may change.
+// ---------------------------------------------------------------------------
+
+/** The Asha fixtures (CLAUDE.md: tests use the fictional family "Asha"). */
+const P0_ASHA: Record<string, string> = {
+  app: brand.name,
+  child: 'Asha',
+  signsAs: 'Mama',
+  month: '7',
+  n: '60',
+  count: '5',
+  date: 'October 13',
+  size: '575 MB',
+  a: 'September 13',
+  b: 'October 12',
+};
+const p0Fill = (text: string, vars: Record<string, string> = P0_ASHA) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
+
+/** Words that say letters never leave the phone, that there are no accounts, or that nothing is shared. */
+const ON_DEVICE_ONLY =
+  /\b(?:stays? on (?:this|your|the) phone|stays? on it|never leaves?|only on (?:this|your) phone|from this phone|no accounts?|without an account|only you can read|no one else|nobody else)\b|\bnothing is sent anywhere\b/i;
+
+const P0_IN_APP: Leaf[] = [
+  ...leaves(en, 'en'),
+  ...leaves(permissions, 'permissions'),
+  ...leaves(features, 'features'),
+  ...leaves([...onboardingStories, ...alternateStories], 'stories'),
+];
+
+describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
+  it('says "we" or "our" only inside the sanctioned promises (principle 2)', () => {
+    const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
+    const bad = TOUCHED.filter(
+      (l) => !P0_WE_ALLOWED.has(l.path) && /\b(?:we|our)\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
+    );
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // Every allowed key is a touched key, so the list cannot hide a stale exception.
+    for (const key of P0_WE_ALLOWED) expect(ADDED.includes(key) || CHANGED.includes(key), key).toBe(true);
+  });
+
+  it('never says tidy, clean, correct, edit or improve (BRAND.md glossary)', () => {
+    const BANNED = /\btid(?:y|ied|ies|ying|ier)\b|\bclean\w*|\bcorrect\w*|\bedit\w*|\bimprov\w*/i;
+    expect(TOUCHED.filter((l) => BANNED.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
+    const buttons = TOUCHED.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!));
+    expect(buttons.length).toBeGreaterThan(10);
+    for (const b of buttons) {
+      expect(b.text.length, b.path).toBeLessThanOrEqual(22);
+      expect(p0Fill(b.text).length, b.path).toBeLessThanOrEqual(22);
+    }
+  });
+
+  it('writes error and state titles without a full stop', () => {
+    const titles = [
+      ...leaves(en.errors, 'en.errors').filter((l) => l.path.endsWith('.title')),
+      ...TOUCHED.filter((l) => /^en\.review\.(missingFile|emptyTake|noDraft)\.title$|^en\.reader\.notFoundTitle$/.test(l.path)),
+    ];
+    expect(titles.length).toBeGreaterThan(10);
+    expect(titles.filter((l) => /\.\s*$/.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('agrees in number for twins: the plural keys use the plural verb (S06)', () => {
+    expect(en.onboarding.signsAs.titleMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAsMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAs).toMatch(/\{child\} calls\b/);
+  });
+
+  it('never says or implies that letters stay on the phone, that there are no accounts, or no sharing (option B, D-100)', () => {
+    expect(TOUCHED.filter((l) => ON_DEVICE_ONLY.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] rules across in-app copy', () => {
+  it('spells for the US storefront (D-087)', () => {
+    // The spec's list, plus the lowercase noun since `licences.libraries` changed (code names keep "licences").
+    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
+    expect(P0_IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('names the plans Plus Monthly and Plus Annual, as App Store Connect does (D-077)', () => {
+    expect(features.billing.plan.annual).toBe('Plus Annual');
+    expect(features.billing.confirmation.planMonthly).toBe('Plus Monthly');
+    expect(features.billing.confirmation.planAnnual).toBe('Plus Annual');
+    const named = P0_IN_APP.flatMap((l) => [...l.text.matchAll(/\bPlus (?:Monthly|Annual|Yearly|Year|Month)\w*/g)].map((m) => `${l.path}: ${m[0]}`));
+    expect(named.filter((n) => !/: Plus (?:Monthly|Annual)$/.test(n))).toEqual([]);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] story.private.v2 (P0 rule 4, option B)', () => {
+  const v1 = onboardingStories.find((c) => c.id === 'story.private.v1');
+  const v2 = alternateStories.find((c) => c.id === 'story.private.v2');
+
+  it('sits beside v1 in the same slot, and the packaged deck still serves v1', () => {
+    expect(v1).toBeDefined();
+    expect(v2).toBeDefined();
+    expect(v2!.order).toBe(v1!.order);
+    expect(v2!.visual).toBe(v1!.visual);
+    expect(onboardingStories.map((c) => c.id)).not.toContain('story.private.v2');
+  });
+
+  it('follows the story card and reassurance rules', () => {
+    const ids = [...onboardingStories, ...alternateStories].map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const c of alternateStories) {
+      expect(c.type).toBe('story');
+      expect(c.id).toMatch(/^story\.[a-z-]+\.v\d+$/);
+      expect(c.headline.length, c.id).toBeLessThanOrEqual(80);
+      expect(c.line.length, c.id).toBeLessThanOrEqual(160);
+      expect((c.line.match(/[.!?](\s|$)/g) ?? []).length, c.id).toBeLessThanOrEqual(2);
+      expect(STORY_VISUALS).toContain(c.visual);
+      for (const m of `${c.headline} ${c.line}`.matchAll(/\{(\w+)\}/g)) expect(['child', 'app', 'signsAs']).toContain(m[1]);
+      expect(`${c.headline} ${c.line}`).not.toMatch(/\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i);
+    }
+  });
+
+  it('makes no claim about where letters are kept or who can read them, and has no "we"', () => {
+    const text = `${v2!.headline} ${v2!.line}`;
+    expect(text).not.toMatch(ON_DEVICE_ONLY);
+    expect(text).not.toMatch(/\bcan read\b|\bwe\b/i);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] the promise sample (S04)', () => {
+  it('gets exactly one filler and one repeat from the real engine, and puts back to the raw words', () => {
+    const raw = en.onboarding.promise.sampleRaw;
+    expect(raw).not.toMatch(/\{\w+\}/);
+    const out = faithfulClean(raw, { level: 'clean', dictionary: [] });
+    expect(out.rejected).toEqual([]);
+    expect(out.applied.map((e) => e.type).sort()).toEqual(['filler', 'repeat']);
+    let applied = out.applied;
+    while (applied.length) applied = withoutEdit(raw, applied, 0).applied;
+    expect(finalText(raw, applied)).toBe(raw);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface rules, or says why not', () => {
+  it('has a row or an opt-out with a reason for every key of `features`, and keeps the three P8 rows', () => {
+    const rows = SURFACES.map((s) => s.feature as string);
+    const optOut = Object.keys(SURFACE_OPT_OUT);
+    expect(new Set(rows).size).toBe(rows.length);
+    for (const required of ['auth', 'family', 'accountDeletion']) expect(rows, required).toContain(required);
+    // A new copy file must join with one row, or say why not.
+    expect(Object.keys(features).filter((k) => !rows.includes(k) && !optOut.includes(k))).toEqual([]);
+    // An opt-out is for a file that exists and has no row, and it says why.
+    expect(optOut.filter((k) => !(k in features) || rows.includes(k))).toEqual([]);
+    for (const [k, why] of Object.entries(SURFACE_OPT_OUT)) expect(why!.trim().length, k).toBeGreaterThan(20);
+    // A row points at the copy it names.
+    for (const s of SURFACES) expect(s.copy, s.name).toBe(features[s.feature]);
+  });
+});
+
+describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as const))('%s', (_title, surface) => {
+  const ALL = leaves(surface.copy);
+  const paths = new Set(ALL.map((l) => l.path));
+  const line = (l: Leaf) => `${l.path}: ${l.text}`;
+  const placeholdersIn = (l: Leaf) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!);
+  const fillWith = (text: string) => text.replace(/\{(\w+)\}/g, (m, k: string) => surface.vars[k] ?? m);
+  const sanctioned = (path: string, allowed: readonly string[] = [], prefixes: readonly string[] = []) =>
+    allowed.includes(path) || prefixes.some((p) => path.startsWith(p));
+
+  it('finds the copy it checks, and every exception it names is a real leaf, so none can go stale', () => {
+    expect(ALL.length).toBeGreaterThan(0);
+    const named = [
+      ...(surface.we.allowed ?? []),
+      ...surface.buttons,
+      ...(surface.filled ?? []),
+      ...Object.values(surface.placeholderOnly ?? {}).flat(),
+      ...surface.banned.flatMap((b) => [...(b.allowed ?? []), ...(b.only ?? []), ...(b.exactly ?? [])]),
+    ];
+    expect(named.filter((p) => !paths.has(p))).toEqual([]);
+    const prefixes = [...(surface.we.allowedPrefixes ?? []), ...surface.banned.flatMap((b) => b.allowedPrefixes ?? [])];
+    expect(prefixes.filter((p) => !ALL.some((l) => l.path.startsWith(p)))).toEqual([]);
+  });
+
+  it('says "we" or "our" only where the surface may (principle 2)', () => {
+    const bad = ALL.filter((l) => !sanctioned(l.path, surface.we.allowed, surface.we.allowedPrefixes) && surface.we.re.test(l.text));
+    expect(bad.map(line)).toEqual([]);
+  });
+
+  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
+    expect(surface.buttons.length).toBeGreaterThan(0);
+    // The list cannot fall behind the file: every leaf named ...Button or ...Cta is on it.
+    const named = ALL.filter((l) => /(?:button|cta)$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
+    expect(named.filter((p) => !surface.buttons.includes(p))).toEqual([]);
+    for (const key of surface.buttons) {
+      const label = get(surface.copy, key);
+      expect(typeof label, key).toBe('string');
+      expect((label as string).length, key).toBeLessThanOrEqual(22);
+      expect(fillWith(label as string).length, key).toBeLessThanOrEqual(22);
+    }
+  });
+
+  it('uses only the placeholders this file may use, where it may use them', () => {
+    const used = ALL.flatMap((l) => placeholdersIn(l).map((name) => ({ path: l.path, name })));
+    expect(used.filter((u) => !surface.placeholders.includes(u.name)).map((u) => `${u.path}: {${u.name}}`)).toEqual([]);
+    for (const [name, where] of Object.entries(surface.placeholderOnly ?? {})) {
+      expect(used.filter((u) => u.name === name).map((u) => u.path).sort(), `{${name}}`).toEqual([...where].sort());
+    }
+    for (const key of surface.filled ?? []) expect(fillWith(get(surface.copy, key) as string), key).not.toMatch(/[{}]/);
+  });
+
+  for (const b of surface.banned) {
+    it(`never says ${b.name}, outside its named exceptions`, () => {
+      const pool = b.only ? ALL.filter((l) => b.only!.includes(l.path)) : ALL;
+      const hits = pool.filter((l) => b.re.test(l.text) && !sanctioned(l.path, b.allowed, b.allowedPrefixes));
+      // A claim that is true in one place only must be there, and nowhere else.
+      if (b.exactly) expect(hits.map((l) => l.path)).toEqual([...b.exactly]);
+      else expect(hits.map(line)).toEqual([]);
+    });
+  }
+
+  it('spells for the US storefront (D-087)', () => {
+    expect(offenders(ALL, surface.uk)).toEqual([]);
   });
 });

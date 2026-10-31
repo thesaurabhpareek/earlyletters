@@ -3,23 +3,29 @@
  * Export words. `{app}` is the public name, filled from packages/brand by the export builder.
  *
  * Screen strings that already exist are reused from content:
- * `settings.export.title`, `.body`, `.button`, `.preparing`, `.ready`.
+ * `settings.export.title`, `.button`, `.preparing`, `.ready`.
  */
 export const exportCopy = {
   screen: {
     includesTitle: 'What is inside',
-    includesLetters: 'Every letter and note, as text',
+    // v1.0 makes no notes (S43).
+    includesLetters: 'Every letter, as text',
     includesRecordings: 'Every recording on this phone, exactly as it was made',
     includesBook: 'A printable book for each child, by month',
     // D-074: what the machine changes is a "small fix", never a tidy-up.
     includesData: 'A data file with your words as heard, every small fix, and the final text',
-    // BL-323: signed in, the export also reads your consent record from our server, so the note speaks of the file only.
-    offlineNote: 'Works without a connection. The file is made on this phone and goes only where you save or share it.',
+    // Option B (D-100): letters sync, so the line is about the export only, never a claim that nothing leaves
+    // the phone. The export is built on this phone; signed in, it also reads the person's own consent record and
+    // spelling list from the server for account.json (BL-323), and sends nothing. Counsel claims review.
+    offlineNote: 'The export is made on this phone. It goes only where you send it.',
+    // Above the disabled button while the book has no letter.
+    emptyNote: 'You can export once the book has a letter.',
     packing: 'Packing your letters',
     checking: 'Checking every file',
     progressA11y: 'Export progress',
     cancelButton: 'Stop',
-    cancelled: 'Stopped. Nothing was kept.',
+    // "Nothing was kept" could read as letters not kept.
+    cancelled: 'Export stopped.',
     shareButton: 'Save or share',
     /** DATA-REQ-056: one line, shown with the share action. */
     privacyNotice: 'This file holds your letters and recordings, unlocked. Keep it somewhere private.',
@@ -27,8 +33,9 @@ export const exportCopy = {
     againButton: 'Export again',
     failedTitle: 'The export did not finish',
     failedBody: 'Your letters and recordings are all still here. Please try again.',
-    tooBigBody: 'This export is larger than one file can hold. Write to us and we will help you get every letter out.',
-    lowSpaceBody: 'This phone needs a little more free space to make the export. Free some space and try again.',
+    // Too big: the title, then `settingsHome.helpValue` "Write to us" as the primary (S43).
+    tooBigTitle: 'This book is too big for one file',
+    lowSpaceBody: 'This phone needs more free space first.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
   },
 
@@ -74,7 +81,7 @@ export const exportCopy = {
     '            Letters you kept private are not in the printable book.',
     '            They are in letters/ and data/ with everything else.',
     'letters/    Every letter and note as a plain text file, one folder per child and month.',
-    'audio/      Every recording on this phone, exactly as it was made (M4A, AAC).',
+    'audio/      Every recording on this phone, exactly as it was made (AAC audio, as .m4a or .aac).',
     '            Open them in any music or video player.',
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
@@ -107,8 +114,9 @@ export const exportCopy = {
     '',
     'manifest.json lists every file with its size and SHA-256 fingerprint.',
     'manifest.sha256 holds the fingerprint of manifest.json itself.',
-    'To check a file on a Mac:      shasum -a 256 audio/FILE.m4a',
-    'To check a file on Windows:    certutil -hashfile audio\\FILE.m4a SHA256',
+    'To check a file on a Mac:      shasum -a 256 audio/FILE',
+    'To check a file on Windows:    certutil -hashfile audio\\FILE SHA256',
+    'FILE is the full name of the recording, ending in .m4a or .aac.',
     'The result should match the line for that file in manifest.json.',
     '',
     'KEEPING IT SAFE',

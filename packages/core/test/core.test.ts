@@ -122,8 +122,11 @@ describe('verifier: allowed model edits', () => {
   it('accepts a one-word agreement fix with the same stem', () => {
     const raw = 'She have two teeth now.';
     expect(checkEdit(modelEdit(raw, 'agreement', 'have', 'has'), ctx(raw))).toBeNull();
-    const raw2 = 'She walk to me every morning.';
-    expect(checkEdit(modelEdit(raw2, 'agreement', 'walk', 'walks'), ctx(raw2))).toBeNull();
+    const raw2 = 'She go to me every morning.';
+    expect(checkEdit(modelEdit(raw2, 'agreement', 'go', 'goes'), ctx(raw2))).toBeNull();
+    // A verb outside the closed table is refused (R-01 D9, F06-REQ-007).
+    const raw3 = 'She walk to me every morning.';
+    expect(checkEdit(modelEdit(raw3, 'agreement', 'walk', 'walks'), ctx(raw3))).toBe('agreement_stem_mismatch');
   });
 
   it('accepts a model stt_fix only when the replacement is a dictionary term', () => {
@@ -215,8 +218,10 @@ describe('verifier: adversarial model edits are rejected', () => {
   });
 
   it('discards all model edits when the model touches too much', () => {
-    const raw = 'she walk. she talk. she run. she eat. she sing. she jump.';
-    const edits = ['walk', 'talk', 'run', 'eat', 'sing', 'jump'].map((w) => modelEdit(raw, 'agreement', w, w + 's'));
+    // Closed-table pairs (F06-REQ-007), so each edit passes on its own and only the ceiling refuses them.
+    const raw = "she have. she go. she do. they is. she were. she don't.";
+    const pairs: Array<[string, string]> = [['have', 'has'], ['go', 'goes'], ['do', 'does'], ['is', 'are'], ['were', 'was'], ["don't", "doesn't"]];
+    const edits = pairs.map(([w, r]) => modelEdit(raw, 'agreement', w, r));
     const out = faithfulClean(raw, { level: 'clean', dictionary: DICT, modelEdits: edits });
     expect(out.text).toBe(raw);
     expect(out.rejected.filter((r) => r.reason === 'change_ceiling_exceeded')).toHaveLength(6);

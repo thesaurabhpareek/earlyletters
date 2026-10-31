@@ -131,14 +131,14 @@ export function ashaSnapshot(): ExportSnapshot {
     ],
     // The 18+ gate was answered yes; v1.0 never asks about usage sharing.
     consent: phoneConsent(true, null),
-    // Signed out: there is no server record (schema 1.2.0).
+    // Signed out: there is no server record (schema 1.3.0).
     consentHistory: noConsentHistory('not_signed_in'),
     // What each book spells your way on this phone (store.dictionaryFor): the child's name and your signature.
     dictionary: [
-      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], source: 'phone' },
-      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
-      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], source: 'phone' },
-      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
+      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], forms: null, source: 'phone' },
+      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
+      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], forms: null, source: 'phone' },
+      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
     ],
   };
 }

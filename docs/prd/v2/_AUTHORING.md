@@ -1,0 +1,221 @@
+# PRD V2 authoring contract
+
+Read this before writing or reviewing anything in `docs/prd/v2/`. It is the rulebook for every writer (human or agent) and every critic. Date: 3 Oct 2026.
+
+## 1. What V2 is
+
+V2 replaces `docs/prd/PRD.md` 1.3 as the product requirements for Early Letters (codename `scribe`). It covers the whole product. Release v1.0 is specified to build depth. v1.1 and later are stack-ranked with lighter specs. It keeps every existing requirement ID (A-REQ, B-REQ, C-REQ, PRD-REQ, LEGAL-REQ, DATA-REQ) so `docs/BACKLOG.md` and test titles still trace (ADR 0011). New requirements use `F##-REQ-###`.
+
+V2 is written for three readers: the founder (decides), architects (shape how), and AI agent engineers who build from it without asking questions. If an agent would have to guess, the spec is not done.
+
+## 2. Source of truth, in this order
+
+1. **Founder decisions in `docs/agents/BRIEF-2026-10-03.md`** (newest; the founder confirmed on 3 Oct that the brief wins over PRD 1.3).
+2. `docs/DECISIONS.md` (D-###), where the brief does not override it.
+3. `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ) and `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). A legal duty wins over a product wish until counsel or the founder says otherwise. If a brief decision collides with a legal duty, do not resolve it yourself: write it as an open question for counsel and the founder.
+4. `docs/prd/PRD.md` 1.3 and appendices A, B, C.
+5. `docs/tdd/01` to `10`, `docs/adr/*`, `docs/ARCHITECTURE.md` (note its 3 Oct status box).
+6. Research: `docs/prd/v2/research/R1..R3`, `docs/research/USER_RESEARCH.md` (UR), `docs/research/COMPETITIVE_RESEARCH.md` (CR).
+
+## 3. What the 3 Oct brief changes (apply these; do not re-argue them)
+
+| # | Brief decision | What it overrides in 1.3 | Consequence a writer must handle |
+|---|---|---|---|
+| B1 | Family at v1.0 is **co-parent only**. Contributors (grandparents, aunts, uncles) and the web contribution page are v1.1. The database keeps contributor support; the app hides it. | D-002, K-35, B-REQ-007/-009/-010 contributor paths, C-REQ-007 family-letter push | Co-parent letters still need approval rules, notifications and visibility. "Family authors free" now means co-parents at v1.0. |
+| B2 | **Payments: Apple only, out of the box.** StoreKit 2 with Apple's own subscription UI (SubscriptionStoreView or the closest Apple-provided equivalent reachable from Expo), Apple's restore and manage sheets, on-device entitlement check (`Transaction.currentEntitlements`). No server of ours sees purchases. No RevenueCat, no App Store Server Notifications endpoint. Co-parent gets Plus through Apple Family Sharing. Server entitlement tables are removed; server code does not enforce Plus. $3.99/month with 1-month trial, $29.99/year with 2-month trial. | ADR 0013 server parts, D-001 server parts, PRD-REQ-003 (server-computed notices), PRD-REQ-015 server enforcement, PRD-REQ-017 purchase ledger, K-28 (Plus per account inherited by books), C-REQ-024 to C-REQ-026 notice delivery | (a) Auto-renewal and trial notices (LEGAL-REQ-047, California ARL) can no longer be computed from server snapshots. Billing emails are parked on branch `feat/email-brand-library`. Open question for counsel. (b) Family Sharing covers a co-parent only if both are in the same Apple Family group. (c) The second-child Plus rule is enforced on the device only. |
+| B3 | **Sign-in:** Sign in with Apple, Sign in with Google, email magic link. Passkeys can be added after sign-in. No passwords. | D-044 (Google in v1.1), A-REQ-017 tier | 1.3 specifies link plus 6-digit code (A-REQ-018). The brief says "magic link". Keep the code unless a reason to drop it is found; flag it. |
+| B4 | **Spoken-letter languages at v1.0:** English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese. Each needs strong language-specific transcription, correct spelling, script and punctuation (Hindi in Devanagari, Arabic right to left, Chinese characters, accents), and phonetics for taught names. App UI stays English but localisation-ready. Hindi-English code-switching mode is v1.1. | K-24 (English and Hindi, code-switched speech P0), B-REQ-003 Hindi script choice | Seven languages multiply the transcription, packs, review and QA work. Code-switching moves out of v1.0. |
+| B5 | Machine may fix spelling, script, punctuation, remove "um" and stumbles, tiny agreement slips. Never rewords. **Typed text keeps the keyboard's own autocorrect; we never rewrite typed text.** | none (confirms the constitution) | Typed letters get no machine edit pass at all. |
+| B6 | **Audio:** the original recording is never altered. Apple voice processing at record time where it helps, and/or proven open-source noise suppression (RNNoise BSD, DeepFilterNet MIT/Apache) to make a cleaner listening copy. The person can always hear the original. | new | Two audio files per letter (original, listening copy) or one plus a flag. Storage and export implications. |
+| B7 | **Deferred to v1.1:** Hindi-English mode; the safety classifier (a static "If you are struggling" row ships instead); word highlighting in Read together; family hearing each other's recordings (**no audio upload in v1.0**); Google Play / Android; the web contribution page. | D-032, PRD-REQ-021 (shared voice), D-034, PRD-REQ-020 (defines a Read together session by word-highlight playback), ROADMAP M4 and M7 | (a) In v1.0 a co-parent cannot hear the other parent's recordings; only the author's phone holds the audio. (b) PRD-REQ-020 must be redefined. (c) Plus at v1.0 has no cloud backup. |
+| B8 | **Beta** runs on TestFlight. The store listing never says "beta". The app keeps a small "early version, can make mistakes" note. | Resolves D-030, K-37 | |
+| B9 | Privacy and trust are paramount and conveyed subtly: never sold, never used for ads, never used to train models. Calm, in the right places, backed by real controls. | | |
+| B10 | Analytics: opt-in PostHog plus server aggregates, feeding a self-learning loop where agents read the data, write findings and propose backlog items. | D-003 confirmed | Server aggregates can no longer include purchase data (B2). |
+| B11 | Domains: earlyletters.com primary; earlyletters.app redirects. Email through Resend; hello@earlyletters.com live. Legal pages at /terms, /privacy, /health-privacy, /subprocessors. Universal links on https://earlyletters.com. | Q5, BL-100 | |
+| B12 | Publisher: individual Apple Developer account. | D-004 confirmed | |
+| B13 | **Lean app:** download size under 40 MB, measured on every release build. Ships: code, English text-rules pack, subset fonts. Downloaded on demand: speech models and every non-English language pack. Packs are data, not code (versioned JSON plus model file, SHA-256 against a signed manifest), interpreted by a generic engine in the app (App Store 2.5.2). Prefer Apple-hosted Background Assets if feasible from Expo; else a cheap-egress CDN (Cloudflare R2, Hugging Face for public models). Packs deletable in Settings. | PRD 7.7 (80 MB budget) | |
+| B14 | **Server-driven content inside native screens** (recommended, founder may override): prompts, tips, onboarding story cards, announcements, remote config, feature flags, kill switches, pack manifests as typed, schema-validated, versioned, signed or hashed, cached content blocks from an edge cache. Works offline from the last good copy. Never server-driven: anything that changes data collection or the paywall, or could slip past App Review (2.5.19, 2.3.1(a)). | new | |
+| B15 | **API quality:** every endpoint has a p95 budget and an auth check, is idempotent under retries, rate-limited, content-free in logs, carries request ids, uses user JWTs only (no service keys in the app). Public config and manifests from CDN with long cache plus ETag. User data through Supabase RLS and RPCs in one US region. Typed, versioned contracts in `packages/api`. | new | |
+| B16 | Standard over custom. Quality bar: Airbnb, Calm, Headspace, Day One, Apple's own apps. Use Reanimated, Gesture Handler, @gorhom/bottom-sheet, Apple-native views through Expo. | | |
+
+## 3b. Founder decisions after the brief (3 to 4 Oct 2026). These win over B1 to B16 where they differ.
+
+Sources: `docs/DECISIONS.md` on `origin/develop` (D-068 to D-081) and on `origin/main` (D-051, D-052, membership; main and develop number D-051 to D-053 differently, so cite main's as "D-051 (main)"); D-082 to D-085 have no log entry yet and are cited from the code and docs that carry them (`packages/core/src/plan.ts`, `apps/mobile/src/lib/billing/`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, commits 71070c4, f4cdbc3, 6482cd3). `docs/ROADMAP.md` 2.1 on develop is the current plan.
+
+| # | Decision | Replaces | What a writer must do |
+|---|---|---|---|
+| M1 | **Membership (D-051 main, D-082, D-083).** The first **2 letters kept per account are free**, one pool across every book. After that, the **Keep** step of a new letter needs Plus. Capturing, typing, reviewing, reading, playing, exporting, deleting and restoring are never gated. A letter held at the gate is never lost (it stays on the phone until Plus or deletion). A never-decreasing ledger counts letters ever kept (Keychain plus database mirror, healed at launch); deleting a letter does not give a free letter back; "Erase everything" resets it. Remote config may only raise the allowance. One calm line after the second free letter; no counters. | The "free forever: write" promise, PRD-REQ-015 (second child Plus), PRD-REQ-020 and DR-06 (Read together sessions), DR-08 | Plus is the membership. Rewrite every "free forever" claim as: letters already made always stay readable, playable and exportable. |
+| M2 | **Read together and extra books are free** (D-082, D-083). No session counter. Starting a book for another child has no gate. | PRD-REQ-020, D-037, PRD-REQ-015 | Delete session-counting requirements; F10 and F12 have no Plus gate. |
+| M3 | **Prices (D-082, 4 Oct):** Plus Monthly $4.99 with a 1-month free trial; Plus Annual $49.99 with a 2-month free trial. Display names per D-077. | B2 prices | Use these numbers everywhere. Price-point availability in App Store Connect is unverified (ops doc). |
+| M4 | **Family under one membership (D-051 main):** a co-parent adds letters under the book's membership without their own. Whether a co-parent's kept letters count toward the 2 free is an open edge (D-051 edge 1); the code counts per account. Co-parent Plus otherwise only through Apple Family Sharing (D-080). | DR-03 framing | State the open edge; do not decide it. |
+| M5 | **Offer codes (D-052 main):** Apple offer codes only, a "Redeem a code" row in Settings > Plan; no code system of ours. | none | F14, F17. |
+| M6 | **Subscription status report (D-080, D-081).** The app reports status only (plan, trial end, renewal date, cancelled flag, plus the consent facts on first report) so the server sends California auto-renewal reminder emails. No receipts, no payment data; the server never enforces Plus. On-device plan reminders and "Save a copy" after purchase are also v1.0 (ROADMAP 2.1, BL-342). | B2 "no server sees purchases", DR-02 default | DR-02 is answered. |
+| M7 | **Encrypted backup of the owner's recordings ships in v1.0 (D-073).** Hearing each other's recordings stays v1.1. | B7 "no audio upload in v1.0", DR-07 partly | F08, F16, F17 must spec backup; copy never promises family listening. |
+| M8 | **At most two parents per book (D-069)**, server-enforced. | F11 recommendation | Mark as decided-recommended per D-069 status. |
+| M9 | **"Word for word" (D-074)** names the edit feature; "tidy" words leave the product. | F06 naming | |
+| M10 | **Quiet-day marks (D-084):** "Not much today" stores a mark with no words; the Book shows an unsigned "A quiet day" row; marks never count, print, play or move into the book. | F04, F09 | |
+| M11 | **Recently deleted shelf (D-085):** confirm before delete, durable erase, playable check, "Last export". | F09, F17 | |
+| M12 | **Remote config has one source (D-068, ADR 0016)**; **insights agents never push (D-070)**; API standards in ADR 0017; languages and models per ADR 0014 and ADR 0015 (Hindi has its own model; the others share turbo). | F18, F19, F05 | Cite the ADRs; do not re-specify what they decide. |
+| M13 | **Timeline (ROADMAP 2.1):** submit to App Review in the week of Mon 2 Nov 2026; release planned Mon 16 Nov. Much of v1.0 exists in code and is green in CI but has not run on a real iPhone. | V2's 11 Jan date | Work packages say what exists, what is missing, and what needs a device. |
+
+| M14 | **Server features are ON for v1.0 (founder, 13 Oct 2026, in the PRD V2 session).** Reverses commit c1764f9 ("v1.0 on-device only"): `EXPO_PUBLIC_SERVER_FEATURES=on` in the release profiles, so sign-in, sync, co-parent sharing (D-069 cap), encrypted recording backup (D-073) and the subscription status report with reminder emails (D-080) all ship in v1.0. The switch stays as the kill path. Consequences: the M5 security fixes (BL-330, BL-347, BL-322, BL-331) gate any outside tester; migrations must be applied to staging and production; legal pages must be live before sign-in; the 2 Nov submission date is at risk and must be re-planned in `08-delivery.md`. | c1764f9, ROADMAP 2.1 "on-device" parts, F14 DR-17 default | Requirements tagged [server] are v1.0. Log this as a D-### in `docs/DECISIONS.md` (coordinator). |
+
+| M15 | **Keep the full v1.0 scope and move the date (founder, 13 Oct, after critique round 1).** Recording backup, co-parent, sign-in and sync all stay in v1.0. Submission moves to about mid-January 2027; `08-delivery.md` sets the exact week from the merge budget. (Note, 15 Oct: after critique round 2, `08-delivery.md` section 2.2 plans the week of Mon 3 May 2027, T36, about 40% confidence. The founder has not chosen between the two dates; D-100's 15 Oct status in `docs/DECISIONS.md` says the date is open.) | 08 "23 Nov" plan, cut lists that drop backup | Re-plan honestly from the merge budget; cut only P1 extras. |
+| M16 | **Backup keys are recoverable, and the copy says so (founder, 13 Oct).** Keep server escrow. Copy says recordings are encrypted, we hold a recovery key under strict, logged access, and they are never read, sold or used to train models. No "only your family's keys" claim anywhere. | F08 E2E wording, mic string, legal lines | Specify the access log, who can unwrap, and how; fix every claim. |
+| M17 | **Free letters count your own letters, once their words exist and you have seen them (founder, 13 Oct).** The other parent's synced letters never count. A voice-only letter waiting for its model does not count until its words are reviewed and kept. Ledger stays never-decreasing. | Code's count of letters present on the device; DR-16 | Change F14 and the ledger spec; work packages to change the code. |
+
+Decisions after the PRD V2 merge (added by the daily PRD update, 23 Oct 2026; source `docs/DECISIONS.md` on `develop`).
+
+| # | Decision | Replaces | What a writer must do |
+|---|---|---|---|
+| M18 | **PRD V2 is the spec of record (D-105).** `docs/prd/v2/` replaces PRD 1.3 once PR #124 merges (merged 16 Oct). Requirement IDs keep their meaning. Where V2 and a LEGAL-REQ disagree on a legal duty, counsel decides. | PRD 1.3 as spec of record | Cite V2 IDs. Do not retire a LEGAL-REQ by a founder decision alone. |
+| M19 | **Alpha first (D-106, founder, 15 Oct).** Option B ships as a TestFlight alpha with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha. | M15's submission week as the next milestone | `08-delivery.md` plans the alpha first; the submission date stays open until re-planned. |
+| M20 | **Merge delegation (D-107, founder, 15 Oct; the founder-only list is superseded in part by D-117, M30).** The coordinator merges app code, docs and tests into `develop` after two independent review agents pass and CI is green. Founder-only: `supabase/**`, auth, payments (billing, StoreKit, `plan.ts`), release configuration, the CODEOWNERS engine files, and any production deploy. | D-104 item 1; the "founder merges every pull request" note below | Name the merge owner by this rule in work packages. |
+| M21 | **Backup recovery (D-108, founder, 15 Oct).** A device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to the backup server as built on PR #151: ten functions and nine settings, not four functions and three secrets. | F08-REQ-034 first text; F08 6.5 C and G2 | F08 carries the amended text (F08-REQ-034, F08-REQ-044). |
+| M22 | **Experience pass calls F2 to F8 (D-109, coordinator, 16 Oct; founder may reverse).** The lamp gradient is allowed; `app.welcome` lockup at 96 pt; the welcome-first order is held for counsel (F4); the Declared Age Range call is owned by S14 with S17 before App Store submission; Plus display names are Plus Monthly and Plus Annual; server surfaces are in v1.0 (D-100); typed letters skip Review. | none | F03, F04 and F14 follow these. Typed letters meet D-103 condition (c) when kept on Write. |
+| M23 | **Lamp contrast (D-110, coordinator, 16 Oct; founder may reverse).** `text`, `textMuted`, `accent` and `focus` hold 4.5:1 everywhere at every lamp peak in both schemes. Status colours hold 4.5:1 where text sits and never sit on the lit paper of the age gate or Read together. Tests run on three phone sizes. | none | Accessibility acceptance in 06 and the screen specs uses this rule. |
+| M24 | **Alpha calls (D-111, founder, 17 Oct).** Fictional family only on `main`; Vercel previews off; domains per D-097 and D-063; the alpha transcribes English only; the 500-kill test on the hosted macOS runner with a Mac fallback; backup is free for everyone in v1.0 (D-104 item 2 decided); the server keeps erase records and held-draft markers (ids and times, never words) until the book or account is deleted; R-17 limits stay as built and `peek_invite` never returns the child's name or ids before consent; held-draft sync on in build 2 unless not green in `sync-two-phone` by Fri 23 Oct; the first keep's transcript stands and the second phone's words become a conflict copy; the promise screen goes to about 70 words; the name step hides the cover below 480 pt free height. Counsel items stay open (7, 13). | D-104 item 2 proposal; F08 Q2 default; F02-REQ-021 child name in `peek_invite`; F03 "about 60" words and 640 pt | F02, F03, F08, F11, F14 and F16 follow these. Do not decide items 7 and 13 for counsel. |
+| M25 | **Engine 6 open calls (D-112, coordinator, 23 Oct; founder may reverse).** The D14 character rule stays as built for the alpha (WP-F06-05 follows it, stores each change as an undoable `punctuation` edit and narrows `NUMBER_DASH`); `meaning.commonWords` is kept minus mason, carter, cooper, hunter, rowan; "mm" moves from `fillers.auto` to `fillers.suggest`; kinship rule 4 is confirmed as built | F06-REQ-008, F06-REQ-010, WP-F06-05; PR #179 review | F06 follows. |
+| M26 | **Co-parent build 2 (D-113, coordinator, 23 Oct; founder may reverse).** Leave is hidden in build 2 until left books are listed under "Letters to {child}" with read, export and delete (BL-444, before build 3); the invite share text keeps the child's name; the server's peek still never reveals it | F11 6.2 D step 1, F11-REQ-011 | F11-REQ-088 added. |
+| M27 | **Database budgets (D-114, coordinator, 23 Oct; founder may reverse).** Pull requests run the plan and named-index checks at 250 x 400; the p95 budgets run on the nightly only at 1,000 x 400; a nightly red from a missed budget alone is advisory for go/no-go row B2-22 | `07-quality-bar.md` L3 | Nightly cannot fire until `develop` is the default branch (AF-05, founder). |
+| M28 | **Pack release (D-115, coordinator, 23 Oct; founder may reverse).** An English-only pack release is a build 1 prerequisite; the founder runs the key ceremony, `release`, `upload` and `verify` on one computer; `release` defaults to `--languages en`; a non-English pack ships only when a native reviewer and the founder say so | WP-F19-04, F05 Q5 | The alpha picker gate is S12. |
+| M29 | **Former members' letters (D-116, coordinator, 23 Oct; founder may reverse).** A former member's letters, held drafts and recording backups survive the remaining parent's book deletion and purge; the book row stays tombstoned for labels until BL-444 | DATA-REQ-014 | F16-REQ-034 added. Privacy policy lines are counsel's. |
+| M30 | **Blanket approval (D-117, founder, 23 Oct).** The founder's words: "Everything is approved. Don't keep asking me to approve things. I give you a blanket approval." The coordinator's operating rule under it (not the founder's words; the founder may reverse): the coordinator also merges `supabase/**`, auth, payments, `.github/**`, `eas.json`, `app.config.ts`, the engine files and alpha production deploys after two independent passing reviews on the current head and green CI. Founder-only steps stay: applying migrations to hosted projects, the Apple, Expo, Supabase and Vercel accounts and secrets, the signing and escrow keys. Legal text is counsel's | M20 (D-107) is superseded in part | Name the merge owner by this rule in work packages. |
+| M31 | **Website names the founder's child (D-118, founder, 27 Oct).** Only `apps/web/src/content/site.ts` may carry the child's first name, through one narrow exception in both copies of the real-family guard. Tests, fixtures, docs, `packages/content`, the app and this PRD keep the fictional family "Asha". | D-111 item 1, for `site.ts` only | D-118 proposes, and does not make, the matching change to F21-REQ-017. Never write the name in the PRD. |
+| M32 | **Logo round 4 (D-119, design lead, 27 Oct; founder may reverse).** The approved mark (D-071) stays primary; the two-tone version (B) is the alternate; C and D are rejected. Trademark clearance (BL-366) stays open. | none | F21 and brand rows cite D-071 and D-119. |
+| M33 | **Build 2 invites are link-only (D-120, coordinator, 27 Oct; founder may reverse).** The phone shares and opens invite links and makes, shows and sends no typed code. Typed codes wait for a code-registration route and client (BL-445, after the alpha). F11-REQ-001, -002, -007 and A-REQ-029 stand; this defers their code half past build 2 on the phone. | none | F11 notes the deferral; the requirement text is unchanged. |
+| M34 | **Staged release (D-121, coordinator on the founder's delegation, 28 Oct; founder may reverse).** The first store build is the `production` profile: server features, backup, status report and analytics off, English only, Plus on; target submission Tue 1 Dec 2026. The full scope ships in later 1.0.x releases in this order: sign-in, sync and co-parent sharing; status report and reminder emails; owner backup; the other six languages. | D-100, D-101, M14, M15 for the first binary only | The `08-delivery.md` header and `11-requirement-rules-and-retro-changes.md` section 8.2 carry it. Requirements tagged [server] ship with their 1.0.x stage. |
+| M35 | **Repository stance (D-122, 28 Oct; founder may reverse).** All rights reserved `LICENSE`; outside pull requests limited to collaborators; new design-level detail goes to a private repository; planning documents (including `docs/prd`) never ship in the app or the website. | none | None for spec text. |
+| M36 | **Requirement rules (D-123, 28 Oct).** RR-1 to RR-13 adopted with the changes in `11-requirement-rules-and-retro-changes.md` section 8.1. | none | New or changed rows follow the adopted rules. |
+| M37 | **Open-question sweep (D-124, 28 Oct; founder may reverse).** The two-parent cap takes effect in the first release that turns co-parent sharing on (a 1.0.x stage); analytics stays off for the whole 1.0 line; #127 is superseded; backup stays free and `plan.ts` changes after the go/no-go. Its go/no-go date of Thu 5 Nov is superseded by D-130. | DR-20 note; F18 v1.0 rows | F18 rows bind from v1.1 or later. |
+| M38 | **Rulings on the remaining questions (D-125, 28 Oct; founder may reverse).** DR-19 option A (D-104 item 3 closed); DR-01 A with an unlock order (Spanish, French, Portuguese and Mandarin as reviewers sign, then Hindi after counsel Q9, then Arabic); DR-21 as written with minimum samples of 500 downloads and 100 trial starts; DR-15 A with co-parent sharing; DR-20 and 08 section 6.2 superseded; the production App Store record waits for the individual or entity call by Fri 13 Nov; the store listing does not say "exactly as you said it" until counsel clears it; F08-REQ-034 confirmed at ten entry points and nine settings. | DR-01, DR-15, DR-19, DR-20, DR-21 open status | `09` records these as answered. |
+| M39 | **No "coming soon" co-parent surface in the store build (D-126, 28 Oct; founder may reverse).** With server features off, the Family tab, the Settings row and the invite entry points are hidden by the existing capability switch. Alpha build 2 keeps the current screens. The change lands after the go/no-go. | none | F11 and F21 note it. |
+| M40 | **No paid inference for the agent harness (D-127, founder's words, 30 Oct).** | none | None for spec text. |
+| M41 | **Privacy row in build 2 (D-128, founder, 30 Oct).** Settings > Privacy's sync row shows On or Off for a signed-in person, or "Waiting for a connection"; no withdrawal control in build 2. The withdrawal sheet and `withdraw_sensitive_data` are built before any friend outside the family signs in. | none | F17 notes it against LEGAL-REQ-006 and LEGAL-REQ-008. |
+| M42 | **Delete account hidden in the alpha builds (D-129, founder, 30 Oct).** The row shows only when `EXPO_PUBLIC_ACCOUNT_DELETION` is `on`, set only if the purge worker runs on staging and the sole-parent drill passes by Mon 2 Nov noon PT. The open-request screen with Cancel deletion is not behind the switch. | none | F17 notes it; go/no-go row B2-13 is unchanged. |
+| M43 | **Alpha dates (D-130, founder, 30 Oct).** Build 2 freeze Tue 3 Nov 2026 (5:00 AM PT is the coordinator's hour) and go/no-go Mon 9 Nov 2026. | D-124's Thu 5 Nov go/no-go | `08-delivery.md` and `11` use Mon 9 Nov. |
+
+Decisions log: M14 to M17 are recorded in `docs/DECISIONS.md` as D-100 to D-103 by PR #128 (first drafted there as D-089 to D-092 and renumbered, because PR #108 uses D-089 to D-092 for the release-engineering decisions and PR #122 uses D-093 to D-099; D-103 amends D-083's rule that a voice letter kept without words counts at once). The three delivery defaults are D-104 in that PR. Superseded in part: item 1 is replaced by D-107 (M20), item 2 is decided by D-111 (M24, backup free), item 3 (voice-only counting) is still proposed.
+
+Decided since: D-023 sync engine is outbox and cursor on expo-sqlite (founder, 3 Oct). Decisions still open (cite, do not decide): the eight D-051 (main) open edges, D-033 free audio durability copy, D-004 individual-publisher hedge, D-045 beta cohorts, D-031 Hindi script default, D-050 second consent at first share (counsel), plus anything the brief creates (see B2 consequences).
+
+## 4. Feature map and file names
+
+v1.0 features get full specs. v1.1 and later get light specs in `features/F30-later.md`.
+
+| ID | Feature | File | Release |
+|---|---|---|---|
+| F01 | Entry, 18+ gate and welcome | `features/F01-entry.md` | v1.0 |
+| F02 | Account and sign-in (Keep the book, local-first, re-ownership) | `features/F02-account.md` | v1.0 |
+| F03 | First run: child, signature, languages, names | `features/F03-first-run.md` | v1.0 |
+| F04 | Capture: speak or type a note or letter | `features/F04-capture.md` | v1.0 |
+| F05 | On-device transcription and language packs | `features/F05-transcription.md` | v1.0 |
+| F06 | Faithful edit and review | `features/F06-faithful-edit.md` | v1.0 |
+| F07 | Names and words dictionary | `features/F07-dictionary.md` | v1.0 |
+| F08 | Recordings: original, listening copy, playback, durability | `features/F08-recordings.md` | v1.0 |
+| F09 | The book: month chapters, Before You, cards | `features/F09-book.md` | v1.0 |
+| F10 | Read together | `features/F10-read-together.md` | v1.0 (word highlight v1.1) |
+| F11 | Co-parent sharing | `features/F11-co-parent.md` | v1.0 |
+| F12 | Multiple children | `features/F12-children.md` | v1.0 |
+| F13 | Prompts, reminders and notifications | `features/F13-prompts-reminders.md` | v1.0 |
+| F14 | Plus: subscription, paywall, lapse | `features/F14-plus.md` | v1.0 |
+| F15 | Export and the PDF book | `features/F15-export.md` | v1.0 |
+| F16 | Sync, devices and restore | `features/F16-sync.md` | v1.0 |
+| F17 | Settings, privacy controls, consents and deletion | `features/F17-settings-privacy.md` | v1.0 |
+| F18 | Analytics and the learning loop | `features/F18-analytics.md` | v1.0 |
+| F19 | Server-driven content, remote config, kill switches, pack delivery | `features/F19-content-config.md` | v1.0 |
+| F20 | Help, support and safety resources | `features/F20-help-safety.md` | v1.0 |
+| F21 | App Store listing, website and legal pages | `features/F21-store-web.md` | v1.0 |
+| F31 to F49 | Later releases, numbered and ranked in `05-feature-map.md` section 3 (shared voice and audio backup, contributors, Hindi and Arabic catch-up and code-switching, word highlight, server transcription, Android, web page, second-language versions, safety classifier, story intro, sealed letters, print, lifetime and gifts, UI localisation, next languages, themes and photos, On this day, Vault mode, Apple-hosted packs) | `features/F30-later.md` | v1.1, later |
+
+Personas are defined in `02-customers.md`. Use these handles: **P1 Evening parent** (primary author and buyer), **P2 Co-parent**, **P3 Expecting parent**, **P4 Multilingual family**, **P5 Close family** (v1.1 contributor), **P6 Future reader** (the child, years later).
+
+## 5. Feature spec template (use every heading, in this order)
+
+```
+# F## Name
+
+| | |
+|---|---|
+| Release | v1.0 gate / v1.1 / later |
+| Priority and rank | P0, rank n (rank set in 05-feature-map.md) |
+| Personas | P1, P2 ... |
+| Existing IDs | A-REQ-..., LEGAL-REQ-..., D-..., BL-... |
+| Depends on | F##, F## |
+| Status | Draft V2, 3 Oct 2026 |
+
+## 1. Why
+The problem this feature solves, with evidence. 3 to 8 sentences or bullets. Labeled evidence only.
+
+## 2. Who
+Which personas, in which moment of their life and day. What they are holding, feeling, short of.
+
+## 3. What we are solving
+One-sentence outcome. Then success measures (metric, target, how measured, consent caveat).
+
+## 4. Scope
+In v1.0. Later (with release). Never (and why).
+
+## 5. Market reference
+Table: Product | What it does | Does it work? (evidence) | What customers say | Our call (Match / Innovate / Avoid) and why.
+Only products and claims backed by R1, R2, R3, UR or CR. Mark Unverified where the research does.
+
+## 6. Experience
+6.1 Entry points.
+6.2 Happy path: numbered steps. Each step: what the person does, what the app shows (copy key if one exists in packages/content), what the system does.
+6.3 Unhappy paths and edge cases: table with ID (F##-U##) | Trigger | System behaviour | What the person sees | Recovery | Test.
+Cover at least: offline, no permission, low storage, app killed or backgrounded, interruption (call, Siri, alarm), slow or failed network, server error, conflicting edits, duplicate taps, accessibility (VoiceOver, AX5 text, Reduce Motion), device limits (iPhone SE 3), account states (signed out, lapsed, deleted), co-parent and multi-child states, languages and scripts where relevant.
+
+## 7. Requirements and acceptance criteria
+Table: ID | P | Requirement | Acceptance criteria (Given / When / Then, testable, with numbers) | Source.
+Reuse existing IDs. Mark revised ones "Rev (B#)" with the brief item. New: F##-REQ-001...
+
+## 8. Data, privacy and security
+What data the feature creates or reads, its level (L1 to L4, PRD 1.3 section 7.10), where it lives (device, Postgres, Storage), who can read it, retention, what never leaves the phone.
+
+## 9. Non-functional requirements
+Budgets specific to this feature (speed, size, battery, reliability, accessibility). Link to 06-nfr.md for shared ones.
+
+## 10. Analytics
+Events (from packages/analytics catalogue where they exist), properties (L2 only), the question each event answers. Consent-gated.
+
+## 11. How we build it (with the architect)
+Components, packages, files, libraries (standard over custom; permissive licences only), data model and API contracts, sequencing, the riskiest unknown and the spike that retires it. Cite TDD and ADR sections.
+
+## 12. Work packages
+Agent-sized units: WP-F##-## | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode (agent / pair / human).
+Each WP is one pull request a reviewer can check in under 30 minutes.
+
+## 13. Open questions and assumptions
+Q: who answers, by when, what changes. A: labeled assumptions with how we will validate.
+
+## 14. Sources
+Every source cited above.
+```
+
+## 6. Evidence rules (no hallucination)
+
+- Label claims: **[F]** fact with a source; **[S]** signal (anecdote, reviews, sourced); **[A]** assumption (ours, with how to validate); **[D]** founder decision (D-### or B#); **[R]** recommendation.
+- Every [F] and [S] cites a source: a research file entry (`R1-S12`, `UR S24`, `CR S6`) or a repo path with section.
+- Never state a competitor feature, price, rating, model capability, library API, Apple rule, law or number without a source. If you cannot source it, write it as [A] or "Unverified".
+- Do not invent copy keys, file paths, table names or functions. If you name an existing one, check it exists in the repo. If you propose a new one, say "new".
+- Paraphrase sources. No quotes over 15 words, at most one quote per source.
+
+## 7. Voice rules (the founder's tone, not AI tone)
+
+- Plain, direct, peer to peer. Short sentences. Active voice. Specific numbers.
+- No em dashes, en dashes, curly quotes, ellipsis characters or emoji (same rules as `packages/content`).
+- Banned words and patterns: seamless, robust, leverage, delightful, empower, unlock (except Apple's own term), cutting-edge, game-changer, holistic, synergy, "in today's world", "it's important to note", "it's worth noting", "dive into", "navigate the", "elevate", "streamline", "best-in-class", "world-class", rhetorical questions, three-adjective lists, closing summaries that repeat the section.
+- No hedging filler. If unsure, say exactly what is unknown and who resolves it.
+- Product copy examples follow `packages/content/VOICE.md`: never gender the child (use `{child}`), no fear, guilt or loss language, never imply AI writes anything.
+- Real family details never appear. The fictional family is "Asha".
+
+## 8. Definition of done for a spec
+
+1. Every template heading is filled or says "None" with a reason.
+2. Every v1.0 requirement has testable acceptance criteria with a number or an observable state.
+3. Unhappy paths cover the list in 6.3 where relevant.
+4. Every market claim and number is sourced or labeled.
+5. Every brief consequence (section 3) that touches the feature is handled or raised as an open question.
+6. Work packages are small, fenced to files, ordered, and name the tests that prove them.
+7. Content rules pass: run `node docs/prd/v2/tools/lint.mjs <file>` when it exists.

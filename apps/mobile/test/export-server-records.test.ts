@@ -96,7 +96,7 @@ describe('[BL-323] readServerRecords', () => {
       );
     }
     expect(JSON.stringify(r)).not.toContain('user-1');
-    expect(r.dictionary).toEqual([{ child_id: 'c1', term: 'Nani', kind: 'family', heard_as: ['nanny'], source: 'server' }]);
+    expect(r.dictionary).toEqual([{ child_id: 'c1', term: 'Nani', kind: 'family', heard_as: ['nanny'], forms: null, source: 'server' }]);
   });
 
   it('acts at the same instant keep a stable order (by id)', async () => {
@@ -171,9 +171,33 @@ describe('[BL-323] readServerRecords', () => {
     const r = await readServerRecords(opts({ reader: reader({ dictionary: async () => ok(words) }) }));
     expect(r.consent.status).toBe('included');
     expect(r.dictionary).toEqual([
-      { child_id: null, term: 'Bengaluru', kind: 'place', heard_as: [], source: 'server' },
-      { child_id: 'c1', term: 'Ammu', kind: 'nickname', heard_as: ['amu'], source: 'server' },
+      { child_id: null, term: 'Bengaluru', kind: 'place', heard_as: [], forms: null, source: 'server' },
+      { child_id: 'c1', term: 'Ammu', kind: 'nickname', heard_as: ['amu'], forms: null, source: 'server' },
     ]);
+  });
+
+  it('carries each script\'s spelling (dictionary_terms.forms), leaving out a form it cannot describe', async () => {
+    const words = [
+      {
+        child_id: 'c1', term: 'Asha', kind: 'child', heard_as: [],
+        forms: [
+          { script: 'devanagari', text: '\u0906\u0936\u093e', heardAs: ['aasha'], offerOnly: ['\u0905\u0936\u093e'] },
+          { script: 'latin', text: 'Asha' },
+          { script: 'klingon', text: 'x' },
+          { script: 'arabic', text: '  ' },
+          'not a form',
+        ],
+      },
+      { child_id: 'c1', term: 'Dev', kind: 'child', heard_as: [], forms: [{ script: 'klingon', text: 'x' }] },
+      { child_id: 'c1', term: 'Papa', kind: 'family', heard_as: [], forms: 'nope' },
+    ];
+    const r = await readServerRecords(opts({ reader: reader({ dictionary: async () => ok(words) }) }));
+    expect(r.dictionary[0].forms).toEqual([
+      { script: 'devanagari', text: '\u0906\u0936\u093e', heard_as: ['aasha'], offer_only: ['\u0905\u0936\u093e'] },
+      { script: 'latin', text: 'Asha', heard_as: [], offer_only: [] },
+    ]);
+    expect(r.dictionary[1].forms).toBeNull();
+    expect(r.dictionary[2].forms).toBeNull();
   });
 });
 
@@ -210,6 +234,7 @@ describe('[BL-323] mergeDictionary', () => {
     term,
     kind: 'word',
     heard_as,
+    forms: null,
     source,
   });
 

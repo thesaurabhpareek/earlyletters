@@ -5,6 +5,7 @@
   "title": "A birthday in the future",
   "note": "On the web the date can be typed; a day after today is refused in words (on a phone the picker simply does not offer it).",
   "from": "J01-05",
+  "shot": "screens/J01-08.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -21,19 +22,17 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Born today We sort letters by Asha's month of age. A birthday is a day that has already come. Choose today or earlier. Continue",
+  "text": "Back Who is this book for? Asha Name Add another child Birthday Not here yet Birthday Born today Choose today or an earlier day.",
   "lines": [
     "Back",
     "Who is this book for?",
-    "Their name",
-    "You can add a nickname later.",
+    "Asha",
+    "Name",
     "Add another child",
     "Birthday",
     "Not here yet",
     "Birthday",
     "Born today",
-    "We sort letters by Asha's month of age.",
-    "A birthday is a day that has already come. Choose today or earlier.",
-    "Continue"
+    "Choose today or an earlier day."
   ]
 }

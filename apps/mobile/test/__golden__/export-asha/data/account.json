@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.2.0",
+  "schema_version": "1.3.0",
   "format": "early-letters-export",
   "signed_in": false,
   "plan": "free",
@@ -32,6 +32,7 @@
       "term": "Asha",
       "kind": "child",
       "heard_as": [],
+      "forms": null,
       "source": "phone"
     },
     {
@@ -39,6 +40,7 @@
       "term": "Mama",
       "kind": "self",
       "heard_as": [],
+      "forms": null,
       "source": "phone"
     },
     {
@@ -46,6 +48,7 @@
       "term": "Dev",
       "kind": "child",
       "heard_as": [],
+      "forms": null,
       "source": "phone"
     },
     {
@@ -53,6 +56,7 @@
       "term": "Mama",
       "kind": "self",
       "heard_as": [],
+      "forms": null,
       "source": "phone"
     }
   ]

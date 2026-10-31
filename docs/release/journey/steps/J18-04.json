@@ -3,8 +3,9 @@
   "journey": "dark-mode",
   "kind": "happy",
   "title": "A letter, dark",
-  "note": "The letter page in the dark theme.",
+  "note": "The letter page at night: the words in the letter face, signed \"From Mama\", the pill player (\"Hear Mama\" and its length), the provenance line and the actions.",
   "from": "J18-03",
+  "shot": "screens/J18-04.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,17 +22,15 @@
     }
   },
   "scrolls": false,
-  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Make private Delete",
+  "text": "Aa Sunday, August 30, 2026 So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:42 Spoken, with small fixes. Recording kept on this phone. Exactly as said Make private Delete",
   "lines": [
     "Aa",
-    "Thursday, August 13, 2026. Asha is 5 months old.",
+    "Sunday, August 30, 2026",
     "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
     "From Mama",
     "Hear Mama",
-    "0:00",
     "0:42",
-    "Spoken, with small fixes",
-    "Recording kept on this phone",
+    "Spoken, with small fixes. Recording kept on this phone.",
     "Exactly as said",
     "Make private",
     "Delete"

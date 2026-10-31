@@ -28,6 +28,9 @@ export const packsCopy = {
     failed: 'Not downloaded yet',
   },
   failures: {
+    // Nothing is published for this phone yet: a tap cannot help, so the line does not ask for one.
+    no_manifest: 'Not available yet.',
+    not_in_manifest: 'Not available yet.',
     offline: 'Starts when you are back online.',
     no_space: 'Needs more free space on this phone.',
     downloads_paused: 'Downloads are paused for now. Please try again later.',
@@ -36,7 +39,7 @@ export const packsCopy = {
     download_failed: 'That download did not finish. Please try again.',
     generic: 'Please try again in a moment.',
   } as Record<string, string>,
-  cellularTitle: 'Use mobile data',
+  cellularTitle: 'Use cellular data',
   cellularHelp: 'Large downloads wait for Wi-Fi unless this is on. Small language packs always download.',
   removeButton: 'Remove',
   removeA11y: 'Remove {name}',

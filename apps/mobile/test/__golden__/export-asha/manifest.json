@@ -1,6 +1,6 @@
 {
   "format": "early-letters-export",
-  "format_version": "1.2.0",
+  "format_version": "1.3.0",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "app_version": "1.0.0",
   "engine_version": 3,
@@ -20,14 +20,14 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 2543,
-      "sha256": "27831d4f37ac1b4273acc30323eca24d58a41747d8383bcfb455302c06aa42cc",
+      "bytes": 2618,
+      "sha256": "356e534874bcb2e816c94cb95aab1243495eb593d16a7a7ce82ed7f80497c5c3",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 19730,
-      "sha256": "76e00347021d7af2c0e7dc6741d6d7bff2089ba46f59f0b0c93934c68259a61b",
+      "bytes": 23148,
+      "sha256": "fc46a25afe6f22b4e9b39c4b01a17b6f01a73836fd891f067dc876472e8cd28f",
       "media_type": "application/json"
     },
     {
@@ -86,8 +86,8 @@
     },
     {
       "path": "letters/Asha/2026-08/2026-08-10_e7.txt",
-      "bytes": 188,
-      "sha256": "b7ff64ffc91fb389aca0d824de0f82e3f99d5f8065192c4301c8b8fc7e5db0cb",
+      "bytes": 170,
+      "sha256": "21aaf2d3b26115c419e41302758def10c1d51e40d33bc01bfbd3722d8909adfa",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -159,19 +159,19 @@
     {
       "path": "data/children.json",
       "bytes": 604,
-      "sha256": "0003ff767a3550632b7109cb7f94a98986de40ad7b538e7df594baf0a778d737",
+      "sha256": "48f478eb6b8ff7dbeb55f21024bb34ec8fbf0158c8bb6ff3e8091e19f504ad3d",
       "media_type": "application/json"
     },
     {
       "path": "data/entries.json",
       "bytes": 13556,
-      "sha256": "659bb36b6516d56c7ff97e6dfc190c7fd4a9c5f3ec24a43cb934f526762ee744",
+      "sha256": "7a26b3aba980e315fb7af30388b979715540e8f594b62ddbf8d080c019a5f07f",
       "media_type": "application/json"
     },
     {
       "path": "data/account.json",
-      "bytes": 1148,
-      "sha256": "0388128d7f8c086c93237d195c290c2ea21aeb79aa4d717918dbe451535efa55",
+      "bytes": 1232,
+      "sha256": "8bff567695f08db8116787bfcfc66aa4ca38183a72d83b5f4870f0ccd71d73b5",
       "media_type": "application/json"
     }
   ]

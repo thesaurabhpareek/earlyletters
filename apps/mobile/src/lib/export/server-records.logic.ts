@@ -1,5 +1,5 @@
 /**
- * The server's part of account.json (schema 1.2.0; BL-323, LEGAL-REQ-034):
+ * The server's part of account.json (schema 1.3.0; BL-323, LEGAL-REQ-034):
  * the consent record (`policy_acceptances` and `my_policy_state`, own rows
  * under row-level security) and the spelling-list words held for the account
  * (`dictionary_terms`). Pure: the reads are injected, so every path is tested
@@ -12,7 +12,7 @@
  * `consent_history.status`. Rows are never silently cut: a reader that cannot
  * return every row fails, and the status is then `unavailable`.
  */
-import type { ExportConsentHistory, ExportDictionaryTerm, ExportPolicyAct, PolicyAction } from './schema';
+import type { ExportConsentHistory, ExportDictionaryForm, ExportDictionaryTerm, ExportPolicyAct, PolicyAction } from './schema';
 
 /** A read result as PostgREST returns it. */
 export interface ReadResult {
@@ -113,14 +113,30 @@ export function exportState(row: unknown): ExportConsentHistory['current'][numbe
   return document && version && action && at ? { document, version, action, at } : null;
 }
 
+const SCRIPTS: readonly ExportDictionaryForm['script'][] = ['latin', 'devanagari', 'arabic', 'han_simplified', 'han_traditional'];
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((h): h is string => typeof h === 'string') : []);
+
+/** `dictionary_terms.forms` (null, or 1 to 8 `{script, text, heardAs?, offerOnly?}`); a form it cannot describe is left out. */
+export function exportForms(v: unknown): ExportDictionaryForm[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: ExportDictionaryForm[] = [];
+  for (const f of v) {
+    if (!isRecord(f)) continue;
+    const script = (SCRIPTS as readonly unknown[]).includes(f.script) ? (f.script as ExportDictionaryForm['script']) : null;
+    const text = str(f.text);
+    if (!script || !text || !text.trim()) continue;
+    out.push({ script, text, heard_as: strings(f.heardAs), offer_only: strings(f.offerOnly) });
+  }
+  return out.length ? out : null;
+}
+
 /** One `dictionary_terms` row; rows the export cannot describe are skipped (a spelling hint, not a legal record). */
 export function exportServerTerm(row: unknown): ExportDictionaryTerm | null {
   if (!isRecord(row)) return null;
   const term = str(row.term);
   const kind = (DICTIONARY_KINDS as readonly unknown[]).includes(row.kind) ? (row.kind as ExportDictionaryTerm['kind']) : null;
   if (!term || !term.trim() || !kind) return null;
-  const heard = Array.isArray(row.heard_as) ? row.heard_as.filter((h): h is string => typeof h === 'string') : [];
-  return { child_id: str(row.child_id), term, kind, heard_as: heard, source: 'server' };
+  return { child_id: str(row.child_id), term, kind, heard_as: strings(row.heard_as), forms: exportForms(row.forms), source: 'server' };
 }
 
 class Unreadable extends Error {}
@@ -189,7 +205,7 @@ export function mergeDictionary(phone: readonly ExportDictionaryTerm[], server: 
   for (const t of [...phone, ...server]) {
     if (!t.term.trim() || seen.has(key(t))) continue;
     seen.add(key(t));
-    out.push({ ...t, heard_as: [...t.heard_as] });
+    out.push({ ...t, heard_as: [...t.heard_as], forms: t.forms ? t.forms.map((f) => ({ ...f, heard_as: [...f.heard_as], offer_only: [...f.offer_only] })) : null });
   }
   return out;
 }

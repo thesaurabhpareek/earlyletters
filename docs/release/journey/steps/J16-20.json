@@ -1,0 +1,67 @@
+{
+  "id": "J16-20",
+  "journey": "settings-and-help",
+  "kind": "happy",
+  "title": "Settings, server features on",
+  "note": "With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.",
+  "from": "J16-01",
+  "shot": "screens/J16-20.png",
+  "full": "screens/J16-20-full.png",
+  "route": "/settings",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Settings Account Account Sign in, and the ways you sign in. Plan Your first two letters are free. Plus lets you keep adding letters. Children Asha Add a child Writing Spoken language The language you speak your letters in. Reminders Off Appearance Match this phone Your data Privacy Export your book Every letter and recording, free, any time. Recently deleted Letters you delete wait here for 30 days. Recordings Storage Language packs and space on this phone. Private by default. Never sold, never used for ads. Help and legal Help Write to us If you are struggling Terms of Service Privacy Policy Licenses About Version 1.0.0 Early version Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
+  "lines": [
+    "Settings",
+    "Account",
+    "Account",
+    "Sign in, and the ways you sign in.",
+    "Plan",
+    "Your first two letters are free. Plus lets you keep adding letters.",
+    "Children",
+    "Asha",
+    "Add a child",
+    "Writing",
+    "Spoken language",
+    "The language you speak your letters in.",
+    "Reminders",
+    "Off",
+    "Appearance",
+    "Match this phone",
+    "Your data",
+    "Privacy",
+    "Export your book",
+    "Every letter and recording, free, any time.",
+    "Recently deleted",
+    "Letters you delete wait here for 30 days.",
+    "Recordings",
+    "Storage",
+    "Language packs and space on this phone.",
+    "Private by default. Never sold, never used for ads.",
+    "Help and legal",
+    "Help",
+    "Write to us",
+    "If you are struggling",
+    "Terms of Service",
+    "Privacy Policy",
+    "Licenses",
+    "About",
+    "Version",
+    "1.0.0",
+    "Early version",
+    "Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then."
+  ]
+}

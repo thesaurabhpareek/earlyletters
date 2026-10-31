@@ -26,7 +26,7 @@ import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
-import { currentUserId, dictionaryFor, getSetting, listChildren, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { allRows, mergeDictionary, noConsentHistory, readServerRecords, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
@@ -126,6 +126,10 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     signedIn: me !== null,
     children,
     entries,
+    // Conflict copies are the author's own words: kept on this phone until they pick, and in every export (F16-REQ-023).
+    otherVersions: listConflicts().map((c) => ({
+      entryId: c.entryId, finalText: c.words.final_text, editLevel: c.words.edit_level, machineEdits: c.words.machine_edits, keptAt: c.at,
+    })),
     consent: consentOnThisPhone(),
     // withServerRecords() replaces this when the server's record can be read.
     consentHistory: noConsentHistory(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
@@ -141,6 +145,7 @@ function phoneDictionary(children: SnapshotChild[]): ExportDictionaryTerm[] {
       term: d.term,
       kind: d.kind,
       heard_as: [...d.heardAs],
+      forms: null,
       source: 'phone' as const,
     })),
   );
@@ -159,7 +164,7 @@ function supabaseReader(): ServerRecordsReader | null {
       ),
     state: (signal) => allRows((from, to) => sb.from('my_policy_state').select('document, version, action, accepted_at').order('document').range(from, to).abortSignal(signal)),
     dictionary: (signal) =>
-      allRows((from, to) => sb.from('dictionary_terms').select('child_id, term, kind, heard_as').order('term').range(from, to).abortSignal(signal)),
+      allRows((from, to) => sb.from('dictionary_terms').select('child_id, term, kind, heard_as, forms').order('term').range(from, to).abortSignal(signal)),
   };
 }
 

@@ -1,0 +1,32 @@
+{
+  "id": "J22-10",
+  "journey": "sign-in",
+  "kind": "unhappy",
+  "title": "No book here yet",
+  "note": "Signed in, but this account has no book: the sheet asks whether another way was used last time. \"Start a book\" closes onto the lit welcome (5.8 row 13).",
+  "from": "J22-09",
+  "shot": "screens/J22-10.png",
+  "route": "/sign-in/consent",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "No book here yet Did you use a different way to sign in last time? Try another way Start a book",
+  "lines": [
+    "No book here yet",
+    "Did you use a different way to sign in last time?",
+    "Try another way",
+    "Start a book"
+  ]
+}

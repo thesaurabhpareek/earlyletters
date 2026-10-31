@@ -1,0 +1,43 @@
+{
+  "id": "J21-06",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Joined, the book is here",
+  "note": "The cover has opened to the flyleaf. What the child calls this parent in the book is filled in with the inviter's suggestion and can be changed; \"Open the book\" is the one way the open book changes.",
+  "shot": "screens/J21-06.png",
+  "route": "/invite",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha From Mama You're in Asha's book Your letters and Mama's sit side by side, each signed. What does Asha call you? It signs your letters in this book. Mama Papa Amma Appa Mommy Daddy Ma Baba Open the book Close",
+  "lines": [
+    "Asha",
+    "From Mama",
+    "You're in Asha's book",
+    "Your letters and Mama's sit side by side, each signed.",
+    "What does Asha call you?",
+    "It signs your letters in this book.",
+    "Mama",
+    "Papa",
+    "Amma",
+    "Appa",
+    "Mommy",
+    "Daddy",
+    "Ma",
+    "Baba",
+    "Open the book",
+    "Close"
+  ]
+}

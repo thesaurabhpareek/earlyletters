@@ -175,10 +175,10 @@ describe('Asha export (golden)', () => {
     expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
   });
 
-  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (schema 1.2.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.2.0');
+  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (schema 1.3.0)', async () => {
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.3.0');
     const signedOut = accountOf((await makeExport()).zip);
-    expect(signedOut.schema_version).toBe('1.2.0');
+    expect(signedOut.schema_version).toBe('1.3.0');
     expect(signedOut.consent_history).toEqual({ status: 'not_signed_in', read_at: null, current: [], acts: [] });
     expect(signedOut.dictionary.map((d) => [d.child_id, d.term, d.kind, d.source])).toEqual([
       ['child-asha-0001', 'Asha', 'child', 'phone'],
