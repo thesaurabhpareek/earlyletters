@@ -1,8 +1,8 @@
 ---
 title: Delete account page copy (https://earlyletters.com/delete-account)
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
-last_updated: 2026-10-16
+last_updated: 2026-10-31
 owner: founder
 for: the words of apps/web/src/lib/legal/delete-account-copy.ts. Each heading below is a key of that object; {brand.name}, {brand.storeName} and {contact} are filled as the page does today.
 ---
@@ -97,4 +97,5 @@ If you only gave us your email on our website, use the unsubscribe link in any e
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.0 | 2026-10-31 | Adds the kept letters of a former member (D-116) and the book entry kept to label them; says the in-app Delete account control is used where a build has it and is hidden in the early test builds unless switched on (D-129). The website no longer serves /delete-account (content moved into /privacy, #169), so this copy now feeds the deletion section there. Version 1.1.0 because 1.0.0 is used. |
 | 1.0.0 | 2026-10-16 | Deletion for an app with accounts and sharing. |

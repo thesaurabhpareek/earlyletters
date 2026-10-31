@@ -34,7 +34,7 @@ The pull request #81 draft (2.0.0, never merged) answered "Data Not Collected", 
 | Do you or your third-party partners collect data from this app? | **Yes** |
 | Do you or your third-party partners use data for tracking? | **No.** No ad SDKs, no advertising identifier, no IDFV, no data brokers, no App Tracking Transparency prompt (LEGAL-REQ-016) |
 | Privacy Policy URL | https://earlyletters.com/privacy (live at the version the build links to before submission) |
-| Privacy choices URL | https://earlyletters.com/delete-account |
+| Privacy choices URL | https://earlyletters.com/privacy (the /delete-account page was removed from the website and its content moved into the Privacy Policy, #169; the app test `privacy-documents.test.ts` lists the removed routes) |
 
 ### 3.2 Data types
 

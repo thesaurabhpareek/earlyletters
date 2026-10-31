@@ -103,7 +103,7 @@ Each acts only on our instructions, under a written contract, and may not sell y
 
 Apple provides Sign in with Apple, App Store purchases and iPhone backups under its own terms and privacy policy.
 
-The current list is at https://earlyletters.com/subprocessors. We will update it before a new provider receives letters or recordings.
+The list above is the current list; the separate providers page was removed from the website and its content is here. We will update it before a new provider receives letters or recordings.
 
 ## 7. How long we keep things, and deleting
 
