@@ -15,7 +15,8 @@ export const exportCopy = {
     // D-074: what the machine changes is a "small fix", never a tidy-up.
     includesData: 'A data file with your words as heard, every small fix, and the final text',
     // Option B (D-100): letters sync, so the line is about the export only, never a claim that nothing leaves
-    // the phone. The export is built on this phone (lib/export reads no network). Counsel claims review.
+    // the phone. The export is built on this phone; signed in, it also reads the person's own consent record and
+    // spelling list from the server for account.json (BL-323), and sends nothing. Counsel claims review.
     offlineNote: 'The export is made on this phone. It goes only where you send it.',
     // Above the disabled button while the book has no letter.
     emptyNote: 'You can export once the book has a letter.',
@@ -85,7 +86,7 @@ export const exportCopy = {
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
     '            account.json: your plan, whether you were signed in, the books you belong to,',
-    '            and the choices you made on this phone (see below).',
+    '            the names we always spell your way, and your consent choices (see below).',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',
     '            It works with no connection and no app.',
@@ -100,6 +101,14 @@ export const exportCopy = {
     'account.json says whether you answered yes to "Are you 18 or older?" on this phone,',
     'and your choice about sharing usage and crash reports ("not_answered" if you have',
     'not answered). These are the answers kept on this phone.',
+    '',
+    'YOUR CONSENT HISTORY',
+    '',
+    'When you are signed in, our server keeps a record of each time you agreed to, declined',
+    'or acknowledged our terms, and each privacy choice you made or withdrew. account.json',
+    'holds that record under "consent_history" when it could be read while the export was',
+    'made. If it could not, "status" says why ("not_signed_in", "unavailable" or',
+    '"different_account"), and nothing from this phone is left out because of it.',
     '',
     'CHECKING THE FILES',
     '',

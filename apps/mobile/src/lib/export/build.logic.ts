@@ -6,10 +6,10 @@
  *
  * Rules:
  * - Every letter on this phone, in book or private, in every book including
- *   hidden ones. Recently deleted letters are left out by design (D-085): a
- *   letter the person deleted is not part of their book, and they can Restore
- *   it from Recently deleted for 30 days. (`listDeleted` exists; export does
- *   not read it.)
+ *   hidden ones. Recently deleted letters are left out for now: whether they
+ *   belong in an export, always or only when ticked (spec 4.1), is BL-388's
+ *   to settle (CR-35). D-085 sets up the 30-day shelf; it does not decide
+ *   this. (`listDeleted` exists; export does not read it.)
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte, each named and labelled by its own
@@ -41,6 +41,8 @@ import {
   type EntriesFile,
   type ExportAudio,
   type ExportEntry,
+  type ExportConsentHistory,
+  type ExportDictionaryTerm,
   type ExportMachineEdit,
   type OtherVersionsFile,
   type ExportPhoneConsent,
@@ -48,6 +50,8 @@ import {
 
 export interface SnapshotChild extends Child {
   hidden: boolean;
+  /** The exporter's role in this book (the server's member list; a book only on this phone is theirs). */
+  role: 'parent' | 'contributor';
 }
 
 export interface SnapshotEntry extends Entry {
@@ -88,6 +92,15 @@ export interface ExportSnapshot {
   otherVersions?: SnapshotOtherVersion[];
   /** For account.json: the consent choices this phone holds (never a server record). */
   consent: ExportPhoneConsent;
+  /** For account.json (1.3.0): the server's consent record, or why it is not here. */
+  consentHistory: ExportConsentHistory;
+  /** For account.json (1.3.0): the words spelled your way, phone first, then the server's. */
+  dictionary: ExportDictionaryTerm[];
+}
+
+/** The exporter's role for the manifest: parent when they are a parent of any book here, or there are none. */
+export function exporterRole(children: readonly Pick<SnapshotChild, 'role'>[]): 'parent' | 'contributor' {
+  return children.length === 0 || children.some((c) => c.role === 'parent') ? 'parent' : 'contributor';
 }
 
 export interface TextFile {
@@ -574,8 +587,10 @@ export async function dataFiles(
     signed_in: snapshot.signedIn,
     plan: snapshot.plan,
     exported_from: 'phone',
-    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: c.role, signs_as: c.signsAs })),
     consent_on_this_phone: snapshot.consent,
+    consent_history: snapshot.consentHistory,
+    dictionary: snapshot.dictionary,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
   const files: TextFile[] = [
