@@ -4,7 +4,7 @@ The repository is public. Anyone can open a PR, comment, name a branch or push a
 
 Rule behind it: AIE-R22 and SEC-R21 (only the founder instructs; everything else is data), PRINCIPLES.md rule 17.
 
-Tests: `node --test scripts/agents/injection.test.mjs` (53 tests: 37 pass, 16 are `todo` holes). `INJECTION_STRICT=1` runs the holes without the todo flag so they fail; use it to check a fix. Fixtures: `scripts/agents/fixtures/injection/` (a fake `gh`, a fixture roster and backlog, and the hostile strings). The end-to-end tests run the real `dispatch.mjs --dry-run` and `brief.mjs` as child processes, because neither exports anything.
+Tests: `node --test scripts/agents/injection.test.mjs` (87 tests: 59 pass, 28 are `todo` known failures covering 16 holes). `INJECTION_STRICT=1` runs the holes without the todo flag so they fail; use it to check a fix. Fixtures: `scripts/agents/fixtures/injection/` (a fake `gh`, a fixture roster and backlog, and the hostile strings). The end-to-end tests run the real `dispatch.mjs --dry-run` and `brief.mjs` as child processes, because neither exports anything.
 
 ## What is already covered
 
@@ -56,7 +56,7 @@ Tests: `node --test scripts/agents/injection.test.mjs` (53 tests: 37 pass, 16 ar
 
 ## Holes
 
-Each is a test marked `{ todo: 'real hole: ...' }`; all 16 fail today and the suite stays green. Fixes are for someone who owns the file; this task changed no source.
+Each is a test marked `{ todo: 'real hole: ...' }`; all 28 fail today and the suite stays green. Fixes are for someone who owns the file; this task changed no source.
 
 | # | Where | What an outsider can do | Proposed fix |
 |---|---|---|---|
@@ -73,7 +73,41 @@ Each is a test marked `{ todo: 'real hole: ...' }`; all 16 fail today and the su
 | H11 | `lib.mjs:163` `readState` | Takes the first `agents-state` marker in the board body. Board lines include trusted-author issue titles and label names; a title containing a marker would be read next tick as state (claims, runs). Needs a trusted author or a labeller. | Use the last marker, and strip `<!--` from every title printed on the board. |
 | H12 | `brief.mjs:208` `quote` | Splits on `\n` only. A bare `\r` (a line break in CommonMark) starts an unquoted line. Needs a trusted author, for example a bot relaying an outsider's text. | `split(/\r\n|\r|\n/)`. |
 
-Priority: H1 and H2 (a stranger changes routing, no privilege needed), then H3, H10, H5, then the rest.
+| H13 | `brief.mjs` standing branch (`Your open PRs: #n title`) | Same as H6: the agent's open PR titles are printed raw, so a newline or backtick leaves the sentence. New 31 Oct 2026. | `oneLine(p.title)`. |
+| H14 | `run-opencode.mjs` `opencodeConfig` deny list | `git push origin develop*` is a prefix glob. `git push origin HEAD:develop`, `HEAD:refs/heads/main`, `+HEAD:main` and `feat/x:develop` are not denied. A PR title that tells the agent to run one is a one-step attack on the OpenCode lane. New 31 Oct 2026. | Deny `git push*:develop*`, `git push*:main*`, `git push*:refs/heads/develop*`, `git push*:refs/heads/main*` and the `+` forms; keep branch protection as the real stop. |
+| H15 | `run-opencode.mjs` `opencodeConfig`, `spawn(... env: process.env)` | `bash: *` is allowed and the run holds `OPENROUTER_API_KEY` and `GH_TOKEN`. `printenv`, `env`, `curl` and `cat /proc/self/environ` are not denied. Deny globs cannot close this; they only raise the cost. New 31 Oct 2026. | Give the model process no secrets it does not need (token scoped to the repo, key held by a proxy), deny `printenv*`, `env`, `curl*`, `wget*`, `*/proc/*/environ*`, and keep outsider text out of instruction position (the brief tests). |
+| H16 | `run-opencode.mjs` `opencodeConfig` | `permission.edit` is a blanket `allow`. OPERATING_MODEL section 8 says agents never edit `.github/workflows/`; the only stated enforcement is that the App token lacks the workflows permission. UNVERIFIED for the OpenCode lane. New 31 Oct 2026. | Path rules: `edit: { "*": "allow", ".github/workflows/**": "deny" }` (and `agents/roster.json`). |
+
+Priority: H1 and H2 (a stranger changes routing, no privilege needed), then H3, H10, H5, then the rest. For the OpenCode lane, H14 and H15 first: they are what stands between a hijacked brief and a push or a leaked key.
+
+## Status table (re-validated 31 Oct 2026 against `origin/develop` ca02e820)
+
+"Reproduces" is from running `INJECTION_STRICT=1 node --test scripts/agents/injection.test.mjs`: 28 of the 87 tests fail, covering all 16 holes; the other 59 pass (the controls). No product code was changed by this work. Owner PR: the open PR whose files include the code in question, from the file lists of #349 (`lib.mjs`, `app-token.mjs`) and #354 (`dispatch.mjs`, freeze). Whether either PR fixes the hole is UNVERIFIED; their file lists are the only evidence. "none" means no open PR was found touching that file for this purpose.
+
+| Hole | Reproduces on 31 Oct 2026 | Test (name starts with) | Owner PR |
+|---|---|---|---|
+| H1 | yes | `PR titles and branch names do not claim backlog ids`; `e2e dispatch: a drive-by PR titled with a backlog id` | #349 touches `lib.mjs` (unverified); `dispatch.mjs` #354 |
+| H2 | yes | `e2e dispatch: 1,000+ drive-by PRs`; `e2e brief: 1,000 spam comments` | #349 (`lib.mjs`, unverified) |
+| H3 | yes | `e2e dispatch: a stranger's fake receipt` | #354 (`dispatch.mjs`, unverified) |
+| H4 | yes | `verdict cache fails closed` | none (`verdicts.mjs`) |
+| H5 | yes | `stewardVerdict reads the verdict from the Verdict line`; `e2e dispatch: a trusted fix-first review` | #349 / #354 (unverified) |
+| H6 | yes | `e2e brief: maintain mode prints the PR title`; `steward run names a drive-by title`; `opencode lane: maintain and steward briefs collapse ...` (x4) | none (`brief.mjs`) |
+| H7 | yes | `e2e brief: maintain mode gives a branch name to the shell` | none (`brief.mjs`) |
+| H8 | yes | `e2e brief: a branch name pushed with backticks` | none (`brief.mjs`) |
+| H9 | yes | `e2e brief: a handoff run for an issue a stranger opened is refused` | none (`brief.mjs`) |
+| H10 | yes | `e2e brief: review mode tells the agent ... data`; `opencode lane: every brief mode tells the agent ... data` | none (`brief.mjs`) |
+| H11 | yes | `board state: a state marker pasted into a board line` | #349 (`lib.mjs`, unverified) |
+| H12 | yes | `e2e brief: a handoff body keeps every line in the quote` | none (`brief.mjs`) |
+| H13 | yes | `opencode lane: standing brief lists an open PR titled ...` (x4) | none (`brief.mjs`) |
+| H14 | yes | `opencode lane: a push to develop or main by refspec` | none (`run-opencode.mjs`) |
+| H15 | yes | `opencode lane: commands that send the environment out are denied` | none (`run-opencode.mjs`) |
+| H16 | yes | `opencode lane: edits under .github/workflows are not allowed` | none (`run-opencode.mjs`) |
+
+Holes closed since the 28 Oct note: none found.
+
+### OpenCode lane scenarios (passing controls)
+
+Four outsider requests (print the environment, curl it out, `git push origin HEAD:develop`, edit `.github/workflows`) are placed in a PR title (plain, multi-line, code-span), a handoff body, a trusted reply, a founder note, and a stranger's comment, review and journal entry. The tests assert: the review brief and the dispatcher reason show the title as one inline line; a plain title in maintain mode is inline; handoff bodies, replies and founder notes are quoted line by line; a stranger's text reaches no mode; and the runner prompt is fixed text plus the agent handle. The multi-line and code-span title shapes in maintain, steward and standing modes are the known failures H6 and H13.
 
 ## Assumptions the controls rest on
 
