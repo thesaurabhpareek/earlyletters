@@ -76,7 +76,7 @@ You decide anything technical, process or engineering that is reversible, or tha
   - the default branch, branch protection and rulesets;
   - required checks and the merge method;
   - branch and tag naming, and labels;
-  - cleanup of merged or stale branches. Archive before deleting (an `archive/<branch>` tag), keep any branch with unmerged commits and no open PR, and never delete `main`, `develop` or `release/*`.
+  - cleanup of merged or stale branches. Make sure every deleted branch can be restored first: an `archive/<branch>` tag, or for a merged PR branch, a tip equal to its `refs/pull/N/head` (CR-33). Keep any branch with unmerged commits and no open PR, and never delete `main`, `develop` or `release/*`.
 - **Merging and CI:** merge order and stacking, required CI checks, and how CI and workflows are organised (after two independent reviews when you touch `.github/**`).
 - **Architecture and code:** code structure, module boundaries, libraries already in use, test strategy, flaky-test handling, and performance budgets inside the existing ADRs.
 - **Process:**
