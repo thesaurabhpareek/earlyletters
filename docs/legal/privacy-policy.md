@@ -1,18 +1,18 @@
 ---
 title: Early Letters Privacy Policy
-version: 2.1.0
+version: 2.1.1
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-16
+last_updated: 2026-10-31
 owner: founder
 published_at_url: https://earlyletters.com/privacy
 ---
 
 # Early Letters Privacy Policy
 
-Version 2.1.0. Effective [effective date].
+Version 2.1.1. Effective [effective date].
 
-This policy explains what Early Letters collects, how we use it, who can see it, and the choices you have. It covers the Early Letters app for iPhone and our website, earlyletters.com.
+Early Letters is the baby memory book you fill by talking. Parents speak or type letters to their child. This policy explains what Early Letters collects, how we use it, who can see it, and the choices you have. It covers the Early Letters app for iPhone and our website, earlyletters.com.
 
 ## 1. Who we are
 
@@ -144,4 +144,10 @@ If we ever close Early Letters, we will tell you at least 90 days ahead and keep
 
 | Version | Date | Change |
 |---|---|---|
+| 2.1.1 | 2026-10-31 | Patch, wording only (review `docs/reviews/2026-10-31/language.md` LNG-36): the opening line uses the product descriptor ("the baby memory book you fill by talking") and drops "notes", which v1.0 does not make. No change to what we collect or do. Version 2.1.1 because 1.5.0, 2.0.0 and 2.1.0 were used by unmerged drafts on other branches (POLICY_VERSIONING 2.4). The drafting notice at the top still must be removed before publication, as it says. |
 | 2.1.0 | 2026-10-16 | Covers accounts, sharing a book with a co-parent, how recording backup and the recovery key will work, and Plus reminders. |
+| 1.4.0 | 2026-10-03 | Alignment with the founder decisions of 3 Oct 2026, second round. No audio leaves the phone (short version, sections 3, 4, 7, 9, 11, 15; D-059): backup, Standard and Vault modes, escrow, family playback, web uploads and cloud transcription (Groq, DeepInfra) removed. Co-parent only (sections 2, 7, 12, 14; D-055). No photos in v1.0. Plus checked on the phone; no purchase records on our servers (sections 3, 5, 8, 10, 15; D-053, ADR 0013). Sign-in: Apple, Google, email link (section 3; D-054). Language settings kept on the phone; each letter's language syncs, author-only (`entries.language`, migration 20261005000000); k-anonymised aggregate counts disclosed (section 5); one language code in opt-in analytics (sections 3, 13; Q-004). Never imitate your voice (short version, 6, 13; D-061). Providers: PowerSync, Sentry, Groq, DeepInfra removed; Resend named; Cloudflare (planned download host, Q-001) and Hugging Face (model downloads) disclosed (section 8; subprocessors 1.3.0). Deletion: the email provider's 30-day copy of the completion email stated as an exception to the 45-day processor clock (section 10, CN-12). Purchase-record and crash-report rows removed; Apple sign-in token and deletion-record rows added (section 10). Static "If you are struggling" resources replace the on-device support card (section 13; D-059). Real URLs and hello@earlyletters.com (D-063). Analytics no-reidentification commitment (section 6, CN-21; Q-005). Invite-link "servers don't log" claim removed and Apple-token sentences made conditional on the capture shipping (security review M2 and H3, CN-23). Body version line corrected (it said 1.1.0). Pre-publication draft, no users bound; if 1.3.0 had been published, the removals would narrow what we describe and the analytics language disclosure would be a minor addition; counsel to classify. |
+| 1.3.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (section 1, CN-1; placeholders renamed). RevenueCat removed: purchases come from Apple's App Store under a random ID (section 3, processors table, section 10 deletion, CCPA table; ADR 0013). Section 2 notes that the family web page and cloud transcription arrive after the first version (CN-20). Section 10 lists the 12-month security and staff-access log clock beside 24-month activity records (D-021). Pre-publication draft, no users bound; if published, the controller change would be major and the rest minor. |
+| 1.2.0 | 2026-10-02 | Product alignment with PRD.md 1.2 (founder decision 2 Oct, K-07): no use of any kind under 18, including local use; age asked before first use (intro, section 12). CN-10 points at the promoted governance migration. Pre-publication draft, no users bound; minor (clarifies a narrower audience, adds protection). |
+| 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`). Short version: "by default" on transcription, recovery-key qualifier, no-voiceprint line, deletion line narrowed to "your book" and "your own letters" (PRD K-29). Sections 3 and 5: 18+ confirmation and age signal, per-child profiles, Plus per account, analytics child-count range. Section 7: author-only transcripts (K-09), per-child family lists, how family hear recordings, Standard-mode web playback unlock. Section 10: published deletion clock (31 / 38 / 45 days, K-23), decided invite expiry (K-18), activity records, account-deletion effects on shared and sole-parent books (K-22), analytics deletion limits. Section 11: web uploads no longer described as unreadable to us. Section 12: parent-control sentence corrected (K-10), child-input features unavailable, under-18 closure. Section 13: biometric statement, consent placement and withdrawal in Settings. Section 14: export scope, web deletion page, request extension, provider list on request. Section 15: retention per category, letters as communications, biometric sentence corrected. Section 16: biometric and CHD pointers. Health notice renamed Consumer Health Data Privacy Policy. Pre-publication draft, no users bound; if 1.0.0 had been published this would be major under POLICY_VERSIONING 2.1 item 4 (narrower deletion statement). |
+| 1.0.0 | 2026-10-02 | First draft for counsel review. |

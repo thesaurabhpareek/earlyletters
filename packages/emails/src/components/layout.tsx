@@ -1,6 +1,6 @@
 import { Body, Head, Html, Preview } from 'react-email';
 import { Children, isValidElement, type ReactNode } from 'react';
-import { layout, light, space } from '../tokens';
+import { layout, light, space, wrap } from '../tokens';
 import { EmailFooter } from './footer';
 import { GhostClose, GhostOpen, Mso, MsoHead } from './mso';
 import { tableProps } from './primitives';
@@ -76,7 +76,7 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
                       <td
                         className={cls.pad}
                         align="left"
-                        style={{ padding: `${layout.pad}px ${layout.padMobile}px ${space[8]}px`, textAlign: 'left' }}
+                        style={{ padding: `${layout.pad}px ${layout.padMobile}px ${space[8]}px`, textAlign: 'left', ...wrap }}
                       >
                         {sheet}
                       </td>
@@ -87,7 +87,7 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
                   <table {...tableProps} style={{ maxWidth: layout.maxWidth }}>
                     <tbody>
                       <tr>
-                        <td className={cls.pad} style={{ padding: `${space[6]}px ${layout.padMobile}px 0`, textAlign: 'left' }}>
+                        <td className={cls.pad} style={{ padding: `${space[6]}px ${layout.padMobile}px 0`, textAlign: 'left', ...wrap }}>
                           {footers}
                         </td>
                       </tr>

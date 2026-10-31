@@ -8,7 +8,9 @@
 export const speechSettingsCopy = {
   title: 'Writing down your words',
   footer:
-    'Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again.',
+    'Removing a language frees space. Recordings and letters stay. New recordings wait for their words until you add the language again.',
+  // The language row's trailing action when the model is not on this phone (S42).
+  downloadButton: 'Download',
   ready: 'On this phone, {n} MB',
   downloading: 'Getting ready, {n}%',
   waitingForWifi: 'Waits for Wi-Fi, {n} MB',
@@ -44,12 +46,11 @@ export const speechSettingsCopy = {
  */
 export const speechConsentCopy = {
   title: 'Get your words ready',
-  body: 'Your words are written down on this phone, so they stay on it. This needs a one-time download of {size}.',
-  note: 'It waits for Wi-Fi, and carries on where it left off if it is interrupted.',
+  // Says where the words are written down, never that letters stay on the phone (they sync, D-100).
+  body: 'Spoken letters are written down on this phone. One download of {size}, on Wi-Fi.',
   downloadButton: 'Download on Wi-Fi',
   laterButton: 'Not now',
-  footnote: 'You can do this later in Settings, Recordings. Your voice is always kept.',
   lowSpace: 'This phone needs {size} of free space first.',
   chosenYes: 'Getting ready. It waits for Wi-Fi.',
-  chosenLater: 'Not now. Your voice is kept either way.',
+  chosenLater: 'Your voice is kept either way.',
 };

@@ -69,7 +69,7 @@ Rule for every PR: a new table, column, bucket, device column, SDK or analytics 
 | **Logging** | Allowed | Allowed (ids of operational records, enums, counts, durations) | Not in log streams (Supabase API, Edge Function, Vercel, Sentry). Person ids appear only in database audit tables (`audit_events`, planned `ops_audit_log`) | Never in any log, crash report, breadcrumb, error message, email subject, push payload or support prefill (LEGAL-REQ-014). Log canary scans for the fixture family "Asha" |
 | **Analytics** | n/a | Allowed only if in the typed catalogue (section 4.7) | Never | Never |
 | **URLs** | Allowed | Allowed | Never in paths or query strings; invite tokens only in URL fragments | Never; search queries go in request bodies |
-| **Retention** | While published; versions kept forever | 90 days to 24 months, per data-policy section 6 | Life of account; deleted or pseudonymised at account deletion except listed legal retention (consent 3 years, transactions 7 years) | Until its author deletes it (30-day tombstone, then purge), or the book's sole parent deletes the book, or the account is deleted |
+| **Retention** | While published; versions kept forever | 90 days to 24 months, per data-policy section 6 | Life of account; deleted or pseudonymised at account deletion except listed legal retention (consent 3 years, transactions 7 years) | Until its author deletes it (30-day tombstone, then purge), or the book's sole parent deletes the book, or the account is deleted. A book purged while a former member (who left, whose join was undone, or who was removed) still has letters, held drafts or recording backups in it keeps those rows with their author, and keeps the book row tombstoned with only the child's name, birth date and due date (`children.purged_at`, readable by no app role; 20261023010000, D-116) until nothing of theirs is left |
 | **Access** | Anyone | Staff with a need; users see their own (for example their audit and deletion rows) | RLS: the person themselves and co-members of the same child where the product needs it; service role only through named runbooks that write an audit row (LEGAL-REQ-025) | RLS: author for working material (`raw_transcript`, `raw_sha256`, `machine_edits`, `stt_meta`, versions, dictionary); book members read letters only through `book_entries` while the letter is in the book and the book is live; no staff tool shows L4; service-role access only through deletion, legal-process and safety runbooks with an audit row |
 | **Export** | n/a | Included where useful (dates, flags) | The person's own L3 (profile, signature, memberships) | Author exports all of their own L4; a book export contains other people's letters only as the book shows them, never their raw transcripts, edits or STT metadata (DATA-REQ-050, PRD K-09). Export files are plaintext by design and the export screen says so (DATA-REQ-056); server-built exports expire in 7 days |
 | **Deletion** | Unpublish by new version | Fixed retention by `purge_due()` | Deleted with the account, or pseudonymised (audit actor ids nulled, policy acceptances hashed with a pepper) | Tombstone 30 days, purge, Storage API deletion, off backups within 7 more days, processors within 45 days of request (data-policy section 5) |
@@ -187,6 +187,7 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `book_look` | L2 | theme enum |
 | `family_can_read` | L2 | sharing setting |
 | `hidden_at` | L2 | hide-book time |
+| `purged_at` | L2 | when the book was purged for its members while a former member's letters keep the row (20261023010000) |
 
 ##### `deletion_request_steps`
 
@@ -278,6 +279,17 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `created_at` | L2 | system timestamp |
 | `machine_edits` | L4 | content: previous edit list |
 | `superseded_by` | L3 | person id; nulled at account deletion |
+
+##### `invite_redeem_failures`
+
+Added by `20261028010000_invite_redeem_by_code.sql`. Closed to every role; written only by `invite_redeem_by_code()`; rows older than 2 hours are deleted as new ones are written.
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L2 | internal id |
+| `scope` | L2 | enum (user, device, ip, global) |
+| `subject` | L3 | keyed hash (rotating key) of a person id, device id or client address; empty for global; never a raw id |
+| `at` | L2 | system timestamp |
 
 ##### `legal_holds`
 
@@ -699,6 +711,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `sync.ownerId` | L3 | Person id that owns the local rows |
 | `sync.epoch`, `sync.epochStartedAt`, `sync.restoreAt`, `sync.pausedFor`, `sync.lastSyncedAt`, `sync.lastVerifyAt` | L2 | Sync state |
 | `accountDeletion.forgetPending` | L2 | Flag: analytics ids still to send to `analytics-forget` |
+| `accountDeletion.openRequest` | L3 | While a request to delete the account is open, and for a short wait after a cancel: its state (`scheduled`, `held`, `executing`, or `cancelled` while the book comes back, with the time of the cancel), the server's request id and its date (not on a `cancelled` note), and the id of the account it was made for (the auth user UUID, an L3 person id), so a phone with no book shows the deletion screen and not the first-run welcome, and so another account that signs in on the phone does not inherit it. Copied from the server's own answers (`deletion_requests`, the person's own rows). No name, letter or child. Stays on the phone, never sent. Cleared when a cancel goes through with a book listed; when a read of the server finds no request open and the phone either lists a book or holds no book the server has closed; when another account signs in; when its date has passed by more than 48 hours and the phone is signed out or the server did not say the request is still open (after the purge no read can succeed); and when a `cancelled` wait has lasted 15 minutes or the book is listed. Only a `scheduled` or `held` note, within its date, becomes the `cancelled` wait on a read that finds no request open, and only on a phone with no book that holds a book the server has closed (until the book returns or 15 minutes pass); an `executing` note, or one past its date by more than 48 hours, is simply cleared. The clearing runs while the first-run route is mounted (the deletion screen, the welcome, or a book arriving under it), on the Delete account page's own read, and by the 48-hour rule: a co-parent who keeps a book on the tabs keeps the note until one of those, and while a book is listed the note never counts (the tabs and Settings are reached as always) |
 | `scribe.analytics.consent` | L2 | Analytics choice: unknown, granted, denied |
 | `scribe.analytics.id`, `scribe.analytics.retired_ids` | L2 | Random analytics id and up to 20 retired ids, kept only for deletion (TRACKING_PLAN 7). Never sent anywhere except PostHog (after a yes) and `analytics-forget` |
 | `scribe.analytics.first_launch_at`, `scribe.analytics.last_active_at` | L2 | Device times used only to compute buckets (`days_since_install`, `days_since_last_open`); never sent raw |

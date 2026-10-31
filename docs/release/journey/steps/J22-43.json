@@ -1,0 +1,35 @@
+{
+  "id": "J22-43",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Agree and sync, later",
+  "note": "From Account, \"Agree and sync\" opens the sensitive-data step with every registered line; nothing is recorded until the person answers there (LEGAL-REQ-006).",
+  "from": "J22-42",
+  "shot": "screens/J22-43.png",
+  "route": "/sign-in/consent",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Before your book syncs Letters can hold private things, like health details about you or Asha. To sync your book and share it with the family you choose, we store what you write on our servers. We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models. If you keep it on this phone, syncing and sharing stay off. You can change this any time in Settings, Privacy. Agree and sync Keep on this phone",
+  "lines": [
+    "Before your book syncs",
+    "Letters can hold private things, like health details about you or Asha. To sync your book and share it with the family you choose, we store what you write on our servers.",
+    "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
+    "If you keep it on this phone, syncing and sharing stay off.",
+    "You can change this any time in Settings, Privacy.",
+    "Agree and sync",
+    "Keep on this phone"
+  ]
+}

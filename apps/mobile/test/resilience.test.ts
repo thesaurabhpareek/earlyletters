@@ -10,7 +10,7 @@ import { nodeDb } from './helpers/node-db';
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({ openNativeDb: () => { throw new Error('native opener must not run in tests'); } }));
 
-import { attemptOpen, launchStatus } from '../src/lib/resilience/launch.logic';
+import { attemptOpen, launchStatus, RECOVERY_START, retryResult, retryTapped } from '../src/lib/resilience/launch.logic';
 import { isCaptureRoute, routePathOf, TONIGHT_HREF } from '../src/lib/resilience/not-found.logic';
 import { folderFor, planRecoveryExport, README_PATH, writeRecoveryZip, type FoundFile } from '../src/lib/resilience/recovery-export.logic';
 import { goToTonightAfterRetry } from '../src/lib/resilience/recover-to-tonight';
@@ -47,6 +47,26 @@ describe('launch failure (J20)', () => {
     h.close();
   });
 
+  it('Try again that fails twice answers both taps with a different state each time, then a success opens the book (S1)', () => {
+    const broken = () => store.openStore({ open: () => { throw new Error('x'); } });
+    let view = RECOVERY_START;
+    const answers: unknown[] = [];
+    for (let tap = 0; tap < 2; tap += 1) {
+      view = retryTapped(view);
+      expect(view.trying).toBe(true);
+      expect(attemptOpen(broken)).toBe('recovery');
+      view = retryResult(view, 'recovery');
+      answers.push(view);
+    }
+    expect(answers[1]).not.toEqual(answers[0]);
+    const h = nodeDb();
+    view = retryTapped(view);
+    const found = attemptOpen(() => store.openStore({ open: () => ({ db: h.db, close: () => {} }) }));
+    expect(found).toBe('ok');
+    expect(retryResult(view, found)).toMatchObject({ trying: false, line: 'none' });
+    h.close();
+  });
+
   it('anything thrown while opening counts as a failed launch, never a crash', () => {
     expect(attemptOpen(() => { throw new Error('anything'); })).toBe('recovery');
   });
@@ -70,7 +90,7 @@ describe('scribe://listen never records by itself (J19, J20)', () => {
     for (const u of ['scribe://listen', 'scribe://listen?go=1', '/listen', 'scribe://review?draftId=1', 'scribe://read-together', 'https://earlyletters.com/listen']) {
       expect(isCaptureRoute(u), u).toBe(true);
     }
-    for (const u of ['scribe://auth/callback', 'https://earlyletters.com/i/abc', '/settings', '/letter/1', '/listening-tips', '/']) {
+    for (const u of ['scribe://auth/callback', 'https://earlyletters.com/j#t=abc', '/settings', '/letter/1', '/listening-tips', '/']) {
       expect(isCaptureRoute(u), u).toBe(false);
     }
     expect(TONIGHT_HREF).toBe('/');

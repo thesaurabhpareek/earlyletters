@@ -20,10 +20,12 @@
  * (development, preview, production; eas.json `environment`):
  *   EXPO_PUBLIC_APP_ENV  development | preview | production. Set in eas.json
  *                        per profile and in .env.development for local runs.
- * Anything secret (future Supabase anon key, Sentry DSN, PostHog key) goes in
- * EAS environment variables with "sensitive" or "secret" visibility, created
- * by the founder in the EAS dashboard, never in this file, eas.json or a
- * committed .env file. Nothing secret exists yet: C0 builds have no backend.
+ * Project values (EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+ * the staging project's URL and anon key for the `preview` alpha; later a Sentry
+ * DSN or PostHog key) go in EAS environment variables, created by the founder in
+ * the EAS dashboard ("sensitive" visibility), never in this file, eas.json or a
+ * committed .env file (docs/release/TESTFLIGHT.md step 9). The URL and anon key
+ * are public by design (RLS is the authority); no service key ever ships.
  *
  * Data at rest (PSEC-05, LEGAL-REQ-022(b)): the default data-protection class
  * is set explicitly to "complete until first user authentication", so the
@@ -32,10 +34,14 @@
  * background database writes while the phone is locked.
  */
 import type { ConfigContext, ExpoConfig } from 'expo/config';
+import { withEntitlementsPlist, type ConfigPlugin } from 'expo/config-plugins';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 type BrandModule = typeof import('../../packages/brand/index');
+
+/** Lowest supported iOS (D-098). The billing copy keeps its "needs iOS 17" fallback for safety. */
+export const IOS_DEPLOYMENT_TARGET = '17.0';
 type PermissionCopyModule = typeof import('./src/lib/permission-copy');
 
 const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
@@ -63,7 +69,7 @@ const { permissionCopy } = loadTs<PermissionCopyModule>('./src/lib/permission-co
 
 type BuildEnvModule = typeof import('./src/lib/build-env');
 type AppEnv = import('./src/lib/build-env').AppEnv;
-const { resolveAppEnv } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
+const { resolveAppEnv, e2eRefusal } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
 
 /** Reads EXPO_PUBLIC_APP_ENV at evaluation time. Unset means development; an unknown value is refused. */
 function appEnvFromProcess(): AppEnv {
@@ -87,64 +93,34 @@ export const DATA_PROTECTION_ENTITLEMENT = 'com.apple.developer.default-data-pro
 export const DATA_PROTECTION_CLASS = 'NSFileProtectionCompleteUntilFirstUserAuthentication';
 
 /**
- * Required-reason APIs (LEGAL-REQ-043; docs/legal/app-store-privacy-labels.md 3).
- * Only categories tied to a dependency this app actually links. Evidence was
- * read from node_modules on 2026-10-03 (expo SDK 57, react-native 0.86):
- * each pod's PrivacyInfo.xcprivacy, or source and symbols where a pod ships
- * no manifest. Expo merges these into the app's PrivacyInfo.xcprivacy at
- * prebuild. Re-check after every native dependency change, and treat Apple's
- * upload warning email as the final check.
+ * No remote push: reminders (F13) and plan reminders are local notifications, and nothing in the app asks for a
+ * push token. expo-notifications' own plugin, which prebuild applies because the package is installed, still
+ * writes aps-environment; this removes it, so no build carries a push capability it does not use
+ * (docs/ops/RELEASE.md section 4). Prebuild applies that plugin after this config, and a mod registered
+ * earlier runs later, so the key is gone from the written entitlements file. When co-parent push is built
+ * (F11 WP-F11-09c, which registers a token), remove this and request the entitlement on purpose.
  */
-const PRIVACY_MANIFESTS: NonNullable<NonNullable<ExpoConfig['ios']>['privacyManifests']> = {
-  // No tracking and no tracking domains (PRD: no ads, no data brokers).
-  NSPrivacyTracking: false,
-  NSPrivacyTrackingDomains: [],
-  NSPrivacyAccessedAPITypes: [
-    {
-      // VERIFIED. react-native (React/Resources/PrivacyInfo.xcprivacy;
-      // RCTBundleURLProvider), expo-constants (EXConstantsInstallationIdProvider)
-      // and expo-system-ui each declare CA92.1 in their own manifests. App code
-      // does not use UserDefaults directly (expo-sqlite/kv-store is not used).
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
-      NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
-    },
-    {
-      // VERIFIED. react-native core, boost, glog and RCT-Folly declare C617.1.
-      // expo-file-system declares only 0A2A.1 (wrapper) and 3B52.1, so the app
-      // owns the reason for its own calls: src/lib/capture/sweep.ts reads
-      // creationTime/modificationTime of recordings in the app's Documents
-      // directory. expo-sqlite ships no manifest and its vendored sqlite3.c
-      // calls stat/fstat/lstat on the database files in the app container.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
-      NSPrivacyAccessedAPITypeReasons: ['C617.1'],
-    },
-    {
-      // VERIFIED. react-native (ReactCommon/react/timing) and boost declare
-      // 35F9.1: elapsed time between in-app events. whisper.rn links only
-      // clock_gettime, which is not on Apple's list.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
-      NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
-    },
-    {
-      // UNVERIFIED. expo-sqlite ships no manifest; its vendored sqlite3.c
-      // calls fstatfs() on every database open on Apple platforms
-      // (unixOpen, `defined(__APPLE__)`), only to read the filesystem type
-      // name, never free space. fstatfs is on Apple's disk-space list. E174.1
-      // is the closest approved reason and the one already planned for the
-      // model downloader, but whether Apple's scan flags this symbol, and
-      // whether E174.1 is the right reason for it, is unconfirmed. Confirm on
-      // the first TestFlight upload; drop it if the warning email is silent
-      // without it. App code does not query free space today.
-      NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
-      NSPrivacyAccessedAPITypeReasons: ['E174.1'],
-    },
-  ],
-  // Nothing is collected off the device yet: C0 builds have no backend, no
-  // analytics and no crash reporting. Before any build that syncs or sends
-  // analytics, fill this from docs/legal/data-map.yaml (LEGAL-REQ-041) and
-  // docs/legal/app-store-privacy-labels.md 3.3.
-  NSPrivacyCollectedDataTypes: [],
-};
+const PUSH_ENTITLEMENT = 'aps-environment';
+const withoutRemotePush: ConfigPlugin = (c) =>
+  withEntitlementsPlist(c, (m) => {
+    delete m.modResults[PUSH_ENTITLEMENT];
+    return m;
+  });
+
+/**
+ * The iOS privacy manifest (BL-349, LEGAL-REQ-043): required-reason APIs, no
+ * tracking, and the collected data types for this build's switches, from
+ * src/lib/privacy-manifest.ts (evidence and Apple's sources are there). A build
+ * with server features off declares no collected data; a server-on build
+ * declares what S17's App Privacy worksheet lists for its build flags
+ * (docs/legal/app-store-privacy-labels.md 1.4.0, sections 3.2 and 3.4).
+ * Expo writes it into ios/<app>/PrivacyInfo.xcprivacy at prebuild and merges
+ * into a file that is already there, so the native folder must be generated
+ * fresh for each profile (it is never committed; EAS and the preflight prebuild
+ * clean). Pod install then adds the pods' own reasons to the file.
+ */
+type PrivacyManifestModule = typeof import('./src/lib/privacy-manifest');
+const { privacyManifest } = loadTs<PrivacyManifestModule>('./src/lib/privacy-manifest.ts');
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
 
@@ -156,16 +132,34 @@ function reversedGoogleClientId(clientId: string | undefined): string | null {
 const googleIosUrlScheme = reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 
 /**
- * Server features (sign-in, sync, co-parent sharing): the same rule as
- * src/lib/capabilities.ts, `on` only. Every eas.json profile sets `off` for v1.0
- * (founder, 3 Oct 2026). Recorded in `extra` so a build's config shows which it is.
+ * Server features (sign-in, sync, co-parent sharing) and the build flags on top of
+ * them (recording backup, the status report, the Delete account row): the same rules as
+ * src/lib/capabilities.ts, `on` only, and a build flag needs the server switch too.
+ * In eas.json only `preview` is on (D-100, D-106); `testflight` stays off until the
+ * R-17 gate passes, `production` until submission. The Delete account row
+ * (`EXPO_PUBLIC_ACCOUNT_DELETION`, founder, 30 Oct 2026) is not written in the two alpha
+ * profiles: it comes from the EAS `preview` environment, so a build without it hides the row.
+ * Recorded in `extra` so a build's config shows
+ * which it is. Read per evaluation, so one process can evaluate several profiles.
  */
-const serverFeatures = (process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').trim().toLowerCase() === 'on';
+const isOn = (raw: string | undefined) => (raw ?? '').trim().toLowerCase() === 'on';
+function capabilityFlags() {
+  const serverFeatures = isOn(process.env.EXPO_PUBLIC_SERVER_FEATURES);
+  return {
+    serverFeatures,
+    backup: serverFeatures && isOn(process.env.EXPO_PUBLIC_BACKUP),
+    statusReport: serverFeatures && isOn(process.env.EXPO_PUBLIC_STATUS_REPORT),
+    accountDeletion: serverFeatures && isOn(process.env.EXPO_PUBLIC_ACCOUNT_DELETION),
+  };
+}
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const APP_ENV = appEnvFromProcess();
+  // B-9: EXPO_PUBLIC_E2E=1 only in a development build, and on EAS only in the e2e profile (build-env.ts).
+  const e2eStop = e2eRefusal({ e2e: process.env.EXPO_PUBLIC_E2E, appEnv: APP_ENV, easBuildProfile: process.env.EAS_BUILD_PROFILE });
+  if (e2eStop !== null) throw new Error(e2eStop);
   const appId = `${bundleId()}${ID_SUFFIX[APP_ENV]}`;
-  return {
+  return withoutRemotePush({
   ...config,
   name: brand.name,
   slug: brand.codename,
@@ -199,13 +193,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
     usesAppleSignIn: true,
-    // Universal links for email sign-in and invites (/auth/callback, /i/*); the website serves the AASA
+    // Universal links for email sign-in and invites (/auth/callback, /j); the website serves the AASA
     // file (docs/ops/AUTH_SETUP.md section 5). Domain from packages/brand, never typed here.
     associatedDomains: [`applinks:${brand.publisher.domain}`],
     entitlements: {
       [DATA_PROTECTION_ENTITLEMENT]: DATA_PROTECTION_CLASS,
     },
-    privacyManifests: PRIVACY_MANIFESTS,
+    // The same switches as `extra` below, read in the same evaluation.
+    privacyManifests: privacyManifest(capabilityFlags()),
   },
   android: {
     package: appId,
@@ -224,6 +219,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   plugins: [
     'expo-router',
+    // D-098 (15 Oct 2026, delegated by founder; DEBATES Q-002): iOS 17 or later, because Apple's
+    // subscription store view (the Plus sheet) needs it (ADR 0013). Expo SDK 57's own minimum is 16.4.
+    ['expo-build-properties', { ios: { deploymentTarget: IOS_DEPLOYMENT_TARGET } }],
     [
       'expo-splash-screen',
       {
@@ -271,7 +269,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   extra: {
     appEnv: APP_ENV,
-    serverFeatures,
+    ...capabilityFlags(),
   },
-  };
+  });
 };

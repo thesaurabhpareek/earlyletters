@@ -169,8 +169,23 @@ export function readState(body) {
   }
 }
 
+// GitHub caps an issue body near 65,536 characters. The caches below can all be
+// rebuilt from GitHub, so they go first; claims, runs and standing are never dropped.
+export const STATE_LIMIT = 60000;
+const REBUILDABLE = ["verdicts", "reviewfp", "drift", "d041", "lanes"];
 export function writeState(state) {
-  return `<!-- agents-state:${Buffer.from(JSON.stringify(state)).toString("base64")} -->`;
+  const enc = (o) => `<!-- agents-state:${Buffer.from(JSON.stringify(o)).toString("base64")} -->`;
+  let out = enc(state);
+  if (out.length <= STATE_LIMIT) return out;
+  const slim = { ...state };
+  for (const k of REBUILDABLE) {
+    if (!(k in slim)) continue;
+    delete slim[k];
+    out = enc(slim);
+    if (out.length <= STATE_LIMIT) break;
+  }
+  if (out.length > STATE_LIMIT) console.error(`agents-state is ${out.length} characters even without caches; the board write may fail`);
+  return out;
 }
 
 // ---------- GitHub via the gh CLI (REST only) ----------

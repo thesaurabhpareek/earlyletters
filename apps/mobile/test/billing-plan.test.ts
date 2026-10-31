@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import type { NativeEntitlementSnapshot, NativeStatus, NativeTransaction } from '../modules/scribe-store/types';
 import { periodOf, PLUS_PRODUCT_IDS } from '../src/lib/billing/config';
 import { billingCopy } from '../src/lib/billing/copy';
+import { APP_STORE_PLUS } from '../../../packages/content/src/pricing';
 import {
   EMPTY_PLAN,
   isJoinedBook,
@@ -154,6 +155,45 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
   });
 });
 
+describe('[SUB-05] offer codes: a free period is free, not paid', () => {
+  // A redeemed offer code with free months: StoreKit says offerType offer_code, freePeriod true, isTrial false.
+  const coded = (months: number, over: Partial<NativeTransaction> = {}) =>
+    tx({ isTrial: false, offerType: 'offer_code', freePeriod: true, purchasedAt: at(-1), expiresAt: at(months * 30 - 1), ...over });
+
+  it('1 month and 3 months free from a code: trial, "free until", with the cancel-by day', () => {
+    for (const months of [1, 3]) {
+      const t = coded(months);
+      const p = planFromSnapshot(snap([t], [status(t)]));
+      expect(p.view.state, String(months)).toBe('trial');
+      expect(p.details.status).toBe('trial');
+      expect(planLine(p, NOW)).toEqual({ kind: 'trial', until: localDateOf(t.expiresAt!), cancelBy: localDateOf(at(months * 30 - 2)) });
+      expect(plusOn(p, NOW)).toBe(true);
+    }
+  });
+
+  it('a paid offer-code period (no free period) stays active and "renews"', () => {
+    const t = coded(1, { freePeriod: false });
+    const p = planFromSnapshot(snap([t], [status(t)]));
+    expect(p.view.state).toBe('active');
+    expect(planLine(p, NOW)).toMatchObject({ kind: 'renews' });
+  });
+
+  it('the native fields survive validation and the device cache; unknown offer kinds read as other', () => {
+    const raw = { entitlements: [{ ...coded(3) }, { ...tx({ productId: 'plus.annual' }), offerType: 'something_new', freePeriod: 'yes' }], statuses: [], checkedAt: NOW };
+    const clean = sanitizeSnapshot(raw)!;
+    expect(clean.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(clean.entitlements[1].offerType).toBe('other');
+    expect('freePeriod' in clean.entitlements[1]).toBe(false);
+    expect(parsePlanCache(serializePlanCache(clean))?.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(planFromSnapshot(clean).view.state).toBe('trial');
+  });
+
+  it('a snapshot without the fields (an older cache, or before iOS 17.2 for a code) reads as before', () => {
+    const p = planFromSnapshot(snap([tx()], [status()]));
+    expect(p.view.state).toBe('active');
+  });
+});
+
 describe('snapshot validation and the device cache', () => {
   it('drops other products and malformed entries, never throws', () => {
     const s = sanitizeSnapshot({
@@ -185,6 +225,17 @@ describe('snapshot validation and the device cache', () => {
     expect(sameEntitlements(snap([tx()], [], NOW), snap([tx()], [], at(1)))).toBe(true);
     expect(sameEntitlements(snap([tx()]), snap([tx({ expiresAt: at(50) })]))).toBe(false);
     expect(sameEntitlements(null, null)).toBe(true);
+  });
+
+  it('[G-15] the first purchase date survives the cache and counts as a change (the yearly reminder\'s anniversary)', () => {
+    const first = tx({ originalPurchasedAt: at(-400) });
+    const s = snap([first], [status()]);
+    expect(parsePlanCache(serializePlanCache(s))?.entitlements[0].originalPurchasedAt).toBe(at(-400));
+    expect(planFromSnapshot(s).details).toMatchObject({ purchasedAt: at(-10), originalPurchasedAt: at(-400) });
+    expect(planFromSnapshot(snap([tx()])).details.originalPurchasedAt).toBeNull();
+    // A corrected first-purchase date from StoreKit is a change worth re-caching and re-planning.
+    expect(sameEntitlements(s, snap([tx({ originalPurchasedAt: at(-30) })], [status()]))).toBe(false);
+    expect(sanitizeSnapshot({ ...s, entitlements: [{ ...first, originalPurchasedAt: 'yesterday' }] })?.entitlements[0].originalPurchasedAt).toBeUndefined();
   });
 });
 
@@ -250,6 +301,24 @@ describe('products and the StoreKit configuration file', () => {
     expect(byId['plus.annual'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P2M', numberOfPeriods: 1 });
     expect(periodOf('plus.monthly')).toBe('month');
     expect(periodOf('plus.annual')).toBe('year');
+  });
+
+  it('[D-077, F14-REQ-030] names and descriptions match what App Store Connect gets, within Apple\'s limits, and promise only v1.0', () => {
+    const subs = file.subscriptionGroups[0].subscriptions as Array<{ productID: string; referenceName: string; localizations: Array<{ displayName: string; description: string }> }>;
+    const byId = Object.fromEntries(subs.map((x) => [x.productID, x]));
+    const meta = { 'plus.monthly': APP_STORE_PLUS.monthly, 'plus.annual': APP_STORE_PLUS.annual } as const;
+    for (const id of PLUS_PRODUCT_IDS) {
+      const want = meta[id];
+      expect(byId[id].referenceName).toBe(want.referenceName);
+      expect(byId[id].localizations[0]).toMatchObject({ displayName: want.displayName, description: want.description });
+      expect(want.displayName.length).toBeGreaterThanOrEqual(2);
+      expect(want.displayName.length).toBeLessThanOrEqual(30);
+      expect(want.description.length).toBeLessThanOrEqual(45);
+      expect(want.description).not.toMatch(/Read together|book|backup|theme|free|\$/i);
+    }
+    expect(file.subscriptionGroups[0].name).toBe(APP_STORE_PLUS.group.referenceName);
+    // The confirmation sheet and the emails name the plan the same way (D-077).
+    expect([APP_STORE_PLUS.monthly.displayName, APP_STORE_PLUS.annual.displayName]).toEqual([billingCopy.confirmation.planMonthly, billingCopy.confirmation.planAnnual]);
   });
 });
 

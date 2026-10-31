@@ -1,6 +1,6 @@
 ---
 title: Counsel packet, Early Letters v1.0 (option B) and after
-version: 1.1.0
+version: 1.3.0
 status: for counsel
 date: 2026-10-16
 owner: founder
@@ -152,7 +152,7 @@ Full text is in this file's 1.0.0 version (git history). Only the change is show
 | Q11 | Processor contracts | Live: Supabase (main and recovery projects; will hold encrypted audio), Cloudflare R2 (app settings, language and speech files, after #126), Resend (sign-in, deletion and backup emails; billing emails if built), Vercel; PostHog not in v1.0. Hugging Face is an independent host |
 | Q12 | IP and a language file name at download hosts | Live |
 | Q13 | Deletion clock and the email provider's copy | See Q51 |
-| Q14 | "Free, always" | Superseded by Q40 |
+| Q14 | "Free, always" | Superseded by Q40. Note from develop 1.2.0 (31 Oct 2026, Terms 4.0.0): under D-082 the Terms 13.1 list became keeping the first two letters, reading every kept letter and playing its recordings, and exporting everything; unlimited writing and co-parent writing left the permanent list, for the founder to decide |
 | Q15 | Liability cap | See Q39 |
 | Q16 | Binding promises | Live; adds "we never listen to your recordings" (Q42 e) |
 | Q17 | "Your recordings stay on this phone" | Closed: the microphone string drops it (label 1.4.0 section 5) |
@@ -186,5 +186,7 @@ Full text is in this file's 1.0.0 version (git history). Only the change is show
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3.0 | 2026-10-31 | Merge of develop (31 Oct) into the rebuilt packet of PR #163. Kept the 1.1.0 structure; the 1.2.0 product-paragraph prices (D-082) were already in it; the Q14 note on the Terms 4.0.0 free list is carried into the superseded-questions table. Version 1.3.0 because 1.1.0 and 1.2.0 are used (POLICY_VERSIONING 2.4). |
+| 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
 | 1.1.0 | 2026-10-16 | Rebuilt for option B and the founder's 15 Oct direction for legal pages: a one-page table of what changed; R4's twelve questions in R4's order (Q41 to Q52); Q53 to Q56; #81's Q32 to Q40 restated (Q32 is now the health notice question, with the separate notice removed); the 1.0.0 questions with their status; and the code checks of the services the texts name. 16 Oct: the review of PR #163 (two reviews) found claims the code contradicts or has not built; the drafts now describe only built features or say a feature is not available yet, and section 0 lists each. Decision ids follow develop (D-100 to D-108). The 1.1.0 addendum drafted in PR #81 was never merged; its questions are carried here. |
 | 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |

@@ -1,0 +1,38 @@
+{
+  "id": "J22-33",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Account, signed in",
+  "note": "How the person signed in, with its mark and the address; Sync and sharing; Devices; and Sign out as a plain row, not red: nothing is deleted. The confirm is native (not on the web).",
+  "from": "J22-32",
+  "shot": "screens/J22-33.png",
+  "route": "/settings/account",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Account Signed in with email mama@example.invalid Sync Sync and sharing On Devices Sign out of other devices Other phones signed in to this account will need to sign in again. Sign out",
+  "lines": [
+    "Account",
+    "Signed in with email",
+    "mama@example.invalid",
+    "Sync",
+    "Sync and sharing",
+    "On",
+    "Devices",
+    "Sign out of other devices",
+    "Other phones signed in to this account will need to sign in again.",
+    "Sign out"
+  ]
+}

@@ -27,6 +27,25 @@ describe('incoming links: email sign-in (PRD A F5, TDD 04 3.1.3)', () => {
     });
   });
 
+  it('[SIGN-04] /auth/confirm is read exactly as /auth/callback (the AASA file hands both to the app)', () => {
+    expect(classifyIncomingUrl(`https://earlyletters.com/auth/confirm#token_hash=${HASH}&type=email`, CFG)).toEqual({ kind: 'auth-link', tokenHash: HASH, type: 'email' });
+    expect(classifyIncomingUrl(`https://earlyletters.com/auth/confirm/?token_hash=${HASH}&type=signup`, CFG)).toEqual({ kind: 'auth-link', tokenHash: HASH, type: 'signup' });
+    expect(classifyIncomingUrl('https://earlyletters.com/auth/confirm', CFG)).toEqual({ kind: 'auth-code' });
+    expect(classifyIncomingUrl('scribe://auth/confirm', CFG)).toEqual({ kind: 'auth-code' });
+    expect(classifyIncomingUrl(`scribe://auth/confirm#token_hash=${HASH}&type=email`, CFG)).toEqual({ kind: 'auth-code' });
+    // Nothing else under /auth, and no lookalike host.
+    expect(classifyIncomingUrl(`https://earlyletters.com/auth/confirmed#token_hash=${HASH}`, CFG)).toEqual({ kind: 'other' });
+    expect(classifyIncomingUrl(`https://evil.example/auth/confirm#token_hash=${HASH}`, CFG)).toEqual({ kind: 'other' });
+  });
+
+  it('[TPL-04] an email_change link is read as such, not sent to the sign-in code screen', () => {
+    expect(classifyIncomingUrl(`https://earlyletters.com/auth/callback#token_hash=${HASH}&type=email_change`, CFG)).toEqual({
+      kind: 'auth-link',
+      tokenHash: HASH,
+      type: 'email_change',
+    });
+  });
+
   it('a callback without a usable token opens the code screen', () => {
     expect(classifyIncomingUrl('https://earlyletters.com/auth/callback', CFG)).toEqual({ kind: 'auth-code' });
     expect(classifyIncomingUrl('https://earlyletters.com/auth/callback#token_hash=<script>', CFG)).toEqual({ kind: 'auth-code' });
@@ -37,7 +56,7 @@ describe('incoming links: email sign-in (PRD A F5, TDD 04 3.1.3)', () => {
     expect(classifyIncomingUrl('scribe://auth/callback', CFG)).toEqual({ kind: 'auth-code' });
     expect(classifyIncomingUrl('scribe:///auth/callback', CFG)).toEqual({ kind: 'auth-code' });
     expect(classifyIncomingUrl(`scribe://auth/callback#token_hash=${HASH}&type=email`, CFG)).toEqual({ kind: 'auth-code' });
-    expect(classifyIncomingUrl(`scribe://i/${TOKEN}`, CFG)).toEqual({ kind: 'other' });
+    expect(classifyIncomingUrl(`scribe://j#t=${TOKEN}`, CFG)).toEqual({ kind: 'other' });
   });
 
   it('ignores other hosts and lookalikes', () => {
@@ -49,7 +68,7 @@ describe('incoming links: email sign-in (PRD A F5, TDD 04 3.1.3)', () => {
 
 describe('incoming links: invites and everything else', () => {
   it('routes an invite universal link', () => {
-    expect(classifyIncomingUrl(`https://earlyletters.com/i/${TOKEN}`, CFG)).toEqual({ kind: 'invite', token: TOKEN });
+    expect(classifyIncomingUrl(`https://earlyletters.com/j#t=${TOKEN}`, CFG)).toEqual({ kind: 'invite', token: TOKEN });
   });
 
   it("leaves Google's own redirect alone", () => {

@@ -15,7 +15,7 @@ Sources opened on 3 Oct 2026 (primary): Supabase docs `auth/auth-smtp`, `auth/au
 | Moving parts in the sign-in path | Supabase Auth to `smtp.resend.com` | Supabase Auth to our Edge Function to Resend API. One more service that must be up for anyone to sign in |
 | Time budget | Supabase's SMTP client | Whole hook call, retries included, must finish in 5 s ("We have a time budget of 5s for the entire webhook invocation", Supabase `auth-hooks`) |
 | Who holds the one-time token | Supabase only | Our function receives `token` and `token_hash` in the payload; any log line or error report that echoes the payload leaks a live credential |
-| Templates | Go templates exported by D2 from our React Email sources (`packages/emails/src/templates/supabase.ts`), loaded through `config.toml` `content_path` or pasted in the dashboard | React Email rendered at send time; full control (plain-text part, headers, per-locale copy) |
+| Templates | Go templates exported by D2 from our React Email sources (`packages/emails/src/templates/supabase.ts`), loaded locally through `supabase/config.toml` `content_path` and on hosted projects through the dashboard or `management-api.json` | React Email rendered at send time; full control (plain-text part, headers, per-locale copy) |
 | Link we control | Yes: `{{ .TokenHash }}` lets the template build our own scanner-safe link | Yes |
 | Security notices (email changed, sign-in method linked) | Native Supabase notification templates | Same, routed through the hook (`email_changed_notification`, `identity_linked_notification` action types) |
 | Secret | One Resend API key in the Supabase SMTP password field | Resend API key plus the hook signing secret (`v1,whsec_...`) in Edge Function secrets, plus signature verification code |
@@ -45,7 +45,7 @@ Current state (read from the Resend API, 3 Oct 2026): `earlyletters.com` verifie
 
 ## 3. Supabase dashboard settings (production project `early-letters`)
 
-Apply in the dashboard (Authentication section). The `config.toml` block in section 4 is the same thing for local development and for the record.
+Apply in the dashboard (Authentication section). `supabase/config.toml` holds the same values for local development and for the record; section 4.1 maps each one to its dashboard field and Management API name.
 
 ### 3.1 SMTP (Authentication > Emails > SMTP Settings)
 | Field | Value |
@@ -84,7 +84,7 @@ Apply in the dashboard (Authentication section). The `config.toml` block in sect
 | Site URL | `https://earlyletters.com` |
 | Redirect URLs | `https://earlyletters.com/auth/callback` (exact, no wildcard) |
 
-Nothing at v1.0 uses a redirect back into the app: email sign-in verifies in the app with `verifyOtp`, and Apple uses the native sheet plus `signInWithIdToken`. Do not add `scribe://**` or `https://earlyletters.com/**`. When Android Apple OAuth arrives, add one exact callback such as `https://earlyletters.com/auth/callback` (a verified App Link), not the custom scheme: any app can claim `scribe://`.
+The one redirect in use is email sign-in's PKCE flow (ADR 0023): the app sends `emailRedirectTo` and the `/auth/v1/verify` `redirect_to` as exactly `https://earlyletters.com/auth/callback`, which is also the app's universal link. Apple uses the native sheet plus `signInWithIdToken`. `supabase/config.toml` holds the same single URL and `supabase/tests/auth_config.test.mjs` checks it against the app's `AUTH_CALLBACK_PATH`. Do not add `scribe://**` or `https://earlyletters.com/**`. When Android Apple OAuth arrives, add one exact callback such as `https://earlyletters.com/auth/callback` (a verified App Link), not the custom scheme: any app can claim `scribe://`.
 
 ### 3.5 Sessions (Authentication > Sessions, and JWT settings)
 | Setting | Value |
@@ -121,75 +121,37 @@ Load D2's exported Go templates (`supabase/templates/`, generated from `packages
 
 ---
 
-## 4. `supabase/config.toml` block (local development and record)
+## 4. `supabase/config.toml` (local development and record)
 
-The repo has no `supabase/config.toml` yet. When one is added (outside this lane), the auth part should read as below. Locally, mail goes to the CLI's built-in mail catcher, never to Resend: leave `[auth.email.smtp]` disabled in the committed file so no developer machine needs the key.
+`supabase/config.toml` now holds the auth settings of sections 3.2 to 3.6 and loads our templates (SIGN-02, TPL-12, 31 Oct 2026). Locally, mail goes to the CLI's built-in mail catcher, never to Resend: `[auth.email.smtp]` stays commented out so no developer machine needs the key. `supabase/tests/auth_config.test.mjs` (in `npm run test:db`) pins every value below, checks each template file exists, compares subjects with `templates/config.toml.snippet`, and checks the templates say "15 minutes" while `otp_expiry` is 900.
 
-```toml
-[auth]
-site_url = "https://earlyletters.com"
-additional_redirect_urls = ["https://earlyletters.com/auth/callback"]
-jwt_expiry = 900
-enable_refresh_token_rotation = true
-refresh_token_reuse_interval = 10
-enable_signup = true
-enable_anonymous_sign_ins = false
-enable_manual_linking = false
+Key names were checked on 31 Oct 2026 against the Supabase CLI source at tag v2.119.0 (the version CI pins): `apps/cli-go/pkg/config/templates/config.toml`, `auth.go` and `config.go`. The CLI v2.119.0 binary loaded the file (`supabase db push --dry-run` with an unreachable database URL got past config loading; a missing template file fails it). The six keys this runbook marked UNVERIFIED on 3 Oct (`enable_anonymous_sign_ins`, `enable_manual_linking`, `enable_confirmations` and the rest) are all in that source.
 
-[auth.rate_limit]
-email_sent = 100
-sign_in_sign_ups = 30
-token_verifications = 30
-token_refresh = 150
+Path rule found while checking: `[auth.email.template.*] content_path` is relative to the repository root (`./supabase/templates/...`), while `[auth.email.notification.*] content_path` is relative to `supabase/` in the CLI's Go loader (`./templates/...`). The snippet that `packages/emails/scripts/export-supabase.ts` writes uses `./supabase/templates/` for notifications too; config.toml uses `./templates/` (works in both loaders).
 
-[auth.email]
-enable_signup = true
-double_confirm_changes = true
-enable_confirmations = true
-max_frequency = "1m"
-otp_length = 6
-otp_expiry = 900
+### 4.1 Hosted values (scribe-staging and scribe-prod)
 
-[auth.email.template.confirmation]
-subject = "Confirm your email"   # D2 and C1 own the real subject; placeholder here
-content_path = "./supabase/templates/verify-email.html"
+`config.toml` does not reach the hosted projects (CI has no account token, POPS-04). Set each value below in the dashboard, or in one `PATCH https://api.supabase.com/v1/projects/{ref}/config/auth` together with `supabase/templates/management-api.json`. Field names are the CLI's own mapping (`auth.go` `ToUpdateAuthConfigBody`, v2.119.0); the JSON spelling is the API's snake_case form of those fields (UNVERIFIED against a live GET: do a `GET .../config/auth` first and match the names it returns).
 
-[auth.email.template.magic_link]
-subject = "Your sign-in link"    # placeholder; C1 owns copy
-content_path = "./supabase/templates/sign-in-link.html"
+| config.toml | Value | Dashboard | Management API field |
+|---|---|---|---|
+| `auth.site_url` | `https://earlyletters.com` | URL Configuration > Site URL | `site_url` |
+| `auth.additional_redirect_urls` | `https://earlyletters.com/auth/callback` only | URL Configuration > Redirect URLs | `uri_allow_list` |
+| `auth.jwt_expiry` | 900 | JWT settings > expiry | `jwt_exp` |
+| `auth.enable_anonymous_sign_ins` | false | Sign In / Providers > Anonymous | `external_anonymous_users_enabled` |
+| `auth.enable_manual_linking` | false | Sign In / Providers > Manual linking | `security_manual_linking_enabled` |
+| `auth.email.enable_confirmations` | true | Email provider > Confirm email | `mailer_autoconfirm` = **false** |
+| `auth.email.double_confirm_changes` | true | Email provider > Secure email change | `mailer_secure_email_change_enabled` |
+| `auth.email.otp_length` | 6 | Email provider > Email OTP length | `mailer_otp_length` |
+| `auth.email.otp_expiry` | 900 | Email provider > Email OTP expiration | `mailer_otp_exp` |
+| `auth.email.max_frequency` | `1m` | SMTP > Minimum interval per user | `smtp_max_frequency` = 60 |
+| `auth.rate_limit.email_sent` | 100 | Rate Limits > emails per hour | `rate_limit_email_sent` |
+| `auth.rate_limit.sign_in_sign_ups` | 30 | Rate Limits > sign-ups and sign-ins | `rate_limit_otp` |
+| `auth.rate_limit.token_verifications` | 30 | Rate Limits > token verifications | `rate_limit_verify` |
+| `auth.rate_limit.token_refresh` | 150 | Rate Limits > token refreshes | `rate_limit_token_refresh` |
+| templates and notifications | `supabase/templates/*` | Emails > Templates | `management-api.json` |
 
-[auth.email.template.email_change]
-subject = "Confirm your new email"  # placeholder
-content_path = "./supabase/templates/email-changed-new-address.html"
-
-[auth.email.notification.email_changed]
-enabled = true
-content_path = "./supabase/templates/email-changed-old-address.html"
-
-[auth.email.notification.identity_linked]
-enabled = true
-content_path = "./supabase/templates/apple-account-linked.html"
-
-[auth.email.notification.identity_unlinked]
-enabled = true
-
-# Production only, set in the dashboard, never committed with a value:
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.resend.com"
-# port = 465
-# user = "resend"
-# pass = "env(RESEND_SMTP_API_KEY)"
-# admin_email = "hello@earlyletters.com"
-# sender_name = "Early Letters"
-
-[auth.external.apple]
-enabled = true
-client_id = "<bundle id from packages/brand bundleId()>"
-secret = ""   # native-only: no Services ID secret at v1.0
-```
-
-Key names were checked against Supabase's CLI config reference on 3 Oct 2026 (`otp_length` "Must be between 6 and 10", `double_confirm_changes`, `max_frequency`, `rate_limit.*`, `email.notification.<type>`). `enable_anonymous_sign_ins`, `enable_manual_linking` and `enable_confirmations` are UNVERIFIED key spellings for the current CLI; check with `supabase init` output before committing. Template subjects come from C1 copy; the placeholders above are not final copy.
+Before build 2 (D-121 stage (a), sign-in on): record each project's values (a `GET .../config/auth` with secrets removed, or dashboard screenshots) in `docs/legal/evidence/`, then run section 8 checks 3, 4, 5, 7, 8 and 10.
 
 ---
 

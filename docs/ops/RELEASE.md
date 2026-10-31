@@ -3,7 +3,11 @@
 Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.3, 15 Oct 2026: ported to `develop` from Line B (`d1cbddb`, port map #117), marked for the on-device v1.0, amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread, then revised for the `app-store` environment gate and the 15 Oct reviews; where this file and ADR 0022 differed, ADR 0022 is what the founder approved. Rows that name files, sections or test rows that exist only on `auto/2026-10-05-fixes` (Line B) say so.
 Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-045, D-053, D-060, D-064 to D-067), `docs/ROADMAP.md` 2.1, `docs/FOUNDER_TASKS.md`, TDD 07 sections 9 to 11, `supabase/APPLY.md`, `scripts/packs/publish.ts` and ADR 0016 section 7, `docs/ops/AUTH_SETUP.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, `docs/ops/APP_SIZE.md`, `docs/legal/app-store-privacy-labels.md`, `docs/store/app-store.md`, `docs/qa/DEVICE_TEST_PLAN.md` 1.1.
 
-**v1.0 is on this phone only** (PR #54): no sign-in, accounts, sync or server copy of letters. Sections and rows that describe server work (sign-in setup, database migrations, Edge Functions, the demo account) apply from v1.1, when `EXPO_PUBLIC_SERVER_FEATURES` turns on; they are kept so v1.1 does not start from scratch, and are marked **v1.1** below.
+**Scope changed on 15 Oct (D-100, D-101, D-106).** This file was written for an on-device v1.0. v1.0 now has server features on behind the R-17 gate, the date moves, and a servers-on TestFlight alpha against staging comes first (target Thu 29 Oct; #152, `docs/release/AUTOMATION.md`). So:
+- Every row marked **v1.1** below (sign-in setup, database migrations, Edge Functions, the demo account, the co-parent exit) **applies to the v1.0 store release**.
+- Rows that say v1.0 has no sign-in, no account or no server (5.2 step 4, 5.3 step 3, 6.4, 6.8, section 10's opening line) are superseded for the store release.
+- The alpha runs on the preview lane; this train's store lane starts once the submission date is set.
+- The cut from `main` (1.1) needs the one-lineage merge first (ADR 0022, 17 Oct amendment; ADR 0026 decision 4, Proposed).
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
@@ -26,7 +30,7 @@ Who does what:
 | Step | Who | Never |
 |---|---|---|
 | Code, tests, docs on a wave branch | agents | agents never commit, push, build, submit, publish or apply (COORDINATION 6) |
-| Merge to `develop`, open the release PR, tag, run builds and submissions | coordinator | no build from an untagged commit for TestFlight or the App Store |
+| Merge to `develop`, open the release PR, tag, run builds and submissions | coordinator | no build from an untagged commit for the App Store, or for TestFlight after the alpha (the two alpha builds come from `develop`, `docs/release/TESTFLIGHT.md`) |
 | Approve the release PR, the submission, live migrations, pack and config publishing, legal text going public | founder | no secret in a chat, issue, repo or email (FOUNDER_TASKS) |
 
 ## 1. Branches, tags and CI gates
@@ -35,12 +39,12 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Tue 3 Nov, 13:00 UTC, which is 5:00 AM PT; the date was confirmed by the founder on 30 Oct, D-130, and the hour is the coordinator's; D-089 planned Tue 27 Oct), right after the release PR. **Held (CR-30, 31 Oct 2026):** `main` and `develop` share history only to 3 Oct, and a trial release merge on 31 Oct conflicted in 45 files, so `release/1.0` is not cut at the build 2 freeze. Order after the Mon 9 Nov go/no-go: one PR bringing `main` into `develop` (ADR 0026 decision 4), then the release PR from `develop` into `main`, then the cut. The first store build targets Tue 1 Dec (D-121). The Tue 3 Nov freeze still applies to the alpha builds, which come from `develop`. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
-- `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
+- `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
 - `ios-v<x.y.z>` is pushed after Apple approves and the founder releases, on the same commit as the released RC. The workflow refuses it without an RC tag on that commit and a release record `docs/release/<x.y.z>.md`, then publishes the GitHub Release from the record.
-- Tags never move and are never reused (D-089). The tag's version equals `apps/mobile/version.json`; the build number is not in the tag (2.2).
+- Tags never move and are never reused (D-089). The tag's version equals `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); the build number is not in the tag (2.2).
 
 ### 1.3 CI gates (F: `.github/workflows/ci.yml`, `migration-guard.yml`; TDD 07 9.1)
 
@@ -57,7 +61,7 @@ The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not en
 
 ### 1.4 Hotfix (D-089)
 1. Fix merged to `develop` first (upstream first), labelled `release:<major>.<minor>`.
-2. Coordinator cherry-picks it onto `release/<major>.<minor>` and bumps PATCH in `apps/mobile/version.json` there only (never on `develop`).
+2. Coordinator cherry-picks it onto `release/<major>.<minor>` and bumps PATCH in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`) there only (never on `develop`).
 3. Push the next RC tag (`ios-v1.0.1-rc.1`); same gates; TF-04 smoke; submit that build; ask for an expedited review if it fixes a critical bug (7.3). No OTA in v1.0 (D-091, section 8).
 4. After release, tag `ios-v1.0.1` on the RC's commit.
 
@@ -66,29 +70,29 @@ The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not en
 ### 2.1 What each number is
 | Number | Where | Who changes it |
 |---|---|---|
-| Marketing version (`CFBundleShortVersionString`, Android `versionName`) | `apps/mobile/version.json`, read by `app.config.ts` (D-089, BL-436) | MINOR: a PR on `develop` before the release PR; PATCH: the coordinator on the release branch (1.4) (V: Expo "App version management": set it explicitly for each store release) |
+| Marketing version (`CFBundleShortVersionString`, Android `versionName`) | `apps/mobile/version.json`, read by `app.config.ts` (D-089, BL-436) (after #109; until then `apps/mobile/app.config.ts:162`) | MINOR: a PR on `develop` before the release PR; PATCH: the coordinator on the release branch (1.4) (V: Expo "App version management": set it explicitly for each store release) |
 | Build number (`CFBundleVersion`) | EAS servers | EAS, automatically (2.2) |
 | Runtime version | not used: no `expo-updates` in v1.0 (D-091, section 8) | n/a |
 
 ### 2.2 Remote build numbers (F: `eas.json`)
-`cli.appVersionSource` is `remote` and the `production` profile has `autoIncrement: true` (F). EAS stores the iOS build number and bumps it on every production build, which avoids the common rejection for a duplicate build number (V: Expo "App version management", remote version source recommended from EAS CLI 12). Never set `ios.buildNumber` in `app.config.ts`. To see or set it: `npx eas-cli build:version:get -p ios` and `build:version:set` (A: command names from the EAS CLI reference).
+`cli.appVersionSource` is `remote` and the `production` profile has `autoIncrement: true` (F). EAS stores the iOS build number and bumps it on every production build, which avoids the common rejection for a duplicate build number (V: Expo "App version management", remote version source recommended from EAS CLI 12). Never set `ios.buildNumber` in `app.config.ts`. To see or set it: `npx eas-cli@24.10.0 build:version:get -p ios` and `build:version:set` (A: command names from the EAS CLI reference).
 
 ## 3. EAS: project, profiles, variables, image
 
 ### 3.1 `eas init` (once; founder, FT-17)
 ```bash
 cd apps/mobile
-npx eas-cli@latest login            # Expo account with two-factor (FT-02)
-npx eas-cli@latest init             # creates or links the EAS project for slug "scribe"
+npx eas-cli@24.10.0 login           # Expo account with two-factor (FT-02)
+npx eas-cli@24.10.0 init            # creates or links the EAS project for slug "scribe"
 ```
-`eas init` creates or links a project (V: EAS CLI reference, flags `--id`, `--force`, `--non-interactive`). Our config is dynamic (`app.config.ts`, F), so EAS cannot write the id into it by itself (A: Expo forum "EAS project ID with dynamic configuration"). The founder sends the printed `projectId` to the coordinator, who adds it in `app.config.ts` as `extra.eas.projectId` (and `owner`) in a PR (BL-339, TESTID_REQUESTS B-6). Re-run `npx eas-cli init --id <projectId>` on any new machine.
+`eas init` creates or links a project (V: EAS CLI reference, flags `--id`, `--force`, `--non-interactive`). Our config is dynamic (`app.config.ts`, F), so EAS cannot write the id into it by itself (A: Expo forum "EAS project ID with dynamic configuration"). The founder sends the printed `projectId` to the coordinator, who adds it in `app.config.ts` as `extra.eas.projectId` (and `owner`) in a PR (BL-339, TESTID_REQUESTS B-6). Re-run `npx eas-cli@24.10.0 init --id <projectId>` on any new machine.
 
 ### 3.2 Profiles (F: `eas.json` today; requests from TESTID_REQUESTS B-1 to B-3)
 
 | Profile | Bundle id | Distribution | Use | Status |
 |---|---|---|---|---|
 | `development` | `com.earlyletters.scribe.dev` | internal (ad hoc, registered devices) | dev client on the founder's phones; device spikes with Instruments (S1-17) | exists |
-| `preview` | `com.earlyletters.scribe.preview` | internal | release JavaScript for timing and most device checks; no StoreKit products | exists |
+| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); StoreKit products only after TESTFLIGHT step 2.5 | exists |
 | `production` | `com.earlyletters.scribe` | store (default) | release candidates (internal TestFlight on the production record) and the App Store | exists, `autoIncrement: true` |
 | `testflight` | `com.earlyletters.scribe.preview` | store | C0 and C1 (preview lane, `docs/release/TESTFLIGHT.md`) | exists on `develop` (PR #100) |
 | `e2e` | `.preview` | simulator, `withoutCredentials` | Maestro suite (`EXPO_PUBLIC_E2E=1`) | requested (B-1) |
@@ -107,7 +111,7 @@ Requested submit profile (A: values come from the founder after FT-08):
 `ascAppId` and `appleTeamId` are documented `submit.production.ios` keys, and `groups` adds the build to TestFlight internal groups (V: Expo "Configure with eas.json"). On the production record that group is `Release candidates` (the founder's phones, for TF-04 and FT-39); C0 runs on the `.preview` record (5.2). Neither id is a secret, but they are written only after the founder confirms them.
 
 ### 3.3 Build variables
-Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
+Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli@24.10.0 env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
 
 ### 3.4 The build (from an RC tag)
 Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, a trusted signing key in `packages/api/src/keys.ts` (and a warning if `eas.json` has no `EXPO_PUBLIC_DOCS_BASE_URL`), then, after the founder approves the run in the `app-store` environment, `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. Whether `--auto-submit` still submits after the CLI exits with `--no-wait` is Unverified: on the first RC, watch the build page on expo.dev for the linked submission and record what happened in `docs/release/1.0.0.md`. The checks run `npm test` and typecheck but not `test:db` or `test:functions`: v1.0 runs no server code. It needs the environment and secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
@@ -116,8 +120,8 @@ By hand only as an exception: if the workflow cannot run and the founder approve
 ```bash
 git switch --detach ios-v1.0.0-rc.1
 cd apps/mobile
-npx eas-cli@latest build --platform ios --profile production      # store build, build number bumped by EAS
-npx eas-cli@latest submit --platform ios --latest                   # uploads to App Store Connect (TestFlight)
+npx eas-cli@24.10.0 build --platform ios --profile production      # store build, build number bumped by EAS
+npx eas-cli@24.10.0 submit --platform ios --latest                   # uploads to App Store Connect (TestFlight)
 ```
 `eas submit` uploads the build; it shows in TestFlight after processing (V: Expo "Submit to the Apple App Store", "usually 10-15 minutes"). Record the build id, build number and commit in `docs/release/<x.y.z>.md`.
 
@@ -129,9 +133,16 @@ Store text: `apps/mobile/store.config.json` is generated from `packages/content`
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
 The repository is public, so GitHub Free includes environments with required reviewers, environment secrets, deployment tag and branch rules, and rulesets (V: GitHub "Deployments and environments" and "About rulesets", per the 15 Oct review; `deploy-db.yml` already uses an environment).
+
+What stands (ADR 0022 decision 8, founder, 15 Oct):
 - Environment `app-store`: the founder is the required reviewer; deployment rules allow tag `ios-v*` and branch `release/*` only. The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
 - Rulesets: tag `ios-v*` and branch `release/*`, restricting creations, updates and deletions, with repository admins as the only bypass. The coordinator pushes tags from a founder-credential session; the agent harness's App cannot.
 - Limit: every Claude session runs on the founder's GitHub account, which is an admin. The rulesets and the approval stop the harness App and anyone without admin rights. A session on the founder's credentials is held by the written rule (COORDINATION.md) and by the founder seeing each approval request.
+
+Proposed (17 Oct, not decided; ADR 0026 decision 1, Proposed; SR-3 and SR-11 in `docs/security/SECRETS_REVIEW.md`, on #206). It takes effect when the founder accepts ADR 0026 decision 1; until then the 15 Oct gate above stands:
+- Environment `app-store` (the approver account below is withdrawn, CR-19, 31 Oct; the reviewer waits for CR-20): the approver account (a second account only the founder holds) is the only required reviewer, with prevent self-review on and admin bypass off; the same deployment rules. Create it with `scripts/release/github-settings.ts` (on #236; FT-20) before `release-ios.yml` merges, because a run that names a missing environment creates it unprotected (SR-11).
+- Rulesets, for immutability only (SR-3): `ios-v*` and `db-v*` tags cannot be moved or deleted, and `release/*` cannot be force-pushed or deleted; no bypass list. They do not decide who may create a tag, because every session uses the same account; the approver's click is the control.
+- Limit: the founder's account still owns the repository and can change these settings back; `github-settings.ts --verify` (on #236) reads them back, and the durable fix is a founder decision after the alpha (AF-27 in `docs/release/AUTOMATION.md`).
 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
@@ -143,12 +154,12 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 ## 4. Signing with an individual developer account
 
 - **Account:** the founder's individual Apple Developer Program membership (D-004, D-064). Only the Account Holder accepts agreements, sets up Paid Apps, tax and bank (APP_STORE_CONNECT_SUBSCRIPTIONS step 1); the seller name on the App Store is the founder's legal name (D-004).
-- **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli credentials -p ios`.
+- **Let EAS manage the credentials.** On the first `eas build`, sign in with the Apple Account when asked; EAS creates and stores the distribution certificate and one provisioning profile per bundle id (V: Expo "App credentials": the three iOS credentials are the distribution certificate, provisioning profiles and push notification keys; profiles expire after 12 months, which does not affect apps already on the store; a new one is made on the next `eas build`). Inspect with `npx eas-cli@24.10.0 credentials -p ios`.
 - **Capabilities:** EAS enables the entitlements in the config on the App ID during the build (Sign in with Apple, Associated Domains; DEVICE_TEST_PLAN S1-06 turns that Assumption into V). Check the App ID in Certificates, Identifiers & Profiles after the first build (AUTH_SETUP 2.1).
-- **No push key.** The app schedules only local notifications (reminders and plan reminders); no remote push entitlement is configured (F: no `expo-notifications` plugin entry in `app.config.ts`; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)).
-- **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
+- **No push key.** The app schedules only local notifications (reminders and plan reminders) and never asks for a push token (no `getDevicePushTokenAsync` or `getExpoPushTokenAsync` in `apps/mobile`). expo-notifications' own plugin, which prebuild applies because the package is installed, writes `aps-environment`; `app.config.ts` removes it, so no remote push entitlement is configured (F: `expo prebuild` and `expo config --type introspect` show no `aps-environment`; `apps/mobile/test/config.test.ts` checks the introspected entitlements of every profile and the preflight checks the generated ones; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so an interactive `eas build` does not offer to create a push key (eas-cli 24.10.0, `IosCredentialsProvider.js`); if it ever asks "Would you like to set up Push Notifications for your project?", answer No.
+- **Internal builds** (`development`) are ad hoc: each iPhone is registered first (`npx eas-cli@24.10.0 device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
 - **App Store Connect API key for `eas submit`:** made through `eas credentials` (App Store Connect: Manage your API Key) so later submissions are non-interactive (V: Expo "Submit to the Apple App Store"); creating team keys is an Account Holder or Admin action (A). It never leaves EAS and the founder's password manager.
-- **The Sign in with Apple `.p8` key** used by the purge worker (and, from v1.1, by the `apple-token` Edge Function parked on Line B, G-03) is a different key with a different job (AUTH_SETUP 2.4, SECURITY.md 5; Line B's AUTH_SETUP 2.7 describes `apple-token`). It is not a signing credential.
+- **The Sign in with Apple `.p8` key** used by the purge worker and by the `apple-token` Edge Function (built in #139, G-03) is a different key with a different job (AUTH_SETUP 2.4 and 2.7, SECURITY.md 5). It is not a signing credential.
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
 
 ## 5. TestFlight
@@ -248,18 +259,18 @@ No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 ## 9. Packs, remote config and content publishing
 
-Signed and published only by the coordinator, with the founder's OK and the founder's key (COORDINATION 6, ADR 0016 7). The secret key lives only in the founder's password manager.
+D-115: the founder creates and holds the signing keys and publishes on one computer with `scripts/packs/publish.ts`: `release` (English only by default), then `upload` and `verify`, with the private key outside the repo. No CI job reads the signing or upload secrets, and the coordinator never holds a key (COORDINATION 6, ADR 0016 7). The runbook is `docs/ops/PACKS_HOSTING.md`; steps 2 and 3 below follow its steps 1, 6 and 7. The primary's secret key lives in the founder's password manager and in the key file of PACKS_HOSTING step 1, outside every checkout.
 
-1. Once: `npx tsx scripts/packs/keygen.ts`; the public key line goes into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
-2. Each publish, on the founder's machine:
+1. Once: `node scripts/packs/keygen.mjs`, then `node scripts/packs/keygen.mjs --backup`; both public key lines go into `packages/api/src/keys.ts` (BL-335) **before** the first TestFlight build, or no phone trusts anything published (FT-16).
+2. Each publish, on the founder's machine (PACKS_HOSTING steps 6 and 7):
    ```bash
-   export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...        # from the password manager, this shell only
-   npx tsx scripts/packs/publish.ts packs   --base-url https://packs.<Q-001 host> --min-app 1.0.0
-   npx tsx scripts/packs/publish.ts config  [--kill <switch>] [--unkill <switch>]
-   npx tsx scripts/packs/publish.ts content
+   # the key file of PACKS_HOSTING step 1, outside every checkout; never `export` the key (it stays in ~/.zsh_history)
+   npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream
+   set -a; . ~/.config/early-letters/r2.env; set +a        # the upload credentials, PACKS_HOSTING step 5
+   npx tsx scripts/packs/publish.ts upload
    ```
-   The script validates every text pack, writes `dist/packs/`, signs the manifest, config and content, checks each signature the way a phone does, bumps each document's version by one and rewrites `supabase/functions/{config,content}/published.ts`. It uploads and deploys nothing; it prints the commands (F: `scripts/packs/publish.ts`).
-3. Run the printed upload commands (`wrangler r2 object put` up to 300 MB, `rclone copyto` above, F) and deploy: `npx supabase functions deploy config --no-verify-jwt --use-api` and the same for `content`.
+   `release` writes `dist/release/`, signs the manifest, the remote config (from `scripts/packs/remote-config.json`, where the kill switches are set) and the content bundle, checks each signature the way a phone does, and bumps the versions in `supabase/functions/{config,content}/published.ts`; during the alpha, skip item 3 of its printed next steps (PACKS_HOSTING step 6). `upload` sends packs first and the manifest last, overwrites and deletes nothing, then runs `verify` against the host (F: `scripts/packs/publish.ts`).
+3. Not this path: `publish.ts packs`, `config`, `content` and `all` are development only; they print `wrangler` commands that overwrite without `upload`'s checks (the header of `scripts/packs/publish.ts`).
 4. Commit the changed `published.ts` and `scripts/packs/remote-config.json` in a PR the same day: git history is the audit log of what was served (C-NFR-009).
 5. Staging first, then production, with one phone checking each (DEVICE_TEST_PLAN S1-16 for packs; a kill switch reaches an open app within about 5 minutes, ADR 0016 6).
 6. Kill switches available today (F: `remote-config.json`): `sync`, `invites`, `photos`, `packDownloads`, `serverContent`. `readTogetherFreeSessions` may only be raised (D-009). `forceReauthEpoch` signs everyone out once (G-06; use only for a security incident).
@@ -269,7 +280,7 @@ Signed and published only by the coordinator, with the founder's OK and the foun
 Not run for v1.0: the on-device build makes no Supabase call (PR #54). This section is the plan for when server features turn on.
 
 
-The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is built: `.github/workflows/deploy-db.yml` (PR #36) applies migrations to staging and, on a `db-v*` tag, to production through the `production` environment. Follow APPLY.md for anything that workflow does not cover.
+The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is built: `.github/workflows/deploy-db.yml` (PR #36) applies migrations to staging and, on a `db-v*` tag, to production through the `db-production` environment (#236). Follow APPLY.md for anything that workflow does not cover.
 
 | Order | File | APPLY.md | Needed by |
 |---|---|---|---|

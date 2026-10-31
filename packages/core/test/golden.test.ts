@@ -42,7 +42,7 @@ function modelEdits(c: GoldenCase): Edit[] {
 }
 
 function run(c: GoldenCase): GoldenOutput {
-  const r = faithfulClean(c.raw, { level: c.level ?? 'clean', dictionary: GOLDEN_DICT, locked: c.locked, modelEdits: modelEdits(c) });
+  const r = faithfulClean(c.raw, { level: c.level ?? 'clean', dictionary: c.dictionary ?? GOLDEN_DICT, locked: c.locked, modelEdits: modelEdits(c) });
   return {
     text: r.text,
     applied: r.applied.map(({ type, start, end, replacement, source }) => ({ type, start, end, replacement, source })),
@@ -74,9 +74,9 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     expect(Math.max(...versions)).toBe(ENGINE_VERSION);
   });
 
-  it('covers 40 to 60 cases across English, Hinglish, Devanagari and NFD, with unique ids', () => {
+  it('covers 40 to 70 cases across English, Hinglish, Devanagari and NFD, with unique ids', () => {
     expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(40);
-    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(60);
+    expect(GOLDEN_CASES.length).toBeLessThanOrEqual(70); // 60 until engine 8 added its six
     expect(new Set(GOLDEN_CASES.map((c) => c.id)).size).toBe(GOLDEN_CASES.length);
     for (const lang of ['en', 'hinglish', 'hi', 'nfd'] as const) {
       expect(GOLDEN_CASES.filter((c) => c.lang === lang).length, lang).toBeGreaterThanOrEqual(5);
@@ -113,5 +113,63 @@ describe('golden corpus: same engine version, same output (CORE-08)', () => {
     expect(golden.cases['hi-model-wedge'].text).toBe('वह खुश है');
     expect(golden.cases['nfd-model-drop-accent'].text).toBe('We went to the café today.');
     expect(golden.cases['hinglish-model-negation'].text).toContain('nahi');
+  });
+
+  it('[F06-REQ-019] the engine 6 golden file keeps every R-01 case as said', () => {
+    if (ENGINE_VERSION < 6) return;
+    const golden = JSON.parse(readFileSync(FILE, 'utf8')) as GoldenFile;
+    const text = (id: string) => golden.cases[id].text;
+    expect(text('r01-d6-uh-uh')).toBe('Did you want more? Uh-uh, she said.');
+    expect(text('r01-d6-mm-hmm')).toBe('Mm-hmm, Asha nodded and smiled.');
+    expect(text('r01-d6-uh-uh-spaced')).toBe('Uh uh, not now, Asha.');
+    expect(text('r01-d7-single-quotes')).toContain('um, up');
+    expect(text('r01-d10-name-words')).toBe('I hope you sleep well and we will see Hope tomorrow.');
+    expect(text('r01-d13-name-swap')).toBe('Usha came over today and Asha laughed.');
+    expect(text('r01-d13-heard-as-negation')).toBe('No, she did not cry. I said no.');
+    expect(text('r01-number-range')).toBe('Asha slept 2 - 3 hours.');
+    expect(text('r01-d4-model-direction-mark')).toBe('Asha laughed at the duck.');
+    expect(text('r01-d9-model-noun-plural')).toBe('We saw the dogs with Asha.');
+  });
+
+  // Both files are frozen, so this holds whatever ENGINE_VERSION is now (it ran only at 6 before engine 7).
+  it('[F06-REQ-019] engine 6 changed no engine 5 case: every case recorded for 5 reads the same in 6', () => {
+    const v5 = join(DIR, 'engine-v5.json');
+    const v6 = join(DIR, 'engine-v6.json');
+    if (ENGINE_VERSION < 6 || !existsSync(v5)) return;
+    const five = JSON.parse(readFileSync(v5, 'utf8')) as GoldenFile;
+    const six = JSON.parse(readFileSync(v6, 'utf8')) as GoldenFile;
+    for (const id of Object.keys(five.cases)) expect(six.cases[id], id).toEqual(five.cases[id]);
+  });
+
+  it('[F06-REQ-019] engine 7 changed no engine 6 case; its two new cases keep the mark the speaker said', () => {
+    if (ENGINE_VERSION < 7) return;
+    const six = JSON.parse(readFileSync(join(DIR, 'engine-v6.json'), 'utf8')) as GoldenFile;
+    const seven = JSON.parse(readFileSync(join(DIR, 'engine-v7.json'), 'utf8')) as GoldenFile;
+    for (const id of Object.keys(six.cases)) expect(seven.cases[id], id).toEqual(six.cases[id]);
+    expect(seven.cases['e7-model-period-after-question'].text).toBe('Asha slept. Was there more?');
+    expect(seven.cases['e7-model-period-after-danda'].text).toBe('आशा आज बहुत हँसी।');
+    for (const id of ['e7-model-period-after-question', 'e7-model-period-after-danda']) {
+      expect(seven.cases[id].rejected, id).toEqual(['punctuation:changes_sentence_type']);
+    }
+  });
+
+  it('[F06-REQ-019] engine 8 changed no engine 7 case; its six new cases keep the words, marks and case as said', () => {
+    if (ENGINE_VERSION < 8) return;
+    const seven = JSON.parse(readFileSync(join(DIR, 'engine-v7.json'), 'utf8')) as GoldenFile;
+    const eight = JSON.parse(readFileSync(join(DIR, 'engine-v8.json'), 'utf8')) as GoldenFile;
+    for (const id of Object.keys(seven.cases)) expect(eight.cases[id], id).toEqual(seven.cases[id]);
+    expect(eight.cases['e8-model-join-through-invisible'].text).toBe('Asha\u200B slept well today.');
+    expect(eight.cases['e8-model-join-through-invisible'].rejected).toEqual(['paragraph:changes_word']);
+    expect(eight.cases['e8-model-period-behind-quote'].text).toBe("Asha said \u201Ano.'"); // the house rule straightens U+2018 only
+    expect(eight.cases['e8-model-period-behind-quote'].rejected).toEqual(['punctuation:changes_sentence_type']);
+    expect(eight.cases['e8-heard-as-inside-uh-uh'].text).toBe('Did you want more? Uh-uh, she said.');
+    expect(eight.cases['e8-heard-as-inside-uh-uh'].rejected).toEqual(['stt_fix:splits_word', 'stt_fix:splits_word']);
+    // Rulings on #262.
+    expect(eight.cases['e8-model-capital-after-locked-filler'].text).toBe('Um, hope is here.');
+    expect(eight.cases['e8-model-capital-after-locked-filler'].rejected).toEqual(['filler:overlaps_protected', 'punctuation:case_change_not_sentence_start']);
+    expect(eight.cases['e8-model-mark-moved-into-quote'].text).toBe('She said no.". Then she slept.');
+    expect(eight.cases['e8-model-mark-moved-into-quote'].rejected).toEqual(['punctuation:changes_sentence_type']);
+    expect(eight.cases['e8-heard-as-filler'].text).toBe('she came over.');
+    expect(eight.cases['e8-heard-as-filler'].rejected).toEqual(['stt_fix:stt_fix_protected_word']);
   });
 });

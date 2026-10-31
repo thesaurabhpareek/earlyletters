@@ -1,6 +1,6 @@
 # Early Letters: Brand system
 
-v1.1, 2026-10-03 (v1.1: new contexts for notifications, store frames, video, social, PDF and book pages; email web fonts; canonical tagline; brand-review BRD-03 to BRD-15). The single source agents and people read before touching any brand surface.
+v1.2, 2026-10-16 (v1.2, D-109: the atmosphere lamp is the one gradient allowed besides the icon tile (section 4, F2); new context `app.welcome`, the stacked lockup on the welcome (F3). v1.1: new contexts for notifications, store frames, video, social, PDF and book pages; email web fonts; canonical tagline; brand-review BRD-03 to BRD-15). The single source agents and people read before touching any brand surface.
 Registry: `packages/brand/registry.ts` (typed) and `packages/brand/registry.json` (generated). Mark: `packages/brand/assets/logo/primary/`.
 **(opinion)** marks judgement. Everything else is measured or decided.
 
@@ -17,7 +17,7 @@ Two opening quotation marks, one large and one small, leaning together. A grown-
 - **The wordmark** is EB Garamond, outlined, with its `tt` ligature and a word space opened 15 percent. It reads as a book, not an app.
 - **The colour** is sepia: cognac leather, a book spine, ink on paper.
 
-Approved by the founder on 2026-10-03 as r3 `final-a`. `primary/` is a byte-identical rebuild of it (`node packages/brand/assets/logo/primary/source/build.mjs`).
+Approved by the founder on 2026-10-03 as r3 `final-a`. `primary/` is a byte-identical rebuild of it (`node packages/brand/assets/logo/primary/source/build.mjs`). Round 4 treatments (two tones, the name in quotation marks, a paper tile) sit in `packages/brand/assets/logo/options-r4/` with a recommendation in `docs/brand/logo-r4/`: they are unchosen candidates, not in the registry, and no surface may use them.
 
 **Smart, never the author.** The product feels thoughtful and quick: it remembers the child's age, suggests a prompt, lists the right language. The brand never implies that software writes, improves or shapes a person's words. No sparkles, wands, robots, "AI" badges or "magic" anywhere near the mark or in any brand line.
 
@@ -61,7 +61,7 @@ Plain Node and non-TS tools read `packages/brand/registry.json` (same data). Fil
 | Sources | `source.logo.build`, `source.logo.geometry`, `source.logo.favicon`, `source.touchpoints.build`, `source.icon.bench` |
 | Deprecated | `deprecated.logo.r1.a`, `.r1.b`, `.r2`, `.r3`, `deprecated.email.interim.source`, `.interim.bimi`, `deprecated.email.direction.a`, `.b` |
 
-### Contexts (31)
+### Contexts (32)
 A context without a status is live (its files exist). `planned` contexts have a rule and a release but no artwork yet.
 
 | Context | Uses | Rule |
@@ -71,6 +71,7 @@ A context without a status is live (its files exist). `planned` contexts have a 
 | `app.splash` | `logo.symbol.ink`, `.reversed`, `color.paper`, `color.paperDark` | Symbol alone, 96 pt, centred. |
 | `app.header` | `logo.lockup.horizontal.small.*` | 20 to 26 pt. Navigation bars keep the system title. |
 | `app.brand-device` | `logo.symbol.accent`, `logo.symbol.reversed` | The opening pair alone, 40 to 64 pt, above the heading on welcome and empty states. Accent on paper, reversed on dark. One per screen, decorative, fade only. |
+| `app.welcome` | `logo.lockup.stacked.ink`, `.reversed` | 96 pt, centred, its top 96 pt below the safe-area top; the welcome's one logo, labelled with the brand name, never retyped beside it. Fades in once, never moves. The lamp may light the paper, never as a glow inside, behind or around the mark (D-109, F3). |
 | `app.paywall` | `logo.lockup.stacked.*` | 88 to 120 pt, above Apple's subscription view. |
 | `app.settings.about` | `icon.app.180`, `.180.dark`, small lockup | Icon at 60 pt, lockup at 22 pt. |
 | `web.header` | `logo.lockup.horizontal.ink` | Inline SVG, `currentColor`, 28 px. |
@@ -139,7 +140,7 @@ Values live in `packages/brand/index.ts` (UI roles in `@scribe/design-tokens`). 
 | `recording` (design tokens) | #B5473A | UI state only: the record control, the red circle. Never a brand fill, never near the mark | |
 | `color.icon.*` | #9A613C to #7F4F30; #2C2926 to #1F1B18 | App icon tiles only, never UI | mark 4.78 to 6.47; dark 6.58 to 7.79 |
 
-**Never:** accentDark on paper (2.07:1), accent on ink (2.55:1), pure black behind the mark, a gradient anywhere except the app icon tile.
+**Never:** accentDark on paper (2.07:1), accent on ink (2.55:1), pure black behind the mark, a gradient anywhere except the app icon tile and the atmosphere lamp (`tokens.atmosphere`, `Lamp`), which is decorative, capped for contrast, and never sits inside, behind or around the mark.
 
 The logo is one colour: ink on light, inkDark on dark. The accent symbol (`logo.symbol.accent`) is the one warm brand moment allowed on paper. Never split the lockup into two colours.
 

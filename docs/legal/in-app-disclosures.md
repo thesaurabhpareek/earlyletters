@@ -1,11 +1,11 @@
 ---
 title: Early Letters in-app and store disclosures
-version: 3.1.0
+version: 3.3.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-16
+last_updated: 2026-10-31
 owner: founder
-related: privacy-policy.md (2.1.0), terms-of-service.md (3.1.0), subscription-terms.md (3.1.0), subprocessors.md (2.1.0), app-store-privacy-labels.md (1.4.0), packages/content/VOICE.md
+related: privacy-policy.md (2.2.0), terms-of-service.md (4.0.0), subscription-terms.md (4.0.0), subprocessors.md (2.1.0), app-store-privacy-labels.md (2.1.0), packages/content/VOICE.md
 ---
 
 # In-app and store disclosures
@@ -31,11 +31,11 @@ Drafted for counsel. Not legal advice. The short statements the app, its emails 
 | Staff access line | Settings, Privacy, footer | We don't look at your letters; the few ways we could are written in the Privacy Policy. Never "every access is logged" until F17 8.2 item 6 (a) to (c) hold | Privacy Policy 3; F17 8.3; R4 PT-03 |
 | Keep step and held letter | The save step after the 2 free letters | Plus lets you keep adding letters; this letter waits on this phone (and syncs privately when signed in) and is never discarded. No price, "free trial", "free months" or "we will email you" (D-083) | Terms 8.1; Subscription Terms |
 | Plus text above Apple's plans | Apple's subscription view | What Plus adds; every letter you keep stays yours with or without Plus; plans renew until you cancel; cancel at least 24 hours before a period ends; how to cancel; Family Sharing. Apple shows price and trial. Nothing may make the free period look more prominent than Apple's billed amount | Terms 8; Subscription Terms; Apple 3.1.2(c) |
-| Purchase confirmation with Save a copy (built, #121) | After Apple's sheet closes with a purchase | Plan; trial end or renewal date; cancel-by date; renews until you cancel; how to cancel; Apple charges and its receipt holds the amount; reminders can come late or not at all; Save a copy | Subscription Terms "Dates and reminders"; D-094 |
-| Plan reminders and in-app note (built, #121) | Local notification on the purchaser's iPhone, if allowed; a note in the app | The date, and where to change or cancel (Settings, Plan). No child name, no letter text, no price | Subscription Terms "Dates and reminders" |
+| Purchase confirmation with Save a copy (built, #121) | After Apple's sheet closes with a purchase | Plan; trial end or renewal date; cancel-by date; renews until you cancel; how to cancel; Apple charges and its receipt holds the amount; reminders can come late or not at all; Save a copy. Not met as built if the price after must appear: the build names no amount (D-083); review SUB-04, open for counsel | Subscription Terms "Dates and reminders"; D-094 |
+| Plan reminders and in-app note (built, #121) | Local notification on the purchaser's iPhone, if allowed; a note in the app | The date, and where to change or cancel (Settings, Plan). No child name, no letter text, no price. Whether the amount must appear for California 17602(b) is review SUB-03, open for counsel | Subscription Terms "Dates and reminders" |
 | Plan reminder emails (not built, WP-F14-16) | Email to the account address of the purchaser | The plan, the published price and period, the trial end or renewal date, the cancel-by date, renews until cancelled, the cancel steps, "If you have already cancelled, there is nothing to do.", and that letters and recordings stay free to read, play and export. No offer | None yet: Subscription Terms "Dates and reminders" adds email when it ships; CATALOG section 7 |
 | Delete account screen | Settings, Your data | What happens per book; export first; Plus is not cancelled (opens Manage subscription); type delete to confirm; the date; what we keep and why (the kept records in Privacy Policy 7). When backup ships: recordings only in backup brought here first | Privacy Policy 7; Terms 10.1; `delete-account-page.md` |
-| Store listing legal links | Last lines of the description | Terms of Use and Privacy Policy. A Consumer Health Data Privacy Policy link only if counsel says a separate notice is needed (COUNSEL_PACKET Q32) | Privacy Policy 9 |
+| Store listing legal links | Last lines of the description | Terms of Service and Privacy Policy ("Terms of Service", not "Terms of Use", review LNG-34). A Consumer Health Data Privacy Policy link only if counsel says a separate notice is needed (COUNSEL_PACKET Q32) | Privacy Policy 9 |
 
 ## 2. Rules
 
@@ -69,6 +69,12 @@ Read on `origin/develop` at 4183844 on 15 Oct 2026, and re-checked at ef79bd3 on
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 3.3.0 | 2026-10-31 | draft-for-counsel | Merge of develop (31 Oct 2026) into the table form of PR #163. Kept #163's must-say table. Took from develop 3.2.0: related versions (Terms 4.0.0, Subscription Terms 4.0.0), the store legal link label "Terms of Service" (review LNG-34), and the open flags on the confirmation and reminder rows (reviews SUB-03, SUB-04: the build names no amount, D-083). The develop 3.2.0 string quotes are not copied: this file states what each string must say, not the string. Version 3.3.0 because 3.1.0 and 3.2.0 are used (POLICY_VERSIONING 2.4). Minor. |
+| 3.2.0 | 2026-10-31 | draft-for-counsel | Section 3 and 4 quotes brought up to the strings on develop for the D-082 membership (store subtitle, features, promise; store listing subscription paragraph and its Terms of Service link label, LNG-34); confirmation and reminder rows marked where the build, under D-083, names no amount (review SUB-02 to SUB-04). Related versions: Terms 4.0.0, Subscription Terms 4.0.0. Version 3.2.0 because 1.5.0, 2.0.0, 3.0.0 and 3.1.0 were used by unmerged drafts on other branches (POLICY_VERSIONING 2.4). Records only; no string changes here. Minor. |
 | 3.1.0 | 2026-10-16 | draft-for-counsel | Rewritten for option B (founder, 15 Oct 2026): sign-in lines, sensitive-data agreement naming the co-parent, new-device email, backup sheet and restore lines with the recovery key (D-102), staff access line, Keep step, the purchase confirmation and phone reminders built in #121 (D-094), reminder emails (D-080), delete account screen, and the store legal links (no separate health notice link unless counsel requires one, Q32). References follow the short published drafts of 15 Oct. Keeps the 3.0.0 table form (pull request #81, never merged; superseded): what each string must say, not the string. Section 3 lists the repo strings that say otherwise, as requests to S16. 16 Oct (review of PR #163): new-device email, backup sheet, backup off and reminder emails marked not built; the backup sheet names the three uses of the recovery key; the invite email subject listed. |
 | 3.0.0 | 2026-10-04 | not merged | Draft for an on-device v1.0 (pull request #81). The number is retired, not reused. |
 | 1.4.0 | 2026-10-03 | draft-for-counsel | Draft for the server version as decided on 3 Oct 2026, quoting the strings of that day. Earlier text and its changelog are in git history. |
+| 1.3.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3: `plus.legal.cancel` names only Apple (Plus is sold through the App Store only at v1.0, ADR 0013; App Review 2.3.10 bars other platforms' names in iOS copy); `store.description.betaLine` and `store.promotionalText.beta` marked pending D-030 (recommended: TestFlight beta, no store beta line); `web.legal.accept` ships with the web page in v1.1. Patch-level wording; counsel to confirm. |
+| 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: `subscriptionLine` uses "playing your recordings" and matches `store.en.ts` (K-11); beta ends only on the founder's decision (K-13). Patch-level wording; counsel to confirm. |
+| 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: paywall strings take trial length and cancel-by date from the store offer; clearer renewal wording; consent line now names automatic renewal; acknowledgment string; prominence, one-tap cancel and consent-log rules; 18+ acceptance strings (3a); store legal-links gap flagged. Beta and mistakes strings unchanged. |
+| 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, at the founder's request. |

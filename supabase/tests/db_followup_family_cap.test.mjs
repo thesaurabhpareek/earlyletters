@@ -7,6 +7,9 @@ import { createDb, users } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, newChild, invite, join } = h;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 const { A, B, C, N, S, U } = users;
 const M = '88888888-8888-8888-8888-888888888888'; // Dada, a second family member
 const T = '99999999-9999-9999-9999-999999999999'; // another signed-in person
@@ -74,11 +77,14 @@ await sys(`update child_invites set revoked_at = null where token_hash = sha256(
 const staleErr = await errOf(() => as(C, `select public.accept_child_invite($1)`, [tStale]));
 check('[H2] an invite whose maker is no longer a parent of the book is refused', staleErr?.code === 'SCINV' && /not found/.test(staleErr?.message));
 check('so the stranger is not a member', (await roleOf(CHILD, C)) === null);
-// The direct own-row delete (child_members_leave policy) revokes too.
+// The direct own-row delete is refused since 20261015020000 (F11-REQ-011); a removal
+// by support (service role, APPLY.md step 19) still revokes the parent's invites.
 await join(B, 'parent', CHILD, A);
 const tB2 = await invite(B, CHILD, 'contributor');
-await as(B, `delete from child_members where child_id=$1 and profile_id=auth.uid()`, [CHILD]);
-check('leaving by the direct own-row delete also revokes that parent\'s invites', (await inviteRow(tB2)).revoked_at !== null);
+check('[F11-REQ-011] the direct own-row delete is refused (42501)',
+  (await codeOf(() => as(B, `delete from child_members where child_id=$1 and profile_id=auth.uid()`, [CHILD]))) === '42501');
+await sys(`delete from child_members where child_id=$1 and profile_id=$2`, [CHILD, B]);
+check('a removal by support also revokes that parent\'s invites', (await inviteRow(tB2)).revoked_at !== null);
 const tA = await invite(A, CHILD, 'contributor');
 check('the remaining parent\'s invites are untouched', (await inviteRow(tA)).revoked_at === null);
 
@@ -99,7 +105,7 @@ check('[DATA-REQ-016] the leaver still reads and can delete their own letters',
   && (await one(B, `select public.delete_entry($1) ok`, [bIn])).ok === true);
 check('leave_child is idempotent: again is "not_member"', (await one(B, `select public.leave_child($1) r`, [CHILD])).r === 'not_member');
 check('a left_book audit row is written by the leaver',
-  (await as(B, `select 1 from audit_events where action='left_book' and child_id=$1`, [CHILD])).rows.length >= 1);
+  (await sys(`select 1 from audit_events where action='left_book' and child_id=$1 and actor_id=$2`, [CHILD, B])).rows.length >= 1);
 
 await join(B, 'parent', CHILD, A);
 const bIn2 = await letter(B, CHILD);
@@ -141,7 +147,7 @@ check('[DATA-REQ-017] the removed member still reads their own letter, and no lo
   (await as(N, `select 1 from entries where id=$1`, [nKeep])).rows.length === 1
   && (await as(N, `select 1 from book_entries where child_id=$1 and author_id <> $2`, [CHILD, N])).rows.length === 0);
 check('a member_removed audit row names the remover as actor',
-  (await as(A, `select 1 from audit_events where action='member_removed' and child_id=$1 and subject_id=$2`, [CHILD, N])).rows.length === 1);
+  (await sys(`select 1 from audit_events where action='member_removed' and child_id=$1 and subject_id=$2`, [CHILD, N])).rows.length === 1);
 check('remove_child_member is idempotent: again is "not_member"', (await one(A, `select public.remove_child_member($1, $2) r`, [CHILD, N])).r === 'not_member');
 
 const mAdded = await letter(M, CHILD);

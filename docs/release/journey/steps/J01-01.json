@@ -3,8 +3,9 @@
   "journey": "first-run",
   "kind": "happy",
   "title": "The age question",
-  "note": "The first screen is one neutral question, with nothing preselected. Continue stays off until the person picks Yes or No.",
+  "note": "The first screen is the launch screen's room: the lamp, the opening quotation pair and one neutral question, with nothing preselected. Continue waits, drawn as an outline, until the person picks Yes or No.",
   "from": "J00-open",
+  "shot": "screens/J01-01.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,10 +22,9 @@
     }
   },
   "scrolls": false,
-  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "text": "Are you 18 or older? Yes No Continue",
   "lines": [
     "Are you 18 or older?",
-    "We ask everyone the same question.",
     "Yes",
     "No",
     "Continue"

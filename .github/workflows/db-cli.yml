@@ -1,7 +1,8 @@
 # Real Supabase stack checks for database changes (CI-03). On pull requests
 # that touch supabase/**: start the local stack, rebuild it from every
 # migration with `supabase db reset`, lint the schema (fail on error level),
-# then run the PGlite access-rule suite. The nightly workflow calls this file
+# then run the PGlite access-rule suite, without Supabase's automatic grants and
+# again with the old ones. The nightly workflow calls this file
 # too (workflow_call). Not part of the `required` aggregator, because it only
 # runs when supabase/** changes.
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
@@ -50,6 +51,13 @@ jobs:
         continue-on-error: true
         run: supabase db lint --local --level error --fail-on error
       - name: Access rules, governance, classification, performance (PGlite)
+        run: npm run test:db
+      # The suite runs without Supabase's automatic grants by default (supabase/tests/harness.mjs). This step
+      # runs it again with the old ones, so the revokes stay proven for a project made with them (#265; about
+      # 205 s). The nightly job of the same name takes over once nightly.yml is on the default branch.
+      - name: Access rules under the old automatic grants (PGlite)
+        env:
+          SCRIBE_DEFAULT_GRANTS: legacy
         run: npm run test:db
       - name: Stop the stack
         if: always()

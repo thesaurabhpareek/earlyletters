@@ -16,15 +16,17 @@ const x = en.settings.export as Record<string, string>;
 const r = en.settings.recordings as Record<string, string>;
 
 describe('shelf strings', () => {
+  // Words from D-085, as the experience pass rewrote them (EXPERIENCE_PASS_2026-10 S38, S39; P0 with option B, D-100).
+  // restoredToast took its new words with P5, which fills {child} on this screen.
   it('[D-085] has every delete, shelf and erase string, with the exact words the decision names', () => {
     expect(d.keepButton).toBe('Keep it');
     expect(d.shelfHelp).toBe('Letters you delete wait here for 30 days.');
-    expect(d.shelfEmpty).toBe('Nothing here. Letters you delete wait here for 30 days.');
-    expect(d.erasesOn).toBe('Erased on {date}');
+    expect(d.shelfEmpty).toBe('No deleted letters.');
+    expect(d.erasesOn).toBe('Kept here until {date}');
     expect(d.eraseNow).toBe('Erase now');
     expect(d.eraseNowTitle).toBe('Erase this letter now?');
-    expect(d.eraseNowBody).toBe('The letter and its recording will be erased from this phone, at once.');
-    expect(d.restoredToast).toBe('Letter restored.');
+    expect(d.eraseNowBody).toBe('The letter and its recording are erased for good.');
+    expect(d.restoredToast).toBe("Back in {child}'s book.");
     for (const k of ['entryTitle', 'entryBody', 'entryConfirm', 'recentlyDeleted', 'restoreButton', 'deletedOn']) expect(d[k], k).toBeTruthy();
   });
 
@@ -34,8 +36,8 @@ describe('shelf strings', () => {
     expect(x.exportNudge).toBe('Save a copy of your book in Files or iCloud Drive. It is yours to keep.');
   });
 
-  it('[D-085] says an unplayable take is kept and Export keeps the file', () => {
-    expect(r.unplayableOne).toBe('This take may not play. Export keeps the file.');
+  it('[D-085] says an unplayable recording is kept and Export keeps the file', () => {
+    expect(r.unplayableOne).toBe('This recording may not play. Export keeps the file.');
     expect(r.unplayableMany).toContain('{count}');
   });
 

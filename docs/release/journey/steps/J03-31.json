@@ -2,9 +2,10 @@
   "id": "J03-31",
   "journey": "children-and-books",
   "kind": "happy",
-  "title": "After the due date: a gentle offer",
-  "note": "One quiet card: \"Asha was born, set the birthday\". No count of days, no nudging; it simply waits.",
+  "title": "After the due date: a gentle card",
+  "note": "One quiet card: \"Asha's birthday. Add it when you are ready.\" with \"Set the birthday\" and \"Hide\". A passed due date can be hard news, so it never says Asha was born, never celebrates and never counts days. It is never a notification and never on Tonight.",
   "from": "J03-30",
+  "shot": "screens/J03-31.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -21,24 +22,24 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Your due date has come. Tell us the day and your letters find their place. Asha was born, set the birthday Name and birthday Name Asha Due date October 23, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join.",
+  "text": "Asha's book Asha's birthday Add it when you are ready. Set the birthday Hide Name and birthday Name Asha Due date November 9, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha's book",
-    "Your due date has come. Tell us the day and your letters find their place.",
-    "Asha was born, set the birthday",
+    "Asha's birthday",
+    "Add it when you are ready.",
+    "Set the birthday",
+    "Hide",
     "Name and birthday",
     "Name",
     "Asha",
     "Due date",
-    "October 23, 2026",
+    "November 9, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Include Asha in my reminders",
-    "Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch.",
+    "Month and birthday messages for Asha follow this switch.",
     "Write this book together",
     "Coming soon",
-    "Sharing a book with a co-parent is coming in a later update.",
-    "Family can read Asha's book",
-    "Family see the letters you add to Asha's book. This starts once family can join."
+    "Sharing a book with a co-parent is coming in a later update."
   ]
 }
