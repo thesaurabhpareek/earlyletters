@@ -23,13 +23,13 @@ Delete your {brand.name} account
 
 ## intro
 
-This page is for {brand.storeName}. You can delete your account in the app, or by email if you cannot open it. Deleting your account removes your letters and your account from our servers.
+This page is for {brand.storeName}. You can delete your account by email. Where your build of the app has the Delete account control, you can also delete it there (the early test builds hide it unless it is switched on, D-129). Deleting your account removes your letters and your account from our servers.
 
 ## inApp
 
-**heading:** Delete it in the app
+**heading:** Delete it in the app, where your build has the control
 
-**lead:** The quickest way is on your iPhone.
+**lead:** If Settings, Your data shows Delete account, this is the quickest way. If it does not, use the email steps below.
 
 **steps:**
 

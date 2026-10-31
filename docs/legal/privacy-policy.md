@@ -20,7 +20,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 ## 2. What we collect
 
-**Your account.** If you sign in, we keep your email address, your name if Apple shares it, the name you sign your letters with, a random account ID, your confirmation that you are 18 or older, the version of our Terms you accepted, and the agreements you gave or withdrew in the app.
+**Your account.** If you sign in, we keep your email address, your name if Apple shares it, the name you sign your letters with, a random account ID, your confirmation that you are 18 or older, the version of our Terms you accepted, and the agreements you gave or withdrew.
 
 **Your book.** For each child: a name or nickname, and a birthday or due date. Your letters: the words you speak or type, the original transcript, each small fix the app made, and the final text. Your list of names and words. All of this is kept on your phone. When you sign in and agree to sync, it is also kept on our servers so it can reach your other devices and your co-parent.
 
@@ -94,7 +94,7 @@ The current list is at https://earlyletters.com/subprocessors. We will update it
 We keep your book until you delete it or your account. We never delete them because you stopped using the app or ended Plus.
 
 - **A letter.** Deleting a letter moves it to Recently deleted for 30 days, so you can restore it. Then it is erased.
-- **Your account.** Delete it in the app (Settings, Your data), or email us from the address on your account. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
+- **Your account.** Email us from the address on your account and we will start the deletion. Where the Delete account control is in your build (Settings, Your data), you can start it there instead; the early test builds hide it unless it is switched on (D-129). You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
 - **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted, except for the entry described next.
 - **Letters of someone who left a book.** If a parent left a book, or their joining was undone, before the other parent deleted the book or their own account, that person's letters, their letters waiting to be kept, and any recording backup of theirs are not deleted with it. They stay theirs. To label those letters we keep the book's entry, with the child's name, birth date and due date, and we clear its nickname, photo and other details. Nothing in the app can read that entry today; it will be shown only to the person whose letters remain, once the app can list books they have left. We delete it when nothing of theirs is left in it.
 - **Plus.** Deleting your account does not cancel Plus. Cancel it in your Apple Account.
@@ -115,11 +115,11 @@ Early Letters is for adults. You must be 18 or older to use it. The app asks bef
 
 ## 9. Health details
 
-Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step, and you can withdraw it at any time in Settings, Privacy. If you do, syncing stops and we offer to delete what was synced. We never use health details for advertising, and we never try to work out anything about anyone's health.
+Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step, and you can withdraw it at any time. Withdrawing stops syncing, and we offer to delete what was synced. The control for this, in Settings, Privacy, is not in every build: the family test build (build 2) shows whether sync is on or off but has no withdrawal control (D-128), and the control is built before anyone outside the family signs in. Until it exists, ask us by email (section 10). We never use health details for advertising, and we never try to work out anything about anyone's health.
 
 ## 10. Your rights
 
-Wherever you live in the United States, you can ask to see, export, correct or delete your information, and you can withdraw an agreement you gave. Most of this is in the app. Otherwise, email hello@earlyletters.com. We may confirm it is you by sending a code to the email on your account. We reply within 45 days, and may extend once by 45 days if we tell you why. You can use an authorized agent. If we refuse a request, reply with "Appeal" in the subject and we will look again; if we still refuse, we will tell you how to contact your state attorney general. We will never treat you differently for using these rights.
+Wherever you live in the United States, you can ask to see, export, correct or delete your information, and you can withdraw an agreement you gave. Use the control in the app where your build has one; otherwise, email hello@earlyletters.com. We may confirm it is you by sending a code to the email on your account. We reply within 45 days, and may extend once by 45 days if we tell you why. You can use an authorized agent. If we refuse a request, reply with "Appeal" in the subject and we will look again; if we still refuse, we will tell you how to contact your state attorney general. We will never treat you differently for using these rights.
 
 **California.** We do not sell or share personal information, and we have not done so in the past 12 months. We use sensitive information only to provide the service. We honor Global Privacy Control signals. Section 2 lists what we collect, and section 6 who receives it.
 
