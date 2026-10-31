@@ -37,10 +37,19 @@ export type CtaMode = (typeof CTA_MODES)[number];
 export const NOTIFY_RESULTS = ['ok', 'invalid', 'rate_limited', 'server'] as const;
 export type NotifyOutcome = (typeof NOTIFY_RESULTS)[number];
 
+/** The share row's buttons: six apps, the copied link and the phone's own share sheet. Never the link or any text. */
+export const SHARE_CHANNELS = ['whatsapp', 'messages', 'email', 'facebook', 'telegram', 'x', 'copy', 'native'] as const;
+export type ShareChannel = (typeof SHARE_CHANNELS)[number];
+
+/** Where a share row sits: under the sign-up form in the film, or on the two pages after a native form post. */
+export const SHARE_PLACEMENTS = ['start', 'thanks', 'already'] as const;
+export type SharePlacement = (typeof SHARE_PLACEMENTS)[number];
+
 export type AnalyticsEvent =
   | { name: 'cta_click'; mode: CtaMode; placement: CtaPlacement }
   | { name: 'notify_submit'; result: NotifyOutcome }
-  | { name: 'scene_reached'; id: SceneId };
+  | { name: 'scene_reached'; id: SceneId }
+  | { name: 'share_click'; channel: ShareChannel; placement: SharePlacement };
 
 export interface WireEvent {
   name: AnalyticsEvent['name'];
@@ -62,6 +71,10 @@ export function toWireEvent(event: AnalyticsEvent): WireEvent | null {
       return isOneOf(NOTIFY_RESULTS, event.result) ? { name: 'notify_submit', data: { result: event.result } } : null;
     case 'scene_reached':
       return isOneOf(SCENE_IDS, event.id) ? { name: 'scene_reached', data: { id: event.id } } : null;
+    case 'share_click':
+      return isOneOf(SHARE_CHANNELS, event.channel) && isOneOf(SHARE_PLACEMENTS, event.placement)
+        ? { name: 'share_click', data: { channel: event.channel, placement: event.placement } }
+        : null;
     default:
       return null;
   }

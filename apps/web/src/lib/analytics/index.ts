@@ -16,8 +16,8 @@
 import { toWireEvent, type AnalyticsEvent, type SceneId } from './events';
 import { scrubEvent } from './scrub';
 
-export type { AnalyticsEvent, CtaMode, CtaPlacement, NotifyOutcome, SceneId } from './events';
-export { SCENE_IDS, CTA_PLACEMENTS } from './events';
+export type { AnalyticsEvent, CtaMode, CtaPlacement, NotifyOutcome, SceneId, ShareChannel, SharePlacement } from './events';
+export { SCENE_IDS, CTA_PLACEMENTS, SHARE_CHANNELS, SHARE_PLACEMENTS } from './events';
 
 /** Literal access so Next inlines it at build time. */
 export const analyticsEnabled = process.env.NEXT_PUBLIC_ANALYTICS === 'vercel';
