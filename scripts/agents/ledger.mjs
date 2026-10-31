@@ -8,6 +8,7 @@
 //   node scripts/agents/ledger.mjs --since 2026-10-03 --agent privacy
 //   node scripts/agents/ledger.mjs --since 2026-10-03 --summary  # counts per agent and kind
 import { writeFileSync } from "node:fs";
+import { verdictOf as closedVerdict } from "./hardening.mjs";
 import {
   loadRoster, repoSlug, ghAll, trustContext, isTrusted, parseHandoff, parseReply,
 } from "./lib.mjs";
@@ -58,7 +59,7 @@ export function ledgerRow(item, trust, source, all = false) {
 }
 
 function verdictOf(body) {
-  return (body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() || undefined;
+  return closedVerdict(body) || undefined;
 }
 
 export function summarize(rows) {

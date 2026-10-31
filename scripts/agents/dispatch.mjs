@@ -18,12 +18,13 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
+  ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds, CAP_HITS,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
   isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
-import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
+import { needsIndependentReview, d041Pool, oneLine, spendFromReceipts, verdictOf, capNotice, boardText } from "./hardening.mjs";
+import { ledgerRow } from "./ledger.mjs";
 import * as lane from "./lane.mjs";
 import * as reviewfp from "./reviewfp.mjs";
 import * as verdicts from "./verdicts.mjs";
@@ -74,7 +75,9 @@ const byId = new Map(tasks.map((t) => [t.id, t]));
 const owners = ownerMap(roster);
 
 const openPRs = ghAll(`/repos/${repo}/pulls?state=open`);
-const taken = takenIds(openPRs);
+const taken = takenIds(openPRs, trust);
+const cap = capNotice(CAP_HITS); // H2: a capped PR list means we cannot see every PR
+if (cap.stop) console.error(`::error::${cap.message}`);
 
 // Open handoffs (agent-to-agent messages, docs/agents/AGENT-COMMS.md). Only
 // issues opened by a trusted identity count; anything else is ignored.
@@ -134,7 +137,7 @@ function prFacts(pr) {
   );
   const all = [...reviews, ...comments];
   const redTeam = all.find((c) => isTrusted(c, trust) && startsWithMarker(c.body, `<!-- red-team:${sha} -->`));
-  const redVerdict = redTeam ? (redTeam.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() : undefined;
+  const redVerdict = redTeam ? verdictOf(redTeam.body) : undefined;
   const stewardFix = roster.agents
     .filter((a) => a.kind === "steward")
     .filter((a) => stewardVerdict(all, a.handle, sha, trust)?.startsWith("fix"))
@@ -182,7 +185,7 @@ function attentionReasons(pr) {
 
 const totalCap = roster.limits.max_runs_per_day_total;
 const usedToday = () => Object.values(state.runs).reduce((s, n) => s + n, 0);
-let slots = BOARD_ONLY ? 0 : Math.min(
+let slots = BOARD_ONLY || cap.stop ? 0 : Math.min(
   TOP,
   Math.max(0, roster.limits.max_parallel - running.size),
   Math.max(0, totalCap - usedToday()),
@@ -198,7 +201,7 @@ const engineNeeds = {
 };
 const needsFor = (agent) => (LOCAL && !BOARD_ONLY ? [] : engineNeeds[agent.engine] ?? [`engine ${agent.engine}`]);
 const noKey = roster.agents.every((a) => needsFor(a).length);
-const status = paused ? "paused (repository variable AGENTS_PAUSED is true)"
+const status = cap.stop ? cap.message : paused ? "paused (repository variable AGENTS_PAUSED is true)"
   : noKey ? `waiting for ${[...new Set(roster.agents.flatMap(needsFor))].join(" and ")}`
   : "running";
 
@@ -357,18 +360,7 @@ function describe(c) {
 
 function spendToday() {
   const comments = ghAll(`/repos/${repo}/issues/comments?since=${today}T00:00:00Z&sort=created`, { allowFail: true });
-  let cost = 0;
-  let n = 0;
-  let unknown = 0;
-  for (const c of comments) {
-    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+|unknown) -->/);
-    if (!m) continue;
-    // Receipts that report no cost (and older ones that wrote 0.0000 with
-    // "cost not reported") are counted apart, never as $0.
-    if (m[1] === "unknown" || /cost not reported/.test(c.body)) unknown++;
-    else { cost += Number(m[1]); n++; }
-  }
-  return { cost, n, unknown };
+  return spendFromReceipts(comments, trust, ledgerRow); // H3: trusted receipts only
 }
 
 // ---------- running jobs (Actions API) ----------
@@ -425,7 +417,7 @@ function renderBoard() {
   lines.push(`- **Open handoffs:** ${handoffs.length}; **waiting for a reply:** ${pendingAll.length}.`);
   for (const x of pendingAll.slice(0, 10)) {
     const days = Math.floor((now - new Date(x.issue.created_at)) / 86_400_000);
-    lines.push(`- #${x.issue.number} ${x.issue.title} (waiting on ${x.pending.map((p) => `\`${p}\``).join(", ")}, ${days}d)`);
+    lines.push(`- #${x.issue.number} ${boardText(x.issue.title)} (waiting on ${x.pending.map((p) => `\`${p}\``).join(", ")}, ${days}d)`);
   }
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");

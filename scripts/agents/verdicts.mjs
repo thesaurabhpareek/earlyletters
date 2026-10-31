@@ -18,6 +18,7 @@
 // CLOSED_EVERY_MS. A PR is refetched only when its head moved, or when its head has
 // no red-team review yet and the PR was updated since the last look.
 import { trustContext, isTrusted } from "./lib.mjs";
+import { NO_TRUST_MSG } from "./hardening.mjs";
 
 export const WINDOW = 20;
 export const WARN_AFTER = 15;
@@ -40,8 +41,9 @@ export function parseVerdict(body) {
 /** Red-team reviews from one PR's review list, as compact [sha12, verdict, at] rows. */
 export function redTeamRows(reviews, trust) {
   const rows = [];
+  if (!trust) return []; // fail closed: no trust context, no rows
   for (const r of reviews ?? []) {
-    if (trust && !isTrusted(r, trust)) continue;
+    if (!isTrusted(r, trust)) continue;
     const p = parseVerdict(r.body);
     if (p) rows.push([short(p.sha), p.verdict, r.submitted_at ?? ""]);
   }
@@ -61,7 +63,8 @@ export function refresh(ctx) {
   st.prs ??= {};
   st.pending ??= [];
   const now = new Date(ctx.now ?? Date.now());
-  const trust = ctx.roster ? trustContext(ctx.roster, ctx.env ?? {}) : undefined;
+  if (!ctx.roster) throw new Error(NO_TRUST_MSG);
+  const trust = trustContext(ctx.roster, ctx.env ?? {});
   let calls = 0;
 
   const open = new Set();
@@ -131,7 +134,8 @@ export function boardLines(ctx) {
     if (!ctx?.state || typeof ctx.ghAll !== "function") return [];
     refresh(ctx);
     return formatLines(summarize(ctx.state.verdicts), ctx.state.verdicts.unscanned);
-  } catch {
+  } catch (err) {
+    console.error(String(err?.message ?? err));
     return [];
   }
 }

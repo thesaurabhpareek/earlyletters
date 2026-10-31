@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { idReservingPRs, cleanState, lastStateMarker, verdictOf } from "./hardening.mjs";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -134,9 +135,9 @@ export function eligibility(task, byId) {
 }
 
 /** Backlog ids already being worked on, from open PR branches and titles. */
-export function takenIds(openPRs) {
+export function takenIds(openPRs, trust) {
   const taken = new Set();
-  for (const pr of openPRs) {
+  for (const pr of idReservingPRs(openPRs, trust, agentOfPR)) {
     for (const s of [pr.head?.ref ?? "", pr.title ?? ""]) {
       for (const m of s.matchAll(/bl-(\d{3})/gi)) taken.add(`BL-${m[1]}`);
     }
@@ -157,13 +158,11 @@ export function queueFor(handle, tasks, owners, taken, claimed = new Set()) {
 
 // ---------- board state (hidden JSON in the board issue body) ----------
 
-const STATE_RE = /<!-- agents-state:([A-Za-z0-9+/=]+) -->/;
-
 export function readState(body) {
-  const m = (body ?? "").match(STATE_RE);
-  if (!m) return {};
+  const payload = lastStateMarker(body);
+  if (!payload) return {};
   try {
-    return JSON.parse(Buffer.from(m[1], "base64").toString("utf8"));
+    return cleanState(JSON.parse(Buffer.from(payload, "base64").toString("utf8")));
   } catch {
     return {};
   }
@@ -212,7 +211,10 @@ export function gh(path, { method = "GET", body, allowFail = false } = {}) {
   }
 }
 
-/** GET every page of a list endpoint (max 1,000 items). */
+/** Paths whose listing stopped at the page cap (more items exist than were read). */
+export const CAP_HITS = [];
+
+/** GET every page of a list endpoint (max 1,000 items). A capped listing is recorded in CAP_HITS. */
 export function ghAll(path, { allowFail = false } = {}) {
   const out = [];
   const sep = path.includes("?") ? "&" : "?";
@@ -222,6 +224,7 @@ export function ghAll(path, { allowFail = false } = {}) {
     const items = Array.isArray(res) ? res : res.items ?? res.workflow_runs ?? res.jobs ?? [];
     out.push(...items);
     if (items.length < 100) break;
+    if (page === 10) CAP_HITS.push(path);
   }
   return out;
 }
@@ -390,5 +393,5 @@ export function stewardMarker(handle, sha) {
 export function stewardVerdict(comments, handle, sha, trust) {
   const c = comments.find((x) => isTrusted(x, trust) && startsWithMarker(x.body, stewardMarker(handle, sha)));
   if (!c) return undefined;
-  return (c.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() || "posted";
+  return verdictOf(c.body) || "posted";
 }
