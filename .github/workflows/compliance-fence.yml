@@ -1,0 +1,73 @@
+# Compliance fence (CTO ruling CR-23; compliance/README.md). Fails a pull request that changes a protected
+# compliance path (compliance/FENCE.json) unless it carries an `agent:<handle>` label for an assigned agent
+# and a Karma approval comment bound to its current head commit.
+#
+# Runs on pull_request_target so the copy of this workflow on the base branch is used. It never checks out
+# or runs pull request code: the changed files, labels and comments come from the API, and the rules
+# (compliance/FENCE.json) and the checker (compliance/fence/fence.mjs) come from the BASE commit through the
+# API, so a pull request cannot loosen its own fence. Any API error fails closed.
+#
+# Limits, stated plainly:
+# - Advisory until branch protection on develop and main lists `compliance-fence` as a required check
+#   (founder step: scripts/release/apply-branch-settings.sh).
+# - Every Claude session posts as the founder's account (CR-20), so the label and the approval prove that
+#   the procedure ran, not who ran it.
+# - A comment does not re-run this check (an issue_comment workflow would run from main, not develop). After
+#   posting the approval, Karma adds the label `karma:approved`; the `labeled` event re-runs the check. The label
+#   itself grants nothing: the check reads the approval comment.
+name: Compliance fence
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: compliance-fence-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compliance-fence:
+    name: compliance-fence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Check protected compliance paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error title=compliance-fence::$1"; exit 1; }
+          pr_json="$(gh api "repos/$REPO/pulls/$PR")" || fail "could not read the pull request; failing closed"
+          base_sha="$(jq -r .base.sha <<<"$pr_json")"
+          head_sha="$(jq -r .head.sha <<<"$pr_json")"
+          dir="$RUNNER_TEMP/fence"; mkdir -p "$dir"
+          fetch() { gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/$1?ref=$base_sha" > "$dir/$2"; }
+          if ! fetch compliance/FENCE.json FENCE.json || ! fetch compliance/fence/fence.mjs fence.mjs; then
+            # Bootstrap: the base has no fence yet (this workflow's own first PR). Fail closed on anything under
+            # compliance/ or the protected names, pass otherwise.
+            gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename, (.[].previous_filename // empty)' > "$dir/files.txt" \
+              || fail "could not list files; failing closed"
+            if grep -Eq '^(compliance/|supabase/migrations/[^/]*_compliance_|supabase/tests/compliance_|\.claude/skills/(regulatory-compliance|infosec)/|\.claude/agents/regulatory-affairs\.md|\.github/workflows/compliance-fence\.yml)' "$dir/files.txt"; then
+              fail "the base branch has no compliance fence yet; a PR touching compliance paths needs the founder to merge it by hand"
+            fi
+            echo "no compliance fence on the base and no compliance path changed"; exit 0
+          fi
+          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename}]' | jq -s 'add')" \
+            || fail "could not list files; failing closed"
+          labels="$(jq '[.labels[].name]' <<<"$pr_json")"
+          comments="$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '[.[] | {body, login: .user.login}]' | jq -s 'add // []')" \
+            || fail "could not read comments; failing closed"
+          trusted="$(gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/agents/roster.json?ref=$base_sha" \
+            | jq --arg o "$OWNER" '[$o] + (.trusted_bots // [])')" || fail "could not read trusted logins; failing closed"
+          jq -n --slurpfile c "$dir/FENCE.json" --argjson files "$files" --argjson labels "$labels" \
+            --argjson comments "$comments" --argjson trusted "$trusted" --arg head "$head_sha" \
+            '{config: $c[0], files: $files, labels: $labels, comments: $comments, trustedLogins: $trusted, headSha: $head}' \
+            | node "$dir/fence.mjs"

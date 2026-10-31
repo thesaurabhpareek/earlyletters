@@ -8,7 +8,7 @@
     "experiments"
   ],
   "scripts": {
-    "test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs && node scripts/trace.mjs --no-write",
+    "test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs compliance/ && node scripts/trace.mjs --no-write",
     "test:coverage": "node scripts/coverage/run.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
