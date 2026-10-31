@@ -264,7 +264,9 @@ export function main(argv = process.argv.slice(2), out = console) {
   // Identity must not rest on labels, so the PR's branch and author are required. Only an explicit
   // --offline run with --agent (a local check with no PR) may leave them out.
   const needIdentity = !(args.agent && args.offline !== undefined);
-  if (needIdentity && (args.branch === undefined || args.author === undefined)) {
+  // An empty or blank value is not an identity either (round 8: --branch "" --author "" used to read as 'no signal').
+  const blank = (v) => v === undefined || String(v).trim() === "";
+  if (needIdentity && (blank(args.branch) || blank(args.author))) {
     out.error("pathguard: --branch and --author are required (identity does not rest on labels). A local check with no PR may pass --agent <handle> --offline instead.");
     return 2;
   }

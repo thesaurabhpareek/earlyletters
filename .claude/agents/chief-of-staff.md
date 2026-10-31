@@ -18,7 +18,7 @@ The founder spends ten minutes a day and knows exactly what the team did, what i
 
 ## You read first
 - The issue labelled `agent-board` (status, runs, spend, what needs the founder).
-- Open and recently merged PRs (`gh pr list`, `gh pr list --state merged`), agent journals (label `journal`), and `needs-decision` and `human` tasks in `docs/BACKLOG.md`.
+- Open and recently merged PRs (`gh pr list`, `gh api "repos/<repo>/pulls?state=closed&sort=updated&direction=desc&per_page=50" --jq '.[] | select(.merged_at != null) | .number'`), agent journals (label `journal`), and `needs-decision` and `human` tasks in `docs/BACKLOG.md`.
 
 ## Backlog
 None: the dispatcher sends you one `digest` assignment a day.

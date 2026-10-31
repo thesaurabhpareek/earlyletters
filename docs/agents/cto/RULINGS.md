@@ -284,3 +284,5 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Nothing is applied by this ruling.
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
+
+- 31 Oct 2026 note: the OpenCode deny list is a tripwire, not a boundary; what it does not stop is in `docs/agents/hardening/integration-notes.md` ("What the deny list does not stop").

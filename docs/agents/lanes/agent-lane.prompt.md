@@ -26,8 +26,8 @@ STEP 3. Pick one assignment.
 - Do that one assignment only.
 
 STEP 4. Journal, receipt and release.
-- As soon as you know the assignment, post a journal stub: the marker line from the brief, then the Mode line, then "**Did:** started". Use `gh issue comment <journal> --body-file <file>`.
-- At the end, replace the stub through `gh issue comment <journal> --edit-last --body-file <file>`. Read it back and check that the first line is the marker.
+- As soon as you know the assignment, post a journal stub: the marker line from the brief, then the Mode line, then "**Did:** started". Use `gh issue comment <journal> --body-file .agent-run/journal.md`.
+- At the end, replace the stub through `gh issue comment <journal> --edit-last --body-file .agent-run/journal.md`. Read it back and check that the first line is the marker.
 - Then run `AGENTS_LANE=sched-4h node scripts/agents/receipt.mjs --agent <agent> --journal <journal> --mode <mode> --task <task> --pr <pr> --outcome success --run-id sched-<same stamp>`.
 - Then run `AGENTS_LANE=sched-4h node scripts/agents/dispatch.mjs --local --board-only --release <agent>`.
 

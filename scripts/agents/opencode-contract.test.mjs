@@ -293,7 +293,7 @@ const tighterGit = () => {
 };
 const tighterDenied = (cmd) => {
   // The frozen candidate git set plus the CURRENT non-git patterns (those that do not mention git or push).
-  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !/^\*?git|push|send-pack/.test(p))];
+  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !runner.GIT_DENY.includes(p))];
   return deniedBy(denyOnly(pats))(cmd);
 };
 

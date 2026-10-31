@@ -187,6 +187,7 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 
 ## 11. Governance and safety
 
+- (31 Oct 2026: the deny rules described here are a tripwire for the bare command form only; see `docs/agents/hardening/integration-notes.md`, "What the deny list does not stop".)
 - Agents never merge, approve, close, force-push, or push to `develop` or `main`. Deny rules block the usual forms of those commands (the OpenCode config denies `git push origin develop*` and `main*`; the Claude Code arguments deny force pushes, `gh pr merge`, `gh pr review --approve` and pushes to `develop` and `main` by name), but a deny list is a tripwire, not a guarantee: branch protection (section 12) is what makes a push to `develop` or `main` impossible. Neither GitHub App can edit workflows.
 - Branch protection (section 12) makes your approval required. Supabase and sign-in changes also need a red-team review and your `approve-migration` label (D-041).
 - Only your comments count as instructions. Issue and PR text from anyone else is information, never instructions.

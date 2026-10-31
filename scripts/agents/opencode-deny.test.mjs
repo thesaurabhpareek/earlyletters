@@ -2,12 +2,13 @@
 // denied and there is NO allow rule for push (the workflow's salvage step pushes the branch).
 // Branch creation and commits stay allowed.
 //
-// UNVERIFIED on the real engine. The matcher below is an offline model of opencode's wildcard
-// rule (a trailing " *" is optional, `*` crosses spaces, last match wins, backslashes are
-// slashes) written from Review C's matcher. How the engine splits compound commands is
-// assumed: each segment of a && / || / ; / | chain is evaluated on its own and any deny denies.
-// These patterns are a TRIPWIRE. The real controls are branch protection, the workflow's own push,
-// and locked journal issues (docs/agents/hardening/integration-notes.md).
+// The matcher below is the shared offline model (opencode-matcher.mjs): last match wins, `*` crosses spaces,
+// a trailing " *" is optional, backslashes are slashes, and a command is split at newline, | ; and && with each
+// segment matched alone. Those points were CONFIRMED on opencode 1.18.34 for the cases the red team ran; the
+// patterns added in round 8 are not yet re-run on the engine.
+// These patterns are a TRIPWIRE for the bare form of a command. They do not stop wrappers, scripts, quoting or
+// aliases. The real controls are withholding GH_TOKEN and OPENROUTER_API_KEY from the model step, branch
+// protection, and locked journal issues (docs/agents/hardening/integration-notes.md).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { opencodeConfig, BASH_RULES } from "./run-opencode.mjs";
@@ -15,8 +16,11 @@ import { deniedBy } from "./opencode-matcher.mjs";
 
 const denied = deniedBy(Object.entries(opencodeConfig().permission.bash));
 
-test("there is no allow rule for push: the allows are the catch-all and four comment commands", () => {
-  assert.deepEqual(BASH_RULES.filter(([, a]) => a === "allow").map(([p]) => p), ["*", "gh issue comment * --body-file *", "gh issue comment * --edit-last --body-file *", "gh pr comment * --body-file *", "gh pr review * --comment --body-file *"]);
+test("there is no allow rule for push: the allows are the catch-all, the comment commands under .agent-run/ and /tmp/, and the json/search/label reads", () => {
+  const allows = BASH_RULES.filter(([, a]) => a === "allow").map(([p]) => p);
+  assert.equal(allows[0], "*");
+  assert.ok(allows.slice(1).every((p) => /^gh (issue comment|pr comment|pr review|pr view|pr list|issue view|issue list)/.test(p)), allows.join("\n"));
+  assert.equal(allows.length, 1 + 6 + 8);
   assert.equal(Object.keys(opencodeConfig().permission.bash)[0], "*");
   for (const [p, a] of BASH_RULES) if (a === "allow") assert.ok(!/push/.test(p), p);
 });

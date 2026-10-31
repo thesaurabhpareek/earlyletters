@@ -1,9 +1,13 @@
 // ONE offline model of opencode's bash permission matching, shared by the test files.
-// Test support only (no workflow or script imports it). UNVERIFIED against the real engine:
-// written from Review C's reading of it. Rules: `*` crosses spaces, `?` is one character,
-// a trailing " *" makes the arguments optional, backslashes count as slashes, the LAST matching
-// rule wins, and a chained command is evaluated segment by segment (and as a whole) where any
-// deny denies.
+// Test support only (no workflow or script imports it).
+// CONFIRMED on opencode 1.18.34 for the cases Review B and the engine run covered: the LAST matching rule
+// wins; `*` crosses spaces and tabs; a trailing " *" makes the arguments optional; backslashes count as
+// slashes; a command is split at newline, |, ; and && and each segment is matched alone (the whole line is
+// not matched, so a rule whose pattern contains one of those characters never fires). `?` as one character is
+// modelled but was not separately confirmed.
+// STILL UNVERIFIED on the engine: whether `gh pr create` pushes the branch itself, and every pattern added in
+// round 8 (the extra gh denies, the read allows, the .agent-run/ and /tmp/ allows and their re-denies).
+// Not modelled: wrappers, quoting, variables, substitution. The deny list catches only the bare form.
 
 const norm = (x) => x.replaceAll("\\", "/");
 
@@ -19,10 +23,15 @@ export function decider(rules) {
   return (cmd) => { let a = "allow"; for (const r of res) if (r.re.test(norm(cmd))) a = r.action; return a; };
 }
 
-/** cmd -> true when the command, or any segment of the chain, is denied. */
+/**
+ * cmd -> true when any segment is denied. The REAL engine (opencode 1.18.34, engine-confirmed in round 7)
+ * splits a command at newline, |, ; and && and matches each segment alone; the whole line is not matched.
+ * So a rule whose pattern contains one of those characters never fires: `gh issue comment ... | tee x` and
+ * `... \ncurl x` run. Single & , $( ), backticks and quotes do not split.
+ */
 export function deniedBy(rules) {
   const decide = decider(rules);
-  return (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).filter(Boolean).some((seg) => decide(seg) === "deny") || decide(cmd) === "deny";
+  return (cmd) => cmd.split(/&&|\||;|\n/).map((s) => s.trim()).filter(Boolean).some((seg) => decide(seg) === "deny");
 }
 
 /** A list of deny-only patterns as rules (catch-all allow first). */

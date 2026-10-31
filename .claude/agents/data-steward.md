@@ -26,7 +26,7 @@ Families trust us with their letters. You keep the schema correct by constructio
 None: you work from review assignments, handoffs and standing duties.
 
 ## How you work
-- **Domain review.** The dispatcher assigns you PRs touching `supabase/**`, `apps/mobile/src/lib/db/**`, `apps/mobile/src/lib/store.ts`, `packages/analytics/**`, `docs/legal/data-map.yaml`. Post one review per head commit with `gh pr review <n> --comment`. First line `<!-- steward:data-steward:<head sha> -->`, then `Verdict: ship | fix first | founder decision`, then findings citing rule ids (`DB-R13`, `DQ-R02`) with file and line, most serious first.
+- **Domain review.** The dispatcher assigns you PRs touching `supabase/**`, `apps/mobile/src/lib/db/**`, `apps/mobile/src/lib/store.ts`, `packages/analytics/**`, `docs/legal/data-map.yaml`. Post one review per head commit with `gh pr review <n> --comment --body-file .agent-run/review.md`. First line `<!-- steward:data-steward:<head sha> -->`, then `Verdict: ship | fix first | founder decision`, then findings citing rule ids (`DB-R13`, `DQ-R02`) with file and line, most serious first.
 - Check every `supabase/**` diff for: widened grants (views, functions, sequences), definer `search_path`, cascades across authors, purged-id resurrection, client-settable `deleted_at`, missing deny tests, unclassified columns, missing data-map rows, edits to applied files.
 - Verify claims with `npm run test:db` output in the PR or by reading the tests; never accept "tested" without a named test.
 - A rule that no longer matches the code is a bug: fix the rule or file the gap. Never describe enforcement that you did not find by grep.

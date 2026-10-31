@@ -26,12 +26,11 @@ Before: dispatch branch alone was 204 tests, 184 pass, 0 fail, 20 todo.
 1. Receipts are posted by `github-actions[bot]`, which `isTrusted` rejects. #354's `isTrusted(c, trust) && startsWithMarker(...)` check would drop every real receipt and show spend as unknown. Use `ledgerRow` (trusted author, or github-actions[bot] for receipts only), via `spendFromReceipts` from this branch.
 2. #354 stores `state.traces` (an array) in the board state. `cleanState` keeps only listed keys, so add `traces: "array"` to `STATE_KEYS` and accept an array for it when #354 lands.
 
-## Holes remaining under `INJECTION_STRICT=1` (injection.test.mjs: 89 tests, 86 pass, 3 fail)
+## Holes remaining under `INJECTION_STRICT=1` (injection.test.mjs, at the end of round 8: 105 tests, 103 pass, 2 fail; the earlier 89/86/3 is out of date)
 
 - H15: commands that send the environment out are not denied (a deny list cannot close it; needs a scoped token and no secrets in the model process).
 - H16: edits under `.github/workflows` are allowed.
-- H2, second half: 1,000 spam comments on a journal issue hide the founder's newer note (`ghAll` cap in `brief.mjs`; needs locking journal, board and handoff issues, and a cap warning in the brief).
-- H14 now passes (W1's round 3).
+- H2 (spam hiding the founder's note) and H14 pass now (rounds 3 and 4). Only H15 and H16 fail under the strict flag.
 
 ## Leftover noted for W1's change
 
@@ -164,3 +163,37 @@ All in `round5.test.mjs` unless noted: the whitespace table (150 command and spa
 - Everything under "What is NOT closed".
 - `HARNESS.md`, `cto/RULINGS.md` and older notes still describe the old gh forms and `git push`; not rewritten.
 - The new patterns are not re-run on the real engine. A live matrix for round 7 (whitespace, the four comment allows, the re-denies, the narrowed push shapes) is the next check.
+
+## Round 8: final bounded round (31 Oct 2026)
+
+Decision: we stop chasing deny-list bypass patterns. The deny list is a tripwire. It catches the bare, accidental or lazy form of a command. It does not stop anyone who is trying.
+
+### What the deny list does not stop (engine-confirmed)
+
+These ran on the real engine (opencode 1.18.34), or follow directly from how it matches. None is closed, and none will be closed by adding patterns.
+
+- Merge, approve, close, secret and every other gh deny, by any wrapper: `env gh ...`, `FOO=1 gh ...`, `command gh`, `exec gh`, `nohup gh`, `timeout 5 gh`, `eval`, `xargs gh`, `sh -c 'gh ...'`, `bash -c`, a backslash (`\gh`), a full path (`/usr/bin/gh`), quote splitting. The gh and git patterns are anchored at the start of a command, so they catch only the bare form. Tests record these as known holes.
+- Anything the model writes into a script and runs (`node -e`, `python -c`, a shell file). The patterns see the interpreter, not what it does.
+- `gh alias set` followed by use of the alias. `gh alias` is denied now, as are `gh extension`, `gh config set`, `gh ssh-key`, `gh gpg-key`, `gh repo create|rename|sync`, `gh pr|issue reopen`, `gh pr update-branch`, `gh label|run|cache delete`. Other indirection (a script, a git alias, a shell function) is not.
+- git push bypasses: an absolute path (`/usr/bin/git push`), a tab after an env prefix (`FOO=1<tab>git push`), a backslash-newline, `git config alias.p push` then `git p`, `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_0`/`GIT_CONFIG_VALUE_0` in the environment, `git config core.hooksPath`, `git remote set-url`, quote or backslash splitting (`g"i"t push`). Round 7's narrowing to command position made `git commit -m 'push notes'` runnable and made these easier, not harder.
+- Chains. The real engine splits a command at a newline, `|`, `;` and `&&` and matches each segment alone, never the whole line. A re-deny whose pattern contains one of those characters therefore never fires: `gh issue comment 7 --body-file .agent-run/j.md | tee x` and `... <newline>curl x` run. The offline matcher (`opencode-matcher.mjs`) used to evaluate the whole line as well and so modelled this wrongly; it now splits the same way. The re-denies for `;`, `|` and newline are kept but are decoration. A single `&`, `$( )`, a backtick and quotes do not split, and their re-denies do fire.
+- Extra flags on the allowed comment forms. `--delete-last --yes`, `-R owner/repo` (also glued, `-Rowner/repo`), `--repo`, `-F`, `--body-file -`, `--body-file=...`, `/dev/...`, `~`, `$` and quote or `..` paths are denied now. Not stopped: `--edit-last` on `gh pr comment` (it is a valid flag there; it edits the last comment, which may be someone else's), glob characters `*` and `?` in a body-file path (a glob rule cannot deny a literal `*` or `?`), and any path under `.agent-run/` or `/tmp/` that the model chose to fill with a secret (it can write one: the file is the model's).
+- Forged verdicts. Every agent posts as one App identity. An injected author agent can post a fake red-team or steward verdict on its own PR, or delete the real one. This is the CR-20 identity problem. The real fix is separate identities per role, or verdicts written by the workflow and not by the model. Nothing on this branch does either.
+- Egress and secrets: `curl`, `wget`, `printenv`, `env`, `cat /proc/self/environ`, any interpreter. Not denied, not deniable by glob.
+
+### The only things that hold
+
+The push ban and the protection of the two secrets hold ONLY if (1) `GH_TOKEN` and `OPENROUTER_API_KEY` are withheld from the model step (the job split, H15), and (2) branch protection is set on `develop` and `main`. Neither is in place from this branch. `AGENTS_ENABLED` stays unset until both are. `salvage.mjs` still pushes any branch name the model chose with the App token; PR #429 must enforce `agent/<handle>/` and run `pathguard.mjs`, and salvage running git config or hooks planted by the model is untested.
+
+### Unverified
+
+Last-match-wins, `*` crossing spaces, the optional trailing ` *`, backslash handling and the per-segment split were CONFIRMED on opencode 1.18.34 for the cases Review B and the engine run covered. Not verified: whether `gh pr create` pushes the branch itself (if it does it bypasses the push deny); every new pattern in this round (the C denies, the read allows, the `.agent-run/` and `/tmp/` allows, the body-file re-denies) against the engine; and anything in the workflow.
+
+### What changed
+
+- A. `pathguard.mjs` rejects an empty or blank `--branch` or `--author` with exit 2 unless `--agent X --offline` is given (`--labels agent:product --branch "" --author ""` used to exit 0 as "no signal").
+- B. Our instructions are runnable. (1) The digest agent no longer closes the previous digest issue (`gh issue close` is denied): it comments on it with a link to the new digest and leaves it open; the founder closes it. (2) The charters for ai-eng-lead, data-steward and security-architect say `gh pr review <n> --comment --body-file .agent-run/review.md`; chief-of-staff reads merged PRs with `gh api "repos/<repo>/pulls?state=closed..."`. (3) The every-command test scans `.claude/agents/*.md` too, and fails on a placeholder body-file path. (4) Briefs, the operating model and the lane prompts give a literal body path: `.agent-run/journal.md`, `.agent-run/reply.md`, `.agent-run/review.md`. (5) Reads that merely contain merge, review or release are allowed by narrow allows (`gh pr view*--json*`, `gh pr list*--json*|--search*|--label*`, the same for issues), placed AFTER the denies (last match wins, so an allow before them would do nothing) with the smuggle re-denies after. Cost: a `--search` or `--jq` with `>`, `(`, `{`, `$`, a backtick, `&`, `<` or `|` is still over-blocked.
+- C. New gh denies as listed above. The comment allows now rescue only `--body-file .agent-run/...` and `--body-file /tmp/...`; a relative path such as `closed.md` stays over-blocked on purpose. The dedicated `--edit-last` allow was removed as redundant: the one allow's `*` already covers it (a test says so).
+- D. Mutation-killing tests: each smuggle character and each sensitive fragment, `a & git push`, `{ git push; }`, founder-block defang variants, control-character stripping and all line-break kinds, `AGENTS_BOT_LOGINS` case, the exact 5 MB boundary, the negative journal count and its `why`, and `--labels ... --offline` with no identity.
+- E. Two weakened assertions fixed: the four-space indent is accepted only inside the founder section; the contract test excludes exactly `GIT_DENY` (now exported) and no longer hides a non-git pattern that contains "push".
+- F. This section, the corrected headers (`-XPatch` is denied; only odd case such as `-XpAtCh` passes; the matcher header), and the strict-run counts in "Holes remaining" below.

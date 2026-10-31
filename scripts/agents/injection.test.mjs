@@ -634,7 +634,8 @@ test("e2e brief: even a trusted entry or founder note appears only as a quote or
   const doc = brief("mobile", "task", ["--task", "BL-900"], w);
   const hits = linesWith(doc, "IGNORE PREVIOUS");
   assert.ok(hits.length >= 2, "control: the text is present, so the check below can fail");
-  for (const l of hits) assert.match(l, /^(> |- \(|    )/, l); // a quote, a clipped bullet, or an indented line inside a founder block
+  const inFounder = new Set(section(doc, "Founder instructions since your last run").split("\n"));
+  for (const l of hits) assert.match(l, inFounder.has(l) ? /^(> |- \(|    )/ : /^(> |- \()/, l); // a four-space indent is allowed only inside the founder section
   const founder = section(doc, "Founder instructions since your last run");
   for (const l of founder.split("\n").filter((x) => x.trim() && !/^FOUNDER NOTE (BEGIN|END)/.test(x))) assert.match(l, /^    /, l); // indented, inside the markers, never a heading or fence
 });
@@ -1015,10 +1016,16 @@ test("every gh and git command a brief tells the agent to run is allowed by the 
 test("every gh and git command in the operating model and the lane prompts is allowed by the deny rules", () => {
   const isDenied = deniedBy(Object.entries(opencodeConfig().permission.bash));
   const ROOT = join(HERE, "..", "..");
-  const files = ["docs/agents/OPERATING_MODEL.md", "docs/agents/lanes/agent-lane.prompt.md", "docs/agents/lanes/docs-run.prompt.md", "docs/agents/lanes/prd-daily.prompt.md"];
+  const charters = readdirSync(join(ROOT, ".claude", "agents")).filter((f) => f.endsWith(".md")).map((f) => `.claude/agents/${f}`);
+  const files = ["docs/agents/OPERATING_MODEL.md", "docs/agents/lanes/agent-lane.prompt.md", "docs/agents/lanes/docs-run.prompt.md", "docs/agents/lanes/prd-daily.prompt.md", ...charters];
+  assert.ok(charters.length >= 10, "control: the charters are found");
   let n = 0;
   for (const f of files) {
-    for (const c of commandsIn(readFileSync(join(ROOT, f), "utf8"))) { n++; assert.equal(isDenied(c), false, `${f} tells the agent to run a denied command: ${c}`); }
+    for (const c of commandsIn(readFileSync(join(ROOT, f), "utf8"))) {
+      n++;
+      assert.equal(isDenied(c), false, `${f} tells the agent to run a denied command: ${c}`);
+      assert.ok(!/--body-file </.test(c) && !/--body-file \$/.test(c), `${f}: the body file must be a literal path, not a placeholder: ${c}`);
+    }
   }
   assert.ok(n >= 5, "control: commands were found");
 });
@@ -1029,8 +1036,8 @@ test("brief finish steps: the journal is posted with gh issue comment, labels ar
     assert.ok(!/gh api -X (POST|PATCH)/.test(doc), `${mode}: a gh api write`);
     assert.ok(!/gh pr edit/.test(doc), `${mode}: gh pr edit is denied, so the brief must not ask for it`);
     if (mode === "task") {
-      assert.match(doc, new RegExp(`gh issue comment ${JOURNAL} --body-file <file>`));
-      assert.match(doc, new RegExp(`gh issue comment ${JOURNAL} --edit-last --body-file <file>`));
+      assert.match(doc, new RegExp(`gh issue comment ${JOURNAL} --body-file \\.agent-run/journal\\.md`));
+      assert.match(doc, new RegExp(`gh issue comment ${JOURNAL} --edit-last --body-file \\.agent-run/journal\\.md`));
       assert.match(doc, /Labels: the workflow/);
     }
   }
@@ -1062,4 +1069,26 @@ test("brief: a long journal says what the unread comments can hide and that lock
   assert.match(doc, /after your last entry/);
   assert.match(doc, /old founder notes may reappear/);
   assert.match(doc, /[Ll]ocking the journal issue/);
+});
+
+test("brief: every body-file path is a literal .agent-run/ path (no placeholder, $HOME or RUNNER_TEMP)", () => {
+  const handoff = { ...BOT, number: 51, title: "ask", body: "<!-- handoff from:qa to:mobile kind:request -->\nplease" };
+  const docs = BRIEF_MODES.map(([a, m, e]) => brief(a, m, e, { prs: [agentPR(1, "mobile")] }));
+  docs.push(brief("mobile", "handoff", ["--task", "#51"], { handoff }));
+  let n = 0;
+  for (const doc of docs) {
+    for (const m of doc.matchAll(/--body-file (\S+)/g)) {
+      n++;
+      assert.match(m[1].replace(/[`.,)]+$/, ""), /^\.agent-run\/[a-z]+\.md$/, m[0]);
+    }
+    assert.ok(!/RUNNER_TEMP|\$HOME|--body-file </.test(doc));
+  }
+  assert.ok(n >= 4, "control: body-file paths were found");
+});
+
+test("brief: the digest does not tell the agent to close an issue (closing is denied); it comments and leaves it open", () => {
+  const doc = brief("mobile", "digest", [], { prs: [] });
+  assert.ok(!/(^|\n)Close the previous/.test(doc), "no instruction that starts with Close");
+  assert.match(doc, /Do not close the previous open `digest` issue/);
+  assert.match(doc, /leave it open/);
 });

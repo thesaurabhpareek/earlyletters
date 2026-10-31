@@ -97,7 +97,7 @@ function assignmentSection() {
   } else if (mode === "digest") {
     lines.push("**Write today's founder digest** (operating model section 7).");
     lines.push("Sources: the issue labelled `agent-board`, open PRs (`gh pr list`), PRs merged in the last day (`gh api \"repos/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=50\" --jq '.[] | select(.merged_at != null) | .number'`), agent journals (label `journal`), and `needs-decision` tasks in `docs/BACKLOG.md`.");
-    lines.push("Close the previous open `digest` issue after posting the new one.");
+    lines.push("Do not close the previous open `digest` issue: closing is denied to agents. Post one comment on it with a link to the new digest and leave it open; the founder closes it.");
     lines.push("For what every agent did and said since yesterday, run `node scripts/agents/ledger.mjs --since <yesterday>` (one JSON line per event: journal entries, receipts, handoffs, replies and reviews).");
   } else {
     lines.push("**Your queue is empty: do a standing duty.** Take the first standing duty in your charter that is not already covered by an open PR of yours; if one is, continue that PR on its branch instead of opening another.");
@@ -119,7 +119,7 @@ function handoffSection(num) {
   const lines = [
     `**Answer handoff #${num}** from \`${meta.from ?? "unknown"}\` (${meta.kind ?? "request"}): ${issue.title}`,
     "",
-    "Follow `docs/agents/AGENT-COMMS.md` section 3. Reply with one issue comment (`gh issue comment " + num + " --body-file <file>`) whose first line is:",
+    "Follow `docs/agents/AGENT-COMMS.md` section 3. Reply with one issue comment (`gh issue comment " + num + " --body-file .agent-run/reply.md`) whose first line is:",
     "",
     "```",
     `<!-- handoff-reply from:${handle} status:<answered|done|declined|blocked> -->`,
@@ -154,7 +154,7 @@ function stewardSection() {
     `Files in your review paths (${mineFiles.length} of ${files.length}): ${shownFiles.shown.join(", ")}${shownFiles.more ? ", and more" : ""}${shownFiles.odd ? ` (${shownFiles.odd} file name(s) with unusual characters not shown)` : ""}.`,
     `Check them against your chapters: ${chapters.map((c) => `\`${c}\``).join(", ") || "(none found in docs/engineering/)"}. Read the diff with \`gh pr diff ${prNum}\`; search the chapters by rule id rather than reading them whole.`,
     "",
-    `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, \`Verdict: fix first\` or \`Verdict: founder decision\`, then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
+    `Post exactly one comment with \`gh pr comment ${prNum} --body-file .agent-run/review.md\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, \`Verdict: fix first\` or \`Verdict: founder decision\`, then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
     "Review only your domain; other stewards and the red team cover theirs. A rule the PR breaks because the rule is wrong is a finding against the rule: say so, and open an `rfc` handoff to the other stewards.",
     "Never push to the PR branch. Never approve or merge.",
   ];
@@ -306,7 +306,7 @@ const doc = [
   "",
   `1. Labels: the workflow puts \`agent:${handle}\` and \`from:agent\` on your PR after your run, from your branch name (\`agent/${handle}/<topic>\`). Do not edit PR labels yourself (that command is denied). Name your branch as the brief says.`,
   `2. Commit messages end with \`Agent: ${handle}\`.`,
-  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Write the text to a file, then post it with \`gh issue comment ${journal || "<journal>"} --body-file <file>\` and complete it at the end with \`gh issue comment ${journal || "<journal>"} --edit-last --body-file <file>\`. No other gh command is needed for the journal.`,
+  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Write the text to \`.agent-run/journal.md\` (a plain path in the workspace; any other path may be refused), then post it with \`gh issue comment ${journal || "<journal>"} --body-file .agent-run/journal.md\` and complete it at the end with \`gh issue comment ${journal || "<journal>"} --edit-last --body-file .agent-run/journal.md\`. No other gh command is needed for the journal.`,
   "4. New BL, D or ADR numbers come from `node scripts/agents/next-id.mjs`, never from reading develop alone.",
   "5. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
   "6. Do not run `git push` or any other push. Commit on your branch (`agent/<handle>/<topic>`); the workflow pushes your branch after your run.",
