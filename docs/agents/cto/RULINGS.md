@@ -418,3 +418,19 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - **Two-factor authentication on GitHub becomes mandatory after 17 Nov:** a founder task.
 - Door: two-way.
 - Revisit when: #437 merges (s08 PR), or FT-19 is done (email footer).
+
+### CR-36 The production App ID waits for the entity call on 13 Nov; recommendation is individual first, LLC in parallel (31 Oct 2026, Karma via platform session)
+- Question: the founder asked Karma to decide whether to create the production App ID `com.earlyletters.scribe` now, and to check what a company this size usually does.
+- Tier and type: T3 by subject (Apple account, a bundle id that is permanent from the first upload), decided under the founder's explicit delegation of 31 Oct ("Make that decision with CTO"). Complicated.
+- What the record says: D-121 (risks) puts the name screen FT-28 before the production record. D-125 item 6 holds the production record until the founder decides individual or entity with counsel, by Fri 13 Nov, so a 1 Dec submission holds; if silent, the default is individual and he signs the deferral.
+- New evidence (read 31 Oct 2026):
+  - Apple, App transfer criteria: "The app must have at least one version that was released to the App Store." The bundle id goes with the app on transfer (Apple, Overview of app transfer). So individual first is not a dead end: after 1.0 is live, the app can move to an LLC's organization account. D-125 item 6's "probably a new app record and bundle id" holds only for a switch before the first release.
+  - Apple, Enrollment support: "If you are a sole proprietor/single-person business, you must join as an individual and your legal name will appear as the seller." An organization needs a legal entity (no DBAs), a D-U-N-S Number, a domain email and a live website. Converting an individual account: "please contact us"; what happens to apps is not stated.
+  - Apple, D-U-N-S: free; up to 5 business days from D&B plus up to 2 for Apple.
+  - California FTB: $800 a year LLC tax, no first-year exemption since tax years beginning 1 Jan 2024; first payment due the 15th day of the 4th month after filing.
+  - Industry practice: secondary sources only (developer blogs and formation vendors, which sell LLCs). Common advice for a solo founder shipping a paid consumer app is a single-member LLC, for liability separation and to keep a personal name off the store. Whether an LLC actually shields him here (personal guarantees, veil piercing, insurance) is counsel's call, packet Q1.
+- Ruling: do not create the production App ID today. Registering it in the individual team now locks the bundle id there until a first release, and closes the entity-first route for nothing: build 1 does not need the production record before about 20 Nov. Whether a deleted App ID's identifier can be registered again in another team is Unverified, which is the reason not to test it.
+- Recommendation for 13 Nov (the entity call stays his and counsel's): publish 1.0 as an individual so the date holds, form the LLC now in parallel, get the D-U-N-S, and transfer the app after release. If he signs that, Karma creates the App ID and app record the same day. If he wants entity first, he needs the LLC, D-U-N-S and org enrolment before about 20 Nov, and Apple gives no enrolment review time.
+- Debate: challenger: "he asked for progress; creating it is ten minutes." Answer: waiting thirteen days costs nothing on the critical path, and the step cannot be cleanly undone. Challenger (CFO lens): "$800 a year before revenue." Answer: true; it buys the seller name and a liability line; his call with the accountant. CLO: liability for anything before the transfer stays personal; counsel must confirm.
+- Door: one-way once created; two-way until then.
+- Revisit when: 13 Nov, or the founder answers packet Q1.
