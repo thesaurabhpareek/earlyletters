@@ -72,12 +72,12 @@ jobs:
           done
           case "$PR_BASE_SHA$PR_HEAD_SHA" in *[!0-9a-f]*) echo "agent-pr-guard: sha is not hex, failing closed" >&2; exit 1;; esac
           scope=no
-          case "$PR_BRANCH" in agent/*) scope=yes;; esac
+          case "${PR_BRANCH,,}" in agent/*) scope=yes;; esac
           case ",${PR_LABELS,,}," in *,agent:*) scope=yes;; esac
-          case "$PR_AUTHOR" in
-            *"[bot]")
-              if [[ ",${NON_AGENT_BOTS,,}," != *",${PR_AUTHOR,,},"* ]]; then scope=yes; fi;;
-          esac
+          # A bot is a login ending [bot] or an author type of Bot (pathguard treats both as bots).
+          if [[ "$PR_AUTHOR" == *"[bot]" || "$PR_AUTHOR_TYPE" == Bot ]]; then
+            if [[ ",${NON_AGENT_BOTS,,}," != *",${PR_AUTHOR,,},"* ]]; then scope=yes; fi
+          fi
           echo "in_scope=$scope" >> "$GITHUB_OUTPUT"
           echo "agent-pr-guard: in scope: $scope"
           # A retarget after a green run fires `edited`, which lands here again.
