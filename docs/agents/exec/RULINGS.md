@@ -51,3 +51,22 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Door: two-way
 - Way back: delete the test line when counsel clears it.
 - Revisit when: counsel answers Q16.
+
+### CCO-4 PR #161's export reads of the consent record pass the compliance fence (31 Oct 2026, CCO via session_01JQRV3b)
+- Question: PR #161 (BL-323, export schema 1.3.0) adds `supabase/tests/export_reads.test.mjs`, which names `policy_acceptances`, so the fence's `cco_review` tier asks for a CCO approval on head e7349e9. Does the change meet the CCO checklist in `compliance/README.md`?
+- Tier and type: T1; clear
+- Options considered: approve; hold until counsel answers the open LEGAL-REQ-034 points; ask the founder about the export README wording
+- Ruling: approve e7349e9. Checklist, item by item:
+  - Sign-up checks table unchanged: the diff touches no gate, age-signal, auth or invite file.
+  - No new collection: the phone reads the person's own existing `policy_acceptances` and `my_policy_state` rows (DATA_CLASSIFICATION classifies every column, L2 except `locale` L3) into their own export, never `profile_id`, `subject_hash` or `pseudonymised_at`. The class's export rule allows a person's own L2 and L3, and the temporary ZIP already has its row ("Export ZIPs in app temp").
+  - No legal or platform fact is relied on.
+  - No promise changes: the README's new section describes a record the privacy policy already discloses ("Consent and policy-acceptance records ... to show what you agreed to", `docs/legal/privacy-policy.md` retention table). Its last sentence is about export behaviour and is test-backed. Terms, Privacy Policy and store text are untouched.
+  - No new door path; no geo result, so DB-IP attribution does not apply.
+- Why: two counted reviews passed at e7349e9 (Review A correctness, Review B privacy, PR #161 comments), and the database test proves own rows only. LEGAL-REQ-034 is a requirement we hold ourselves to; whether a right-of-access law also requires it is not decided here (counsel must confirm, packet Q20). Open items, none blocking:
+  - `support_assisted` acts skip the `context` key allowlist: handoff to data-architect before support records its first act.
+  - Claims register entries for the new README lines and `offlineNote`.
+  - Offline exports carry no consent history: counsel must confirm that is acceptable.
+  - The server-built export (DATA-REQ-054) is not built yet.
+- Door: two-way
+- Way back: revert PR #161; the export falls back to schema 1.2.0.
+- Revisit when: any new push to #161 (the approval is for e7349e9 only), or counsel answers Q20. Chief Compliance Officer (Claude role, not counsel)
