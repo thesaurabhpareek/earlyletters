@@ -84,7 +84,7 @@ Apply in the dashboard (Authentication section). `supabase/config.toml` holds th
 | Site URL | `https://earlyletters.com` |
 | Redirect URLs | `https://earlyletters.com/auth/callback` (exact, no wildcard) |
 
-Nothing at v1.0 uses a redirect back into the app: email sign-in verifies in the app with `verifyOtp`, and Apple uses the native sheet plus `signInWithIdToken`. Do not add `scribe://**` or `https://earlyletters.com/**`. When Android Apple OAuth arrives, add one exact callback such as `https://earlyletters.com/auth/callback` (a verified App Link), not the custom scheme: any app can claim `scribe://`.
+The one redirect in use is email sign-in's PKCE flow (ADR 0023): the app sends `emailRedirectTo` and the `/auth/v1/verify` `redirect_to` as exactly `https://earlyletters.com/auth/callback`, which is also the app's universal link. Apple uses the native sheet plus `signInWithIdToken`. `supabase/config.toml` holds the same single URL and `supabase/tests/auth_config.test.mjs` checks it against the app's `AUTH_CALLBACK_PATH`. Do not add `scribe://**` or `https://earlyletters.com/**`. When Android Apple OAuth arrives, add one exact callback such as `https://earlyletters.com/auth/callback` (a verified App Link), not the custom scheme: any app can claim `scribe://`.
 
 ### 3.5 Sessions (Authentication > Sessions, and JWT settings)
 | Setting | Value |

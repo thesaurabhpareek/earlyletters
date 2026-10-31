@@ -106,7 +106,7 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This one waits on this phone, on Tonight, exactly as it is, for as long as you like.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await btn(app, 'Keep it here for now').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();

@@ -286,7 +286,7 @@ describe('S17: Review reads as a letter', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
     expect(footer.indexOf('{r.saveFailed}')).toBeGreaterThan(-1);
     expect(footer.indexOf('{r.saveFailed}')).toBeLessThan(footer.indexOf('savePrimaryLabel('));
-    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    expect(en.review.saveFailed).toBe('That did not save. Your words are still here.');
     // Said aloud too (iOS VoiceOver ignores live regions).
     expect(review).toMatch(/useEffect\(\(\) => \{\s*if \(saveFailed\) announce\(r\.saveFailed\);\s*\}, \[saveFailed, r\.saveFailed\]\);/);
   });
