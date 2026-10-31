@@ -1,5 +1,7 @@
 # Release secrets and permissions review (RA-01-01)
 
+**Withdrawn 31 Oct 2026 (`docs/agents/cto/RULINGS.md` CR-19, CR-20):** the approver account (AF-02) was a second personal GitHub account for the founder, which GitHub's Terms do not allow for free (one free personal account, plus one machine account used only for automated tasks). Every mention of it below is history. Until PR authors are an identity other than the founder's account, no required approval above 0 can be met (CR-20).
+
 Status: S01 review of the release automation plan (`docs/release/AUTOMATION.md` revision 2 and ADR 0026, on `develop` at c9a192d), Fri 16 Oct 2026. Package RA-01-01 (AUTOMATION.md section 5): done before any secret is added. File owner: S01 (`docs/security/**`). Revised Fri 23 Oct 2026 on #206: an owner and a "By" for every fix, from the content review (comment 6247630897), and the staging rows moved to the 17 Oct rule, from the correctness review (comment 6247806622).
 
 This file is a review and a checklist. Nothing here sets, reads or changes a secret, a variable, an environment or a setting; agents never do (AUTOMATION.md 2.11). Every value named below is a name only.

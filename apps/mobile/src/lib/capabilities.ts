@@ -134,7 +134,7 @@ export function analyticsEnabled(): boolean {
   return analyticsTestOverride ?? ANALYTICS_BUILD_VALUE;
 }
 
-/** True only in a build made with `EXPO_PUBLIC_ENGLISH_ONLY=on` (the two alpha profiles, D-111 item 4). */
+/** True only in a build made with `EXPO_PUBLIC_ENGLISH_ONLY=on` (the two alpha profiles, D-111 item 4, and the staged 1.0 production profile, D-121). */
 export function englishOnlyEnabled(): boolean {
   return englishOnlyTestOverride ?? ENGLISH_ONLY_BUILD_VALUE;
 }
