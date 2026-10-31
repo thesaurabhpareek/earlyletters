@@ -364,6 +364,8 @@ export const site = {
   scrollNav: {
     next: 'Next part',
     previous: 'Previous part',
+    /** The word under the first screen's line, so a new visitor knows to scroll. */
+    cue: 'Scroll',
   },
 
   footer: {

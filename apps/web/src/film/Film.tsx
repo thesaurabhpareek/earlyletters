@@ -9,6 +9,8 @@ import { Footer } from '@/components/site/Footer';
 import { SmoothScroll } from './SmoothScroll';
 import { AmbientSound } from './sound/AmbientSound';
 import { ScrollNav } from './ScrollNav';
+import { SceneTick } from './SceneTick';
+import { ScrollProgress } from './ScrollProgress';
 
 /** Paints the page behind the stages in the tone at the bottom edge, so the iOS toolbar strip matches. */
 function PageTone() {
@@ -35,6 +37,8 @@ export function Film() {
         <CtaPill />
         <AmbientSound />
         <ScrollNav />
+        <SceneTick />
+        <ScrollProgress />
         <Footer />
       </SmoothScroll>
     </MotionConfig>

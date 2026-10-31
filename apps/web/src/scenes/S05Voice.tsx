@@ -26,7 +26,7 @@ export const CARD_SCALE = 0.6;
 
 export function S05Voice() {
   return (
-    <Scene id="your-voice" label={copy.label} tone="paper" length={2} rest={0.45}>
+    <Scene id="your-voice" label={copy.label} tone="paper" length={2.4} rest={0.45}>
       <VoiceStage />
     </Scene>
   );

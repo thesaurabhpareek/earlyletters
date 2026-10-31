@@ -78,6 +78,9 @@ function EveningStage() {
           <Wordmark />
         </h1>
         <p className={styles.line}>{site.brand.line}</p>
+        <span className={styles.cueLabel} aria-hidden>
+          {site.scrollNav.cue}
+        </span>
         <span className={styles.cue} aria-hidden />
       </motion.div>
 
