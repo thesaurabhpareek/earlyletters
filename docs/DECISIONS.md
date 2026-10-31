@@ -652,6 +652,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-129 | The Delete account row is hidden in both alpha builds unless the build is explicitly switched on (`EXPO_PUBLIC_ACCOUNT_DELETION`). It is switched on only if the purge worker runs on staging and the sole-parent drill (S1-35, S2-13, AL-07.6a, on a development client or a build with the switch on, against staging) passes by Mon 2 Nov noon PT; otherwise the row stays hidden through the go/no-go | Decided (founder: the choice); detail by the coordinator (founder may reverse) | Yes | 2026-10-30 |
 | D-130 | Dates: the build 2 freeze is Tue 3 Nov 2026 and the go/no-go is Mon 9 Nov 2026 (the founder's two dates). The freeze hour, 5:00 AM PT (13:00 UTC), is the coordinator's (`docs/agents/BOARD.md`), not the founder's. Supersedes the Thu 5 Nov go/no-go in D-123 and D-124 once PR #340 merges | Decided (founder: the two dates); the hour by the coordinator | Yes | 2026-10-30 |
 | D-131 | Countries blocked at sign-up and on the web contribution page: North Korea, Iran, Cuba, Syria, Russia, Belarus, and Crimea, Sevastopol, Donetsk and Luhansk (web page only). Any sanctioned country is blocked totally; other countries are blocked when offering the app there exposes the founder to sanctions or export-control risk | Decided (founder: the rule); the country list by the Chief Compliance Officer (founder may reverse) | Yes | 2026-10-31 |
+| D-132 | Merge decisions go to the CTO (Karma), not the founder. Karma merges under the existing gates (two independent counted reviews on the head and green CI, D-107, D-117); `docs/legal/**`, and founder-only matters other than the merge itself (money, accounts, promises, applying migrations), stay his | Decided (founder: the delegation); gates and limits by Karma (founder may reverse) | Yes | 2026-10-31 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1005,3 +1006,11 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Revisit:** before each store submission (the CCO re-reads the sources); Syria only after BIS removes it from E:1 and amends 746.9.
 - **Implemented by:** `ops.restricted_jurisdictions` seed in `supabase/migrations/20261031000000_compliance_gates.sql` (PR #424, held until after the 9 Nov go/no-go).
 - **Owner:** founder; Chief Compliance Officer.
+### D-132 Merge decisions go to Karma (founder, 31 Oct 2026)
+- **Founder's words:** "merge. dont ask me for merge decisions. ask cto."
+- **Decision (the founder's):** merge decisions go to Karma, the CTO role, not to him.
+- **Gates and limits (Karma's reading; the founder may reverse it):** Karma decides and performs merges, including the classes D-107 kept for the founder (database, auth, `.github/**`, release configuration) and merging `docs/DECISIONS.md` entries that record his own words. The gates stay: two independent counted reviews on the current head, green CI, and for fenced compliance paths the CCO and Karma approvals (CR-27).
+- **Not delegated:** `docs/legal/**` (counsel-facing text stays a founder merge), applying a migration to a hosted project, any external account, secret or money step, and changing what users are promised. Those stay founder steps.
+- **Amends:** D-107's founder-only merge list; D-117's operating rule (the merge now needs no separate founder action); D-125 item 5 for `docs/DECISIONS.md` only (Karma merges entries that record the founder's own words; `docs/legal/**` stays his).
+- **Follow-up:** Karma's skill, section 3, still lists "merging `docs/DECISIONS.md` and legal text" as founder-only; update it to point here.
+- **Owner:** founder; Karma.

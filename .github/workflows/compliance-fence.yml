@@ -1,0 +1,93 @@
+# Compliance fence (CTO ruling CR-27, aligned with the Chief Compliance Officer; compliance/README.md).
+# Protected paths (compliance/FENCE.json) need an `agent:<handle>` label for an assigned agent plus a CCO
+# approval and a Karma approval bound to the current head commit. CCO-review paths (the age gate, consent
+# SQL) need the CCO approval on the head. Migrations are also caught by what their diff mentions.
+#
+# Runs on pull_request_target. Since 8 Dec 2025 GitHub always takes a pull_request_target workflow file from
+# the DEFAULT branch (main), whatever the PR's base (github.blog changelog 2025-11-07). So this file must be on
+# main for the check to run on PRs into develop, and edits to it take effect only once they reach main. It
+# never checks out or runs pull request code: the changed files, labels and comments come from the API, and
+# the rules (compliance/FENCE.json) and the checker (compliance/fence/fence.mjs) come from the PR's BASE
+# commit through the API, so a pull request cannot loosen its own fence. Any API error fails closed.
+# Approvals count only from the repository owner's login, never from a bot, so an unattended agent run
+# cannot approve its own PR.
+#
+# Limits, stated plainly:
+# - Inactive until this file is on main (it arrives with the next release PR from develop), and advisory
+#   until branch protection on develop lists `compliance-fence` as a required check
+#   (founder step: scripts/release/apply-branch-settings.sh).
+# - Every Claude session posts as the founder's account (CR-20), so the label and the approval prove that
+#   the procedure ran, not who ran it.
+# - A comment does not re-run this check (an issue_comment workflow would run from main, not develop). After
+#   posting the approval, Karma adds the label `karma:approved`; the `labeled` event re-runs the check. The label
+#   itself grants nothing: the check reads the approval comment.
+name: Compliance fence
+
+on:
+  pull_request_target:
+    # edited: a change of base branch re-runs the check against the new base's fence.
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: compliance-fence-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  compliance-fence:
+    name: compliance-fence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Check protected compliance paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error title=compliance-fence::$1"; exit 1; }
+          pr_json="$(gh api "repos/$REPO/pulls/$PR")" || fail "could not read the pull request; failing closed"
+          base_sha="$(jq -r .base.sha <<<"$pr_json")"
+          head_sha="$(jq -r .head.sha <<<"$pr_json")"
+          dir="$RUNNER_TEMP/fence"; mkdir -p "$dir"
+          # Fetch a file from the base commit. Exit 0 found, 4 not found (404), 1 any other error.
+          fetch() {
+            local out
+            if out="$(gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/$1?ref=$base_sha" 2>"$dir/err")"; then
+              printf '%s' "$out" > "$dir/$2"; return 0
+            fi
+            if grep -q 'HTTP 404' "$dir/err"; then return 4; fi
+            return 1
+          }
+          set +e; fetch compliance/FENCE.json FENCE.json; c1=$?; fetch compliance/fence/fence.mjs fence.mjs; c2=$?; set -e
+          if [ "$c1" = 1 ] || [ "$c2" = 1 ]; then fail "could not read the fence from the base commit; failing closed"; fi
+          if [ "$c1" = 4 ] || [ "$c2" = 4 ]; then
+            # Bootstrap only when the base truly has no fence (404): this workflow's own first PR. Fail closed on
+            # any compliance-looking path, pass otherwise.
+            gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename, (.[].previous_filename // empty)' > "$dir/files.txt" \
+              || fail "could not list files; failing closed"
+            if grep -Eq '^(compliance/|scripts/compliance/|docs/compliance/|supabase/migrations/[^/]*_compliance_|supabase/tests/compliance_|\.claude/skills/regulatory-compliance/|\.claude/agents/regulatory-affairs\.md|\.github/workflows/compliance-fence\.yml|apps/mobile/src/components/gate/|apps/mobile/src/lib/age-gate)' "$dir/files.txt"; then
+              fail "the base branch has no compliance fence yet; Karma merges the first compliance PR without this check (D-132), after two counted reviews"
+            fi
+            echo "no compliance fence on the base and no compliance path changed"; exit 0
+          fi
+          # Data goes through files, never argv: a large diff would exceed the 128 KiB argument limit.
+          gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename, patch}]' \
+            | jq -s 'add // []' > "$dir/files.json" || fail "could not list files; failing closed"
+          # The files API lists at most 3000 files; a larger PR cannot be checked, so it fails.
+          [ "$(jq length "$dir/files.json")" -lt 3000 ] || fail "too many files to check (3000 or more); split the PR"
+          jq '[.labels[].name]' <<<"$pr_json" > "$dir/labels.json"
+          gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '[.[] | {body, login: .user.login}]' \
+            | jq -s 'add // []' > "$dir/comments.json" || fail "could not read comments; failing closed"
+          # Approvals count only from the repository owner's login, never from a bot.
+          jq -n --slurpfile c "$dir/FENCE.json" --slurpfile files "$dir/files.json" --slurpfile labels "$dir/labels.json" \
+            --slurpfile comments "$dir/comments.json" --arg owner "$OWNER" --arg head "$head_sha" \
+            '{config: $c[0], files: $files[0], labels: $labels[0], comments: $comments[0], trustedLogins: [$owner], headSha: $head}' \
+            > "$dir/input.json"
+          node "$dir/fence.mjs" < "$dir/input.json"

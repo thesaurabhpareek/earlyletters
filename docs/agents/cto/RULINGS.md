@@ -343,3 +343,34 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - Blocked countries: decided by the founder on 31 Oct as D-131 (all sanctioned countries, plus others that expose him to risk). The CCO's list: KP, IR, CU, SY, RU, BY and the four Ukrainian regions.
   - Name screening: Karma and the CCO recommend none, because it would mean collecting legal names. Accepting that residual risk is his with counsel; the default holds until then.
 - Correction (Review B, 31 Oct): an earlier draft said accounts ship in v1.1. They don't: sign-in is v1.0 (D-100), staged in 1.0.x releases (D-121). The premise came from a stale note, not from DECISIONS.md. Karma
+
+### CR-27 Compliance code is fenced, and the Chief Compliance Officer co-signs (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked that compliance code live in its own folder, that nobody else can touch or break it, that only assigned engineer agents work on it through the harness with my approval, and that decisions be aligned with a chief compliance officer.
+- Tier and type: T2 (`.github/**`, a new required-check candidate); complicated.
+- Options considered:
+  - (a) A folder plus a line in CODEOWNERS. It enforces nothing while every session is his account (CR-20).
+  - (b) Rules in prompts and charters only. A wish, not a control (principle 1).
+  - (c) A CI check that reads its rules from the base commit and fails a PR touching compliance paths unless the right label and head-bound approvals are on it.
+  - (d) A guard inside the harness dispatcher. It covers agent runs only, not interactive sessions, and the harness is frozen until 9 Nov (CR-22).
+- Ruling: (c), plus the prose rule in OPERATING_MODEL section 8 and CODEOWNERS for the human owner.
+  - `compliance/` holds the fence (`FENCE.json`, `fence/`) and, after #424, the scripts.
+  - Code that tools need elsewhere (migrations, DB tests, skills, the workflow) is protected by name and, for `supabase/`, by what its diff mentions.
+  - Two tiers. Protected: assigned agents (`regulatory-affairs`, `compliance-engineer`, `security-architect`, `data-architect`) plus CCO (citing `CCO-<n>`) and Karma (citing `CR-<n>`) approvals on the head, from the owner's login only. The `infosec` skill is the CISO's and stays outside this fence (COUNCIL section 2.4). CCO review: the age gate and consent SQL, any owning agent, CCO approval on the head.
+  - The CCO is the executive council's Chief Compliance Officer (`early-letters-cco`, #421), with `regulatory-affairs` (CR-26) doing the working-level review. It is a Claude role, not counsel, and legal judgments still go to counsel.
+- Why: a check that reads its rules from the base cannot be loosened by the PR it judges. Approvals bound to the head SHA go stale on every push. The CCO tier came from the CCO's own review, so `mobile` keeps ownership of the age gate.
+- Debate (CCO alignment review, 31 Oct): concurred with changes, all accepted.
+  - The bootstrap path now runs only on a 404, and any other API error fails.
+  - `scripts/compliance/` and `docs/compliance/` are protected.
+  - Migrations are caught by content markers, and a migration with no diff from GitHub fails closed.
+  - The workflow header was fixed.
+  - The CCO-review tier was added, and two checklist items: a test for each door path, and DB-IP attribution.
+  - The CCO declined to fence `docs/legal/**`, which `legal` owns.
+- Second review round (lenses A and B), all accepted: GitHub takes `pull_request_target` workflows from the default branch since 8 Dec 2025 (github.blog changelog 2025-11-07), so the workflow must also reach `main` before it runs or can be required; `edited` re-runs on a base change; markers ignore case; bots cannot approve; CCO approvals cite `CCO-<n>`; the infosec skill left the fence.
+- Limits, said plainly:
+  - Runs only once the workflow is on `main`, and advisory until `compliance-fence` is a required check. `develop` has no protection today.
+  - The label and approvals prove the procedure ran, not who ran it (CR-20).
+  - The first merge cannot be checked by the fence itself; Karma merges it under D-132 after two counted reviews.
+- Door: two-way.
+- Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
+- Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
+- Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
