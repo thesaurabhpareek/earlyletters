@@ -47,3 +47,240 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
 - Door: two-way.
 - Way back: nothing was enabled. If a harness is turned on later, delete the variable `AGENTS_ENABLED` to stop it (`AGENTS_PAUSED=true` does not stop the board writes). The settings script (`scripts/release/apply-branch-settings.sh`) also disables the `agents.yml` workflow, so turning a harness on later needs that workflow re-enabled in the Actions tab as well.
 - Revisit when: after the go/no-go (Mon 9 Nov), or when the founder wants a harness again.
+
+### CR-6 Merge settings: squash for normal PRs, merge commits for lineage, rebase off (30 Oct 2026, Karma via retro session)
+- Question: Should we go squash only, and delete branches on merge?
+- Tier and type: T1; clear.
+- Options considered:
+  - (a) Leave all three merge methods on.
+  - (b) Squash only.
+  - (c) Squash for normal PRs, merge commits only for lineage PRs, rebase off.
+- Ruling: (c).
+  - Squash stays the way every feature, fix and docs PR lands. The squash subject becomes the PR title, and the body keeps the commit messages, so trailers survive.
+  - Merge commits stay allowed only for lineage PRs: `develop` into `main`, and `main` back into `develop` after a site hotfix. Squashing those splits the histories again.
+  - Rebase merge goes off.
+  - Head branches are deleted on merge.
+  - Auto-merge stays off. With no required approval, auto-merge would merge anything green with nobody looking.
+- Why:
+  - All 161 first-parent commits on `develop` and `main` since 20 Oct are squashes.
+  - The hotfix rule in `docs/DEVELOPMENT.md` needs a merge commit.
+  - 295 of 410 branches are leftovers.
+  - Risk 1x2. Return: fewer leftovers and a clean history.
+- Door: two-way.
+- Way back: `bash scripts/release/apply-branch-settings.sh --undo`.
+- Revisit when: the one-lineage merge is done. Squash-only may then fit.
+
+### CR-7 Protect `develop` and `main` with checks and no approval (30 Oct 2026, Karma via retro session)
+- Question: What protection can `develop` and `main` have while every session and Saurabh are one GitHub account?
+- Tier and type: T2; clear.
+- Options considered:
+  - (a) Nothing until agents have their own GitHub identity (H1).
+  - (b) The spec in `scripts/release/github-settings.ts`, with 1 approval on `main` and admins enforced.
+  - (c) PR required, two required checks, 0 approvals, admins enforced, no force push or deletion.
+  - (d) Same as (c), without admin enforcement.
+- Ruling: (c) on both branches.
+  - (b) would lock everyone out of `main`: nobody can approve their own PR, and every session is the same person to GitHub.
+  - (d) lets a red check be skipped without anyone noticing.
+  - Required checks are `required` and `applied migrations unchanged`, bound to GitHub Actions (app 15368). Both report on every PR into both bases.
+  - The path-filtered web and launch checks are not required, because a PR that never triggers them would wait forever.
+  - "Must be up to date" is off.
+- Why:
+  - The 28 Oct architecture review rated "no protection" as Critical (G3).
+  - Nobody pushes straight to either branch, so nothing breaks.
+  - An independent read of the request body on 30 Oct found it valid. It confirmed the check app ids on #393 and #397, and that all four open PRs into `main` already pass both checks.
+  - Risk 2x3, with a one-call way back. Return: the first machine rule that stops a red merge or a force push.
+- Pre-mortem:
+  1. A job is renamed and PRs wait forever. Fix: update the check list.
+  2. A release PR into `main` goes red on migrations because the lineages diverged, and someone drops the check. The fix is the lineage merge, not the check.
+  3. An urgent hotfix lands while CI is down. Lift admin enforcement for minutes and put it back.
+- Door: two-way.
+- Way back: `--undo`. In an emergency, `gh api -X DELETE repos/thesaurabhpareek/earlyletters/branches/<b>/protection/enforce_admins`, then POST it back.
+- Revisit when:
+  - every PR author is an identity other than Saurabh's account (CR-20). Until then approvals stay at 0, because GitHub never lets an author approve their own PR and every Claude session opens PRs as his account. H1 alone does not get there: it covers only the harness, which is off (CR-5).
+
+### CR-8 Don't run `github-settings.ts` yet; it can't run (30 Oct 2026, Karma via retro session)
+- Question: Run the settings script as is, change its constants, or call the API directly?
+- Tier and type: T1; complicated.
+- Ruling: direct calls, packaged in `scripts/release/apply-branch-settings.sh`. `github-settings.ts` stays the target state.
+  - The script exits unless the approver is a second, accepted collaborator. That premise is wrong as a plan: a second free personal account for Saurabh breaks GitHub's Terms (CR-19). The approver is Saurabh; the separate identity belongs to the agents.
+  - Its environments put Saurabh as reviewer with prevent-self-review on, which would block every deploy, because every run's actor is his account.
+  - After the go/no-go (Mon 9 Nov, D-130), one PR updates it:
+    - `testflight` also allows `ios-v*` tags (`testflight.yml:67`);
+    - protection uses `checks` with app ids;
+    - the rulesets below are added;
+    - a mode creates the environments without reviewers;
+    - the approver becomes Saurabh, once PR authors are not his account (CR-20).
+- Why: `github-settings.ts` main() and `environmentBody`, read on 30 Oct. Risk low. Return: the script matches reality again.
+- Door: two-way.
+- Way back: revert the PR.
+- Revisit when: PR authors are not Saurabh's account (CR-20).
+
+### CR-9 Default branch to `develop`, once protection is on and Vercel is confirmed (30 Oct 2026, Karma via retro session)
+- Question: Switch the default branch now, and in what order?
+- Tier and type: T2; complicated.
+- Ruling: switch, in the order `apply-branch-settings.sh` runs it. It meets both conditions CR-2 set.
+  1. Saurabh confirms in Vercel that the Production Branch is `main`. The script asks before it does anything.
+  2. Protection (CR-7) is applied first.
+  3. The Copilot ruleset is pinned to `main` by name, keeping its three rules, so it does not follow the default branch to `develop`.
+  4. The default branch switches.
+  5. `agents.yml` is disabled once GitHub registers it (CR-5 keeps the hosted harness off).
+
+  This gives the build thread the `testflight.yml` and `deploy-db.yml` Run buttons and the nightly, and new PRs default to `develop`.
+- Why:
+  - ADR 0026 decision 3 preconditions: `claude.yml` is hardened, OWNER only.
+  - The latest production deploy (`dpl_GzAbxo9o87LCZo8eEzG3Z2FMBDYy`) is from `main`.
+  - Vercel's docs describe the Production Branch as a stored project setting. The project API does not show it, hence the founder's look.
+  - Risk 2x4 before the Vercel check, 1x4 after.
+- Pre-mortem:
+  1. A production deploy comes from a branch other than `main`. Vercel's Production Branch is a stored project setting (vercel.com/docs/git), not GitHub's default branch, so this should not happen, and `--undo` would not fix it. Detect: production deploys listed through the Vercel API all name `main` (11 of 11 on 31 Oct). Fix: Instant Rollback in Vercel, then set the Production Branch to `main`, then Undo Rollback once a good deploy is ready, because after a rollback new pushes stop going live until then (vercel.com/docs/instant-rollback; on Hobby, only to the deploy just before). Corrected 31 Oct; the first version said `--undo`. Note: `develop` has not built on Vercel since 15 Oct (every `develop` deploy is ERROR), so watching for a `develop` Preview proves nothing.
+  2. The nightly opens a red issue daily. The coordinator triages it like any red build.
+- Door: two-way.
+- Way back: `--undo` restores the default branch and the Copilot ruleset. Vercel is fixed in Vercel (pre-mortem 1).
+- Revisit when: any production deploy on Vercel comes from a branch other than `main`.
+
+### CR-10 Environments wait (30 Oct 2026, Karma via retro session)
+- Question: Apply the deployment environments now?
+- Tier and type: T1.
+- Ruling: not from here.
+  - The proxy refuses the environments API from Claude sessions.
+  - With Saurabh as reviewer and prevent-self-review on, every deploy would block.
+  - The environments come with `github-settings.ts` once runs are started by an identity other than his, so he can approve them. Correction after the 31 Oct challenge: there is a middle option I missed, environments with him as reviewer and prevent-self-review off. That is a manual pause on `db-production`, not identity separation, and whether a session could approve a pending deployment through the proxy is unverified. It waits with the rest, after the go/no-go.
+- Door: two-way.
+- Revisit when: PR authors are not Saurabh's account (CR-20).
+
+### CR-11 Rulesets: release tags can't move, release branches keep history, archive tags stay (30 Oct 2026, Karma via retro session)
+- Question: Create the tag and release-branch rulesets now?
+- Tier and type: T1; clear.
+- Ruling: yes, three, with no bypass list:
+  - `refs/tags/ios-v*` and `refs/tags/db-v*` can't be updated or deleted;
+  - `refs/heads/release/*` can't be deleted or force-pushed;
+  - `refs/tags/archive/**/*` can't be updated or deleted.
+
+  The archive pattern needs `**/*`: ruleset patterns don't let `*` cross a `/`, and every archived branch name has one. This was found by the independent read on 30 Oct.
+- Why:
+  - ADR 0022 decision 4 says tags never move.
+  - There are no tags today, so nothing is caught by surprise.
+- Door: two-way.
+- Way back: `gh api -X DELETE repos/thesaurabhpareek/earlyletters/rulesets/<id>`. To fix one bad tag, disable the ruleset, fix the tag, and enable it again.
+- Revisit when: Android adds `android-v*`.
+
+### CR-12 Branch names (30 Oct 2026, Karma via retro session)
+- Question: Which prefixes are allowed, and do we enforce them?
+- Tier and type: T1 now. The CI step later is T2.
+- Ruling:
+  - **Allowed:** `feat/`, `fix/`, `chore/`, `docs/`, `test/`, `qa/`, `exp/`, `ci/`, and `release/<major>.<minor>` (coordinator only).
+  - **Also allowed, because tools make them:** `claude/`, `agent/<handle>/`, `dependabot/`, `vercel/`.
+  - **Kept:** `wip/<topic>`, because CLAUDE.md's "Saving work" rule tells every session to push there (the 31 Oct challenge caught that the first version retired it).
+  - **Retired for new branches:** `port/`, `review/`, `integration/`, `copy/`, `refactor/` (use `chore/`), `auto/`, `archive/` (archives are tags now) and bare names. Existing branches stay.
+  - **Enforcement:** a step inside the `required` job after the go/no-go (Mon 9 Nov), not a ruleset. It must allow `wip/`.
+  - **CLAUDE.md:** gets the extra prefixes when no open PR is editing it.
+- Why: the branch count on 30 Oct (105 docs, 71 feat, 51 fix, 38 chore, 12 ci and others). Risk 1x1.
+- Door: two-way.
+- Way back: edit the pattern.
+- Revisit when: the harness decision (W0-12e) is made.
+
+### CR-13 Tag names, and no tag today (30 Oct 2026, Karma via retro session)
+- Ruling: ADR 0022's names stand:
+  - `ios-v<X.Y.Z>-rc.<N>` on a `release/*` commit;
+  - `ios-v<X.Y.Z>` on the RC commit Apple approved;
+  - `db-v<YYYY>.<M>.<D>.<N>` on `main` through `db-production`;
+  - `archive/<branch>` for archived branches.
+
+  Only the coordinator pushes `ios-v*` and `db-v*`. Nothing is tagged today: there is no release branch or RC yet, and a `db-v*` push would start the production database job.
+- Door: two-way.
+- Revisit when: the freeze cuts `release/1.0`.
+
+### CR-14 Clean up stale branches in two passes (30 Oct 2026, Karma via retro session)
+- Question: Which of the 410 branches go, and how?
+- Tier and type: T2 (two-way with cost); complicated.
+- Ruling: archive-tag, then delete, with `scripts/release/cleanup-branches.sh`, after CR-11's archive ruleset is on. Saurabh runs it from his computer: the proxy refuses tag pushes from sessions (30 Oct).
+  - **Pass 1:** 254 branches.
+    - 251 have a merged PR and a tip still equal to that PR's head.
+    - 3 are `auto/` branches with nothing outside `develop` or `main`.
+  - **Pass 2:** 41 closed-unmerged PR branches, on Fri 6 Nov or later. That gives anyone a week to reopen one.
+  - **Kept:** about 115:
+    - `main` and `develop`. `release/ios-v1.0` is archived and deleted separately by Saurabh before the settings run (his answer of 30 Oct, Q3), because the `release/*` ruleset would then block the delete. The commands are in `docs/release/FOUNDER_QUEUE.md` row 7; `cleanup-branches.sh` can't do it, as it skips `release/*`;
+    - every open-PR head and base;
+    - 52 branches that never had a PR;
+    - 3 merged-PR branches whose tip moved after the merge.
+  - **How the script stays safe:**
+    - it skips a branch whose tip moved, and anything that is an open PR's head or base, read live and again just before deleting;
+    - it deletes only after the remote archive tag peels to the branch tip;
+    - it deletes with a lease;
+    - it can be re-run.
+- Why:
+  - Every branch was classified against all 366 PRs on 30 Oct.
+  - An independent spot check of 10 rows confirmed merged, same head and same tip.
+  - No tag push triggers a workflow except `db-v*`.
+  - Risk 2x2, fully restorable.
+- Door: two-way with cost.
+- Way back: `git fetch origin tag archive/<b> && git push origin "$(git rev-parse 'archive/<b>^{commit}')":refs/heads/<b>`.
+- Revisit when: pass 2's date.
+
+### CR-15 Labels and PR titles (30 Oct 2026, Karma via retro session)
+- Ruling:
+  - PR titles stay `type(scope): summary`, with the types `feat`, `fix`, `chore`, `docs`, `test`, `qa`, `exp`, `ci` and `revert`. With CR-6 the title becomes the commit subject.
+  - Labels are not touched now. Deleting a label strips it from every issue. The `agent:`, `from:` and `to:` families wait for the harness decision.
+- Door: two-way.
+- Revisit when: W0-12e is decided.
+
+Proxy note for every session (30 Oct): the agent proxy refuses repository settings writes from Claude sessions (`Repository settings writes are not permitted through this proxy`, HTTP 403 on `PATCH /repos/...`), and the environments and variables APIs. Settings rulings are therefore run by Saurabh with `scripts/release/apply-branch-settings.sh` from his own computer. The proxy also refuses tag pushes (HTTP 403 on `refs/tags/...`, seen 30 Oct), so CR-14's archive tags, and therefore the cleanup, also run from Saurabh's computer.
+
+### CR-16 to CR-18 (31 Oct 2026, Karma via readiness session)
+- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session.
+### CR-19 Post-mortem: how a recommendation that breaks GitHub's Terms reached Saurabh (31 Oct 2026, Karma via retro session)
+- Question: Why did I recommend, on 30 Oct, that Saurabh create a second GitHub account to approve PRs, when GitHub's Terms allow one free account per person plus one machine account used only for automation?
+- Tier and type: T1 (my own process); complicated.
+- What happened: Saurabh asked "why" about Q1. Only then did I read the Terms. The recommendation was wrong, and the fix is the other way round: the agents get the separate identity (a GitHub App, H1 #349, or the one machine account) and Saurabh's own account stays the human approver. No harm landed, because he asked before acting. That was luck, not a control.
+- Root causes, in order of weight:
+  1. I inherited a premise and treated it as checked. `scripts/release/github-settings.ts` was already built around "a second, accepted collaborator as approver". I took the file as a vetted design and only asked how to satisfy it. Something written in the repo is a claim, not evidence.
+  2. I solved the wrong problem. I framed it as "how do we get a second approver" when the real problem is "agents and the human share one identity". Stated that way, the standard answer is obvious: automation gets a bot identity, humans approve as themselves. That answer was already in our own backlog as H1 (#349), an open PR I didn't read. My own read order (open PRs touching the area) would have caught it.
+  3. My evidence rule existed only as prose. Principle 5 says never rule on a guess about a third party. Nothing made me show a source for a vendor claim before a question left. By my own principle 1, a rule nothing enforces is a wish.
+  4. The founder path got less scrutiny than the technical path. The settings script had two lens reviews and an independent read. The three founder questions had no review at all. That is backwards: a founder question costs his attention and can touch his accounts, money or legal standing. It should get the most scrutiny, not the least.
+  5. I used escalation as a substitute for diligence. Because "external accounts" are his call, I wrote a recommendation and let him decide, as if his decision would catch my mistakes. He decides; I'm still accountable for the quality of what I put in front of him.
+  6. Volume. I produced ten rulings and three questions in one sitting with no stop before sending. One option in Q1 differed only in timing, which breaks my own "three real options, including doing nothing" rule.
+- What changes (in the skill, section 10a "The founder gate", and section 15 "Karma's misses"):
+  - Every FOUNDER question is debated before it is sent. An independent challenger gets the question and the source material, not my reasoning, and attacks it. I answer every objection in writing. A question that loses goes back to RULED, NEEDS EVIDENCE or is dropped. The founder sees a one-line debate record under each question.
+  - Every claim about a third party in a FOUNDER question (terms, pricing, plan limits, API behaviour, App Store rules, law) carries a source I read this session. If the recommendation rests on an unsourced claim, the question doesn't go.
+  - Standard practice comes first: each recommendation says how a well-run team does this, and why we differ if we do.
+  - Inherited premises are listed and checked like any other claim.
+  - A hard stop on question smells: asking him to create an account, pay, sign up or accept terms; a workaround to a platform limit (a common way to breach terms); a single real option; contradicting an open PR or a ruling.
+  - I keep a misses log and read it on every run.
+- What the first independent challenge found (31 Oct, a separate agent that had not seen my reasoning). It proves the point, because my corrected answer was still wrong in places:
+  - My corrected Q1 said that once agents had their own identity (H1), approvals could go up. They can't. Every Claude session opens PRs as Saurabh's account through the Claude GitHub App, and GitHub says "Pull request authors cannot approve their own pull requests" (docs.github.com, approving a pull request with required reviews). H1 covers only the harness, which is off. CR-20 has the real position.
+  - CR-9's way back for Vercel (`--undo`) wouldn't fix a wrong production deploy: Vercel's Production Branch is a Vercel setting.
+  - CR-12 retired `wip/`, which CLAUDE.md tells every session to use.
+  - CR-14 and the script header said a session runs the cleanup; the proxy refuses tag pushes, so Saurabh does.
+  - The second-account plan was written into many more docs. Where a founder would act on it, it is now marked withdrawn or "do not run": ADR 0026 decisions 1 and 2, ADR 0022, AUTOMATION (a banner, AF-02), SECRETS_REVIEW (a banner), FOUNDER_QUEUE W0-08 and row 7, FOUNDER_TASKS FT-20, TESTFLIGHT step 6, DEPLOY, RELEASE and 1.0.0. The rest (BOARD history, and the "Proposed 17 Oct, not decided" entry in `docs/DECISIONS.md`, which is the founder's file) is left as history; the banners cover it.
+  - `cleanup-branches.sh` has no `git fetch` and can trip on macOS's bash 3.2 with an empty list; fixed in a separate PR.
+- Numbering: the readiness session recorded CR-16 to CR-18 on 31 Oct in Project doc `infra/cto-rulings-2026-10-31-karma.md`, so this is CR-19. Two sessions picking numbers by hand is the same collision class as the D-ids (#331); the skill now says to check that doc set too until `next-id.mjs` knows CR.
+- Door: two-way (my process).
+- Way back: none needed. The founder can loosen the gate in one line if it slows him down.
+- Revisit when: the next founder question I send is overturned by him or by later evidence. Each one goes in the misses log.
+
+### CR-20 Approvals and identity: what actually works while every session is Saurabh's account (31 Oct 2026, Karma via retro session)
+- Question: How do we get a real human approval gate on GitHub, now that the second-account route is out (CR-19)?
+- Tier and type: T2; complicated. One part is a founder decision (an external account), held below.
+- The facts, with sources read on 31 Oct:
+  - GitHub's Terms, section B: "One person or legal entity may maintain no more than one free Account", and "You may maintain no more than one free machine account in addition to your free Personal Account". A machine account "is used exclusively for performing automated tasks", and "Multiple users may direct the actions of a machine account, but the owner of the Account is ultimately responsible for the machine's actions" (docs.github.com/en/site-policy/github-terms/github-terms-of-service).
+  - "Pull request authors cannot approve their own pull requests" (docs.github.com, approving a pull request with required reviews).
+  - Every session comment and PR on this repo is user `thesaurabhpareek`, through the Claude GitHub App (15 of 15 recent comments read by the challenger).
+  - So no number of approvals above 0 can be met on any PR a session opens, whatever H1 does.
+- Options considered:
+  - (a) Do nothing: PR plus two required checks, 0 approvals (CR-7).
+  - (b) (a), plus make the two counted lens reviews a machine-checked required check: a CI job that passes only when the PR has `## Review A at <head>: PASS` and `## Review B at <head>: PASS`, using the strict parser already in `scripts/status/page.mjs`. That is independence of method, not of identity, and it is honest about that.
+  - (c) The industry-standard route: automation acts as a non-owner identity, and the human approves as himself. Here that means the one machine account GitHub allows, added with Write, with Claude sessions connected to GitHub through it. Saurabh then approves on `main` from his own account.
+  - (d) Move the repo into a free organisation (AF-27). That alone changes nothing about who authors PRs.
+- Ruling:
+  - Now, through the go/no-go (Mon 9 Nov): (a). Approvals stay at 0, and I say so plainly: there is no human approval gate today, on `develop` or on `main`. The only thing GitHub enforces is the two required checks. D-107/D-117's two counted reviews are a written rule, not a control: the same account that merges posts them, and nothing stops a merge without them until (b) exists.
+  - The live site: the coordinator may merge into `main` under D-107/D-117, as now. I'm not making Saurabh the only `main` merger, because it spends his hours on every site PR during the freeze. Be clear about what that costs: Vercel's Instant Rollback can put back an earlier production deploy (vercel.com/docs/instant-rollback, read 31 Oct; on the Hobby plan only the immediately previous one, and I haven't confirmed which plan the project is on), which fixes a broken site, but it does not unpublish what people already saw, and D-118's accepted risks say the repository is public and site content is "effectively permanent once deployed". Nothing independent of the merging session tells him a `main` merge happened; the session's own report to him is not an independent signal. Whether Vercel or GitHub can notify him of every production deploy is unverified; I'll check it before 9 Nov and add it to his queue only if it works with no setup risk.
+  - After the go/no-go: build (b), as a T2 `.github/**` PR with two independent reviews. It turns D-107/D-117 from prose into a check, and needs nothing from Saurabh.
+  - (c) is his decision and is held, not asked, until after the go/no-go (see below).
+- Founder question, held until Tue 10 Nov, not sent now. The challenge left two facts unverified, and moving every session's GitHub identity during the freeze would risk the build thread:
+  - Whether claude.ai's GitHub connection can be bound to the machine account instead of his own. The probe: one session connected that way opens one docs PR.
+  - Whether Vercel's Hobby plan blocks deploys of commits authored by a non-member. Community threads report "commit author does not have contributing access on Hobby plan" errors (community.vercel.com threads 36192, 36161, 36579); I have not found Vercel's own documentation for a public repo. The probe: one site commit by the machine account on a preview branch.
+  - Whether the machine account's use counts as "exclusively for performing automated tasks" when it is Claude sessions he directs. My reading is yes ("multiple users may direct the actions of a machine account"), but it is a reading of a contract, and I'll say so when I ask.
+- Why: principle 5 (evidence first) and the 31 Oct challenge. Risk of (a) until 9 Nov: a bad merge to `develop` is caught by checks or reverted (likelihood 2, impact 2); a bad site merge is rolled back in a minute (2x2). Return of moving now: a real gate, at the cost of touching every session's identity during the freeze. Not worth it this week.
+- Door: two-way. Nothing is applied by this ruling.
+- Way back: none needed.
+- Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
