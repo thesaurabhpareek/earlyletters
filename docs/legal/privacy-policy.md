@@ -32,7 +32,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 **Technical details.** When the app or website connects to our providers, they see your IP address and device type, as any website does.
 
-**What we do not collect.** We do not collect your location, contacts, photos, advertising ID or payment details. The app sends us no usage analytics or crash reports. We never create a voiceprint or any other biometric identifier. Your reminder times stay on your phone. Your choices for each book, such as whether it appears in reminders, are kept with your book.
+**What we do not collect.** We do not collect your location, contacts, photos, advertising ID or payment details. In no current build does the app send us usage analytics or crash reports (D-095). We never create a voiceprint or any other biometric identifier. Your reminder times stay on your phone. Your choices for each book, such as whether it appears in reminders, are kept with your book.
 
 **How speech becomes text.** The app turns your voice into text on your phone. No audio or text is sent to any outside service to be turned into text. The app fixes only small slips, such as a stray "um" or a misheard name, and you can undo every fix. It never rewrites your words.
 
