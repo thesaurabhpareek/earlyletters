@@ -66,8 +66,8 @@ function assignmentSection() {
     lines.push("", "The task, verbatim from `docs/BACKLOG.md`:", "", "```markdown", t ? t.block : `(${taskId} not found in docs/BACKLOG.md: stop and say so in your journal)`, "```");
   } else if (mode === "maintain") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Fix your PR #${prNum}** (${pr?.title ?? "title unknown"}). Why it needs you: ${reason || "see the PR"}.`);
-    if (pr) lines.push(`Work on its branch: \`git fetch origin ${pr.head.ref} && git checkout ${pr.head.ref}\`, commit, \`git push\`. Do not open a new PR.`);
+    lines.push(`**Fix your PR #${prNum}** (${quotedLine(pr?.title ?? "title unknown")}). Why it needs you: ${reason || "see the PR"}.`);
+    if (pr) lines.push(checkoutLine(pr.head.ref));
     const prComments = pr ? [
       ...ghAll(`/repos/${repo}/pulls/${prNum}/reviews`, { allowFail: true }),
       ...ghAll(`/repos/${repo}/issues/${prNum}/comments`, { allowFail: true }),
@@ -89,15 +89,18 @@ function assignmentSection() {
     lines.push("For what every agent did and said since yesterday, run `node scripts/agents/ledger.mjs --since <yesterday>` (one JSON line per event: journal entries, receipts, handoffs, replies and reviews).");
   } else {
     lines.push("**Your queue is empty: do a standing duty.** Take the first standing duty in your charter that is not already covered by an open PR of yours; if one is, continue that PR on its branch instead of opening another.");
-    lines.push(`Your open PRs: ${mine.map((p) => `#${p.number} ${p.title}`).join("; ") || "none"}.`);
+    lines.push(`Your open PRs: ${mine.map((p) => `#${p.number} ${quotedLine(p.title)}`).join("; ") || "none"}.`);
     if (agent.kind === "planner") lines.push("", ...plannerContext());
   }
+  if (["maintain", "review", "steward-review"].includes(mode)) lines.push("", UNTRUSTED_REVIEW_WARNING);
   return lines;
 }
 
 function handoffSection(num) {
   const issue = gh(`/repos/${repo}/issues/${num}`, { allowFail: true });
   if (!issue) return [`**Answer handoff #${num}.** It could not be loaded: say so in your journal and stop.`];
+  const refusal = handoffRefusal(issue, trust, num);
+  if (refusal) return [refusal];
   const comments = ghAll(`/repos/${repo}/issues/${num}/comments`, { allowFail: true });
   const trusted = comments.filter((c) => isTrusted(c, trust));
   const meta = parseHandoff(issue.body) ?? {};
@@ -132,10 +135,11 @@ function stewardSection() {
   if (!pr) return [`**Steward review of PR #${prNum}.** It is no longer open: say so in your journal and stop.`];
   const files = ghAll(`/repos/${repo}/pulls/${prNum}/files`, { allowFail: true }).map((f) => f.filename);
   const mineFiles = matchingPaths(files, agent.review_paths);
+  const shownFiles = fileList(mineFiles);
   const chapters = chaptersOwnedBy(handle);
   return [
-    `**Steward review of PR #${prNum}** (${pr.title}) by \`${agentOfPR(pr) ?? pr.user?.login}\`. Head commit \`${pr.head.sha}\`.`,
-    `Files in your review paths (${mineFiles.length} of ${files.length}): ${mineFiles.slice(0, 30).map((f) => `\`${f}\``).join(", ")}${mineFiles.length > 30 ? ", and more" : ""}.`,
+    `**Steward review of PR #${prNum}** (${quotedLine(pr.title)}) by \`${agentOfPR(pr) ?? pr.user?.login}\`. Head commit \`${pr.head.sha}\`.`,
+    `Files in your review paths (${mineFiles.length} of ${files.length}): ${shownFiles.shown.join(", ")}${shownFiles.more ? ", and more" : ""}${shownFiles.odd ? ` (${shownFiles.odd} file name(s) with unusual characters not shown)` : ""}.`,
     `Check them against your chapters: ${chapters.map((c) => `\`${c}\``).join(", ") || "(none found in docs/engineering/)"}. Read the diff with \`gh pr diff ${prNum}\`; search the chapters by rule id rather than reading them whole.`,
     "",
     `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, \`Verdict: fix first\` or \`Verdict: founder decision\`, then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
@@ -206,7 +210,7 @@ function plannerContext() {
 }
 
 function quote(text) {
-  return (text ?? "").trim().split("\n").map((l) => `> ${l}`).join("\n");
+  return quoteBlock(text);
 }
 
 function latestBrief() {
@@ -216,7 +220,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
-import { trustedJournalEntries, oneLine } from "./hardening.mjs";
+import { trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
@@ -246,7 +250,7 @@ function otherThreadsSection() {
     pushes.set(ref, e.created_at.slice(0, 16).replace("T", " "));
   }
   lines.push("Branches pushed in the last 24 hours with no open PR (someone is working there; check `git diff origin/" + roster.base_branch + "...origin/<branch> --stat` before touching the same files):", "",
-    pushes.size ? [...pushes].map(([r, t]) => `- \`${r}\` (last push ${t} UTC)`).join("\n") : "None.", "");
+    pushes.size ? [...pushes].map(([r, t]) => `- ${branchLabel(r)} (last push ${t} UTC)`).join("\n") : "None.", "");
   return lines;
 }
 
@@ -258,6 +262,8 @@ const doc = [
   "",
   `Run: ${runUrl}. Run id: \`${runId}\`. Mode: **${mode}**. Written ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC.`,
   `Journal issue: #${journal || "missing"}. Repository: ${repo}. Base branch: \`${roster.base_branch}\`.`,
+  "",
+  UNTRUSTED_TEXT_RULES,
   "",
   "## Read first, in this order",
   "",
