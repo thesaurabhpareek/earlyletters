@@ -51,9 +51,9 @@ Karma posts the approval only after the CCO has approved the same head and all o
 - A ruling `CR-<n>` records the approval: what changed, why, and the way back.
 
 ## Limits (true today)
-- **Runs only from `main`.** GitHub takes a `pull_request_target` workflow from the default branch since 8 Dec 2025, so the check runs on PRs into `develop` only once this workflow file is also on `main`. It reads the rules from each PR's base, so `develop`'s `FENCE.json` still governs.
+- **Runs only from `main`.** GitHub takes a `pull_request_target` workflow from the default branch since 8 Dec 2025, so the check runs on PRs into `develop` only once this workflow file is also on `main`, which happens with the next release PR (docs/DEVELOPMENT.md). It reads the rules from each PR's base, so `develop`'s `FENCE.json` still governs.
 - **Advisory until required.** `develop` has no branch protection yet (checked 31 Oct 2026). The check blocks merges only once `compliance-fence` is a required status check, and it must not be made required before the workflow is on `main`, or every PR would wait forever.
 - **Text matching, not parsing.** Content markers catch a compliance table named in a diff in any case. SQL that builds a name from pieces at run time would slip past; review is the backstop.
 - **Not identity.** Every Claude session posts as the founder's account (CR-20). The label and the approvals prove that the procedure ran, not who ran it. The fix is the separate automation identity in CR-20 (after 9 Nov).
 - **Fails closed.** Any API error fails the check. The bootstrap path (a fixed path pattern) runs only when the base commit truly has no fence (HTTP 404), never on another error.
-- **First merge is by hand.** Until this fence is on `develop`, the bootstrap fails closed on any compliance path. The founder merges the fence PR itself, and PR #424 after it.
+- **First merge.** The fence cannot check its own first merge; Karma merges it under D-132 after two counted reviews. It starts running when the workflow reaches `main` with the next release PR from `develop`.

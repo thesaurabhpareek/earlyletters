@@ -342,8 +342,8 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Limits, said plainly:
   - Runs only once the workflow is on `main`, and advisory until `compliance-fence` is a required check. `develop` has no protection today.
   - The label and approvals prove the procedure ran, not who ran it (CR-20).
-  - The founder merges the fence PR itself by hand.
+  - The first merge cannot be checked by the fence itself; Karma merges it under D-132 after two counted reviews.
 - Door: two-way.
 - Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
 - Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
-- Sequence (Karma, under the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`; bring the workflow file to `main` in a small PR; then make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
+- Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
