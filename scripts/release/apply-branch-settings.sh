@@ -11,8 +11,11 @@
 #   bash scripts/release/apply-branch-settings.sh --undo     # puts everything back from the snapshot
 #
 # Order and reasons: docs/agents/cto/RULINGS.md CR-6 to CR-15. It stops at the first failure.
-# What it does NOT do: approvals or environment reviewers (they wait for a second GitHub account),
-# labels (CR-15), or deleting branches (CR-14, which a session runs after this).
+# What it does NOT do: approvals or environment reviewers (they wait until PR authors are not your
+# account, CR-20; a second personal account is withdrawn, CR-19), labels (CR-15), or deleting
+# branches (CR-14: you run scripts/release/cleanup-branches.sh after this, because the proxy
+# refuses tag pushes from sessions). Archive and delete release/ios-v1.0 before --apply: the commands
+# are in docs/release/FOUNDER_QUEUE.md row 7, and --apply asks before going on while it exists.
 set -euo pipefail
 REPO=thesaurabhpareek/earlyletters
 R=repos/$REPO
@@ -96,6 +99,16 @@ case "$MODE" in
     [[ "$ok" == "yes" ]] || { say "Stopped. Nothing changed."; exit 1; }
     read -r -p "Is the repository variable AGENTS_ENABLED unset or not 'true' (Settings, Secrets and variables, Actions, Variables)? Type yes: " ok2
     [[ "$ok2" == "yes" ]] || { say "Stopped. Nothing changed. Leave AGENTS_ENABLED off (CR-5) and run again."; exit 1; }
+    # CR-11's "release branches keep their history" ruleset makes every release/* branch undeletable once it exists.
+    # Fail closed: if GitHub can't be read, stop rather than make a branch undeletable by accident.
+    rel=$(gh api "$R/git/matching-refs/heads/release" --jq '.[].ref|select(startswith("refs/heads/release/"))') \
+      || { say "Stopped: couldn't read the release branches from GitHub. Nothing changed. Try again."; exit 1; }
+    if [[ -n "$rel" ]]; then
+      say "These release branches exist and can't be deleted after this run:"; say "$rel"
+      say "You chose on 30 Oct to archive and delete release/ios-v1.0 first (docs/release/FOUNDER_QUEUE.md row 7 has the commands)."
+      read -r -p "Keep them for good and go on? Type keep to go on, anything else stops: " ok3
+      [[ "$ok3" == "keep" ]] || { say "Stopped. Nothing changed."; exit 1; }
+    fi
     mkdir -p "$SNAP"
     if [[ -f "$SNAP/repo.json" ]]; then
       # Keep the first snapshot: it holds the state before any run, so --undo stays a true way back after a partial run.
@@ -123,7 +136,8 @@ case "$MODE" in
     if [[ -n "$wid" ]]; then gh api -X PUT $R/actions/workflows/$wid/disable && say "  agents.yml disabled"
     else say "  agents.yml not registered yet: open Actions, Agents, and choose Disable workflow. Its jobs also skip while AGENTS_ENABLED is not true."; fi
     say ""; verify && say "All applied and verified." || { say "Drift after apply: run --undo, then tell Karma."; exit 1; }
-    say "Next: watch the next push to develop on Vercel. It must be a Preview, not Production. If it is Production, run --undo."
+    say "Vercel: its Production Branch is a Vercel setting, so --undo cannot fix a production deploy from the wrong branch."
+    say "If one ever happens: Vercel, project earlyletters, Instant Rollback, then set the Production Branch back to main (CR-9)."
     ;;
   --verify) verify ;;
   --undo)
