@@ -9,7 +9,7 @@ import { shareLink } from '../src/components/site/ShareRow';
 
 const c = site.comingSoon;
 // The row shares the public address, never the page's own origin (a preview or the www host).
-const LINK = shareLink();
+const LINK = shareLink(''); // the build used for e2e never sets NEXT_PUBLIC_SITE_URL (global-setup)
 const PAGES = [
   { path: '/signup/thanks', placement: 'thanks' },
   { path: '/signup/already', placement: 'already' },
@@ -57,7 +57,7 @@ for (const { path, placement } of PAGES) {
       await expect(row.getByRole('button', { name: c.shareMore })).toHaveCount(0);
       await row.getByRole('button', { name: c.shareCopy }).click();
       await expect(row.getByRole('status')).toHaveText(c.shareCopied);
-      await expect(row.getByRole('button', { name: c.shareCopy })).toContainText(c.shareCopied);
+      await expect(row.getByRole('button', { name: c.shareCopied })).toBeVisible();
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LINK);
     });
 
@@ -72,7 +72,7 @@ for (const { path, placement } of PAGES) {
       const row = page.getByTestId('share-row');
       await row.getByRole('button', { name: c.shareCopy }).click();
       await expect(row.getByTestId('share-copy-failed')).toContainText(LINK);
-      await expect(row.getByRole('status')).toHaveText(c.shareCopyFailed);
+      await expect(row.getByRole('status')).toHaveText(`${c.shareCopyFailed} ${LINK}`);
     });
 
     test('More opens the native share sheet with the plain address when the browser has one', async ({ page }) => {

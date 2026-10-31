@@ -116,9 +116,8 @@ export function ShareRow({ placement }: { placement: SharePlacement }) {
         <div className={styles.actions}>
           <button type="button" className={styles.pill} data-channel="copy" onClick={copy}>
             {ShareIcons.link}
-            {/* The visible label changes; the status line below is what a screen reader hears, once. */}
-            <span aria-hidden="true">{copied ? c.shareCopied : c.shareCopy}</span>
-            <span className="visually-hidden">{c.shareCopy}</span>
+            {/* The visible label is the accessible name (WCAG 2.5.3), so voice control finds what it sees. */}
+            <span>{copied ? c.shareCopied : c.shareCopy}</span>
           </button>
           {canShare ? (
             <button type="button" className={styles.pill} data-channel="native" onClick={more}>
@@ -134,7 +133,7 @@ export function ShareRow({ placement }: { placement: SharePlacement }) {
         </p>
       ) : null}
       <p className="visually-hidden" role="status" aria-live="polite">
-        {copied ? c.shareCopied : copyFailed ? c.shareCopyFailed : ''}
+        {copied ? c.shareCopied : copyFailed ? `${c.shareCopyFailed} ${link}` : ''}
       </p>
     </section>
   );
