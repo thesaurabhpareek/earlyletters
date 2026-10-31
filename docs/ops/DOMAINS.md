@@ -142,7 +142,7 @@ Never use any of these as the Porkbun, Apple or Supabase account login (section 
 
 ## 10. Auth redirects (summary; details in AUTH_SETUP 5.1)
 
-- Supabase Site URL `https://earlyletters.com`; Redirect URLs exactly `https://earlyletters.com/auth/callback` and `scribe://auth/callback`.
+- Supabase Site URL `https://earlyletters.com`; Redirect URLs exactly one: `https://earlyletters.com/auth/callback` (SIGN-09; `supabase/auth-email.md` 3.4). Never `scribe://auth/callback`: any app can claim the scheme.
 - Email templates build the link themselves; the custom scheme never carries a token (TDD 04 3.1.6).
 
 ## 11. Checks (run after any DNS change)

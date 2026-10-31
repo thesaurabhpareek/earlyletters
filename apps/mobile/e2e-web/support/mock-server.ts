@@ -87,6 +87,8 @@ export async function mockServer(page: Page, opts: { user: string; email?: strin
   rpcs.set('policy_actions_needed', () => ({ body: [] }));
   rpcs.set('sync_push', () => ({ body: { results: [], paused: false, stopped: true } }));
   rpcs.set('sync_pull', () => ({ body: { epoch: 1, books: [], gone: [] } }));
+  // The open-deletion check a signed-in phone makes (lib/account-deletion/open-request.ts, #393): none open.
+  tables.set('deletion_requests', () => ({ body: [] }));
 
   const reply = async (route: Route, a: Answer) => {
     if (a.hold) await a.hold;

@@ -1,6 +1,6 @@
 import { emailChrome } from '@scribe/content/src/emails/chrome.en';
 import type { CSSProperties, ReactNode } from 'react';
-import { fonts, light, space, type } from '../tokens';
+import { fonts, light, space, type, wrap } from '../tokens';
 import { Block, tableProps } from './primitives';
 import { cls } from './theme';
 
@@ -17,6 +17,7 @@ export function Heading({ children }: { children: ReactNode }) {
         fontWeight: type.heading.weight,
         color: light.ink,
         letterSpacing: '-0.2px',
+        ...wrap,
         // No one-word orphan on phones (Apple Mail and iOS Mail honour it; others ignore it).
         textWrap: 'balance',
       } as CSSProperties}
@@ -48,6 +49,7 @@ export function Paragraph({ variant = 'ui', children }: ParagraphProps) {
         lineHeight: t.line,
         fontWeight: t.weight,
         color: light.ink,
+        ...wrap,
       }}
     >
       {children}
@@ -75,6 +77,7 @@ export function Note({ tone = 'quiet', children }: NoteProps) {
         fontSize: tone === 'safety' ? 15 : type.small.size,
         lineHeight: type.small.line,
         color: tone === 'safety' ? light.ink : light.inkMuted,
+        ...wrap,
       }}
     >
       {children}
@@ -116,6 +119,7 @@ export function Signature({ text }: { text?: string }) {
           lineHeight: type.letter.line,
           fontStyle: 'italic',
           color: light.ink,
+          ...wrap,
         }}
       >
         {lines.map((l, i) => (

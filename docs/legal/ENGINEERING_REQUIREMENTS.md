@@ -1,6 +1,6 @@
 # Legal Engineering Requirements (`LEGAL-REQ-###`)
 
-Version 1.2.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 2.1.0, 31 Oct 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. These requirements translate `compliance-register.md` into testable rules for the technical design and code. Where a requirement rests on an unverified legal reading it says so; build it anyway unless counsel removes it, because each one is cheap now and expensive after launch.
 
@@ -361,7 +361,7 @@ Source: CR-001, CR-002, CR-003 (COPPA directed-to-children factors [L1]; Apple 2
 ## 7. Subscriptions
 
 ### LEGAL-REQ-046 (P0) Paywall disclosures next to the button
-The purchase screen is Apple's `SubscriptionStoreView` (ADR 0013): Apple shows each plan's price, period and any free trial for eligible people, one subscribe button per plan (no plan preselected, PRD C-REQ-022), Restore, and the Terms and Privacy links (to https://earlyletters.com/terms and /privacy). Our marketing content above the plans states what Plus adds, that writing, reading, playing recordings, export and writing with a co-parent stay free, that plans renew automatically until cancelled at least 24 hours before the end, how to cancel, and Family Sharing (`billingCopy.store`). Nothing we add may make the free period more prominent than Apple's price, or state a trial length that Apple's offer does not.
+The purchase screen is Apple's `SubscriptionStoreView` (ADR 0013): Apple shows each plan's price, period and any free trial for eligible people, one subscribe button per plan (no plan preselected, PRD C-REQ-022), Restore, and the Terms and Privacy links (to https://earlyletters.com/terms and /privacy). Our marketing content above the plans states what Plus adds (keep adding letters after the first two, D-082), that every letter kept stays the person's to read, play and export with or without Plus (`billingCopy.store.promise`), that plans renew automatically until cancelled at least 24 hours before the end, how to cancel, and Family Sharing (`billingCopy.store`). Nothing we add may make the free period more prominent than Apple's price, or state a trial length that Apple's offer does not.
 - Given the store view on a release build, When rendered at the default and the largest Dynamic Type size, Then Apple's plans and all of our marketing content are visible and wrap without truncation, and VoiceOver reads them.
 - Given a non-eligible account (sandbox), Then nothing we show mentions a free trial.
 - Test: on-device check per release (screenshots into the evidence pack, POLICY_VERSIONING 8) plus a content test on `billingCopy.store`.
@@ -403,8 +403,8 @@ Source: CR-050 (online cancellation by a prominent direct link [L7]), CR-051.
 Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Q-003 memo.
 
 ### LEGAL-REQ-050 (P0) Keep-and-leave promise enforced in code
-Writing, reading, playback of recordings, export and writing with a co-parent never consult the StoreKit entitlement and never show a paywall (PRD C-NFR-004, C-REQ-017, C-REQ-028). A lapse, refund or billing failure removes only Plus extras (new books beyond the free ones, Read together after the free sessions); existing books stay fully usable.
-- Given StoreKit unavailable and a lapsed plan, When the user writes, reads, plays and exports, Then all succeed with no Plus UI.
+Reading, playback of recordings, export, Read together, starting a book, capturing and typing a letter, and drafts never consult the StoreKit entitlement and never show a paywall (PRD C-NFR-004, C-REQ-017, C-REQ-028). The one step Plus gates is keeping a letter after the person's first two kept letters (D-082, D-083; `keep_letter` in `packages/core/src/plan.ts`); a letter that cannot be kept yet waits on the phone untouched. A lapse, refund or billing failure removes only the ability to keep more letters; every kept letter stays readable, playable and exportable.
+- Given StoreKit unavailable and a lapsed plan, When the user reads, plays, exports, uses Read together, and captures or types a draft, Then all succeed with no Plus UI; only keeping a third or later letter shows the Keep sheet.
 - Test: automated.
 Source: CR-012 (honouring "free" promises), CR-010.
 
@@ -508,6 +508,7 @@ Citations [L#] are listed with URLs in `compliance-register.md` (all opened 2 Oc
 
 | Version | Date | Change |
 |---|---|---|
+| 2.1.0 | 2026-10-31 | 046 and 050 follow founder decision D-082 and D-083 (first two letters free, Plus gates only keeping later letters; Read together and new books free), replacing the 3 Oct description (writing and co-parent writing free; Read together after free sessions and books for more children as Plus extras). Review `docs/reviews/2026-10-31/subscriptions.md` SUB-02. Version 2.1.0 because 1.3.0 and 2.0.0 were used by unmerged drafts on other branches (POLICY_VERSIONING 2.4). Not a published document; no notice. |
 | 1.2.0 | 2026-10-03 | Alignment with the founder decisions of 3 Oct 2026, second round (D-051 to D-070). Release-tier paragraph for D-055 and D-059 (013, 022(a), 023 and the web and AI requirements bind when their features ship). 007 and 008 scoped to v1.0 permissions and consents. 022: device backup decided (D-033), no SQLCipher. 024: sync access tests replace PowerSync parity (D-023). 029 rewritten to the built purge worker (Apple token revocation, PostHog at request, Resend, no purchase mapping). 031 and 033: Resend 30-day exception; purchase ledger and ARL record rows removed. 037 consoles updated. 040: v1.0 switches, `forceReauthEpoch` gap (security review L3). 046 to 050 rewritten for Apple-only Plus on the device: Apple's store view (046), on-device reminder engine (047, Q-003), Apple's manage sheet (048), 049 retired for per-release evidence, 050 keep-and-leave without an entitlement service. 058: no storefront stored. Not a published document; no notice. |
 | 1.1.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct; `docs/DECISIONS.md`). Release-tier note: web-page requirements (010, 035 and web parts of 002, 005, 014) bind from v1.1; AI requirements (004, 005, 020) bind when the gateway ships; 030 reduced at v1.0 (D-042); counsel to confirm. RevenueCat removed (ADR 0013): 029 deletion steps, 031 processors, 037 consoles, 049 reconciliation, 058 storefront source. 033: invite hashes 90 days keyed on use, revocation or expiry (K-18, D-020); `audit_events` 24 months beside 12-month ops and security logs (D-021); purchase ledger 7 years. 047 rewritten to the K-38 hard windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]; long trial inside [E-21d, E-16d]). Not a published document; no notice. |
 | 1.0.0 | 2026-10-02 | First version; 2 Oct revision of 002 for the 18+ entry gate. |

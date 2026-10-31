@@ -79,7 +79,7 @@ public class ScribeStoreModule: Module {
       }
     }
 
-    /// Apple's offer code redemption sheet (D-081: codes come from Apple, never a code system of ours).
+    /// Apple's offer code redemption sheet (D-053 and ADR 0013, Apple only: codes come from Apple, never a code system of ours).
     /// "presented" | "unavailable" | "failed". It resolves when the sheet has been shown; a redeemed code
     /// arrives as a Transaction through the update listener above (onEntitlementsChanged), so the caller
     /// re-reads the entitlements afterwards. API read in Apple's documentation on 4 Oct 2026:

@@ -8,6 +8,7 @@
  * except Apple's own subscriptions page. Never put a real family detail here.
  */
 import { brand } from '@scribe/brand';
+import { DEFAULT_LINKS } from '../links';
 import type { EmailValues } from './fill';
 
 const SITE = `https://${brand.publisher.domain}`;
@@ -32,14 +33,13 @@ export const previewValues: EmailValues = {
   when: 'Saturday, October 3, 2026 at 9:14 pm',
 
   // links
-  appUrl: `${SITE}/open`,
+  appUrl: DEFAULT_LINKS.appUrl, // /open: website page still to build (src/links.ts)
   inviteUrl: `${SITE}/j#t=preview-not-a-real-invite`, // coparent-invite (universal link, 7 days)
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
   confirmDeleteUrl: `${SITE}/delete-account/confirm#token=preview-not-a-real-token`, // deletion-confirm (web route to build)
-  documentUrl: `${SITE}/privacy`,
-  changesUrl: `${SITE}/privacy/changes`,
-  subscriptionTermsUrl: `${SITE}/subscription-terms`, // apps/web/src/lib/legal.ts
-  manageUrl: 'https://apps.apple.com/account/subscriptions',
+  documentUrl: `${SITE}/privacy`, // its page lists what changed (TPL-06: no separate changes page)
+  subscriptionTermsUrl: DEFAULT_LINKS.subscriptionTermsUrl, // page still to build (src/links.ts)
+  manageUrl: DEFAULT_LINKS.manageUrl,
 
   // billing (fictional dates; prices are the list prices, D-082)
   planName: 'Plus Annual',
@@ -66,5 +66,6 @@ export const previewValues: EmailValues = {
 
   // recording backup and the recovery key (backup.en.ts; sent by the escrow function)
   holdUntil: 'Sunday, October 4, 2026 at 9:14 pm UTC',
-  stopUrl: `${SITE}/stop#t=preview-not-a-real-token`,
+  // Same shape as the escrow sender (restore.ts) and packages/api recovery-key.ts: /stop#<43-character token> (TPL-11).
+  stopUrl: `${SITE}/stop#previewNotARealStopToken0000000000000000000`,
 };

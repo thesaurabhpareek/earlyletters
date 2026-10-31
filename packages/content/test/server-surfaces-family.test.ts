@@ -45,8 +45,8 @@ const CHANGED: Record<string, string> = {
   'create.done': 'The invite waits on the Family tab until they join.',
   'errors.not_found': 'That link does not open an invite. Check it and try again.',
   'errors.network': 'This phone is offline. Try again once it is back online.',
-  'errors.unknown': 'That did not work this time. Try again.',
-  'errors.retry_new_invite': 'That did not work this time. Try again.',
+  'errors.unknown': 'That did not go through. Try again.',
+  'errors.retry_new_invite': 'That did not go through. Try again.',
   // S59 Joining a book
   'accept.title': 'Join a book',
   'accept.signInBody': 'You each write from your own phone, in the same book.',

@@ -1,4 +1,4 @@
-import { btn, firstRun, journey, selectedTab, tab } from './support/app';
+import { btn, firstRun, journey, noRemindersAfterFirstLetter, selectedTab, tab } from './support/app';
 import { expect, test } from './support/journey';
 
 /**
@@ -73,6 +73,7 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await expect(app.getByText(/Added to/)).toBeVisible();
   await expect(app.getByText('That was your second free letter.')).toHaveCount(0);
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await write('You laughed at the rain.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();
