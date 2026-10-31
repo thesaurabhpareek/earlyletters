@@ -70,7 +70,7 @@ Sender legend: **SB** = Supabase Auth template (committed in `supabase/templates
 | backup-key-used | yes (not in CATALOG) | backup.en | **ESC** `restore.ts:173` | yes | | needed |
 | backup-key-rotated | yes (not in CATALOG) | backup.en | **ESC** `rotate.ts:102` | yes | | needed |
 
-Totals: 43 templates. Wired: 6 Supabase-sent (7 catalog ids), 3 purge-worker, 3 escrow = 13. Unwired: 30, including 5 marked LB in the catalog (account-create-attempt, sign-in-trouble, deletion-confirm, and the D-022 trial/acknowledgment set) .
+Totals: 43 templates. Wired: 6 Supabase-sent (7 catalog ids), 3 purge-worker, 3 escrow = 13. Unwired: 30, including 5 marked LB in the catalog (account-create-attempt, sign-in-trouble, deletion-confirm, and the D-022 trial/acknowledgment set).
 
 ## Findings
 
