@@ -5,8 +5,11 @@
  */
 import { site } from '../src/content/site';
 import { expect, test } from './support/fixtures';
+import { shareLink } from '../src/components/site/ShareRow';
 
 const c = site.comingSoon;
+// The row shares the public address, never the page's own origin (a preview or the www host).
+const LINK = shareLink(''); // the build used for e2e never sets NEXT_PUBLIC_SITE_URL (global-setup)
 const PAGES = [
   { path: '/signup/thanks', placement: 'thanks' },
   { path: '/signup/already', placement: 'already' },
@@ -19,8 +22,7 @@ for (const { path, placement } of PAGES) {
       const row = page.getByTestId('share-row');
       await expect(row).toBeVisible();
       await expect(row.getByText(c.shareHeading)).toBeVisible();
-      const origin = new URL(page.url()).origin;
-      const link = `${origin}/`;
+      const link = LINK;
       const message = `${c.shareText} ${link}`;
       const expected: Record<string, string> = {
         [c.shareWhatsapp]: `https://wa.me/?text=${encodeURIComponent(message)}`,
@@ -54,8 +56,23 @@ for (const { path, placement } of PAGES) {
       const row = page.getByTestId('share-row');
       await expect(row.getByRole('button', { name: c.shareMore })).toHaveCount(0);
       await row.getByRole('button', { name: c.shareCopy }).click();
+      await expect(row.getByRole('status')).toHaveText(c.shareCopied);
       await expect(row.getByRole('button', { name: c.shareCopied })).toBeVisible();
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${new URL(page.url()).origin}/`);
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LINK);
+    });
+
+    test('when the browser will not copy, the address is shown to copy by hand', async ({ page }) => {
+      await page.addInitScript(() =>
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: { writeText: () => Promise.reject(new Error('denied')) },
+        }),
+      );
+      await page.goto(path);
+      const row = page.getByTestId('share-row');
+      await row.getByRole('button', { name: c.shareCopy }).click();
+      await expect(row.getByTestId('share-copy-failed')).toContainText(LINK);
+      await expect(row.getByRole('status')).toHaveText(`${c.shareCopyFailed} ${LINK}`);
     });
 
     test('More opens the native share sheet with the plain address when the browser has one', async ({ page }) => {
@@ -72,7 +89,7 @@ for (const { path, placement } of PAGES) {
       await page.goto(path);
       await page.getByTestId('share-row').getByRole('button', { name: c.shareMore }).click();
       const shared = await page.evaluate(() => (window as unknown as { __shared: { title: string; text: string; url: string }[] }).__shared);
-      expect(shared).toEqual([{ title: c.shareTitle, text: c.shareText, url: `${new URL(page.url()).origin}/` }]);
+      expect(shared).toEqual([{ title: c.shareTitle, text: c.shareText, url: LINK }]);
     });
 
     test(`taps are counted as share_click with the channel and "${placement}" only, and only when analytics is on`, async ({ page }) => {
@@ -85,12 +102,32 @@ for (const { path, placement } of PAGES) {
       expect(requests.filter((u) => /vercel|_vercel|va\.js/.test(u))).toEqual([]);
     });
 
-    test('keeps within a 320px screen with no sideways scroll', async ({ page }) => {
+    test('keeps within a 320px screen with no sideways scroll and 44px taps', async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 568 });
       await page.goto(path);
-      await expect(page.getByTestId('share-row')).toBeVisible();
+      const row = page.getByTestId('share-row');
+      await expect(row).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(0);
+      for (const a of await row.getByRole('link').all()) {
+        const box = await a.boundingBox();
+        expect(box?.width).toBeGreaterThanOrEqual(44);
+        expect(box?.height).toBeGreaterThanOrEqual(44);
+      }
+    });
+
+    test.describe('with scripts off', () => {
+      test.use({ javaScriptEnabled: false, strictConsole: false }); // a script preload is refused by the CSP with scripts off
+      test('the six app links are still there, sharing the public address', async ({ page }) => {
+        await page.goto(path);
+        const row = page.getByTestId('share-row');
+        await expect(row.getByRole('link')).toHaveCount(6);
+        await expect(row.getByRole('link', { name: `${c.shareVia} ${c.shareFacebook}` })).toHaveAttribute(
+          'href',
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(LINK)}`,
+        );
+        await expect(row.getByRole('button')).toHaveCount(0);
+      });
     });
   });
 }
