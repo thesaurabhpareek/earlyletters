@@ -8,7 +8,6 @@ import { brand } from '@scribe/brand';
 export const siteCopy = {
   footer: {
     legalNavLabel: 'Legal',
-    tagline: brand.tagline,
   },
   notFound: {
     title: 'Page not found',
