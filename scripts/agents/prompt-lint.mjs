@@ -18,6 +18,7 @@
 // copy differs from develop, or no dates file of record); 64 usage.
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { isMain } from "./main-check.mjs";
 
 const MONTH = "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
 const DATE_PATTERNS = [
@@ -147,4 +148,4 @@ function main(argv) {
   return bad ? 1 : 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

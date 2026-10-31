@@ -5,6 +5,7 @@
 //   node scripts/agents/bootstrap.mjs            # create anything missing
 //   node scripts/agents/bootstrap.mjs --dry-run  # list what would be created
 import { loadRoster, repoSlug, gh, ghAll, labelNames, journalTitle } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 export const BOARD_TITLE = "Agent board";
 
@@ -103,7 +104,7 @@ export function ensureBoard(repo, { dryRun = false } = {}) {
   return { board: issue, created: true };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const dryRun = process.argv.includes("--dry-run");
   const roster = loadRoster();
   const repo = repoSlug(roster);

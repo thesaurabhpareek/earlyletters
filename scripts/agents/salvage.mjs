@@ -10,6 +10,7 @@
 // the job: if there is nothing to save or no token, it says so and exits 0.
 import { execFileSync } from "node:child_process";
 import { loadRoster, repoSlug, gh } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 const PROTECTED = new Set(["develop", "main", "HEAD"]);
 
@@ -35,7 +36,7 @@ function tryGit(args) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const argv = process.argv.slice(2);
   const opt = (n, d = "") => {
     const i = argv.indexOf(`--${n}`);

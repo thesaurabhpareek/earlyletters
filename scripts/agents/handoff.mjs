@@ -13,6 +13,7 @@ import {
   loadRoster, repoSlug, gh, ghAll, trustContext, isTrusted, pendingTargets,
   HANDOFF_KINDS, REPLY_STATUSES,
 } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 /** Build the issue for a new handoff. Pure, so it is tested. */
 export function buildHandoff({ from, to, kind, title, body }, handles) {
@@ -88,4 +89,4 @@ function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMain(import.meta.url)) main();

@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { isMain } from "./main-check.mjs";
 import { identityOf } from "./identity.mjs";
 import { globToRegExp as sharedGlob } from "./glob.mjs";
 
@@ -306,4 +307,6 @@ export function main(argv = process.argv.slice(2), out = console) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exit(main());
+let runAsMain;
+try { runAsMain = isMain(import.meta.url); } catch (e) { console.error(`pathguard: cannot tell whether this is the entry point, failing closed: ${e.message}`); process.exit(2); }
+if (runAsMain) process.exit(main());

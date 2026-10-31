@@ -13,6 +13,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { isMain } from "./main-check.mjs";
 
 /**
  * Bash rules, in order. opencode takes the LAST rule that matches (verified against opencode 1.18.34
@@ -340,4 +341,4 @@ async function main() {
   process.exit(subtype === "success" ? 0 : 1);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMain(import.meta.url)) main();

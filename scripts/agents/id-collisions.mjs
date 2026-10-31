@@ -14,6 +14,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { isMain } from "./main-check.mjs";
 
 export const KINDS = ["D", "ADR", "APPLY", "BL"];
 
@@ -259,7 +260,7 @@ async function main(argv) {
   return result.collisions.length ? 1 : 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).then(
     (code) => process.exit(code),
     (err) => {

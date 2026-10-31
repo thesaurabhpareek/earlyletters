@@ -9,6 +9,7 @@
 // getPage(url) resolves to { status, json }.
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { isMain } from "./main-check.mjs";
 import { isAgentLike } from "./identity.mjs";
 
 export const PER_PAGE = 100;
@@ -87,4 +88,6 @@ export async function main(argv = process.argv.slice(2), { out = console, env = 
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exit(await main());
+let runAsMain;
+try { runAsMain = isMain(import.meta.url); } catch (e) { console.error(`guard-open-prs: cannot tell whether this is the entry point, failing closed: ${e.message}`); process.exit(2); }
+if (runAsMain) process.exit(await main());

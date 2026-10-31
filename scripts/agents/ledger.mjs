@@ -12,6 +12,7 @@ import { verdictOf as closedVerdict } from "./hardening.mjs";
 import {
   loadRoster, repoSlug, ghAll, trustContext, isTrusted, parseHandoff, parseReply,
 } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 /** Classify one comment, review or issue body into a ledger row, or undefined. Pure. */
 export function classify(item, { trusted, source }) {
@@ -115,4 +116,4 @@ function main() {
   else console.log(text);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMain(import.meta.url)) main();

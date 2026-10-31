@@ -8,6 +8,7 @@
 //        --task BL-121 --outcome success --execution-file <path> --run-url <url>
 import { existsSync, readFileSync, appendFileSync } from "node:fs";
 import { loadRoster, repoSlug, gh, ghAll } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 const argv = process.argv.slice(2);
 const opt = (n, d = "") => {
@@ -40,7 +41,7 @@ export function summarize(path) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const roster = loadRoster();
   const repo = repoSlug(roster);
   const s = summarize(opt("execution-file"));

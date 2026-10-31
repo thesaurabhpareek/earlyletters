@@ -7,6 +7,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT, loadRoster, ownerMap, externalOwners, parseBacklog, readText } from "./lib.mjs";
+import { isMain } from "./main-check.mjs";
 
 const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
 const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
@@ -102,7 +103,7 @@ function frontmatter(text) {
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const { errors, warnings, summary } = check();
   for (const w of warnings) console.log(`warning: ${w}`);
   for (const e of errors) console.log(`error: ${e}`);
