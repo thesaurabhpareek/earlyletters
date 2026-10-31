@@ -77,6 +77,8 @@ export type AuthEvent =
   | { type: 'CONSENT_FAILED'; error: AuthErrorKind }
   | { type: 'SIGN_OUT_REQUESTED'; reason: SignOutReason; pendingUploads: number }
   | { type: 'UPLOADS_DRAINED' }
+  /** "Stay signed in" while a sign-out waits for uploads (S01): back to signed in; nothing deleted, nothing sent. */
+  | { type: 'SIGN_OUT_WAIT_CANCELLED' }
   | { type: 'SIGNED_OUT' }
   /** The refresh token was rejected or revoked elsewhere. Local letters stay; the queue is kept. */
   | { type: 'SESSION_LOST' };
@@ -145,6 +147,13 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       }
       // Re-checked on foreground: a new Terms version or a consent withdrawn elsewhere pauses sync here too.
       if (state.status === 'ready') return afterGate({ userId: state.userId, method: null }, event.gate, event.sensitiveDeclined);
+      // S01: a sign-out waiting for uploads honours the gate too. Sync on: the outbox drains, then it finishes.
+      // Anything else: the outbox can never drain, so it finishes now and the letters stay on this phone (as with sync off).
+      if (state.status === 'signingOut' && state.waitingForUploads) {
+        const next = afterGate({ userId: state.userId, method: null }, event.gate, event.sensitiveDeclined);
+        const sync: SyncMode = next.status === 'ready' && next.sync === 'on' ? 'on' : 'off';
+        return sync === state.sync ? state : { ...state, sync, waitingForUploads: sync === 'on' };
+      }
       return state;
 
     case 'GATE_UNAVAILABLE':
@@ -179,6 +188,14 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       if (state.status === 'signingOut' && state.waitingForUploads) return { ...state, waitingForUploads: false };
       return state;
 
+    case 'SIGN_OUT_WAIT_CANCELLED':
+      // Only while waiting (a finishing sign-out is already ending the session), and only for a sign-out
+      // the person asked for: an Apple revocation still signs out once the letters are up (A-REQ-033).
+      if (state.status === 'signingOut' && state.waitingForUploads && state.reason === 'user') {
+        return { status: 'ready', userId: state.userId, sync: state.sync };
+      }
+      return state;
+
     case 'SIGNED_OUT':
       if (state.status === 'signedOut') return state;
       if (state.status === 'signingOut') return { status: 'signedOut' };
@@ -209,6 +226,42 @@ export function canSync(s: AuthState): boolean {
   if (s.status === 'ready') return s.sync === 'on';
   if (s.status === 'signingOut') return s.waitingForUploads && s.sync === 'on';
   return false;
+}
+
+/**
+ * The provider reads the consent gate again (on foreground) when it was never read (offline at
+ * launch) or is stale. A sign-out waiting for uploads counts too (S01): until the gate is read, a
+ * wait that began offline cannot know whether its letters may upload, so it could never end.
+ */
+export function shouldRecheckGate(s: AuthState, stale: boolean): boolean {
+  if (s.status === 'ready') return s.sync === 'unknown' || stale;
+  if (s.status === 'signingOut') return s.waitingForUploads && (s.sync === 'unknown' || stale);
+  return false;
+}
+
+/**
+ * One consent-gate read, answered only if no newer read has started since. Reads overlap (a session
+ * appearing, a sign-out wait, the wait's poll, foreground, refreshGate), and an older, slower answer
+ * must never undo a newer one: a late "off" would end a wait the newer "on" let drain (S01).
+ */
+export async function readGateInOrder(
+  seq: { current: number },
+  load: () => Promise<{ gate: SyncGate; sensitiveDeclined: boolean }>,
+  dispatch: (e: AuthEvent) => void,
+): Promise<void> {
+  const mine = ++seq.current;
+  try {
+    const { gate, sensitiveDeclined } = await load();
+    if (mine === seq.current) dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
+  } catch {
+    if (mine === seq.current) dispatch({ type: 'GATE_UNAVAILABLE' });
+  }
+}
+
+/** Whether Sign out now waits for queued letters: the machine's own SIGN_OUT_REQUESTED rule, not canSync (S01). */
+export function signOutWouldWait(s: AuthState, pendingUploads: number): boolean {
+  const next = authReducer(s, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads });
+  return next.status === 'signingOut' && next.waitingForUploads;
 }
 
 /** The provider should call Supabase signOut now (nothing left to upload, or sync could never run). */

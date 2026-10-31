@@ -86,15 +86,28 @@ test('[J08d] in the morning the light stays; with Reduce Motion the evening ligh
   await app.clock.setFixedTime(EVENING);
   await app.reload();
   await expect(btn(app, 'Not much today')).toBeVisible();
-  // The morning's mark is today's: the evening room opens with its lights already down.
-  expect(await lampLevel(app)).toBeCloseTo(0.7, 2);
+  // The morning's mark is today's: the evening room opens with its lights already down. Wait until the lamp shows any light
+  // (the read is null before it is mounted and 0 before its opacity is applied), then require the FIRST light seen to be the
+  // dimmed level. With Reduce Motion there is no fade, so that is 0.7 at once; a fade, or a flash of the evening 1 first,
+  // would show another value first. (A poll for 0.7 alone would pass after any fade.)
+  const seen: number[] = [];
+  await expect
+    .poll(async () => {
+      const level = (await lampLevel(app)) ?? 0;
+      if (level > 0) seen.push(level);
+      return level;
+    })
+    .toBeGreaterThan(0);
+  expect(seen[0]).toBeCloseTo(0.7, 2);
 });
 
 test('[J08c] marks saved by older builds: the old sentence is never shown, and a mark can be removed', async ({ app, record }) => {
   const step = journey(record, 'J08', 'quiet-day', 5, 'J08-03');
   await seeded(app, 'asha-marks');
   await tab(app, 'Book').click();
-  await expect(app.getByText('Month 6')).toBeVisible();
+  // The month opener draws "MONTH" and the numeral as separate texts (P5), so it is found by the one VoiceOver header it
+  // is, as j09 and j11 do: "Month 6. ..." (or "This month, Month 6. ...").
+  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. / })).toBeVisible();
   // Two old marks exist: one on a day with a letter (hidden), one on a day without (listed).
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   await expect(app.getByText(/ordinary day|Just Asha, and us/)).toHaveCount(0);

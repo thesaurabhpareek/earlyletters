@@ -3,7 +3,8 @@
   "journey": "first-run",
   "kind": "happy",
   "title": "The first thing anyone sees: one plain question",
-  "note": "The same question for everyone (A-REQ-030).",
+  "note": "The same neutral question for everyone, in the launch screen's lit room, with nothing preselected (LEGAL-REQ-002, PRD-REQ-019).",
+  "shot": "screens/J00-open.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -20,10 +21,9 @@
     }
   },
   "scrolls": false,
-  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "text": "Are you 18 or older? Yes No Continue",
   "lines": [
     "Are you 18 or older?",
-    "We ask everyone the same question.",
     "Yes",
     "No",
     "Continue"

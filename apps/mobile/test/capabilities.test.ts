@@ -48,7 +48,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -103,7 +103,9 @@ describe('server features switch: off unless a build says on', () => {
 
 describe('[F19-REQ-025] build flags backup and statusReport: off unless the build says on, and only with the server switch', () => {
   const FLAGS: BuildFlag[] = ['backup', 'statusReport'];
-  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT' };
+  // accountDeletion is a build flag too but not one of these two: it is written `on` (not `off`) where it is wanted, and left out
+  // of the alpha profiles. Its own file pins it (account-deletion-switch.test.ts).
+  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT', accountDeletion: 'EXPO_PUBLIC_ACCOUNT_DELETION' };
   afterEach(() => {
     setServerFeaturesForTests(null);
     for (const f of FLAGS) setBuildFlagForTests(f, null);
@@ -160,7 +162,7 @@ describe('[F19-REQ-025] build flags backup and statusReport: off unless the buil
   });
 });
 
-describe('[D-111 item 4] English only: on in the two alpha profiles, off in development and e2e', () => {
+describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the staged 1.0 store profile, off in development and e2e', () => {
   type Eas = { build: Record<string, { env?: Record<string, string> }> };
   const eas = () => JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as Eas;
   afterEach(() => {
@@ -174,8 +176,9 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     expect(capabilities.englishOnly).toBe(false);
   });
 
-  it('is written out as "on" in both alpha profiles, testflight (build 1) and preview (build 2)', () => {
+  it('is written out as "on" in both alpha profiles, testflight (build 1) and preview (build 2), and in production (D-121: first store build is English only)', () => {
     const { build } = eas();
+    expect(build.production.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(build.preview.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(parseServerFeatures(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY)).toBe(true);
@@ -195,10 +198,10 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     }
   });
 
-  it('is on only in the two alpha profiles; every other profile is as before', () => {
+  it('is on only in the two alpha profiles and production; development and e2e are as before', () => {
     const { build } = eas();
     const on = Object.keys(build).filter((name) => parseServerFeatures(build[name].env?.EXPO_PUBLIC_ENGLISH_ONLY));
-    expect(on.sort()).toEqual(['preview', 'testflight']);
+    expect(on.sort()).toEqual(['preview', 'production', 'testflight']);
   });
 
   it('does not follow the server switch: on with servers off (testflight) and with servers on (preview)', () => {
@@ -212,7 +215,7 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     // And turning it on changes no other capability.
     setServerFeaturesForTests(null);
     setEnglishOnlyForTests(true);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false, englishOnly: true });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
   });
 
   it('the override is for tests only, and goes back to the build value', () => {
@@ -237,7 +240,7 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_STATUS_REPORT']);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);
     expect(code).toMatch(/return englishOnlyTestOverride \?\? ENGLISH_ONLY_BUILD_VALUE;/);
     expect(code).toMatch(/get englishOnly\(\): boolean \{\s*return englishOnlyEnabled\(\);/);
@@ -246,13 +249,13 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     expect([...new Set(spellings)]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
   });
 
-  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight and preview and names it nowhere else, in no other spelling', () => {
+  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight, preview and production and names it nowhere else, in no other spelling', () => {
     const text = readFileSync(join(APP, 'eas.json'), 'utf8');
-    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(2);
+    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(3);
     expect([...new Set(text.match(/\w*ENGLISH\w*/gi) ?? [])]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
     const { build } = eas();
     const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_ENGLISH_ONLY' in p.env);
-    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'testflight']);
+    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'production', 'testflight']);
     for (const [n, p] of naming) expect(p.env?.EXPO_PUBLIC_ENGLISH_ONLY, n).toBe('on');
   });
 

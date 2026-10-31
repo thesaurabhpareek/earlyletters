@@ -1,4 +1,4 @@
-// invite_redeem_by_code (20261027000000): the one SQL call invite-redeem makes.
+// invite_redeem_by_code (20261028010000): the one SQL call invite-redeem makes.
 // Gate, lookup and failure count in one transaction; peek and accept modes; the four limits
 // (person 10, device 10, address 30, service 1,000 per rolling hour); service role only.
 // Contract: packages/api/src/server/family.ts (RedeemByCodeArgs, RedeemRpcResultSchema).
@@ -91,7 +91,7 @@ check('a person already in the book gets already_member (counted)', again.outcom
 const pAgain = await redeem(V, 'peek', await hashOf('ASHA9999'));
 check('peek says already_member too', pAgain.outcome === 'unusable' && pAgain.detail === 'already_member');
 check('already_member comes from an explicit membership check, not the inner error message text',
-  !/already a member of this book/.test(readFileSync(new URL('../migrations/20261027000000_invite_redeem_by_code.sql', import.meta.url), 'utf8')));
+  !/already a member of this book/.test(readFileSync(new URL('../migrations/20261028010000_invite_redeem_by_code.sql', import.meta.url), 'utf8')));
 
 // ── Closed codes read as not found ───────────────────────────────────────
 const BK2 = await newChild(B, 'Asha', '2025-06-01');
@@ -168,7 +168,7 @@ await redeem(S, 'peek', unknown);
 check('[A03 F1] a purge pass still removes at most 200 stale rows and the new failure is counted',
   (await sys(`select count(*)::int n from invite_redeem_failures where subject like 'old-%'`)).rows[0].n === 50
   && (await failures('global')) === 1);
-const migrationText = readFileSync(new URL('../migrations/20261027000000_invite_redeem_by_code.sql', import.meta.url), 'utf8');
+const migrationText = readFileSync(new URL('../migrations/20261028010000_invite_redeem_by_code.sql', import.meta.url), 'utf8');
 check('[A04 F3] the migration header states its rollback (CLAUDE.md, pull requests)',
   /^-- ROLLBACK: drop function public\.invite_redeem_by_code\(uuid, text, bytea, text\[\], text\[\], text\[\]\);/m.test(migrationText)
   && /drop table public\.invite_redeem_failures/.test(migrationText));

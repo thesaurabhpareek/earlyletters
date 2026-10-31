@@ -44,7 +44,7 @@
 do $$
 begin
   if to_regclass('public.invite_redeem_failures') is not null then
-    raise exception '20261027000000 is already applied; do not run it again' using errcode = '55000';
+    raise exception '20261028010000 is already applied; do not run it again' using errcode = '55000';
   end if;
 end;
 $$;

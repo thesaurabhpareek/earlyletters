@@ -39,7 +39,7 @@ export interface Entry {
   authorSignsAs?: string;
   /**
    * Local file URI of the AAC recording, kept in the app's document directory (`Documents/ExpoAudio` on iOS):
-   * M4A (`.m4a`, ADR 0005), or ADTS (`.aac`, ADR 0027) once a platform records it. The extension names the container.
+   * M4A (`.m4a`, ADR 0005), or ADTS (`.aac`, ADR 0027), which iOS records since the 27 Oct flip. The extension names the container.
    */
   audioUri?: string | null;
   audioDurationMs?: number | null;
@@ -63,9 +63,10 @@ export interface Entry {
   /** v6: 'rtl' for Arabic and right-to-left typed letters. Defaults to 'ltr'. */
   baseDirection?: BaseDirection;
   /**
-   * Read only: the words of a voice-only letter arrived from the machine later and
-   * the author has not kept them from Review yet (M17). The letter shows them; it
-   * counts toward the free letters once kept (store `keepReviewedWords`).
+   * Read only: the words of a voice-only letter arrived later (from the machine, or
+   * typed on the letter page) and the author has not kept them from Review yet (M17).
+   * The letter shows them; it counts toward the free letters once kept (store
+   * `keepReviewedWords`, from Review's Keep step).
    */
   wordsUnreviewed?: boolean;
 }

@@ -367,7 +367,7 @@ App Store privacy labels as declared today. "None" means the summary showed no "
 | From, Mama | Daily curated Reflect tab [F] R1-S20 | 4.9 (48) | n/a | Neutral |
 | Day One | Daily prompts and templates on the free plan [F] R1-S23 | 4.8 | n/a | **Match** [R] |
 | SpeechAnalyzer | Apple manages model downloads and updates in system storage; no app size cost [F] R1-S70 | Arabic asset download failures in a beta [S] R1-S27 | n/a | Packs need a retry and a visible state (B13) [R] |
-| Apple rules | 2.3.1: no hidden or undocumented features; 2.5.2: no downloaded code that changes features [F] R1-S49 | n/a | n/a | Matches B14 "never server-driven" list |
+| Apple rules | 2.5.19: no hidden or undocumented features (R1 cited 2.3.1; Apple moved the text, checked 28 Oct 2026); 2.5.2: no downloaded code that changes features [F] R1-S49 | n/a | n/a | Matches B14 "never server-driven" list |
 | Competitor internals | How competitors deliver remote config | **Unverified** (not observable from public pages) | n/a | n/a |
 
 **Opportunity.** Public pages show only that daily content is common [F] R1-S48, R1-S23. The useful lesson is from Apple's own asset failures: a downloaded language pack needs a download state, retry and a clear message when it fails [S] R1-S27, [R].

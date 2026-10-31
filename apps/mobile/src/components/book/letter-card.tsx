@@ -31,10 +31,11 @@ import { useFontScale, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
-import { authorOf } from '@/components/child/child-store';
+import { authorOf, isOwnEntry } from '@/components/child/child-store';
 import { datelineA11y, shortDateline } from './chapters';
 import { AppNote } from './app-note';
 import { bookCopy } from './copy';
+import { cardLabel } from './letter-card.logic';
 import { letterWords } from './letter-words.logic';
 import { showsSignature } from './quiet-day.logic';
 
@@ -88,9 +89,17 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
   const signed = showsSignature(words);
   const rtl = !note && isRtl(text);
 
-  const label = [signed ? signature : null, datelineA11y(child, entry.occurredOn), text, entry.inBook ? null : copy.book.privateLabel, reason ?? null, spoken ? copy.book.recordingOnPhone : null]
-    .filter(Boolean)
-    .join('. ');
+  const label = cardLabel({
+    signature: signed ? signature : null,
+    dateline: datelineA11y(child, entry.occurredOn),
+    text,
+    inBook: entry.inBook,
+    privateLabel: copy.book.privateLabel,
+    reason,
+    spoken,
+    own: isOwnEntry(entry),
+    recordingOnPhone: copy.book.recordingOnPhone,
+  });
 
   return (
     <Card

@@ -2,6 +2,8 @@
 
 Status: Draft V2.2, 15 Oct 2026. Re-planned after critique round 1 (`reviews/R1` to `R6`) and the founder's answers M15 to M17 (`_AUTHORING.md` section 3b), then again after critique round 2 (`reviews/R7` and `R9`): the v1.0 list now holds every unbuilt or partly built work package that carries a P0 requirement, and the date comes from that list. M15 keeps the full scope, so the submission week moves from January to the week of Mon 3 May 2027 (section 2.2). Round 1 findings are in `reviews/DISPOSITION-A.md`; round 2 delivery findings are in `reviews/DISPOSITION-R2-delivery.md`. Owner: delivery lead (the architect partner to the PM). The founder merges every pull request except the delegated classes in section 6.2; that delegation is a default awaiting the founder's confirmation (section 1.1).
 
+> **Re-based on 28 Oct 2026 (D-121, D-124, D-125; PR #340).** The first store build is on-device only and staged: target submission Tue 1 Dec 2026, release about Tue 8 Dec. The server features follow in later 1.0.x releases (sign-in, sync and co-parent sharing; status report and reminder emails; owner backup; the other six languages), each behind its existing flag and gate. The dates and the merge budget below describe the full-scope plan (submission week of Mon 3 May 2027, about 40% confidence) and are not re-dated line by line here; section 6.2's delegation is superseded by D-107 and D-117. The alpha freeze Tue 3 Nov and go/no-go Thu 5 Nov are confirmed (D-124).
+
 **This file is the only place in PRD V2 that carries calendar dates.** Section 2.1 holds every date in one table, each with an id `T01` to `T40`. Other V2 files name the id and point here. `07-quality-bar.md` governs the gates; where 07 sections 4 and 5.2 still show an older calendar, section 2.1 governs the dates and the 07 owner updates them. `docs/ROADMAP.md` 2.1 sections 2 and 3 are superseded for v1.0.
 
 Labels follow `_AUTHORING.md` section 6: **[F]** fact with a source, **[A]** assumption with how we check it, **[E]** estimate, **[D]** founder decision, **[R]** recommendation.
@@ -45,6 +47,27 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | Decisions log | `docs/DECISIONS.md` on `develop` still ends at D-088 (M14 to M17 not logged) | Wave 0 item 1 (section 5.1), due T41 |
 | `develop` moved after this plan was checked | Since ed16ca3, `develop` (56ec5b5, 15 Oct) merged PR #121 (plan reminders, cards and the purchase confirmation with Save a copy: the work of WP-F14-02, -06 and -07, BL-342), PR #114 (same-version different-body refusal: WP-F19-05), PR #113 (native decode guards: the WP-F05-01 clamp), PR #118 (`EXPO_PUBLIC_ANALYTICS` off in every profile, see F18 Q9), PR #4 and #39 (ADR 0018 to 0020). Section 13 keeps its 15 Oct marks | The wave 1 rows for S06, S07 and S08 are "verify first": close each with evidence if the merged code meets the WP's Done when, and the slot returns to the reserve |
 | v1.0 list | Rebuilt from section 12 of every spec (R7 R2P-01, R9 R2D-02): 229 work packages that are not built or partly built and carry a P0 requirement are now in section 6.3, 14 human or device ones are in section 10 (the WP-F08-B6 drill also has an evidence slot), and 3 P1 extras stay cut with a stated condition | Slots to the last feature merge rise from 128 to 281; submission moves to the week of Mon 3 May 2027 (section 2.2) |
+
+### 1.2 Status on Fri 23 Oct 2026 (daily PRD update)
+
+| Item | State on 23 Oct | What changes |
+|---|---|---|
+| Next milestone | **Alpha first (D-106, founder, 15 Oct).** A TestFlight alpha of option B with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha | Section 2.2's week of Mon 3 May 2027 is the last plan of record for submission; it is not re-confirmed and gets re-planned after the alpha (D-106). The alpha plan itself is `docs/release/ALPHA_PLAN.md` on PR #152 (open) |
+| Default (a), merges | **Decided (D-107, 15 Oct).** The coordinator merges app code, docs and tests into `develop` after two independent review agents pass and CI is green. Founder-only: `supabase/**`, auth, payments, release configuration, the CODEOWNERS engine files, production deploys | Section 2.2 row 1 and section 6.2 read default (a) as this wider rule |
+| Default (b), backup free | **Decided (D-111 item 6, 17 Oct).** Backup is free for everyone in v1.0 | F08 Q2 answered; `plan.ts` still gates `backup_upload` and changes with WP-F08-B5c |
+| Default (c), voice-only counting | Still proposed (D-104 item 3) | none |
+| Alpha calls | **Decided (D-111, 17 Oct).** The alpha transcribes English only; the 500-kill test runs on the hosted macOS runner with the founder's Mac as fallback; held-draft sync is on in build 2 unless the held-draft table is not green in `sync-two-phone` by Fri 23 Oct | `_AUTHORING.md` M24 |
+| Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-111 (the 15 Oct row above saying it ends at D-088 is history) | none |
+
+### 1.3 Status on Tue 27 Oct 2026 (daily PRD update)
+
+| Item | State on 27 Oct | What changes |
+|---|---|---|
+| Alpha dates | The 17 Oct target was Thu 29 Oct (D-106). `docs/release/TESTFLIGHT.md` and `AUTOMATION.md` (#267, 24 Oct) now plan build 1 for Mon 26 Oct, go/no-go for Thu 5 Nov and build 2 at the freeze, Tue 3 Nov 5:00 AM PT. All three are **proposed by the coordinator and not confirmed by the founder**. ADR 0022 and D-089 still say freeze Tue 27 Oct 5:00 AM PT, with a move to Tue 3 Nov proposed | Section 2.2's submission week stays the last plan of record. No build has been made or uploaded as of the 24 Oct runbook |
+| Merges | D-117 (founder, 23 Oct) is a blanket approval. The coordinator's rule under it is wider than D-107's: it also merges `supabase/**`, auth, payments, `.github/**`, `eas.json`, `app.config.ts`, the engine files and alpha production deploys, after two independent passing reviews and green CI | `_AUTHORING.md` M30. Default (a) in the table above reads as this rule |
+| New calls | D-112 to D-114 and D-116 are delegated coordinator calls (the founder may reverse); D-115 makes an English-only pack release a build 1 prerequisite that the founder runs | `_AUTHORING.md` M25 to M29 |
+| Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-117 | none |
+| Build state | 81 commits since 23 Oct. Newly built or further built, per spec Status columns: co-parent invite, join and the pure rules (#184, #140, #138), local schemas v7 and v8 (#166, #182), sync protocol v1 server and held drafts (#208), status report and the M17 gate (#178, #277), owner backup server and client behind a flag (#151, #150), the engine through version 8 (#179, #249, #262), email-link binding and Apple token capture (#139), and the experience passes P3 to P5 | Work package statuses in section 13 and in each spec were rechecked against the code on 27 Oct |
 
 ## 2. The plan
 
@@ -290,7 +313,7 @@ Mobile engineer: S10, S11, S12, S13, S14 by area. Speech engineer: S08. Core own
 - Takes: WP-F05-01 clamp (review L9), -02, -05, -10, -11 (pair), -12 (human); the scorer half of WP-F06-04 (`experiments/score.ts`); BL-337 agent half; WP-F07-02 (pair); BL-375; BL-376 with S11; BL-382; BL-432; BL-324 audio part; WP-F03-04 dictionary seeding (orphan, R5 EQ-07).
 - Starts when: T03 for harness and gate tooling; device runs need T04 and FT-21.
 - Done when: a gate report per language (`[F05-REQ-002]` to `[F05-REQ-006]`) and the FT-34 record exist; `[F05-REQ-040]` numbers recorded on SE 3, iPhone 12 and iPhone 15 (S1-17); S1-15, S1-16, S1-18, S1-19 recorded.
-- Must not decide alone: which languages ship (founder, DR-01 at T18); the model per language (ADR 0015); publishing packs (coordinator with the founder's OK); anything that sends audio off the phone.
+- Must not decide alone: which languages ship (founder, DR-01 at T18); the model per language (ADR 0015); publishing packs (the founder runs the key ceremony and the release, D-115; an English-only release is a build 1 prerequisite); anything that sends audio off the phone.
 
 **S09 Faithful-edit engine**
 - Owns: `packages/core/src/{verify,meaning,protect,types,pipeline,rules,punctuation,text,repeats,model-edits,edit-provider,frozen,domain,index}.ts`, `packages/core/src/lang/**`, `packages/core/src/{author-edits,review-state,dictionary}.ts` (new), `packages/core/test/**` except the test files section 4 gives to other streams.
@@ -887,7 +910,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F01-07 | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F02-01 | Not built | 2 | In 6.3, round 2 additions (before C1, S01) |
 | WP-F02-02 | Not built | 5 | In 6.3, round 2 additions (waves 3 and 4, S01) |
-| WP-F02-03 | Not built | 4 | In 6.3 as: BL-330 (wave 1, S01) |
+| WP-F02-03 | Built in the repo (#139): `supabase/functions/apple-token/`; deploy and device check open | 4 | In 6.3 as: BL-330 (wave 1, S01) |
 | WP-F02-04 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F02-05 | Not built | 5 | In 6.3, round 2 additions (before C1, S01) |
 | WP-F02-06 | Not built | 6 | In 6.3, round 2 additions (before C1, S01) |
@@ -896,7 +919,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F02-09 | Not built | 2 | In 6.3, round 2 additions (before C1, S01) |
 | WP-F02-10 | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F02-11 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F02-12 | Not built | 4 | In 6.3 as: BL-347 (wave 1, S01) |
+| WP-F02-12 | Built in code (#139, #242): ADR 0023 still says Proposed; device checks open | 4 | In 6.3 as: BL-347 (wave 1, S01) |
 | WP-F02-13 | Not built | 2 | In 6.3 as: S01 wave 2 `new-device-sign-in` email |
 | WP-F02-14 | Not built | 3 | In 6.3, round 2 additions (waves 3 and 4, S01) |
 | WP-F02-15 | Not built | 1 | In 6.3 as: WP-F19-12a (wave 2, S01); the same consumer |
@@ -909,11 +932,11 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F03-07 | Not built | 1 | Human or device (section 10) |
 | WP-F04-01 | Not run | 0 | 1.0.x: carries no P0 requirement |
 | WP-F04-02 | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F04-03 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F04-03 | Partly built (#146; classification rows not built) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F04-04 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-05 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-06 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S10) |
-| WP-F04-07 | Partly built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F04-07 | Built in code (#274, #271) | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F04-08 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-09 | Partly built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-10 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S10) |
@@ -923,7 +946,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F04-14 | Partly built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F04-15 | Not built | 2 | In 6.3 as: S10 wave 1 no VoiceOver speech during a take |
 | WP-F04-16 | Partly built | 2 | In 6.3, round 2 additions (waves 3 and 4, S11) |
-| WP-F04-17 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
+| WP-F04-17 | Partly built (#271) | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-18 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F05-01 | Partly built (clamp merged by PR #113 on 15 Oct; verify first) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F05-02 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
@@ -938,10 +961,10 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F05-11 | Not run | 4 | Human or device (section 10) |
 | WP-F05-12 | Not run | 1 | Human or device (section 10) |
 | WP-F05-13 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F05-14 | Not built | 5 | In 6.3, round 2 additions (waves 3 and 4, S08) |
+| WP-F05-14 | Partly built (#271, #260) | 5 | In 6.3, round 2 additions (waves 3 and 4, S08) |
 | WP-F06-01 | Not run | 0 | 1.0.x: carries no P0 requirement |
-| WP-F06-02 | Partly built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F06-03 | Partly built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F06-02 | Built (#179, engines 6 to 8) | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F06-03 | Built for English (#179, D-112) | 7 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F06-04 | Partly built | 4 | In 6.3, round 2 additions (waves 3 and 4, S08) |
 | WP-F06-05 | Partly built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F06-06 | Not built | 5 | In 6.3 (waves 1 to 3 as of 13 Oct) |
@@ -956,7 +979,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F06-14 | Partly built | 1 | In 6.3, round 2 additions (waves 3 and 4, S11) |
 | WP-F06-15 | Not built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F07-01 | Partly built | 7 | In 6.3, round 2 additions (waves 3 and 4, S09) |
-| WP-F07-02 | Not built | 0 | 1.0.x: carries no P0 requirement |
+| WP-F07-02 | Partly built: English seed only (#179) | 0 | 1.0.x: carries no P0 requirement |
 | WP-F07-03 | Not built | 7 | In 6.3, round 2 additions (waves 3 and 4, S03) |
 | WP-F07-04 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S02) |
 | WP-F07-05 | Not built | 3 | In 6.3, round 2 additions (waves 3 and 4, S11) |
@@ -968,15 +991,15 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F08-02 | Partly built | 2 | In 6.3, round 2 additions (waves 3 and 4, S05) |
 | WP-F08-B2 | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F08-03 | Partly built | 8 | In 6.3, round 2 additions (waves 3 and 4, S13) |
-| WP-F08-B3 | Not built | 5 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F08-B3p | Not built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B3 | Built (#151) | 5 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B3p | Built (#151) | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F08-04 | Partly built | 4 | In 6.3, round 2 additions (waves 3 and 4, S10) |
-| WP-F08-B4 | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B4 | Partly built (#151) | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F08-05 | Built | 2 | Built: verify only if a gate fails |
-| WP-F08-B5a | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F08-B5b | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B5a | Built behind a flag (#150) | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B5b | Partly built (#150, #255) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F08-B5c | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F08-B5d | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F08-B5d | Partly built (#150) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F08-06 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S13) |
 | WP-F08-B6 | Not run | 1 | Human or device (section 10) |
 | WP-F08-07 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S13) |
@@ -1006,13 +1029,13 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F10-08 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S13) |
 | WP-F10-09 | Not built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F10-10 | Not built | 0 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-01 | Partly built | 11 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-02 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-03 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-04 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-05 | Partly built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-06 | Partly built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F11-07 | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-01 | Built (#140) | 11 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-02 | Built (#138) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-03 | Built (#184) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-04 | Built (#138) | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-05 | Built for the alpha, behind the server switch (#184, #243) | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-06 | Built for the alpha, behind the server switch (#184) | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-07 | Partly built, not offered in build 2 (D-113) | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F11-08 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S13) |
 | WP-F11-09a | Not run | 0 | In 6.3, round 2 additions (before C1, S07) |
 | WP-F11-09c | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
@@ -1022,11 +1045,11 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F11-11 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S20) |
 | WP-F11-12 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S04) |
 | WP-F11-13 | Not built | 0 | Cut (6.4): P1, no P0 requirement |
-| WP-F11-14 | Not built | 1 | In 6.3 as: WP-F14-20 (wave 1, S06), one PR with F14 as home |
-| WP-F11-15 | Not built | 1 | In 6.3 as: WP-F11-04 (wave 1, S07) and BL-322 app part (wave 1, S04) |
-| WP-F11-16 | Not built | 0 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F11-14 | Built (#277) | 1 | In 6.3 as: WP-F14-20 (wave 1, S06), one PR with F14 as home |
+| WP-F11-15 | Built (#138, #184) | 1 | In 6.3 as: WP-F11-04 (wave 1, S07) and BL-322 app part (wave 1, S04) |
+| WP-F11-16 | Partly built, not offered in build 2 (D-113) | 0 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F12-01 | Partly built | 2 | Human or device (section 10) |
-| WP-F12-02 | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F12-02 | Built (#166) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F12-03 | Removed | 1 | Removed (M2 or D-055) |
 | WP-F12-04 | Partly built | 2 | In 6.3, round 2 additions (waves 3 and 4, S13) |
 | WP-F12-05 | Partly built | 5 | In 6.3, round 2 additions (waves 3 and 4, S13) |
@@ -1061,16 +1084,16 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F14-12 | Not built | 0 | Human or device (section 10) |
 | WP-F14-13 | Not built | 2 | Human or device (section 10) |
 | WP-F14-14 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F14-15a | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F14-15b | Not built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F14-15c | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-15a | Built, client behind a flag (#178) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-15b | Partly built (#178): the billing-notice table and F14-REQ-045 are not | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-15c | Built (#178) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-16 | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-17 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S06) |
 | WP-F14-18 | Not built | 4 | In 6.3, round 2 additions (waves 3 and 4, S20) |
 | WP-F14-19 | Not built | 0 | 1.0.x: carries no P0 requirement |
-| WP-F14-20 | Not built | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct). Open problem (24 Oct 2026, #277): the letter page's Save words counts with no Keep gate, and its Read it back leaves words that arrived later uncounted; the fix is to route that keep through Review or hold the words (WP-F14-22), not a sheet on the letter page (F14 6.1, 6.4, WP-F14-21 note) |
-| WP-F14-22 | Not built | 2 | In 6.3 as: Wave 2: S02 held-draft table, S03 held-draft sync op, S13 export `waiting/` |
+| WP-F14-20 | Partly built (#146: the S03 ledger query `countPresent` in `lib/db/repos/ledger.ts`) | 8 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-21 | Not built | 7 | In 6.3 (waves 1 to 3 as of 13 Oct). The letter page's later words (open problem 24 Oct 2026, #277) are resolved (27 Oct 2026, task #53): Save words and Read it back open Review for the letter, whose Keep step asks the gate and counts; the letter page counts nothing and shows no Plus sheet (F14 6.1, 6.4, WP-F14-21 note) |
+| WP-F14-22 | Partly built (#182, #208): schema v8, `held.upsert` and `held.discard` ops; `waiting/` in export, held audio in the upload queue and the sign-out case are not found | 2 | In 6.3 as: Wave 2: S02 held-draft table, S03 held-draft sync op, S13 export `waiting/` |
 | WP-F15-01 | Partly built | 0 | 1.0.x: carries no P0 requirement |
 | WP-F15-02 | Partly built | 7 | In 6.3, round 2 additions (before C1, S13) |
 | WP-F15-03 | Partly built | 4 | In 6.3, round 2 additions (waves 3 and 4, S13) |
@@ -1083,7 +1106,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F15-10 | Not run | 0 | Human or device (section 10) |
 | WP-F15-11 | Not built | 2 | In 6.3 as: S13 wave 2 held letters in export under `waiting/` |
 | WP-F16-00 | Partly built | 1 | In 6.3, round 2 additions (before C1, S02) |
-| WP-F16-01 | Not built | 1 | In 6.3 as: S07 wave 1 sync v1 wire contract as types |
+| WP-F16-01 | Built (#138, #253) | 1 | In 6.3 as: S07 wave 1 sync v1 wire contract as types |
 | WP-F16-02 | Removed | 0 | Removed (M2 or D-055) |
 | WP-F16-03 | Partly built | 10 | In 6.3 as: BL-331 rest (wave 1, S02): op receipts keyed by person |
 | WP-F16-04 | Partly built | 9 | In 6.3, round 2 additions (before C1, S02) |
@@ -1095,11 +1118,11 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F16-10 | Partly built | 3 | In 6.3, round 2 additions (waves 3 and 4, S02) |
 | WP-F16-11 | Not run | 1 | In 6.3, round 2 additions (waves 3 and 4, S03) |
 | WP-F16-12 | Not run | 0 | Cut (6.4): P1, no P0 requirement |
-| WP-F16-13 | Not built | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F16-14 | Not built | 2 | In 6.3 as: S02 wave 2 words-group compare-and-set |
-| WP-F16-15 | Not built | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
+| WP-F16-13 | Built (#208) | 3 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F16-14 | Built, server half (#208) | 2 | In 6.3 as: S02 wave 2 words-group compare-and-set |
+| WP-F16-15 | Partly built (#146; conflict note not built) | 4 | In 6.3 as: S03 wave 2 conflict handling and rebase with the words-group conflict copy |
 | WP-F16-16 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S03+S07) |
-| WP-F16-17 | Not built | 3 | In 6.3 as: Wave 2: S02 held-draft table and S03 held-draft sync op (the same work as WP-F14-22) |
+| WP-F16-17 | Built (#208, #182, #254) | 3 | In 6.3 as: Wave 2: S02 held-draft table and S03 held-draft sync op (the same work as WP-F14-22) |
 | WP-F16-18 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S02+S07) |
 | WP-F16-19 | Not built | 1 | In 6.3, round 2 additions (before C1, S20) |
 | WP-F17-00 | Not run | 0 | 1.0.x: carries no P0 requirement |
@@ -1138,7 +1161,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F18-15 | Not built | 0 | Cut (6.4): P1, no P0 requirement |
 | WP-F19-01 | Not built | 1 | Human or device (section 10) |
 | WP-F19-02 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
-| WP-F19-03 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
+| WP-F19-03 | Partly built (#162): R2 upload and verify code; the host is not live | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F19-04 | Not built | 1 | Human or device (section 10) |
 | WP-F19-05 | Not built on 15 Oct; PR #114 merged the same-version different-body refusal (`packages/api/src/integrity.ts`, `lib/remote/documents.ts`) the same day; verify first | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F19-06 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |

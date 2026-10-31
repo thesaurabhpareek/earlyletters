@@ -160,7 +160,7 @@ Today the file still describes `early-letters` (2 files). On the first staging d
 Rules for the token, in this order:
 1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branch `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.
 2. **Never fall back to a classic access token** if a scoped one is refused. A classic token reaches every project on the account, production included. Leave the secret unset instead (the run says NOT DEPLOYED and you deploy from your computer), or keep staging in an organization the token cannot leave (AF-06).
-3. **Until the approver account exists (AF-02)**, any session holding your GitHub credential can approve as you, so the reviewer is a policy, not a control. Hold the token until AF-02 is in place, or accept that for the alpha.
+3. **The approver account (AF-02) is withdrawn (CR-19, 31 Oct); until PR and run authors are not your account (CR-20)**, any session holding your GitHub credential can approve as you, so the reviewer is a policy, not a control. Hold the token until CR-20's identity change is in place, or accept that for the alpha.
 
 **Dispatch** needs the workflow on the default branch (`main` today, AF-05). Until then the push trigger on `develop` is the only way it runs; agents never dispatch it (AUTOMATION.md 2.11).
 

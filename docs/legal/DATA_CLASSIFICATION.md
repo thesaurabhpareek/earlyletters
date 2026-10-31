@@ -279,7 +279,7 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 
 ##### `invite_redeem_failures`
 
-Added by `20261027000000_invite_redeem_by_code.sql`. Closed to every role; written only by `invite_redeem_by_code()`; rows older than 2 hours are deleted as new ones are written.
+Added by `20261028010000_invite_redeem_by_code.sql`. Closed to every role; written only by `invite_redeem_by_code()`; rows older than 2 hours are deleted as new ones are written.
 
 | Column | Level | Note |
 |---|---|---|
@@ -692,6 +692,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `sync.ownerId` | L3 | Person id that owns the local rows |
 | `sync.epoch`, `sync.epochStartedAt`, `sync.restoreAt`, `sync.pausedFor`, `sync.lastSyncedAt`, `sync.lastVerifyAt` | L2 | Sync state |
 | `accountDeletion.forgetPending` | L2 | Flag: analytics ids still to send to `analytics-forget` |
+| `accountDeletion.openRequest` | L3 | While a request to delete the account is open, and for a short wait after a cancel: its state (`scheduled`, `held`, `executing`, or `cancelled` while the book comes back, with the time of the cancel), the server's request id and its date (not on a `cancelled` note), and the id of the account it was made for (the auth user UUID, an L3 person id), so a phone with no book shows the deletion screen and not the first-run welcome, and so another account that signs in on the phone does not inherit it. Copied from the server's own answers (`deletion_requests`, the person's own rows). No name, letter or child. Stays on the phone, never sent. Cleared when a cancel goes through with a book listed; when a read of the server finds no request open and the phone either lists a book or holds no book the server has closed; when another account signs in; when its date has passed by more than 48 hours and the phone is signed out or the server did not say the request is still open (after the purge no read can succeed); and when a `cancelled` wait has lasted 15 minutes or the book is listed. Only a `scheduled` or `held` note, within its date, becomes the `cancelled` wait on a read that finds no request open, and only on a phone with no book that holds a book the server has closed (until the book returns or 15 minutes pass); an `executing` note, or one past its date by more than 48 hours, is simply cleared. The clearing runs while the first-run route is mounted (the deletion screen, the welcome, or a book arriving under it), on the Delete account page's own read, and by the 48-hour rule: a co-parent who keeps a book on the tabs keeps the note until one of those, and while a book is listed the note never counts (the tabs and Settings are reached as always) |
 | `scribe.analytics.consent` | L2 | Analytics choice: unknown, granted, denied |
 | `scribe.analytics.id`, `scribe.analytics.retired_ids` | L2 | Random analytics id and up to 20 retired ids, kept only for deletion (TRACKING_PLAN 7). Never sent anywhere except PostHog (after a yes) and `analytics-forget` |
 | `scribe.analytics.first_launch_at`, `scribe.analytics.last_active_at` | L2 | Device times used only to compute buckets (`days_since_install`, `days_since_last_open`); never sent raw |

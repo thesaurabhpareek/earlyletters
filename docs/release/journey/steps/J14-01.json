@@ -3,8 +3,9 @@
   "journey": "recordings-and-language",
   "kind": "happy",
   "title": "Recordings",
-  "note": "Where the voice lives: on this phone and in the iPhone's own backup if there is one (no backup of our own in v1.0, D-085), and how transcription works (tidying, or word for word). The language row shows the speech model for English as not on this phone, 575 MB (it is downloaded natively; on web there is no model).",
+  "note": "Where the voice lives: on this phone and in the iPhone's own backup if there is one, said once. With backup in a build the card follows backup's state (\"Kept on this phone and backed up\" when it is on); those lines wait for counsel (C7), and build 2 has backup off. How transcription works: small fixes, marked, or word for word. The language row reads \"English, Not on this phone, 575 MB\"; on a phone it ends in \"Download\" (or \"Remove\" once it is here) and shows a small ring with \"Getting ready, 40%\" while it downloads. On web there is no model to fetch.",
   "from": "J13-01",
+  "shot": "screens/J14-01.png",
   "route": "/settings/recordings",
   "viewport": {
     "width": 402,
@@ -21,20 +22,19 @@
     }
   },
   "scrolls": false,
-  "text": "Recordings Recordings Kept on this phone Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own. Your voice is saved with each letter, on this phone. Writing down your words English Not on this phone, 575 MB Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again. How transcription works Word for word Small fixes, marked Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+  "text": "Recordings Recordings Kept on this phone Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own. Writing down your words English Not on this phone, 575 MB Removing a language frees space. Recordings and letters stay. New recordings wait for their words until you add the language again. How transcription works Word for word Small fixes, marked Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
   "lines": [
     "Recordings",
     "Recordings",
     "Kept on this phone",
     "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own.",
-    "Your voice is saved with each letter, on this phone.",
     "Writing down your words",
     "English",
     "Not on this phone, 575 MB",
-    "Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again.",
+    "Removing a language frees space. Recordings and letters stay. New recordings wait for their words until you add the language again.",
     "How transcription works",
     "Word for word",
     "Small fixes, marked",
-    "Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong."
+    "Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong."
   ]
 }

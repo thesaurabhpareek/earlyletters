@@ -40,13 +40,16 @@ export const accountEmails = {
   'account-deletion-scheduled': {
     id: 'account-deletion-scheduled',
     subject: "Your account is set to be deleted",
-    preheader: "On {deletionDate}. Until then you can save a copy, or change your mind.",
+    // No export after the request (DATA-REQ-053 is not met yet: the phone's next sync moves the person's own letters to
+    // Recently deleted, which Export leaves out), and no "we have let them know": nothing sends coparent-left or shows
+    // the coParentLeft card yet (BL-361). The app offers Export on the step before Confirm (S64).
+    preheader: "On {deletionDate}. Until then you can change your mind.",
     heading: "We have your request",
     body: [
       `You asked to delete your ${brand.name} account on {requestDate}. Request number: {requestId}.`,
       "Your account, letters and recordings will be deleted from our servers on {deletionDate}. Our backups clear 7 days after that, and our service providers delete their copies within 45 days of your request.",
-      "Until then, you can sign in to export a copy of everything, free, or to cancel the request. Both are in Settings, Your data.",
-      "If you share a book with a co-parent, your letters and recordings have left it, so they can no longer read them. The book stays with them, and we have let them know. If you would like them to keep a copy, export yours before {deletionDate} and share it.",
+      "Until then, you can sign in and cancel the request in Settings, Delete account.",
+      "If you share a book with a co-parent, your letters and recordings have left it, so they can no longer read them. The book stays with them.",
       PLUS_NOT_CANCELLED,
       RECORDS_KEPT,
     ],
@@ -146,7 +149,7 @@ export const accountEmails = {
       `We received a request to delete the ${brand.name} account for this email address. Request number: {requestId}.`,
       "To make sure it is really you, we will send a separate email to this address with a link that confirms it. It works in any web browser, so you do not need the app. Nothing is deleted until you confirm.",
       "Once you confirm, your account is set to be deleted 30 days later. Until then you can change your mind.",
-      "If you can open the app, you can also do this yourself: Settings, Your data, Delete account.",
+      "If you can open the app, you can also do this yourself: Settings, Delete account.",
     ],
     safety: "Did not ask for this? You can ignore this email. Nothing happens without your confirmation.",
     category: 'account',
@@ -247,7 +250,7 @@ export const accountEmails = {
       "{changeSummary}",
       "The new version takes effect on {effectiveDate}. You can read it in full at {documentUrl}, and see every change at {changesUrl}.",
       "If the change needs your agreement, the app will ask you once, on or after {effectiveDate}.",
-      "You can export everything or delete your account at any time, in Settings, Your data.",
+      "You can export everything at any time in Settings, Your data, and delete your account in Settings, Delete account.",
     ],
     cta: { label: "Read the new version", urlVar: "{documentUrl}" },
     fallback: FALLBACK,

@@ -17,7 +17,7 @@ import { Text, type TextProps } from '@/components/ui/text';
 import { useScreenReader, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { rowShows } from './review-view.logic';
-import { cardCutAt, placeAroundCard } from './transcript.logic';
+import { cardCutAt, placeAroundCard, struckGaps } from './transcript.logic';
 
 interface Props {
   segments: Segment[];
@@ -41,13 +41,6 @@ interface Props {
    */
   accessibilityLabel?: string;
 }
-
-/** A space where struck words would otherwise touch their neighbours (the taken-out span often carried its own space). */
-const gap = (neighbour: string | undefined, before: boolean): string => {
-  if (!neighbour) return '';
-  const edge = before ? neighbour.slice(-1) : neighbour.slice(0, 1);
-  return /\s/.test(edge) ? '' : ' ';
-};
 
 /** Removed-words mark: 32pt wide (never under 24); hitSlop brings the target to 44x44pt. */
 const MARK_W = 32;
@@ -81,7 +74,10 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
     if (s.edit === null || s.edit === restoredIndex) return s.text;
     const shows = showsOf(s);
     if (s.text && shows?.kind === 'change') return `${shows.from} ${s.text}`;
-    if (!s.text && shows?.kind === 'struck') return `${gap(segments[i - 1]?.text, true)}${shows.text}${gap(segments[i + 1]?.text, false)}`;
+    if (!s.text && shows?.kind === 'struck') {
+      const [before, after] = struckGaps(segments[i - 1]?.text, shows.text, segments[i + 1]?.text);
+      return `${before}${shows.text}${after}`;
+    }
     if (!s.text) return '\uFFFC'; // the short dotted mark is one inline object
     return s.text;
   };
@@ -122,10 +118,12 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
     }
     if (taken?.kind === 'struck') {
       // Words taken out, kept visible and struck through; a tap opens the "You said / Now it reads" card. The spaces
-      // around them stay outside the strike, in the letter's face, so "um," never reads joined to "today".
+      // around them stay outside the strike, in the letter's face, so "um," never reads joined to "today", and none
+      // goes in front of a closing mark (transcript.logic.ts `struckGaps`).
+      const [before, after] = struckGaps(segments[i - 1]?.text, taken.text, segments[i + 1]?.text);
       return (
         <Fragment key={i}>
-          {gap(segments[i - 1]?.text, true)}
+          {before}
           <LetterSpan
             scale={scale}
             onPress={() => onPressEdit(edit)}
@@ -142,7 +140,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
             }}>
             {taken.text}
           </LetterSpan>
-          {gap(segments[i + 1]?.text, false)}
+          {after}
         </Fragment>
       );
     }

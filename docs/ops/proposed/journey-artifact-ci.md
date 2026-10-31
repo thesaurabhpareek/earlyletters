@@ -16,12 +16,12 @@ Status: proposal, 15 Oct 2026. Written by the repo hygiene pass; `.github/` is o
 
 ## The job
 
-One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispatch` (any branch), the nightly schedule (`nightly.yml`), and pull requests that carry a `journey` label. Running it on every PR is too slow for the 10 minute CI budget (two `expo export` builds plus 55 flows took about 6 to 8 minutes locally).
+One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispatch` (any branch) and the nightly schedule (`nightly.yml`). It does not run on pull requests: a feature PR does not commit the record (`docs/release/journey/README.md`, "Regenerate safely"), so the diff step below would be red for every PR that changed a screen, and running it on every PR is too slow for the 10 minute CI budget (two `expo export` builds plus 55 flows took about 6 to 8 minutes locally).
 
 ```yaml
   journey:
     name: journey record (web e2e, screens, PDF)
-    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'journey')
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -58,7 +58,7 @@ One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispat
 Notes for the CI owner:
 
 - `@playwright/test` is already a dependency of `@scribe/mobile` (it runs the flows) and ships the `playwright` CLI, so `npx playwright install` picks the matching browser build. `--with-deps` installs the system libraries Chromium needs on the runner.
-- The `git diff --exit-code` step turns a stale `INDEX.md` or `steps/` into a red run rather than a silent drift: a PR that changes a screen must commit the regenerated steps and index (small text), nothing else.
+- The `git diff --exit-code` step turns a stale `INDEX.md` or `steps/` into a red run rather than a silent drift. Feature PRs never commit `steps/` or `INDEX.md` (`docs/release/journey/README.md`, "Regenerate safely"), so a red run means the journey-record PR is due, not that a feature PR is wrong, which is why the job runs on the nightly schedule and on `workflow_dispatch` only. Only the journey-record PR commits the regenerated steps and index (small text), nothing else.
 - `if: always()` on the upload keeps the Playwright HTML report (`.results/report`) when a flow fails; `if-no-files-found: error` catches a packing failure.
 - Retention: 30 days covers a review wave. The nightly run gives a fresh record every day; a release should download the run's zip and attach it to the release notes if the record is wanted for longer.
 - Cost: the two web exports dominate. If the job is too slow, cache `apps/mobile/e2e-web/.web-dist*` keyed on the mobile source tree, and set `E2E_WEB_REBUILD=1` only when the key misses.

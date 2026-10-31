@@ -29,7 +29,8 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 23 | `20261023040000_entries_machine_edits_check.sql` | **Pending** | A letter's `machine_edits` must be an array (section "File 23") |
 | 24 | `20261023050000_consent_grants_tightening.sql` | **Pending** | The consent tables' grants match their row security (section "File 24") |
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
-| 26 | `20261027000000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 26") |
+| 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
+| 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -150,7 +151,7 @@ select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
 select to_regclass('public.safety_events');
 -- Book creator deletion no longer cascades (expect 'n' = SET NULL).
 select confdeltype from pg_constraint where conname = 'children_created_by_fkey';
--- Policy documents seeded (expect 13).
+-- Policy documents seeded (expect 13 after file 4 alone; 14 once file 19, 20261023000000_backup_server.sql, adds 'backup').
 select count(*) from public.policy_documents;
 ```
 Then Dashboard > Advisors > Security and Performance. Expected and accepted:
@@ -643,7 +644,8 @@ select has_column_privilege('authenticated', 'public.children', 'date_of_birth',
 -- DB-01: the reading views are read-only.
 select has_table_privilege('authenticated', 'public.book_entries', 'update') upd,
        has_table_privilege('authenticated', 'public.book_entries', 'delete') del,
-       has_table_privilege('authenticated', 'public.book_entries', 'select') sel;                -- false, false, true
+       has_table_privilege('authenticated', 'public.book_entries', 'select') sel;                -- false, false, false
+-- (sel is true before file 25: 20261023060000_explicit_grants.sql grants book_entries to no API role on purpose, as no client path reads it.)
 -- G-10 and F11-REQ-011: no client writes receipts or memberships.
 select has_table_privilege('authenticated', 'public.sync_op_receipts', 'insert') receipts,
        has_table_privilege('authenticated', 'public.child_members', 'delete') leave_direct;     -- false, false
@@ -910,7 +912,7 @@ What it changes:
 - **Consent records.** `service_role` loses INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on `policy_acceptances` and `subscription_consents`, and keeps SELECT. The row guards let a delete through while `app.retention_purge` is on, which any session can set, so before this file the service key could delete every consent record. Every writer is a definer function and keeps working. Support-assisted acts (step 8.3) are recorded from the SQL Editor, as before.
 - **A former member's letters stay theirs.** When a book is purged (day 30 after the remaining parent deletes it, or with that parent's account), the letters, held drafts and recording backups of anyone who is no longer a member (they left, their join was undone, or they were removed) stay, with their book key, per-book terms and Storage objects. Everything of the current members goes as before. The `children` row stays, tombstoned, with `purged_at` set and only the name and dates kept, until nothing of theirs is left; then `purge_due` removes it as it removes any book. A book with no former member's rows is purged exactly as before. `purge_due` answers two more keys (`books_kept`, `kept_removed`) and `prepare_account_purge` one (`books_kept`); the purge worker reads only the keys it already knew.
 - **Undo** (`undo_parent_join`) no longer deletes the removed parent's held drafts on the server, and an author reads their own held drafts in any book.
-- **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`. File 26 (`20261027000000`) creates it.
+- **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`. File 27 (`20261028010000`) creates it.
 
 **After a database restore** (RB-8, `docs/ops/runbooks/restore-drill.md` Part 2): if the restore point is before an account purge that kept a book for a former member, the replay brings the book back live with the deleted person still its only parent, so deleting their Auth user again fails with `SCLPG` (Auth reports a database error). Nothing is lost and it heals once the restored account request runs: it is `executing` again (or, with a restore point before it started, a past-due `scheduled` request that `purge_due` hands to the worker the same way), and the worker's next run keeps the book for the former member and then deletes the user (`former_member_purge` section 5; during a restore the jobs are paused, so the runbook has the operator start that run).
 
@@ -1129,13 +1131,54 @@ Then "Hosted checks before the first apply" a) answers `0 | 0 | 0`, and step 21'
 
 **Rollback.** Prefer fixing forward: a path that turns out to need a grant gets that one grant, to that one role, in a new file, never `grant all`. What a rollback would mean: on a project made with the old automatic grants (`early-letters`), granting SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER and MAINTAIN back on every table to all three roles, the 86 function grants to service_role and the old defaults, which reopens the TRUNCATE gap on 13 tables. On a new project there is nothing to go back to: its defaults never had those grants, and without this file the app cannot read or write at all.
 
-## File 26: invite_redeem_by_code, the call behind a typed invite code (27 Oct 2026, stream S02)
+## File 26: pg_temp last on the escrow role, and purged photos stay purged (28 Oct 2026, data-architect)
 
-`20261027000000_invite_redeem_by_code.sql`. Before this file the `invite-redeem` Edge Function called an RPC that no migration created (review B N8 on #138 deferred it), so every typed code answered 503 `unavailable`. Links were not affected (`accept_child_invite` and `peek_invite` are separate).
+`20261028000000_pg_temp_last_and_purged_photos.sql`. Re-check of PR #51 (open, draft) against develop. Needs founder `approve-migration` (D-041). Apply after File 25. Idempotent; changes no row; no new column.
+
+- **pg_temp last.** Finding 1 of #51 is already closed in the end state: File 13 (`20261015000000`, section 7) re-pins every earlier function and every later file writes `pg_catalog, public, pg_temp`. No function is altered here. The one setting left was the role default of `escrow_svc`, now `pg_catalog, public, pg_temp`. `supabase/tests/pg_temp_search_path.test.mjs` reads `pg_proc.proconfig` for every definer function and every function a policy calls, and `pg_db_role_setting` for role defaults.
+- **Purged photos.** `public.photo_entry_is_purged(text)` (definer, `authenticated` only) answers true only for the author on record: the path's second folder must be the caller's own id, and the file name must start with a letter id that the caller erased (the caller's own `sync_private.entry_erasures` row or own `erased` held-draft marker). It inlines that rule and does not call `sync_private.erasure_recorded`. It differs from `entries_not_purged`, which refuses a letter write on the bare `purge_ledger`: `purge_ledger` has no author, so here it counts only for an id nobody else holds any trail of. `entry_photos_author_insert` and `entry_photos_author_update` (renames, moves, upserts) add `and not public.photo_entry_is_purged(name)` and refuse a path deeper than `{book}/{author}/{file}`. The uuid is matched as the start of the file name. A refused upload is a 403 from Storage.
+- **Residual, by design.** A letter id that is only in `purge_ledger` (no `entry_erasures` row, no entry, held draft or marker of any author) answers true to any signed-in person for a path in their own folder. That is a restore replay, and also an ordinary whole-book purge, an account purge, or the purge of a non-kept author's letters in a kept-book purge: the erasure record goes with the book and the author while the ledger keeps the id for 60 days. It reaches a stranger who already knows the uuid, for up to 60 days, and tells them no more than `sync_push` `entry.upsert` with that id already does (`SCDEL`, `gone: true`). After the 60 day trim the answer is false again, except for an author who still has their own record.
+- **Locks.** The two `alter policy ... on storage.objects` statements take ACCESS EXCLUSIVE on `storage.objects` for the whole transaction, and while they wait every Storage read and write queues behind them. The file therefore starts with `select set_config('lock_timeout', '5s', true);` (local to its transaction, as File 23 does). If it fails with `55P03` (`lock_not_available`, "canceling statement due to lock timeout"), nothing changed and nothing was recorded: retry the deploy a little later, when fewer uploads are running. Apply it at a quiet time.
+
+**Check after applying** (SQL Editor; expect one row whose array holds `search_path=pg_catalog, public, pg_temp` next to `statement_timeout=5s`, then two rows, both `true`):
+```sql
+select rolconfig from pg_roles where rolname = 'escrow_svc';
+select polname, pg_get_expr(polwithcheck, polrelid) like '%photo_entry_is_purged%' as has_check
+  from pg_policy where polrelid = 'storage.objects'::regclass and polname in ('entry_photos_author_insert', 'entry_photos_author_update') order by 1;
+```
+Then repeat step 21's `search_path` query (expect 0 rows; the one new function is pinned `pg_catalog, public, pg_temp`). Advisors, expected and accepted: **0029** "authenticated can execute security definer function" for the new `photo_entry_is_purged`, a Storage policy helper like `backup_object_writable`: it answers only for the caller's own folder and the caller's own records (expected, not an error). Anything else new: stop and ask.
+
+**Rollback.** Prefer fixing forward: rolling back lets an author put a purged letter's photo back under its path again, and takes `pg_temp` off the escrow role's search path. If it must go, run this in the SQL Editor (one transaction). It restores the role setting and the two policies exactly as `20261003000000` and `20261005000000` leave them, then drops the function. The function goes last: dropping it while a policy still names it fails with `2BP01`.
+```sql
+begin;
+select set_config('lock_timeout', '5s', true);
+alter role escrow_svc set search_path = pg_catalog, public;
+alter policy entry_photos_author_insert on storage.objects with check (
+  bucket_id = 'entry-photos'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+  and public.is_child_member(((storage.foldername(name))[1])::uuid)
+  and public.child_is_live(((storage.foldername(name))[1])::uuid)
+  and public.can_write_content()
+);
+alter policy entry_photos_author_update on storage.objects
+  using (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text)
+  with check (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text
+              and public.is_child_member(((storage.foldername(name))[1])::uuid)
+              and public.child_is_live(((storage.foldername(name))[1])::uuid)
+              and public.can_write_content());
+drop function public.photo_entry_is_purged(text);
+commit;
+```
+
+The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
+
+## File 27: invite_redeem_by_code, the call behind a typed invite code (27 Oct 2026, stream S02)
+
+`20261028010000_invite_redeem_by_code.sql`. Before this file the `invite-redeem` Edge Function called an RPC that no migration created (review B N8 on #138 deferred it), so every typed code answered 503 `unavailable`. Links were not affected (`accept_child_invite` and `peek_invite` are separate).
 
 What it adds:
 - **`public.invite_redeem_by_code(p_user, p_mode, p_code_hash, p_user_subjects, p_device_subjects, p_ip_subjects)`**, executable by `service_role` only. In one transaction it locks each subject hash, checks the limits (10 failures an hour per person, 10 per device, 30 per address, 1,000 for the whole service), looks the code up and, for a wrong, used, expired, revoked or closed code, writes the failure before the answer leaves. Mode `peek` returns the inviter's sign-off and the role (and `joined` while the caller is a member); mode `accept` runs `accept_child_invite_by_code` and returns the book and role. A full book (`SCCAP`) and missing consent (`SCCON`) come back as `refused` and are not counted. Contract: `packages/api/src/server/family.ts`.
 - **`public.invite_redeem_failures`**: hashed subjects and times only, no link to a profile, closed to every role; rows older than 2 hours are deleted as new failures are written.
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
-**Apply** after file 25. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+**Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.

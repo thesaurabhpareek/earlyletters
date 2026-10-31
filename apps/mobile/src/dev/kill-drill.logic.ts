@@ -58,7 +58,7 @@ export const DRILL_ARG = { mode: 'e2eKillDrill', run: 'e2eKillRun', kind: 'e2eKi
 export const MARKER_DIR = 'kill-drill';
 /** The host copies a generated tone (never a voice) here before spoken DL-02 runs. */
 export const FIXTURE_FILE = 'fixture.m4a';
-/** Folder under Documents where expo-audio writes takes (`ExpoAudio/recording-<uuid>.m4a`); spoken drill files go there too. */
+/** Folder under Documents where expo-audio writes takes (`ExpoAudio/recording-<uuid>.aac` on iOS, ADR 0027); spoken drill files go there too. */
 export const TAKE_DIR = 'ExpoAudio';
 /** The planted loss holds the letter in neither table for this long; every DL-02 kill delay must be shorter. */
 export const PLANT_LOSS_GAP_MS = 3000;

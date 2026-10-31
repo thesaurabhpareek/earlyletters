@@ -3,8 +3,9 @@
   "journey": "typed-letter",
   "kind": "happy",
   "title": "Write, empty",
-  "note": "A page, not a form: the child's name and age, the prompt as a quiet line, and a blank letter. Save is off until something is typed.",
+  "note": "A page under the still write lamp, not a form: the child's name and age, the prompt as the literary line, and a blank letter. \"Add to Asha's book\" and \"Keep private\" wait above the keyboard, off until something is typed (S19).",
   "from": "J01-14",
+  "shot": "screens/J07-01.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -21,11 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "text": "Close Asha · 0 days Who came to meet Asha this week? What did they say? Add to Asha's book Keep private",
   "lines": [
     "Close",
     "Asha · 0 days",
-    "Tell Asha how the name was chosen.",
-    "Save"
+    "Who came to meet Asha this week? What did they say?",
+    "Add to Asha's book",
+    "Keep private"
   ]
 }
