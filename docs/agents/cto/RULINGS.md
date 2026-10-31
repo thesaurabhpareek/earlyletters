@@ -384,3 +384,21 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
 - Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
 - Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
+
+### CR-32 The compliance fence is required on `develop`, not on `main` (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked me to make `compliance-fence` a required check myself ("do 2 yourself"). It was blocked on a browser, and CR-27 said the check would only run once the workflow reached `main`.
+- Tier and type: T2 (a settings write and `.github/**`); clear once the live state was read.
+- What changed under us: the founder's settings run (CR-6 to CR-11) made `develop` the default branch and protected both branches. So the fence started running from `develop` on every PR. It ran on #437 (base `main`) and #438 (base `develop`), and both reported on the PR head (API, 31 Oct).
+- Options considered:
+  - (a) Require it on both branches.
+  - (b) Require it on `develop` only.
+  - (c) Leave it advisory.
+- Ruling: (b), applied in the founder's browser on 31 Oct (Settings, Branches, the `develop` rule). The API shows `develop` requiring `required`, `applied migrations unchanged` and `compliance-fence`; `main` is unchanged.
+- Why not `main`: `main` has no `FENCE.json`, so the bootstrap path fails any PR into `main` that carries compliance paths. The release PR from `develop` will carry them, so requiring it there would block every release until the release itself landed.
+- Also in this PR:
+  - `apply-branch-settings.sh` and `github-settings.ts` now carry the per-branch check, so a re-run neither removes it nor reports drift.
+  - CR-27's text that the fence "runs only from `main`" is superseded by this ruling; the README and the workflow header are corrected.
+- Door: two-way.
+- Way back: remove the check from the `develop` rule in Settings, and revert this PR.
+- Revisit when: `main` has a `FENCE.json` (after the lineage and release merges planned for after the 9 Nov go/no-go; Project doc `infra/cto-rulings-2026-10-31-karma-deploy.md`); then require it on `main` too. Karma
+
