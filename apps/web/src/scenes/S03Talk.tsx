@@ -18,7 +18,7 @@ import { Scene } from '@/film/Scene';
 import { Headline, Support } from '@/film/Copy';
 import { PaperLetter } from '@/film/PaperLetter';
 import { phoneWidthFor, useStage, useViewport } from '@/film/hooks';
-import { heardSentences, voiceLevel, WORD_COUNT } from '@/film/letter';
+import { heardSentences, voiceEnvelope, WORD_COUNT } from '@/film/letter';
 import { site } from '@/content/site';
 import { ListeningScreen, PhoneFrame, TonightScreen } from '@/components/app-ui';
 import { Grain, LampLight, Vignette } from '@/components/atmosphere';
@@ -56,8 +56,9 @@ function TalkStage() {
   const fill = Math.max(w / screenW, h / screenH) * 1.08;
 
   const words = useTransform(p, [0.08, 0.66], [0, WORD_COUNT]);
-  const level = useTransform(words, (v) => (v >= WORD_COUNT ? 0.08 : voiceLevel(v)));
-  const spill = useTransform(level, (v) => 0.2 + 0.65 * v);
+  const level = useTransform(words, (v) => (v >= WORD_COUNT ? 0.08 : voiceEnvelope(v)));
+  // A narrow, slow swell: the room glows with the voice without ever flickering.
+  const spill = useTransform(level, (v) => 0.34 + 0.34 * v);
   const spillOut = useTransform(p, [0.7, 0.8], [1, 0]);
 
   const tonight = useTransform(p, [0, 0.04], [1, 0]);
@@ -71,7 +72,7 @@ function TalkStage() {
   const supOpacity = useTransform(p, narrow ? [0.06, 0.12, 0.32, 0.38] : [0.06, 0.12, 0.36, 0.42], [0, 1, 1, 0]);
 
   const captions = useTransform(p, [0.4, 0.44, 0.78, 0.84], [0, 1, 1, 0]);
-  const cleanup = useTransform(p, [0.92, 0.96], [0, 1]);
+  const cleanup = useTransform(p, [0.935, 0.95], [0, 1]);
 
   return (
     <div className={stage.frame} data-resting={resting || undefined}>

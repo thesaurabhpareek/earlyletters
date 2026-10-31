@@ -51,3 +51,17 @@ export function voiceLevel(pos: number): number {
   const fade = f > 0.75 ? 1 - (f - 0.75) * 4 * (1 - tail) : 1;
   return Math.max(0.04, Math.min(1, bump * loud * fade));
 }
+
+/**
+ * The same voice, smoothed for light. `voiceLevel` jumps with every syllable, which is right for the little
+ * microphone disc but makes a whole room of light shimmer as the page scrolls. This averages it over the last
+ * stretch of words, so the glow swells and settles like breathing instead of flickering.
+ */
+export function voiceEnvelope(pos: number): number {
+  if (pos <= 0 || pos >= WORD_COUNT) return 0.04;
+  const taps = 9;
+  const span = 3.2;
+  let sum = 0;
+  for (let k = 0; k < taps; k++) sum += voiceLevel(Math.max(0, pos - (span * k) / (taps - 1)));
+  return sum / taps;
+}
