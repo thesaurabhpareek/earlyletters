@@ -418,3 +418,14 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - **Two-factor authentication on GitHub becomes mandatory after 17 Nov:** a founder task.
 - Door: two-way.
 - Revisit when: #437 merges (s08 PR), or FT-19 is done (email footer).
+
+### CR-35 Recently deleted letters in the export belong to BL-388, not BL-323 (31 Oct 2026, Karma via session_01JQRV3b, PR #161)
+- Question: Should "Export everything" include letters on the Recently deleted shelf, and does PR #161 (BL-323) have to settle it before it merges?
+- Tier and type: T1; clear.
+- Options considered: (a) ask the founder now; (b) build it in #161, either always or behind a tick box; (c) take it out of BL-323 and leave it with BL-388, which already scopes it; (d) leave the conflict sitting in three backlog items.
+- Ruling: (c). BL-323 drops "include Recently deleted letters"; #161 ships without it, as `develop` does today. BL-388 ("Export is complete and safe", ready, High) already scopes tombstoned letters, drafts and orphan recordings in a "not in the book" folder. Before anyone builds BL-388, its owner settles one difference with the Chief Privacy Officer: spec 4.1 says Recently deleted goes in only when "Include recently deleted" is ticked, and BL-388 says always. The answer goes to the founder, through the gate and with a recommendation, if it changes `docs/legal/DELETION_AND_EXPORT_SPEC.md`, or if it conflicts with Privacy Policy section 14 ("every letter you wrote") or the export screen's "Every letter". BL-446, which covers only the letters an account-deletion request tombstoned, keeps its own scope; its Overlap note now points here instead of saying the general question is the founder's, because no founder decision is needed until BL-388 has a design.
+- Why: one concern per PR, and BL-388 is the item that already owns this (`docs/BACKLOG.md`, BL-388 scope line). The old `build.logic.ts` header said deleted letters were left out "by design (D-085)". D-085 sets up the 30-day shelf and mentions export (the "Last export" nudge), but it does not say whether an export includes the shelf. The debate behind it (PR #87, open) proposed a test that the export excludes the shelf; that is a proposal, not a decision. #161 corrects the comment to point at BL-388. Nobody is building BL-388 now, and the build 2 freeze starts Tue 3 Nov, so a founder question today would be unripe and would spend his time on a design that does not exist yet. Return: #161 is unblocked at no cost. Risk: low; nothing a user sees changes.
+- Council: no CPO or CPrivO view was taken, because this ruling moves a backlog line and decides nothing on the substance; the substance goes to the CPrivO before BL-388 starts (COUNCIL section 2, rule 4).
+- Door: two-way.
+- Way back: put the line back into BL-323's scope and BL-446's Overlap note.
+- Revisit when: BL-388 is picked up, or a data-access request asks for a deleted letter. Karma
