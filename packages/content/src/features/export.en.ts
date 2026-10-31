@@ -108,7 +108,7 @@ export const exportCopy = {
     'or acknowledged our terms, and each privacy choice you made or withdrew. account.json',
     'holds that record under "consent_history" when it could be read while the export was',
     'made. If it could not, "status" says why ("not_signed_in", "unavailable" or',
-    '"different_account"), and everything on this phone is still in this export.',
+    '"different_account"), and nothing from this phone is left out because of it.',
     '',
     'CHECKING THE FILES',
     '',
