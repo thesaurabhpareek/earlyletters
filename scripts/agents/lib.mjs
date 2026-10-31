@@ -239,7 +239,7 @@ export function agentOfPR(pr) {
   return label ? label.slice("agent:".length) : undefined;
 }
 
-/** For caps only: label OR branch prefix `agent/<handle>/` OR bot author (identity.mjs). Routing stays label-only (agentOfPR). */
+/** For caps only: an `agent:*` label, OR a branch/bot signal from an author in AGENTS_BOT_LOGINS (identity.mjs isAgentLike, same rule as guard-open-prs.mjs). Strangers and Dependabot never count. Routing stays label-only (agentOfPR). */
 export const agentLikePR = (pr) => isAgentLike(pr, { appLogins: String(process.env.AGENTS_BOT_LOGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean) });
 
 export function journalTitle(agent) {

@@ -54,7 +54,7 @@ const comments = journalRead.comments;
 const journalNotes = [
   journalRead.unreadable ? `**Journal unreadable:** ${journalRead.why}. Treat it as having no entries and no founder notes, do not guess, and say so in your journal.` : "",
   !journal && !journalLookupFailed ? "**No journal issue exists for this agent** (the lookup worked and returned none). Say so in your journal; do not guess." : "",
-  journalRead.notRead ? `**${journalRead.notRead} of ${journalRead.total} journal comments were not read** (${journalRead.failedPages ? `${journalRead.failedPages} page(s) failed to load, and ` : ""}the middle of a long thread). A founder note could be among them. Ask the founder to lock the journal issue so only collaborators can comment.` : "",
+  journalGapNotice(journalRead),
 ].filter(Boolean);
 const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
@@ -96,7 +96,7 @@ function assignmentSection() {
     lines.push(...stewardSection());
   } else if (mode === "digest") {
     lines.push("**Write today's founder digest** (operating model section 7).");
-    lines.push("Sources: the issue labelled `agent-board`, open PRs (`gh pr list`), PRs merged in the last day (`gh pr list --state merged --search \"merged:>=<yesterday>\"`), agent journals (label `journal`), and `needs-decision` tasks in `docs/BACKLOG.md`.");
+    lines.push("Sources: the issue labelled `agent-board`, open PRs (`gh pr list`), PRs merged in the last day (`gh api \"repos/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=50\" --jq '.[] | select(.merged_at != null) | .number'`), agent journals (label `journal`), and `needs-decision` tasks in `docs/BACKLOG.md`.");
     lines.push("Close the previous open `digest` issue after posting the new one.");
     lines.push("For what every agent did and said since yesterday, run `node scripts/agents/ledger.mjs --since <yesterday>` (one JSON line per event: journal entries, receipts, handoffs, replies and reviews).");
   } else {
@@ -232,7 +232,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
-import { readJournal, trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
+import { readJournal, trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING, founderBlock, journalGapNotice } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
@@ -285,7 +285,7 @@ const doc = [
   "## Founder instructions since your last run",
   "",
   founderNotes.length
-    ? founderNotes.map((c) => `${c.created_at.slice(0, 16).replace("T", " ")} UTC:\n\n${quote(c.body)}`).join("\n\n")
+    ? founderNotes.map((c) => founderBlock(c.created_at, c.body)).join("\n\n")
     : "None.",
   "",
   "## Your last journal entries",
@@ -304,9 +304,9 @@ const doc = [
   ...memoryBrief.briefLines({ ROOT, handle, recent }),
   "## Finish the run",
   "",
-  `1. Labels on every PR you open or update: \`agent:${handle}\` and \`from:agent\` (\`gh pr edit <n> --add-label agent:${handle},from:agent\`).`,
+  `1. Labels: the workflow puts \`agent:${handle}\` and \`from:agent\` on your PR after your run, from your branch name (\`agent/${handle}/<topic>\`). Do not edit PR labels yourself (that command is denied). Name your branch as the brief says.`,
   `2. Commit messages end with \`Agent: ${handle}\`.`,
-  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Post with \`gh api -X POST repos/${repo}/issues/${journal || "<journal>"}/comments -F body=@<file>\` and complete it with \`gh api -X PATCH repos/${repo}/issues/comments/<id> -F body=@<file>\`.`,
+  `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Write the text to a file, then post it with \`gh issue comment ${journal || "<journal>"} --body-file <file>\` and complete it at the end with \`gh issue comment ${journal || "<journal>"} --edit-last --body-file <file>\`. No other gh command is needed for the journal.`,
   "4. New BL, D or ADR numbers come from `node scripts/agents/next-id.mjs`, never from reading develop alone.",
   "5. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
   "6. Do not run `git push` or any other push. Commit on your branch (`agent/<handle>/<topic>`); the workflow pushes your branch after your run.",

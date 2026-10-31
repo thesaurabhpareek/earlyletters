@@ -64,8 +64,10 @@ test("deny list covers option, -C/-c, -R and implicit-write spellings (round 2)"
   assert.ok(denied("FOO=1 git push origin develop"));
   assert.ok(denied("sh -c 'git push origin develop'"));
   assert.ok(denied("env git push origin develop"));
-  // PR bodies that merely mention words are not blocked
-  assert.ok(!denied('gh pr create --title x --body "rotate the secret and variable names"'));
+  // Round 7: the gh denies are whitespace tolerant, so a command line that has the word secret in it is denied even in a
+  // quoted body. Over-blocking is accepted; use --body-file for text that mentions these words.
+  assert.ok(denied('gh pr create --title x --body "rotate the secret and variable names"'));
+  assert.ok(!denied("gh pr create --title x --body-file /tmp/body.md"));
 });
 
 test("deny list does not block normal agent work", () => {

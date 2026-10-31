@@ -15,8 +15,8 @@ import { deniedBy } from "./opencode-matcher.mjs";
 
 const denied = deniedBy(Object.entries(opencodeConfig().permission.bash));
 
-test("there is no allow rule for push: the only allow is the catch-all", () => {
-  assert.deepEqual(BASH_RULES.filter(([, a]) => a === "allow"), [["*", "allow"]]);
+test("there is no allow rule for push: the allows are the catch-all and four comment commands", () => {
+  assert.deepEqual(BASH_RULES.filter(([, a]) => a === "allow").map(([p]) => p), ["*", "gh issue comment * --body-file *", "gh issue comment * --edit-last --body-file *", "gh pr comment * --body-file *", "gh pr review * --comment --body-file *"]);
   assert.equal(Object.keys(opencodeConfig().permission.bash)[0], "*");
   for (const [p, a] of BASH_RULES) if (a === "allow") assert.ok(!/push/.test(p), p);
 });
@@ -75,10 +75,13 @@ test("gh api write verbs: every spelling, quoted or not, lands on deny", () => {
   }
 });
 
-test("known bypass, stated honestly: mixed-case verbs such as -XPatch are not caught", () => {
-  assert.equal(denied("gh api repos/a/b/issues/1 -XPatch"), false);
+test("known bypass, stated honestly: odd-case verbs such as -XpAtCh are not caught (upper, lower and Capitalised are)", () => {
+  assert.equal(denied("gh api repos/a/b/issues/1 -XPatch"), true);
+  assert.equal(denied("gh api repos/a/b/issues/1 -XpAtCh"), false);
 });
 
-test("known false positives of the broad rule, stated honestly: any command containing git and push", () => {
-  for (const c of ["git commit -m 'document the push to main page'", "git log --grep=push", "git checkout feat/push-fix"]) assert.ok(denied(c), c);
+test("round 7: the push deny is anchored to command position, so commands that only mention push are allowed", () => {
+  for (const c of ["git commit -m 'document the push to main page'", "git log --grep=push", "git checkout feat/push-fix"]) assert.ok(!denied(c), c);
+  // Known remaining false positive: a -C global option or a reuse-message flag before the word push.
+  assert.ok(denied("git commit -C HEAD -m 'push'"));
 });

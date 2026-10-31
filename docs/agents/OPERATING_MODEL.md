@@ -64,7 +64,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 ## 5. The journal entry (one per run)
 
-**Post a stub first, finish it last.** Usage limits stopped several runs before they could report. As soon as you know your assignment, post a stub (the marker line, then the **Mode:** line, then `**Did:** started`). At the end, replace it with the full entry: `gh api -X PATCH repos/<repo>/issues/comments/<id> -F body=@<file>`. Use capital `-F`; a lowercase `-f body=@<file>` posts the literal path. Read the comment back and check that its first line is the marker.
+**Post a stub first, finish it last.** Usage limits stopped several runs before they could report. As soon as you know your assignment, post a stub (the marker line, then the **Mode:** line, then `**Did:** started`). Write the text to a file and post the stub with `gh issue comment <journal> --body-file <file>`. At the end, replace it with the full entry: `gh issue comment <journal> --edit-last --body-file <file>`. Those two commands are the only gh writes the journal needs (`gh api` writes are denied in the OpenCode lane). Read the comment back and check that its first line is the marker.
 
 The full entry has this shape, with no other headings:
 

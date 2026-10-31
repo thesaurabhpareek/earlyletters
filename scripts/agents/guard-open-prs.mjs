@@ -37,7 +37,7 @@ export async function countAgentPrs({ repo, getPage, maxPages = MAX_PAGES, appLo
     try { res = await getPage(url); } catch (e) { throw new GuardError(`request failed for ${url}: ${e.message}`); }
     if (!res || res.status !== 200) throw new GuardError(`GitHub returned HTTP ${res?.status} for ${url}`);
     if (!Array.isArray(res.json)) throw new GuardError(`unexpected response shape for ${url} (not an array)`);
-    for (const pr of res.json) { seen++; if (isAgentPr(pr) || isAgentLike(pr, { appLogins })) count++; } // label OR branch prefix OR bot author
+    for (const pr of res.json) { seen++; if (isAgentPr(pr) || isAgentLike(pr, { appLogins })) count++; } // a label, or a branch/bot signal from a trusted login (AGENTS_BOT_LOGINS)
     if (res.json.length < PER_PAGE) return { count, seen, pages: page };
   }
   throw new GuardError(`pagination cap hit (${maxPages} pages of ${PER_PAGE}); cannot count open PRs, failing closed`);

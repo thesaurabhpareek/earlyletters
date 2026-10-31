@@ -15,30 +15,41 @@ import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
 /**
- * Bash rules, in order. opencode takes the LAST rule that matches (UNVERIFIED here: written from
- * Review C's reading of the engine and the offline matcher in opencode-deny.test.mjs).
+ * Bash rules, in order. opencode takes the LAST rule that matches (verified against opencode 1.18.34
+ * by Review B on 25 commands; the offline matcher in opencode-matcher.mjs models it).
  *
- * TRIPWIRE, NOT A BOUNDARY. Globs cannot close quoting, spacing, variables, command substitution,
- * `sh -c`, `env git`, a script the model wrote, or mixed-case verbs such as `-XPatch`. The real
- * controls live elsewhere: branch protection on develop and main, a separate write job that does
- * the push so the model never holds push credentials, and locked journal issues. See
- * docs/agents/hardening/integration-notes.md. Do not rely on this list.
+ * Order: the catch-all allow, then every deny, then a few narrow allows for the comment commands
+ * the brief tells the agent to run (file names such as `closed.md` would otherwise trip the broad
+ * `gh*issue*close*` deny), then re-denies for anything that could ride along on those allows.
  *
- * Shape of the git rules (round 6): the model does not push at all. Every command that has `git`
- * and `push` in it is denied, in any spacing, with any global option or env prefix, inside `sh -c`,
- * `env`, a chain, a substitution or a pipe, and there is NO allow rule for push. The workflow's
- * salvage step pushes the branch after the run. `git -c k=v` (config injection) is denied too;
- * `git switch -c` and `git checkout -b` stay allowed. Known cost: the broad deny also blocks harmless
- * commands that contain both words (`git commit -m "push notes"`). Known hole: mixed-case gh verbs.
+ * TRIPWIRE, NOT A BOUNDARY. Globs cannot close quoting (`g"i"t push` still gets through), spacing
+ * tricks outside the ones listed, variables, command substitution, `sh -c`, a script the model wrote,
+ * mixed-case verbs such as `-XPatch`, or `curl`, `wget`, `printenv` and `/proc/self/environ`. The
+ * real controls live elsewhere: withholding GH_TOKEN and OPENROUTER_API_KEY from the model step,
+ * branch protection on develop and main, a separate write job that does the push (H15), and
+ * locked journal issues. See docs/agents/hardening/integration-notes.md. Do not rely on this list.
+ *
+ * Whitespace (round 7): the engine ran `gh pr  merge` (two spaces) and it was NOT denied, so the gh
+ * denies use `*` between words, which crosses spaces and tabs. The cost is over-blocking: any command
+ * line that has these words in this order is denied, even inside a quoted title. That is accepted.
+ *
+ * Push: the model does not push at all and there is no allow rule for it. The deny is anchored to
+ * command position (`git push*`, `git -C x push`, `git  push`) and to the places a command can start
+ * (after `&&`, `;`, `|`, `$(`, a backtick, a newline, an env prefix, `env`, `sh -c`), so that
+ * `git commit -m 'push notes'` and `gh pr create --title "git push guard"` are no longer denied.
  */
+const SMUGGLE = ["$", "`", ";", "&", "|", ">", "<", "\n", "(", "{"];
+const SENSITIVE = ["/proc/", "environ", "hosts.yml", ".ssh", "/etc/", "id_rsa", ".netrc", ".config/gh", ".git/config", ".env"];
+const WRAPPERS = ["env", "exec", "command", "sudo", "xargs", "nohup", "time", "timeout", "nice", "stdbuf", "setsid", "eval", "sh", "bash", "zsh", "dash"];
+
 const QUOTE_FORMS = ["-X", "--method"].flatMap((f) => [" ", "  ", "=", ""].flatMap((sep) => ['"', "'"].map((q) => `gh*api*${f}${sep}${q}*`)));
 
-/** gh api with a write verb, in the plain spellings: `-X V`, `-X  V`, `-X=V`, `-XV`, `--method V`, `--method  V`, `--method=V`, upper or lower case. */
+/** gh api with a write verb: any text between the flag and the verb (spaces, tabs, `=`), upper, lower or capitalised verb. */
 export function ghApiWritePatterns() {
   const out = [];
   for (const verb of ["DELETE", "PUT", "PATCH", "POST"]) {
-    for (const v of [verb, verb.toLowerCase()]) {
-      for (const f of [`-X ${v}`, `-X  ${v}`, `-X=${v}`, `-X${v}`, `--method ${v}`, `--method  ${v}`, `--method=${v}`]) out.push(`gh*api*${f}*`);
+    for (const v of new Set([verb, verb.toLowerCase(), verb[0] + verb.slice(1).toLowerCase()])) {
+      out.push(`gh*api*-X*${v}*`, `gh*api*--method*${v}*`);
     }
   }
   return out;
@@ -46,35 +57,52 @@ export function ghApiWritePatterns() {
 
 const DENY_BEFORE_GIT = [
   // exact legacy forms (lib.test.mjs asserts them)
-  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*",
-  // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
-  "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
-  "gh*pr*--admin*",
-  // secrets, settings, repo admin, workflow control
-  // (anchored at "gh" so a PR body that mentions "secret" is not blocked; -R/--repo forms added)
-  "gh secret*", "gh variable*", "gh repo delete*", "gh repo edit*", "gh repo archive*",
-  "gh ruleset*", "gh auth*", "gh workflow run*", "gh workflow enable*", "gh workflow disable*",
-  "gh run rerun*", "gh run cancel*",
-  "gh -R*secret*", "gh -R*variable*", "gh -R*ruleset*", "gh -R*workflow run*", "gh -R*workflow enable*",
-  "gh -R*workflow disable*", "gh -R*run rerun*", "gh -R*run cancel*", "gh -R*repo delete*", "gh -R*repo edit*",
-  "gh --repo*secret*", "gh --repo*variable*", "gh --repo*workflow run*", "gh --repo*repo delete*",
-  // gh api writes: explicit verbs (plain and quoted spellings), implicit POST (field flags), graphql, sensitive paths
+  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", "gh pr merge*", "gh secret*",
+  // merges, closes, approvals, edits (any spacing; also with `gh -R owner/repo` before the subcommand)
+  "gh*pr*merge*", "gh*pr*close*", "gh*pr*review*", "gh*pr*edit*", "gh*pr*ready*", "gh*pr*--admin*",
+  "gh*issue*close*", "gh*issue*edit*", "gh*issue*delete*", "gh*issue*transfer*", "gh*issue*lock*",
+  // secrets, settings, repo admin, workflow control, egress through gh
+  "gh*secret*", "gh*variable*", "gh*repo*delete*", "gh*repo*edit*", "gh*repo*archive*", "gh*ruleset*",
+  "gh auth*", "gh  *auth*", "gh\t*auth*", "gh \t*auth*", "gh\t *auth*",
+  "gh*workflow*run*", "gh*workflow*enable*", "gh*workflow*disable*", "gh*run*rerun*", "gh*run*cancel*",
+  "gh*release*", "gh*gist*",
+  // gh api writes: explicit verbs, quoted spellings, implicit POST (field flags, also after a tab), graphql, sensitive paths
   ...ghApiWritePatterns(), ...QUOTE_FORMS,
-  "gh*api* -f*", "gh*api* -F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
+  "gh*api* -f*", "gh*api*\t-f*", "gh*api* -F*", "gh*api*\t-F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
   // anchored so a comment body that mentions graphql is not blocked (W2 suggestion; not run live)
-  "gh api*graphql*", "gh -R* api*graphql*", "gh --repo* api*graphql*",
+  "gh api*graphql*", "gh*-R*api*graphql*", "gh*--repo*api*graphql*", "gh  *api*graphql*", "gh\t*api*graphql*",
   "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
   "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
   "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
-  // any command with git and push in it, anywhere (spacing, global options, env prefix, sh -c, chains);
-  // and git config injection (`git -c k=v ...`, `git --no-pager -c k=v ...`)
-  "*git*push*", "git*push*", "git -c*", "git*-c *=*",
+  // git push, anchored to command position (not "any command that mentions push"), in any spacing:
+  "git push*", "git  *push*", "git\t*push*",
+  "git -*push*", "git*-C*push*",               // global options before the subcommand
+  "git send-pack*", "git  *send-pack*", "git\t*send-pack*", "git -*send-pack*",
+  // push after something else: a chain, a substitution, a subshell, a new line, an env prefix, a wrapper
+  "*&&*git*push*", "*&*git*push*", "*;*git*push*", "*|*git*push*", "*(*git*push*", "*`*git*push*", "*{*git*push*", "*\ngit*push*", "*=* git*push*",
+  ...WRAPPERS.map((w) => `${w} *git*push*`),
+  // git config injection (`git -c k=v ...`, `git --no-pager -c k=v ...`)
+  "git -c*", "git  *-c*", "git\t*-c*", "git*-c *=*", "git*-c\t*=*",
+];
+
+/** Narrow allows, after the denies: the journal and review comment commands. */
+const COMMENT_ALLOWS = [
+  "gh issue comment * --body-file *", "gh issue comment * --edit-last --body-file *",
+  "gh pr comment * --body-file *", "gh pr review * --comment --body-file *",
+];
+const COMMENT_HEADS = ["gh issue comment", "gh pr comment", "gh pr review"];
+/** Re-denies, last: nothing may ride along on an allowed comment command. */
+const COMMENT_REDENY = [
+  ...COMMENT_HEADS.flatMap((h) => [...SMUGGLE.map((c) => `${h}*${c}*`), ...SENSITIVE.map((c) => `${h}*${c}*`), `${h}* -R *`, `${h}*--repo*`]),
+  "gh pr review*--approve*", "gh pr review* -a *", "gh pr review*\t-a*",
 ];
 
 /** The ordered bash rules as [pattern, action] pairs, catch-all first. */
 export const BASH_RULES = [
   ["*", "allow"],
   ...DENY_BEFORE_GIT.map((p) => [p, "deny"]),
+  ...COMMENT_ALLOWS.map((p) => [p, "allow"]),
+  ...COMMENT_REDENY.map((p) => [p, "deny"]),
 ];
 
 /** Every pattern that is denied, in rule order (for tests that list them). */

@@ -80,6 +80,14 @@ const FORBIDDEN = [
   ["bunfig.toml", "bunfig"],
   ["opencode.jsonc", "opencode-config"],
   [".opencode/agent/x.md", "opencode-config"],
+  [".devcontainer/devcontainer.json", "devcontainer"],
+  ["apps/mobile/.devcontainer/Dockerfile", "devcontainer"],
+  [".vscode/tasks.json", "vscode"],
+  ["packages/x/.vscode/settings.json", "vscode"],
+  [".mcp.json", "mcp-config"],
+  ["apps/mobile/.mcp.json", "mcp-config"],
+  ["CODEOWNERS", "codeowners"],
+  ["docs/CODEOWNERS", "codeowners"],
 ];
 for (const [p, rule] of FORBIDDEN) {
   test(`forbidden: ${p}`, () => {

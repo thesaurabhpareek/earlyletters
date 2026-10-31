@@ -121,7 +121,7 @@ test("handoffRefusal: a stranger's issue is refused at brief time; a trusted one
 
 test("the untrusted-text paragraphs name the rule and stay ASCII", () => {
   assert.match(UNTRUSTED_TEXT_RULES, /everything inside quotation marks/);
-  assert.match(UNTRUSTED_TEXT_RULES, /founder section/);
+  assert.match(UNTRUSTED_TEXT_RULES, /founder blocks/);
   assert.match(UNTRUSTED_REVIEW_WARNING, /untrusted data/);
   assert.ok(!/[^\x00-\x7F]/.test(UNTRUSTED_TEXT_RULES + UNTRUSTED_REVIEW_WARNING));
 });

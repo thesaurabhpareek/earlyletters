@@ -39,6 +39,10 @@ export const HARD_RULES = [
   { id: "opencode-config", glob: "**/opencode.json", why: "the OpenCode runner config (opencode.json)" },
   { id: "opencode-config", glob: "**/opencode.jsonc", why: "the OpenCode runner config (opencode.jsonc)" },
   { id: "opencode-config", glob: "**/.opencode/**", why: "the OpenCode project directory (.opencode/**)" },
+  { id: "devcontainer", glob: "**/.devcontainer/**", why: "dev container config runs commands on open (.devcontainer/**, any depth)" },
+  { id: "vscode", glob: "**/.vscode/**", why: "editor tasks and settings can run commands (.vscode/**, any depth)" },
+  { id: "mcp-config", glob: "**/.mcp.json", why: "MCP server config starts programs (.mcp.json, any depth)" },
+  { id: "codeowners", glob: "**/CODEOWNERS", why: "review ownership rules (CODEOWNERS, any directory)" },
   { id: "agents-md", glob: "**/AGENTS.md", why: "agent instructions (AGENTS.md, any depth)" },
   { id: "git-dir", glob: "**/.git", why: "git internals (.git, also as a file)" },
   { id: "git-dir", glob: "**/.git/**", why: "git internals (.git/**, any depth)" },
@@ -126,6 +130,10 @@ export function checkPaths({ agent, files, lanes }) {
 
   for (const f of list) {
     const e = typeof f === "string" ? { path: f } : f ?? {};
+    // A mode change (644 to 755, or back) is a change even with the same content: it turns a file into something that runs.
+    if (e.oldMode && e.mode && e.oldMode !== e.mode && e.oldMode !== "000000" && e.mode !== "000000") {
+      v(e.path, "new", "mode-change", `file mode changed from ${e.oldMode} to ${e.mode} (a mode-only change is still a change)`);
+    }
     const sides = [["new", e.path, e.mode]];
     if (e.oldPath !== undefined && e.oldPath !== null) sides.push(["old", e.oldPath, e.oldMode]);
     else if (/^[RC]/.test(e.status ?? "")) v(e.path, "old", "bad-path", "rename or copy without its source path");

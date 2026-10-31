@@ -28,5 +28,10 @@ export function deniedBy(rules) {
 /** A list of deny-only patterns as rules (catch-all allow first). */
 export const denyOnly = (patterns) => [["*", "allow"], ...patterns.map((p) => [p, "deny"])];
 
-/** True for a command that has git and push in it: recordings of these ran under older rule sets and cannot be compared now. */
-export const isPush = (cmd) => /git.*push/.test(cmd);
+/**
+ * True for a command that pushes (or might): git and push in it, except a plain commit, log, checkout or
+ * branch command with no chain or substitution, which merely mentions the word (round 7 narrowed the deny
+ * to command position, so `git commit -m 'push notes'` is allowed again). Recordings of pushes ran under
+ * older rule sets and cannot be compared now.
+ */
+export const isPush = (cmd) => /git.*push/.test(cmd) && !(/^\s*git\s+(commit|log|checkout|branch|switch)\b/.test(cmd) && !/[;&|`$(\n]/.test(cmd));

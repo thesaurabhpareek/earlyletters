@@ -48,25 +48,36 @@ test("a head branch that starts with agent/ but is not agent/<handle>/<topic> fa
   assert.equal(identityOf(pr({ head: { ref: "agents/x" } })).status, "none", "agents/ is a different prefix");
 });
 
-test("dispatcher: routing stays label-only, but the open-PR cap counts an unlabelled agent-branch PR", () => {
+test("dispatcher: routing stays label-only; the cap counts an unlabelled agent-branch or bot PR only from a trusted login", () => {
   const drive = pr({ head: { ref: "agent/qa/x" } });
-  assert.equal(agentOfPR(drive), undefined, "a drive-by branch name never routes");
-  assert.equal(agentLikePR(drive), true, "but it counts against the cap");
-  assert.equal(agentLikePR(pr({ user: { login: "claude[bot]", type: "Bot" } })), true);
-  assert.equal(agentLikePR(pr()), false);
+  const trusted = pr({ head: { ref: "agent/qa/x" }, user: { login: "claude[bot]", type: "Bot" } });
+  const before = process.env.AGENTS_BOT_LOGINS;
+  try {
+    process.env.AGENTS_BOT_LOGINS = "claude[bot]";
+    assert.equal(agentOfPR(drive), undefined, "a drive-by branch name never routes");
+    assert.equal(agentLikePR(drive), false, "and a stranger's agent/ branch does not count against the cap either (cap DoS)");
+    assert.equal(agentLikePR(trusted), true, "a branch signal from a trusted login counts");
+    assert.equal(agentLikePR(pr({ user: { login: "claude[bot]", type: "Bot" } })), true, "so does a bot signal from a trusted login");
+    assert.equal(agentLikePR(pr({ user: { login: "dependabot[bot]", type: "Bot" } })), false, "Dependabot is a bot, not a trusted one");
+    assert.equal(agentLikePR(pr({ labels: [{ name: "agent:qa" }] })), true, "a label counts");
+    assert.equal(agentLikePR(pr()), false);
+  } finally { if (before === undefined) delete process.env.AGENTS_BOT_LOGINS; else process.env.AGENTS_BOT_LOGINS = before; }
 });
 
-test("guard-open-prs: the count includes branch-prefix and bot-author PRs without a label", async () => {
+test("guard-open-prs: the count includes branch-prefix and bot-author PRs without a label only from a trusted login", async () => {
   const page = [
     pr({ labels: [{ name: "agent:ops" }] }),
     pr({ head: { ref: "agent/qa/a" } }),
     pr({ user: { login: "claude[bot]", type: "Bot" } }),
+    pr({ head: { ref: "agent/qa/c" }, user: { login: "claude[bot]", type: "Bot" } }),
     pr({ head: { ref: "agent-ish/x" } }),
     pr(),
   ];
-  const r = await countAgentPrs({ repo: "o/r", getPage: async () => ({ status: 200, json: page }) });
+  const get = async () => ({ status: 200, json: page });
+  const r = await countAgentPrs({ repo: "o/r", getPage: get, appLogins: ["claude[bot]"] });
   assert.equal(r.count, 3);
-  assert.equal(r.seen, 5);
+  assert.equal(r.seen, 6);
+  assert.equal((await countAgentPrs({ repo: "o/r", getPage: get })).count, 1, "with no trusted logins only the label counts");
 });
 
 function cli(...args) {

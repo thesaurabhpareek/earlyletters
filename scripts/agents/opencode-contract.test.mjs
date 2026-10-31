@@ -201,11 +201,20 @@ test("child env: the model's shell sees only the allowlist plus engine variables
 
 const final = outcomesOf("final-deny-matrix");
 const GRAPHQL_COMMENT = "gh pr comment 1 --body 'ran gh api graphql locally'";
+// Round 7: the gh denies are whitespace tolerant (`gh*secret*`), so a command line that has the word secret in it is
+// denied even in a quoted body. The real binary ran this one under the old anchored pattern; over-blocking is accepted now.
+const OVERBLOCKED = "gh pr create --title 'fix main page' --body 'no secret here'";
+
+test("round 7: a body that mentions a denied word is over-blocked on purpose (use --body-file)", () => {
+  assert.equal(final[OVERBLOCKED], "ran", "fixture is the old recording");
+  assert.ok(denied(OVERBLOCKED));
+  assert.ok(!denied("gh pr create --title 'fix main page' --body-file /tmp/body.md"));
+});
 
 test("final deny: the glob matcher agrees with the real binary on all 58 recorded commands", () => {
   // 98dcbf84 recording. Round 3 changed the patterns on purpose for the false positives, the
   // graphql comment and the accidental substitution match, so those rows are expected to differ.
-  const changedOnPurpose = new Set([...MUST_ALLOW, GRAPHQL_COMMENT, "git push origin $(echo develop)"]);
+  const changedOnPurpose = new Set([...MUST_ALLOW, GRAPHQL_COMMENT, OVERBLOCKED, "git push origin $(echo develop)"]);
   for (const [cmd, res] of Object.entries(final)) {
     if (changedOnPurpose.has(cmd)) continue;
     if (isPush(cmd)) { assert.ok(denied(cmd), cmd); continue; } // documented exception: see the comment at the top of this section
@@ -246,7 +255,8 @@ for (const cmd of MUST_ALLOW) {
     assert.equal(tighter[cmd], "ran", "recorded on the real binary with the tighter set");
     // Round 5 policy: only `git push [-u] origin agent/*` stays allowed; other pushes and any git command
     // containing "push" are denied on purpose (documented in integration-notes.md).
-    assert.ok(denied(cmd), "round 6: the model does not push, so every command with git and push is denied");
+    if (isPush(cmd)) assert.ok(denied(cmd), "round 6: the model does not push, so every push is denied");
+    else assert.equal(denied(cmd), false, "round 7: a command that only mentions push is allowed again");
   });
 }
 
@@ -283,7 +293,7 @@ const tighterGit = () => {
 };
 const tighterDenied = (cmd) => {
   // The frozen candidate git set plus the CURRENT non-git patterns (those that do not mention git or push).
-  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !/^\*?git/.test(p))];
+  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !/^\*?git|push|send-pack/.test(p))];
   return deniedBy(denyOnly(pats))(cmd);
 };
 
@@ -299,5 +309,5 @@ test("tighter candidate: the real binary allows every must-allow command and sti
 
 test("tighter candidate: the matcher agrees with the real binary on all 58 commands", () => {
   // The graphql comment row was recorded with the old unanchored gh pattern; it is anchored now (not run live).
-  for (const [cmd, res] of Object.entries(tighter)) if (cmd !== GRAPHQL_COMMENT) assert.equal(tighterDenied(cmd), res === "blocked", cmd);
+  for (const [cmd, res] of Object.entries(tighter)) if (cmd !== GRAPHQL_COMMENT && cmd !== OVERBLOCKED) assert.equal(tighterDenied(cmd), res === "blocked", cmd);
 });

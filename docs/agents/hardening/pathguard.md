@@ -27,7 +27,7 @@ The hard rules cannot be unlocked by a lane. An agent with no lane may change no
 
 Tricks handled: a rename or copy counts as touching both the old and the new path; deletions count; `..` segments, absolute paths, drive letters and control characters are rejected (not resolved); case is folded (macOS and Windows file systems); backslashes, `./`, `//`, trailing dots and spaces, and fullwidth Unicode (NFKC) are normalised; symlink (mode 120000) and submodule (160000) entries are rejected on either side of a change; an empty diff, an unknown base, a missing lanes file or a bad handle all fail closed.
 
-CLI exit codes: 0 ok, 1 violations (each printed as `[rule] path: reason`), 2 could not decide. The CLI uses `git diff --raw -z -M base...head` (merge-base form, so only the PR's own changes count).
+CLI exit codes: 0 ok, 1 violations (each printed as `[rule] path: reason`), 2 could not decide. The CLI checks every commit in `base..head` one by one (`git rev-list` then `git diff-tree --raw -z -M` per commit), not the net diff, so a path added in one commit and removed in the next is still seen (round 4 and 5; the older merge-base form `base...head` is gone from the CLI).
 
 ## Wiring it (after 5 Nov; founder applies, not applied to `.github/`)
 
@@ -104,7 +104,7 @@ Compared by reading only; W4's branch is not edited.
 
 1. Open-PR cap: same number (15) and same label rule (`agent:` prefix). Differences: W4's gate uses `gh pr list --limit 300` (a silent cap above 300, GraphQL under the hood), mine uses REST with pagination and fails closed at 2000. W4's gate stops quietly (`go=false`, exit 0, warning); mine exits 1 at or above the max and 2 on errors, so a workflow using mine must treat 1 as "stop, not a failure" if it wants W4's quiet behaviour. Unresolved: which behaviour the run path wants.
 2. Path rules: W4 has an allow regex `^docs/` plus a deny regex (`.github/`, `supabase/`, `scripts/`, `agents/roster.json`, `.claude/`, `CLAUDE.md`, `package(-lock).json`, `.gitmodules`, `docs/agents/`). I added `.claude/**`, `docs/agents/**`, any `package.json` and `.gitmodules` to my hard rules to match. W4's pilot allow-list is all of `docs/` (minus `docs/agents/`), mine is per-lane files (`docs/BACKLOG.md`, `docs/FOUNDER_TASKS.md`). Mine is narrower; for the product pilot the two lanes disagree until W4 narrows its `PUBLISH_ALLOW` or the founder accepts both (both must pass).
-3. Check point: W4 checks every commit in the agent's bundle before publishing (so a bad commit hidden by a later revert is caught), mine checks the net diff of the PR (`base...head`). Mine would miss a path touched and then reverted inside a PR. Not resolved; running both is the safe option.
+3. Check point: both check every commit now. W4 checks every commit in the agent's bundle before publishing; this script checks every commit in `base..head` (see the round 4 and 5 section). The earlier wording here, that this script checked only the net diff and would miss a path touched and then reverted, is stale and no longer true.
 4. Renames: W4 uses `--no-renames` (both paths show as delete and add); mine uses `-M` and checks old and new explicitly. Equivalent result.
 5. Symlink and submodule: both reject. W4 also caps commits (10), files (40), bytes (5 MB) and rejects merge commits; mine has no size or count limits.
 6. Normalisation (`..`, case folding, NFKC, trailing dots, control characters) exists only in mine; W4 relies on git's own path output and plain regexes, so a case variant such as `CLAUDE.MD` on a case-insensitive checkout is not matched by its deny regex.
@@ -132,3 +132,10 @@ Remove `pathguard` from required checks in branch protection (founder), then del
 - Every commit in `base..head` is checked, not only the net diff, so a forbidden path added in one commit and removed in the next fails. Caps (flags, defaults from the lane proposal): `--max-commits 10`, `--max-files 40` (distinct paths over all commits), `--max-bytes 5242880` (sum of blob sizes of added or changed files). A merge commit in the range fails.
 - Hard rules are matched at any depth and cover `.claude/**`, `.husky/**`, `AGENTS.md`, `opencode.json`, `opencode.jsonc`, `.opencode/**`, `.npmrc`, `.yarnrc*`, `.pnpmfile.cjs`, `bunfig.toml`, `.gitattributes`, and `.git` (also as a file). Case, trailing dots and spaces and backslashes are normalised before matching.
 - Bot-authored PRs with no `agent:*` label (for example Dependabot) now exit 1. The workflow must decide whether to skip known bots before calling the script.
+
+## Round 7 changes (31 Oct 2026, UNVERIFIED in a workflow: none runs this script yet)
+
+- More hard rules, any depth, same normalisation as the others: `.devcontainer/**`, `.vscode/**`, `.mcp.json`, and `CODEOWNERS` in any directory (`.github/CODEOWNERS` was already caught by `.github/**`).
+- A mode change is a violation (rule `mode-change`), also when the content did not change: `100644` to `100755` (or back) turns a file into something that runs, and git shows it as a modification with an unchanged blob. Adding a new executable file is not a mode change (its old mode is `000000`) and is judged by its path like any other add. A rename or copy that changes the mode is flagged too.
+- A bot-authored PR needs the label AND a head branch `agent/<same handle>/<topic>`. Label-only or a handle mismatch exits 1 (before, a bot account with a label and any branch passed). A PR opened by a human and labelled by the founder is unchanged.
+- Still not caught: content inside an allowed file, and anything outside a PR (see "What it does not catch").

@@ -51,13 +51,23 @@ export function identityOf(pr, { appLogins = [] } = {}) {
   if (labels.length > 1) return { status: "conflict", reasons: [`more than one agent:* label (${labels.join(", ")})`] };
   if (labels.length === 1) {
     if (branch && branch !== labels[0]) return { status: "conflict", reasons: [`label agent:${labels[0]} but branch handle is '${branch}'`] };
+    // A bot-authored PR cannot launder a label: its branch must be agent/<same handle>/<topic>.
+    if (bot && !branch) return { status: "conflict", reasons: [`bot author with label agent:${labels[0]} but the branch is not agent/${labels[0]}/<topic> (a bot-authored agent PR needs both)`] };
     return { status: "agent", agent: labels[0], reasons: [] };
   }
   const why = [branch && `branch prefix agent/${branch}/`, bot && "bot author"].filter(Boolean);
   return why.length ? { status: "unlabelled", agent: branch, reasons: [`${why.join(" and ")} but no agent:* label`] } : { status: "none", reasons: [] };
 }
 
-/** For counting: a PR is agent-like if label OR branch prefix OR bot author says so. */
-export function isAgentLike(pr, opts) {
-  return identityOf(pr, opts).status !== "none";
+/**
+ * For counting against the open-PR cap. A PR counts if it carries an `agent:*` label, OR if branch
+ * or bot signal says "agent" AND the author is one of the trusted logins (AGENTS_BOT_LOGINS).
+ * A stranger with an `agent/...` branch and Dependabot never count: counting them lets anyone fill
+ * the cap and stop the team (a denial of service). Routing and the guards are unchanged.
+ */
+export function isAgentLike(pr, opts = {}) {
+  if (labelHandles(pr).length > 0) return true;
+  if (identityOf(pr, opts).status === "none") return false;
+  const login = String(pr?.user?.login ?? "").toLowerCase();
+  return Boolean(login) && (opts.appLogins ?? []).some((a) => String(a).toLowerCase() === login);
 }
