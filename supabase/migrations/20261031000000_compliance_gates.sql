@@ -26,6 +26,12 @@
 --   ops_compliance_retention(timestamptz)  service_role: deletes counts older than two years.
 --
 -- Decisions inside this file (CR-22):
+--   * The hook is security definer (owner postgres), so supabase_auth_admin needs only EXECUTE on it and no
+--     rights on ops. Supabase's guide grants table rights to supabase_auth_admin instead; definer is used here
+--     because every table it touches is private to ops and the search_path is pinned.
+--   * Known gap, to verify on a local stack: if GoTrue rolls back its transaction when the hook returns an
+--     error, the 'block' count is lost with it (Postgres has no autonomous transactions). Passes and
+--     fail-open counts are unaffected.
 --   * The IP is used in memory to find a country and is never stored or logged.
 --   * Fail open, and count it. No geo data, no IP, an unknown country, or an internal error lets the sign-up
 --     through and counts `geo_unknown` or `error`. Refusing every sign-up because a monthly file is late would
@@ -103,14 +109,21 @@ create table if not exists ops.geo_ip_meta (
   loaded_at timestamptz not null default now()
 );
 
--- Host address of an inet (drops any mask), so comparisons with the stored range starts are exact.
+-- Host address of an inet (drops any mask), so comparisons with the stored range starts are exact. An
+-- IPv4-mapped IPv6 address (::ffff:a.b.c.d) is looked up as IPv4. The lower bound keeps the backward index
+-- scan inside the address's own family. lock_timeout: a geo load holds ACCESS EXCLUSIVE on the table; the
+-- hook must fail open (55P03 is caught) well inside Supabase's hook time limit, whose cancel is not.
 create or replace function ops.country_of(p_ip inet)
-returns text language sql stable security definer set search_path = pg_catalog, ops, pg_temp as $$
+returns text language sql stable security definer
+set search_path = pg_catalog, ops, pg_temp set lock_timeout = '200ms' as $$
   select r.country
-    from (select set_masklen(p_ip, case family(p_ip) when 4 then 32 else 128 end) as ip) q
+    from (select case when family(p_ip) = 6 and set_masklen(p_ip, 128) << '::ffff:0:0/96'::inet
+                      then regexp_replace(host(p_ip), '^::ffff:', '', 'i')::inet
+                      else set_masklen(p_ip, case family(p_ip) when 4 then 32 else 128 end) end as ip) q
     cross join lateral (
       select g.country, g.ip_end from ops.geo_ip_ranges g
-       where g.ip_start <= q.ip and family(g.ip_start) = family(q.ip)
+       where g.ip_start <= q.ip
+         and g.ip_start >= case family(q.ip) when 4 then '0.0.0.0'::inet else '::'::inet end
        order by g.ip_start desc limit 1) r
    where q.ip <= r.ip_end and r.country <> 'ZZ';
 $$;
@@ -212,7 +225,8 @@ comment on column ops.regulatory_watch.triaged_at is 'L2 system timestamp';
 
 -- 5. The auth hook -----------------------------------------------------------------------------------------
 create or replace function public.hook_before_user_created(event jsonb)
-returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp set lock_timeout = '200ms' as $$
 declare
   v_ip inet;
   v_meta ops.geo_ip_meta%rowtype;
@@ -260,7 +274,6 @@ begin
     revoke all on function public.hook_before_user_created(jsonb) from service_role;
   end if;
   if exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
-    grant usage on schema public to supabase_auth_admin;
     grant execute on function public.hook_before_user_created(jsonb) to supabase_auth_admin;
   end if;
 end $$;

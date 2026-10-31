@@ -36,11 +36,12 @@ check('ZZ (unknown) address: allowed', isAllow(await hook('203.0.113.9')));
 check('address outside every range: allowed', isAllow(await hook('100.64.0.1')));
 check('missing ip_address: allowed', isAllow(await hook(undefined)));
 check('garbage ip_address: allowed', isAllow(await hook('not-an-ip')));
+check('IPv4-mapped IPv6 KP address: refused', (await hook('::ffff:192.0.2.77'))?.error?.http_code === 403);
 check('address with a mask is looked up as a host', (await hook('192.0.2.200/8'))?.error?.http_code === 403);
 const afterBasics = await counts();
 console.log('      counts:', afterBasics.join(' | '));
 check('counts: blocks by jurisdiction, nothing else identifying', afterBasics.join('|') ===
-  'signup_region block IR 1|signup_region block KP 2|signup_region geo_unknown - 4|signup_region pass - 1');
+  'signup_region block IR 1|signup_region block KP 3|signup_region geo_unknown - 4|signup_region pass - 1');
 
 // 2. No IP and no person id is stored anywhere in ops.
 const leaked = (await sys(`select table_name, column_name from information_schema.columns
@@ -117,7 +118,12 @@ check('report shows the geo source', report.geo.source === 'dbip-country-lite' &
 await sys(`insert into ops.compliance_check_counts values (current_date - 800, 'signup_region', 'pass', '', 3)`);
 check('retention deletes counts older than two years', (await sys(`select public.ops_compliance_retention() n`)).rows[0].n === 1);
 
-// 9. The migration runs twice.
+// 9. lock_timeout is set on the hook and the lookup, so a geo load makes the hook fail open, not time out.
+const cfg = (await sys(`select p.proname, array_to_string(p.proconfig, ',') c from pg_proc p
+  where p.oid in ('public.hook_before_user_created(jsonb)'::regprocedure, 'ops.country_of(inet)'::regprocedure)`)).rows;
+check('hook and lookup carry lock_timeout=200ms', cfg.length === 2 && cfg.every((r) => /lock_timeout=200ms/.test(r.c)));
+
+// 10. The migration runs twice.
 const file = process.argv.slice(2).find((f) => f.endsWith('20261031000000_compliance_gates.sql'));
 const { readFileSync } = await import('node:fs');
 let twice = true;

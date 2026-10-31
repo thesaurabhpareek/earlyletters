@@ -11,7 +11,8 @@
 //
 // It validates every row (two addresses of one family, start <= end, a two-letter code), refuses a file with
 // fewer than --min-rows valid rows (default 200000) or more than 0.1% bad rows, and replaces the table and
-// ops.geo_ip_meta in one transaction through psql. A failed load leaves the old data in place.
+// ops.geo_ip_meta in one transaction through psql. A failed load leaves the old data in place. During the
+// load the auth hook cannot read the table and fails open (lock_timeout 200ms), so run it at a quiet hour.
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { isIP } from 'node:net';
@@ -97,7 +98,8 @@ function main(argv) {
     writeFileSync(csv, rows.map((r) => `${r.start},${r.end},${r.cc}`).join('\n') + '\n');
     const sql = join(dir, 'load.sql');
     writeFileSync(sql, psqlScript(csv, version, rows.length));
-    const r = spawnSync('psql', [db, '-X', '-q', '-f', sql], { stdio: 'inherit' });
+    // The URL goes in the environment (PGDATABASE accepts a connection URI), not argv, so `ps` does not show it.
+    const r = spawnSync('psql', ['-X', '-q', '-f', sql], { stdio: 'inherit', env: { ...process.env, PGDATABASE: db } });
     if (r.status !== 0) { console.error('load failed; the previous data is unchanged'); process.exit(1); }
     console.log(`loaded ${rows.length} ranges, version ${version}`);
   } finally {

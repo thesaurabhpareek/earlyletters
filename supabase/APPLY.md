@@ -1182,6 +1182,7 @@ The migration history row stays, so `db push` never runs this file again. To app
 1. Load geo data: `node scripts/compliance/load-geo-ip.mjs --csv dbip-country-lite-YYYY-MM.csv.gz --version YYYY-MM --dry-run`, then again with `SUPABASE_DB_URL` and without `--dry-run`.
 2. Turn the hook on: Dashboard > Authentication > Hooks > "Before User Created" > Postgres > `public.hook_before_user_created`.
 3. Check one sign-up from a normal network still works, then `select public.ops_compliance_report(current_date, current_date);` shows one `pass`.
+4. Before relying on block counts: on a local stack (`supabase start`), refuse one sign-up through the hook and check the `block` row survived. If GoTrue's rollback removed it, block counts are not recorded at the hook and the report says only passes and fail-opens.
 
 **Check after applying** (expect 7, then `false`, then `true`):
 ```sql
