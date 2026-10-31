@@ -1,0 +1,75 @@
+/* Two quiet round buttons. Laptop: bottom right. Phones: either side of the bottom pill, so nothing overlaps. */
+.nav {
+  position: fixed;
+  /* Phones: one row at the pill's height, up on the left, down on the right, the pill between them. */
+  left: max(10px, env(safe-area-inset-left, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px + 3px);
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  transition: opacity 400ms var(--ease-standard);
+  --n-ink: var(--night-ink);
+  --n-fill: rgba(28, 25, 22, 0.58);
+  --n-line: rgba(242, 236, 228, 0.28);
+}
+.nav[data-tone='paper'] {
+  --n-ink: var(--ink);
+  --n-fill: rgba(251, 248, 243, 0.82);
+  --n-line: rgba(43, 39, 34, 0.26);
+}
+.nav[data-hidden] {
+  opacity: 0;
+  pointer-events: none;
+}
+.btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--n-line);
+  background: var(--n-fill);
+  color: var(--n-ink);
+  cursor: pointer;
+  /* No backdrop blur: a fixed blur over a scrolling page is re-drawn every frame and costs smoothness. */
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+.btn[data-end] {
+  margin-left: auto;
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--n-fill) 60%, var(--n-ink) 14%);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--n-ink);
+  outline-offset: 3px;
+}
+@media (min-width: 900px) {
+  .nav {
+    left: auto;
+    right: max(24px, env(safe-area-inset-right, 0px));
+    bottom: 24px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn[data-end] {
+    margin-left: 0;
+  }
+}
+@media (forced-colors: active) {
+  .btn {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav {
+    transition: none;
+  }
+}
