@@ -90,6 +90,8 @@ const again = await redeem(V, 'accept', await hashOf('ASHA9999'));
 check('a person already in the book gets already_member (counted)', again.outcome === 'unusable' && again.detail === 'already_member');
 const pAgain = await redeem(V, 'peek', await hashOf('ASHA9999'));
 check('peek says already_member too', pAgain.outcome === 'unusable' && pAgain.detail === 'already_member');
+check('already_member comes from an explicit membership check, not the inner error message text',
+  !/already a member of this book/.test(readFileSync(new URL('../migrations/20261027000000_invite_redeem_by_code.sql', import.meta.url), 'utf8')));
 
 // ── Closed codes read as not found ───────────────────────────────────────
 const BK2 = await newChild(B, 'Asha', '2025-06-01');

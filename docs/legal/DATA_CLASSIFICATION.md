@@ -277,6 +277,17 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `machine_edits` | L4 | content: previous edit list |
 | `superseded_by` | L3 | person id; nulled at account deletion |
 
+##### `invite_redeem_failures`
+
+Added by `20261027000000_invite_redeem_by_code.sql`. Closed to every role; written only by `invite_redeem_by_code()`; rows older than 2 hours are deleted as new ones are written.
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L2 | internal id |
+| `scope` | L2 | enum (user, device, ip, global) |
+| `subject` | L3 | keyed hash (rotating key) of a person id, device id or client address; empty for global; never a raw id |
+| `at` | L2 | system timestamp |
+
 ##### `legal_holds`
 
 | Column | Level | Note |

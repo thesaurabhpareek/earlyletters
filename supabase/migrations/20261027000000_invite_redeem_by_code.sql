@@ -137,7 +137,15 @@ begin
       get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text, v_detail = pg_exception_detail;
       if v_state = 'SCINV' then
         v_unusable := true;
-        if v_msg = 'already a member of this book' then v_unusable_detail := 'already_member'; end if;
+        -- already_member by an explicit check, not by the inner message text: the newest open invite
+        -- for this code (as accept_child_invite_by_code picks it) is in a live book this person is in.
+        select * into v_inv from child_invites i
+         where i.code_hash = p_code_hash and i.accepted_at is null and i.revoked_at is null and i.expires_at > now()
+         order by i.created_at desc limit 1;
+        if found and public.child_is_live(v_inv.child_id)
+           and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_user) then
+          v_unusable_detail := 'already_member';
+        end if;
       elsif v_state in ('SCCAP', 'SCCON') then
         return jsonb_build_object('outcome', 'refused', 'sqlstate', v_state, 'detail', v_detail);
       else

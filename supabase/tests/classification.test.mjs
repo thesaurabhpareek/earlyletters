@@ -32,6 +32,12 @@ const weakIds = cols.filter((r) => personIds.includes(r.col) && !/^L[34]\b/.test
 for (const w of weakIds) console.log(`      person id below L3: public.${w.rel}.${w.col}`);
 check('person identifiers are L3 or higher', weakIds.length === 0);
 
+// Pseudonymised subjects (keyed or peppered hashes of a person, device or address) are L3 (DATA_CLASSIFICATION rule 4).
+const subjects = ['subject_hash', 'subject'];
+const weakSubjects = cols.filter((r) => subjects.includes(r.col) && !/^L[34]\b/.test(r.comment ?? ''));
+for (const w of weakSubjects) console.log(`      pseudonymised subject below L3: public.${w.rel}.${w.col}`);
+check('pseudonymised subject hashes are L3 or higher', cols.some((r) => r.rel === 'invite_redeem_failures' && r.col === 'subject') && weakSubjects.length === 0);
+
 const noRls = (await sys(`
   select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relrowsecurity`)).rows;

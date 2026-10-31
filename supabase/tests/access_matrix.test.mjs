@@ -567,9 +567,9 @@ check('[20261023060000] a table, sequence or function created after every file g
 
 // ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
 // The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the
-// invite-redeem function, as service_role, may run it. 20261027000000 builds it; the rule holds for every overload,
-// every overload must be closed to PUBLIC, anon and authenticated and open to service_role, and it is
-// never an RPC or helper of the matrix above. 20261027000000 adds it. The two probes show the rule is not empty: Postgres's
+// invite-redeem function, as service_role, may run it. 20261027000000 builds it. Every overload must be
+// closed to PUBLIC, anon and authenticated and open to service_role, and it is never an RPC or helper
+// of the matrix above. The two probes show the rule is not empty: Postgres's
 // default grant (PUBLIC) fails it, and the grants the migration must make pass it.
 const redeemFacts = async () => (await sys(`select coalesce(array_to_string(p.proacl, ','), '') acl,
     has_function_privilege('anon', p.oid, 'execute') anon_x, has_function_privilege('authenticated', p.oid, 'execute') auth_x,
