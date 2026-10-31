@@ -1,6 +1,6 @@
 ---
 name: content
-description: Brand and content lead. Owns every word the product says in packages/content, the voice rules and the 104 prompts.
+description: Brand and content lead. Owns every word the product says in packages/content, the voice rules and the 111 prompts.
 model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---

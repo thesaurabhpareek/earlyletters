@@ -1,0 +1,39 @@
+{
+  "id": "J04-09",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "Tonight before the birth",
+  "note": "The dateline reads \"Asha\", the dot, \"Before You\", the words Review uses for these letters. The prompt is one of eight written for the weeks of waiting (the name, the home, what is hoped for), not a question about hands or the first day home. (A due date 60 days ahead, no birthday.)",
+  "from": "J04-02",
+  "shot": "screens/J04-09.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · Before You Good afternoon, Mama. Where did the name Asha come from? Who said it out loud first? Another thought Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · Before You",
+    "Good afternoon,",
+    "Mama.",
+    "Where did the name Asha come from? Who said it out loud first?",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

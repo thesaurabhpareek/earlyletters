@@ -13,6 +13,12 @@ import type { AuthErrorKind } from './machine.logic';
 
 export type AuthErrorContext = 'code' | 'link' | 'provider' | 'send' | 'passkey';
 
+/** The error carries an HTTP status of 500 or more: a server answered. Status 0 (a failed fetch) or none is not one. */
+function isServerError(e: unknown): boolean {
+  const status = errorStatus(e);
+  return status !== null && status >= 500;
+}
+
 export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorKind {
   if (e && typeof e === 'object') {
     const x = e as { error?: unknown };
@@ -24,7 +30,11 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
   const code = errorCode(e);
   // expo-apple-authentication: the person closed the Apple sheet.
   if (code === 'ERR_REQUEST_CANCELED') return 'cancelled';
-  if (isNetworkError(e)) return 'network';
+  // "Network" is a request that never got an answer. @supabase/auth-js also throws AuthRetryableFetchError for a
+  // 500 to 504 or a 520 to 530 it did get (status carried on the error, node_modules/@supabase/auth-js/src/lib/fetch.ts);
+  // for a failed fetch the status is 0. A person who is online and met a server error must not be told to come back
+  // online (BL-488): a status of 500 or more falls through to the provider or unknown words ("That did not work this time").
+  if (isNetworkError(e) && !isServerError(e)) return 'network';
   switch (code) {
     case 'otp_expired':
       // Supabase says "expired or invalid" for both; a typed code is most often a typo.
@@ -37,9 +47,10 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
     case 'webauthn_challenge_expired':
     case 'flow_state_expired':
       return 'expired';
+    // SIGN-01: in the send step a 429 is about emails (the per-address wait or the hourly cap); elsewhere it is not.
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
-      return 'rate_limited';
+      return context === 'send' ? 'email_wait' : 'rate_limited';
     case 'email_address_invalid':
     case 'email_address_not_authorized':
       return 'invalid_email';
@@ -61,7 +72,7 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
     case 'bad_oauth_callback':
       return 'provider';
   }
-  if (errorStatus(e) === 429) return 'rate_limited';
+  if (errorStatus(e) === 429) return context === 'send' ? 'email_wait' : 'rate_limited';
   return context === 'provider' || context === 'passkey' ? 'provider' : 'unknown';
 }
 
@@ -91,4 +102,19 @@ export function normaliseCode(input: string): string {
 export function looksLikeEmail(input: string): boolean {
   const s = input.trim();
   return s.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+/**
+ * SIGN-01: the client's own wait before another email to the same address (A-REQ-025, `RESEND_WAIT_MS` in email.ts).
+ * Milliseconds left, 0 when another may go. Keyed by address by the caller, so going back with "Use a different
+ * email" and sending the same address again inside the minute never reaches Supabase's per-address 429.
+ */
+export function emailSendWaitMs(lastSentAt: number | null | undefined, now: number, waitMs: number): number {
+  if (lastSentAt === null || lastSentAt === undefined || !Number.isFinite(lastSentAt) || lastSentAt > now) return 0;
+  return Math.max(0, lastSentAt + waitMs - now);
+}
+
+/** The key for that wait: the address as Supabase compares it (trimmed, lower case). Kept in memory only. */
+export function emailWaitKey(email: string): string {
+  return email.trim().toLowerCase();
 }

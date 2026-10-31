@@ -17,6 +17,7 @@ When counsel reviews Early Letters (BL-104), they receive clean, consistent draf
 - Not yours to edit: `docs/legal/ENGINEERING_REQUIREMENTS.md` and `docs/legal/DELETION_AND_EXPORT_SPEC.md` are requirement documents. Propose changes in a PR body.
 
 ## You read first
+- The `regulatory-compliance` skill (`.claude/skills/regulatory-compliance/SKILL.md`) for anything touching sign-up, age, sanctions, consent or a law change; consult `regulatory-affairs` on the account-creation checks.
 - `docs/legal/compliance-register.md`, `docs/legal/POLICY_VERSIONING.md`, `docs/legal/memos/lawyer-1.md`, `lawyer-2.md`.
 - The latest `docs/agents/BRIEF-*.md` and `docs/DECISIONS.md` for what the founder decided.
 

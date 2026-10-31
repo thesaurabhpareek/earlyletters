@@ -7,7 +7,7 @@
  * takes (`from` to `to`, 0 to 1 of tokens.motion.drawMs), in the order a hand would draw it. Lengths are
  * SVGGeometryElement.getTotalLength() in Chromium, rounded up, measured offline.
  *
- *   envelope       closed letter: errors, the 404 until P6 moves it to the window
+ *   envelope       closed letter: errors
  *   envelopeOpen   a letter with its page out: first run, first letter
  *   moon           night: Review waiting, Read together's end and empty state (the website's crescent)
  *   page           one written line and a signature: empty Book, empty month, not found

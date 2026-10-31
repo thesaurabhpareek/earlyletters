@@ -48,7 +48,7 @@
 
 **In v1.0**
 - Prompt library delivered as a typed, versioned, hashed content block through F19, cached, with the bundled English library as the floor (B14).
-- Age-aware selection by the child's month of age, a new expecting band for due-date books, no prompt repeated for the same author and child within 12 months, skip with "Another thought", no prompt rather than a repeat when the pool runs out.
+- Age-aware selection by the child's month of age, a new `before` band for a book that is not born yet (no birthday, or one after today), no prompt repeated for the same author and child within 12 months, skip with "Another thought", no prompt rather than a repeat when the pool runs out.
 - `together` prompts never served while the `child-input` flag is off (PRD-REQ-005).
 - Local reminders only, scheduled on the phone with `expo-notifications`: default "A few times a week" (Tuesday and Saturday, 20:30) plus the month-age note per included child; Off, Weekly, Every evening; a time picker from 07:00 to 21:30.
 - Smart quiet, back-off, copy rotation, birthday note replacing that day's reminder, nothing on a plan-notice day.
@@ -75,7 +75,7 @@
 - A due-date countdown or due-date push (B-REQ-015).
 - Letter text, transcript or audio reference in any notification (LEGAL-REQ-054).
 - Email or SMS letter reminders. One channel by default (R2 F13 row; R1-S15). The transactional plan reminder emails in `docs/emails/CATALOG.md` section 7 are F14's, carry no letter prompt and are not reminders to write.
-- Notifications that change behaviour from the server without a release (B14: never server-driven if it changes data collection; 2.3.1(a) no hidden features, R4-S55).
+- Notifications that change behaviour from the server without a release (B14: never server-driven if it changes data collection; 2.5.19 no hidden features, R4-S55).
 
 ## 5. Market reference
 
@@ -239,11 +239,11 @@ The planner is a pure function on the device. It runs on every save, foreground,
 | `schema` | `"prompts.v1"` | Unknown schema: reject |
 | `version` | integer | Must be greater than the live version |
 | `language` | `"en"` at v1.0 | Others ignored at v1.0 |
-| `prompts[]` | array of `{key, text, band, kind, retired?}` | Same shape as `Prompt` in `packages/core/src/prompts.ts`, with new band `expecting` |
+| `prompts[]` | array of `{key, text, band, kind, retired?}` | Same shape as `Prompt` in `packages/core/src/prompts.ts`, with new band `before` |
 | `key` | `kind.band.slug` | Unique; once published, a key's text never changes (publish check compares with every earlier version) |
 | `text` | 1 to 140 characters | Only `{child}` as a placeholder; no em or en dashes, curly quotes, ellipsis characters or emoji; no she, he, her, him, his, hers; `gap` prompts never mention time away (same rules as `packages/content/test/rules.test.ts`) |
 | `kind` | `opening`, `gap`, `hard`, `family`, `together` | `together` served only with `child-input` on |
-| `band` | `any`, `expecting`, `0-3` to `37-60` | `expecting` only for books with a due date and no birth date |
+| `band` | `any`, `before`, `0-3` to `37-60` | `before` only for a book that is not born yet: no birthday, or a birthday after the local day (`isBeforeBirth` in `packages/core/src/age.ts`, #376). `PROMPT_BANDS` in `packages/api/src/content.ts` carries it; `PROMPT_LIBRARY_VERSION` is 3 |
 
 The publish pipeline (F19) runs the full content test suite before signing. The device repeats the cheap checks (length, placeholders, forbidden characters, pronouns) as a second line, because a signed block that slipped a rule should still never reach a parent.
 
@@ -268,12 +268,12 @@ The publish pipeline (F19) runs the full content test suite before signing. The 
 | C-NFR-001 Rev (B2, M6) | P0 | Letter reminders: local scheduling only; 99% fire within 15 minutes of the slot; zero between 21:30 and 07:00. F14 plan reminders are local on the phone too, and also go by server email from the D-080 status report; the emails are not F13 requests | Given a device lab run of 200 slots over 14 days, Then 198 or more fire within 15 minutes (logged by a test build). Given the planner property test across 24 zones and both DST changes, Then 0 slots in the quiet window | C, B2 |
 | F13-REQ-001 | P0 | The live prompt library comes from the F19 `prompts` block; fallback is the last good cached block, then the bundled `packages/content` library. Tonight never waits for the network | Given no network on first launch, Then Tonight shows a bundled prompt in under 300 ms (first route budget). Given a cached v3 and a failed fetch, Then v3 serves | B14, D-035 |
 | F13-REQ-002 | P0 | A block goes live only after SHA-256 matches the signed manifest, `prompts.v1` schema passes, version is higher than live, and the on-device checks in 6.5 pass | Given 6 corrupt fixtures (bad hash, bad signature, unknown schema, lower version, a curly quote, a gendered pronoun), Then all 6 are rejected and the previous library stays live | B14, CLAUDE.md content rules |
-| F13-REQ-003 | P0 | Selection is by the child's month of age (`bandFor`) on the local date, and by the `expecting` band for a book with a due date and no birth date. Expecting books never get a born-age band | Given a due-date book, When 500 seeded selections run, Then 0 prompts from bands `0-3` to `37-60`. Given Asha turning 4 months today, Then band `4-6` applies today | B14, defect in 1 (Tonight passes 0) |
+| F13-REQ-003 | P0 | Selection is by the child's month of age (`bandFor`) on the local date, and by the `before` band for a book that is not born yet (no birthday, or one after the local day). Such a book never gets a born-age band | Given a due-date book, When 500 seeded selections run, Then 0 prompts from bands `0-3` to `37-60`. Given Asha turning 4 months today, Then band `4-6` applies today | B14, defect in 1 (Tonight passes 0) |
 | F13-REQ-004 | P0 | No prompt key is shown to the same author for the same child twice within 365 days. A prompt counts as shown once per local date when rendered on Tonight, or when skipped | Given a simulated 2-year history with Tonight opened every evening and 3 skips a week, Then no key repeats inside any 365-day window per child | R2 T5, brief |
 | F13-REQ-005 | P0 | When no eligible unseen prompt exists, show no prompt rather than repeat; fallback order is kind pool, then `opening` for the band, then `opening` any, each excluding the 365-day history | Given every eligible key in history, Then the selector returns none and Tonight shows `tonight.subtitle` with no prompt label | brief |
 | F13-REQ-006 | P0 | "Another thought" shows the next eligible prompt; "Just talk" starts with none; skipping never blocks capture | Given 5 skips, Then 5 distinct prompts, and Speak and Type stay enabled throughout | C 3 |
 | F13-REQ-007 | P0 | The selection is deterministic for the same author, child, local date and history, so a reopened Tonight shows the same prompt | Given Tonight closed and reopened 3 times on one date, Then one prompt key and one history entry | `prompts.ts` seed rule |
-| F13-REQ-008 | P0 | The library includes at least 12 `expecting` prompts at launch; none mentions the due date, a countdown, labour or an assumed outcome | Given the content test, Then `expecting` count is 12 or more and a banned-term list (due, weeks left, countdown, labour, delivery) has 0 hits | B-REQ-015, R2-S14 |
+| F13-REQ-008 | P0 | The library includes at least 12 `before` prompts at launch (8 today, #376); none mentions the due date, a countdown, labour or an assumed outcome | Given the content test, Then `before` count is 12 or more and a banned-term list (due, weeks left, countdown, labour, delivery) has 0 hits | B-REQ-015, R2-S14 |
 | F13-REQ-009 | P0 | Every F13 notification is a local notification scheduled on the phone; no server sends reminders, month notes or birthday notes | Given the network monitor during a 7-day run, Then 0 requests carry reminder schedules or fire events | B2, C-NFR-001 |
 | F13-REQ-010 | P0 | One pure planner in `packages/core` computes every F13 request and accepts F14 plan dates as input; it runs on save, foreground, background, settings, zone, child and plan changes and replaces all pending F13 requests | Given each of the 7 triggers in a test harness, Then the pending set equals the planner output exactly | BL-151 |
 | F13-REQ-011 | P0 | Pending budget: F13 owns at most 56 requests, F14 at most 4, horizon 8 weeks or the budget | Given Every evening with 3 children, Then pending F13 requests are 56 or fewer and the earliest dates are kept | R4 section 9 (Unverified limit) |
@@ -336,7 +336,7 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 | `reminder_suppressed` | Yes, enum change | `reason`: add `foreground_recent`, `birthday`, `plan_notice_day`, `hidden_book`, `due_date_quiet`, `backoff` to the existing four | Is smart quiet doing its job? |
 | `notification_opened` | Yes | `type`, `variant_id` | Do reminders bring parents back? Month and birthday notes stay excluded |
 | `letter_saved.from_notification_2h` | Yes | bool | The 12% target |
-| `prompt_shown` | New | `kind`, `band_fit` (`banded`, `any`, `expecting`), `exhausted` (bool) | Is the library deep enough for the 12-month rule? |
+| `prompt_shown` | New | `kind`, `band_fit` (`banded`, `any`, `before`), `exhausted` (bool) | Is the library deep enough for the 12-month rule? |
 | `prompt_skipped` | New | `kind` | Which kinds get skipped? |
 | `settings_changed` | Yes | `key: reminders`, `lock_screen_names` | Mute rate guardrail |
 
@@ -344,12 +344,12 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 
 | Part | Files | Notes |
 |---|---|---|
-| Prompt selection | `packages/core/src/prompts.ts` (exists) | Add band `expecting`; new `pickPrompt(input): Prompt \| null` with `history: {key, date}[]` (365-day window), `allowKinds` (drops `together` when `child-input` is off), `expecting: boolean`. Keep `selectPrompt` until Tonight moves, then remove it. `AVOID_RECENT` goes |
+| Prompt selection | `packages/core/src/prompts.ts` (exists) | Add band `before` (built, #376); new `pickPrompt(input): Prompt \| null` with `history: {key, date}[]` (365-day window), `allowKinds` (drops `together` when `child-input` is off), `beforeBirth: boolean` (built on `SelectInput`, #376). Keep `selectPrompt` until Tonight moves, then remove it. `AVOID_RECENT` goes |
 | Planner | New `packages/core/src/reminder-plan.ts` | Pure: input is settings, children (birth date, due date, hidden, included, paused), saves, foreground times, plan dates from F14, now, zone; output is a list of `{id, fireAtLocal, kind, routeChildId, variantId}`. No clock reads, no React Native (CLAUDE.md `packages/core` rule) |
 | Scheduler adapter | New `apps/mobile/src/lib/notifications/` (`schedule.ts`, `permissions.ts`, `routes.ts`, `copy.ts`) | `expo-notifications` (not installed today: `apps/mobile/package.json`; TDD 01 section 2). Install with `flock /tmp/scribe-npm.lock npx expo install expo-notifications`; check its licence and last release before merge (BRIEF). **Update 13 Oct 2026:** the adapter now exists as `apps/mobile/src/lib/reminders/` (`scheduler.ts`, `planner.ts`) with `expo-notifications` ~57.0.21 installed. It cancels only requests marked `scribe.reminders`, so F14 plan reminders must carry their own marker and pass their dates in for the day rule; plan reminders are not in its planner yet (its header lists them as later) |
 | Prompt history | `apps/mobile/src/lib/db/migrations.ts` (exists): new local table `prompt_history(key, child_id, shown_on)` | Append-only migration step |
 | Content block client | F19 client (BL-022); contract `prompts.v1` in `packages/api` (new package, B15, F19 owns) | Schema validation library chosen by F19 |
-| Copy | `packages/content/src/prompts.ts` (12 or more `expecting` prompts; none today), `packages/content/src/features/reminders.en.ts` (`notifications.*` name-free variants, BL-157; `reminders.backoff.*`; `reminders.earlyBirth.*`; new `settings.reminders.*` keys listed in 6.2 and 6.3) | Strings go straight to the stream's `packages/content` feature file, never a `copy.ts` in a component folder (R5 EQ-29) |
+| Copy | `packages/content/src/prompts.ts` (12 or more `before` prompts; 8 today, #376), `packages/content/src/features/reminders.en.ts` (`notifications.*` name-free variants, BL-157; `reminders.backoff.*`; `reminders.earlyBirth.*`; new `settings.reminders.*` keys listed in 6.2 and 6.3) | Strings go straight to the stream's `packages/content` feature file, never a `copy.ts` in a component folder (R5 EQ-29) |
 | Ask order | F02 `nextAsk` (BL-023) | F13 provides the prime card only |
 | Settings screen | `apps/mobile/src/app/settings/reminders.tsx` (exists; today it saves choices and says scheduling is not built: `settingsMore.remindersNotYet`) | Remove `remindersNotYet` when the planner ships |
 
@@ -365,9 +365,9 @@ Stream: S14, with S03 for the local table and S16 for copy (`08-delivery.md` sec
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct |
 |---|---|---|---|---|---|---|---|
-| WP-F13-01 | Prompt selector: `expecting` band, 365-day history, none on exhaustion, kind filter | S14 | `packages/core/src/prompts.ts`, `packages/core/test/prompts.test.ts` | none | `[F13-REQ-003]`, `[F13-REQ-004]` 2-year property test, `[F13-REQ-005]`, `[F13-REQ-007]`, `[PRD-REQ-005]` | Agent. BL-151 | Partly built: `selectPrompt` exists with `AVOID_RECENT = 10`; no `expecting` band |
+| WP-F13-01 | Prompt selector: `before` band, 365-day history, none on exhaustion, kind filter | S14 | `packages/core/src/prompts.ts`, `packages/core/test/prompts.test.ts` | none | `[F13-REQ-003]`, `[F13-REQ-004]` 2-year property test, `[F13-REQ-005]`, `[F13-REQ-007]`, `[PRD-REQ-005]` | Agent. BL-151 | Partly built: `selectPrompt` exists with `AVOID_RECENT = 10`; the `before` band is built (#376) |
 | WP-F13-02 | Pure planner, with quiet, hidden and early-birth inputs | S14 | New `packages/core/src/reminder-plan.ts`, its test | none | `[C-REQ-002]`, `[C-REQ-004]`, `[C-REQ-006]`, `[C-REQ-008]`, `[C-REQ-011]`, `[F13-REQ-011]`, `[F13-REQ-013]`, `[F13-REQ-014]`, `[F13-REQ-015]`, `[F13-REQ-021]`, `[F13-REQ-022]`; quiet-window property test over 24 zones and both DST changes; `[B-REQ-015]`, `[C-REQ-012]`, `[F13-REQ-019]` | Agent. BL-151 | Not built in core; a planner exists in `apps/mobile/src/lib/reminders/planner.ts` and is the starting point |
-| WP-F13-03 | Expecting prompts, name-free notification copy, the proposed keys in 6.6 | S16 | `packages/content/src/prompts.ts`, `packages/content/src/features/reminders.en.ts`, `packages/content/test/rules.test.ts` | none | `[F13-REQ-008]`, `[C-REQ-005]` daily and day-count terms, BL-157 variants without `{child}` | Agent. BL-157 | Not built (0 `expecting` prompts) |
+| WP-F13-03 | Before-birth (`before`) prompts, name-free notification copy, the proposed keys in 6.6 | S16 | `packages/content/src/prompts.ts`, `packages/content/src/features/reminders.en.ts`, `packages/content/test/rules.test.ts` | none | `[F13-REQ-008]`, `[C-REQ-005]` daily and day-count terms, BL-157 variants without `{child}` | Agent. BL-157 | Built in part (8 `before` prompts, #376; 12 or more not yet) |
 | WP-F13-08 | Device checks: expo-notifications on SDK 57 | Device operator with S14 | `docs/qa/evidence/` | none | Written results for local-time triggers across zone and DST, pending limit, revoke detection; 6.4 budget confirmed or changed | Human (W2) | Not run |
 | WP-F13-04 | Scheduler adapter, permissions, routing, the long-press Quiet action | S14 | `apps/mobile/src/lib/reminders/` (exists; was `lib/notifications/` in the 3 Oct draft) | WP-F13-02, WP-F13-08 | `[F13-REQ-009]`, `[F13-REQ-010]` 7 triggers, `[F13-REQ-012]`, `[F13-REQ-017]`, `[F13-REQ-018]`, `[C-REQ-009]`; `[LEGAL-REQ-054]` | Agent | Partly built: `scheduler.ts`, `planner.ts`; `expo-notifications` ~57.0.21 installed |
 | WP-F13-05 | Priming card first in the ask sequencer | S14 | Prime card component under `apps/mobile/src/components/settings/` (new file) | BL-023, WP-F13-04 | `[C-REQ-001]` 3 cases, `[F13-REQ-023]` | Agent. BL-023 | Not built against DR-12 B |

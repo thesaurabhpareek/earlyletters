@@ -1,9 +1,13 @@
 /**
  * Export on the phone (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, -056).
- * Free in every plan state and fully offline: it reads only the local store
- * and files, never the network or the entitlement (C-NFR-004).
+ * Free in every plan state and works offline: it reads the local store and
+ * files, never the entitlement (C-NFR-004). The one network read is the
+ * server's consent record for account.json, when signed in
+ * (server-records.logic.ts): bounded by the read timeout, and when it cannot
+ * be read the export still finishes and says why.
  *
- * Flow: snapshot the store, write the ZIP to the app cache (never backed
+ * Flow: snapshot the store, add the server's records when they can be read,
+ * write the ZIP to the app cache (never backed
  * up), re-read it and check every hash, then hand it to the share sheet. The
  * temporary ZIP is deleted when the share sheet closes, when the person
  * stops, when anything fails, and by `cleanupExports()` on the next visit.
@@ -16,11 +20,16 @@ import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { STORAGE_KEYS as ANALYTICS_KEYS } from '@scribe/analytics';
+import { ENDPOINT_CLASSES } from '@scribe/api';
 import { ENGINE_VERSION } from '@scribe/core';
+import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
-import { currentUserId, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, type Entry } from '../store';
+import { getSupabaseOrNull } from '../supabase/client';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
+import { ACT_COLUMNS, allRows, noConsentHistory, readServerRecords, STATE_COLUMNS, type ServerRecordsReader } from './server-records.logic';
+import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
 import { verifyExport, type RandomAccess } from './verify';
@@ -101,7 +110,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
   const children: SnapshotChild[] = [
     ...listChildren().map((c) => ({ ...c, hidden: false })),
     ...listHiddenChildren().map((c) => ({ ...c, hidden: true })),
-  ];
+  ].map((c) => ({ ...c, role: myRoleIn(c.id) }));
   const entries: SnapshotEntry[] = children.flatMap((c) =>
     listEntriesForChild(c.id).map((e) => {
       const state = e.captureMode !== 'typed' ? fileState(e.audioUri) : { exists: false, size: null };
@@ -122,7 +131,49 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
       entryId: c.entryId, finalText: c.words.final_text, editLevel: c.words.edit_level, machineEdits: c.words.machine_edits, keptAt: c.at,
     })),
     consent: consentOnThisPhone(),
+    // withServerRecords() replaces this when the server's record can be read.
+    consentHistory: noConsentHistory(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
+    dictionary: phoneDictionary(children),
   };
+}
+
+/** The words each book always spells your way on this phone: the child's name and your signature. */
+function phoneDictionary(children: SnapshotChild[]): ExportDictionaryTerm[] {
+  return children.flatMap((c) =>
+    dictionaryFor({ childName: c.name, childBirthday: c.birthday, signsAs: c.signsAs }).map((d) => ({
+      child_id: c.id,
+      term: d.term,
+      kind: d.kind,
+      heard_as: [...d.heardAs],
+      source: 'phone' as const,
+    })),
+  );
+}
+
+/** Own rows only: row-level security limits each read to the signed-in account. */
+function supabaseReader(): ServerRecordsReader | null {
+  const sb = getSupabaseOrNull();
+  if (!sb) return null;
+  return {
+    acts: (signal) =>
+      allRows((from, to) =>
+        sb.from('policy_acceptances').select(ACT_COLUMNS).order('accepted_at', { ascending: true }).order('id', { ascending: true }).range(from, to).abortSignal(signal),
+      ),
+    state: (signal) => allRows((from, to) => sb.from('my_policy_state').select(STATE_COLUMNS).order('document').range(from, to).abortSignal(signal)),
+  };
+}
+
+/** Adds the server's consent record to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
+  const consentHistory = await readServerRecords({
+    authUserId: currentAuthUserId(),
+    ownerId: currentUserId(),
+    reader: supabaseReader(),
+    timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
+    now: () => new Date(),
+    cancelled: () => signal?.aborted === true,
+  });
+  return { ...snapshot, consentHistory };
 }
 
 /** What the screen shows before export starts ("What is inside" counts). */
@@ -217,7 +268,8 @@ async function renderPdf(html: string, locale: string): Promise<Uint8Array> {
  */
 export async function runExport(opts: { onProgress?: (p: ExportProgress) => void; signal?: { aborted: boolean } } = {}): Promise<ExportResult> {
   cleanupExports();
-  const snapshot = exportSnapshot();
+  const snapshot = await withServerRecords(exportSnapshot(), opts.signal);
+  if (opts.signal?.aborted) throw new ExportCancelledError();
   const estimate = estimateExportBytes(snapshot);
   if (estimate > MAX_EXPORT_BYTES) throw new ExportTooLargeError();
   try {

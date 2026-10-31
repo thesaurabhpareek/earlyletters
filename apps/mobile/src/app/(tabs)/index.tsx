@@ -10,7 +10,9 @@
  * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
  * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
  * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals (or, when none is waiting,
- * "A month ago"); Speak and Type pinned below, so several drafts scroll above them.
+ * "A month ago"); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
+ * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
+ * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
  *
  * Light: the `tonight` lamp scene, its tones from the greeting's own daypart (gold in the morning, amber in the
  * evening, a rose tail at night, a dusk tail late at night), breathing; persistKey "tabs", so a tab switch settles the
@@ -23,6 +25,8 @@
  * Type never animate in (MOTION principle 2). "Another thought": the old prompt leaves (exitMs) and the new one rises
  * in from when it is half gone. Reduce Motion: one 200 ms fade on a prompt change.
  * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`, Not much today `soft`. Nothing else.
+ * Before the birth (a due date, no birthday) the dateline reads "Asha", the dot, "Before You" and the prompt comes from the set
+ * written for it; "Another thought" never shows the prompt that is on screen again (components/tonight/prompt.logic).
  * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo. Nothing on Tonight counts:
  * no totals, no days-since, no streak.
  * Time: the day, the greeting's daypart, the lamp's tone and each card's dateline come from the moment the room was
@@ -36,7 +40,7 @@ import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
-import { ageOn, renderTemplate, selectPrompt } from '@scribe/core';
+import { renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
@@ -52,19 +56,21 @@ import {
   tonightDateline,
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
+import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
-import { announce } from '@/lib/a11y';
+import { announce, useIsAccessibilitySize } from '@/lib/a11y';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
-import { ageText, dayDate } from '@/lib/dates';
+import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
 import { armListenStart } from '@/lib/resilience/start-intent';
+import { footerPlacement } from '@/lib/review-layout.logic';
 import {
   deleteEntry,
   getActiveChildId,
@@ -105,6 +111,10 @@ export default function Tonight() {
   const [recent, setRecent] = useState<string[]>([]);
   const [daysSince, setDaysSince] = useState<number | null>(null);
   const [shuffle, setShuffle] = useState(0);
+  // The prompt "Another thought" was last pressed on: it is left out of the next draw, so a press never repeats it.
+  const [leftKey, setLeftKey] = useState<string | null>(null);
+  // At accessibility text sizes Speak and Type follow the prompt inside the scroll instead of pinning (S1).
+  const inlineActions = footerPlacement(useIsAccessibilitySize()) === 'inline';
   // The mark kept for today while its line is showing (so Undo knows what to remove).
   const [keptMark, setKeptMark] = useState<string | null>(null);
   // Tonight's lines enter once per cold launch, on the first render that shows them; a later mount, and a card that
@@ -159,23 +169,11 @@ export default function Tonight() {
   const clock = roomClock(room?.at ?? new Date());
   const today = clock.today;
   const family = room?.family;
-  const age = family?.childBirthday ? ageOn(family.childBirthday, today) : null;
+  const birthday = family?.childBirthday ?? null;
 
   const prompt = useMemo(
-    () =>
-      selectPrompt(
-        {
-          ageMonths: age && age.days >= 0 ? age.months : 0,
-          daysSinceLastEntry: daysSince,
-          hardStretch: false,
-          role: 'parent',
-          together: false,
-          recentKeys: recent,
-          seed: `${today}:${shuffle}`,
-        },
-        PROMPTS,
-      ),
-    [age?.months, daysSince, recent, today, shuffle],
+    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS),
+    [birthday, daysSince, recent, today, shuffle, leftKey],
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
@@ -188,7 +186,9 @@ export default function Tonight() {
   const child = book.childName;
   const daypart = clock.daypart;
   const greeting = greetingParts(t.greeting[daypart], book.signsAs);
-  const dateline = tonightDateline(child, ageText({ birthday: book.childBirthday }, today), dayDate(today));
+  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the child;
+  // the day's date is only the function's fallback for its other caller, the Family tab.
+  const dateline = tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today));
   // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
   const lampLevel = tonightLampIntensity(daypart, !!markOn(room.entries, today));
   const enter = (i: number) => (arriving ? motion.enter(i) : undefined);
@@ -227,6 +227,23 @@ export default function Tonight() {
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
+  // Speak, Type and the quiet link: pinned under the scroll, or inline under the prompt at accessibility sizes.
+  const actions = (
+    <View className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}>
+      <ButtonRow>
+        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
+        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+      </ButtonRow>
+      {keptMark ? (
+        <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
+      ) : (
+        <Animated.View exiting={linkOut} className="self-center">
+          <Button variant="quiet" label={t.notMuchButton} onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />
+        </Animated.View>
+      )}
+    </View>
+  );
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background" {...behind}>
       <Lamp scene="tonight" daypart={daypart} persistKey="tabs" intensity={lampLevel} />
@@ -261,10 +278,14 @@ export default function Tonight() {
             className="-ml-4 mt-3 self-start"
             onPress={() => {
               haptic('tap');
+              setLeftKey(prompt.key);
               setShuffle((s) => s + 1);
             }}
           />
         </Animated.View>
+
+        {/* Dynamic Type at accessibility sizes: the actions scroll with the page, under the question, before the cards. */}
+        {inlineActions ? actions : null}
 
         {cards.length > 0 ? (
           <View className="mt-8 gap-3">
@@ -283,20 +304,8 @@ export default function Tonight() {
         ) : null}
       </ScrollView>
 
-      {/* Pinned: Speak and Type are opaque and hittable from the first frame (MOTION principle 2). */}
-      <View className="gap-2 px-5 pb-3 pt-3">
-        <ButtonRow>
-          <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
-          <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
-        </ButtonRow>
-        {keptMark ? (
-          <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
-        ) : (
-          <Animated.View exiting={linkOut} className="self-center">
-            <Button variant="quiet" label={t.notMuchButton} onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />
-          </Animated.View>
-        )}
-      </View>
+      {/* Pinned at the default sizes: Speak and Type are opaque and hittable from the first frame (MOTION principle 2). */}
+      {inlineActions ? null : actions}
     </SafeAreaView>
   );
 }

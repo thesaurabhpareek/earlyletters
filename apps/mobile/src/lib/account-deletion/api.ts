@@ -60,9 +60,17 @@ export function loadBooks(client: DeletionClient): Promise<ApiOutcome<SyncBook[]
   });
 }
 
-/** Idempotent on the server: a second call returns the open request. */
-export function requestDeletion(client: DeletionClient, hadActiveSubscription: boolean | null): Promise<ApiOutcome<{ requestId: string; scheduledFor: string }>> {
-  return call(
+/**
+ * Idempotent on the server: a second call returns the open request.
+ *
+ * A request that failed here may still have been made: the server can commit and the answer be lost (a dropped
+ * connection, a reply that cannot be read). So a failed call is checked against the open request once, as a cancel is
+ * (cancelDeletion): the screen must never say that nothing has changed while a request is open. If the check finds the
+ * request, this is a success. If it finds none, the failure stands, and it is true. If the check cannot be made either,
+ * the failure stands as it was.
+ */
+export async function requestDeletion(client: DeletionClient, hadActiveSubscription: boolean | null): Promise<ApiOutcome<{ requestId: string; scheduledFor: string }>> {
+  const r = await call(
     () => client.rpc('request_account_deletion', { p_source: 'ios', p_had_active_subscription: hadActiveSubscription }),
     (d) => {
       const row = (Array.isArray(d) ? d[0] : d) as { request_id?: unknown; scheduled_for?: unknown } | null;
@@ -70,10 +78,24 @@ export function requestDeletion(client: DeletionClient, hadActiveSubscription: b
       return { requestId: row.request_id, scheduledFor: row.scheduled_for };
     },
   );
+  if (r.ok) return r;
+  const s = await loadStatus(client);
+  if (s.ok && (s.value.state === 'scheduled' || s.value.state === 'held')) {
+    return { ok: true, value: { requestId: s.value.requestId, scheduledFor: s.value.scheduledFor } };
+  }
+  return r;
 }
 
-export function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
-  return call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
+/**
+ * Cancels the open request. The server answers false when nothing was open to cancel, which is fine when the request
+ * was already cancelled (an earlier try whose answer was lost, or another phone) and not when it is still open or
+ * executing, so a false answer is checked against the status, read as the screen reads it.
+ */
+export async function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
+  const r = await call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
+  if (!r.ok || r.value) return r;
+  const s = await loadStatus(client);
+  return s.ok && s.value.state === 'none' ? { ok: true, value: true } : { ok: false, reason: s.ok ? 'failed' : s.reason };
 }
 
 /** Where the "forget my analytics ids" retry flag lives (device settings, L2). */

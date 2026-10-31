@@ -1,5 +1,7 @@
 # Release secrets and permissions review (RA-01-01)
 
+**Withdrawn 31 Oct 2026 (`docs/agents/cto/RULINGS.md` CR-19, CR-20):** the approver account (AF-02) was a second personal GitHub account for the founder, which GitHub's Terms do not allow for free (one free personal account, plus one machine account used only for automated tasks). Every mention of it below is history. Until PR authors are an identity other than the founder's account, no required approval above 0 can be met (CR-20).
+
 Status: S01 review of the release automation plan (`docs/release/AUTOMATION.md` revision 2 and ADR 0026, on `develop` at c9a192d), Fri 16 Oct 2026. Package RA-01-01 (AUTOMATION.md section 5): done before any secret is added. File owner: S01 (`docs/security/**`). Revised Fri 23 Oct 2026 on #206: an owner and a "By" for every fix, from the content review (comment 6247630897), and the staging rows moved to the 17 Oct rule, from the correctness review (comment 6247806622).
 
 This file is a review and a checklist. Nothing here sets, reads or changes a secret, a variable, an environment or a setting; agents never do (AUTOMATION.md 2.11). Every value named below is a name only.
@@ -341,7 +343,7 @@ All 175 remote branches were scanned on 16 Oct [R]. They hold 23 distinct workfl
 | `agents.yml` | `develop` | `schedule`; dispatch | `AGENTS_APP_PRIVATE_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` (repository) | none; `agents` after the move | `plan`: contents read, issues write, pull requests read, checks read, actions read. `run`: contents write, pull requests write, issues write, checks read, actions read, id-token write | no trigger, but repository secrets reach any branch |
 | `claude.yml` | `develop` and every branch cut from it | `issue_comment`, `issues`; **`pull_request_review`, `pull_request_review_comment`** | `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` (repository) | none | `claude`: contents write, pull requests write, issues write, actions read, id-token write | **yes (SR-1)** |
 | `deploy-db.yml` | `develop` (#205, merged Sun 18 Oct, replaced the push to `main` [R, 23 Oct]) | push to `develop`; dispatch on `develop` as the catch-up; tags `db-v*` | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `staging`, `production` | `contents: read` | no |
-| `testflight.yml` | `develop`; #145 | dispatch | `EXPO_TOKEN` (repository) | none; RA-20-06a adds `testflight` | `contents: read` | no trigger, but the repository secret reaches any branch |
+| `testflight.yml` | `develop`; #145 | dispatch; `pull_request` only for a PR that edits this file (#404, the job is skipped by its `if`, so it only registers the workflow) | `EXPO_TOKEN` (repository) | none; RA-20-06a adds `testflight` | `contents: read` | the pull_request run builds nothing and a fork PR gets no secrets; the repository secret still reaches any branch |
 | `web.yml`, `web-e2e.yml` | `main` | `pull_request` (paths); push | none | none | `contents: read` | no |
 | `fence.yml` | #30 | `pull_request_target` | none; `GITHUB_TOKEN` only | none | `contents: read`, `pull-requests: read` | no: it checks out nothing and runs only the base commit's rules [R] |
 | `security.yml` | #30 | `pull_request`; push; `schedule`; dispatch | none | none | `contents: read` | no |

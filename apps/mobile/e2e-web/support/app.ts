@@ -74,6 +74,16 @@ export async function typeLetter(page: Page, text: string, to: 'book' | 'private
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
 }
 
+/**
+ * The reminder card after the phone's first letter (C-REQ-001 Rev, DR-12 B; components/asks/reminder-prime-ask.tsx):
+ * answers "No reminders" so a journey about something else can go on over the Book. Asserts the card was there.
+ */
+export async function noRemindersAfterFirstLetter(page: Page) {
+  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
+  await btn(page, 'No reminders').click();
+  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+}
+
 /** Local calendar day `days` from today (negative = earlier), YYYY-MM-DD, in the browser's time zone (the same machine). */
 export function dayOffset(days: number, from: Date = new Date()): string {
   const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);

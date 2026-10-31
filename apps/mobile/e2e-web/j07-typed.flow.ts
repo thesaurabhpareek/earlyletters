@@ -1,5 +1,36 @@
-import { btn, firstRun, journey, selectedTab, tab } from './support/app';
+import { btn, firstRun, journey, noRemindersAfterFirstLetter, selectedTab, tab } from './support/app';
 import { expect, test } from './support/journey';
+
+/**
+ * A frame sampler for the arrival wash (5.8 row 5, S26; P5 critics' pass S1). The wash is an absolutely placed,
+ * touch-free layer filling the arrived card, from `accentSoft` at full strength to nothing over 1.6 s. This records, once
+ * per animation frame, when a Book card first exists and when such a layer first rises above 0.01, so the test can say how
+ * long the new card waited for its receipt. The layer has no test id of its own; it is found by what it is.
+ */
+const watchArrivalWash = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => {
+    const w: { bookAt: number | null; washAt: number | null } = { bookAt: null, washAt: null };
+    (window as unknown as { __wash: typeof w }).__wash = w;
+    const t0 = performance.now();
+    const tick = () => {
+      const now = performance.now();
+      const cards = Array.from(document.querySelectorAll('[data-testid="book.card"]'));
+      if (cards.length > 0 && w.bookAt === null) w.bookAt = now;
+      if (w.washAt === null) {
+        for (const card of cards) {
+          const box = card.getBoundingClientRect();
+          for (const d of Array.from(card.querySelectorAll('div'))) {
+            const cs = getComputedStyle(d);
+            const r = d.getBoundingClientRect();
+            const fills = Math.abs(r.width - box.width) < 2 && Math.abs(r.height - box.height) < 2;
+            if (fills && cs.pointerEvents === 'none' && cs.position === 'absolute' && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && Number(cs.opacity) > 0.01) w.washAt = now;
+          }
+        }
+      }
+      if (now - t0 < 12_000 && w.washAt === null) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 
 test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app, record }) => {
   const step = journey(record, 'J07', 'typed-letter', 1, 'J01-14');
@@ -12,6 +43,7 @@ test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app,
   await app.getByRole('textbox').first().fill('You put both hands on the window today and watched the rain.');
   await expect(app.getByText('Saved on this phone')).toBeVisible();
   await step('happy', 'Typing, autosaved', 'After a pause "Saved on this phone" appears and stays. Every pause saves a local draft, so a closed sheet or a crash loses nothing.');
+  await watchArrivalWash(app);
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Added to Asha's book.")).toBeVisible();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toHaveCount(0);
@@ -19,6 +51,11 @@ test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app,
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('You put both hands on the window today and watched the rain.')).toBeVisible();
   await step('happy', 'On the Book', 'The person lands on the Book, on the new letter in its month (5.8 row 5a).', undefined, { settle: 400 });
+  // The receipt of the save (5.8 row 5, S26): the Book mounts with the new letter and the card washes within 1.5 s of
+  // appearing. This Book was never opened before the keep, so it mounts with `arrived`: the case the wash used to lose.
+  await expect.poll(() => app.evaluate(() => (window as unknown as { __wash: { washAt: number | null } }).__wash.washAt), { timeout: 4000, message: 'the new card washes' }).not.toBeNull();
+  const wash = await app.evaluate(() => (window as unknown as { __wash: { bookAt: number; washAt: number } }).__wash);
+  expect(wash.washAt - wash.bookAt).toBeLessThan(1500);
 });
 
 test('[J07d] the free letters: two are kept, the third is held', async ({ app, record }) => {
@@ -36,6 +73,7 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await expect(app.getByText(/Added to/)).toBeVisible();
   await expect(app.getByText('That was your second free letter.')).toHaveCount(0);
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await write('You laughed at the rain.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();

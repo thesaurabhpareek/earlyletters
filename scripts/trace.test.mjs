@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
-  legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main,
+  legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -20,6 +20,19 @@ test('extractIds expands ranges only when asked', () => {
   assert.deepEqual(extractIds('A-REQ-006 to A-REQ-008', { ranges: true }).sort(), ['A-REQ-006', 'A-REQ-007', 'A-REQ-008']);
   assert.deepEqual(extractIds('A-NFR-005 to -007', { ranges: true }).sort(), ['A-NFR-005', 'A-NFR-006', 'A-NFR-007']);
   assert.deepEqual(extractIds('A-REQ-006 to B-REQ-008', { ranges: true }).sort(), ['A-REQ-006', 'B-REQ-008']);
+});
+
+test('extractIds reads sub-IDs as their own IDs and never as the parent', () => {
+  assert.deepEqual(extractIds('see F16-REQ-029a and F16-REQ-029b.').sort(), ['F16-REQ-029a', 'F16-REQ-029b']);
+  assert.deepEqual(extractIds('F16-REQ-029 and F16-REQ-029a').sort(), ['F16-REQ-029', 'F16-REQ-029a']);
+  assert.deepEqual(extractIds('F16-REQ-029and more'), ['F16-REQ-029']);
+  assert.deepEqual(extractIds('F16-REQ-029ab'), ['F16-REQ-029']);
+  assert.deepEqual(extractIds('F16-REQ-029a to F16-REQ-029c', { ranges: true }).sort(), ['F16-REQ-029a', 'F16-REQ-029c']);
+  assert.deepEqual(bracketedIds('`[F16-REQ-029a]` and [F16-REQ-029b Rev]').sort(), ['F16-REQ-029a', 'F16-REQ-029b']);
+});
+
+test('cmpId orders a parent before its sub-IDs and sub-IDs alphabetically', () => {
+  assert.deepEqual(['F16-REQ-030', 'F16-REQ-029b', 'F16-REQ-029', 'F16-REQ-029a'].sort(cmpId), ['F16-REQ-029', 'F16-REQ-029a', 'F16-REQ-029b', 'F16-REQ-030']);
 });
 
 test('bracketedIds reads tags, Rev suffixes and bracketed ranges', () => {

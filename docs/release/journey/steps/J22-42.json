@@ -1,0 +1,39 @@
+{
+  "id": "J22-42",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Kept on this phone, still signed in",
+  "note": "The decline is recorded and the person stays signed in with sync off; Account offers \"Agree and sync\" for later. Nothing synced.",
+  "from": "J22-41",
+  "shot": "screens/J22-42.png",
+  "route": "/settings/account",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Account Signed in with email mama@example.invalid Sync Sync and sharing Off, kept on this phone Agree and sync Devices Sign out of other devices Other phones signed in to this account will need to sign in again. Sign out",
+  "lines": [
+    "Account",
+    "Signed in with email",
+    "mama@example.invalid",
+    "Sync",
+    "Sync and sharing",
+    "Off, kept on this phone",
+    "Agree and sync",
+    "Devices",
+    "Sign out of other devices",
+    "Other phones signed in to this account will need to sign in again.",
+    "Sign out"
+  ]
+}

@@ -19,7 +19,7 @@ This document is the one spec an engineer builds from. It merges four critiques 
 | `docs/design/experience-pass/critiques/03-visual-motion.json` | Visual and motion lens (46 screens) |
 | `docs/design/experience-pass/critiques/04-states-errors.json` | States, errors and empathy lens (50 screens) |
 
-The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8 keeps screenshots in the session scratchpad. They are at `/tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/experience-pass/before/` (`01-first-run-1.jpg` to `09-errors-empty.jpg`), cut from the journey record on `origin/chore/journey-refresh` (b7afe42), which stays the source every screen entry cites.
+The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8 keeps screenshots in the session scratchpad. They are at `/tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/experience-pass/before/` (`01-first-run-1.jpg` to `09-errors-empty.jpg`), cut from the journey record on `origin/chore/journey-refresh` (b7afe42), the source of the "before" images that the entries cite by their old step ids. The regenerated record (#389) reuses those ids, so a `screens/<id>.png` file now shows the build after P2 to P6, not the "before".
 
 **Sources added for v1.1.** On `origin/develop` (17d6319, merged into this branch): `docs/DECISIONS.md` D-100 to D-109 (D-109 from #173, merged as `b22876b`; D-110 is added by this PR), `docs/agents/COORDINATION.md`, PRD V2 `08-delivery.md` section 3 (streams S01 to S20 and the files each owns), `features/F08-recordings.md` (6.5 and 6.7), `F11`, `F16`, `F17`, the sign-in, Account, Family, invite and delete-account code and copy. Open pull requests read at their heads: #181 (P0, read at `7d3b507`, `bcf301e` and `de2b916`), #150 (backup client, `5c32ad1`), #151 (backup server, `ad222eb`), #148 (`946b14a`) and `feat/coparent-alpha` (`a39094f`) for invite, join and leave, #146 and #182 (sync, held drafts), #163 (server-product legal set). Both reviews of this PR (B, comment 6218727236; A, comment 6218750279).
 
@@ -73,7 +73,7 @@ Ten rules, merged from the four lenses. Each names its benchmark and how it was 
 
 ### 2.1 What the law and our decisions require
 
-The journey record labels the gate "A-REQ-030". That is a mislabel: A-REQ-030 in `docs/prd/PRD.md` and `docs/prd/A-entry-and-auth.md` is "Offline entry". The age question's real sources are:
+The journey record used to label the gate "A-REQ-030" (corrected in the regenerated record, #389). That was a mislabel: A-REQ-030 in `docs/prd/PRD.md` and `docs/prd/A-entry-and-auth.md` is "Offline entry". The age question's real sources are:
 
 - **LEGAL-REQ-002 (P0)**, `docs/legal/ENGINEERING_REQUIREMENTS.md`, revised 2 Oct 2026, sourced to CR-001, CR-004 (Texas SB 2420 in force; Apple Declared Age Range), CR-005, CR-006. It requires: the app "asks before first use (an entry gate before first run, invites and sign-in)", "presented neutrally (no pre-selected answer, no hint that one answer is 'right')"; acceptance criterion 1: "When the user takes any first action (start a book, I was invited, sign in, or an invite link), Then the age question appears first, with nothing preselected"; a stop screen that "explains the app is currently for adults 18 and over"; nothing stored but the gate state; closed for 24 hours after an under-18 answer; the Declared Age Range API called where required and used in memory only.
 - **PRD-REQ-019 (P0)** and **K-07**, `docs/prd/PRD.md`: "Before any first-run screen, story 4 action or invite flow, a neutral 'Are you 18 or older?' (Yes, No, nothing preselected)". Yes is stored as a boolean only.
@@ -184,7 +184,7 @@ Light: L (lamp scene, section 5.2), none, or dusk. Motion names refer to section
 | 9 | Review, waiting (S14) | J05-03 | Writing down what you said. | none | moon breath 8 s | none |
 | 10 | Review, letter (S17) | J06-01 to J06-07 | the letter | none | inline card expands; put back cross-fades | selection on put back |
 | 11 | Saved (S21) | J06-09, J07-07 | Added to Asha's book. | none | file into month chip, dismiss to the Book | success on commit |
-| 12 | Book, new letter (S26) | J09-02 | Month 7 | L book 0.6, still; returns over 280 ms | lands scrolled to the card, arrival wash 1.6 s | none |
+| 12 | Book, new letter (S26) | J06-10, J07-04, J09-02 | Month 7 | L book 0.6, still; returns over 280 ms | lands scrolled to the card, arrival wash 1.6 s | none |
 | 13 | A letter (S27) | J10-01 | the letter | none (the Book's lamp fades as the card grows) | card grows into page | none |
 | 14 | Read together (S30) | J11-01 to J11-03 | the letter | dusk at night, still | page turn | none |
 | 15 | End of the book (S31) | J11-04 | That is every letter so far. | dusk, dims | moon draws on, then still | none |
@@ -193,14 +193,14 @@ Light: L (lamp scene, section 5.2), none, or dusk. Motion names refer to section
 | 18 | Microphone is off (S13) | J05-04 | The microphone is off | none | 200 ms fade | none |
 | 19 | Deleted, Undo (S36) | J10-08 | Letter deleted. | (Book's own) | card collapses out of its row | warning on confirm |
 | 20 | Crash, launch recovery (S50, S51) | J20-01, J20-02 | This page did not open / The book could not open | none | none | none |
-| 21 | Sign in (S52 to S55) | none yet (P8 adds j22) | Keep Asha's book on any phone | none (sheet over the Book) | native sheet; steps cross-fade | none |
-| 22 | Family tab (S57) | J17-01, J17-02, J17-03 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
-| 23 | Invite a co-parent (S58) | none yet (P8 adds j21) | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
-| 24 | Joined (S59) | none yet (j21) | You're in Asha's book | none in the sheet; the Book's lamp rises after | the cover opens | success once |
+| 21 | Sign in (S52 to S55) | J22-01 to J22-10, J22-20, J22-21, J22-31, J22-32, J22-40 to J22-43, J22-50, J22-60, J22-70, J22-71, J22-80, J22-81 | Keep Asha's book on any phone | none (sheet over the Book) | native sheet; steps cross-fade | none |
+| 22 | Family tab (S57) | J17-01, J17-02, J17-03, J21-20, J21-23 | Who writes to Asha | L family 0.4, still | lamp settles from the last tab's tone | none |
+| 23 | Invite a co-parent (S58) | J21-21, J21-22, J21-30, J22-90, J22-91 | Invite Asha's co-parent | none (sheet) | native sheet, then the share sheet | none |
+| 24 | Joined (S59) | J21-05 to J21-08 | You're in Asha's book | none in the sheet; the Book's lamp rises after | the cover opens | success once |
 | 25 | Back up my recordings (S61) | none yet (P8 adds j23) | Back up your recordings | none | the turn-on card folds into the On rows | tap |
 | 26 | A new phone (S62) | none yet (j23) | Bringing your recordings to this phone. | (Book's own) | a thin determinate line, no count | success once when done |
 
-The "before" for rows 1 to 20 is in the scratchpad contact sheets (sheets 01 to 09, labelled by step id; path in the files table above). Row 22's "before" is the coming-soon Family tab (`screens/J17-01.png`, sheet 08). Rows 21 and 23 to 26 have no "before": the journey record was made with server features off. P8's flows add them and P7's regenerated journey shows them.
+The "before" for rows 1 to 20 is in the scratchpad contact sheets (sheets 01 to 09, labelled by step id; path in the files table above). Row 22's "before" is the coming-soon Family tab (`screens/J17-01.png`, sheet 08). Rows 21 and 23 to 26 have no "before": the record the sheets were cut from was made with server features off. P8's flows added rows 21 to 24, and the regenerated record (run with server features on, against the mock server) shows them at the steps above; rows 25 and 26 have no step yet (no j23 flow).
 
 ---
 
@@ -238,7 +238,7 @@ States: no empty, loading or error state.
 
 Acceptance:
 - [ ] The product name is never typed in a font on this screen; the lockup comes from the registry and its accessibility label is the brand name.
-- [ ] Exactly one serif line (the descriptor), one filled button and the two quiet doors; no line drawing.
+- [ ] Exactly one serif line (the descriptor), one filled button and the two quiet doors; no line drawing. The one state with no filled button is a phone whose invite just joined a book that has not arrived: a line says the book is on its way in place of "Begin the book", until the book is here, 30 seconds pass, or sync cannot run (S59, as built in #375).
 - [ ] "I already have a book" opens S52 over the welcome, and "I was invited" opens S59; closing either without a book returns to the lit welcome with the lamp at the same level (a sheet over a lit room holds its light, section 5.8).
 - [ ] A sign-in that brings a book to this phone lands on the Book, where the letters that came back and the restore line show first (5.8 row 13), never on Tonight.
 - [ ] From the gate to the welcome there is no frame of unlit paper (the lamp keeps its state through `persistKey`).
@@ -246,7 +246,7 @@ Acceptance:
 - [ ] Reduce Motion: the lamp holds still at 1.0, and the content appears with one 200 ms fade.
 
 #### S04 The promise
-Step J01-04. Before: `screens/J01-04.png`, `screens/J01-04-full.png`. Verdict: redesign. Package P2.
+Step J01-04. Before: `screens/J01-04.png`. Verdict: redesign. Package P2.
 
 Problem: about 110 words in three cards and a footnote, three "we" sentences, and mechanics explained before the person has said a word. The mishear card repeats what the first Review note and Settings already say (those are the two places `docs/legal/in-app-disclosures.md` section 2 registers for it; first run is not one of them).
 
@@ -293,7 +293,7 @@ Copy:
 | `onboarding.child.title` | Who is this book for? | KEEP |
 | `onboarding.child.nameLabel` | Name | CHG |
 | `onboarding.child.nameLabelMore` | Another child's name | NEW (second and later rows; "Another name" read as a nickname for the same child; as #181's final notes) |
-| `onboarding.child.namePlaceholder` | First name, or the name you use at home | KEEP |
+| `onboarding.child.namePlaceholder` | First name, or a nickname | CHG (#374, 28 Oct: "First name, or the name you use at home" did not fit the serif name field on a 375 pt phone. It asks for a name and promises no nickname feature, unlike the retired `nameHelp`, "You can add a nickname later.") |
 | `onboarding.child.nameHelp` | (not shown) | RET |
 | `onboarding.child.birthdayLabel` | Birthday | KEEP |
 | `onboarding.child.birthdayHelp` | (not shown) | RET |
@@ -308,7 +308,7 @@ Copy:
 | `childrenExtra.edit.dueDateRange` | Choose a due date from today up to ten months ahead. | KEEP |
 | `onboarding.child.cta` | Continue | KEEP |
 
-Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph. Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 480 pt of free height, the cover hides, so the name field stays in view. Free height with the keyboard and its QuickType bar up, measured by P2-V on #220 on a web export, unverified on a phone: 407 pt on an iPhone SE, 538 on a 17 Pro, 610 on a Pro Max; so the SE hides the cover and the Pro and Pro Max keep it while the name is typed. The form itself may scroll once the date block is in (it does on all three under this rule: by 176 pt on the SE, 145 pt on the 17 Pro and 73 pt on the Pro Max). The name field uses the letter face (Literata 22 pt), because it is the book's title; labels stay Mukta. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
+Visual: introduce the **book cover** (`components/book/book-cover.tsx`, section 5.4). On this step it sits at the top right of the heading row, 88 x 116 pt, closed: paper (`surfaceRaised`, `radius.md`, elevation 1, a 1 pt `line` border in dark mode), the small-cut symbol at its head, and the child's name set live in Literata Medium 17 pt, centred, at most three lines, ending in a fade, never an ellipsis glyph and never a word broken in two: the type steps down to the 13 pt floor first, and a word still wider than the cover at the floor ends the name in a fade on one line (neither a 12 pt floor nor the 96 pt cover holds all of "Christopher", "Maximilian" and "Alexandrina": on the 88 pt cover 12 pt still fades Christopher, by 0.05 pt, and Alexandrina, and the 96 pt cover at the 13 pt floor fades both; `book-cover.test.ts` pins the 13 pt measurements and the 96 pt case, and lowering the floor is the spec owner's call; #374). Empty name: the cover is blank. Twins: a second cover fans 10 pt behind the first, rotated 3 degrees, carrying the second name. With the keyboard up and under 480 pt of free height, the cover hides, so the name field stays in view. Free height with the keyboard and its QuickType bar up, measured by P2-V on #220 on a web export, unverified on a phone: 407 pt on an iPhone SE, 538 on a 17 Pro, 610 on a Pro Max; so the SE hides the cover and the Pro and Pro Max keep it while the name is typed. The form itself may scroll once the date block is in (it does on all three under this rule: by 176 pt on the SE, 145 pt on the 17 Pro and 73 pt on the Pro Max). At accessibility text sizes the heading takes the whole row and the cover sits under it, here, on the signature step and in Add a child (S47), so the heading is never squeezed to a word a line (the P6a critics' pass S2, #374). The name field uses the letter face (Literata 22 pt), because it is the book's title, in first run (every name row) and in Add a child; labels stay Mukta, and the signature field keeps the app's face. "Born today" becomes a chip beside the date control. The disabled Continue is the outline style from S01.
 
 The reason line stays in words and is never only a greyed button. It sits directly above Continue in `footnote` `textMuted` until the person taps the disabled Continue. Then it turns `caution` with a WarningCircle icon, is announced politely, and focus moves to the empty field. HIG Entering data: "make the button available only after people enter the data you require" (*verified*).
 
@@ -362,7 +362,7 @@ Acceptance:
 - [ ] Seven languages, one check; no download starts from this sheet (D-087).
 
 #### S08 The book is open, with the one-time speech download
-Steps J01-16, J01-17, J03-03. Before: `screens/J01-16.png`, `screens/J01-16-full.png`, `screens/J01-17.png`, `screens/J03-03.png`. Verdict: redesign. Package P2 (and `components/speech/speech-consent-card.tsx`).
+Steps J01-16, J01-17, J03-03. Before: `screens/J01-16.png`, `screens/J01-17.png`, `screens/J03-03.png`. Verdict: redesign. Package P2 (and `components/speech/speech-consent-card.tsx`).
 
 Problem: the emotional peak of first run carries a five-line help-centre card with its own filled button, so two primary buttons compete, and after "Not now" the screen says the voice is kept twice.
 
@@ -384,7 +384,7 @@ Copy:
 | `speechConsentCopy.chosenLater` | Your voice is kept either way. | CHG |
 | `speechConsentCopy.lowSpace` | This phone needs {size} of free space first. | KEEP (no download button then) |
 
-Visual: the cover from S06, now 132 x 176 pt and centred above the hero line, **opens**: its front cross-fades to the flyleaf (the child's name small at the top, "From Mama" at the foot, one hairline across the middle where the first letter will go). "The book is open." in `hero`, the body in `body`. The download card below: `accentSoft` fill, `radius.md`, 16 pt padding, title in `headline`, body in `footnote`, then a bordered secondary "Download on Wi-Fi" and a quiet "Not now" side by side (stacked at accessibility sizes). After a choice the card collapses to one line: `chosenYes` plus a thin determinate bar, or `chosenLater`, or `lowSpace`. "Write the first one" full width at the bottom. The lamp `finish` scene rises from 0.5 to 1.0: the light comes up as the book opens.
+Visual: the cover from S06, now 132 x 176 pt and centred above the hero line, **opens**: its front cross-fades to the flyleaf (the child's name small at the top, "From Mama" at the foot, one hairline across the middle where the first letter will go). "The book is open." in `hero`, the body in `body`. The download card below: `accentSoft` fill, `radius.md`, 16 pt padding, title in `headline`, body in `footnote`, then a bordered secondary "Download on Wi-Fi" and a quiet "Not now" side by side (stacked at accessibility sizes). After a choice the card collapses to one line: `chosenYes` plus a thin determinate bar, or `chosenLater`, or `lowSpace`. "Write the first one" full width, pinned at the bottom below the scrolling step, so it is whole on an iPhone SE at the default text size (#374; the web flow measures that size only, and large type is a device check, D1 and D5 of the P2 critics' pass); the cover, the line and the download card scroll above it. The lamp `finish` scene rises from 0.5 to 1.0: the light comes up as the book opens.
 
 Motion: on arrival the cover's front holds for 300 ms, then cross-fades to the flyleaf with an 8 pt shift on `standard` (no 3D flip). The lamp rises over 1200 ms. The hero line enters at 200 ms. The `success` haptic plays once when the step is reached. The card collapse uses `LinearTransition` on `standard`. Any tap completes the sequence. Reduce Motion: the open cover is shown at once, the lamp is at 1.0, one 200 ms fade.
 
@@ -399,7 +399,7 @@ Acceptance:
 ### Chapter 2. The first evening
 
 #### S09 Tonight
-Steps J01-18, J04-01, J04-02, J04-03, J04-05, J06-12, J06-15, J07-05, J07-10, J08-01, J18-02. Before: `screens/J01-18.png`, `screens/J04-01.png`, `screens/J18-02.png`; PR #99 after: `docs/design/calm-brand/after/tonight-*.png` on `feat/mobile-calm-brand`. Verdict: redesign. Package P3.
+Steps J01-18, J04-01, J04-02, J04-03, J04-05, J04-06, J04-08, J04-09, J04-10, J05-12, J06-12, J06-15, J07-05, J07-10, J08-01, J18-02. Before: `screens/J01-18.png`, `screens/J04-01.png`, `screens/J18-02.png`; PR #99 after: `docs/design/calm-brand/after/tonight-*.png` on `feat/mobile-calm-brand`. Verdict: redesign. Package P3.
 
 Problem: two questions stack (the subtitle "What do you want Asha to know about today?" over the prompt), a caps label explains the prompt, the prompt sits in a card like every other card, and every unfinished thing shows the same generic line. Tonight lists only the first draft: `listDrafts(childId)` in `lib/store.ts` already returns every draft, and the `[0]` is in `app/(tabs)/index.tsx` line 57, so the fix is in P3's own file and `store.ts` (S03) is not touched.
 
@@ -447,7 +447,7 @@ Visual:
 
 Motion: cold launch only: the dateline, greeting and prompt enter with a 30 ms stagger, under 400 ms (MOTION 5a). A warm resume, a tab switch and a return from Listen, Review or a letter move nothing; only the lamp changes (section 5.8). "Another thought": the old prompt exits (160 ms), the new one enters (8 pt, 280 ms). Draft cards enter with `motion.enter` at a 30 ms stagger. Speak and Type never move. Reduce Motion: static; one 200 ms fade on a prompt change.
 
-States: no drafts (prompt only); several drafts (scroll above the pinned Speak and Type); newborn day 0 (J04-03, the same layout); twins (the switcher in the dateline, as today).
+States: no drafts (prompt only); several drafts (scroll above the pinned Speak and Type); newborn day 0 (J04-03, the same layout); twins (no child switcher on Tonight in build 2: the switcher is on the Book only, one place for the control, and Tonight's dateline names the child it is for; the P3 critics' pass S3 asked for it in the dateline, and #376 left it to the Book).
 
 Acceptance:
 - [ ] One question on screen: the prompt. No subtitle, no caps label.
@@ -458,7 +458,7 @@ Acceptance:
 - [ ] No count, days-since or streak anywhere on Tonight.
 
 #### S10 Usage-sharing ask
-Step J04-04. Before: `screens/J04-04.png` (stale: on `develop` the sheet never shows, because #118 turns analytics off in every profile). Verdict: keep, not built in this pass. Package: none.
+Step J04-04, now titled "A later session: no usage-sharing ask". Before: `screens/J04-04.png` (it shows what `develop` does: Tonight with no sheet, because #118 turns analytics off in every profile; the old capture of the sheet is not in the regenerated record). Verdict: keep, not built in this pass. Package: none.
 
 When the sheet returns in v1.1, these words are recorded for that work, with LEGAL-REQ-003 and counsel: title "Share usage reports?", body "Which screens you open and when something breaks. Never your letters, recordings or anyone's names.", equal buttons "Don't share" and "Share usage". No copy changes in v1.0.
 
@@ -496,7 +496,7 @@ Acceptance:
 - [ ] VoiceOver reads "Start recording, button".
 
 #### S13 Microphone is off, busy, or the phone is full
-Step J05-04 (busy and full are native only and judged from code). Before: `screens/J05-04.png`. Verdict: redesign. Package P4.
+Steps J05-04, J05-10 (the phone being full is native only and judged from code). Before: `screens/J05-04.png`. Verdict: redesign. Package P4.
 
 Problem: "We can't hear you yet" is a "we" line, and its body explains the two buttons. Worse, in `listen.tsx` `begin()` any error from `start()` shows this screen, so a microphone held by a call, a refused audio session or a full phone all say "allow the microphone in Settings", which cannot help. `errors.storageLow` exists and is never used.
 
@@ -526,7 +526,7 @@ Acceptance:
 - [ ] Returning from Settings with permission granted lands on idle Listening.
 
 #### S14 Review while the words are being written down
-Steps J05-03, J05-07, J05-08. Before: `screens/J05-03.png`, `screens/J05-08.png`. Verdict: polish. Package P4.
+Steps J05-03, J05-07, J05-08, J05-11. Before: `screens/J05-03.png`, `screens/J05-08.png`. Verdict: polish. Package P4.
 
 Copy:
 
@@ -655,7 +655,7 @@ Acceptance:
 - [ ] No web-form rectangle inside the letter while editing; the person's edits are stored as theirs.
 
 #### S19 Write
-Steps J05-05, J07-01, J07-02, J07-06. Before: `screens/J07-02.png`. Verdict: polish. Package P4.
+Steps J04-07, J05-05, J07-01, J07-02, J07-06. Before: `screens/J07-02.png`. Verdict: polish. Package P4.
 
 Copy: `write.autosaved` "Saved on this phone" KEEP; `write.label` KEEP; `tonight.typing.placeholder` "Write it the way you would say it." KEEP; `write.notSaved` NEW "Not saved yet" (autosave failure, caution, in the same place; retried on the next pause). The single "Save" is replaced by the destination pair (S20).
 
@@ -666,7 +666,7 @@ Acceptance:
 - [ ] Typed words are never touched by the machine.
 
 #### S20 A typed letter: no Review step
-Step J07-03. Before: `screens/J07-03.png`. Verdict: redesign. Package P4.
+Step J07-03 (now titled "Saved to the book, no Review": the regenerated record shows the saved moment of a typed letter, so the old Review screen for a typed letter is not in it and there is no "before"). Verdict: redesign. Package P4.
 
 Decision: typed letters skip Review. A typed letter has no fixes and no recording, so "Read it back" is one extra screen between typing and keeping. Content and States wanted to keep it; Product wanted to skip it. Skipping wins: HIG Modality "keep modal tasks simple, short, and streamlined" (*verified by the product lens*); Apple Notes and Bear save without a review step (*memory, unverified*). The Keep step is still the only gate (D-082): tapping "Add to Asha's book" or "Keep private" on Write runs `decideKeepLetter()` exactly where Review does today, and the Plus gate (S22) opens from that tap.
 
@@ -675,7 +675,7 @@ Acceptance:
 - [ ] The third kept letter without Plus opens the gate from Write, and the letter waits as a draft (D-082, D-083).
 
 #### S21 The saved moment
-Steps J06-09, J06-10, J06-11, J07-04, J07-07, J07-08. Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
+Steps J06-09, J06-11, J07-07, J07-08 (J06-09, J06-11 and J07-07 are the saved screens on the Review route; J07-08 is the Book after the second kept letter, with the toast this entry owns; the Book just after a save is in S26). Before: `screens/J06-09.png`, `screens/J07-07.png`. Verdict: redesign. Package P4.
 
 Problem: the letter fades to about 10 to 15 percent opacity and stays there behind a green line. The captures read as a rendering bug, and nothing shows where the letter went.
 
@@ -725,7 +725,7 @@ Copy:
 | `billingCopy.keepGate.offline` | Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is. | CHG. Held in #181 until P3, as `heldNote`; register 3.1.0 as `heldNote` (C10). |
 | `billingCopy.gate.unavailable` | Plus is not available on this device yet. | KEEP |
 
-Visual: a full-height sheet on paper. At the top, the **held letter itself** as a small paper card (`surfaceRaised`, `radius.md`, elevation 1, rotated -2 degrees): its dateline, its first two lines in `letterBody` with a fade, "From Mama", and the "Waiting" chip. Then the title in `title1`, the body in `body`, the held note in `footnote` `textMuted`. Then "See Plus" (opens the Plus store screen with Apple's `SubscriptionStoreView`), "Keep it here for now", and the "Redeem a code" link. No lamp and no lockup on this sheet: the stacked lockup belongs above Apple's subscription view (registry `app.paywall`), and light is for the person's moments, not for selling. No price, trial or countdown anywhere on the sheet (D-083).
+Visual: a full-height sheet on paper. At the top, the **held letter itself** as a small paper card (`surfaceRaised`, `radius.md`, elevation 1, rotated -2 degrees): its dateline, its first two lines in `letterBody` with a fade, "From Mama", and the "Waiting" chip. Then the title in `title1`, the body in `body`, the held note in `subhead` `textMuted` (trust copy is never below the subhead step). Then "See Plus" (opens the Plus store screen with Apple's `SubscriptionStoreView`), "Keep it here for now", and the "Redeem a code" link. No lamp and no lockup on this sheet: the stacked lockup belongs above Apple's subscription view (registry `app.paywall`), and light is for the person's moments, not for selling. No price, trial or countdown anywhere on the sheet (D-083). At accessibility text sizes the order changes (the P6a critics' pass S1, as built in #370; the default size keeps the order above): the footer holds exactly the two buttons, "See Plus" and "Keep it here for now", and no text (when Apple's store is not available "See Plus" is not drawn and the footer is just "Keep it here for now"); the scroll holds the title, the held note (the letter-safe line, right after the title), the note about See Plus when there is one, then the body, and after them the held card and "Redeem a code". The scroll comes first in reading order, so the held note is read before any button at every size.
 
 Motion: the sheet opens natively; the held card rises with `motion.enter`; buttons are static.
 
@@ -772,7 +772,7 @@ Acceptance:
 - [ ] Each row shows a month line; the current book has the check.
 
 #### S26 Book with letters
-Steps J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J11-06, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
+Steps J06-10, J07-04 (the Book on arrival after a save, 5.8 rows 5 and 5a), J08-03, J08-05, J08-06, J09-02, J09-03, J09-04, J09-05, J11-05, J18-03. Before: `screens/J09-02.png`, `screens/J09-04.png`, `screens/J09-04-full.png`, `screens/J18-03.png`. Verdict: redesign. Package P5.
 
 Problem: it reads as a feed. The current month is a tinted box that explains the filing system on every visit and takes the hero position from the newest letter. Excerpts end in a cut-off glyph. A letter opens with a generic push.
 
@@ -806,7 +806,7 @@ Visual:
 - **A new phone, recordings coming back** (S62): P8's `components/backup/restore-line.tsx` sits above the first opener while a restore runs: one line and a thin determinate bar, no count. P5 places it; P8 owns it.
 - Lamp `book` scene (top, 0.6, still) behind the header, with `persistKey="tabs"`; cards are opaque.
 
-Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f, built by P1 as `CardToPage`). The Book goes under a veil of the page's paper over 160 ms (`lamp.leaveMs`, on a straight line, the way its lamp leaves a lit room) while the tapped card holds for 136 ms (`cardToPage.holdMs`), keeping its press feedback; then one paper surface grows from the card's rect to the whole screen on `standard`, radius `md` to 0, its colour from the card's `surfaceRaised` to the page's `bg`. The card's dateline and opening lines are carried whole into the page (P1's contract, section 6, P5), and only the rest of the letter fades in from 60 percent progress. There is no dim and no blur on the Book: the veil is the dim. Back carries the words into the card while it is still visible, and the veil lifts over 280 ms (`lamp.returnMs`) once the paper is within 24 pt (`cardToPage.clearPt`) of the card; otherwise the page leaves by the 200 ms hand-off below. Reduce Motion, no measured card, or a page column or type size that differs from the card's: nothing moves; the move is one 200 ms fade (`fadeMs`) each way, shaped as a hand-off (`CARD_TO_PAGE.handOff`, #218): the leaving screen (the Book under the same veil, or on the way back the page, paper and words) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms. Both are straight lines, so nothing loses more than half its strength in 50 ms (the planned worst is 36 percent), and the two screens' words are never on screen together at more than a quarter of their strength (0.23 planned; at most 0.18 measured on the web build). Measured on the web build, it is done 224 to 240 ms after the tap, both ways. As P1 built it (#192, with the Reduce Motion timing from #218; `CARD_TO_PAGE` in `lib/transitions.logic.ts`, stepped ms by ms in `transitions.test.ts`). The native push stays only until P5 mounts `CardToPage` and asks P1 to switch the route (section 6, P5).
+Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f, built by P1 as `CardToPage`) from **build 3**: in build 2 the letter opens by the platform push, because the route stays `push` (`ROUTES['letter/[id]']` in `transitions.logic.ts`) until the device checks (D4) pass and the page reads `useCardToPagePhase()` for when its carried words are home (the P5 critics' pass S2). The push is the platform default and every other P5 line works under it. The rest of this paragraph is the build 3 design. The Book goes under a veil of the page's paper over 160 ms (`lamp.leaveMs`, on a straight line, the way its lamp leaves a lit room) while the tapped card holds for 136 ms (`cardToPage.holdMs`), keeping its press feedback; then one paper surface grows from the card's rect to the whole screen on `standard`, radius `md` to 0, its colour from the card's `surfaceRaised` to the page's `bg`. The card's dateline and opening lines are carried whole into the page (P1's contract, section 6, P5), and only the rest of the letter fades in from 60 percent progress. There is no dim and no blur on the Book: the veil is the dim. Back carries the words into the card while it is still visible, and the veil lifts over 280 ms (`lamp.returnMs`) once the paper is within 24 pt (`cardToPage.clearPt`) of the card; otherwise the page leaves by the 200 ms hand-off below. Reduce Motion, no measured card, or a page column or type size that differs from the card's: nothing moves; the move is one 200 ms fade (`fadeMs`) each way, shaped as a hand-off (`CARD_TO_PAGE.handOff`, #218): the leaving screen (the Book under the same veil, or on the way back the page, paper and words) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms. Both are straight lines, so nothing loses more than half its strength in 50 ms (the planned worst is 36 percent), and the two screens' words are never on screen together at more than a quarter of their strength (0.23 planned; at most 0.18 measured on the web build). Measured on the web build, it is done 224 to 240 ms after the tap, both ways. As P1 built it (#192, with the Reduce Motion timing from #218; `CARD_TO_PAGE` in `lib/transitions.logic.ts`, stepped ms by ms in `transitions.test.ts`). The native push stays only until P5 mounts `CardToPage` and asks P1 to switch the route (section 6, P5).
 
 States: one letter (J09-02); many months (J09-04); a recording waiting (J09-03); no words (J09-05); quiet days and removing a mark with Undo (J08-03, J08-05, J08-06); dark (J18-03); a letter from the other parent; a month both parents wrote in (`book.fromTwo`); a letter deleted on another phone (its card collapses out of its row on the next pull, `exitMs`, with no toast, because nobody tapped anything here); recordings coming back on a new phone (the restore line).
 
@@ -815,15 +815,15 @@ Acceptance:
 - [ ] Month openers show the numeral, the letter count and the date range; VoiceOver reads "2 letters, from Mama", never the "·" separator.
 - [ ] No ellipsis glyph in any excerpt; the stored letter is never cut.
 - [ ] A quiet-day mark is never counted or shown in the letter face.
-- [ ] The card-to-page transition reverses on Back, and under Reduce Motion or on failure falls back to the 200 ms hand-off: the Book (under the veil) fades over the first 140 ms and the whole page fades in over the last 120 ms, from 80 ms, done within 250 ms of the tap; the same shape back.
-- [ ] The letter card keeps its press feedback (cards at 0.98 on `snappy`, `motion.press.cardScale`) through the 136 ms hold, until the paper starts to grow.
-- [ ] When a card opens into its page, VoiceOver focus lands on the page's opening once the move or the fade settles, and the list behind cannot be reached by swiping (check on a device that the presenting screen is hidden; hide the list explicitly if not).
+- [ ] (Build 3.) The card-to-page transition reverses on Back, and under Reduce Motion or on failure falls back to the 200 ms hand-off: the Book (under the veil) fades over the first 140 ms and the whole page fades in over the last 120 ms, from 80 ms, done within 250 ms of the tap; the same shape back.
+- [ ] (Build 3.) The letter card keeps its press feedback (cards at 0.98 on `snappy`, `motion.press.cardScale`) through the 136 ms hold, until the paper starts to grow.
+- [ ] (Build 3.) When a card opens into its page, VoiceOver focus lands on the page's opening once the move or the fade settles, and the list behind cannot be reached by swiping (check on a device that the presenting screen is hidden; hide the list explicitly if not).
 - [ ] Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium, font scale 0.823, 0.882 and 0.941): two lines clip at exactly two rendered lines, and the fade sits on the last of them.
 - [ ] After a save, the Book shows the new card in view and washed, once; the other parent's letter is signed with their name and carries no badge.
 - [ ] The month range reads "{a} to {b}" filled with real dates, never a raw placeholder.
 
 #### S27 A letter, as a page
-Steps J10-01, J10-02, J10-05, J10-07, J10-09, J18-04. Before: `screens/J10-01.png`, `screens/J18-04.png`. Verdict: polish. Package P5.
+Steps J10-01, J10-02, J10-05, J10-07, J10-16, J18-04. Before: `screens/J10-01.png`, `screens/J18-04.png`. Verdict: polish. Package P5.
 
 Copy:
 
@@ -850,7 +850,7 @@ Acceptance:
 - [ ] Nothing loops on the letter page.
 
 #### S28 A letter with no words
-Step J10-10. Before: `screens/J10-10.png`. Verdict: polish. Package P5.
+Steps J10-10, J10-17. Before: `screens/J10-10.png`. Verdict: polish. Package P5.
 
 Copy: `bookCopy.nobodySpoke` KEEP; primary `wordsCopy.waiting.writeButton` "Write the words" (opens the existing sheet: `wordsCopy.waiting.writeLabel` "Words for this recording", `saveButton` "Save words", `cancelButton` "Not now"). "Record again" is removed from this page (it starts a separate letter and can meet the gate). "Add to book" and "Delete" stay.
 
@@ -960,7 +960,7 @@ Step J10-06. Before: `screens/J10-06.png`. Verdict: polish. Package P5.
 Copy: `settings.delete.entryTitle` "Delete this letter?" KEEP; `settings.delete.entryBody` CHG "It waits in Recently deleted for 30 days."; `settings.delete.keepButton` "Keep it" KEEP (primary, the default); `settings.delete.entryConfirm` "Delete letter" KEEP (quiet, destructive, with the Trash icon). The header Close is removed: "Keep it" and a swipe down are the ways out. D-085 chose a light confirm for letters; it stays, although HIG Alerts would not ask for an undoable delete. The `warning` haptic plays only on the confirm.
 
 #### S36 Letter deleted, with Undo
-Step J10-08. Before: `screens/J10-08.png`. Verdict: redesign. Package P5.
+Steps J10-08, J10-09. Before: `screens/J10-08.png`. Verdict: redesign. Package P5.
 
 Problem: a blank page says "Letter deleted." and explains the buttons while a toast says the same thing.
 
@@ -1013,7 +1013,7 @@ Copy: `settings.delete.eraseNowTitle` "Erase this letter now?" KEEP; `settings.d
 ### Settings, Plus and the rest
 
 #### S40 Settings home, with If you are struggling and Licenses
-Steps J03-06, J03-09, J16-01, J16-05, J16-06. Before: `screens/J16-01.png`, `screens/J16-01-full.png`, `screens/J16-05-full.png`, `screens/J16-06-full.png`. Verdict: polish. Package P6.
+Steps J03-06, J03-10, J16-01, J16-05, J16-06, J16-20. Before: `screens/J16-01.png`, `screens/J16-01-full.png` (J16-05 and J16-06 are now their own pages, `/settings/struggling` and `/settings/licenses`, so the two captures that showed the accordions open are gone: `J16-05-full` is not in the regenerated record and `J16-06-full` is now the Licenses page). Verdict: polish. Package P6.
 
 Problem: the early-version note is the first thing on every visit, in a tinted card, although `in-app-disclosures.md` section 1 registers it for Settings, About. The privacy short line appears twice. "If you are struggling" and the licenses open as accordions in the middle of the list.
 
@@ -1153,7 +1153,7 @@ Acceptance:
 - [ ] No sentence the app wrote is shown in the letter face.
 
 #### S46 A child's book settings
-Steps J03-07, J03-20, J03-21, J03-22, J03-23, J03-24, J03-25, J03-26, J03-27, J03-30, J03-31, J03-32, J03-33. Before: `screens/J03-07.png`, `screens/J03-31.png`. Verdict: polish. Package P6.
+Steps J03-07, J03-20, J03-21, J03-22, J03-23, J03-24, J03-25, J03-26, J03-27, J03-30, J03-31, J03-32, J03-33, J03-34, J03-40, J03-41 (J03-40 and J03-41 are the Hidden books page, the way back from "Hide this book"). Before: `screens/J03-07.png`, `screens/J03-31.png`. Verdict: polish. Package P6.
 
 Copy:
 
@@ -1185,13 +1185,13 @@ Acceptance:
 - [ ] With server features on, "Write this book together" opens the invite sheet (one parent) or the Family tab (two parents); with them off, the coming-soon row shows as today.
 
 #### S47 Add a child
-Step J03-08. Before: `screens/J03-08.png`. Verdict: redesign. Package P6 (consuming P2's `date-field.tsx`).
+Steps J03-08, J03-09. Before: `screens/J03-08.png`. Verdict: redesign. Package P6 (consuming P2's `date-field.tsx`).
 
 Problem: it prefills today as the birthday (the "0 days" trap first run removed) and its helper prints the placeholder as a name ("We sort letters by Their name's month of age.").
 
 Copy: `children.add.title` "Add a child" KEEP; `children.add.body` (not shown) RET; the fields use the S05 keys; `children.add.cta` "Add {child}'s book" KEEP; `children.add.ctaShort` NEW "Add this book" (when the filled label passes 22 characters, or before a name is typed); `children.add.twinsHelp` KEEP.
 
-Behaviour: identical to the first-run child step: no default date, "Born today" as a chip, Continue disabled with its reason line, the small book cover taking the name. Free, with no Plus gate (D-082, D-083).
+Behaviour: identical to the first-run child step: no default date, "Born today" as a chip, Continue disabled with its reason line, the small book cover taking the name (at accessibility text sizes, under the heading: the P6a critics' pass S2, #374). Free, with no Plus gate (D-082, D-083).
 
 Acceptance:
 - [ ] The birthday starts empty; a seven-month-old cannot be saved as a newborn by default.
@@ -1231,16 +1231,20 @@ Copy:
 | Key | After | Mark |
 |---|---|---|
 | `errors.launch.title` | The book could not open | CHG (no full stop, as #181) |
-| `errors.launch.body` | Your letters and recordings are safe on this phone. | CHG. Revised 16 Oct (review B6): the second sentence was the padding principle 2 removes. "Safe on this phone" stays: `rules.test.ts` requires it in `en.errors`. |
+| `errors.launch.body` | Export saves a copy of the recordings and book files it can read, exactly as they are. | CHG. Revised 30 Oct (coordinator's ruling on the P6c critics' pass, S2; `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md`): the 16 Oct line, "Your letters and recordings are safe on this phone.", made a promise the build cannot check (claims inventory 3f, E2; A2) on the one screen where it knows least. This line says what the screen's Export does, which the code backs (E1), and adds no "nothing was changed" (B6 stands). S50 keeps "safe on this phone", so `rules.test.ts` still finds it in `en.errors`. |
 | `errors.launch.hint` | Try again, or restart the phone. | CHG |
 | `errors.launch.tryAgainButton` | Try again | KEEP |
+| `errors.launch.tryingAgainButton` | Trying again | NEW (added 30 Oct, S1). The Try again button's words while it opens the book again (busy, about half a second, then the answer). |
+| `errors.launch.stillClosed` | It did not open this time either. | NEW (added 30 Oct, S1). The one line under the hint after a Try again that did not work, announced each time. No count, no "nothing was changed" (B6). |
 | `errors.launch.exportButton` | Export what's readable | KEEP (22 characters; the States lens's "Save a copy of the files" is 24 and over the budget, rejected) |
 | `errors.launch.exportingTitle` | Gathering your files | KEEP |
-| `errors.launch.exportNothing` | This phone has no recordings or files to export. | CHG. Revised 16 Oct (review B6): active voice, no "were found". |
+| `errors.launch.exportNothing` | Export has nothing to put in a file right now. | CHG. Revised 30 Oct (S2): the 16 Oct line, "This phone has no recordings or files to export.", counted what the phone lacks and read as loss. This one says what Export does and is true whenever no file was listed (claims inventory 3f, E3). |
 | `errors.launch.exportFailed` | That export did not work. Your files are still on this phone. | CHG. Revised 16 Oct (review B6): VOICE's own error shape ("That did not work this time."), then where the files are, with no "nothing was changed" padding. |
 | `errors.launch.readme` | as today | KEEP |
 
 Visual: as S50 (brand faces, static drawing, plain paper). No delete, reset or rebuild action may appear here (D-085).
+
+States: Try again is answered every time (30 Oct, S1). The tap turns the button busy ("Trying again", the outline form, ignoring a second tap) and takes away the last answer; after about half a second the open runs. If it worked, the app opens. If it did not, the button is back and `errors.launch.stillClosed` shows under the hint, in the page's live region, so a screen reader says it after every tap, not only the first. Nothing counts the taps.
 
 ### Chapter 7. Two phones, two parents (package P8)
 
@@ -1255,7 +1259,7 @@ Option B puts these surfaces in v1.0 (D-100; D-109 item 6). The streams built th
 **One sheet frame for the chapter**: `lib/auth/ui.tsx` (`SheetFrame`, `SheetTitle`, `SheetBody`, `QuietButton`, `Busy`, `ErrorLine`; P8a's file, consumed unchanged by P8b and P8c). `bg` paper, 24 pt top padding, 20 pt gutters. Title in `title2` (Literata Medium 22/28), body in `body` `textMuted`. One filled primary, 56 pt, at the bottom; quiet buttons as `accent` text, 44 pt. The privacy line in `footnote` `textMuted` with LockSimple 16 pt. An error is a `footnote` line with WarningCircle in `caution`, announced politely, never red text alone and never a shake. While busy, the primary keeps its size and shows its busy line with a small spinner inside it.
 
 #### S52 Sign in, the sheet
-Entry points: the welcome's "I already have a book" (trigger `sign_in`), the first kept letter (`first_letter`, over the Book, S21), Account signed out (`settings`), the Family tab's invite (`invite_create`), joining (`invite`). No journey step yet; P8a adds `j22-sign-in.flow.ts`. Verdict: polish. Package P8a. Logic: **S01** (`lib/auth/**` except `ui.tsx`, `lib/supabase/**`, `supabase/functions/apple-token`; links bound to the asking phone and claim after consent, #139).
+Entry points: the welcome's "I already have a book" (trigger `sign_in`), the first kept letter (`first_letter`, over the Book, S21), Account signed out (`settings`), the Family tab's invite (`invite_create`), joining (`invite`). Steps J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60 (J22-31 is this sheet opened from Account). Verdict: polish. Package P8a. Logic: **S01** (`lib/auth/**` except `ui.tsx`, `lib/supabase/**`, `supabase/functions/apple-token`; links bound to the asking phone and claim after consent, #139).
 
 Problem: each body is one long sentence of reasons ("Sign in so your co-parent can write too, and so ..."); the unavailable line says "in this build"; errors put the problem before the reassurance, and two sound like a chat bot ("Let's take a short break.", "That's a lot of emails for one hour.").
 
@@ -1275,13 +1279,14 @@ Copy (`authCopy`, `packages/content/src/features/auth.en.ts`):
 | `sheet.notConfigured` | Signing in is not available right now. Your letters are safe on this phone. | CHG ("in this build" is our word, not theirs; kill path only) |
 | `errors.network` | Your letters are safe on this phone. Sign in once you are back online. | CHG (reassure first, VOICE Error row) |
 | `errors.expired` | That link has expired. Send a new email for a fresh one. | CHG |
-| `errors.code_paused` | You can try a code again in 15 minutes. | CHG (one sentence, without the system's voice) |
-| `errors.rate_limited` | Sign-in emails are paused for an hour. Use Apple or Google, or try again later. | CHG (the cause and a way forward) |
-| `errors.provider` | That did not work this time. Try again, or try another way. | CHG (VOICE's own error line) |
+| `errors.code_paused` | Your letters are safe. You can try a code again in 15 minutes. | CHG (one sentence, without the system's voice; amended 28 Oct, #360: a service- or network-caused error says the letters are safe first) |
+| `errors.rate_limited` | Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later. | CHG (the cause and a way forward; amended 28 Oct, #360, as `code_paused`) |
+| `errors.provider` | Your letters are safe. That did not work this time. Try again, or try another way. | CHG (VOICE's own error line; amended 28 Oct, #360, as `code_paused`) |
 | `errors.session_expired` | Your letters are safe on this phone. Sign in again to keep sharing them. | CHG |
 | `errors.consent_unavailable` | Your letters are safe on this phone. Setting up your account did not finish. Try again. | CHG |
 | `errors.unknown` | That did not work this time. Your letters are safe on this phone. | CHG |
-| `errors.wrong_code`, `invalid_email`, `not_available`, `under_18` | as today | KEEP |
+| `errors.not_available` | Your letters are safe. This way of signing in isn't available right now. Try another way. | CHG (amended 28 Oct, #360, as `code_paused`; the words after the first sentence as before) |
+| `errors.wrong_code`, `invalid_email`, `under_18` | as today | KEEP (input errors keep their words) |
 
 Visual: a native sheet, fit to contents (large at accessibility sizes). With a book on this phone (`first_letter`, `settings`, `invite_create`), the small closed book cover (88 x 116, the child's name) sits at the right of the title row, as on S05: the sheet is about that book. Under the body, the providers stacked full width, 56 pt, 12 pt apart: Sign in with Apple (Apple's own button, as HIG Sign in with Apple requires), "Continue with Google" (bordered, Google's mark as its branding rules allow), "Continue with email" (bordered, EnvelopeSimple 20 pt). "Use a passkey" as a quiet button only when enabled. "Last time you used Apple." in `footnote` under them. The privacy line and "Not now" at the foot. No illustration.
 
@@ -1291,13 +1296,13 @@ States: kill path (`notConfigured`, no buttons); offline; busy; each error; open
 
 Acceptance:
 - [ ] One title, one body sentence, the providers, the privacy line and "Not now".
-- [ ] Every error after an offline or failed attempt says the letters are safe before anything else.
+- [ ] Service- or network-caused errors say the letters are safe first; input errors keep their words; unknown says it second.
 - [ ] No "we" on the sheet outside the registered privacy line.
 - [ ] "Not now" always closes and changes nothing on this phone.
 - [ ] After the first kept letter it rises over the Book, never in place of Review (S21).
 
 #### S53 Continue with email
-No journey step yet (j22). Package P8a. Logic: **S01** (`lib/auth/email.ts`: one email with a link and a code).
+Steps J22-03, J22-04, J22-05, J22-06. Package P8a. Logic: **S01** (`lib/auth/email.ts`: one email with a link and a code).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1313,7 +1318,7 @@ Acceptance:
 - [ ] AutoFill offers the person's addresses; no error shows before the first submit.
 
 #### S54 Check your email, and opening the link
-No journey step yet (j22). Package P8a. Logic: **S01** (the link opens only on the phone that asked, #139; codes last 900 s, #159; `EMAIL_CODE_LENGTH` 6).
+Steps J22-07, J22-08, J22-09, J22-70, J22-71, J22-80, J22-81. Package P8a. Logic: **S01** (the link opens only on the phone that asked, #139; codes last 900 s, #159; `EMAIL_CODE_LENGTH` 6).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1322,21 +1327,25 @@ No journey step yet (j22). Package P8a. Logic: **S01** (the link opens only on t
 | `code.sentToEmail` | A link and a code are on their way to {email}. | NEW |
 | `code.emailLabel` | Your email address | CHG ("Which email did we send it to?"; shown only when the app restarted in between) |
 | `code.label`, `verify`, `openMail`, `resend`, `resendWait`, `resent`, `differentEmail` | Code / Continue / Open Mail / Send a new email / You can send another in a minute. / A new email is on its way. / Use a different email | KEEP |
+| `code.lettersSafe` | Your letters are safe on this phone. | NEW (P8a critics S2, #372). Under the field while the email is on its way, and only when this phone holds a book; the same words as `errors.network`'s first sentence |
+| `code.pausedOtherWays` | The link in the newest email still works, and so does signing in with Apple or Google. | NEW (P8a critics S1, #372). Said straight after `errors.code_paused`, in the same line, while the pause holds |
 | `verify.title`, `typeCode`, `newEmail` | Signing you in / Type the code instead / Send a new email | KEEP |
 | `en.auth.troubleButton`, `noEmailHelp` | Trouble signing in? / as today | KEEP (P0's file, unchanged); a quiet button at the foot that opens the help line in place |
 
-Visual: `sentToEmail` with the address in `text` and the rest in `textMuted`. The code is one field in tabular figures, Mukta SemiBold 28 pt, tracking 6, centred, `textContentType="oneTimeCode"` so iOS offers the code from Mail, submitting at full length; "Continue" stays for VoiceOver and Switch Control. "Open Mail" bordered, then "Send a new email" and "Use a different email" quiet. Opening the link shows "Signing you in" with the small spinner, then S55 or closes.
+Visual: `sentToEmail` with the address in `text` and the rest in `textMuted`. The code is one field in tabular figures, Mukta SemiBold 28 pt, tracking 6, centred, `textContentType="oneTimeCode"` so iOS offers the code from Mail, submitting at full length; "Continue" stays for VoiceOver and Switch Control. "Open Mail" bordered, then "Send a new email" and "Use a different email" quiet. Opening the link shows "Signing you in" with the small spinner, then S55 or closes. "Not now" (`sheet.later`, S52's key) is the sheet frame's header button, top right, outside the scroll and above the keyboard, so it stays in reach with the number pad up at every text size; it closes the sheet and changes nothing on this phone, and it waits while a code is being checked or a new email is being sent (#372). While the email is on its way, and only when this phone holds a book, `lettersSafe` sits under the field (a fresh install has no letters here to be safe); "A new email is on its way." shows under that line, and under the paused line while the pause holds.
 
 Motion: a wrong code clears and refocuses the field and the line cross-fades in (150 ms); no shake, no haptic.
 
-States: waiting; wrong code; expired; paused 15 minutes; rate limited; offline; restarted (asks the address); the link opened.
+States: waiting; wrong code; expired; paused 15 minutes (S01's rule, unchanged: five wrong codes in 15 minutes pause typing a code for 15 minutes, and the server's own limit still holds. The field and Continue wait, and one polite line says `errors.code_paused` and then `code.pausedOtherWays`. "Send a new email" stays offered after its usual minute, because the newest email's link works too; sending never clears or shortens the pause. When the pause ends the field comes back and the line goes on its own; #372); rate limited; offline; restarted (asks the address); the link opened.
 
 Acceptance:
 - [ ] The address the email went to is on screen.
 - [ ] A full-length code submits without a tap; a wrong one never shakes or flashes red.
+- [ ] "Not now" is in the header and closes the sheet; it changes nothing on this phone, and it waits while a code is being checked or a new email is being sent.
+- [ ] After five wrong codes the field waits, one line says the letters are safe and that the link and Apple or Google still work, and "Send a new email" is still offered; sending does not end the pause.
 
 #### S55 Before your book syncs (terms, the age step, sensitive data)
-No journey step yet (j22). Package P8a. Logic: **S01** (`record_policy_act`, `my_sync_gate`, claim after consent), **S14** (the sensitive-data step moves to `app/consent/sensitive.tsx` in WP-F02-07; until it moves it is this file's third step), S17 and counsel (every word).
+Steps J22-10, J22-32, J22-40, J22-41, J22-42, J22-43. Package P8a. Logic: **S01** (`record_policy_act`, `my_sync_gate`, claim after consent), **S14** (the sensitive-data step moves to `app/consent/sensitive.tsx` in WP-F02-07; until it moves it is this file's third step), S17 and counsel (every word).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1359,7 +1368,7 @@ Acceptance:
 - [ ] P8 changes no registered sentence.
 
 #### S56 Account
-No journey step (the record ran signed out). Package P8a. Logic: **S01** (session, passkeys, sign out of other devices), **S03** (the sync state and the outbox drain before sign-out, `lib/sync/**`).
+Steps J22-30, J22-33 (the sign-out wait and "Stay signed in" have no step: no web flow reaches them). Package P8a. Logic: **S01** (session, passkeys, sign out of other devices), **S03** (the sync state and the outbox drain before sign-out, `lib/sync/**`).
 
 Problem: the signed-out body is two reasons and a reassurance; "Sync and family sharing" names a role v1.0 does not have; the sign-out lines say "we will sign you out".
 
@@ -1375,19 +1384,21 @@ Problem: the signed-out body is two reasons and a reassurance; "Sync and family 
 | `account.signOut`, `signOutTitle`, `cancel` | Sign out / Sign out on this phone? / Cancel | KEEP |
 | `account.signOutBody` | Your letters stay on this phone. Sign in again any time. | CHG. True (signing out leaves this phone's letters in place), so it is one of the three keys P8's test allows to say "stay on this phone" (section 6). |
 | `account.signOutWaiting` | Your newest letters are still on their way. This phone signs out once they are sent. | CHG (no "we will") |
+| `account.staySignedIn` | Stay signed in | NEW (BL-451, #388). A row under the waiting row that calls `cancelSignOutWait()`: back to signed in, nothing deleted, nothing sent. Only for a sign-out the person asked for (`reason === 'user'`), never while the sign-out is closing. |
+| `account.signOutEarly` | Your newest letters are kept on this phone. They are sent the next time you sign in to this account. | NEW (BL-451, #388). On the signed-out page when the wait ended before the newest letters were sent (sync turned off, or the session ended during it). |
 
-Visual: an iOS Settings page, no lamp. Signed in: a header on paper with the method's mark at 28 pt (Apple's logo as Apple allows, Google's G, or EnvelopeSimple), "Signed in with email" in `headline` and the address in `footnote` `textMuted`. Then Sync (one row with its value, or "Finish setting up" as a row), Passkeys, Devices, and "Sign out" as a row in `text`, not red: nothing is deleted (Delete account is on Settings home, S64). Signed out: the small closed cover, the title, the body and "Sign in".
+Visual: an iOS Settings page, no lamp. Signed in: a header on paper with the method's mark at 28 pt (Apple's logo as Apple allows, Google's G, or EnvelopeSimple), "Signed in with email" in `headline` and the address in `footnote` `textMuted`. Then Sync (one row with its value, or "Finish setting up" as a row), Passkeys, Devices, and "Sign out" as a row in `text`, not red: nothing is deleted (Delete account is on Settings home, S64). Signed out: the small closed cover, the title, the body and "Sign in". After a wait that ended early, `signOutEarly` sits between the body and "Sign in" in `body` `text`, and is announced once. It is the Account page's own state: it shows only if Account was open when the wait ended, and goes once the person is signed in again. In a sheet that needs the account (Invite a co-parent, Joining a book, Leave the book) the not-set-up-yet state is drawn by `AccountGate` (`lib/auth/ui.tsx`; signed out, it shows the sheet's sign-in body and "Sign in" instead): its line is a sentence about what the person was doing, not Account's row value (`account.sync.waiting` stays on Account): "Finish setting up your account to invite someone." (`familyCopy.card.finishSetup`) when inviting, "Finish setting up your account first." (`familyCopy.errors.consent_needed`) when joining or leaving, and `claim.waiting` while the claim screen is unanswered, each with "Finish setting up" under it. After a decline ("Keep on this phone") the gate shows nothing above "Agree and sync": `sensitiveConsent.declineHelp` would read as a question about a choice already made, and the step that button opens shows every registered line (P8a critics S4, #372).
 
-Motion: native push. The sign-out confirm is a native alert. While the outbox drains, the Sign out row shows `signOutWaiting` with a small spinner; then the page cross-fades (200 ms) to signed out.
+Motion: native push. The sign-out confirm is a native alert. While the outbox drains, the Sign out row is replaced by the waiting row (`signOutWaiting` with a small spinner), with "Stay signed in" under it for a sign-out the person asked for; then the page cross-fades (200 ms) to signed out.
 
-States: signed out; signed in with sync on; consent missing; offline; session expired (`errors.session_expired` above the sections, with "Sign in"); sign-out waiting.
+States: signed out; signed in with sync on; consent missing; offline; session expired (`errors.session_expired` above the sections, with "Sign in"); sign-out waiting (with "Stay signed in"); signed out after a wait that ended early.
 
 Acceptance:
 - [ ] Sign out never drops a queued letter: it waits for the outbox (F16) and says so.
 - [ ] Sign out is not styled as destructive; no "we" on the page.
 
 #### S57 Family tab
-Steps J17-01, J17-02, J17-03 (moved from S48; the record shows the coming-soon tab). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
+Steps J17-01, J17-02, J17-03, J21-20, J21-23 (J17-01 to J17-03 moved from S48 and show the coming-soon tab; J21-20 is the live tab with one parent; J21-23 is the tab with an invite open). Before: `screens/J17-01.png`, `screens/J17-01-full.png`. Verdict: redesign. Package P8b. Logic: **S04** (`lib/family/**`, `members.logic.ts`, `packages/core/src/{invite,family-rules}.ts`), S02 (invites, the two-parent cap, leave), S07 (family contracts, `invite-redeem`), **S03** (members from the last pull).
 
 Problem: the tab is a list in a settings voice, the invite card explains equality and sign-in in three sentences, and its privacy line ("Only the people you invite can read Asha's book.") claims who can read, which option B does not keep (review A1).
 
@@ -1419,7 +1430,7 @@ Acceptance:
 - [ ] The three tab titles come from `packages/content`.
 
 #### S58 Invite a co-parent
-No journey step yet; P8b adds `j21-coparent.flow.ts` (on `feat/coparent-alpha`). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
+Steps J21-21, J21-22, J21-30, J22-90, J22-91 (J22-90 and J22-91 are the sheet's gate text). Package P8b. Logic: **S04** (`createCoParentInvite`, `shareInviteLink`, device-made invite ids WP-F11-01), S02 (invite rows, the 7-day expiry, the cap), S07 (the link `/j#t=TOKEN`, #165).
 
 | Key | After | Mark |
 |---|---|---|
@@ -1436,14 +1447,14 @@ Visual: a sheet at the large detent. The book cover (132 x 176, closed, the chil
 
 Motion: the foot line cross-fades after each 300 ms typing pause (200 ms), as S05. When the share sheet closes, this sheet dismisses; the Family tab's pending row enters with `enter` and `create.done` shows as a toast.
 
-States: getting the link; two parents already (`full`, no Share); consent missing; signed out (S52 first); rate limited; not a parent; offline.
+States: getting the link; two parents already (`full`, no Share); consent missing (the gate, S56); signed out (S52 first); rate limited; not a parent; offline.
 
 Acceptance:
 - [ ] The link carries no child name (BL-348, #165) and works once for 7 days.
 - [ ] The app sends nothing itself; the person sends the link from the share sheet.
 
 #### S59 Joining a book
-The welcome's "I was invited" (S03) or an invite link opens it; no journey step yet (j21). Package P8b. Logic: **S04** (`join-flow.logic.ts`: views `paste`, `signIn`, `peeking`, `ask`, `account`, `joining`, `joined`, `failed`; `pending-invite.ts`), **S01** (`+native-intent.tsx` keeps the token; sign-in from here), S02 (`peek_invite` returns the inviter's sign-off only; `accept_child_invite`), **S03** (pulling the book to this phone).
+The welcome's "I was invited" (S03) or an invite link opens it. Steps J21-01, J21-02, J21-03, J21-04, J21-05, J21-06, J21-07, J21-08, J21-10 (J21i and J21j, the quiet wait while sync runs and its end, record no step). Package P8b. Logic: **S04** (`join-flow.logic.ts`: views `paste`, `signIn`, `peeking`, `ask`, `account`, `joining`, `joined`, `failed`; `pending-invite.ts`), **S01** (`+native-intent.tsx` keeps the token; sign-in from here), S02 (`peek_invite` returns the inviter's sign-off only; `accept_child_invite`), **S03** (pulling the book to this phone).
 
 Problem: the second parent's arrival, their "The book is open.", is a plain sheet that says "Your letters and your co-parent's will be together in one book."
 
@@ -1456,7 +1467,7 @@ Problem: the second parent's arrival, their "The book is open.", is a plain shee
 | `accept.peeking` | Opening the invite | NEW (the busy line while `peek_invite` runs) |
 | `accept.askTitle`, `invitedBy`, `invitedByUnknown`, `askBody`, `join`, `notNow` | Join this book as a parent? / Invited by {inviter} / You were invited to write a book together. / You will both read every letter in the book. Join only if you know who sent you this link. / Join the book / Not now | KEEP (on `feat/coparent-alpha`; `askBody` is the safety line) |
 | `accept.needsSync` | To join, turn on sync and sharing in Settings, Privacy. | CHG (one instruction) |
-| `accept.signIn`, `consentBody`, `consentButton`, `joining` | as today | KEEP |
+| `accept.signIn`, `joining` | as today | KEEP |
 | `accept.signsAsLabel`, `signsAsHelp`, `signsAsPlaceholder` | What does {child} call you? / It signs your letters in this book. / Mama, Papa, Amma, Baba | KEEP (on `feat/coparent-alpha`) |
 | `accept.joinedTitle`, `joinedWaiting`, `open`, `close`, `tryAgain` | You're in {child}'s book / {child}'s book is on its way to this phone. / Open the book / Close / Try again | KEEP |
 | `accept.joinedBody` | Your letters and {inviter}'s sit side by side, each signed. | CHG (the flyleaf, in words) |
@@ -1468,7 +1479,7 @@ Visual: a sheet at the large detent; no lamp inside it. Paste: the title, the fi
 
 Motion: views replace each other with a 200 ms cross-fade, never a push. Joined: the cover fades in (200 ms), holds 300 ms, then opens as on S08 (front cross-fades to the flyleaf with an 8 pt shift on `standard`); `success` once, when the join returns. "Open the book": the sheet dismisses natively, the app opens the Book tab on this book, and the Book's lamp **rises from 0 to 0.6 over `arriveMs` (1200 ms)** with the header settle (5a): the one slow arrival outside first run, because this is the second parent's first evening in the book. Reduce Motion: the cover shown open at once, one 200 ms fade, the lamp at 0.6 at once.
 
-States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (`consentBody`, or `needsSync`); joining; joined, book still coming; joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
+States: no link; a link not recognised; signed out; peeking; ask; consent or sync missing (the gate after "Join the book", S56: "Finish setting up your account first."; and `needsSync`, the line for the server's own `consent_needed` on the join call); joining; joined, book still coming (on a fresh phone Close hands over to the first-run welcome, which says "Asha's book is on its way to this phone." in place of "Begin the book", so the person is not left at a door that starts a second book; after 30 seconds, or when sync cannot bring the book (it is not running on this phone, or it cannot reach the server), it says "Asha's book has not reached this phone yet.", offers Try again while a sync can run, and "Begin the book" returns; when the child's name could not be read the lines say "The book"; once the book is here the welcome hands over to the Book; the P8b critics' pass S2, as built in #375); joined and ready; each final error (expired, used, cancelled, not found, already a member, two parents) with "Close"; offline with "Try again" (the token is kept); the kill path (`InviteComingSoon`, nothing kept).
 
 Acceptance:
 - [ ] Before sign-in, neither the child's name nor the inviter is shown (BL-322).
@@ -1587,7 +1598,7 @@ Acceptance:
 - [ ] No toast shows on a phone where nobody tapped Erase now.
 
 #### S64 Delete account
-No journey step (the record ran signed out). Package P8c. Logic: **S14** (`lib/account-deletion/**`: the two steps, the 30-day window, cancel), **S01** (the session, signing out of this phone), S02 and S07 (the purge across every system in F17 section 8.4: `prepare_account_purge`, the purge worker), **S05** (backup objects and keys in that purge), S06 (the Apple billing notice).
+No journey step (no web flow reaches it). Package P8c. Logic: **S14** (`lib/account-deletion/**`: the two steps, the 30-day window, cancel), **S01** (the session, signing out of this phone), S02 and S07 (the purge across every system in F17 section 8.4: `prepare_account_purge`, the purge worker), **S05** (backup objects and keys in that purge), S06 (the Apple billing notice).
 
 Problem: it promises to remove "photos", which v1.0 never makes; the export line lists photos; two lines say "we"; the errors put the failure before the reassurance.
 
@@ -1604,7 +1615,11 @@ Copy (`accountDeletionCopy`, `packages/content/src/features/account-deletion.en.
 | `exportFirst.body` | Export everything, free: the book as a PDF, your letters as text and your recordings. | CHG (no photos) |
 | `subscription.*`, `continueButton`, `confirm.*` | as today | KEEP ("Type delete to confirm" stays: the one irreversible act in the app) |
 | `scheduled.emailNote` | A confirmation is on its way to your email. | CHG (no "we sent"; a receipt is for a purchase) |
-| other `scheduled.*`, `executing`, `signedOut.*` | as today | KEEP |
+| `signedOut.body` | Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app. | CHG (30 Oct 2026, critics' pass S3: true for a person who never asked and for one who signed out after asking) |
+| `scheduled.signOutBody` | Your deletion stays scheduled for {date}. Sign in again any time before then to cancel it. | NEW (30 Oct 2026, S3: the native confirm before "Sign out of this phone"; its buttons are `authCopy.account.staySignedIn` and `signOut`; "before then" because the undo window ends at the date, LEGAL-REQ-029) |
+| `what.onThisPhone` | On this phone, your letters stay. The ones already saved to your account move to Recently deleted. | NEW (30 Oct 2026, critics' pass S4; only what the code does, no date and no erase; counsel's relay list) |
+| `signedOut.scheduledBody`, `open.executingTitle`, `open.restoringTitle`, `open.restoringBody`, `open.cancelling`, `open.notYet`, `open.checking` | Your account will be deleted on {date}. Sign in to cancel the deletion. / Deletion in progress / Deletion cancelled / Your letters and books are on their way back to this phone. / Cancelling the deletion. / Still on their way. Try again in a moment. / One moment. | NEW (30 Oct 2026, D-117 M1: the deletion screen a phone with no book shows while a request is open, in place of the welcome; `cancelling`, `notYet` and `checking` are spoken or answer a press) |
+| other `scheduled.*`, `executing`, `signedOut.button` | as today | KEEP |
 | `notConfigured` | Accounts are not available right now. Everything stays on this phone, and deleting the app removes it. | CHG (kill path only) |
 | `errors.offline` | Nothing has changed. Deleting an account needs a connection. | CHG (reassure first) |
 | `errors.failed` | That did not work this time. Nothing has changed. | CHG |
@@ -1807,7 +1822,7 @@ Presentation and animation per route live in one table in `lib/motion.ts` (`rout
 | 5b | The first kept letter, signed out | after row 5 settles, 600 ms after the Book appears, the sign-in sheet (S52, `first_letter`) rises over the Book, once | the person sees the letter in its month before the ask | the Book's lamp holds under the sheet | none | the sheet as the system presents it |
 | 5c | Keep, when the gate opens (S22) | the Plus gate sheet rises over Review; no saved moment | the held letter card `enter`s; "Keep it here for now" closes the sheet and Review, back to Tonight, where the held card `enter`s | Tonight's returns over 280 ms | none | fades |
 | 6 | Tab switches (Tonight, Book, Family) | native tab swap, no animation | nothing; the Book's header settle (MOTION 5a) only on its first view this session | `persistKey="tabs"`: the arriving tab's lamp starts at the tone and intensity the last one left and eases to its own over 280 ms (Tonight's daypart light settles to the Book's still 0.6 and the Family tab's 0.4); it never re-arrives | none | the lamp jumps; the swap is unchanged |
-| 7 | Book to a letter, and back | measured-rect card to page (MOTION 5f; `presentation: 'transparentModal'`, `animation: 'none'`) once P5 mounts `CardToPage`, the platform push until then; also from Tonight's "A month ago" card | the Book goes under the page's paper veil over 160 ms while the tapped card holds for 136 ms, keeping its press feedback; then the paper grows to the page, radius `md` to 0, on `standard`, carrying the card's words; no dim (the veil is the dim). Back carries the words into the card if it is visible, and the veil lifts over 280 ms once the paper is within 24 pt of the card; else the 200 ms hand-off | the Book's leaves over 160 ms with the veil (a voice plays on the page) and returns over 280 ms as the veil lifts | none | one 200 ms hand-off each way (#218): the leaving screen (the Book under the veil, or back, the page) fades over the first 140 ms and the arriving one over the last 120 ms, from 80 ms; straight lines; done 224 to 240 ms after the tap (measured on the web build); the lamp jumps |
+| 7 | Book to a letter, and back | measured-rect card to page (MOTION 5f; `presentation: 'transparentModal'`, `animation: 'none'`) in build 3, once the route is flipped to it after the device checks (D4); the platform push in build 2; also from Tonight's "A month ago" card | the Book goes under the page's paper veil over 160 ms while the tapped card holds for 136 ms, keeping its press feedback; then the paper grows to the page, radius `md` to 0, on `standard`, carrying the card's words; no dim (the veil is the dim). Back carries the words into the card if it is visible, and the veil lifts over 280 ms once the paper is within 24 pt of the card; else the 200 ms hand-off | the Book's leaves over 160 ms with the veil (a voice plays on the page) and returns over 280 ms as the veil lifts | none | one 200 ms hand-off each way (#218): the leaving screen (the Book under the veil, or back, the page) fades over the first 140 ms and the arriving one over the last 120 ms, from 80 ms; straight lines; done 224 to 240 ms after the tap (measured on the web build); the lamp jumps |
 | 8 | The Book or a letter to Read together, and back | `read-together`: `fullScreenModal`, `animation: 'fade'` | the room dissolves into the chrome-free reader; inside it, the page turn | at night the still dusk pool arrives over `arriveMs` (1200 ms), once per opening: Read together is its own room; it dims as S31 says | none | cross-fade; the pool at its level at once |
 | 9 | Tonight, the Book or the Family tab to Settings, and back | native push (the gear in the header); Settings' own pages push | the platform's push | none: the lit screen slides away and back with its light as it was | none | the system's |
 | 10 | Any sheet: Whose book, Reading size, Choose a language, Erase this letter, Keep needs Plus, sign-in, invite, join, leave, the restore approval | native sheet (formSheet with detents, or a page sheet), MOTION 5i | sheet content adds no entrance, except the held letter on the Plus gate (rises with `enter`) and the cover opening on Joined (S59); steps inside one sheet cross-fade (200 ms) | the room behind keeps its light and pauses its breath while the sheet is up | per screen (a confirm that cannot be undone: `warning`) | the system's |
@@ -1968,7 +1983,7 @@ Depends on: P0, P1.
 
 Files: `apps/mobile/src/app/(tabs)/book.tsx`; every file in `apps/mobile/src/components/book/` except P1's `book-cover.tsx` and `book-cover.logic.ts` (that is `letter-card.tsx`, `chapters.ts`, `app-note.tsx`, `quiet-day-row.tsx`, `undo-toast.tsx`, `confirm-sheet.tsx`, `reading-size-sheet.tsx`, `shelf.logic.ts`, `letter-words.logic.ts`, `quiet-day.logic.ts`, `copy.ts` and their tests); `apps/mobile/src/app/letter/[id].tsx`; `apps/mobile/src/app/read-together.tsx`; `apps/mobile/src/components/player/audio-player.tsx`; `apps/mobile/src/components/child/whose-book-sheet.tsx`, `child-switcher.tsx`; `apps/mobile/src/app/settings/recently-deleted.tsx`; e2e `j09-book.flow.ts`, `j10-letter.flow.ts`, `j11-read-together.flow.ts`.
 
-Card to page, P1's contract (#192, merged as `db258b5`): P5 wraps each letter card in `CardSource` (`id`), and the card's dateline and excerpt (an `ExcerptFade`, which draws the fade) in `CardText`, giving `lineHeight` (the line height its body renders at, from `lineHeightFor`) and `rtl` when the excerpt runs right to left. The letter page wraps itself in `CardToPage` with the same `id`, `onClosed` and `opening`, a function `(focus) => ...` that returns the page's dateline and whole letter and attaches `focus` to the dateline, the element VoiceOver lands on once the page has arrived. The page places that opening with `PageOpening` and its `lineHeight`, which must equal the card's for the words to be carried, and closes with `useCardToPageClose()`. The Book spreads `useHiddenBehindCardPage()` on its root, so screen readers cannot reach it under the page. The letter page opens in the card's text column, with the same width, type and gaps, so its first lines wrap exactly as they did on the card and the words travel without reflowing. Without a measured card, without a shared column, or under Reduce Motion, the transition falls back to one 200 ms hand-off each way (#218, 5.8 row 7): the leaving screen (the Book under the page's paper veil, or back, the page) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms, on straight lines, done within 250 ms of the tap. The tapped card holds for 136 ms before the paper grows, and P5's `LetterCard` keeps its press feedback through that hold. The letter route stays a native push until the page mounts `CardToPage`; then P5 asks P1 to switch `ROUTES['letter/[id]']` to `cardToPage` (one line and its test).
+Card to page, P1's contract (#192, merged as `db258b5`): P5 wraps each letter card in `CardSource` (`id`), and the card's dateline and excerpt (an `ExcerptFade`, which draws the fade) in `CardText`, giving `lineHeight` (the line height its body renders at, from `lineHeightFor`) and `rtl` when the excerpt runs right to left. The letter page wraps itself in `CardToPage` with the same `id`, `onClosed` and `opening`, a function `(focus) => ...` that returns the page's dateline and whole letter and attaches `focus` to the dateline, the element VoiceOver lands on once the page has arrived. The page places that opening with `PageOpening` and its `lineHeight`, which must equal the card's for the words to be carried, and closes with `useCardToPageClose()`. The Book spreads `useHiddenBehindCardPage()` on its root, so screen readers cannot reach it under the page. The letter page opens in the card's text column, with the same width, type and gaps, so its first lines wrap exactly as they did on the card and the words travel without reflowing. Without a measured card, without a shared column, or under Reduce Motion, the transition falls back to one 200 ms hand-off each way (#218, 5.8 row 7): the leaving screen (the Book under the page's paper veil, or back, the page) fades over the first 140 ms, and the arriving one fades in over the last 120 ms, from 80 ms, on straight lines, done within 250 ms of the tap. The tapped card holds for 136 ms before the paper grows, and P5's `LetterCard` keeps its press feedback through that hold. The letter route stays a native push in build 2; the flip of `ROUTES['letter/[id]']` to `cardToPage` (one line and its test) ships in build 3, after the device checks (D4) and after the page reads `useCardToPagePhase()` (the P5 critics' pass S2).
 
 Requests in: P4 (`arrived`); P8 (the restore line in the Book, the letter page's backup and restore lines, the synced erase states of S63).
 
@@ -2022,7 +2037,7 @@ Files: P0's content files, `packages/content/src/strings.en.ts`, `stories.en.ts`
 
 Acceptance:
 - [ ] No retired key remains; `npm test` and `npm run typecheck` green.
-- [ ] The regenerated journey has one screenshot per step for every journey, including j21 to j23, and every "after" in this spec can be checked against it.
+- [ ] The regenerated journey has one screenshot per step for every journey, including j21 and j22 (there is no j23 flow), and every "after" in this spec can be checked against it.
 - [ ] The transitions in 5.8 are checked on the regenerated journey and on one device run (no unlit frame between lit rooms).
 
 ---
@@ -2119,4 +2134,4 @@ Nothing in this pass is irreversible: every change is code or copy and can be re
 
 ## Appendix C. Step coverage
 
-Every one of the 147 journey steps is placed in exactly one screen entry in section 4 (S01 to S64). S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S56 and S58 to S64 have no step in the journey record, which ran with server features off; P8 adds flows j21 to j23, and P7's regenerated journey gives them steps.
+Every one of the 203 journey steps (22 journeys, `docs/release/journey/steps/`, regenerated in #389) is placed in exactly one screen entry in section 4 (S01 to S64); no step is left without an entry. The 57 steps that no entry cited when the record was regenerated are placed in: S09 J04-06, J04-08, J04-09, J04-10, J05-12; S13 J05-10; S14 J05-11; S19 J04-07; S27 J10-16; S28 J10-17; S40 J03-10, J16-20; S46 J03-34, J03-40, J03-41; S52 J22-01, J22-02, J22-20, J22-21, J22-31, J22-50, J22-60; S53 J22-03 to J22-06; S54 J22-07 to J22-09, J22-70, J22-71, J22-80, J22-81; S55 J22-10, J22-32, J22-40 to J22-43; S56 J22-30, J22-33; S57 J21-20, J21-23; S58 J21-21, J21-22, J21-30, J22-90, J22-91; S59 J21-01 to J21-08, J21-10. S15 and S16 cover native-only states with no journey step. S10 is recorded but not built in this pass. S48 carries no step since v1.1: J17-01, J17-02 and J17-03 are in S57. S52 to S59 have steps (J22 for S52 to S56 and the gate text in S58, J21 for S57 to S59). S60 to S64 have none: there is no leave flow (S60), no j23 flow (S61 backup, S62 a new phone), no step for the synced erase (S63), and Delete account (S64) has no flow.

@@ -1,5 +1,7 @@
 # Lanes and review churn (owner: ops)
 
+Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`); any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
+
 Two hardening modules, both called by `scripts/agents/dispatch.mjs` through `hctx()`.
 Tests: `scripts/agents/lane.test.mjs`, `scripts/agents/reviewfp.test.mjs` (fixtures, no network).
 

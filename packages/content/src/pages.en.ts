@@ -58,7 +58,7 @@ export const pages = {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, transcription fixes only small slips: a misheard word, a missing full stop, a stray um, or a one-word grammar slip like we was to we were. We call this Word for word. Every small fix is marked on the page, so you can see it and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "In practice, we only fix small slips, like an um, a repeat or a misheard word, and mark each one. A small fix can also be a missing full stop or a one-word grammar slip like we was to we were. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
           "Every fix is recorded and can be undone. Exactly what you said is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
           "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
@@ -114,22 +114,22 @@ export const pages = {
       {
         heading: "Exactly as you said it",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. Not to make them neater, not to make them sound more like a greeting card. Transcription only fixes the slips a microphone makes, a misheard word or a missing full stop, and every fix is kept and can be undone. The sentence that ends up in the book is one you actually said.",
-          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The way your own language says it, because those were the right words. The way you always say the name. Smooth those out and you get something easier to read and less true.",
-          "A letter to {child} is not a performance. It is you, on an ordinary day, and that is the version worth keeping. Not the best version. Yours.",
+          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",
+          "You do not need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
       },
       {
         heading: "A voice to come back to",
         paragraphs: [
-          "Words on a page are one thing. The sound of a voice is another. Each letter keeps its original recording, so one day {child} can read the words and hear them too: the pause before the punchline, the sleepy mumble at the end of a long night, the story of the first steps told again and again.",
-          "Read together plays a letter in your own voice, with the letter on the page. It is made for bedtime, for a lap and a small hand on the screen, and for years of asking to hear the same one twice.",
+          "Each letter also keeps its recording, so one day {child} can hear the words as well as read them: the pause before the punchline, the sleepy mumble at the end of a long night.",
+          "Read together plays a letter in your own voice, with the letter on the page. It is made for bedtime, and for hearing the same one twice.",
         ],
       },
       {
         heading: "Small days count",
         paragraphs: [
-          "There is no right amount to say. A minute is plenty. On a quiet day, Not much today is a complete answer. Nothing counts days, nothing keeps score, and nothing nudges you with a number.",
+          "There is no right amount to say. A minute is plenty. On a quiet day, Not much today is a complete answer. Nothing counts days or keeps score.",
           "The book does not ask to be finished. It stays open for the next thing you want to tell {child}, whether that is tomorrow or next month.",
         ],
       },
@@ -137,7 +137,7 @@ export const pages = {
         heading: "Two parents, one book",
         paragraphs: [
           "A child is surrounded by voices. Both parents can write to {child}, each letter signed the way the family says it. From Mama. From Papa. From Amma.",
-          "Each of you keeps private letters until you add them to the book, and the book belongs to you both. One child, two voices that love them, in one place.",
+          "Each of you keeps private letters until you add them to the book, and the book belongs to you both.",
         ],
       },
       {
@@ -149,7 +149,7 @@ export const pages = {
       {
         heading: "Said once. Heard for years.",
         paragraphs: [
-          "That is the whole idea. Talk to {child} today, in your own words and your own voice. Written early, read for years, and one day {child} will know exactly how it sounded when you said it.",
+          "Talk to {child} today, in your own words and your own voice. Written early, read for years, and one day {child} will know exactly how it sounded when you said it.",
         ],
       },
     ],

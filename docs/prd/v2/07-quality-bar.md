@@ -63,7 +63,7 @@ The author's final report lists: files changed; test results with counts; what n
 | L1 unit | vitest | Every PR | `packages/core` (engine, verifier, plan, prompts, planner, notice windows, backdating, capture reducer), `packages/content`, `packages/analytics`, `packages/design-tokens`, `apps/mobile/test` logic | G0 |
 | L1b engine regression and property | vitest, fast-check | Every PR (fixed seed); nightly (random seed, printed) | R-01 suite, verifier property tests, Hermes parity | G0 (nightly red blocks G2) |
 | L2 component | Render harness, new: WP-F00-01 (proposed in R5 EQ-04; one library decided in that WP, pair mode with the founder because it adds a package; first in its wave). `BL-Q08`, cited here before, does not exist in `docs/BACKLOG.md` | PRs touching `apps/mobile` | AX5 rendering, labels, targets, focus order, placement rules | G0 once the harness lands; until then the AX5 device script is the evidence |
-| L3 database | PGlite harness (`npm run test:db`) | Every PR; always on `main` | RLS matrix, triggers, RPCs, parity and leak suite, purge with clock control, classification, plan-shape performance | G0 |
+| L3 database | PGlite harness (`npm run test:db`) | Every PR; always on `main` | RLS matrix, triggers, RPCs, parity and leak suite, purge with clock control, classification, plan and named-index checks at 250 families x 400 letters (the p95 budgets run on the nightly only, D-114) | G0 |
 | L4 service | Deno tests with fakes | PRs touching `supabase/functions` | `invite-redeem`, `apple-token`, `push-send` | G0 |
 | L5 end to end | Maestro on iOS simulators, mitmproxy for network assertions. On 14 Oct neither runs in CI: Maestro exists only as `e2e/ci/ios-e2e.yml.example`, mitmproxy capture is not built (R5 EQ-10) | Nightly and release candidate, once Q6 is answered | The flows in section 2.6 | G2 once running; until then each proxy-based line is `[manual]` evidence |
 | L6 device | Scripted runs on iPhone SE 3 and a current iPhone | Release candidate | Budgets, kill runs, transcription speed and memory, sandbox, VoiceOver | G3, G4 |
@@ -106,7 +106,7 @@ No non-English language may pass its corpus gate (2.8) before its script's R-01 
 - **No Plus on the server.** `create_child` paths never read `has_plus`; store tables and functions are dropped (F12-REQ-002; F14-REQ-012).
 - **Migration upgrade test.** Apply `main`'s migrations, load fixtures, apply the new file, re-run every suite (TDD 07 section 7.1) [R].
 - **Clock-controlled retention.** Just-inside and just-past pairs for every retention row (LEGAL-REQ-033).
-- **Performance plan shape.** `perf.test.mjs` budgets plus realistic rows and write paths with triggers on (BL-289).
+- **Performance plan shape.** Per pull request: the deterministic plan and named-index checks at 250 families x 400 letters. On the nightly only: the p95 budgets at 1,000 x 400 with `PERF_BUDGETS=1` (D-114). A nightly red from a missed budget alone is advisory for go/no-go row B2-22 until the budgets get their own workflow with one retry. Realistic rows and write paths with triggers on (BL-289).
 
 ### 2.5 Content and copy tests
 

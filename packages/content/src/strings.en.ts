@@ -62,6 +62,8 @@ export const en = {
   },
 
   onboarding: {
+    // SET-05: said where a step needs the child and no name is typed yet (onboarding.tsx used to type it).
+    childFallback: "your child",
     welcome: {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
@@ -74,7 +76,6 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      body: "This is Word for word. We take out a stray \"um\", fix a misheard name, add a missing comma, and mark every small fix so you can undo it.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the sample shows it)
       // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
       // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
       body2: "We never rewrite your words, shorten them or write for you.",
@@ -83,11 +84,8 @@ export const en = {
       sampleLabel: "For example",
       sampleRaw: "Today, um, you you held the spoon all by yourself.",
       sampleHint: "Word for word marks every small fix. Tap one to put it back.",
-      recordingTitle: "Your voice stays too", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
-      // Heading above settings.help.mistakes in first run.
-      mishearTitle: "We can mishear", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       privateNote: "Private by default. You choose what goes in the book.",
       cta: "That sounds right",
     },
@@ -97,10 +95,13 @@ export const en = {
       nameLabel: "Name",
       // The second and later name rows (twins or more).
       nameLabelMore: "Another child's name",
-      namePlaceholder: "First name, or the name you use at home",
-      nameHelp: "You can add a nickname later.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
+      // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
+      namePlaceholder: "First name, or a nickname",
+      // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
+      // date field. No {child}: with twins the step has more than one name.
+      bornQuestion: "Here yet, or on the way?",
+      bornLabel: "Born",
       birthdayLabel: "Birthday",
-      birthdayHelp: "We sort letters by {child}'s month of age.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before the birth go in Before You.",
       dueDateLabel: "Due date",
@@ -124,7 +125,6 @@ export const en = {
       title: "What does {child} call you?",
       // Twins or more: {child} is the joined names, so the verb is plural.
       titleMany: "What do {child} call you?",
-      body: "This is how your letters will be signed.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (the cover preview shows it)
       placeholder: "Papa, Mama, Amma, Baba, Dad",
       examplesLabel: "A few ideas",
       // US storefront only (D-087), so "Mommy".
@@ -141,8 +141,6 @@ export const en = {
       title: "Your words, spelled your way",
       body: "Add names and home words you use often. We will spell them the way you do.",
       examples: "Like Nani, chhotu, or the name of a stuffed rabbit.",
-      // v1.0: one of 7 languages per letter (D-056); mixing languages in a sentence is v1.1 (D-059).
-      languagesBody: "Your words stay in the language you speak. We never translate them.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (only the signsAs step read it)
       addPlaceholder: "Add a word or name",
       addButton: "Add word",
       emptyHint: "You can always add more from Settings.",
@@ -182,7 +180,7 @@ export const en = {
     invite: {
       title: "Writing this with someone?",
       body: "Invite {child}'s other parent to add letters of their own, each one signed.",
-      privacyNote: "Your private letters stay yours until you add them to the book.",
+      privacyNote: "Letters you keep private are for you alone. Only the ones you add to the book are shared.",
       addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
@@ -204,7 +202,6 @@ export const en = {
       night: "The house is quiet, {name}.",
       lateNight: "Still up, {name}. Take your time.",
     },
-    subtitle: "What do you want {child} to know about today?", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     // Accessibility hint of the prompt only, never visible (S09).
     promptLabel: "A thought to start with",
     newPromptButton: "Another thought",
@@ -228,7 +225,7 @@ export const en = {
       paused: "Paused.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
-      saving: "Keeping your words safe.",
+      saving: "Saving your words.",
       saved: "Saved, in your words.",
       savedLetter: "Signed and kept.",
       transcribing: "Writing down what you said.",
@@ -276,9 +273,6 @@ export const en = {
     elapsedA11y: "{minutes} min {seconds} s recorded",
     // Shown when Listen opens without a tap on Speak (a link, a restored screen): nothing records until the person taps.
     ready: {
-      title: "Ready when you are", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-      body: "Nothing is recording yet. Tap Start when you want to speak.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-      startButton: "Start", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       // Listening at rest: the red circle is the start control (BRAND.md glossary phrase).
       hint: "Tap the red circle and talk.",
       startA11y: "Start recording",
@@ -312,8 +306,6 @@ export const en = {
     // The edit feature is called "Word for word" (D-074) and only where the feature is named (D-086: the promise,
     // Settings, store, website). Here, plain words: a "small fix" is named by what happened, and "Exactly as said"
     // is said only when it is true. Never "edit", "correct", "clean" or "tidy" in text a person reads.
-    subtitle: "Here is what you said. Small fixes are marked.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-    trustLine: "We only fixed what got in the way of your words. Nothing added.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     // The letter sheet's header row, left (S17). The right side is `common.signature`.
     headerTo: "To {child} · Month {month}",
     headerToNewborn: "To {child} · The first weeks",
@@ -335,8 +327,8 @@ export const en = {
       button: "Go to the book",
     },
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
-    // The words are safe first, then what happened (VOICE).
-    saveFailed: "Your words are still here. That did not work this time.",
+    // What happened, then where the words are (LNG-05).
+    saveFailed: "That did not save. Your words are still here.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -423,7 +415,6 @@ export const en = {
       // Used when the filled `addButton` label would pass 22 characters (a long or two-word name).
       addButtonShort: "Add to the book",
       privateButton: "Keep private",
-      privateHelp: "Private letters stay with you. You can add them to the book later.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       addedToast: "Added to {child}'s book.",
       // The saved moment's chip: where the letter now sits in the book (S21, MOTION 5e).
       filedChip: "Kept in Month {month}",
@@ -466,7 +457,6 @@ export const en = {
     monthKicker: "Month",
     monthRange: "{a} to {b}",
     // v1.0 makes no notes (S26).
-    chapterSubtitle: "{count} letters and notes", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     chapterSubtitleOne: "1 letter",
     chapterLetters: "{count} letters",
     chapterNotes: "{count} notes", // retired by EXPERIENCE_PASS_2026-10; delete in P7
@@ -485,6 +475,9 @@ export const en = {
     provenance: {
       spokenFixed: "Spoken, with small fixes",
       spokenExact: "Spoken, exactly as said",
+      // Another parent's letter: this phone never holds their raw words (book_entries leaves them out), so it cannot
+      // know whether any fix was made and says only that the letter was spoken (P5 critics' pass, S8).
+      spokenOther: "Spoken",
       typed: "Typed",
     },
     hearLink: "Hear it in {signsAs}'s voice",
@@ -514,8 +507,6 @@ export const en = {
       bookTitle: "The first page is waiting.",
       bookBody: "Tell {child} one thing about today.",
       bookCta: "Write a letter",
-      chapterTitle: "Month {month} is open.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-      chapterBody: "Whatever you add this month lands here.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       // v1.1: family members beyond the co-parent.
       familyTitle: "Family letters will gather here.",
       familyBody: "Invite a grandparent, aunt or uncle to add their words.",
@@ -561,7 +552,6 @@ export const en = {
     empty: "Letters you add to the book will be here to read together.",
     // The app adds no sentiment of its own; the letters carry the love (VOICE, the app's own words).
     endOfMonth: "That was Month {month}.",
-    endOfMonthAlt: "That was Month {month}.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (now the same as endOfMonth)
     endOfBook: "That is every letter so far. More are still being written.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
@@ -577,7 +567,6 @@ export const en = {
   // contributor's own view. The app hides these paths in v1.0 (Brief decision 5).
   family: {
     title: "Family",
-    subtitle: "The people who love {child}, adding their words.",
     invite: {
       title: "Invite someone to write",
       body: "They can send letters to {child}. You choose which ones go in the book.",
@@ -616,7 +605,7 @@ export const en = {
       cardBody: "{signsAs} wrote to {child}. Would you like it in the book?",
       addButton: "Add to the book",
       keepAsideButton: "Keep it aside",
-      keepAsideHelp: "It stays safe, just outside the book. {signsAs} will not be told.",
+      keepAsideHelp: "It stays just outside the book. {signsAs} will not be told.",
       thankButton: "Send a thank you",
       thankMessage: "Your letter is in {child}'s book. Thank you, {signsAs}.",
       addedToast: "{signsAs}'s letter is in the book.",
@@ -634,13 +623,13 @@ export const en = {
   notifications: {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
-      { title: "Tonight's letter", body: "What made you smile today? Say it out loud and we will keep it." },
-      { title: "Dear {child},", body: "Your words, kept for {child}. Today, and long after." },
+      { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
+      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
       { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
-      { title: "A page for {weekday}", body: "Whatever today held, it belongs in {child}'s book." },
+      { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
@@ -649,7 +638,7 @@ export const en = {
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
       title: "A letter from {signsAs}",
-      body: "{signsAs} wrote something for {child}. Have a read.",
+      body: "{signsAs} wrote something for {child}. Take a look.",
     },
     familyAdded: {
       title: "Your letter is in the book",
@@ -676,19 +665,19 @@ export const en = {
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty small moments, kept in your own voice.",
+      body: "Fifty letters, kept in your words.",
     },
     letters100: {
       title: "100 letters.",
-      body: "A hundred times you stopped to tell {child} something. That is love, written down.",
+      body: "A hundred letters to {child}, every one in your words.",
     },
     letters365: {
       title: "365 letters.",
-      body: "A year's worth of your words for {child}. All the work, all the love, kept.",
+      body: "365 letters for {child}, in your words.",
     },
     firstMonthComplete: {
       title: "Month {month} is in the book now.",
-      body: "{count} letters and notes, ready for {child} to read one day.",
+      body: "{count} letters, there for {child} to read one day.",
       cta: "Read this month",
     },
     // v1.1.
@@ -702,7 +691,7 @@ export const en = {
     },
     monthSummary: "{count} letters this month",
     monthSummaryFamily: "{count} letters from family this month", // v1.1
-    dismissButton: "Lovely",
+    dismissButton: "Close",
   },
 
   settings: {
@@ -748,7 +737,6 @@ export const en = {
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
-      keepHelp: "Your voice is saved with each letter, on this phone.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       onPhoneTitle: "Kept on this phone",
       onPhoneBody: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own.",
       // Option B (D-100, D-102; experience pass S42): the Recordings card with our encrypted backup off, and on.
@@ -756,7 +744,7 @@ export const en = {
       onPhoneBodyBackupOff: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Our encrypted backup can keep them too, so they come back on a new phone.",
       backedUpTitle: "Kept on this phone and backed up",
       // Disclosure text with "we" (D-102, counsel item C7): it names the recovery key we hold. Counsel must approve it
-      // before any screen shows it; experience-pass.test.ts allows its "we" for that reason only.
+      // before any screen shows it; `P0_WE_ALLOWED` in test/support/copy-surfaces.ts (enforced by rules.test.ts) allows its "we" for that reason only.
       backedUpBody: "Recordings are kept on this phone and in our encrypted backup. We hold a recovery key under strict, logged access, so they can come back on a new phone. We never listen to them, sell them or use them to train models.",
       exportFooter: "Export any time to keep a copy of your own.",
       storageUsed: "{count} MB used on this phone",
@@ -765,13 +753,12 @@ export const en = {
       orphansOne: "1 recording on this phone is not part of a letter yet. It stays on this phone.",
       orphansMany: "{count} recordings on this phone are not part of a letter yet. They stay on this phone.",
       // D-085: a take a kill cut off that would not open is kept, never dropped. Counts as a plain sentence.
-      unplayableTitle: "Takes that may not play",
-      unplayableOne: "This take may not play. Export keeps the file.",
-      unplayableMany: "{count} takes may not play. Export keeps the files.",
+      unplayableTitle: "Recordings that may not play",
+      unplayableOne: "This recording may not play. Export keeps the file.",
+      unplayableMany: "{count} recordings may not play. Export keeps the files.",
     },
     export: {
       title: "Export",
-      body: "Download every letter and recording, any time, free. A PDF of the book, plus plain text and audio files.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (only the Export screen read it)
       button: "Export everything",
       preparing: "Gathering every letter. This can take a minute.",
       ready: "Your export is ready.",
@@ -802,10 +789,16 @@ export const en = {
       eraseNowBody: "The letter and its recording are erased for good.",
       // After Restore (S38), with "Open"; {child} is the restored letter's book.
       restoredToast: "Back in {child}'s book.",
+      // Restore when no book can be named (the letter's book is gone and none is open): the same line without a name,
+      // so the toast never reads "Back in 's book." (P5 critics' pass, L9).
+      restoredToastNoName: "Back in the book.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
       erasedToast: "Letter erased.",
+      // Erase now when the recording's file could not be removed: the letter was not erased, the row stays for another try
+      // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
+      eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",
       bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
@@ -827,10 +820,10 @@ export const en = {
       offLabel: "Off",
       weeklyLabel: "Weekly",
       fewTimesLabel: "A few times a week",
+      // LNG-06 (31 Oct 2026): kept on purpose. PRD C-REQ-002 (P0) lists Every evening among the options; it labels the
+      // cadence a person chooses, not a rhythm the product sets, and `help` below no longer says "a few evenings".
       everyEveningLabel: "Every evening",
-      // EXPERIENCE_PASS_2026-10 S34: P6 removes the Pause row if it duplicates the master switch; retire this key then.
-      pauseLabel: "Pause all reminders",
-      help: "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
+      help: "A nudge in the evening, as often as you choose. Never late at night.",
     },
     privacyLine: "Private by default. You decide what goes in the book.",
     help: {
@@ -851,7 +844,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix.",
+    neverRewrite: "We never rewrite your words. We only fix small slips, like an um, a repeat or a misheard word, and mark each one, so you can put it back.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
@@ -912,7 +905,6 @@ export const en = {
     },
     add: {
       title: "Add a child",
-      body: "Each child gets their own book, with their own months, family and settings.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
       // D-082, D-083: starting a book is free; the free letters are one pool across every book.
       twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
@@ -971,8 +963,6 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    // D-085 (amends D-073): no backup is claimed in v1.0.
-    promise: "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters.",
   },
 
   errors: {
@@ -1012,14 +1002,9 @@ export const en = {
       title: "This invite has expired",
       body: "Ask {inviter} to send a new one.",
     },
-    // Never used; `phoneFull` covers it.
-    storageLow: {
-      title: "This phone is almost full", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-      body: "New recordings may not fit. Freeing some space on this phone will help.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-    },
     generic: {
       title: "Something went wrong",
-      body: "Your words are safe. Please try again.",
+      body: "Please try again. Nothing you saved has changed.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.
@@ -1035,15 +1020,22 @@ export const en = {
       body: "Your book is right where you left it.",
       button: "Back to Tonight",
     },
-    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
+    // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
+    // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,
+    // rows E1, E3 and E4): the body says what Export does (recovery-export.logic.ts copies the files byte for byte); it does not
+    // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was
+    // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
       title: "The book could not open",
-      body: "Your letters and recordings are safe on this phone.",
+      body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
+      // The Try again button's words while it opens the book again, and the line after an open that did not work.
+      tryingAgainButton: "Trying again",
+      stillClosed: "It did not open this time either.",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "This phone has no recordings or files to export.",
+      exportNothing: "Export has nothing to put in a file right now.",
       exportFailed: "That export did not work. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
@@ -1060,12 +1052,8 @@ export const en = {
       large: "Large",
       largePrint: "Large print",
     },
-    // An app-written letter in the letter face; Appearance shows the person's newest letter instead (S45).
-    preview: "Dear {child}, today you laughed at the rain.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     // Appearance with no letter yet: the glyph specimen at each size.
     previewEmpty: "Aa",
-    // No timed return to the book (TDD 09 A11Y-F03).
-    deletedBody: "It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     notFoundTitle: "This letter is not in the book",
     // Shown only when a deleted copy of this letter is on the shelf (S37).
     notFoundDeleted: "It is in Recently deleted.",
@@ -1099,7 +1087,6 @@ export const en = {
       // The due-date card once the due date has passed (S46). It never presumes a birth and never celebrates:
       // no count of days, never a notification, never on Tonight. "Hide" hides it until the Due date row is opened.
       born: {
-        offer: "{child} was born, set the birthday", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (it presumes the outcome)
         title: "{child}'s birthday",
         offerBody: "Add it when you are ready.",
         pickerLabel: "{child}'s birthday",
@@ -1115,9 +1102,6 @@ export const en = {
   familyTab: {
     membersTitle: "Who writes to {child}",
     youLabel: "You",
-    emptyTitle: "Just you, for now.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-    emptyBody: "Letters are lovelier with more voices.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
-    inviteNeedsSignIn: "Inviting {child}'s other parent needs an account, so they can write from their own phone. Sign in arrives in a coming update.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     rolesTitle: "Two ways to join", // v1.1 (one way in v1.0: co-parent)
     coParentLabel: "Co-parent",
     coParentBody: "Writes to {child} and reads the whole book, as an equal.",
@@ -1168,7 +1152,7 @@ export const en = {
     privacyLabel: "Privacy",
     // Language packs and speech files, downloaded only when needed (D-065).
     storageLabel: "Storage",
-    storageHelp: "Language packs and space on this phone.",
+    storageHelp: "Languages and space on this phone.",
     recordingsLabel: "Recordings",
     appearanceLabel: "Appearance",
     deleteAccountLabel: "Delete account",
@@ -1264,15 +1248,10 @@ export const en = {
   // The stop screen becomes one line in P2 (S02, LEGAL-REQ-002): the app "is currently for adults 18 and over".
   ageGate: {
     title: "Are you 18 or older?",
-    body: "We ask everyone the same question.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     yesButton: "Yes",
     noButton: "No",
-    // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop. Switched with P2's stop screen,
-    // which no longer shows stopBody or stopNote.
+    // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop.
     stopTitle: "{app} is currently for adults 18 and over",
-    stopBody: "{app} is currently for adults 18 and over.", // retired by EXPERIENCE_PASS_2026-10; delete in P7 (its sentence became the title)
-    // Only partly true (the time of the No is stored, D-026), and it refers to nothing.
-    stopNote: "Nothing you entered has been kept.", // retired by EXPERIENCE_PASS_2026-10; delete in P7
     mistakeButton: "I answered by mistake",
   },
 } as const;
@@ -1289,7 +1268,7 @@ export const en = {
 // - settingsHome.helpLabel "Write to us" moved to settingsHome.helpValue; the row is "Help".
 // - storeListing beta paragraph and promotionalTextBeta: D-030, D-060.
 // - pendingCopy in apps/mobile/src/lib/copy.ts: every string now lives here; it is a thin re-export.
-// Still in use and due to retire when their screens change: settingsMore.remindersNotYet (reminders),
-// childrenExtra.plusNotYet (Plus gate), familyTab.inviteNeedsSignIn (Family tab).
+// Unread today (no screen reads them), left for the dead-copy sweep: settingsMore.remindersNotYet (reminders)
+// and childrenExtra.plusNotYet (Plus gate).
 
 export type Strings = typeof en;

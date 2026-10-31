@@ -10,7 +10,7 @@ async function openReview(app: import('@playwright/test').Page, kind: 'asha' | '
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
 }
 
-test('[J06] review: what the machine tidied, put back, word for word, save to the book', async ({ app, record }) => {
+test('[J06] review: the small fixes, put back, word for word, save to the book', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 1, 'J05-03');
   await openReview(app);
   await expect(app.getByTestId('review.sheet')).toBeVisible();
@@ -31,7 +31,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await expect(app.getByText(/put back/i).first()).toBeVisible();
   await step('happy', 'Put back', 'The original words return, marked for a moment, with Undo beside them.');
   await app.getByRole('button', { name: 'Undo', exact: true }).click();
-  await step('happy', 'Undo the put-back', 'Undo re-applies the tidy-up. Every edit is reversible both ways.');
+  await step('happy', 'Undo the put-back', 'Undo re-applies the small fix. Every edit is reversible both ways.');
 
   await app.getByRole('radio', { name: 'Exactly as said' }).click();
   await expect(app.getByText('Exactly as you said it.')).toBeVisible();
@@ -78,12 +78,14 @@ test('[J06e] Keep needs Plus past the free letters: the letter is held, never lo
   await btn(app, 'Got it').click();
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This one waits on this phone, on Tonight, exactly as it is, for as long as you like.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await expect(app.getByText(/\$\d|free trial|email you/i)).toHaveCount(0);
   await step('unhappy', 'Keep needs Plus', 'Pressing Keep after the first two letters opens one calm sheet: "Keep adding to Asha\'s book", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple\'s own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no "See Plus" or "Redeem a code" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.');
   await btn(app, 'Keep it here for now').click();
-  await expect(app.getByText('Read it back').first()).toBeVisible();
-  await step('happy', 'Kept here for now', 'The letter stays a draft: its card is still on Tonight with the words exactly as they were. It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
+  // S22: the draft is marked held (store.holdDraft), so Tonight's card says so (S09), with its words as they were.
+  await expect(app.getByText('Waiting to be kept.').first()).toBeVisible();
+  await expect(btn(app, /Keep it/).first()).toBeVisible();
+  await step('happy', 'Kept here for now', 'The letter stays a draft, marked held: its card on Tonight says "Waiting to be kept." with the words exactly as they were and "Keep it". It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
 });
 
 test('[J06d] a Review link with no draft', async ({ app, record }) => {

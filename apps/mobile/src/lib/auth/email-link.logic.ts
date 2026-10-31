@@ -75,8 +75,14 @@ export type LinkDecision =
   /** Someone is already signed in here: a link never replaces the session. */
   | 'signed_in';
 
-/** Layer 1 (and the signed-in refusal). The signed-in check wins: it holds whatever the pending record says. */
-export function decideEmailLink(input: { pending: PendingEmailRequest | 'expired' | null; signedIn: boolean }): LinkDecision {
+/**
+ * Layer 1 (and the signed-in refusal). The signed-in check wins: it holds whatever the pending record says.
+ * An `email_change` link (TPL-04) is the other way round: it confirms a new address for the account signed in
+ * here, so it opens only while signed in, and never signs anyone in. Asking for a change writes no pending note
+ * (only a sign-in email does), so layer 2 (PKCE: the verifier `updateUser` stored on this phone) is its binding.
+ */
+export function decideEmailLink(input: { pending: PendingEmailRequest | 'expired' | null; signedIn: boolean; type?: EmailLinkType }): LinkDecision {
+  if (input.type === 'email_change') return input.signedIn ? 'verify' : 'not_this_phone';
   if (input.signedIn) return 'signed_in';
   if (input.pending === 'expired') return 'expired';
   return input.pending ? 'verify' : 'not_this_phone';
@@ -91,14 +97,17 @@ export function decideEmailLink(input: { pending: PendingEmailRequest | 'expired
  * that type, as a signup. A miss under the wrong type consumes nothing: the
  * token is only looked up, not used.
  */
-export function verifyTypesFor(type: EmailLinkType): readonly ('magiclink' | 'signup')[] {
+export type VerifyType = 'magiclink' | 'signup' | 'email_change';
+
+export function verifyTypesFor(type: EmailLinkType): readonly VerifyType[] {
+  if (type === 'email_change') return ['email_change'];
   if (type === 'signup') return ['signup'];
   if (type === 'magiclink') return ['magiclink'];
   return ['magiclink', 'signup'];
 }
 
 /** The GET /verify URL. The token hash travels to Supabase only, never to our website. */
-export function verifyUrl(supabaseUrl: string, tokenHash: string, type: 'magiclink' | 'signup', redirectTo: string): string {
+export function verifyUrl(supabaseUrl: string, tokenHash: string, type: VerifyType, redirectTo: string): string {
   const base = supabaseUrl.replace(/\/+$/, '');
   return `${base}/auth/v1/verify?token=${encodeURIComponent(tokenHash)}&type=${type}&redirect_to=${encodeURIComponent(redirectTo)}`;
 }
@@ -125,11 +134,12 @@ export interface OpenLinkDeps {
  * No request reaches Supabase on a refusal.
  */
 export async function openEmailLink(link: { tokenHash: string; type: EmailLinkType }, deps: OpenLinkDeps): Promise<OpenLinkOutcome> {
-  const decision = decideEmailLink({ pending: await deps.readPending(), signedIn: deps.signedIn() });
+  const decision = decideEmailLink({ pending: await deps.readPending(), signedIn: deps.signedIn(), type: link.type });
   if (decision === 'signed_in') return { ok: false, error: 'already_signed_in' };
   if (decision === 'not_this_phone') return { ok: false, error: 'other_phone' };
   if (decision === 'expired') return { ok: false, error: 'expired' };
   const userId = await deps.exchange(link.tokenHash, link.type);
+  if (link.type === 'email_change') return { ok: true, userId }; // a sign-in email's note, if any, is not this link's
   await deps.clearPending();
   return { ok: true, userId };
 }

@@ -2,13 +2,15 @@
 
 Owner: `chief-of-staff`. Code: `scripts/agents/pause.mjs`, tests in `scripts/agents/pause.test.mjs`.
 
+Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`); any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
+
 ## Gap 1: the scope was too wide
 
-Writing agents produced launch plans, metric trees and help articles that nobody merged. They went stale while `develop` moved, and each one used a run and a review. The repo is in alpha stabilisation: the build 2 freeze planned for Tue 27 Oct was not applied, and the coordinator's proposal is a freeze on Tue 3 Nov and a go/no-go on Thu 5 Nov, until the founder confirms (`docs/release/AUTOMATION.md` section 6). New writing work has no reader before the go/no-go.
+Writing agents produced launch plans, metric trees and help articles that nobody merged. They went stale while `develop` moved, and each one used a run and a review. The repo is in alpha stabilisation: the build 2 freeze planned for Tue 27 Oct was not applied, and on 30 Oct the founder confirmed a freeze on Tue 3 Nov and a go/no-go on Mon 9 Nov (D-130; the go/no-go had been proposed as Thu 5 Nov, `docs/release/AUTOMATION.md` section 6). New writing work has no reader before the go/no-go.
 
 **Rule.** An agent entry in `agents/roster.json` may carry `paused_until: "YYYY-MM-DD"` and a short `paused_reason`. While the current time is before 00:00 UTC on that date, the dispatcher gives the agent no `task` and no `standing` work. It still gets `maintain`, `review`, `handoff`, `steward-review` and `digest` work, so a paused agent fixes its open PRs and answers other agents. The board row says `idle: paused until <date> (<reason>)`.
 
-**Paused now, until 2026-10-30:** `marketing`, `decision-science`, `support`, `legal`. The pause lapses on its own at 00:00 UTC on 30 Oct (Thu 29 Oct, 5:00 PM PT); nobody has to remember to lift it. To end it early, delete the two fields. To extend it, change the date. The date was set on 18 Oct against the 27 Oct freeze, so the writers resume before the proposed 3 Nov freeze. If the intent is no new writing until the alpha is decided, the roster edit is `2026-11-06` (the day after the proposed go/no-go); that edit is the founder's to make and this note does not make it.
+**Paused now, until 2026-10-30:** `marketing`, `decision-science`, `support`, `legal`. The pause lapses on its own at 00:00 UTC on 30 Oct (Thu 29 Oct, 5:00 PM PT); nobody has to remember to lift it. To end it early, delete the two fields. To extend it, change the date. The date was set on 18 Oct against the 27 Oct freeze, so the writers resume before the 3 Nov freeze. If the intent is no new writing until the alpha is decided, the roster edit is `2026-11-10` (the day after the go/no-go on Mon 9 Nov, D-130; it was `2026-11-06` against the proposed Thu 5 Nov); that edit is the founder's to make and this note does not make it.
 
 **Dates, for the record.** Two different things carry dates here. This module's pause is the planned writer pause: `paused_until` in the roster, 2026-10-30 today, a calendar date the founder can move. The session halt of Sat 24 Oct, 5:10 AM PT to Tue 27 Oct, 1:00 PM PT is not recorded by this module and nothing here depends on it. A halt of that length is the case the lane flag is for: a lane that stops writing the board reads "quiet since" after 8 hours (`scripts/agents/lane.mjs`, `lanes-and-review-churn.md`).
 

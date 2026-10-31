@@ -227,8 +227,11 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(land).not.toMatch(/router\.back\(\)/);
   });
 
-  it('5.8 row 5b: the first-letter sign-in sheet rises over the Book after the landing, never in place of Review', () => {
-    expect(review).toMatch(/offerSignIn\.current = firstLetter && auth\.configured && auth\.state\.status === 'signedOut'/);
+  // SET-01 (docs/reviews/2026-10-31/setup.md): this test used to pin the sheet to the first letter, which encoded the
+  // bug (DR-12 B puts Keep the book on the second letter or session 2). The order is now lib/asks, test/next-ask.test.ts.
+  it('5.8 row 5b: the Keep the book sheet rises over the Book after the landing, never in place of Review, when lib/asks says so', () => {
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/if \(askAfterLanding\.current === 'keep_book'\) \{/);
     expect(review).toMatch(/setTimeout\(\(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'first_letter' \} \}\), signInAfterLandingMs\(motion\.reduced\)\)/);
     expect(review).not.toMatch(/router\.replace\(\{ pathname: '\/sign-in'/);
   });
@@ -244,11 +247,14 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(arrivalToastDelayMs(false)).toBe(tokens.motion.route.dissolveMs);
     expect(arrivalToastDelayMs(true)).toBe(tokens.motion.fadeMs);
     const book = code(src('app/(tabs)/book.tsx'));
-    const arrival = book.slice(book.indexOf('const arrival = arrivalOf('), book.indexOf('router.setParams({ arrived: undefined, secondFree: undefined });') + 80);
-    expect(arrival).toMatch(/if \(secondFreeOnArrival\(params\.secondFree\)\) \{\s*secondFreeTimer\.current = setTimeout\(\(\) => toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\), arrivalToastDelayMs\(reduced\)\);/);
+    const arrival = book.slice(book.indexOf('const [arrivalGate] = useState(createArrivalGate)'), book.indexOf('}, step.afterMs);') + 20);
+    // It waits with the wash: the gate's `afterMs` is arrivalToastDelayMs(reduced), the route's dissolve (book.logic, p5-critics.test.ts).
+    expect(arrival).toMatch(/const secondFree = secondFreeOnArrival\(params\.secondFree\);/);
+    expect(arrival).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{[\s\S]*?if \(secondFree\) toast\.show\(\{ message: billingCopy\.keepGate\.secondFreeNote \}\);[\s\S]*?\}, step\.afterMs\);/);
     // No action, so it leaves on its own; cleared with `arrived`, so Back and tab taps never replay it.
     expect(arrival).not.toMatch(/secondFreeNote[^)]*action/);
-    expect(arrival).toMatch(/router\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
+    expect(arrival).toMatch(/navigation\.setParams\(\{ arrived: undefined, secondFree: undefined \}\)/);
+    expect(arrival).toMatch(/clearArrivalParams\(\);\s*\}, step\.afterMs\);/);
   });
 });
 
@@ -280,7 +286,7 @@ describe('S17: Review reads as a letter', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
     expect(footer.indexOf('{r.saveFailed}')).toBeGreaterThan(-1);
     expect(footer.indexOf('{r.saveFailed}')).toBeLessThan(footer.indexOf('savePrimaryLabel('));
-    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    expect(en.review.saveFailed).toBe('That did not save. Your words are still here.');
     // Said aloud too (iOS VoiceOver ignores live regions).
     expect(review).toMatch(/useEffect\(\(\) => \{\s*if \(saveFailed\) announce\(r\.saveFailed\);\s*\}, \[saveFailed, r\.saveFailed\]\);/);
   });

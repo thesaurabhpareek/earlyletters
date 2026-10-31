@@ -4,7 +4,7 @@
  * On (D-100, drafted as D-089; the TestFlight alpha of D-106): "I was invited" is back on
  * Welcome, the Family tab is live, and every entry opens its real flow. Off (the kill path):
  * every invite entry point leads to the coming-soon presentation, deep links keep nothing they
- * could not use, and "Tell me when it's here" is a local flag. Both states are tested here.
+ * could not use, and "Tell me when it's here" is a local flag (its button is off until the arrival card, SET-08).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -55,10 +55,11 @@ describe('every invite entry point leads to coming soon when server features are
   it('sign-in is never offered with the switch off', () => {
     expect(src('app/(auth)/_layout.tsx')).toMatch(/capabilities\.signIn \? <AuthStack \/> : <Redirect href="\/" \/>/);
     expect(src('app/settings/account.tsx')).toMatch(/capabilities\.signIn \? <AccountSettings \/> : <Redirect href="\/settings" \/>/);
-    expect(src('app/settings/delete-account.tsx')).toMatch(/capabilities\.signIn \? <DeleteAccount \/> : <Redirect href="\/settings" \/>/);
+    // The Delete account page also needs its own switch (capabilities.accountDeletion, which includes this one); see account-deletion-switch.test.ts.
+    expect(src('app/settings/delete-account.tsx')).toMatch(/capabilities\.accountDeletion \? <DeleteAccount \/> : <Redirect href="\/settings" \/>/);
     expect(src('app/onboarding.tsx')).toMatch(/capabilities\.signIn \? \(\s*<Button[^>]*signInButton/);
-    // The first-letter offer reads `auth.configured`, which is false when no client exists.
-    expect(src('app/review.tsx')).toMatch(/offerSignIn\.current = firstLetter && auth\.configured/);
+    // The Keep the book offer (lib/asks) reads `auth.configured`, which is false when no client exists.
+    expect(src('app/review.tsx')).toMatch(/askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && /);
   });
 });
 
@@ -175,12 +176,18 @@ describe('"Tell me when it\'s here": a local flag only', () => {
     expect(imports).not.toMatch(/supabase|lib\/auth|lib\/sync/);
     expect(ui).not.toMatch(/fetch\(|capture\(/);
     const tracked = [...ui.matchAll(/track\('([a-z_]+)'(.*)\)/g)];
-    expect(tracked.map((m) => m[1]).sort()).toEqual(['coparent_soon_notify', 'coparent_soon_opened']);
+    // SET-08: the "Tell me" button is gone until the arrival card ships, so only the screen count remains.
+    expect(tracked.map((m) => m[1]).sort()).toEqual(['coparent_soon_opened']);
     // No child name, book name, text or date in the properties.
     expect(tracked.map((m) => m[2]).join(' ')).not.toMatch(/child|name|text|date|body/i);
   });
 
-  it('the notify line says only what is true today', () => {
+  it('SET-08: no "Tell me when it\'s here" button while nothing shows the promised note (it returns with the arrival card)', () => {
+    const ui = src('components/family/coparent-soon.tsx');
+    expect(ui).not.toMatch(/soon\.notify|requestCoParentNotify|NotifyAction/);
+  });
+
+  it('the notify line (kept for the arrival card) says only what is true', () => {
     expect(familyCopy.soon.notify.done).toBe('Noted on this phone. When the update arrives, you will see it here.');
     expect(familyCopy.soon.notify.done).not.toMatch(/let you know|email|notification|we will|we'll/i);
   });

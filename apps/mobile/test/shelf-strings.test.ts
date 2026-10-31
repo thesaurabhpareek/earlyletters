@@ -36,8 +36,8 @@ describe('shelf strings', () => {
     expect(x.exportNudge).toBe('Save a copy of your book in Files or iCloud Drive. It is yours to keep.');
   });
 
-  it('[D-085] says an unplayable take is kept and Export keeps the file', () => {
-    expect(r.unplayableOne).toBe('This take may not play. Export keeps the file.');
+  it('[D-085] says an unplayable recording is kept and Export keeps the file', () => {
+    expect(r.unplayableOne).toBe('This recording may not play. Export keeps the file.');
     expect(r.unplayableMany).toContain('{count}');
   });
 

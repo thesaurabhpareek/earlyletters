@@ -1,5 +1,8 @@
 # Early Letters: Launch PRD (integrated)
 
+> **Superseded.** D-105: PRD V2 (`docs/prd/v2/`) is the requirements of record since PR #124 merged (16 Oct 2026). Requirement IDs keep their meaning.
+> Dates of record: `docs/release/1.0.0.md` (proposed, pending coordinator confirmation).
+
 Owner: lead PM. Version 1.3, 3 Oct 2026. Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
 Codename `scribe`. Public name and publisher identity from `packages/brand` only.
 
@@ -886,7 +889,7 @@ Added in version 1.1 (same day):
 | `children.switcher.*`, `children.add.*`, `children.settings.*`, `children.sharing.*` (new) | Switcher, add a child with Plus note and keep note, per-child settings, per-child sharing | K-12 |
 | `onboarding.child.addAnotherHelp` (new) | Twins line for first run | K-12 |
 | `analyticsConsent.*`, `settings.privacy.*` (new) | Opt-in consent sheet and Privacy rows | K-01, K-17 |
-| `plus.legal.*`, `plus.promise` (new) | Paywall disclosure from in-app-disclosures section 3 with `{price}` | K-11, K-31 |
+| `plus.legal.*`, `plus.promise` (new; replaced by `billingCopy.store.promise` and deleted in P7) | Paywall disclosure from in-app-disclosures section 3 with `{price}` | K-11, K-31 |
 | `web.firstNote.*`, `web.ageConfirm` (new) | Web page mistakes note and 18+ confirmation | K-07, K-14 |
 | `family.approval.settingLabel` | "on their own" to "automatically" | K-20 |
 | `store.description`, `store.promotionalTextBeta` | "A book for each child" section; optional beta promotional text | K-12, K-13 |

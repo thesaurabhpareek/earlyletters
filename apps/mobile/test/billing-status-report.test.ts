@@ -200,7 +200,7 @@ describe('[BL-347] who a report goes to (the claim screen from #139)', () => {
     expect(reportingUserOf({ status: 'ready', userId: ASHA_MAMA, sync: 'off' }, never, () => ASHA_MAMA)).toBe(ASHA_MAMA);
   });
 
-  it('a session waiting for "Keep them here" gets no report, so a purchase on this phone never goes to an account the person has not confirmed', () => {
+  it('a session waiting for "Keep in this account" gets no report, so a purchase on this phone never goes to an account the person has not confirmed', () => {
     expect(reportingUserOf({ status: 'ready', userId: ASHA_PAPA, sync: 'on' }, () => true, noOwner)).toBeNull();
   });
 
@@ -309,7 +309,7 @@ describe('the sender', () => {
     expect(await h.reporter.flush()).toBe('nothing');
     expect(h.sent).toHaveLength(1);
     expect(h.sent[0].report.consent).toMatchObject({ product_id: 'plus.annual', offer_type: 'introductory' });
-    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^1\.4\.0\+[0-9a-f]{8}$/);
+    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^4\.0\.0\+[0-9a-f]{8}$/);
     expect(h.state().pending).toEqual([]);
   });
 
@@ -342,7 +342,7 @@ describe('the sender', () => {
     expect(await h.reporter.flush()).toBe('sent');
     expect(await h.reporter.flush()).toBe('nothing');
     expect(h.sent).toHaveLength(1);
-    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^1\.4\.0\+[0-9a-f]{8}$/);
+    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^4\.0\.0\+[0-9a-f]{8}$/);
     expect(h.state().pending).toEqual([]);
   });
 
