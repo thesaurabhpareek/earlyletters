@@ -250,7 +250,7 @@ These files are outside the PRD; the coordinator adds each to `reviews/STALE-OUT
 | F08-U04 | AUSoundIsolation unavailable or fails | `listeningCopiesSupported()` false or `failed`; playback uses the original | Original plays | n/a | Unit with a throwing native fake |
 | F08-U05 | Listening copy judged worse | Original recording switch; preference remembered | Original plays | Switch back any time | Component test |
 | F08-U06 | Isolation softens a baby's laugh or singing | 80% wet mix by default (ADR 0015, E: tuned by ear); original one tap away | Original switch | Switch | Listening check on device (S1-19) |
-| F08-U07 | Take cut off by a kill does not open | Kept, hashed, marked `unrecoverable`, listed under Settings > Recordings "Takes that may not play"; never shown on Tonight as ready (D-085) | `settings.recordings.unplayableOne` | Export keeps the file | DL-01 (device) |
+| F08-U07 | Take cut off by a kill does not open | Kept, hashed, marked `unrecoverable`, listed under Settings > Recordings "Recordings that may not play"; never shown on Tonight as ready (D-085) | `settings.recordings.unplayableOne` | Export keeps the file | DL-01 (device) |
 | F08-U08 | Call, Siri or alarm during playback | Playback pauses; never auto-resumes | Paused player | Tap play | Manual script |
 | F08-U09 | App backgrounded during playback | Pause; idle mode | Paused on return | Tap play | E2E |
 | F08-U10 | Silent switch on | Letter audio plays (deliberate tap) | Audio plays | n/a | Manual; R3 DX-38 (volume ramp) is a P2 for F10 and F08 design |
