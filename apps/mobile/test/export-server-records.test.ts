@@ -1,5 +1,5 @@
 /**
- * The server's part of account.json (schema 1.3.0; BL-323, LEGAL-REQ-034):
+ * The server's part of account.json (schema 1.3.0 and 1.4.0; BL-323, BL-529, LEGAL-REQ-034):
  * every way the read can go, and that the export never fails, waits too long
  * or carries a shortened or account-identifying record because of it
  * (DATA-REQ-052).
@@ -38,9 +38,11 @@ const row = (over: Record<string, unknown> = {}) => ({
 });
 const ok = (data: unknown[]): ReadResult => ({ data, error: null });
 
-function reader(over: Partial<Record<keyof ServerRecordsReader, () => Promise<ReadResult>>> = {}): ServerRecordsReader {
+type Over = { acts?: () => Promise<ReadResult>; state?: () => Promise<ReadResult>; profile?: (s: AbortSignal, uid: string) => Promise<ReadResult> };
+function reader(over: Over = {}): ServerRecordsReader {
   return {
     acts: over.acts ?? (async () => ok([row(), row({ id: 'a1', document: 'sensitive-data', accepted_at: '2027-01-01T00:00:00+00:00', rendered_sha256: null })])),
+    profile: over.profile ?? (async (_s: AbortSignal, uid: string) => ok([{ id: uid, display_name: 'Asha\'s Mama', signs_as: 'Mama', created_at: '2026-10-01T00:00:00+00:00' }])),
     state: over.state ?? (async () => ok([{ document: 'terms', version: '1.0.0', action: 'accept', accepted_at: '2027-01-02T00:00:00+00:00' }, { document: 'sensitive-data', version: '1.0.0', action: 'accept', accepted_at: '2027-01-01T00:00:00+00:00' }])),
   };
 }
@@ -54,12 +56,14 @@ const opts = (over: Partial<ReadOptions> = {}): ReadOptions => ({
   ...over,
 });
 
+const consentOf = async (o: ReadOptions) => (await readServerRecords(o)).consent;
+
 describe('[BL-323] readServerRecords', () => {
   it('signed out, or server features off: no record, and nothing is read', async () => {
     let reads = 0;
     const counting = reader({ acts: async () => (reads++, ok([])) });
     for (const o of [opts({ authUserId: null, reader: counting }), opts({ reader: null })]) {
-      const r = await readServerRecords(o);
+      const r = await consentOf(o);
       expect(r).toEqual({ status: 'not_signed_in', read_at: null, current: [], acts: [] });
     }
     expect(reads).toBe(0);
@@ -67,18 +71,18 @@ describe('[BL-323] readServerRecords', () => {
 
   it('a different account than the one that owns these letters: no record, nothing read', async () => {
     let reads = 0;
-    const r = await readServerRecords(opts({ ownerId: 'user-2', reader: reader({ acts: async () => (reads++, ok([])) }) }));
+    const r = await consentOf(opts({ ownerId: 'user-2', reader: reader({ acts: async () => (reads++, ok([])) }) }));
     expect(r.status).toBe('different_account');
     expect(r.acts).toEqual([]);
     expect(reads).toBe(0);
   });
 
   it('signed in before the first sync claimed the letters: the record is read', async () => {
-    expect((await readServerRecords(opts({ ownerId: null }))).status).toBe('included');
+    expect((await consentOf(opts({ ownerId: null }))).status).toBe('included');
   });
 
   it('included: every act oldest first, the latest per document, no account columns, hash as hex', async () => {
-    const r = await readServerRecords(opts());
+    const r = await consentOf(opts());
     expect(r.status).toBe('included');
     expect(r.read_at).toBe('2027-03-15T10:00:00.000Z');
     expect(r.acts.map((a) => a.id)).toEqual(['a1', 'a2']);
@@ -96,29 +100,29 @@ describe('[BL-323] readServerRecords', () => {
 
   it('acts at the same instant keep a stable order (by id)', async () => {
     const t = '2027-01-01T00:00:00+00:00';
-    const r = await readServerRecords(opts({ reader: reader({ acts: async () => ok([row({ id: 'b', accepted_at: t }), row({ id: 'a', accepted_at: t })]) }) }));
+    const r = await consentOf(opts({ reader: reader({ acts: async () => ok([row({ id: 'b', accepted_at: t }), row({ id: 'a', accepted_at: t })]) }) }));
     expect(r.acts.map((a) => a.id)).toEqual(['a', 'b']);
   });
 
   it('any read error, a thrown error or missing data: unavailable, and no partial record', async () => {
-    const failing: Partial<Record<keyof ServerRecordsReader, () => Promise<ReadResult>>>[] = [
+    const failing: Over[] = [
       { acts: async () => ({ data: null, error: { code: 'PGRST301' } }) },
       { state: async () => ({ data: null, error: { message: 'offline' } }) },
       { acts: async () => Promise.reject(new TypeError('Network request failed')) },
       { state: async () => ({ data: null, error: null }) },
     ];
     for (const f of failing) {
-      const r = await readServerRecords(opts({ reader: reader(f) }));
+      const r = await consentOf(opts({ reader: reader(f) }));
       expect(r, JSON.stringify(Object.keys(f))).toEqual({ status: 'unavailable', read_at: null, current: [], acts: [] });
     }
   });
 
   it('a row this app cannot describe makes the record unavailable instead of shortening it', async () => {
     for (const bad of [row({ action: 'agree' }), row({ platform: 'desktop' }), row({ id: null }), row({ accepted_at: 42 }), 'x', null]) {
-      const r = await readServerRecords(opts({ reader: reader({ acts: async () => ok([row(), bad]) }) }));
+      const r = await consentOf(opts({ reader: reader({ acts: async () => ok([row(), bad]) }) }));
       expect(r.status, JSON.stringify(bad)).toBe('unavailable');
     }
-    const r = await readServerRecords(opts({ reader: reader({ state: async () => ok([{ document: 'terms', version: '1', action: 'unknown', accepted_at: 't' }]) }) }));
+    const r = await consentOf(opts({ reader: reader({ state: async () => ok([{ document: 'terms', version: '1', action: 'unknown', accepted_at: 't' }]) }) }));
     expect(r.status).toBe('unavailable');
   });
 
@@ -127,9 +131,10 @@ describe('[BL-323] readServerRecords', () => {
     const hang: ServerRecordsReader = {
       acts: (s) => ((signal = s), new Promise<ReadResult>(() => {})),
       state: () => new Promise<ReadResult>(() => {}),
+      profile: () => new Promise<ReadResult>(() => {}),
     };
     const started = Date.now();
-    const r = await readServerRecords(opts({ reader: hang, timeoutMs: 50 }));
+    const r = await consentOf(opts({ reader: hang, timeoutMs: 50 }));
     expect(Date.now() - started).toBeLessThan(1000);
     expect(r.status).toBe('unavailable');
     expect(signal!.aborted).toBe(true);
@@ -141,29 +146,31 @@ describe('[BL-323] readServerRecords', () => {
     const hang: ServerRecordsReader = {
       acts: (sig) => ((signal = sig), new Promise<ReadResult>(() => {})),
       state: () => new Promise<ReadResult>(() => {}),
+      profile: () => new Promise<ReadResult>(() => {}),
     };
     setTimeout(() => (stopped = true), 30);
     const started = Date.now();
-    const r = await readServerRecords(opts({ reader: hang, timeoutMs: 10_000, cancelled: () => stopped, pollMs: 10 }));
+    const r = await consentOf(opts({ reader: hang, timeoutMs: 10_000, cancelled: () => stopped, pollMs: 10 }));
     expect(Date.now() - started).toBeLessThan(1000);
     expect(r.status).toBe('unavailable');
     expect(signal!.aborted).toBe(true);
   });
 
   it('a Stop that never comes changes nothing', async () => {
-    expect((await readServerRecords(opts({ cancelled: () => false, pollMs: 5 }))).status).toBe('included');
+    expect((await consentOf(opts({ cancelled: () => false, pollMs: 5 }))).status).toBe('included');
   });
 
   it('a read that fails after the timeout is not an unhandled rejection', async () => {
     const late: ServerRecordsReader = {
       acts: () => new Promise<ReadResult>((_, reject) => setTimeout(() => reject(new Error('late')), 80)),
       state: async () => ok([]),
+      profile: async (_s, uid) => ok([{ id: uid }]),
     };
     const unhandled: unknown[] = [];
     const onUnhandled = (e: unknown) => unhandled.push(e);
     process.on('unhandledRejection', onUnhandled);
     try {
-      expect((await readServerRecords(opts({ reader: late, timeoutMs: 20 }))).status).toBe('unavailable');
+      expect((await consentOf(opts({ reader: late, timeoutMs: 20 }))).status).toBe('unavailable');
       await new Promise((res) => setTimeout(res, 150));
       expect(unhandled).toEqual([]);
     } finally {
@@ -171,6 +178,56 @@ describe('[BL-323] readServerRecords', () => {
     }
   });
 
+});
+
+describe('[BL-529] the profile in account.json', () => {
+  it('signed out or a different account: no profile, and nothing is read', async () => {
+    let reads = 0;
+    const counting = reader({ profile: async () => (reads++, ok([])) });
+    expect((await readServerRecords(opts({ authUserId: null, reader: counting }))).profile).toEqual(
+      { status: 'not_signed_in', read_at: null, display_name: null, signs_as: null, created_at: null },
+    );
+    expect((await readServerRecords(opts({ ownerId: 'user-2', reader: counting }))).profile.status).toBe('different_account');
+    expect(reads).toBe(0);
+  });
+
+  it('included: the person\'s own row, asked for by their id, with no id in the file', async () => {
+    let asked = '';
+    const r = await readServerRecords(opts({ reader: reader({ profile: async (_s, uid) => ((asked = uid), ok([{ id: uid, display_name: 'Nani', signs_as: null, created_at: '2026-10-01T00:00:00+00:00' }])) }) }));
+    expect(asked).toBe('user-1');
+    expect(r.profile).toEqual({ status: 'included', read_at: '2027-03-15T10:00:00.000Z', display_name: 'Nani', signs_as: null, created_at: '2026-10-01T00:00:00+00:00' });
+    expect(Object.keys(r.profile)).not.toContain('id');
+  });
+
+  it('no row, two rows, or someone else\'s row: unavailable, never another person\'s profile', async () => {
+    const other = { id: 'user-2', display_name: 'Papa', signs_as: 'Papa', created_at: 't' };
+    for (const rows of [[], [other], [{ id: 'user-1' }, other], ['x']]) {
+      const r = await readServerRecords(opts({ reader: reader({ profile: async () => ok(rows) }) }));
+      expect(r.profile.status, JSON.stringify(rows)).toBe('unavailable');
+      expect(JSON.stringify(r.profile)).not.toContain('Papa');
+    }
+  });
+
+  it('the two reads fail apart: a profile error keeps the consent record, and a consent error keeps the profile', async () => {
+    const a = await readServerRecords(opts({ reader: reader({ profile: async () => ({ data: null, error: { code: 'PGRST301' } }) }) }));
+    expect(a.consent.status).toBe('included');
+    expect(a.profile.status).toBe('unavailable');
+    const b = await readServerRecords(opts({ reader: reader({ acts: async () => Promise.reject(new TypeError('Network request failed')) }) }));
+    expect(b.consent.status).toBe('unavailable');
+    expect(b.profile.status).toBe('included');
+  });
+
+  it('the timeout and Stop make both unavailable, and the export still gets an answer at once', async () => {
+    const hang: ServerRecordsReader = {
+      acts: () => new Promise<ReadResult>(() => {}),
+      state: () => new Promise<ReadResult>(() => {}),
+      profile: () => new Promise<ReadResult>(() => {}),
+    };
+    const t = await readServerRecords(opts({ reader: hang, timeoutMs: 30 }));
+    expect([t.consent.status, t.profile.status]).toEqual(['unavailable', 'unavailable']);
+    const s = await readServerRecords(opts({ reader: hang, timeoutMs: 10_000, cancelled: () => true, pollMs: 5 }));
+    expect([s.consent.status, s.profile.status]).toEqual(['unavailable', 'unavailable']);
+  });
 });
 
 describe('[BL-323] allRows', () => {

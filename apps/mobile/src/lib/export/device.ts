@@ -2,7 +2,7 @@
  * Export on the phone (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, -056).
  * Free in every plan state and works offline: it reads the local store and
  * files, never the entitlement (C-NFR-004). The one network read is the
- * server's consent record for account.json, when signed in
+ * server's consent record and the person's profile for account.json, when signed in
  * (server-records.logic.ts): bounded by the read timeout, and when it cannot
  * be read the export still finishes and says why.
  *
@@ -28,7 +28,7 @@ import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
-import { ACT_COLUMNS, allRows, noConsentHistory, readServerRecords, STATE_COLUMNS, type ServerRecordsReader } from './server-records.logic';
+import { ACT_COLUMNS, allRows, noConsentHistory, noProfile, PROFILE_COLUMNS, readServerRecords, STATE_COLUMNS, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
@@ -133,6 +133,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     consent: consentOnThisPhone(),
     // withServerRecords() replaces this when the server's record can be read.
     consentHistory: noConsentHistory(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
+    profile: noProfile(currentAuthUserId() ? 'unavailable' : 'not_signed_in'),
     dictionary: phoneDictionary(children),
   };
 }
@@ -160,12 +161,13 @@ function supabaseReader(): ServerRecordsReader | null {
         sb.from('policy_acceptances').select(ACT_COLUMNS).order('accepted_at', { ascending: true }).order('id', { ascending: true }).range(from, to).abortSignal(signal),
       ),
     state: (signal) => allRows((from, to) => sb.from('my_policy_state').select(STATE_COLUMNS).order('document').range(from, to).abortSignal(signal)),
+    profile: async (signal, userId) => sb.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).limit(2).abortSignal(signal),
   };
 }
 
-/** Adds the server's consent record to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+/** Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
-  const consentHistory = await readServerRecords({
+  const server = await readServerRecords({
     authUserId: currentAuthUserId(),
     ownerId: currentUserId(),
     reader: supabaseReader(),
@@ -173,7 +175,7 @@ export async function withServerRecords(snapshot: ExportSnapshot, signal?: { abo
     now: () => new Date(),
     cancelled: () => signal?.aborted === true,
   });
-  return { ...snapshot, consentHistory };
+  return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
 /** What the screen shows before export starts ("What is inside" counts). */

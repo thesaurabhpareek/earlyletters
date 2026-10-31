@@ -608,10 +608,91 @@
         "consent_history": {
           "$ref": "#/$defs/consentHistory"
         },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
         "dictionary": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/dictionaryTerm"
+          }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "read_at",
+        "display_name",
+        "signs_as",
+        "created_at"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "included",
+            "not_signed_in",
+            "different_account",
+            "unavailable"
+          ]
+        },
+        "read_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signs_as": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "included"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "null"
+          },
+          "display_name": {
+            "type": "null"
+          },
+          "signs_as": {
+            "type": "null"
+          },
+          "created_at": {
+            "type": "null"
           }
         }
       }

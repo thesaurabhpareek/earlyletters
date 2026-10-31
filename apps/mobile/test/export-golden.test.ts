@@ -175,10 +175,8 @@ describe('Asha export (golden)', () => {
     expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
   });
 
-  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (schema 1.3.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.3.0');
+  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (since 1.3.0)', async () => {
     const signedOut = accountOf((await makeExport()).zip);
-    expect(signedOut.schema_version).toBe('1.3.0');
     expect(signedOut.consent_history).toEqual({ status: 'not_signed_in', read_at: null, current: [], acts: [] });
     expect(signedOut.dictionary.map((d) => [d.child_id, d.term, d.kind, d.source])).toEqual([
       ['child-asha-0001', 'Asha', 'child', 'phone'],
@@ -194,6 +192,15 @@ describe('Asha export (golden)', () => {
     const consentHistory = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', current: [{ document: 'terms', version: '1.0.0', action: 'accept' as const, at: act.at }], acts: [act] };
     const signedIn = accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, consentHistory })).zip);
     expect(signedIn.consent_history).toEqual(consentHistory);
+  });
+
+  it('[LEGAL-REQ-034, BL-529] account.json carries the profile, or why it is not here (schema 1.4.0)', async () => {
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.4.0');
+    const signedOut = accountOf((await makeExport()).zip);
+    expect(signedOut.schema_version).toBe('1.4.0');
+    expect(signedOut.profile).toEqual({ status: 'not_signed_in', read_at: null, display_name: null, signs_as: null, created_at: null });
+    const profile = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', display_name: 'Mama', signs_as: 'Mama', created_at: '2026-03-01T00:00:00+00:00' };
+    expect(accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, profile })).zip).profile).toEqual(profile);
   });
 
   it('[BL-323] memberships and the manifest say the real role', async () => {

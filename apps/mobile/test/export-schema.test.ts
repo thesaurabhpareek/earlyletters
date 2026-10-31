@@ -89,7 +89,7 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  for (const version of ['1.0.0', '1.1.0', '1.2.0']) {
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0']) {
     it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
       const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
       const cases: [string, string][] = [
@@ -108,6 +108,31 @@ describe('export schema', () => {
       }
     });
   }
+
+  describe('[BL-529, LEGAL-REQ-034] profile (1.4.0)', () => {
+    const profile = validator('profile');
+    const read = { status: 'included', read_at: '2027-03-15T10:00:00.000Z', display_name: 'Nani', signs_as: 'Nani', created_at: '2026-10-01T00:00:00+00:00' };
+
+    it('accepts a profile that was read (values may be null) and an empty one that says why', () => {
+      expect(profile(read), JSON.stringify(profile.errors)).toBe(true);
+      expect(profile({ ...read, display_name: null, signs_as: null }), JSON.stringify(profile.errors)).toBe(true);
+      for (const status of ['not_signed_in', 'unavailable', 'different_account']) {
+        expect(profile({ status, read_at: null, display_name: null, signs_as: null, created_at: null }), status).toBe(true);
+      }
+    });
+
+    it('rejects values on a profile that was not read, a missing read time, and any id', () => {
+      expect(profile({ ...read, status: 'unavailable' })).toBe(false);
+      expect(profile({ ...read, read_at: null })).toBe(false);
+      expect(profile({ ...read, id: 'user-1' })).toBe(false);
+    });
+
+    it('an account.json carrying a profile validates', async () => {
+      const account = json(await ashaZip(), 'data/account.json');
+      const validate = validator('accountFile');
+      expect(validate({ ...account, profile: read }), JSON.stringify(validate.errors)).toBe(true);
+    });
+  });
 
   describe('[BL-323, LEGAL-REQ-034] consent_history (1.3.0)', () => {
     const act = {
