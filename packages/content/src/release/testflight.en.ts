@@ -67,12 +67,45 @@ const pleaseTryCore = [
   '- Dark mode and larger text, if you use them.',
 ];
 
+// The Delete account row is hidden in both alpha builds unless the build was made with EXPO_PUBLIC_ACCOUNT_DELETION
+// "on" (D-129, founder, 30 Oct 2026). So this sentence is in the text only for a build where the row is on:
+// `whatToTest.build2WithDeleteRow`. The default `whatToTest.build2` does not say it, and nothing here says how to
+// delete an account when the row is hidden: those words are the founder's and counsel's.
+const deleteAccountLine = 'To delete your account and its letters, use Settings, Delete account.';
+
+/**
+ * Build 2's text, in its two forms. They differ only by the Delete account sentence, which ends the paragraph about the
+ * App Store version.
+ */
+function build2Text(withDeleteRow: boolean): string {
+  const appStoreParagraph =
+    'This test app and its server are separate from the App Store version, so letters written here do not move across on their own. We will tell you before the test server is closed. To keep a copy of your book, use Settings, Export your book, now and then.';
+  return [
+    `Thank you for testing ${brand.name}. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your child's other parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recordings are not uploaded in this test.`,
+    [
+      'Please try:',
+      '- Signing in with Apple, or with your email and a sign-in link or code.',
+      '- Keeping a few letters, then signing out and back in on this phone. Every letter should still be there.',
+      '- If you are two parents: invite the other parent from the Family tab, then each write a letter and look for both in the Book.',
+      '- Anything from the first build, if you have time.',
+    ].join('\n'),
+    'The other parent sees your words. Your recordings are not shared with them in this test.',
+    plusLine,
+    withDeleteRow ? `${appStoreParagraph} ${deleteAccountLine}` : appStoreParagraph,
+    'Feedback you send leaves the phone, and so can a crash report if the app crashes.',
+    feedbackBlock,
+  ].join('\n\n');
+}
+
 const describeApp = `It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`;
 const earlyTest = 'It is an early test version, so it can make mistakes, and it will change. You must be 18 or older to take part.';
 
 export const testflightCopy = {
   /** The placeholder in the texts below, for the workflow or the founder to replace with the feedback mailbox. */
   feedbackEmailPlaceholder: feedbackEmail,
+
+  /** The one sentence that `whatToTest.build2WithDeleteRow` has and `whatToTest.build2` does not (D-129). */
+  deleteAccountLine,
 
   /**
    * Beta App Description (App Store Connect, Test Information; required for external testing, shown in the TestFlight
@@ -100,21 +133,18 @@ export const testflightCopy = {
       feedbackBlock,
     ].join('\n\n'),
 
-    build2: [
-      `Thank you for testing ${brand.name}. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your child's other parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recordings are not uploaded in this test.`,
-      [
-        'Please try:',
-        '- Signing in with Apple, or with your email and a sign-in link or code.',
-        '- Keeping a few letters, then signing out and back in on this phone. Every letter should still be there.',
-        '- If you are two parents: invite the other parent from the Family tab, then each write a letter and look for both in the Book.',
-        '- Anything from the first build, if you have time.',
-      ].join('\n'),
-      'The other parent sees your words. Your recordings are not shared with them in this test.',
-      plusLine,
-      'This test app and its server are separate from the App Store version, so letters written here do not move across on their own. We will tell you before the test server is closed. To keep a copy of your book, use Settings, Export your book, now and then. To delete your account and its letters, use Settings, Delete account.',
-      'Feedback you send leaves the phone, and so can a crash report if the app crashes.',
-      feedbackBlock,
-    ].join('\n\n'),
+    /**
+     * Build 2 as it is when the Delete account row is hidden, which is the default (D-129): the same text as
+     * `build2WithDeleteRow`, without the Delete account sentence. Paste this one unless the row is on in the build.
+     */
+    build2: build2Text(false),
+
+    /**
+     * Build 2 for a build made with EXPO_PUBLIC_ACCOUNT_DELETION "on" in the EAS `preview` environment (D-129): the
+     * default text with the Delete account sentence added. Paste it only for such a build; where the row is hidden the
+     * sentence would not be true.
+     */
+    build2WithDeleteRow: build2Text(true),
 
     /** Added to a build that goes out before the speech files can download (TESTFLIGHT.md, "Without this, no words"). */
     withoutSpeech: 'Recording works in this build, but the words do not appear yet. Typed letters work as usual.',
