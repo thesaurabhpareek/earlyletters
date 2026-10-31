@@ -31,7 +31,7 @@
 /scripts/agents/                    @thesaurabhpareek
 /docs/agents/                       @thesaurabhpareek
 
-# Compliance (fenced, CR-23; compliance/README.md): assigned agents plus Karma approval, checked by
+# Compliance (fenced, CR-27; compliance/README.md): assigned agents plus Karma approval, checked by
 # .github/workflows/compliance-fence.yml. Code owners cannot add a second identity while sessions post as
 # the founder (CR-20); this line names the human owner.
 /compliance/                        @thesaurabhpareek

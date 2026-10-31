@@ -1,6 +1,6 @@
 # compliance/
 
-Code and data that keep Early Letters inside the law at the door: who may create an account, from where, and what we watch for when rules change. It is fenced (CTO ruling CR-23, aligned with the Chief Compliance Officer). Only assigned agents may change it, and only when the Chief Compliance Officer (`regulatory-affairs`) and Karma (CTO) have both approved the exact commit.
+Code and data that keep Early Letters inside the law at the door: who may create an account, from where, and what we watch for when rules change. It is fenced (CTO ruling CR-27, aligned with the Chief Compliance Officer). Only assigned agents may change it, and only when the Chief Compliance Officer (council role `early-letters-cco`) and Karma (CTO) have both approved the exact commit.
 
 ## What lives here
 | Path | What |
@@ -34,7 +34,7 @@ Assigned agents (`FENCE.json`): `regulatory-affairs` (owner), `compliance-engine
 Every other agent's charter forbids editing these paths; they open a handoff to `regulatory-affairs` instead (`docs/agents/AGENT-COMMS.md`).
 
 ## The Chief Compliance Officer's checklist (CCO approval)
-The CCO is the `regulatory-affairs` agent (skill `regulatory-compliance`). It is an AI role, not a lawyer: anything that needs a legal judgment goes to counsel through `docs/legal/COUNSEL_PACKET.md`, and the CCO does not approve until counsel's answer, or the founder's recorded default, exists.
+The CCO is the executive council's Chief Compliance Officer (skill `early-letters-cco`, `docs/agents/exec/COUNCIL.md`), with the `regulatory-affairs` agent (skill `regulatory-compliance`) doing the working-level review. It is a Claude role, not a lawyer: anything that needs a legal judgment goes to counsel through `docs/legal/COUNSEL_PACKET.md`, and the CCO does not approve until counsel's answer, or the founder's recorded default, exists.
 - The account-creation checks table (skill section 2) still holds for every sign-up path, with a test for each row.
 - No new collection of personal data without a DATA_CLASSIFICATION row and a data-minimisation reason.
 - Every legal or platform fact the change relies on is in `references/checked-facts.md` with a source and date.

@@ -1,4 +1,4 @@
-// Tests for the compliance fence (CR-23). Uses the real compliance/FENCE.json.
+// Tests for the compliance fence (CR-27). Uses the real compliance/FENCE.json.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ const config = JSON.parse(readFileSync(join(here, '..', 'FENCE.json'), 'utf8'));
 const SHA = 'a'.repeat(40);
 const OLD = 'b'.repeat(40);
 const OWNER = 'thesaurabhpareek';
-const approval = (sha = SHA, login = OWNER, role = 'Karma') => ({ login, body: `Checked the diff.\n## ${role} approval at ${sha}: APPROVED (CR-23)\n${role}` });
+const approval = (sha = SHA, login = OWNER, role = 'Karma') => ({ login, body: `Checked the diff.\n## ${role} approval at ${sha}: APPROVED (CR-27)\n${role}` });
 const both = (sha = SHA) => [approval(sha, OWNER, 'CCO'), approval(sha)];
 const base = { config, labels: [], headSha: SHA, comments: [], trustedLogins: [OWNER, 'claude[bot]'] };
 const pr = (files, extra = {}) => decide({ ...base, files: files.map((f) => (typeof f === 'string' ? { filename: f } : f)), ...extra });
@@ -68,7 +68,7 @@ test('an approval from an untrusted login does not count', () => {
 });
 
 test('the approval line must stand alone and match exactly', () => {
-  const loose = { login: OWNER, body: `I think ## Karma approval at ${SHA}: APPROVED (CR-23) is fine` };
+  const loose = { login: OWNER, body: `I think ## Karma approval at ${SHA}: APPROVED (CR-27) is fine` };
   const noRuling = { login: OWNER, body: `## Karma approval at ${SHA}: APPROVED` };
   assert.equal(pr(['compliance/README.md'], { labels: ['agent:security-architect'], comments: [loose, noRuling] }).pass, false);
 });

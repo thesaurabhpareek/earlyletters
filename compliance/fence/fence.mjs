@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The compliance fence (CTO ruling CR-23; compliance/README.md). Decides whether a pull request may change
+// The compliance fence (CTO ruling CR-27; compliance/README.md). Decides whether a pull request may change
 // protected compliance paths. Self-contained on purpose: .github/workflows/compliance-fence.yml fetches this
 // file and compliance/FENCE.json from the BASE commit through the API and runs it on data it fetched itself.
 // It never sees pull request code.

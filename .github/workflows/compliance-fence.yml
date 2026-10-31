@@ -1,4 +1,4 @@
-# Compliance fence (CTO ruling CR-23, aligned with the Chief Compliance Officer; compliance/README.md).
+# Compliance fence (CTO ruling CR-27, aligned with the Chief Compliance Officer; compliance/README.md).
 # Protected paths (compliance/FENCE.json) need an `agent:<handle>` label for an assigned agent plus a CCO
 # approval and a Karma approval bound to the current head commit. CCO-review paths (the age gate, consent
 # SQL) need the CCO approval on the head. Migrations are also caught by what their diff mentions.
