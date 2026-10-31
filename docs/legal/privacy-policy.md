@@ -94,8 +94,9 @@ The current list is at https://earlyletters.com/subprocessors. We will update it
 We keep your book until you delete it or your account. We never delete them because you stopped using the app or ended Plus.
 
 - **A letter.** Deleting a letter moves it to Recently deleted for 30 days, so you can restore it. Then it is erased.
-- **Your account.** Delete it in the app (Settings, Your data), or email us from the address on your account. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
-- **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted.
+- **Your account.** Delete it in the app (Settings, Your data), or email us from the address on your account. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
+- **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted, except for the entry described next.
+- **Letters of someone who left a book.** If a parent left a book, or their joining was undone, before the other parent deleted the book or their own account, that person's letters, their letters waiting to be kept, and any recording backup of theirs are not deleted with it. They stay theirs. To label those letters we keep the book's entry, with the child's name, birth date and due date, and we clear its nickname, photo and other details. Nothing in the app can read that entry today; it will be shown only to the person whose letters remain, once the app can list books they have left. We delete it when nothing of theirs is left in it.
 - **Plus.** Deleting your account does not cancel Plus. Cancel it in your Apple Account.
 
 After your account is deleted, we keep only these, and none of them holds your letters or recordings:

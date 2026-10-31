@@ -45,7 +45,7 @@ This page is for {brand.storeName}. You can delete your account in the app, or b
 **heading:** What happens next
 
 - You have 30 days to change your mind. Sign in before the date the app showed and choose Cancel, and everything comes back.
-- After that, we erase your information from our live systems within 31 days of your request, from our backups within 38 days, and from our service providers within 45 days. Our email provider keeps each email it sends for 30 days.
+- After that, we erase your information from our live systems within 31 days of your request (except the kept book entry above), from our backups within 38 days, and from our service providers within 45 days. Our email provider keeps each email it sends for 30 days.
 - When the 30 days end, every device signed in to your account is signed out.
 
 ## removed
@@ -53,7 +53,8 @@ This page is for {brand.storeName}. You can delete your account in the app, or b
 **heading:** What is removed
 
 - Your letters, from every book, including a book you share with a co-parent. That book stays with your co-parent.
-- Any book where you are the only parent, with everything in it.
+- Any book where you are the only parent, with everything in it, except the letters of someone who left that book earlier (below).
+- If someone left a book, or their joining was undone, before you deleted it, their letters stay theirs. We keep the book's entry with the child's name, birth date and due date to label those letters, clear its nickname, photo and other details, and delete it when nothing of theirs is left.
 - If you used recording backup, your encrypted recordings and the keys that open them.
 - Your account, your sign-in methods and your Sign in with Apple connection.
 - Copies your co-parent already exported, and letters already on their phone, stay with them.
