@@ -20,6 +20,7 @@
 .brand {
   pointer-events: auto;
   display: block;
+  line-height: 0;
   color: var(--night-ink);
   text-decoration: none;
 }
