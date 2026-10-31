@@ -9,10 +9,10 @@
 --                                  references/sanctions.md). Seeded with the CR-22 default.
 --   ops.geo_ip_ranges, ops.geo_ip_meta
 --                                  IP to country, loaded monthly from DB-IP "IP to Country Lite" (CC BY 4.0,
---                                  attribution to DB-IP.com) by scripts/compliance/load-geo-ip.mjs.
+--                                  attribution to DB-IP.com) by compliance/scripts/load-geo-ip.mjs.
 --   ops.compliance_check_counts   one row per day, check, outcome and (for blocks only) jurisdiction, with a
 --                                  count. No person id, no IP, no time finer than a day. Two-year retention.
---   ops.regulatory_watch          rule changes seen by scripts/compliance/regulatory-watch.mjs, with triage.
+--   ops.regulatory_watch          rule changes seen by compliance/scripts/regulatory-watch.mjs, with triage.
 --
 -- And in public (definer, pinned search_path, revoked from PUBLIC, anon and authenticated):
 --   hook_before_user_created(jsonb)   Supabase Auth "before user created" hook (Postgres function). Grants
@@ -32,18 +32,19 @@
 --   * Known gap, to verify on a local stack: if GoTrue rolls back its transaction when the hook returns an
 --     error, the 'block' count is lost with it (Postgres has no autonomous transactions). Passes and
 --     fail-open counts are unaffected.
---   * The IP is used in memory to find a country and is never stored or logged.
+--   * The IP is used in memory to find a country and is never stored or logged by this file. Supabase Auth's own
+--     audit log may still record it (unverified); see APPLY.md File 27.
 --   * Fail open, and count it. No geo data, no IP, an unknown country, or an internal error lets the sign-up
 --     through and counts `geo_unknown` or `error`. Refusing every sign-up because a monthly file is late would
 --     be an outage, not a control; the counts make it visible, and the report flags stale data (> 45 days).
 --   * Country level only. Region-level places (Crimea, Sevastopol, Donetsk, Luhansk) cannot be resolved from
 --     country data; their rows are kept for the web page, which gets a region header, and the hook ignores
---     region rows. The Terms attestation covers the rest.
+--     region rows. At v1.1 those regions are covered only by the Terms 2.4 confirmation.
 --   * No name screening (references/sanctions.md).
 --
 -- Enable on hosted (founder step, after apply; APPLY.md File 27): Dashboard > Authentication > Hooks > Before User Created >
 -- Postgres function public.hook_before_user_created.
--- Then load geo data (scripts/compliance/load-geo-ip.mjs). Until geo data is loaded the hook allows all.
+-- Then load geo data (compliance/scripts/load-geo-ip.mjs). Until geo data is loaded the hook allows all.
 --
 -- Rollback: disable the hook first (Dashboard), then
 --   drop function public.hook_before_user_created(jsonb), public.ops_count_check(text,text,text),
@@ -99,7 +100,7 @@ create table if not exists ops.geo_ip_ranges (
   check (family(ip_start) = family(ip_end) and ip_start <= ip_end)
 );
 comment on table ops.geo_ip_ranges is
-  'DB-IP IP to Country Lite (CC BY 4.0, attribution to DB-IP.com). Replaced whole by scripts/compliance/load-geo-ip.mjs.';
+  'DB-IP IP to Country Lite (CC BY 4.0, attribution to DB-IP.com). Replaced whole by compliance/scripts/load-geo-ip.mjs.';
 
 create table if not exists ops.geo_ip_meta (
   id boolean primary key default true check (id),

@@ -6,8 +6,8 @@
 // Monthly, from a machine that can reach db-ip.com and the database (the founder's computer or a workflow
 // with the DB secret; Claude sessions cannot reach either):
 //   1. Download the CSV from https://db-ip.com/db/download/ip-to-country-lite (dbip-country-lite-YYYY-MM.csv.gz).
-//   2. node scripts/compliance/load-geo-ip.mjs --csv dbip-country-lite-2026-11.csv.gz --version 2026-11 --dry-run
-//   3. SUPABASE_DB_URL=postgresql://... node scripts/compliance/load-geo-ip.mjs --csv ... --version 2026-11
+//   2. node compliance/scripts/load-geo-ip.mjs --csv dbip-country-lite-2026-11.csv.gz --version 2026-11 --dry-run
+//   3. SUPABASE_DB_URL=postgresql://... node compliance/scripts/load-geo-ip.mjs --csv ... --version 2026-11
 //
 // It validates every row (two addresses of one family, start <= end, a two-letter code), refuses a file with
 // fewer than --min-rows valid rows (default 200000) or more than 0.1% bad rows, and replaces the table and

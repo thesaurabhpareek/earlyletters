@@ -1,5 +1,5 @@
 {
-  "$comment": "What scripts/compliance/regulatory-watch.mjs asks the Federal Register API for. Federal only; state law is checked by hand (checked-facts.md). Owner: regulatory-affairs. Edit terms here, not in the script.",
+  "$comment": "What compliance/scripts/regulatory-watch.mjs asks the Federal Register API for. Federal only; state law is checked by hand (checked-facts.md). Owner: regulatory-affairs. Edit terms here, not in the script.",
   "lookback_days": 14,
   "topics": [
     { "id": "coppa", "why": "Children's Online Privacy Protection Rule and FTC guidance", "agencies": ["federal-trade-commission"], "terms": ["Children's Online Privacy Protection", "COPPA"] },

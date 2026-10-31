@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Regulatory watch (CTO ruling CR-22; owner: regulatory-affairs; skill regulatory-compliance section 5).
 // Asks the Federal Register API for new documents on the topics in
-// scripts/compliance/watch-topics.json and prints what it found.
+// compliance/scripts/watch-topics.json and prints what it found.
 // Federal only: state law is checked by hand (references/checked-facts.md).
 //
-//   node scripts/compliance/regulatory-watch.mjs [--since 2026-10-01] [--out watch.json]
-//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/compliance/regulatory-watch.mjs --record
+//   node compliance/scripts/regulatory-watch.mjs [--since 2026-10-01] [--out watch.json]
+//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node compliance/scripts/regulatory-watch.mjs --record
 //
 // --record stores the items through public.ops_regwatch_record (idempotent; triage happens there).
 // The API is public and free (federalregister.gov/developers); no key. Network failures exit 2 so a
@@ -15,7 +15,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const TOPICS_PATH = join(ROOT, 'scripts', 'compliance', 'watch-topics.json');
+export const TOPICS_PATH = join(ROOT, 'compliance', 'scripts', 'watch-topics.json');
 const API = 'https://www.federalregister.gov/api/v1/documents.json';
 const FIELDS = ['document_number', 'title', 'publication_date', 'html_url', 'type'];
 
