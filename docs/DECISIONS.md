@@ -1014,3 +1014,18 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Amends:** D-107's founder-only merge list; D-117's operating rule (the merge now needs no separate founder action); D-125 item 5 for `docs/DECISIONS.md` only (Karma merges entries that record the founder's own words; `docs/legal/**` stays his).
 - **Follow-up:** Karma's skill, section 3, still lists "merging `docs/DECISIONS.md` and legal text" as founder-only; update it to point here.
 - **Owner:** founder; Karma.
+### D-133 Notes ship in v1.0, and the public promise says only what is true (founder, 31 Oct 2026)
+- **Founder's words:** his answers to Karma's questions on 31 Oct. On notes: "Build it for v1.0", then "Count them like letters". On the promise: "think more", and after the second round, "Use the true line now" and "Same true line in the store build".
+- **Decision 1, notes:** v1.0 makes notes. F04-REQ-014 stays P0. The note-or-letter control is built in Review, using F06 Q10's default: inside the dateline sheet, collapsed by default. Drafts start as `letter`. A kept note counts toward the free letters exactly like a letter, so `COUNTED_LETTERS_SQL` (`apps/mobile/src/lib/db/repos/ledger.ts:49`, today `kind = 'letter'`) counts `kind IN ('letter', 'note')` in the same pull request that makes notes. Otherwise filing everything as a note would bypass the Plus gate.
+- **Decision 2, the promise:** "every word exactly as you said it" is not true of the words: the default view removes ums and repeats, and the speech model can mishear. Public surfaces (the website, its emails and the store listing) say what is true instead: "It stays in your words. Every change is marked, and your original recording is kept unchanged." The store build's first-run headline uses the same true wording. The alpha keeps "Exactly as you said it." as D-125 item 9 left it. "Word for word" stays the in-app name of the feature. Waiting for counsel was considered and rejected, because counsel cannot make the old sentence true.
+- **Why (Karma, debated):** an independent challenger read the code and found three problems:
+  - the default Review view is the one with fixes (`review-view.logic.test.ts:31`);
+  - the "Exactly as said" view is raw machine output;
+  - the player plays a cleaned listening copy by default (`apps/mobile/src/lib/player/index.ts:4-5`), so even "your voice kept exactly" would overclaim. Only the original file is unchanged.
+  Apple 2.3.1(a), read 31 Oct, targets advertising features an app doesn't offer and false prices, so the App Review risk is lower than first argued. The real risks are consumer-protection rules on deception (UNVERIFIED for this case; counsel's call) and parents' reviews.
+- **Amends:** D-125 item 9 (the listing now uses the true line, and the store build's first run uses it too); the nomenclature audit's R-D (#422: the listing adds notes back in the same pull request that ships them).
+- **Effects:**
+  - The website PR #437 applies decision 2 on `main` and adds a copy-rules test.
+  - The brand tagline in `packages/brand/index.ts` ("Exactly as you said it.") is drawn into the share image and the video end card (registry ids for `og.image` and the end card). The brand lane picks a short true tagline and redraws those pictures. Until then the tagline is the one exception the website rule allows.
+  - The notes work package lands after the 9 Nov go/no-go (D-130), because the freeze starts 3 Nov and other branches touch `strings.en.ts`. It covers the control, the ledger, the Book's note label and month lines, the export readme, and the store listing's notes line.
+- **Owner:** founder; Karma for the build; the CMO and the brand lane for the tagline.
