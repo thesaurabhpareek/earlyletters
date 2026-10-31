@@ -175,7 +175,9 @@ test.describe('ambient sound', () => {
     await page.waitForTimeout(500);
     expect(await contexts(page)).toEqual([]);
     await expect(toggle(page)).toHaveAttribute('data-state', 'blocked');
-    // A real gesture still starts it.
+    // A real gesture still starts it. (End took the page to the sign-up form, where a click is deliberately not a gesture.)
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(500);
     await page.mouse.click(720, 450);
     await expect(toggle(page)).toHaveText('Sound on');
     expect(await contexts(page)).toEqual(['running']);
