@@ -10,7 +10,7 @@ OFAC FAQ 445 (ofac.treasury.gov/faqs/445, read 31 Oct 2026): US persons must avo
 - The exposure is the free service: a person in an embargoed place creating an account (v1.1), or a relative abroad using the web contribution page (later, D-055, which superseded D-002).
 - The Terms already ask every user to confirm they are not in an embargoed place and not on a US restricted-party list (Terms 2.4).
 
-## What we do (ruled by Karma, CR-22, pending one founder decision)
+## What we do (ruled by Karma, CR-26, pending one founder decision)
 1. **Block places, not people.** At v1.1, Crimea, Donetsk and Luhansk are covered only by the Terms confirmation (country data cannot single them out). A `before user created` auth hook and the web contribution page (when it ships, D-055) check the request's country against `ops.restricted_jurisdictions` and refuse with a neutral, accessible message that does not dead-end (it says where to read more).
 2. **No name screening.** Screening names would make us collect legal names we otherwise never need, which works against data minimisation and our privacy promises. With no payments through us and a US-only storefront, the Terms attestation plus the place block is a proportionate risk-based program in our engineering reading. Revisit if we ever take payments directly, ship outside the US storefront, or counsel says otherwise.
 3. **Log counts, not people.** A blocked request writes one increment to `ops.compliance_check_counts` (day, check, outcome, jurisdiction code). The IP is used in memory to find the country and is never stored.

@@ -2,10 +2,10 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
-Seeded on 31 Oct 2026 when the role was created (CTO ruling CR-22). Nothing below comes from a run yet.
+Seeded on 31 Oct 2026 when the role was created (CTO ruling CR-26). Nothing below comes from a run yet.
 
 ## Current focus
-- daily_runs is 0 (no scheduled runs, CR-22); consulted in interactive sessions. Raise it after the 9 Nov go/no-go if the lane runs.
+- daily_runs is 0 (no scheduled runs, CR-26); consulted in interactive sessions. Raise it after the 9 Nov go/no-go if the lane runs.
 
 ## Facts about this codebase (with paths)
 - My skill: `.claude/skills/user-research/SKILL.md`.
