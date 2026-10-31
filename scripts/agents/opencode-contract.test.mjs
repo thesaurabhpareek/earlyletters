@@ -9,7 +9,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { tally, newTotals, opencodeConfig } from "./run-opencode.mjs";
+import * as runner from "./run-opencode.mjs";
+const { tally, newTotals, opencodeConfig } = runner;
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "opencode");
 const load = (name) =>
@@ -91,53 +92,98 @@ test("real events: a denied tool call is a tool_use with status error and still 
   assert.equal(total(events).steps, 4);
 });
 
-// ---- Deny globs, replayed from a run of the real binary with opencodeConfig() ----
+// ---- Deny globs, replayed from runs of the real binary ----
 
-const outcomes = () =>
+const outcomesOf = (name) =>
   Object.fromEntries(
-    load("deny-matrix")
-      .filter((e) => e.type === "tool_use")
+    load(name)
+      .filter((e) => e.type === "tool_use" && e.part.state.input.command)
       .map((e) => [e.part.state.input.command, e.part.state.status === "error" ? "blocked" : "ran"]),
   );
 
-test("real deny: the commands the globs name are blocked by the real binary", () => {
-  const o = outcomes();
-  for (const c of [
-    "git push origin develop",
-    "git push origin main",
-    "git push --force origin x",
-    "gh pr merge 1 --squash",
-    "cd /tmp && gh pr merge 1",
-    "gh pr close 2",
-    "gh api -X DELETE repos/a/b",
-  ]) assert.equal(o[c], "blocked", c);
-});
-
-test("real deny: permitted commands run", () => {
-  const o = outcomes();
-  assert.equal(o["git push origin test/x"], "ran");
-  assert.equal(o["gh pr create --fill"], "ran");
-  assert.equal(load("denied-push-merge").find((e) => e.part?.state?.input?.command === "git status").part.state.status, "completed");
-});
-
-test("real deny: recorded gap, refspec and -C forms of a push to develop or main ran", () => {
-  // Documents what the real engine did. If this fails, the fixture was replaced after a fix:
-  // update the fixture and drop the todo markers below.
-  const o = outcomes();
-  assert.equal(o["git push origin HEAD:main"], "ran");
-  assert.equal(o["git push -u origin HEAD:refs/heads/develop"], "ran");
-  assert.equal(o["git -C . push origin develop"], "ran");
+// Baseline: opencodeConfig() as on develop f94e76d0, before the hardening branch.
+test("baseline deny (develop f94e76d0): globs named in the old config blocked, refspec forms ran", () => {
+  const o = outcomesOf("deny-matrix");
+  for (const c of ["git push origin develop", "git push origin main", "git push --force origin x", "gh pr merge 1 --squash",
+    "cd /tmp && gh pr merge 1", "gh pr close 2", "gh api -X DELETE repos/a/b"]) assert.equal(o[c], "blocked", c);
+  for (const c of ["git push origin HEAD:main", "git push -u origin HEAD:refs/heads/develop", "git -C . push origin develop",
+    "git push origin test/x", "gh pr create --fill"]) assert.equal(o[c], "ran", c);
   assert.equal(load("denied-push-merge").find((e) => e.part?.state?.input?.command === "git push origin HEAD:develop").part.state.status, "completed");
 });
 
-// opencode matches the whole command string against the glob ("*" = any run of characters).
-const globToRe = (g) => new RegExp("^" + g.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$");
-const denied = (cmd) => Object.entries(opencodeConfig().permission.bash).some(([g, v]) => v === "deny" && globToRe(g).test(cmd));
+// Hardened: DENY_PATTERNS / buildChildEnv from origin/fix/opencode-runner-hardening d060a36f,
+// run through the real binary opencode-ai 1.18.34. opencode matches the whole command string
+// (and each segment of a && / ; / | compound) against the glob, "*" being any run of characters.
+const hardened = outcomesOf("hardened-deny-matrix");
 
-for (const cmd of ["git push origin HEAD:develop", "git push origin HEAD:main", "git push -u origin HEAD:refs/heads/develop", "git -C . push origin develop"]) {
+test("hardened deny: protected-branch pushes in every refspec form are blocked by the real binary", () => {
+  for (const c of ["git push origin HEAD:develop", "git push origin develop", "git push origin HEAD:main", "git push origin main",
+    "git push -u origin HEAD:refs/heads/develop", "git push origin +HEAD:develop", "git push origin +develop",
+    "git push origin test/x:develop"]) assert.equal(hardened[c], "blocked", c);
+});
+
+test("hardened deny: force, lease, delete, merge, close, workflow and gh api writes are blocked by the real binary", () => {
+  for (const c of ["git push --force origin x", "git push --force-with-lease origin x", "git push origin --delete foo", "git push origin :foo",
+    "gh pr merge 1", "gh pr merge 1 --squash", "cd /tmp && gh pr merge 1", "gh pr close 2", "gh workflow run ci.yml",
+    "gh api -X DELETE repos/a/b", "gh api -X POST repos/a/b/issues", "gh api -X PUT repos/a/b/x",
+    "gh api repos/a/b/branches/develop/protection"]) assert.equal(hardened[c], "blocked", c);
+});
+
+test("hardened deny: ordinary work still runs (no over-blocking)", () => {
+  for (const c of ["git status", "git push origin test/x", "gh pr create --fill", "gh api repos/a/b/pulls", "git push origin HEAD:refs/heads/release"]) {
+    assert.equal(hardened[c], "ran", c);
+  }
+});
+
+// Shell indirection cannot be covered by globs. These RAN against the real binary: it is the
+// documented reason branch protection and the App token scope are the real controls.
+test("hardened deny: shell indirection to push develop is NOT blocked (tripwire, not a boundary)", () => {
+  for (const c of ["FOO=1 git push origin develop", "sh -c 'git push origin develop'", "B=develop; git push origin $B",
+    "git push origin $(echo develop)", "sh push.sh", "env git push origin develop", "git push origin HEAD:'develop'"]) {
+    assert.equal(hardened[c], "ran", c);
+  }
+});
+
+// Spelling variants a glob could cover. They ran today; the todo tests check the config and flip
+// to real passes when DENY_PATTERNS covers them. After that, refresh the fixture and move them up.
+const patterns = () => runner.DENY_PATTERNS ?? Object.entries(opencodeConfig().permission.bash).filter(([, v]) => v === "deny").map(([k]) => k);
+const globToRe = (g) => new RegExp("^" + g.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "s");
+const denied = (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => patterns().some((g) => globToRe(g).test(seg)));
+
+test("hardened deny: the glob matcher used here agrees with the real binary on every recorded command", {
+  todo: runner.DENY_PATTERNS ? false : "run-opencode.mjs on this branch predates DENY_PATTERNS; passes once the hardening branch is merged",
+}, () => {
+  for (const [cmd, res] of Object.entries(hardened)) assert.equal(denied(cmd), res === "blocked", cmd);
+});
+
+for (const cmd of ["git -C . push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
+  "git -c core.x=1 push origin develop", "gh -R a/b pr merge 1", "gh api repos/a/b/issues -f title=x", "gh api graphql -f query=mutation"]) {
   test(`[expected failure] deny globs block "${cmd}"`, {
-    todo: "KNOWN GAP (real engine, opencode-ai 1.18.34): this command ran. Patterns only match the 'git push origin develop|main' prefix. Owner: run-opencode.mjs (W1). See docs/agents/hardening/opencode-contract.md",
+    todo: `STILL RUNS on the real binary (opencode-ai 1.18.34, hardening d060a36f): ${cmd}. Owner: run-opencode.mjs DENY_PATTERNS.`,
   }, () => {
+    assert.equal(hardened[cmd], "blocked");
     assert.ok(denied(cmd));
   });
 }
+
+// ---- Project config and child env, from the real binary ----
+
+const statuses = (name) => load(name).filter((e) => e.type === "tool_use").map((e) => [e.part.state.input.command, e.part.state.status]);
+
+test("project config: a repo opencode.json that allows the denied commands is ignored with OPENCODE_DISABLE_PROJECT_CONFIG=1", () => {
+  assert.deepEqual(statuses("project-config-disabled"), [["gh pr merge 1", "error"], ["git push origin develop", "error"]]);
+});
+
+test("project config: without the flag the same repo opencode.json DOES override the deny rules", () => {
+  assert.deepEqual(statuses("project-config-enabled"), [["gh pr merge 1", "completed"], ["git push origin develop", "completed"]]);
+});
+
+test("child env: the model's shell sees only the allowlist plus engine variables, no planted canary secrets", () => {
+  const out = load("child-env").find((e) => e.type === "tool_use").part.state.output;
+  const names = out.split("\n").filter(Boolean).map((l) => l.split("=")[0]);
+  for (const n of ["GH_TOKEN", "OPENROUTER_API_KEY", "OPENCODE_DISABLE_PROJECT_CONFIG"]) assert.ok(names.includes(n), n);
+  for (const n of ["CANARY_AWS_SECRET_ACCESS_KEY", "ANTHROPIC_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "GITHUB_TOKEN", "AGENT_APP_PRIVATE_KEY", "NPM_TOKEN"]) {
+    assert.ok(!names.includes(n), n);
+  }
+  assert.ok(!/canary/i.test(out));
+});
