@@ -12,6 +12,7 @@
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
 import { phoneConsent, type ExportSnapshot, type SnapshotEntry } from '../../src/lib/export/build.logic';
+import { noConsentHistory } from '../../src/lib/export/server-records.logic';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -89,8 +90,8 @@ export function ashaSnapshot(): ExportSnapshot {
     plan: 'free',
     signedIn: false,
     children: [
-      { id: ASHA, name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false },
-      { id: DEV, name: 'Dev', birthday: '2024-05-31', dueDate: null, signsAs: 'Mama', remindersOn: false, familyCanRead: false, hidden: true },
+      { id: ASHA, name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false, role: 'parent' },
+      { id: DEV, name: 'Dev', birthday: '2024-05-31', dueDate: null, signsAs: 'Mama', remindersOn: false, familyCanRead: false, hidden: true, role: 'parent' },
     ],
     entries: [
       entry({ id: 'e1', occurredOn: '2026-02-20', captureMode: 'typed', finalText: 'We painted your room yellow today.\n\nPapa says it looks like butter.', editLevel: 'verbatim' }),
@@ -130,5 +131,14 @@ export function ashaSnapshot(): ExportSnapshot {
     ],
     // The 18+ gate was answered yes; v1.0 never asks about usage sharing.
     consent: phoneConsent(true, null),
+    // Signed out: there is no server record (schema 1.3.0).
+    consentHistory: noConsentHistory('not_signed_in'),
+    // What each book spells your way on this phone (store.dictionaryFor): the child's name and your signature.
+    dictionary: [
+      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], forms: null, source: 'phone' },
+      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
+      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], forms: null, source: 'phone' },
+      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
+    ],
   };
 }

@@ -604,6 +604,285 @@
               ]
             }
           }
+        },
+        "consent_history": {
+          "$ref": "#/$defs/consentHistory"
+        },
+        "dictionary": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dictionaryTerm"
+          }
+        }
+      }
+    },
+    "consentHistory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "read_at",
+        "current",
+        "acts"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "included",
+            "not_signed_in",
+            "different_account",
+            "unavailable"
+          ]
+        },
+        "read_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "current": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "document",
+              "version",
+              "action",
+              "at"
+            ],
+            "properties": {
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "at": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "acts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "document",
+              "version",
+              "action",
+              "method",
+              "surface",
+              "at",
+              "client_recorded_at",
+              "app_version",
+              "platform",
+              "locale",
+              "rendered_sha256",
+              "context"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "method": {
+                "type": "string"
+              },
+              "surface": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "client_recorded_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app_version": {
+                "type": "string"
+              },
+              "platform": {
+                "enum": [
+                  "ios",
+                  "android",
+                  "web"
+                ]
+              },
+              "locale": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rendered_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "context": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "included"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "null"
+          },
+          "current": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "acts": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "dictionaryTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "child_id",
+        "term",
+        "kind",
+        "heard_as",
+        "forms",
+        "source"
+      ],
+      "properties": {
+        "child_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "term": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "child",
+            "nickname",
+            "family",
+            "word",
+            "place",
+            "self"
+          ]
+        },
+        "heard_as": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forms": {
+          "anyOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "script",
+                  "text",
+                  "heard_as",
+                  "offer_only"
+                ],
+                "properties": {
+                  "script": {
+                    "enum": [
+                      "latin",
+                      "devanagari",
+                      "arabic",
+                      "han_simplified",
+                      "han_traditional"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "heard_as": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "offer_only": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "enum": [
+            "phone",
+            "server"
+          ]
         }
       }
     },
