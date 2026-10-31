@@ -6,7 +6,7 @@ v1 went to the full executive council (CMO, CDesO, CPO, CLO, CCO, CPrivO, CDO, C
 
 ## How this sits with the rest of the record
 
-- The product vocabulary has one home: the glossary in `packages/content/BRAND.md`. CR-22 (PR #420, open) adds the internal-term door. This audit adds no second glossary. It checks the app against that one and proposes the rows it is missing (section 4).
+- The product vocabulary has one home: the glossary in `packages/content/BRAND.md`. CR-25 (PR #420, merged) adds the internal-term door. This audit adds no second glossary. It checks the app against that one and proposes the rows it is missing (section 4).
 - `docs/GLOSSARY.md` is cited by CODE-R07 and DB-R05 but was never written. After #420 merges, both rules point at BRAND.md (FP-6).
 - Promise words stay founder and counsel territory. D-125 item 9 already holds "exactly as you said it" out of the store listing until counsel clears it at T30. Whether the same hold covers the website and the name "Word for word" is the second founder question in section 6.
 - Another session is carrying the store listing and some of the copy this audit touches: branch `fix/comms-validation-2026-10-31` (no PR yet) rewrites `store.en.ts`, `app-store.md`, `billing.en.ts`, `strings.en.ts`, BRAND.md and both sets of terms. FP-1 and FP-2 rebase on it rather than race it (section 5).
@@ -59,7 +59,7 @@ Severity: High = a parent would read it wrongly, or a public line claims somethi
 | NA-36 | Low | `children.hidden_at` is a book-level server column the other parent can read, but the product says hiding a book is only for you. Unused on the server today. | DATA_CLASSIFICATION `:186`; `supabase/migrations/20261015000000_*.sql:124`; `strings.en.ts:920-923` |
 | NA-37 | Low | The founder's App Store Connect run sheet expects labels that build 2 will not show ("Leave it waiting", "Save"). | `docs/release/APP_STORE_CONNECT_SUBSCRIPTIONS.md:148,150` |
 
-Not findings: `data/entries.json` in the export keeps its name (format contract, D-096, CR-22). The website uses the child's real first name on purpose (D-118); I don't reopen it.
+Not findings: `data/entries.json` in the export keeps its name (format contract, D-096, CR-25). The website uses the child's real first name on purpose (D-118); I don't reopen it.
 
 ## 3. Rulings
 
@@ -99,7 +99,7 @@ All T1, two-way, unless marked. In-app copy and UI work lands after the go/no-go
 
 **R-K. The allowance is read, not written (NA-28).** In-app lines read the number from remote config and spell it as a word. F14 section 6.9 names the store, website and Terms lines as part of any raise, and DR-21 gets a note.
 
-**R-L. Contracts are never renamed (NA-33, NA-34). T2.** `EXPORT_FORMAT` becomes the literal `early-letters-export`, so a brand rename can't break old exports (CR-26). It needs a test that fails on the old code and two reviews before merge. #420's `scribe` row lists every contract: the repo, packages, Supabase projects, bundle id, the URL scheme `scribe://`, the Expo slug and the database file `scribe.db`, including the recovery export. Any IA change that renames a route or setting key updates `isCaptureRoute` and `resilience.test.ts` in the same PR.
+**R-L. Contracts are never renamed (NA-33, NA-34). T2.** `EXPORT_FORMAT` becomes the literal `early-letters-export`, so a brand rename can't break old exports (the export-format id ruling, number set when it is added to the log). It needs a test that fails on the old code and two reviews before merge. #420's `scribe` row lists every contract: the repo, packages, Supabase projects, bundle id, the URL scheme `scribe://`, the Expo slug and the database file `scribe.db`, including the recovery export. Any IA change that renames a route or setting key updates `isCaptureRoute` and `resilience.test.ts` in the same PR.
 
 Routed, not ruled here: NA-29 (Subscription Terms 1.4.0) and NA-30 ("the price after") go to the legal lane and counsel Q8; merging legal text is the founder's (D-125), and both are already in the counsel flow. NA-31 is consent text (HN-4) and goes to counsel with the candidate "Sync and sharing with {child}'s other parent". NA-36 gets a DATA_CLASSIFICATION note: if hiding is ever synced, it is stored per person in `child_member_prefs`. NA-37 gets a docs note in the run sheet.
 
@@ -131,7 +131,7 @@ Routed, not ruled here: NA-29 (Subscription Terms 1.4.0) and NA-30 ("the price a
 | FP-3 | NA-03, NA-04, R-C cards, R-I site source; port the glossary bans into `main`'s copy-rules test and drop its seven-language requirement | website thread | Before submission; the founder merges to `main` (D-107) |
 | FP-4 | R-G analytics | analytics | After the go/no-go; route additions with the analytics-on packet |
 | FP-5 | The Family teaser lines | content | With the v1.1 copy |
-| FP-6 | R-I docs, section 4 rows, CR-25 and CR-26 into `docs/agents/cto/RULINGS.md` (after #420 merges, to avoid a conflict on the log) | docs | After #420 merges |
+| FP-6 | R-I docs, section 4 rows, and the audit and export-format id rulings into `docs/agents/cto/RULINGS.md`. #420 has merged. Several sessions numbered rulings on 31 Oct and CR-25 to CR-30 each had more than one claimant, so take the next free number from `RULINGS.md` on develop at that time | docs | After #420 merges |
 | FP-7 | CPO-1 in the PRD; R-C labels, R-E lines, NA-29, NA-30, NA-31 with counsel | PRD lane; legal lane with counsel | Next PRD update; counsel round |
 | FP-8 | R-L export format literal (T2) | mobile | After the go/no-go, with two reviews |
 
