@@ -15,6 +15,13 @@ export function baseUrl(): string {
   return value;
 }
 
+/** The scroll film's own server (SITE_MODE=film), set by global setup. */
+export function filmUrl(): string {
+  const value = process.env.E2E_FILM_URL;
+  if (!value) throw new Error('E2E_FILM_URL is not set: run through `npm run e2e -w @scribe/web` so global setup starts the film.');
+  return value;
+}
+
 export function mockUrl(): string {
   const value = process.env.E2E_MOCK_URL;
   if (!value) throw new Error('E2E_MOCK_URL is not set: run through `npm run e2e -w @scribe/web`.');

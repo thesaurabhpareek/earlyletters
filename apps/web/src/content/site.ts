@@ -352,6 +352,13 @@ export const site = {
     home: `Back to ${NAME}`,
   },
 
+  /** The film's quiet ambient sound and its one button. Labels stay under 23 characters. */
+  sound: {
+    on: 'Sound on',
+    off: 'Sound off',
+    start: 'Tap to start sound',
+  },
+
   footer: {
     contact: 'hello@earlyletters.com',
     links: [
