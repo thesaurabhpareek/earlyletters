@@ -101,7 +101,11 @@ const GH_DENY = [
   "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
 ];
 
-const DENY_BEFORE_GIT = [...GH_DENY, ...GIT_DENY];
+// `time <anything>` runs on the engine without matching any gh or git pattern (the node text starts with "time"), so it is denied.
+// Agents never need it. (`time -p git push` is also denied by GIT_DENY's wrapper rule.)
+const TIME_DENY = ["time *", "time\t*"];
+
+const DENY_BEFORE_GIT = [...TIME_DENY, ...GH_DENY, ...GIT_DENY];
 
 // Narrow allows, after the denies. A plain path under .agent-run/ or /tmp/ is rescued (for a single body flag only: a tripwire, not a
 // guarantee about the path; real gh uses the LAST body flag, so two are denied); a relative path such as

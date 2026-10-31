@@ -4,8 +4,11 @@
 // spaces and tabs; a trailing " *" makes the arguments optional; backslashes count as slashes; and the engine
 // matches shell-grammar command nodes (see commandNodes below), each by its full text, never the whole line.
 // A rule whose pattern contains an unquoted separator therefore never fires on its own node.
-// Remaining disagreements (approximate): heredocs, `case`, arithmetic, `eval`, a `(` inside a word, `?` as a single
-// character (modelled, not separately confirmed). STILL UNVERIFIED: whether `gh pr create` pushes the branch itself.
+// `case` and arithmetic AGREE with the engine (denied by both). Remaining disagreements: heredocs (the matcher mirrors the
+// engine, which does not look inside them: a known hole, dangerous direction), `! !` (both run), comment text after `#`,
+// unbalanced quotes (harmless), `function f { ...; }` and `{gh ...;}` (matcher allows, engine denies: safe direction), a `(` inside
+// a word (unconfirmed), `?` as a single character (modelled, not separately confirmed). `time` is not stripped: the engine
+// matches it as part of the node, and the config denies `time *`. STILL UNVERIFIED: whether `gh pr create` pushes the branch itself.
 // Not modelled: wrappers, quoting tricks, variables. The deny list catches only the bare form.
 
 const norm = (x) => x.replaceAll("\\", "/");
@@ -32,12 +35,15 @@ export function decider(rules) {
  *    `|` in `--jq '.[] | .n'` stays in the node text; single quotes hide `$( )` completely;
  *  - a backslash escapes the next character, and backslash-newline is a continuation (no split);
  *  - `2>&1` and `&>` are redirects, not separators.
- * Approximate (not modelled): heredocs, `case`, arithmetic, `eval`, aliases, and anything else the grammar does.
+ * Heredocs: the rest of the `<<WORD` line and the body up to the terminator are data (the engine does not look inside). Approximate (not modelled): `eval`, aliases, and anything else the grammar does.
  */
 export function commandNodes(cmd) {
   const out = [];
-  const lead = /^(?:(?:!|\{|then|do|else|elif|if|while|until|time)\s+)+/;
-  const push = (t) => { const x = t.trim().replace(lead, "").trim(); if (x && x !== "}" && x !== "fi" && x !== "done" && x !== "esac") out.push(x); };
+  // Leading keywords are stripped, and at most ONE leading `!`. `time` is NOT stripped: the engine matches the node text
+  // including `time` (so `time gh pr merge 7` runs under a gh-only rule), and `! ! gh pr merge 7` runs too (engine-confirmed).
+  const kw = /^(?:(?:\{|then|do|else|elif|if|while|until)\s+)+/;
+  const strip = (t) => t.replace(kw, "").replace(/^!\s+/, "").replace(kw, "");
+  const push = (t) => { const x = strip(t.trim()).trim(); if (x && x !== "}" && x !== "fi" && x !== "done" && x !== "esac") out.push(x); };
   // Scan [from, end) and return {text, next}; `closer` is the character that ends a substitution or group.
   function scan(str, from, closer) {
     let seg = "";
@@ -68,6 +74,26 @@ export function commandNodes(cmd) {
         seg += str.slice(i, r.next); i = r.next; continue;
       }
       if (closer && ch === closer) { push(seg); return { next: i + 1 }; }
+      if (ch === "<" && next === "<" && str[i + 2] !== "<" && str[i - 1] !== "<") {
+        // Heredoc. The engine does NOT look inside it (engine-confirmed: `cat <<EOF`, a substitution in the body, and
+        // `cat <<EOF; gh pr merge 7` all RUN), so the rest of the line and the body up to the terminator are skipped as data.
+        // That is the dangerous direction: a shell would run a substitution in an unquoted body. Recorded as a known hole.
+        const m = /^<<(-?)\s*(['"]?)([A-Za-z_][\w-]*)\2/.exec(str.slice(i));
+        if (m) {
+          push(seg + m[0]); seg = "";
+          const nl = str.indexOf("\n", i + m[0].length);
+          let pos = nl < 0 ? str.length : nl + 1;
+          i = str.length;
+          while (pos < str.length) {
+            let end = str.indexOf("\n", pos);
+            if (end < 0) end = str.length;
+            const line = str.slice(pos, end);
+            pos = end + 1;
+            if ((m[1] ? line.replace(/^\t+/, "") : line) === m[3]) { i = pos; break; }
+          }
+          continue;
+        }
+      }
       if (ch === "(") { push(seg); seg = ""; const r = scan(str, i + 1, ")"); i = r.next; continue; }
       if (ch === ")" ) { push(seg); seg = ""; i++; continue; }
       const redirectAmp = ch === "&" && (str[i - 1] === ">" || str[i - 1] === "<" || next === ">");
