@@ -4,7 +4,7 @@ Charter: `docs/agents/lanes/backlog-hygiene.md`. Fill this in during the pilot; 
 
 Pilot tasks (class `pilot`, `agents/evals/pilot/`): `stale-status-001` (routine), `founder-steps-001` (routine), `reword-refusal-001` (constitution test: correct outcome is refusal plus a note).
 
-Run: `node scripts/agents/evals/runner.mjs --candidate "<opencode command>" --class pilot --k 3` gives 9 trials. The runner reports pass, fail, unknown and error per trial; count unknown and error as not passed.
+Run (the runner is on `wip/rb-10e-eval-runner-remove`, not yet on `develop`): `node scripts/agents/evals/runner.mjs --candidate "<opencode command>" --class pilot --k 3` gives 9 trials. The runner reports pass, fail, unknown and error per trial; count unknown and error as not passed.
 
 ## 1. Results
 

@@ -10,18 +10,18 @@ Marking: **[E]** means the number is my estimate, not a measurement. **[V]** mea
 It keeps two kinds of text true, and nothing else:
 
 1. A task's status line in `docs/BACKLOG.md` when merged code or a merged PR proves the status is stale (for example `in-review (PR #n)` for a PR that is merged).
-2. The wording of an item in `docs/FOUNDER_TASKS.md` when it lacks the exact click steps that a setup doc under `docs/ops/` already contains (copy the steps; never invent them).
+2. The wording of an item in `docs/release/FOUNDER_QUEUE.md` when it lacks the exact click steps that a setup doc under `docs/ops/` already contains (copy the steps; never invent them).
 
 It never decides, never writes new meaning, never rewrites a person's words.
 
-**Repo fact [V]:** the file `docs/release/FOUNDER_QUEUE.md` named in the brief does not exist on `wip/rb-10e-eval-runner-remove`. The founder's step list is `docs/FOUNDER_TASKS.md` (items `FT-##`, each with Time, Cost, Steps, By, Blocks). This charter uses that file. If you want a different file, change section 2 before the pilot starts.
+**Repo fact [V]:** the founder's step list is `docs/release/FOUNDER_QUEUE.md` (items `W0-##`, each with a heading line that gives status and time, then `- Steps:`, `- Unblocks:` and `- Verify:` lines). The older `docs/FOUNDER_TASKS.md` (items `FT-##`) still exists but the queue replaces it as the single ordered list, so this lane uses the queue only.
 
 ## 2. Allowed paths
 
 | Path | What may change |
 |---|---|
 | `docs/BACKLOG.md` | Only the `- Status:` line of a task, to a value from the status list at the top of that file, and only with evidence (merged PR number and commit). The product agent may edit more of this file under its own charter; this lane may not. |
-| `docs/FOUNDER_TASKS.md` | Only the `Steps:` line (and `Time:` or `By:` when a cited doc states them) of an existing `FT-##` item, copied from the doc the item already cites. |
+| `docs/release/FOUNDER_QUEUE.md` | Only the `- Steps:` line (and the time in the heading line when a cited doc states it) of an existing `W0-##` item, copied from the doc the item already cites. |
 
 One file per PR where possible. The PR body quotes the evidence for each changed line.
 
@@ -79,7 +79,7 @@ Enforcement [V partly]: `scripts/agents/` has path checks for agent PRs that I d
 
 ## 8. Pilot before unattended running
 
-1. Validate the seeded tasks: `node scripts/agents/evals/runner.mjs --validate --root agents/evals --class pilot` must report 3 ok (done on the branch `test/pilot-seeded-tasks`; see its commit).
+1. Validate the seeded tasks: `node scripts/agents/evals/runner.mjs --validate --root agents/evals --class pilot` must report 3 ok. The runner is not on `develop` yet (it lives on `wip/rb-10e-eval-runner-remove`); run it from that branch against this tree.
 2. Run the candidate engine on the three tasks, k = 3 trials each (9 trials), per the runner README.
 3. Score with `backlog-hygiene-scorecard.md`.
 4. Only a "continue" verdict allows the first unattended run. Until the 5 Nov freeze ends and the founder decides, nothing runs.
