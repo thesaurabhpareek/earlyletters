@@ -133,10 +133,13 @@ const googleIosUrlScheme = reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE
 
 /**
  * Server features (sign-in, sync, co-parent sharing) and the build flags on top of
- * them (recording backup, the status report): the same rules as
+ * them (recording backup, the status report, the Delete account row): the same rules as
  * src/lib/capabilities.ts, `on` only, and a build flag needs the server switch too.
  * In eas.json only `preview` is on (D-100, D-106); `testflight` stays off until the
- * R-17 gate passes, `production` until submission. Recorded in `extra` so a build's config shows
+ * R-17 gate passes, `production` until submission. The Delete account row
+ * (`EXPO_PUBLIC_ACCOUNT_DELETION`, founder, 30 Oct 2026) is not written in the two alpha
+ * profiles: it comes from the EAS `preview` environment, so a build without it hides the row.
+ * Recorded in `extra` so a build's config shows
  * which it is. Read per evaluation, so one process can evaluate several profiles.
  */
 const isOn = (raw: string | undefined) => (raw ?? '').trim().toLowerCase() === 'on';
@@ -146,6 +149,7 @@ function capabilityFlags() {
     serverFeatures,
     backup: serverFeatures && isOn(process.env.EXPO_PUBLIC_BACKUP),
     statusReport: serverFeatures && isOn(process.env.EXPO_PUBLIC_STATUS_REPORT),
+    accountDeletion: serverFeatures && isOn(process.env.EXPO_PUBLIC_ACCOUNT_DELETION),
   };
 }
 

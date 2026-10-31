@@ -42,6 +42,26 @@
  *                     and an older signed config without them parses as off. The build flags
  *                     are off in every profile today, so they stay the lever for build 1.
  *
+ *   ACCOUNT_DELETION  `EXPO_PUBLIC_ACCOUNT_DELETION=on` (founder, 30 Oct 2026). The Delete account row in
+ *                     Settings and its page (`/settings/delete-account`). A build flag like the two above: true
+ *                     only when server features are on AND the variable is `on`; anything else, or nothing,
+ *                     is OFF, in every build. Written `on` in the eas.json profiles `development`, `e2e` and
+ *                     `production` (so a build of those shows the row wherever servers are on) and in the web e2e
+ *                     server-on build. NOT written in any `.env*` file (the preflight FAILs on it there: a file
+ *                     that filled it in would show the row in an alpha build), and NOT written in the two alpha
+ *                     profiles (`testflight`, `preview`): there it comes from the EAS `preview` environment on
+ *                     expo.dev (docs/release/TESTFLIGHT.md step 9), so it can be set after the freeze without
+ *                     touching eas.json or app.config.ts, and a build made without it hides the row. A drill on a
+ *                     development client passes it to Metro in the shell. It is meant to go `on` in the alpha only
+ *                     when the purge worker runs on staging and the sole-parent drill has passed (S1-35, S2-13,
+ *                     AL-07.6a). The hide-until-proven rule is for the alpha profiles; `production` writes `on`.
+ *                     Off: the row is not drawn and the page redirects to Settings. It touches nothing else:
+ *                     a phone that lists no book and has an open request still gets the deletion screen with
+ *                     Cancel deletion (lib/account-deletion/use-first-run-gate.ts, components/settings/
+ *                     open-deletion.tsx), because that gate does not read this flag
+ *                     (test/account-deletion-switch.test.ts). A phone that still lists a book does not get that
+ *                     screen, and its Cancel button is on the hidden Delete account page, so it has no Cancel path.
+ *
  *   ANALYTICS         `EXPO_PUBLIC_ANALYTICS=on` in the build's env. Anything else, or
  *                     nothing, is OFF. Off in every profile (decision of 15 Oct 2026,
  *                     delegated by the founder; D-088): no consent sheet, no Settings
@@ -101,9 +121,11 @@ let englishOnlyTestOverride: boolean | null = null;
 /** Per-feature build flags (F19-REQ-025). Inlined at bundle time; only `on` is on. */
 const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_BACKUP);
 const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_STATUS_REPORT);
+/** Delete account (founder, 30 Oct 2026). Same rule: only `on` is on, so a build with the variable unset hides the row. */
+const ACCOUNT_DELETION_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ACCOUNT_DELETION);
 
 /** The build flags that sit on top of the server switch. */
-export type BuildFlag = 'backup' | 'statusReport';
+export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion';
 
 let buildFlagTestOverride: Partial<Record<BuildFlag, boolean>> = {};
 
@@ -130,8 +152,12 @@ export function serverFeaturesEnabled(): boolean {
 /** A build flag: needs the server switch too, so a flag can never bring the server back into an off build. */
 export function buildFlagEnabled(flag: BuildFlag): boolean {
   if (!serverFeaturesEnabled()) return false;
-  const built = flag === 'backup' ? BACKUP_BUILD_VALUE : STATUS_REPORT_BUILD_VALUE;
-  return buildFlagTestOverride[flag] ?? built;
+  const built: Record<BuildFlag, boolean> = {
+    backup: BACKUP_BUILD_VALUE,
+    statusReport: STATUS_REPORT_BUILD_VALUE,
+    accountDeletion: ACCOUNT_DELETION_BUILD_VALUE,
+  };
+  return buildFlagTestOverride[flag] ?? built[flag];
 }
 
 /**
@@ -158,6 +184,14 @@ export const capabilities = {
   /** The subscription status report and its reminder emails (D-080, F14). */
   get statusReport(): boolean {
     return buildFlagEnabled('statusReport');
+  },
+  /**
+   * The Delete account row in Settings and its page (founder, 30 Oct 2026). Needs the server switch and its own variable.
+   * It is not the open-request gate: a phone that lists no book and has an open request still gets the deletion screen with
+   * Cancel deletion with this off. A phone that still lists a book has its Cancel button on the page this hides.
+   */
+  get accountDeletion(): boolean {
+    return buildFlagEnabled('accountDeletion');
   },
   /** Opt-in product analytics: consent sheet, Settings switch, PostHog. Its own switch, off in every profile. */
   get analytics(): boolean {

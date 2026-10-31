@@ -37,6 +37,9 @@ export default async function globalSetup() {
     build(ON_DIST, {
       EXPO_PUBLIC_WEB_PREVIEW: '1',
       EXPO_PUBLIC_SERVER_FEATURES: 'on',
+      // The Delete account row is a build flag on top of server features (lib/capabilities.ts, founder 30 Oct 2026): the two
+      // alpha EAS profiles leave it unset (row hidden), but the flows that open Delete account need it on in this build.
+      EXPO_PUBLIC_ACCOUNT_DELETION: 'on',
       EXPO_PUBLIC_SUPABASE_URL: MOCK_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'e2e-web-publishable-key',
     });
