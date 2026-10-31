@@ -11,8 +11,10 @@
 #   bash scripts/release/apply-branch-settings.sh --undo     # puts everything back from the snapshot
 #
 # Order and reasons: docs/agents/cto/RULINGS.md CR-6 to CR-15. It stops at the first failure.
-# What it does NOT do: approvals or environment reviewers (they wait for a second GitHub account),
-# labels (CR-15), or deleting branches (CR-14, which a session runs after this).
+# What it does NOT do: approvals or environment reviewers (they wait until PR authors are not your
+# account, CR-20; a second personal account is withdrawn, CR-19), labels (CR-15), or deleting
+# branches (CR-14: you run scripts/release/cleanup-branches.sh after this, because the proxy
+# refuses tag pushes from sessions). Archive and delete release/ios-v1.0 before --apply (CR-14).
 set -euo pipefail
 REPO=thesaurabhpareek/earlyletters
 R=repos/$REPO

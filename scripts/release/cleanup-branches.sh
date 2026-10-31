@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # CR-14 branch cleanup (docs/agents/cto/RULINGS.md). Archive-tag then delete the branches in a list, fail closed.
+# Run by the founder from his own computer: the agent proxy refuses tag pushes from Claude sessions.
+# Works with macOS's default bash 3.2 (empty lists are expanded with the ${a[@]+...} form).
 # Usage (from a clone of thesaurabhpareek/earlyletters):
 #   bash scripts/release/cleanup-branches.sh scripts/release/branch-cleanup/pass1-2026-10-30.tsv           # dry run
 #   bash scripts/release/cleanup-branches.sh scripts/release/branch-cleanup/pass1-2026-10-30.tsv --apply   # tags, verifies, deletes
@@ -10,6 +12,8 @@ set -euo pipefail
 LIST=$1; APPLY=${2:-}
 REPO=thesaurabhpareek/earlyletters
 git remote get-url origin | grep -q "thesaurabhpareek/earlyletters" || { echo "origin is not $REPO"; exit 1; }
+# The ruled shas must exist locally before tags can be made, so start from a fresh fetch.
+git fetch origin --prune --quiet
 W=${WORK:-$(mktemp -d)}
 LOG=$W/cleanup-$(date -u +%Y%m%dT%H%M%SZ).log
 OPEN=$(mktemp)
@@ -27,7 +31,7 @@ while IFS=$'\t' read -r b sha pr; do
   ok+=("$b|$sha|$pr")
 done < "$LIST"
 echo "candidates: ${#ok[@]}  kept: $skipped" | tee -a "$LOG"
-[[ "$APPLY" == "--apply" ]] || { printf '%s\n' "${ok[@]}" | sed 's/^/WOULD archive+delete /'; exit 0; }
+[[ "$APPLY" == "--apply" ]] || { printf '%s\n' ${ok[@]+"${ok[@]}"} | sed 's/^/WOULD archive+delete /'; exit 0; }
 
 # 0. CR-14 runs only after CR-11's "archive tags are kept" ruleset is active on refs/tags/archive/**/*
 gh api "repos/$REPO/rulesets" --jq '.[]|select(.name=="archive tags are kept" and .enforcement=="active")|.id' | grep -q . \
@@ -36,7 +40,7 @@ gh api "repos/$REPO/rulesets" --jq '.[]|select(.name=="archive tags are kept" an
 # 1. annotated archive tags, pushed in batches of 50 (tag pushes trigger no workflow: only db-v* is a tag trigger)
 refs=()
 git ls-remote --tags origin > $W/tags-before.txt
-for e in "${ok[@]}"; do IFS='|' read -r b sha pr <<<"$e"
+for e in ${ok[@]+"${ok[@]}"}; do IFS='|' read -r b sha pr <<<"$e"
   # re-runnable: an archive tag already on the remote at the same commit is kept as it is
   have=$(awk -v r="refs/tags/archive/$b^{}" '$2==r{print $1}' $W/tags-before.txt)
   if [[ "$have" == "$sha" ]]; then continue; fi
@@ -48,7 +52,7 @@ for ((i=0; i<${#refs[@]}; i+=50)); do git push origin "${refs[@]:i:50}"; done
 # 2. verify every tag on the remote peels to the branch sha before any deletion
 git ls-remote --tags origin > $W/live-tags.txt
 del=()
-for e in "${ok[@]}"; do IFS='|' read -r b sha pr <<<"$e"
+for e in ${ok[@]+"${ok[@]}"}; do IFS='|' read -r b sha pr <<<"$e"
   peeled=$(awk -v r="refs/tags/archive/$b^{}" '$2==r{print $1}' $W/live-tags.txt)
   if [[ "$peeled" == "$sha" ]]; then del+=("$b|$sha"); else echo "KEEP tag-unverified $b" | tee -a "$LOG"; fi
 done
@@ -56,15 +60,15 @@ done
 # 3. re-read open PRs (the tag pushes widened the window), then delete with a lease:
 #    a branch that moved since the check is refused, not deleted
 for p in 1 2 3; do gh api "repos/$REPO/pulls?state=open&per_page=100&page=$p" --jq '.[]|.head.ref, .base.ref'; done | sort -u > "$OPEN"
-keep=(); for e in "${del[@]}"; do b=${e%%|*}; if grep -qxF "$b" "$OPEN"; then echo "KEEP open-pr-now $b" | tee -a "$LOG"; else keep+=("$e"); fi; done
-del=("${keep[@]}")
+keep=(); for e in ${del[@]+"${del[@]}"}; do b=${e%%|*}; if grep -qxF "$b" "$OPEN"; then echo "KEEP open-pr-now $b" | tee -a "$LOG"; else keep+=("$e"); fi; done
+del=(${keep[@]+"${keep[@]}"})
 for ((i=0; i<${#del[@]}; i+=50)); do
   leases=(); specs=()
   for e in "${del[@]:i:50}"; do IFS='|' read -r b sha <<<"$e"; leases+=("--force-with-lease=refs/heads/$b:$sha"); specs+=(":refs/heads/$b"); done
   git push "${leases[@]}" origin "${specs[@]}" 2>&1 | tee -a "$LOG" || true
 done
 git ls-remote --heads origin > $W/live-heads-after.txt
-for e in "${del[@]}"; do b=${e%%|*}
+for e in ${del[@]+"${del[@]}"}; do b=${e%%|*}
   if awk -v r="refs/heads/$b" '$2==r{f=1} END{exit !f}' $W/live-heads-after.txt; then echo "STILL-PRESENT $b" | tee -a "$LOG"; else echo "DELETED $b (tag archive/$b)" >> "$LOG"; fi
 done
 echo "Done. Log: $LOG."
