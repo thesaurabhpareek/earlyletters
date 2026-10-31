@@ -97,3 +97,31 @@ test('the fence protects its own config, checker and workflow', () => {
     assert.equal(protectedPaths(config, [{ filename: f }]).length, 1, f);
   }
 });
+
+test('a migration is caught by what it changes, whatever its name', () => {
+  const sneaky = { filename: 'supabase/migrations/20261201000000_misc.sql', patch: '+update ops.restricted_jurisdictions set status = \'allow\';' };
+  assert.deepEqual(protectedPaths(config, [sneaky]), [sneaky.filename]);
+  const fine = { filename: 'supabase/migrations/20261201000000_misc.sql', patch: '+alter table public.entries add column x int;' };
+  assert.equal(pr([fine]).pass, true);
+});
+
+test('a migration whose diff GitHub omitted fails closed', () => {
+  assert.equal(pr([{ filename: 'supabase/migrations/20261201000000_big.sql', patch: null }]).pass, false);
+});
+
+test('CCO review tier: any agent, but the CCO must approve the head', () => {
+  const gate = ['apps/mobile/src/components/gate/age-gate-screen.tsx'];
+  assert.equal(pr(gate, { labels: ['agent:mobile'] }).pass, false);
+  assert.equal(pr(gate, { labels: ['agent:mobile'], comments: [approval(SHA, OWNER, 'CCO')] }).pass, true);
+  assert.equal(pr(['apps/mobile/src/lib/age-gate.ts'], { comments: [approval(OLD, OWNER, 'CCO')] }).pass, false);
+});
+
+test('policy_acceptances SQL needs the CCO; jurisdiction SQL needs the full fence', () => {
+  const pa = { filename: 'supabase/migrations/20261201000000_terms_v3.sql', patch: '+insert into policy_acceptances values (1);' };
+  assert.equal(pr([pa], { comments: [approval(SHA, OWNER, 'CCO')] }).pass, true);
+  assert.equal(pr([pa]).pass, false);
+});
+
+test('scripts/compliance and docs/compliance are protected until the move lands', () => {
+  for (const f of ['scripts/compliance/load-geo-ip.mjs', 'docs/compliance/WATCH.md']) assert.equal(protectedPaths(config, [{ filename: f }]).length, 1, f);
+});

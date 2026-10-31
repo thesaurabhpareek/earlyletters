@@ -284,3 +284,33 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Nothing is applied by this ruling.
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
+
+### CR-23 Compliance code is fenced, and the Chief Compliance Officer co-signs (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked that compliance code live in its own folder, that nobody else can touch or break it, that only assigned engineer agents work on it through the harness with my approval, and that decisions be aligned with a chief compliance officer.
+- Tier and type: T2 (`.github/**`, a new required-check candidate); complicated.
+- Options considered:
+  - (a) A folder plus a line in CODEOWNERS. It enforces nothing while every session is his account (CR-20).
+  - (b) Rules in prompts and charters only. A wish, not a control (principle 1).
+  - (c) A CI check that reads its rules from the base commit and fails a PR touching compliance paths unless the right label and head-bound approvals are on it.
+  - (d) A guard inside the harness dispatcher. It covers agent runs only, not interactive sessions, and the harness is frozen until 9 Nov (CR-21).
+- Ruling: (c), plus the prose rule in OPERATING_MODEL section 8 and CODEOWNERS for the human owner.
+  - `compliance/` holds the fence (`FENCE.json`, `fence/`) and, after #424, the scripts.
+  - Code that tools need elsewhere (migrations, DB tests, skills, the workflow) is protected by name and, for `supabase/`, by what its diff mentions.
+  - Two tiers. Protected: assigned agents (`regulatory-affairs`, `compliance-engineer`, `security-architect`, `data-architect`) plus CCO and Karma approvals on the head. CCO review: the age gate and consent SQL, any owning agent, CCO approval on the head.
+  - The CCO is the `regulatory-affairs` agent. It is an AI role, not counsel, and legal judgments still go to counsel.
+- Why: a check that reads its rules from the base cannot be loosened by the PR it judges. Approvals bound to the head SHA go stale on every push. The CCO tier came from the CCO's own review, so `mobile` keeps ownership of the age gate.
+- Debate (CCO alignment review, 31 Oct): concurred with changes, all accepted.
+  - The bootstrap path now runs only on a 404, and any other API error fails.
+  - `scripts/compliance/` and `docs/compliance/` are protected.
+  - Migrations are caught by content markers, and a migration with no diff from GitHub fails closed.
+  - The workflow header was fixed.
+  - The CCO-review tier was added, and two checklist items: a test for each door path, and DB-IP attribution.
+  - The CCO declined to fence `docs/legal/**`, which `legal` owns.
+- Limits, said plainly:
+  - Advisory until `compliance-fence` is a required check. `develop` has no protection today.
+  - The label and approvals prove the procedure ran, not who ran it (CR-20).
+  - The founder merges the fence PR itself by hand.
+- Door: two-way.
+- Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
+- Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
+- Founder decisions: make `compliance-fence` a required check on `develop` and `main`. Merge this PR by hand. Karma

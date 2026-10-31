@@ -1,6 +1,6 @@
 {
-  "$comment": "The compliance fence (CTO ruling CR-23). A pull request that changes any protected path passes the `compliance-fence` check only if it carries an `agent:<handle>` label for one of the assigned agents AND two approval comments bound to its current head commit: the Chief Compliance Officer (`regulatory-affairs`) for compliance, then Karma (CTO) for engineering. The check reads this file from the base branch, never from the pull request, so a PR cannot loosen its own fence. Changing this file is itself fenced. Each approval is one line on its own, e.g. `## CCO approval at <40-hex head sha>: APPROVED (CR-<n>)` and `## Karma approval at <40-hex head sha>: APPROVED (CR-<n>)`. Procedure: compliance/README.md.",
-  "version": 1,
+  "$comment": "The compliance fence (CTO ruling CR-23, CCO-aligned). Two tiers. `protected`: only the assigned agents may change these, and the PR needs the `agent:<handle>` label of one of them plus a CCO approval and a Karma approval on its current head commit. `cco_review`: any agent may change these (for example `mobile` owns the age gate), but the PR needs a CCO approval on its head. A path is also caught when its diff mentions a marker in `content_markers` (so a migration cannot dodge the fence by its file name); a matching file whose diff GitHub does not return is treated as caught. The check reads this file from the base branch, never from the pull request, and changing it is itself fenced. Approval lines, each alone on a line: `## CCO approval at <40-hex head sha>: APPROVED (CR-<n>)`, `## Karma approval at <40-hex head sha>: APPROVED (CR-<n>)`. Procedure: compliance/README.md.",
+  "version": 2,
   "assigned_agents": ["regulatory-affairs", "compliance-engineer", "security-architect", "data-architect"],
   "approvals": {
     "cco": "^## CCO approval at ([0-9a-f]{40}): APPROVED \\(CR-\\d+\\)\\s*$",
@@ -8,11 +8,24 @@
   },
   "protected": [
     "compliance/**",
+    "scripts/compliance/**",
+    "docs/compliance/**",
     "supabase/migrations/*_compliance_*.sql",
     "supabase/tests/compliance_*.test.mjs",
     ".claude/skills/regulatory-compliance/**",
     ".claude/skills/infosec/**",
     ".claude/agents/regulatory-affairs.md",
     ".github/workflows/compliance-fence.yml"
-  ]
+  ],
+  "cco_review": [
+    "apps/mobile/src/components/gate/**",
+    "apps/mobile/src/lib/age-gate*",
+    "apps/mobile/src/**/*age-signal*",
+    "apps/mobile/src/**/*declared-age*"
+  ],
+  "content_markers": {
+    "paths": ["supabase/migrations/**", "supabase/tests/**", "supabase/functions/**"],
+    "protected": ["restricted_jurisdictions", "hook_before_user_created", "compliance_check_counts", "geo_ip_ranges", "geo_ip_meta", "regulatory_watch"],
+    "cco_review": ["policy_acceptances", "record_policy_act"]
+  }
 }

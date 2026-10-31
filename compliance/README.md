@@ -1,21 +1,29 @@
 # compliance/
 
-Code and data that keep Early Letters inside the law at the door: who may create an account, from where, and what we watch for when rules change. It is fenced (CTO ruling CR-23). Only assigned agents may change it, and only when the Chief Compliance Officer (`regulatory-affairs`) and Karma (CTO) have both approved the exact commit.
+Code and data that keep Early Letters inside the law at the door: who may create an account, from where, and what we watch for when rules change. It is fenced (CTO ruling CR-23, aligned with the Chief Compliance Officer). Only assigned agents may change it, and only when the Chief Compliance Officer (`regulatory-affairs`) and Karma (CTO) have both approved the exact commit.
 
 ## What lives here
 | Path | What |
 |---|---|
-| `FENCE.json` | The fence: protected paths, assigned agents, the approval format. |
+| `FENCE.json` | The fence: the two tiers of paths, content markers, assigned agents, the approval formats. |
 | `fence/` | The checker the `compliance-fence` CI check runs, and its tests. |
 | `scripts/` | The regulatory watch (Federal Register), the geo data loader, their tests and `watch-topics.json` (moving here from `scripts/compliance/` in PR #424). |
 
-Some compliance code cannot live in this folder, because its tools look elsewhere. `FENCE.json` protects it by name:
-- `supabase/migrations/*_compliance_*.sql`: the Supabase CLI only reads `supabase/migrations/`. Every new compliance migration must have `_compliance_` in its file name.
+Some compliance code cannot live in this folder, because its tools look elsewhere. `FENCE.json` protects it by name, and also catches any file under `supabase/` whose diff mentions a compliance table or function (`content_markers`), so a migration cannot dodge the fence by its name:
+- `supabase/migrations/*_compliance_*.sql`: the Supabase CLI only reads `supabase/migrations/`. Name new compliance migrations `*_compliance_*`; the content markers catch the rest.
 - `supabase/tests/compliance_*.test.mjs`: the database harness runs `supabase/tests/`.
 - `.claude/skills/regulatory-compliance/`, `.claude/skills/infosec/` and `.claude/agents/regulatory-affairs.md`: Claude Code loads skills and agents from `.claude/`.
 - `.github/workflows/compliance-fence.yml`: GitHub runs workflows from `.github/`.
 
-## Who may change it
+## Two tiers
+| Tier | Paths | Who may change them | Needs on the head commit |
+|---|---|---|---|
+| Protected | `compliance/`, `scripts/compliance/`, `docs/compliance/`, compliance migrations and tests, the compliance and infosec skills, the CCO charter, this check's workflow; any `supabase/` file whose diff touches a compliance table or the auth hook | Assigned agents only | `agent:<assigned handle>` label, CCO approval, Karma approval |
+| CCO review | The age gate (`apps/mobile/src/components/gate/`, `apps/mobile/src/lib/age-gate*`), store age-signal code, any `supabase/` file whose diff touches `policy_acceptances` or `record_policy_act` | Any agent (`mobile` owns the age gate) | CCO approval |
+
+`docs/legal/**` is not fenced here: `legal` owns it, and Terms or Privacy changes already need the founder. The CCO reviews register changes as part of the door review.
+
+## Who may change protected paths
 Assigned agents (`FENCE.json`): `regulatory-affairs` (owner), `compliance-engineer`, `security-architect`, `data-architect`. A PR that touches a protected path needs:
 1. The label `agent:<handle>` for one of them. An interactive session working as one of these agents labels its PR the same way.
 2. Two comments from a trusted login, each with one line on its own naming the PR's current head commit:
@@ -31,6 +39,8 @@ The CCO is the `regulatory-affairs` agent (skill `regulatory-compliance`). It is
 - No new collection of personal data without a DATA_CLASSIFICATION row and a data-minimisation reason.
 - Every legal or platform fact the change relies on is in `references/checked-facts.md` with a source and date.
 - No user-facing promise changes without the founder (Terms, Privacy Policy, store listing, in-app copy).
+- No new door path (a sign-up method, an invite or deep link, the web contribution page) without its row in the checks table and a test.
+- DB-IP attribution: any page that shows or uses the geo result (the sign-up refusal screen, the web contribution page, the Licences screen) links to https://db-ip.com, as the CC BY 4.0 licence requires.
 
 ## Karma's checklist (Karma approval)
 Karma posts the approval only after the CCO has approved the same head and all of these hold. Then Karma adds the label `karma:approved`, which re-runs the check.
@@ -43,4 +53,5 @@ Karma posts the approval only after the CCO has approved the same head and all o
 ## Limits (true today)
 - **Advisory until required.** `develop` has no branch protection yet (checked 31 Oct 2026). The check blocks merges only once `compliance-fence` is a required status check. That is a founder step, alongside `scripts/release/apply-branch-settings.sh`.
 - **Not identity.** Every Claude session posts as the founder's account (CR-20). The label and the approvals prove that the procedure ran, not who ran it. The fix is the separate automation identity in CR-20 (after 9 Nov).
-- **First merge is by hand.** Until this fence is on `develop`, the check fails closed on any compliance path. The founder merges the fence PR itself, and PR #424 after it.
+- **Fails closed.** Any API error fails the check. The bootstrap path (a fixed path pattern) runs only when the base commit truly has no fence (HTTP 404), never on another error.
+- **First merge is by hand.** Until this fence is on `develop`, the bootstrap fails closed on any compliance path. The founder merges the fence PR itself, and PR #424 after it.

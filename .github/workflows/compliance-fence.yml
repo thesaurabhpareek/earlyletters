@@ -1,6 +1,7 @@
-# Compliance fence (CTO ruling CR-23; compliance/README.md). Fails a pull request that changes a protected
-# compliance path (compliance/FENCE.json) unless it carries an `agent:<handle>` label for an assigned agent
-# and a Karma approval comment bound to its current head commit.
+# Compliance fence (CTO ruling CR-23, aligned with the Chief Compliance Officer; compliance/README.md).
+# Protected paths (compliance/FENCE.json) need an `agent:<handle>` label for an assigned agent plus a CCO
+# approval and a Karma approval bound to the current head commit. CCO-review paths (the age gate, consent
+# SQL) need the CCO approval on the head. Migrations are also caught by what their diff mentions.
 #
 # Runs on pull_request_target so the copy of this workflow on the base branch is used. It never checks out
 # or runs pull request code: the changed files, labels and comments come from the API, and the rules
@@ -49,18 +50,28 @@ jobs:
           base_sha="$(jq -r .base.sha <<<"$pr_json")"
           head_sha="$(jq -r .head.sha <<<"$pr_json")"
           dir="$RUNNER_TEMP/fence"; mkdir -p "$dir"
-          fetch() { gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/$1?ref=$base_sha" > "$dir/$2"; }
-          if ! fetch compliance/FENCE.json FENCE.json || ! fetch compliance/fence/fence.mjs fence.mjs; then
-            # Bootstrap: the base has no fence yet (this workflow's own first PR). Fail closed on anything under
-            # compliance/ or the protected names, pass otherwise.
+          # Fetch a file from the base commit. Exit 0 found, 4 not found (404), 1 any other error.
+          fetch() {
+            local out
+            if out="$(gh api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/$1?ref=$base_sha" 2>"$dir/err")"; then
+              printf '%s' "$out" > "$dir/$2"; return 0
+            fi
+            if grep -q 'HTTP 404' "$dir/err"; then return 4; fi
+            return 1
+          }
+          set +e; fetch compliance/FENCE.json FENCE.json; c1=$?; fetch compliance/fence/fence.mjs fence.mjs; c2=$?; set -e
+          if [ "$c1" = 1 ] || [ "$c2" = 1 ]; then fail "could not read the fence from the base commit; failing closed"; fi
+          if [ "$c1" = 4 ] || [ "$c2" = 4 ]; then
+            # Bootstrap only when the base truly has no fence (404): this workflow's own first PR. Fail closed on
+            # any compliance-looking path, pass otherwise.
             gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename, (.[].previous_filename // empty)' > "$dir/files.txt" \
               || fail "could not list files; failing closed"
-            if grep -Eq '^(compliance/|supabase/migrations/[^/]*_compliance_|supabase/tests/compliance_|\.claude/skills/(regulatory-compliance|infosec)/|\.claude/agents/regulatory-affairs\.md|\.github/workflows/compliance-fence\.yml)' "$dir/files.txt"; then
+            if grep -Eq '^(compliance/|scripts/compliance/|docs/compliance/|supabase/migrations/[^/]*_compliance_|supabase/tests/compliance_|\.claude/skills/(regulatory-compliance|infosec)/|\.claude/agents/regulatory-affairs\.md|\.github/workflows/compliance-fence\.yml|apps/mobile/src/components/gate/|apps/mobile/src/lib/age-gate)' "$dir/files.txt"; then
               fail "the base branch has no compliance fence yet; a PR touching compliance paths needs the founder to merge it by hand"
             fi
             echo "no compliance fence on the base and no compliance path changed"; exit 0
           fi
-          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename}]' | jq -s 'add')" \
+          files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '[.[] | {filename, previous_filename, patch}]' | jq -s 'add')" \
             || fail "could not list files; failing closed"
           labels="$(jq '[.labels[].name]' <<<"$pr_json")"
           comments="$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '[.[] | {body, login: .user.login}]' | jq -s 'add // []')" \
