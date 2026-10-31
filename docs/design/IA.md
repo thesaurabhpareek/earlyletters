@@ -1,6 +1,6 @@
 # Information architecture
 
-The map of every place in the iOS app and what each is called. Visible names are the exact words a parent sees; the glossary for those words is `packages/content/BRAND.md`. Read on `develop` at fa37032 (31 Oct 2026). Naming findings and rulings: [NOMENCLATURE_AUDIT_2026-10-31.md](NOMENCLATURE_AUDIT_2026-10-31.md).
+The map of every place in the iOS app and what each is called. Visible names are the exact words a parent sees; the glossary for those words is `packages/content/BRAND.md`. Read on `develop` at e7b53193 (31 Oct 2026). Where a ruling or decision will change a place, the table says what you see today and what changes, so the map never presents a target as fact. Naming findings and rulings: [NOMENCLATURE_AUDIT_2026-10-31.md](NOMENCLATURE_AUDIT_2026-10-31.md).
 
 ## Builds and switches
 
@@ -8,19 +8,21 @@ Three builds show different trees. The switches live in `apps/mobile/src/lib/cap
 
 | Build | Profile | Server features | Languages | Family surfaces |
 |---|---|---|---|---|
-| Alpha build 1 (TestFlight) | `testflight` | off | all that passed their gate | "Coming soon" screens today; hidden once the D-126 change lands after the go/no-go |
+| Alpha build 1 (TestFlight) | `testflight` | off | all that passed their gate | Today: "Coming soon" screens. After the D-126 change: hidden |
 | Alpha build 2 | `preview` | on | all that passed their gate | the full co-parent screens |
-| First store build (1.0) | `production` | off | English only (D-121, CR-16) | hidden (D-126) |
+| First store build (1.0) | `production` | off | English only (D-121, CR-16) | Today: "Coming soon" screens. After the D-126 change: hidden. If that change is not ready, the screens stay and the Notes for Review describe them (D-126 fallback) |
+
+Backup of recordings (`EXPO_PUBLIC_BACKUP`) is off in every profile, so no build shows "Back up my recordings"; the row reads "Kept on this phone" everywhere.
 
 Every tree below is the first store build unless marked.
 
 ## Tabs
 
-| Tab | Route | What it is for | Heading |
-|---|---|---|---|
-| Tonight | `/` | Start today's letter | A greeting, then the prompt |
-| Book | `/book` | Read and hear what is kept | "{child}'s book" |
-| Family | `/family` | Build 2 and later only (D-126). Build 2: "Who writes to {child}" | |
+| Tab | Route | What it is for | Heading | Shown in |
+|---|---|---|---|---|
+| Tonight | `/` | Start today's letter | A greeting, then the prompt | every build |
+| Book | `/book` | Read and hear what is kept | "{child}'s book" | every build |
+| Family | `/family` | Build 2: "Who writes to {child}" | | Today: every build (`(tabs)/_layout.tsx:71`), "coming soon" with servers off. After the D-126 change: build 2 and later |
 
 ## Tonight
 
@@ -67,21 +69,23 @@ Reached from the gear on Book. Section titles are as shown; a dash means no titl
 | Children | Add a child | the first-run form |
 | Children | Hidden books (only when one is hidden) | "Show this book again" |
 | Writing | Spoken language | English only in the store build |
+| Writing | Word for word (after FP-1, ruling R-A) | a checkmark list "New spoken letters start": "With small fixes" or "Exactly as said". Today this is a switch under Recordings |
 | Writing | Reminders | how often, which evenings, time, month and birthday messages, names in notifications |
 | Writing | Appearance | theme; reading size |
 | Your data | Privacy | what we never do; the policy and terms |
-| Your data | Export your book | export everything |
+| Your data | Export your book | export everything (page titled "Export" today; "Export your book" after FP-1) |
 | Your data | Recently deleted | 30 days, Restore, Erase now |
-| Your data | Recordings | kept on this phone; recordings without a letter; per-language speech downloads; "How transcription works" with the Word for word switch (to become section "Word for word" with "Show spoken letters", ruling R-A) |
+| Your data | Recordings | kept on this phone; recordings without a letter; per-language speech downloads ("Writing down your words"). Today it also holds "How transcription works" with the Word for word switch, which moves to Writing in FP-1 |
 | Your data | Storage | downloads and space used |
 | Help and legal | Help, If you are struggling, Terms of Service, Privacy Policy, Licenses | |
 | About | Version | "Early version" note |
 
-Build 2 adds Account (sign-in methods, devices, sign out), "Back up my recordings", and Delete account when its switch is on (D-129).
+Build 2 adds Account (sign-in methods, devices, sign out) and Delete account when its switch is on (D-129). It does not add backup (see Builds).
 
 ## Rules for adding a place
 
-- A new tab needs a decision entry; the store build has two.
-- A new screen gets a route, a visible name from `packages/content`, a row in this file, and an analytics route name (`packages/analytics/src/catalog.ts`) before analytics turn on.
+- A new tab needs a decision entry. The store build is meant to have two, Tonight and Book, once the D-126 change lands.
+- A new screen gets a route, a visible name from `packages/content`, a row in this file, and an analytics route name (`packages/analytics/src/catalog.ts`) before analytics turn on, unless a view of it could signal a mental state or a loss ("If you are struggling", Hidden books), which are never listed (R-G).
+- Route names and setting keys are contracts: renaming one updates `isCaptureRoute` and `resilience.test.ts` in the same PR (R-L).
 - A Settings row belongs to the section that matches what it changes, not the screen that happens to own the code.
 - Anything behind a capability switch says so in the table above.
