@@ -6,8 +6,22 @@
   place-items: center;
   z-index: 2;
 }
+/*
+ * From 900px the words sit in the left column beside the phone. The column is whatever is left between the page edge
+ * and the phone's actual width (--phone-w, set by TalkStage), and the headline is sized to the column (container
+ * units), so it never runs under the phone however wide or short the window. It breaks as two even lines where it
+ * fits ("Talk like you / normally do.") and never leaves a single word on a line of its own.
+ */
 .copy {
-  width: min(540px, calc(50vw - 160px - max(var(--gutter), 50vw - 640px) - 48px));
+  width: min(540px, calc(50vw - var(--phone-w, 320px) / 2 - max(var(--gutter), 50vw - 640px) - 40px));
+  container-type: inline-size;
+}
+.copy h2 {
+  font-size: clamp(34px, 12.5cqw, 76px);
+  text-wrap: balance;
+}
+.copy p {
+  max-width: 100%;
 }
 .captions {
   position: absolute;
@@ -59,10 +73,20 @@
   padding: 0 var(--gutter);
   pointer-events: none;
 }
-@media (max-width: 1099px) {
+@media (max-width: 899px) {
   .copy {
     width: auto;
   }
+  .copy h2 {
+    font-size: clamp(40px, 7.2vw, 112px);
+  }
+}
+@media (max-width: 360px), (max-height: 600px) {
+  .copy h2 {
+    font-size: clamp(30px, 9.4vw, 38px);
+  }
+}
+@media (max-width: 1099px) {
   .captions {
     left: var(--gutter);
     right: var(--gutter);

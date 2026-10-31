@@ -75,7 +75,7 @@ function TalkStage() {
   const cleanup = useTransform(p, [0.935, 0.95], [0, 1]);
 
   return (
-    <div className={stage.frame} data-resting={resting || undefined}>
+    <div className={stage.frame} data-resting={resting || undefined} style={{ ['--phone-w' as string]: `${width}px` }}>
       <motion.div className={stage.layer} style={{ opacity: spillOut }}>
         <LampLight intensity={spill} x="50%" y="52%" size={narrow ? '150vmax' : '95vmax'} warmth="recording" />
       </motion.div>

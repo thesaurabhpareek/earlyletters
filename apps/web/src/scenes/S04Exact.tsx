@@ -57,8 +57,18 @@ function ExactStage() {
       <PaperTexture />
       <div className={styles.letterStage}>
         <motion.div style={{ y: letterY, scale: letterScale, transformOrigin: origin, position: 'relative' }}>
-          <PaperLetter marks={marks} fixes={fixes} />
-          <motion.p className={styles.note} style={{ opacity: note }}>
+          {/* The box is as tall as the letter as heard, whatever the fixes do inside it. A fix closes up a line, and a box that shrank re-centred and shifted everything with it (and the note under it) once per fix: layout shift. */}
+          <div className={styles.letterBox} data-s04-box>
+            {!resting && (
+              <div className={styles.ghost} aria-hidden>
+                <PaperLetter />
+              </div>
+            )}
+            <div className={styles.live}>
+              <PaperLetter marks={marks} fixes={fixes} />
+            </div>
+          </div>
+          <motion.p className={styles.note} data-s04-note style={{ opacity: note }}>
             <span className={styles.count}>{copy.appChanges}.</span> {copy.appTrust}
           </motion.p>
         </motion.div>
