@@ -100,7 +100,9 @@ case "$MODE" in
     read -r -p "Is the repository variable AGENTS_ENABLED unset or not 'true' (Settings, Secrets and variables, Actions, Variables)? Type yes: " ok2
     [[ "$ok2" == "yes" ]] || { say "Stopped. Nothing changed. Leave AGENTS_ENABLED off (CR-5) and run again."; exit 1; }
     # CR-11's "release branches keep their history" ruleset makes every release/* branch undeletable once it exists.
-    rel=$(gh api "$R/git/matching-refs/heads/release" --jq '.[].ref|select(startswith("refs/heads/release/"))' 2>/dev/null || true)
+    # Fail closed: if GitHub can't be read, stop rather than make a branch undeletable by accident.
+    rel=$(gh api "$R/git/matching-refs/heads/release" --jq '.[].ref|select(startswith("refs/heads/release/"))') \
+      || { say "Stopped: couldn't read the release branches from GitHub. Nothing changed. Try again."; exit 1; }
     if [[ -n "$rel" ]]; then
       say "These release branches exist and can't be deleted after this run:"; say "$rel"
       say "You chose on 30 Oct to archive and delete release/ios-v1.0 first (docs/release/FOUNDER_QUEUE.md row 7 has the commands)."
