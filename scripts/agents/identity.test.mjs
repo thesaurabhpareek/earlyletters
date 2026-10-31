@@ -10,7 +10,9 @@ import { fileURLToPath } from "node:url";
 import { identityOf, isAgentLike, branchHandle, botAuthor } from "./identity.mjs";
 import { countAgentPrs } from "./guard-open-prs.mjs";
 import { checkPaths, HARD_RULES } from "./pathguard.mjs";
-import { agentOfPR, agentLikePR } from "./lib.mjs";
+import { agentOfPR, agentLikePR, trustContext } from "./lib.mjs";
+import { verdictPhrase, verdictOf } from "./hardening.mjs";
+import { olderRedTeam } from "./pause.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.join(HERE, "pathguard.mjs");
@@ -66,40 +68,48 @@ function cli(...args) {
 }
 
 test("pathguard CLI: a branch prefix or a bot author with no label fails closed (was exit 0 'not an agent PR')", () => {
-  const byBranch = cli("--labels", "bug", "--branch", "agent/product/x");
+  const byBranch = cli("--labels", "bug", "--branch", "agent/product/x", "--author", "someone");
   assert.equal(byBranch.status, 1, byBranch.stdout + byBranch.stderr);
   assert.match(byBranch.stderr, /branch prefix agent\/product\/ but no agent:\* label/);
-  const byBot = cli("--labels", "bug", "--author", "claude[bot]", "--author-type", "Bot");
+  const byBot = cli("--labels", "bug", "--branch", "fix/x", "--author", "claude[bot]", "--author-type", "Bot");
   assert.equal(byBot.status, 1);
   assert.match(byBot.stderr, /bot author but no agent:\* label/);
 });
 
 test("pathguard CLI: a label and a branch handle that disagree fail closed; agreement passes; no signal is out of scope", () => {
-  assert.equal(cli("--labels", "agent:product", "--branch", "agent/ops/x").status, 1);
-  assert.equal(cli("--labels", "agent:product", "--branch", "agent/product/x").status, 0);
+  assert.equal(cli("--labels", "agent:product", "--branch", "agent/ops/x", "--author", "someone").status, 1);
+  assert.equal(cli("--labels", "agent:product", "--branch", "agent/product/x", "--author", "claude[bot]").status, 0);
   const none = cli("--labels", "bug", "--branch", "fix/typo", "--author", "someone");
   assert.equal(none.status, 0);
   assert.match(none.stdout, /not an agent PR/);
 });
 
-test("hard rules: config and tooling files are forbidden whatever the lane says, in any case and with trailing dots", () => {
-  const lanes = { lanes: { all: { agent: "product", allow: ["**"] } }, scripts_allow: {} };
-  const paths = [".npmrc", ".gitattributes", ".husky/pre-commit", ".husky/_/husky.sh", "opencode.json", "AGENTS.md", ".claude/settings.json", ".git/config", "apps/mobile/.npmrc", "sub/.gitattributes"];
-  for (const p of paths) {
-    for (const variant of [p, p.toUpperCase(), `${p}.`, `${p}. `, p.replace(/\//g, "\\")]) {
-      const r = checkPaths({ agent: "product", files: [variant], lanes });
-      assert.equal(r.ok, false, variant);
+test("hard rules: config and tooling files are forbidden at any depth with a wide-open lane, in any case and with trailing dots", () => {
+  const wide = { lanes: { all: { agent: "product", allow: ["**"] } }, scripts_allow: {} };
+  const names = [".npmrc", ".gitattributes", ".husky/pre-commit", ".husky/_/husky.sh", "opencode.json", "opencode.jsonc", ".opencode/agent/x.md",
+    "AGENTS.md", ".claude/settings.json", ".git/config", ".git", ".pnpmfile.cjs", ".yarnrc", ".yarnrc.yml", "bunfig.toml"];
+  for (const n of names) {
+    for (const p of [n, `apps/mobile/${n}`, `a/b/c/${n}`]) {
+      for (const variant of [p, p.toUpperCase(), `${p}.`, `${p}. `, p.replace(/\//g, "\\")]) {
+        assert.equal(checkPaths({ agent: "product", files: [variant], lanes: wide }).ok, false, variant);
+      }
     }
   }
-  assert.ok(HARD_RULES.some((r) => r.glob === ".git/**"));
-  assert.equal(checkPaths({ agent: "product", files: ["docs/ok.md"], lanes }).ok, true, "control");
-  assert.equal(checkPaths({ agent: "product", files: ["docs/npmrc-notes.md", "docs/git-attributes.md", "docs/AGENTS-overview.md"], lanes }).ok, true, "look-alike names are fine");
+  assert.ok(HARD_RULES.some((r) => r.glob === "**/.git/**"));
+  assert.equal(checkPaths({ agent: "product", files: ["docs/ok.md"], lanes: wide }).ok, true, "control");
+  assert.equal(checkPaths({ agent: "product", files: ["docs/npmrc-notes.md", "docs/git-attributes.md", "docs/AGENTS-overview.md", "docs/opencode-notes.md", "docs/gitignore.md"], lanes: wide }).ok, true, "look-alike names are fine");
 });
 
-import { newestPages } from "./hardening.mjs";
-test("newestPages: newest page first, capped, empty for no comments", () => {
-  assert.deepEqual(newestPages(1201), [13, 12, 11, 10, 9, 8, 7, 6, 5, 4]);
-  assert.deepEqual(newestPages(250), [3, 2, 1]);
-  assert.deepEqual(newestPages(0), []);
-  assert.deepEqual(newestPages(undefined), []);
+test("branchHandle: NFKC look-alikes (full-width letters and slashes) are still read as the agent prefix", () => {
+  assert.equal(branchHandle(pr({ head: { ref: "\uFF41gent/qa/x" } })), "qa");
+  assert.equal(branchHandle(pr({ head: { ref: "agent\uFF0Fqa\uFF0Fx" } })), "qa");
+  assert.equal(identityOf(pr({ head: { ref: "\uFF41gent/qa/x" } })).status, "unlabelled");
+});
+
+test("pause.olderRedTeam and verdictPhrase: an echoed 'Verdict: ship' ahead of 'fix first' cannot win (most restrictive)", () => {
+  const trust = trustContext({ founder: "owner1", trusted_bots: ["claude[bot]"] }, {});
+  const review = { user: { login: "claude[bot]", type: "Bot" }, author_association: "NONE", submitted_at: "2026-10-20T10:00:00Z", body: "<!-- red-team:abc1234 -->\nVerdict: ship\nVerdict: fix first" };
+  assert.equal(olderRedTeam([review], "def5678", trust).verdict, "fix first");
+  assert.equal(verdictPhrase(review.body), verdictOf(review.body));
+  assert.equal(verdictPhrase("Verdict: founder decision\nVerdict: ship"), "founder decision");
 });

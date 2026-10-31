@@ -43,21 +43,13 @@ if (!journal) {
   const issues = ghAll(`/repos/${repo}/issues?state=open&labels=journal,agent:${handle}`, { allowFail: true });
   journal = String(issues[0]?.number ?? "");
 }
-// Newest pages first (H2): ghAll lists oldest first and stops at 1,000, so spam on the journal
-// issue could hide the founder's latest note. Stop once three trusted entries are in hand.
-function readJournal(num) {
-  const total = Number(gh(`/repos/${repo}/issues/${num}`, { allowFail: true })?.comments);
-  if (!Number.isFinite(total) || total <= 0) return ghAll(`/repos/${repo}/issues/${num}/comments`, { allowFail: true });
-  let out = [];
-  for (const page of newestPages(total)) {
-    const res = gh(`/repos/${repo}/issues/${num}/comments?per_page=100&page=${page}`, { allowFail: true });
-    if (!Array.isArray(res)) break;
-    out = [...res, ...out];
-    if (trustedJournalEntries(out, trust).length >= 3) break;
-  }
-  return out;
-}
-const comments = journal ? readJournal(journal) : [];
+// Both ends of the thread, failing closed (readJournal in hardening.mjs).
+const journalRead = journal ? readJournal({ gh, repo, num: journal }) : { comments: [], unreadable: false, total: 0, notRead: 0 };
+const comments = journalRead.comments;
+const journalNotes = [
+  journalRead.unreadable ? `**Journal unreadable:** ${journalRead.why}. Treat it as having no entries and no founder notes, do not guess, and say so in your journal.` : "",
+  journalRead.notRead ? `**${journalRead.notRead} of ${journalRead.total} journal comments were not read** (the middle of a long thread). A founder note could be among them. Ask the founder to lock the journal issue so only collaborators can comment.` : "",
+].filter(Boolean);
 const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
 const founderNotes = comments.filter((c) => isFounderComment(c, roster) && new Date(c.created_at) > lastEntryAt);
@@ -234,7 +226,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
-import { newestPages, trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
+import { readJournal, trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
@@ -276,6 +268,7 @@ const doc = [
   "",
   `Run: ${runUrl}. Run id: \`${runId}\`. Mode: **${mode}**. Written ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC.`,
   `Journal issue: #${journal || "missing"}. Repository: ${repo}. Base branch: \`${roster.base_branch}\`.`,
+  ...(journalNotes.length ? ["", ...journalNotes] : []),
   "",
   UNTRUSTED_TEXT_RULES,
   "",

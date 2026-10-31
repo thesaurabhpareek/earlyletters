@@ -586,7 +586,7 @@ test("e2e dispatch: a stranger's fake receipt does not change the spend line on 
 const JOURNAL = 7;
 function briefRoutes(w = {}) {
   const prs = w.prs ?? [];
-  const routes = [route(`${R}/issues/${JOURNAL}/comments`, w.journal ?? []), route(`${R}/issues/${JOURNAL}$`, { number: JOURNAL, comments: (w.journal ?? []).length })];
+  const routes = [route(`${R}/issues/${JOURNAL}/comments`, w.journal ?? []), ...(w.journalCountFails ? [] : [route(`${R}/issues/${JOURNAL}$`, { number: JOURNAL, comments: (w.journal ?? []).length })])];
   for (const p of prs) {
     routes.push(
       route(`${R}/pulls/${p.number}/reviews`, (w.reviews ?? {})[p.number] ?? []),
@@ -744,6 +744,42 @@ test("e2e brief: 1,200 spam comments on a journal issue do not hide the founder'
   assert.ok(!doc.includes("spam 5"), "stranger comments reach no section");
 });
 
+test("e2e brief: a founder note FIRST on the journal, followed by 1,500 stranger comments, is still read", () => {
+  const spam = Array.from({ length: 1500 }, (_, i) => comment(STRANGER, `spam ${i}`, "2026-10-21T00:00:00Z"));
+  const w = { journal: [comment(FOUNDER, "Founder note before the spam.", "2026-10-20T00:00:00Z"), ...spam] };
+  const doc = brief("mobile", "task", ["--task", "BL-900"], w);
+  assert.match(section(doc, "Founder instructions since your last run"), /Founder note before the spam/);
+  assert.match(doc, /600 of 1501 journal comments were not read/);
+  assert.match(doc, /lock the journal issue/i);
+});
+
+test("e2e brief: a founder note in the middle of a long thread is not read, and the brief says how many comments were not", () => {
+  const w = { journal: [...Array.from({ length: 500 }, (_, i) => comment(STRANGER, `a ${i}`)), comment(FOUNDER, "Middle note.", "2026-10-27T00:00:00Z"), ...Array.from({ length: 700 }, (_, i) => comment(STRANGER, `b ${i}`))] };
+  const doc = brief("mobile", "task", ["--task", "BL-900"], w);
+  assert.ok(!section(doc, "Founder instructions since your last run").includes("Middle note"));
+  assert.match(doc, /300 of 1201 journal comments were not read/);
+});
+
+test("e2e brief: when the comment count cannot be read the brief says the journal is unreadable and shows no entries or notes", () => {
+  const w = { journalCountFails: true, journal: [comment(FOUNDER, "Founder note that must not be guessed at.", "2026-10-27T00:00:00Z")] };
+  const doc = brief("mobile", "task", ["--task", "BL-900"], w);
+  assert.match(doc, /Journal unreadable/);
+  assert.ok(!doc.includes("must not be guessed"), "no oldest-first fallback");
+});
+
+test("e2e dispatch: unlabelled PRs on an agent/ branch or from a bot count against the open agent PR cap (dispatcher wiring)", () => {
+  const unlabelled = (n) => prObj(n, { head: { ref: `agent/qa/topic-${n}`, sha: String(n).repeat(40).slice(0, 40) } });
+  const plain = (n) => prObj(n);
+  const world = (mk) => ({ prs: Array.from({ length: 10 }, (_, i) => mk(20 + i)) });
+  const capped = dispatch(world(unlabelled));
+  assert.equal(forAgent(capped.assignments, "mobile")?.task, undefined, "no new task while the cap is full");
+  assert.match(capped.board, /team limit, 10 agent PRs open/);
+  const control = dispatch(world(plain));
+  assert.equal(forAgent(control.assignments, "mobile")?.task, "BL-900", "ten plain drive-by PRs do not use the cap");
+  const bots = dispatch({ prs: Array.from({ length: 10 }, (_, i) => prObj(40 + i, { ...BOT })) });
+  assert.equal(forAgent(bots.assignments, "mobile")?.task, undefined, "bot-authored PRs count too");
+});
+
 // =====================================================================
 // OpenCode lane (W3, 31 Oct 2026). The OpenCode runner gives the model a shell
 // (`bash: *` allow) and edit rights, so the brief is the only thing between an
@@ -866,16 +902,18 @@ test("opencode lane: the runner prompt is fixed text plus the agent handle; no G
 const globToRe = (g) => new RegExp("^" + g.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
 const denied = (cmd) => {
   const bash = opencodeConfig().permission.bash;
-  return Object.entries(bash).filter(([, v]) => v === "deny").some(([g]) => globToRe(g).test(cmd));
+  let action = "allow";
+  for (const [g, v] of Object.entries(bash)) if (globToRe(g).test(cmd)) action = v; // last match wins
+  return action === "deny";
 };
 
 test("opencode lane: control, the deny list blocks the pushes and merges it was written for", () => {
   for (const cmd of ["git push origin develop", "git push origin main", "git push --force origin x", "gh pr merge 5 --squash", "gh secret list"]) assert.equal(denied(cmd), true, cmd);
-  assert.equal(denied("git push origin feat/x"), false, "a normal branch push is allowed");
+  assert.equal(denied("git push origin agent/qa/x"), false, "an agent branch push is allowed (round 5: only agent/* branches)");
   assert.equal(opencodeConfig().share, "disabled");
 });
 
-test("opencode lane: a push to develop or main by refspec is denied like the plain form", { ...hole("H14: run-opencode.mjs deny list matches `git push origin develop*` as a prefix, so `git push origin HEAD:develop`, `HEAD:refs/heads/main` and `git push origin +HEAD:main` pass; branch protection is the only stop") }, () => {
+test("opencode lane: a push to develop or main by refspec is denied like the plain form", () => {
   for (const cmd of ["git push origin HEAD:develop", "git push origin HEAD:refs/heads/develop", "git push origin HEAD:main", "git push origin +HEAD:main", "git push origin feat/x:develop"]) assert.equal(denied(cmd), true, cmd);
 });
 

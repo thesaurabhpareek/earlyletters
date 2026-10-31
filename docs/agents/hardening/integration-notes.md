@@ -63,3 +63,30 @@ Not attempted here (`.github/**` is frozen and these need the two-job split). Re
 - `salvage.mjs` and `receipt.mjs` run from the model-editable working tree with write tokens. The model can edit them and then have its own code run with the token. They must run from a trusted checkout in a second job.
 - `OPENROUTER_API_KEY` and `GH_TOKEN` are readable by the model's shell (see the comment on the env allowlist in `run-opencode.mjs`). Fix: a job split where the model job holds no write token, and a proxy for the model key with its own budget.
 - `gh issue comment`, `gh pr comment`, `gh release`, `gh gist` are unrestricted by the deny list. A comment is an exfiltration channel and a release can publish. Needs token scope or lane control, not globs.
+
+## Round 5: Review C and QA Review A fixes
+
+| Item | Change | Test failed on old code? |
+|---|---|---|
+| 1. Journal (B) | `readJournal` in `hardening.mjs` reads the first 5 and the last 5 pages (the old 10-page cap), dedupes by comment id, and fails closed: an unreadable count or page gives `unreadable` and no comments, never an oldest-first guess. The brief prints "Journal unreadable" or "N of M journal comments were not read ... lock the journal issue". A note in the middle of a thread over 1,000 comments is NOT read; the brief says how many comments were skipped. The dispatcher already treats a failed journal read as no notes (`founderNotesSince` returns 0 on a null response); it was not changed. | yes (journal.test.mjs, 3 e2e tests in injection.test.mjs) |
+| 2. Identity flags (A) | `--branch` and `--author` required; `--offline` for `--agent` runs. See pathguard.md. | yes (pathguard-cli.test.mjs) |
+| 3. Hard rules (C) | any-depth forms and the added files; see pathguard.md. | yes (identity.test.mjs, wide-open lane) |
+| 4. Dispatcher cap wiring | e2e test through `dispatch.mjs`: ten unlabelled `agent/` branch PRs, and ten bot PRs, fill the team cap. | yes: with `dispatch.mjs` reverted to `agentOfPR` the test fails; restored |
+| 5. Deny rules (D) | Replaced the many push globs by: deny `git*push*` and `git*-c *`, allow only `git push origin agent/*` and `git push -u origin agent/*`, then re-deny a short list after the allow (`--force`, `-f`, `--delete`, `+`, any `:` refspec, ` develop`, ` main`, `--all`, `--mirror`, `--tags`, `--receive-pack`), because with last-match-wins an allow placed last would otherwise let a force push to an agent branch through. `gh*api*` denies any `-X` or `--method` followed by a quote. | yes (opencode-deny.test.mjs) |
+| a. H14 | todo marker removed from the H14 test; it passes in strict mode. | n/a |
+| b. Verdicts | `verdictPhrase` is now `verdictOf` (most restrictive wins), so `pause.mjs` and `reviewfp.mjs` cannot be fooled by an echoed "Verdict: ship". | yes (via `pause.olderRedTeam`) |
+| c. pathguard history | per-commit checking and caps; see pathguard.md. | yes |
+| d. NFKC and readJournal | look-alike branch test (fails with the normalisation removed, checked); direct `readJournal` tests. | yes |
+| e. globToRegExp | one implementation in `glob.mjs`; `lib.mjs` re-exports it and `pathguard.mjs` wraps it with `ignoreCase`. | n/a |
+
+Legacy assertions changed (the new ordering contradicts them):
+- `opencode-contract.test.mjs`: the matcher now takes the last matching rule. The three "matcher agrees with the recording" tests now assert only that anything the real binary blocked is still denied (the new rules block more). The must-allow test now expects that only `git push [-u] origin agent/*` stays allowed; pushes of `feat/maintenance` and the like, and a commit message that contains "push", are denied on purpose.
+- `run-opencode.test.mjs`: ordered matcher; the must-allow branch is `agent/qa/...` instead of `fix/...`.
+- `injection.test.mjs`: ordered matcher; the allowed-push example is `agent/qa/x`.
+- `lib.test.mjs` legacy keys (`git push --force*`, `git push origin main*`, ...) are kept as deny rules ahead of the allow.
+
+Known holes left on purpose, stated plainly:
+- Shell indirection after the allowed prefix (`git push origin agent/qa/x $REFSPEC`), `sh -c`, `env git`, a script the model wrote, and mixed-case verbs (`gh api -XPatch`) are not caught.
+- The broad rule has false positives: any `git` command containing `push` or ` -c `.
+- Behaviour on the real engine is UNVERIFIED: last-match-wins, `*` crossing spaces, the optional trailing ` *`, and how compound commands are split were taken from Review C's model, not run here.
+- The deny list is a TRIPWIRE, not a boundary. The real controls are (a) branch protection on main and develop, (b) a write job that does the push so the model never holds push credentials, and (c) locking the journal, board and handoff issues so only collaborators can comment. None of the three is in place from this branch. This branch is not shown to be safe to enable.

@@ -6,8 +6,11 @@ import {
 } from "./run-opencode.mjs";
 
 const globToRe = (g) => new RegExp("^" + g.split("*").map((x) => x.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$");
-const denied = (cmd) => Object.entries(opencodeConfig().permission.bash)
-  .some(([p, v]) => v === "deny" && globToRe(p).test(cmd));
+const denied = (cmd) => {
+  let action = "allow";
+  for (const [p, v] of Object.entries(opencodeConfig().permission.bash)) if (globToRe(p).test(cmd)) action = v; // last match wins
+  return action === "deny";
+};
 
 test("child env drops every secret that is not on the allowlist", () => {
   const fake = {
@@ -66,7 +69,7 @@ test("deny list covers option, -C/-c, -R and implicit-write spellings (round 2)"
 
 test("deny list does not block normal agent work", () => {
   const mustAllow = [
-    "git push -u origin fix/opencode-runner-hardening", "git push origin agent/qa/wip-42", "git status",
+    "git push -u origin agent/qa/opencode-runner-hardening", "git push origin agent/qa/wip-42", "git status",
     "gh pr create --title x --body y", "gh pr create --fill", "gh pr view 12", "gh pr list --label agent:qa",
     "gh api repos/o/r/pulls/12/comments", "gh issue comment 5 --body hi", "npm test",
   ];

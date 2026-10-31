@@ -15,10 +15,7 @@ export function oneLine(text, max = 100) {
  * boundary. Anything else, and every word after the verdict, returns "". Use it for
  * text that reaches the board, so a reviewer's sentence never does.
  */
-export function verdictPhrase(body) {
-  const m = String(body ?? "").match(/^[ \t]*\**Verdict:?\**:?[ \t]*(ship|fix[ \t]+first|founder[ \t]+decision)\b/im);
-  return m ? m[1].toLowerCase().replace(/\s+/g, " ") : "";
-}
+export const verdictPhrase = (body) => verdictOf(body); // one rule everywhere: most restrictive wins (see verdictOf)
 
 /** Journal entries a brief may use: the marker comes first AND the author is trusted. Anyone can comment on a journal issue. */
 export function trustedJournalEntries(comments, trust) {
@@ -61,16 +58,37 @@ export function nextIds(texts, adrFiles = []) {
 }
 
 /**
- * Page numbers to read, newest first, for an issue with `total` comments (GitHub lists
- * issue comments oldest first and has no sort option). At most `maxPages` pages, so a
- * flood of old spam can never hide the newest comments.
+ * Read a journal issue's comments from BOTH ends. GitHub lists issue comments oldest first
+ * with no sort option, and a stranger can post a thousand of them, so neither end alone is safe:
+ * the first `first` pages and the last `last` pages are read (10 pages in all, the old cap),
+ * deduplicated by comment id. Fails closed: if the comment count or any page cannot be read,
+ * nothing is returned (`unreadable`), never an oldest-first guess. `notRead` is how many
+ * comments sit in the middle and were skipped, so the brief can say so.
+ * @param {{gh: Function, repo: string, num: string|number, first?: number, last?: number}} a
+ * @returns {{comments: object[], unreadable: boolean, total: number, notRead: number, why?: string}}
  */
-export function newestPages(total, perPage = 100, maxPages = 10) {
-  const last = Math.ceil(Number(total) / perPage);
-  if (!Number.isFinite(last) || last < 1) return [];
-  const out = [];
-  for (let p = last; p >= 1 && out.length < maxPages; p--) out.push(p);
-  return out;
+export function readJournal({ gh, repo, num, first = 5, last = 5 }) {
+  const fail = (why) => ({ comments: [], unreadable: true, total: 0, notRead: 0, why });
+  const total = Number(gh(`/repos/${repo}/issues/${num}`, { allowFail: true })?.comments);
+  if (!Number.isFinite(total) || total < 0) return fail("the comment count could not be read");
+  if (total === 0) return { comments: [], unreadable: false, total: 0, notRead: 0 };
+  const pages = Math.ceil(total / 100);
+  const want = pages <= first + last
+    ? Array.from({ length: pages }, (_, i) => i + 1)
+    : [...Array.from({ length: first }, (_, i) => i + 1), ...Array.from({ length: last }, (_, i) => pages - last + 1 + i)];
+  const seen = new Set();
+  const comments = [];
+  for (const page of [...new Set(want)]) {
+    const res = gh(`/repos/${repo}/issues/${num}/comments?per_page=100&page=${page}`, { allowFail: true });
+    if (!Array.isArray(res)) return fail(`comment page ${page} could not be read`);
+    for (const c of res) {
+      const key = c?.id ?? `p${page}:${comments.length}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      comments.push(c);
+    }
+  }
+  return { comments, unreadable: false, total, notRead: Math.max(0, total - comments.length) };
 }
 
 // ---------- injection-dispatch fixes (H1 to H5, H11) ----------

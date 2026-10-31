@@ -148,7 +148,10 @@ test("hardened deny: shell indirection to push develop is NOT blocked (tripwire,
 // to real passes when DENY_PATTERNS covers them. After that, refresh the fixture and move them up.
 const patterns = () => runner.DENY_PATTERNS ?? Object.entries(opencodeConfig().permission.bash).filter(([, v]) => v === "deny").map(([k]) => k);
 const globToRe = (g) => new RegExp("^" + g.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "s");
-const denied = (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => patterns().some((g) => globToRe(g).test(seg)));
+// Round 5: the rules are ordered and the LAST matching rule wins (allow `git push origin agent/*` comes after the broad deny).
+const RULES = Object.entries(opencodeConfig().permission.bash);
+const decide = (seg) => { let a = "allow"; for (const [g, act] of RULES) if (globToRe(g).test(seg)) a = act; return a; };
+const denied = (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => decide(seg) === "deny");
 
 // Recorded as RAN under d060a36f (fixture left untouched); the round 2 patterns now cover them.
 const FIXED = ["git -C . push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
@@ -159,7 +162,9 @@ test("hardened deny: the glob matcher used here agrees with the real binary on e
     if (FIXED.includes(cmd)) continue;
     // Incidentally matched by " develop*" now; not a promise (substitution is a known bypass shape).
     if (cmd === "git push origin $(echo develop)") continue;
-    assert.equal(denied(cmd), res === "blocked", cmd);
+    // Round 5 blocks more than the recorded rule set did (every git push outside agent/*), so only
+    // "the real binary blocked it" is asserted: the new rules must never allow what was blocked.
+    if (res === "blocked") assert.ok(denied(cmd), cmd);
   }
 });
 
@@ -202,7 +207,7 @@ test("final deny: the glob matcher agrees with the real binary on all 58 recorde
   // graphql comment and the accidental substitution match, so those rows are expected to differ.
   const changedOnPurpose = new Set([...MUST_ALLOW, GRAPHQL_COMMENT, "git push origin $(echo develop)"]);
   for (const [cmd, res] of Object.entries(final)) {
-    if (!changedOnPurpose.has(cmd)) assert.equal(denied(cmd), res === "blocked", cmd);
+    if (!changedOnPurpose.has(cmd) && res === "blocked") assert.ok(denied(cmd), cmd); // round 5: one-way, see above
   }
   assert.equal(Object.keys(final).length, 58);
 });
@@ -237,7 +242,10 @@ test("final deny: commands without develop or main as a branch are not blocked",
 for (const cmd of MUST_ALLOW) {
   test(`must-allow is not blocked: "${cmd}"`, () => {
     assert.equal(tighter[cmd], "ran", "recorded on the real binary with the tighter set");
-    assert.ok(!denied(cmd), "current DENY_PATTERNS do not match");
+    // Round 5 policy: only `git push [-u] origin agent/*` stays allowed; other pushes and any git command
+    // containing "push" are denied on purpose (documented in integration-notes.md).
+    const agentPush = /^git push (-u )?origin agent\//.test(cmd);
+    assert.equal(denied(cmd), !agentPush, "current rules: allowed only for agent/* pushes");
   });
 }
 

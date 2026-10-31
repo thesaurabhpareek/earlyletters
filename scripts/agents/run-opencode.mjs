@@ -15,45 +15,26 @@ import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
 /**
- * Bash patterns the agent may not run.
+ * Bash rules, in order. opencode takes the LAST rule that matches (UNVERIFIED here: written from
+ * Review C's reading of the engine and the offline matcher in opencode-deny.test.mjs).
  *
- * TRIPWIRE, NOT A BOUNDARY. opencode matches the whole command string (and each segment
- * of a && / ; / | compound) against these globs, so they catch the honest mistake and the
- * lazy attempt only. These shapes are KNOWN to bypass and are deliberately not chased:
- * env-prefix (`FOO=1 git push ...`), `sh -c '...'`, variables (`B=develop; git push origin $B`),
- * command substitution, a script file the model wrote, `env git ...`, and quoted branch
- * names (`HEAD:'develop'`). The real controls are server side: branch protection on develop
- * and main, the scoped short-lived App token, and the two-job split. Do not rely on this list.
- * Parity: the Claude Code arm in .github/workflows/agents.yml denies pushes to develop and main.
+ * TRIPWIRE, NOT A BOUNDARY. Globs cannot close quoting, spacing, variables, command substitution,
+ * `sh -c`, `env git`, a script the model wrote, or mixed-case verbs such as `-XPatch`. The real
+ * controls live elsewhere: branch protection on develop and main, a separate write job that does
+ * the push so the model never holds push credentials, and locked journal issues. See
+ * docs/agents/hardening/integration-notes.md. Do not rely on this list.
  *
- * The git patterns come from the tighter set W2 verified on the real binary (see
- * docs/agents/hardening/opencode-contract.md): anchored on the command start (`git push`,
- * `git -C* push`, `git -c* push`) and on a whole branch token, so `feat/maintenance` or a
- * commit message that says "push to main" is not blocked. The two exact legacy forms
- * "git push origin develop*" / "main*" stay because lib.test.mjs asserts them; they also block
- * a branch whose name STARTS with develop or main directly after origin.
+ * Shape of the git rules (round 5): deny every git command with `push` in it, whatever the
+ * spacing or global option, and every `git ... -c ...`; then allow ONLY
+ * `git push origin agent/*` and `git push -u origin agent/*`; then re-deny the few tokens that an
+ * allowed prefix would otherwise let through (force, delete, plus or colon refspecs, develop and
+ * main as separate words, --all, --mirror, --tags, --receive-pack). Known cost: the broad deny also
+ * blocks harmless commands that contain the word push (`git commit -m "push notes"`).
+ * Known hole: shell indirection after the allowed prefix (`git push origin agent/x $REFSPEC`).
  */
-export function gitPushPatterns() {
-  const out = [];
-  // Global options git accepts before the subcommand are prefixes too (round 4).
-  for (const p of ["git push", "git -C* push", "git -c* push", "git --no-pager push", "git -P push", "git --git-dir=* push", "git --work-tree=* push"]) {
-    out.push(`${p} --force*`, `${p}*--force*`, `${p}* -f*`, `${p}*--delete*`, `${p}* +*`, `${p}* :*`);
-    for (const b of ["develop", "main"]) {
-      out.push(`${p}* ${b}`, `${p}* ${b} *`, `${p}*:${b}`, `${p}*:${b} *`, `${p}*:refs/heads/${b}`, `${p}*:refs/heads/${b} *`, `${p}* refs/heads/${b}`);
-      // `HEAD:heads/develop` names the same ref without the refs/ prefix.
-      out.push(`${p}*:heads/${b}`, `${p}*:heads/${b} *`, `${p}* heads/${b}`);
-    }
-    // Bare push: no refspec means "whatever upstream says", which can be develop. Exact patterns, so
-    // `git push -u origin HEAD` and `git push origin agent/<handle>/<topic>` stay allowed.
-    out.push(p, `${p} origin`, `${p} -u`, `${p} -u origin`, `${p} --set-upstream`, `${p} --set-upstream origin`);
-    // Many refs at once, tags (a tag can start a release), and helper programs.
-    out.push(`${p}* --all*`, `${p}* --mirror*`, `${p}* --tags*`, `${p}* --follow-tags*`, `${p}* refs/tags/*`, `${p}* tag *`);
-    out.push(`${p}*--receive-pack*`, `${p}*--exec=*`);
-  }
-  return out;
-}
+const QUOTE_FORMS = ["-X", "--method"].flatMap((f) => [" ", "  ", "=", ""].flatMap((sep) => ['"', "'"].map((q) => `gh*api*${f}${sep}${q}*`)));
 
-/** gh api with a write verb, in every spelling: `-X V`, `-X  V`, `-X=V`, `-XV`, `--method V`, `--method  V`, `--method=V`, either case. */
+/** gh api with a write verb, in the plain spellings: `-X V`, `-X  V`, `-X=V`, `-XV`, `--method V`, `--method  V`, `--method=V`, upper or lower case. */
 export function ghApiWritePatterns() {
   const out = [];
   for (const verb of ["DELETE", "PUT", "PATCH", "POST"]) {
@@ -64,11 +45,9 @@ export function ghApiWritePatterns() {
   return out;
 }
 
-export const DENY_PATTERNS = [...new Set([
-  // force, delete, plus-refspec and protected-branch pushes, any -C/-c prefix, any option order
-  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", // exact legacy forms
-  ...gitPushPatterns(),
-  ...ghApiWritePatterns(),
+const DENY_BEFORE_GIT = [
+  // exact legacy forms (lib.test.mjs asserts them)
+  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*",
   // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
   "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
   "gh*pr*--admin*",
@@ -80,17 +59,33 @@ export const DENY_PATTERNS = [...new Set([
   "gh -R*secret*", "gh -R*variable*", "gh -R*ruleset*", "gh -R*workflow run*", "gh -R*workflow enable*",
   "gh -R*workflow disable*", "gh -R*run rerun*", "gh -R*run cancel*", "gh -R*repo delete*", "gh -R*repo edit*",
   "gh --repo*secret*", "gh --repo*variable*", "gh --repo*workflow run*", "gh --repo*repo delete*",
-  // gh api writes: explicit non-GET verbs, implicit POST (field flags), graphql, sensitive paths
-  "gh*api*-X DELETE*", "gh*api*--method DELETE*", "gh*api*-X PUT*", "gh*api*--method PUT*",
-  "gh*api*-X PATCH*", "gh*api*--method PATCH*", "gh*api*-X POST*", "gh*api*--method POST*",
-  "gh*api*-XDELETE*", "gh*api*-XPUT*", "gh*api*-XPATCH*", "gh*api*-XPOST*",
+  // gh api writes: explicit verbs (plain and quoted spellings), implicit POST (field flags), graphql, sensitive paths
+  ...ghApiWritePatterns(), ...QUOTE_FORMS,
   "gh*api* -f*", "gh*api* -F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
   // anchored so a comment body that mentions graphql is not blocked (W2 suggestion; not run live)
   "gh api*graphql*", "gh -R* api*graphql*", "gh --repo* api*graphql*",
   "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
   "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
   "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
-])];
+  // any git push, any spacing, any global option; and any git command with -c
+  "git*push*", "git*-c *",
+];
+const ALLOW_AGENT_PUSH = ["git push origin agent/*", "git push -u origin agent/*"];
+const DENY_AFTER_ALLOW = [
+  "git*push* --force*", "git*push* -f*", "git*push*--delete*", "git*push* +*", "git*push*:*",
+  "git*push* develop*", "git*push* main*", "git*push*--all*", "git*push*--mirror*", "git*push*--tags*", "git*push*--receive-pack*",
+];
+
+/** The ordered bash rules as [pattern, action] pairs, catch-all first. */
+export const BASH_RULES = [
+  ["*", "allow"],
+  ...DENY_BEFORE_GIT.map((p) => [p, "deny"]),
+  ...ALLOW_AGENT_PUSH.map((p) => [p, "allow"]),
+  ...DENY_AFTER_ALLOW.map((p) => [p, "deny"]),
+];
+
+/** Every pattern that is denied, in rule order (for tests that list them). */
+export const DENY_PATTERNS = BASH_RULES.filter(([, a]) => a === "deny").map(([p]) => p);
 
 /** Permissions: everything an agent needs, minus the actions only the founder takes. */
 export function opencodeConfig() {
@@ -102,7 +97,7 @@ export function opencodeConfig() {
     permission: {
       edit: "allow",
       webfetch: "allow",
-      bash: Object.fromEntries([["*", "allow"], ...DENY_PATTERNS.map((p) => [p, "deny"])]),
+      bash: Object.fromEntries(BASH_RULES), // key order is rule order: last match wins
     },
   };
 }
