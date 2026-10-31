@@ -15,8 +15,8 @@ export const exportCopy = {
     // D-074: what the machine changes is a "small fix", never a tidy-up.
     includesData: 'A data file with your words as heard, every small fix, and the final text',
     // Option B (D-100): letters sync, so the line is about the export only, never a claim that nothing leaves
-    // the phone. The export is built on this phone; signed in, it also reads the person's own consent record and
-    // spelling list from the server for account.json (BL-323), and sends nothing. Counsel claims review.
+    // the phone. The export is built on this phone; signed in, it also reads the person's own consent record
+    // from the server for account.json (BL-323), and sends nothing. Counsel claims review.
     offlineNote: 'The export is made on this phone. It goes only where you send it.',
     // Above the disabled button while the book has no letter.
     emptyNote: 'You can export once the book has a letter.',
