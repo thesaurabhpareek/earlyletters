@@ -17,7 +17,7 @@
   .lamp {
     left: max(10vw, calc(50vw - 560px));
     bottom: 6svh;
-    width: min(13vw, 190px);
+    width: min(13vw, 190px, 22svh);
   }
 }
 

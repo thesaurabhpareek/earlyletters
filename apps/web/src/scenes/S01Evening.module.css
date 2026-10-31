@@ -81,13 +81,19 @@
   .lamp {
     left: max(10vw, calc(50vw - 560px));
     bottom: 6svh;
-    width: min(13vw, 190px);
+    /* Scales with the screen's height so the lamp never climbs into the words on a short laptop. */
+    width: min(13vw, 190px, 22svh);
   }
   .copy {
     left: max(var(--gutter), calc(50vw - 640px));
     right: auto;
-    top: 30svh;
+    top: clamp(84px, 13svh, 30svh);
     width: min(40vw, 560px);
+  }
+}
+@media (min-width: 900px) and (min-height: 1000px) {
+  .copy {
+    top: 30svh;
   }
 }
 
