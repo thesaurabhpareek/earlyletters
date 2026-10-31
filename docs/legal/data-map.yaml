@@ -1,0 +1,1568 @@
+# Early Letters (codename scribe): machine-readable data map.
+#
+# Every place personal data can live or travel: server tables and columns,
+# Storage buckets, the device database and its settings keys, device files,
+# SDKs, hosts, logs and analytics properties. Levels L1 to L4 are defined in
+# docs/legal/DATA_CLASSIFICATION.md section 1; this file does not redefine them.
+# Checked by scripts/check-data-map.mjs (see that file for usage).
+#
+# AI-drafted engineering inventory for counsel review. Not legal advice. It
+# states what is built or decided; it draws no legal conclusions.
+#
+# Field meanings
+#   level           Highest level the item can hold (rule 1.1.1, highest wins).
+#                   For tables it must equal the highest column level.
+#   leaves_device   true when the data is held or sent anywhere other than the
+#                   user's own phone (our servers, a processor, a third party).
+#                   The user's own OS device backup is noted separately.
+#   status          applied        in a migration that is applied live
+#                   pending_apply  in a migration that is not applied yet
+#                                  (supabase/APPLY.md). For tables this is the
+#                                  creating migration; later columns may be pending.
+#                   in_code        built in the app or packages, not released
+#                   planned        decided or documented, not built
+#                   deferred       moved out of v1.0 by a founder decision
+#                   retired        no longer written; kept for old installs
+#                   dev_only       written only by development tooling
+#                   not_used       considered and rejected
+#   verified        code      checked against this repo on as_of
+#                   decision  founder decision (docs/agents/BRIEF-2026-10-03.md),
+#                             not yet visible in code
+#                   doc       taken from a repo document, not checked against a
+#                             running system or a contract
+#                   assumed   the author's assumption; confirm before relying on it
+#
+# Format: a strict YAML subset so the checker needs no YAML library (no new
+# dependency). Allowed: block mappings, block sequences, plain or quoted
+# scalars, flow lists of scalars, {} and [], # comments. Not allowed: anchors,
+# aliases, tags, block scalars (| and >), flow mappings with content, and
+# ambiguous plain scalars (yes, no, on, off, unquoted dates, decimals). Quote
+# any value that contains ": " or " #".
+
+schema_version: 1
+as_of: "2026-10-04"
+classification: docs/legal/DATA_CLASSIFICATION.md
+schema_basis: "supabase/migrations on develop at 8896000 (12 files), plus the differences open PR #32 (fix/db-pending-hardening) would make (book_children view, children.client_created_at, child_invites.code_hash); server entitlement tables are gone on develop (20261004000000_plus_on_device_only.sql, founder decision 3)"
+release_scope: "v1.0 (iOS, TestFlight first). Decision 9: no audio upload in v1.0; decision 3: purchases only on the device with Apple; decision 12: analytics opt-in"
+
+# Changes in open pull requests that this map already reflects. The checker
+# accepts these differences against an older migration set (with a warning) and
+# asks for the entry to be removed once the migrations match the map.
+pending_changes:
+  - pr: 32
+    branch: fix/db-pending-hardening
+    note: "Adds the book_children view (D-039), children.client_created_at and child_invites.code_hash, and drops profiles.first_run_closed_at. Its entitlement-table removal is already on develop through 20261004000000_plus_on_device_only.sql"
+    adds: [book_children, children.client_created_at, child_invites.code_hash]
+    removes: [app_account_tokens, store_subscriptions, store_notifications, profiles.first_run_closed_at]
+
+hosts:
+  - id: supabase
+    name: "Supabase (Postgres, Auth, Storage, Edge Functions)"
+    role: processor
+    level: L4
+    purpose: "Account sign-in, synced letter text and book data, photos, consent and deletion records"
+    retention: "Per table and bucket below; daily backups roll off after 7 days (data-policy section 6)"
+    deletion_path: "purge_due, the deletion worker and the Storage API (see postgres and storage_buckets)"
+    leaves_device: true
+    status: in_code
+    verified: doc
+    notes: "Project early-letters in us-west-1 (supabase/APPLY.md). The app in this repo has no Supabase client yet; sync arrives with sign-in (D-023). Encryption at rest is Unverified in writing (DATA_CLASSIFICATION open issue 5)"
+  - id: resend
+    name: "Resend (email)"
+    role: processor
+    level: L3
+    purpose: "Transactional email: sign-in links, notices, and the hello@ mailbox"
+    retention: "Sent-message data kept 30 days (DATA_CLASSIFICATION 4.8)"
+    deletion_path: "Provider log deletion; route not documented yet"
+    leaves_device: true
+    status: in_code
+    verified: decision
+    notes: "Decision 13: email runs through Resend and hello@earlyletters.com is live. Use as the Supabase Auth SMTP sender is assumed. subprocessors.md still shows a placeholder for the email provider. Email subjects and bodies never carry letter content (DATA_CLASSIFICATION 4.8)"
+  - id: vercel
+    name: "Vercel (website)"
+    role: processor
+    level: L3
+    purpose: "One-page website, legal pages, universal-link files; waitlist if built"
+    retention: "Provider request-log window (Unverified)"
+    deletion_path: "Provider log expiry"
+    leaves_device: true
+    status: in_code
+    verified: decision
+    notes: "Decision 13. The website is built in a separate repo or thread; request logs hold IP address, user agent and path"
+  - id: porkbun
+    name: "Porkbun (domain registrar and DNS)"
+    role: vendor
+    level: L1
+    purpose: "earlyletters.com and earlyletters.app domains"
+    retention: "Not applicable (no user data)"
+    deletion_path: "Not applicable"
+    leaves_device: false
+    status: in_code
+    verified: decision
+  - id: pack_cdn
+    name: "Language pack and speech model host (Cloudflare R2 candidate pending Q-001; Hugging Face for pinned upstream models; D-046, D-065)"
+    role: vendor
+    level: L3
+    purpose: "Downloads speech models and non-English language packs on demand (decision 15)"
+    retention: "Pack files are public data (L1); provider access logs hold IP address and path, period depends on the host"
+    deletion_path: "Provider log expiry"
+    leaves_device: true
+    status: planned
+    verified: decision
+    notes: "Level L3 because an access log pairs an IP address with the requested pack, and the pack name reveals a chosen language (languages are L4 in DATA_CLASSIFICATION). See open_issues"
+  - id: posthog
+    name: "PostHog (US Cloud)"
+    role: processor
+    level: L2
+    purpose: "Opt-in product analytics, allowlisted events only (decision 12)"
+    retention: "12 months, proposed; set in the PostHog project"
+    deletion_path: "Person delete with events for each analytics id the device holds; route planned"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "The catalogue, consent gate and adapter exist in packages/analytics; the app does not install or import the PostHog SDK yet"
+  - id: sentry
+    name: "Sentry (crash reporting)"
+    role: processor
+    level: L2
+    purpose: "Scrubbed crash and error reports"
+    retention: "90 days, proposed"
+    deletion_path: "Provider retention expiry"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "Listed in subprocessors.md and ADR 0008. Not in the v1.0 app and not installed anywhere in this repo on as_of; when added: scrubbed, same consent switch as analytics"
+  - id: powersync
+    name: "PowerSync Cloud"
+    role: processor
+    level: L4
+    purpose: "Sync engine considered in ADR 0004"
+    retention: "Replicated rows until purge and compaction"
+    deletion_path: "Follows Postgres"
+    leaves_device: true
+    status: not_used
+    verified: doc
+    notes: "D-023: sync is an outbox upload and cursor pull through Supabase RPCs (migration 20261004100000_sync_engine.sql); PowerSync is not used. Not installed"
+  - id: apple
+    name: "Apple (Sign in with Apple, App Store and StoreKit, APNs)"
+    role: independent
+    level: L3
+    purpose: "Sign-in, purchases and subscription management through Apple only, push delivery"
+    retention: "Apple's own terms"
+    deletion_path: "Revoke Sign in with Apple at account deletion (planned); purchases stay with Apple"
+    leaves_device: true
+    status: planned
+    verified: decision
+    notes: "Decision 3: StoreKit 2 on the device; no server of ours sees purchases and no App Store Server Notifications endpoint exists. Family Sharing gives a co-parent Plus"
+  - id: google
+    name: "Google (Sign in with Google)"
+    role: independent
+    level: L3
+    purpose: "Sign-in"
+    retention: "Google's own terms"
+    deletion_path: "Unlink at account deletion"
+    leaves_device: true
+    status: planned
+    verified: decision
+    notes: "Decision 4 lists Sign in with Google; subprocessors.md says from v1.1. Confirm the release"
+
+storage_buckets:
+  - id: entry-photos
+    path: "{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}"
+    level: L4
+    purpose: "Photos attached to letters"
+    retention: "Life of the letter"
+    deletion_path: "Letter or book purge queues the object in storage_purge_queue; the worker deletes it through the Storage API (worker planned)"
+    leaves_device: true
+    status: applied
+    verified: code
+    notes: "Private bucket created in 20260930000000_scribe_core.sql. The app has no photo upload yet"
+  - id: backup-audio
+    path: "per ADR 0006 (name not chosen)"
+    level: L4
+    purpose: "Encrypted backup of recordings"
+    retention: "Life of the letter"
+    deletion_path: "Crypto-shred plus Storage API deletion (planned)"
+    leaves_device: true
+    status: deferred
+    verified: decision
+    notes: "Decision 9: no audio upload in v1.0"
+  - id: inbox
+    path: "{child_id}/{entry_id}"
+    level: L4
+    purpose: "Recordings from the family web contribution page"
+    retention: "Until moved into the letter"
+    deletion_path: "Storage API deletion (planned)"
+    leaves_device: true
+    status: deferred
+    verified: decision
+    notes: "Decision 9: the web contribution page is v1.1"
+  - id: child-photos
+    path: "{child_id}/..."
+    level: L4
+    purpose: "Child profile photo"
+    retention: "Life of the book"
+    deletion_path: "Storage API deletion at book purge (planned)"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "children.photo_path exists; no bucket is created in the migrations"
+  - id: avatars
+    path: "{profile_id}/..."
+    level: L3
+    purpose: "Member photo"
+    retention: "Life of account"
+    deletion_path: "Storage API deletion at account deletion (planned)"
+    leaves_device: true
+    status: planned
+    verified: doc
+  - id: exports
+    path: "{profile_id}/{export_id}.zip"
+    level: L4
+    purpose: "Server-built exports"
+    retention: "7 days"
+    deletion_path: "Expiry job (planned, DATA-REQ-054)"
+    leaves_device: true
+    status: planned
+    verified: doc
+  - id: ops-ledger
+    path: "purges/YYYY-MM-DD.jsonl"
+    level: L3
+    purpose: "Purged ids for replay after a restore"
+    retention: "60 days"
+    deletion_path: "Expiry job (planned)"
+    leaves_device: true
+    status: planned
+    verified: doc
+
+postgres:
+  notes: "Columns and levels must match the COMMENT ON COLUMN labels in the migrations; the checker compares them. Only schema public is compared: the ops schema (deletion worker, migration 20261004200000) and the insights schema (k-anonymised aggregates, migration 20261004300000) are described in DATA_CLASSIFICATION 4.1.2 and 4.9 and are not yet in this map. purge_due exists in the migrations but no schedule is created (the cron line is commented out), and the deletion worker Edge Function is not built, so deletion paths that rely on them are planned work"
+  auth:
+    - name: auth.users and auth.identities
+      level: L3
+      purpose: "Sign-in identity: email, Apple and Google subject ids"
+      retention: "Life of account"
+      deletion_path: "auth.admin.deleteUser by the deletion worker (planned)"
+      leaves_device: true
+      status: planned
+      verified: doc
+    - name: auth.sessions and auth.refresh_tokens
+      level: L4
+      purpose: "Session secrets"
+      retention: "Rolling; removed with the user"
+      deletion_path: "Removed with the user"
+      leaves_device: true
+      status: planned
+      verified: doc
+    - name: Auth audit log
+      level: L3
+      purpose: "Sign-in events (may hold IP addresses)"
+      retention: "Unverified; target 90 days (DELETION spec OQ-5)"
+      deletion_path: "Provider window"
+      leaves_device: true
+      status: planned
+      verified: doc
+  tables:
+    - name: entries
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L4
+      purpose: "Letters: exact transcript, machine edits, the text the book shows, and metadata"
+      retention: "Until the author deletes the letter, the book is purged or the account is deleted"
+      deletion_path: "Letter delete: 30-day tombstone, then purge_due deletes the row (cascades versions), records the id in purge_ledger and queues the photo for Storage API deletion"
+      leaves_device: true
+      verified: code
+      columns:
+        language: L4
+        sync_xid: L2
+        sync_restored_from: L2
+        id: L3
+        child_id: L3
+        author_id: L3
+        kind: L2
+        occurred_on: L3
+        captured_at: L2
+        capture_mode: L2
+        edit_level: L2
+        prompt_key: L2
+        prompt_library_version: L2
+        engine_version: L2
+        raw_transcript: L4
+        stt_meta: L4
+        machine_edits: L4
+        final_text: L4
+        in_book: L2
+        photo_path: L3
+        audio_kept_on_device: L2
+        sounds_like_me: L2
+        created_at: L2
+        updated_at: L2
+        deleted_at: L2
+        search: L4
+        deleted_reason: L2
+        raw_sha256: L4
+        author_signs_as: L3
+        approval: L2
+        reviewed_by: L3
+        reviewed_at: L2
+    - name: entry_versions
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L4
+      purpose: "Previous versions of a letter's text, so every change is reversible"
+      retention: "Life of the letter"
+      deletion_path: "Cascades from entries"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        entry_id: L3
+        final_text: L4
+        in_book: L2
+        created_at: L2
+        machine_edits: L4
+        superseded_by: L3
+    - name: book_entries
+      kind: view
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L4
+      purpose: "Read-only view: letters as book members see them (no raw transcript, edits or STT metadata, PRD K-09)"
+      retention: "No storage of its own (view over entries)"
+      deletion_path: "Follows entries"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L3
+        child_id: L3
+        author_id: L3
+        author_signs_as: L3
+        kind: L2
+        occurred_on: L3
+        captured_at: L2
+        capture_mode: L2
+        edit_level: L2
+        prompt_key: L2
+        prompt_library_version: L2
+        engine_version: L2
+        final_text: L4
+        in_book: L2
+        photo_path: L3
+        audio_kept_on_device: L2
+        sounds_like_me: L2
+        created_at: L2
+        updated_at: L2
+        deleted_at: L2
+        search: L4
+        approval: L2
+    - name: children
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L4
+      purpose: "A child's book: name, birthday or due date, theme, sharing setting"
+      retention: "Until the book's sole parent deletes the book, or account deletion"
+      deletion_path: "Book deletion request, 30-day tombstone, then purge_due deletes the row (cascades members, invites, entries, versions, terms); photo objects queued for Storage API deletion"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L3
+        name: L4
+        date_of_birth: L4
+        created_by: L3
+        created_at: L2
+        client_created_at: L2
+        updated_at: L2
+        deleted_at: L2
+        deletion_request_id: L2
+        nickname: L4
+        due_date: L4
+        photo_path: L3
+        book_look: L2
+        family_can_read: L2
+        hidden_at: L2
+    - name: book_children
+      kind: view
+      created_in: 20261003000000_security_and_family.sql
+      status: pending_apply
+      level: L4
+      purpose: "Read-only view: what every book member may see of a child (name, nickname, birthday month and day; never the due date or birth year, D-039)"
+      retention: "No storage of its own (view over children)"
+      deletion_path: "Follows children"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L3
+        name: L4
+        nickname: L4
+        birth_month: L4
+        birth_day: L4
+    - name: child_members
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L3
+      purpose: "Access control: who belongs to which child's book and in what role"
+      retention: "Until leave, removal, book purge or account deletion"
+      deletion_path: "Row delete on leave or removal; cascades from children and profiles"
+      leaves_device: true
+      verified: code
+      columns:
+        child_id: L3
+        profile_id: L3
+        role: L3
+        joined_at: L2
+        auto_add_letters: L2
+    - name: child_member_prefs
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Per-member settings for one book: signature, reminders, celebrations pause"
+      retention: "Until the membership ends, the book is purged or the account is deleted"
+      deletion_path: "Cascades from child_members"
+      leaves_device: true
+      verified: code
+      columns:
+        child_id: L3
+        profile_id: L3
+        signs_as: L3
+        include_in_reminders: L2
+        celebrations_paused: L3
+        created_at: L2
+        updated_at: L2
+    - name: child_invites
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L3
+      purpose: "Invite a co-parent (v1.0) or family member (later) to one book; only a hash of the token is stored"
+      retention: "90 days after use, revocation or expiry (purge_due step 4, D-020)"
+      deletion_path: "Hard delete by purge_due; cascades with the book"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        child_id: L3
+        invited_by: L3
+        token_hash: L3
+        code_hash: L3
+        role: L3
+        expires_at: L2
+        accepted_by: L3
+        accepted_at: L2
+        created_at: L2
+        revoked_at: L2
+        signs_as: L3
+    - name: dictionary_terms
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L4
+      purpose: "Names and family words that improve transcription of names"
+      retention: "Until the owner deletes the term, or book or account deletion"
+      deletion_path: "Row delete; cascades from children and profiles"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        owner_id: L3
+        child_id: L3
+        term: L4
+        kind: L2
+        heard_as: L4
+        created_at: L2
+        updated_at: L2
+    - name: profiles
+      kind: table
+      created_in: 20260930000000_scribe_core.sql
+      status: applied
+      level: L3
+      purpose: "A person's display name and default signature (\"From Papa\")"
+      retention: "Life of account"
+      deletion_path: "Account deletion request (30-day undo), then the deletion worker deletes the auth user and rows cascade. The worker Edge Function and the purge schedule are planned, not built"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L3
+        display_name: L3
+        signs_as: L3
+        created_at: L2
+        updated_at: L2
+    - name: policy_documents
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L1
+      purpose: "Registry of legal documents (keys and titles)"
+      retention: "While published"
+      deletion_path: "Not deleted (public record)"
+      leaves_device: true
+      verified: code
+      columns:
+        key: L1
+        title: L1
+        needs_affirmative_act: L1
+    - name: policy_versions
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L1
+      purpose: "Published versions of legal documents with hashes and URLs"
+      retention: "Kept forever (public record)"
+      deletion_path: "Not deleted; a new version supersedes"
+      leaves_device: true
+      verified: code
+      columns:
+        document: L1
+        version: L1
+        major: L1
+        minor: L1
+        patch: L1
+        change_class: L1
+        requires_reconsent: L1
+        published_at: L1
+        new_users_from: L1
+        effective_at: L1
+        content_sha256: L1
+        url: L1
+        summary: L1
+    - name: policy_acceptances
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Proof of consent: which legal text version a person accepted or withdrew, and when (no IP, no free text)"
+      retention: "Life of account; pseudonymised at account deletion; then 3 years (purge_due step 4)"
+      deletion_path: "Pseudonymised by subject_hash at account deletion (needs app.consent_pepper), hard delete 3 years later"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        profile_id: L3
+        subject_hash: L3
+        pseudonymised_at: L2
+        document: L2
+        version: L2
+        action: L2
+        method: L2
+        surface: L2
+        accepted_at: L2
+        client_recorded_at: L2
+        app_version: L2
+        platform: L2
+        locale: L3
+        rendered_sha256: L2
+        context: L2
+    - name: my_policy_state
+      kind: view
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L2
+      purpose: "Read-only view: the signed-in person's latest act per legal document"
+      retention: "No storage of its own (view over policy_acceptances)"
+      deletion_path: "Follows policy_acceptances"
+      leaves_device: true
+      verified: code
+      columns:
+        document: L2
+        version: L2
+        action: L2
+        accepted_at: L2
+    - name: deletion_requests
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Proof that deletion happened: kind, status, dates, counts"
+      retention: "3 years after completion or cancellation (purge_due step 4)"
+      deletion_path: "Hard delete by purge_due; profile_id nulled on completion"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        kind: L2
+        profile_id: L3
+        child_id: L3
+        status: L2
+        source: L2
+        requested_at: L2
+        scheduled_for: L2
+        cancelled_at: L2
+        executing_at: L2
+        completed_at: L2
+        had_active_subscription: L3
+        receipt: L2
+    - name: deletion_request_steps
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L2
+      purpose: "Progress of each step of a deletion request, for retries and receipts"
+      retention: "With its request (3 years after completion)"
+      deletion_path: "Cascades from deletion_requests"
+      leaves_device: true
+      verified: code
+      columns:
+        request_id: L2
+        step: L2
+        status: L2
+        attempts: L2
+        last_error_code: L2
+        updated_at: L2
+        next_attempt_at: L2
+    - name: legal_holds
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Preservation of specific records when legal process requires it"
+      retention: "No automatic deletion in the migrations; data-policy proposes release plus 3 years"
+      deletion_path: "Manual release by staff runbook; no purge rule yet"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        scope: L2
+        scope_id: L3
+        reason_code: L3
+        matter_ref: L3
+        placed_by: L3
+        placed_at: L2
+        review_by: L2
+        released_at: L2
+        released_by: L3
+    - name: audit_events
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Security and dispute evidence: who did what to which record, as enums and counts"
+      retention: "24 months (purge_due step 4)"
+      deletion_path: "Hard delete by purge_due after 24 months; actor_id nulled at account deletion"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        at: L2
+        actor_id: L3
+        actor_kind: L2
+        action: L2
+        subject_type: L2
+        subject_id: L3
+        child_id: L3
+        detail: L2
+    - name: purge_ledger
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Ids of purged records, so a database restore cannot bring them back"
+      retention: "Letter and book ids kept indefinitely (ids only, DB-02); person and object-path rows 60 days"
+      deletion_path: "purge_due removes profile and storage_object rows after 60 days"
+      leaves_device: true
+      verified: code
+      columns:
+        entity_type: L2
+        entity_id: L3
+        purged_at: L2
+    - name: storage_purge_queue
+      kind: table
+      created_in: 20261002020000_data_governance.sql
+      status: pending_apply
+      level: L3
+      purpose: "Queue of Storage objects to delete through the Storage API"
+      retention: "7 days after done (purge_due step 5)"
+      deletion_path: "purge_due deletes done rows after 7 days; the worker that drains the queue is planned, not built"
+      leaves_device: true
+      verified: code
+      columns:
+        id: L2
+        bucket_id: L2
+        object_path: L3
+        is_prefix: L2
+        reason: L2
+        request_id: L2
+        enqueued_at: L2
+        attempts: L2
+        done_at: L2
+        next_attempt_at: L2
+        last_error_code: L2
+    - name: sync_epochs
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L2
+      purpose: "Restore epochs: a phone that sees a newer epoch re-uploads and never deletes"
+      retention: "Kept; a handful of rows for the life of the database"
+      deletion_path: "None needed: holds no person or child data"
+      leaves_device: true
+      verified: code
+      columns:
+        epoch: L2
+        started_at: L2
+        restore_point: L2
+        reason: L2
+    - name: sync_op_receipts
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L3
+      purpose: "Ids of applied sync ops, so a retried op is applied once"
+      retention: "30 days (sync_push trims the caller's own rows; sync_housekeeping trims the rest)"
+      deletion_path: "Removed with the person (cascade) and by the 30-day trim"
+      leaves_device: true
+      verified: code
+      columns:
+        op_id: L2
+        profile_id: L3
+        applied_at: L2
+    - name: sync_rate_windows
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L3
+      purpose: "Per-person request counters for server-side rate limits; written only by rate_hit(); unlogged"
+      retention: "1 day (sync_housekeeping)"
+      deletion_path: "Removed with the person and by the 1-day trim"
+      leaves_device: true
+      verified: code
+      columns:
+        profile_id: L3
+        bucket: L2
+        window_start: L2
+        hits: L2
+    - name: idempotency_keys
+      kind: table
+      created_in: 20261005000000_family_cap_language_idempotency.sql
+      status: pending_apply
+      level: L3
+      purpose: "Idempotency keys of write RPCs (ADR 0017): one row per person and key; results hold ids only, never tokens or text"
+      retention: "24 hours (sync_housekeeping)"
+      deletion_path: "Removed with the person (cascade) and by the 24-hour trim"
+      leaves_device: true
+      verified: code
+      columns:
+        profile_id: L3
+        idem_key: L2
+        fn: L2
+        request_sha256: L2
+        result: L3
+        created_at: L2
+
+device_sqlite:
+  file: "scribe.db in the app sandbox (apps/mobile/src/lib/store.ts, migrator apps/mobile/src/lib/db/migrations.ts)"
+  notes: "The whole file is handled as L4 (DATA_CLASSIFICATION 4.5). iOS Data Protection class and SQLCipher are open (LEGAL-REQ-022). Sync to the server arrives with sign-in (D-023); until then nothing in this file leaves the phone. The user's own OS device backup may include it"
+  tables:
+    - name: entries
+      level: L4
+      purpose: "Letters on this phone, including letters written before sign-in"
+      retention: "Until the author deletes the letter (tombstone, then removed), or the app is deleted"
+      deletion_path: "Tombstone in the app; removal of the row and its audio after the undo window (purge sync planned); deleting the app removes the file"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "After sign-in and sync consent, letter text and metadata sync to postgres entries (planned). Audio never syncs in v1.0 (decision 9)"
+      columns:
+        id: L3
+        kind: L2
+        occurred_on: L3
+        captured_at: L2
+        capture_mode: L2
+        edit_level: L2
+        prompt_key: L2
+        engine_version: L2
+        raw_transcript: L4
+        machine_edits: L4
+        final_text: L4
+        in_book: L2
+        sounds_like_me: L2
+        updated_at: L2
+        deleted_at: L2
+        synced_at: L2
+        child_id: L3
+        author_id: L3
+        author_signs_as: L3
+        audio_uri: L3
+        audio_duration_ms: L2
+        audio_sha256: L4
+        audio_bytes: L2
+        transcript_status: L2
+        server_version: L2
+        server_updated_at: L2
+        server_epoch: L2
+        sync_state: L2
+        approval: L2
+    - name: children
+      level: L4
+      purpose: "Each child's book on this phone"
+      retention: "Until the book is deleted or the app is deleted"
+      deletion_path: "Row delete in the app; deleting the app removes the file"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "Syncs to postgres children after sign-in (planned)"
+      columns:
+        id: L3
+        name: L4
+        birthday: L4
+        due_date: L4
+        signs_as: L3
+        reminders_on: L2
+        family_can_read: L2
+        created_at: L2
+        updated_at: L2
+        hidden_at: L2
+        role: L3
+        created_by_me: L2
+        nickname: L4
+        server_state: L2
+    - name: drafts
+      level: L4
+      purpose: "Capture in progress, so a crash never loses a recording or typed words"
+      retention: "Until saved as a letter or discarded"
+      deletion_path: "Deleted in the same transaction that saves the letter, or on discard"
+      leaves_device: false
+      status: in_code
+      verified: code
+      columns:
+        id: L3
+        child_id: L3
+        capture_mode: L2
+        prompt_key: L2
+        created_at: L2
+        audio_uri: L3
+        audio_duration_ms: L2
+        raw_transcript: L4
+        typed_text: L4
+        state: L2
+        audio_sha256: L4
+        audio_bytes: L2
+        recovered_at: L2
+    - name: orphan_audio
+      level: L3
+      purpose: "Recordings found with no draft or letter, reported in Settings and never deleted automatically"
+      retention: "Until the user acts on them in Settings or deletes the app"
+      deletion_path: "User action in Settings, Recordings; deleting the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "file_name is treated as L3 because recording file names can carry ids (assumed)"
+      columns:
+        file_name: L3
+        bytes: L2
+        found_at: L2
+    - name: settings
+      level: L4
+      purpose: "Device settings as key and value pairs; keys are listed in device_kv"
+      retention: "Until the app is deleted"
+      deletion_path: "deleteSetting in the app; deleting the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "Table level is L4 only because the retired key family held child data; current keys are L2 or L3"
+      columns:
+        key: L2
+        value: L4
+
+    - name: sync_outbox
+      level: L4
+      purpose: "Ordered upload queue of ops waiting to reach the server; the payload is the op exactly as sent and can hold letter text"
+      retention: "Until the server accepts the op, then removed"
+      deletion_path: "Removed on acknowledgement, at sign-out and with the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "The queue is the path by which letters leave the phone once sign-in and sync consent exist. Never logged"
+      columns:
+        seq: L2
+        op_id: L2
+        lane: L2
+        type: L2
+        entity_id: L3
+        book_id: L3
+        payload: L4
+        created_at: L2
+        attempts: L2
+        next_attempt_at: L2
+        sent_at: L2
+    - name: rejected_writes
+      level: L4
+      purpose: "Ops the server refused for good, kept so nothing is silently lost (DATA-REQ-043)"
+      retention: "Until the person has seen them and chosen what to do, and in export"
+      deletion_path: "Removed after the person resolves them; deleting the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      columns:
+        op_id: L2
+        type: L2
+        entity_id: L3
+        payload: L4
+        code: L2
+        rejected_at: L2
+        seen_at: L2
+    - name: sync_books
+      level: L4
+      purpose: "One row per book this phone pulls: sync position, access signature, member list and the birthday month and day shown to contributors"
+      retention: "While the person is a member of the book"
+      deletion_path: "Removed when the person leaves or is removed, at sign-out and with the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      columns:
+        child_id: L3
+        cursor: L2
+        access: L3
+        meta_hash: L4
+        members: L3
+        birthday_md: L4
+        state: L2
+        want_ids: L2
+device_kv:
+  - key: activeChildId
+    store: settings
+    level: L3
+    purpose: "Which book is open"
+    retention: "Until the app is deleted"
+    deletion_path: "Overwritten on switch; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: appearance
+    store: settings
+    level: L2
+    purpose: "Light, dark or system appearance"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: readingSize
+    store: settings
+    level: L2
+    purpose: "Reading text size"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: reminders.cadence
+    store: settings
+    level: L2
+    purpose: "Reminder cadence"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: reminders.paused
+    store: settings
+    level: L2
+    purpose: "Reminders paused"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: review.firstNoteSeen
+    store: settings
+    level: L2
+    purpose: "The one-time note on Review was shown"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: ageGate.passed
+    store: settings
+    level: L2
+    purpose: "18+ entry gate answered Yes (a boolean, never an age; PRD-REQ-019, D-026)"
+    retention: "Until the app is deleted"
+    deletion_path: "Removed if the answer changes; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: ageGate.stoppedAt
+    store: settings
+    level: L2
+    purpose: "Time of a No answer, for the 24-hour stop screen"
+    retention: "Until the gate is passed or the app is deleted"
+    deletion_path: "Deleted when the gate is passed"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: readTogether.sessions
+    store: settings
+    level: L3
+    purpose: "Count of free Read together sessions used; stored per book as readTogether.sessions.<book id>, so the key holds a book id (L3)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: content.dismissed
+    store: settings
+    level: L2
+    purpose: "Dismissed content-block ids (server content keys)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: auth.lastMethod
+    store: settings
+    level: L2
+    purpose: "Last sign-in method (apple, google, email, passkey)"
+    retention: "Until sign-out or the app is deleted"
+    deletion_path: "Cleared at sign-out; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: family.coParentNotify
+    store: settings
+    level: L2
+    purpose: "Day the person tapped the Tell me when it is here button on co-parent coming soon; stays on the phone and is never sent"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.language
+    store: settings
+    level: L4
+    purpose: "The author's primary speech language (a person's language, PRD 7.10)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.memoryFailures
+    store: settings
+    level: L2
+    purpose: "Model tier fallback count"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.jobRunning
+    store: settings
+    level: L2
+    purpose: "Transcription job marker"
+    retention: "While a job runs"
+    deletion_path: "Cleared when the job ends; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: player.original
+    store: settings
+    level: L2
+    purpose: "Play the original recording instead of the listening copy"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: preview.draftId
+    store: settings
+    level: L3
+    purpose: "Development preview seed for the fictional Asha family"
+    retention: "Development builds only"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: dev_only
+    verified: code
+  - key: family
+    store: settings
+    level: L4
+    purpose: "Legacy single-child record (child name and birthday)"
+    retention: "Migrated into children and deleted on first open of a newer build"
+    deletion_path: "Local migration 2"
+    leaves_device: false
+    status: retired
+    verified: code
+  - key: ageAttested
+    store: settings
+    level: L2
+    purpose: "Legacy 18+ answer"
+    retention: "Converted to ageGate.passed and deleted by local migration 3"
+    deletion_path: "Local migration 3"
+    leaves_device: false
+    status: retired
+    verified: code
+  - key: ageAttestedAt
+    store: settings
+    level: L2
+    purpose: "Legacy time of the 18+ answer"
+    retention: "Deleted by local migration 3"
+    deletion_path: "Local migration 3"
+    leaves_device: false
+    status: retired
+    verified: code
+  - key: scribe.analytics.consent
+    store: "analytics key-value storage (backend not chosen: MMKV, SecureStore or AsyncStorage)"
+    level: L2
+    purpose: "Analytics consent choice (unknown, granted, denied)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: scribe.analytics.id
+    store: "analytics key-value storage (backend not chosen)"
+    level: L2
+    purpose: "Random analytics id, created only on opt-in"
+    retention: "Until consent is withdrawn (retired), sign-out or account deletion"
+    deletion_path: "Retired on withdrawal; reset at sign-out and account deletion"
+    leaves_device: true
+    status: in_code
+    verified: code
+    notes: "Sent with analytics events after opt-in only"
+  - key: scribe.analytics.retired_ids
+    store: "analytics key-value storage (backend not chosen)"
+    level: L2
+    purpose: "Up to 20 retired analytics ids, kept only so a deletion request can name them"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+
+device_files:
+  - id: recordings
+    path: "Audio files (.m4a, AAC-LC) in the app sandbox; the path is stored in entries.audio_uri"
+    level: L4
+    purpose: "The original recording of each spoken letter; never altered (decision 8)"
+    retention: "Until the author deletes the letter, or the app is deleted"
+    deletion_path: "Deleted with the letter (purge sync planned); deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+    notes: "Decision 9: no audio upload in v1.0, so recordings are not sent to our servers or to any transcription service. They sit in Documents, which the user's own OS device backup (for example iCloud Backup) may include (D-033 recommended, awaiting founder)"
+  - id: speech-models
+    path: "Application Support/models (excluded from backup), fallback Documents/models"
+    level: L1
+    purpose: "Whisper model files for on-device transcription"
+    retention: "Until removed in Settings or the app is deleted"
+    deletion_path: "Settings (packs can be deleted, decision 15); deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - id: language-packs
+    path: "App sandbox (location not built)"
+    level: L1
+    purpose: "Downloaded language packs (versioned JSON plus model file, SHA-256 checked against a signed manifest)"
+    retention: "Until deleted in Settings or the app is deleted"
+    deletion_path: "Settings"
+    leaves_device: false
+    status: planned
+    verified: decision
+  - id: photos
+    path: "App sandbox"
+    level: L4
+    purpose: "Photos with letters, and cached copies of other members' photos"
+    retention: "Until purge sync or member removal"
+    deletion_path: "Purge sync (planned)"
+    leaves_device: false
+    status: planned
+    verified: doc
+  - id: export-zips
+    path: "App temp directory"
+    level: L4
+    purpose: "Export of the book, plaintext by design"
+    retention: "Deleted after the share sheet closes"
+    deletion_path: "App deletes the temp file"
+    leaves_device: false
+    status: planned
+    verified: doc
+  - id: keychain
+    path: "iOS Keychain"
+    level: L4
+    purpose: "Session token, invite token; content keys when encrypted backup ships"
+    retention: "Until sign-out or acceptance; keys until book purge or rotation"
+    deletion_path: "Sign-out; account deletion"
+    leaves_device: false
+    status: planned
+    verified: doc
+  - id: safety-tiers
+    path: "On the device only"
+    level: L4
+    purpose: "Safety tiers (PRD K-06); v1.0 ships a static support row instead of a classifier (decision 9)"
+    retention: "Not applicable in v1.0"
+    deletion_path: "Not applicable"
+    leaves_device: false
+    status: deferred
+    verified: decision
+    notes: "There is no server table for safety data (CLAUDE.md)"
+
+sdks:
+  - id: whisper.rn
+    level: L4
+    purpose: "On-device speech to text"
+    retention: "Nothing kept by the library beyond the transcript the app stores"
+    deletion_path: "Not applicable"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - id: expo-sqlite
+    level: L4
+    purpose: "Local database"
+    retention: "See device_sqlite"
+    deletion_path: "See device_sqlite"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - id: expo-audio
+    level: L4
+    purpose: "Recording and playback"
+    retention: "See device_files recordings"
+    deletion_path: "See device_files recordings"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - id: expo-file-system
+    level: L4
+    purpose: "Audio and model files"
+    retention: "See device_files"
+    deletion_path: "See device_files"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - id: posthog-react-native
+    level: L2
+    purpose: "Opt-in analytics transport; every event passes the packages/analytics allowlist"
+    retention: "See hosts posthog"
+    deletion_path: "See hosts posthog"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "Required options in packages/analytics/src/posthog.ts: off until opt-in, no session replay, no autocapture, GeoIP off. Not installed in apps/mobile"
+  - id: sentry-react-native
+    level: L2
+    purpose: "Crash reporting with content scrubbing"
+    retention: "See hosts sentry"
+    deletion_path: "See hosts sentry"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "Not installed"
+  - id: storekit2
+    level: L3
+    purpose: "Apple subscription UI, restore, manage, on-device entitlement check (decision 3)"
+    retention: "Apple holds purchase records"
+    deletion_path: "Not applicable (Apple)"
+    leaves_device: true
+    status: planned
+    verified: decision
+    notes: "Purchase data goes between the phone and Apple only; no server of ours receives it. Expo binding not chosen"
+  - id: supabase-js
+    level: L4
+    purpose: "Sign-in and sync client"
+    retention: "See hosts supabase"
+    deletion_path: "See hosts supabase"
+    leaves_device: true
+    status: planned
+    verified: code
+    notes: "Not installed in apps/mobile on as_of"
+
+analytics:
+  provider: posthog
+  catalogue: packages/analytics/src/catalog.ts
+  level: L2
+  purpose: "Product analytics for the self-learning loop (decision 12). Enums, booleans and bounded integers only"
+  retention: "12 months, proposed"
+  deletion_path: "Withdrawing consent retires the id; account deletion asks PostHog to delete each id the device holds (route planned)"
+  leaves_device: true
+  status: in_code
+  verified: code
+  notes: "Opt-in: nothing is sent before the person says yes. No event carries letter text, recordings, photos, names, dates, language names or any id other than the random analytics id. The SDK is not wired into the app yet"
+  global_props:
+    schema_version: L2
+    child_count_bucket: L2
+    sample_pct: L2
+  events:
+    app_cold_start:
+      ttfi_bucket: L2
+    app_opened:
+      source: L2
+      days_since_last_open: L2
+    app_backgrounded:
+      session_bucket: L2
+    screen_view:
+      route: L2
+    analytics_opted_in:
+      surface: L2
+      days_since_install: L2
+      letters_bucket: L2
+      signed_in: L2
+      member_role: L2
+      first_letter_mode: L2
+      time_to_first_letter: L2
+      came_from_invite: L2
+    auth_sheet_shown:
+      trigger: L2
+    auth_method_selected:
+      method: L2
+    auth_succeeded:
+      method: L2
+      had_local_data: L2
+    auth_failed:
+      method: L2
+      reason: L2
+    auth_email_sent:
+      attempt: L2
+    auth_deferred:
+      trigger: L2
+    signed_out:
+      reason: L2
+    invite_opened:
+      via: L2
+      signed_in: L2
+    local_merge_choice:
+      choice: L2
+    child_added:
+      has_date: L2
+      child_ordinal: L2
+      in_first_run: L2
+      added_together: L2
+    child_switched:
+      child_ordinal: L2
+      surface: L2
+    child_setting_changed:
+      key: L2
+      child_ordinal: L2
+    make_it_yours_card:
+      card: L2
+      action: L2
+    goals_set:
+      count: L2
+    dictionary_term_added:
+      kind: L2
+      source: L2
+    capture_started:
+      mode: L2
+      source: L2
+      prompt_kind: L2
+      child_ordinal: L2
+      member_role: L2
+    capture_discarded:
+      mode: L2
+      stage: L2
+      audio_bucket: L2
+    transcription_completed:
+      engine: L2
+      model: L2
+      audio_bucket: L2
+      latency_bucket: L2
+      outcome: L2
+    letter_saved:
+      mode: L2
+      destination: L2
+      child_ordinal: L2
+      member_role: L2
+      prompt_kind: L2
+      audio_bucket: L2
+      words_bucket: L2
+      machine_edit_count: L2
+      edits_reverted_count: L2
+      edits_rejected_count: L2
+      engine: L2
+      from_notification_2h: L2
+    review_action:
+      action: L2
+    machine_edit_reverted:
+      edit_type: L2
+      source: L2
+    machine_edit_rejected:
+      edit_type: L2
+      source: L2
+      reason: L2
+      count: L2
+    letter_deleted:
+      action: L2
+      destination: L2
+    language_set:
+      lang: L2
+      action: L2
+    pack_download:
+      pack: L2
+      lang: L2
+      pack_version: L2
+      stage: L2
+      failure: L2
+      network: L2
+    book_opened:
+      child_ordinal: L2
+      letters_bucket: L2
+      member_role: L2
+    letter_opened:
+      author_relation: L2
+      has_audio: L2
+    playback_started:
+      surface: L2
+      author_relation: L2
+      version: L2
+    read_together_started:
+      child_ordinal: L2
+      access: L2
+      letters_bucket: L2
+    read_together_ended:
+      reason: L2
+      session_bucket: L2
+      letters_heard: L2
+    read_together_try_used:
+      n: L2
+    invite_created:
+      role: L2
+      channel: L2
+      shared: L2
+      child_ordinal: L2
+    invite_accepted:
+      role: L2
+      surface: L2
+    invite_failed:
+      stage: L2
+      reason: L2
+    family_letter_reviewed:
+      decision: L2
+    member_removed:
+      role: L2
+    member_left:
+      role: L2
+      letters: L2
+    reminder_prime_shown:
+      source: L2
+    reminder_prime_result:
+      choice: L2
+    os_permission_result:
+      granted: L2
+      platform: L2
+    reminder_schedule_set:
+      cadence: L2
+      hour_bucket: L2
+      paused: L2
+    reminder_sent:
+      type: L2
+      variant_id: L2
+    reminder_suppressed:
+      reason: L2
+    notification_opened:
+      type: L2
+      variant_id: L2
+    moment_shown:
+      type: L2
+    resurface_shown:
+      kind: L2
+    resurface_opened:
+      kind: L2
+    settings_changed:
+      key: L2
+    export_started:
+      format: L2
+      letters_bucket: L2
+    export_completed:
+      format: L2
+      size_bucket: L2
+      duration_bucket: L2
+    export_failed:
+      format: L2
+      reason: L2
+    export_shared:
+      result: L2
+    account_deletion:
+      stage: L2
+    plus_offer_viewed:
+      trigger: L2
+    plus_offer_closed:
+      trigger: L2
+      outcome: L2
+    plan_changed:
+      from_state: L2
+      to_state: L2
+      period: L2
+      ownership: L2
+    restore_result:
+      outcome: L2
+    error_shown:
+      code: L2
+    sync_failed:
+      reason: L2
+
+logs:
+  - id: supabase-api-and-postgres
+    level: L2
+    purpose: "Request metadata for operating the service; never bodies with content"
+    retention: "Provider rolling window (Unverified per plan)"
+    deletion_path: "Provider window"
+    leaves_device: true
+    status: planned
+    verified: doc
+    notes: "Target L2: ids of operational records, enums, counts (DATA_CLASSIFICATION 4.8). Responses are content-free in logs and carry request ids (decision 17)"
+  - id: edge-functions
+    level: L2
+    purpose: "Logs of planned Edge Functions (deletion worker, purge worker)"
+    retention: "Provider rolling window (Unverified)"
+    deletion_path: "Provider window"
+    leaves_device: true
+    status: planned
+    verified: doc
+    notes: "No Edge Functions exist in this repo on as_of"
+  - id: auth-audit-log
+    level: L3
+    purpose: "Supabase Auth sign-in events (may hold IP addresses)"
+    retention: "Unverified; target 90 days"
+    deletion_path: "Provider window"
+    leaves_device: true
+    status: planned
+    verified: doc
+  - id: vercel-request-logs
+    level: L3
+    purpose: "Website request logs (IP address, user agent, path)"
+    retention: "Provider window (Unverified)"
+    deletion_path: "Provider window"
+    leaves_device: true
+    status: planned
+    verified: doc
+  - id: resend-message-logs
+    level: L3
+    purpose: "Email delivery logs (recipient address, subject, status)"
+    retention: "Provider window (not recorded in this repo)"
+    deletion_path: "Provider log deletion"
+    leaves_device: true
+    status: in_code
+    verified: assumed
+  - id: pack-cdn-access-logs
+    level: L3
+    purpose: "Access logs of the pack and model host (IP address and path)"
+    retention: "Depends on the host chosen"
+    deletion_path: "Provider window"
+    leaves_device: true
+    status: planned
+    verified: assumed
+  - id: support-mailbox
+    level: L4
+    purpose: "What people write to hello@ (they may paste a letter)"
+    retention: "2 years after the last message, proposed"
+    deletion_path: "Manual deletion on request"
+    leaves_device: true
+    status: in_code
+    verified: doc
+  - id: database-audit-tables
+    level: L3
+    purpose: "audit_events and the planned ops_audit_log; the only place person ids appear in logs"
+    retention: "audit_events 24 months; ops_audit_log 12 months (planned)"
+    deletion_path: "purge_due (audit_events); ops_audit_log planned"
+    leaves_device: true
+    status: pending_apply
+    verified: code
+
+open_issues:
+  - "Language pack downloads: the request path names the pack, so a host access log pairs an IP address with a chosen language, which DATA_CLASSIFICATION treats as L4. Decide the host and its logging before packs ship (decision 15)."
+  - "Deletion: purge_due is not scheduled and the deletion and purge worker Edge Functions are not built, so server-side deletion stops at the queue until they ship."
+  - "Analytics id deletion: the device keeps current and retired ids for deletion requests, but the server-side route that asks PostHog to delete them is not built."
+  - "Recordings and the user's own OS device backup: D-033 (recommended, awaiting founder) keeps recordings in Documents so device backups include them; product copy that says recordings live only on this phone should match the decision."
+  - "Copy describes encrypted backup of recordings and family playback; decision 9 defers all audio upload to v1.1. See docs/legal/CLAIMS.md."
+  - "Sentry is listed in subprocessors.md and ADR 0008 but decision 12 names only PostHog; confirm whether crash reporting ships in v1.0."
