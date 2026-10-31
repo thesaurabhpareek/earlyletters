@@ -423,7 +423,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
-- Status: ready. Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; include Recently deleted letters; use the real membership role instead of `'parent'`.
+- Status: ready. Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; use the real membership role instead of `'parent'`. Recently deleted letters moved to BL-388 (CR-35). In PR #161.
 
 #### BL-324 Native modules never crash or hang on bad input (review L9)
 - Status: ready. Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
