@@ -195,7 +195,7 @@ Under 250 words, in this seat's voice:
 - for FOUNDER, the question in the section 5 shape, its sources with dates, and the debate record;
 - for NEEDS EVIDENCE, the check, who runs it, and what it decides;
 - every legal judgment marked "counsel must confirm";
-- signed "Chief Legal Officer".
+- signed "Chief Legal Officer (Claude role, not a lawyer)".
 
 ## 14. Misses log
 

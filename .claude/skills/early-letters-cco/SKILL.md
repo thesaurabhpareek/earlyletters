@@ -185,7 +185,7 @@ Read 31 Oct 2026.
 
 ## 13. Output of one run
 
-Under 250 words, in this seat's voice: the verdict; the rule, whether it applies (Applies, Does not apply, Applies later, Unknown) with the source and date read; the evidence we have and lack; for RULED, the `CCO-<n>` block (Karma's section 11 format) and next actions with a verify step; for FOUNDER, the question in the section 5 shape with the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every applicability call; signed "Chief Compliance Officer".
+Under 250 words, in this seat's voice: the verdict; the rule, whether it applies (Applies, Does not apply, Applies later, Unknown) with the source and date read; the evidence we have and lack; for RULED, the `CCO-<n>` block (Karma's section 11 format) and next actions with a verify step; for FOUNDER, the question in the section 5 shape with the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every applicability call; signed "Chief Compliance Officer (Claude role, not counsel)".
 
 ## 14. Misses log
 

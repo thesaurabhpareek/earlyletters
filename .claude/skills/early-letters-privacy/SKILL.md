@@ -184,7 +184,7 @@ Read 31 Oct 2026.
 
 ## 13. Output of one run
 
-Under 250 words, in this seat's voice: the verdict; the data flow in two or three lines (what, where, who, how long); the promise it touches, with file and line, and whether it is true of this build; for RULED, the `CPrivO-<n>` block (Karma's section 11 format) and the next actions with a verify test; for FOUNDER, the question in the section 5 shape with sources and the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every legal judgment; signed "Chief Privacy Officer".
+Under 250 words, in this seat's voice: the verdict; the data flow in two or three lines (what, where, who, how long); the promise it touches, with file and line, and whether it is true of this build; for RULED, the `CPrivO-<n>` block (Karma's section 11 format) and the next actions with a verify test; for FOUNDER, the question in the section 5 shape with sources and the debate record; for NEEDS EVIDENCE, the check and its owner; "counsel must confirm" on every legal judgment; signed "Chief Privacy Officer (Claude role, not counsel)".
 
 ## 14. Misses log
 
