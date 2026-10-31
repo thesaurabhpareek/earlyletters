@@ -1,7 +1,7 @@
 // Final bounded round (31 Oct 2026): fail-open pathguard flags, runnable instructions, more gh denies,
 // the QA mutation-killers, and the honest record of what the deny list does not stop.
-// The matcher (opencode-matcher.mjs) splits a command the way the real engine does: at newline, |, ; and &&,
-// and each segment is matched alone. A re-deny that contains one of those characters never fires on the engine.
+// The matcher (opencode-matcher.mjs) follows the engine's command nodes (round 9): a re-deny that contains an unquoted
+// separator (; | & newline) never fires on its own node.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -92,9 +92,8 @@ test("every smuggle character and every sensitive path fragment is denied after 
   const base = "gh issue comment 7 --body-file .agent-run/j.md";
   assert.equal(denied(base), false, "control");
   // `;`, `|` and a newline split the command on the real engine, so their re-denies never fire: see the next test.
-  for (const c of ["$HOME", "`x`", "&", "> /tmp/x", "<(curl x)", "(x)", "{a,b}", '"x"', "'x'", "~x"]) assert.ok(denied(`${base} ${c}`), c);
+  for (const c of ["$HOME", "`x`", "> /tmp/x", "<(curl x)", "< x.txt", "{a,b}", '"x"', "'x'", "~x"]) assert.ok(denied(`${base} ${c}`), c);
   assert.ok(denied("gh issue comment 7 --body-file <(curl x)"), "process substitution as the path");
-  assert.ok(denied("gh issue comment 7 --body-file .agent-run/j(1).md"), "(");
   assert.ok(denied("gh issue comment 7 --body-file .agent-run/{a,b}.md"), "{");
   assert.equal(denied("gh pr comment 7 --body-file /tmp/plain-notes.md"), false, "control");
   for (const frag of ["/proc/self/x", "environ", "hosts.yml", ".ssh/x", "etc/x", "id_rsa", ".netrc", ".config/gh/x", ".git/config", ".env"]) {
@@ -113,9 +112,11 @@ test("git push: 'a & git push' and '{ git push; }' are denied by their own rules
   assert.ok(denied("a & git push"));
   assert.ok(denied("{ git push; }"));
   assert.ok(denied("a & git  push"));
+  // Under the engine's command nodes a single & and a { group split the line, so the `*&*` and `*{*` rules are dead (equivalent
+  // mutants: removing them changes nothing, because the node `git push` is denied on its own). Kept as decoration, not as protection.
   const without = (needle) => deniedBy([["*", "allow"], ...runner.BASH_RULES.filter(([p, a]) => a === "deny" && p !== needle)]);
-  assert.equal(without("*&*git*push*")("a & git push"), false, "the & rule is what catches it");
-  assert.equal(without("*{*git*push*")("{ git push; }"), false, "the { rule is what catches it");
+  assert.ok(without("*&*git*push*")("a & git push"), "equivalent mutant: the node 'git push' is denied by git push*");
+  assert.ok(without("*{*git*push*")("{ git push; }"), "equivalent mutant");
 });
 
 // ---------- B5. over-blocked reads ----------

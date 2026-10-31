@@ -3,9 +3,8 @@
 // Branch creation and commits stay allowed.
 //
 // The matcher below is the shared offline model (opencode-matcher.mjs): last match wins, `*` crosses spaces,
-// a trailing " *" is optional, backslashes are slashes, and a command is split at newline, | ; and && with each
-// segment matched alone. Those points were CONFIRMED on opencode 1.18.34 for the cases the red team ran; the
-// patterns added in round 8 are not yet re-run on the engine.
+// a trailing " *" is optional, backslashes are slashes, and the engine matches shell-grammar command nodes (opencode-matcher.mjs).
+// Those points were CONFIRMED on opencode 1.18.34 for the cases the red team ran, and the round 8 patterns were ENGINE-VERIFIED for those cases.
 // These patterns are a TRIPWIRE for the bare form of a command. They do not stop wrappers, scripts, quoting or
 // aliases. The real controls are withholding GH_TOKEN and OPENROUTER_API_KEY from the model step, branch
 // protection, and locked journal issues (docs/agents/hardening/integration-notes.md).

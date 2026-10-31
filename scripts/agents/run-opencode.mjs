@@ -20,7 +20,7 @@ import { tmpdir } from "node:os";
  *
  * Order: the catch-all allow, then every deny, then a few narrow allows for the comment commands
  * the brief tells the agent to run (file names such as `closed.md` would otherwise trip the broad
- * `gh*issue*close*` deny; only a body file under .agent-run/ or /tmp/), then read allows (`--json`, `--search`, `--label` on pr/issue
+ * `gh*issue*close*` deny; a body file under .agent-run/ or /tmp/, tripwire wording: this holds for a single body flag only), then read allows (`--json`, `--search`, `--label` on pr/issue
  * view and list, so mergeStateStatus or `--label release` run), then re-denies for anything that could ride along on those allows.
  *
  * TRIPWIRE, NOT A BOUNDARY. Globs cannot close quoting (`g"i"t push` still gets through), spacing
@@ -28,7 +28,9 @@ import { tmpdir } from "node:os";
  * odd-case verbs such as `-XpAtCh` (upper, lower and Capitalised verbs ARE denied), or `curl`, `wget`, `printenv` and
  * `/proc/self/environ`. The gh and git patterns are anchored at the start of a command, so they catch only the bare form: `env gh`,
  * `FOO=1 gh`, `command gh`, `exec`, `nohup`, `timeout`, `eval`, `xargs`, `sh -c`, `\gh` and `/usr/bin/gh` are NOT caught and are not chased.
- * The engine splits a command at newline, | ; and && and matches each segment alone, so a re-deny containing one of those never fires. The
+ * The engine matches shell-grammar command nodes (separators | ; & && || newline outside quotes; $( ), backticks, ( ) and { } as
+ * separate commands; quotes are not split), so a re-deny containing a separator never fires. The round 8 patterns were ENGINE-VERIFIED on
+ * opencode 1.18.34 for the cases the red team ran (see integration-notes.md, "Round 9 additions"). The
  * real controls live elsewhere: withholding GH_TOKEN and OPENROUTER_API_KEY from the model step,
  * branch protection on develop and main, a separate write job that does the push (H15), and
  * locked journal issues. See docs/agents/hardening/integration-notes.md. Do not rely on this list.
@@ -81,10 +83,12 @@ const GH_DENY = [
   "gh*issue*close*", "gh*issue*edit*", "gh*issue*delete*", "gh*issue*transfer*", "gh*issue*lock*", "gh*issue*reopen*",
   // secrets, settings, repo admin, workflow control, egress through gh
   "gh*secret*", "gh*variable*", "gh*repo*delete*", "gh*repo*edit*", "gh*repo*archive*", "gh*repo*create*", "gh*repo*rename*", "gh*repo*sync*", "gh*ruleset*",
-  "gh auth*", "gh  *auth*", "gh\t*auth*", "gh \t*auth*", "gh\t *auth*",
-  "gh alias*", "gh  *alias*", "gh\t*alias*", "gh \t*alias*", "gh\t *alias*",
+  "gh auth*", "gh  *auth*", "gh\t*auth*", "gh \t*auth*",
+  "gh alias*", "gh  *alias*", "gh\t*alias*", "gh \t*alias*",
   "gh*extension*", "gh ext*", "gh  ext*", "gh\text*", "gh*config*set*", "gh*ssh-key*", "gh*gpg-key*",
   "gh*label*delete*", "gh*run*delete*", "gh*cache*delete*",
+  // a body file on a comment or review is denied unless an allow below rescues its path
+  "gh issue comment*--body-file*", "gh pr comment*--body-file*", "gh pr review*--body-file*",
   "gh*workflow*run*", "gh*workflow*enable*", "gh*workflow*disable*", "gh*run*rerun*", "gh*run*cancel*",
   "gh*release*", "gh*gist*",
   // gh api writes: explicit verbs, quoted spellings, implicit POST (field flags, also after a tab), graphql, sensitive paths
@@ -99,10 +103,12 @@ const GH_DENY = [
 
 const DENY_BEFORE_GIT = [...GH_DENY, ...GIT_DENY];
 
-// Narrow allows, after the denies. Only a plain path under .agent-run/ or /tmp/ is rescued; a relative path such as
+// Narrow allows, after the denies. A plain path under .agent-run/ or /tmp/ is rescued (for a single body flag only: a tripwire, not a
+// guarantee about the path; real gh uses the LAST body flag, so two are denied); a relative path such as
 // `closed.md` stays over-blocked. Glob characters (* and ?) in a path cannot be denied by a glob rule: stated in the notes.
 const COMMENT_HEADS = ["gh issue comment", "gh pr comment", "gh pr review"];
 const BODY_PREFIXES = [".agent-run/", "/tmp/"];
+const BODY_FLAGS = ["--body", " -b", "\t-b", " -F", "\t-F"];
 const COMMENT_ALLOWS = BODY_PREFIXES.flatMap((p) => [
   `gh issue comment * --body-file ${p}*`, `gh pr comment * --body-file ${p}*`, `gh pr review * --comment --body-file ${p}*`,
 ]);
@@ -117,8 +123,10 @@ const COMMENT_REDENY = [
   ...COMMENT_HEADS.flatMap((h) => [
     ...SMUGGLE.map((c) => `${h}*${c}*`), ...['"', "'", "~", ".."].map((c) => `${h}*--body-file*${c}*`), ...SENSITIVE.map((c) => `${h}*${c}*`),
     `${h}*-R*`, `${h}*--repo*`, `${h}*--delete-last*`, `${h}*--body-file -*`, `${h}*--body-file=*`, `${h}*--body-file /dev/*`, `${h}* -F*`,
+    // real gh uses the LAST body flag, so a second one defeats the first: deny any two of --body(-file), -b, -F
+    ...BODY_FLAGS.flatMap((x) => BODY_FLAGS.map((y) => `${h}*${x}*${y}*`)),
   ]),
-  "gh pr review*--approve*", "gh pr review* -a *", "gh pr review*\t-a*",
+  "gh pr review*--approve*", "gh pr review* -a *", "gh pr review*\t-a*", "gh pr review* -a\t*",
   ...READ_HEADS.flatMap((h) => SMUGGLE.map((c) => `${h}*${c}*`)),
 ];
 
