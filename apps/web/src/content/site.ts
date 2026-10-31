@@ -147,7 +147,7 @@ export const site = {
     s04: {
       label: 'Your words',
       headline: 'It stays in your words.',
-      support: "Your phone listens and takes out the ums and false starts. If it mishears Meera's name, it fixes that too. It never adds a word. Every change is marked and can be put back, and the original recording is kept as it was.",
+      support: 'It takes out the ums and false starts, and fixes a misheard name. It never adds a word. Every change is marked and can be put back, and your recording is kept as it was.',
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -185,7 +185,7 @@ export const site = {
     s08: {
       label: 'Languages',
       headline: 'English first, more to follow.',
-      support: 'It starts in English. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each one when a native speaker has checked it. Every language is kept in its own script.',
+      support: 'English first. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each once a native speaker has checked it.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
