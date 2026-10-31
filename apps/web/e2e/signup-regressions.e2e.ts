@@ -14,14 +14,14 @@ test.describe('A-U2: sign-up without JavaScript', () => {
   test('a native submit saves the address, sends the welcome and lands the person on a readable page, not raw JSON', async ({ page, mock, email }) => {
     await page.goto('/');
     await page.getByLabel(n.label).fill(email);
-    const [response] = await Promise.all([page.waitForResponse((r) => r.url().endsWith('/api/notify')), page.getByRole('button', { name: n.button }).click()]);
+    const [response] = await Promise.all([page.waitForResponse((r) => r.url().endsWith('/api/notify')), page.getByRole('button', { name: n.quietButton }).click()]);
     await page.waitForLoadState('load');
 
     // The post is answered with a redirect, and the person ends on a page of the site, never the machine's JSON.
     expect(response.status()).toBe(303);
     await expect(page).toHaveURL(/\/signup\/thanks$/);
     await expect(page.getByRole('heading', { level: 1, name: n.thanksTitle })).toBeVisible();
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await page.content()).not.toContain('"ok"');
     // And it worked: the address is saved and the welcome went out.
     expect(await mock.contact(email)).toBeDefined();
@@ -42,10 +42,11 @@ test.describe('A-U8: repeat and unsubscribed addresses', () => {
   test('the form in the browser: the second sign-up of the same address sends no second welcome email', async ({ page, mock, email }) => {
     await page.goto('/');
     await signUp(page, email);
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     await page.reload();
     await signUp(page, email);
-    await expect(page.getByText(n.success)).toBeVisible();
+    // The second time the person is told the address is already on the list.
+    await expect(page.getByText(n.alreadyTitle)).toBeVisible();
     expect(await mock.emailsTo(email)).toHaveLength(1);
   });
 

@@ -34,6 +34,7 @@ test('every internal link on every page leads somewhere that exists, and every f
   const failures: string[] = [];
   const external = new Map<string, Link>();
   const mail = new Set<string>();
+  const shareIntents = new Set<string>();
   const fragments: { from: string; path: string; hash: string }[] = [];
   let internalLinks = 0;
 
@@ -50,6 +51,11 @@ test('every internal link on every page leads somewhere that exists, and every f
       const href = link.href.trim();
       if (!href) {
         failures.push(`${path}: empty href on "${link.text}"`);
+        continue;
+      }
+      // The share row (components/site/ShareButton.tsx): an addressless mail and text message that carry the page link.
+      if (/^mailto:\?subject=/.test(href) || href.startsWith('sms:')) {
+        shareIntents.add(href);
         continue;
       }
       if (href.startsWith('mailto:')) {
@@ -88,6 +94,10 @@ test('every internal link on every page leads somewhere that exists, and every f
   for (const [href, link] of external) {
     if (!/^https:\/\//.test(href)) failures.push(`external link is not https: ${href}`);
     if (link.target === '_blank' && !/noopener/.test(link.rel ?? '')) failures.push(`external link opens a tab without rel=noopener: ${href}`);
+  }
+  for (const href of shareIntents) {
+    expect(href, 'share link shape').toMatch(/^(mailto:\?subject=[^&\s]+&body=[^\s]+|sms:\?&body=[^\s]+)$/);
+    expect(decodeURIComponent(href), 'share link carries the page address').toMatch(/https?:\/\/[^\s]+\/$/);
   }
   for (const href of mail) expect(href, 'mailto shape').toMatch(/^mailto:[^@\s?]+@[^@\s?]+\.[a-z]{2,}(\?subject=[^&\s]+)?$/i);
 

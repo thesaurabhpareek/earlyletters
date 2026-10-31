@@ -144,6 +144,16 @@ export type VignetteProps = {
 };
 
 export function Vignette({ strength = 1, tone = 'night', x = '50%', y = '46%' }: VignetteProps) {
+  // A constant strength needs no MotionValue, so it costs no style write per scroll frame.
+  if (typeof strength === 'number') {
+    return (
+      <div
+        aria-hidden
+        className={styles.layer}
+        style={{ opacity: strength, background: `radial-gradient(ellipse farthest-corner at ${x} ${y}, ${VIGNETTE_STOPS[tone]})` }}
+      />
+    );
+  }
   return (
     <motion.div
       aria-hidden

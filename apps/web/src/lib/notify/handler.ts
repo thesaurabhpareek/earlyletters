@@ -11,7 +11,10 @@
  *  5. email validation and normalisation;
  *  6. configuration, then a small per-instance ceiling on provider calls, then the Resend call.
  *
- * Same answer for a new and an existing address, so the endpoint cannot be used to find out who signed up.
+ * An address that is already on the list is told so (`already: true`), because a visitor who enters it twice should
+ * hear that it is saved, not be left unsure. That is the only thing the answer reveals, and only for active
+ * subscribers (an address that unsubscribed gets the same answer as a new one). The per-client rate limit above
+ * is what keeps the endpoint from being used to check a long list of addresses.
  */
 import type { NotifyResult } from './client';
 import { normalizeEmail } from './email';
@@ -37,8 +40,8 @@ export function resetNotifyLimits(): void {
 
 const STATUS: Record<ErrorCode, number> = { invalid: 400, rate_limited: 429, server: 500 };
 
-function ok(): Response {
-  return Response.json({ ok: true } satisfies NotifyResult, { headers: { 'Cache-Control': 'no-store' } });
+function ok(already = false): Response {
+  return Response.json((already ? { ok: true, already: true } : { ok: true }) satisfies NotifyResult, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 function fail(error: ErrorCode, retryAfterSeconds?: number): Response {
@@ -106,7 +109,8 @@ export async function handleNotify(request: Request): Promise<Response> {
   const native = isNativeForm(request);
   const response = await handleNotifyJson(request);
   if (!native) return response;
-  const where = response.status === 200 ? '/signup/thanks' : `/signup/sorry?e=${response.status === 400 ? 'invalid' : response.status === 429 ? 'slow' : 'server'}`;
+  const already = response.status === 200 && ((await response.clone().json()) as { already?: boolean }).already === true;
+  const where = already ? '/signup/already' : response.status === 200 ? '/signup/thanks' : `/signup/sorry?e=${response.status === 400 ? 'invalid' : response.status === 429 ? 'slow' : 'server'}`;
   return new Response(null, { status: 303, headers: { 'Cache-Control': 'no-store', Location: where } });
 }
 
@@ -144,9 +148,9 @@ async function handleNotifyJson(request: Request): Promise<Response> {
     const ceiling = providerCeiling.hit('provider');
     if (!ceiling.allowed) return fail('rate_limited', ceiling.retryAfterSeconds);
 
-    const { outcome, contactId, existing } = await subscribe(email, config);
+    const { outcome, contactId, existing, alreadyOnList } = await subscribe(email, config);
     if (outcome === 'ok' && !existing) await sendWelcome(email, config, contactId);
-    return outcome === 'ok' ? ok() : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
+    return outcome === 'ok' ? ok(alreadyOnList === true) : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
   } catch (error) {
     // The error code of the underlying cause (for example ERR_INVALID_CHAR): a fixed vocabulary, never message text.
     const cause = error instanceof Error ? (error.cause as { code?: unknown } | undefined) : undefined;

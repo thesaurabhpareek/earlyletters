@@ -4,6 +4,9 @@
   inset: 0;
   z-index: 1;
 }
+.meta {
+  opacity: 1;
+}
 .cover {
   position: absolute;
   left: 50%;
@@ -75,11 +78,29 @@
 .copy h2 {
   font-size: clamp(36px, 5.2vw, 80px);
 }
+.golden {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(to top, var(--accent) 0%, var(--night-accent) 48%, var(--lamp) 100%);
+}
 .dusk {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 0;
   background: var(--dusk);
+}
+/* Low sun through a window: a skewed band of light with two mullion shadows, sweeping across the book. */
+.sun {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 34vw;
+  z-index: 0;
+  transform: skewX(-18deg);
+  background: linear-gradient(to right, transparent, rgba(255, 226, 180, 0.3) 12%, rgba(255, 226, 180, 0.3) 44%, transparent 46%, transparent 54%, rgba(255, 226, 180, 0.3) 56%, rgba(255, 226, 180, 0.3) 88%, transparent);
+  pointer-events: none;
 }
 @media (min-width: 900px) {
   .copy {

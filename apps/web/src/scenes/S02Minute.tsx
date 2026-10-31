@@ -25,7 +25,7 @@ const copy = site.scenes.s02;
 
 export function S02Minute() {
   return (
-    <Scene id="a-minute" label={copy.label} tone="night" length={2.5}>
+    <Scene id="a-minute" label={copy.label} tone="night" length={2.5} rest={0.6}>
       <MinuteStage />
     </Scene>
   );
@@ -38,14 +38,15 @@ function MinuteStage() {
   const pool = lampPool(w);
   const width = phoneWidthFor(w, h);
 
-  const lampOpacity = useTransform(p, [0.1, 0.34], [1, 0.4]);
+  const lampOpacity = useTransform(p, [0.1, 0.34], [1, 0.25]);
   const phoneOpacity = useTransform(p, [0, 0.06], [0, 1]);
   const tilt = useTransform(p, [0.06, 0.3], [62, 0]);
   const lift = useTransform(p, [0.06, 0.3], [0.9, 1]);
   const dark = useTransform(p, [0.2, 0.34], [1, 0]);
   const press = useTransform(p, [0.88, 0.98], [0, 1]);
-  const x = useTransform(p, [0.8, 0.94], narrow ? ['0vw', '0vw'] : ['17vw', '0vw']);
-  const y = useTransform(p, [0.8, 0.94], narrow ? ['10svh', '0svh'] : ['0svh', '0svh']);
+  const x = useTransform(p, [0.06, 0.3, 0.8, 0.94], narrow ? ['0vw', '0vw', '0vw', '0vw'] : ['-26vw', '17vw', '17vw', '0vw']);
+  const y = useTransform(p, [0.0, 0.3, 0.8, 0.94], narrow ? ['22svh', '10svh', '10svh', '0svh'] : ['16svh', '0svh', '0svh', '0svh']);
+  const lampY = useTransform(p, [0.1, 0.34], ['0svh', '6svh']);
 
   const headOpacity = useTransform(p, [0.32, 0.4, 0.78, 0.85], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.32, 0.4], [18, 0]);
@@ -55,22 +56,22 @@ function MinuteStage() {
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
       <LampLight intensity={1} x={pool.x} y={pool.y} size={pool.size} warmth="lamp" aspect={0.8} breathe />
-      <motion.div className={styles.lamp} style={{ opacity: lampOpacity }}>
+      <motion.div className={styles.lamp} style={{ opacity: lampOpacity, y: lampY }}>
         <Lamp glow={1} strokeWidth={1.5} />
       </motion.div>
 
       <div className={styles.phoneStage}>
         <motion.div style={{ x, y, opacity: phoneOpacity }}>
           <motion.div style={{ rotateX: tilt, scale: lift, transformPerspective: 1400, transformOrigin: '50% 80%' }}>
-            <PhoneFrame width={width} scheme="dark">
+            <PhoneFrame width={width} scheme="dark" label="The Tonight screen: a prompt, and Speak and Type buttons">
               <TonightScreen press={press} />
-              <motion.div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000', opacity: dark, zIndex: 7 }} />
+              <motion.div aria-hidden style={{ position: 'absolute', inset: 0, background: 'var(--night)', opacity: dark, zIndex: 7 }} />
             </PhoneFrame>
           </motion.div>
         </motion.div>
       </div>
 
-      <div className={stage.copySide}>
+      <div className={[stage.copySide, styles.copy].join(" ")}>
         <motion.div style={{ opacity: headOpacity, y: headY }}>
           <Headline>{copy.headline}</Headline>
         </motion.div>

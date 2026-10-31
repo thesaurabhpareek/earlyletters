@@ -29,7 +29,7 @@ export function Footer() {
                     {link.label}
                   </a>
                 ) : (
-                  <Link className={styles.link} href={link.href}>
+                  <Link className={styles.link} href={link.href} prefetch={false}>
                     {link.label}
                   </Link>
                 )}
