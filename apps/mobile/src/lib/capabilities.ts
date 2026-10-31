@@ -45,17 +45,22 @@
  *   ACCOUNT_DELETION  `EXPO_PUBLIC_ACCOUNT_DELETION=on` (founder, 30 Oct 2026). The Delete account row in
  *                     Settings and its page (`/settings/delete-account`). A build flag like the two above: true
  *                     only when server features are on AND the variable is `on`; anything else, or nothing,
- *                     is OFF, in every build. Written `on` where the row is wanted without a decision:
- *                     `.env.development` and the eas.json profiles `development`, `e2e` and `production`.
- *                     NOT written in the two alpha profiles (`testflight`, `preview`): there it comes from
- *                     the EAS `preview` environment on expo.dev (docs/release/TESTFLIGHT.md step 9), so it
- *                     can be set after the freeze without touching eas.json or app.config.ts, and a build
- *                     made without it hides the row. It is meant to go `on` only when the purge worker runs
- *                     on staging and the sole-parent drill has passed (S1-35, S2-13, AL-07.6a).
+ *                     is OFF, in every build. Written `on` in the eas.json profiles `development`, `e2e` and
+ *                     `production` (so a build of those shows the row wherever servers are on) and in the web e2e
+ *                     server-on build. NOT written in any `.env*` file (the preflight FAILs on it there: a file
+ *                     that filled it in would show the row in an alpha build), and NOT written in the two alpha
+ *                     profiles (`testflight`, `preview`): there it comes from the EAS `preview` environment on
+ *                     expo.dev (docs/release/TESTFLIGHT.md step 9), so it can be set after the freeze without
+ *                     touching eas.json or app.config.ts, and a build made without it hides the row. A drill on a
+ *                     development client passes it to Metro in the shell. It is meant to go `on` in the alpha only
+ *                     when the purge worker runs on staging and the sole-parent drill has passed (S1-35, S2-13,
+ *                     AL-07.6a). The hide-until-proven rule is for the alpha profiles; `production` writes `on`.
  *                     Off: the row is not drawn and the page redirects to Settings. It touches nothing else:
- *                     a phone whose account already has an open request still gets the deletion screen with
+ *                     a phone that lists no book and has an open request still gets the deletion screen with
  *                     Cancel deletion (lib/account-deletion/use-first-run-gate.ts, components/settings/
- *                     open-deletion.tsx), because that gate does not read this flag (test/account-deletion-switch.test.ts).
+ *                     open-deletion.tsx), because that gate does not read this flag
+ *                     (test/account-deletion-switch.test.ts). A phone that still lists a book does not get that
+ *                     screen, and its Cancel button is on the hidden Delete account page, so it has no Cancel path.
  *
  *   ANALYTICS         `EXPO_PUBLIC_ANALYTICS=on` in the build's env. Anything else, or
  *                     nothing, is OFF. Off in every profile (decision of 15 Oct 2026,
@@ -182,7 +187,8 @@ export const capabilities = {
   },
   /**
    * The Delete account row in Settings and its page (founder, 30 Oct 2026). Needs the server switch and its own variable.
-   * It is not the open-request gate: a request opened elsewhere still shows its Cancel path with this off.
+   * It is not the open-request gate: a phone that lists no book and has an open request still gets the deletion screen with
+   * Cancel deletion with this off. A phone that still lists a book has its Cancel button on the page this hides.
    */
   get accountDeletion(): boolean {
     return buildFlagEnabled('accountDeletion');

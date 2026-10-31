@@ -50,7 +50,9 @@ import { cn } from '@/lib/utils';
 /**
  * v1.0 has no account, and a build without EXPO_PUBLIC_ACCOUNT_DELETION=on (the alpha, founder, 30 Oct 2026) offers no
  * deletion (lib/capabilities.ts): Settings draws no row, and a stale route goes back to Settings. The open-request
- * screen (components/settings/open-deletion.tsx) does not pass through here and is not behind this switch.
+ * screen (components/settings/open-deletion.tsx) does not pass through here and is not behind this switch: a phone that
+ * lists no book and has an open request still gets the deletion screen with Cancel deletion. A phone that still lists a
+ * book does not, because its Cancel button is on this page.
  */
 export default function DeleteAccountRoute() {
   return capabilities.accountDeletion ? <DeleteAccount /> : <Redirect href="/settings" />;

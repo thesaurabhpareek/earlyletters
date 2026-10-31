@@ -26,6 +26,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { envFileProblems } from './env-file-guard.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -356,19 +357,9 @@ try {
 // ---------------------------------------------------------------- 4. env files: nothing server-ish baked in
 {
   const envFiles = readdirSync(MOBILE).filter((f) => f.startsWith('.env'));
-  const bad = [];
-  for (const f of envFiles) {
-    for (const line of read(join(MOBILE, f)).split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))) {
-      const [k, ...v] = line.split('=');
-      if (k === 'EXPO_PUBLIC_APP_ENV') continue;
-      if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
-      if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
-      // The Delete account row is shown in development (founder, 30 Oct 2026); no other .env file may name it, so none can reach a store bundle.
-      if (f === '.env.development' && k === 'EXPO_PUBLIC_ACCOUNT_DELETION' && v.join('=').trim() === 'on') continue;
-      bad.push(`${f}: ${k}`);
-    }
-  }
-  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off, plus ACCOUNT_DELETION=on in .env.development (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
+  // scripts/env-file-guard.mjs: only values that are harmless if baked into any build; EXPO_PUBLIC_ACCOUNT_DELETION never, in any file.
+  const bad = envFiles.flatMap((f) => envFileProblems(f, read(join(MOBILE, f))));
+  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.${bad.some((b) => b.endsWith('EXPO_PUBLIC_ACCOUNT_DELETION')) ? ' EXPO_PUBLIC_ACCOUNT_DELETION is never set in a .env file: the alpha profiles leave it unset so the EAS "preview" environment decides (TESTFLIGHT.md step 9); a drill passes it to Metro in the shell.' : ''}`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
   check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);

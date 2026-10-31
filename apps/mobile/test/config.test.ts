@@ -496,7 +496,7 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
 });
 
 describe('.env.development', () => {
-  it('sets development and nothing else (the server-features and analytics switches may only be off; the Delete account switch on)', () => {
+  it('sets development and nothing else (the server-features and analytics switches may only be off; the Delete account switch is never written here)', () => {
     const lines = fs
       .readFileSync(path.join(ROOT, '.env.development'), 'utf8')
       .split('\n')
@@ -505,9 +505,7 @@ describe('.env.development', () => {
       // Co-parent coming soon (v1.0 on-device only) adds this one line, and only ever as off.
       .filter((l) => l !== 'EXPO_PUBLIC_SERVER_FEATURES=off')
       // v1.0 collects no data (D-088, 15 Oct): the analytics switch, and only ever as off.
-      .filter((l) => l !== 'EXPO_PUBLIC_ANALYTICS=off')
-      // The Delete account row is shown in development (founder, 30 Oct 2026), and only ever as on, and only in this file.
-      .filter((l) => l !== 'EXPO_PUBLIC_ACCOUNT_DELETION=on');
+      .filter((l) => l !== 'EXPO_PUBLIC_ANALYTICS=off');
     expect(lines).toEqual([`${KEY}=development`]);
   });
 });

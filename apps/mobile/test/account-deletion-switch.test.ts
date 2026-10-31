@@ -5,16 +5,22 @@
  * when the purge worker runs on staging and the sole-parent drill has passed (S1-35, S2-13, AL-07.6a).
  *
  * The rule, in one line: like backup and the status report it is a build flag on top of the server switch, and only `on` is on.
- * Where the row is wanted without a decision it is written `on` (`.env.development`, eas.json `development`, `e2e`, `production`,
- * the web e2e server-on build); the two alpha profiles (`testflight`, `preview`) do not write it at all, so it reads off
- * unless the EAS `preview` environment on expo.dev holds it, which needs no change to eas.json or app.config.ts after the freeze.
+ * Where the row is wanted without a decision it is written `on` (eas.json `development`, `e2e`, `production`, and the web e2e
+ * server-on build); the two alpha profiles (`testflight`, `preview`) do not write it at all, so it reads off unless the EAS
+ * `preview` environment on expo.dev holds it, which needs no change to eas.json or app.config.ts after the freeze. It is written
+ * in NO `.env*` file: Expo fills an unset variable in from whichever `.env*` file the process loads, which would show the row in
+ * an alpha build. A drill on a development client passes it to Metro in the shell instead.
  *
  * What this file pins:
  *  - the capability logic, with a real read of the environment (a fresh copy of the module per case): unset, off, on, in the
  *    alpha shapes, and in development and e2e;
- *  - the files that write the variable: .env.development, eas.json, the web e2e build;
+ *  - the files that write the variable (eas.json, the web e2e build) and the ones that must not (every `.env*` file), and the
+ *    preflight's `.env*` guard (scripts/env-file-guard.mjs), run on each file name;
  *  - the Settings row and the route honour it (their conditions are read from the source and run against the real capability);
- *  - the open-request gate does NOT: a request opened elsewhere still shows Cancel deletion with the switch off.
+ *  - the open-request gate does NOT read it: the source-grep test below and the hook tests in
+ *    account-deletion-gate-hook.test.ts are the protection (decideGate is pure and takes no capability, so a test of it alone
+ *    could not fail on this). What is kept is what is true: a phone that lists no book and has an open request still gets the
+ *    deletion screen with Cancel deletion; a phone that still lists a book has its Cancel button on the hidden page.
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { execFile } from 'node:child_process';
@@ -22,8 +28,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
-import { decideGate } from '../src/lib/account-deletion/first-run-gate.logic';
-import { deletionView, type OpenRequest } from '../src/lib/account-deletion/open-request';
+import { envFileLines, envFileProblems } from '../scripts/env-file-guard.mjs';
 
 const APP = join(__dirname, '..');
 const SRC = join(APP, 'src');
@@ -174,17 +179,17 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     }
   });
 
-  it('local development: .env.development writes it "on", and no other .env file names it (none can reach a store bundle)', () => {
+  it('no .env* file names it, .env.development included: a file would fill it in for the alpha profiles, which leave it unset', () => {
     const files = readdirSync(APP).filter((n) => n.startsWith('.env'));
     expect(files).toContain('.env.development');
     for (const f of files) {
-      const lines = readFileSync(join(APP, f), 'utf8')
-        .split('\n')
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith('#'));
-      const named = lines.filter((l) => l.startsWith(`${VAR}=`));
-      expect(named, f).toEqual(f === '.env.development' ? [`${VAR}=on`] : []);
+      const named = envFileLines(readFileSync(join(APP, f), 'utf8')).filter((l) => l.startsWith(VAR));
+      expect(named, f).toEqual([]);
     }
+    // The committed file is exactly the three lines it had before this switch.
+    expect(envFileLines(readFileSync(join(APP, '.env.development'), 'utf8')).sort()).toEqual(
+      ['EXPO_PUBLIC_ANALYTICS=off', 'EXPO_PUBLIC_APP_ENV=development', 'EXPO_PUBLIC_SERVER_FEATURES=off'],
+    );
   });
 
   it('the web e2e build with servers on sets it, so flows that open Delete account (j24-style) still see the row; the server-off builds need nothing', () => {
@@ -202,6 +207,40 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     const block = pre.slice(pre.indexOf('// The Delete account row (founder, 30 Oct 2026)'), pre.indexOf("check(prof.autoIncrement === true"));
     expect(block).toMatch(/pass\('Delete account row: hidden \(EXPO_PUBLIC_ACCOUNT_DELETION is not on\)'\)/);
     expect(block).not.toMatch(/\bfail\(|\bcheck\(/);
+  });
+});
+
+describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable in any .env file is a FAIL', () => {
+  const FILES = ['.env', '.env.development', '.env.development.local', '.env.production', '.env.local'];
+
+  it('flags the variable in each .env file the build or the dev server can load, with any value', () => {
+    for (const f of FILES) {
+      for (const value of ['on', 'off', '', 'true']) {
+        expect(envFileProblems(f, `${VAR}=${value}\n`), `${f} ${VAR}=${value}`).toEqual([`${f}: ${VAR}`]);
+      }
+      // Among the lines a file may hold, and with a comment above it, it is still found.
+      expect(envFileProblems(f, `# drill\nEXPO_PUBLIC_APP_ENV=development\n  ${VAR}=on  \nEXPO_PUBLIC_SERVER_FEATURES=off\n`), f).toEqual([`${f}: ${VAR}`]);
+    }
+  });
+
+  it('still allows what is harmless if baked: the app env, and the server and analytics switches only as off', () => {
+    for (const f of FILES) {
+      expect(envFileProblems(f, 'EXPO_PUBLIC_APP_ENV=development\nEXPO_PUBLIC_SERVER_FEATURES=off\nEXPO_PUBLIC_ANALYTICS=off\n# note\n\n'), f).toEqual([]);
+      expect(envFileProblems(f, 'EXPO_PUBLIC_SERVER_FEATURES=on\n'), f).toEqual([`${f}: EXPO_PUBLIC_SERVER_FEATURES`]);
+      expect(envFileProblems(f, 'EXPO_PUBLIC_BACKUP=on\n'), f).toEqual([`${f}: EXPO_PUBLIC_BACKUP`]);
+    }
+  });
+
+  it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
+    const pre = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
+    expect(pre).toMatch(/import \{ envFileProblems \} from '\.\/env-file-guard\.mjs';/);
+    expect(pre).toMatch(/const envFiles = readdirSync\(MOBILE\)\.filter\(\(f\) => f\.startsWith\('\.env'\)\);/);
+    expect(pre).toMatch(/const bad = envFiles\.flatMap\(\(f\) => envFileProblems\(f, read\(join\(MOBILE, f\)\)\)\);/);
+    expect(pre).toMatch(/check\(bad\.length === 0, /);
+    expect(pre).toMatch(/EXPO_PUBLIC_ACCOUNT_DELETION is never set in a \.env file/);
+    // The guard module allows nothing for the variable, in any spelling of the allow list.
+    const guard = code(readFileSync(join(APP, 'scripts/env-file-guard.mjs'), 'utf8'));
+    expect(guard).not.toMatch(/ACCOUNT_DELETION/);
   });
 });
 
@@ -290,7 +329,7 @@ describe('the Settings row and the route honour it', () => {
   });
 });
 
-describe('the open-request gate does NOT read the switch: a request opened elsewhere still shows its Cancel path', () => {
+describe('the open-request gate does NOT read the switch: no book and an open request still gets the deletion screen with Cancel deletion', () => {
   const gateFiles = (): string[] => [
     ...walk(join(SRC, 'lib', 'account-deletion')),
     join(SRC, 'components', 'settings', 'open-deletion.tsx'),
@@ -310,23 +349,5 @@ describe('the open-request gate does NOT read the switch: a request opened elsew
     const onboarding = src('app/onboarding.tsx');
     expect(onboarding).not.toMatch(/capabilities\.accountDeletion|buildFlagEnabled\('accountDeletion'\)|ACCOUNT_DELETION/);
     expect(onboarding).toMatch(/const gate = useFirstRunGate\(\);\s*if \(gate\.screen === 'deletion' && gate\.request\) return <OpenDeletionScreen request=\{gate\.request\} \/>;\s*if \(gate\.screen === 'checking'\) return <CheckingScreen \/>;/);
-  });
-
-  it('with the switch off the gate decides as it always did: no book and an open request is the deletion screen, offering Cancel deletion', () => {
-    for (const [servers, deletion] of [[true, false], [false, false], [true, true]] as const) {
-      setServerFeaturesForTests(servers);
-      setBuildFlagForTests('accountDeletion', deletion);
-      const note: OpenRequest = { state: 'scheduled', requestId: 'req-asha-1', scheduledFor: '2026-11-28T09:00:00.000Z', userId: 'u-asha-mama' };
-      const gate = decideGate({
-        hasBook: false, hasDeletedBook: true, note, nowMs: Date.parse('2026-10-30T09:00:00.000Z'), signedIn: true, userId: 'u-asha-mama',
-        checked: true, confirmed: true, wasDeletion: false, pathname: '/onboarding',
-      });
-      expect(gate.screen, `servers ${servers}, switch ${deletion}`).toBe('deletion');
-      expect(gate.request).toMatchObject({ state: 'scheduled' });
-      const view = deletionView(gate.request!, { signedIn: true, date: '28 November 2026', tryAgainLabel: 'Try again' });
-      expect(view.actions[0], 'Cancel deletion is the one button').toBe('cancel');
-    }
-    setServerFeaturesForTests(null);
-    setBuildFlagForTests('accountDeletion', null);
   });
 });

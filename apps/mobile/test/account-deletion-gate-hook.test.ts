@@ -552,7 +552,9 @@ describe('the answer of the server is taken as it is', () => {
   });
 });
 
-describe('the gate does not read the Delete account switch (founder, 30 Oct 2026): a request opened elsewhere still shows Cancel deletion', () => {
+// Protection against the gate being put behind the Delete account switch, with the source-grep test in account-deletion-switch.test.ts.
+// A phone that lists a book is out of scope on purpose: its Cancel button is on the hidden Delete account page (lib/capabilities.ts).
+describe('the gate does not read the Delete account switch (founder, 30 Oct 2026): no book and an open request still gets the deletion screen', () => {
   afterEach(() => {
     setServerFeaturesForTests(null);
     setBuildFlagForTests('accountDeletion', null);
