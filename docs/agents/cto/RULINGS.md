@@ -132,7 +132,7 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
   - Vercel's docs describe the Production Branch as a stored project setting. The project API does not show it, hence the founder's look.
   - Risk 2x4 before the Vercel check, 1x4 after.
 - Pre-mortem:
-  1. A production deploy comes from a branch other than `main`. Vercel's Production Branch is a stored project setting (vercel.com/docs/git), not GitHub's default branch, so this should not happen, and `--undo` would not fix it. Detect: production deploys listed through the Vercel API all name `main` (11 of 11 on 31 Oct). Fix: Instant Rollback in Vercel, then set the Production Branch to `main`. Corrected 31 Oct; the first version said `--undo`. Note: `develop` has not built on Vercel since 15 Oct (every `develop` deploy is ERROR), so watching for a `develop` Preview proves nothing.
+  1. A production deploy comes from a branch other than `main`. Vercel's Production Branch is a stored project setting (vercel.com/docs/git), not GitHub's default branch, so this should not happen, and `--undo` would not fix it. Detect: production deploys listed through the Vercel API all name `main` (11 of 11 on 31 Oct). Fix: Instant Rollback in Vercel, then set the Production Branch to `main`, then Undo Rollback once a good deploy is ready, because after a rollback new pushes stop going live until then (vercel.com/docs/instant-rollback; on Hobby, only to the deploy just before). Corrected 31 Oct; the first version said `--undo`. Note: `develop` has not built on Vercel since 15 Oct (every `develop` deploy is ERROR), so watching for a `develop` Preview proves nothing.
   2. The nightly opens a red issue daily. The coordinator triages it like any red build.
 - Door: two-way.
 - Way back: `--undo` restores the default branch and the Copilot ruleset. Vercel is fixed in Vercel (pre-mortem 1).
@@ -199,7 +199,7 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
     - 3 are `auto/` branches with nothing outside `develop` or `main`.
   - **Pass 2:** 41 closed-unmerged PR branches, on Fri 6 Nov or later. That gives anyone a week to reopen one.
   - **Kept:** about 115:
-    - `main` and `develop`. `release/ios-v1.0` is archived and deleted separately by Saurabh before the settings run (his answer of 30 Oct, Q3), because the `release/*` ruleset would then block the delete;
+    - `main` and `develop`. `release/ios-v1.0` is archived and deleted separately by Saurabh before the settings run (his answer of 30 Oct, Q3), because the `release/*` ruleset would then block the delete. The commands are in `docs/release/FOUNDER_QUEUE.md` row 7; `cleanup-branches.sh` can't do it, as it skips `release/*`;
     - every open-PR head and base;
     - 52 branches that never had a PR;
     - 3 merged-PR branches whose tip moved after the merge.
