@@ -28,7 +28,7 @@ const fontFor = (lang: string) =>
 
 export function S08Languages() {
   return (
-    <Scene id="languages" label={copy.label} tone="night" length={2.0} rest={0.5} reducedMinHeight="140svh">
+    <Scene id="languages" label={copy.label} tone="night" length={2.4} rest={0.5} reducedMinHeight="140svh">
       <LanguagesStage />
     </Scene>
   );

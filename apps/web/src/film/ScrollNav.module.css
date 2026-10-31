@@ -20,6 +20,9 @@
   --n-fill: rgba(251, 248, 243, 0.82);
   --n-line: rgba(43, 39, 34, 0.26);
 }
+.nav[data-busy] {
+  opacity: 0.45;
+}
 .nav[data-hidden] {
   opacity: 0;
   pointer-events: none;
