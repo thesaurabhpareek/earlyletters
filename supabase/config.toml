@@ -36,6 +36,10 @@ enable_anonymous_sign_ins = false
 [auth.email]
 enable_signup = true
 
+# Compliance gate at sign-up (20261031000000, CR-22; APPLY.md File 27): the "before user created" auth hook,
+# Postgres function public.hook_before_user_created. Not configured here: the CLI key for this hook was not
+# verified against the CLI version in use (31 Oct 2026). Hosted: turn it on in the Dashboard (APPLY.md).
+
 # Apple and Google are off until the founder has the credentials (BL-053).
 # To try them locally, export the variables below and set enabled = true.
 [auth.external.apple]

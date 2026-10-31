@@ -35,8 +35,8 @@
 --     region rows. The Terms attestation covers the rest.
 --   * No name screening (references/sanctions.md).
 --
--- Enable on hosted (founder step, after apply): Dashboard > Authentication > Hooks > Before User Created >
--- Postgres function public.hook_before_user_created; or supabase/config.toml [auth.hook.before_user_created].
+-- Enable on hosted (founder step, after apply; APPLY.md File 27): Dashboard > Authentication > Hooks > Before User Created >
+-- Postgres function public.hook_before_user_created.
 -- Then load geo data (scripts/compliance/load-geo-ip.mjs). Until geo data is loaded the hook allows all.
 --
 -- Rollback: disable the hook first (Dashboard), then

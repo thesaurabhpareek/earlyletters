@@ -1170,3 +1170,24 @@ commit;
 ```
 
 The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
+
+## File 27: compliance gates at sign-up, counts and the regulatory watch (31 Oct 2026, CR-22)
+
+`20261031000000_compliance_gates.sql`. v1.1 only: do not apply before accounts ship, and not before the 9 Nov go/no-go. Apply after File 26. Idempotent; adds tables in `ops` and functions; changes no existing row or function.
+
+- **What it adds.** `ops.restricted_jurisdictions` (seeded with the CR-22 default: KP, IR, CU and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
+- **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
+
+**After applying (founder, in this order):**
+1. Load geo data: `node scripts/compliance/load-geo-ip.mjs --csv dbip-country-lite-YYYY-MM.csv.gz --version YYYY-MM --dry-run`, then again with `SUPABASE_DB_URL` and without `--dry-run`.
+2. Turn the hook on: Dashboard > Authentication > Hooks > "Before User Created" > Postgres > `public.hook_before_user_created`.
+3. Check one sign-up from a normal network still works, then `select public.ops_compliance_report(current_date, current_date);` shows one `pass`.
+
+**Check after applying** (expect 7, then `false`, then `true`):
+```sql
+select count(*) from ops.restricted_jurisdictions;
+select has_function_privilege('authenticated', 'public.hook_before_user_created(jsonb)', 'execute');
+select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_created(jsonb)', 'execute');
+```
+
+**Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.
