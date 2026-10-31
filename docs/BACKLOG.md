@@ -425,13 +425,13 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 #### BL-323 Export carries consent history and dictionary terms (review L4)
 - Status: ready. Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; include Recently deleted letters; use the real membership role instead of `'parent'`.
 
-#### BL-529 Export carries the person's own profile fields [Medium]
-- Status: in-review (PR to follow BL-323). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034 ("profile fields"). Raised by: Review B of PR #161.
-- Scope: `account.json` gains `profile` (export schema 1.4.0): the signed-in person's own `profiles` row (`display_name`, `signs_as`, `created_at`), read while the export is made, with a `status` like `consent_history`. The two server reads fail apart. The phone keeps no copy, so an offline export says `unavailable` (the same gap as BL-528).
-- Done when: the export carries the profile when signed in, and says why when not; `supabase/tests/export_profile_read.test.mjs` runs the exact column list as a signed-in person.
-
 #### BL-324 Native modules never crash or hang on bad input (review L9)
 - Status: ready. Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
+
+#### BL-529 Export carries the person's own profile fields [Medium]
+- Status: in-review (PR #469). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034 ("profile fields"). Raised by: Review B of PR #161.
+- Scope: `account.json` gains `profile` (export schema 1.4.0): the signed-in person's own `profiles` row (`display_name`, `signs_as`, `created_at`), read while the export is made, with a `status` like `consent_history`. The two server reads fail apart. Left out on purpose: `updated_at` and `first_run_closed_at` (L2 system timestamps; the class's export rule includes L2 only where useful). The phone keeps no copy, so an offline export says `unavailable`, the same offline gap the consent record has (filed in PR #456).
+- Done when: the export carries the profile when signed in, and says why when not; `supabase/tests/export_profile_read.test.mjs` runs the exact column list as a signed-in person.
 
 #### BL-325 Remote documents cannot be held stale (review L10)
 - Status: ready. Mode: agent. Owner: platform. Scope: ignore a same-version document with a different body; treat kill-switch config older than N days as stale (`notAfter` or `generatedAt`); act on `forceReauthEpoch` by signing out locally (review L3).

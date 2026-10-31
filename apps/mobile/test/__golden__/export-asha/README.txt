@@ -41,9 +41,9 @@ made. If it could not, "status" says why ("not_signed_in", "unavailable" or
 YOUR PROFILE
 
 When you are signed in, account.json also holds your profile as our server keeps it,
-under "profile": the name you chose, the name your letters come "From", and when you
-made your account.
-Its "status" works the same way as the consent history's.
+under "profile", when it could be read while the export was made: the name on your
+account, your usual "From" name (a book can have its own, in "memberships"), and when
+you made your account. Its "status" works the same way as the consent history's.
 
 CHECKING THE FILES
 

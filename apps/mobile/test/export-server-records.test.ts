@@ -217,6 +217,19 @@ describe('[BL-529] the profile in account.json', () => {
     expect(b.profile.status).toBe('included');
   });
 
+  it('a part that hangs past the timeout does not take the other part with it', async () => {
+    const hang = () => new Promise<ReadResult>(() => {});
+    const a = await readServerRecords(opts({ reader: reader({ profile: hang }), timeoutMs: 40 }));
+    expect([a.consent.status, a.profile.status]).toEqual(['included', 'unavailable']);
+    const b = await readServerRecords(opts({ reader: reader({ state: hang }), timeoutMs: 40 }));
+    expect([b.consent.status, b.profile.status]).toEqual(['unavailable', 'included']);
+  });
+
+  it('a reader that throws at once counts as that part failing, and the other part stands', async () => {
+    const r = await readServerRecords(opts({ reader: reader({ profile: () => { throw new Error('boom'); } }) }));
+    expect([r.consent.status, r.profile.status]).toEqual(['included', 'unavailable']);
+  });
+
   it('the timeout and Stop make both unavailable, and the export still gets an answer at once', async () => {
     const hang: ServerRecordsReader = {
       acts: () => new Promise<ReadResult>(() => {}),

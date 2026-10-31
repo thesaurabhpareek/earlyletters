@@ -172,8 +172,9 @@ export function profileFromRows(rows: unknown[], userId: string, readAt: string)
 
 /**
  * Reads the server's consent record and the person's profile. Never throws and
- * never takes longer than `timeoutMs`; Stop ends it sooner. A failure in one
- * read leaves the other as it is.
+ * never takes longer than `timeoutMs`; Stop ends it sooner. Each part has its
+ * own result: an error, a bad row or a hang in one leaves the other as it is
+ * (a part still waiting at the timeout or Stop is `unavailable`).
  */
 export async function readServerRecords(o: ReadOptions): Promise<ServerRecords> {
   if (!o.authUserId || !o.reader) return { consent: noConsentHistory('not_signed_in'), profile: noProfile('not_signed_in') };
@@ -191,29 +192,20 @@ export async function readServerRecords(o: ReadOptions): Promise<ServerRecords> 
     timer = setTimeout(end, o.timeoutMs);
     if (o.cancelled) poll = setInterval(() => o.cancelled?.() && end(), o.pollMs ?? 100);
   });
+  // Each part races the timeout and Stop on its own, so a part that finished keeps its result
+  // when the other hangs. `stop` rejects at most once; both parts see it.
+  stop.catch(() => {});
+  const part = <T,>(work: () => Promise<T>, fallback: T): Promise<T> =>
+    Promise.race([Promise.resolve().then(work), stop]).catch(() => fallback);
   try {
-    const [consentRead, profileRead] = await Promise.race([
-      Promise.allSettled([Promise.all([reader.acts(abort.signal), reader.state(abort.signal)]), reader.profile(abort.signal, uid)]),
-      stop,
+    const [consent, profile] = await Promise.all([
+      part(async () => {
+        const [acts, state] = await Promise.all([reader.acts(abort.signal), reader.state(abort.signal)]);
+        return consentFromRows(rowsOf(acts), rowsOf(state), o.now().toISOString());
+      }, noConsentHistory('unavailable')),
+      part(async () => profileFromRows(rowsOf(await reader.profile(abort.signal, uid)), uid, o.now().toISOString()), noProfile('unavailable')),
     ]);
-    const readAt = o.now().toISOString();
-    let consent: ExportConsentHistory;
-    try {
-      if (consentRead.status !== 'fulfilled') throw new Unreadable();
-      consent = consentFromRows(rowsOf(consentRead.value[0]), rowsOf(consentRead.value[1]), readAt);
-    } catch {
-      consent = noConsentHistory('unavailable');
-    }
-    let profile: ExportProfile;
-    try {
-      if (profileRead.status !== 'fulfilled') throw new Unreadable();
-      profile = profileFromRows(rowsOf(profileRead.value), uid, readAt);
-    } catch {
-      profile = noProfile('unavailable');
-    }
     return { consent, profile };
-  } catch {
-    return { consent: noConsentHistory('unavailable'), profile: noProfile('unavailable') };
   } finally {
     if (timer) clearTimeout(timer);
     if (poll) clearInterval(poll);
