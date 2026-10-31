@@ -6,6 +6,8 @@ import {
   MASTER_BASE,
   MASTER_MAX,
   STORAGE_KEY,
+  CROSSFADE_SECONDS,
+  TONE_EVERY_SECONDS,
   ambientParams,
   asTone,
   chordIndexAt,
@@ -64,16 +66,48 @@ describe('ambient sound mapping', () => {
     expect(mid.cutoffHz).toBeLessThan(busy.cutoffHz);
   });
 
-  it('keeps the filter a warm lid: never brighter than about 2.1 kHz', () => {
-    for (const tone of ['night', 'paper', 'dusk'] as const) expect(ambientParams({ energy: 1, progress: 0, tone }).cutoffHz).toBeLessThan(2100);
+  it('keeps the filter a warm lid: 900 to 1200 Hz at rest, never brighter than about 2.8 kHz', () => {
+    for (const tone of ['night', 'paper', 'dusk'] as const) {
+      const rest = ambientParams({ energy: 0, progress: 0, tone }).cutoffHz;
+      expect(rest).toBeGreaterThanOrEqual(900);
+      expect(rest).toBeLessThanOrEqual(1200);
+      expect(ambientParams({ energy: 1, progress: 0, tone }).cutoffHz).toBeLessThan(2800);
+    }
   });
 
-  it('makes night warmer and lower, paper a touch brighter', () => {
+  it('makes a firm scroll audible but gentle: more air, more reverb, more level, all within bounds', () => {
+    for (const tone of ['night', 'paper', 'dusk'] as const) {
+      const rest = ambientParams({ energy: 0, progress: 0.3, tone });
+      const firm = ambientParams({ energy: 1, progress: 0.3, tone });
+      expect(firm.airGain).toBeGreaterThan(rest.airGain);
+      expect(firm.airGain).toBeLessThanOrEqual(0.25);
+      expect(rest.airGain).toBeGreaterThanOrEqual(0.1);
+      expect(firm.reverbWet).toBeGreaterThan(rest.reverbWet);
+      expect(firm.masterGain).toBeLessThanOrEqual(0.11);
+      // the designed level lift is about 3.3 dB, no more
+      expect(20 * Math.log10(firm.masterGain / rest.masterGain)).toBeLessThan(3.5);
+    }
+  });
+
+  it('lets the scene tone change brightness, air and reverb, but never pitch', () => {
     const at = (tone: 'night' | 'paper' | 'dusk') => ambientParams({ energy: 0, progress: 0.1, tone });
     expect(at('night').cutoffHz).toBeLessThan(at('dusk').cutoffHz);
     expect(at('dusk').cutoffHz).toBeLessThan(at('paper').cutoffHz);
-    expect(at('night').voicesHz[0]).toBeLessThan(at('paper').voicesHz[0]);
     expect(at('night').airGain).toBeLessThan(at('paper').airGain);
+    expect(at('night').reverbWet).toBeGreaterThan(at('paper').reverbWet);
+    // Same notes whatever the tone: a tone change never moves a pitch (and so cannot beat).
+    expect(at('night').voicesHz).toEqual(at('paper').voicesHz);
+    expect(at('night').voicesHz).toEqual(at('dusk').voicesHz);
+    expect(at('night').airHz).toBe(at('paper').airHz);
+    for (const p of [0, 0.3, 0.6, 0.9])
+      expect(ambientParams({ energy: 0, progress: p, tone: 'night' }).voicesHz).toEqual(ambientParams({ energy: 0, progress: p, tone: 'paper' }).voicesHz);
+  });
+
+  it('crossfades slowly between chords and rings a quiet chord tone only now and then', () => {
+    expect(CROSSFADE_SECONDS).toBeGreaterThanOrEqual(8);
+    expect(CROSSFADE_SECONDS).toBeLessThanOrEqual(12);
+    expect(TONE_EVERY_SECONDS[0]).toBeGreaterThanOrEqual(20);
+    expect(TONE_EVERY_SECONDS[1]).toBeLessThanOrEqual(40);
   });
 
   it('drifts through the chords as the film goes down, and stays in range', () => {
@@ -94,12 +128,13 @@ describe('ambient sound mapping', () => {
     for (const tone of ['night', 'paper', 'dusk'] as const)
       for (let p = 0; p <= 1; p += 0.1) {
         const r = ambientParams({ energy: 1, progress: p, tone });
+        // About an octave up from the first version: nothing under 250 Hz (phone speakers), nothing shrill.
         for (const hz of [...r.voicesHz, r.airHz]) {
-          expect(hz).toBeGreaterThan(80);
-          expect(hz).toBeLessThan(1200);
+          expect(hz).toBeGreaterThan(250);
+          expect(hz).toBeLessThan(1300);
         }
-        expect(r.airGain).toBeGreaterThanOrEqual(0);
-        expect(r.airGain).toBeLessThanOrEqual(0.5);
+        expect(r.airGain).toBeGreaterThanOrEqual(0.1);
+        expect(r.airGain).toBeLessThanOrEqual(0.25);
       }
   });
 

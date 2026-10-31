@@ -27,7 +27,11 @@ import styles from './AmbientSound.module.css';
 
 const TICK_MS = 120;
 const GESTURES = ['pointerdown', 'touchend', 'keydown', 'click'] as const;
-const IGNORED_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Escape']);
+// Keys that are moving around the page, not asking for anything: they never start the sound.
+const IGNORED_KEYS = new Set([
+  'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Escape', 'Tab', ' ', 'Spacebar',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End',
+]);
 
 function storage(): Storage | null {
   try {

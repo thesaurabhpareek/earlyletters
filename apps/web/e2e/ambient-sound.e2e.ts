@@ -139,7 +139,7 @@ test.describe('ambient sound', () => {
     }
     const busy = Math.max(...(await cutoffs()));
     expect(busy).toBeGreaterThan(rest + 300);
-    expect(busy).toBeLessThan(2100);
+    expect(busy).toBeLessThan(2800); // the rest cutoff is 900 to 1200 Hz and scrolling opens it by at most 1500 Hz
     // Still: the most recent targets come back down.
     await page.waitForTimeout(9000);
     const all = await cutoffs();
@@ -160,6 +160,27 @@ test.describe('ambient sound', () => {
     await expect.poll(() => contexts(page), { timeout: 5000 }).toEqual(['suspended']);
     await setHidden(false);
     await expect.poll(() => contexts(page), { timeout: 5000 }).toEqual(['running']);
+  });
+
+  test('keys that only move around the page (Tab, Space, arrows, Page, Home, End) never start the sound', async ({ page }) => {
+    await spyOnAudio(page);
+    await page.goto(filmUrl());
+    await expect(toggle(page)).toBeVisible();
+    await expect(toggle(page)).toHaveAttribute('data-state', 'blocked');
+    await page.waitForTimeout(250);
+    for (const key of ['Tab', 'Shift+Tab', 'Space', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End']) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(100);
+    }
+    await page.waitForTimeout(500);
+    expect(await contexts(page)).toEqual([]);
+    await expect(toggle(page)).toHaveAttribute('data-state', 'blocked');
+    // A real gesture still starts it. (End took the page to the sign-up form, where a click is deliberately not a gesture.)
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(500);
+    await page.mouse.click(720, 450);
+    await expect(toggle(page)).toHaveText('Sound on');
+    expect(await contexts(page)).toEqual(['running']);
   });
 
   test('the legal pages never make a sound or show the button', async ({ page }) => {
