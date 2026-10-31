@@ -1,6 +1,6 @@
 # Brief (b): PR #316, five agents onto Claude Code for the API credit
 
-Status: open, not decided. Needed by Fri 30 Oct, so one working day remains to provision before the credit expires on Tue 3 Nov. Depends on brief (a).
+Status: open, not decided. Needed by Fri 30 Oct, so one working day remains to provision before the credit expires on Tue 3 Nov. Depends on brief (a), which the founder answered on 30 Oct for the spend (D-127: no paid inference, the GitHub-hosted harness stays off); that does not decide this brief.
 Default if unanswered: #316 stays open. As written it spends nothing, and the credit lapses on 3 Nov.
 Conflict of interest: #316 came from the session that built the harness.
 
@@ -21,4 +21,4 @@ Merge [#316](https://github.com/thesaurabhpareek/earlyletters/pull/316) and prov
 | 3. Spend the credit in supervised sessions | The founder runs and watches named review sessions with the key; no Actions lane | Founder time. Whether the credit applies to that use is unverified |
 
 ## Recommendation (a recommendation, not a decision)
-Option 1, unless brief (a) option 2 is chosen. Under brief (a)'s recommended sequencing, unattended runs start only after the 5 Nov go/no-go, two days after the credit expires, so #316 cannot spend it there. The listed reviews can run in the existing interactive threads; a $200 credit does not justify switching on an unattended lane before its safety checks exist.
+Option 1, unless brief (a) option 2 is chosen. Under brief (a)'s recommended sequencing, unattended runs start only after the go/no-go (Mon 9 Nov, D-130; it was Thu 5 Nov when this brief was written), six days after the credit expires on Tue 3 Nov, so #316 cannot spend it there. The listed reviews can run in the existing interactive threads; a $200 credit does not justify switching on an unattended lane before its safety checks exist.

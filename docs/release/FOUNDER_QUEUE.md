@@ -49,7 +49,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 **W0-02 Disable the agent lane.** Done 28 Oct 06:05 UTC (11:05 PM PT Tue 27 Oct) by the retro session: `enabled: false`, `updated_at` 06:05:39 UTC (list_triggers, read 28 Oct). Its connectors are still attached (W0-01).
 - Re-enable only after a supervised run leaves a journal entry and a board tick, with the procedure-only prompt from retro package R1-04. The live prompt still cites issue #127 as "Decisions in force".
 
-**W0-03 Pause the daily PRD update until after 5 Nov, then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
+**W0-03 Pause the daily PRD update until after the go/no-go (Mon 9 Nov; it was 5 Nov), then weekly.** Done 28 Oct 06:05 UTC by the retro session: `enabled: false`, `updated_at` 06:05:57 UTC. The **daily docs run** was disabled 28 Oct 05:30 UTC (`updated_at` 05:30:48 UTC); leave it off. Connectors still attached on both (W0-01).
 
 **W0-04 Close #309 and turn off automatic Vercel Agent pull requests for the website project.** Partly done: #309 (author `vercel[bot]`, into `main`) was closed unmerged on 28 Oct at 06:16 UTC (REST). Still open: turn off automatic Vercel Agent pull requests so another one does not arrive. About 3 minutes. The Vercel setting's exact name is unverified.
 - Why: #309 adds Vercel Web Analytics and flips the guard test in `legal.test.ts` from "must not mention" to "must mention" (retro synthesis section 1, row 21).
@@ -88,7 +88,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 **W0-11 Confirm or amend D-117's operating rule in one line.** Open. 5 minutes. The question: may the coordinator keep merging `supabase/**`, auth, payments and `.github/**` after two review passes (`docs/DECISIONS.md:810`)? Synthesis recommendation: yes, plus a weekly skim of a list of those merges (R1-03 prints it).
 
-**W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by 5 Nov. Briefs: R1-09.
+**W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by the go/no-go (Mon 9 Nov). Answered 30 Oct for the spend: no paid harness, `agents.yml` is not provisioned (D-127); trimming the roster is still open. Briefs: R1-09.
 
 **W0-13 Engage counsel and send one packet built from #163.** Open: #163 and #136 are open (REST, 28 Oct). Hours. Ask which texts apply to the alpha and the "Friends" group.
 - Unblocks: legal pages in final form, Friends signing in, submission.
@@ -127,7 +127,7 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 85 |
 | Q2-14 | R-17 sign-off: read `docs/security/REVIEW_R17_CHECKLIST.md` and the staging `test:db` evidence; record "R-17 passed" | 30 min | Friends may sign in (D-100) | open; a D-id records it | F21 |
 | Q2-15 | Friends: build 1 to Beta App Review for "Friends", invite by email (AF-11 replaces F26's route of adding friends as App Store Connect users, AUTOMATION section 4 intro) | 30 min plus review | friends on build 1 | unverified | AF-11, F26 |
-| Q2-16 | Answer the proposed dates (freeze Tue 3 Nov 13:00 UTC, go/no-go Thu 5 Nov), overdue since Sat 24 Oct (BOARD line 85); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
+| Q2-16 | Dates answered 30 Oct (D-130: freeze Tue 3 Nov, go/no-go Mon 9 Nov; the freeze hour, 13:00 UTC, is the coordinator's); then the go/no-go with the coordinator (`docs/qa/ALPHA_GO_NO_GO.md` section 3) and, if go, build 2 to "Friends" | 30 min | the alpha | open | F27, BOARD line 85 |
 | Q2-17 | Upgrade Vercel to Pro (Hobby is non-commercial; AUTOMATION 0.1 item 10) | 10 min | commercial use of the site | unverified; price unverified | AF-15 |
 
 ---
@@ -155,5 +155,5 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | AF (`docs/release/AUTOMATION.md` section 4) | AF-01 W0-14a. AF-02 and AF-03 W0-08. AF-04 W0-14d. AF-05 W0-09. AF-06 W0-14f. AF-07 W0-08 and W0-07. AF-08 W0-14c. AF-09 W0-14b. AF-10 W0-14e. AF-11 Q2-15. AF-12 W0-14c. AF-13 Q2-01 and Q2-07. AF-14 overtaken: the harness runs on the macOS runner (AUTOMATION 0.2 row 13, measured 24 Oct). AF-15 Q2-17. AF-20 Q3-01. AF-21 Q3-02. AF-22 Q3-03. AF-23 W0-08. AF-24 W0-06 and Q3-04. AF-25 to AF-28 Q3-05. AF-40 to AF-43 Q3-06. |
 | TESTFLIGHT steps | 1 W0-14a. 2 W0-14b (2.5 is Q2-09). 3 W0-14d and W0-07. 4 W0-14c. 5 W0-14e. 6 W0-14f, W0-08 and Q2-01. 7 Q2-02 and Q2-03. 8 Q2-04. 9 Q2-05. 10 Q2-06. 11 Q2-10. 12 Q2-07. |
 | F (alpha plan, 1ae1ace6 section 4) | F01 W0-14a. F02 W0-14d. F03 overtaken by D-111 (alpha calls resolved 17 Oct; item by item unverified). F04 W0-14f. F05 Q2-02. F06 Q2-05. F07 W0-13. F08 W0-14b. F09 W0-14c. F10 Q2-02. F11 Q2-04. F12 W0-14e. F13 W0-14c. F14 Q2-09. F15 Q2-06. F16 Q2-01. F17 Q2-07. F18 Q2-08. F19 Q2-11. F20 Q2-08. F21 Q2-14. F22 W0-13. F23 Q2-11. F24 Q2-10. F25 Q2-11. F26 Q2-15. F27 Q2-16. W (daily merge window) overtaken by D-117. |
-| BOARD line 85 | TESTFLIGHT steps 1 to 5: W0-14a to e. Mac kit run: Q2-12. Scratch branch: Q2-13. AF-05: W0-09. Proposed dates: Q2-16. |
+| BOARD line 85 | TESTFLIGHT steps 1 to 5: W0-14a to e. Mac kit run: Q2-12. Scratch branch: Q2-13. AF-05: W0-09. Dates (answered 30 Oct): Q2-16. |
 | Retro Wave 0 | Items 1 to 15 are W0-01 to W0-15. |

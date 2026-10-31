@@ -1,6 +1,6 @@
 # Brief (c): D-117, who merges the founder-class paths
 
-Status: open, not decided. Needed by Mon 2 Nov, before the proposed freeze (Tue 3 Nov, 5:00 AM PT), because freeze-week fixes on these paths merge under whichever rule stands.
+Status: open, not decided. Needed by Mon 2 Nov, before the freeze (Tue 3 Nov, confirmed by the founder on 30 Oct, D-130; the hour, 5:00 AM PT, is the coordinator's), because freeze-week fixes on these paths merge under whichever rule stands.
 Default if unanswered: the coordinator's rule stays in force, as recorded, with nothing in GitHub enforcing it.
 
 ## Question
