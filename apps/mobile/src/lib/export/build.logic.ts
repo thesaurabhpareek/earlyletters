@@ -97,7 +97,7 @@ export interface ExportSnapshot {
   consentHistory: ExportConsentHistory;
   /** For account.json (1.4.0): the person's own profile from the server, or why it is not here. */
   profile: ExportProfile;
-  /** For account.json (1.3.0): the words spelled your way, phone first, then the server's. */
+  /** For account.json (1.3.0): the words spelled your way, as kept on this phone (each book's child name and your signature). */
   dictionary: ExportDictionaryTerm[];
 }
 

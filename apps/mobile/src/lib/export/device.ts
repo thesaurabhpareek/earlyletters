@@ -6,7 +6,7 @@
  * (server-records.logic.ts): bounded by the read timeout, and when it cannot
  * be read the export still finishes and says why.
  *
- * Flow: snapshot the store, add the server's records when they can be read,
+ * Flow: snapshot the store, add the server's consent record and profile when they can be read,
  * write the ZIP to the app cache (never backed
  * up), re-read it and check every hash, then hand it to the share sheet. The
  * temporary ZIP is deleted when the share sheet closes, when the person
