@@ -18,6 +18,7 @@ export function Footer() {
             <Wordmark />
           </p>
           <p className={styles.tagline}>{siteCopy.footer.tagline}</p>
+          <p className={styles.tagline}>{site.footer.sampleNote}</p>
         </div>
 
         <nav aria-label={siteCopy.footer.legalNavLabel}>

@@ -1,6 +1,6 @@
 /** The film's letter must be honest: the review scene may only remove and repair (CLAUDE.md constitution). */
 import { describe, expect, it } from 'vitest';
-import { sampleLetter, type HeardSegment } from '../src/content/site';
+import { sampleLetter, site, type HeardSegment } from '../src/content/site';
 
 const segments = sampleLetter.heard as readonly HeardSegment[];
 
@@ -15,5 +15,10 @@ describe('sample letter', () => {
       if (s.kind === 'name') expect(s.becomes).toBe(sampleLetter.to);
       else expect(s.becomes).toBe('');
     }
+  });
+
+  it('says plainly, in the footer and the welcome email, that the letter is a sample', () => {
+    expect(site.footer.sampleNote.toLowerCase()).toContain('sample');
+    expect(site.welcomeEmail.letterLabel.toLowerCase()).toContain('sample');
   });
 });
