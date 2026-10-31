@@ -135,3 +135,54 @@ The partially fixed items and the open SUB-07, SUB-08, SUB-11, SUB-12, SET-06, S
 3. Get the founder's explicit sign-off on N3.
 4. Close or record the 7 open and 9 partial findings.
 5. Run `test:db`, `test:functions` and `supabase start` (D-041).
+
+## Second pass (head `aeb248c4`)
+
+Same reviewer. Checked out `aeb248c4` with `git fetch` and a detached checkout. The lockfile is unchanged, so `npm ci` was not needed. `supabase/**` is unchanged since `2b473a39`. The coordinator reports that `test:db` (35/35) and `test:functions` passed there; I did not run them.
+
+**Runs:** `npm test` exit 0 (mobile: 176 files, 3424 passed, 1 skipped; emails: 231 passed; every other workspace passed). `npm run typecheck` exit 0.
+
+### Items re-checked against the code
+
+| ID | Now | Evidence |
+|---|---|---|
+| N1 | Fixed | `git diff origin/develop HEAD -- docs/release/journey` is empty. The four partial-run files are gone. |
+| N2 | Fixed | `packages/core/src/plan.ts:9-16` cites D-053 ("A co-parent gets Plus through Family Sharing", `DECISIONS.md:367`) and Terms 14.12. `CHANGES-2026-10-31.md` item 3 is marked resolved. The TDD 08 note now points at `packages/core/src/plan.ts`. |
+| N3 | Founder's call, recorded | `CHANGES-2026-10-31.md` has a new section, "Needs explicit founder sign-off at merge", covering Terms 13.1 and 14.6, with a revert path for each. |
+| N4 | Fixed or deferred | The `billing.en.ts:12` test reference is fixed, and so is the `CATALOG.md` family-book-closing row. The two `supabase/` comments are deferred to BL-516; supabase was frozen for the DB run. |
+| N5, LNG-18 | Fixed or locked | Every surface not registered with counsel now uses the BRAND.md sentence: `strings.en.ts:847`, `stories.en.ts:41`, `store.en.ts:46`, `site.en.ts:35,59,97`, `pages.en.ts:61,117`, `auth.en.ts:105`. The store and site steps now read "Fix a word if one is wrong." `review.firstNote.body` is counsel-locked. |
+| SIGN-08 | Deferred | BL-509 (website, `main`). |
+| SIGN-09 | Fixed | `AUTH_SETUP.md:169-172`, `DOMAINS.md:145`, `TESTFLIGHT.md`. |
+| SET-06 | Fixed | `onboarding.tsx:469` uses `language-row.logic.ts`, tested in `onboarding-language-row.test.ts`. |
+| SUB-01 | Fixed | `pricing.test.ts:63-77` scans both legal bodies for `PLUS_PRICE`. ADR 0013 has a status note and keeps the old table as history. `payments.md:22` gives the D-082 prices and marks the old ones superseded. |
+| SUB-02 | Fixed | `pricing.test.ts:79`: the Subscription Terms "What Plus adds" equals `billingCopy.store.features`. |
+| SUB-06 | Fixed or deferred | The `codeOffers` entry is added and tested in `storekit-config.test.ts`. The device pass D-10 is BL-526. |
+| SUB-07 | Fixed | `plan.logic.ts` `ownSubscription`, used at `plus.tsx:105`, tested in `settings-plan-rows.test.ts`. |
+| SUB-08 | Fixed | `planScreen` `manage` excludes `familyShared`, tested. |
+| SUB-11 | Fixed | `EarlyLetters.storekit`: grace on, one code offer, Terms named. Tested. |
+| SUB-12 | Fixed | The Swift and `actions.ts` comments now cite D-053 and ADR 0013 (D-081 is kept only for consent records). A test pins it. |
+| LNG-04, 09, 12, 15 | Counsel-locked | `COUNSEL_LOCKED.md`, BL-527. I confirmed every locked string is pinned by `experience-pass.test.ts` or `server-surfaces-auth.test.ts`, or quoted in `in-app-disclosures.md`. Changing one is a counsel change, not a copy fix. |
+| LNG-06 | Reason | `strings.en.ts:823-824`: PRD C-REQ-002 (P0) lists "Every evening" as an option the person chooses, and the help text no longer sets a rhythm. |
+| BL-509 to BL-527 | Present | `docs/BACKLOG.md:2246-2375`. Each item has an owner, a gate and a done-when line. BL-520 to BL-525 concern #306, not this review. |
+
+### `language-picker-english-only.test.ts`
+
+The only change is to the allowlist of files that may read the English-only switch. It adds `app/onboarding.tsx` and `components/onboarding/language-row.logic.ts`, and renames the test title to match. No assertion was removed. The guard's purpose still holds: both new entries are screen code, and no store, sync, rules or pack code reads the switch. A new test, `onboarding-language-row.test.ts`, pins the row to that rule. This widens the guard because a decision needs it. It does not weaken the guard.
+
+### Sweeps on the second-pass diff
+
+- **Banned characters:** none.
+- **Prices:** $3.99 and $29.99 now appear only as marked history (ADR 0013 note and table, CHANGES, changelogs, the payments agent file).
+- **Removed test lines:** only the test title above.
+- **Privacy:** no new data in analytics or emails.
+- **Build 1:** the language row is hidden there, and nothing new reaches server features.
+- **Migrations:** none.
+
+### Final verdict
+
+**Ready for founder merge.** At merge the founder still needs to:
+
+1. Approve or revert Terms 13.1 and 14.6 (N3, `CHANGES-2026-10-31.md`).
+2. Give the D-041 `supabase/**` review and `approve-migration` sign-off.
+
+Before submission these stay open: BL-509 to BL-527, including counsel on the locked strings (BL-527) and SUB-03 and SUB-04.
