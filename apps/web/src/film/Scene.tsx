@@ -18,8 +18,8 @@
  * Rules (docs/web/TEAM.md): animate transform and opacity only (plus SVG pathLength); words come from
  * src/content/site.ts; text never over busy motion; every scene has a designed reduced-motion frame.
  */
-import { createContext, useContext, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import { useMotionValueEvent, useReducedMotion, useScroll, type MotionValue } from 'motion/react';
+import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { cubicBezier, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
 import styles from './Scene.module.css';
 
 export type Tone = 'paper' | 'dusk' | 'night';
@@ -59,11 +59,33 @@ export type SceneProps = {
   style?: CSSProperties;
 };
 
+/** How far a scene reaches back over the one before it, in screens. A short scene reaches back less (half its own run). */
+export function handoffOf(length: number): number {
+  return Math.max(0, Math.min(0.35, (length - 1) * 0.5));
+}
+
+const DISSOLVE = cubicBezier(0.4, 0, 0.2, 1);
+
 export function Scene({ id, label, length = 2, tone = 'night', rest = 0.5, toneStops, reducedMinHeight, children, className, style }: SceneProps) {
   const ref = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion() ?? false;
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+
+  // The scene reaches back over the one before it and fades in across that overlap, so lights and backgrounds
+  // dissolve into each other instead of cutting. The first scene has nothing before it and is always there.
+  const handoff = handoffOf(length);
+  const fade = useTransform(scrollYProgress, [0, handoff / Math.max(length - 1, 0.01)], [0, 1], { ease: DISSOLVE });
+  const [dissolve, setDissolve] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const prev = el?.previousElementSibling as HTMLElement | null;
+    // Only dissolve where the colour changes. Two scenes on the same paper would show both sets of words at once.
+    const differs = !!prev && prev.tagName === 'SECTION' && prev.dataset.tone !== el?.dataset.tone;
+    const on = !reduced && handoff > 0 && differs;
+    setDissolve(on);
+    el?.style.setProperty('--scene-handoff', on ? String(handoff) : '0');
+  }, [reduced, handoff]);
 
   const { scrollYProgress: arrival } = useScroll({ target: ref, offset: ['start end', 'start start'] });
   const show = (v: number) => {
@@ -116,9 +138,9 @@ export function Scene({ id, label, length = 2, tone = 'night', rest = 0.5, toneS
         ...style,
       }}
     >
-      <div ref={stageRef} className={styles.stage} data-live="true">
+      <motion.div ref={stageRef} className={styles.stage} data-live="true" style={dissolve ? { opacity: fade } : undefined}>
         <SceneContext.Provider value={{ progress: scrollYProgress, reduced, id }}>{children}</SceneContext.Provider>
-      </div>
+      </motion.div>
     </section>
   );
 }

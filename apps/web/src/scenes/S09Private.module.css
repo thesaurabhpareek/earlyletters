@@ -52,3 +52,35 @@
   transform: translateY(-50%) rotate(-45deg);
   border-radius: 1px;
 }
+
+/* Phones: keep the last promise clear of the floating button, and let a short screen breathe. */
+@media (max-width: 759px) {
+  .column {
+    gap: 12px;
+    padding-top: 68px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
+  .envelope {
+    width: clamp(96px, 28vw, 130px);
+  }
+  .point {
+    padding: 9px 0;
+    font-size: clamp(17px, 4.6vw, 20px);
+    line-height: 1.38;
+  }
+}
+
+@media (max-width: 759px) and (max-height: 640px) {
+  .column {
+    gap: 8px;
+    padding-top: 56px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  }
+  .envelope {
+    display: none;
+  }
+  .point {
+    padding: 7px 0;
+    font-size: 16px;
+  }
+}

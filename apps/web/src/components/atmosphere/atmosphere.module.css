@@ -10,6 +10,16 @@
 .pool {
   position: absolute;
   pointer-events: none;
+  contain: layout paint style;
+}
+/* Only the stage on screen gets its own layers: a promoted pool is large (up to 150vmax), and ten of them at
+   once would cost a phone more memory than the motion is worth. */
+:global([data-live='true']) .pool,
+:global([data-live='true']) .breathe {
+  will-change: transform, opacity;
+}
+:global([data-live='true']) .grain {
+  will-change: transform;
 }
 
 .fill {

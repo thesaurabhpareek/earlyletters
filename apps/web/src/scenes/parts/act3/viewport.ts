@@ -12,7 +12,11 @@ export function useViewport(fallback = { w: 390, h: 844 }) {
     let raf = 0;
     const read = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setSize({ w: window.innerWidth, h: probe?.offsetHeight || window.innerHeight }));
+      raf = requestAnimationFrame(() => setSize((p) => {
+          const w = window.innerWidth;
+          const h = probe?.offsetHeight || window.innerHeight;
+          return p.w === w && p.h === h ? p : { w, h };
+        }));
     };
     read();
     window.addEventListener('resize', read);
