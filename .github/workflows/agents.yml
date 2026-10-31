@@ -246,8 +246,9 @@ jobs:
       #      agent/<handle>/wip-<run id>;
       #   3. unsaved changes are committed here, and the commits since the base
       #      commit go through pathguard.mjs (trusted copy) as the agent's
-      #      identity; a second, independent `git diff` must list exactly the
-      #      files pathguard checked. On any failure nothing is pushed.
+      #      identity; the net BASE...HEAD diff must contain no path that
+      #      pathguard did not evaluate per commit (a consistency tripwire, not
+      #      an independent check). On any failure nothing is pushed.
       # Ignored files are not force-added (that would commit node_modules): a
       # file that is ignored is simply not in the commit. Against an honest
       # model only commits are pushed, so what is pushed is what pathguard
