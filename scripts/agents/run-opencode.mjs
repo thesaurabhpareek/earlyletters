@@ -14,13 +14,65 @@ import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
+/**
+ * Bash patterns the agent may not run.
+ *
+ * TRIPWIRE, NOT A BOUNDARY. opencode matches the whole command string (and each segment
+ * of a && / ; / | compound) against these globs, so they catch the honest mistake and the
+ * lazy attempt only. These shapes are KNOWN to bypass and are deliberately not chased:
+ * env-prefix (`FOO=1 git push ...`), `sh -c '...'`, variables (`B=develop; git push origin $B`),
+ * command substitution, a script file the model wrote, `env git ...`, and quoted branch
+ * names (`HEAD:'develop'`). The real controls are server side: branch protection on develop
+ * and main, the scoped short-lived App token, and the two-job split. Do not rely on this list.
+ * Parity: the Claude Code arm in .github/workflows/agents.yml denies pushes to develop and main.
+ *
+ * The git patterns come from the tighter set W2 verified on the real binary (see
+ * docs/agents/hardening/opencode-contract.md): anchored on the command start (`git push`,
+ * `git -C* push`, `git -c* push`) and on a whole branch token, so `feat/maintenance` or a
+ * commit message that says "push to main" is not blocked. The two exact legacy forms
+ * "git push origin develop*" / "main*" stay because lib.test.mjs asserts them; they also block
+ * a branch whose name STARTS with develop or main directly after origin.
+ */
+export function gitPushPatterns() {
+  const out = [];
+  for (const p of ["git push", "git -C* push", "git -c* push"]) {
+    out.push(`${p} --force*`, `${p}*--force*`, `${p}* -f*`, `${p}*--delete*`, `${p}* +*`, `${p}* :*`);
+    for (const b of ["develop", "main"]) {
+      out.push(`${p}* ${b}`, `${p}* ${b} *`, `${p}*:${b}`, `${p}*:${b} *`, `${p}*:refs/heads/${b}`, `${p}*:refs/heads/${b} *`, `${p}* refs/heads/${b}`);
+    }
+  }
+  return out;
+}
+
+export const DENY_PATTERNS = [...new Set([
+  // force, delete, plus-refspec and protected-branch pushes, any -C/-c prefix, any option order
+  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", // exact legacy forms
+  ...gitPushPatterns(),
+  // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
+  "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
+  "gh*pr*--admin*",
+  // secrets, settings, repo admin, workflow control
+  // (anchored at "gh" so a PR body that mentions "secret" is not blocked; -R/--repo forms added)
+  "gh secret*", "gh variable*", "gh repo delete*", "gh repo edit*", "gh repo archive*",
+  "gh ruleset*", "gh auth*", "gh workflow run*", "gh workflow enable*", "gh workflow disable*",
+  "gh run rerun*", "gh run cancel*",
+  "gh -R*secret*", "gh -R*variable*", "gh -R*ruleset*", "gh -R*workflow run*", "gh -R*workflow enable*",
+  "gh -R*workflow disable*", "gh -R*run rerun*", "gh -R*run cancel*", "gh -R*repo delete*", "gh -R*repo edit*",
+  "gh --repo*secret*", "gh --repo*variable*", "gh --repo*workflow run*", "gh --repo*repo delete*",
+  // gh api writes: explicit non-GET verbs, implicit POST (field flags), graphql, sensitive paths
+  "gh*api*-X DELETE*", "gh*api*--method DELETE*", "gh*api*-X PUT*", "gh*api*--method PUT*",
+  "gh*api*-X PATCH*", "gh*api*--method PATCH*", "gh*api*-X POST*", "gh*api*--method POST*",
+  "gh*api*-XDELETE*", "gh*api*-XPUT*", "gh*api*-XPATCH*", "gh*api*-XPOST*",
+  "gh*api* -f*", "gh*api* -F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
+  // anchored so a comment body that mentions graphql is not blocked (W2 suggestion; not run live)
+  "gh api*graphql*", "gh -R* api*graphql*", "gh --repo* api*graphql*",
+  "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
+  "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
+  "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
+])];
+
 /** Permissions: everything an agent needs, minus the actions only the founder takes. */
 export function opencodeConfig() {
-  const deny = [
-    "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*",
-    "gh pr merge*", "gh pr close*", "gh pr review*--approve*", "gh issue close*",
-    "gh secret*", "gh variable*", "gh repo delete*", "gh repo edit*", "gh api*-X DELETE*", "gh api*--method DELETE*",
-  ];
   return {
     $schema: "https://opencode.ai/config.json",
     share: "disabled",
@@ -29,8 +81,87 @@ export function opencodeConfig() {
     permission: {
       edit: "allow",
       webfetch: "allow",
-      bash: Object.fromEntries([["*", "allow"], ...deny.map((p) => [p, "deny"])]),
+      bash: Object.fromEntries([["*", "allow"], ...DENY_PATTERNS.map((p) => [p, "deny"])]),
     },
+  };
+}
+
+/**
+ * Environment names the opencode child (and so the model's bash tool) may see.
+ * Everything else, including every other secret on the runner, is dropped.
+ *
+ * Kept on purpose, and the residual risk: OPENROUTER_API_KEY (the config reads it
+ * through {env:...}; the engine cannot call the model without it) and GH_TOKEN
+ * (gh reads it for every API call; `gh pr create` and git over HTTPS need it).
+ * A model with a shell can still print these two. Mitigations that live elsewhere:
+ * the OpenRouter key must carry its own dollar budget, the App token is short lived
+ * and scoped to this repo, and webfetch egress is the open hole to watch.
+ * Writing the key into the config file instead would only move it onto disk.
+ */
+export const ENV_ALLOWLIST = [
+  "PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LC_ALL", "TERM", "TZ", "TMPDIR", "CI",
+  "RUNNER_TEMP", "OPENCODE_CONFIG",
+  "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy",
+  "SSL_CERT_FILE", "NODE_EXTRA_CA_CERTS", "GIT_SSL_CAINFO",
+  "OPENROUTER_API_KEY", "GH_TOKEN",
+];
+
+/**
+ * Pure: build the child environment from a source env. `extra` is applied last and wins.
+ *
+ * OPENCODE_DISABLE_PROJECT_CONFIG is verified present in opencode-ai 1.18.34 (read from
+ * the shipped binary). Config order there is global, then OPENCODE_CONFIG, then repo
+ * opencode.json(c) files and .opencode directories, so WITHOUT this flag a file in the
+ * checkout overrides our permissions. With it, those and repo AGENTS.md discovery are
+ * skipped; the brief is read explicitly by the prompt, so that loss is acceptable.
+ */
+export function buildChildEnv(source, extra = {}) {
+  const env = {};
+  for (const k of ENV_ALLOWLIST) if (typeof source[k] === "string") env[k] = source[k];
+  return { ...env, OPENCODE_DISABLE_PROJECT_CONFIG: "1", ...extra };
+}
+
+/**
+ * Pure: should the run stop now? Steps are reported only after they finish, so one
+ * step of overshoot cannot be avoided; projecting with the dearest step seen so far
+ * stops before the likely next breach instead of after it.
+ */
+export function stopReason(totals, { budget, maxTurns, model }) {
+  if (totals.cost >= budget || totals.cost + (totals.maxStepCost ?? 0) > budget) return "error_max_budget_usd";
+  if (totals.steps >= maxTurns) return "error_max_turns";
+  // A paid model that reports no cost would make the cap blind: stop early.
+  if (totals.steps >= 5 && totals.cost === 0 && !model.endsWith(":free")) return "error_cost_not_reported";
+  return null;
+}
+
+/**
+ * Signal the child and everything it spawned. The child is started as a process group
+ * leader (detached), so a negative pid reaches the group; falls back to the child alone.
+ */
+export function killTree(child, signal, killFn = process.kill) {
+  if (child.pid) {
+    try {
+      killFn(-child.pid, signal);
+      return;
+    } catch {
+      // group gone or not a group leader: fall through to the direct child
+    }
+  }
+  try {
+    child.kill(signal);
+  } catch {
+    // already exited
+  }
+}
+
+/** Build the stop function: SIGTERM the group now, SIGKILL after a grace period. */
+export function makeStopper(child, state, { killFn = process.kill, setTimer = setTimeout, graceMs = 15_000 } = {}) {
+  return (why) => {
+    if (state.subtype === "success") state.subtype = why;
+    killTree(child, "SIGTERM", killFn);
+    const t = setTimer(() => killTree(child, "SIGKILL", killFn), graceMs);
+    t?.unref?.();
+    return t;
   };
 }
 
@@ -39,7 +170,10 @@ export function tally(totals, event) {
   if (event?.type === "step_finish") {
     const part = event.part ?? event;
     totals.steps += 1;
-    if (typeof part.cost === "number") totals.cost += part.cost;
+    if (typeof part.cost === "number") {
+      totals.cost += part.cost;
+      totals.maxStepCost = Math.max(totals.maxStepCost ?? 0, part.cost);
+    }
     const t = part.tokens;
     if (t) {
       totals.tokens.input += t.input ?? 0;
@@ -51,7 +185,7 @@ export function tally(totals, event) {
 }
 
 export function newTotals() {
-  return { steps: 0, cost: 0, tokens: { input: 0, output: 0, cacheRead: 0 } };
+  return { steps: 0, cost: 0, maxStepCost: 0, tokens: { input: 0, output: 0, cacheRead: 0 } };
 }
 
 function args() {
@@ -82,17 +216,17 @@ async function main() {
 
   const started = Date.now();
   const totals = newTotals();
-  let subtype = "success";
+  // detached: the child leads its own process group, so a stop reaches shells and
+  // tools the model started. Project config is disabled through the env, not the cwd.
   const child = spawn("opencode", cmd, {
-    env: { ...process.env, OPENCODE_CONFIG: cfgPath },
+    env: buildChildEnv(process.env, { OPENCODE_CONFIG: cfgPath }),
     stdio: ["ignore", "pipe", "inherit"],
+    detached: true,
   });
 
-  const stop = (why) => {
-    if (subtype === "success") subtype = why;
-    child.kill("SIGTERM");
-    setTimeout(() => child.kill("SIGKILL"), 15_000).unref();
-  };
+  const state = { subtype: "success" };
+  const stop = makeStopper(child, state);
+  for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => stop("error_during_execution"));
 
   const rl = createInterface({ input: child.stdout });
   rl.on("line", (line) => {
@@ -106,13 +240,13 @@ async function main() {
     // Keep public Actions logs short: step totals and the agent's own text only.
     if (ev.type === "step_finish") console.log(`step ${totals.steps}: $${totals.cost.toFixed(4)} so far`);
     else if (ev.type === "text" && ev.part?.text) console.log(ev.part.text.trim().slice(0, 2000));
-    if (totals.cost > a.budget) stop("error_max_budget_usd");
-    else if (totals.steps > a.maxTurns) stop("error_max_turns");
-    // A paid model that reports no cost would make the cap blind: stop early.
-    else if (totals.steps >= 5 && totals.cost === 0 && !a.model.endsWith(":free")) stop("error_cost_not_reported");
+    const why = stopReason(totals, a);
+    if (why) stop(why);
   });
 
   const code = await new Promise((res) => child.on("close", res));
+  if (state.subtype !== "success") killTree(child, "SIGKILL"); // sweep stragglers in the group
+  let subtype = state.subtype;
   if (code !== 0 && subtype === "success") subtype = "error_during_execution";
 
   const result = {
