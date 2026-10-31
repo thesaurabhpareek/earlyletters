@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { identityOf } from "./identity.mjs";
 
 const LOCKFILES = [
   "package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock",
@@ -28,6 +29,12 @@ export const HARD_RULES = [
   { id: "roster", glob: "agents/roster.json", why: "the agent roster" },
   { id: "lanes", glob: "agents/lanes.json", why: "the lane definitions themselves" },
   { id: "claude-config", glob: ".claude/**", why: "agent identities and settings (.claude/**)" },
+  { id: "npmrc", glob: "**/.npmrc", why: "npm config can run code at install (.npmrc)" },
+  { id: "gitattributes", glob: "**/.gitattributes", why: "git filters and attributes (.gitattributes)" },
+  { id: "husky", glob: ".husky/**", why: "git hooks (.husky/**)" },
+  { id: "opencode-config", glob: "opencode.json", why: "the OpenCode runner config (opencode.json)" },
+  { id: "agents-md", glob: "AGENTS.md", why: "agent instructions (AGENTS.md)" },
+  { id: "git-dir", glob: ".git/**", why: "git internals (.git/**)" },
   { id: "agent-docs", glob: "docs/agents/**", why: "agent harness docs (docs/agents/**)" },
   { id: "manifest", glob: "**/package.json", why: "package manifest (package.json)" },
   { id: "manifest", glob: ".gitmodules", why: "submodule config (.gitmodules)" },
@@ -202,7 +209,12 @@ export function main(argv = process.argv.slice(2), out = console) {
   if (args.agent && args.labels !== undefined) { out.error("pathguard: give --agent or --labels, not both"); return 2; }
   if (!args.agent && args.labels === undefined) { out.error("pathguard: --agent <handle> or --labels <a,b,...> is required"); return 2; }
   if (args.labels !== undefined) {
-    const id = agentFromLabels(args.labels.split(","));
+    const labels = args.labels.split(",");
+    // Identity does not rest on labels: a branch prefix agent/<handle>/ or a bot author counts too.
+    const logins = String(args["app-logins"] ?? process.env.AGENTS_BOT_LOGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    const ident = identityOf({ labels, head: { ref: args.branch ?? "" }, user: { login: args.author ?? "", type: args["author-type"] ?? "" } }, { appLogins: logins });
+    if (ident.status === "conflict" || ident.status === "unlabelled") { out.error(`pathguard: FAIL, agent identity is inconsistent: ${ident.reasons.join("; ")}. Fail closed: fix the labels or the branch name.`); return 1; }
+    const id = agentFromLabels(labels);
     if (id.status === "none") { out.log("pathguard: no agent:* label, not an agent PR; out of scope for this check (human review and branch protection apply)."); return 0; }
     if (id.status === "many") { out.error(`pathguard: FAIL, more than one agent:* label (${id.labels.join(", ")}). Label order can be changed by anyone with triage permission, so no lane is chosen. Remove all but one.`); return 1; }
     args.agent = id.agent;

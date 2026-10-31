@@ -67,6 +67,13 @@ const FORBIDDEN = [
   ["pnpm-lock.yaml", "lockfile"],
   ["apps/mobile/ios/Podfile.lock", "lockfile"],
   ["scripts/agents/dispatch.mjs", "scripts"],
+  [".npmrc", "npmrc"],
+  ["apps/mobile/.npmrc", "npmrc"],
+  [".gitattributes", "gitattributes"],
+  [".husky/pre-commit", "husky"],
+  ["opencode.json", "opencode-config"],
+  ["AGENTS.md", "agents-md"],
+  [".git/config", "git-dir"],
 ];
 for (const [p, rule] of FORBIDDEN) {
   test(`forbidden: ${p}`, () => {

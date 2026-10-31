@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isAgentLike } from "./identity.mjs";
 import { idReservingPRs, cleanState, lastStateMarker, verdictOf } from "./hardening.mjs";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -237,6 +238,9 @@ export function agentOfPR(pr) {
   const label = labelNames(pr).find((n) => n.startsWith("agent:"));
   return label ? label.slice("agent:".length) : undefined;
 }
+
+/** For caps only: label OR branch prefix `agent/<handle>/` OR bot author (identity.mjs). Routing stays label-only (agentOfPR). */
+export const agentLikePR = (pr) => isAgentLike(pr, { appLogins: String(process.env.AGENTS_BOT_LOGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean) });
 
 export function journalTitle(agent) {
   return `Agent journal: ${agent.title} (${agent.handle})`;

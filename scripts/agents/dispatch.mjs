@@ -19,7 +19,7 @@ import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds, CAP_HITS,
-  readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
+  readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, agentLikePR, readText, todayUTC,
   isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
@@ -235,7 +235,7 @@ function firstD041Target() {
 }
 // Team limit: when this many agent PRs wait for review, agents only review and
 // fix; they start no new task or standing duty (open docs went stale unmerged).
-const teamOpen = openPRs.filter((pr) => agentOfPR(pr)).length;
+const teamOpen = openPRs.filter((pr) => agentLikePR(pr)).length; // unlabelled agent-like PRs count against the cap
 const teamCap = roster.limits.max_open_agent_prs ?? Infinity;
 
 // ONLY_AGENT: a comma-separated list of handles to assign; everyone else still appears on the board.
