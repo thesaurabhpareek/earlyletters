@@ -17,7 +17,7 @@ Engineering notes, not legal advice. Facts with dates; recheck anything older th
 ## Laws and platform rules (status as checked)
 | Item | Status | Checked | Source |
 |---|---|---|---|
-| Texas SB 2420 (App Store Accountability Act) | Enforceable. District court enjoined it 23 Dec 2025; Fifth Circuit stayed the injunction pending appeal on 4 Jun 2026; the Supreme Court denied vacatur on 6 Jul 2026; oral argument 4 Aug 2026; no merits decision as of the tracker's 13 Oct 2026 check. | 31 Oct 2026 | texasdatalaw.com/tracker/sb-2420 (secondary). Register CR-004. |
+| Texas SB 2420 (App Store Accountability Act) | Enforceable. District court enjoined it 23 Dec 2025; Fifth Circuit entered an administrative stay on 28 May 2026 and stayed the injunction pending appeal on 4 Jun 2026; the Supreme Court denied vacatur on 6 Jul 2026; oral argument 4 Aug 2026; no merits decision as of the tracker's 13 Oct 2026 check. | 31 Oct 2026 | texasdatalaw.com/tracker/sb-2420 (secondary). Register CR-004. |
 | California AB 1043 (Digital Age Assurance Act) | Effective 1 Jan 2027 per the register. Developer duties on requesting the OS or store signal are COUNSEL_PACKET Q5(b). | Not rechecked this session | Register CR-005 (secondary [L15], [L16]) |
 | Utah, Louisiana, Alabama app-store laws; Colorado OS-level | Dates per register CR-005 | Not rechecked this session | Register CR-005 |
 | COPPA (FTC) | Applies to services directed to children or with actual knowledge of collecting from a child under 13. Our scope question (adults writing about a child) is in the register. | Not rechecked this session | Register; ftc.gov COPPA FAQ |

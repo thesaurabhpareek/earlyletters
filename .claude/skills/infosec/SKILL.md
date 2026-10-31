@@ -36,7 +36,8 @@ For each new screen, endpoint, table, function, vendor or workflow, answer in th
 - RLS on every table the client can reach; a new table ships its grants in its own migration and in `supabase/tests/grants.mjs` (default privileges were reset in `20261023060000`).
 - `security definer` functions: pinned `search_path` (the repo sweep test), no dynamic SQL from user input, explicit grants.
 - Never edit an applied migration. `npm run test:db` must pass, including the access matrix.
-- Auth hooks run as `supabase_auth_admin`: grant only that role execute, and give it only the table rights the hook needs.
+- Auth hooks are called by `supabase_auth_admin`: grant only that role EXECUTE. Supabase's guide grants the role table rights; this repo's hook is `security definer` instead, touching only private `ops` tables with a pinned search_path (20261031000000 header). Pick one model per hook and say which in the migration.
+- Hooks have a time limit: set a short `lock_timeout` so a lock fails open inside the hook rather than timing out the sign-up.
 - Use the Supabase advisors (security and performance lints) on any hosted project before and after a migration is applied; applying is the founder's step.
 
 **Edge Functions and APIs**
