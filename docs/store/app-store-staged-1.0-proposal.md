@@ -8,7 +8,7 @@ How this was made: from `docs/store/app-store.md`, `packages/content/src/store.e
 
 | Full-scope listing says | This build | Change |
 |---|---|---|
-| Seven spoken languages; keywords `hindi`, `spanish`, `arabic`, `bilingual` | English only [F: `EXPO_PUBLIC_ENGLISH_ONLY`, `capabilities.ts`; to be set in `production` after 5 Nov, D-121] | Remove the language section and those four keywords (guideline 2.3.7: keywords must accurately describe the app) |
+| Seven spoken languages; keywords `hindi`, `spanish`, `arabic`, `bilingual` | English only [F: `EXPO_PUBLIC_ENGLISH_ONLY`, `capabilities.ts`; to be set in `production` after the go/no-go (Mon 9 Nov, D-130), D-121] | Remove the language section and those four keywords (guideline 2.3.7: keywords must accurately describe the app) |
 | "Write it together": invite a co-parent | No sharing, no sign-in [F: server features off] | Remove the section |
 | "Only you and the people you invite can read your book" | Nobody is invited | "Your book stays on your phone." [Counsel Q17] |
 | "Exactly as you said it" as the heading, in the promotional text and in screenshot 2 | The product marks every fix, and the recording is the exact original | Hold the phrase until counsel clears it at T30 (D-125 item 9). Use "see every change" and "in your own voice" |

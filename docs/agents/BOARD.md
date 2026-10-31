@@ -114,7 +114,7 @@ Every thread syncs to this order. PR state, heads and review counts are from the
 
 **Internal targets (coordinator's dates, not confirmed):** the four UI PRs merged by Thu 29 Oct, 11:59 PM PT; P6c and P7 merged by Sat 31 Oct; the critics' pass and device checks Sun 1 Nov; buffer and gate prep Mon 2 Nov.
 
-**Freeze and go/no-go:** build 2 freeze Tue 3 Nov, 5:00 AM PT (13:00 UTC; the hour is the coordinator's), and go/no-go Mon 9 Nov, both dates confirmed by the founder on 30 Oct (D-130; D-124, PR #340, open, had the go/no-go as Thu 5 Nov).
+**Freeze and go/no-go:** build 2 freeze Tue 3 Nov, 5:00 AM PT (13:00 UTC; the hour is the coordinator's), and go/no-go Mon 9 Nov, both dates confirmed by the founder on 30 Oct (D-130; D-124, in PR #340, had the go/no-go as Thu 5 Nov and now reads Mon 9 Nov).
 
 **Founder-only critical path:** the Apple, Expo and App Store Connect accounts (now, coordinator's date, not confirmed); the pack key ceremony (before build 1, D-115); the Mac kit run (by Fri 30 Oct, coordinator's date, not confirmed); the counsel relay (by Thu 29 Oct, unverified: no repo source, it comes from the counsel relay doc); staging (no date set).
 
