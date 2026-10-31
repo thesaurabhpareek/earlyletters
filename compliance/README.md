@@ -35,7 +35,7 @@ The CCO is the `regulatory-affairs` agent (skill `regulatory-compliance`). It is
 ## Karma's checklist (Karma approval)
 Karma posts the approval only after the CCO has approved the same head and all of these hold. Then Karma adds the label `karma:approved`, which re-runs the check.
 - Two independent counted reviews on the head (`## Review A at <sha>: PASS`, `## Review B at <sha>: PASS`; D-107, D-117), one of them with the `infosec` skill.
-- CI green, including `npm run test:db` for any SQL and `node --test compliance/` for scripts.
+- CI green, including `npm run test:db` for any SQL and `node --test "compliance/**/*.test.mjs"` for scripts.
 - Nothing stores or logs an IP, a birth date, an age range, a name or any user content (skill `regulatory-compliance`, "Never").
 - A change to which places are blocked, or to what a user is told, has a founder decision recorded in `docs/DECISIONS.md` (Karma section 3). Karma never approves those alone.
 - A ruling `CR-<n>` records the approval: what changed, why, and the way back.
