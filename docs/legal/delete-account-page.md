@@ -23,7 +23,7 @@ Delete your {brand.name} account
 
 ## intro
 
-This page is for {brand.storeName}. You can delete your account by email. Where your build of the app has the Delete account control, you can also delete it there (the early test builds hide it unless it is switched on, D-129). Deleting your account removes your letters and your account from our servers.
+This page is for {brand.storeName}. You can delete your account by email. Where your build of the app has the Delete account control, you can also delete it there (the early test builds hide it unless it is switched on). Deleting your account removes your letters and your account from our servers.
 
 ## inApp
 
@@ -97,5 +97,5 @@ If you only gave us your email on our website, use the unsubscribe link in any e
 
 | Version | Date | Change |
 |---|---|---|
-| 1.1.0 | 2026-10-31 | Adds the kept letters of a former member (D-116) and the book entry kept to label them; says the in-app Delete account control is used where a build has it and is hidden in the early test builds unless switched on (D-129). The website no longer serves /delete-account (content moved into /privacy, #169), so this copy now feeds the deletion section there. Version 1.1.0 because 1.0.0 is used. |
+| 1.1.0 | 2026-10-31 | Adds the letters of a parent who left a book, which stay theirs, and the book entry kept to label them. Says the in-app Delete account control is used where a build has it and that email always works. |
 | 1.0.0 | 2026-10-16 | Deletion for an app with accounts and sharing. |

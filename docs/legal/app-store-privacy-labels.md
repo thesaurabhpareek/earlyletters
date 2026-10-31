@@ -80,7 +80,7 @@ All purposes use Apple's names. "Linked" means linked to the user's identity. Ev
 | Backup on (`capabilities.backup`) | Audio Data Yes and Device ID Yes |
 | Status report on | Purchase History Yes; Email Address purpose adds reminder emails |
 | New-device notice on | Device ID Yes (`account_sessions_seen`) |
-| Build 1 (`testflight` profile) and the first store build (`production` profile): server features off (D-121) | Only what the build still sends (the download hosts, section 3.2); D-088's "Data Not Collected" is the working default for the first store build, subject to counsel (D-121 item 3); with sign-in off there are no Contact Info, Identifiers, Purchases or User Content rows. Re-run this file before submitting one |
+| Build 1 (`testflight` profile) and the first store build (`production` profile): server features off (D-121) | Only what the build still sends (the download hosts, section 3.2); the D-088 answer (no data collected) is the working default for the first store build, subject to counsel (D-121 item 3); with sign-in off there are no Contact Info, Identifiers, Purchases or User Content rows. Re-run this file before submitting one |
 | A later build with opt-in analytics (v1.1) | Add Usage Data and Diagnostics for Analytics, and Analytics on the identifier rows; the Linked or Not linked question (COUNSEL_PACKET Q7) returns |
 
 ## 4. Privacy manifest (`PrivacyInfo.xcprivacy`)
