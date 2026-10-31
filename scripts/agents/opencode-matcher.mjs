@@ -78,6 +78,7 @@ export function commandNodes(cmd) {
         // Heredoc. The engine does NOT look inside it (engine-confirmed: `cat <<EOF`, a substitution in the body, and
         // `cat <<EOF; gh pr merge 7` all RUN), so the rest of the line and the body up to the terminator are skipped as data.
         // That is the dangerous direction: a shell would run a substitution in an unquoted body. Recorded as a known hole.
+        // Exception below: a column-0 `$( )` in an unquoted body is denied by the engine, and modelled.
         const m = /^<<(-?)\s*(['"]?)([A-Za-z_][\w-]*)\2/.exec(str.slice(i));
         if (m) {
           push(seg + m[0]); seg = "";
@@ -90,6 +91,9 @@ export function commandNodes(cmd) {
             const line = str.slice(pos, end);
             pos = end + 1;
             if ((m[1] ? line.replace(/^\t+/, "") : line) === m[3]) { i = pos; break; }
+            // Engine-confirmed: in an UNQUOTED heredoc a `$( )` on a body line that starts in column 0 is denied; a tab-indented
+            // one and the backtick form run. Modelled for lines without a backtick; anything subtler stays approximate.
+            if (!m[2] && !/^\t/.test(line) && line.includes("$(") && !line.includes("`")) for (const n of commandNodes(line)) out.push(n);
           }
           continue;
         }

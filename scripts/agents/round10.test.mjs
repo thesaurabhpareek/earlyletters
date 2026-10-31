@@ -44,13 +44,24 @@ test("the time deny is the rule that catches time forms (mutant: removing it let
 // ---------- 2. heredocs ----------
 
 test("heredoc: the engine RUNS these three forms, so the matcher returns the engine result (a known hole, dangerous direction)", () => {
-  for (const c of ["cat <<EOF\n`gh pr merge 7`\nEOF", "cat <<EOF; gh pr merge 7\nbody\nEOF", "cat <<EOF\n$(gh pr merge 7)\nEOF", "cat <<'EOF'\ngh pr merge 7\nEOF", "cat <<-EOF\n\tgh pr merge 7\n\tEOF"]) {
+  for (const c of ["cat <<EOF\n`gh pr merge 7`\nEOF", "cat <<EOF; gh pr merge 7\nbody\nEOF", "cat <<EOF\n\t$(gh pr merge 7)\nEOF", "cat <<-EOF\n\t$(gh pr merge 7)\n\tEOF", "cat <<'EOF'\n$(gh pr merge 7)\nEOF", "cat <<\"EOF\"\n$(gh pr merge 7)\nEOF", "cat <<'EOF'\ngh pr merge 7\nEOF", "cat <<-EOF\n\tgh pr merge 7\n\tEOF"]) {
     assert.equal(ghOnly(c), false, JSON.stringify(c));
   }
   assert.ok(ghOnly("cat <<EOF\nx\nEOF\ngh pr merge 7"), "a command after the terminator is a node again");
   assert.ok(ghOnly("gh pr merge 7 <<EOF\nx\nEOF"), "the command that owns the heredoc is still a node");
   assert.equal(ghOnly("cat <<< 'gh pr merge 7'"), false, "a here-string is just text");
   assert.ok(ghOnly("cat <<< x; gh pr merge 7"), "and does not swallow what follows");
+});
+
+test("heredoc: a column-0 $( ) in an UNQUOTED body is DENIED by the engine and by the matcher (also <<-, x/hi lines before, trailing space, <<EOF | cat)", () => {
+  for (const c of ["cat <<EOF\n$(gh pr merge 7)\nEOF", "cat <<-EOF\n$(gh pr merge 7)\n\tEOF", "cat <<EOF\nx\nhi\n$(gh pr merge 7)\nEOF", "cat <<EOF\n$(gh pr merge 7) \nEOF", "cat <<EOF\n$(gh pr merge 7)\n", "cat <<EOF | cat\n$(gh pr merge 7)\nEOF"]) assert.ok(ghOnly(c), JSON.stringify(c));
+  assert.equal(ghOnly("cat <<EOF\n`gh pr merge 7`\nEOF"), false, "the backtick form RUNS");
+});
+
+test("recorded disagreements, SAFE direction (matcher allows, engine denies): && and | on the heredoc line, and $'\\'' form", () => {
+  // Pinned to what the matcher returns now; the engine denies all three, so a change to true here is an improvement, not a regression.
+  for (const c of ["cat <<EOF && gh pr merge 7\nx\nEOF", "cat <<EOF | gh pr merge 7\nx\nEOF", "echo $'\\''; gh pr merge 7"]) assert.equal(ghOnly(c), false, JSON.stringify(c));
+  assert.ok(ghOnly("echo $'a'; gh pr merge 7"), "control: a plain $'a' agrees (denied by both)");
 });
 
 // ---------- 3. Review A gaps ----------
