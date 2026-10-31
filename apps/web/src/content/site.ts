@@ -135,7 +135,7 @@ export const site = {
     s03: {
       label: 'Talking',
       headline: 'Talk like you normally do.',
-      support: 'Say it the way you would say it to Meera. Stop halfway, laugh, lose your thread. It does not have to be tidy.',
+      support: 'Say it the way you would to Meera. Laugh, stop halfway, lose your thread.',
       appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
@@ -185,7 +185,7 @@ export const site = {
     s08: {
       label: 'Languages',
       headline: 'English first, more to follow.',
-      support: 'English first. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each once a native speaker has checked it.',
+      support: 'English at launch. Then Hindi, Spanish, Mandarin, French, Arabic and Portuguese, each once a native speaker has checked it.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
