@@ -110,7 +110,7 @@ test.describe('reduced motion', () => {
       await page.goto('/');
       await page.waitForFunction(() => performance.now() > 1800);
       await page.getByLabel('Your email').fill(email);
-      await page.getByRole('button', { name: 'Keep me informed' }).click();
+      await page.getByRole('button', { name: /save my place/i }).click();
       await expect(page.getByRole('status').filter({ hasText: 'Thank you' })).toBeVisible();
       expect(await mock.contact(email)).toBeDefined();
     });

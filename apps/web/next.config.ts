@@ -64,6 +64,7 @@ const REDIRECT_HOSTS = ['www.earlyletters.com', 'earlyletters.app', 'www.earlyle
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  devIndicators: false,
   distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['@scribe/brand', '@scribe/design-tokens'],
 

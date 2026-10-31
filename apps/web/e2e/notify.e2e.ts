@@ -1,5 +1,5 @@
 /**
- * The "Keep me informed" sign-up, through the real page and the real server, with Resend mocked.
+ * The "Save my place" sign-up, through the real page and the real server, with Resend mocked.
  * Rules under test: src/lib/notify/handler.ts (order of checks), client.ts, components/cta/NotifyForm.tsx.
  */
 import { TEST_ENV } from './support/env';
@@ -14,7 +14,7 @@ test.describe('sign-up form', () => {
     await page.goto('/');
     await signUp(page, email.toUpperCase().replace('@EXAMPLE.COM', '@example.com'));
 
-    await expect(page.getByText(n.success)).toBeVisible();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     // The form is replaced by the message (nothing left to submit twice).
     await expect(page.getByLabel(n.label)).toHaveCount(0);
 
@@ -50,6 +50,23 @@ test.describe('sign-up form', () => {
     expect((await mock.state()).calls.filter((c) => JSON.stringify(c.body).includes('asha-at-example'))).toHaveLength(0);
   });
 
+  test('a wrong address puts the cursor back in the field, and typing clears the message', async ({ page }) => {
+    await page.goto('/');
+    await signUp(page, 'asha-at-example.com');
+    await expect(status(page)).toHaveText(n.error);
+    await expect(page.getByLabel(n.label)).toBeFocused();
+    await page.getByLabel(n.label).pressSequentially('x');
+    await expect(status(page)).toHaveText('');
+    await expect(page.getByLabel(n.label)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('an empty submit asks for the address in plain words', async ({ page }) => {
+    await page.goto('/');
+    await signUp(page, '');
+    await expect(status(page)).toHaveText(n.empty);
+    await expect(page.getByLabel(n.label)).toBeFocused();
+  });
+
   test.describe('server says invalid', () => {
     test.use({ strictConsole: false }); // the 400 is logged by the browser as a failed resource
 
@@ -71,8 +88,8 @@ test.describe('sign-up form', () => {
     await expect(page.locator('#notify-company').locator('xpath=ancestor::div[@aria-hidden="true"]')).toHaveCount(1);
     await trap.fill('Acme Bots', { force: true });
     await page.getByLabel(n.label).fill(email);
-    await page.getByRole('button', { name: n.button }).click();
-    await expect(page.getByText(n.success)).toBeVisible();
+    await page.getByRole('button', { name: n.quietButton }).click();
+    await expect(page.getByText(n.successTitle)).toBeVisible();
     expect(await mock.callsFor(email)).toEqual([]);
   });
 
@@ -86,7 +103,7 @@ test.describe('sign-up form', () => {
       });
       await page.goto('/');
       await page.getByLabel(n.label).fill(email);
-      await page.getByRole('button', { name: n.button }).click();
+      await page.getByRole('button', { name: n.quietButton }).click();
       await expect(status(page)).toHaveText(n.rateLimited);
       expect(await mock.callsFor(email)).toEqual([]);
       // The person can simply try again: the form is still there.
@@ -161,7 +178,7 @@ test.describe('sign-up form', () => {
       await mock.setMode(email, { emailsSend: 'error' });
       await page.goto('/');
       await signUp(page, email);
-      await expect(page.getByText(n.success)).toBeVisible();
+      await expect(page.getByText(n.successTitle)).toBeVisible();
       expect(await mock.contact(email)).toBeDefined();
     });
   });
@@ -200,7 +217,7 @@ test.describe('without JavaScript', () => {
   test('a native submit never puts the address in the page address (history, logs, Referer)', async ({ page, email }) => {
     await page.goto('/');
     await page.getByLabel(n.label).fill(email);
-    await page.getByRole('button', { name: n.button }).click();
+    await page.getByRole('button', { name: n.quietButton }).click();
     await page.waitForLoadState('load');
     expect(page.url()).not.toContain(encodeURIComponent(email));
     expect(page.url()).not.toContain(email);

@@ -10,7 +10,8 @@ test.describe('pricing (coming soon)', () => {
     await expect(section.getByRole('heading', { level: 2 })).toHaveText(site.scenes.s10.headline);
     for (const plan of Object.values(plusPricing)) {
       await expect(section).toContainText(plan.price);
-      await expect(section).toContainText(`${plan.trialMonths}-month free trial`);
+      // The plan cards say it as "1 month free to start" / "2 months free to start"; the group's accessible name has the full sentence.
+      await expect(section).toContainText(new RegExp(`${plan.trialMonths} months? free`));
     }
     await expect(section).not.toContainText('$3.99');
     await expect(section).not.toContainText('$29.99');

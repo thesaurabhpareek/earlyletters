@@ -26,7 +26,7 @@ export const CARD_SCALE = 0.6;
 
 export function S05Voice() {
   return (
-    <Scene id="your-voice" label={copy.label} tone="paper" length={2}>
+    <Scene id="your-voice" label={copy.label} tone="paper" length={2} rest={0.45}>
       <VoiceStage />
     </Scene>
   );
@@ -40,7 +40,7 @@ function VoiceStage() {
   const player = useTransform(p, [0.06, 0.18], [0, 1]);
   const playback = useTransform(p, [0.16, 0.7], [0, 1]);
   const card = useTransform(p, [0.64, 0.8], [0, 1]);
-  const down = narrow ? h * 0.12 : h * 0.11;
+  const down = narrow ? h * 0.06 : h * 0.09;
   const y = useTransform(p, [0.18, 0.28, 0.58, 0.66], [0, down, down, 0]);
   const scale = useTransform(p, [0.18, 0.28, 0.58, 0.66, 0.68, 0.94], [1, 0.86, 0.86, 1, 1, CARD_SCALE]);
 

@@ -21,7 +21,7 @@ const copy = site.scenes.s11;
 
 export function S11Start() {
   return (
-    <Scene id="start" label={copy.label} tone="night" length={1.2}>
+    <Scene id="start" label={copy.label} tone="night" length={1.2} rest={1}>
       <StartStage />
     </Scene>
   );
@@ -35,8 +35,8 @@ function StartStage() {
   const live = launch.mode === 'live';
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
-      <LampLight intensity={light} x="50%" y="62%" size="110vmax" warmth="lamp" aspect={0.8} breathe />
-      <Motes x={0.5} y={0.62} radius={0.3} intensity={light} />
+      <LampLight intensity={light} x="50%" y="38%" size="110vmax" warmth="lamp" aspect={0.8} breathe />
+      <Motes x={0.5} y={0.38} radius={0.3} intensity={light} />
       <div className={styles.card}>
         <motion.div style={{ opacity, y }}>
           <Headline>{copy.headline}</Headline>

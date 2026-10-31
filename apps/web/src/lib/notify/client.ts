@@ -6,7 +6,8 @@
  * Sends `company` (the hidden honeypot field, empty for people) and `t`, the milliseconds since the page
  * loaded, which the server uses to ignore submissions no person could have made. Neither changes the signature.
  */
-export type NotifyResult = { ok: true } | { ok: false; error: 'invalid' | 'rate_limited' | 'server' };
+/** `network` is set only on a 'server' answer that never reached us (offline or timed out), so the words can say so. */
+export type NotifyResult = { ok: true; already?: true } | { ok: false; error: 'invalid' | 'rate_limited' | 'server'; network?: true };
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -47,6 +48,6 @@ export async function submitNotify(email: string, extra?: { company?: string }):
     if (response.status === 429) return { ok: false, error: 'rate_limited' };
     return { ok: false, error: 'server' };
   } catch {
-    return { ok: false, error: 'server' };
+    return { ok: false, error: 'server', network: true };
   }
 }

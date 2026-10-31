@@ -80,13 +80,14 @@ test.describe('welcome email', () => {
 test.describe('repeat and unsubscribed addresses', () => {
   const post = (request: import('@playwright/test').APIRequestContext, clientIp: string, email: string) => notifyApi(request, clientIp, email);
 
-  test('signing up twice gives the same answer, one contact, and the segment is ensured', async ({ request, mock, email, clientIp }) => {
+  test('signing up twice says so the second time, keeps one contact, and the segment is ensured', async ({ request, mock, email, clientIp }) => {
     const first = await post(request, clientIp, email);
     const second = await post(request, clientIp, email);
     expect(first.status()).toBe(200);
     expect(second.status()).toBe(200);
-    // The answer does not reveal whether the address was already known.
-    expect(await second.json()).toEqual(await first.json());
+    // The first answer is plain; the second tells the visitor the address is already on the list.
+    expect(await first.json()).toEqual({ ok: true });
+    expect(await second.json()).toEqual({ ok: true, already: true });
     const { contacts } = await mock.state();
     expect(contacts.filter((c) => c.email === email)).toHaveLength(1);
     const calls = await mock.callsFor(email);

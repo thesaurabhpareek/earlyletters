@@ -12,6 +12,6 @@ export { useResting } from '@/scenes/parts/act3/resting';
 
 /** Phone width in px for a viewport, shared so handoffs between scenes match exactly. */
 export function phoneWidthFor(w: number, h: number): number {
-  if (w < 768) return Math.round(Math.max(170, Math.min(300, w * 0.64, (h - 300) / 2.09)));
+  if (w < 768) return Math.round(Math.max(170, Math.min(300, w * 0.58, (h - 340) / 2.09)));
   return Math.round(Math.max(240, Math.min(320, (h - 200) / 2.09)));
 }

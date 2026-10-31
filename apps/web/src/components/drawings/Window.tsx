@@ -11,6 +11,7 @@
  */
 import { motion, useTransform, type MotionValue } from 'motion/react';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 /** [path, draw from, draw to] in the order the hand draws. viewBox 240 x 300. */
 const STROKES: ReadonlyArray<readonly [string, number, number]> = [
@@ -33,27 +34,28 @@ const MOON: readonly [string, number, number] = ['M 163.9 67 A 17 17 0 1 1 152 9
 function Line({ d, draw, from, to }: { d: string; draw: MotionValue<number>; from: number; to: number }) {
   const pathLength = useTransform(draw, [from, to], [0, 1]);
   const opacity = useTransform(pathLength, (v) => (v > 0.002 ? 1 : 0));
-  return <motion.path d={d} vectorEffect="non-scaling-stroke" style={{ pathLength, opacity }} />;
+  return <motion.path d={d} style={{ pathLength, opacity }} />;
 }
 
 export function Window({ draw, className, title, strokeWidth = 1.5, moon = true }: DrawingProps & { moon?: boolean }) {
   const strokes = moon ? [...STROKES, MOON] : STROKES;
+  const hairline = useHairline(240, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 0 240 300"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ overflow: 'visible' }}
     >
       {title ? <title>{title}</title> : null}
       {strokes.map(([d, from, to]) =>
-        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} vectorEffect="non-scaling-stroke" />,
+        draw ? <Line key={d} d={d} draw={draw} from={from} to={to} /> : <path key={d} d={d} />,
       )}
     </svg>
   );

@@ -7,6 +7,7 @@
  */
 import { Stroke } from '@/scenes/parts/act3/stroke';
 import type { DrawingProps } from './types';
+import { useHairline } from './hairline';
 
 /** Near shoe, toe to the right. Sole, toe, vamp, collar, heel in one line. */
 const NEAR =
@@ -22,15 +23,16 @@ const FAR_SOLE = 'M85.4 57 C98.9 58.7 118.2 58.9 135.3 56.8';
 const FAR_STRAP = 'M102.6 40.8 C105 46.3 106.7 51.6 107 55.6';
 
 export function Shoes({ draw, className, title, strokeWidth = 1.5 }: DrawingProps) {
+  const hairline = useHairline(160, strokeWidth);
   return (
     <svg
+      ref={hairline}
       viewBox="0 0 160 76"
       className={className}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

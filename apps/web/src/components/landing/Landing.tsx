@@ -10,8 +10,11 @@
  * (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
  * serves earlyletters.com once the domain is attached.
  */
+import Link from 'next/link';
 import { site } from '@/content/site';
+import { Lockup } from '@/components/brand/Lockup';
 import { NotifyForm } from '@/components/cta/NotifyForm';
+import { PricingPlans } from '@/components/site/PricingPlans';
 import { ShareButton } from '@/components/site/ShareButton';
 import { Aurora } from './Aurora';
 import { Evening } from './Evening';
@@ -32,8 +35,8 @@ export function Landing() {
       <StoryRail />
 
       <header className={styles.header}>
-        <a href="#top" className={styles.brand}>
-          {site.brand.name}
+        <a href="#top" className={styles.brand} aria-label={site.brand.name}>
+          <Lockup />
         </a>
       </header>
 
@@ -45,7 +48,10 @@ export function Landing() {
           <p className={styles.lead}>{site.comingSoon.line}</p>
           <p className={styles.trust}>{site.comingSoon.trust}</p>
           <div className={styles.actions}>
-            <p className={styles.pill}>{site.cta.prelaunch.eyebrow}</p>
+            <a className={styles.heroCta} href="#early-access">
+              {site.cta.prelaunch.button}
+            </a>
+            <p className={styles.status}>{site.cta.prelaunch.eyebrow}</p>
           </div>
         </HeroStage>
 
@@ -154,7 +160,9 @@ export function Landing() {
               {s.s10.headline}
             </h2>
           </Beat>
-          <SceneText text={s.s10.support} className={styles.sub} from={0.1} to={0.55} />
+          <Beat from={0.1} to={0.3}>
+            <PricingPlans />
+          </Beat>
         </PinScene>
 
         <PinScene vh={2} id="early-access" labelledBy="start-title" innerClassName={styles.closing} exit={false} showOnFocus>
@@ -187,9 +195,9 @@ export function Landing() {
       <footer className={styles.footer}>
         <nav aria-label="Legal" className={styles.links}>
           {site.footer.links.map((link) => (
-            <a key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} prefetch={false}>
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
       </footer>

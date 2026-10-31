@@ -185,7 +185,7 @@ export async function refuseClipboard(page: Page, how: 'reject' | 'missing' = 'r
 export async function signUp(page: Page, address: string): Promise<void> {
   await waitLikeAPerson(page);
   await page.getByLabel('Your email').fill(address);
-  await page.getByRole('button', { name: 'Keep me informed' }).click();
+  await page.getByRole('button', { name: /save my place/i }).click();
 }
 
 /** Everything the site's server has printed so far (global setup writes it). Used to prove no address is logged. */
