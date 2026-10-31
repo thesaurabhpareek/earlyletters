@@ -43,7 +43,21 @@ if (!journal) {
   const issues = ghAll(`/repos/${repo}/issues?state=open&labels=journal,agent:${handle}`, { allowFail: true });
   journal = String(issues[0]?.number ?? "");
 }
-const comments = journal ? ghAll(`/repos/${repo}/issues/${journal}/comments`, { allowFail: true }) : [];
+// Newest pages first (H2): ghAll lists oldest first and stops at 1,000, so spam on the journal
+// issue could hide the founder's latest note. Stop once three trusted entries are in hand.
+function readJournal(num) {
+  const total = Number(gh(`/repos/${repo}/issues/${num}`, { allowFail: true })?.comments);
+  if (!Number.isFinite(total) || total <= 0) return ghAll(`/repos/${repo}/issues/${num}/comments`, { allowFail: true });
+  let out = [];
+  for (const page of newestPages(total)) {
+    const res = gh(`/repos/${repo}/issues/${num}/comments?per_page=100&page=${page}`, { allowFail: true });
+    if (!Array.isArray(res)) break;
+    out = [...res, ...out];
+    if (trustedJournalEntries(out, trust).length >= 3) break;
+  }
+  return out;
+}
+const comments = journal ? readJournal(journal) : [];
 const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
 const founderNotes = comments.filter((c) => isFounderComment(c, roster) && new Date(c.created_at) > lastEntryAt);
@@ -220,7 +234,7 @@ function latestBrief() {
 }
 
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
-import { trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
+import { newestPages, trustedJournalEntries, oneLine, quotedLine, checkoutLine, branchLabel, fileList, quoteBlock, handoffRefusal, UNTRUSTED_TEXT_RULES, UNTRUSTED_REVIEW_WARNING } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in

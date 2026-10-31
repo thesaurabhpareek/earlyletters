@@ -586,7 +586,7 @@ test("e2e dispatch: a stranger's fake receipt does not change the spend line on 
 const JOURNAL = 7;
 function briefRoutes(w = {}) {
   const prs = w.prs ?? [];
-  const routes = [route(`${R}/issues/${JOURNAL}/comments`, w.journal ?? [])];
+  const routes = [route(`${R}/issues/${JOURNAL}/comments`, w.journal ?? []), route(`${R}/issues/${JOURNAL}$`, { number: JOURNAL, comments: (w.journal ?? []).length })];
   for (const p of prs) {
     routes.push(
       route(`${R}/pulls/${p.number}/reviews`, (w.reviews ?? {})[p.number] ?? []),
@@ -736,11 +736,12 @@ test("e2e brief: a branch name pushed with backticks stays inside one code span 
   assert.match(l, /^- `[^`]+` \(last push/, l);
 });
 
-test("e2e brief: 1,000 spam comments on a journal issue do not hide the founder's newer note", { ...hole("lib.mjs:219 ghAll caps at 1,000 items and issue comments list oldest first, so a stranger who posts 1,000 comments on a journal issue hides every later founder note and journal entry; fix by locking journal, board and handoff issues to collaborators (bootstrap.mjs) and warning when the cap is hit") }, () => {
-  const spam = Array.from({ length: 1000 }, (_, i) => comment(STRANGER, `spam ${i}`, "2026-10-20T00:00:00Z"));
+test("e2e brief: 1,200 spam comments on a journal issue do not hide the founder's newer note", () => {
+  const spam = Array.from({ length: 1200 }, (_, i) => comment(STRANGER, `spam ${i}`, "2026-10-20T00:00:00Z"));
   const w = { journal: [...spam, comment(FOUNDER, "Founder note after the spam.", "2026-10-27T00:00:00Z")] };
   const doc = brief("mobile", "task", ["--task", "BL-900"], w);
   assert.match(section(doc, "Founder instructions since your last run"), /Founder note after the spam/);
+  assert.ok(!doc.includes("spam 5"), "stranger comments reach no section");
 });
 
 // =====================================================================

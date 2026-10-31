@@ -95,3 +95,11 @@ test("hard rules: config and tooling files are forbidden whatever the lane says,
   assert.equal(checkPaths({ agent: "product", files: ["docs/ok.md"], lanes }).ok, true, "control");
   assert.equal(checkPaths({ agent: "product", files: ["docs/npmrc-notes.md", "docs/git-attributes.md", "docs/AGENTS-overview.md"], lanes }).ok, true, "look-alike names are fine");
 });
+
+import { newestPages } from "./hardening.mjs";
+test("newestPages: newest page first, capped, empty for no comments", () => {
+  assert.deepEqual(newestPages(1201), [13, 12, 11, 10, 9, 8, 7, 6, 5, 4]);
+  assert.deepEqual(newestPages(250), [3, 2, 1]);
+  assert.deepEqual(newestPages(0), []);
+  assert.deepEqual(newestPages(undefined), []);
+});

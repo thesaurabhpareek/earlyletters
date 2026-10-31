@@ -60,6 +60,19 @@ export function nextIds(texts, adrFiles = []) {
   return { BL: `BL-${pad(max(/\bBL-(\d{3,4})\b/g) + 1, 3)}`, D: `D-${pad(max(/\bD-(\d{3})\b/g) + 1, 3)}`, ADR: pad(adr + 1, 4) };
 }
 
+/**
+ * Page numbers to read, newest first, for an issue with `total` comments (GitHub lists
+ * issue comments oldest first and has no sort option). At most `maxPages` pages, so a
+ * flood of old spam can never hide the newest comments.
+ */
+export function newestPages(total, perPage = 100, maxPages = 10) {
+  const last = Math.ceil(Number(total) / perPage);
+  if (!Number.isFinite(last) || last < 1) return [];
+  const out = [];
+  for (let p = last; p >= 1 && out.length < maxPages; p--) out.push(p);
+  return out;
+}
+
 // ---------- injection-dispatch fixes (H1 to H5, H11) ----------
 
 /**
