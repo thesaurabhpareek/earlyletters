@@ -117,3 +117,10 @@
     outline-color: Highlight;
   }
 }
+
+/* The address shown when the browser will not copy: easy to select by hand, never wider than the screen. */
+.address {
+  user-select: all;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}

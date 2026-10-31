@@ -2,7 +2,11 @@
 /**
  * The share row: six apps new parents already use, a copied link, and the phone's own share sheet when there is one.
  * It shares the plain site address and one line of words (site.comingSoon), nothing else: no tracking code, no
- * referral id. The address is built from the page's own origin, so a preview or another domain shares itself.
+ * referral id. The address is the public one (NEXT_PUBLIC_SITE_URL, else https://earlyletters.com), never the
+ * page's own origin, so the www host or a preview address is never what gets shared.
+ *
+ * The six app links are plain links rendered on the server, so they work with scripts off (the two signup pages
+ * are where a no-script form post lands). Copy link and More need scripts, so they appear only after load.
  *
  * Counting: each tap reports only which button and which page it sat on (`share_click`, a fixed list in
  * src/lib/analytics/events.ts). The link, the words and anything about the person are never sent.
@@ -11,12 +15,23 @@ import { useEffect, useState } from 'react';
 import { site } from '@/content/site';
 import { track, type ShareChannel, type SharePlacement } from '@/lib/analytics';
 import { tap } from '@/lib/haptics';
+import { FALLBACK_SITE_URL } from '@/lib/site-url';
 import { ShareIcons } from './shareIcons';
 import styles from './ShareRow.module.css';
 
 const c = site.comingSoon;
 
 type AppChannel = { id: Exclude<ShareChannel, 'copy' | 'native'>; label: string; href: string; external: boolean };
+
+/** The public address to share: the site root, from NEXT_PUBLIC_SITE_URL when set, else the production domain. */
+export function shareLink(explicit: string | undefined = process.env.NEXT_PUBLIC_SITE_URL): string {
+  try {
+    if (explicit?.trim()) return `${new URL(explicit.trim()).origin}/`;
+  } catch {
+    // A malformed value falls back to the production domain rather than breaking the row.
+  }
+  return `${new URL(FALLBACK_SITE_URL).origin}/`;
+}
 
 /** The exact address each app is sent to. `link` is the plain site address. */
 export function shareChannels(link: string): AppChannel[] {
@@ -33,11 +48,13 @@ export function shareChannels(link: string): AppChannel[] {
 }
 
 export function ShareRow({ placement }: { placement: SharePlacement }) {
-  const [link, setLink] = useState<string | null>(null);
+  const link = shareLink();
+  const [mounted, setMounted] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   useEffect(() => {
-    setLink(`${window.location.origin}/`);
+    setMounted(true);
     setCanShare(typeof navigator.share === 'function');
   }, []);
   useEffect(() => {
@@ -52,26 +69,26 @@ export function ShareRow({ placement }: { placement: SharePlacement }) {
   }
 
   async function copy() {
-    report('copy');
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/`);
+      await navigator.clipboard.writeText(link);
+      setCopyFailed(false);
       setCopied(true);
+      report('copy');
     } catch {
-      // No clipboard access: nothing to do, and nothing was sent anywhere.
+      // No clipboard access: show the address so it can be copied by hand. Nothing was sent anywhere.
+      setCopyFailed(true);
     }
   }
 
   async function more() {
     report('native');
     try {
-      await navigator.share({ title: c.shareTitle, text: c.shareText, url: `${window.location.origin}/` });
+      await navigator.share({ title: c.shareTitle, text: c.shareText, url: link });
     } catch {
       // The visitor closed the sheet, or the browser refused it: either way, nothing was sent anywhere.
     }
   }
 
-  // Nothing to share until the page's own address is known (and nothing to tap with scripts off).
-  if (!link) return null;
   const channels = shareChannels(link);
   return (
     <section className={styles.wrap} aria-labelledby={`share-heading-${placement}`} data-testid="share-row">
@@ -95,20 +112,29 @@ export function ShareRow({ placement }: { placement: SharePlacement }) {
           </li>
         ))}
       </ul>
-      <div className={styles.actions}>
-        <button type="button" className={styles.pill} data-channel="copy" onClick={copy}>
-          {ShareIcons.link}
-          <span>{copied ? c.shareCopied : c.shareCopy}</span>
-        </button>
-        {canShare ? (
-          <button type="button" className={styles.pill} data-channel="native" onClick={more}>
-            {ShareIcons.more}
-            <span>{c.shareMore}</span>
+      {mounted ? (
+        <div className={styles.actions}>
+          <button type="button" className={styles.pill} data-channel="copy" onClick={copy}>
+            {ShareIcons.link}
+            {/* The visible label changes; the status line below is what a screen reader hears, once. */}
+            <span aria-hidden="true">{copied ? c.shareCopied : c.shareCopy}</span>
+            <span className="visually-hidden">{c.shareCopy}</span>
           </button>
-        ) : null}
-      </div>
+          {canShare ? (
+            <button type="button" className={styles.pill} data-channel="native" onClick={more}>
+              {ShareIcons.more}
+              <span>{c.shareMore}</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {copyFailed ? (
+        <p className={styles.heading} data-testid="share-copy-failed">
+          {c.shareCopyFailed} <span className={styles.address}>{link}</span>
+        </p>
+      ) : null}
       <p className="visually-hidden" role="status" aria-live="polite">
-        {copied ? c.shareCopied : ''}
+        {copied ? c.shareCopied : copyFailed ? c.shareCopyFailed : ''}
       </p>
     </section>
   );

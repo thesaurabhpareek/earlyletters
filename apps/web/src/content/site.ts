@@ -75,6 +75,7 @@ export const site = {
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
+    shareCopyFailed: 'This browser would not copy. Here is the address:',
     shareHeading: 'Know a parent who would love this?',
     shareWhatsapp: 'WhatsApp',
     shareMessages: 'Messages',
