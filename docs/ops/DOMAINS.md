@@ -78,7 +78,7 @@ Checks at each stage: send a magic link and a deletion receipt from staging to G
 | Nobody may send as .app | TXT | `@` | `v=spf1 -all` |
 | Spoofed mail is rejected | TXT | `_dmarc` | `v=DMARC1; p=reject; adkim=s; aspf=s` |
 | No DKIM keys | TXT | `*._domainkey` | `v=DKIM1; p=` (empty key, optional) |
-| Certificates | CAA | `@` | `0 issue "letsencrypt.org"`, `0 issuewild ";"` |
+| Certificates | CAA | `@` | `0 issue "letsencrypt.org"`, `0 issue "pki.goog"`, `0 issue "ssl.com"`, `0 issuewild ";"` (the two extra CAs are for the Cloudflare certificate of `packs.earlyletters.app`; see PACKS_HOSTING.md, "If earlyletters.app is not on Cloudflare yet", step 3) |
 
 In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website project as **redirects** to `https://earlyletters.com` (permanent, 308). `.app` is on the HSTS preload list, so browsers only ever use HTTPS for it (it is a property of the TLD). It must never serve the AASA file or any sign-in page: one link domain only (AUTH_SETUP 5.2).
 
@@ -153,6 +153,7 @@ dig +short MX earlyletters.com; dig +short MX send.earlyletters.com
 dig +short TXT send.earlyletters.com; dig +short TXT resend._domainkey.earlyletters.com
 dig +short TXT _dmarc.earlyletters.com; dig +short CAA earlyletters.com
 dig +short MX earlyletters.app; dig +short TXT _dmarc.earlyletters.app
+dig +short NS earlyletters.app; dig +short DS earlyletters.app; dig +short CAA earlyletters.app; dig +short packs.earlyletters.app
 curl -sI https://earlyletters.app | grep -i '^location'                       # 308 to https://earlyletters.com
 curl -sI https://earlyletters.com/.well-known/apple-app-site-association     # 200, application/json, no redirect
 curl -s  https://earlyletters.com/.well-known/security.txt                   # Contact and Expires present
