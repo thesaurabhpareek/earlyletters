@@ -1170,3 +1170,34 @@ commit;
 ```
 
 The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
+
+## File 27: compliance gates at sign-up, counts and the regulatory watch (31 Oct 2026, CR-26)
+
+`20261031000000_compliance_gates.sql`. Not before the 9 Nov go/no-go; apply before any server-feature release (sign-in, D-100, staged by D-121) reaches people outside the family. Apply after File 26. Idempotent; adds tables in `ops` and functions; changes no existing row or function.
+
+- **What it adds.** `ops.restricted_jurisdictions` (seeded per D-131: KP, IR, CU, SY, RU, BY and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
+- **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
+
+**Before the hook is turned on (CCO conditions, CR-27 review):**
+- An ops alert on the `geo_stale`, `geo_unknown` and `error` counts exists (not built yet).
+- Step 4 below is verified on a local stack, so we know whether `block` counts survive a refused sign-up.
+- `legal` has drafted, and the founder has approved, the Privacy Policy disclosure that the sign-up IP is used to work out a country. Today the policy says we do not collect location.
+- DATA_CLASSIFICATION rows exist for the five new tables, and the retention schedule lists two years for the counts (`legal` and `compliance-engineer`).
+- The refusal screen links to https://db-ip.com (DB-IP's CC BY 4.0 attribution).
+
+**What it does not cover:** at sign-up Crimea, Donetsk and Luhansk are covered only by the Terms 2.4 confirmation, because country-level data cannot single them out. "No IP stored" is true of our tables only. Supabase Auth's own audit log probably records the sign-up IP (unverified, 31 Oct 2026); check its retention before making any claim.
+
+**After applying (founder, in this order):**
+1. Load geo data: `node compliance/scripts/load-geo-ip.mjs --csv dbip-country-lite-YYYY-MM.csv.gz --version YYYY-MM --dry-run`, then again with `SUPABASE_DB_URL` and without `--dry-run`.
+2. Turn the hook on: Dashboard > Authentication > Hooks > "Before User Created" > Postgres > `public.hook_before_user_created`.
+3. Check one sign-up from a normal network still works, then `select public.ops_compliance_report(current_date, current_date);` shows one `pass`.
+4. Before relying on block counts: on a local stack (`supabase start`), refuse one sign-up through the hook and check the `block` row survived. If GoTrue's rollback removed it, block counts are not recorded at the hook and the report says only passes and fail-opens.
+
+**Check after applying** (expect 10, then `false`, then `true`):
+```sql
+select count(*) from ops.restricted_jurisdictions;
+select has_function_privilege('authenticated', 'public.hook_before_user_created(jsonb)', 'execute');
+select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_created(jsonb)', 'execute');
+```
+
+**Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.

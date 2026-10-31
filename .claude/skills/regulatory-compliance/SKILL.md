@@ -33,7 +33,7 @@ Sign-in is part of v1.0 (D-100), released in stages: the first store build is on
 | 1 | Adults only (18+), neutral question, nothing preselected | D-006, LEGAL-REQ-002, Terms 2.1 | `apps/mobile/src/components/gate/age-gate-screen.tsx` before first run; sign-in agree line (A-REQ-034) | On device: `ageGate.passed` boolean, and `ageGate.stoppedAt` after a No only (D-026). Never a birth date or an age range. |
 | 2 | Store age signal (Apple Declared Age Range) where a state requires it | LEGAL-REQ-002, register CR-004, COUNSEL_PACKET Q5 | not yet: no Declared Age Range code on `develop` (31 Oct 2026). The API needs iOS 26 and the app's floor is iOS 17, so older phones give no signal (CCO skill, section 3). | Nothing, when built: used for the decision in memory and dropped. |
 | 3 | Terms and Privacy acceptance, versioned | LEGAL-REQ on policy acceptance, `docs/legal/POLICY_VERSIONING.md` | `public.policy_acceptances`, `record_policy_act` | Version, act, surface, time |
-| 4 | Not in a blocked country (D-131) | Terms 2.4, register CR-121, D-131 | US-only storefront (Apple); the `before user created` auth hook and the web contribution page (later, D-055) | Daily counts only: day, check, outcome, jurisdiction code. Never the IP. |
+| 4 | Not in a blocked country (D-131, the founder's decision of 31 Oct 2026) | Terms 2.4, register CR-121, D-131 | US-only storefront (Apple); the `before user created` auth hook and the web contribution page (later, D-055) | Daily counts only: day, check, outcome, jurisdiction code. Never the IP. |
 | 5 | Not on a US restricted-party list | Terms 2.4 (attestation) | The Terms attestation only. No name screening today: a founder-and-counsel question with a default, see `references/sanctions.md` | Nothing beyond the acceptance |
 | 6 | Under-18 or under-13 actual knowledge (a support report, or a store signal saying minor) | LEGAL-REQ-002 last scenario, COUNSEL_PACKET Q5(d) | not yet: there is no underage runbook in `docs/ops/runbooks/` (checked 31 Oct 2026). Gap owned by `regulatory-affairs` with `ops`. | `ops.audit_log` row, content-free, once the runbook exists |
 
@@ -50,7 +50,7 @@ A new sign-up path (a new identity provider, the web contribution page, an invit
 
 ## 4. Verifying a legal or platform fact
 
-The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 2026 sanctions blog said Syria was still comprehensively sanctioned; it was terminated by Executive Order 14312 on 30 June 2025, and OFAC removed 31 CFR part 542 in August 2025.
+The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 2026 sanctions blog said Syria was still comprehensively sanctioned; it was terminated by Executive Order 14312 on 30 June 2025, and OFAC removed 31 CFR part 542 in August 2025. Even so, Syria stays blocked: the export rules (EAR 746.9, Country Group E:1) still apply (D-131).
 
 - Prefer primary sources: the statute or regulation, the regulator's site (ftc.gov, ofac.treasury.gov, federalregister.gov, oag.ca.gov, cppa.ca.gov, capitol.texas.gov), Apple's App Review Guidelines and developer docs.
 - Secondary sources (law firm alerts, trackers) are fine for dates and status, labelled as secondary.
@@ -64,7 +64,7 @@ The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 
 ## 6. References in this skill
 
 - `references/age-assurance.md`: the 18+ gate, store signals, under-13 handling, what changes on 1 Jan 2027.
-- `references/sanctions.md`: why we block places and do not screen names, the jurisdiction list, the open counsel question.
+- `references/sanctions.md`: why we block places, and the no-screening default, the jurisdiction list, the open counsel question.
 - `references/checked-facts.md`: dated, sourced facts checked since the register was written.
 - `compliance/scripts/watch-topics.json` (backend PR): what the regulatory watch searches for.
 
