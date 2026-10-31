@@ -227,7 +227,7 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
 Proxy note for every session (30 Oct): the agent proxy refuses repository settings writes from Claude sessions (`Repository settings writes are not permitted through this proxy`, HTTP 403 on `PATCH /repos/...`), and the environments and variables APIs. Settings rulings are therefore run by Saurabh with `scripts/release/apply-branch-settings.sh` from his own computer. The proxy also refuses tag pushes (HTTP 403 on `refs/tags/...`, seen 30 Oct), so CR-14's archive tags, and therefore the cleanup, also run from Saurabh's computer.
 
 ### CR-16 to CR-18 (31 Oct 2026, Karma via readiness session)
-- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session. CR-21 (naming: product terms and internal terms, one direction) is in the same doc.
+- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session. CR-25 (naming: product terms and internal terms, one direction) is in the same doc.
 ### CR-19 Post-mortem: how a recommendation that breaks GitHub's Terms reached Saurabh (31 Oct 2026, Karma via retro session)
 - Question: Why did I recommend, on 30 Oct, that Saurabh create a second GitHub account to approve PRs, when GitHub's Terms allow one free account per person plus one machine account used only for automation?
 - Tier and type: T1 (my own process); complicated.
