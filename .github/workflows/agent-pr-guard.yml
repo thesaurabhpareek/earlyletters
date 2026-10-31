@@ -1,0 +1,99 @@
+# Agent PR guard: a check meant to be REQUIRED on develop and main (branch
+# protection is the founder's script, FOUNDER_QUEUE row 7).
+#
+# For any pull request that looks like an agent's (head branch `agent/...`,
+# author login ending `[bot]`, or an `agent:*` label) it runs
+#   scripts/agents/pathguard.mjs      the PR may touch only its lane's paths
+#   scripts/agents/guard-open-prs.mjs the open agent PR count is under the cap
+# Any other PR passes without running either guard, so the check can be required
+# on every PR.
+#
+# Trust: the guard scripts and agents/lanes.json come from the BASE commit.
+# The PR head is fetched as git objects only, to diff; it is never checked out
+# and nothing from it is executed. Branch, author and labels come from the
+# event payload through env, never from the PR body or title. No secrets are
+# used: the token is read-only and pull_request from a fork gets no secrets.
+# Missing data fails the check.
+name: Agent PR guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: agent-pr-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: agent-pr-guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+      PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+    steps:
+      # Fail closed on missing payload data, and decide whether the PR is in scope.
+      - name: Read the event
+        id: scope
+        run: |
+          set -euo pipefail
+          for v in PR_NUMBER PR_BASE_SHA PR_HEAD_SHA PR_BRANCH PR_AUTHOR; do
+            if [ -z "${!v}" ]; then echo "agent-pr-guard: $v missing from the event payload, failing closed" >&2; exit 1; fi
+          done
+          case "$PR_BASE_SHA$PR_HEAD_SHA" in *[!0-9a-f]*) echo "agent-pr-guard: sha is not hex, failing closed" >&2; exit 1;; esac
+          scope=no
+          case "$PR_BRANCH" in agent/*) scope=yes;; esac
+          case "$PR_AUTHOR" in *"[bot]") scope=yes;; esac
+          case ",${PR_LABELS,,}," in *,agent:*) scope=yes;; esac
+          echo "in_scope=$scope" >> "$GITHUB_OUTPUT"
+          echo "agent-pr-guard: in scope: $scope"
+
+      # Scripts and lanes come from the base commit, not the PR.
+      - name: Check out the base commit
+        if: steps.scope.outputs.in_scope == 'yes'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the PR head as git objects only
+        if: steps.scope.outputs.in_scope == 'yes'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --no-recurse-submodules origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+          test "$(git rev-parse refs/remotes/pr/head)" = "$PR_HEAD_SHA" || { echo "agent-pr-guard: PR head moved or does not match the event, failing closed" >&2; exit 1; }
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.scope.outputs.in_scope == 'yes'
+        with:
+          node-version: 22
+
+      - name: Path guard
+        if: steps.scope.outputs.in_scope == 'yes'
+        env:
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
+        run: >
+          node scripts/agents/pathguard.mjs --labels "$PR_LABELS" --branch "$PR_BRANCH"
+          --author "$PR_AUTHOR" --author-type "$PR_AUTHOR_TYPE"
+          --base "$PR_BASE_SHA" --head "$PR_HEAD_SHA"
+
+      # --max 16: this PR is itself in the count, so 15 open agent PRs in total
+      # (the cap in the OpenCode lane proposal) passes and a 16th fails, and
+      # PRs already open are not blocked from merging when the cap is reached.
+      - name: Open agent PR cap
+        if: steps.scope.outputs.in_scope == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
+        run: node scripts/agents/guard-open-prs.mjs --max 16 --repo "$GITHUB_REPOSITORY"

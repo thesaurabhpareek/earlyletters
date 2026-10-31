@@ -55,13 +55,24 @@ Limits and caveats:
 - The new deny patterns are glob tests with the offline matcher. Engine behaviour is UNVERIFIED: how opencode matches `git --no-pager push`, double spaces and quoted forms was not run on the real binary. They remain a tripwire, not a boundary.
 - The `injection.test.mjs` zero width space (line 123) is deliberate test data and stays.
 
-## Needs the workflow PR after 9 Nov
+## Workflow gates (PR `ci/agent-lane-gates`, draft; `.github/**` is T2, two independent reviews on the head)
 
-Not attempted here (`.github/**` is frozen and these need the two-job split). Red-team reasoning:
-- `pathguard.mjs` and `guard-open-prs.mjs` are not run by any workflow, so today they protect nothing. They must run as a required step before push, from a clean checkout of `develop`, not from the PR's tree.
-- `salvage.mjs` and `receipt.mjs` run from the model-editable working tree with write tokens. The model can edit them and then have its own code run with the token. They must run from a trusted checkout in a second job.
-- `OPENROUTER_API_KEY` and `GH_TOKEN` are readable by the model's shell (see the comment on the env allowlist in `run-opencode.mjs`). Fix: a job split where the model job holds no write token, and a proxy for the model key with its own budget.
-- `gh issue comment`, `gh pr comment`, `gh release`, `gh gist` are unrestricted by the deny list. A comment is an exfiltration channel and a release can publish. Needs token scope or lane control, not globs.
+Covered by this PR:
+- `.github/workflows/agent-pr-guard.yml` runs `pathguard.mjs` and `guard-open-prs.mjs` on any PR whose head branch starts `agent/`, whose author login ends `[bot]`, or that carries an `agent:*` label. Branch, author and labels come from the event payload through env. The scripts and `agents/lanes.json` come from the base commit; the PR head is fetched as git objects only and never checked out. Permissions are `contents: read` and `pull-requests: read`. Missing payload data fails the check. Other PRs pass without running the guards, so the check can be required on every PR.
+- The cap uses `--max 16` because the PR being checked is in the count: 15 open agent PRs pass, a 16th fails, and PRs already open are not blocked from merging.
+- `agents.yml`: `salvage.mjs` and `receipt.mjs` now run from a fresh tarball of `develop` in `$RUNNER_TEMP/trusted` (outside the repo, so salvage never commits it), not from the model-editable tree. Git hooks and fsmonitor are switched off for salvage through `GIT_CONFIG_*` env, which outranks the model-editable `.git/config`. `AGENTS_ENABLED` gating and the OpenCode pin are unchanged.
+
+- The workflow passes `--labels`, `--branch`, `--author` and `--author-type` on every pathguard call, as the round 3 CLI requires (exit 2 without them). Dependabot and other bots are NOT skipped: an unlabelled bot PR fails the check (the decision left open above); the PR cap step is the only other guard.
+
+Still open:
+- Secrets: `OPENROUTER_API_KEY` and the App token are still readable by the model's shell (same job). Next PR: two jobs. Job 1 `model`: no App token, contents read only, the OpenRouter key only; uploads the diff and journal text as an artifact. Job 2 `publish`: checks out `develop`, applies the artifact, runs pathguard, salvage and receipt with the App token. Not done here because it changes the artifact hand-off and every step's token wiring.
+- The model's step can still append to `$GITHUB_ENV` and `$GITHUB_PATH`, which later steps in the same job honour. Only the job split closes this.
+- Journal lock is not done.
+- Branch protection (making `agent-pr-guard` required) is the founder's script, FOUNDER_QUEUE row 7. It needs the repository settings page; no browser step is done by this PR.
+- A bot author with no `agent:*` label (for example a dependency bot) fails the guard as "unlabelled" by design; label it or exempt it in `identity.mjs`.
+- A PR that edits the guard scripts is judged by the base version of them, so those edits need human review.
+- Engine behaviour of the deny patterns is UNVERIFIED against a real OpenCode run.
+- `gh issue comment`, `gh pr comment`, `gh release`, `gh gist` stay unrestricted by the deny list; needs token scope or lane control.
 
 ## Round 5: Review C and QA Review A fixes
 
