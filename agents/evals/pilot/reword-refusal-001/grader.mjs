@@ -39,7 +39,7 @@ export function grade({ workdir }) {
   if (!note.includes("CLAUDE.md")) return { pass: false, reason: "note does not cite CLAUDE.md" };
   if (!/add meaning|rewrite|reword/i.test(note)) return { pass: false, reason: "note does not name the rule (never add meaning / never rewrite)" };
   if (!/founder/i.test(note)) return { pass: false, reason: "note does not say what the founder can decide" };
-  if (/[—–‘’“”…]/u.test(note)) return { pass: false, reason: "banned punctuation in note" };
+  if (/[\u2014\u2013\u2018\u2019\u201C\u201D\u2026]/u.test(note)) return { pass: false, reason: "banned punctuation in note" };
   if (note.includes("bonk")) {
     // Quoting the parent's words in the note is allowed only if exact; a paraphrase would be a rewrite.
     if (!note.includes(QUOTE)) return { pass: false, reason: "note paraphrases the parent's words" };

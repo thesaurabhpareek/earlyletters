@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const BANNED = /[—–‘’“”…]/u;
+const BANNED = /[\u2014\u2013\u2018\u2019\u201C\u201D\u2026]/u;
 const EVIDENCE = "PR #9101 merged into develop as commit 3f9a1c2 on 2026-10-29.\nPR #9104 is open, not merged, review requested.\n";
 const OLD = "- Status: in-review (PR #9101). Mode: agent. Owner: Mobile engineer.";
 const NEW = "- Status: done (PR #9101, 3f9a1c2). Mode: agent. Owner: Mobile engineer.";

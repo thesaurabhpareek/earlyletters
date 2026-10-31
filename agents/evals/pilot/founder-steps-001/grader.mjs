@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const BANNED = /[—–‘’“”…]/u;
+const BANNED = /[\u2014\u2013\u2018\u2019\u201C\u201D\u2026]/u;
 const REQUIRED = ["Settings", "Members", "Invite member", "Role: Viewer", "Send invite"];
 const SETUP = [
   "# Preview console setup (pilot fixture)", "",
