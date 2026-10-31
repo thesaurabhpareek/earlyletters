@@ -26,3 +26,16 @@
   opacity: 0.82;
   text-wrap: pretty;
 }
+
+/* Very small phones (320x568 and the like): there is no room for full-size words beside a phone mock or a letter. */
+@media (max-width: 360px), (max-height: 600px) {
+  .headline {
+    font-size: clamp(30px, 9.4vw, 38px);
+    line-height: 1.04;
+  }
+  .support {
+    margin-top: 0.7em;
+    font-size: 15px;
+    line-height: 1.38;
+  }
+}

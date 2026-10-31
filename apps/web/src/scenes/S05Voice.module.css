@@ -28,6 +28,14 @@
     top: 7svh;
   }
 }
+@media (max-width: 360px), (max-height: 600px) {
+  .copy {
+    top: calc(env(safe-area-inset-top, 0px) + 8svh);
+  }
+  .copy h2 {
+    font-size: clamp(30px, 9.4vw, 38px);
+  }
+}
 [data-resting] .copy {
   position: relative;
   top: auto;

@@ -71,3 +71,12 @@
     transform: translateY(-50%);
   }
 }
+
+@media (max-width: 899px) and ((max-width: 360px) or (max-height: 600px)) {
+  .copySide {
+    top: calc(env(safe-area-inset-top, 0px) + 11svh);
+  }
+  .copyTop {
+    top: calc(env(safe-area-inset-top, 0px) + 11svh);
+  }
+}

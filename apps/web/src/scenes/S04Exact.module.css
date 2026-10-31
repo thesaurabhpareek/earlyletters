@@ -7,6 +7,21 @@
   padding: 0 var(--gutter);
   z-index: 2;
 }
+/* Ghost and live letter share one grid cell. The ghost only holds the height; the live letter hangs from the top of it, so closing up a line never moves the letter's own box. */
+.letterBox {
+  display: grid;
+}
+.letterBox > * {
+  grid-area: 1 / 1;
+}
+.ghost {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.live {
+  align-self: start;
+}
 .note {
   position: absolute;
   left: 0;
@@ -38,6 +53,11 @@
 }
 .copy h2 {
   font-size: clamp(36px, 5.2vw, 80px);
+}
+@media (max-width: 360px), (max-height: 600px) {
+  .copy h2 {
+    font-size: clamp(30px, 9.4vw, 38px);
+  }
 }
 @media (min-width: 900px) {
   .copy {

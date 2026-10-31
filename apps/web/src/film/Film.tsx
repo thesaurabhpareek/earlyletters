@@ -30,13 +30,14 @@ export function Film() {
         <SkipLink />
         <Header />
         <AmbientSound />
+        {/* Before <main> in the DOM so a keyboard reaches Next and Previous without tabbing through the whole film first. It is position:fixed, so the order moves nothing on screen. */}
+        <ScrollNav />
         <main>
           {scenes.map((SceneComponent, i) => (
             <SceneComponent key={i} />
           ))}
         </main>
         <CtaPill />
-        <ScrollNav />
         <SceneTick />
         <ScrollProgress />
         <Footer />

@@ -18,6 +18,12 @@
   transform-origin: top;
   background: rgba(217, 165, 129, 0.85);
 }
+.track[data-tone='paper'] {
+  background: rgba(43, 39, 34, 0.3);
+}
+.track[data-tone='paper'] .fill {
+  background: var(--accent);
+}
 @media (prefers-reduced-motion: reduce) {
   .track {
     display: none;
