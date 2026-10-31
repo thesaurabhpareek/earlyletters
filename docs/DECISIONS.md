@@ -651,6 +651,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-128 | Build 2: Settings > Privacy's "Sync and family sharing" row shows On or Off for a signed-in person (BL-485 option (b)); the withdrawal control and its server function are built before any friend outside the family signs in. | Decided (founder: the choice); detail by the coordinator (founder may reverse) | Yes | 2026-10-30 |
 | D-129 | The Delete account row is hidden in both alpha builds unless the build is explicitly switched on (`EXPO_PUBLIC_ACCOUNT_DELETION`). It is switched on only if the purge worker runs on staging and the sole-parent drill (S1-35, S2-13, AL-07.6a, on a development client or a build with the switch on, against staging) passes by Mon 2 Nov noon PT; otherwise the row stays hidden through the go/no-go | Decided (founder: the choice); detail by the coordinator (founder may reverse) | Yes | 2026-10-30 |
 | D-130 | Dates: the build 2 freeze is Tue 3 Nov 2026 and the go/no-go is Mon 9 Nov 2026 (the founder's two dates). The freeze hour, 5:00 AM PT (13:00 UTC), is the coordinator's (`docs/agents/BOARD.md`), not the founder's. Supersedes the Thu 5 Nov go/no-go in D-123 and D-124 once PR #340 merges | Decided (founder: the two dates); the hour by the coordinator | Yes | 2026-10-30 |
+| D-132 | Merge decisions go to the CTO (Karma), not the founder. Karma merges under the existing gates (two independent counted reviews on the head and green CI, D-107, D-117); `docs/legal/**`, and founder-only matters other than the merge itself (money, accounts, promises, applying migrations), stay his | Decided (founder: the delegation); gates and limits by Karma (founder may reverse) | Yes | 2026-10-31 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -994,3 +995,12 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Effects:** the freeze rule (`docs/release/AUTOMATION.md` 0.2 item 17: no workflow, `eas.json` or `app.config.ts` change between the freeze and the go/no-go, except an S0 or S1 fix) now covers Tue 3 Nov 13:00 UTC to Mon 9 Nov, six days instead of two. Swept: `docs/release/`, `docs/qa/`, `docs/ops/RELEASE.md`, `docs/agents/BOARD.md` and `docs/agents/hardening/scope-and-drift.md`.
 - **Reverses:** nothing.
 - **Owner:** founder; coordinator.
+
+### D-132 Merge decisions go to Karma (founder, 31 Oct 2026)
+- **Founder's words:** "merge. dont ask me for merge decisions. ask cto."
+- **Decision (the founder's):** merge decisions go to Karma, the CTO role, not to him.
+- **Gates and limits (Karma's reading; the founder may reverse it):** Karma decides and performs merges, including the classes D-107 kept for the founder (database, auth, `.github/**`, release configuration) and merging `docs/DECISIONS.md` entries that record his own words. The gates stay: two independent counted reviews on the current head, green CI, and for fenced compliance paths the CCO and Karma approvals (CR-27).
+- **Not delegated:** `docs/legal/**` (counsel-facing text stays a founder merge), applying a migration to a hosted project, any external account, secret or money step, and changing what users are promised. Those stay founder steps.
+- **Amends:** D-107's founder-only merge list; D-117's operating rule (the merge now needs no separate founder action); D-125 item 5 for `docs/DECISIONS.md` only (Karma merges entries that record the founder's own words; `docs/legal/**` stays his).
+- **Follow-up:** Karma's skill, section 3, still lists "merging `docs/DECISIONS.md` and legal text" as founder-only; update it to point here.
+- **Owner:** founder; Karma.
