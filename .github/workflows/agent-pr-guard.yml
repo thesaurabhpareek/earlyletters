@@ -88,9 +88,18 @@ jobs:
           --author "$PR_AUTHOR" --author-type "$PR_AUTHOR_TYPE"
           --base "$PR_BASE_SHA" --head "$PR_HEAD_SHA"
 
-      # --max 16: this PR is itself in the count, so 15 open agent PRs in total
-      # (the cap in the OpenCode lane proposal) passes and a 16th fails, and
-      # PRs already open are not blocked from merging when the cap is reached.
+      # Cap. Three numbers, kept consistent:
+      #   10  roster max_open_agent_prs: the dispatcher stops giving agents new
+      #       work at 10 open agent PRs (the normal limit);
+      #   15  the guard's own default (DEFAULT_MAX): the backstop for PRs that
+      #       reach GitHub another way;
+      #   16  --max here. This PR is itself in the count, so 15 open agent PRs
+      #       in total pass and a 16th fails, and PRs already open are not
+      #       blocked from merging when the cap is reached.
+      # Who counts: a PR with an agent:* label, or one whose branch or bot
+      # signal says agent AND whose author login is in AGENTS_BOT_LOGINS (a
+      # repository variable, comma separated, set to the agents App login). If
+      # the variable is empty, ONLY labelled PRs count, so set it.
       - name: Open agent PR cap
         if: steps.scope.outputs.in_scope == 'yes'
         env:

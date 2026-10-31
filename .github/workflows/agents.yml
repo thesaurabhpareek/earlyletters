@@ -104,6 +104,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The commit this run starts from. Written to a step output before any
+      # model step, so the model cannot change it. The post-run path check
+      # diffs against this, not against refs in the model-editable .git.
+      - name: Record the base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Install dependencies
         uses: ./.github/actions/setup
 
@@ -199,23 +206,128 @@ jobs:
           rm -rf "$dest" && mkdir -p "$dest"
           gh api "repos/${GITHUB_REPOSITORY}/tarball/develop" > "$RUNNER_TEMP/trusted.tgz"
           tar -xzf "$RUNNER_TEMP/trusted.tgz" -C "$dest" --strip-components=1
-          test -f "$dest/scripts/agents/salvage.mjs" && test -f "$dest/scripts/agents/receipt.mjs"
+          test -f "$dest/scripts/agents/salvage.mjs" && test -f "$dest/scripts/agents/pathguard.mjs" && test -f "$dest/scripts/agents/receipt.mjs"
+
+      # Post-run gate. The model has had a shell in this workspace, so before
+      # anything is pushed with the write token:
+      #   1. .git/config, hooks and attribute overrides are replaced with a
+      #      minimal known-good set (a planted core.sshCommand, core.fsmonitor,
+      #      credential helper, filter driver or hook would otherwise run with
+      #      the token in the environment), and env config outranks the rest;
+      #   2. the branch must be agent/<handle>/<topic> with the handle from the
+      #      run context (matrix.agent), else the work moves to
+      #      agent/<handle>/wip-<run id>;
+      #   3. unsaved changes are committed here, and the commits since the base
+      #      commit go through pathguard.mjs (from the trusted copy) as the
+      #      agent's identity. On failure nothing is pushed, labelled or opened.
+      # Absolute paths for git and the shell tools: a later PATH change by the
+      # model (via GITHUB_PATH) cannot redirect them. node is still found
+      # through PATH; only the job split (H15) closes that.
+      - name: Gate the branch and the paths
+        id: gate
+        if: always()
+        env:
+          AGENT: ${{ matrix.agent }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          AUTHOR: ${{ format('{0}[bot]', matrix.engine == 'opencode' && steps.app.outputs.app-slug || 'claude') }}
+          GIT_CONFIG_NOSYSTEM: "1"
+          GIT_CONFIG_GLOBAL: ${{ runner.temp }}/gitconfig-trusted
+          GIT_CONFIG_COUNT: "3"
+          GIT_CONFIG_KEY_0: core.hooksPath
+          GIT_CONFIG_VALUE_0: /dev/null
+          GIT_CONFIG_KEY_1: core.fsmonitor
+          GIT_CONFIG_VALUE_1: "false"
+          GIT_CONFIG_KEY_2: core.sshCommand
+          GIT_CONFIG_VALUE_2: "false"
+        run: |
+          set -uo pipefail
+          GIT=/usr/bin/git
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+          fail() { echo "gate: $1, nothing will be pushed" >&2; exit 1; }
+          [[ "$AGENT" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "agent handle from the run context is not a plain handle"
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "base commit missing or not a sha"
+          [ -d .git ] || fail ".git is not a plain directory"
+          : > "$GIT_CONFIG_GLOBAL"
+          /bin/rm -rf .git/hooks .git/info/attributes .git/config.worktree .git/objects/info/alternates .git/objects/info/http-alternates
+          /bin/mkdir .git/hooks
+          /usr/bin/printf '[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n[remote "origin"]\n\turl = https://github.com/%s.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n' "$GITHUB_REPOSITORY" > .git/config
+          branch="$($GIT symbolic-ref --short -q HEAD || true)"
+          if ! [[ "$branch" =~ ^agent/${AGENT}/[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$ ]] \
+            || [[ "$branch" == *..* || "$branch" == *.lock || "$branch" == *.lock/* ]] \
+            || ! $GIT check-ref-format --branch "$branch" > /dev/null 2>&1; then
+            branch="agent/${AGENT}/wip-${GITHUB_RUN_ID}"
+            $GIT checkout -q -B "$branch" || fail "could not move the work to $branch"
+          fi
+          if [ -n "$($GIT status --porcelain -- . ':(exclude).agent-run')" ]; then
+            $GIT add -A -- . ':(exclude).agent-run' || fail "git add failed"
+            $GIT -c "user.name=$AUTHOR" -c "user.email=$AUTHOR@users.noreply.github.com" commit -q --no-verify \
+              -m "WIP: ${AGENT} run ${GITHUB_RUN_ID}" -m "Saved by the workflow." -m "Agent: ${AGENT}" || fail "git commit failed"
+          fi
+          head="$($GIT rev-parse HEAD)"
+          if [ "$head" = "$BASE_SHA" ]; then echo "gate: nothing beyond the base commit"; exit 0; fi
+          node "$RUNNER_TEMP/trusted/scripts/agents/pathguard.mjs" --labels "agent:${AGENT}" --branch "$branch" \
+            --author "$AUTHOR" --author-type Bot --base "$BASE_SHA" --head "$head" || fail "pathguard refused the changes"
+          subject="$($GIT log -1 --format=%s | /usr/bin/tr -d '\r\n' | /usr/bin/cut -c1-80)"
+          {
+            echo "ok=true"
+            echo "branch=$branch"
+            echo "head=$head"
+            echo "subject=$subject"
+          } >> "$GITHUB_OUTPUT"
 
       # Whatever stopped the run (cap, timeout, error, provider limit), push
       # anything left unsaved to a branch and note it in the journal.
       - name: Save unfinished work
-        if: always()
+        id: salvage
+        if: always() && steps.gate.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.github_token || steps.app.outputs.token }}
           AGENT: ${{ matrix.agent }}
           JOURNAL: ${{ matrix.journal }}
           REASON: ${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}
-          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_NOSYSTEM: "1"
+          GIT_CONFIG_GLOBAL: ${{ runner.temp }}/gitconfig-trusted
+          GIT_CONFIG_COUNT: "3"
           GIT_CONFIG_KEY_0: core.hooksPath
           GIT_CONFIG_VALUE_0: /dev/null
           GIT_CONFIG_KEY_1: core.fsmonitor
           GIT_CONFIG_VALUE_1: "false"
+          GIT_CONFIG_KEY_2: core.sshCommand
+          GIT_CONFIG_VALUE_2: "false"
         run: node "$RUNNER_TEMP/trusted/scripts/agents/salvage.mjs" --agent "$AGENT" --journal "$JOURNAL" --run-id "$GITHUB_RUN_ID" --reason "$REASON"
+
+      # The workflow, not the model, opens the PR and applies agent:<handle> and
+      # from:agent. The handle is matrix.agent (the run context), never PR
+      # metadata. Runs only if the gate passed and the pushed branch on GitHub
+      # is exactly the commit the gate checked. Any other agent:* label on the
+      # PR (for example one the model set) is removed. REST only.
+      - name: Open the PR and label it
+        id: label
+        if: always() && steps.gate.outputs.ok == 'true' && steps.salvage.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.github_token || steps.app.outputs.token }}
+          AGENT: ${{ matrix.agent }}
+          BRANCH: ${{ steps.gate.outputs.branch }}
+          HEAD_SHA: ${{ steps.gate.outputs.head }}
+          SUBJECT: ${{ steps.gate.outputs.subject }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WANT: ${{ format('agent:{0}', matrix.agent) }}
+        run: |
+          set -euo pipefail
+          [[ "$BRANCH" == "agent/${AGENT}/"* && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          remote="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" --jq .object.sha || true)"
+          if [ "$remote" != "$HEAD_SHA" ]; then echo "label: branch on GitHub is not the checked commit, not opening a PR" >&2; exit 1; fi
+          num="$(gh api -X GET "repos/${GITHUB_REPOSITORY}/pulls" -f state=open -f "head=${GITHUB_REPOSITORY_OWNER}:${BRANCH}" --jq '.[0].number // empty')"
+          if [ -z "$num" ]; then
+            num="$(gh api -X POST "repos/${GITHUB_REPOSITORY}/pulls" -f "title=${AGENT}: ${SUBJECT}" -f "head=${BRANCH}" -f base=develop -F draft=true \
+              -f "body=Opened by the workflow for the ${AGENT} agent. Run: ${RUN_URL}" --jq .number)"
+          fi
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${num}/labels" -f "labels[]=${WANT}" -f "labels[]=from:agent" > /dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${num}/labels" --jq '.[].name | select(startswith("agent:") and . != env.WANT)' |
+            while IFS= read -r other; do
+              [ -n "$other" ] && gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/${num}/labels/$(jq -rn --arg n "$other" '$n|@uri')" > /dev/null
+            done
+          echo "label: PR #${num} carries ${WANT} and from:agent"
 
       - name: Run receipt
         if: always()

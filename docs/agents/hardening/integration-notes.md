@@ -55,24 +55,28 @@ Limits and caveats:
 - The new deny patterns are glob tests with the offline matcher. Engine behaviour is UNVERIFIED: how opencode matches `git --no-pager push`, double spaces and quoted forms was not run on the real binary. They remain a tripwire, not a boundary.
 - The `injection.test.mjs` zero width space (line 123) is deliberate test data and stays.
 
-## Workflow gates (PR `ci/agent-lane-gates`, draft; `.github/**` is T2, two independent reviews on the head)
+## Workflow gates (PR #429 `ci/agent-lane-gates`, draft; `.github/**` is T2, two independent reviews on the head)
+
+Written against rounds 7 to 10. None of this has run on GitHub. `AGENTS_ENABLED` stays unset.
 
 Covered by this PR:
-- `.github/workflows/agent-pr-guard.yml` runs `pathguard.mjs` and `guard-open-prs.mjs` on any PR whose head branch starts `agent/`, whose author login ends `[bot]`, or that carries an `agent:*` label. Branch, author and labels come from the event payload through env. The scripts and `agents/lanes.json` come from the base commit; the PR head is fetched as git objects only and never checked out. Permissions are `contents: read` and `pull-requests: read`. Missing payload data fails the check. Other PRs pass without running the guards, so the check can be required on every PR.
-- The cap uses `--max 16` because the PR being checked is in the count: 15 open agent PRs pass, a 16th fails, and PRs already open are not blocked from merging.
-- `agents.yml`: `salvage.mjs` and `receipt.mjs` now run from a fresh tarball of `develop` in `$RUNNER_TEMP/trusted` (outside the repo, so salvage never commits it), not from the model-editable tree. Git hooks and fsmonitor are switched off for salvage through `GIT_CONFIG_*` env, which outranks the model-editable `.git/config`. `AGENTS_ENABLED` gating and the OpenCode pin are unchanged.
+- `.github/workflows/agent-pr-guard.yml` runs `pathguard.mjs` and `guard-open-prs.mjs` on any PR whose head branch starts `agent/`, whose author login ends `[bot]`, or that carries an `agent:*` label. It passes `--labels`, `--branch`, `--author`, `--author-type`, `--base` and `--head` from the event payload through env. Empty branch, author, number or shas fail the check before pathguard runs (pathguard exits 2 on empty branch or author). The scripts and `agents/lanes.json` come from the base commit; the PR head is fetched as git objects only and never checked out. Permissions are `contents: read` and `pull-requests: read`. Other PRs pass without running the guards, so the check can be required on every PR. A PR with no labels gives an empty `join()`; the shell test covers that, GitHub's own evaluation of the expression is unverified.
+- Cap: `--max 16` (this PR is in the count) so 15 open agent PRs pass; the roster's `max_open_agent_prs` is 10 and stops new work earlier. `AGENTS_BOT_LOGINS` is wired; empty means only labelled PRs count.
+- `agents.yml`: salvage, receipt and pathguard run from a fresh tarball of `develop` in `$RUNNER_TEMP/trusted`. New step "Gate the branch and the paths" (after the model, `if: always()`): replaces `.git/config`, hooks and `info/attributes` with a minimal set; sets `GIT_CONFIG_NOSYSTEM`, a fresh `GIT_CONFIG_GLOBAL` and `core.hooksPath`, `core.fsmonitor`, `core.sshCommand` through env; moves any branch that is not `agent/<handle>/<topic>` (handle from `matrix.agent`) to `agent/<handle>/wip-<run id>`; commits unsaved changes itself; runs pathguard on `base..HEAD` as the agent's identity, with the base commit recorded before the model ran. Salvage runs only if that passed. Salvage no longer decides the branch name or the commit.
+- New step "Open the PR and label it": the workflow opens a draft PR (REST) if none exists for the branch, applies `agent:<handle>` and `from:agent` from `matrix.agent`, and removes any other `agent:*` label. It checks that the branch on GitHub is exactly the commit the gate checked. Brief step 1 depends on this.
+- `scripts/workflows.test.mjs` (12 tests, added to the root `npm test`) runs the scope and gate shell blocks with bash, including planted hooks and fsmonitor.
 
-- The workflow passes `--labels`, `--branch`, `--author` and `--author-type` on every pathguard call, as the round 3 CLI requires (exit 2 without them). Dependabot and other bots are NOT skipped: an unlabelled bot PR fails the check (the decision left open above); the PR cap step is the only other guard.
-
-Still open:
-- Secrets: `OPENROUTER_API_KEY` and the App token are still readable by the model's shell (same job). Next PR: two jobs. Job 1 `model`: no App token, contents read only, the OpenRouter key only; uploads the diff and journal text as an artifact. Job 2 `publish`: checks out `develop`, applies the artifact, runs pathguard, salvage and receipt with the App token. Not done here because it changes the artifact hand-off and every step's token wiring.
-- The model's step can still append to `$GITHUB_ENV` and `$GITHUB_PATH`, which later steps in the same job honour. Only the job split closes this.
-- Journal lock is not done.
-- Branch protection (making `agent-pr-guard` required) is the founder's script, FOUNDER_QUEUE row 7. It needs the repository settings page; no browser step is done by this PR.
-- A bot author with no `agent:*` label (for example a dependency bot) fails the guard as "unlabelled" by design; label it or exempt it in `identity.mjs`.
-- A PR that edits the guard scripts is judged by the base version of them, so those edits need human review.
-- Engine behaviour of the deny patterns is UNVERIFIED against a real OpenCode run.
-- `gh issue comment`, `gh pr comment`, `gh release`, `gh gist` stay unrestricted by the deny list; needs token scope or lane control.
+NOT done:
+- The two-job split (H15): the model step still runs with `GH_TOKEN` and `OPENROUTER_API_KEY` in its environment, so both are readable by the model's shell. Design: job `model` (OpenRouter key only, no App token, uploads a patch or bundle as an artifact), then job `publish` (checks out `develop`, applies the artifact, runs the gate, salvage, PR and labels with the App token).
+- The model's step can still append to `$GITHUB_ENV` and `$GITHUB_PATH`, which later steps in the job honour. The gate uses absolute paths for git and shell tools, but `node` is found through PATH. Only the split closes this.
+- Branch protection on `develop` and `main`, and making `agent-pr-guard` required: the founder's script (FOUNDER_QUEUE row 7).
+- Journal lock.
+- A model-opened PR (`gh pr create` is not denied) opens with whatever labels the model could set; the label step corrects `agent:*` labels only when the model also left a branch for the workflow to push.
+- The opened PR first fires the guard without labels (it fails as "unlabelled"), then fires again on `labeled` and passes. Expect one red run.
+- A bot-authored PR with no `agent:*` label (Dependabot) fails the guard by design.
+- A PR that edits the guard scripts is judged by the base version of them.
+- Whether `gh pr create` pushes by itself is UNVERIFIED; engine behaviour of the deny patterns is only as stated in rounds 9 and 10.
+- A finding: `pathguard.mjs` exits 0 and prints nothing when started through a symlink (its "am I main" test compares the unresolved path). The workflows run it by real path; it is not fixed here (scripts/agents is not this PR's).
 
 ## Round 5: Review C and QA Review A fixes
 
