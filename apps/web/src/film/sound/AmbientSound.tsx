@@ -101,9 +101,18 @@ export function AmbientSound() {
       if (e.type === 'keydown' && IGNORED_KEYS.has((e as KeyboardEvent).key)) return;
       begin();
     };
+    // Scrolling alone is not a gesture the browser accepts (Chromium's autoplay policy excludes it). But a visitor who
+    // has already tapped or typed anywhere on this page has earned the sound, so their next scroll starts it.
+    const onScroll = () => {
+      if ((navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive) begin();
+    };
     for (const type of GESTURES) window.addEventListener(type, onGesture, { capture: true, passive: true });
+    window.addEventListener('wheel', onScroll, { capture: true, passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       for (const type of GESTURES) window.removeEventListener(type, onGesture, { capture: true });
+      window.removeEventListener('wheel', onScroll, { capture: true });
+      window.removeEventListener('scroll', onScroll);
     };
   }, [wanted, playing, begin]);
 

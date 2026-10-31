@@ -43,8 +43,7 @@
   font: 500 13px/1 var(--font-sans);
   letter-spacing: 0.01em;
   cursor: pointer;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* No backdrop blur: a fixed blur over a scrolling page is re-drawn every frame and costs smoothness. */
   transition: color 300ms var(--ease-standard), background-color 300ms var(--ease-standard), border-color 300ms, opacity 300ms;
 }
 .button[data-state='on'] {
@@ -99,8 +98,6 @@
     color: ButtonText;
     border: 1px solid ButtonText;
     opacity: 1;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
   .button:focus-visible {
     outline: 2px solid Highlight;

@@ -360,6 +360,12 @@ export const site = {
     start: 'Tap to start sound',
   },
 
+  /** The two quiet buttons that move one part of the film at a time. Labels are for screen readers and tooltips. */
+  scrollNav: {
+    next: 'Next part',
+    previous: 'Previous part',
+  },
+
   footer: {
     contact: 'hello@earlyletters.com',
     links: [
