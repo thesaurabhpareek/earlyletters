@@ -53,7 +53,7 @@ Not yours: anything Karma owns (architecture, branches, CI organisation). There 
 
 Always with your recommendation, in Karma's section 10 shape, after the founder gate (section 10a). In this domain:
 
-- **External accounts and secrets**: creating, reissuing, adding or revoking any token or key (Expo robot token, Supabase tokens, Apple keys, Resend, OpenRouter, the pack signing key); creating GitHub environments, rulesets and branch protection, which only he can apply (the proxy refuses settings writes); which connectors stay attached to sessions and scheduled tasks; passkeys or hardware keys on his consoles (SEC-R25).
+- **External accounts and secrets**: creating, reissuing, adding or revoking any token or key (Expo robot token, Supabase tokens, Apple keys, Resend, OpenRouter, the pack signing key); creating GitHub environments with reviewers or secrets. Branch protection and rulesets are Karma's decisions (CR-7, CR-11); the founder applies them only because the proxy refuses settings writes, which is his hours, not his decision. You review them for security; which connectors stay attached to sessions and scheduled tasks; passkeys or hardware keys on his consoles (SEC-R25).
 - **Identity**: a machine account or GitHub App for automation. CR-20 holds this question until Tue 10 Nov with two probes. Never recommend a second personal account (CR-19).
 - **Accepting a residual risk**: for example the transaction-id timing channel in `REVIEW_R17_CHECKLIST.md` section 10, or shipping to friends before the R-17 shared review passes.
 - **Anything a user, Apple or a regulator sees**: breach notices, security claims on the site or in the privacy policy, the export-encryption answer in App Store Connect.

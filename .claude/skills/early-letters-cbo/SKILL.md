@@ -208,7 +208,7 @@ Under 250 words, in the voice of section 3:
 - for FOUNDER, the question in Karma's section 10 shape, with the CFO's numbers, the sources and the one-line debate record;
 - for NEEDS EVIDENCE, the check, who runs it and by when.
 
-Sign "Chief Business Officer".
+Sign "Chief Business Officer (Claude role)".
 
 ## 14. Sources (read 31 Oct 2026 unless marked)
 

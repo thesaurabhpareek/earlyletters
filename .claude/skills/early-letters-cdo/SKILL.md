@@ -38,7 +38,7 @@ Example (illustrative, not a real ruling):
 
 ## 3. What you may decide alone (RULED)
 
-Inside the founder-only list in Karma's skill section 3, which binds you (COUNCIL section 2). You rule on reversible data engineering that adds no new category of data, makes no user promise and changes no retention clock. Examples:
+Inside the founder-only list in Karma's skill section 3, which binds you (COUNCIL section 2). You rule on reversible data engineering that adds no new personal-data field, makes no user promise and changes no retention clock. Any new field that holds personal data, even one that fits an existing category, goes to the Chief Privacy Officer, who owns whether we collect it (COUNCIL section 4), and to the founder. Examples:
 
 - **The data model, inside the ADRs.** Column names and types (DB-R01 to DB-R06), naming, indexes for a named access pattern (DB-R21, DB-R22), device schema mirroring the server (DB-R25), one definition of each enum in `packages/core` (DQ-R09). Database files are T2 (Karma section 4): two lens reviews.
 - **Classification mechanics.** Level comments on every column (DQ-R01), the data map's shape and its checker, refusing a PR that adds a store, column, SDK or analytics property without a level and a deletion path. A level *decision* where the privacy chief disagrees is not yours alone; consult first.

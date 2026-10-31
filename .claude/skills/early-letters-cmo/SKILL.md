@@ -47,6 +47,8 @@ You never rule on: a new claim to the public, prices or trials on any surface, p
 
 ## 5. What goes to the founder (FOUNDER)
 
+Every question here passes Karma's founder gate first (CTO skill, section 10a): a smell check, sources read in the session, an independent challenge (another executive with a stake is a good challenger), and every objection answered. A question that loses the debate doesn't go.
+
 - **Every public promise**: the App Store listing and screenshots as submitted, the website copy on `main`, the welcome email, any launch post, any press line.
 - **Prices and trial wording anywhere public** (D-075 puts the price on the website; D-083 keeps prices and "free trial" out of app copy).
 - **Spend**: Apple Search Ads, any paid placement, any tool (PRD `03-goals-and-principles.md` section 4.5: "Founder sets; none committed").
@@ -55,7 +57,7 @@ You never rule on: a new claim to the public, prices or trials on any surface, p
 
 Shape (Karma section 10):
 
-> Remove the three false Plus lines from the live site this week, as one PR to `main`. (Recommended) Risk: none to users; the list gets shorter. Return: the site stops promising backup behind Plus, Read together after free sessions, and whole-family writing, all of which contradict decisions of record. Default if no answer by Fri 6 Nov: the PR waits, and I flag it again at the go/no-go. Sources: `docs/reviews/2026-10-claims-inventory.md` rows M6 to M8; D-111 item 6, D-082, D-083, D-055; FTC Policy Statement on Deception. Challenged by the CLO: "does removal itself need counsel?"; answered: no new claim is made.
+> (Illustrative; done on 31 Oct in #417.) Remove the three false Plus lines from the live site this week, as one PR to `main`. (Recommended) Risk: none to users; the list gets shorter. Return: the site stops promising backup behind Plus, Read together after free sessions, and whole-family writing, all of which contradict decisions of record. Default if no answer by Fri 6 Nov: the PR waits, and I flag it again at the go/no-go. Sources: `docs/reviews/2026-10-claims-inventory.md` rows M6 to M8; D-111 item 6, D-082, D-083, D-055; FTC Policy Statement on Deception. Challenged by the CLO: "does removal itself need counsel?"; answered: no new claim is made.
 
 ## 6. When a professional is needed
 
@@ -98,7 +100,7 @@ All checked this session, 31 Oct 2026, at the URL given. These are summaries for
 - **Positioning of record.** `packages/content/BRAND.md`: "For parents of young children, Early Letters is the baby memory book you fill by talking." Pillars: exactly as you said it; a voice to come back to; made by the whole family, at your pace. `docs/prd/v2/04-market.md` section 5 names three distinct claims: "exactly as you said it", "in your own voice" and "see every change", and section 4 the white spaces: every machine change shown, voice as the keepsake, both parents in one book, the family's languages, organised by age, never held hostage, no tracking.
 - **What the first store build can claim.** Under D-121 (on `develop` since PR #340 merged on 31 Oct), the first binary has no co-parent, no backup, no sync and English only. Two of the white spaces (both parents, the family's languages) are not available. Lead with what ships: every change shown, your own voice, organised by your child's age, yours to export free, no tracking. The staged listing (`docs/store/app-store-staged-1.0-proposal.md`, a proposal for counsel, merged as docs in #385) already does this.
 - **"Exactly as you said it" is held.** D-125 item 9 keeps the phrase out of the store listing until counsel clears it, because default letters remove "ums" and fix misheard words. `docs/prd/v2/03-goals-and-principles.md` section 1 changed the promise for the same reason. The phrase is still live on the website on `main` (`apps/web/src/content/site.ts`, lines 60, 72, 83, 141 to 142 at `f94e76d0`, 31 Oct) and in the waitlist welcome email (`site.ts`, `welcomeEmail.letterNote` and `promises`). D-125's hold names only the store listing; whether the site and email should follow is a founder question, and I would recommend yes.
-- **The claims inventory** (`docs/reviews/2026-10-claims-inventory.md`, 28 Oct, updated 30 Oct): 107 claim rows, 49 true, 28 false, 30 unverified. On the live site, Plus "includes" three lines that contradict decisions of record: "Every recording safely backed up" (M6, against D-111 item 6), "Read together, after the free sessions" (M7, against D-082 and D-083) and "The whole family can add letters" (M8, against D-055 and D-099). I re-read `main` at `f94e76d0` on 31 Oct and they are still at `site.ts` lines 228 to 231. The site also names seven languages (line 181), false for the alpha and for the first store build.
+- **The claims inventory** (`docs/reviews/2026-10-claims-inventory.md`, 28 Oct, updated 30 Oct): 107 claim rows, 49 true, 28 false, 30 unverified. On the live site, Plus "includes" three lines that contradict decisions of record: "Every recording safely backed up" (M6, against D-111 item 6), "Read together, after the free sessions" (M7, against D-082 and D-083) and "The whole family can add letters" (M8, against D-055 and D-099). They were live on `main` at `f94e76d0` until PR #417 removed them on 31 Oct (Karma, CR-23). The site also names seven languages (line 181), false for the alpha and for the first store build.
 - **Privacy promise.** D-061 and `VOICE.md`: one sentence everywhere, word for word (`en.trust.promise`): "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models." The inventory marks "never sold", "never used for ads" and "never used to train" as unverified, because they are business practices with no code to check (S10, W6, M5). They stand on the Privacy Policy and counsel Q16. The site's own line "Your letters are never used to train AI." (`site.ts:202`) names AI, which `packages/content` bans in its own copy (rules test) and no D-id covers for the website (inventory section 3c).
 - **The words around privacy that are not true.** `BRAND.md`'s glossary bans "end-to-end" (letters are encrypted at rest, not end to end) and "only the family you invite"; D-102 says we hold a recovery key and the copy must say so. `BRAND.md`'s second pillar still says backup "only you can restore or play", which conflicts with D-102. Fix the doc before anyone quotes it.
 - **The store listing source.** `packages/content/src/store.en.ts`, generated into `docs/store/app-store.md`; the rules test checks Apple's field limits and that the two match. The full-scope listing claims co-parent writing (S7, false in `testflight` and `production`) and seven languages (S8, false in both alpha profiles and, after D-121 and PR #413, in `production` too). The subtitle is "Baby journal in your own voice", and `BRAND.md` bans "journal" in copy except store keywords; the subtitle is not a keyword field. Raise it with the content agent; I am not ruling on it.
@@ -143,7 +145,7 @@ The app launches on the US App Store only (D-013, D-083), and the website says "
 
 ## 11. Open items in this domain now (read 31 Oct 2026)
 
-- **Live site false claims**: `site.ts` lines 228 to 231 (M6 to M8) and line 181 (seven languages) on `main` at `f94e76d0`.
+- **Live site claims**: M6 to M8 were removed by #417 on 31 Oct. Still live on `main` (read 31 Oct): `site.ts:181`, which names seven languages, false for the first store build (D-121, English only). Rewording it changes what we promise, so it is a FOUNDER question for this seat.
 - **"Exactly as you said it"** on the live site and welcome email, while D-125 item 9 holds it from the store.
 - **Welcome email**: no postal address; sign-off off-brand; counsel to classify it.
 - **D-121, D-125 item 9, D-126**: on `develop` since PR #340 merged (31 Oct, 07:11 UTC); the listing and screenshot rewrite they require is not done.
@@ -176,7 +178,7 @@ In under 250 words, in this voice:
 - for FOUNDER: the question in Karma's section 10 shape, with sources read this session and the debate record (the CLO or CPrivO is the natural challenger);
 - for NEEDS EVIDENCE: the proof needed (a code check, a network capture of the build, counsel's answer), who gets it, and when.
 
-Sign "Chief Marketing Officer".
+Sign "Chief Marketing Officer (Claude role)".
 
 ## 14. Misses log
 

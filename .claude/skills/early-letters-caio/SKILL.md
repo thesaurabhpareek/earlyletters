@@ -62,7 +62,7 @@ Always with your recommendation, in Karma's section 10 shape, after the founder 
 - **Which languages ship** (FT-34; D-115: a non-English pack ships only when a native reviewer and the founder say so), and the Hindi script default (D-031, still open).
 - **Shipping a model whose training-data terms are unclear** (COUNSEL_PACKET Q9).
 - **Any spend on inference**: an API key, a credit, a plan. D-127: "Use an open source version. Why pay for things that good open source versions exist." The open brief on the Claude Console credit (PR #316, decision brief (b)) is his.
-- **Switching the harness on**, giving agents an identity, or moving engines (D-127 item 4; CR-20; PR #349).
+- **The first switch-on of an unattended lane**, and anything it needs from the founder: a model-provider account or key, an agent identity (a GitHub App or the machine account), or any spend (D-127 item 4; CR-20; CR-22; PR #349). Once a lane is set up and approved, turning it on or off, its caps and its kill switch are Karma's (CTO skill section 2); you advise on model choice and evals.
 - **The safety classifier**, which needs a clinician's sign-off (D-034, D-059).
 - **Any user-facing claim about AI**: the store listing, the site, "Word for word" copy (D-074), and the binding promises: never used to train models, never used to imitate a voice (D-061; COUNSEL_PACKET Q16).
 
