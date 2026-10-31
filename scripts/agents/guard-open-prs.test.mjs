@@ -1,7 +1,7 @@
 // Tests for guard-open-prs.mjs (offline: the HTTP layer is injected).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { countAgentPrs, isAgentPr, main, httpGetPage, GuardError, PER_PAGE, MAX_PAGES } from "./guard-open-prs.mjs";
+import { countAgentPrs, isAgentPr, main, httpGetPage, GuardError, PER_PAGE, MAX_PAGES, DEFAULT_MAX } from "./guard-open-prs.mjs";
 
 const agentPr = (n) => ({ number: n, labels: [{ name: "agent:ops" }, { name: "from:agent" }] });
 const humanPr = (n) => ({ number: n, labels: [{ name: "bug" }] });
@@ -99,13 +99,20 @@ test("main: human PRs do not count toward the max", async () => {
 
 test("main: bad arguments and API failure exit 2", async () => {
   const ok = pager([[]]);
-  for (const argv of [["--repo", "o/r"], ["--max", "0", "--repo", "o/r"], ["--max", "x", "--repo", "o/r"], ["--max", "5"], ["--max"], ["stray"]]) {
+  for (const argv of [["--max", "0", "--repo", "o/r"], ["--max", "x", "--repo", "o/r"], ["--max", "5"], ["--max"], ["stray"]]) {
     const s = sink();
     assert.equal(await main(argv, { out: s.out, env: {}, getPage: ok }), 2, argv.join(" "));
     assert.match(s.m.error[0], /failing closed/);
   }
   const s = sink();
   assert.equal(await main(["--max", "5", "--repo", "o/r"], { out: s.out, getPage: async () => ({ status: 500, json: null }) }), 2);
+});
+
+test("--max defaults to 15 (explicit, equal to the stop gate) when omitted", async () => {
+  assert.equal(DEFAULT_MAX, 15);
+  const mk = (n) => pager([Array.from({ length: n }, (_, i) => agentPr(i))]);
+  assert.equal(await main(["--repo", "o/r"], { out: sink().out, getPage: mk(14) }), 0);
+  assert.equal(await main(["--repo", "o/r"], { out: sink().out, getPage: mk(15) }), 1);
 });
 
 test("main: repo falls back to GITHUB_REPOSITORY", async () => {

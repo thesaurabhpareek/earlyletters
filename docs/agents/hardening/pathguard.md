@@ -13,6 +13,8 @@ Files: `scripts/agents/pathguard.mjs` (+ `.test.mjs`), `agents/lanes.json`, `scr
 | workflows | `.github/**` |
 | supabase | `supabase/**` |
 | roster, lanes | `agents/roster.json`, `agents/lanes.json` |
+| claude-config, agent-docs | `.claude/**`, `docs/agents/**` |
+| manifest | any `package.json`, `.gitmodules` |
 | decisions, constitution | `docs/DECISIONS.md`, `CLAUDE.md` |
 | legal | `docs/legal/**` |
 | content | `packages/content/**` |
@@ -29,7 +31,13 @@ CLI exit codes: 0 ok, 1 violations (each printed as `[rule] path: reason`), 2 co
 
 ## Wiring it (after 5 Nov; founder applies, not applied to `.github/`)
 
-The agent identity comes from the `agent:*` label (the same source of truth as `agentOfPR` in `lib.mjs`). Run the guard from the base branch's copy of the scripts and lanes, never from the PR's own checkout, or an agent could edit the guard in the same PR (the guard also forbids `scripts/agents/**`, but defence in depth is cheap).
+The agent identity comes from the `agent:*` label (the same source of truth as `agentOfPR` in `lib.mjs`), passed as `--labels`. Rules, in `agentFromLabels`:
+
+- Exactly one `agent:*` label: that agent's lane applies.
+- More than one: rejected, exit 1, with a message. Label order can be changed by anyone with triage permission, so picking "first" or "last" would let a broad lane be chosen. Order never matters (tested).
+- None: out of scope, exit 0. Why: the guard cannot know whose lane applies, and an unlabeled PR is a human or fork PR that is already under branch protection and review. Treating it as an agent PR would block every human PR. The cost: an agent that strips its own label escapes this check (see below).
+
+Run the guard from the base branch's copy of the scripts and lanes, never from the PR's own checkout, or an agent could edit the guard in the same PR (the guard also forbids `scripts/agents/**`, but defence in depth is cheap).
 
 ```yaml
 # .github/workflows/pathguard.yml
@@ -59,20 +67,17 @@ jobs:
           node-version: 22
       - name: Check lane
         env:
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          agent=""
-          for l in $LABELS; do case "$l" in agent:*) agent="${l#agent:}";; esac; done
-          if [ -z "$agent" ]; then echo "No agent:* label: not an agent PR, nothing to check."; exit 0; fi
           cd pr
           node ../base/scripts/agents/pathguard.mjs \
             --lanes ../base/agents/lanes.json \
-            --agent "$agent" --base "$BASE_SHA" --head "$HEAD_SHA"
+            --labels "$LABELS" --base "$BASE_SHA" --head "$HEAD_SHA"
 ```
 
-Then add the check name `pathguard` to the required checks in branch protection (founder, Settings). Notes: a PR from an agent that someone relabels is still guarded because the check also runs on `labeled`/`unlabeled`; removing the `agent:*` label makes it a non-agent PR, which stays under normal human review (branch protection), so the label is not the only guard. Two things to verify before requiring it: that `--cwd` is not needed (the step does `cd pr`), and that a PR with several `agent:*` labels picks the last one (consider failing instead).
+Then add the check name `pathguard` to the required checks in branch protection (founder, Settings). The check also runs on `labeled`/`unlabeled`, so relabelling re-evaluates it.
 
 Optional flood guard in an agent run's pre-step (needs `pull-requests: read`):
 
@@ -84,6 +89,27 @@ Optional flood guard in an agent run's pre-step (needs `pull-requests: read`):
 ```
 
 It counts open PRs with an `agent:*` label through the REST API (100 per page, at most 20 pages), exits 1 at or above `--max`, and exits 2 (fails closed) on any HTTP error, bad response or hitting the page cap.
+
+`--max` defaults to 15. Chosen because the OpenCode stop gate (W4, `docs/agents/hardening/opencode-lane.md` section 4) uses 15 as its backstop, while the dispatcher's roster `max_open_agent_prs` is 10 and stops new work earlier. Two numbers are deliberate: 10 is the soft limit for new assignments, 15 is the hard backstop when the dispatcher is bypassed. Whether to keep both is the founder's decision (W4 decision 8.3).
+
+## Rollout note (first week)
+
+Requiring `pathguard` blocks every agent PR whose agent has no lane in `agents/lanes.json`. Today only `product` (backlog-hygiene) has one, so in week one every other agent PR (ops, qa, mobile and so on, whichever the dispatcher still opens) fails with `[no-lane]`, and any agent PR with two `agent:*` labels fails with the multiple-label message. Expect red checks on those PRs, not on human PRs (no agent label means out of scope). Suggested path: run the workflow non-required for the first week, read the failures, add lanes for agents that should keep working, then make it required.
+
+One-step rollback: in branch protection, remove `pathguard` from the required checks (a setting, effective immediately, no merge needed). Deleting the workflow file comes second.
+
+## Open differences with W4 (`docs/agents/hardening/opencode-lane.md` at 19681459)
+
+Compared by reading only; W4's branch is not edited.
+
+1. Open-PR cap: same number (15) and same label rule (`agent:` prefix). Differences: W4's gate uses `gh pr list --limit 300` (a silent cap above 300, GraphQL under the hood), mine uses REST with pagination and fails closed at 2000. W4's gate stops quietly (`go=false`, exit 0, warning); mine exits 1 at or above the max and 2 on errors, so a workflow using mine must treat 1 as "stop, not a failure" if it wants W4's quiet behaviour. Unresolved: which behaviour the run path wants.
+2. Path rules: W4 has an allow regex `^docs/` plus a deny regex (`.github/`, `supabase/`, `scripts/`, `agents/roster.json`, `.claude/`, `CLAUDE.md`, `package(-lock).json`, `.gitmodules`, `docs/agents/`). I added `.claude/**`, `docs/agents/**`, any `package.json` and `.gitmodules` to my hard rules to match. W4's pilot allow-list is all of `docs/` (minus `docs/agents/`), mine is per-lane files (`docs/BACKLOG.md`, `docs/FOUNDER_TASKS.md`). Mine is narrower; for the product pilot the two lanes disagree until W4 narrows its `PUBLISH_ALLOW` or the founder accepts both (both must pass).
+3. Check point: W4 checks every commit in the agent's bundle before publishing (so a bad commit hidden by a later revert is caught), mine checks the net diff of the PR (`base...head`). Mine would miss a path touched and then reverted inside a PR. Not resolved; running both is the safe option.
+4. Renames: W4 uses `--no-renames` (both paths show as delete and add); mine uses `-M` and checks old and new explicitly. Equivalent result.
+5. Symlink and submodule: both reject. W4 also caps commits (10), files (40), bytes (5 MB) and rejects merge commits; mine has no size or count limits.
+6. Normalisation (`..`, case folding, NFKC, trailing dots, control characters) exists only in mine; W4 relies on git's own path output and plain regexes, so a case variant such as `CLAUDE.MD` on a case-insensitive checkout is not matched by its deny regex.
+7. Names and flags: W4 has inline shell, not a script, so there is no flag or exit-code contract to align yet. If its steps are moved to scripts, use `--agent`/`--labels`, `--base`, `--head`, `--max`, `--repo` and exit codes 0, 1, 2 as here.
+8. Identity: W4 labels PRs in its publish job (`agent:${AGENT}`); the label the guard reads is therefore set by the same pipeline it guards. Mine assumes labels are trustworthy within the limits listed above.
 
 ## What it does not catch
 

@@ -14,6 +14,10 @@ export const PER_PAGE = 100;
 /** 20 pages x 100 = 2000 open PRs. Reaching the cap means we cannot know the count: fail closed. */
 export const MAX_PAGES = 20;
 
+/** Default cap. 15 matches the stop gate in the OpenCode lane proposal; the dispatcher's own
+ *  roster cap (max_open_agent_prs) is 10 and stops new work earlier. This is the backstop. */
+export const DEFAULT_MAX = 15;
+
 export class GuardError extends Error {}
 
 /** True when a PR carries a label whose name starts with `agent:` (case-insensitive). */
@@ -65,7 +69,7 @@ function parseArgs(argv) {
 export async function main(argv = process.argv.slice(2), { out = console, env = process.env, getPage } = {}) {
   try {
     const args = parseArgs(argv);
-    const max = Number(args.max);
+    const max = Number(args.max ?? DEFAULT_MAX);
     if (!Number.isInteger(max) || max < 1) throw new GuardError(`--max must be a positive integer, got ${JSON.stringify(args.max)}`);
     const repo = args.repo ?? env.GITHUB_REPOSITORY;
     const get = getPage ?? httpGetPage(env.GH_TOKEN || env.GITHUB_TOKEN);

@@ -27,6 +27,10 @@ export const HARD_RULES = [
   { id: "supabase", glob: "supabase/**", why: "database schema and access rules (supabase/**)" },
   { id: "roster", glob: "agents/roster.json", why: "the agent roster" },
   { id: "lanes", glob: "agents/lanes.json", why: "the lane definitions themselves" },
+  { id: "claude-config", glob: ".claude/**", why: "agent identities and settings (.claude/**)" },
+  { id: "agent-docs", glob: "docs/agents/**", why: "agent harness docs (docs/agents/**)" },
+  { id: "manifest", glob: "**/package.json", why: "package manifest (package.json)" },
+  { id: "manifest", glob: ".gitmodules", why: "submodule config (.gitmodules)" },
   { id: "decisions", glob: "docs/DECISIONS.md", why: "the decision log" },
   { id: "constitution", glob: "CLAUDE.md", why: "the repo constitution (CLAUDE.md)" },
   { id: "legal", glob: "docs/legal/**", why: "legal text (docs/legal/**)" },
@@ -75,6 +79,19 @@ export function normalizePath(raw) {
   }
   if (segs.length === 0) return { ok: false, reason: "empty path" };
   return { ok: true, norm: segs.join("/").toLowerCase() };
+}
+
+/**
+ * Agent identity from PR labels. Label order is attacker-influenceable (anyone with
+ * triage permission), so we never pick one: exactly one `agent:*` label gives an agent,
+ * none means "not an agent PR" (out of scope), more than one is rejected.
+ * @returns {{status: "none"|"one"|"many", agent?: string, labels: string[]}}
+ */
+export function agentFromLabels(labels) {
+  const found = [...new Set((labels ?? []).map((l) => String(l).trim()).filter((l) => /^agent:/i.test(l)).map((l) => l.toLowerCase()))];
+  if (found.length === 0) return { status: "none", labels: found };
+  if (found.length > 1) return { status: "many", labels: found };
+  return { status: "one", agent: found[0].slice("agent:".length), labels: found };
 }
 
 /** Lanes applying to an agent. */
@@ -182,7 +199,14 @@ function parseArgs(argv) {
 export function main(argv = process.argv.slice(2), out = console) {
   let args;
   try { args = parseArgs(argv); } catch (e) { out.error(`pathguard: ${e.message}`); return 2; }
-  if (!args.agent) { out.error("pathguard: --agent <handle> is required"); return 2; }
+  if (args.agent && args.labels !== undefined) { out.error("pathguard: give --agent or --labels, not both"); return 2; }
+  if (!args.agent && args.labels === undefined) { out.error("pathguard: --agent <handle> or --labels <a,b,...> is required"); return 2; }
+  if (args.labels !== undefined) {
+    const id = agentFromLabels(args.labels.split(","));
+    if (id.status === "none") { out.log("pathguard: no agent:* label, not an agent PR; out of scope for this check (human review and branch protection apply)."); return 0; }
+    if (id.status === "many") { out.error(`pathguard: FAIL, more than one agent:* label (${id.labels.join(", ")}). Label order can be changed by anyone with triage permission, so no lane is chosen. Remove all but one.`); return 1; }
+    args.agent = id.agent;
+  }
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const lanes = JSON.parse(readFileSync(args.lanes ?? path.join(here, "..", "..", "agents", "lanes.json"), "utf8"));

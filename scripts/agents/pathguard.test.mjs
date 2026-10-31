@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync, readFileSyn
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkPaths, normalizePath, parseRawZ, main, HARD_RULES } from "./pathguard.mjs";
+import { agentFromLabels, checkPaths, normalizePath, parseRawZ, main, HARD_RULES } from "./pathguard.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.join(HERE, "pathguard.mjs");
@@ -49,6 +49,11 @@ const FORBIDDEN = [
   ["supabase/tests/a.test.ts", "supabase"],
   ["agents/roster.json", "roster"],
   ["agents/lanes.json", "lanes"],
+  [".claude/agents/ops.md", "claude-config"],
+  ["docs/agents/OPERATING_MODEL.md", "agent-docs"],
+  ["package.json", "manifest"],
+  ["apps/mobile/package.json", "manifest"],
+  [".gitmodules", "manifest"],
   ["docs/DECISIONS.md", "decisions"],
   ["CLAUDE.md", "constitution"],
   ["docs/legal/privacy.md", "legal"],
@@ -307,4 +312,34 @@ test("main() is callable with injected output", () => {
   const out = { log: (m) => msgs.push(m), error: (m) => msgs.push(m) };
   const code = main(["--agent"], out);
   assert.equal(code, 2);
+});
+
+test("agentFromLabels: none, one, many; order and case do not matter", () => {
+  assert.equal(agentFromLabels(["bug", "from:agent"]).status, "none");
+  assert.equal(agentFromLabels([]).status, "none");
+  assert.equal(agentFromLabels(undefined).status, "none");
+  assert.deepEqual(agentFromLabels(["bug", "agent:ops"]), { status: "one", agent: "ops", labels: ["agent:ops"] });
+  assert.equal(agentFromLabels(["Agent:Ops", "agent:ops"]).status, "one");
+  assert.equal(agentFromLabels(["agent:ops", "agent:product"]).status, "many");
+  assert.equal(agentFromLabels(["agent:product", "x", "agent:ops"]).status, "many");
+  assert.deepEqual(agentFromLabels(["agent:ops", "agent:product"]).labels.sort(), agentFromLabels(["agent:product", "agent:ops"]).labels.sort());
+});
+
+test("CLI --labels: two agent labels fail closed in either order; none is out of scope", () => {
+  const d = repo();
+  try {
+    writeFileSync(path.join(d, "docs/BACKLOG.md"), "# Backlog\n".repeat(20) + "x\n");
+    commit(d);
+    for (const labels of ["agent:product,agent:ops", "agent:ops,agent:product"]) {
+      const r = cli(d, "--labels", labels, "--base", "develop", "--head", "HEAD");
+      assert.equal(r.status, 1, labels);
+      assert.match(r.stderr, /more than one agent:\* label/);
+    }
+    const none = cli(d, "--labels", "bug,from:agent", "--base", "develop", "--head", "HEAD");
+    assert.equal(none.status, 0);
+    assert.match(none.stdout, /not an agent PR/);
+    const one = cli(d, "--labels", "bug,agent:product", "--base", "develop", "--head", "HEAD");
+    assert.equal(one.status, 0, one.stderr);
+    assert.equal(cli(d, "--labels", "agent:product", "--agent", "product").status, 2);
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });
