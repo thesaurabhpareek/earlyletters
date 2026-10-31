@@ -253,7 +253,7 @@ export const site = {
     sending: 'Saving',
     successTitle: 'Thank you, you are on the list.',
     successBody: `Check your inbox for a hello. One more email comes when ${NAME} is ready.`,
-    success: `You are on the list. Check your inbox for a hello. One more email comes when ${NAME} is ready.`,
+    success: `Thank you, you are on the list. Check your inbox for a hello. One more email comes when ${NAME} is ready.`,
     /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
     alreadyTitle: 'You are already on the list.',
     alreadyBody: `You do not need to do anything. We will write when ${NAME} is ready.`,
@@ -267,7 +267,7 @@ export const site = {
     retry: 'Try again',
     honeypotLabel: 'Company',
     /** The pages a native form post lands on (app/signup). */
-    thanksTitle: 'Thank you.',
+    thanksTitle: 'All set.',
     sorryTitle: 'That did not go through.',
     home: `Back to ${NAME}`,
   },
