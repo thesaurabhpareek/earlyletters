@@ -284,3 +284,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Nothing is applied by this ruling.
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
+
+### CR-22 Naming: two vocabularies, one door, one direction (31 Oct 2026, Karma via naming session)
+
+- Tier: T1, two-way. (CR-21, the harness freeze, is in the 30 Oct Project doc and is still to be added to this log.)
+- Decision: product names are what a parent already says (letter, note, recording, the red circle, Tonight, Keep, Read together, Word for word, small fix, Plus). Internal names say what the system guarantees (`raw_transcript`, `EditType`, `verifyEdits`, take, draft, pack, ADTS) and stay blunt on purpose. The glossary in `packages/content/BRAND.md` is the only door between them, and traffic goes one way: internal terms stay in code, schema, test names and spec section 12; a parent reads only the right-hand column.
+- Why: renaming `raw_transcript` to a soft word invites the next agent to treat it as editable. The constitution lives in those names. Meanwhile "take" and "language packs" were showing to parents, against the glossary.
+- Applied in the same PR: the three "take" strings and the two "pack" strings in `packages/content`, an internal-terms table in BRAND.md, a banned-term test in `rules.test.ts`, and one line in CLAUDE.md. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are untouched. The codename `scribe` stays in repo, packages, Supabase projects and the bundle id.
+- Not changed, on purpose: legal pages (may say "transcript"; the founder merges legal text), the export file `data/entries.json` (format contract, D-096), store keywords, and PRD specs outside section 12 (a lint of the 21 specs is a follow-up, not a freeze task).
+- Door: two-way. Way back: revert the PR.
+- Revisit when: a banned-term test blocks a legitimate string twice.

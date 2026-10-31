@@ -507,6 +507,39 @@ describe('the 90-day pledge', () => {
   });
 });
 
+describe('internal words stay inside (CR-22, BRAND.md internal terms)', () => {
+  // "Take your time" and "this can take a minute" are the verb and pass. Only the noun is an internal word.
+  const TAKE_NOUN = /(?:\b(?:a|an|the|this|that|each|every|your|any|per|one|these|those|many|\d+)|\{count\})\s+takes?\b/i;
+  // The export file data/entries.json is a format contract (D-096), so a file name is not a parent word.
+  const ENTRY = /(?<!data\/)\bentr(?:y|ies)\b(?!\.json)/i;
+  const DRAFT_NOUN = /\b(?:a|the|your|each|this|saved|unsaved)\s+drafts?\b/i;
+  const PACK = /\b(?:language|speech|text-rules|rule|model)\s+packs?\b/i;
+
+  it('[CR-22] no parent-facing string calls a recording a take', () => {
+    expect(offenders(EVERY, TAKE_NOUN)).toEqual([]);
+  });
+
+  it('[CR-22] the take pattern catches the noun and leaves the verb alone', () => {
+    for (const noun of ['This take may not play.', 'Check the take.', '3 takes may not play.', '{count} takes may not play.'])
+      expect(TAKE_NOUN.test(noun), noun).toBe(true);
+    for (const verb of ['Take your time.', 'This can take a minute.', 'We take out small slips.', 'It takes effect on {date}.'])
+      expect(TAKE_NOUN.test(verb), verb).toBe(false);
+  });
+
+  it('[CR-22] no parent-facing string says entry, draft (as a noun) or language pack', () => {
+    expect(offenders(EVERY, ENTRY)).toEqual([]);
+    expect(offenders(EVERY, DRAFT_NOUN)).toEqual([]);
+    expect(offenders(EVERY, PACK)).toEqual([]);
+  });
+
+  it('[CR-22] BRAND.md carries the internal-terms table, one row per internal word', () => {
+    const brand = DOCS.find((d) => d.path === 'BRAND.md')!.text;
+    expect(brand).toContain('## Internal terms, and what a parent sees instead');
+    for (const term of ['`raw_transcript`', '`EditType`', '| take |', '| entry |', '| draft |', '| held letter, Keep gate |', 'language pack', '`scribe`'])
+      expect(brand, term).toContain(term);
+  });
+});
+
 describe('brand name and v1.0 claims', () => {
   it('never types the public name in in-app copy; uses {app} from packages/brand', () => {
     expect(offenders(leaves(en, 'en'), new RegExp(brand.name, 'i'))).toEqual([]);
