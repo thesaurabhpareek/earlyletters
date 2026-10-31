@@ -20,12 +20,12 @@ content_path = "./supabase/templates/reauthentication.html"
 [auth.email.notification.identity_linked]
 enabled = true
 subject = "{{ if eq .Provider \"google\" }}Sign in with Google is now on your account{{ else }}Sign in with Apple is now on your account{{ end }}"
-content_path = "./supabase/templates/identity_linked.html"
+content_path = "./templates/identity_linked.html"
 
 [auth.email.notification.email_changed]
 enabled = true
 subject = "Your sign-in email was changed"
-content_path = "./supabase/templates/email_changed.html"
+content_path = "./templates/email_changed.html"
 
 # password_changed: No passwords.
 [auth.email.notification.password_changed]

@@ -8,6 +8,7 @@
  * restoring and family authorship are never gated, and writing is gated only
  * at the Keep step (`keep_letter`), never while capturing or typing.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   decide,
@@ -74,8 +75,9 @@ interface Row {
 const TABLE: Row[] = [
   // backup_upload
   { id: '1', rule: 'own Plus backs up', input: input('backup_upload', { viewer: { own: P } }), expected: allow('plus_own') },
-  { id: '2', rule: 'book Plus backs up', input: input('backup_upload', { book: { coveredByOtherParent: true } }), expected: allow('plus_book') },
-  { id: '3', rule: 'contributor in a covered book gets Plus features there', input: input('backup_upload', { viewer: { roleInBook: 'contributor' }, book: { coveredByOtherParent: true } }), expected: allow('plus_book') },
+  // Terms 14.12: another parent's Plus never covers this person (rows 2 and 3 used to say it did).
+  { id: '2', rule: 'Free parent in a book whose other parent has Plus: their own offer (Terms 14.12)', input: input('backup_upload'), expected: offer('backup') },
+  { id: '3', rule: 'contributor in a book whose parent has Plus: quiet, not covered (Terms 14.12)', input: input('backup_upload', { viewer: { roleInBook: 'contributor' } }), expected: quiet('contributor') },
   { id: '4', rule: 'Free book, background uploader: quiet, audio stays on the phone', input: input('backup_upload', { initiatedBy: 'background' }), expected: quiet('free_background') },
   { id: '5', rule: 'Free book, parent taps Turn on backup', input: input('backup_upload'), expected: offer('backup') },
   { id: '6', rule: 'signed out: sign in before the Plus sheet (R-1)', input: input('backup_upload', { signedIn: false }), expected: offer('backup', true) },
@@ -100,7 +102,7 @@ const TABLE: Row[] = [
   { id: '21', rule: 'trial counts as Plus', input: input('theme_extra', { viewer: { own: TRIAL } }), expected: allow('plus_own') },
   { id: '22', rule: 'billing grace keeps Plus on (C-REQ-027)', input: input('theme_extra', { viewer: { own: GRACE } }), expected: allow('plus_own') },
   { id: '23', rule: 'lifetime (no end date) counts', input: input('backup_upload', { viewer: { own: plan({ effectiveUntil: null }) } }), expected: allow('plus_own') },
-  { id: '24', rule: 'both parents hold Plus: allow, no offer anywhere (R-3)', input: input('backup_upload', { viewer: { own: P }, book: { coveredByOtherParent: true } }), expected: allow('plus_own') },
+  { id: '24', rule: 'both parents hold Plus: each is allowed by their own (R-3)', input: input('backup_upload', { viewer: { own: P } }), expected: allow('plus_own') },
   { id: '25', rule: 'first-run surface: quiet', input: input('theme_extra', { surface: 'first_run' }), expected: quiet('first_run') },
 ];
 
@@ -232,7 +234,7 @@ describe('decide(): properties over every combination', () => {
   for (const feature of ['backup_upload', 'theme_extra'] as const)
     for (const own of plans)
       for (const roleInBook of ['parent', 'contributor', null] as const)
-        for (const covered of [false, true])
+        for (const covered of [false] as const)
           for (const surface of ['first_run', 'normal'] as const)
             for (const isBirthday of [false, true])
               for (const signedIn of [false, true])
@@ -249,7 +251,7 @@ describe('decide(): properties over every combination', () => {
 
   it('never offers Plus where it is already on (R-3)', () => {
     for (const i of all) {
-      const on = (planActive(i.viewer.own, i.now) && i.viewer.roleInBook === 'parent') || i.book?.coveredByOtherParent;
+      const on = planActive(i.viewer.own, i.now) && i.viewer.roleInBook === 'parent';
       if (on) expect(decide(i).kind).toBe('allow');
     }
   });
@@ -281,5 +283,25 @@ describe('helpers', () => {
   it('planActive: the end instant is exclusive', () => {
     expect(planActive(plan({ effectiveUntil: NOW }), NOW)).toBe(false);
     expect(planActive(plan({ effectiveUntil: FUTURE }), NOW)).toBe(true);
+  });
+});
+
+describe('[Terms 14.12, D-053, D-080] Plus covers its holder, never another member of a shared book', () => {
+  it('a Free co-parent or contributor is never allowed through someone else\'s Plus', () => {
+    for (const roleInBook of ['parent', 'contributor', null] as const) {
+      for (const feature of ['backup_upload', 'theme_extra'] as const) {
+        expect(decide(input(feature, { viewer: { roleInBook, own: FREE } })).kind, `${roleInBook} ${feature}`).not.toBe('allow');
+      }
+    }
+  });
+
+  it('Family Sharing reaches a co-parent as their own entitlement: allowed as plus_own', () => {
+    expect(decide(input('theme_extra', { viewer: { roleInBook: 'parent', own: P } }))).toEqual(allow('plus_own'));
+  });
+
+  it('the engine has no "covered by the other parent" path any more', () => {
+    const src = readFileSync(new URL('../src/plan.ts', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/plus_book/);
+    expect(src).toMatch(/book: \{ coveredByOtherParent: false \} \| null;/);
   });
 });

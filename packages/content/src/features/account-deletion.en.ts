@@ -105,6 +105,6 @@ export const accountDeletionCopy = {
   // Each failure says first, or says plainly, that nothing has changed.
   errors: {
     offline: 'Nothing has changed. Deleting an account needs a connection.',
-    failed: 'That did not work this time. Nothing has changed.',
+    failed: 'That did not go through. Nothing has changed.',
   },
 } as const;

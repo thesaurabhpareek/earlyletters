@@ -155,6 +155,45 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
   });
 });
 
+describe('[SUB-05] offer codes: a free period is free, not paid', () => {
+  // A redeemed offer code with free months: StoreKit says offerType offer_code, freePeriod true, isTrial false.
+  const coded = (months: number, over: Partial<NativeTransaction> = {}) =>
+    tx({ isTrial: false, offerType: 'offer_code', freePeriod: true, purchasedAt: at(-1), expiresAt: at(months * 30 - 1), ...over });
+
+  it('1 month and 3 months free from a code: trial, "free until", with the cancel-by day', () => {
+    for (const months of [1, 3]) {
+      const t = coded(months);
+      const p = planFromSnapshot(snap([t], [status(t)]));
+      expect(p.view.state, String(months)).toBe('trial');
+      expect(p.details.status).toBe('trial');
+      expect(planLine(p, NOW)).toEqual({ kind: 'trial', until: localDateOf(t.expiresAt!), cancelBy: localDateOf(at(months * 30 - 2)) });
+      expect(plusOn(p, NOW)).toBe(true);
+    }
+  });
+
+  it('a paid offer-code period (no free period) stays active and "renews"', () => {
+    const t = coded(1, { freePeriod: false });
+    const p = planFromSnapshot(snap([t], [status(t)]));
+    expect(p.view.state).toBe('active');
+    expect(planLine(p, NOW)).toMatchObject({ kind: 'renews' });
+  });
+
+  it('the native fields survive validation and the device cache; unknown offer kinds read as other', () => {
+    const raw = { entitlements: [{ ...coded(3) }, { ...tx({ productId: 'plus.annual' }), offerType: 'something_new', freePeriod: 'yes' }], statuses: [], checkedAt: NOW };
+    const clean = sanitizeSnapshot(raw)!;
+    expect(clean.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(clean.entitlements[1].offerType).toBe('other');
+    expect('freePeriod' in clean.entitlements[1]).toBe(false);
+    expect(parsePlanCache(serializePlanCache(clean))?.entitlements[0]).toMatchObject({ offerType: 'offer_code', freePeriod: true });
+    expect(planFromSnapshot(clean).view.state).toBe('trial');
+  });
+
+  it('a snapshot without the fields (an older cache, or before iOS 17.2 for a code) reads as before', () => {
+    const p = planFromSnapshot(snap([tx()], [status()]));
+    expect(p.view.state).toBe('active');
+  });
+});
+
 describe('snapshot validation and the device cache', () => {
   it('drops other products and malformed entries, never throws', () => {
     const s = sanitizeSnapshot({

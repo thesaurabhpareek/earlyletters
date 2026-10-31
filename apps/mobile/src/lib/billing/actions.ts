@@ -64,7 +64,7 @@ export async function presentPlusStore(): Promise<StoreSheetOutcome> {
     const result: StoreSheetOutcome = plusOn(getPlan(), now) ? 'purchased' : outcome;
     if (result === 'purchased' && !hadOwn && ownPlusOn(getPlan(), now)) {
       void reschedulePlanReminders();
-      // D-081: the terms our store sheet showed, for the first status report (WP-F14-15a).
+      // D-081 (purchase consent records): the terms our store sheet showed, for the first status report (WP-F14-15a).
       if (capabilities.statusReport) {
         const details = getPlan().details;
         void import('./status-report.app').then((m) => m.recordPurchaseConsent(details)).catch(() => {});
@@ -118,7 +118,7 @@ export async function manageSubscription(): Promise<void> {
 }
 
 /**
- * Apple's offer code sheet (D-081: codes come from Apple, never a code system of ours).
+ * Apple's offer code sheet (D-053 and ADR 0013, Apple only: codes come from Apple, never a code system of ours).
  * Resolves when the sheet has been shown. A redeemed code arrives as an entitlement
  * update through the StoreKit listener (plan-store), so Plus turns on by itself; watch
  * usePlan().plusOn. Needs an iOS build with the native function: an older dev client

@@ -48,7 +48,7 @@ export const billingCopy = {
     // draft (spec S09, S22). Written to the register row "Keep step and held letter" (#163, 3.1.0); counsel reads them
     // (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing shows it until counsel has read it
     // (apps/mobile plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED).
-    heldNote: 'This one waits on this phone, on Tonight, exactly as it is, for as long as you like.',
+    heldNote: 'This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.',
     heldNoteSynced: 'This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.',
     // The chip on the held letter's own card at the top of the sheet.
     heldChip: 'Waiting',
@@ -56,11 +56,11 @@ export const billingCopy = {
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
     lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
-    offline: 'Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is.',
+    offline: 'Plus needs a connection to start. This letter waits on Tonight, on this phone, exactly as it is.',
     // A letter whose words arrived later reaches the sheet from its own page, through Review (task #53): it is already
     // in the book or private, and only its words wait, on the letter itself, so neither line names Tonight or the
     // phone. New for the content owner and counsel (C10), beside the "Keep step and held letter" register row.
-    heldNoteLetter: 'Your words stay with this letter, exactly as they are, for as long as you like.',
+    heldNoteLetter: 'Your words stay with this letter, exactly as they are. Keep them whenever you like.',
     offlineLetter: 'Plus needs a connection to start. Your words stay with this letter, exactly as they are.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
@@ -138,12 +138,16 @@ export const billingCopy = {
     trialOneMonth: 'Plus is free until {date}, then it renews unless you cancel. You can change this in Settings, Plan.',
     trialMonths: 'Plus is free until {date}, then it renews unless you cancel. You can change this in Settings, Plan.',
     renews: 'If Plus is still set to renew, it renews on {date}. You can change this in Settings, Plan.',
-    yearly: 'A yearly note: Plus renews until you cancel. You can change this in Settings, Plan.',
+    yearly: 'A yearly reminder: Plus renews until you cancel. You can change this in Settings, Plan.',
   },
 
-  /** The same reminder inside the app: on the next open inside its window, and in Settings, Plan until the date passes. */
+  /**
+   * The same reminder inside the app: on the next open inside its window, and in Settings, Plan until the date passes.
+   * The `trial*` lines say "free until", never "trial", so they are also the words for a free period from an offer code
+   * (SUB-05: the plan state for a code's free period must be the free one, not "renews on").
+   */
   note: {
-    title: 'A note about Plus',
+    title: 'A reminder about Plus',
     trialOneMonth: 'Plus is free until {date}.',
     trialMonths: 'Plus is free until {date}.',
     renews: 'Plus renews on {date}.',
@@ -160,7 +164,7 @@ export const billingCopy = {
    * before the purchase and Apple's receipt holds it.
    */
   confirmation: {
-    title: 'Plus is on',
+    title: 'Thank you. Plus is on',
     planMonthly: 'Plus Monthly',
     planAnnual: 'Plus Annual',
     trial: 'Free until {date}. Then Plus renews until you cancel.',
