@@ -1,0 +1,25 @@
+.track {
+  position: fixed;
+  right: 5px;
+  top: 50%;
+  height: min(26svh, 220px);
+  width: 2px;
+  margin-top: calc(min(26svh, 220px) / -2);
+  border-radius: 2px;
+  background: rgba(242, 236, 228, 0.16);
+  mix-blend-mode: normal;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+.fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: top;
+  background: rgba(217, 165, 129, 0.85);
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    display: none;
+  }
+}

@@ -27,8 +27,16 @@
   line-height: 1.4;
   color: color-mix(in srgb, var(--night-ink) 74%, transparent);
 }
+.cueLabel {
+  margin-top: 7svh;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--night-ink) 62%, transparent);
+}
 .cue {
-  margin-top: 9svh;
+  margin-top: 10px;
   width: 1px;
   height: 56px;
   background: linear-gradient(to bottom, transparent, var(--night-ink-muted));
