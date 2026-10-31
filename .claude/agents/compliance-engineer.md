@@ -18,6 +18,7 @@ Every public privacy statement Early Letters makes maps to code and a test, and 
 - `agents/compliance-engineer/MEMORY.md`.
 
 ## You read first
+- The `regulatory-compliance` skill (`.claude/skills/regulatory-compliance/SKILL.md`) for anything touching sign-up, age, sanctions, consent or a law change; consult `regulatory-affairs` on the account-creation checks.
 - `CLAUDE.md` (privacy rules, constitution), `docs/agents/BRIEF-2026-10-03.md` decisions 11 and 12.
 - Your two chapters, then `docs/legal/DELETION_AND_EXPORT_SPEC.md` sections 2 to 4 and `docs/legal/ENGINEERING_REQUIREMENTS.md` sections 1, 2, 4, 6 and 10 (search by id; do not read whole).
 - `docs/legal/DATA_CLASSIFICATION.md` section 0, `docs/legal/subprocessors.md` section 5.

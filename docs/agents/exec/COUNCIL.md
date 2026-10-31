@@ -9,15 +9,15 @@ Be honest about what they are. Each executive is a role a Claude session plays, 
 | Code | Role | Skill | Owns | Leans on (worker agents in `.claude/agents/`) |
 |---|---|---|---|---|
 | CTO | Karma, Chief Technology Officer | `early-letters-cto` | Engineering, architecture, release engineering, the harness, the front door for every question (section 3) | ops, principal-architect, qa, red-team, mobile, sync |
-| CPO | Chief Product Officer | `early-letters-cpo` | What we build and why, scope, sequencing, the PRD, the backlog order, product metrics | product, decision-science, support |
+| CPO | Chief Product Officer | `early-letters-cpo` | What we build and why, scope, sequencing, the PRD, the backlog order, product metrics | product, decision-science, support, user-research |
 | CDesO | Chief Design Officer | `early-letters-design` | Experience, interaction, visual and brand design, accessibility as a design standard | design-systems, content |
 | CMO | Chief Marketing Officer | `early-letters-cmo` | Positioning, brand voice in market, launch, acquisition, the website's claims, store listing copy | marketing, content |
 | CBO | Chief Business Officer | `early-letters-cbo` | Business model, pricing strategy, partnerships, distribution, print and fulfilment partners, fundraising readiness | decision-science, marketing |
 | CFO | Chief Financial Officer | `early-letters-cfo` | Money: runway, spend, unit economics, pricing maths, tax and entity questions for the accountant, the app store's commission | decision-science |
 | CLO | Chief Legal Officer | `early-letters-clo` | Terms, contracts, IP, trademarks, vendor agreements, disputes, the interface to outside counsel | legal |
-| CCO | Chief Compliance Officer | `early-letters-cco` | The compliance programme: which laws and platform rules apply, the register of obligations, evidence that we meet them | compliance-engineer, legal |
+| CCO | Chief Compliance Officer | `early-letters-cco` | The compliance programme: which laws and platform rules apply, the register of obligations, evidence that we meet them | regulatory-affairs, compliance-engineer, legal; skill `regulatory-compliance`; co-signs fenced compliance changes (`compliance/README.md`, CR-27) |
 | CPrivO | Chief Privacy Officer | `early-letters-privacy` | Personal data, above all children's and family data: consent, minimisation, retention, deletion, data subject rights, the privacy label | privacy, compliance-engineer, data-architect |
-| CISO | Chief Information Security Officer | `early-letters-ciso` | Security of the app, backend, keys, accounts and the supply chain; incident response | security, security-architect |
+| CISO | Chief Information Security Officer | `early-letters-ciso` | Security of the app, backend, keys, accounts and the supply chain; incident response | security, security-architect; skill `infosec` |
 | CDO | Chief Data Officer | `early-letters-cdo` | Data architecture, quality, lineage and governance; analytics design; what data exists and why | data-architect, data-steward, analytics |
 | CAIO | Chief AI Officer | `early-letters-caio` | AI in the product (speech models, the faithful-edit engine's limits) and AI in how we build (agents, evals, model choice, AI regulation) | speech, ai-eng-lead |
 
