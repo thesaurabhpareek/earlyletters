@@ -98,6 +98,14 @@ case "$MODE" in
     [[ "$ok" == "yes" ]] || { say "Stopped. Nothing changed."; exit 1; }
     read -r -p "Is the repository variable AGENTS_ENABLED unset or not 'true' (Settings, Secrets and variables, Actions, Variables)? Type yes: " ok2
     [[ "$ok2" == "yes" ]] || { say "Stopped. Nothing changed. Leave AGENTS_ENABLED off (CR-5) and run again."; exit 1; }
+    # CR-11's "release branches keep their history" ruleset makes every release/* branch undeletable once it exists.
+    rel=$(gh api "$R/git/matching-refs/heads/release" --jq '.[].ref|select(startswith("refs/heads/release/"))' 2>/dev/null || true)
+    if [[ -n "$rel" ]]; then
+      say "These release branches exist and can't be deleted after this run:"; say "$rel"
+      say "You chose on 30 Oct to archive and delete release/ios-v1.0 first (docs/release/FOUNDER_QUEUE.md row 7 has the commands)."
+      read -r -p "Keep them for good and go on? Type keep to go on, anything else stops: " ok3
+      [[ "$ok3" == "keep" ]] || { say "Stopped. Nothing changed."; exit 1; }
+    fi
     mkdir -p "$SNAP"
     if [[ -f "$SNAP/repo.json" ]]; then
       # Keep the first snapshot: it holds the state before any run, so --undo stays a true way back after a partial run.
@@ -125,7 +133,8 @@ case "$MODE" in
     if [[ -n "$wid" ]]; then gh api -X PUT $R/actions/workflows/$wid/disable && say "  agents.yml disabled"
     else say "  agents.yml not registered yet: open Actions, Agents, and choose Disable workflow. Its jobs also skip while AGENTS_ENABLED is not true."; fi
     say ""; verify && say "All applied and verified." || { say "Drift after apply: run --undo, then tell Karma."; exit 1; }
-    say "Next: watch the next push to develop on Vercel. It must be a Preview, not Production. If it is Production, run --undo."
+    say "Vercel: its Production Branch is a Vercel setting, so --undo cannot fix a production deploy from the wrong branch."
+    say "If one ever happens: Vercel, project earlyletters, Instant Rollback, then set the Production Branch back to main (CR-9)."
     ;;
   --verify) verify ;;
   --undo)

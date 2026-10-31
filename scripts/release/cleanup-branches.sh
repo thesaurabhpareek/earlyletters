@@ -14,7 +14,8 @@ REPO=thesaurabhpareek/earlyletters
 git remote get-url origin | grep -q "thesaurabhpareek/earlyletters" || { echo "origin is not $REPO"; exit 1; }
 # The ruled shas must exist locally before tags can be made, so start from a fresh fetch.
 git fetch origin --prune --quiet
-W=${WORK:-$(mktemp -d)}
+W=${WORK:-$HOME/.earlyletters-cleanup}   # kept outside temp folders, which macOS clears
+mkdir -p "$W"
 LOG=$W/cleanup-$(date -u +%Y%m%dT%H%M%SZ).log
 OPEN=$(mktemp)
 for p in 1 2 3; do
