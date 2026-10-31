@@ -5,7 +5,6 @@
   "title": "No book here yet",
   "note": "Signed in, but this account has no book: the sheet asks whether another way was used last time. \"Start a book\" closes onto the lit welcome (5.8 row 13).",
   "from": "J22-09",
-  "shot": "screens/J22-10.png",
   "route": "/sign-in/consent",
   "viewport": {
     "width": 402,

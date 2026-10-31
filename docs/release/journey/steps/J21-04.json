@@ -5,7 +5,6 @@
   "title": "Ask before joining",
   "note": "Signed in, the sheet looks first (peek_invite) and shows only who sent it, by the name the child calls them. Never the child's name. Nothing joins until Join is tapped; Not now forgets the link (BL-322, security review H2).",
   "from": "J21-03",
-  "shot": "screens/J21-04.png",
   "route": "/invite",
   "viewport": {
     "width": 402,

@@ -4,7 +4,6 @@
   "kind": "happy",
   "title": "The pause has ended",
   "note": "Fifteen minutes after the fifth wrong code the field takes a code again and the paused line goes, with nothing to tap (no countdown on screen).",
-  "shot": "screens/J22-81.png",
   "route": "/sign-in/code",
   "viewport": {
     "width": 402,

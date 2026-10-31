@@ -2,10 +2,9 @@
   "id": "J22-03",
   "journey": "sign-in",
   "kind": "happy",
-  "title": "Continue with email",
+  "title": "Sign in with email",
   "note": "One field with the email keyboard and AutoFill, the help under it, and Send link outlined until the text looks like an address. Nothing is wrong while the person types (S53).",
   "from": "J22-02",
-  "shot": "screens/J22-03.png",
   "route": "/sign-in/email",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Back Continue with email Email A link and a code arrive by email. No password to remember. Send link",
+  "text": "Back Sign in with email Email A link and a code arrive by email. No password to remember. Send link",
   "lines": [
     "Back",
-    "Continue with email",
+    "Sign in with email",
     "Email",
     "A link and a code arrive by email. No password to remember.",
     "Send link"

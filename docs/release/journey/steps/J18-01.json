@@ -5,7 +5,6 @@
   "title": "Appearance: Dark",
   "note": "Theme is per phone: Match this phone, Light or Dark. Choosing Dark re-themes every screen at once, and the reading-size sample under it, the person's own newest words, takes the dark page too.",
   "from": "J16-03",
-  "shot": "screens/J18-01.png",
   "route": "/settings/appearance",
   "viewport": {
     "width": 402,

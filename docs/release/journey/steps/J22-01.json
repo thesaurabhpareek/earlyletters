@@ -5,7 +5,6 @@
   "title": "Sign in, \"Welcome back\"",
   "note": "The welcome's \"I already have a book\": one title, one sentence (sign in the same way, so no second account is made), the ways in, the registered privacy line and Not now. No book on this phone yet, so no cover (S52).",
   "from": "J01-02",
-  "shot": "screens/J22-01.png",
   "route": "/sign-in",
   "viewport": {
     "width": 402,
@@ -22,11 +21,11 @@
     }
   },
   "scrolls": false,
-  "text": "Welcome back Sign in the same way as last time to see every letter. Continue with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
+  "text": "Welcome back Sign in the same way as last time to see every letter. Sign in with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
   "lines": [
     "Welcome back",
     "Sign in the same way as last time to see every letter.",
-    "Continue with email",
+    "Sign in with email",
     "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
     "Not now"
   ]

@@ -5,7 +5,6 @@
   "title": "Invited, not signed in",
   "note": "A generic line and Sign in. Nothing about the invite is known yet, so nothing is shown and nothing is asked of the server (BL-322): the token waits in the Keychain (A-REQ-028).",
   "from": "J21-02",
-  "shot": "screens/J21-03.png",
   "route": "/invite",
   "viewport": {
     "width": 402,

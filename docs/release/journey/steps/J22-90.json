@@ -4,7 +4,6 @@
   "kind": "unhappy",
   "title": "Invite, setup not finished",
   "note": "The invite sheet says why in its own words, as the Family tab's card does: \"Finish setting up your account to invite someone.\" Account keeps \"Not set up yet\" as its row value.",
-  "shot": "screens/J22-90.png",
   "route": "/invite/new",
   "viewport": {
     "width": 402,

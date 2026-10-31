@@ -5,7 +5,6 @@
   "title": "Listening, dark",
   "note": "The listening screen at night. (Fake microphone tone on web.)",
   "from": "J18-05",
-  "shot": "screens/J18-06.png",
   "route": "/listen",
   "viewport": {
     "width": 402,
@@ -22,11 +21,11 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha Only you, until you add it to the book. What was cooking in your kitchen today? 0:02 Listening. Say it however it comes. Pause Finish Let it go",
+  "text": "To Asha Only you, until you add it to the book. What is Asha's favorite thing in the house this week? 0:02 Listening. Say it however it comes. Pause Finish Let it go",
   "lines": [
     "To Asha",
     "Only you, until you add it to the book.",
-    "What was cooking in your kitchen today?",
+    "What is Asha's favorite thing in the house this week?",
     "0:02",
     "Listening.",
     "Say it however it comes.",

@@ -5,7 +5,6 @@
   "title": "Invite shared",
   "note": "The phone made the invite: its id, a 32-byte token for the link, and the token's SHA-256, which is all the server receives (F11 D5, B-NFR-002). The link, which carries no name, goes to the share sheet and is never stored or shown again; the person sends it. When the share sheet closes the sheet closes too, and the tab says where the invite waits, with the pending row in place.",
   "from": "J21-21",
-  "shot": "screens/J21-22.png",
   "route": "/family",
   "viewport": {
     "width": 402,

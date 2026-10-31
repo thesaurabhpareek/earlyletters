@@ -4,7 +4,6 @@
   "kind": "happy",
   "title": "Account, signed out",
   "note": "The small closed cover, \"Not signed in\", the sign-in sheet's own sentence and Sign in (S56).",
-  "shot": "screens/J22-30.png",
   "route": "/settings/account",
   "viewport": {
     "width": 402,

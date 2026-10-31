@@ -4,7 +4,6 @@
   "kind": "happy",
   "title": "From a child's settings",
   "note": "With the switch on the row opens the invite itself. \"Family can read\" (the family-contributor switch) stays hidden: contributors are not in v1.0 (B1).",
-  "shot": "screens/J21-30.png",
   "route": "/invite/new",
   "viewport": {
     "width": 402,

@@ -5,7 +5,6 @@
   "title": "Tonight, dark",
   "note": "Tonight at night: the dateline, the one question in the letter face, Speak and Type, and the card for the recording waiting on Review with \"Read it back\". (Seeded fictional family Asha.)",
   "from": "J18-01",
-  "shot": "screens/J18-02.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -22,14 +21,14 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good morning, Mama. What is Asha's favorite thing in the house this week? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "Good afternoon,",
+    "Good morning,",
     "Mama.",
-    "What was cooking in your kitchen today?",
+    "What is Asha's favorite thing in the house this week?",
     "Another thought",
-    "Friday",
+    "Saturday",
     "0:31",
     "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
     "Read it back",

@@ -2,12 +2,10 @@
   "id": "J17-02",
   "journey": "family-coming-soon",
   "kind": "happy",
-  "title": "Tell me when it's here",
-  "note": "The one action stores a local \"tell me\" flag and says only what is true: \"Noted on this phone. When the update arrives, you will see it here.\" Nothing is sent to us except a count of the tap. (The card on Tonight that fulfils the second sentence ships with co-parent sharing in v1.1.)",
+  "title": "From a child's settings",
+  "note": "The \"Write this book together: Soon\" row opens the same coming-soon sheet, with Close.",
   "from": "J17-01",
-  "shot": "screens/J17-02.png",
-  "full": "screens/J17-02-full.png",
-  "route": "/family",
+  "route": "/invite",
   "viewport": {
     "width": 402,
     "height": 874
@@ -22,10 +20,10 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Family Coming soon Write to Asha, together Soon Asha's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name Asha calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read Asha's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Noted on this phone. When the update arrives, you will see it here. Tonight Book Family",
+  "scrolls": false,
+  "text": "Close Coming soon Write to Asha, together Soon Asha's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name Asha calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Asha's book is shared only with Asha's other parent, if you invite them. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone.",
   "lines": [
-    "Family",
+    "Close",
     "Coming soon",
     "Write to Asha, together",
     "Soon Asha's other parent can write in this same book, from their own phone.",
@@ -34,11 +32,7 @@
     "Each from your own phone",
     "Write whenever it suits you, and read every shared letter wherever you are.",
     "Private to your family",
-    "Only the people you invite can read Asha's book. A letter you keep private stays yours.",
-    "We're building it now. Until then, every letter you write stays on this phone.",
-    "Noted on this phone. When the update arrives, you will see it here.",
-    "Tonight",
-    "Book",
-    "Family"
+    "Asha's book is shared only with Asha's other parent, if you invite them. A letter you keep private stays yours.",
+    "We're building it now. Until then, every letter you write stays on this phone."
   ]
 }

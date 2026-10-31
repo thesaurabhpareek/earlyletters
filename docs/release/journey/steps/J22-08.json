@@ -5,7 +5,6 @@
   "title": "A wrong code",
   "note": "Six digits went on their own; the wrong code clears and the field takes focus again, with the line beside a mark. No shake, no red.",
   "from": "J22-07",
-  "shot": "screens/J22-08.png",
   "route": "/sign-in/code",
   "viewport": {
     "width": 402,
