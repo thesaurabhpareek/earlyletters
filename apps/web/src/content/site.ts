@@ -145,9 +145,9 @@ export const site = {
       appPause: 'Pause',
     },
     s04: {
-      label: 'Exactly as you said it',
-      headline: 'Exactly as you said it.',
-      support: "Your phone listens and takes out the ums and false starts. If it mishears Meera's name, it fixes that too. It never adds a word, and any fix can be put back.",
+      label: 'Your words',
+      headline: 'It stays in your words.',
+      support: "Your phone listens and takes out the ums and false starts. If it mishears Meera's name, it fixes that too. It never adds a word. Every change is marked and can be put back, and the original recording is kept as it was.",
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -164,12 +164,12 @@ export const site = {
     s06: {
       label: 'The book',
       headline: "Sorted by Meera's age.",
-      support: "Each letter is filed under the month Meera was when you said it, with your name on it. You and Mama add to the same book.",
+      support: "Each letter is filed under the month Meera was when you said it, with your name on it.",
       appTitle: "Meera's Book",
       chapters: [
-        { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
-        { month: 'Month 8', meta: '11 letters, from Papa and Mama' },
-        { month: 'Month 9', meta: '12 letters, from Papa and Mama' },
+        { month: 'Month 7', meta: '9 letters' },
+        { month: 'Month 8', meta: '11 letters' },
+        { month: 'Month 9', meta: '12 letters' },
       ],
       filedChip: 'Filed in Month 9',
     },
@@ -183,9 +183,9 @@ export const site = {
       hear: 'Hear this letter',
     },
     s08: {
-      label: 'Your language',
-      headline: 'Say it in your language.',
-      support: 'Your phone understands English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese. Each one is kept in its own script.',
+      label: 'Languages',
+      headline: 'English first, more to follow.',
+      support: 'It starts in English. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each one when a native speaker has checked it. Every language is kept in its own script.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).

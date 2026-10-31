@@ -259,7 +259,11 @@ describe('s08 language lines (translations need native-speaker confirmation, see
     // Primary subtag only: lang may carry a script or region (zh-Hans, pt-BR).
     expect(lines.map((l) => l.lang.split('-')[0])).toEqual(['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt']);
     const names = lines.map((l) => l.name);
-    expect(siteModule.site.scenes.s08.support).toContain(`${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+    // English first, the rest as a native speaker signs each (D-121): the line still names all seven, in this order.
+    const support = siteModule.site.scenes.s08.support;
+    const at = names.map((n) => support.indexOf(n));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
   // RULE: each line is in its own script, ends with its language's full stop, and is right to left only for Arabic.
