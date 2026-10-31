@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
-import { testflightCopy } from '../src';
+import { en, testflightCopy } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -16,13 +16,15 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
-const { whatToTest, invitation, groupLines, feedbackEmailPlaceholder } = testflightCopy;
+const { whatToTest, invitation, groupLines, feedbackEmailPlaceholder, deleteAccountLine } = testflightCopy;
 const ALL = leaves(testflightCopy, 'testflight').filter((l) => l.path !== 'testflight.feedbackEmailPlaceholder');
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
 const WHAT_TO_TEST: Leaf[] = [
   { path: 'whatToTest.build1', text: whatToTest.build1 },
   { path: 'whatToTest.build2', text: whatToTest.build2 },
+  // Build 2 for a build with the Delete account row on (D-129). It gets every check the other texts get.
+  { path: 'whatToTest.build2WithDeleteRow', text: whatToTest.build2WithDeleteRow },
 ];
 /** Texts a tester reads before sending feedback: each must carry the ask (B1-11, B2-20). */
 const ASKED: Leaf[] = [...WHAT_TO_TEST, ...leaves(invitation, 'invitation')];
@@ -148,14 +150,16 @@ describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on 
   });
 
   it('build 2 (servers on) says what reaches the test server, that the policies apply, and claims no on-device-only letters', () => {
-    expect(whatToTest.build2).toMatch(/stored on our test server/);
-    expect(whatToTest.build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
-    // Backup is not in build 2 (EXPO_PUBLIC_BACKUP off in eas.json), so no text may offer to turn it on.
-    expect(whatToTest.build2).toMatch(/Recordings are not uploaded in this test/);
-    expect(whatToTest.build2).not.toMatch(/\bbackup\b|turn it on/i);
-    expect(whatToTest.build2).toMatch(/Export your book/);
-    expect(whatToTest.build2).toMatch(/Delete account/);
-    for (const t of [whatToTest.build2, invitation.friendsServersOn]) {
+    // Both forms of build 2 (D-129): the default, and the one for a build with the Delete account row on.
+    for (const build2 of [whatToTest.build2, whatToTest.build2WithDeleteRow]) {
+      expect(build2).toMatch(/stored on our test server/);
+      expect(build2).toMatch(/Privacy Policy and Terms you agree to in the app apply to this test/);
+      // Backup is not in build 2 (EXPO_PUBLIC_BACKUP off in eas.json), so no text may offer to turn it on.
+      expect(build2).toMatch(/Recordings are not uploaded in this test/);
+      expect(build2).not.toMatch(/\bbackup\b|turn it on/i);
+      expect(build2).toMatch(/Export your book/);
+    }
+    for (const t of [whatToTest.build2, whatToTest.build2WithDeleteRow, invitation.friendsServersOn]) {
       expect(t).not.toMatch(/stays? (?:only )?on (?:this|your) phone|only on (?:this|your) phone|backed up|encrypt/i);
     }
     // Never that letters carry over to the App Store version (5.2).
@@ -164,5 +168,35 @@ describe('[RA-16-01] TestFlight texts: the tester notice (TESTFLIGHT_TESTERS on 
 
   it('the beta app description holds for both builds: no sign-in, sync, sharing or on-device-only claim', () => {
     expect(testflightCopy.betaAppDescription).not.toMatch(/\bsync|sign-in|sign in|invite|share|sharing|everything on your phone|only on|stay on/i);
+  });
+});
+
+describe('[D-129] build 2 and the Delete account row: the sentence is in the text only for a build where the row is on', () => {
+  const { build2, build2WithDeleteRow } = whatToTest;
+
+  it('the sentence names the row as Settings has it', () => {
+    expect(deleteAccountLine).toMatch(/\buse Settings, /);
+    expect(deleteAccountLine.endsWith(`Settings, ${en.settingsHome.deleteAccountLabel}.`)).toBe(true);
+  });
+
+  it('the default build 2 text does not say it, and promises no other way to delete an account', () => {
+    expect(build2).not.toContain(deleteAccountLine);
+    expect(build2).not.toMatch(/Delete account|delete your account|its letters, use/i);
+  });
+
+  it('the text for a build with the row on has the sentence exactly once, ending the paragraph about the App Store version', () => {
+    expect(build2WithDeleteRow.split(deleteAccountLine)).toHaveLength(2);
+    expect(build2WithDeleteRow).toContain(`Export your book, now and then. ${deleteAccountLine}\n\n`);
+  });
+
+  it('the two forms differ by that sentence and nothing else', () => {
+    expect(build2WithDeleteRow).not.toBe(build2);
+    expect(build2WithDeleteRow.replace(` ${deleteAccountLine}`, '')).toBe(build2);
+  });
+
+  it('nothing else the file says mentions the row: build 1 has no account, and the invitations and the description say nothing about deleting one', () => {
+    const others = ALL.filter((l) => !['testflight.deleteAccountLine', 'testflight.whatToTest.build2WithDeleteRow'].includes(l.path));
+    expect(others.length).toBeGreaterThanOrEqual(8);
+    expect(offenders(others, /Delete account|delete your account/i)).toEqual([]);
   });
 });

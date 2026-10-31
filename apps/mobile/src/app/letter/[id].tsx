@@ -58,6 +58,7 @@ import {
   getEntry,
   listDeleted,
   setEntryInBook,
+  canTypeWordsFor,
   setTypedWordsForWaitingEntry,
   subscribeTo,
   undeleteEntry,
@@ -72,9 +73,11 @@ import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-wo
 import { AppNote } from '@/components/book/app-note';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf, shortDateline } from '@/components/book/chapters';
+import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { wordsCardKind, wordsCardState, type WordsCardKind } from '@/components/book/words-card.logic';
 import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
@@ -294,6 +297,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   );
   const [sizeOpen, setSizeOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // "Write the words" sheet: open state lives here, with the sheet, so it outlives the words card (below).
+  const [writing, setWriting] = useState(false);
   // Words that arrived after the letter was saved and have not been read back yet (D-086).
   const [unread, setUnread] = useState(() => isReadItBack(entry.id));
   useEffect(() => subscribeTo('entries', () => setUnread(isReadItBack(entry.id))), [entry.id]);
@@ -303,11 +308,13 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const spoken = entry.captureMode !== 'typed';
   const typedWords = provenanceOf(entry) === 'typed'; // typed, or typed for a recording that had no words
   const own = isOwnEntry(entry);
-  const canShowOriginal = own && spoken && words === 'words' && entry.rawTranscript !== entry.finalText;
+  const canShowOriginal = exactViewAvailable(entry, { own, hasWords: words === 'words' });
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
-  // recording is on their phone, which the player's place says (D-073), so the line names only how it was made.
-  const provenance = copy.book.provenance[provenanceOf(entry)];
-  const provenanceLine = spoken && own ? `${provenance}. ${copy.book.recordingOnPhone}.` : provenance;
+  // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
+  // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
+  const provenanceLine = provenanceLineOf(entry, { own, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
+  // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
+  const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
   const aa = (
     <Pressable
@@ -383,11 +390,15 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         <Animated.View style={[{ gap: 28 }, restBody]}>
         {spoken && <AudioPlayer entryId={entry.id} />}
 
-        {own && words === 'waiting' && <WaitingCard entry={entry} />}
-        {own && words === 'words' && unread && (
+        {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
+        {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
           <ReadItBackCard
+            typed={typedWords}
             onRead={() => {
               haptic('tap');
+              // Words waiting for review count at Review's Keep step, never here, and this page never shows a Plus
+              // sheet (M17, F14-REQ-037; F14 6.1 :129, 6.4): Review opens for this letter. Its Keep clears the card.
+              if (entry.wordsUnreviewed) return router.push({ pathname: '/review', params: { entryId: entry.id } });
               clearReadItBack(entry.id);
               setUnread(false);
             }}
@@ -444,6 +455,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       </ScrollView>
 
       {topBar}
+
+      {/* The words sheet is the page's, not the card's. The card comes and goes with the store (words arrive, a sync event
+          puts the letter on the server), and the person's typing must never go with it: while the sheet is open it stays
+          mounted, with its text, whatever the card does (S3, lens notes on #373). */}
+      {(wordsCard || writing) && <WordsSheet entryId={entry.id} open={writing} onClose={() => setWriting(false)} />}
 
       <ConfirmSheet
         open={confirmOpen}
@@ -510,22 +526,22 @@ function NotFoundBody({ onShelf }: { onShelf: boolean }) {
 }
 
 /**
- * A saved letter still waiting for its words (D-086): the reason, then one primary action. The reason lines reuse
- * the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are Try again or Get words ready when that is what
- * would help, and Write the words, which opens the words sheet (S28). The recording itself is never touched.
+ * A saved letter still waiting for its words (D-086), or a recording whose words came back empty (S28): the reason,
+ * then one primary action. The reason lines reuse the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are
+ * Try again or Get words ready when that is what would help (a waiting letter only), and Write the words, which opens
+ * the words sheet. A recording with no words has no reason and no other action (words-card.logic). The recording
+ * itself is never touched.
  */
-function WaitingCard({ entry }: { entry: Entry }) {
+function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKind; onWrite: () => void }) {
   const language = languageFor(entry.id);
   const job = useWordsJob(entry.id);
-  const download = useSpeechDownload(job?.phase === 'waiting_for_pack' ? language : null);
-  const [writing, setWriting] = useState(false);
+  const state = wordsCardState(kind, job);
+  const download = useSpeechDownload(state.packWait ? language : null);
   const w = wordsCopy.waiting;
 
-  const failed = job?.phase === 'failed';
-  const retryable = failed && job.failure !== 'file_missing' && job.failure !== 'unsupported';
-  const packWait = job?.phase === 'waiting_for_pack';
+  const { failed, retryable, packWait } = state;
   // D-111 item 4: a language this build does not hear yet; the letter waits for its language (from the job, no read).
-  const languageWait = waitingForLanguageNote(job);
+  const languageWait = state.languageWait ? waitingForLanguageNote(job) : null;
   const p = download.progress;
   const reason = failed
     ? copy.errors.transcriptionFailed.body
@@ -551,8 +567,7 @@ function WaitingCard({ entry }: { entry: Entry }) {
     <View className="gap-3" accessibilityLiveRegion="polite" testID="letter.waiting">
       {reason && <Text variant="footnote">{reason}</Text>}
       {primary}
-      <Button size="md" variant={primary ? 'secondary' : 'primary'} label={w.writeButton} onPress={() => setWriting(true)} testID="letter.write" />
-      <WordsSheet entryId={entry.id} open={writing} onClose={() => setWriting(false)} />
+      <Button size="md" variant={primary ? 'secondary' : 'primary'} label={w.writeButton} onPress={onWrite} testID="letter.write" />
     </View>
   );
 }
@@ -561,17 +576,41 @@ function WaitingCard({ entry }: { entry: Entry }) {
 function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean; onClose: () => void }) {
   const w = wordsCopy.waiting;
   const [text, setText] = useState('');
+  // The store refused the words (the letter has words now, or is on the server): the typing stays, the sheet stays open,
+  // and the person is told their words are still here. Nothing typed is ever dropped.
+  const [refused, setRefused] = useState(false);
   return (
     <Sheet open={open} onClose={onClose} title={w.writeLabel} testID="letter.writeWords">
       <View className="gap-3 pb-2">
-        <TextField variant="letter" label={w.writeLabel} labelHidden value={text} onChangeText={setText} multiline autoFocus accessibilityHint={w.writeTitle} />
+        <TextField
+          variant="letter"
+          label={w.writeLabel}
+          labelHidden
+          value={text}
+          onChangeText={(v) => {
+            setText(v);
+            setRefused(false);
+          }}
+          multiline
+          autoFocus
+          accessibilityHint={w.writeTitle}
+        />
+        {refused ? (
+          <Text variant="footnote" accessibilityLiveRegion="polite" testID="letter.writeWords.refused">
+            {copy.review.saveFailed}
+          </Text>
+        ) : null}
         <Button
           size="lg"
           label={w.saveButton}
           disabled={!text.trim()}
           onPress={() => {
             haptic('tap');
-            if (setTypedWordsForWaitingEntry(entryId, text)) onClose();
+            // The typed words become the letter's at once, so they are never lost, and wait for review: they count at
+            // Review's Keep step for this letter, never here (M17, F14-REQ-037; F14 6.1 :129, 6.2 B2 step 4).
+            if (!setTypedWordsForWaitingEntry(entryId, text)) return setRefused(true);
+            onClose();
+            router.push({ pathname: '/review', params: { entryId } });
           }}
           testID="letter.writeWords.save"
         />
@@ -583,14 +622,16 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
 
 /**
  * "Words are ready. Read it back." The words arrived after the letter was saved, so they are exactly as said and
- * nothing was fixed unread (D-086). Reading them back is the parent's step; the card then goes away.
+ * nothing was fixed unread (D-086). Reading them back is the parent's step. While they wait for review (Entry
+ * .wordsUnreviewed) it opens Review for the letter, whose Keep step keeps them and takes the card away. Words the
+ * parent typed are not "as you said them", so that line is left out for them.
  */
-function ReadItBackCard({ onRead }: { onRead: () => void }) {
+function ReadItBackCard({ onRead, typed }: { onRead: () => void; typed: boolean }) {
   const w = wordsCopy.waiting;
   return (
     <View className="gap-3" accessibilityLiveRegion="polite" testID="letter.readItBack">
       <Text variant="headline">{w.readyBody}</Text>
-      <Text variant="footnote">{w.arrivedNote}</Text>
+      {!typed && <Text variant="footnote">{w.arrivedNote}</Text>}
       <Button size="md" label={w.readItBackButton} onPress={onRead} testID="letter.readItBack.done" />
     </View>
   );

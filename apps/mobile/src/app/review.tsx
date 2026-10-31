@@ -25,6 +25,11 @@
  * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
  * shows again and the person taps Keep themselves.
  *
+ * A letter whose words arrived later (F14 6.1 :129, 6.2 B2): the letter page never counts its words and never
+ * shows a Plus sheet; it opens Review with the letter's `entryId` instead. The letter is already saved, so Review
+ * shows its words exactly as stored (no fix, no Change words), and the same Keep step decides: keepNeedsPlus, then
+ * keepReviewedWords counts it and puts it where the person chose, then countAfterSave (later-words.logic.ts).
+ *
  * Words come from the transcription queue (src/lib/transcription-queue),
  * never from a transcriber called here, so reopening Review never starts a
  * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
@@ -55,6 +60,7 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
@@ -92,7 +98,9 @@ import {
   type WordsCard,
 } from '@/components/capture/words-state.logic';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
+import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -109,6 +117,7 @@ import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
+import { clearReadItBack } from '@/lib/read-it-back';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
@@ -117,7 +126,10 @@ import {
   dictionaryFor,
   getChild,
   getDraft,
+  getEntry,
   getSetting,
+  holdDraft,
+  keepReviewedWords,
   listChildren,
   listEntriesForChild,
   listHiddenChildren,
@@ -150,6 +162,16 @@ const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
   script: 'script',
 };
 
+/**
+ * Keep a letter whose words arrived later, after the gate allowed it: the review mark, the count and the place the
+ * person chose, in one transaction (store keepReviewedWords). Then the letter page's card goes. Throws when the
+ * letter no longer has words waiting (deleted, or kept on another screen), so Review says the save did not work.
+ */
+function keepLaterLetter(id: string, inBook: boolean): void {
+  if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
+  clearReadItBack(id);
+}
+
 /** Any letter on this phone yet, in any book (hidden books count). */
 function hasAnyLetter(): boolean {
   return [...listChildren(), ...listHiddenChildren()].some((c) => listEntriesForChild(c.id).length > 0);
@@ -169,8 +191,10 @@ export default function Review() {
   const motion = useMotion();
   // A room with no lamp (5.2): the light underneath leaves while Review is up and returns after (5.8 rows 4 and 4a).
   useUnlitRoom();
-  const { draftId, stopped } = useLocalSearchParams<{ draftId: string; stopped?: string }>();
-  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
+  const { draftId, entryId, stopped } = useLocalSearchParams<{ draftId?: string; entryId?: string; stopped?: string }>();
+  // A letter whose words arrived later, opened from the letter page (see the header); null for every draft.
+  const [later] = useState<Draft | null>(() => (!draftId && entryId ? laterWordsDraft(getEntry(entryId), isOwnEntry) : null));
+  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : later));
   const [childId, setChildId] = useState(draft?.childId ?? '');
   const child = childId ? getChild(childId) : null;
 
@@ -368,7 +392,7 @@ export default function Review() {
   };
 
   const pickChild = () => {
-    if (listChildren().length < 2 || !draft) return;
+    if (listChildren().length < 2 || !draft || later) return; // a saved letter stays in its book
     haptic('tap');
     setPickerOpen(true);
   };
@@ -422,9 +446,15 @@ export default function Review() {
   };
 
   const saving = useRef(false);
+  // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
+  // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
+  const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
+    heldInBook.current = inBook;
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
@@ -437,7 +467,9 @@ export default function Review() {
         return;
       }
       const firstLetter = !hasAnyLetter();
-      saveLetterFromDraft(
+      // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
+      if (later) keepLaterLetter(draft.id, inBook);
+      else saveLetterFromDraft(
         draft.id,
         {
           id: draft.id,
@@ -462,7 +494,8 @@ export default function Review() {
         },
         audio.exists,
       );
-      trackLetterSaved({
+      // letter_saved went when the recording was kept; keeping its words later is not a second letter.
+      if (!later) trackLetterSaved({
         mode: typed ? 'typed' : 'spoken',
         inBook,
         childIndex: childIndexOf(child.id),
@@ -635,29 +668,40 @@ export default function Review() {
     later: () => (router.canGoBack() ? router.back() : router.replace('/')),
   };
 
+  // The Keep sheet rises over this Review (S22, 5.8 row 5c), drawn last in its screen; the letter stays underneath.
+  let keepSheet: ReactNode = null;
   if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <PlusGate
-          variant="keep_letter"
-          childName={child.name}
-          lapsed={gate.decision.lapsed}
-          lettersKept={gate.lettersKept}
-          onHold={() => {
-            track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
-            router.back(); // the draft stays: Tonight shows "A letter is waiting"
-          }}
-          onPlus={() => setGate(null)} // the same Review again; the person taps Keep
-          onContinueDev={
-            devShortcutsAllowed
-              ? () => {
-                  devPass.current = true;
-                  setGate(null);
-                }
-              : undefined
-          }
-        />
-      </SafeAreaView>
+    keepSheet = (
+      <PlusGate
+        variant="keep_letter"
+        childName={child.name}
+        lapsed={gate.decision.lapsed}
+        lettersKept={gate.lettersKept}
+        heldOn={later ? 'letter' : 'tonight'}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
+        onHold={() => {
+          // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
+          // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          router.back();
+        }}
+        onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+        onDismiss={() => setGate(null)} // back to the letter, nothing held or kept
+        onContinueDev={
+          devShortcutsAllowed
+            ? () => {
+                devPass.current = true;
+                setGate(null);
+              }
+            : undefined
+        }
+      />
     );
   }
 
@@ -838,7 +882,7 @@ export default function Review() {
                 <LetterSheet
                   header={header}
                   editing={editing}
-                  onChangeBook={many ? pickChild : undefined}
+                  onChangeBook={many && !later ? pickChild : undefined}
                   changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
                   {editing ? (
                     // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
@@ -935,7 +979,8 @@ export default function Review() {
                 </View>
               )}
 
-              {!isSample && !editing && (
+              {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
+              {!isSample && !editing && !later && (
                 <Button
                   variant="quiet"
                   size="sm"
@@ -969,6 +1014,7 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {keepSheet}
     </SafeAreaView>
   );
 }

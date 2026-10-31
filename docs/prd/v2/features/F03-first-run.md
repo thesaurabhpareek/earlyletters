@@ -88,7 +88,7 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 
 | # | Person does | App shows (copy key) | System does |
 |---|---|---|---|
-| 1 | Taps Start a book | `onboarding.child.title` "Who is this book for?", name field `onboarding.child.nameLabel`, placeholder `.namePlaceholder`, help `.nameHelp`; Add another child (`.addAnotherButton`) | Keyboard opens; nothing stored yet |
+| 1 | Taps Start a book | `onboarding.child.title` "Who is this book for?", name field `onboarding.child.nameLabel`, placeholder `.namePlaceholder` "First name, or a nickname", no help line (S05); Add another child (`.addAnotherButton`) | Keyboard opens; nothing stored yet |
 | 2 | Types "Asha" | Birthday or Not here yet segmented control (`.birthdayLabel`, `.expectingLabel`); birthday picker, no future dates; due-date picker today to 305 days ahead (today's code; server allows 310) | Name 1 to 60 characters, trimmed, any script, never transliterated |
 | 3 | Picks a date, Continue | `onboarding.signsAs.title` "What does {child} call you?", chips `.examples`, preview `.preview` "From Papa", `.notYetHelp` | Continue disabled until 1 to 30 characters |
 | 4 | Taps "Papa", Continue | Languages: "Which languages will you speak your letters in?" (new `onboarding.languages.title`), seven chips; English preselected only if the device language is English [R]; help `onboarding.dictionary.languagesBody` (exists: "Your words stay in the language you speak. We never translate them.") | Store per-author languages locally. On Continue, the built speech card (`speechConsentCopy.title` "Get your words ready", `.body` with the size, `.downloadButton` "Download on Wi-Fi", `.laterButton` "Not now"; `apps/mobile/test/speech-consent.test.ts` exists) shows once; Download on Wi-Fi starts the model and pack downloads at once (F05-REQ-042), so they have the rest of first run and the first letter to arrive |
@@ -126,7 +126,7 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
-| F03-U01 | No date chosen | Continue disabled | `onboarding.child.birthdayHelp` "We sort letters by {child}'s month of age." | Pick a date | Unit (B-REQ-001) |
+| F03-U01 | No date chosen | Continue disabled | The reason line `onboarding.child.needBirthday` "Choose {child}'s birthday to continue.", muted above Continue until the disabled button is tapped (S05) | Pick a date | Unit (B-REQ-001) |
 | F03-U02 | Name empty or spaces only | Continue disabled | `childrenExtra.nameRequired` | Type a name | Unit |
 | F03-U03 | Name in Devanagari, Arabic or with diacritics | Stored exactly as typed | Same name everywhere | n/a | Unit with "आशा" and "Zoë" |
 | F03-U04 | Two to six children added together | One book each, one `first_run_batch`; no Plus sheet; the server accepts every child in `create_first_run_children` without Plus | Signature title uses `pendingCopy.onboarding.signsAsTitleMany` | n/a | Integration (checklist 6.8) |
@@ -155,7 +155,7 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 
 | Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
 |---|---|---|---|---|---|---|
-| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled with `onboarding.child.birthdayHelp` until a date is picked | n/a | Name empty: `childrenExtra.nameRequired` under the field | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
+| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled, with the reason line `onboarding.child.needBirthday` above it, until a date is picked | n/a | Name empty: `childrenExtra.nameRequired` under the field | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
 | Signature step | Chips `onboarding.signsAs.examples`; preview hidden until a value | n/a | Over 30 characters: Continue disabled, counter hidden (no counts), help line | Identical | Chips wrap | Chips are toggle buttons with selected state |
 | Languages step | Seven chips, none selected unless the device language is English | n/a | n/a | Identical; gate labels from the last good manifest or the bundled snapshot | Chips wrap two per row; labels never truncate | Chip reads name, then "transcribed" or `onboarding.languages.recordAndType` |
 | Ready screen | n/a | Speech downloading: the `speechConsentCopy.chosenYes` footnote, no bar, no spinner | Not enough space: the F03-U13 line; cellular: the F03-U14 choice | The note says it starts on Wi-Fi | Stack | Note read after the title |

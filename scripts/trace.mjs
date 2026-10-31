@@ -32,12 +32,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const ID_SOURCE = String.raw`[A-Z][A-Z0-9]*-(?:REQ|NFR)-\d{3}`;
+// A requirement ID is three digits, optionally followed by one lowercase sub-ID letter: F16-REQ-029a
+// is a child of F16-REQ-029 (RR-2). The letter must not run into a word (`029and` is not a sub-ID).
+export const ID_SOURCE = String.raw`[A-Z][A-Z0-9]*-(?:REQ|NFR)-\d{3}(?:[a-z](?![A-Za-z0-9]))?`;
 const ID_ONLY = new RegExp(`^${ID_SOURCE}$`);
 
 const pad3 = (n) => String(n).padStart(3, '0');
 const prefixOf = (id) => id.slice(0, id.lastIndexOf('-') + 1);
-const numOf = (id) => Number(id.slice(id.lastIndexOf('-') + 1));
+const numOf = (id) => parseInt(id.slice(id.lastIndexOf('-') + 1), 10);
+const hasSub = (id) => /[a-z]$/.test(id);
 
 /**
  * Every requirement ID in `text`. Shorthand after a full ID is read too: `A-NFR-005 to -007`
@@ -62,7 +65,7 @@ export function extractIds(text, { ranges = false } = {}) {
   if (ranges) {
     const full = new RegExp(`(${ID_SOURCE})\\s+to\\s+(${ID_SOURCE})`, 'g');
     for (const m of text.matchAll(full)) {
-      if (prefixOf(m[1]) === prefixOf(m[2])) addRange(out, prefixOf(m[1]), numOf(m[1]), numOf(m[2]));
+      if (prefixOf(m[1]) === prefixOf(m[2]) && !hasSub(m[1]) && !hasSub(m[2])) addRange(out, prefixOf(m[1]), numOf(m[1]), numOf(m[2]));
     }
   }
   return [...out];
@@ -81,7 +84,7 @@ export function bracketedIds(text) {
   for (const m of text.matchAll(new RegExp(tag, 'g'))) out.add(m[1]);
   const range = new RegExp(`${tag}\`?\\s+to\\s+\`?${tag}`, 'g');
   for (const m of text.matchAll(range)) {
-    if (prefixOf(m[1]) === prefixOf(m[2])) addRange(out, prefixOf(m[1]), numOf(m[1]), numOf(m[2]));
+    if (prefixOf(m[1]) === prefixOf(m[2]) && !hasSub(m[1]) && !hasSub(m[2])) addRange(out, prefixOf(m[1]), numOf(m[1]), numOf(m[2]));
   }
   return [...out];
 }
@@ -379,7 +382,7 @@ export function collect({ repo, docsRoot }) {
 }
 
 export function cmpId(a, b) {
-  return prefixOf(a).localeCompare(prefixOf(b)) || numOf(a) - numOf(b);
+  return prefixOf(a).localeCompare(prefixOf(b)) || numOf(a) - numOf(b) || a.localeCompare(b);
 }
 
 export function summarize(m) {

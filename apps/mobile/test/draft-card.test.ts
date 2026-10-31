@@ -7,9 +7,14 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { en, reminderCopy } from '@scribe/content';
+import { en, PROMPTS, reminderCopy } from '@scribe/content';
+import { selectPrompt } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// The Book's chapters read the native store through child-store; only the Book's own before-birth rule is used here.
+vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
+
 import { fadeBox, lineHeightFor } from '../src/components/motion/excerpt-fade.logic';
 import {
   EVENING_DAYPARTS,
@@ -32,7 +37,12 @@ import {
   tonightLampIntensity,
   type DraftFields,
 } from '../src/components/tonight/draft-card.logic';
+import { monthFor } from '../src/components/book/chapters';
+import { letterHeader } from '../src/components/capture/review-view.logic';
+import { tonightPromptInput, tonightStage, tonightStageLabel } from '../src/components/tonight/prompt.logic';
+import { FONT_SCALE, isAccessibilitySize } from '../src/lib/a11y.logic';
 import { dayDate, isoOf } from '../src/lib/dates';
+import { footerPlacement } from '../src/lib/review-layout.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -239,6 +249,7 @@ describe('[S09] the dateline and what VoiceOver reads', () => {
     const d = tonightDateline('Asha', '7 months', dayDate('2026-10-17'));
     expect(d.text).toBe('Asha · 7 months');
     expect(d.a11y).toBe('Asha, 7 months');
+    // With no age at all (the Family tab, which has no stage) it is still the day's date, as before.
     expect(tonightDateline('Asha', null, dayDate('2026-10-17'))).toEqual({ text: dayDate('2026-10-17'), a11y: dayDate('2026-10-17') });
   });
 
@@ -520,5 +531,193 @@ describe('[5.8 rule 2] Tonight arrives once per cold launch', () => {
 
   it('isoOf keeps the phone\'s own calendar day for a draft started late at night', () => {
     expect(isoOf(new Date(2026, 9, 13, 23, 50))).toBe('2026-10-13');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* P3 critics' pass, 28 Oct 2026                                       */
+/* ------------------------------------------------------------------ */
+
+describe('[S2] a book that is not born yet: the dateline names the child, and the prompts are the pre-birth set', () => {
+  const TODAY = '2026-10-28';
+  /** The dateline's separator, a middle dot (U+00B7). */
+  const DOT = '\u00b7';
+  // The fictional family Asha, started with "Not here yet" and a due date 60 days ahead: no birthday.
+  const preBirthBook = { name: 'Asha', birthday: null as string | null, dueDate: '2026-12-27' };
+
+  it('no birthday, or a birthday after today, is before the birth; the Book files such letters in Before You', () => {
+    expect(tonightStage(null, TODAY)).toEqual({ beforeBirth: true, ageMonths: 0 });
+    expect(tonightStage('2026-10-29', TODAY)).toEqual({ beforeBirth: true, ageMonths: 0 });
+    expect(tonightStage('2026-10-28', TODAY)).toEqual({ beforeBirth: false, ageMonths: 0 });
+    expect(tonightStage('2026-03-28', TODAY)).toEqual({ beforeBirth: false, ageMonths: 7 });
+    // One rule for the Book, Review and Tonight: the Book's own.
+    for (const birthday of [null, '2026-10-29', '2026-10-28', '2026-03-28']) {
+      expect(tonightStage(birthday, TODAY).beforeBirth).toBe(monthFor({ birthday }, TODAY) === null);
+    }
+  });
+
+  it('the dateline reads "Asha", the dot, "Before You", with Review\'s words, and "Asha, Before You" aloud: no count of weeks, no gap', () => {
+    const stage = tonightStageLabel(preBirthBook.birthday, TODAY);
+    const d = tonightDateline(preBirthBook.name, stage, dayDate(TODAY));
+    expect(d.text).toBe(`Asha ${DOT} Before You`);
+    expect(d.a11y).toBe('Asha, Before You');
+    expect(d.a11y).not.toContain(DOT);
+    expect(d.text).not.toMatch(/\d|week|day|month|due|born/i);
+    // The same words Review's header uses for these letters ("To Asha", the dot, "Before You").
+    const review = letterHeader({ childName: 'Asha', signsAs: 'Mama', month: monthFor({ birthday: preBirthBook.birthday }, TODAY) });
+    expect(review.to).toBe(`To Asha ${DOT} Before You`);
+    expect(review.to.endsWith(d.text.slice(`Asha ${DOT} `.length))).toBe(true);
+    // Not the day's date alone, which is what a book without a birthday showed.
+    expect(d.text).not.toBe(dayDate(TODAY));
+  });
+
+  it('a born child\'s dateline is as before: the name and the age; the day of birth is still "0 days" (L1 is not in this change)', () => {
+    expect(tonightDateline('Asha', tonightStageLabel('2026-03-28', TODAY), dayDate(TODAY))).toEqual({ text: `Asha ${DOT} 7 months`, a11y: 'Asha, 7 months' });
+    expect(tonightStageLabel('2026-10-28', TODAY)).toBe('0 days');
+    expect(tonightStageLabel('2026-10-29', TODAY)).toBe('Before You');
+    // The label and the stage agree on every kind of birthday: "Before You" exactly when the stage is before the birth.
+    for (const birthday of [null, '2027-01-01', '2026-10-29', '2026-10-28', '2026-10-27', '2026-09-01', '2026-03-28', '2024-01-10']) {
+      expect(tonightStageLabel(birthday, TODAY) === 'Before You', String(birthday)).toBe(tonightStage(birthday, TODAY).beforeBirth);
+    }
+  });
+
+  it('probe: 14 presses of "Another thought" on a book before the birth show no prompt about a born child', () => {
+    const shown: string[] = [];
+    let leftKey: string | null = null;
+    for (let shuffle = 0; shuffle < 14; shuffle++) {
+      const input = tonightPromptInput({ birthday: preBirthBook.birthday, today: TODAY, daysSinceLastEntry: null, recentKeys: [], shuffle, leftKey });
+      expect(input).toMatchObject({ beforeBirth: true, ageMonths: 0, hardStretch: false, together: false, role: 'parent' });
+      const prompt = selectPrompt(input, PROMPTS);
+      expect(prompt.band, prompt.key).toBe('before');
+      shown.push(prompt.text.replace(/\{child\}/g, preBirthBook.name));
+      leftKey = prompt.key;
+    }
+    // The review's probe showed these on the same book, 28 Oct 2026.
+    const all = shown.join(' | ');
+    expect(all).not.toMatch(/look like today|first day home|Describe Asha's hands|came to meet|face do while sleeping/);
+    expect(new Set(shown).size).toBeGreaterThan(3);
+  });
+
+  it('the same book, back after a week away: still the pre-birth set, never the gap prompts about a child who is here', () => {
+    for (let shuffle = 0; shuffle < 30; shuffle++) {
+      const input = tonightPromptInput({ birthday: null, today: TODAY, daysSinceLastEntry: 9, recentKeys: [], shuffle, leftKey: null });
+      expect(selectPrompt(input, PROMPTS).band).toBe('before');
+    }
+  });
+
+  it('a born book is unchanged: the age decides, and the seed is the day and the press', () => {
+    const input = tonightPromptInput({ birthday: '2026-03-28', today: TODAY, daysSinceLastEntry: 2, recentKeys: ['opening.7-9.games'], shuffle: 3, leftKey: 'opening.7-9.peekaboo' });
+    expect(input).toEqual({
+      ageMonths: 7,
+      beforeBirth: false,
+      daysSinceLastEntry: 2,
+      hardStretch: false,
+      role: 'parent',
+      together: false,
+      recentKeys: ['opening.7-9.games'],
+      seed: '2026-10-28:3',
+      excludeKeys: ['opening.7-9.peekaboo'],
+    });
+    for (let shuffle = 0; shuffle < 30; shuffle++) {
+      const p = selectPrompt(tonightPromptInput({ birthday: '2026-03-28', today: TODAY, daysSinceLastEntry: 2, recentKeys: [], shuffle, leftKey: null }), PROMPTS);
+      expect(p.band).not.toBe('before');
+    }
+  });
+
+  it('the screen builds its prompt and its dateline from these (source)', () => {
+    const screen = code('app/(tabs)/index.tsx');
+    expect(screen).toContain('selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS)');
+    expect(screen).toContain('tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today))');
+    // The old input, which turned a missing birthday into month 0, is gone.
+    expect(screen).not.toMatch(/ageMonths:/);
+    expect(screen).not.toMatch(/age\.days >= 0/);
+    expect(screen).not.toMatch(/ageText\(/);
+  });
+});
+
+describe('[S4] "Another thought" never shows the prompt that is on screen', () => {
+  it('leaves the prompt that was pressed on out of the next draw; before any press nothing is left out', () => {
+    const args = { birthday: '2026-03-28', today: '2026-10-28', daysSinceLastEntry: 9, recentKeys: [], shuffle: 1 };
+    expect(tonightPromptInput({ ...args, leftKey: 'gap.any.small' }).excludeKeys).toEqual(['gap.any.small']);
+    expect(tonightPromptInput({ ...args, leftKey: null }).excludeKeys).toEqual([]);
+  });
+
+  it('after five days away, over 60 days of 12 presses on the real library, no press repeats and the tap is never dead', () => {
+    let presses = 0;
+    for (const birthday of ['2026-03-28', '2025-04-12', '2024-01-10', null]) {
+      for (let day = 0; day < 60; day++) {
+        const today = isoOf(new Date(2026, 9, 1 + day));
+        let leftKey: string | null = null;
+        let on = selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: 9, recentKeys: [], shuffle: 0, leftKey }), PROMPTS).key;
+        for (let shuffle = 1; shuffle <= 12; shuffle++) {
+          leftKey = on;
+          const next = selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: 9, recentKeys: [], shuffle, leftKey }), PROMPTS).key;
+          expect(next, `${birthday} ${today} press ${shuffle}`).not.toBe(on);
+          on = next;
+          presses++;
+        }
+      }
+    }
+    expect(presses).toBe(4 * 60 * 12);
+  });
+
+  it('the button records the prompt it was pressed on, in the same press that changes the seed (source)', () => {
+    const screen = code('app/(tabs)/index.tsx');
+    expect(screen).toMatch(/haptic\('tap'\);\s*setLeftKey\(prompt\.key\);\s*setShuffle\(\(s\) => s \+ 1\);/);
+    expect(screen).toContain('const [leftKey, setLeftKey] = useState<string | null>(null);');
+    // it is a dependency of the memo, so the draw sees it
+    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey\]/);
+  });
+});
+
+describe('[S1] at accessibility text sizes Speak, Type and "Not much today" ride in the scroll, under the question', () => {
+  const screen = code('app/(tabs)/index.tsx');
+
+  it('inline from AX1 up, pinned at every smaller size: the same rule as Review\'s footer', () => {
+    for (const [name, scale] of Object.entries(FONT_SCALE)) {
+      const ax = name.startsWith('ax');
+      expect(isAccessibilitySize(scale), name).toBe(ax);
+      expect(footerPlacement(isAccessibilitySize(scale)), name).toBe(ax ? 'inline' : 'pinned');
+    }
+    expect(footerPlacement(isAccessibilitySize(FONT_SCALE.ax3))).toBe('inline');
+    expect(footerPlacement(isAccessibilitySize(FONT_SCALE.ax5))).toBe('inline');
+    expect(footerPlacement(isAccessibilitySize(FONT_SCALE.xxxLarge))).toBe('pinned');
+  });
+
+  it('the screen reads the size with the same hook and rule as Review, and draws the actions in exactly one place at a time (source)', () => {
+    expect(screen).toContain("const inlineActions = footerPlacement(useIsAccessibilitySize()) === 'inline';");
+    expect(screen).toContain('{inlineActions ? actions : null}');
+    expect(screen).toContain('{inlineActions ? null : actions}');
+    // one definition of the buttons, so the two places can never drift apart
+    expect(screen.match(/<ButtonRow>/g)).toHaveLength(1);
+    expect(screen.match(/label=\{t\.notMuchButton\}/g)).toHaveLength(1);
+  });
+
+  it('inline, the actions come after the question and "Another thought" and before the cards; pinned, after the scroll (source)', () => {
+    const at = (needle: string) => {
+      const i = screen.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      return i;
+    };
+    const question = at('label={t.newPromptButton}');
+    const inline = at('{inlineActions ? actions : null}');
+    const cardsAt = at('{cards.length > 0 ? (');
+    const scrollEnds = at('</ScrollView>');
+    const pinned = at('{inlineActions ? null : actions}');
+    expect(question).toBeLessThan(inline);
+    expect(inline).toBeLessThan(cardsAt);
+    expect(cardsAt).toBeLessThan(scrollEnds);
+    expect(scrollEnds).toBeLessThan(pinned);
+    // the inline copy is inside the ScrollView, the pinned copy outside it
+    expect(at('<ScrollView')).toBeLessThan(inline);
+  });
+
+  it('the inline block has no pinned padding and keeps the quiet link and the kept line with the buttons', () => {
+    expect(screen).toContain("className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}");
+    const block = screen.slice(screen.indexOf('const actions = ('), screen.indexOf('return (\n    <SafeAreaView'));
+    expect(block).toContain('<QuietDayInline onUndo={undoNotMuch} entering={lineIn} />');
+    expect(block).toContain('exiting={linkOut}');
+    // Speak and Type still never animate in, inline or pinned
+    expect(block.slice(block.indexOf('<ButtonRow>'), block.indexOf('</ButtonRow>'))).not.toMatch(/entering=/);
   });
 });

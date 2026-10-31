@@ -1,0 +1,41 @@
+{
+  "id": "J22-71",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "Waiting for the email, with a book here",
+  "note": "Under the code field, only when this phone holds a book: \"Your letters are safe on this phone.\" A fresh install has no letters to be safe, so it says nothing there.",
+  "from": "J22-70",
+  "shot": "screens/J22-71.png",
+  "route": "/sign-in/code",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Not now Check your email A link and a code are on their way to mama@example.invalid . Tap the link on this phone, or type the code here. Code Your letters are safe on this phone. Send a new email You can send another in a minute. Use a different email Trouble signing in? Continue",
+  "lines": [
+    "Not now",
+    "Check your email",
+    "A link and a code are on their way to",
+    "mama@example.invalid",
+    ".",
+    "Tap the link on this phone, or type the code here.",
+    "Code",
+    "Your letters are safe on this phone.",
+    "Send a new email",
+    "You can send another in a minute.",
+    "Use a different email",
+    "Trouble signing in?",
+    "Continue"
+  ]
+}

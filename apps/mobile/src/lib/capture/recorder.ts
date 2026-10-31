@@ -33,8 +33,8 @@ import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format'
  * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
  * AAC-LC, mono, 64 kbps, in Documents (kept in the device backup, D-033).
  * With `directory: 'document'` expo-audio writes each take to
- * `Documents/ExpoAudio/recording-<UUID>.m4a` (`.aac` once ADR 0027 flips iOS
- * to ADTS) and the app leaves it there; code that lists or removes
+ * `Documents/ExpoAudio/recording-<UUID>.m4a` (`.aac` on iOS since ADR 0027's
+ * flip to ADTS) and the app leaves it there; code that lists or removes
  * recordings goes through capture/recordings.ts.
  *
  * 48 kHz rather than 44.1 kHz: iPhone microphones run at 48 kHz, so the
@@ -50,7 +50,7 @@ import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format'
  * microphone heard it; a clearer copy is made separately
  * (src/lib/audio-enhance).
  *
- * The container (M4A today; ADTS on iOS once ADR 0027's checks pass) is
+ * The container (ADTS on iOS since ADR 0027's flip, M4A on Android) is
  * chosen per platform by `RECORDING_CONTAINERS` (recording-file.ts); nothing
  * else differs between them.
  *

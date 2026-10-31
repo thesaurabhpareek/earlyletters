@@ -366,7 +366,7 @@ Gate (one position with 06 section 16; default awaiting the founder's answer to 
 | local | PGlite harness (`npm run test:db`) and the Supabase CLI stack in CI | Tests only | Asha fixtures |
 | staging | `scribe-staging` (BL-107) | CI from `develop` with the `approve-migration` label (08 section 7; R2 AR-21) | Synthetic Asha families, load data |
 | prod | `scribe-prod` | CI on a `db-v*` tag, after the founder's approval | Real families |
-| escrow | `scribe-escrow` (new, F08 6.5 G2) | No tables of ours; the only migration-like change is the `escrow` function deploy, from CI on a release tag with the founder's approval | None: one function and three secrets |
+| escrow | `scribe-escrow` (new, F08 6.5 G2) | No tables of ours; the only migration-like change is the `escrow` function deploy, from CI on a release tag with the founder's approval | None: one function and nine settings as built (D-108) |
 
 **Which build talks to which project (R8 R2A-15).** On `develop` today the `testflight` profile in `apps/mobile/eas.json` uses EAS environment `preview` and channel `preview`, the same as internal preview builds, so C1 families would land wherever `preview` points. From the M14 switch-on, the matrix is [R]:
 

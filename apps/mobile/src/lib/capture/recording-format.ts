@@ -1,20 +1,21 @@
 /**
- * The recorder settings for each platform's container (ADR 0027, accepted
- * pending checks V1, V2 and V3; until then ADR 0005's M4A stays the default
- * on both platforms). The switch itself is `RECORDING_CONTAINERS` in
- * recording-file.ts.
+ * The recorder settings for each platform's container (ADR 0027: iOS records
+ * ADTS in every build from the 27 Oct flip on, build 1 included; Android
+ * keeps ADR 0005's M4A). The switch itself is
+ * `RECORDING_CONTAINERS` in recording-file.ts.
  *
- * - 'm4a', today: AAC-LC in MPEG-4. The index (`moov`) is written when the
- *   recorder stops, so a take cut off by a kill most likely has none and will
- *   not open (TDD 03 R-4). The launch sweep keeps such a take and lists it
- *   (D-085), but it does not play.
+ * - 'm4a', Android's, and iOS's before the flip: AAC-LC in MPEG-4. The index
+ *   (`moov`) is written when the recorder stops, so a take cut off by a kill
+ *   most likely has none and will not open (TDD 03 R-4). The launch sweep
+ *   keeps such a take and lists it (D-085), but it does not play.
  * - 'adts': the same AAC-LC frames, at the same rate, channels, bitrate and
  *   quality, written as an ADTS stream (`.aac`). Every frame carries its own
  *   header, so a take cut off by a kill opens up to its last whole frame.
  *   iOS takes the file type from the extension (the AVAudioRecorder header
- *   says so and Apple documents the same rule for AVAudioFile; unverified
- *   until check V1). Android would use MediaRecorder.OutputFormat.AAC_ADTS
- *   (expo-audio `outputFormat: 'aac_adts'`), but stays M4A in build 2.
+ *   says so and Apple documents the same rule for AVAudioFile; seen on the
+ *   simulator in check V1's header half, and the device half is DL-06).
+ *   Android would use MediaRecorder.OutputFormat.AAC_ADTS (expo-audio
+ *   `outputFormat: 'aac_adts'`), but stays M4A in build 2.
  *
  * Nothing converts a take after it is recorded, in either container: the
  * file is kept exactly as the recorder wrote it, and its capture hash

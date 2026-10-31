@@ -26,6 +26,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { envFileProblems } from './env-file-guard.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -59,7 +60,7 @@ const STEPS = {
   1: 'Step 1. Apple Developer Program enrolment (FT-01)',
   2: 'Step 2. App Store Connect: the .preview App ID, the app record, testers and the API key (FT-07, FT-08)',
   3: 'Step 3. Expo account, the project id and EXPO_TOKEN (FT-17, BL-339)',
-  4: 'Step 4. Words from speech: pack signing keys and the R2 bucket packs.earlyletters.app (FT-16, D-097)',
+  4: 'Step 4. Words from speech: pack signing keys and the R2 bucket early-letters-packs at packs.earlyletters.app (FT-16, D-097)',
   5: 'Step 5. Build 1: preflight, build, submit, testers',
   6: 'Step 6. Supabase staging project and its schema (FT-10)',
   7: 'Step 7. Supabase Auth on staging, with Resend SMTP for sign-in email (FT-12, FT-13)',
@@ -197,6 +198,19 @@ if (prof) {
     else if (v === 'on') warn(`${PROFILE} profile: ${flag}=on. This build flag turns on ${what}; it needs that feature merged, its kill switch consumer, and the founder's approval.`);
     else fail(`${PROFILE} profile: ${flag} is ${JSON.stringify(v)}; write "off" explicitly (F19-REQ-025).`);
   }
+  // The Delete account row (founder, 30 Oct 2026): hidden in both alpha builds unless EXPO_PUBLIC_ACCOUNT_DELETION is on. It comes
+  // from the EAS "preview" environment (TESTFLIGHT.md step 9), so the profile leaves it unwritten; the preflight reports the state
+  // and never FAILs on it. It sees eas.json and this shell, not expo.dev, so it says so (UNVERIFIED) where the row could be drawn.
+  {
+    const written = profEnv.EXPO_PUBLIC_ACCOUNT_DELETION;
+    const seen = written ?? process.env.EXPO_PUBLIC_ACCOUNT_DELETION;
+    const deletionOn = String(seen ?? '').trim().toLowerCase() === 'on';
+    if (written !== undefined) warn(`${PROFILE} profile writes EXPO_PUBLIC_ACCOUNT_DELETION=${JSON.stringify(written)} in eas.json. Leave it out of the alpha profiles: the value belongs in the EAS "preview" environment (TESTFLIGHT.md step 9), so it can change after the freeze without touching eas.json.`);
+    if (!deletionOn) pass('Delete account row: hidden (EXPO_PUBLIC_ACCOUNT_DELETION is not on)');
+    else if (!SERVER_ON) pass('Delete account row: hidden (this build has server features off, so it has no account to delete; EXPO_PUBLIC_ACCOUNT_DELETION=on changes nothing here)');
+    else warn('Delete account row: shown (EXPO_PUBLIC_ACCOUNT_DELETION=on in the profile or this shell). Switch it on only when the purge worker runs on staging (TESTFLIGHT.md step 12) and the sole-parent drill has passed (DEVICE_TEST_PLAN S1-35, S2-13, AL-07.6a).');
+    if (SERVER_ON) unverified(`the EAS "${prof.environment ?? PROFILE}" environment on expo.dev may hold EXPO_PUBLIC_ACCOUNT_DELETION (this script cannot read it): with it set to on, build 2 draws the Delete account row; unset or off, it does not. Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof.environment ?? PROFILE}\` in apps/mobile.`);
+  }
   check(prof.autoIncrement === true && eas.cli?.appVersionSource === 'remote', 'build number: EAS owns it (appVersionSource remote, autoIncrement true)', 'Build numbers are not auto-incremented by EAS: a second upload would be rejected as a duplicate build number.');
 }
 {
@@ -292,7 +306,7 @@ if (cfg) {
     step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
   } else {
     warn('No extra.eas.projectId in app.config.ts yet: founder step 3, listed as MISSING below. app.config.ts is a dynamic config, so eas-cli cannot write the id into it, and every `eas build`, from GitHub or from your own computer, stops until step 3\'s PR adds it (eas-cli 24.10.0, getProjectIdAsync.js: "the EAS project ID can\'t automatically be added"). The founder sends the id that expo.dev or `eas init` shows; it goes into `extra` in a small PR.');
-    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN as a GitHub secret');
+    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN only for builds from GitHub, as a secret of the GitHub Environment testflight');
   }
 
   // Version and build number.
@@ -343,17 +357,9 @@ try {
 // ---------------------------------------------------------------- 4. env files: nothing server-ish baked in
 {
   const envFiles = readdirSync(MOBILE).filter((f) => f.startsWith('.env'));
-  const bad = [];
-  for (const f of envFiles) {
-    for (const line of read(join(MOBILE, f)).split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))) {
-      const [k, ...v] = line.split('=');
-      if (k === 'EXPO_PUBLIC_APP_ENV') continue;
-      if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
-      if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
-      bad.push(`${f}: ${k}`);
-    }
-  }
-  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
+  // scripts/env-file-guard.mjs: only values that are harmless if baked into any build; EXPO_PUBLIC_ACCOUNT_DELETION never, in any file.
+  const bad = envFiles.flatMap((f) => envFileProblems(f, read(join(MOBILE, f))));
+  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.${bad.some((b) => b.endsWith('EXPO_PUBLIC_ACCOUNT_DELETION')) ? ' EXPO_PUBLIC_ACCOUNT_DELETION is never set in a .env file: the alpha profiles leave it unset so the EAS "preview" environment decides (TESTFLIGHT.md step 9); a drill passes it to Metro in the shell.' : ''}`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
   check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
@@ -520,8 +526,8 @@ let packMissing = false;
     /* treated as not published */
   }
   if (!manifestPublished) {
-    fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release\`, then \`upload\` (docs/ops/PACKS_HOSTING.md), or the host answers 404 and nothing downloads. ${d115}`);
-    stepFourMissing.push('no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release` and `upload`)');
+    fail(`No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run \`npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream\`, then load r2.env and run \`upload\` (docs/ops/PACKS_HOSTING.md steps 5 to 7), or the host answers 404 and nothing downloads. ${d115}`);
+    stepFourMissing.push('no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts release --key-file <signing.env> --models upstream` and `upload`, PACKS_HOSTING steps 6 and 7)');
   } else {
     unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building, or run `npx tsx scripts/packs/publish.ts verify`.');
     if (keySet) step(4, 'check', 'a manifest is in the repo; check the R2 bucket serves it');
@@ -697,7 +703,7 @@ if (SERVER_ON) {
   step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
   step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
   step(11, 'check', 'this run is the preflight for build 2');
-  step(12, 'check', 'before anyone tries Delete account: RESEND_API_KEY and the purge worker on staging');
+  step(12, 'check', 'before EXPO_PUBLIC_ACCOUNT_DELETION is set to on in the EAS "preview" environment (until then build 2 hides Delete account): RESEND_API_KEY and the purge worker on staging');
 }
 const needed = SERVER_ON ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5];
 

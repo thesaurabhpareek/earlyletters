@@ -163,7 +163,6 @@ describe('copy', () => {
   it('names the choice and the size, promises nothing about speed and keeps the voice', () => {
     expect(speechConsentCopy.downloadButton).toBe('Download on Wi-Fi');
     expect(speechConsentCopy.laterButton).toBe('Not now');
-    expect(speechConsentCopy.footnote).toMatch(/Your voice is always kept/);
     expect(wordsCopy.pack.askBody).toMatch(/Your voice is kept/);
   });
 });

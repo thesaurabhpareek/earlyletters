@@ -1,0 +1,40 @@
+{
+  "id": "J21-23",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Invite open",
+  "note": "The member list shows the open invite with the day it stops working, Share again and Cancel invite (F11-REQ-019). The invite card steps aside while an invite is open.",
+  "from": "J21-22",
+  "shot": "screens/J21-23.png",
+  "route": "/family",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Who writes to Asha From Mama You Your co-parent Invited, open until Thu, Oct 22 Share again Cancel invite Tonight Book Family The invite waits on the Family tab until they join.",
+  "lines": [
+    "Asha · 7 months",
+    "Who writes to Asha",
+    "From Mama",
+    "You",
+    "Your co-parent",
+    "Invited, open until Thu, Oct 22",
+    "Share again",
+    "Cancel invite",
+    "Tonight",
+    "Book",
+    "Family",
+    "The invite waits on the Family tab until they join."
+  ]
+}

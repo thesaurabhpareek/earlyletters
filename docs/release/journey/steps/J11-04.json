@@ -3,8 +3,9 @@
   "journey": "read-together",
   "kind": "happy",
   "title": "The end of the book",
-  "note": "After the last letter: an end line, a finish button and \"again\".",
+  "note": "After the last letter: the moon draws on once above the line, then nothing moves; \"Close the book\" and \"Read it again\".",
   "from": "J11-03",
+  "shot": "screens/J11-04.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
@@ -21,9 +22,8 @@
     }
   },
   "scrolls": false,
-  "text": "5 / 5 Close That is every letter so far. More are still being written. Close the book Read it again",
+  "text": "Close That is every letter so far. More are still being written. Close the book Read it again",
   "lines": [
-    "5 / 5",
     "Close",
     "That is every letter so far. More are still being written.",
     "Close the book",

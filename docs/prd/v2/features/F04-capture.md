@@ -541,6 +541,7 @@ TDD 03 treats a call or Siri as a pause that the person resumes. This spec final
 
 **Unknown:** whether an M4A whose writer was killed is playable (TDD 03 section 3.2 rule 4 and R-4), plus which interruptions `expo-audio` 57 surfaces and whether a lock reliably fires AppState `background`.
 **Spike (WP-F04-01):** 50 kills on an SE 3 at random points; count playable files and the seconds lost; run every interruption in F04-U05 to U13 and record what the recorder reports. If fewer than 49 of 50 play, options for the founder: (a) record ADTS AAC, which survives truncation, and remux to M4A on stop, amending ADR 0005; (b) record in 60-second segments joined at stop. Both keep every byte the microphone produced.
+**Outcome so far (ADR 0027, 27 Oct):** the simulator answered the playable half. No killed M4A take opened (0 of 70 across five kill-harness runs). The coordinator chose option (a) without the remux, under D-117 (the founder may reverse it): every iOS build cut from develop from #293 on records ADTS AAC (`.aac`), kept exactly as recorded, and 100 of 100 killed ADTS takes played to within 5 s on the simulator. Still to come on the SE 3: this spike's 50 kills, the interruption runs, and ADR 0027's DL-06 (due before the build 2 freeze; if it fails, iOS goes back to M4A). Android stays M4A.
 
 ### 11.7 Sequencing
 

@@ -10,10 +10,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { en } from '@scribe/content';
+import { faithfulClean, segments as toSegments } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { reviewHasOwnChanges } from '../src/components/capture/review-view.logic';
-import { cardCutAt, placeAroundCard } from '../src/components/capture/transcript.logic';
+import { reviewHasOwnChanges, rowShows } from '../src/components/capture/review-view.logic';
+import { cardCutAt, placeAroundCard, struckGaps } from '../src/components/capture/transcript.logic';
 
 const read = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
 const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -44,8 +45,44 @@ describe('[M1] every mark is drawn in the letter\'s face, at the letter\'s size'
 
   it('the spaces around struck words stay outside the strike, so "um," never reads joined to "today"', () => {
     const struck = transcript.slice(transcript.indexOf("if (taken?.kind === 'struck') {"), transcript.indexOf('if (!s.text) {\n      const h'));
-    expect(struck).toMatch(/<Fragment key=\{i\}>\s*\{gap\(segments\[i - 1\]\?\.text, true\)\}\s*<LetterSpan/);
-    expect(struck).toMatch(/\{taken\.text\}\s*<\/LetterSpan>\s*\{gap\(segments\[i \+ 1\]\?\.text, false\)\}\s*<\/Fragment>/);
+    expect(struck).toMatch(/const \[before, after\] = struckGaps\(segments\[i - 1\]\?\.text, taken\.text, segments\[i \+ 1\]\?\.text\);/);
+    expect(struck).toMatch(/<Fragment key=\{i\}>\s*\{before\}\s*<LetterSpan/);
+    expect(struck).toMatch(/\{taken\.text\}\s*<\/LetterSpan>\s*\{after\}\s*<\/Fragment>/);
+    // The words shown (for where lines break) use the same spaces.
+    expect(transcript).toMatch(/const \[before, after\] = struckGaps\(segments\[i - 1\]\?\.text, shows\.text, segments\[i \+ 1\]\?\.text\);\s*return `\$\{before\}\$\{shows\.text\}\$\{after\}`;/);
+    expect(transcript).not.toMatch(/\bgap\(/);
+  });
+
+  it('no space goes in front of a closing mark: "Today you held the spoon, um." shows "spoon~~, um~~." (#290 lens B)', () => {
+    // The engine's own edits and segments for Asha letters, then what Transcript draws for each struck removal.
+    const shown = (raw: string) => {
+      const r = faithfulClean(raw, { level: 'clean', dictionary: [], language: 'en' } as never);
+      const segs = toSegments(raw, r.applied);
+      return segs
+        .map((seg, i) => {
+          if (seg.edit === null) return seg.text;
+          const shows = rowShows(r.applied[seg.edit]);
+          if (seg.text || shows.kind !== 'struck') return seg.text;
+          const [before, after] = struckGaps(segs[i - 1]?.text, shows.text, segs[i + 1]?.text);
+          return `${before}[${shows.text}]${after}`; // [ ] marks the strike
+        })
+        .join('');
+    };
+    expect(shown('Today you held the spoon, um.')).toBe('Today you held the spoon[, um].');
+    expect(shown('You laughed, uh, and then um.')).toBe('You laughed, [uh,] and then [um].');
+    expect(shown('Asha, um, today you held the spoon.')).toBe('Asha, [um,] today you held the spoon.');
+    expect(shown('Um, you slept.')).toBe('[Um,] you slept.');
+  });
+
+  it('struckGaps: a space only between two words, never before a closing mark, never doubled', () => {
+    expect(struckGaps('spoon', ', um', '.')).toEqual(['', '']);
+    expect(struckGaps('and then', 'um', '.')).toEqual([' ', '']);
+    expect(struckGaps('Asha, ', 'um,', 'today')).toEqual(['', ' ']);
+    expect(struckGaps('you', 'you', 'held')).toEqual([' ', ' ']);
+    expect(struckGaps(undefined, 'Um,', 'you')).toEqual(['', ' ']);
+    expect(struckGaps('slept', 'um', undefined)).toEqual([' ', '']);
+    for (const mark of [',', '.', ';', ':', '!', '?', ')', ']']) expect(struckGaps('spoon', 'um', `${mark} then`)[1], mark).toBe('');
+    expect(struckGaps('spoon', 'um', '"Mama," you said')[1]).toBe(' '); // an opening quote is a new word
   });
 });
 

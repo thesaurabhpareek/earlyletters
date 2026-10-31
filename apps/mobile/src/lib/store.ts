@@ -473,7 +473,7 @@ export function ledgerDb(): LedgerDb {
  * recording is the true original; words are set once later
  * (setWordsForWaitingEntry). Saved private unless the parent chose the book.
  * It never counts toward the free letters (M17, F14-REQ-037): it counts when
- * its words are kept (setTypedWordsForWaitingEntry, keepReviewedWords).
+ * its words are kept from Review (keepReviewedWords).
  */
 export function saveVoiceOnlyFromDraft(
   draft: Draft,
@@ -518,19 +518,18 @@ export function setWordsForWaitingEntry(
 
 /**
  * "Write the words" on a letter still waiting for its words (D-086), or on a spoken letter whose words came
- * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once. False
- * when the letter already had words, was deleted, is on the server, or the text is empty.
+ * back empty and that the server does not have yet (S28): the parent's typing becomes the words, once, kept
+ * and sent at once so they are never lost. It never counts (M17, F14-REQ-037): the words wait for the author's
+ * review, and the letter page hands the keep to Review, whose Keep step asks the gate and counts them
+ * (keepReviewedWords; F14 6.1 :129). False when the letter already had words, was deleted, is on the server,
+ * or the text is empty.
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
   let done = false;
   c.db.transaction(() => {
     done = entries.setTypedWordsOnce(c, id, text);
-    if (done) {
-      // Typed by the author with the words on screen: the counting moment (M17, F14-REQ-037).
-      ledger.recordKept(c, id, keychainFloor());
-      enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
-    }
+    if (done) enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
   });
   if (done) {
     bus.emit('entries');
@@ -540,20 +539,33 @@ export function setTypedWordsForWaitingEntry(id: string, text: string): boolean 
 }
 
 /**
- * The author kept words the machine wrote later, with them on screen (M17: the
- * counting moment, F14 6.2 B2). The review mark and the count are written in one
- * transaction. The words are not changed here (an edit is a separate save).
- * False when the letter has no words waiting for review. The Keep gate decision
- * comes first, in the screen (lib/billing keepGateFor, with the words on screen).
+ * Whether "Write the words" can take words for this letter now: a letter still waiting, or a recording whose words
+ * came back empty and that the server does not have yet. Read only; the same rows `setTypedWordsForWaitingEntry` writes.
  */
-export function keepReviewedWords(id: string): boolean {
+export function canTypeWordsFor(id: string): boolean {
+  return entries.canTypeWords(ctx(), id);
+}
+
+/**
+ * The author kept words that arrived later (the machine's, or typed on the letter page), with them on screen in
+ * Review (M17: the counting moment, F14 6.2 B2). The review mark, the count and, when given, the place the
+ * author chose (`inBook`) are written in one transaction. The words are not changed here (an edit is a
+ * separate save). False when the letter has no words waiting for review. The Keep gate decision comes first,
+ * in Review (keepNeedsPlus, lib/billing/keep-step.ts keepSheetFor).
+ */
+export function keepReviewedWords(id: string, inBook?: boolean): boolean {
   const c = ctx();
   let done = false;
+  let moved = false;
   c.db.transaction(() => {
     done = entries.markWordsReviewed(c, id);
-    if (done) ledger.recordKept(c, id, keychainFloor());
+    if (!done) return;
+    ledger.recordKept(c, id, keychainFloor());
+    if (inBook !== undefined) moved = entries.setInBook(c, id, inBook);
+    if (moved) enqueueEntryUpsert(c.db, id, IN_BOOK, enqueueContext(c));
   });
   if (done) bus.emit('entries');
+  if (moved) signalOutbox();
   return done;
 }
 

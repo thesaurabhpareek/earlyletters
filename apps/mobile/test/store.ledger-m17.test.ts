@@ -93,7 +93,7 @@ describe('[F14-REQ-036] own letters only', () => {
 });
 
 describe('[F14-REQ-037] words seen: a letter counts at the save where its words are on screen', () => {
-  it('voice-only letters never count; typing their words counts each at that moment', () => {
+  it('voice-only letters never count; words typed for them on the letter page wait for review and count only when kept from Review (#53)', () => {
     const c = asha();
     const v1 = keepVoiceOnly(c);
     const v2 = keepVoiceOnly(c);
@@ -101,9 +101,15 @@ describe('[F14-REQ-037] words seen: a letter counts at the save where its words 
     expect(counts()).toEqual({ recorded: 0, present: 0 });
     expect(store.setTypedWordsForWaitingEntry(v1, 'You babbled to the cat.')).toBe(true);
     expect(store.setTypedWordsForWaitingEntry(v2, 'You laughed in your sleep.')).toBe(true);
-    expect(counts()).toEqual({ recorded: 2, present: 2 });
+    // The words are the letters' at once (never lost), but the letter page counts nothing (F14 6.1 :129).
+    expect(store.getEntry(v1)).toMatchObject({ finalText: 'You babbled to the cat.', wordsUnreviewed: true });
+    expect(counts()).toEqual({ recorded: 0, present: 0 });
     expect(store.setTypedWordsForWaitingEntry(v1, 'again')).toBe(false); // once
-    expect(counts().recorded).toBe(2);
+    // Review's Keep for each letter is the counting moment.
+    expect(store.keepReviewedWords(v1, true)).toBe(true);
+    expect(store.keepReviewedWords(v2, false)).toBe(true);
+    expect(counts()).toEqual({ recorded: 2, present: 2 });
+    expect([store.getEntry(v1)?.inBook, store.getEntry(v2)?.inBook]).toEqual([true, false]);
   });
 
   it('[S28] a spoken letter whose words came back empty takes typed words once, unless the server already has it (P5 #222)', () => {
@@ -113,10 +119,17 @@ describe('[F14-REQ-037] words seen: a letter counts at the save where its words 
     // The transcription finished with no words: no longer waiting, raw and words still empty.
     raw.run("UPDATE entries SET transcript_status = NULL WHERE id IN (?, ?)", v, w);
     raw.run("UPDATE entries SET server_version = '100' WHERE id = ?", w); // the server has this one: its raw is fixed there
+    // The letter page offers "Write the words" only where the write can happen (P5 critics' pass S3): the same rows.
+    expect(store.canTypeWordsFor(v)).toBe(true);
+    expect(store.canTypeWordsFor(w)).toBe(false);
+    expect(store.canTypeWordsFor('no-such-letter')).toBe(false);
     expect(store.setTypedWordsForWaitingEntry(v, 'You hummed the bath song.')).toBe(true);
+    expect(store.canTypeWordsFor(v)).toBe(false); // it has words now
     expect(store.getEntry(v)).toMatchObject({ rawTranscript: 'You hummed the bath song.', finalText: 'You hummed the bath song.', captureMode: 'mixed' });
     expect(store.setTypedWordsForWaitingEntry(v, 'again')).toBe(false); // once
     expect(store.setTypedWordsForWaitingEntry(w, 'Not this one.')).toBe(false);
+    expect(counts()).toEqual({ recorded: 0, present: 0 }); // counted at Review's Keep, not on the letter page (#53)
+    expect(store.keepReviewedWords(v)).toBe(true);
     expect(counts()).toEqual({ recorded: 1, present: 1 });
   });
 

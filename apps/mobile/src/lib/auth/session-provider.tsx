@@ -39,7 +39,10 @@ import {
   canSync,
   initialAuthState,
   isSignedIn,
+  readGateInOrder,
   shouldFinishSignOut,
+  shouldRecheckGate,
+  signOutWouldWait,
   type AuthErrorKind,
   type AuthMethod,
   type AuthState,
@@ -47,6 +50,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
+import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -66,11 +70,11 @@ export interface AuthApi {
   canSync: boolean;
   /**
    * This phone's letters belong to no account yet and the person has not
-   * confirmed this one: show the claim screen (masked email, "Keep them here")
+   * confirmed this one: show the claim screen (masked email, "Keep in this account")
    * before anything syncs (BL-347, F02-REQ-019).
    */
   claimPending: boolean;
-  /** "Keep them here": this phone's letters may now join the signed-in account. */
+  /** "Keep in this account": this phone's letters may now join the signed-in account. */
   keepLettersHere(): void;
   /** "Not my account": ends this session on this phone; nothing was claimed or uploaded. */
   notMyAccount(): Promise<void>;
@@ -92,6 +96,11 @@ export interface AuthApi {
   refreshGate(): Promise<void>;
   /** 'waiting' when letters are still uploading; sign-out finishes on its own when they are done. */
   signOut(): Promise<'done' | 'waiting'>;
+  /**
+   * "Stay signed in" while a sign-out the person asked for waits for uploads: back to signed in,
+   * nothing deleted, nothing sent (S01). Settings > Account's "Stay signed in" row calls it (BL-451).
+   */
+  cancelSignOutWait(): void;
   signOutOtherDevices(): Promise<Outcome>;
   /** The Supabase client for screens in lib/family and lib/auth; null when not configured. */
   client: SupabaseClient | null;
@@ -178,6 +187,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
   useEffect(() => publishAuth(state), [state]);
+  // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
+  // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
+  // client exists: without one the state is signed out and the row says "Not signed in", as before.
+  useEffect(() => {
+    registerSensitiveDataRow();
+  }, []);
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
@@ -211,15 +226,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
 
+  // Only the newest of overlapping gate reads may answer (machine.logic readGateInOrder).
+  const gateSeq = useRef(0);
   const checkGate = useCallback(async () => {
     if (!sb) return;
     lastGateCheck.current = Date.now();
-    try {
-      const { gate, sensitiveDeclined } = await withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS);
-      dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
-    } catch {
-      dispatch({ type: 'GATE_UNAVAILABLE' });
-    }
+    await readGateInOrder(gateSeq, () => withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS), dispatch);
   }, [sb]);
 
   // Consent check whenever a session appears; again on foreground when stale or unknown.
@@ -231,8 +243,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
-      const cur = stateRef.current;
-      if (cur.status === 'ready' && (cur.sync === 'unknown' || Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
+      if (shouldRecheckGate(stateRef.current, Date.now() - lastGateCheck.current > GATE_RECHECK_MS)) void checkGate();
     });
     return () => sub.remove();
   }, [checkGate]);
@@ -257,12 +268,23 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     if (!waiting) return;
     const done = () => dispatch({ type: 'UPLOADS_DRAINED' });
     const off = onUploadsDrained(done);
-    const poll = setInterval(() => void pendingUploads().then((n) => n === 0 && done()), 10_000);
+    const poll = setInterval(() => {
+      // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
+      if (shouldRecheckGate(stateRef.current, false)) void checkGate();
+      void pendingUploads().then((n) => n === 0 && done());
+    }, 10_000);
     return () => {
       off();
       clearInterval(poll);
     };
-  }, [waiting]);
+  }, [waiting, checkGate]);
+
+  // S01: a wait that began before the gate was ever read (offline at launch) reads it now. GATE_LOADED then
+  // lets the outbox drain or ends the wait; still offline, the poll above and the foreground re-check try again.
+  const waitingBlind = state.status === 'signingOut' && shouldRecheckGate(state, false);
+  useEffect(() => {
+    if (waitingBlind) void checkGate();
+  }, [waitingBlind, checkGate]);
 
   const finishing = shouldFinishSignOut(state);
   useEffect(() => {
@@ -465,10 +487,14 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       refreshGate: checkGate,
 
       async signOut() {
-        const syncing = canSync(stateRef.current);
         const pending = await pendingUploads();
+        const waits = signOutWouldWait(stateRef.current, pending);
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending });
-        return pending > 0 && syncing ? 'waiting' : 'done';
+        return waits ? 'waiting' : 'done';
+      },
+
+      cancelSignOutWait() {
+        dispatch({ type: 'SIGN_OUT_WAIT_CANCELLED' });
       },
 
       async signOutOtherDevices() {

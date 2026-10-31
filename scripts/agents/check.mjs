@@ -32,6 +32,7 @@ export function check(root = ROOT) {
       if (!Number.isInteger(a[k]) || a[k] < 0) errors.push(`${where}: ${k} must be a whole number`);
     }
     if (!(typeof a.max_budget_usd === "number" && a.max_budget_usd > 0)) errors.push(`${where}: max_budget_usd must be a positive number (set it on the agent or as the engine default)`);
+    if (a.paused_until !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(a.paused_until))) errors.push(`${where}: paused_until must be YYYY-MM-DD, or the pause silently ends`);
     if (a.effort && !["low", "medium", "high", "xhigh", "max"].includes(a.effort)) errors.push(`${where}: effort "${a.effort}" is not low, medium, high, xhigh or max`);
     if (a.kind === "steward") {
       if (!Array.isArray(a.review_paths) || !a.review_paths.length || !a.review_paths.every((g) => typeof g === "string" && g && !g.startsWith("/"))) {
