@@ -227,7 +227,10 @@ jobs:
           /bin/rm -rf "$dest" && /bin/mkdir -p "$dest"
           /usr/bin/gh api "repos/${GITHUB_REPOSITORY}/tarball/${BASE_SHA}" > "$RUNNER_TEMP/trusted.tgz"
           /usr/bin/tar -xzf "$RUNNER_TEMP/trusted.tgz" -C "$dest" --strip-components=1
-          test -f "$dest/scripts/agents/salvage.mjs" && test -f "$dest/scripts/agents/pathguard.mjs" && test -f "$dest/scripts/agents/receipt.mjs"
+          # one test per line: a failure in the middle of an && list does not trip -e
+          test -f "$dest/scripts/agents/salvage.mjs"
+          test -f "$dest/scripts/agents/pathguard.mjs"
+          test -f "$dest/scripts/agents/receipt.mjs"
           /bin/chmod -R a-w "$dest"
 
       # Post-run gate. The model has had a shell in this workspace, so before
@@ -312,31 +315,39 @@ jobs:
           fi
           if [ -n "$($GIT status --porcelain -- . ':(exclude).agent-run')" ]; then
             $GIT add -A -- . ':(exclude).agent-run' || fail "git add failed"
-            $GIT -c "user.name=$AUTHOR" -c "user.email=$AUTHOR@users.noreply.github.com" commit -q --no-verify \
-              -m "WIP: ${AGENT} run ${GITHUB_RUN_ID}" -m "Saved by the workflow." -m "Agent: ${AGENT}" || fail "git commit failed"
+            # status can be dirty only because the index differed from HEAD; commit only if add left a change
+            if ! $GIT diff --cached --quiet; then
+              $GIT -c "user.name=$AUTHOR" -c "user.email=$AUTHOR@users.noreply.github.com" commit -q --no-verify \
+                -m "WIP: ${AGENT} run ${GITHUB_RUN_ID}" -m "Saved by the workflow." -m "Agent: ${AGENT}" || fail "git commit failed"
+            fi
           fi
           head="$($GIT rev-parse HEAD)"
           if [ "$head" = "$BASE_SHA" ]; then echo "gate: nothing beyond the base commit"; exit 0; fi
           T="$RUNNER_TEMP/trusted"
           node "$T/scripts/agents/pathguard.mjs" --labels "agent:${AGENT}" --branch "$branch" \
             --author "$AUTHOR" --author-type Bot --base "$BASE_SHA" --head "$head" || fail "pathguard refused the changes"
-          # Second opinion on what changed: a diff over the SAME range pathguard uses (BASE...HEAD,
-          # from the merge base, so a branch that is behind develop is fine) must list exactly the
-          # paths pathguard's own diff produced; any mismatch fails closed. This is load-bearing
-          # against history lies (replace refs, GIT_GRAFT_FILE, a shallow or commit-graph trick
-          # that makes the two views differ), together with the unset/cleanup above. It does NOT
-          # help against a poisoned PATH or a hostile model that can still act after the gate.
+          # Consistency tripwire, NOT an independent check of pathguard. pathguard's CLI walks the
+          # range commit by commit (rev-list + diff-tree); this compares the set of paths it
+          # evaluated per commit with the net BASE...HEAD diff (the same range, so a branch that is
+          # behind develop is fine): every path in the net diff must have been evaluated. Both come
+          # from the same git in the same repo, so it only catches views that disagree with each
+          # other. The real defences against history lies (replace refs, GIT_GRAFT_FILE, shallow,
+          # commit-graph) are the cleanup and unsets above; with the replace defences removed this
+          # check still passes (a test records that). It does not help against PATH poisoning.
+          # A net diff that is empty while the per-commit view passed is not an error here:
+          # pathguard itself decides about an empty diff.
           CHECKED="$(T="$T" BASE_SHA="$BASE_SHA" HEAD_SHA="$head" node --input-type=module -e '
             import { pathToFileURL } from "node:url";
             import { execFileSync } from "node:child_process";
-            const { gitChanged } = await import(pathToFileURL(process.env.T + "/scripts/agents/pathguard.mjs").href);
-            const key = (a) => JSON.stringify([...new Set(a)].sort());
-            const A = gitChanged(process.env.BASE_SHA, process.env.HEAD_SHA, process.cwd()).flatMap((f) => (typeof f === "string" ? [f] : [f.path, f.oldPath].filter(Boolean)));
+            const { gitHistory } = await import(pathToFileURL(process.env.T + "/scripts/agents/pathguard.mjs").href);
+            const h = gitHistory(process.env.BASE_SHA, process.env.HEAD_SHA, process.cwd());
+            const seen = new Set(h.files.flatMap((f) => [f.path, f.oldPath].filter(Boolean)));
             const z = execFileSync("/usr/bin/git", ["diff", "--raw", "-z", "--no-renames", "--no-abbrev", process.env.BASE_SHA + "..." + process.env.HEAD_SHA], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split("\0");
-            const B = []; for (let i = 0; i + 1 < z.length; i += 2) if (z[i].startsWith(":")) B.push(z[i + 1]);
-            if (A.length === 0 || key(A) !== key(B)) { console.error("pathguard checked " + key(A) + " but git diff lists " + key(B)); process.exit(1); }
-            console.log("crosscheck ok: " + A.length + " path(s)");
-          ')" || fail "the file list pathguard checked differs from git diff"
+            const net = []; for (let i = 0; i + 1 < z.length; i += 2) if (z[i].startsWith(":")) net.push(z[i + 1]);
+            const missing = net.filter((p) => !seen.has(p));
+            if (missing.length) { console.error("net diff has paths pathguard did not evaluate per commit: " + JSON.stringify(missing)); process.exit(1); }
+            console.log("crosscheck ok: " + seen.size + " path(s) evaluated per commit, " + net.length + " in the net diff");
+          ')" || fail "the net diff lists paths pathguard did not evaluate"
           [[ "$CHECKED" == "crosscheck ok: "* ]] || fail "the cross-check did not report success"
           echo "$CHECKED"
           subject="$($GIT log -1 --format=%s | /usr/bin/tr -d '\r\n' | /usr/bin/cut -c1-80)"
@@ -468,14 +479,26 @@ jobs:
               args=(); for a in $assignees; do args+=(-f "assignees[]=$a"); done
               try $GH api -X DELETE "${api}/issues/${num}/assignees" "${args[@]}"
             fi
-            try $GH pr merge "$num" --disable-auto --repo "$GITHUB_REPOSITORY"
+            # gh errors when auto-merge is not enabled (the usual case): tolerate exactly that.
+            if ! out="$($GH pr merge "$num" --disable-auto --repo "$GITHUB_REPOSITORY" 2>&1)"; then
+              if printf '%s' "$out" | /usr/bin/grep -qiE 'auto[- ]?merge.*(not enabled|is not|not allowed|already|disabled)'; then
+                echo "label: auto-merge was not enabled on #${num}"
+              else
+                echo "label: FAILED: pr merge --disable-auto: $out" >&2; FAILED=1
+              fi
+            fi
             if [ "$pr_draft" != true ]; then try $GH pr ready "$num" --undo --repo "$GITHUB_REPOSITORY"; fi
           done
           if [ "$FAILED" != 0 ]; then echo "label: the labels are right but at least one reset above failed; failing the step" >&2; exit 1; fi
 
       - name: Run receipt
         if: always()
+        shell: /usr/bin/bash --noprofile --norc -eo pipefail {0}
         env:
+          BASH_ENV: ""
+          ENV: ""
+          LD_PRELOAD: ""
+          NODE_OPTIONS: ""
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           AGENT: ${{ matrix.agent }}

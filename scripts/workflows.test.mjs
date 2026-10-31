@@ -48,7 +48,10 @@ function stepEnv(s, exprs = {}, extra = {}) {
   }
   return { PATH: process.env.PATH, HOME: os.tmpdir(), ...env, ...extra };
 }
-const bash = (script, env, cwd) => spawnSync("/usr/bin/bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", script], { env, cwd, encoding: "utf8" });
+// Run a step's script with the flags the step declares in `shell:` (the runner default for an
+// implicit shell on Linux is `bash -e {0}`).
+const shellArgs = (shell) => (shell ? String(shell).split(/\s+/).slice(1).filter((t) => t !== "{0}") : ["-e"]);
+const bash = (script, env, cwd, shell) => spawnSync("/usr/bin/bash", [...shellArgs(shell), "-c", script], { env, cwd, encoding: "utf8" });
 // Every temp directory lives under ONE per-run root (under TMPDIR), removed when the process exits.
 const RUN_ROOT = mkdtempSync(path.join(os.tmpdir(), "wf-test-"));
 process.on("exit", () => rmSync(RUN_ROOT, { recursive: true, force: true }));
@@ -89,7 +92,7 @@ function scopeOf(over = {}) {
   const dir = tmp("scope-");
   const out = path.join(dir, "out");
   writeFileSync(out, "");
-  const r = bash(scopeStep.run, stepEnv(scopeStep, { ...guardEnvExprs, ...over }, { GITHUB_OUTPUT: out }), dir);
+  const r = bash(scopeStep.run, stepEnv(scopeStep, { ...guardEnvExprs, ...over }, { GITHUB_OUTPUT: out }), dir, scopeStep.shell);
   return { status: r.status, scope: /in_scope=(\w+)/.exec(readFileSync(out, "utf8"))?.[1], err: r.stderr };
 }
 test("scope: a human PR with no labels (empty join) is out of scope and passes", () => {
@@ -153,7 +156,7 @@ test("guard: the pathguard step is not skipped for in-scope PRs and binds every 
   const cwd = stubDir({ "scripts/agents/pathguard.mjs": recorder(rec) });
   const env = stepEnv(s, { ...guardEnvExprs, PR_LABELS: "", PR_BRANCH: "agent/ops/t1", PR_AUTHOR: "agents[bot]", PR_AUTHOR_TYPE: "Bot", PR_BASE_SHA: "b".repeat(40), PR_HEAD_SHA: "c".repeat(40), AGENTS_BOT_LOGINS: "agents[bot]" });
   Object.assign(env, { PR_LABELS: "", PR_BRANCH: "agent/ops/t1", PR_AUTHOR: "agents[bot]", PR_AUTHOR_TYPE: "Bot", PR_BASE_SHA: "b".repeat(40), PR_HEAD_SHA: "c".repeat(40) });
-  const r = bash(s.run, env, cwd);
+  const r = bash(s.run, env, cwd, s.shell);
   assert.equal(r.status, 0, r.stderr);
   const argv = JSON.parse(readFileSync(rec, "utf8"));
   const flag = (n) => argv[argv.indexOf(`--${n}`) + 1];
@@ -165,7 +168,7 @@ test("guard: the cap step is not skipped and really invokes guard-open-prs with 
   assert.equal(s.if, IN_SCOPE);
   const rec = path.join(tmp("rec-"), "argv.json");
   const cwd = stubDir({ "scripts/agents/guard-open-prs.mjs": recorder(rec) });
-  const r = bash(s.run, stepEnv(s, { ...guardEnvExprs, GH_TOKEN: "t", AGENTS_BOT_LOGINS: "" }, { GITHUB_REPOSITORY: "o/r" }), cwd);
+  const r = bash(s.run, stepEnv(s, { ...guardEnvExprs, GH_TOKEN: "t", AGENTS_BOT_LOGINS: "" }, { GITHUB_REPOSITORY: "o/r" }), cwd, s.shell);
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(JSON.parse(readFileSync(rec, "utf8")), ["--max", "16", "--repo", "o/r"]);
   assert.equal(guard.jobs.guard.steps.filter((x) => x.if !== IN_SCOPE && x.name !== "Read the event").length, 0, "every later step is gated on scope only");
@@ -174,7 +177,7 @@ test("guard: the PR head sha is verified against the event (mismatch fails, matc
   const s = step(guard, "guard", "Fetch the PR head as git objects only");
   const run = (revParse) => {
     const bin = stubDir({ git: `#!/bin/sh\nif [ "$1" = rev-parse ]; then echo ${revParse}; fi\nexit 0\n` });
-    return bash(s.run, stepEnv(s, {}, { PR_NUMBER: "7", PR_HEAD_SHA: HEX, PATH: bin + ":" + process.env.PATH }), bin);
+    return bash(s.run, stepEnv(s, {}, { PR_NUMBER: "7", PR_HEAD_SHA: HEX, PATH: bin + ":" + process.env.PATH }), bin, s.shell);
   };
   assert.equal(run(HEX).status, 0);
   assert.notEqual(run("d".repeat(40)).status, 0);
@@ -230,38 +233,52 @@ test("label step: handle from matrix.agent, runs only after gate and salvage, al
   assert.doesNotMatch(labelStep.run, /-X DELETE[^\n]*\/labels/);
   assert.doesNotMatch(stripComments(JSON.stringify(labelStep)), /pull_request|github\.event/);
 });
-// A gh stub whose answers depend on the query, so a dropped `head=` filter or `state=open` returns
-// different PRs (77, 78) and shows up in the calls. Per-PR facts come from meta files.
-function labelRun({ remote = HEX, existing = "", meta = {}, reviewers = {}, teams = {}, assignees = {}, failReady = false, branch = "agent/ops/t1-x", author = "agents[bot]" } = {}) {
+// A gh stub that answers from JSON fixtures and runs the REAL jq expression the step passes with --jq,
+// so the policy fields (.user.login, .base.ref, .draft, the marker) are read by the step's own jq.
+// The PR list answers depend on the query: a dropped `head=` filter or `state=open` returns 77 and 78.
+function labelRun({ remote = HEX, existing = "", prs = {}, reviewers = {}, teams = {}, assignees = {}, failReady = false, mergeError = "", branch = "agent/ops/t1-x", author = "agents[bot]", headSha = HEX } = {}) {
   const dir = tmp("label-");
   const log = path.join(dir, "calls.log");
   const gh = path.join(dir, "gh");
-  for (const [n, m] of Object.entries(meta)) writeFileSync(path.join(dir, `meta-${n}`), m.join("\t") + "\n");
-  for (const [n, v] of Object.entries(reviewers)) writeFileSync(path.join(dir, `rev-${n}`), v.join("\n") + "\n");
-  for (const [n, v] of Object.entries(teams)) writeFileSync(path.join(dir, `team-${n}`), v.join("\n") + "\n");
-  for (const [n, v] of Object.entries(assignees)) writeFileSync(path.join(dir, `asg-${n}`), v.join("\n") + "\n");
+  const j = (f, o) => writeFileSync(path.join(dir, f), JSON.stringify(o));
+  j("ref.json", { object: { sha: remote } });
+  j("list.json", existing.split("\n").filter(Boolean).map((n) => ({ number: Number(n) })));
+  j("extra.json", [{ number: 77 }, { number: 78 }]);
+  j("created.json", { number: 99 });
+  for (const n of new Set([...existing.split("\n").filter(Boolean), "99"])) {
+    const pr = prs[n] ?? { login: "x", type: "User", base: "develop", draft: true, body: "" };
+    j(`pr-${n}.json`, { user: { login: pr.login, type: pr.type }, base: { ref: pr.base }, head: { ref: "wrong-head-ref" }, draft: pr.draft, body: pr.body });
+    j(`rev-${n}.json`, { users: (reviewers[n] ?? []).map((l) => ({ login: l })), teams: (teams[n] ?? []).map((t) => ({ slug: t })) });
+    j(`issue-${n}.json`, { assignees: (assignees[n] ?? []).map((l) => ({ login: l })), user: { login: "wrong" } });
+  }
+  if (mergeError) writeFileSync(path.join(dir, "merge-error"), mergeError);
   writeFileSync(gh, `#!/bin/bash
 echo "$*" >> ${log}
 D=${dir}
+expr=""; a=("$@"); for ((i=0;i<\${#a[@]};i++)); do [[ "\${a[i]}" == "--jq" ]] && expr="\${a[i+1]}"; done
+q() { /usr/bin/jq -r "$expr" "$D/$1"; }
+if [[ "$1 $2" == "pr merge" && -f $D/merge-error ]]; then cat $D/merge-error >&2; exit 1; fi
+if [[ "$1 $2" == "pr ready" && "${failReady}" == "true" ]]; then exit 1; fi
+[[ -z "$expr" ]] && { [[ "$*" == *"-X POST"*"/pulls "* ]] && echo 99; exit 0; }
 case "$*" in
-  *git/ref/heads*) echo ${remote};;
-  *"-X GET"*pulls*) if [[ "$*" == *"state=open"* && "$*" == *"head=o:${branch}"* ]]; then printf '%s' "${existing}"; else printf '77\n78\n'; fi;;
-  *"-X POST"*pulls*) echo 99;;
-  *"/requested_reviewers"*users*) cat $D/rev-$(echo "$*" | sed -E 's#.*pulls/([0-9]+)/.*#\\1#') 2>/dev/null || true;;
-  *"/requested_reviewers"*teams*) cat $D/team-$(echo "$*" | sed -E 's#.*pulls/([0-9]+)/.*#\\1#') 2>/dev/null || true;;
-  *"/issues/"*assignees*) cat $D/asg-$(echo "$*" | sed -E 's#.*issues/([0-9]+).*#\\1#') 2>/dev/null || true;;
-  *"/pulls/"*tsv*) cat $D/meta-$(echo "$*" | sed -E 's#.*pulls/([0-9]+).*#\\1#') 2>/dev/null || printf 'x\\tdevelop\\ttrue\\tfalse\\n';;
+  *git/ref/heads*) q ref.json;;
+  *"-X GET"*pulls*) if [[ "$*" == *"state=open"* && "$*" == *"head=o:${branch}"* ]]; then q list.json; else q extra.json; fi;;
+  *"-X POST"*pulls*) q created.json;;
+  *requested_reviewers*) q rev-$(echo "$*" | sed -E 's#.*pulls/([0-9]+)/.*#\\1#').json;;
+  *"/issues/"*) q issue-$(echo "$*" | sed -E 's#.*issues/([0-9]+).*#\\1#').json;;
+  *"/pulls/"*) q pr-$(echo "$*" | sed -E 's#.*pulls/([0-9]+).*#\\1#').json;;
 esac
-if [[ "$*" == "pr ready"* && "${failReady}" == "true" ]]; then exit 1; fi
 exit 0
 `);
   chmodSync(gh, 0o755);
   const script = labelStep.run.replace("GH=/usr/bin/gh", `GH=${gh}`);
   assert.notEqual(script, labelStep.run, "the GH= line moved");
-  const vals = { GH_TOKEN: "t", AGENT: "ops", AUTHOR: author, BRANCH: branch, HEAD_SHA: HEX, SUBJECT: "did a thing", RUN_URL: "u", WANT: "agent:ops" };
-  const r = bash(script, stepEnv(labelStep, vals, { ...vals, GITHUB_REPOSITORY: "o/r", GITHUB_REPOSITORY_OWNER: "o" }), dir);
+  const vals = { GH_TOKEN: "t", AGENT: "ops", AUTHOR: author, BRANCH: branch, HEAD_SHA: headSha, SUBJECT: "did a thing", RUN_URL: "u", WANT: "agent:ops" };
+  const r = bash(script, stepEnv(labelStep, vals, { ...vals, GITHUB_REPOSITORY: "o/r", GITHUB_REPOSITORY_OWNER: "o" }), dir, labelStep.shell);
   return { r, calls: existsSync(log) ? readFileSync(log, "utf8").trim().split("\n") : [] };
 }
+const MARK = "<!-- agents-workflow -->\nOpened by the workflow";
+const pr = (o) => ({ login: "someone", type: "User", base: "develop", draft: true, body: "", ...o });
 // A body holds a newline, so a logged call can span two lines: join continuation lines.
 const patchOf = (x, n) => {
   const i = x.calls.findIndex((c) => c.includes(`-X PATCH repos/o/r/pulls/${n} `));
@@ -276,29 +293,27 @@ test("label step: a branch on GitHub that is not the checked commit opens nothin
   assert.notEqual(x.r.status, 0);
   assert.equal(x.calls.length, 1);
 });
-test("label step: a branch outside agent/<handle>/ is refused before any call", () => {
-  for (const b of ["feat/x", "agent/other/x", "agent/ops"]) {
-    const x = labelRun({ branch: b });
-    assert.notEqual(x.r.status, 0, b);
-    assert.equal(x.calls.length, 0, b);
-  }
+test("label step: a branch outside agent/<handle>/ or a head sha that is not 40 hex is refused before any call", () => {
+  for (const b of ["feat/x", "agent/other/x", "agent/ops"]) { const x = labelRun({ branch: b }); assert.notEqual(x.r.status, 0, b); assert.equal(x.calls.length, 0, b); }
+  for (const h of ["xyz", "A".repeat(40), "a".repeat(39), ""]) { const x = labelRun({ headSha: h }); assert.notEqual(x.r.status, 0, h); assert.equal(x.calls.length, 0, h); }
 });
-test("label step: no existing PR opens a draft into develop and sets exactly the two labels", () => {
+test("label step: no existing PR opens a draft into develop with head=<branch>, and sets exactly the two labels", () => {
   const x = labelRun({});
   assert.equal(x.r.status, 0, x.r.stderr);
-  assert.ok(x.calls.some((c) => /-X POST repos\/o\/r\/pulls .*base=develop .*draft=true/.test(c)), x.calls.join("\n"));
+  const post = x.calls.find((c) => /-X POST repos\/o\/r\/pulls /.test(c));
+  assert.ok(post && post.includes("-f head=agent/ops/t1-x") && post.includes("-f base=develop") && post.includes("draft=true"), post);
   const put = putOf(x, 99);
   assert.equal(put.length, 1);
   assert.match(put[0], /-f labels\[\]=agent:ops -f labels\[\]=from:agent$/);
 });
-test("label step: the PR query keeps its head filter and state=open (a dropped filter would pick up PRs 77 and 78)", () => {
-  const x = labelRun({ existing: "12", meta: { 12: ["agents[bot]", "develop", "true", "true"] } });
+test("label step: the PR query keeps its head filter and state=open and is paginated", () => {
+  const x = labelRun({ existing: "12", prs: { 12: pr({ login: "agents[bot]", body: MARK }) } });
   assert.equal(x.r.status, 0, x.r.stderr);
   assert.ok(!x.calls.some((c) => /\b(77|78)\b/.test(c)), x.calls.join("\n"));
   assert.ok(x.calls.find((c) => c.includes("-X GET")).includes("--paginate"));
 });
 test("label step policy: a PR the workflow did not create, with a base other than develop, is fully reset", () => {
-  const x = labelRun({ existing: "12", meta: { 12: ["someone", "feature", "false", "false"] }, reviewers: { 12: ["rev1"] }, teams: { 12: ["team1"] }, assignees: { 12: ["asg1"] } });
+  const x = labelRun({ existing: "12", prs: { 12: pr({ base: "feature" }) }, reviewers: { 12: ["rev1"] }, teams: { 12: ["team1"] }, assignees: { 12: ["asg1"] } });
   assert.equal(x.r.status, 0, x.r.stderr);
   const patch = patchOf(x, 12);
   assert.match(patch, /base=develop/);
@@ -306,38 +321,72 @@ test("label step policy: a PR the workflow did not create, with a base other tha
   assert.match(patch, /body=<!-- agents-workflow -->/);
   assert.match(patch, /maintainer_can_modify=false/);
   assert.match(putOf(x, 12)[0], /-f labels\[\]=agent:ops -f labels\[\]=from:agent$/);
-  assert.ok(x.calls.some((c) => c.startsWith("pr ready 12 --undo")));
-  assert.ok(x.calls.some((c) => c.startsWith("pr merge 12 --disable-auto")));
-  assert.ok(x.calls.some((c) => /-X DELETE repos\/o\/r\/pulls\/12\/requested_reviewers .*reviewers\[\]=rev1 .*team_reviewers\[\]=team1/.test(c)));
-  assert.ok(x.calls.some((c) => /-X DELETE repos\/o\/r\/issues\/12\/assignees .*assignees\[\]=asg1/.test(c)));
+  assert.ok(x.calls.some((c) => c.startsWith("pr merge 12 --disable-auto") && c.includes("--repo o/r")));
+  assert.ok(!x.calls.some((c) => c.startsWith("pr ready")), "already a draft: no conversion");
   assert.ok(!x.calls.some((c) => c.includes("-X POST repos/o/r/pulls ")), "no second PR");
 });
+test("label step policy: a draft is not converted again, a non-draft is (with --repo)", () => {
+  const draft = labelRun({ existing: "12", prs: { 12: pr({ draft: true }) } });
+  assert.ok(!draft.calls.some((c) => c.startsWith("pr ready")));
+  const live = labelRun({ existing: "12", prs: { 12: pr({ draft: false }) } });
+  assert.ok(live.calls.some((c) => c === "pr ready 12 --undo --repo o/r"), live.calls.join("\n"));
+});
+test("label step policy: reviewers, teams and assignees are removed separately, from paginated reads", () => {
+  const cases = [
+    [{ reviewers: { 12: ["u1", "u2"] } }, [/-X DELETE repos\/o\/r\/pulls\/12\/requested_reviewers .*reviewers\[\]=u1 .*reviewers\[\]=u2/], [/team_reviewers/, /\/assignees/]],
+    [{ teams: { 12: ["t1"] } }, [/-X DELETE repos\/o\/r\/pulls\/12\/requested_reviewers .*team_reviewers\[\]=t1/], [/ reviewers\[\]=/, /\/assignees/]],
+    [{ assignees: { 12: ["a1"] } }, [/-X DELETE repos\/o\/r\/issues\/12\/assignees .*assignees\[\]=a1/], [/requested_reviewers .*-X DELETE|-X DELETE .*requested_reviewers/]],
+    [{}, [], [/-X DELETE/]],
+  ];
+  for (const [extra, want, notWant] of cases) {
+    const x = labelRun({ existing: "12", prs: { 12: pr({}) }, ...extra });
+    assert.equal(x.r.status, 0, x.r.stderr);
+    const text = x.calls.join("\n");
+    for (const w of want) assert.match(text, w);
+    for (const n of notWant) assert.doesNotMatch(text, n);
+    assert.ok(x.calls.filter((c) => /requested_reviewers|issues\/12 /.test(c) && !c.includes("-X DELETE")).every((c) => c.includes("--paginate")), "reads are paginated");
+  }
+});
 test("label step policy: title and body of a legitimate PR (workflow-made, or already on develop) are left alone", () => {
-  for (const meta of [["agents[bot]", "develop", "true", "true"], ["someone", "develop", "true", "false"], ["agents[bot]", "develop", "false", "false"]]) {
-    const x = labelRun({ existing: "12", meta: { 12: meta } });
-    assert.equal(x.r.status, 0, meta + x.r.stderr);
+  for (const p of [pr({ login: "agents[bot]", body: MARK }), pr({ login: "someone" }), pr({ login: "agents[bot]", draft: false })]) {
+    const x = labelRun({ existing: "12", prs: { 12: p } });
+    assert.equal(x.r.status, 0, x.r.stderr);
     const patch = patchOf(x, 12);
     assert.match(patch, /base=develop/);
     assert.match(patch, /maintainer_can_modify=false/);
-    assert.doesNotMatch(patch, /title=|body=/, meta.join());
+    assert.doesNotMatch(patch, /title=|body=/, JSON.stringify(p));
     assert.equal(putOf(x, 12).length, 1);
   }
-  // marker without the workflow's identity, or identity without the marker, on a foreign base: reset
-  for (const meta of [["someone", "feature", "true", "true"], ["agents[bot]", "feature", "true", "false"]]) {
-    assert.match(patchOf(labelRun({ existing: "12", meta: { 12: meta } }), 12), /title=/, meta.join());
+  // identity and marker both needed: the login comes from .user.login (not .user.type, not the issue's user), the base from .base.ref (not .head.ref)
+  for (const p of [pr({ login: "someone", base: "feature", body: MARK }), pr({ login: "agents[bot]", base: "feature", body: "no marker" }), pr({ login: "someone", type: "Bot", base: "feature", body: MARK }), pr({ login: "agents[bot]", base: "feature", body: "a workflow thing, no marker" })]) {
+    assert.match(patchOf(labelRun({ existing: "12", prs: { 12: p } }), 12), /title=/, JSON.stringify(p));
   }
+  assert.doesNotMatch(patchOf(labelRun({ existing: "12", prs: { 12: pr({ login: "agents[bot]", type: "Bot", base: "develop", body: MARK }) } }), 12), /title=/);
+  // workflow-made (login AND marker) but on a foreign base: only the base is reset, the text stays
+  assert.doesNotMatch(patchOf(labelRun({ existing: "12", prs: { 12: pr({ login: "agents[bot]", type: "User", base: "feature", body: MARK }) } }), 12), /title=|body=/);
 });
 test("label step: labels are PUT before anything that can fail; a failed draft conversion fails the step loudly", () => {
-  const x = labelRun({ existing: "12", meta: { 12: ["someone", "develop", "false", "false"] }, failReady: true });
+  const x = labelRun({ existing: "12", prs: { 12: pr({ draft: false }) }, failReady: true });
   assert.notEqual(x.r.status, 0);
   assert.match(x.r.stderr, /FAILED: .*pr ready 12 --undo/);
   assert.equal(putOf(x, 12).length, 1, "labels were set");
   assert.ok(x.calls.findIndex((c) => c.includes("-X PUT")) < x.calls.findIndex((c) => c.startsWith("pr ready")));
 });
+test("label step: 'auto-merge is not enabled' from gh pr merge --disable-auto is tolerated; any other error fails loudly", () => {
+  for (const m of ["GraphQL: Auto merge is not enabled for this pull request", "auto-merge is not allowed for this repository"]) {
+    const x = labelRun({ existing: "12", prs: { 12: pr({}) }, mergeError: m });
+    assert.equal(x.r.status, 0, m + x.r.stderr);
+  }
+  const bad = labelRun({ existing: "12", prs: { 12: pr({}) }, mergeError: "HTTP 502 bad gateway" });
+  assert.notEqual(bad.r.status, 0);
+  assert.match(bad.r.stderr, /FAILED: pr merge --disable-auto/);
+  assert.equal(putOf(bad, 12).length, 1);
+});
 
 // ---------------------------------------------------------------- gate, in a real repo with the real pathguard
 const gateStep = run("Gate the branch and the paths");
-function gate({ branch, change, agent = "product", baseSha, setup, stubPathguard, extraEnv = {} } = {}) {
+function gate({ branch, change, agent = "product", baseSha, setup, stubPathguard, extraEnv = {}, mutate } = {}) {
+  const gs = mutate ? mutate(structuredClone(gateStep)) : gateStep;
   const dir = tmp("gate-");
   const work = path.join(dir, "work");
   const temp = path.join(dir, "temp");
@@ -357,10 +406,10 @@ function gate({ branch, change, agent = "product", baseSha, setup, stubPathguard
   if (change) { mkdirSync(path.dirname(path.join(work, change)), { recursive: true }); writeFileSync(path.join(work, change), "y\n"); }
   const out = path.join(dir, "out");
   writeFileSync(out, "");
-  const env = stepEnv(gateStep, { AGENT: agent, BASE_SHA: baseSha ?? base, AUTHOR: "agents[bot]", GIT_CONFIG_GLOBAL: path.join(temp, "gitconfig-trusted") },
+  const env = stepEnv(gs, { AGENT: agent, BASE_SHA: baseSha ?? base, AUTHOR: "agents[bot]", GIT_CONFIG_GLOBAL: path.join(temp, "gitconfig-trusted") },
     { GITHUB_OUTPUT: out, RUNNER_TEMP: temp, GITHUB_REPOSITORY: "o/r", GITHUB_RUN_ID: "42", HOOK_FLAG: path.join(dir, "hook-ran"), FSMON_FLAG: path.join(dir, "fsmon-ran"), PG_ARGV: path.join(dir, "pg-argv.json"), ...(typeof extraEnv === "function" ? extraEnv(ctx) : extraEnv) });
   Object.assign(env, { AGENT: agent, BASE_SHA: baseSha ?? base, AUTHOR: "agents[bot]", GIT_CONFIG_GLOBAL: path.join(temp, "gitconfig-trusted") });
-  const r = bash(gateStep.run, env, work);
+  const r = bash(gs.run, env, work, gs.shell);
   const lines = readFileSync(out, "utf8").split("\n").filter(Boolean);
   const o = Object.fromEntries(lines.map((l) => l.split(/=(.*)/s).slice(0, 2)));
   return { r, o, lines, ...ctx, branchNow: g("symbolic-ref", "--short", "HEAD").stdout.trim() };
@@ -372,7 +421,7 @@ test("gate: a clean agent branch with an allowed change passes, with one ok= lin
   assert.equal(x.o.ok, "true");
   assert.equal(x.o.branch, "agent/product/t1-x");
   assert.equal(x.lines.filter((l) => l.startsWith("ok=")).length, 1);
-  assert.match(x.r.stdout, /crosscheck ok: 1 path/);
+  assert.match(x.r.stdout, /crosscheck ok: 1 path\(s\) evaluated per commit, 1 in the net diff/);
 });
 test("gate: any other branch name is moved to agent/<handle>/wip-<run> before the push", () => {
   for (const b of ["feat/anything", "develop", "agent/other/x", "agent/product/../x", "agent/product/x.lock"]) {
@@ -444,6 +493,7 @@ function replaceExploit(extra = () => {}) {
     cmd(["update-ref", "refs/heads/agent/product/t1-x", R]);
     cmd(["reset", "-q", "--hard", R]);
     cmd(["replace", R, Rb]);
+    cmd(["reset", "-q"]); // index := the (replaced) HEAD tree; the real files stay in the work tree, hidden by info/exclude
     mkdirSync(path.join(work, ".git/info"), { recursive: true });
     writeFileSync(path.join(work, ".git/info/exclude"), ".github/\n");
     extra({ work, cmd, R, Rb });
@@ -465,33 +515,52 @@ test("gate (S1): the replace ref is also stripped from packed-refs", () => {
   assert.deepEqual(x.lines, ["ok=false"]);
   assert.ok(ids);
 });
-test("gate (S1): a replace exploit whose twin is also allowed still cannot pass the cross-check", () => {
-  // pathguard stub says yes and reports the benign twin's path; the real diff lists the evil path
-  const stub = `export function gitChanged() { return ["docs/BACKLOG.md"]; }\nif (process.argv.length > 2) process.exit(0);\n`;
-  const x = gate({ branch: "agent/product/t1-x", stubPathguard: stub, setup: replaceExploit() });
-  assert.notEqual(x.r.status, 0);
-  assert.deepEqual(x.lines, ["ok=false"]);
-  assert.match(x.r.stderr, /differs from git diff/);
-});
-test("gate: the cross-check fails when the two diffs disagree, passes when they agree", () => {
-  const stubNo = `export function gitChanged() { return ["docs/OTHER.md"]; }\nif (process.argv.length > 2) process.exit(0);\n`;
-  const no = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: stubNo });
+// The stubs export gitHistory, the function the cross-check imports from the trusted pathguard.
+const histStub = (paths, extra = "") => `${extra}export function gitHistory() { return { commits: 1, files: ${JSON.stringify(paths.map((p) => ({ path: p })))}, merges: [], shas: [] }; }\nif (process.argv.length > 2) process.exit(0);\n`;
+test("gate: the cross-check fails when the net diff has a path pathguard did not evaluate; extra evaluated paths are fine", () => {
+  const no = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: histStub(["docs/OTHER.md"]) });
   assert.notEqual(no.r.status, 0);
   assert.deepEqual(no.lines, ["ok=false"]);
-  const stubYes = `export function gitChanged() { return ["docs/BACKLOG.md"]; }\nif (process.argv.length > 2) process.exit(0);\n`;
-  const yes = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: stubYes });
+  assert.match(no.r.stderr, /did not evaluate/);
+  const yes = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: histStub(["docs/BACKLOG.md", "docs/REVERTED.md"]) });
   assert.equal(yes.r.status, 0, yes.r.stderr);
   assert.equal(yes.o.ok, "true");
 });
-
 test("gate: a pathguard module that exits 0 when imported cannot skip the cross-check", () => {
-  const stub = `export function gitChanged() { return ["docs/BACKLOG.md"]; }\nprocess.exit(0);\n`;
-  const x = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: stub });
+  const x = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: `export function gitHistory() { return { files: [{ path: "docs/BACKLOG.md" }] }; }\nprocess.exit(0);\n` });
   assert.notEqual(x.r.status, 0);
   assert.deepEqual(x.lines, ["ok=false"]);
 });
+test("gate (S1, honest limit): with the replace defences AND the .git/info cleanup removed the real exploit passes and the cross-check does NOT catch it; those three do the work", () => {
+  const dropBoth = (st) => {
+    // Removing only the replace defences is not enough for the exploit: the removed .git/info/exclude
+    // is what makes the hidden files show up as dirty, and the gate then commits them where pathguard
+    // sees them. So the .git/info cleanup is a third layer.
+    st.run = st.run.replace("/bin/rm -rf .git/hooks .git/info .git/refs/replace .git/shallow", "/bin/rm -rf .git/hooks .git/shallow").replace("/bin/mkdir .git/hooks .git/info", "/bin/mkdir -p .git/hooks .git/info");
+    delete st.env.GIT_NO_REPLACE_OBJECTS;
+    return st;
+  };
+  const x = gate({ branch: "agent/product/t1-x", setup: replaceExploit(), mutate: dropBoth });
+  assert.equal(x.o.ok, "true", "if this starts failing, the cross-check got stronger: update the claim in the notes\n" + x.r.stderr);
+  const withDefences = gate({ branch: "agent/product/t1-x", setup: replaceExploit() });
+  assert.deepEqual(withDefences.lines, ["ok=false"]);
+});
+test("gate: a range that adds a file and then removes it again is decided by pathguard, not by the cross-check", () => {
+  const x = gate({
+    branch: "agent/product/t1-x",
+    setup: ({ work, g }) => {
+      const id = ["-c", "user.name=t", "-c", "user.email=t@t"];
+      mkdirSync(path.join(work, "docs"), { recursive: true });
+      writeFileSync(path.join(work, "docs/BACKLOG.md"), "x\n"); g("add", "-A"); g(...id, "commit", "-q", "-m", "add");
+      g("rm", "-q", "docs/BACKLOG.md"); g(...id, "commit", "-q", "-m", "remove");
+    },
+  });
+  const pg = spawnSync("node", [path.join(x.temp, "trusted/scripts/agents/pathguard.mjs"), "--labels", "agent:product", "--branch", "agent/product/t1-x", "--author", "agents[bot]", "--author-type", "Bot", "--base", x.base, "--head", "HEAD"], { cwd: x.work, encoding: "utf8", env: x.clean });
+  assert.equal(x.o.ok === "true", pg.status === 0, `gate ok=${x.o.ok} but pathguard exit ${pg.status}: ${pg.stderr}${x.r.stderr}`);
+  assert.doesNotMatch(x.r.stderr, /did not evaluate/);
+  if (pg.status === 0) assert.match(x.r.stdout, /0 in the net diff/);
+});
 
-// ---------------------------------------------------------------- F1: a branch that is behind the base
 test("gate (F1): a maintain-mode branch that is behind the base still passes (same range as pathguard)", () => {
   const x = gate({
     branch: "agent/product/t1-x",
@@ -510,7 +579,7 @@ test("gate (F1): a maintain-mode branch that is behind the base still passes (sa
   });
   assert.equal(x.r.status, 0, x.r.stderr + x.r.stdout);
   assert.equal(x.o.ok, "true");
-  assert.match(x.r.stdout, /crosscheck ok: 1 path/);
+  assert.match(x.r.stdout, /crosscheck ok: 1 path\(s\) evaluated per commit, 1 in the net diff/);
 });
 
 // GIT_GRAFT_FILE lie: E adds a forbidden file, R removes it again. With a graft that gives R the parent
@@ -551,7 +620,7 @@ test("gate (F3): a symlinked .git fails closed", () => {
   assert.deepEqual(x.lines, ["ok=false"]);
 });
 test("gate (F3): pathguard is called with the agent label, the branch, the bot author and --author-type Bot", () => {
-  const stub = `import { writeFileSync } from "node:fs";\nexport function gitChanged() { return ["docs/BACKLOG.md"]; }\nif (process.argv.length > 2) { writeFileSync(process.env.PG_ARGV, JSON.stringify(process.argv.slice(2))); process.exit(0); }\n`;
+  const stub = `import { writeFileSync } from "node:fs";\nexport function gitHistory() { return { files: [{ path: "docs/BACKLOG.md" }] }; }\nif (process.argv.length > 2) { writeFileSync(process.env.PG_ARGV, JSON.stringify(process.argv.slice(2))); process.exit(0); }\n`;
   const x = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md", stubPathguard: stub });
   assert.equal(x.r.status, 0, x.r.stderr);
   const argv = JSON.parse(readFileSync(path.join(x.dir, "pg-argv.json"), "utf8"));
@@ -570,7 +639,7 @@ function salvageAfterGate(mutate) {
   const env = stepEnv(salvageStep, { GH_TOKEN: "t", AGENT: "product", JOURNAL: "1", REASON: "success", GATED_HEAD: x.o.head, GATED_BRANCH: x.o.branch, GIT_CONFIG_GLOBAL: path.join(x.temp, "gitconfig-trusted") },
     { RUNNER_TEMP: x.temp, GITHUB_RUN_ID: "42", GITHUB_REPOSITORY: "o/r" });
   Object.assign(env, { GATED_HEAD: x.o.head, GATED_BRANCH: x.o.branch, GIT_CONFIG_GLOBAL: path.join(x.temp, "gitconfig-trusted") });
-  const r = bash(salvageStep.run, env, x.work);
+  const r = bash(salvageStep.run, env, x.work, salvageStep.shell);
   return { r, pushed: existsSync(marker), x };
 }
 test("salvage step (M2): right after the gate it runs salvage", () => {
@@ -603,7 +672,7 @@ test("guard (F2): a failing Path guard or cap step exits non-zero, with no conti
   for (const [name, script] of [["Path guard", "scripts/agents/pathguard.mjs"], ["Open agent PR cap", "scripts/agents/guard-open-prs.mjs"]]) {
     const s = withJobEnv(step(guard, "guard", name));
     const cwd = stubDir({ [script]: "process.exit(1);\n" });
-    const r = bash(s.run, stepEnv(s, { ...guardEnvExprs, GH_TOKEN: "t", AGENTS_BOT_LOGINS: "" }, { GITHUB_REPOSITORY: "o/r" }), cwd);
+    const r = bash(s.run, stepEnv(s, { ...guardEnvExprs, GH_TOKEN: "t", AGENTS_BOT_LOGINS: "" }, { GITHUB_REPOSITORY: "o/r" }), cwd, s.shell);
     assert.equal(r.status, 1, name);
     assert.equal(s["continue-on-error"], undefined, name);
     assert.doesNotMatch(s.run, /\|\||;\s*true|\bexit 0\b/, name);
@@ -651,7 +720,7 @@ test("trusted step (F3): extracts the base commit's scripts read-only; a bad sha
     writeFileSync(gh, `#!/bin/sh\ncat ${build(files)}\n`); chmodSync(gh, 0o755);
     const script = t.run.replace("/usr/bin/gh", gh);
     assert.notEqual(script, t.run);
-    const r = bash(script, stepEnv(t, { GH_TOKEN: "t", BASE_SHA: sha }, { RUNNER_TEMP: d, GITHUB_REPOSITORY: "o/r", GH_TOKEN: "t", BASE_SHA: sha }), d);
+    const r = bash(script, stepEnv(t, { GH_TOKEN: "t", BASE_SHA: sha }, { RUNNER_TEMP: d, GITHUB_REPOSITORY: "o/r", GH_TOKEN: "t", BASE_SHA: sha }), d, t.shell);
     return { r, d };
   };
   const all = ["scripts/agents/salvage.mjs", "scripts/agents/pathguard.mjs", "scripts/agents/receipt.mjs"];
@@ -661,6 +730,141 @@ test("trusted step (F3): extracts the base commit's scripts read-only; a bad sha
   assert.notEqual(go(all, "develop").r.status, 0);
   assert.notEqual(go(all, "").r.status, 0);
   assert.notEqual(go(all.slice(0, 2), HEX).r.status, 0);
+});
+
+// ---------------------------------------------------------------- round 3: data-driven bindings
+test("shell flags: every post-run step declares -eo pipefail (the guards rely on -e)", () => {
+  for (const n of ["Fetch trusted post-run scripts", "Gate the branch and the paths", "Save unfinished work", "Open the PR and label it", "Run receipt"]) {
+    assert.match(String(run(n).shell), /^\/usr\/bin\/bash --noprofile --norc -eo pipefail \{0\}$/, n);
+  }
+  assert.deepEqual(shellArgs(gateStep.shell), ["--noprofile", "--norc", "-eo", "pipefail"]);
+  assert.deepEqual(shellArgs(undefined), ["-e"]);
+});
+
+const UNSET_REQUIRED = [
+  "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_EXEC_PATH", "GIT_ASKPASS", "GIT_SSH", "GIT_SSH_COMMAND",
+  "GIT_TEMPLATE_DIR", "GIT_NAMESPACE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_REPLACE_REF_BASE", "GIT_CONFIG_PARAMETERS", "GIT_CEILING_DIRECTORIES", "LD_LIBRARY_PATH",
+  "GIT_GRAFT_FILE", "GIT_SHALLOW_FILE", "GIT_LITERAL_PATHSPECS", "GIT_ICASE_PATHSPECS", "GIT_GLOB_PATHSPECS", "GIT_NOGLOB_PATHSPECS", "GIT_ATTR_SOURCE", "EMAIL",
+  "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE", "SSL_CERT_DIR",
+  "GIT_TRACE", "GIT_TRACE2", "GIT_TRACE_PACKET", "GIT_TRACE2_EVENT", "GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_AUTHOR_DATE", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "GIT_COMMITTER_DATE",
+];
+const PREBLANKED = ["BASH_ENV", "ENV", "LD_PRELOAD", "NODE_OPTIONS"];
+for (const [label, st] of [["gate", gateStep], ["salvage", salvageStep]]) {
+  test(`${label} step: every variable in the required unset list is gone before git or node run (probe, one table)`, () => {
+    const lines = st.run.split("\n");
+    const lastUnset = lines.map((l, i) => (l.trim().startsWith("unset ") ? i : -1)).filter((i) => i >= 0).pop();
+    assert.ok(lastUnset >= 0, "no unset line");
+    const dir = tmp("probe-");
+    const probe = path.join(dir, "env.txt");
+    const script = lines.slice(0, lastUnset + 1).join("\n") + `\n/usr/bin/env > ${JSON.stringify(probe)}\n`;
+    const inject = Object.fromEntries(UNSET_REQUIRED.map((k) => [k, "/nonexistent-" + k]));
+    const exprs = { AGENT: "product", BASE_SHA: HEX, AUTHOR: "a[bot]", GIT_CONFIG_GLOBAL: path.join(dir, "g"), GH_TOKEN: "t", JOURNAL: "1", REASON: "success", GATED_HEAD: HEX, GATED_BRANCH: "agent/product/x" };
+    const env = { ...stepEnv(st, exprs, { GITHUB_OUTPUT: path.join(dir, "out"), GITHUB_RUN_ID: "1", GITHUB_REPOSITORY: "o/r", RUNNER_TEMP: dir }), ...inject };
+    writeFileSync(path.join(dir, "out"), "");
+    const r = bash(script, env, dir, st.shell);
+    assert.equal(r.status, 0, r.stderr);
+    const seen = new Set(readFileSync(probe, "utf8").split("\n").map((l) => l.split("=")[0]));
+    for (const k of UNSET_REQUIRED) assert.equal(seen.has(k), false, `${k} survived the unset list in the ${label} step`);
+    for (const k of PREBLANKED) assert.equal(st.env[k], "", `${label}: ${k} is not blanked by the step env`);
+  });
+}
+
+// What the gate's clean-up removes: plant each target, run the gate, assert it is gone.
+const PLANT = (work, dir) => ({
+  ".git/shallow": () => writeFileSync(path.join(work, ".git/shallow"), HEX + "\n"),
+  ".git/grafts": () => writeFileSync(path.join(work, ".git/grafts"), HEX + "\n"),
+  ".git/config.worktree": () => writeFileSync(path.join(work, ".git/config.worktree"), "[core]\n\tfsmonitor = true\n"),
+  ".git/commondir": () => writeFileSync(path.join(work, ".git/commondir"), "../elsewhere\n"),
+  ".git/gitdir": () => writeFileSync(path.join(work, ".git/gitdir"), "/elsewhere\n"),
+  ".git/objects/info/alternates": () => { mkdirSync(path.join(work, ".git/objects/info"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/info/alternates"), "/elsewhere/objects\n"); },
+  ".git/objects/info/http-alternates": () => { mkdirSync(path.join(work, ".git/objects/info"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/info/http-alternates"), "http://x/\n"); },
+  ".git/objects/info/commit-graph": () => { mkdirSync(path.join(work, ".git/objects/info"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/info/commit-graph"), "junk"); },
+  ".git/objects/info/commit-graphs": () => { mkdirSync(path.join(work, ".git/objects/info/commit-graphs"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/info/commit-graphs/commit-graph-chain"), "junk"); },
+  ".git/objects/pack/multi-pack-index": () => { mkdirSync(path.join(work, ".git/objects/pack"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/pack/multi-pack-index"), "junk"); },
+  ".git/objects/pack/pack-x.bitmap": () => { mkdirSync(path.join(work, ".git/objects/pack"), { recursive: true }); writeFileSync(path.join(work, ".git/objects/pack/pack-x.bitmap"), "junk"); },
+  ".git/hooks/post-commit": () => { mkdirSync(path.join(work, ".git/hooks"), { recursive: true }); writeFileSync(path.join(work, ".git/hooks/post-commit"), "#!/bin/sh\n"); },
+  ".git/info/exclude": () => { mkdirSync(path.join(work, ".git/info"), { recursive: true }); writeFileSync(path.join(work, ".git/info/exclude"), "docs/\n"); },
+  ".git/info/grafts": () => { mkdirSync(path.join(work, ".git/info"), { recursive: true }); writeFileSync(path.join(work, ".git/info/grafts"), HEX + "\n"); },
+  ".git/refs/replace/x": () => { mkdirSync(path.join(work, ".git/refs/replace"), { recursive: true }); writeFileSync(path.join(work, ".git/refs/replace", HEX), HEX + "\n"); },
+});
+const GATE_TARGETS = Object.keys(PLANT("", ""));
+test("gate step: every .git clean-up target is gone after the gate, and the trusted global gitconfig is truncated", () => {
+  let plantedAt;
+  const x = gate({
+    branch: "agent/product/t1-x", change: "docs/BACKLOG.md",
+    setup: ({ work, dir, temp }) => {
+      const plants = PLANT(work, dir);
+      for (const f of Object.values(plants)) f();
+      writeFileSync(path.join(work, ".git/packed-refs"), `# pack-refs with: peeled fully-peeled sorted \n${HEX} refs/replace/${HEX}\n`);
+      mkdirSync(temp, { recursive: true });
+      writeFileSync(path.join(temp, "gitconfig-trusted"), "[core]\n\tsshCommand = evil\n");
+      plantedAt = work;
+    },
+  });
+  assert.equal(x.r.status, 0, x.r.stderr);
+  for (const t of GATE_TARGETS) {
+    if (t === ".git/hooks/post-commit" || t === ".git/info/exclude" || t === ".git/info/grafts") assert.equal(existsSync(path.join(plantedAt, t)), false, t);
+    else assert.equal(existsSync(path.join(plantedAt, t)), false, t);
+  }
+  assert.doesNotMatch(readFileSync(path.join(plantedAt, ".git/packed-refs"), "utf8") ?? "", /refs\/replace/);
+  assert.equal(statSync(path.join(x.temp, "gitconfig-trusted")).size, 0, "the global gitconfig was not truncated");
+});
+const SALVAGE_TARGETS = [".git/refs/replace/x", ".git/info/grafts", ".git/shallow", ".git/grafts", ".git/objects/info/commit-graph", ".git/objects/info/commit-graphs", ".git/objects/pack/multi-pack-index", ".git/objects/pack/pack-x.bitmap"];
+test("salvage step: its own re-clean removes the same kinds of targets, and still runs salvage", () => {
+  const s = salvageAfterGate((x) => {
+    const plants = PLANT(x.work, x.dir);
+    for (const t of SALVAGE_TARGETS) plants[t]();
+    writeFileSync(path.join(x.work, ".git/packed-refs"), `# pack-refs with: peeled fully-peeled sorted \n${HEX} refs/replace/${HEX}\n`);
+    s_work = x.work;
+  });
+  assert.equal(s.r.status, 0, s.r.stderr);
+  assert.equal(s.pushed, true);
+  for (const t of SALVAGE_TARGETS) assert.equal(existsSync(path.join(s_work, t)), false, t);
+  assert.doesNotMatch(readFileSync(path.join(s_work, ".git/packed-refs"), "utf8"), /refs\/replace/);
+});
+let s_work;
+test("salvage step: REASON comes from the engine outcome and salvage.mjs gets --agent, --journal, --run-id and --reason", () => {
+  assert.equal(salvageStep.env.REASON, "${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}");
+  assert.equal(salvageStep.env.AGENT, "${{ matrix.agent }}");
+  const x = gate({ branch: "agent/product/t1-x", change: "docs/BACKLOG.md" });
+  const argvFile = path.join(x.dir, "salvage-argv.json");
+  writeFileSync(path.join(x.temp, "trusted/scripts/agents/salvage.mjs"), `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));\n`);
+  const vals = { GH_TOKEN: "t", AGENT: "product", JOURNAL: "17", REASON: "failure", GATED_HEAD: x.o.head, GATED_BRANCH: x.o.branch, GIT_CONFIG_GLOBAL: path.join(x.temp, "gitconfig-trusted") };
+  const r = bash(salvageStep.run, stepEnv(salvageStep, vals, { ...vals, RUNNER_TEMP: x.temp, GITHUB_RUN_ID: "42", GITHUB_REPOSITORY: "o/r" }), x.work, salvageStep.shell);
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(argvFile, "utf8")), ["--agent", "product", "--journal", "17", "--run-id", "42", "--reason", "failure"]);
+});
+
+test("trusted step: each of salvage.mjs, pathguard.mjs and receipt.mjs missing from the tarball fails the step", () => {
+  const t = run("Fetch trusted post-run scripts");
+  const all = ["scripts/agents/salvage.mjs", "scripts/agents/pathguard.mjs", "scripts/agents/receipt.mjs"];
+  for (const missing of all) {
+    const d = tmp("trusted2-");
+    mkdirSync(path.join(d, "repo-x/scripts/agents"), { recursive: true });
+    for (const f of all.filter((f) => f !== missing)) writeFileSync(path.join(d, "repo-x", f), "//\n");
+    const tgz = path.join(d, "t.tgz");
+    spawnSync("tar", ["-czf", tgz, "-C", d, "repo-x"]);
+    const gh = path.join(d, "gh");
+    writeFileSync(gh, `#!/bin/sh\ncat ${tgz}\n`); chmodSync(gh, 0o755);
+    const r = bash(t.run.replace("/usr/bin/gh", gh), stepEnv(t, { GH_TOKEN: "t", BASE_SHA: HEX }, { RUNNER_TEMP: d, GITHUB_REPOSITORY: "o/r", GH_TOKEN: "t", BASE_SHA: HEX }), d, t.shell);
+    assert.notEqual(r.status, 0, missing);
+  }
+});
+
+test("guard: the concurrency group is per PR, the checkout is a full clone, the cap step's token is the read-only github.token", () => {
+  assert.match(guard.concurrency.group, /github\.event\.pull_request\.number/);
+  assert.equal(guard.concurrency["cancel-in-progress"], true);
+  const co = stepsOf(guard, "guard").find((x) => String(x.uses ?? "").startsWith("actions/checkout@"));
+  assert.equal(co.with["fetch-depth"], 0);
+  assert.equal(step(guard, "guard", "Open agent PR cap").env.GH_TOKEN, "${{ github.token }}");
+});
+test("scope: NON_AGENT_BOTS is folded to lower case on both sides", () => {
+  assert.equal(scopeOf({ PR_AUTHOR: "dependabot[bot]", NON_AGENT_BOTS: "DependaBot[BOT], Renovate[Bot]".replace(", ", ",") }).scope, "no");
+  assert.equal(scopeOf({ PR_AUTHOR: "RENOVATE[bot]", NON_AGENT_BOTS: "DependaBot[BOT],Renovate[Bot]" }).scope, "no");
+  assert.equal(scopeOf({ PR_AUTHOR: "other[bot]", NON_AGENT_BOTS: "DependaBot[BOT],Renovate[Bot]" }).scope, "yes");
+});
+test("label step: its AUTHOR expression is the gate's, so the workflow identity matches", () => {
+  assert.equal(labelStep.env.AUTHOR, gateStep.env.AUTHOR);
 });
 
 test("package.json: root npm test runs this suite, the agents suite and keeps develop's compliance suite", () => {
