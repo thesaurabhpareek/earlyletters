@@ -5,7 +5,6 @@
   "title": "Erase now asks first",
   "note": "Erase now ends the wait, after one question: \"The letter and its recording are erased for good.\" \"Keep it\" is the default.",
   "from": "J10-13",
-  "shot": "screens/J10-14.png",
   "route": "/settings/recently-deleted",
   "viewport": {
     "width": 402,

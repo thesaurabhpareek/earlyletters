@@ -5,7 +5,6 @@
   "title": "Read together with no letters",
   "note": "With no letters in the book, Read together says so, shows the moon, and offers \"Write a letter\" (to Tonight) as well as Close. The Book hides the button until a letter is in the book, so this is reached only by a stale link.",
   "from": "J11-01",
-  "shot": "screens/J11-07.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
