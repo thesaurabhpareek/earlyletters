@@ -31,9 +31,10 @@ import {
   type SnapshotEntry,
 } from '../src/lib/export/build.logic';
 import type { EntriesFile, ChildrenFile, AccountFile } from '../src/lib/export/schema';
+import { noConsentHistory } from '../src/lib/export/server-records.logic';
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
-const ASHA: SnapshotChild = { id: 'child-asha-0001', name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false };
+const ASHA: SnapshotChild = { id: 'child-asha-0001', name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false, role: 'parent' };
 const DEV: SnapshotChild = { ...ASHA, id: 'child-dev-0002', name: 'आशा', birthday: null, dueDate: '2027-01-15', hidden: true };
 
 function entry(p: Partial<SnapshotEntry> & Pick<SnapshotEntry, 'id' | 'occurredOn'>): SnapshotEntry {
@@ -65,6 +66,7 @@ function entry(p: Partial<SnapshotEntry> & Pick<SnapshotEntry, 'id' | 'occurredO
 
 const snapshot = (entries: SnapshotEntry[], children: SnapshotChild[] = [ASHA]): ExportSnapshot => ({
   generatedAt: '2026-10-03T09:00:00.000Z', appVersion: '1.0.0', engineVersion: 3, locale: 'en-GB', plan: 'free', signedIn: false, consent: phoneConsent(true, null), children, entries,
+  consentHistory: noConsentHistory('not_signed_in'), dictionary: [],
 });
 
 describe('names and paths', () => {
