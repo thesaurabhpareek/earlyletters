@@ -257,6 +257,12 @@ export function hasNotMuchOn({ db }: RepoContext, childId: string, isoDate: stri
   ) !== null;
 }
 
+/** The rows `setTypedWordsOnce` may write into: one definition, so the page's offer and the write never disagree. */
+const TYPED_WORDS_ALLOWED = `raw_transcript = '' AND deleted_at IS NULL
+       AND (transcript_status = 'waiting'
+            OR (transcript_status IS NULL AND kind = 'letter' AND final_text = '' AND server_version IS NULL
+                AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id AND (o.sent_at IS NOT NULL OR o.attempts > 0))))`;
+
 /**
  * The parent typed the words for a recording that never got any (D-086 "Write the words"). A letter still
  * waiting, or a spoken letter whose transcription came back with no words (S28, P5 #222), with its raw still
@@ -273,13 +279,19 @@ export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): b
   ctx.db.run(
     `UPDATE entries SET raw_transcript = ?, machine_edits = '[]', final_text = ?, edit_level = 'verbatim', capture_mode = 'mixed',
        transcript_status = '${WORDS_UNREVIEWED}', updated_at = ?
-     WHERE id = ? AND raw_transcript = '' AND deleted_at IS NULL
-       AND (transcript_status = 'waiting'
-            OR (transcript_status IS NULL AND kind = 'letter' AND final_text = '' AND server_version IS NULL
-                AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = entries.id AND (o.sent_at IS NOT NULL OR o.attempts > 0))))`,
+     WHERE id = ? AND ${TYPED_WORDS_ALLOWED}`,
     words, words, ctx.now(), id,
   );
   return changes(ctx.db) === 1;
+}
+
+/**
+ * Whether `setTypedWordsOnce` would take words for this letter now (the same rows, read only). A recording with no
+ * words that has been sent to the server cannot: the server's raw is fixed once a letter is there, so the letter page
+ * offers "Write the words" only where the write can happen (S28, P5 critics' pass S3).
+ */
+export function canTypeWords({ db }: RepoContext, id: string): boolean {
+  return db.get<{ t: number }>(`SELECT 1 AS t FROM entries WHERE id = ? AND ${TYPED_WORDS_ALLOWED} LIMIT 1`, id) !== null;
 }
 
 /** Tombstone, never a hard delete. Keeps the first deleted_at. False when missing or already tombstoned. */

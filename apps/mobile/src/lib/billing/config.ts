@@ -33,7 +33,7 @@ export const APPLE_REPORT_A_PROBLEM_URL = 'https://reportaproblem.apple.com';
  * (status-report.logic.ts termsVersionOf); test/billing-status-report.test.ts fails when
  * the document's version moves and this does not.
  */
-export const SUBSCRIPTION_TERMS_DOC_VERSION = '1.4.0';
+export const SUBSCRIPTION_TERMS_DOC_VERSION = '4.0.0';
 
 /** Device settings key for the last entitlement snapshot (L2: product id, dates, flags; no ids). */
 export const PLAN_CACHE_KEY = 'plus.cache';

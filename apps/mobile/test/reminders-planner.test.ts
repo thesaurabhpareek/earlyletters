@@ -299,7 +299,7 @@ describe('month notes and birthdays (C-REQ-011)', () => {
     expect(p[0].title).toBe('Month 7 begins');
     expect(p[0].body).toBe(reminderCopy.together.monthBodyNeutral);
     const named = plan({ children: [asha, twin], prefs: { cadence: 'off', namesOnLockScreen: true }, monthHorizonDays: 40 });
-    expect(named[0].body).toBe('New chapters for Asha and Dev are open.');
+    expect(named[0].body).toBe('A new month is open for Asha and Dev.');
   });
 });
 

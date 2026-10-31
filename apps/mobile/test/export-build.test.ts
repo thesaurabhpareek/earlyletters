@@ -31,9 +31,10 @@ import {
   type SnapshotEntry,
 } from '../src/lib/export/build.logic';
 import type { EntriesFile, ChildrenFile, AccountFile } from '../src/lib/export/schema';
+import { noConsentHistory } from '../src/lib/export/server-records.logic';
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
-const ASHA: SnapshotChild = { id: 'child-asha-0001', name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false };
+const ASHA: SnapshotChild = { id: 'child-asha-0001', name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama', remindersOn: true, familyCanRead: false, hidden: false, role: 'parent' };
 const DEV: SnapshotChild = { ...ASHA, id: 'child-dev-0002', name: 'आशा', birthday: null, dueDate: '2027-01-15', hidden: true };
 
 function entry(p: Partial<SnapshotEntry> & Pick<SnapshotEntry, 'id' | 'occurredOn'>): SnapshotEntry {
@@ -65,6 +66,7 @@ function entry(p: Partial<SnapshotEntry> & Pick<SnapshotEntry, 'id' | 'occurredO
 
 const snapshot = (entries: SnapshotEntry[], children: SnapshotChild[] = [ASHA]): ExportSnapshot => ({
   generatedAt: '2026-10-03T09:00:00.000Z', appVersion: '1.0.0', engineVersion: 3, locale: 'en-GB', plan: 'free', signedIn: false, consent: phoneConsent(true, null), children, entries,
+  consentHistory: noConsentHistory('not_signed_in'), dictionary: [],
 });
 
 describe('names and paths', () => {
@@ -178,6 +180,24 @@ describe('recordings', () => {
       ]),
     );
     expect(plan.audio).toEqual([{ entryId: 'own', uri: 'file:///doc/audio/own.m4a', path: 'audio/own.m4a', mediaType: 'audio/mp4', recordedSha256: 'a'.repeat(64), durationMs: 12_000, sizeHint: 4096 }]);
+  });
+});
+
+describe('[P5 critics S8] the "How" line says nothing it cannot know about another person\'s letter', () => {
+  const how = (e: SnapshotEntry) => planExport(snapshot([e])).textFiles.find((f) => f.path.endsWith(`_${e.id}.txt`))!.text.split(/\r?\n/).find((l) => l.startsWith('How: '));
+
+  it('the exporter\'s own letters keep the two honest lines, as the letter page says them', () => {
+    expect(how(entry({ id: 'fixed', occurredOn: '2026-10-01' }))).toBe('How: Spoken, with small fixes');
+    expect(how(entry({ id: 'exact', occurredOn: '2026-10-02', rawTranscript: 'Asha, you laughed.' }))).toBe('How: Spoken, exactly as said');
+    expect(how(entry({ id: 'typed', occurredOn: '2026-10-03', captureMode: 'typed', audioUri: null }))).toBe('How: Typed');
+  });
+
+  it('another person\'s spoken letter says only "Spoken", whatever raw words the snapshot happens to hold (this phone never has them)', () => {
+    expect(how(entry({ id: 'theirs1', occurredOn: '2026-10-04', own: false }))).toBe('How: Spoken');
+    expect(how(entry({ id: 'theirs2', occurredOn: '2026-10-05', own: false, rawTranscript: '' }))).toBe('How: Spoken');
+    expect(how(entry({ id: 'theirs3', occurredOn: '2026-10-06', own: false, rawTranscript: 'Asha, you laughed.' }))).toBe('How: Spoken');
+    // Their typed words are known to be typed.
+    expect(how(entry({ id: 'theirs4', occurredOn: '2026-10-07', own: false, captureMode: 'typed', audioUri: null }))).toBe('How: Typed');
   });
 });
 

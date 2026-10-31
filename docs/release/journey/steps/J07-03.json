@@ -2,9 +2,10 @@
   "id": "J07-03",
   "journey": "typed-letter",
   "kind": "happy",
-  "title": "Review a typed letter",
-  "note": "Typed words are kept exactly as typed: no tidying, no list of changes, no \"does this sound like you\". The person chooses where it goes.",
+  "title": "Saved to the book, no Review",
+  "note": "One tap keeps a typed letter: no \"Read it back\" screen. The Keep step runs exactly as for a spoken letter, then the letter files into its month (S20, S21).",
   "from": "J07-02",
+  "shot": "screens/J07-03.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,15 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Read it back You put both hands on the window today and watched the rain. Change words Private letters stay with you. You can add them to the book later. Add to Asha's book Keep private",
+  "text": "To Asha · The first weeks From Mama You put both hands on the window today and watched the rain.",
   "lines": [
-    "Close",
-    "Asha · 0 days",
-    "Read it back",
-    "You put both hands on the window today and watched the rain.",
-    "Change words",
-    "Private letters stay with you. You can add them to the book later.",
-    "Add to Asha's book",
-    "Keep private"
+    "To Asha · The first weeks",
+    "From Mama",
+    "You put both hands on the window today and watched the rain."
   ]
 }

@@ -22,7 +22,7 @@ For parents of young children, Early Letters is the baby memory book you fill by
 
 ### 1. Exactly as you said it
 Your words, never ours.
-- On-device transcription only fixes microphone and grammar slips.
+- On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
 - We never rewrite your words. Every sentence is one the person actually said.
 - Every language stays as spoken: seven languages at v1.0, each in its own script, never translated. Hindi and English in one sentence arrives in v1.1.
@@ -93,6 +93,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | The words from a recording | your words; "what you said" | transcript (in app copy), caption | Legal pages may say "transcript". |
 | The edit feature (D-074, D-086) | Word for word, only where the feature is named: the promise, Settings, the store, the website | Any word that says software tidied or cleaned a letter, polished, improved, corrected | Founder decision. In review and on the letter page we say what happened ("Took out a sound") and use "Exactly as said" only when it is true. |
 | What the machine changes | small fix (each one named by what happened), shown as a mark you can undo | edits, corrections, improvements | D-086. The Review views are "With small fixes" and "Exactly as said". |
+| What a small fix is, in one sentence | "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." | "what the microphone got wrong", "slips of the tongue", "the slips a microphone makes" | One phrasing on every surface (comms validation LNG-18, 31 Oct 2026). Shorter forms keep "small slips". |
 | The untouched words | "Exactly what you said"; setting "Exactly as said" | raw transcript, original text | |
 | Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |
@@ -109,9 +110,26 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Apple identity | Apple Account | Apple ID, iCloud account, store account | |
 | Google identity | Google Account | Google ID, Gmail account | |
 | Email sign-in | sign-in link; 6-digit code | magic link, login link, one-time password, OTP | "Magic link" only as Supabase's dashboard name in internal docs. |
-| Sign-in buttons | Sign in with Apple; Sign in with Google | Apple login, Google sign-in, log in | "Sign in with Google is now on your account". |
+| Sign-in buttons | Sign in with Apple; Sign in with Google; Sign in with email | Apple login, Google sign-in, log in, "Continue with Google", "Continue with email" | "Sign in with Google is now on your account". The app's buttons and the emails use the same words (LNG-13). Name a provider only where the build offers it. |
+| Sign out elsewhere | Sign out other devices | Sign out of other devices, log out everywhere | Button and Account row (LNG-14). |
 | Action | sign in / sign out | log in, log out, login | |
 | Privacy promise | private by default; "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |
+
+## Internal terms, and what a parent sees instead (CR-25, 31 Oct 2026)
+
+Two vocabularies, one door, one direction. Code, schema, test names and spec section 12 keep the internal term on the left, because those names hold the guarantees (renaming `raw_transcript` to something soft would invite an edit to it). Anything a parent can read uses the term on the right: app, store, website, email, help, the export README and the printed book. Spec sections that describe what a parent sees use the right-hand term too. `test/rules.test.ts` blocks the left-hand words in parent-facing copy. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are not changed here.
+
+| Internal term | What a parent sees | Notes |
+|---|---|---|
+| `raw_transcript`, raw text | "Exactly what you said"; setting "Exactly as said" | Immutable. Never renamed. |
+| `EditType`, edit, `verifyEdits` | small fix, marked and undoable | No parent word for the check itself. |
+| take | recording | "Take your time" and "this can take a minute" are the verb and stay. |
+| entry | letter (long) or note (short) | The export file `data/entries.json` is a format contract (D-096) and keeps its name. |
+| draft | "Waiting to be kept." | A recording whose words are not kept yet. |
+| held letter, Keep gate | "Waiting to be kept."; the action is Keep; the plan is Plus | The gate is never named in copy. |
+| language pack, speech pack, text-rules pack | language; Settings > Languages and speech; "download" for the act | "Speech models" may stay where the file itself is meant. |
+| chapter | month | Already in the table above. |
+| `scribe` | nothing | The codename lives in repo, packages and bundle id only. |

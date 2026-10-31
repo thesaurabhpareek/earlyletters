@@ -1,4 +1,5 @@
-import { btn, firstRun, journey, tab, typeLetter } from './support/app';
+import { PROMPTS } from '@scribe/content';
+import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter, noRemindersAfterFirstLetter } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
@@ -11,8 +12,9 @@ test('[J04] Tonight: one question, another thought, a card for the waiting lette
   // One question on screen: the prompt. No subtitle, no caps label (its words are now only the prompt's hint).
   await expect(app.getByText('A thought to start with', { exact: false })).toHaveCount(0);
   await expect(app.getByText(/to know about today\?/)).toHaveCount(0);
-  // The dateline is read without its separator ("Asha, 7 months"); the card shows the first words and its action.
-  await expect(app.getByLabel(/^Asha, 7 months/)).toBeVisible();
+  // The dateline is read without its separator ("Asha, 7 months"); the card shows the first words and its action. The seed
+  // dates the birthday 214 days before now, so the age is 6 months in some runs (31 Jan to 27 Feb) and 7 in the rest.
+  await expect(app.getByLabel(/^Asha, [67] months/)).toBeVisible();
   await expect(app.getByText(SEEDED_WORDS)).toBeVisible();
   await expect(app.getByText('Read it back', { exact: true })).toBeVisible();
   await expect(app.getByRole('button', { name: /Asha, um, today you you held the spoon.*Read it back\.$/ })).toHaveCount(1);
@@ -95,6 +97,7 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await firstRun(app);
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
+  await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');
@@ -104,12 +107,60 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This one waits on this phone, on Tonight, exactly as it is, for as long as you like.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await btn(app, 'Keep it here for now').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
-  // Until local schema v8 (#182) gives the draft its `held` field, a held typed letter is a typed draft ("Pick it
-  // up"); with it, "Waiting to be kept." and "Keep it" (S09). Either way it is one card, with the words as typed.
+  // "Keep it here for now" marks the draft held (store.holdDraft, P6a), so its one card says "Waiting to be kept." and
+  // "Keep it" (S09), with the words as typed; j06 asserts those words.
   await expect(app.getByRole('button', { name: /You waved at the dog on the corner\./ })).toHaveCount(1);
-  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Tonight, and it does: its own card with the words as typed. With the held-drafts schema (#182) the card says "Waiting to be kept." and "Keep it".');
+  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Tonight, and it does: its own card, with the words as typed, says "Waiting to be kept." and "Keep it".');
+});
+
+test('[J04g] a book that is not born yet: the dateline names the child and the prompts are for the weeks of waiting', async ({ app, record }) => {
+  test.setTimeout(120_000);
+  const step = journey(record, 'J04', 'tonight-and-prompts', 9, 'J04-02');
+  // First run with "Not here yet" and a due date 60 days ahead: a child with a due date and no birthday.
+  await passAgeGate(app);
+  await startOnboarding(app);
+  await toChildStep(app);
+  await nameField(app).fill(CHILD);
+  await app.getByText('Not here yet', { exact: true }).click();
+  await dateInput(app, 'Due date').fill(dayOffset(60));
+  await btn(app, 'Continue').click();
+  await app.getByText(SIGNS_AS, { exact: true }).click();
+  await btn(app, 'Sign my letters').click();
+  await btn(app, /Write the first one/).click();
+  await expect(btn(app, 'Speak')).toBeVisible();
+
+  // The dateline names the child and uses Review's words for these letters ("To Asha, Before You"); it is read without the dot.
+  await expect(app.getByLabel(/^Asha, Before You$/)).toBeVisible();
+  await expect(app.getByText('Asha \u00b7 Before You', { exact: true })).toBeVisible();
+  // Not the day's date alone, and no count of weeks or days.
+  await expect(app.getByText(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),/)).toHaveCount(0);
+  await expect(app.getByText(/\b\d+ (days?|weeks?)\b/)).toHaveCount(0);
+
+  // Fourteen presses of "Another thought": every prompt is one of the eight written for the weeks before the birth,
+  // none is about hands, the first day home or visitors, and no press shows the prompt that was on screen.
+  const before = PROMPTS.filter((p) => p.band === 'before').map((p) => p.text.replace(/\{child\}/g, CHILD));
+  expect(before.length).toBeGreaterThanOrEqual(6);
+  const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const shown = app.getByText(new RegExp(`^(${before.map(escape).join('|')})$`));
+  const seen: string[] = [];
+  for (let press = 0; press < 14; press++) {
+    await expect(shown).toHaveCount(1);
+    const text = (await shown.innerText()).trim();
+    seen.push(text);
+    if (press === 0) await step('happy', 'Tonight before the birth', 'The dateline reads "Asha", the dot, "Before You", the words Review uses for these letters. The prompt is one of eight written for the weeks of waiting (the name, the home, what is hoped for), not a question about hands or the first day home. (A due date 60 days ahead, no birthday.)');
+    await btn(app, 'Another thought').click();
+    // the old prompt leaves (160 ms) and the new one rises in; wait for it to be the only one on screen
+    await expect(app.getByText(text, { exact: true })).toHaveCount(0);
+    await expect(shown).toHaveCount(1);
+  }
+  seen.forEach((text, i) => {
+    expect(text).not.toMatch(/hands|first day home|look like today|came to meet|face do while sleeping|calms/i);
+    if (i > 0) expect(text, `press ${i}`).not.toBe(seen[i - 1]);
+  });
+  expect(new Set(seen).size).toBeGreaterThan(3);
+  await step('happy', 'Another thought, before the birth', 'Fourteen presses: each shows a different prompt from the eight, never the one that was on screen, and never a newborn one. Nothing is counted.');
 });

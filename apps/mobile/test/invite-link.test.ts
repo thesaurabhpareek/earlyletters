@@ -20,6 +20,7 @@ import { byteaArg, newInviteDraft } from '../src/lib/family/invite-draft.logic';
 import { readInvitePreview, UNKNOWN_PREVIEW } from '../src/lib/family/invite-preview.logic';
 import { joinedView, joinErrorLine, joinPlan, type JoinInputs } from '../src/lib/family/join-flow.logic';
 import { decodeSeen, encodeSeen, familyTabState, leftSince, seenCoParentsKey } from '../src/lib/family/members.logic';
+import { peopleRows } from '../src/components/family/family-tab.logic';
 
 const ORIGIN = brand.web.origin; // https://earlyletters.com
 // What create_child_invite returns today: two v4 UUIDs without dashes, 64 hex characters.
@@ -478,12 +479,16 @@ describe('review fixes (PR #184)', () => {
     const tab = screen('(tabs)/family.tsx');
     expect(tab).toMatch(/m\.signsAs\.trim\(\) \? fill\(f\.left\.note, \{ signsAs: m\.signsAs\.trim\(\), child \}\) : fill\(f\.left\.noteUnsigned, \{ child \}\)/);
     expect(familyCopy.left.noteUnsigned).toBe("Your co-parent has left {child}'s book.");
-    expect(tab).toMatch(/<MemberRow signsAs=\{m\.signsAs\.trim\(\) \|\| f\.members\.invitedName\} role=\{f\.members\.coParent\} \/>/);
+    // The member list writes each person as a signature (EXPERIENCE_PASS S57, components/family/family-tab.logic.ts).
+    expect(peopleRows({ signsAs: 'Mama' }, [{ id: 'p', signsAs: '  ', role: 'parent' }])[1]).toMatchObject({ signature: familyCopy.members.invitedName, role: familyCopy.members.coParent });
+    expect(tab).toMatch(/peopleRows\(active, state\.coParents\)/);
   });
 
   it('Cancel invite is announced to VoiceOver, and the row actions wrap at the largest text sizes', () => {
     const tab = screen('(tabs)/family.tsx');
-    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*\/\/[^\n]*\n\s*setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);\s*haptic\('soft'\);\s*announce\(f\.pending\.cancelled\);/);
+    // "Invite cancelled." is the tab's toast (EXPERIENCE_PASS S57), and every toast is announced (components/ui/toast.tsx).
+    expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*\/\/[^\n]*\n\s*setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);\s*haptic\('soft'\);\s*toast\.show\(\{ message: f\.pending\.cancelled \}\);/);
+    expect(readFileSync(join(__dirname, '..', 'src', 'components', 'ui', 'toast.tsx'), 'utf8')).toMatch(/announce\(action \? `\$\{message\} \$\{action\.label\}\.` : message\)/);
     expect(tab).toMatch(/className="min-h-11 shrink flex-row/);
     expect(tab).toMatch(/<Text className="shrink text-base font-medium text-primary">\{label\}<\/Text>/);
   });

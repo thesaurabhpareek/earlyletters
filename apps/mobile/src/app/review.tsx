@@ -100,6 +100,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -117,6 +118,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
+import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
@@ -127,6 +129,7 @@ import {
   getDraft,
   getEntry,
   getSetting,
+  holdDraft,
   keepReviewedWords,
   listChildren,
   listEntriesForChild,
@@ -403,11 +406,12 @@ export default function Review() {
 
   // Save: commit, haptic, then animate (MOTION principle 3). The saved moment (components/capture/saved-moment.tsx)
   // files the letter into its month and then lands on the Book (S21, 5.8 row 5).
-  // After the very first letter on this phone, someone signed out is offered an account (PRD A F3): the sign-in
-  // sheet rises over the Book once the letter is seen in its place, never in place of Review (5.8 row 5b), and
-  // "Not now" always works (the app is local-first).
+  // After the save, one ask at most, in the decided order (DR-12 B, F02 6.1, F13-REQ-023; lib/asks/next-ask.logic):
+  // the reminder card after the first letter, then Keep the book (the sign-in sheet, servers on and signed out) on
+  // the second letter or the first save of a later session. Either rises over the Book once the letter is seen in
+  // its place, never in place of Review (5.8 row 5b), and "Not now" / "No reminders" always work (local-first).
   const auth = useAuth();
-  const offerSignIn = useRef(false);
+  const askAfterLanding = useRef<NextAsk>(null);
   const left = useRef(false);
   const land = () => {
     if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
@@ -417,12 +421,14 @@ export default function Review() {
     // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
     setActiveChildId(child.id);
     router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
-    if (offerSignIn.current) {
+    if (askAfterLanding.current === 'keep_book') {
       setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
+    } else if (askAfterLanding.current === 'reminder_prime') {
+      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
     }
   };
   const finishSave = (inBook: boolean, firstLetter: boolean) => {
-    offerSignIn.current = firstLetter && auth.configured && auth.state.status === 'signedOut';
+    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
@@ -444,9 +450,15 @@ export default function Review() {
   };
 
   const saving = useRef(false);
+  // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
+  // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
+  const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
+    heldInBook.current = inBook;
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
@@ -660,30 +672,40 @@ export default function Review() {
     later: () => (router.canGoBack() ? router.back() : router.replace('/')),
   };
 
+  // The Keep sheet rises over this Review (S22, 5.8 row 5c), drawn last in its screen; the letter stays underneath.
+  let keepSheet: ReactNode = null;
   if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <PlusGate
-          variant="keep_letter"
-          childName={child.name}
-          lapsed={gate.decision.lapsed}
-          lettersKept={gate.lettersKept}
-          heldOn={later ? 'letter' : 'tonight'}
-          onHold={() => {
-            track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
-            router.back(); // the draft stays: Tonight shows "A letter is waiting"; a later letter's words stay on it
-          }}
-          onPlus={() => setGate(null)} // the same Review again; the person taps Keep
-          onContinueDev={
-            devShortcutsAllowed
-              ? () => {
-                  devPass.current = true;
-                  setGate(null);
-                }
-              : undefined
-          }
-        />
-      </SafeAreaView>
+    keepSheet = (
+      <PlusGate
+        variant="keep_letter"
+        childName={child.name}
+        lapsed={gate.decision.lapsed}
+        lettersKept={gate.lettersKept}
+        heldOn={later ? 'letter' : 'tonight'}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
+        onHold={() => {
+          // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
+          // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          router.back();
+        }}
+        onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+        onDismiss={() => setGate(null)} // back to the letter, nothing held or kept
+        onContinueDev={
+          devShortcutsAllowed
+            ? () => {
+                devPass.current = true;
+                setGate(null);
+              }
+            : undefined
+        }
+      />
     );
   }
 
@@ -996,6 +1018,7 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {keepSheet}
     </SafeAreaView>
   );
 }

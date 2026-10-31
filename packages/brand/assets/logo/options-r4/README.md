@@ -20,7 +20,7 @@ Open the review page: `presentation.html`.
 - Shapes: all marks come from the custom drawing behind D-071 (`primary/geometry.json`, `primary/source`). No font glyph, stock icon or third-party artwork is traced or used as a mark.
 - Wordmark: outlined EB Garamond, SIL Open Font License 1.1 (`assets/fonts/eb-garamond/OFL.txt`). The OFL permits embedding outlines in a logo.
 - Distinctiveness: a quotation mark is a common symbol. A web search for quotation-mark logos returns many stock icons and brand logos. That is not a copyright problem for an original drawing, but it makes the mark weak as a trademark, and option C adds a second quote shape, which makes a look-alike conflict slightly more likely, not less.
-- Not done: no trademark clearance search (BL-355 is still open) and no legal review. Nothing here is cleared.
+- Not done: no trademark clearance search (BL-366 is still open) and no legal review. Nothing here is cleared.
 
 ## Sizes shipped (options B and D; C ships lockups only)
 | Use | Files |

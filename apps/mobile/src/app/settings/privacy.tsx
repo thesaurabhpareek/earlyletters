@@ -11,7 +11,7 @@ import { copy, fill } from '@/lib/copy';
 import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
 import { useAnalyticsConsent } from '@/lib/analytics/use-analytics-consent';
-import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
+import { sensitiveStatusWords, useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
 
 /**
  * Settings > Privacy (PRD.md K-01, K-17; C-REQ-016; LEGAL-REQ-003, -006).
@@ -19,11 +19,18 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  *
  * - Usage and crash reports: the same switch as the consent sheet. Off stops
  *   sending within the session (PRD-REQ-018); on starts a new random id.
- * - Sync and family sharing (sensitive-data consent): shown here; its owner
- *   registers the status and the change flow (lib/analytics/privacy-sources).
+ * - Sync and family sharing (sensitive-data consent): the session provider registers its status (BL-485 (b)), read-only:
+ *   no `open`, so ListRow draws a plain row (no chevron, no press). No withdrawal yet (BL-485 (a)); lib/analytics/privacy-sources.
  * - What we never do, then the full documents.
  * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown;
  * no analytics either (capabilities.analytics, 15 Oct), so the usage switch is not shown.
+ *
+ * EXPERIENCE_PASS_2026-10 S44 (package P6): the never-lines are a plain list on paper with a glyph each (NeverList),
+ * not rows that look tappable; their words are registered claims, unchanged. The documents stay rows, rendered from
+ * content: the Privacy Policy and the Terms, the two pages the website serves. #169 took /health-privacy and
+ * /subprocessors off the site before #163 landed, so their rows went from here first (P6b critics' M1, #370); the
+ * content keys `healthPrivacyLink` and `subprocessorsLink` wait for S14 and #163 to retire (spec S44, counsel C9).
+ * test/privacy-documents.test.ts fails if a row opens a route the website removed.
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;
@@ -43,7 +50,7 @@ export default function PrivacySettings() {
     }
   };
 
-  const sensitiveValue = sensitive.status === 'on' ? p.sensitiveOn : sensitive.status === 'off' ? p.sensitiveOff : p.sensitiveSignedOut;
+  const sensitiveValue = sensitiveStatusWords(sensitive.status);
   const open = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 
 
@@ -71,10 +78,10 @@ export default function PrivacySettings() {
 
         <NeverList />
 
+        {/* Only documents the website serves (P6b critics' M1): it took /health-privacy and /subprocessors down (#169), and
+            their content sits inside /privacy. Their content keys wait for S14 and #163. */}
         <ListSection title={p.documentsTitle}>
           <ListRow accessibilityRole="link" title={p.privacyPolicyLink} trailing="chevron" onPress={open(brand.web.privacy)} />
-          <ListRow accessibilityRole="link" title={p.healthPrivacyLink} trailing="chevron" onPress={open(brand.web.healthPrivacy)} />
-          <ListRow accessibilityRole="link" title={p.subprocessorsLink} trailing="chevron" onPress={open(brand.web.subprocessors)} />
           <ListRow accessibilityRole="link" title={p.termsLink} trailing="chevron" onPress={open(brand.web.terms)} />
         </ListSection>
       </ScrollView>

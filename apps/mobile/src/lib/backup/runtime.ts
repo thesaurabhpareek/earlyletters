@@ -528,7 +528,7 @@ export function startBackupRuntime(): void {
   });
   subscribe(() => kick());
   getSupabaseOrNull()?.auth.onAuthStateChange(() => kick(500));
-  // The account is released to backup by consent and "Keep them here", not by a Supabase auth event.
+  // The account is released to backup by consent and "Keep in this account", not by a Supabase auth event.
   subscribeAuth(() => kick(500));
 }
 

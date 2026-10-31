@@ -13,7 +13,7 @@ audio/      Every recording on this phone, exactly as it was made (AAC audio, as
 data/       entries.json: every letter, with your words exactly as heard, every small
             fix, and the final text. children.json: the books on this phone.
             account.json: your plan, whether you were signed in, the books you belong to,
-            and the choices you made on this phone (see below).
+            the names we always spell your way, and your consent choices (see below).
 schema/     A description of the data files, for anyone building a reader.
 index.html  Open in any web browser to read every letter and hear every recording.
             It works with no connection and no app.
@@ -29,6 +29,14 @@ account.json says whether you answered yes to "Are you 18 or older?" on this pho
 and your choice about sharing usage and crash reports ("not_answered" if you have
 not answered). These are the answers kept on this phone.
 
+YOUR CONSENT HISTORY
+
+When you are signed in, our server keeps a record of each time you agreed to, declined
+or acknowledged our terms, and each privacy choice you made or withdrew. account.json
+holds that record under "consent_history" when it could be read while the export was
+made. If it could not, "status" says why ("not_signed_in", "unavailable" or
+"different_account"), and nothing from this phone is left out because of it.
+
 CHECKING THE FILES
 
 manifest.json lists every file with its size and SHA-256 fingerprint.
@@ -43,4 +51,4 @@ KEEPING IT SAFE
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.2.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.3.0. Questions: hello@earlyletters.com

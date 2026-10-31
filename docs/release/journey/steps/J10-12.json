@@ -3,8 +3,9 @@
   "journey": "letter-detail",
   "kind": "happy",
   "title": "Recently deleted",
-  "note": "Settings, Recently deleted lists the letter with its first words, its date, the day it was deleted and \"Erased on\" the day the purge removes it (30 days on), with Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)",
+  "note": "Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, \"From Mama\", and one line: \"Deleted October 13. Kept here until November 12.\" Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)",
   "from": "J10-01",
+  "shot": "screens/J10-12.png",
   "route": "/settings/recently-deleted",
   "viewport": {
     "width": 402,
@@ -21,14 +22,13 @@
     }
   },
   "scrolls": false,
-  "text": "Recently deleted Letters you delete wait here for 30 days. So it rained all morning so we sat by the window and you tried to catch the drops on the August 13, 2026 Deleted October 13, 2026 Erased on November 12, 2026 Restore Erase now",
+  "text": "Recently deleted Letters you delete wait here for 30 days. So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Deleted October 30. Kept here until November 29. Restore Erase now",
   "lines": [
     "Recently deleted",
     "Letters you delete wait here for 30 days.",
-    "So it rained all morning so we sat by the window and you tried to catch the drops on the",
-    "August 13, 2026",
-    "Deleted October 13, 2026",
-    "Erased on November 12, 2026",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Deleted October 30. Kept here until November 29.",
     "Restore",
     "Erase now"
   ]

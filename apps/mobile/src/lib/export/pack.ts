@@ -15,7 +15,7 @@
  */
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';
-import { dataFiles, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
+import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
 
 /** Below the 4 GiB limit of a ZIP without ZIP64, with room for headers. */
 export const MAX_EXPORT_BYTES = 3_900_000_000;
@@ -208,7 +208,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     generated_at: snapshot.generatedAt,
     app_version: snapshot.appVersion,
     engine_version: snapshot.engineVersion,
-    scope: { exporter_role: 'parent', children: snapshot.children.length, include_recently_deleted: false },
+    scope: { exporter_role: exporterRole(snapshot.children), children: snapshot.children.length, include_recently_deleted: false },
     counts: {
       entries: entriesCount,
       audio: audioResults.size,

@@ -5,6 +5,7 @@
   "title": "Finished at once",
   "note": "Finish tapped straight after starting. The app keeps whatever was captured and opens Review; it does not refuse a short or empty take. The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
   "from": "J05-01",
+  "shot": "screens/J05-08.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -21,12 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "Hear it Close Asha · 0 days Read it back Writing down what you said.",
+  "text": "Hear it Close Read it back Writing down what you said. 0:00",
   "lines": [
     "Hear it",
     "Close",
-    "Asha · 0 days",
     "Read it back",
-    "Writing down what you said."
+    "Writing down what you said.",
+    "0:00"
   ]
 }

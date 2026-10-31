@@ -34,7 +34,7 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 ## The no-machine-writing rule
 
-We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
+We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." What a small fix is, said the same way everywhere: "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." Not "what the microphone got wrong" (an um is not the microphone's fault) and not "slips of the tongue".
 
 ## The app's own words
 
@@ -81,7 +81,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
 - Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
-- Make them feel wanted, not managed: "Your stories belong in {child}'s book."
+- Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 
 ## Saying what the product does today
@@ -116,6 +116,18 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 **How it sounds.** One line per place, never a paragraph. State what we do, not what could go wrong. No locks, shields or "bank-level" anything. Never: hack, breach, leak, spy, steal, creepy, scary, "don't worry", "100%", "military-grade", "unhackable", "completely secure". Do not repeat the promise on screens where nobody is wondering; saying it too often sounds anxious.
 
 **Proof before words.** Every privacy claim is registered in `docs/legal/claims-registry.yaml` with counsel approval (LEGAL-REQ, ENGINEERING_REQUIREMENTS) before a public page or store listing goes live.
+
+## Words we lean on too much
+
+A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
+
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save, a crash, and the sign-in errors the S52 table leads with it).
+- **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
+- **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
+- **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
+- **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
+- **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
 
 ## How to write an email
 

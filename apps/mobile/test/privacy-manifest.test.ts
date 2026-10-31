@@ -37,6 +37,7 @@ const VARIABLES = [
   'EXPO_PUBLIC_BACKUP',
   'EXPO_PUBLIC_STATUS_REPORT',
   'EXPO_PUBLIC_ANALYTICS',
+  'EXPO_PUBLIC_ACCOUNT_DELETION',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   'EXPO_PUBLIC_E2E',
   'EAS_BUILD_PROFILE',
@@ -285,6 +286,12 @@ describe('LEGAL-REQ-043 collected data types: exactly true for each build', () =
     }
     // The analytics switch alone sends nothing (no SDK), so it must not change the manifest either.
     expect(manifestFor({ ...profileEnv('preview'), EXPO_PUBLIC_ANALYTICS: 'on' })).toEqual(manifestFor(profileEnv('preview')));
+  });
+
+  it('the Delete account switch changes nothing in the manifest: it shows or hides a row, and no data is kept differently (founder, 30 Oct 2026)', () => {
+    for (const value of ['on', 'off']) {
+      expect(manifestFor({ ...profileEnv('preview'), EXPO_PUBLIC_ACCOUNT_DELETION: value })).toEqual(manifestFor(profileEnv('preview')));
+    }
   });
 
   it('follows exactly the switches app.config.ts records in extra, in every combination', () => {

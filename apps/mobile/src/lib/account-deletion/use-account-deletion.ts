@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, withdrawAnalytics } from '@/lib/analytics';
+import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
 import { currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
@@ -13,6 +14,7 @@ import {
   type AnalyticsIds, type DeletionClient, type FlagStore,
 } from './api';
 import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, type SyncBook } from './logic';
+import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
 const flags: FlagStore = { get: getSetting, set: setSetting, remove: deleteSetting };
 const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds };
@@ -31,6 +33,9 @@ export function useAccountDeletion() {
   const auth = useAuth();
   const plan = usePlan();
   const client = auth.client as unknown as DeletionClient | null;
+  // Who a read is asked as: the session's user at render time (the auth store's snapshot is published by the provider's
+  // effect, after this screen's, so on the first read of a sign-in it still holds the previous state).
+  const userId = authUserId(auth.state);
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [books, setBooks] = useState<SyncBook[] | null>(null);
   const [error, setError] = useState<'offline' | 'failed' | null>(null);
@@ -40,12 +45,17 @@ export function useAccountDeletion() {
   const refresh = useCallback(async () => {
     if (!client || !auth.signedIn) return;
     const [s, b] = await Promise.all([loadStatus(client), loadBooks(client)]);
-    if (s.ok) setStatus(s.value);
-    else setError(s.reason);
+    if (s.ok) {
+      setStatus(s.value);
+      // What the server says about the open request is remembered on this phone, so a phone that lists no book
+      // (a sole parent's book goes with the request) shows the deletion screen and never the welcome (open-request.ts).
+      // For the account that asked: an answer that lands after another account has signed in is dropped.
+      recordStatus(s.value, userId);
+    } else setError(s.reason);
     if (b.ok) setBooks(b.value);
     // A forget that failed earlier (offline at request time) is finished here.
     void retryForget(client, ids, flags, uuidv7());
-  }, [client, auth.signedIn]);
+  }, [client, auth.signedIn, userId]);
 
   useEffect(() => {
     void refresh();
@@ -64,6 +74,8 @@ export function useAccountDeletion() {
       setError(r.reason);
       return false;
     }
+    // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
+    recordRequested(r.value);
     // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
     // then PostHog deletes this phone's persons through analytics-forget.
     analytics.track('account_deletion', { stage: 'confirmed' });
@@ -84,6 +96,9 @@ export function useAccountDeletion() {
       setError(r.reason);
       return false;
     }
+    // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
+    // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
+    recordCancelled();
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;

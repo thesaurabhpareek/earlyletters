@@ -1,6 +1,6 @@
 {
   "format": "early-letters-export",
-  "format_version": "1.2.0",
+  "format_version": "1.3.0",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "app_version": "1.0.0",
   "engine_version": 3,
@@ -20,14 +20,14 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 2186,
-      "sha256": "97d01775c1efa8a841aa8220a61d2965cf98a7c43baddc3df3f26c28b8030b4f",
+      "bytes": 2650,
+      "sha256": "4396eaec5252174b065098fc2d2371f8a028db98381601c49c9b7298815d191c",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 16699,
-      "sha256": "d6668e1e73be716824d4127f4ce54482db1b892230fb1e1cf69df1a3ab8666e9",
+      "bytes": 21817,
+      "sha256": "4b34c409d6c94b6d776529665107e6e00b6a8908533fde96b9ff7382997d7047",
       "media_type": "application/json"
     },
     {
@@ -86,8 +86,8 @@
     },
     {
       "path": "letters/Asha/2026-08/2026-08-10_e7.txt",
-      "bytes": 188,
-      "sha256": "b7ff64ffc91fb389aca0d824de0f82e3f99d5f8065192c4301c8b8fc7e5db0cb",
+      "bytes": 170,
+      "sha256": "21aaf2d3b26115c419e41302758def10c1d51e40d33bc01bfbd3722d8909adfa",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -159,19 +159,19 @@
     {
       "path": "data/children.json",
       "bytes": 604,
-      "sha256": "0003ff767a3550632b7109cb7f94a98986de40ad7b538e7df594baf0a778d737",
+      "sha256": "48f478eb6b8ff7dbeb55f21024bb34ec8fbf0158c8bb6ff3e8091e19f504ad3d",
       "media_type": "application/json"
     },
     {
       "path": "data/entries.json",
       "bytes": 13556,
-      "sha256": "659bb36b6516d56c7ff97e6dfc190c7fd4a9c5f3ec24a43cb934f526762ee744",
+      "sha256": "7a26b3aba980e315fb7af30388b979715540e8f594b62ddbf8d080c019a5f07f",
       "media_type": "application/json"
     },
     {
       "path": "data/account.json",
-      "bytes": 453,
-      "sha256": "5f72657d1b80c37c85b7804743cb61368c9f18e9802bf199e4b6c5b0cb277cd7",
+      "bytes": 1148,
+      "sha256": "beae1d02bb1508d65e1bee2f3efc812d1264723e574c4fb319dbc4a713e51308",
       "media_type": "application/json"
     }
   ]

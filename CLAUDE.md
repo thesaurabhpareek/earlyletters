@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 103 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 111 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
@@ -47,6 +47,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Never imply AI writes anything. We never rewrite.
 - Never gender the child; use `{child}`.
 - Celebrate what exists; never count gaps. No streaks, points or badges, ever.
+- Two vocabularies: internal terms (take, entry, draft, pack, `raw_transcript`) stay in code and specs; a parent only reads the words in the BRAND.md glossary and its internal-terms table (CR-25).
 
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
@@ -54,7 +55,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes).
 
 ## Agents
-- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (24 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (26 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
 - Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
 - Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.

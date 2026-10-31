@@ -1,0 +1,36 @@
+{
+  "id": "J21-08",
+  "journey": "co-parent-sharing",
+  "kind": "unhappy",
+  "title": "Closed before the book came, sync held",
+  "note": "The joined sheet closes onto first run's welcome. Here sync cannot bring the book, so there is no dead end: the welcome says the book has not reached this phone yet, offers Try again (a sync), and keeps \"Begin the book\". While sync is running it says the book is on its way and hides \"Begin the book\" for up to 30 s (J21i); once the book is here, the welcome hands over to the Book.",
+  "from": "J21-05",
+  "shot": "screens/J21-08.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Your first two letters are free. Asha's book has not reached this phone yet. Try again Begin the book I already have a book I was invited",
+  "lines": [
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Your first two letters are free.",
+    "Asha's book has not reached this phone yet.",
+    "Try again",
+    "Begin the book",
+    "I already have a book",
+    "I was invited"
+  ]
+}

@@ -154,6 +154,8 @@ const READS = [
   ['subscription_status', 'select 1 from subscription_status', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_consents', 'select 1 from subscription_consents', [],                ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['subscription_report_rates', 'select 1 from subscription_report_rates', [],        ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261028010000: guess counters for invite-redeem, written only by invite_redeem_by_code().
+  ['invite_redeem_failures', 'select 1 from invite_redeem_failures', [],              ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -315,6 +317,7 @@ const HELPERS = {
   'is_child_member(uuid)': [`select public.is_child_member('${CHILD}') v`, [true, true, true, false, true, '42501']],
   'is_child_parent(uuid)': [`select public.is_child_parent('${CHILD}') v`, [true, true, false, false, false, '42501']],
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
+  'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/${uuid7()}.jpg') v`, [false, false, false, false, false, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
@@ -565,9 +568,9 @@ check('[20261023060000] a table, sequence or function created after every file g
 
 // ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
 // The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the
-// invite-redeem function, as service_role, may run it. It is not built yet. When a migration adds it,
-// every overload must be closed to PUBLIC, anon and authenticated and open to service_role, and it is
-// never an RPC or helper of the matrix above. The two probes show the rule is not empty: Postgres's
+// invite-redeem function, as service_role, may run it. 20261028010000 builds it. Every overload must be
+// closed to PUBLIC, anon and authenticated and open to service_role, and it is never an RPC or helper
+// of the matrix above. The two probes show the rule is not empty: Postgres's
 // default grant (PUBLIC) fails it, and the grants the migration must make pass it.
 const redeemFacts = async () => (await sys(`select coalesce(array_to_string(p.proacl, ','), '') acl,
     has_function_privilege('anon', p.oid, 'execute') anon_x, has_function_privilege('authenticated', p.oid, 'execute') auth_x,
@@ -581,6 +584,7 @@ check('[review B N8] invite_redeem_by_code: executable by service_role only, and
 const redeemProbe = async (grants) => {
   await db.exec('begin');
   try {
+    await db.exec(`drop function if exists public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[])`);
     await db.exec(`create function public.invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea, p_user_subjects text[],
       p_device_subjects text[], p_ip_subjects text[]) returns jsonb language sql set search_path = pg_catalog, public, pg_temp as $$ select '{}'::jsonb $$`);
     if (grants) await db.exec(grants);

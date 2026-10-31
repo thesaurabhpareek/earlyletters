@@ -1,10 +1,15 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useState } from 'react';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
+import { tokens } from '@scribe/design-tokens';
+import { remindersSwitchOn, remindersTurnedOnInSettings, showNotificationsOff } from '@/components/settings/reminders.logic';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
 import { ListSection, ToggleRow } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { track } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
@@ -26,15 +31,21 @@ import {
 } from '@/lib/reminders';
 import { subscribe } from '@/lib/store';
 import { useTheme } from '@/lib/a11y';
+import { useMotion } from '@/lib/motion';
 
 type OnCadence = Exclude<Cadence, 'off'>;
 
 /**
- * Reminders (PRD C F1, C-REQ-001 to -003, -007, -009, -011). Local
+ * Reminders (PRD C F1, C-REQ-001 to -003, -007, -009, -011; EXPERIENCE_PASS_2026-10 S34, package P6). Local
  * notifications only. The OS permission is asked only when the switch is
  * turned on here (or from the priming card after the first letter), and the
  * first time only after the priming sheet; if the OS says no, the choice is
  * kept and this screen offers Open Settings.
+ *
+ * One switch per decision: the master switch keeps the cadence, evenings and time when it is off, so there is no
+ * separate Pause (components/settings/reminders.logic.ts). Back from iOS Settings with notifications allowed, the
+ * notifications-off card collapses (LinearTransition, 280 ms; none under Reduce Motion) and "Reminders are on."
+ * shows once. Nothing here counts days or runs.
  */
 export default function Reminders() {
   const c = useTheme().c;
@@ -46,11 +57,21 @@ export default function Reminders() {
   const [lateNote, setLateNote] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [priming, setPriming] = useState(false);
+  const toast = useToast();
+  const motion = useMotion();
+  // The permission last seen, to tell "allowed in iOS Settings just now" from any other read.
+  const seen = useRef<ReminderPermission | null>(null);
 
   useEffect(() => subscribe(() => setPrefs(readPrefs())), []);
   useEffect(() => {
     let alive = true;
-    const refresh = () => void getReminderPermission().then((p) => alive && setPermission(p));
+    const refresh = () =>
+      void getReminderPermission().then((p) => {
+        if (!alive) return;
+        if (remindersTurnedOnInSettings(seen.current, p, readPrefs())) toast.show({ message: s.onToast });
+        seen.current = p;
+        setPermission(p);
+      });
     refresh();
     // Coming back from iOS Settings: show the new state at once.
     const sub = AppState.addEventListener('change', (state) => state === 'active' && refresh());
@@ -58,7 +79,7 @@ export default function Reminders() {
       alive = false;
       sub.remove();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (patch: Partial<ReminderPrefs>) => {
     writePrefs(patch);
@@ -75,8 +96,11 @@ export default function Reminders() {
         noteAskShown();
         return;
       }
-      if (on) setPermission(await enableReminders());
-      else await disableReminders();
+      if (on) {
+        const p = await enableReminders();
+        seen.current = p;
+        setPermission(p);
+      } else await disableReminders();
     } finally {
       setPrefs(readPrefs());
       setBusy(false);
@@ -91,6 +115,7 @@ export default function Reminders() {
       // The priming sheet shows only while iOS has never asked, so this is the OS alert's answer.
       const answer = await enableReminders();
       track('os_permission_result', { granted: answer === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+      seen.current = answer;
       setPermission(answer);
     } finally {
       setPrefs(readPrefs());
@@ -124,33 +149,37 @@ export default function Reminders() {
     update({ days: has ? prefs.days.filter((d) => d !== day) : [...prefs.days, day] });
   };
   const selectedDays = cadence === 'weekly' ? [prefs.weeklyDay] : cadence === 'everyEvening' ? [0, 1, 2, 3, 4, 5, 6] : prefs.days;
+  const on = remindersSwitchOn(prefs);
+  // The rows below the card move up as it collapses (S34); under Reduce Motion they jump.
+  const layout = motion.reduced ? undefined : LinearTransition.duration(tokens.motion.enter.durationMs);
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <ListSection footer={r.help}>
-        <ToggleRow title={s.enabledLabel} value={prefs.enabled} disabled={busy} onValueChange={(v) => void toggle(v)} />
+        <ToggleRow title={s.enabledLabel} value={on} disabled={busy} onValueChange={(v) => void toggle(v)} />
       </ListSection>
 
-      {prefs.enabled && permission === 'denied' && (
-        <View accessible={false} className="gap-3 rounded-[14px] bg-secondary p-4">
-          <Text role="heading" className="text-base font-medium text-foreground">
-            {s.deniedTitle}
-          </Text>
-          <Text className="text-sm leading-5 text-foreground">{s.deniedBody}</Text>
-          <Button variant="outline" size="sm" className="self-start" onPress={() => void Linking.openSettings()}>
-            <Text>{s.openSettingsButton}</Text>
-          </Button>
-        </View>
+      {showNotificationsOff(prefs, permission) && (
+        <Animated.View exiting={motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)} accessible={false} className="gap-3 rounded-[14px] bg-secondary p-4" testID="reminders.denied">
+          <View className="flex-row items-center gap-2">
+            <WarningCircleIcon size={20} color={c.caution} weight="bold" />
+            <Text variant="headline" asHeading className="shrink">
+              {s.deniedTitle}
+            </Text>
+          </View>
+          <Text variant="subhead">{s.deniedBody}</Text>
+          <Button variant="outline" size="sm" className="self-start" label={s.openSettingsButton} onPress={() => void Linking.openSettings()} />
+        </Animated.View>
       )}
 
-      {prefs.enabled && (
-        <>
+      {on && (
+        <Animated.View layout={layout} className="gap-7">
           <ListSection title={s.howOftenTitle}>
             <ChoiceGroup label={s.howOftenTitle} layout="list" options={cadenceOptions} value={cadence} onChange={(v) => update({ cadence: v })} />
           </ListSection>
 
           {cadence !== 'everyEvening' && (
-            <ListSection title={s.eveningsTitle} footer={cadence === 'weekly' ? s.eveningHelp : s.eveningsHelp}>
+            <ListSection title={s.eveningsTitle}>
               {/* Chip is the one selection pattern: accentSoft + accent edge + check. Solid accent is for the one primary button. */}
               <ChipGroup label={s.eveningsTitle} className="px-4 py-3">
                 {reminderCopy.weekdaysShort.map((label, day) => (
@@ -215,11 +244,7 @@ export default function Reminders() {
               }}
             />
           </ListSection>
-
-          <ListSection footer={prefs.paused ? s.pausedHelp : undefined}>
-            <ToggleRow title={r.pauseLabel} value={prefs.paused} onValueChange={(v) => update({ paused: v })} />
-          </ListSection>
-        </>
+        </Animated.View>
       )}
 
       <ReminderPrimingSheet visible={priming} onContinue={() => void continueFromPriming()} />
