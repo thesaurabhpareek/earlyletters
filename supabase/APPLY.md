@@ -1171,14 +1171,14 @@ commit;
 
 The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
 
-## File 27: compliance gates at sign-up, counts and the regulatory watch (31 Oct 2026, CR-22)
+## File 27: compliance gates at sign-up, counts and the regulatory watch (31 Oct 2026, CR-26)
 
 `20261031000000_compliance_gates.sql`. v1.1 only: do not apply before accounts ship, and not before the 9 Nov go/no-go. Apply after File 26. Idempotent; adds tables in `ops` and functions; changes no existing row or function.
 
-- **What it adds.** `ops.restricted_jurisdictions` (seeded with the CR-22 default: KP, IR, CU and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
+- **What it adds.** `ops.restricted_jurisdictions` (seeded with the CR-26 default: KP, IR, CU and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
 - **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
 
-**Before the hook is turned on (CCO conditions, CR-23 review):**
+**Before the hook is turned on (CCO conditions, CR-27 review):**
 - An ops alert on the `geo_stale`, `geo_unknown` and `error` counts exists (not built yet).
 - Step 4 below is verified on a local stack, so we know whether `block` counts survive a refused sign-up.
 - `legal` has drafted, and the founder has approved, the Privacy Policy disclosure that the sign-up IP is used to work out a country. Today the policy says we do not collect location.

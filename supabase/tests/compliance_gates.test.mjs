@@ -1,4 +1,4 @@
-// Compliance gates (20261031000000; CTO ruling CR-22; skill regulatory-compliance). The before-user-created
+// Compliance gates (20261031000000; CTO ruling CR-26; skill regulatory-compliance). The before-user-created
 // hook refuses sign-up from a blocked country with 403 `signup_unavailable_region`, fails open (and counts it)
 // without geo data, an IP, a known country or on an internal error, stores no IP and no person id, ignores
 // region rows, and is executable by nobody but supabase_auth_admin. Counts, the regulatory watch, the report

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Loads DB-IP "IP to Country Lite" into ops.geo_ip_ranges (20261031000000; CTO ruling CR-22).
+// Loads DB-IP "IP to Country Lite" into ops.geo_ip_ranges (20261031000000; CTO ruling CR-26).
 // Licence: CC BY 4.0. Attribution to DB-IP.com is required (link: https://db-ip.com) wherever the
 // results are used; see .claude/skills/regulatory-compliance/references/sanctions.md.
 //

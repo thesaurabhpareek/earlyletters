@@ -1,4 +1,4 @@
-// Offline tests for the regulatory watch and the geo loader (CR-22). No network: fetch is injected.
+// Offline tests for the regulatory watch and the geo loader (CR-26). No network: fetch is injected.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildUrl, normalize, dedupe, loadTopics, watch, record } from './regulatory-watch.mjs';

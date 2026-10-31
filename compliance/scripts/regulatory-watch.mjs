@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Regulatory watch (CTO ruling CR-22; owner: regulatory-affairs; skill regulatory-compliance section 5).
+// Regulatory watch (CTO ruling CR-26; owner: regulatory-affairs; skill regulatory-compliance section 5).
 // Asks the Federal Register API for new documents on the topics in
 // compliance/scripts/watch-topics.json and prints what it found.
 // Federal only: state law is checked by hand (references/checked-facts.md).

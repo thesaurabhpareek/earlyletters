@@ -1,4 +1,4 @@
--- Compliance gates at account creation, content-free counts, and the regulatory watch (CTO ruling CR-22).
+-- Compliance gates at account creation, content-free counts, and the regulatory watch (CTO ruling CR-26).
 --
 -- PENDING: not yet applied. v1.1 (accounts arrive in v1.1; v1.0 is on-device only, 15 Oct 2026). Do not
 -- merge before the 9 Nov go/no-go. Apply after 20261028000000. Safe to run twice.
@@ -6,7 +6,7 @@
 -- What it adds, all in schema ops (service only, never reachable from the app):
 --   ops.restricted_jurisdictions  places we refuse sign-up from (Terms 2.4, register CR-121). Data, not code.
 --                                  Changing a status is a founder decision (skill regulatory-compliance,
---                                  references/sanctions.md). Seeded with the CR-22 default.
+--                                  references/sanctions.md). Seeded with the CR-26 default.
 --   ops.geo_ip_ranges, ops.geo_ip_meta
 --                                  IP to country, loaded monthly from DB-IP "IP to Country Lite" (CC BY 4.0,
 --                                  attribution to DB-IP.com) by compliance/scripts/load-geo-ip.mjs.
@@ -25,7 +25,7 @@
 --   ops_compliance_report(date,date)  service_role: one JSON report for a date range.
 --   ops_compliance_retention(timestamptz)  service_role: deletes counts older than two years.
 --
--- Decisions inside this file (CR-22):
+-- Decisions inside this file (CR-26):
 --   * The hook is security definer (owner postgres), so supabase_auth_admin needs only EXECUTE on it and no
 --     rights on ops. Supabase's guide grants table rights to supabase_auth_admin instead; definer is used here
 --     because every table it touches is private to ops and the search_path is pinned.
@@ -71,24 +71,24 @@ create table if not exists ops.restricted_jurisdictions (
   check ((scope = 'country') = (code !~ '-'))
 );
 comment on table ops.restricted_jurisdictions is
-  'Places sign-up is refused from (Terms 2.4, register CR-121, CTO ruling CR-22). Status changes need a founder decision.';
+  'Places sign-up is refused from (Terms 2.4, register CR-121, CTO ruling CR-26). Status changes need a founder decision.';
 
 insert into ops.restricted_jurisdictions (code, name, program, scope, status, decided_by, source_url, checked_on, note) values
-  ('KP', 'North Korea', 'North Korea Sanctions Regulations, 31 CFR 510', 'country', 'block', 'CR-22 default',
+  ('KP', 'North Korea', 'North Korea Sanctions Regulations, 31 CFR 510', 'country', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', null),
-  ('IR', 'Iran', 'Iranian Transactions and Sanctions Regulations, 31 CFR 560', 'country', 'block', 'CR-22 default',
+  ('IR', 'Iran', 'Iranian Transactions and Sanctions Regulations, 31 CFR 560', 'country', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
    'General License D-2 may authorize free internet communications; open founder and counsel question'),
-  ('CU', 'Cuba', 'Cuban Assets Control Regulations, 31 CFR 515', 'country', 'block', 'CR-22 default',
+  ('CU', 'Cuba', 'Cuban Assets Control Regulations, 31 CFR 515', 'country', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
    '31 CFR 515.578 may authorize internet communications (not verified); open founder and counsel question'),
-  ('UA-43', 'Crimea', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-22 default',
+  ('UA-43', 'Crimea', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-40', 'Sevastopol', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-22 default',
+  ('UA-40', 'Sevastopol', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-14', 'Donetsk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-22 default',
+  ('UA-14', 'Donetsk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-09', 'Luhansk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-22 default',
+  ('UA-09', 'Luhansk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-26 default',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only')
 on conflict (code) do nothing;
 
