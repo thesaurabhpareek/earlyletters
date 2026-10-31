@@ -42,6 +42,7 @@ import {
   type ExportAudio,
   type ExportEntry,
   type ExportConsentHistory,
+  type ExportProfile,
   type ExportDictionaryTerm,
   type ExportMachineEdit,
   type OtherVersionsFile,
@@ -94,6 +95,8 @@ export interface ExportSnapshot {
   consent: ExportPhoneConsent;
   /** For account.json (1.3.0): the server's consent record, or why it is not here. */
   consentHistory: ExportConsentHistory;
+  /** For account.json (1.4.0): the person's own profile from the server, or why it is not here. */
+  profile: ExportProfile;
   /** For account.json (1.3.0): the words spelled your way, as kept on this phone (each book's child name and your signature). */
   dictionary: ExportDictionaryTerm[];
 }
@@ -590,6 +593,7 @@ export async function dataFiles(
     memberships: snapshot.children.map((c) => ({ child_id: c.id, role: c.role, signs_as: c.signsAs })),
     consent_on_this_phone: snapshot.consent,
     consent_history: snapshot.consentHistory,
+    profile: snapshot.profile,
     dictionary: snapshot.dictionary,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;

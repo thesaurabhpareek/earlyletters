@@ -1,7 +1,8 @@
 /**
- * The server's part of account.json (schema 1.3.0; BL-323, LEGAL-REQ-034):
- * the consent record, `policy_acceptances` and `my_policy_state`, own rows
- * under row-level security. Pure: the reads are injected, so every path is
+ * The server's part of account.json (BL-323 and BL-529, LEGAL-REQ-034): the
+ * consent record (`policy_acceptances` and `my_policy_state`, own rows under
+ * row-level security, schema 1.3.0) and the person's own `profiles` row
+ * (schema 1.4.0). Pure: the reads are injected, so every path is
  * tested without a network (test/export-server-records.test.ts), and the
  * column lists below are run against the real access rules by
  * supabase/tests/export_reads.test.mjs. `device.ts` wires the Supabase reads.
@@ -16,13 +17,15 @@
  * cannot return every row, or a row this app cannot describe, makes the
  * status `unavailable`.
  */
-import type { ExportConsentHistory, ExportPolicyAct, PolicyAction } from './schema';
+import type { ExportConsentHistory, ExportPolicyAct, ExportProfile, PolicyAction } from './schema';
 
 /** Columns read from `policy_acceptances`: never `profile_id`, `subject_hash` or the retention columns. */
 export const ACT_COLUMNS =
   'id, document, version, action, method, surface, accepted_at, client_recorded_at, app_version, platform, locale, rendered_sha256, context';
 /** Columns read from `my_policy_state`. */
 export const STATE_COLUMNS = 'document, version, action, accepted_at';
+/** Columns read from the person's own `profiles` row (filtered to their id: co-parents can read each other's). */
+export const PROFILE_COLUMNS = 'id, display_name, signs_as, created_at';
 
 /** A read result as PostgREST returns it. */
 export interface ReadResult {
@@ -30,10 +33,18 @@ export interface ReadResult {
   error: unknown;
 }
 
-/** The two reads. Each gets an AbortSignal; each must return every row or an error. */
+/** The reads. Each gets an AbortSignal; each must return every row or an error. */
 export interface ServerRecordsReader {
   acts(signal: AbortSignal): Promise<ReadResult>;
   state(signal: AbortSignal): Promise<ReadResult>;
+  /** The `profiles` row whose id is `userId` (and no other). */
+  profile(signal: AbortSignal, userId: string): Promise<ReadResult>;
+}
+
+/** What the server holds for account.json. The two parts are read together and fail apart. */
+export interface ServerRecords {
+  consent: ExportConsentHistory;
+  profile: ExportProfile;
 }
 
 export const PAGE_ROWS = 500;
@@ -49,6 +60,11 @@ export async function allRows(page: (from: number, to: number) => PromiseLike<Re
     if (r.data.length < PAGE_ROWS) return { data: rows, error: null };
   }
   return { data: null, error: 'too_many_rows' };
+}
+
+/** A profile with no values, and why. */
+export function noProfile(status: Exclude<ExportProfile['status'], 'included'>): ExportProfile {
+  return { status, read_at: null, display_name: null, signs_as: null, created_at: null };
 }
 
 /** A history with no rows, and why. */
@@ -146,11 +162,25 @@ export interface ReadOptions {
   pollMs?: number;
 }
 
-/** Reads the server's consent record. Never throws and never takes longer than `timeoutMs`; Stop ends it sooner. */
-export async function readServerRecords(o: ReadOptions): Promise<ExportConsentHistory> {
-  if (!o.authUserId || !o.reader) return noConsentHistory('not_signed_in');
-  if (o.ownerId && o.ownerId !== o.authUserId) return noConsentHistory('different_account');
+/** The person's profile from the read: exactly one row, theirs, or the read counts as failed. */
+export function profileFromRows(rows: unknown[], userId: string, readAt: string): ExportProfile {
+  if (rows.length !== 1 || !isRecord(rows[0]) || rows[0].id !== userId) throw new Unreadable();
+  const r = rows[0];
+  const opt = (v: unknown) => (v === null || v === undefined ? null : str(v));
+  return { status: 'included', read_at: readAt, display_name: opt(r.display_name), signs_as: opt(r.signs_as), created_at: opt(r.created_at) };
+}
+
+/**
+ * Reads the server's consent record and the person's profile. Never throws and
+ * never takes longer than `timeoutMs`; Stop ends it sooner. Each part has its
+ * own result: an error, a bad row or a hang in one leaves the other as it is
+ * (a part still waiting at the timeout or Stop is `unavailable`).
+ */
+export async function readServerRecords(o: ReadOptions): Promise<ServerRecords> {
+  if (!o.authUserId || !o.reader) return { consent: noConsentHistory('not_signed_in'), profile: noProfile('not_signed_in') };
+  if (o.ownerId && o.ownerId !== o.authUserId) return { consent: noConsentHistory('different_account'), profile: noProfile('different_account') };
   const reader = o.reader;
+  const uid = o.authUserId;
   const abort = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let poll: ReturnType<typeof setInterval> | undefined;
@@ -162,11 +192,20 @@ export async function readServerRecords(o: ReadOptions): Promise<ExportConsentHi
     timer = setTimeout(end, o.timeoutMs);
     if (o.cancelled) poll = setInterval(() => o.cancelled?.() && end(), o.pollMs ?? 100);
   });
+  // Each part races the timeout and Stop on its own, so a part that finished keeps its result
+  // when the other hangs. `stop` rejects at most once; both parts see it.
+  stop.catch(() => {});
+  const part = <T,>(work: () => Promise<T>, fallback: T): Promise<T> =>
+    Promise.race([Promise.resolve().then(work), stop]).catch(() => fallback);
   try {
-    const [acts, state] = await Promise.race([Promise.all([reader.acts(abort.signal), reader.state(abort.signal)]), stop]);
-    return consentFromRows(rowsOf(acts), rowsOf(state), o.now().toISOString());
-  } catch {
-    return noConsentHistory('unavailable');
+    const [consent, profile] = await Promise.all([
+      part(async () => {
+        const [acts, state] = await Promise.all([reader.acts(abort.signal), reader.state(abort.signal)]);
+        return consentFromRows(rowsOf(acts), rowsOf(state), o.now().toISOString());
+      }, noConsentHistory('unavailable')),
+      part(async () => profileFromRows(rowsOf(await reader.profile(abort.signal, uid)), uid, o.now().toISOString()), noProfile('unavailable')),
+    ]);
+    return { consent, profile };
   } finally {
     if (timer) clearTimeout(timer);
     if (poll) clearInterval(poll);

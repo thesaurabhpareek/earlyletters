@@ -56,7 +56,15 @@ import { brand } from '@scribe/brand';
  * still validates; this version always writes them. The same one-way rule
  * applies: the 1.2.0 schema rejects a 1.3.0 account.json.
  */
-export const EXPORT_SCHEMA_VERSION = '1.3.0';
+/**
+ * 1.4.0 (BL-529, LEGAL-REQ-034 "profile fields"): account.json gains
+ * `profile`, the person's own `profiles` row (the name they chose, their
+ * default signature, when the account was made), read from the server when
+ * signed in, with its own `status` like `consent_history`. Optional in the
+ * schema, so every earlier v1 export still validates; this version always
+ * writes it. The 1.3.0 schema rejects a 1.4.0 account.json.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.4.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -159,6 +167,25 @@ export interface AccountFile {
   consent_history: ExportConsentHistory;
   /** Since 1.3.0. */
   dictionary: ExportDictionaryTerm[];
+  /** Since 1.4.0. */
+  profile: ExportProfile;
+}
+
+/**
+ * The person's own `profiles` row (LEGAL-REQ-034 "profile fields"). The phone
+ * keeps no copy, so it is read while the export is made; `status` works as in
+ * `ExportConsentHistory`, and only `included` carries values.
+ */
+export interface ExportProfile {
+  status: 'included' | 'not_signed_in' | 'different_account' | 'unavailable';
+  /** When it was read; null unless `included`. */
+  read_at: string | null;
+  /** The name the person chose for their account. */
+  display_name: string | null;
+  /** Their default signature ("Papa"); each book's own is in memberships. */
+  signs_as: string | null;
+  /** When the account was made. */
+  created_at: string | null;
 }
 
 export type PolicyAction = 'accept' | 'decline' | 'withdraw' | 'acknowledge';
@@ -473,8 +500,26 @@ export const exportJsonSchema = {
         },
         // Since 1.3.0; optional so every earlier v1 export still validates.
         consent_history: { $ref: '#/$defs/consentHistory' },
+        // Since 1.4.0; optional so every earlier v1 export still validates.
+        profile: { $ref: '#/$defs/profile' },
         dictionary: { type: 'array', items: { $ref: '#/$defs/dictionaryTerm' } },
       },
+    },
+    profile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status', 'read_at', 'display_name', 'signs_as', 'created_at'],
+      properties: {
+        status: { enum: ['included', 'not_signed_in', 'different_account', 'unavailable'] },
+        read_at: { type: ['string', 'null'] },
+        display_name: { type: ['string', 'null'] },
+        signs_as: { type: ['string', 'null'] },
+        created_at: { type: ['string', 'null'] },
+      },
+      // Only a profile that was read carries values and a read time.
+      if: { type: 'object', properties: { status: { const: 'included' } } },
+      then: { type: 'object', properties: { read_at: { type: 'string' } } },
+      else: { type: 'object', properties: { read_at: { type: 'null' }, display_name: { type: 'null' }, signs_as: { type: 'null' }, created_at: { type: 'null' } } },
     },
     consentHistory: {
       type: 'object',

@@ -12,7 +12,7 @@
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
 import { phoneConsent, type ExportSnapshot, type SnapshotEntry } from '../../src/lib/export/build.logic';
-import { noConsentHistory } from '../../src/lib/export/server-records.logic';
+import { noConsentHistory, noProfile } from '../../src/lib/export/server-records.logic';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -133,6 +133,7 @@ export function ashaSnapshot(): ExportSnapshot {
     consent: phoneConsent(true, null),
     // Signed out: there is no server record (schema 1.3.0).
     consentHistory: noConsentHistory('not_signed_in'),
+    profile: noProfile('not_signed_in'),
     // What each book spells your way on this phone (store.dictionaryFor): the child's name and your signature.
     dictionary: [
       { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], source: 'phone' },

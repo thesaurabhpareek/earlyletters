@@ -16,7 +16,7 @@ export const exportCopy = {
     includesData: 'A data file with your words as heard, every small fix, and the final text',
     // Option B (D-100): letters sync, so the line is about the export only, never a claim that nothing leaves
     // the phone. The export is built on this phone; signed in, it also reads the person's own consent record
-    // from the server for account.json (BL-323), and sends nothing. Counsel claims review.
+    // and profile from the server for account.json (BL-323, BL-529), and sends nothing. Counsel claims review.
     offlineNote: 'The export is made on this phone. It goes only where you send it.',
     // Above the disabled button while the book has no letter.
     emptyNote: 'You can export once the book has a letter.',
@@ -86,7 +86,8 @@ export const exportCopy = {
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
     '            account.json: your plan, whether you were signed in, the books you belong to,',
-    '            the names we always spell your way, and your consent choices (see below).',
+    '            the names we always spell your way, your consent choices and, when you are',
+    '            signed in, your profile (see below).',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',
     '            It works with no connection and no app.',
@@ -109,6 +110,13 @@ export const exportCopy = {
     'holds that record under "consent_history" when it could be read while the export was',
     'made. If it could not, "status" says why ("not_signed_in", "unavailable" or',
     '"different_account"), and nothing from this phone is left out because of it.',
+    '',
+    'YOUR PROFILE',
+    '',
+    'When you are signed in, account.json also holds your profile as our server keeps it,',
+    'under "profile", when it could be read while the export was made: the name on your',
+    'account, your usual "From" name (a book can have its own, in "memberships"), and when',
+    'you made your account. Its "status" works the same way as the consent history\'s.',
     '',
     'CHECKING THE FILES',
     '',
