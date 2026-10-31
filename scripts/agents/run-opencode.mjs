@@ -35,10 +35,30 @@ import { tmpdir } from "node:os";
  */
 export function gitPushPatterns() {
   const out = [];
-  for (const p of ["git push", "git -C* push", "git -c* push"]) {
+  // Global options git accepts before the subcommand are prefixes too (round 4).
+  for (const p of ["git push", "git -C* push", "git -c* push", "git --no-pager push", "git -P push", "git --git-dir=* push", "git --work-tree=* push"]) {
     out.push(`${p} --force*`, `${p}*--force*`, `${p}* -f*`, `${p}*--delete*`, `${p}* +*`, `${p}* :*`);
     for (const b of ["develop", "main"]) {
       out.push(`${p}* ${b}`, `${p}* ${b} *`, `${p}*:${b}`, `${p}*:${b} *`, `${p}*:refs/heads/${b}`, `${p}*:refs/heads/${b} *`, `${p}* refs/heads/${b}`);
+      // `HEAD:heads/develop` names the same ref without the refs/ prefix.
+      out.push(`${p}*:heads/${b}`, `${p}*:heads/${b} *`, `${p}* heads/${b}`);
+    }
+    // Bare push: no refspec means "whatever upstream says", which can be develop. Exact patterns, so
+    // `git push -u origin HEAD` and `git push origin agent/<handle>/<topic>` stay allowed.
+    out.push(p, `${p} origin`, `${p} -u`, `${p} -u origin`, `${p} --set-upstream`, `${p} --set-upstream origin`);
+    // Many refs at once, tags (a tag can start a release), and helper programs.
+    out.push(`${p}* --all*`, `${p}* --mirror*`, `${p}* --tags*`, `${p}* --follow-tags*`, `${p}* refs/tags/*`, `${p}* tag *`);
+    out.push(`${p}*--receive-pack*`, `${p}*--exec=*`);
+  }
+  return out;
+}
+
+/** gh api with a write verb, in every spelling: `-X V`, `-X  V`, `-X=V`, `-XV`, `--method V`, `--method  V`, `--method=V`, either case. */
+export function ghApiWritePatterns() {
+  const out = [];
+  for (const verb of ["DELETE", "PUT", "PATCH", "POST"]) {
+    for (const v of [verb, verb.toLowerCase()]) {
+      for (const f of [`-X ${v}`, `-X  ${v}`, `-X=${v}`, `-X${v}`, `--method ${v}`, `--method  ${v}`, `--method=${v}`]) out.push(`gh*api*${f}*`);
     }
   }
   return out;
@@ -48,6 +68,7 @@ export const DENY_PATTERNS = [...new Set([
   // force, delete, plus-refspec and protected-branch pushes, any -C/-c prefix, any option order
   "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", // exact legacy forms
   ...gitPushPatterns(),
+  ...ghApiWritePatterns(),
   // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
   "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
   "gh*pr*--admin*",

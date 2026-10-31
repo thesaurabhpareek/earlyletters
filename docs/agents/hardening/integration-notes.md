@@ -40,3 +40,26 @@ Branches whose names start with `develop` or `main` right after `origin` (for ex
 ## Other
 
 The one non-ASCII character in `injection.test.mjs` (line 123) is a deliberate zero width space used as test data for `startsWithMarker`, so it was left in place. The changed docs are ASCII only.
+
+## Round 4: red-team blockers fixed in scripts/agents (head after this section's commit)
+
+| Finding | Change | Tests |
+|---|---|---|
+| A. Identity not label-only | New `identity.mjs` (label, branch prefix `agent/<handle>/`, bot author). `pathguard.mjs --labels` takes optional `--branch`, `--author`, `--author-type`, `--app-logins`; branch or bot author without a label, or a label and branch handle that disagree, exit 1. `guard-open-prs.mjs` counts label OR branch OR bot author. `dispatch.mjs` team cap uses `agentLikePR`. `lib.agentOfPR` stays label-only on purpose: a stranger's branch named `agent/qa/x` must never be routed, reviewed or briefed as an agent PR. | identity.test.mjs |
+| B. Journal spam (rest of H2) | `brief.mjs` reads the journal comments newest page first (`newestPages`), stops at 3 trusted entries or 10 pages. | injection.test.mjs (1,200 spam comments), identity.test.mjs |
+| C. Hard rules | `.npmrc`, `.gitattributes` (any directory), `.husky/**`, `opencode.json`, `AGENTS.md`, `.git/**` added to `HARD_RULES`; `.claude/**` was already there. Case, trailing dots and spaces, and backslashes were already normalised; now tested for the new rules. | identity.test.mjs, pathguard.test.mjs |
+| D. Deny patterns | Bare `git push` forms, `--all/--mirror/--tags/--follow-tags`, tag refs, `heads/develop|main`, `--no-pager/-P/--git-dir/--work-tree` prefixes, `--receive-pack`, `--exec=`, and gh api write verbs in `=`, two-space, `-XV`, lower-case spellings. | opencode-deny.test.mjs |
+
+Limits and caveats:
+- Caller must pass `--branch` and `--author` to pathguard. If the workflow omits them, the check is only as strong as before (UNVERIFIED wiring, no workflow runs it yet).
+- A bot-authored PR with no `agent:*` label (for example Dependabot) now exits 1 in pathguard. That is the requested fail-closed behaviour; the workflow PR must decide whether to skip known bots before calling it.
+- The new deny patterns are glob tests with the offline matcher. Engine behaviour is UNVERIFIED: how opencode matches `git --no-pager push`, double spaces and quoted forms was not run on the real binary. They remain a tripwire, not a boundary.
+- The `injection.test.mjs` zero width space (line 123) is deliberate test data and stays.
+
+## Needs the workflow PR after 9 Nov
+
+Not attempted here (`.github/**` is frozen and these need the two-job split). Red-team reasoning:
+- `pathguard.mjs` and `guard-open-prs.mjs` are not run by any workflow, so today they protect nothing. They must run as a required step before push, from a clean checkout of `develop`, not from the PR's tree.
+- `salvage.mjs` and `receipt.mjs` run from the model-editable working tree with write tokens. The model can edit them and then have its own code run with the token. They must run from a trusted checkout in a second job.
+- `OPENROUTER_API_KEY` and `GH_TOKEN` are readable by the model's shell (see the comment on the env allowlist in `run-opencode.mjs`). Fix: a job split where the model job holds no write token, and a proxy for the model key with its own budget.
+- `gh issue comment`, `gh pr comment`, `gh release`, `gh gist` are unrestricted by the deny list. A comment is an exfiltration channel and a release can publish. Needs token scope or lane control, not globs.
