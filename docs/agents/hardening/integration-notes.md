@@ -76,7 +76,7 @@ NOT done:
 - A bot-authored PR with no `agent:*` label (Dependabot) fails the guard by design.
 - A PR that edits the guard scripts is judged by the base version of them.
 - Whether `gh pr create` pushes by itself is UNVERIFIED; engine behaviour of the deny patterns is only as stated in rounds 9 and 10.
-- A finding: `pathguard.mjs` exits 0 and prints nothing when started through a symlink (its "am I main" test compares the unresolved path). The workflows run it by real path; it is not fixed here (scripts/agents is not this PR's).
+- The symlink main-check finding (pathguard exiting 0 silently when started through a symlink) is fixed upstream by `main-check.mjs`; the workflows still run the scripts by real path.
 
 ## Round 5: Review C and QA Review A fixes
 
