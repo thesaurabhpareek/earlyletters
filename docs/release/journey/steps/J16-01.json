@@ -5,8 +5,6 @@
   "title": "Settings",
   "note": "Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is said once, under Your data, and the \"Early version\" note is About's footer, word for word, not the first thing on the page.",
   "from": "J15-02",
-  "shot": "screens/J16-01.png",
-  "full": "screens/J16-01-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,
