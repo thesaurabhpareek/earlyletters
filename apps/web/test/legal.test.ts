@@ -196,7 +196,7 @@ describe('the home page sign-up note', () => {
   // and Resend stores the address, so "we never share it" would be untrue.
   it('names both emails and promises no selling and no advertising, not "never share"', () => {
     expect(site.notify.note).toBe(
-      `A welcome email now, and one more when ${site.brand.name} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
+      `You will get a short hello, then one email when ${site.brand.name} is ready. We never sell your address or share it for advertising. Every email has an unsubscribe link.`,
     );
     expect(site.notify.note).not.toMatch(/never share|^One email/i);
   });
