@@ -1,0 +1,136 @@
+# Agent PR guard: a check meant to be REQUIRED on develop and main (branch
+# protection is the founder's script, FOUNDER_QUEUE row 7).
+#
+# For any pull request that looks like an agent's (head branch `agent/...`, an
+# `agent:*` label, or a bot author not listed in NON_AGENT_BOTS) it runs
+#   scripts/agents/pathguard.mjs      the PR may touch only its lane's paths
+#   scripts/agents/guard-open-prs.mjs the open agent PR count is under the cap
+# and requires the PR to target develop or main. Any other PR passes without
+# running either guard, so the check can be required on every PR.
+#
+# WHY pull_request_target (Karma ruling, 31 Oct): with `pull_request` the PR
+# controls this very file, so a PR could delete or weaken its own guard. With
+# `pull_request_target` GitHub runs the copy of this file on the BASE branch.
+# That is safe here ONLY because:
+#   - no PR code is ever checked out or executed: the job checks out the BASE
+#     sha, and the PR head is fetched as git objects only, to diff;
+#   - the token is read-only (contents: read, pull-requests: read), no secrets
+#     are used, and PR text (title, body) is never read;
+#   - branch, author, labels and shas reach the shell through env, as data.
+# RULE: nobody may add a step that checks out, builds or runs
+# github.event.pull_request.head.* or the merge ref in this workflow. A test
+# (scripts/workflows.test.mjs) fails if they do.
+# Consequence: the workflow copy that runs is the one on the PR's base branch
+# (develop for a PR into develop), so this file must exist there BEFORE the
+# check is made required, and a change to this file takes effect only when it
+# is merged. main has no copy yet: do not require the check on main until it does.
+#
+# Trust: the guard scripts and agents/lanes.json come from the BASE commit.
+# Missing event data fails the check. A Re-run of an old run replays the old
+# payload (stale labels); only a new labeled/unlabeled/synchronize/edited event
+# re-reads the PR.
+name: Agent PR guard
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review, converted_to_draft]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: agent-pr-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: agent-pr-guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+      PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+      # Bot logins that are NOT agents (comma separated, case-insensitive). Set the
+      # repository variable NON_AGENT_BOTS to change it. An agent/* branch or an
+      # agent:* label is always in scope, whoever the author is.
+      NON_AGENT_BOTS: ${{ vars.NON_AGENT_BOTS || 'dependabot[bot]' }}
+    steps:
+      # Fail closed on missing payload data, and decide whether the PR is in scope.
+      - name: Read the event
+        id: scope
+        run: |
+          set -euo pipefail
+          for v in PR_NUMBER PR_BASE_SHA PR_BASE_REF PR_HEAD_SHA PR_BRANCH PR_AUTHOR PR_AUTHOR_TYPE; do
+            if [ -z "${!v}" ]; then echo "agent-pr-guard: $v missing from the event payload, failing closed" >&2; exit 1; fi
+          done
+          case "$PR_BASE_SHA$PR_HEAD_SHA" in *[!0-9a-f]*) echo "agent-pr-guard: sha is not hex, failing closed" >&2; exit 1;; esac
+          scope=no
+          case "${PR_BRANCH,,}" in agent/*) scope=yes;; esac
+          case ",${PR_LABELS,,}," in *,agent:*) scope=yes;; esac
+          # A bot is a login ending [bot] or an author type of Bot (pathguard treats both as bots).
+          if [[ "$PR_AUTHOR" == *"[bot]" || "$PR_AUTHOR_TYPE" == Bot ]]; then
+            if [[ ",${NON_AGENT_BOTS,,}," != *",${PR_AUTHOR,,},"* ]]; then scope=yes; fi
+          fi
+          echo "in_scope=$scope" >> "$GITHUB_OUTPUT"
+          echo "agent-pr-guard: in scope: $scope"
+          # A retarget after a green run fires `edited`, which lands here again.
+          if [ "$scope" = yes ] && [ "$PR_BASE_REF" != develop ] && [ "$PR_BASE_REF" != main ]; then
+            echo "agent-pr-guard: an agent PR must target develop or main, not '$PR_BASE_REF'" >&2; exit 1
+          fi
+
+      # Scripts and lanes come from the base commit, not the PR.
+      - name: Check out the base commit
+        if: steps.scope.outputs.in_scope == 'yes'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the PR head as git objects only
+        if: steps.scope.outputs.in_scope == 'yes'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --no-recurse-submodules origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+          test "$(git rev-parse refs/remotes/pr/head)" = "$PR_HEAD_SHA" || { echo "agent-pr-guard: PR head moved or does not match the event, failing closed" >&2; exit 1; }
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.scope.outputs.in_scope == 'yes'
+        with:
+          node-version: 22
+
+      - name: Path guard
+        if: steps.scope.outputs.in_scope == 'yes'
+        env:
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
+        run: >
+          node scripts/agents/pathguard.mjs --labels "$PR_LABELS" --branch "$PR_BRANCH"
+          --author "$PR_AUTHOR" --author-type "$PR_AUTHOR_TYPE"
+          --base "$PR_BASE_SHA" --head "$PR_HEAD_SHA"
+
+      # Cap. Three numbers, kept consistent:
+      #   10  roster max_open_agent_prs: the dispatcher stops giving agents new
+      #       work at 10 open agent PRs (the normal limit);
+      #   15  the guard's own default (DEFAULT_MAX): the backstop for PRs that
+      #       reach GitHub another way;
+      #   16  --max here. This PR is itself in the count, so 15 open agent PRs
+      #       in total pass and the 16th fails. An already open PR also goes red
+      #       on its next run (any new event) once the count is 16 or more, and
+      #       stays red until the count drops: close or merge some.
+      # Who counts: a PR with an agent:* label, or one whose branch or bot
+      # signal says agent AND whose author login is in AGENTS_BOT_LOGINS (a
+      # repository variable, comma separated, set to the agents App login). If
+      # the variable is empty, ONLY labelled PRs count, so set it.
+      - name: Open agent PR cap
+        if: steps.scope.outputs.in_scope == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
+        run: node scripts/agents/guard-open-prs.mjs --max 16 --repo "$GITHUB_REPOSITORY"
