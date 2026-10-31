@@ -423,14 +423,13 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
-- Status: in review (PR #161). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; use the real membership role instead of `'parent'`. Recently deleted letters moved to BL-388 (CR-35). The offline gap is BL-528.
+- Status: done (PR #161, merged as 4651256; comment follow-up in PR #463). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; use the real membership role instead of `'parent'`. Recently deleted letters moved to BL-388 (CR-35). The offline gap is BL-528.
 
 #### BL-528 An offline export carries the consent record, or LEGAL-REQ-034 says it cannot [Medium]
-- Status: needs-decision (Chief Privacy Officer: which option; option (b) changes legal text, so it goes to the founder through the gate). Mode: agent. Owner: export owner, privacy engineer. Satisfies: LEGAL-REQ-034 ("Works offline from local data"). Raised by: Reviews A and B of PR #456 (CCO-4).
+- Status: needs-decision (Chief Privacy Officer: which option; options (b) and (c) change legal text, so they go to the founder through the gate). Mode: agent. Owner: export owner, privacy engineer. Satisfies: LEGAL-REQ-034 ("Works offline from local data"). Raised by: Reviews A and B of PR #456 (CCO-4).
 - Problem: after BL-323 (PR #161) the export reads the person's consent record from the server; offline, `consent_history.status` is `unavailable` and the record is missing, while LEGAL-REQ-034 asks for consent history and an export that works offline from local data.
 - Options: (a) keep a local copy of the person's own `policy_acceptances` rows after each successful read (L2 and L3, own rows only; a DATA_CLASSIFICATION row and a deletion path with it) and export that copy, marked with when it was read; (b) amend LEGAL-REQ-034 to say the consent history needs a connection; (c) both, (a) now and the wording in (b) for the gap before the first read.
 - Done when: the chosen option is recorded; for (a), an export taken offline after one signed-in read holds the record and says when it was read, with a test.
-
 
 #### BL-324 Native modules never crash or hang on bad input (review L9)
 - Status: ready. Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
@@ -1066,6 +1065,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Status: ready. Mode: agent. Owner: export owner, mobile engineer. Milestone: M-JR. Size: L.
 - Severity: major. Raised by: product, quality (4 findings). Steps: J14-01, J15-01, J15-02.
 - Satisfies: LEGAL-REQ-034; BL-150, BL-323; the screen promises "every letter and recording".
+- Before building (CR-35): settle with the Chief Privacy Officer whether Recently deleted letters go in always (this scope) or only when "Include recently deleted" is ticked (`docs/legal/DELETION_AND_EXPORT_SPEC.md` 4.1). If the answer changes the spec, Privacy Policy section 14 or the export screen copy, it goes to the founder through the gate.
 - Scope: Include tombstoned letters, drafts (typed and recorded) and orphan recordings in a "not in the book" folder and the manifest. ZIP64 or split by year so a very large book does not fail. Keep the ZIP until the person leaves the export screen (Share cancelled must not delete it). The failure line names a cause only when known ("That did not work this time. Your letters are safe on this phone.").
 - Done when: An export-golden fixture with a draft, an orphan and a deleted letter lists all three in the manifest. A test across the 4 GB boundary passes. Cancelling the Share sheet keeps the ZIP and Export again needs no rebuild. The "needs a little more free space" line shows only for a real space error.
 - Test: Journey J15 (J15-01, J15-02); `apps/mobile/test/export-golden.test.ts` and `apps/mobile/test/export-schema.test.ts`.
