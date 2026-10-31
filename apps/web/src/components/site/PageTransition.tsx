@@ -12,12 +12,24 @@ import styles from './PageTransition.module.css';
 /** True once any page has mounted in this tab, so the next mount is a navigation and not the first load. */
 let visited = false;
 
+/** The background of the page that has just mounted: the body's, else the root's, else undefined (the veil keeps its night). */
+function arrivingColour(): string | undefined {
+  for (const el of [document.body, document.documentElement]) {
+    const c = getComputedStyle(el).backgroundColor;
+    if (c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c)) return c;
+  }
+  return undefined;
+}
+
 export function PageTransition({ children }: { children: ReactNode }) {
   const [navigated, setNavigated] = useState(false);
   const [veil, setVeil] = useState(false);
+  const [end, setEnd] = useState<string | undefined>();
 
   useLayoutEffect(() => {
     if (visited && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // The curtain ends on the colour of the page that is arriving.
+      setEnd(arrivingColour());
       setNavigated(true);
       setVeil(true);
     }
@@ -26,14 +38,14 @@ export function PageTransition({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!veil) return;
-    const done = window.setTimeout(() => setVeil(false), 800);
+    const done = window.setTimeout(() => setVeil(false), 820);
     return () => window.clearTimeout(done);
   }, [veil]);
 
   return (
     <>
       <div className={navigated ? styles.enter : undefined}>{children}</div>
-      {veil ? <div className={styles.veil} aria-hidden="true" /> : null}
+      {veil ? <div className={styles.veil} style={end ? ({ ['--veil-end']: end } as React.CSSProperties) : undefined} aria-hidden="true" /> : null}
     </>
   );
 }

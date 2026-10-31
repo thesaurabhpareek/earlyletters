@@ -4,7 +4,7 @@
  *
  *   0.00-0.16  An envelope draws itself, open, a letter inside.
  *   0.12-0.30  The letter slides in and the flap folds closed.
- *   0.26-0.34  "Private by default."
+ *   0.26-0.34  "Just for your family."
  *   0.34-0.60  Five plain promises, one at a time.
  *   0.92-0.99  Everything leaves (handoff to S10).
  * Reduced motion: the closed envelope, the headline and all five promises.

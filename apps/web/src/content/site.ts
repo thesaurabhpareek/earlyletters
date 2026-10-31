@@ -195,7 +195,7 @@ export const site = {
     },
     s09: {
       label: 'Private',
-      headline: 'Private by default.',
+      headline: 'Just for your family.',
       points: [
         'Only the people you invite can see your letters.',
         'No ads, and we never sell your data.',
@@ -285,11 +285,11 @@ export const site = {
     /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
     letterExcerpt: 'Asha, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
     letterNote: 'A minute of talking. Every word kept exactly as it was said.',
-    promisesTitle: 'What we are building',
+    promisesTitle: 'What to expect',
     promises: [
       'Every word kept exactly as you said it.',
       'Your voice kept with each letter.',
-      'Private by design. No ads, and we never sell your data.',
+      'Only the people you invite can see your letters. No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
