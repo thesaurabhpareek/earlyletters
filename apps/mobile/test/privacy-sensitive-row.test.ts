@@ -144,6 +144,7 @@ describe('[BL-485] the row, on the real auth store (the hook Settings > Privacy 
     const row = renderHook(() => useSensitiveDataStatus());
     publishAuth(STATES.on);
     expect(row.result.current.status).toBe('signed_out');
+    row.unmount();
   });
 
   it('registered, the row follows the auth state as it moves, with no reload', () => {
@@ -175,6 +176,50 @@ describe('[BL-485] the row, on the real auth store (the hook Settings > Privacy 
     publishAuth(STATES.declined);
     expect(row.result.current.status).toBe('off');
     row.unmount();
+  });
+
+  it('registering another source refreshes the row, releases the old subscription, and unmounting frees the last one', () => {
+    // A source that counts its live subscriptions, so a leak or a missed release shows as a number.
+    const counted = (start: SensitiveDataStatus) => {
+      let current = start;
+      const ls = new Set<() => void>();
+      return {
+        live: () => ls.size,
+        emit: (next: SensitiveDataStatus) => {
+          current = next;
+          ls.forEach((l) => l());
+        },
+        source: {
+          read: () => current,
+          subscribe: (l: () => void) => {
+            ls.add(l);
+            return () => {
+              ls.delete(l);
+            };
+          },
+        },
+      };
+    };
+    const a = counted('off');
+    const b = counted('on');
+    const row = renderHook(() => useSensitiveDataStatus());
+
+    setSensitiveDataSource(a.source);
+    expect(row.result.current.status).toBe('off');
+    expect(a.live()).toBe(1);
+
+    setSensitiveDataSource(b.source);
+    expect(row.result.current.status).toBe('on');
+    expect(a.live()).toBe(0);
+    expect(b.live()).toBe(1);
+
+    a.emit('signed_out');
+    expect(row.result.current.status).toBe('on');
+
+    row.unmount();
+    expect(b.live()).toBe(0);
+    setSensitiveDataSource(a.source);
+    expect(a.live()).toBe(0);
   });
 
   it('a screen opened after sign-in reads the current state at once', () => {
