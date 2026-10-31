@@ -14,7 +14,8 @@
 # What it does NOT do: approvals or environment reviewers (they wait until PR authors are not your
 # account, CR-20; a second personal account is withdrawn, CR-19), labels (CR-15), or deleting
 # branches (CR-14: you run scripts/release/cleanup-branches.sh after this, because the proxy
-# refuses tag pushes from sessions). Archive and delete release/ios-v1.0 before --apply (CR-14).
+# refuses tag pushes from sessions). Archive and delete release/ios-v1.0 before --apply: the commands
+# are in docs/release/FOUNDER_QUEUE.md row 7, and --apply asks before going on while it exists.
 set -euo pipefail
 REPO=thesaurabhpareek/earlyletters
 R=repos/$REPO

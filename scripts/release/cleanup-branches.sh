@@ -9,6 +9,7 @@
 # A branch is skipped (and kept) when: it is main, develop or release/*; its live tip is not the
 # ruled sha; it is the head or base of an open PR right now; or its archive tag cannot be verified.
 set -euo pipefail
+[[ $# -ge 1 && -f "$1" ]] || { echo "Usage: bash $0 <list.tsv> [--apply]   (lists are in scripts/release/branch-cleanup/)"; exit 2; }
 LIST=$1; APPLY=${2:-}
 REPO=thesaurabhpareek/earlyletters
 git remote get-url origin | grep -q "thesaurabhpareek/earlyletters" || { echo "origin is not $REPO"; exit 1; }
