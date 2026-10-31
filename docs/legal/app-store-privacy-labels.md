@@ -1,8 +1,8 @@
 ---
 title: Early Letters App Privacy answers, privacy manifest and permission strings
-version: 1.4.0
+version: 2.1.0
 status: draft-for-counsel
-last_updated: 2026-10-16
+last_updated: 2026-10-31
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
@@ -10,7 +10,7 @@ reviewers: outside privacy counsel (TBD), iOS engineer
 
 # App Privacy answers, privacy manifest and permission strings
 
-Drafted for counsel. Not legal advice. Version 1.4.0 describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (2.1.0) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
+Drafted for counsel. Not legal advice. Version 2.1.0 describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (3.0.0) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
 
 ## 1. Apple's rules we rely on
 
@@ -131,5 +131,6 @@ Required-reason API declarations stay as 1.3.0 listed them (UserDefaults CA92.1,
 
 | Version | Date | Change |
 |---|---|---|
+| 2.1.0 | 2026-10-31 | Merge of develop (31 Oct 2026): microphone-denied string added to the permission row. Analytics wording made exact (no `posthog-react-native` dependency; analytics and status report off in every `eas.json` profile, D-095, D-121). Purchases row names the flag. Build-state rows map to the `testflight`, `preview` and `production` profiles; first store build has the D-088 working default. Privacy choices URL moved to /privacy (the /delete-account page was removed from the website). Version 2.1.0 because 1.4.0 is this branch's own draft and 2.0.0 is used by another branch (POLICY_VERSIONING 2.4). Record only. |
 | 1.4.0 | 2026-10-16 | Drafted for option B (founder, 15 Oct 2026; D-100; F17 8.5, R4 PT-24): Audio Data Yes (backup with a recovery key we hold, D-102); Purchase History Yes for App Functionality (status report, D-080, D-081); Email adds billing reminders; Device ID added (random install ID for backup and new-device notices; counsel to confirm); Usage Data and Diagnostics No (no analytics SDK in v1.0, D-095); every row App Functionality; microphone string drops "Your recordings stay on this phone."; build-state variants; manifest to match. The 2.0.0 answer of pull request #81 ("Data Not Collected", on-device build, never merged) is superseded and kept only in this history. 16 Oct (review of PR #163): Audio Data, Device ID and Purchase History are No until backup and the status report are built; push tokens and new-device notices are not built; download hosts follow #126. Draft for counsel. |
 | 1.3.0 | 2026-10-03 | Draft for the signed-in build without backup or the status report, with opt-in analytics and the Linked analysis. Earlier text and its changelog are in git history. |
