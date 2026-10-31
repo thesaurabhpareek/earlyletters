@@ -2296,14 +2296,14 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 ### Server lane (`supabase/**`)
 
 #### BL-516 Two stale comments under `supabase/` (closure review N4)
-- Status: ready. Mode: agent. Owner: server lane (data architect). Milestone: M12. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
 - Priority: Low. Gate: none (comments only, but `supabase/**` needs the D-041 review).
 - Problem and evidence: `supabase/config.toml:38` says "/auth/confirm is not listed until the app accepts it (SIGN-04)"; the app accepts it now, and the real reason it is not listed is that no code sends it as a redirect. `supabase/templates/README.md:59-61` says the app does not accept `email_change`; it does now (SIGN-10). Left alone on 31 Oct because a database test run held `supabase/**`.
 - Scope: reword both lines. No setting changes.
 - Done when: both lines match the code and `supabase/tests/auth_config.test.mjs` still passes.
 
 #### BL-517 Billing reminder email scheduler (TPL-03, SUB-03)
-- Status: blocked (after build 2, D-121 item 2(b); WP-F14-16 in `docs/prd/v2/08-delivery.md`). Mode: agent. Owner: payments engineer, server lane. Size: M.
+- Status: blocked (after build 2, D-121 item 2(b); WP-F14-16 in `docs/prd/v2/08-delivery.md`). Mode: agent. Owner: payments engineer, sync owner. Size: M.
 - Problem and evidence: no function sends any billing template (`trial-ending-*`, `annual-renewal-*`, `plus-started`, `plus-cancelled`, `plus-ended`). Terms 14.6 says the emails are not sent yet and what they will contain (`docs/legal/CHANGES-2026-10-31.md`).
 - Scope: a scheduler that sends the D-022 windows to the payer only (D-080), through `generated/resend.ts`, with the amount and period from the status report; update Terms 14.6 in the same release.
 - Done when: each window sends once in a test, never to a Family Sharing member, and the legal text says emails are sent.
@@ -2318,7 +2318,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 - Done when: `test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it.
 
 #### BL-519 Keep the book re-offer after the third letter when the person chose Later
-- Status: ready. Mode: agent. Owner: mobile engineer (asks), account owner. Milestone: M12. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: build 2 (the sheet needs `auth.configured`).
 - Problem and evidence: F02 6.1 offers Keep the book again after the third letter if the person tapped Later; `next-ask.logic.ts:10` offers it once ("the re-offer is not built", SET-01).
 - Scope: one re-offer after the third saved letter when the first was declined, never more, within the session and day caps.
@@ -2339,7 +2339,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Done when: APPLY.md has the step and its expected result.
 
 #### BL-522 #306: `redeem.brake` alert and its runbook
-- Status: blocked (BL-445). Mode: pair. Owner: data architect (S02), ops. Size: S.
+- Status: blocked (BL-445). Mode: pair. Owner: data architect (S02), platform. Size: S.
 - Problem and evidence: F11-REQ-007 asks for an alert within 15 minutes when code redemption reaches the global limit and answers `SCRAT` for everyone. The `redeem.brake` alert and a runbook entry for it do not exist.
 - Done when: the alert fires in a test and the runbook says what to do, including that links keep working.
 
@@ -2349,7 +2349,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Done when: the wording matches the retention schedule and the purge test covers the rows.
 
 #### BL-524 #306: typed-code app copy, including `codes_paused`
-- Status: blocked (BL-445). Mode: agent. Owner: copy lane, family owner (S04). Size: S.
+- Status: blocked (BL-445). Mode: agent. Owner: content, family owner (S04). Size: S.
 - Problem and evidence: the client needs words for each typed-code answer, including `codes_paused` (the global brake); none exist in `packages/content` (`familyCopy` has link words only, D-120).
 - Done when: every answer the endpoint can give has words in `packages/content`, passing the content rules.
 
@@ -2367,7 +2367,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Done when: D-10 passes on TestFlight (a free-period code shows "free until", SUB-05) and the result is recorded in the ASC doc.
 
 #### BL-527 Counsel reads the counsel-locked rewrites of 31 Oct 2026
-- Status: needs-founder (counsel). Mode: pair. Owner: legal, copy lane. Milestone: M12. Size: S. Depends on: none.
+- Status: needs-founder (counsel). Mode: pair. Owner: legal, content. Milestone: M12. Size: S. Depends on: none.
 - Priority: Medium. Gate: before App Store submission.
 - Problem and evidence: the language review's rewrites for registered disclosure strings were not applied, because those words change only through counsel (`docs/legal/in-app-disclosures.md`). The keys and proposed rewrites are in `docs/reviews/2026-10-31/COUNSEL_LOCKED.md` (LNG-04, LNG-09, LNG-12, LNG-15, LNG-18).
 - Done when: counsel accepts or rejects each row; accepted rows change in `packages/content`, the disclosures file and its pinning tests in one PR with a version bump.
