@@ -248,6 +248,12 @@ Counsel has not answered. Spec default: no second consent; the sensitive-data co
 
 ## 7. Requirements and acceptance criteria
 
+Decisions that change when these rows apply (recorded 31 Oct 2026; the rows themselves are unchanged):
+- [D] D-120 (coordinator, 27 Oct; founder may reverse): build 2 invites are link-only. The phone makes, shows and sends no typed code, so the code half of F11-REQ-001, F11-REQ-002 and F11-REQ-007 (and A-REQ-029's typed code) is deferred past build 2 on the phone. Typed codes return with a code-registration route and client (BL-445, after the alpha).
+- [D] D-121 and D-126: the first store build has server features off, so co-parent sharing ships in a later 1.0.x stage. In that store build the Family tab, the Settings row and the invite entry points are hidden by the capability switch (D-126); alpha build 2 keeps them.
+- [D] D-124 item 2: the two-parent cap (D-069, D-099) takes effect in the first release that turns co-parent sharing on.
+- [D] D-125 item 4: DR-15 option A (show the letter's language name and one line asking the author to read it with them) ships with co-parent sharing.
+
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
 | B-REQ-007 Rev (B1) | P0 | Invite by link and code with an explicit role; only parents create invites. At v1.0 the app creates `parent` invites only | Given a parent, When they share an invite, Then the server row has role `parent`, expires 7 days after creation, and stores only hashes. Given a build of the app, When the source is searched, Then no call creates a `contributor` invite. Given a contributor calls create, Then `SCPAR` (exists) | B, K-18, D-002, B1 |
