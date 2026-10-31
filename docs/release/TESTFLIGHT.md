@@ -113,6 +113,7 @@ curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com  # what
 
 **Step 11. Build 2: preflight, build, submit, the family group only.** About 20 minutes of yours, plus the queue. Once `testflight.yml` is dispatchable (AF-05, or the other routes in step 5): Actions > testflight > Run workflow, branch `develop`, profile `preview`, upload ticked (it runs `preflight:alpha`). Until then, from your own computer, with the same answers as step 5 (no to expo-updates, No to Push Notifications, APP_MANAGER if `eas submit` asks for an API key role): `npm run preflight:alpha -w @scribe/mobile`, then `npx eas-cli@24.10.0 build --platform ios --profile preview` and `npx eas-cli@24.10.0 submit --platform ios --profile preview --latest` in `apps/mobile`.
 Add the build to the **Family** internal group only (below).
+The "What to test" text for this build is `whatToTest.build2WithDeleteRow` only if `EXPO_PUBLIC_ACCOUNT_DELETION` was `on` in the EAS `preview` environment when the build was made (D-129); otherwise `whatToTest.build2` (see "What to test" below). To check which applies, run `npx eas-cli@24.10.0 env:list --environment preview` in `apps/mobile` and look for `EXPO_PUBLIC_ACCOUNT_DELETION` with the value `on`, and open Settings in the installed build to see whether the Delete account row is there.
 *Unblocks:* the alpha with servers.
 
 **Step 12. Staging function secrets: the purge worker and the Resend key (FT-11).** About 1 hour; do it before anyone tries Delete account in build 2. A second sending-only Resend key as the staging secret `RESEND_API_KEY` (not the SMTP key), the purge worker deployed and scheduled (`docs/ops/SECURITY.md` 1.1, `docs/ops/runbooks/purge-failing.md`). The status and reminder emails (D-080) will use the same function key when they ship; build 2 sends none (`EXPO_PUBLIC_STATUS_REPORT` is off).
@@ -186,7 +187,11 @@ Build 2 adds `docs/ops/AUTH_SETUP.md` section 11 items 1, 3, 4, 5 and 6: Apple s
 
 ## "What to test" text for TestFlight
 
-The texts live in one place, `packages/content/src/release/testflight.en.ts`: `testflightCopy.whatToTest.build1` and `build2`, the `betaAppDescription` (Test Information) and the invitations `invitation.family` and `invitation.friends`. They carry the public name from `packages/brand`, and `{feedbackEmail}` is replaced with the feedback mailbox (AF-11) before a text goes into App Store Connect. No script prints them yet (`what-to-test.mjs`, RA-20-06, is not built), so ask the coordinator for a plain-text copy with the name filled in.
+The texts live in one place, `packages/content/src/release/testflight.en.ts`: `testflightCopy.whatToTest.build1`, `build2` and `build2WithDeleteRow`, the `betaAppDescription` (Test Information) and the invitations `invitation.family` and `invitation.friends`. They carry the public name from `packages/brand`, and `{feedbackEmail}` is replaced with the feedback mailbox (AF-11) before a text goes into App Store Connect. No script prints them yet (`what-to-test.mjs`, RA-20-06, is not built), so ask the coordinator for a plain-text copy with the name filled in.
+
+Build 2 has two texts (D-129). `build2` is the default. `build2WithDeleteRow` is the same text with one more sentence, "To delete your account and its letters, use Settings, Delete account." Paste it only if the Delete account row is on in the build, that is, `EXPO_PUBLIC_ACCOUNT_DELETION` was `on` in the EAS `preview` environment when the build was made; the row is hidden otherwise and the sentence would not be true. Build 1 has no accounts and no such sentence.
+
+`docs/legal/TESTFLIGHT_TESTERS.md` section 5.2 and go/no-go row B2-17 (`docs/qa/ALPHA_GO_NO_GO.md`) still list the delete sentence as something build 2 must say. That conflict with D-129 is open for counsel and the founder (counsel relay item 30). Do not put the sentence back into `build2` to satisfy it: while the row is hidden the sentence is not true.
 
 If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can happen only if the founder reverses D-115 first: the preflight FAILs both builds without the signed pack.
 
