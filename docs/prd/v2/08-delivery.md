@@ -2,7 +2,7 @@
 
 Status: Draft V2.2, 15 Oct 2026. Re-planned after critique round 1 (`reviews/R1` to `R6`) and the founder's answers M15 to M17 (`_AUTHORING.md` section 3b), then again after critique round 2 (`reviews/R7` and `R9`): the v1.0 list now holds every unbuilt or partly built work package that carries a P0 requirement, and the date comes from that list. M15 keeps the full scope, so the submission week moves from January to the week of Mon 3 May 2027 (section 2.2). Round 1 findings are in `reviews/DISPOSITION-A.md`; round 2 delivery findings are in `reviews/DISPOSITION-R2-delivery.md`. Owner: delivery lead (the architect partner to the PM). The founder merges every pull request except the delegated classes in section 6.2; that delegation is a default awaiting the founder's confirmation (section 1.1).
 
-> **Re-based on 28 Oct 2026 (D-121, D-124, D-125; PR #340).** The first store build is on-device only and staged: target submission Tue 1 Dec 2026, release about Tue 8 Dec. The server features follow in later 1.0.x releases (sign-in, sync and co-parent sharing; status report and reminder emails; owner backup; the other six languages), each behind its existing flag and gate. The dates and the merge budget below describe the full-scope plan (submission week of Mon 3 May 2027, about 40% confidence) and are not re-dated line by line here; section 6.2's delegation is superseded by D-107 and D-117. The alpha freeze Tue 3 Nov and go/no-go Thu 5 Nov are confirmed (D-124).
+> **Re-based on 28 Oct 2026 (D-121, D-124, D-125; PR #340).** The first store build is on-device only and staged: target submission Tue 1 Dec 2026, release about Tue 8 Dec. The server features follow in later 1.0.x releases (sign-in, sync and co-parent sharing; status report and reminder emails; owner backup; the other six languages), each behind its existing flag and gate. The dates and the merge budget below describe the full-scope plan (submission week of Mon 3 May 2027, about 40% confidence) and are not re-dated line by line here; section 6.2's delegation is superseded by D-107 and D-117. The alpha freeze Tue 3 Nov is confirmed (D-124, D-130). The go/no-go is Mon 9 Nov 2026 (D-130, founder, 30 Oct), which supersedes D-124's Thu 5 Nov.
 
 **This file is the only place in PRD V2 that carries calendar dates.** Section 2.1 holds every date in one table, each with an id `T01` to `T40`. Other V2 files name the id and point here. `07-quality-bar.md` governs the gates; where 07 sections 4 and 5.2 still show an older calendar, section 2.1 governs the dates and the 07 owner updates them. `docs/ROADMAP.md` 2.1 sections 2 and 3 are superseded for v1.0.
 
@@ -68,6 +68,16 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | New calls | D-112 to D-114 and D-116 are delegated coordinator calls (the founder may reverse); D-115 makes an English-only pack release a build 1 prerequisite that the founder runs | `_AUTHORING.md` M25 to M29 |
 | Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-117 | none |
 | Build state | 81 commits since 23 Oct. Newly built or further built, per spec Status columns: co-parent invite, join and the pure rules (#184, #140, #138), local schemas v7 and v8 (#166, #182), sync protocol v1 server and held drafts (#208), status report and the M17 gate (#178, #277), owner backup server and client behind a flag (#151, #150), the engine through version 8 (#179, #249, #262), email-link binding and Apple token capture (#139), and the experience passes P3 to P5 | Work package statuses in section 13 and in each spec were rechecked against the code on 27 Oct |
+
+### 1.4 Status on Sat 31 Oct 2026 (daily PRD update)
+
+| Item | State on 31 Oct | What changes |
+|---|---|---|
+| Alpha dates | **Decided (D-130, founder, 30 Oct).** Build 2 freeze Tue 3 Nov 2026 at 5:00 AM PT (the hour is the coordinator's); go/no-go Mon 9 Nov 2026. The freeze rule (no workflow, `eas.json` or `app.config.ts` change except an S0 or S1 fix) runs Tue 3 Nov to Mon 9 Nov | Section 1.3's "proposed" alpha dates and D-124's Thu 5 Nov are superseded |
+| First store build | Staged and on-device only (D-121); target submission Tue 1 Dec 2026. The production App Store record waits for the individual or entity call by Fri 13 Nov (D-125 item 6) | Header note above; the full-scope dates below are not re-dated line by line |
+| Build 2 scope calls | Invites are link-only (D-120). The Privacy sync row shows On or Off (D-128, built by #408). Delete account is hidden unless `EXPO_PUBLIC_ACCOUNT_DELETION` is on (D-129, built by #409) | F11 and F17 notes |
+| Store build scope | No "coming soon" co-parent surface while server features are off (D-126); lands after the go/no-go | F11, F21 notes |
+| Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-130 | `_AUTHORING.md` M31 to M43 |
 
 ## 2. The plan
 

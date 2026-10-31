@@ -317,6 +317,11 @@ Each step is idempotent and retried with backoff from 1 minute to 6 hours for 7 
 
 ## 7. Requirements and acceptance criteria
 
+Decisions that change when these rows apply in the alpha (recorded 31 Oct 2026; the rows themselves are unchanged):
+- [D] D-128 (founder, 30 Oct): in build 2, Settings > Privacy's "Sync and family sharing" row shows On or Off for a signed-in person, or "Waiting for a connection" when the state cannot be read, with no withdrawal control. Built by #408 (`apps/mobile/src/lib/auth/sensitive-row.ts`, `app/settings/privacy.tsx`). The withdrawal sheet and the server function `withdraw_sensitive_data` (new) are built before any friend outside the family signs in, and counsel reads the withdrawal mode first (Q4). Until then LEGAL-REQ-006 and LEGAL-REQ-008 are open for the family-only alpha.
+- [D] D-129 (founder, 30 Oct): both alpha builds hide the Delete account row unless `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` in the EAS `preview` environment, set only if the purge worker runs on staging and the sole-parent drill passes by Mon 2 Nov noon PT. Built by #409 (`lib/capabilities.ts`, `app/settings/index.tsx`, `app/settings/delete-account.tsx`). The open-request screen with Cancel deletion is not behind the switch. A hidden row does not meet C-REQ-019 or DATA-REQ-019; go/no-go row B2-13 is unchanged.
+- [D] D-124 item 3: analytics stays off for the whole 1.0 line, so the "Usage and crash reports" consent row binds from v1.1 or later (F18).
+
 ### 7.1 Existing IDs
 
 | ID | P | Requirement | Acceptance criteria | Source |
