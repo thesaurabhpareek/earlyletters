@@ -507,7 +507,7 @@ describe('the 90-day pledge', () => {
   });
 });
 
-describe('internal words stay inside (CR-22, BRAND.md internal terms)', () => {
+describe('internal words stay inside (CR-25, BRAND.md internal terms)', () => {
   // "Take your time" and "this can take a minute" are the verb and pass. Only the noun is an internal word.
   const NUMBER_WORDS = 'two|three|four|five|six|seven|eight|nine|ten';
   const TAKE_NOUN = new RegExp(
@@ -524,11 +524,11 @@ describe('internal words stay inside (CR-22, BRAND.md internal terms)', () => {
   const DRAFT_NOUN = /\bdrafts\b|\b(?:a|an|the|your|each|this|that|any|saved|unsaved|as|in)\s+draft\b/i;
   const PACK = /\b(?:language|languages|speech|text[\s-]+rules?|rule|model)[\s-]+packs?\b/i;
 
-  it('[CR-22] no parent-facing string calls a recording a take', () => {
+  it('[CR-25] no parent-facing string calls a recording a take', () => {
     expect(offenders(EVERY, TAKE_NOUN)).toEqual([]);
   });
 
-  it('[CR-22] the take pattern catches the noun and leaves the verb alone', () => {
+  it('[CR-25] the take pattern catches the noun and leaves the verb alone', () => {
     for (const noun of [
       'This take may not play.',
       'Check the take.',
@@ -543,20 +543,20 @@ describe('internal words stay inside (CR-22, BRAND.md internal terms)', () => {
       expect(TAKE_NOUN.test(verb), verb).toBe(false);
   });
 
-  it('[CR-22] the draft, entry and pack patterns catch the noun forms and leave file names alone', () => {
+  it('[CR-25] the draft, entry and pack patterns catch the noun forms and leave file names alone', () => {
     for (const bad of ['Your drafts', '2 drafts waiting', 'Save as draft', 'This draft is kept']) expect(DRAFT_NOUN.test(bad), bad).toBe(true);
     for (const bad of ['Language-pack data', 'speech pack', 'text rules pack', 'Languages pack']) expect(PACK.test(bad), bad).toBe(true);
     for (const bad of ['Your first entry', 'Entries']) expect(ENTRY.test(bad), bad).toBe(true);
     for (const ok of ['data/entries.json', 'entries.json']) expect(ENTRY.test(ok), ok).toBe(false);
   });
 
-  it('[CR-22] no parent-facing string says entry, draft (as a noun) or language pack', () => {
+  it('[CR-25] no parent-facing string says entry, draft (as a noun) or language pack', () => {
     expect(offenders(EVERY, ENTRY)).toEqual([]);
     expect(offenders(EVERY, DRAFT_NOUN)).toEqual([]);
     expect(offenders(EVERY, PACK)).toEqual([]);
   });
 
-  it('[CR-22] BRAND.md carries the internal-terms table, one row per internal word', () => {
+  it('[CR-25] BRAND.md carries the internal-terms table, one row per internal word', () => {
     const brand = DOCS.find((d) => d.path === 'BRAND.md')!.text;
     expect(brand).toContain('## Internal terms, and what a parent sees instead');
     for (const term of ['`raw_transcript`', '`EditType`', '| take |', '| entry |', '| draft |', '| held letter, Keep gate |', 'language pack', '`scribe`'])

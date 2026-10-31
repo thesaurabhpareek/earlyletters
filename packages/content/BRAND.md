@@ -116,7 +116,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |
 
-## Internal terms, and what a parent sees instead (CR-22, 31 Oct 2026)
+## Internal terms, and what a parent sees instead (CR-25, 31 Oct 2026)
 
 Two vocabularies, one door, one direction. Code, schema, test names and spec section 12 keep the internal term on the left, because those names hold the guarantees (renaming `raw_transcript` to something soft would invite an edit to it). Anything a parent can read uses the term on the right: app, store, website, email, help, the export README and the printed book. Spec sections that describe what a parent sees use the right-hand term too. `test/rules.test.ts` blocks the left-hand words in parent-facing copy. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are not changed here.
 
