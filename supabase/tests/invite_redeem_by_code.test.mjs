@@ -185,4 +185,10 @@ check('[A03 F5 / A04 F2] a code for a deleted book is unusable (counted) in acce
   goneAccept.outcome === 'unusable' && gonePeek.outcome === 'unusable' && (await failures('global')) === gb + 2
   && (await roleOf(DEL, V)) === null);
 
+// ── Classification (DATA_CLASSIFICATION 1.1 rules 4 and 5): hashed subjects are L3, operational fields L2 ──
+const lv = Object.fromEntries((await sys(`select a.attname c, substring(col_description(a.attrelid, a.attnum) from '^L[1-4]') l
+  from pg_attribute a where a.attrelid = 'public.invite_redeem_failures'::regclass and a.attnum > 0 and not a.attisdropped`)).rows.map((r) => [r.c, r.l]));
+check('[classification] subject is L3 (a keyed hash of a person, device or address); id, scope and at are L2',
+  lv.subject === 'L3' && lv.id === 'L2' && lv.scope === 'L2' && lv.at === 'L2');
+
 await done();

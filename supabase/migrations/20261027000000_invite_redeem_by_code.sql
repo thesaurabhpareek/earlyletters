@@ -63,10 +63,10 @@ revoke all on public.invite_redeem_failures from public, anon, authenticated, se
 revoke all on sequence public.invite_redeem_failures_id_seq from public, anon, authenticated, service_role;
 comment on table public.invite_redeem_failures is
   'One row per counted wrong guess at an invite code (hashed subjects only). Written only by invite_redeem_by_code(); rows older than 2 hours are removed as new ones are written.';
-comment on column public.invite_redeem_failures.id is 'L1 row number';
-comment on column public.invite_redeem_failures.scope is 'L1 user, device, ip or global';
-comment on column public.invite_redeem_failures.subject is 'L2 keyed hash of the person, device or address (rotating key); empty for global; never a raw id';
-comment on column public.invite_redeem_failures.at is 'L1 when the guess failed';
+comment on column public.invite_redeem_failures.id is 'L2 row number of an operational record';
+comment on column public.invite_redeem_failures.scope is 'L2 user, device, ip or global';
+comment on column public.invite_redeem_failures.subject is 'L3 keyed hash (rotating key) of a person id, device id or client address; empty for global; never a raw id';
+comment on column public.invite_redeem_failures.at is 'L2 when the guess failed';
 
 -- ─── 2. The call ─────────────────────────────────────────────────────────
 create or replace function public.invite_redeem_by_code(
