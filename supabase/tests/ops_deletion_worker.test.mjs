@@ -45,6 +45,10 @@ const SERVICE_ONLY = [
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
   `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`,
+  // 20261031000000 (CR-22)
+  `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
+  `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
+  `select public.ops_compliance_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
