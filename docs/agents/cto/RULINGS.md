@@ -227,7 +227,7 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
 Proxy note for every session (30 Oct): the agent proxy refuses repository settings writes from Claude sessions (`Repository settings writes are not permitted through this proxy`, HTTP 403 on `PATCH /repos/...`), and the environments and variables APIs. Settings rulings are therefore run by Saurabh with `scripts/release/apply-branch-settings.sh` from his own computer. The proxy also refuses tag pushes (HTTP 403 on `refs/tags/...`, seen 30 Oct), so CR-14's archive tags, and therefore the cleanup, also run from Saurabh's computer.
 
 ### CR-16 to CR-18 (31 Oct 2026, Karma via readiness session)
-- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session.
+- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session. CR-21 (naming: product terms and internal terms, one direction) is in the same doc.
 ### CR-19 Post-mortem: how a recommendation that breaks GitHub's Terms reached Saurabh (31 Oct 2026, Karma via retro session)
 - Question: Why did I recommend, on 30 Oct, that Saurabh create a second GitHub account to approve PRs, when GitHub's Terms allow one free account per person plus one machine account used only for automation?
 - Tier and type: T1 (my own process); complicated.
@@ -272,7 +272,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - (c) The industry-standard route: automation acts as a non-owner identity, and the human approves as himself. Here that means the one machine account GitHub allows, added with Write, with Claude sessions connected to GitHub through it. Saurabh then approves on `main` from his own account.
   - (d) Move the repo into a free organisation (AF-27). That alone changes nothing about who authors PRs.
 - Ruling:
-  - Now, through the go/no-go (Mon 9 Nov): (a). Approvals stay at 0, and I say so plainly: there is no human approval gate today, on `develop` or on `main`. The only thing GitHub enforces is the two required checks. D-107/D-117's two counted reviews are a written rule, not a control: the same account that merges posts them, and nothing stops a merge without them until (b) exists.
+  - Now, through the go/no-go (Mon 9 Nov): (a). Approvals stay at 0, and I say so plainly: there is no human approval gate today, on `develop` or on `main`. Once Saurabh runs the settings script (`docs/release/FOUNDER_QUEUE.md` row 7), the only thing GitHub enforces is the two required checks. Until then even that isn't true: on 31 Oct `develop` had no protection and `main` only the Copilot review ruleset (no deletion, no force push, no required PR or check; `GET /repos/thesaurabhpareek/earlyletters/rules/branches/main`, and classic protection returns 404). Corrected 31 Oct after a fact-check; the first version read as if protection were already on. D-107/D-117's two counted reviews are a written rule, not a control: the same account that merges posts them, and nothing stops a merge without them until (b) exists.
   - The live site: the coordinator may merge into `main` under D-107/D-117, as now. I'm not making Saurabh the only `main` merger, because it spends his hours on every site PR during the freeze. Be clear about what that costs: Vercel's Instant Rollback can put back an earlier production deploy (vercel.com/docs/instant-rollback, read 31 Oct; on the Hobby plan only the immediately previous one, and I haven't confirmed which plan the project is on), which fixes a broken site, but it does not unpublish what people already saw, and D-118's accepted risks say the repository is public and site content is "effectively permanent once deployed". Nothing independent of the merging session tells him a `main` merge happened; the session's own report to him is not an independent signal. Whether Vercel or GitHub can notify him of every production deploy is unverified; I'll check it before 9 Nov and add it to his queue only if it works with no setup risk.
   - After the go/no-go: build (b), as a T2 `.github/**` PR with two independent reviews. It turns D-107/D-117 from prose into a check, and needs nothing from Saurabh.
   - (c) is his decision and is held, not asked, until after the go/no-go (see below).
@@ -284,3 +284,36 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Nothing is applied by this ruling.
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
+
+### CR-22 The harness freeze runs to the go/no-go; a research team works inside it (31 Oct 2026, Karma via retro session)
+- Question: The founder adopted the freeze "until the 5 Nov go/no-go" (28 Oct), D-130 moved the go/no-go to Mon 9 Nov, and on 31 Oct he asked for "3 agent engineering expert team to work on harness part". Does the freeze end on 5 Nov, and can the team work during it?
+- Tier and type: T1 for the timing, but it is my reading of a founder decision ("until the 5 Nov go/no-go"), so he can overrule it in one line. The team's research spends shared usage that the build thread also needs; it stays capped at three agents and no PRs.
+- Options considered: (a) end the freeze on 5 Nov as written; (b) tie it to the go/no-go, so 9 Nov; (c) (b), with the team doing research and prototypes only, no PRs and no review load.
+- Ruling: (c). The freeze existed to protect the go/no-go and the build thread's share of usage, so it follows the go/no-go. The team's work sits on branch `wip/harness-free-route` (reports, lane design, eval, and my summary in `docs/agents/harness-team/SUMMARY.md`). It gets a PR and two lens reviews after 9 Nov. Nothing runs, and nothing is bought (D-127).
+- Why: the freeze's own reasons (`infra/harness-architecture-review-2026-10-28.md`, risks 1 and 2); D-130. What the team found: GitHub Models was retired on 30 Jul 2026 (github.blog changelog, read 31 Oct). OpenRouter's free models give 50 requests a day with nothing bought (openrouter.ai/docs/api-reference/limits, read 31 Oct), which is enough for one narrow lane, not for the 24-agent design. Two risks go with that route, and both are founder-only: whether OpenRouter signup asks for a card is unverified (D-127 rules out a card), and the strongest free models come from providers whose terms say they train on prompts. Opening the account and accepting those terms are his, asked once after the go/no-go with the terms quoted.
+- Door: two-way.
+- Way back: the founder can end the freeze or stop the team in one line.
+- Revisit when: Mon 9 Nov.
+
+### CR-23 The live site drops three Plus lines the founder's decisions contradict (31 Oct 2026, Karma via retro session)
+- Question: The site on `main` listed backup, Read together after the free sessions, and the whole family adding letters as Plus features. Does fixing that need the founder, since what the site promises is his call?
+- Tier and type: T1; clear.
+- Ruling: NOT A QUESTION. His decisions already settled the facts (D-111 item 6 and D-104 item 2: backup is free; D-083: Read together is free; D-055 and D-099: two parents only), and `docs/reviews/2026-10-claims-inventory.md` rows M6 to M8 mark the lines false. Removing them adds no promise. Merged as #417 after two counted reviews and green CI; production deploy `dpl_5T3b4aW7rU8PUAxzeqRdemJbRzNn` is READY. Anything new to say about Plus, and the claim "exactly as you said it", stay his and counsel's (D-125, CR-21).
+- Found and left with their owners (the claims inventory and its keeper; the live wording has changed since the inventory was taken, so not every line has its own row):
+  - "only the people you invite" and "You and Mama add to the same book", against the v1.0 sharing scope;
+  - "Your letters stay on your phone" (`apps/web/src/content/site.ts:73`, inventory row M1): false for `preview`, because letter text syncs once signed in (D-100);
+  - `plan.ts` gates `backup_upload` on Plus, against D-111 (app code; not touched during the freeze).
+- Door: two-way.
+- Way back: revert #417.
+- Revisit when: the founder or counsel changes what Plus contains.
+
+### CR-24 The machine-account route stays held: Vercel Hobby might not deploy a non-owner's commits (31 Oct 2026, Karma via retro session)
+- Question: The founder approved the CR-20 plan on 31 Oct ("Yes approve all", then "I approve but work with CTO for all implementation"). Do we move Claude sessions onto the one machine account now?
+- Tier and type: T3 for the account itself (his); T1 for the timing.
+- Ruling: not yet. Vercel's own guide says that on Hobby "only the account owner can trigger deployments, and contributors who aren't the owner cannot deploy" (vercel.com/kb/guide/commits-not-triggering-deployments, read 31 Oct). The guide states the commit-author check for private repositories; ours is public, and whether the same applies is unverified. If it does, site deploys from machine-account commits would stop, and the fix Vercel offers is a paid Pro team (D-127). After the go/no-go I run one probe, and it can't be a preview branch: Vercel previews are off for this project (D-111), so a preview commit would deploy nothing either way. The probe is a throwaway public repository and a throwaway Hobby Vercel project, both his, with one commit by the machine account. That touches nothing live. The alternative, a machine-authored merge to `main` with a rollback ready, risks the live site, so I won't use it. This replaces the preview-branch probe named in CR-20. The founder gets one question only if the route works for free, or if Pro is the only route and worth paying for.
+- Also checked (CR-20 follow-up): Vercel notifications are on all plans, web and email are on by default, and there are "Deployment Promotions" notifications for the deployment owner (vercel.com/docs/notifications, read 31 Oct). Whether a git-push production deploy counts as a promotion is unverified. GitHub doesn't notify a user of their own actions, and session merges are his actions, so GitHub is no independent signal.
+- The founder's 31 Oct instruction stands for all of this: Karma leads implementation, and the other executives advise through it (`docs/agents/exec/COUNCIL.md` once merged).
+- Door: two-way.
+- Way back: none needed; nothing changed.
+- Revisit when: Tue 10 Nov, after the probe.
+
