@@ -195,9 +195,15 @@ test("child env: the model's shell sees only the allowlist plus engine variables
 // ---- Round 3: W1 final patterns (98dcbf84), re-run on the real binary ----
 
 const final = outcomesOf("final-deny-matrix");
+const GRAPHQL_COMMENT = "gh pr comment 1 --body 'ran gh api graphql locally'";
 
 test("final deny: the glob matcher agrees with the real binary on all 58 recorded commands", () => {
-  for (const [cmd, res] of Object.entries(final)) assert.equal(denied(cmd), res === "blocked", cmd);
+  // 98dcbf84 recording. Round 3 changed the patterns on purpose for the false positives, the
+  // graphql comment and the accidental substitution match, so those rows are expected to differ.
+  const changedOnPurpose = new Set([...MUST_ALLOW, GRAPHQL_COMMENT, "git push origin $(echo develop)"]);
+  for (const [cmd, res] of Object.entries(final)) {
+    if (!changedOnPurpose.has(cmd)) assert.equal(denied(cmd), res === "blocked", cmd);
+  }
   assert.equal(Object.keys(final).length, 58);
 });
 
@@ -225,14 +231,33 @@ test("final deny: commands without develop or main as a branch are not blocked",
   }
 });
 
-for (const cmd of MUST_ALLOW.filter((c) => final[c] === "blocked")) {
-  test(`[expected failure] must-allow is not blocked: "${cmd}"`, {
-    todo: `FALSE POSITIVE on the real binary (opencode-ai 1.18.34, 98dcbf84): ${cmd} was blocked. See the tighter pattern set in docs/agents/hardening/opencode-contract.md.`,
-  }, () => {
-    assert.equal(final[cmd], "ran");
-    assert.ok(!denied(cmd));
+// These were false positives under 98dcbf84 (recorded in final-deny-matrix). The git patterns are now
+// W2's tighter set, which the real binary allowed in tighter-deny-matrix. The assertions below check
+// the current DENY_PATTERNS through the offline matcher plus that recording; W2 re-runs the live engine.
+for (const cmd of MUST_ALLOW) {
+  test(`must-allow is not blocked: "${cmd}"`, () => {
+    assert.equal(tighter[cmd], "ran", "recorded on the real binary with the tighter set");
+    assert.ok(!denied(cmd), "current DENY_PATTERNS do not match");
   });
 }
+
+test("must-allow: a gh comment that mentions graphql is not blocked, a real graphql call is", () => {
+  assert.ok(!denied("gh pr comment 1 --body 'ran gh api graphql locally'"));
+  assert.ok(denied("gh api graphql -f query=q"));
+  assert.ok(denied("gh -R a/b api graphql -f query=q"));
+});
+
+test("current DENY_PATTERNS still block every protected-branch, force and delete case the real binary blocked", () => {
+  for (const [cmd, res] of Object.entries(tighter)) {
+    if (res === "blocked" && cmd !== GRAPHQL_COMMENT) assert.ok(denied(cmd), cmd);
+  }
+  for (const c of ["git push origin HEAD:develop", "git push origin develop", "git push origin HEAD:main", "git push origin main",
+    "git push -u origin HEAD:refs/heads/develop", "git push origin +develop", "git push origin test/x:develop", "git -C . push origin develop",
+    "git -c core.x=1 push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
+    "git push --force origin x", "git push origin --delete foo", "git push origin :foo", "git -C . push -u origin develop"]) {
+    assert.ok(denied(c), c);
+  }
+});
 
 // Candidate tighter git patterns, recorded on the real binary in tighter-deny-matrix (W1's gh and
 // other patterns unchanged). The branch must be a whole token, so substrings do not match.
@@ -263,5 +288,6 @@ test("tighter candidate: the real binary allows every must-allow command and sti
 });
 
 test("tighter candidate: the matcher agrees with the real binary on all 58 commands", () => {
-  for (const [cmd, res] of Object.entries(tighter)) assert.equal(tighterDenied(cmd), res === "blocked", cmd);
+  // The graphql comment row was recorded with the old unanchored gh pattern; it is anchored now (not run live).
+  for (const [cmd, res] of Object.entries(tighter)) if (cmd !== GRAPHQL_COMMENT) assert.equal(tighterDenied(cmd), res === "blocked", cmd);
 });

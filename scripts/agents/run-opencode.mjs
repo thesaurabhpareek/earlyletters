@@ -26,17 +26,28 @@ import { tmpdir } from "node:os";
  * and main, the scoped short-lived App token, and the two-job split. Do not rely on this list.
  * Parity: the Claude Code arm in .github/workflows/agents.yml denies pushes to develop and main.
  *
- * Spelling variants are covered with leading wildcards ("git*push*", "gh*pr merge*") so that
- * `git -C . push`, `git -c k=v push`, `gh -R a/b pr merge` and doubled spaces are caught.
- * Cost: a few false positives (a branch whose name has a space-separated word "main").
+ * The git patterns come from the tighter set W2 verified on the real binary (see
+ * docs/agents/hardening/opencode-contract.md): anchored on the command start (`git push`,
+ * `git -C* push`, `git -c* push`) and on a whole branch token, so `feat/maintenance` or a
+ * commit message that says "push to main" is not blocked. The two exact legacy forms
+ * "git push origin develop*" / "main*" stay because lib.test.mjs asserts them; they also block
+ * a branch whose name STARTS with develop or main directly after origin.
  */
-export const DENY_PATTERNS = [
-  // force pushes, including lease, delete and plus-prefixed refspec forms
+export function gitPushPatterns() {
+  const out = [];
+  for (const p of ["git push", "git -C* push", "git -c* push"]) {
+    out.push(`${p} --force*`, `${p}*--force*`, `${p}* -f*`, `${p}*--delete*`, `${p}* +*`, `${p}* :*`);
+    for (const b of ["develop", "main"]) {
+      out.push(`${p}* ${b}`, `${p}* ${b} *`, `${p}*:${b}`, `${p}*:${b} *`, `${p}*:refs/heads/${b}`, `${p}*:refs/heads/${b} *`, `${p}* refs/heads/${b}`);
+    }
+  }
+  return out;
+}
+
+export const DENY_PATTERNS = [...new Set([
+  // force, delete, plus-refspec and protected-branch pushes, any -C/-c prefix, any option order
   "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", // exact legacy forms
-  "git*push*--force*","git*push* -f*", "git*push*--delete*", "git*push* +*", "git*push* :*",
-  // pushes to protected branches: bare, upstream flags, refspec, refs/heads, any -C/-c prefix
-  "git*push* develop*", "git*push* main*", "git*push*:develop*", "git*push*:main*",
-  "git*push*/develop*", "git*push*/main*", "git*push*+develop*", "git*push*+main*",
+  ...gitPushPatterns(),
   // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
   "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
   "gh*pr*--admin*",
@@ -53,11 +64,12 @@ export const DENY_PATTERNS = [
   "gh*api*-X PATCH*", "gh*api*--method PATCH*", "gh*api*-X POST*", "gh*api*--method POST*",
   "gh*api*-XDELETE*", "gh*api*-XPUT*", "gh*api*-XPATCH*", "gh*api*-XPOST*",
   "gh*api* -f*", "gh*api* -F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
-  "gh*api*graphql*",
+  // anchored so a comment body that mentions graphql is not blocked (W2 suggestion; not run live)
+  "gh api*graphql*", "gh -R* api*graphql*", "gh --repo* api*graphql*",
   "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
   "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
   "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
-];
+])];
 
 /** Permissions: everything an agent needs, minus the actions only the founder takes. */
 export function opencodeConfig() {
