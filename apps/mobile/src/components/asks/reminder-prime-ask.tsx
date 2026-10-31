@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
+import { track } from '@/lib/analytics/track';
 import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -37,6 +38,7 @@ export function ReminderPrimeAsk() {
     const take = () => {
       if (!takeReminderPrimeRequest()) return;
       noteReminderPrimeShown();
+      track('reminder_prime_shown', { source: 'first_letter' });
       setOpen(true);
     };
     take();
@@ -57,10 +59,12 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const yes = (chosen?: ReminderTime) => {
     haptic('tap');
     if (chosen) writePrefs({ time: chosen });
+    track('reminder_prime_result', { choice: 'yes' });
     onClose();
     void enableReminders().catch(() => {}); // the choice is saved either way; Settings shows a no from iOS
   };
   const none = () => {
+    track('reminder_prime_result', { choice: 'not_now' });
     onClose();
     toast.show({ message: r.noneHelp });
   };
