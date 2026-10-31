@@ -17,37 +17,46 @@ import { tmpdir } from "node:os";
 /**
  * Bash patterns the agent may not run.
  *
- * TRIPWIRE, NOT A BOUNDARY. Glob patterns on a shell string are easy to bypass
- * (variables, `sh -c`, a script file, another HTTP client). They catch the honest
- * mistake and the lazy attempt. The real guards are server side: branch protection
- * on develop and main, required reviews, and the App token's scopes.
- * Parity: the Claude Code arm in .github/workflows/agents.yml denies the same
- * pushes to develop and main.
+ * TRIPWIRE, NOT A BOUNDARY. opencode matches the whole command string (and each segment
+ * of a && / ; / | compound) against these globs, so they catch the honest mistake and the
+ * lazy attempt only. These shapes are KNOWN to bypass and are deliberately not chased:
+ * env-prefix (`FOO=1 git push ...`), `sh -c '...'`, variables (`B=develop; git push origin $B`),
+ * command substitution, a script file the model wrote, `env git ...`, and quoted branch
+ * names (`HEAD:'develop'`). The real controls are server side: branch protection on develop
+ * and main, the scoped short-lived App token, and the two-job split. Do not rely on this list.
+ * Parity: the Claude Code arm in .github/workflows/agents.yml denies pushes to develop and main.
+ *
+ * Spelling variants are covered with leading wildcards ("git*push*", "gh*pr merge*") so that
+ * `git -C . push`, `git -c k=v push`, `gh -R a/b pr merge` and doubled spaces are caught.
+ * Cost: a few false positives (a branch whose name has a space-separated word "main").
  */
 export const DENY_PATTERNS = [
   // force pushes, including lease, delete and plus-prefixed refspec forms
-  "git push --force*", "git push -f*", "git push*--force*", "git push*--force-with-lease*",
-  "git push* +*", "git push*--delete*", "git push* :*",
-  // pushes to protected branches, bare and refspec forms
-  "git push origin develop*", "git push origin main*",
-  "git push origin HEAD:develop*", "git push origin HEAD:main*",
-  "git push origin HEAD:refs/heads/develop*", "git push origin HEAD:refs/heads/main*",
-  "git push*:develop*", "git push*:main*", "git push*:refs/heads/develop*", "git push*:refs/heads/main*",
-  "git push origin +develop*", "git push origin +main*",
-  // merges, closes, approvals
-  "gh pr merge*", "gh pr close*", "gh pr review*--approve*", "gh pr review*-a *", "gh issue close*",
-  "gh pr*--admin*",
+  "git push --force*", "git push -f*", "git push origin develop*", "git push origin main*", // exact legacy forms
+  "git*push*--force*","git*push* -f*", "git*push*--delete*", "git*push* +*", "git*push* :*",
+  // pushes to protected branches: bare, upstream flags, refspec, refs/heads, any -C/-c prefix
+  "git*push* develop*", "git*push* main*", "git*push*:develop*", "git*push*:main*",
+  "git*push*/develop*", "git*push*/main*", "git*push*+develop*", "git*push*+main*",
+  // merges, closes, approvals (also with `gh -R owner/repo` before the subcommand)
+  "gh pr merge*", "gh*pr merge*","gh*pr close*", "gh*pr review*--approve*", "gh*pr review*-a *", "gh*issue close*",
+  "gh*pr*--admin*",
   // secrets, settings, repo admin, workflow control
+  // (anchored at "gh" so a PR body that mentions "secret" is not blocked; -R/--repo forms added)
   "gh secret*", "gh variable*", "gh repo delete*", "gh repo edit*", "gh repo archive*",
   "gh ruleset*", "gh auth*", "gh workflow run*", "gh workflow enable*", "gh workflow disable*",
   "gh run rerun*", "gh run cancel*",
-  // gh api writes: any non-GET verb, then sensitive paths whatever the verb
-  "gh api*-X DELETE*", "gh api*--method DELETE*", "gh api*-X PUT*", "gh api*--method PUT*",
-  "gh api*-X PATCH*", "gh api*--method PATCH*", "gh api*-X POST*", "gh api*--method POST*",
-  "gh api*-XDELETE*", "gh api*-XPUT*", "gh api*-XPATCH*", "gh api*-XPOST*",
-  "gh api*protection*", "gh api*rulesets*", "gh api*/actions/secrets*", "gh api*/actions/variables*", "gh api*/actions/runners*","gh api*/hooks*",
-  "gh api*/keys*", "gh api*/collaborators*", "gh api*/merges*", "gh api*/git/refs*",
-  "gh api*/pulls/*/merge*", "gh api*/settings*",
+  "gh -R*secret*", "gh -R*variable*", "gh -R*ruleset*", "gh -R*workflow run*", "gh -R*workflow enable*",
+  "gh -R*workflow disable*", "gh -R*run rerun*", "gh -R*run cancel*", "gh -R*repo delete*", "gh -R*repo edit*",
+  "gh --repo*secret*", "gh --repo*variable*", "gh --repo*workflow run*", "gh --repo*repo delete*",
+  // gh api writes: explicit non-GET verbs, implicit POST (field flags), graphql, sensitive paths
+  "gh*api*-X DELETE*", "gh*api*--method DELETE*", "gh*api*-X PUT*", "gh*api*--method PUT*",
+  "gh*api*-X PATCH*", "gh*api*--method PATCH*", "gh*api*-X POST*", "gh*api*--method POST*",
+  "gh*api*-XDELETE*", "gh*api*-XPUT*", "gh*api*-XPATCH*", "gh*api*-XPOST*",
+  "gh*api* -f*", "gh*api* -F*", "gh*api*--field*", "gh*api*--raw-field*", "gh*api*--input*",
+  "gh*api*graphql*",
+  "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
+  "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
+  "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
 ];
 
 /** Permissions: everything an agent needs, minus the actions only the founder takes. */

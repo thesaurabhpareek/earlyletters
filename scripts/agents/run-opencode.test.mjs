@@ -50,6 +50,20 @@ test("deny list has parity with the Claude Code arm and covers bypass shapes", (
   for (const c of mustDeny) assert.ok(denied(c), `should deny: ${c}`);
 });
 
+test("deny list covers option, -C/-c, -R and implicit-write spellings (round 2)", () => {
+  for (const c of ["git -C . push origin develop", "git -c core.x=1 push origin main", "git push -u origin develop",
+    "git push --set-upstream origin main", "git push  origin  develop", "gh -R a/b pr merge 1", "gh --repo a/b secret set X",
+    "gh api repos/a/b/issues -f title=x", "gh api repos/a/b/issues -F n=1", "gh api graphql -f query=q"]) {
+    assert.ok(denied(c), `should deny: ${c}`);
+  }
+  // known bypass shapes are NOT claimed: the list is a tripwire
+  assert.ok(!denied("FOO=1 git push origin develop"));
+  assert.ok(!denied("sh -c 'git push origin develop'"));
+  assert.ok(!denied("env git push origin develop"));
+  // PR bodies that merely mention words are not blocked
+  assert.ok(!denied('gh pr create --title x --body "rotate the secret and variable names"'));
+});
+
 test("deny list does not block normal agent work", () => {
   const mustAllow = [
     "git push -u origin fix/opencode-runner-hardening", "git push origin agent/qa/wip-42", "git status",

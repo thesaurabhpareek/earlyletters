@@ -150,18 +150,22 @@ const patterns = () => runner.DENY_PATTERNS ?? Object.entries(opencodeConfig().p
 const globToRe = (g) => new RegExp("^" + g.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "s");
 const denied = (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => patterns().some((g) => globToRe(g).test(seg)));
 
-test("hardened deny: the glob matcher used here agrees with the real binary on every recorded command", {
-  todo: runner.DENY_PATTERNS ? false : "run-opencode.mjs on this branch predates DENY_PATTERNS; passes once the hardening branch is merged",
-}, () => {
-  for (const [cmd, res] of Object.entries(hardened)) assert.equal(denied(cmd), res === "blocked", cmd);
+// Recorded as RAN under d060a36f (fixture left untouched); the round 2 patterns now cover them.
+const FIXED = ["git -C . push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
+  "git -c core.x=1 push origin develop", "gh -R a/b pr merge 1", "gh api repos/a/b/issues -f title=x", "gh api graphql -f query=mutation"];
+
+test("hardened deny: the glob matcher used here agrees with the real binary on every recorded command it did not leak", () => {
+  for (const [cmd, res] of Object.entries(hardened)) {
+    if (FIXED.includes(cmd)) continue;
+    // Incidentally matched by " develop*" now; not a promise (substitution is a known bypass shape).
+    if (cmd === "git push origin $(echo develop)") continue;
+    assert.equal(denied(cmd), res === "blocked", cmd);
+  }
 });
 
-for (const cmd of ["git -C . push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
-  "git -c core.x=1 push origin develop", "gh -R a/b pr merge 1", "gh api repos/a/b/issues -f title=x", "gh api graphql -f query=mutation"]) {
-  test(`[expected failure] deny globs block "${cmd}"`, {
-    todo: `STILL RUNS on the real binary (opencode-ai 1.18.34, hardening d060a36f): ${cmd}. Owner: run-opencode.mjs DENY_PATTERNS.`,
-  }, () => {
-    assert.equal(hardened[cmd], "blocked");
+for (const cmd of FIXED) {
+  test(`deny globs now block "${cmd}" (it RAN on the real binary under d060a36f)`, () => {
+    assert.equal(hardened[cmd], "ran", "fixture is the old recording");
     assert.ok(denied(cmd));
   });
 }
