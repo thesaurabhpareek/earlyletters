@@ -6,10 +6,10 @@
  *
  * Rules:
  * - Every letter on this phone, in book or private, in every book including
- *   hidden ones. Recently deleted letters are left out by design (D-085): a
- *   letter the person deleted is not part of their book, and they can Restore
- *   it from Recently deleted for 30 days. (`listDeleted` exists; export does
- *   not read it.)
+ *   hidden ones. Recently deleted letters are left out for now: whether they
+ *   belong in an export, always or only when ticked (spec 4.1), is BL-388's
+ *   to settle (CR-35). D-085 sets up the 30-day shelf; it does not decide
+ *   this. (`listDeleted` exists; export does not read it.)
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte, each named and labelled by its own

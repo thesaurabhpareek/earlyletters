@@ -158,14 +158,11 @@ describe('export schema', () => {
       const account = json(await ashaZip(), 'data/account.json');
       const validate = validator('accountFile');
       expect(validate({ ...account, consent_history: included }), JSON.stringify(validate.errors)).toBe(true);
-      const word = { child_id: null, term: 'Nani', kind: 'family', heard_as: [], forms: null, source: 'server' };
+      const word = { child_id: null, term: 'Nani', kind: 'family', heard_as: [], source: 'phone' };
       expect(validate({ ...account, dictionary: [word] }), JSON.stringify(validate.errors)).toBe(true);
-      const form = { script: 'devanagari', text: '\u0928\u093e\u0928\u0940', heard_as: [], offer_only: [] };
-      expect(validate({ ...account, dictionary: [{ ...word, forms: [form] }] }), JSON.stringify(validate.errors)).toBe(true);
       expect(validate({ ...account, dictionary: [{ ...word, term: '' }] })).toBe(false);
-      expect(validate({ ...account, dictionary: [{ ...word, forms: [] }] })).toBe(false);
-      expect(validate({ ...account, dictionary: [{ ...word, forms: [{ ...form, script: 'klingon' }] }] })).toBe(false);
-      expect(validate({ ...account, dictionary: [{ ...word, forms: [{ ...form, heardAs: [] }] }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, kind: 'robot' }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, forms: null }] })).toBe(false);
       expect(validate({ ...account, memberships: [{ child_id: 'c', role: 'owner', signs_as: 'Mama' }] })).toBe(false);
     });
   });

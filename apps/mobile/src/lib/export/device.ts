@@ -2,7 +2,7 @@
  * Export on the phone (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, -056).
  * Free in every plan state and works offline: it reads the local store and
  * files, never the entitlement (C-NFR-004). The one network read is the
- * server's consent record and spelling list for account.json, when signed in
+ * server's consent record for account.json, when signed in
  * (server-records.logic.ts): bounded by the read timeout, and when it cannot
  * be read the export still finishes and says why.
  *
@@ -28,7 +28,7 @@ import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
-import { allRows, mergeDictionary, noConsentHistory, readServerRecords, type ServerRecordsReader } from './server-records.logic';
+import { ACT_COLUMNS, allRows, noConsentHistory, readServerRecords, STATE_COLUMNS, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
@@ -145,14 +145,11 @@ function phoneDictionary(children: SnapshotChild[]): ExportDictionaryTerm[] {
       term: d.term,
       kind: d.kind,
       heard_as: [...d.heardAs],
-      forms: null,
       source: 'phone' as const,
     })),
   );
 }
 
-const ACT_COLUMNS =
-  'id, document, version, action, method, surface, accepted_at, client_recorded_at, app_version, platform, locale, rendered_sha256, context';
 /** Own rows only: row-level security limits each read to the signed-in account. */
 function supabaseReader(): ServerRecordsReader | null {
   const sb = getSupabaseOrNull();
@@ -162,22 +159,21 @@ function supabaseReader(): ServerRecordsReader | null {
       allRows((from, to) =>
         sb.from('policy_acceptances').select(ACT_COLUMNS).order('accepted_at', { ascending: true }).order('id', { ascending: true }).range(from, to).abortSignal(signal),
       ),
-    state: (signal) => allRows((from, to) => sb.from('my_policy_state').select('document, version, action, accepted_at').order('document').range(from, to).abortSignal(signal)),
-    dictionary: (signal) =>
-      allRows((from, to) => sb.from('dictionary_terms').select('child_id, term, kind, heard_as, forms').order('term').range(from, to).abortSignal(signal)),
+    state: (signal) => allRows((from, to) => sb.from('my_policy_state').select(STATE_COLUMNS).order('document').range(from, to).abortSignal(signal)),
   };
 }
 
-/** Adds the server's consent record and spelling list to a snapshot (never throws; see server-records.logic.ts). */
-export async function withServerRecords(snapshot: ExportSnapshot): Promise<ExportSnapshot> {
-  const server = await readServerRecords({
+/** Adds the server's consent record to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
+  const consentHistory = await readServerRecords({
     authUserId: currentAuthUserId(),
     ownerId: currentUserId(),
     reader: supabaseReader(),
     timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
     now: () => new Date(),
+    cancelled: () => signal?.aborted === true,
   });
-  return { ...snapshot, consentHistory: server.consent, dictionary: mergeDictionary(snapshot.dictionary, server.dictionary) };
+  return { ...snapshot, consentHistory };
 }
 
 /** What the screen shows before export starts ("What is inside" counts). */
@@ -272,7 +268,7 @@ async function renderPdf(html: string, locale: string): Promise<Uint8Array> {
  */
 export async function runExport(opts: { onProgress?: (p: ExportProgress) => void; signal?: { aborted: boolean } } = {}): Promise<ExportResult> {
   cleanupExports();
-  const snapshot = await withServerRecords(exportSnapshot());
+  const snapshot = await withServerRecords(exportSnapshot(), opts.signal);
   if (opts.signal?.aborted) throw new ExportCancelledError();
   const estimate = estimateExportBytes(snapshot);
   if (estimate > MAX_EXPORT_BYTES) throw new ExportTooLargeError();

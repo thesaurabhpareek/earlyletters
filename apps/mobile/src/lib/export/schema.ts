@@ -49,7 +49,8 @@ import { brand } from '@scribe/brand';
  * because ADR 0027 landed 1.2.0 first): account.json gains `consent_history`
  * (the server's consent record: every act in `policy_acceptances` and the
  * latest per document from `my_policy_state`, when it could be read) and
- * `dictionary` (the names and words the transcriber spells your way).
+ * `dictionary` (the names and words the transcriber spells your way, as kept
+ * on this phone).
  * `memberships[].role` and `manifest.scope.exporter_role` now say the real
  * role. Both fields are optional in the schema, so every earlier v1 export
  * still validates; this version always writes them. The same one-way rule
@@ -203,15 +204,6 @@ export interface ExportConsentHistory {
   acts: ExportPolicyAct[];
 }
 
-/** One script's spelling of a dictionary word (`dictionary_terms.forms`). */
-export interface ExportDictionaryForm {
-  script: 'latin' | 'devanagari' | 'arabic' | 'han_simplified' | 'han_traditional';
-  text: string;
-  heard_as: string[];
-  /** Spellings offered as a choice, never applied on their own. */
-  offer_only: string[];
-}
-
 /** A name or word the transcriber spells your way (DictionaryTerm in packages/core). */
 export interface ExportDictionaryTerm {
   /** The book it belongs to; null for a word kept for every book. */
@@ -219,12 +211,7 @@ export interface ExportDictionaryTerm {
   term: string;
   kind: 'child' | 'nickname' | 'family' | 'word' | 'place' | 'self';
   heard_as: string[];
-  /**
-   * The same word in other scripts (`dictionary_terms.forms`, held on the server
-   * only); null when there are none, and always null for a phone term.
-   */
-  forms: ExportDictionaryForm[] | null;
-  /** `phone`: kept on this phone (each book's child name and your signature); `server`: held for your account on the server. */
+  /** `phone`: kept on this phone (each book's child name and your signature). `server` is for a server-built export (DATA-REQ-054); the phone never writes it. */
   source: 'phone' | 'server';
 }
 
@@ -540,32 +527,12 @@ export const exportJsonSchema = {
     dictionaryTerm: {
       type: 'object',
       additionalProperties: false,
-      required: ['child_id', 'term', 'kind', 'heard_as', 'forms', 'source'],
+      required: ['child_id', 'term', 'kind', 'heard_as', 'source'],
       properties: {
         child_id: { type: ['string', 'null'] },
         term: { type: 'string', minLength: 1 },
         kind: { enum: ['child', 'nickname', 'family', 'word', 'place', 'self'] },
         heard_as: { type: 'array', items: { type: 'string' } },
-        forms: {
-          anyOf: [
-            {
-              type: 'array',
-              minItems: 1,
-              items: {
-                type: 'object',
-                additionalProperties: false,
-                required: ['script', 'text', 'heard_as', 'offer_only'],
-                properties: {
-                  script: { enum: ['latin', 'devanagari', 'arabic', 'han_simplified', 'han_traditional'] },
-                  text: { type: 'string', minLength: 1 },
-                  heard_as: { type: 'array', items: { type: 'string' } },
-                  offer_only: { type: 'array', items: { type: 'string' } },
-                },
-              },
-            },
-            { type: 'null' },
-          ],
-        },
         source: { enum: ['phone', 'server'] },
       },
     },

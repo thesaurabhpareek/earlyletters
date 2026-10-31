@@ -32,10 +32,10 @@ not answered). These are the answers kept on this phone.
 YOUR CONSENT HISTORY
 
 When you are signed in, our server keeps a record of each time you agreed to, declined
-or withdrew from our terms and privacy choices. account.json holds that record under
-"consent_history" when it could be read while the export was made. If it could not,
-"status" says why ("not_signed_in", "unavailable" or "different_account"), and
-everything else in this export is complete.
+or acknowledged our terms, and each privacy choice you made or withdrew. account.json
+holds that record under "consent_history" when it could be read while the export was
+made. If it could not, "status" says why ("not_signed_in", "unavailable" or
+"different_account"), and everything on this phone is still in this export.
 
 CHECKING THE FILES
 

@@ -1,18 +1,28 @@
 /**
  * The server's part of account.json (schema 1.3.0; BL-323, LEGAL-REQ-034):
- * the consent record (`policy_acceptances` and `my_policy_state`, own rows
- * under row-level security) and the spelling-list words held for the account
- * (`dictionary_terms`). Pure: the reads are injected, so every path is tested
- * without a network (test/export-server-records.test.ts). `device.ts` wires
- * the Supabase reads.
+ * the consent record, `policy_acceptances` and `my_policy_state`, own rows
+ * under row-level security. Pure: the reads are injected, so every path is
+ * tested without a network (test/export-server-records.test.ts), and the
+ * column lists below are run against the real access rules by
+ * supabase/tests/export_reads.test.mjs. `device.ts` wires the Supabase reads.
+ *
+ * The spelling list is not read from the server: it lives on the phone, and
+ * since 20261023060000 no client may read `dictionary_terms` at all.
  *
  * Export never waits on the network for long and never fails because of it
  * (DATA-REQ-052, C-NFR-004): signed out, a different account, offline, an
- * error or the timeout all keep the phone's export and say why in
- * `consent_history.status`. Rows are never silently cut: a reader that cannot
- * return every row fails, and the status is then `unavailable`.
+ * error, the timeout or Stop all keep the phone's export and say why in
+ * `consent_history.status`. The record is never silently cut: a reader that
+ * cannot return every row, or a row this app cannot describe, makes the
+ * status `unavailable`.
  */
-import type { ExportConsentHistory, ExportDictionaryForm, ExportDictionaryTerm, ExportPolicyAct, PolicyAction } from './schema';
+import type { ExportConsentHistory, ExportPolicyAct, PolicyAction } from './schema';
+
+/** Columns read from `policy_acceptances`: never `profile_id`, `subject_hash` or the retention columns. */
+export const ACT_COLUMNS =
+  'id, document, version, action, method, surface, accepted_at, client_recorded_at, app_version, platform, locale, rendered_sha256, context';
+/** Columns read from `my_policy_state`. */
+export const STATE_COLUMNS = 'document, version, action, accepted_at';
 
 /** A read result as PostgREST returns it. */
 export interface ReadResult {
@@ -20,17 +30,10 @@ export interface ReadResult {
   error: unknown;
 }
 
-/** The three reads. Each gets an AbortSignal; each must return every row or an error. */
+/** The two reads. Each gets an AbortSignal; each must return every row or an error. */
 export interface ServerRecordsReader {
   acts(signal: AbortSignal): Promise<ReadResult>;
   state(signal: AbortSignal): Promise<ReadResult>;
-  dictionary(signal: AbortSignal): Promise<ReadResult>;
-}
-
-export interface ServerRecords {
-  consent: ExportConsentHistory;
-  /** Words held on the server for this account (merged with the phone's by `mergeDictionary`). */
-  dictionary: ExportDictionaryTerm[];
 }
 
 export const PAGE_ROWS = 500;
@@ -55,7 +58,6 @@ export function noConsentHistory(status: Exclude<ExportConsentHistory['status'],
 
 const ACTIONS: readonly PolicyAction[] = ['accept', 'decline', 'withdraw', 'acknowledge'];
 const PLATFORMS = ['ios', 'android', 'web'] as const;
-const DICTIONARY_KINDS: readonly ExportDictionaryTerm['kind'][] = ['child', 'nickname', 'family', 'word', 'place', 'self'];
 
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
 const asAction = (v: unknown): PolicyAction | null => ((ACTIONS as readonly unknown[]).includes(v) ? (v as PolicyAction) : null);
@@ -113,32 +115,6 @@ export function exportState(row: unknown): ExportConsentHistory['current'][numbe
   return document && version && action && at ? { document, version, action, at } : null;
 }
 
-const SCRIPTS: readonly ExportDictionaryForm['script'][] = ['latin', 'devanagari', 'arabic', 'han_simplified', 'han_traditional'];
-const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((h): h is string => typeof h === 'string') : []);
-
-/** `dictionary_terms.forms` (null, or 1 to 8 `{script, text, heardAs?, offerOnly?}`); a form it cannot describe is left out. */
-export function exportForms(v: unknown): ExportDictionaryForm[] | null {
-  if (!Array.isArray(v)) return null;
-  const out: ExportDictionaryForm[] = [];
-  for (const f of v) {
-    if (!isRecord(f)) continue;
-    const script = (SCRIPTS as readonly unknown[]).includes(f.script) ? (f.script as ExportDictionaryForm['script']) : null;
-    const text = str(f.text);
-    if (!script || !text || !text.trim()) continue;
-    out.push({ script, text, heard_as: strings(f.heardAs), offer_only: strings(f.offerOnly) });
-  }
-  return out.length ? out : null;
-}
-
-/** One `dictionary_terms` row; rows the export cannot describe are skipped (a spelling hint, not a legal record). */
-export function exportServerTerm(row: unknown): ExportDictionaryTerm | null {
-  if (!isRecord(row)) return null;
-  const term = str(row.term);
-  const kind = (DICTIONARY_KINDS as readonly unknown[]).includes(row.kind) ? (row.kind as ExportDictionaryTerm['kind']) : null;
-  if (!term || !term.trim() || !kind) return null;
-  return { child_id: str(row.child_id), term, kind, heard_as: strings(row.heard_as), forms: exportForms(row.forms), source: 'server' };
-}
-
 class Unreadable extends Error {}
 
 function rowsOf(r: ReadResult): unknown[] {
@@ -165,47 +141,34 @@ export interface ReadOptions {
   reader: ServerRecordsReader | null;
   timeoutMs: number;
   now: () => Date;
+  /** True once the person taps Stop: the reads are aborted at once (checked every `pollMs`). */
+  cancelled?: () => boolean;
+  pollMs?: number;
 }
 
-/** Reads the server's part of account.json. Never throws and never takes longer than `timeoutMs`. */
-export async function readServerRecords(o: ReadOptions): Promise<ServerRecords> {
-  if (!o.authUserId || !o.reader) return { consent: noConsentHistory('not_signed_in'), dictionary: [] };
-  if (o.ownerId && o.ownerId !== o.authUserId) return { consent: noConsentHistory('different_account'), dictionary: [] };
+/** Reads the server's consent record. Never throws and never takes longer than `timeoutMs`; Stop ends it sooner. */
+export async function readServerRecords(o: ReadOptions): Promise<ExportConsentHistory> {
+  if (!o.authUserId || !o.reader) return noConsentHistory('not_signed_in');
+  if (o.ownerId && o.ownerId !== o.authUserId) return noConsentHistory('different_account');
   const reader = o.reader;
   const abort = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
+  let poll: ReturnType<typeof setInterval> | undefined;
+  const stop = new Promise<never>((_, reject) => {
+    const end = () => {
       abort.abort();
       reject(new Unreadable());
-    }, o.timeoutMs);
+    };
+    timer = setTimeout(end, o.timeoutMs);
+    if (o.cancelled) poll = setInterval(() => o.cancelled?.() && end(), o.pollMs ?? 100);
   });
   try {
-    const [acts, state, words] = await Promise.race([
-      Promise.all([reader.acts(abort.signal), reader.state(abort.signal), reader.dictionary(abort.signal)]),
-      timeout,
-    ]);
-    const consent = consentFromRows(rowsOf(acts), rowsOf(state), o.now().toISOString());
-    const dictionary = rowsOf(words)
-      .map((r) => exportServerTerm(r))
-      .filter((t): t is ExportDictionaryTerm => t !== null);
-    return { consent, dictionary };
+    const [acts, state] = await Promise.race([Promise.all([reader.acts(abort.signal), reader.state(abort.signal)]), stop]);
+    return consentFromRows(rowsOf(acts), rowsOf(state), o.now().toISOString());
   } catch {
-    return { consent: noConsentHistory('unavailable'), dictionary: [] };
+    return noConsentHistory('unavailable');
   } finally {
     if (timer) clearTimeout(timer);
+    if (poll) clearInterval(poll);
   }
-}
-
-/** Phone words first, then server words the phone does not already have (same book, same spelling in any case). */
-export function mergeDictionary(phone: readonly ExportDictionaryTerm[], server: readonly ExportDictionaryTerm[]): ExportDictionaryTerm[] {
-  const key = (t: ExportDictionaryTerm) => `${t.child_id ?? ''}\u0000${t.term.normalize('NFC').toLocaleLowerCase()}`;
-  const seen = new Set<string>();
-  const out: ExportDictionaryTerm[] = [];
-  for (const t of [...phone, ...server]) {
-    if (!t.term.trim() || seen.has(key(t))) continue;
-    seen.add(key(t));
-    out.push({ ...t, heard_as: [...t.heard_as], forms: t.forms ? t.forms.map((f) => ({ ...f, heard_as: [...f.heard_as], offer_only: [...f.offer_only] })) : null });
-  }
-  return out;
 }

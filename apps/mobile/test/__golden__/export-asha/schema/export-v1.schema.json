@@ -800,7 +800,6 @@
         "term",
         "kind",
         "heard_as",
-        "forms",
         "source"
       ],
       "properties": {
@@ -829,54 +828,6 @@
           "items": {
             "type": "string"
           }
-        },
-        "forms": {
-          "anyOf": [
-            {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "script",
-                  "text",
-                  "heard_as",
-                  "offer_only"
-                ],
-                "properties": {
-                  "script": {
-                    "enum": [
-                      "latin",
-                      "devanagari",
-                      "arabic",
-                      "han_simplified",
-                      "han_traditional"
-                    ]
-                  },
-                  "text": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "heard_as": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "offer_only": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "source": {
           "enum": [

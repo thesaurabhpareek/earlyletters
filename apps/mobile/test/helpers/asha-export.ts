@@ -135,10 +135,10 @@ export function ashaSnapshot(): ExportSnapshot {
     consentHistory: noConsentHistory('not_signed_in'),
     // What each book spells your way on this phone (store.dictionaryFor): the child's name and your signature.
     dictionary: [
-      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], forms: null, source: 'phone' },
-      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
-      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], forms: null, source: 'phone' },
-      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], forms: null, source: 'phone' },
+      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
     ],
   };
 }

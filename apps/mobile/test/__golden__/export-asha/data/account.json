@@ -32,7 +32,6 @@
       "term": "Asha",
       "kind": "child",
       "heard_as": [],
-      "forms": null,
       "source": "phone"
     },
     {
@@ -40,7 +39,6 @@
       "term": "Mama",
       "kind": "self",
       "heard_as": [],
-      "forms": null,
       "source": "phone"
     },
     {
@@ -48,7 +46,6 @@
       "term": "Dev",
       "kind": "child",
       "heard_as": [],
-      "forms": null,
       "source": "phone"
     },
     {
@@ -56,7 +53,6 @@
       "term": "Mama",
       "kind": "self",
       "heard_as": [],
-      "forms": null,
       "source": "phone"
     }
   ]
