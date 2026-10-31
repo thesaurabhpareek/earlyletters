@@ -10,6 +10,8 @@
   z-index: 3;
 }
 .card > div {
+  width: 100%;
+  min-width: 0;
   max-width: 40rem;
   display: flex;
   flex-direction: column;
