@@ -1,0 +1,43 @@
+{
+  "id": "J22-22",
+  "journey": "sign-in",
+  "kind": "unhappy",
+  "title": "Not now, on the Book",
+  "note": "Not now leaves the person on the Book with the new letter, as it was. The ask is made once (PRD-REQ-001).",
+  "from": "J22-21",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Read together This month The first weeks 2 letters · From Mama October 31 to November 29 Sunday, November 1, 2026 You laughed at the dog all through breakfast. From Mama Saturday, October 31, 2026 You put both hands on the window today and watched the rain. From Mama Tonight Book Family That was your second free letter.",
+  "lines": [
+    "Asha's book",
+    "Read together",
+    "This month",
+    "The first weeks",
+    "2 letters · From Mama",
+    "October 31 to November 29",
+    "Sunday, November 1, 2026",
+    "You laughed at the dog all through breakfast.",
+    "From Mama",
+    "Saturday, October 31, 2026",
+    "You put both hands on the window today and watched the rain.",
+    "From Mama",
+    "Tonight",
+    "Book",
+    "Family",
+    "That was your second free letter."
+  ]
+}

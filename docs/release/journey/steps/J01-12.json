@@ -21,7 +21,7 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Asha Name Another child's name Twins or more? Each child gets their own book. Add another child Birthday Not here yet Birthday Born today Fill in or remove this name to continue.",
+  "text": "Back Who is this book for? Asha Name Another child's name Twins or more? Each child gets their own book. Add another child Born Not here yet Birthday Born today Fill in or remove this name to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -30,7 +30,7 @@
     "Another child's name",
     "Twins or more? Each child gets their own book.",
     "Add another child",
-    "Birthday",
+    "Born",
     "Not here yet",
     "Birthday",
     "Born today",

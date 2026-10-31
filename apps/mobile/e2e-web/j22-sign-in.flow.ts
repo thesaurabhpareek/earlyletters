@@ -190,6 +190,7 @@ test('[J22b] DR-12 B: the reminder card after the first letter; Keep the book on
   const now = await app.evaluate(() => Date.now());
   await app.clock.setSystemTime(now + 25 * 60 * MIN);
   await app.reload();
+  await tab(app, 'Tonight').click(); // the relaunch reopens the Book it was on
   await expect(btn(app, /^Type/)).toBeVisible({ timeout: 15_000 });
   await typeLetter(app, 'You laughed at the dog all through breakfast.');
   await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
@@ -469,9 +470,10 @@ test('[J22k] the pause stands through a new email, another address and back, and
   await expectPaused(app, 'after a new email to the same address');
 
   // Use a different email, then the same address again, typed with a space and capitals: the same list, so the pause holds.
+  // Inside the minute after that email, nothing new is sent (SIGN-01): the code screen comes back for the email just sent.
   await btn(app, 'Use a different email').click();
   await sendTo(app, ' Mama@Example.invalid');
-  expect(emailsSent(m)).toHaveLength(3);
+  expect(emailsSent(m), 'the same address inside the minute sends no second email (SIGN-01)').toHaveLength(2);
   await expectPaused(app, 'the same address from the email step');
 
   // Another address has its own list: nothing of the first address's five is counted for it.

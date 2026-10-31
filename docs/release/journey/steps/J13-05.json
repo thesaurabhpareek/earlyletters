@@ -1,0 +1,32 @@
+{
+  "id": "J13-05",
+  "journey": "reminders",
+  "kind": "happy",
+  "title": "After the first letter",
+  "note": "Over the Book, once the letter is in its place: the reminder card, the first ask after the first letter. Nothing was asked before it, and no OS prompt has appeared anywhere.",
+  "from": "J07-03",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "A gentle nudge, now and then? A couple of evenings a week, at a time you pick. Never late at night. Yes, evenings Pick a time No reminders",
+  "lines": [
+    "A gentle nudge, now and then?",
+    "A couple of evenings a week, at a time you pick. Never late at night.",
+    "Yes, evenings",
+    "Pick a time",
+    "No reminders"
+  ]
+}

@@ -8,7 +8,6 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
-import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
@@ -218,8 +217,6 @@ function Root() {
             <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
-            {/* The reminder card after the first letter, over the Book (C-REQ-001 Rev; Review asks for it, lib/asks). */}
-            <ReminderPrimeAsk />
           </SessionProvider>
         )}
       </UIProvider>

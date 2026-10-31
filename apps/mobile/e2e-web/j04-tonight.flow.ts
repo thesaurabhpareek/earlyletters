@@ -1,5 +1,5 @@
 import { PROMPTS } from '@scribe/content';
-import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter } from './support/app';
+import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter, noRemindersAfterFirstLetter } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
@@ -97,6 +97,7 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await firstRun(app);
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
+  await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');

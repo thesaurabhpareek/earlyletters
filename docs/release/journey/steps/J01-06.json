@@ -21,7 +21,7 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? AAAAAAA Name A name can have up to 60 characters. Add another child Birthday Not here yet Birthday Born today Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue.",
+  "text": "Back Who is this book for? AAAAAAA Name A name can have up to 60 characters. Add another child Born Not here yet Birthday Born today Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue.",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -29,7 +29,7 @@
     "Name",
     "A name can have up to 60 characters.",
     "Add another child",
-    "Birthday",
+    "Born",
     "Not here yet",
     "Birthday",
     "Born today",

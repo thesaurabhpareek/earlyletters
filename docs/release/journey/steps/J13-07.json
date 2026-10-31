@@ -1,0 +1,37 @@
+{
+  "id": "J13-07",
+  "journey": "reminders",
+  "kind": "unhappy",
+  "title": "No reminders",
+  "note": "No OS prompt; one calm line. Settings, Reminders still offers them.",
+  "from": "J13-06",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Read together This month The first weeks 1 letter · From Mama October 31 to November 29 Saturday, October 31, 2026 You held the spoon by yourself today. From Mama You can write whenever you like.",
+  "lines": [
+    "Asha's book",
+    "Read together",
+    "This month",
+    "The first weeks",
+    "1 letter · From Mama",
+    "October 31 to November 29",
+    "Saturday, October 31, 2026",
+    "You held the spoon by yourself today.",
+    "From Mama",
+    "You can write whenever you like."
+  ]
+}

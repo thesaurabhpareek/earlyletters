@@ -1,7 +1,7 @@
 // android: same | web preview: same (the OS permission answer is the browser's; nothing is scheduled there)
 /**
  * The reminder card after the first letter (C-REQ-001 Rev, F13 6.2 B rows 2 to 5', F13-REQ-023, DR-12 B).
- * Mount once in the root layout, inside the 18+ gate. Review asks for it through `requestReminderPrime()`
+ * Mounted once in the tabs layout, inside its ToastHost (the Book is a tab). Review asks for it through `requestReminderPrime()`
  * when `nextAsk` returns `reminder_prime`, after the Book is on screen; the card is then the first ask.
  *
  * - "Yes, evenings": the default ("A few times a week", 8:30 PM), then the iOS alert (F13 6.2 B row 4a). The card

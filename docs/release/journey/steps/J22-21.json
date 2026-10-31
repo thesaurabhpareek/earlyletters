@@ -1,12 +1,11 @@
 {
   "id": "J22-21",
   "journey": "sign-in",
-  "kind": "unhappy",
-  "title": "Not now, on the Book",
-  "note": "Not now leaves the person on the Book with the new letter, as it was. The ask is made once (PRD-REQ-001).",
+  "kind": "happy",
+  "title": "Keep the book on any phone",
+  "note": "On the first save of session 2 the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b, DR-12 B). It is about this book, so its cover sits beside the title.",
   "from": "J22-20",
-  "shot": "screens/J22-21.png",
-  "route": "/book",
+  "route": "/sign-in",
   "viewport": {
     "width": 402,
     "height": 874
@@ -22,19 +21,13 @@
     }
   },
   "scrolls": false,
-  "text": "Asha's book Read together This month The first weeks 1 letter · From Mama October 30 to November 29 Friday, October 30, 2026 You put both hands on the window today and watched the rain. From Mama Tonight Book Family",
+  "text": "Keep Asha's book on any phone Your letters come with you to a new phone, and Asha's other parent can write in the same book. Asha Sign in with email Only you and the people you invite can read your letters. We never sell them or use them for ads. Not now",
   "lines": [
-    "Asha's book",
-    "Read together",
-    "This month",
-    "The first weeks",
-    "1 letter · From Mama",
-    "October 30 to November 29",
-    "Friday, October 30, 2026",
-    "You put both hands on the window today and watched the rain.",
-    "From Mama",
-    "Tonight",
-    "Book",
-    "Family"
+    "Keep Asha's book on any phone",
+    "Your letters come with you to a new phone, and Asha's other parent can write in the same book.",
+    "Asha",
+    "Sign in with email",
+    "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+    "Not now"
   ]
 }

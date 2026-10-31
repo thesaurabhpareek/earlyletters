@@ -121,8 +121,10 @@ describe('wiring (source checks; the card and the sheet are on the device list)'
     expect(review).not.toMatch(/offerSignIn/);
   });
 
-  it('the card is mounted in the root layout and uses the registered onboarding.reminder words', () => {
-    expect(src('app/_layout.tsx')).toMatch(/<ReminderPrimeAsk \/>/);
+  it('the card is mounted in the tabs layout, under its toast host, and uses the registered onboarding.reminder words', () => {
+    const tabs = src('app/(tabs)/_layout.tsx');
+    expect(tabs.indexOf('<ReminderPrimeAsk />')).toBeGreaterThan(tabs.indexOf('<ToastHost bottomOffset={BAR}>'));
+    expect(tabs.indexOf('<ReminderPrimeAsk />')).toBeLessThan(tabs.indexOf('</ToastHost>'));
     const card = src('components/asks/reminder-prime-ask.tsx');
     for (const k of ['title', 'body', 'yesEveningsButton', 'pickTimeButton', 'noneOption', 'noneHelp', 'timeLabel', 'cta']) expect(card, k).toMatch(new RegExp(`r\\.${k}\\b`));
     expect(card).toMatch(/noteReminderPrimeShown\(\)/);

@@ -1,7 +1,7 @@
 /**
  * Feeds `nextAsk` (./next-ask.logic, tested) what the phone knows, and remembers what was asked.
  * Review calls `askAfterSave()` once per kept letter, then acts on the answer after the Book lands:
- * `keep_book` opens the sign-in sheet, `reminder_prime` asks `<ReminderPrimeAsk>` (mounted in the root
+ * `keep_book` opens the sign-in sheet, `reminder_prime` asks `<ReminderPrimeAsk>` (mounted in the tabs
  * layout) to show the reminder card over the Book.
  *
  * Device settings (plain values, no names or text):
