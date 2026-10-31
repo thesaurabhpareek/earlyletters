@@ -170,6 +170,16 @@ describe('site vocabulary', () => {
     expect(offenders(PROSE, BANNED)).toEqual([]);
   });
 
+  // RULE: no "exactly as you said it" promise and no "never adds a word" (founder, 31 Oct 2026: the default view removes ums and the
+  // speech model can mishear, so the claim is not true of the words). What is true: your words, every change marked, the original
+  // recording kept unchanged. One exception, for now: the brand tagline in packages/brand, which is also drawn into the share
+  // image and the video end card. It changes with those pictures, redrawn from the brand masters on develop, not by hand here.
+  it('makes no word-for-word exactness promise', () => {
+    const OVERCLAIM = /\b(exactly as (you|it was|they were) (said|spoke)|exactly as said|every word (kept )?exactly|never adds a word)\b/i;
+    const held = (l: Leaf) => l.text === brand.tagline;
+    expect(offenders(PROSE.filter((l) => !held(l)), OVERCLAIM)).toEqual([]);
+  });
+
   // RULE: the product name is spelled exactly as in packages/brand (never EarlyLetters, Early letters or early-letters) and the codename never shows.
   it('spells the brand name as packages/brand does', () => {
     const near = /\bearly[\s -]*letters?\b(?!\.(com|app))/gi;

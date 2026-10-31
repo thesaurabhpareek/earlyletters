@@ -57,7 +57,7 @@ export type HeardSegment = { text: string; becomes?: string; kind?: 'name' | 'fi
 export const site = {
   meta: {
     title: `${NAME}: the baby memory book you fill by talking`,
-    description: `Tell your child about today, out loud. ${NAME} keeps every word exactly as you said it, and your voice with it.`,
+    description: `Tell your child about today, out loud. ${NAME} keeps it in your words, marks every change, and keeps your original recording unchanged.`,
   },
 
   brand: {
@@ -69,7 +69,7 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'A baby book you fill by talking. Tell your child about today, and it stays exactly as you said it.',
+    line: 'A baby book you fill by talking. Tell your child about today, and it stays in your words, with every change marked.',
     trust: 'Your letters stay on your phone, and only the people you invite ever see them.',
     shareButton: 'Share with friends and family',
     howTitle: 'How it works',
@@ -80,7 +80,7 @@ export const site = {
     shareMessages: 'Messages',
     shareEmail: 'Email',
     shareTitle: `${NAME}, the baby memory book`,
-    shareText: `${NAME}, a baby book you fill by talking. A minute at the end of the day, kept exactly as you said it.`,
+    shareText: `${NAME}, a baby book you fill by talking. A minute at the end of the day, kept in your words.`,
   },
 
   cta: {
@@ -138,9 +138,9 @@ export const site = {
       appPause: 'Pause',
     },
     s04: {
-      label: 'Exactly as you said it',
-      headline: 'Exactly as you said it.',
-      support: "Your phone listens and clears the ums and false starts. If it mishears Meera's name, it fixes that too. It never adds a word, and every fix can be put back.",
+      label: 'In your words',
+      headline: 'It stays in your words.',
+      support: "Your phone listens and clears the ums and false starts. Every fix is marked and can be put back. If it mishears Meera's name, you change it in a tap, and your original recording is kept unchanged.",
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -281,10 +281,10 @@ export const site = {
     letterFrom: 'From Papa',
     /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
     letterExcerpt: 'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
-    letterNote: 'A minute of talking. Every word kept exactly as it was said.',
+    letterNote: 'A minute of talking, kept in your own words.',
     promisesTitle: 'What to expect',
     promises: [
-      'Every word kept exactly as you said it.',
+      'Your words kept as yours, with every change marked.',
       'Your voice kept with each letter.',
       'Only the people you invite can see your letters. No ads, and we never sell your data.',
     ],
