@@ -14,6 +14,7 @@ import { launch } from '@/lib/launch';
 import { Grain, LampLight, Motes, Vignette } from '@/components/atmosphere';
 import { NotifyForm } from '@/components/cta/NotifyForm';
 import { AppStoreBadge } from '@/components/cta/AppStoreBadge';
+import { ShareRow } from '@/components/site/ShareRow';
 import stage from '@/film/stage.module.css';
 import styles from './S11Start.module.css';
 
@@ -42,6 +43,7 @@ function StartStage() {
           <Headline>{copy.headline}</Headline>
           <Support>{live ? copy.supportLive : copy.supportPrelaunch}</Support>
           <div className={styles.action}>{live ? <AppStoreBadge placement="start" /> : <NotifyForm />}</div>
+          <ShareRow placement="start" />
         </motion.div>
       </div>
       <Vignette strength={1} />

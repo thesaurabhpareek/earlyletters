@@ -9,7 +9,7 @@ import {
   type AnalyticsEvent,
   type TrackerDeps,
 } from '../src/lib/analytics';
-import { CTA_MODES, CTA_PLACEMENTS, NOTIFY_RESULTS, SCENE_IDS, toWireEvent } from '../src/lib/analytics/events';
+import { CTA_MODES, CTA_PLACEMENTS, NOTIFY_RESULTS, SCENE_IDS, SHARE_CHANNELS, SHARE_PLACEMENTS, toWireEvent } from '../src/lib/analytics/events';
 import { scrubUrl } from '../src/lib/analytics/scrub';
 
 function harness(enabled = true) {
@@ -45,6 +45,7 @@ describe('events', () => {
       ...CTA_MODES.flatMap((mode) => CTA_PLACEMENTS.map((placement) => ({ name: 'cta_click' as const, mode, placement }))),
       ...NOTIFY_RESULTS.map((result) => ({ name: 'notify_submit' as const, result })),
       ...SCENE_IDS.map((id) => ({ name: 'scene_reached' as const, id })),
+      ...SHARE_CHANNELS.flatMap((channel) => SHARE_PLACEMENTS.map((placement) => ({ name: 'share_click' as const, channel, placement }))),
     ];
     for (const event of events) {
       const wire = toWireEvent(event);
@@ -65,11 +66,35 @@ describe('events', () => {
       { name: 'cta_click', mode: 'beta', placement: 'header' },
       { name: 'scene_reached', id: 'https://earlyletters.com/?email=a@b.c' },
       { name: 'scene_reached', id: 42 },
+      { name: 'share_click', channel: 'https://earlyletters.com/', placement: 'start' },
+      { name: 'share_click', channel: 'whatsapp', placement: 'header' },
+      { name: 'share_click', channel: 'whatsapp', placement: undefined },
+      { name: 'share_click', channel: 42, placement: 'thanks' },
       { name: 'signup', email: 'someone@example.com' },
       null,
       undefined,
     ];
     for (const event of bad) expect(toWireEvent(event as unknown as AnalyticsEvent), JSON.stringify(event)).toBeNull();
+  });
+});
+
+describe('share_click', () => {
+  it('sends the channel and the placement only: extra fields such as a link or text never leave', () => {
+    const event = { name: 'share_click', channel: 'copy', placement: 'start', url: 'https://earlyletters.com/', text: 'hello' };
+    expect(toWireEvent(event as unknown as AnalyticsEvent)).toEqual({ name: 'share_click', data: { channel: 'copy', placement: 'start' } });
+  });
+
+  it('is sent straight away, every time, and not at all when analytics is off', () => {
+    const on = harness();
+    on.track({ name: 'share_click', channel: 'whatsapp', placement: 'start' });
+    on.track({ name: 'share_click', channel: 'whatsapp', placement: 'start' });
+    expect(on.sent).toEqual([
+      { name: 'share_click', data: { channel: 'whatsapp', placement: 'start' } },
+      { name: 'share_click', data: { channel: 'whatsapp', placement: 'start' } },
+    ]);
+    const off = harness(false);
+    off.track({ name: 'share_click', channel: 'x', placement: 'thanks' });
+    expect(off.sent).toEqual([]);
   });
 });
 
