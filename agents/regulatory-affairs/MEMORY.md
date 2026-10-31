@@ -20,7 +20,8 @@ Seeded on 31 Oct 2026 when the role was created (CTO ruling CR-26). Nothing belo
 - I report to the council CCO (`early-letters-cco`), who signs fence approvals.
 - 31 Oct CCO review of the fence (CR-27) and PR #424: conditions before the auth hook goes on are in supabase/APPLY.md File 27.
 - Underage runbook does not exist; needed before the AB 1043 1.0.x release (COUNSEL_PACKET Q5).
-- Founder decisions open: IR and CU status (with counsel; Terms 2.4 would change too), Privacy Policy location wording.
+- D-131 (31 Oct): blocked countries KP, IR, CU, SY, RU, BY plus four Ukrainian regions. Still open: name screening (founder with counsel, default none), Privacy Policy location wording.
+- Sign-in is v1.0 (D-100), staged in 1.0.x (D-121); alpha build 2 signs people in (D-128). Not v1.1.
 
 ## Lessons
 - None yet.

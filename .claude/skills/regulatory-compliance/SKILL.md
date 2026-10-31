@@ -26,15 +26,15 @@ If you learn something the register does not say, record it in `references/check
 
 ## 2. The account-creation checks
 
-Accounts arrive in v1.1 (v1.0 is on-device only, decided 15 Oct 2026). Every path that creates a person in our systems must pass these, in this order. The table says where each one is enforced, so a reviewer can check the code, not the prose.
+Sign-in is part of v1.0 (D-100), released in stages: the first store build is on-device only, and the server features follow in later 1.0.x releases (D-121). Alpha build 2 already signs people in (D-128). Every path that creates a person in our systems must pass these, in this order. The table says where each one is enforced, so a reviewer can check the code, not the prose.
 
 | # | Check | Rule | Enforced by | Stored |
 |---|---|---|---|---|
 | 1 | Adults only (18+), neutral question, nothing preselected | D-006, LEGAL-REQ-002, Terms 2.1 | `apps/mobile/src/components/gate/age-gate-screen.tsx` before first run; sign-in agree line (A-REQ-034) | On device: `ageGate.passed` boolean, and `ageGate.stoppedAt` after a No only (D-026). Never a birth date or an age range. |
-| 2 | Store age signal (Apple Declared Age Range) where a state requires it | LEGAL-REQ-002, register CR-004, COUNSEL_PACKET Q5 | The app, in memory only | Nothing. The value is used for the decision and dropped. |
+| 2 | Store age signal (Apple Declared Age Range) where a state requires it | LEGAL-REQ-002, register CR-004, COUNSEL_PACKET Q5 | not yet: no Declared Age Range code on `develop` (31 Oct 2026). The API needs iOS 26 and the app's floor is iOS 17, so older phones give no signal (CCO skill, section 3). | Nothing, when built: used for the decision in memory and dropped. |
 | 3 | Terms and Privacy acceptance, versioned | LEGAL-REQ on policy acceptance, `docs/legal/POLICY_VERSIONING.md` | `public.policy_acceptances`, `record_policy_act` | Version, act, surface, time |
-| 4 | Not in a comprehensively embargoed place | Terms 2.4, register CR-121 | US-only storefront (Apple); the `before user created` auth hook and the web contribution page (later, D-055) | Daily counts only: day, check, outcome, jurisdiction code. Never the IP. |
-| 5 | Not on a US restricted-party list | Terms 2.4 (attestation) | The Terms attestation only. We do not screen names: see `references/sanctions.md` | Nothing beyond the acceptance |
+| 4 | Not in a blocked country (D-131) | Terms 2.4, register CR-121, D-131 | US-only storefront (Apple); the `before user created` auth hook and the web contribution page (later, D-055) | Daily counts only: day, check, outcome, jurisdiction code. Never the IP. |
+| 5 | Not on a US restricted-party list | Terms 2.4 (attestation) | The Terms attestation only. No name screening today: a founder-and-counsel question with a default, see `references/sanctions.md` | Nothing beyond the acceptance |
 | 6 | Under-18 or under-13 actual knowledge (a support report, or a store signal saying minor) | LEGAL-REQ-002 last scenario, COUNSEL_PACKET Q5(d) | not yet: there is no underage runbook in `docs/ops/runbooks/` (checked 31 Oct 2026). Gap owned by `regulatory-affairs` with `ops`. | `ops.audit_log` row, content-free, once the runbook exists |
 
 A new sign-up path (a new identity provider, the web contribution page, an invite flow) is not done until it passes all six. Add it to this table in the same PR.

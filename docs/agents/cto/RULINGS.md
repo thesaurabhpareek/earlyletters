@@ -324,13 +324,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Options considered:
   - (a) Three new agents exactly as asked.
   - (b) Skills for the existing agents, plus only the missing roles (user research; a regulatory-affairs owner for the door checks and the watch).
-  - (c) Do nothing until v1.1 planning.
+  - (c) Do nothing until the server-feature releases are planned.
   - (d) A commercial screening vendor (OpenSanctions or similar) for name screening.
 - Ruling: (b).
   - Reconciled with the executive council (#421, merged the same day): the council's Chief Compliance Officer (`early-letters-cco`) is the CCO; `regulatory-affairs` is its working-level lead, `user-research` works for the CPO, and the `infosec` skill serves the CISO's agents.
   - New: `regulatory-affairs` and `user-research` agents; three skills (`regulatory-compliance`, `infosec`, `user-research`); the existing compliance and security agents read them. Both new agents have `daily_runs: 0`, so they cost nothing on the (frozen, CR-22) lane and are consulted in interactive sessions; raise it after 9 Nov if wanted.
   - Infosec gets no new agent: `security` and `security-architect` own it, and the real gap is that #30 is unmerged. Landing #30 after its D-041 review beats writing a second scanner PR.
-  - Backend: one draft PR for v1.1, not merged before the 9 Nov go/no-go. It adds `ops.restricted_jurisdictions`, IP-to-country ranges from DB-IP Lite (CC BY 4.0), content-free daily check counts, a regulatory-watch log, a `before user created` auth hook (a Postgres function) and a report function. No name screening (d): it would make us collect legal names we never otherwise need, and OFAC asks for a risk-based program (ofac.treasury.gov/faqs/445, read 31 Oct). OpenSanctions is CC BY-NC, so it would cost money anyway.
+  - Backend: one draft PR for the server-feature releases (sign-in is in v1.0 per D-100, staged by D-121; alpha build 2 already signs people in, D-128), not merged before the 9 Nov go/no-go. It adds `ops.restricted_jurisdictions`, IP-to-country ranges from DB-IP Lite (CC BY 4.0), content-free daily check counts, a regulatory-watch log, a `before user created` auth hook (a Postgres function) and a report function. No name screening (d): it would make us collect legal names we never otherwise need, and OFAC asks for a risk-based program (ofac.treasury.gov/faqs/445, read 31 Oct). OpenSanctions is CC BY-NC, so it would cost money anyway.
 - Why: principle 2 (one source of truth) and Little's Law (about 50 PRs already open). Return of (a) over (b): none. Two more charters overlapping six existing ones splits ownership. Risk of (b): low, since it's docs and charters.
 - Debate: an independent challenger reviewed the first draft, and a second independent reviewer reviewed both branches (fixes: lock_timeout so the hook fails open during a geo load, IPv4-mapped addresses, stale decision ids, docs that contradicted code). It found three things, all accepted:
   - Sign-up never touches Vercel, so the block must sit in a Supabase auth hook, not a Vercel header.
@@ -338,5 +338,8 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - The regulatory watch must cover state law, not only the Federal Register. Partly met: the script is federal only, and state law is a monthly manual check (skill `references/checked-facts.md`) until a tracker is wired.
 - Door: two-way. Agents and skills revert with one PR. The migration is unapplied until Saurabh applies it.
 - Way back: revert the PR; remove the two roster entries.
-- Revisit when: the 9 Nov go/no-go is done (the backend PR can move to review), counsel answers the Iran and Cuba question, or v1.1 scope changes.
-- Founder decision, with default: block North Korea, Iran, Cuba and the occupied Ukrainian regions (where data allows) until counsel confirms the general licenses cover a free family app. Then open Iran and Cuba. The default costs nothing today, because accounts ship in v1.1 and the web page later (D-055). Karma
+- Revisit when: the 9 Nov go/no-go is done (the backend PR can move to review), counsel answers the D-131 or name-screening questions, or the staging of server features (D-121) changes.
+- Founder decisions:
+  - Blocked countries: decided by the founder on 31 Oct as D-131 (all sanctioned countries, plus others that expose him to risk). The CCO's list: KP, IR, CU, SY, RU, BY and the four Ukrainian regions.
+  - Name screening: Karma and the CCO recommend none, because it would mean collecting legal names. Accepting that residual risk is his with counsel; the default holds until then.
+- Correction (Review B, 31 Oct): an earlier draft said accounts ship in v1.1. They don't: sign-in is v1.0 (D-100), staged in 1.0.x releases (D-121). The premise came from a stale note, not from DECISIONS.md. Karma

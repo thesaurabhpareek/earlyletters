@@ -16,6 +16,9 @@ Facts checked since `docs/legal/compliance-register.md` was written. One line ea
 | 31 Oct 2026 | DB-IP requires "a link back to DB-IP.com on pages that display or use results". | https://db-ip.com/db/download/ip-to-country-lite | primary |
 | 31 Oct 2026 | California AB 1043 effective date (1 Jan 2027) rests on secondary sources; leginfo did not load. A bill AB 1856, "Age verification signals", appeared in search results; effect unverified. | leginfo.legislature.ca.gov | unverified |
 
+| 31 Oct 2026 | EAR Country Groups: E:1 is Iran, North Korea, Syria; E:2 is Cuba. EAR 746.8 needs a licence for any item with an ECCN to Russia and Belarus; 746.9 for Syria; 746.6 for Crimea, DNR, LNR. eCFR current to 29 Oct 2026. | https://www.ecfr.gov/current/title-15/part-740/appendix-Supplement%20No.%201%20to%20Part%20740 ; https://www.ecfr.gov/current/title-15/section-746.8 ; https://www.ecfr.gov/current/title-15/section-746.9 ; https://www.ecfr.gov/current/title-15/section-746.6 | primary (read by the CCO) |
+| 31 Oct 2026 | OFAC: Syria's State Sponsor of Terrorism designation was rescinded on 24 Aug 2026. | https://ofac.treasury.gov/sanctions-programs-and-country-information | primary (read by the CCO) |
+
 ## Trackers to check monthly (state law)
 - Texas: https://texasdatalaw.com/tracker/sb-2420/
 - California AB 1043: leginfo.legislature.ca.gov (search AB 1043)
