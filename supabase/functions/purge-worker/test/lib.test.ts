@@ -8,7 +8,7 @@ import { BUCKETS, mirrorPrefixes, ownedObjectAction, profilePrefixes, rehomedChi
 import { ServiceError, safeEqual } from '../lib/http.ts';
 import { readConfig } from '../config.ts';
 import { workerCopy } from '../copy.ts';
-import { alertEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail, withoutPlusLine } from '../emails.ts';
+import { alertEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail, withoutPlusLine } from '../emails.ts';
 import { conditionsFromSla } from '../alerts.ts';
 import { appleTestKey, KEK } from './helpers.ts';
 
@@ -103,7 +103,6 @@ Deno.test('every worker email follows the content rules and carries no content',
     deletionCancelledEmail({ reference: ref }),
     deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: false }),
     deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: null }),
-    contributorNoticeEmail({ scheduledFor: '2026-12-05T10:00:00Z' }),
     alertEmail({ conditions: [{ kind: 'request_stuck', count: 2 }], run: 'abcdefabcdef', at: new Date('2026-12-05T10:00:00Z') }),
   ];
   const strings = [...mails.flatMap((m) => [m.subject, m.text]), ...JSON.stringify(workerCopy).split('"')];

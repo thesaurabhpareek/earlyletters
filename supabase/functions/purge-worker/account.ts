@@ -19,7 +19,7 @@ import { makeClientSecret, revokeAppleToken, unwrapAppleToken } from './lib/appl
 import { ServiceError } from './lib/http.ts';
 import { deleteContact, sendEmail } from './lib/resend.ts';
 import { codeOf, type Ctx, flag, isTransient, overBudget, sha256Hex } from './context.ts';
-import { type ComposedEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from './emails.ts';
+import { type ComposedEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from './emails.ts';
 import type { EmailWork, ExecutingRequest, NoticeWork, StepStatus } from './rpc.ts';
 import { purgeAccountStorage } from './storage.ts';
 import type { StepName } from '../_shared/log/log.ts';
@@ -211,6 +211,13 @@ async function revokeApple(ctx: Ctx, uid: string): Promise<StepResult> {
 // Emails around a request: received, cancelled, and the contributor notice.
 // ---------------------------------------------------------------------------
 
+/**
+ * The contributor "save a copy" step (DATA-REQ-014). Its catalogued email, `family-book-closing`, is v1.1
+ * (docs/emails/CATALOG.md; D-055: no contributors at v1.0), so the worker sends no email for it (TPL-05).
+ * In the 1.0 line the database refuses contributor memberships while `contributors_enabled()` is false, so
+ * there are none and the step is not_applicable. If one ever exists, the step is recorded failed with
+ * `config` and the founder alert fires: never silent, and never blocking the deletion.
+ */
 export async function sendNotice(ctx: Ctx, n: NoticeWork, beforePrepare = false): Promise<StepStatus> {
   try {
     const contributors = await ctx.d.contributors(n.request_id);
@@ -218,22 +225,12 @@ export async function sendNotice(ctx: Ctx, n: NoticeWork, beforePrepare = false)
       await ctx.d.recordStep(n.request_id, 'contributor_export_notice', 'not_applicable');
       return 'not_applicable';
     }
-    const mail = contributorNoticeEmail({ scheduledFor: n.scheduled_for });
-    let sent = 0;
-    for (const id of contributors) {
-      const user = await ctx.c.auth.getUser(id);
-      if (!user?.email) continue;
-      await sendEmail(ctx.fetch, ctx.cfg.resendApiKey, {
-        from: ctx.cfg.mailFrom, replyTo: ctx.cfg.replyTo, to: user.email, ...mail,
-        idempotencyKey: `contributor-notice:${await sha256Hex(`${n.request_id}:${id}`)}`,
-      });
-      sent++;
-    }
-    await ctx.d.recordStep(n.request_id, 'contributor_export_notice', 'done');
-    ctx.log.info('emails.sent', { step: 'contributor_export_notice', provider: 'resend', counts: { emails: sent } });
-    return 'done';
+    await ctx.d.recordStep(n.request_id, 'contributor_export_notice', 'failed', 'config');
+    flag(ctx, 'step_failed');
+    ctx.log.warn('emails.failed', { step: 'contributor_export_notice', provider: 'resend', code: 'config' });
+    return 'failed';
   } catch (e) {
-    // Never blocks the deletion: at execution time a last failure is recorded as failed.
+    // The contributor lookup failed. Never blocks the deletion: at execution time it is recorded failed.
     const status: StepStatus = beforePrepare ? 'failed' : 'pending';
     try {
       await ctx.d.recordStep(n.request_id, 'contributor_export_notice', status, codeOf(e));

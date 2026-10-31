@@ -71,6 +71,8 @@ export class FakeWorld {
   appleResponse: { status: number; body?: unknown } = { status: 200 };
   emails: SentEmail[] = [];
   resendStatus = 200;
+  /** An RPC name that answers 503 (a transient database failure). */
+  failRpc: string | null = null;
   contactDeletes: string[] = [];
   /** Every request the worker made: url, method and body text (for the canary scan). */
   traffic: { url: string; method: string; body: string }[] = [];
@@ -148,6 +150,7 @@ export class FakeWorld {
       const fn = path.slice('/rest/v1/rpc/'.length);
       const args = body ? JSON.parse(body) : {};
       this.rpcCalls.push({ fn, args });
+      if (fn === this.failRpc) return json(503, { code: 'PGRST000', message: 'unavailable' });
       try {
         return json(200, this.rpc(fn, args));
       } catch (e) {

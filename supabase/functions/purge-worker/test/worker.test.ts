@@ -317,27 +317,26 @@ Deno.test('request and cancellation receipts use the content package words and a
   }
 });
 
-Deno.test('save-a-copy notices: none without family members, one per member otherwise', async () => {
+Deno.test('[TPL-05] save-a-copy step: not_applicable without family members; no off-catalog email, a failed step and an alert otherwise', async () => {
   const w = new FakeWorld();
   const mk = (id: string) => ({ id, profile_id: CANARY.profileId, status: 'scheduled' as const, requested_at: w.now.toISOString(), scheduled_for: new Date(w.now.getTime() + 30 * DAY).toISOString(), executing_at: '', cancelled_at: null, had_active_subscription: null, receipt: { request_email: 'sent' }, steps: [{ step: 'contributor_export_notice', status: 'pending' as const, attempts: 0, next_attempt_at: new Date(0).toISOString(), last_error_code: null }] });
   w.requests.push(mk('bbbbbbbb-0000-4000-8000-000000000001'), mk('bbbbbbbb-0000-4000-8000-000000000002'));
   w.users.set(CANARY.coParentId, { email: CANARY.coParentEmail, providers: ['email'] });
   w.contributors.set('bbbbbbbb-0000-4000-8000-000000000002', [CANARY.coParentId]);
-  await run(w, testConfig());
+  const { summary } = await run(w, testConfig());
   assert.equal(w.step('bbbbbbbb-0000-4000-8000-000000000001', 'contributor_export_notice')!.status, 'not_applicable');
-  assert.equal(w.step('bbbbbbbb-0000-4000-8000-000000000002', 'contributor_export_notice')!.status, 'done');
-  const notice = w.emails.find((e) => e.to === CANARY.coParentEmail)!;
-  assert.match(notice.text, /Export everything/);
-  assert.ok(notice.idempotencyKey && !notice.idempotencyKey.includes(CANARY.coParentId), 'idempotency key carries a hash, not the id');
+  const step = w.step('bbbbbbbb-0000-4000-8000-000000000002', 'contributor_export_notice')!;
+  assert.equal(step.status, 'failed');
+  assert.equal(step.last_error_code, 'config');
+  assert.ok(!w.emails.some((e) => e.to === CANARY.coParentEmail), 'family-book-closing is v1.1: nothing goes to the member');
+  assert.ok(summary.alerts.conditions >= 1, 'the founder hears about it');
 });
 
-Deno.test('repeated notice failures raise the retry alert after enough attempts', async () => {
+Deno.test('a failed contributor lookup stays pending and raises the retry alert after enough attempts', async () => {
   const w = new FakeWorld();
   w.requests.push({ id: 'cccccccc-0000-4000-8000-000000000001', profile_id: CANARY.profileId, status: 'scheduled', requested_at: w.now.toISOString(), scheduled_for: w.now.toISOString(), executing_at: '', cancelled_at: null, had_active_subscription: null, receipt: { request_email: 'sent' },
     steps: [{ step: 'contributor_export_notice', status: 'pending', attempts: ALERT_AFTER_ATTEMPTS - 1, next_attempt_at: new Date(0).toISOString(), last_error_code: 'http_503' }] });
-  w.users.set(CANARY.coParentId, { email: CANARY.coParentEmail, providers: ['email'] });
-  w.contributors.set('cccccccc-0000-4000-8000-000000000001', [CANARY.coParentId]);
-  w.resendStatus = 503;
+  w.failRpc = 'ops_deletion_contributors';
   const { summary } = await run(w, testConfig());
   assert.equal(summary.alerts.conditions >= 1, true);
   assert.equal(w.step('cccccccc-0000-4000-8000-000000000001', 'contributor_export_notice')!.status, 'pending');

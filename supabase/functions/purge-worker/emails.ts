@@ -8,11 +8,10 @@
  * Content-free by construction: the only values filled in are dates, the request reference (an L2 id)
  * and public links. Never a child's name, a letter or anything from a book.
  *
- * The contributor notice and the founder alert stay plain text (see below).
+ * The founder alert stays plain text (internal, counts only). The contributor notice is not sent (TPL-05,
+ * see sendNotice in account.ts).
  */
 import { brand } from '../../../packages/brand/index.ts';
-import { emailChrome } from '../../../packages/content/src/emails/chrome.en.ts';
-import { emailLegal } from '../../../packages/content/src/emails/legal.en.ts';
 import { longDate, renderForResend, type InlineAttachment } from '../../../packages/emails/generated/resend.ts';
 import { ALERT_RUNBOOK, workerCopy } from './copy.ts';
 import type { AlertKind } from '../_shared/log/log.ts';
@@ -30,26 +29,6 @@ export interface ComposedEmail {
 const fill = (s: string, vars: Record<string, string>): string => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 
 const DAY = 24 * 60 * 60 * 1000;
-
-/** Public links for the worker's own plain-text emails (the library emails take theirs from the generated meta). */
-const base = (): Record<string, string> => ({
-  app: brand.name,
-  email: brand.support.email,
-  appUrl: `${brand.web.universalLinkBase}/open`,
-  helpUrl: `${brand.web.origin}/contact`,
-  privacyUrl: brand.web.privacy,
-});
-
-/** The footer, as packages/emails renders it in plain text (chrome.en.ts, legal.en.ts). */
-const footer = (vars: Record<string, string>): string[] => {
-  const v = { ...vars, whyYouGotThis: emailLegal.whyYouGotThis.transactional };
-  return [
-    '',
-    ...emailChrome.footer.transactional.map((l) => fill(l, v)),
-    ...emailChrome.footer.links.transactional.map((l) => `${l.label}: ${fill(l.urlVar, v)}`),
-    emailChrome.footer.nameLine,
-  ];
-};
 
 /** The Plus line of account-deleted (DATA-REQ-022). It starts this way in account.en.ts. */
 const PLUS = 'If you have Plus';
@@ -89,18 +68,6 @@ export function deletionCompletedEmail(args: { completedAt: string; reference: s
   // DATA-REQ-022: repeat how to cancel with Apple when a subscription was active at request time
   // (unknown counts as active: saying it costs nothing, missing it costs money).
   return args.hadSubscription === false ? withoutPlusLine(mail) : mail;
-}
-
-/**
- * Plain text, off the email catalog (TPL-05, deferred): the catalogued `family-book-closing` needs the
- * requester's display name ({parentName}), which no service function returns. Unreachable in the 1.0 line:
- * the database refuses contributor memberships while `contributors_enabled()` is false, so
- * `ops_deletion_contributors` returns none and the step is recorded not_applicable.
- */
-export function contributorNoticeEmail(args: { scheduledFor: string }): ComposedEmail {
-  const t = workerCopy.contributorNotice;
-  const vars = { ...base(), date: longDate(args.scheduledFor) };
-  return { subject: fill(t.subject, vars), text: [...t.body.map((b) => fill(b, vars)), ...footer(vars)].join('\n') };
 }
 
 export function alertEmail(args: { conditions: { kind: AlertKind; count: number }[]; run: string; at: Date }): ComposedEmail {
