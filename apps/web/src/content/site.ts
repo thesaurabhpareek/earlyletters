@@ -225,10 +225,7 @@ export const site = {
         trialNote: 'to start',
         includes: [
           'Add letters as often as you like',
-          'Every recording safely backed up',
-          'Read together, after the free sessions',
           'One price for every child in the family',
-          'The whole family can add letters',
         ],
       },
       promise: 'Every letter you have made stays yours to read, play and export, whatever you choose.',
