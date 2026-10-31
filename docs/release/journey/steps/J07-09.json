@@ -5,7 +5,6 @@
   "title": "The third letter is held",
   "note": "The third Keep, from Write, opens the Plus sheet instead of saving. The typed words are still on the phone as a draft; nothing was lost. (Plus itself needs a real iPhone: Apple's store view does not exist on web.)",
   "from": "J07-08",
-  "shot": "screens/J07-09.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -22,7 +21,7 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha · The first weeks You waved at the dog. From Mama Waiting Keep adding to Asha's book Your first two letters are kept for good. Plus lets you keep adding letters. This one waits on this phone, on Tonight, exactly as it is, for as long as you like. Plus is not available on this device yet. Keep it here for now",
+  "text": "To Asha · The first weeks You waved at the dog. From Mama Waiting Keep adding to Asha's book Your first two letters are kept for good. Plus lets you keep adding letters. This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like. Plus is not available on this device yet. Keep it here for now",
   "lines": [
     "To Asha · The first weeks",
     "You waved at the dog.",
@@ -30,7 +29,7 @@
     "Waiting",
     "Keep adding to Asha's book",
     "Your first two letters are kept for good. Plus lets you keep adding letters.",
-    "This one waits on this phone, on Tonight, exactly as it is, for as long as you like.",
+    "This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.",
     "Plus is not available on this device yet.",
     "Keep it here for now"
   ]
