@@ -342,7 +342,7 @@ export function AccountGate({
     );
   }
 
-  // ready, with sync off (declined) or unknown (offline at launch)
+  // ready, with sync off (declined) or unknown (the gate could not be read: offline, a server error or the timeout)
   const offline = s.sync === 'unknown';
   const sc = copy.sensitiveConsent;
   if (!offline) {
@@ -354,9 +354,12 @@ export function AccountGate({
       </View>
     );
   }
+  // Signed in, and the gate could not be read at launch for any reason (readGateInOrder: offline, a server error, the
+  // 10 second GATE_TIMEOUT_MS or an empty row), so say the connection, not that the phone is offline. Not
+  // errors.network, which ends "Sign in once you are back online" and so tells a signed-in person to sign in (BL-488).
   return (
     <View className="gap-4">
-      <SheetBody muted>{authCopy.errors.network}</SheetBody>
+      <SheetBody muted>{g.gateOffline}</SheetBody>
       <Button
         size="lg"
         fullWidth

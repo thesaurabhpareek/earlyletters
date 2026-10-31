@@ -1,6 +1,6 @@
 # Brief (f): `plan.ts` gates backup on Plus, against D-111 item 6
 
-Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go) to place the fix in the post-alpha queue. Hard deadline: before any build profile turns backup on.
+Status: open, not decided. Needed by Mon 9 Nov (the go/no-go, D-130) to place the fix in the post-alpha queue. Hard deadline: before any build profile turns backup on.
 Default if unanswered: the gate stays in code. It is not reached in either alpha build, because backup is off, but it would ship the moment backup is turned on.
 Owner of the fix: the build thread (billing path; retro section 5.6).
 

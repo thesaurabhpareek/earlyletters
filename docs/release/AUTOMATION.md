@@ -21,7 +21,7 @@ Agents in this sandbox cannot reach expo.dev, docs.expo.dev, appstoreconnect.app
 
 1. **Agents act as the founder.** Agent sessions use a token for the founder's own account, approval records carry only the user [V-S01: REST `environment-approvals`], and the founder account owns the repository, so it can re-add itself as a reviewer and bypass rulesets [V-S01]. Fix: a second GitHub account that only the founder holds is the sole required reviewer, with "prevent self-review" on and administrator bypass off (AF-02, section 2.0). Until then the rule "agents never approve" is policy.
 2. **Nothing protects `main` or `develop` today** [R: the GitHub API, quoted in #152 section 3.4]. A push to `main` is a website production deploy. Fix: branch protection on both now, with bypass off (AF-03).
-3. **Dispatch and schedules cannot work today.** The default branch is `main` [R], and `main` holds only `ci.yml`, `migration-guard.yml`, `web.yml` and `web-e2e.yml` [R]. GitHub triggers `workflow_dispatch` and `schedule` only for files on the default branch, and on github.com runs `pull_request_target` and `issue_comment` from it [V1]. The Actions API listed none of `testflight.yml`, `deploy-db.yml`, `nightly.yml` or `agents.yml` on 16 Oct [R]; on 28 Oct it lists `deploy-db.yml` (it runs on pushes to `develop`) and still none of the other three [R]. So no nightly runs (B2-22 in `docs/qa/ALPHA_GO_NO_GO.md` on #176) and no schedule can run the 500-kill harness. Fix: make `develop` the default branch (AF-05), after hardening `claude.yml`, which goes live at the switch (section 2.11).
+3. **Dispatch and schedules cannot work today.** The default branch is `main` [R], and `main` holds only `ci.yml`, `migration-guard.yml`, `web.yml` and `web-e2e.yml` [R]. GitHub triggers `workflow_dispatch` and `schedule` only for files on the default branch, and on github.com runs `pull_request_target` and `issue_comment` from it [V1]. The Actions API listed none of `testflight.yml`, `deploy-db.yml`, `nightly.yml` or `agents.yml` on 16 Oct [R]; on 28 Oct it lists `deploy-db.yml` (it runs on pushes to `develop`) and still none of the other three [R]. So no nightly runs (B2-22 in `docs/qa/ALPHA_GO_NO_GO.md` on #176) and no schedule can run the 500-kill harness. Fix: make `develop` the default branch (AF-05), after hardening `claude.yml`, which goes live at the switch (section 2.11). **30 Oct note:** the Actions API listed none of `testflight.yml`, `agents.yml` and `nightly.yml` (HTTP 404 for each file name, read 30 Oct) [R]; after PR #404's first run `testflight.yml` is registered (id 402268598, run skipped, seen 30 Oct) [R], and `agents.yml` and `nightly.yml` are still not. The interim route, until AF-05, is open PR #398 (branch `chore/workflows-to-main`), which would add only `agents.yml` to `main`, byte for byte from `develop` after #403 pinned its actions by commit SHA (it first also carried `testflight.yml`, dropped once #404 made that unnecessary); `docs/release/HARNESS_SETUP.md` section 1 item 3 names the general idea (a small PR with `agents.yml`, `agents-check.yml` and `claude.yml`). `nightly.yml` is not in it: on `main` its `db` job calls `./.github/workflows/db-cli.yml`, which `main` does not have [R], so its schedule cannot run from `main` (how GitHub reports that is [U]) and the nightly (B2-22) needs AF-05. #398 is held until the founder confirms that the repository variable `AGENTS_ENABLED` is not already `true` and creates the GitHub Environment `testflight`. A dispatch runs the file from the branch chosen (`develop`); a schedule runs the copy on `main`, so `agents.yml` (every 30 minutes, idle unless `AGENTS_ENABLED` is `true`) is the one file there that can drift from `develop`, and it has to be copied again after every change to it. `testflight.yml` does not need `main`: a workflow registers with the Actions API after a `pull_request` run (the header of `kill-harness.yml` says so, and that workflow is dispatched on `develop` today by its numeric id), and #404 gives `testflight.yml` a path-filtered `pull_request` trigger for that; a dispatch of it is still untested. Only `agents.yml`'s schedule truly needs the default branch.
 4. **`pull_request_target` is blocked by default in public repositories from Mon 2 Nov 2026** [V34]. The fence in #30 uses it. Fix: an Actions event policy that allows it for `fence.yml` before that date (AF-20).
 5. **The Vercel failure on `develop` PRs is a lineage split.** The project builds every branch with root directory `apps/web`, which exists only on `main`; the build stops at `build-container-init` with `NOW_SANDBOX_WORKER_ROOTDIR_NOT_EXIST` [R: deployment `dpl_3fbe7smLCY5TzbuQHR8zJLvrm98b`]. A `vercel.json` cannot help, because Vercel reads it from the branch it builds [V30]. Fix: merge `main` into `develop` once (RA-20-01), after the alpha; the status is noise until then, never a required check.
 6. **The store journey is automatable through Apple's API except App Privacy** [V12, V16]; fastlane's App Privacy action needs an Apple ID session [V29].
@@ -32,12 +32,12 @@ Agents in this sandbox cannot reach expo.dev, docs.expo.dev, appstoreconnect.app
 
 ### 0.2 The alpha critical path (Thu 29 Oct)
 
-Dates are #152's (section 2.2 there); "window" is the founder's daily merge window. Each row's proof is a row of `docs/qa/ALPHA_GO_NO_GO.md` on #176. Anything not in this table lands after Thu 29. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates now proposed, until the founder confirms, are at the top of `docs/release/TESTFLIGHT.md` and `docs/qa/ALPHA_GO_NO_GO.md`.
+Dates are #152's (section 2.2 there); "window" is the founder's daily merge window. Each row's proof is a row of `docs/qa/ALPHA_GO_NO_GO.md` on #176. Anything not in this table lands after Thu 29. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates now planned are at the top of `docs/release/TESTFLIGHT.md` and `docs/qa/ALPHA_GO_NO_GO.md` (the freeze Tue 3 Nov and the go/no-go Mon 9 Nov were confirmed by the founder on 30 Oct, D-130; build 1's date is still a proposal).
 
 | # | Item | Owner | Date | Proof |
 |---|---|---|---|---|
 | 1 | **iOS compile check**: `.github/workflows/ios-compile.yml` on branch `ci/ios-compile-check` (S20; merged in #188, 23 Oct) compiles the app and every Swift module for the Simulator on `macos-26`, no signing, no secrets [R]. Run it on #145 and on #150's head (the never-compiled `scribe-keys`) before build 1 | S20 | merged by Mon 19; green on #150 before Fri 23 | green run links in S19's evidence index |
-| 2 | Apple enrolment Active (AF-01 = #152 F01) | founder | by Mon 19, latest Fri 23 (past it the alpha moves day for day) | the Account Holder sees App Store Connect |
+| 2 | Apple enrolment Active (AF-01 = #152 F01). **Done 29 Oct 2026**: Active, from the founder's own confirmation emails | founder | by Mon 19, latest Fri 23 (past it the alpha moves day for day); done Thu 29 | the Account Holder sees App Store Connect |
 | 3 | Expo project id (AF-04 = #152 F02) and its PR | founder, S20 | window 1, Fri 16 | B1-1 |
 | 4 | #145 merged (both alpha profiles, preflight, kill path), with the request in RA-20-06a (`environment: testflight`, SHA pins) folded in or deferred | S20, founder | window 1, Fri 16 | B1-1, B1-2 |
 | 5 | Approver account and branch protection (AF-02, AF-03) before any secret lands | founder | Fri 16 to Mon 19 | the environment and branch settings read back by API (RA-20-12 drift job later) |
@@ -403,7 +403,7 @@ The API has no App Privacy resource (the API index and the Apps, App Infos, App 
 
 | # | Step | Minutes | Unblocks | Page |
 |---|---|---|---|---|
-| AF-01 | = #152 F01: Apple enrolment as an individual (two-factor Apple Account, legal name as seller name, 99 USD a year) | 45 + Apple's check | every Apple step, both builds | [V20]; approval time [U] |
+| AF-01 | **Done 29 Oct 2026** (Active, from the founder's own confirmation emails). = #152 F01: Apple enrolment as an individual (two-factor Apple Account, legal name as seller name, 99 USD a year) | 45 + Apple's check | every Apple step, both builds | [V20]; approval time [U] |
 | AF-02 | **Approver account**: a second GitHub account, passkey only, never connected to claude.ai, a connector, a CLI or an agent machine; invite it as a collaborator (Write). It becomes the only reviewer of each environment as you create them (AF-07, AF-22), with prevent self-review on and administrator bypass off | 20 | enforcement of every approval; precondition for every secret | [V2]; menu labels [U] |
 | AF-03 | **Branch protection now** on `develop` and `main` as in 2.1 (require PR, `required` and `applied migrations unchanged`, no force push or deletion, no bypass; `main` also one review by the approver) | 10 | stops direct pushes; gives the `testflight` ref rule meaning | [V7]; `.github/README.md` API call |
 | AF-04 | = #152 F02: Expo account, `eas init`, send the project id | 20 | every EAS build | #145 step 3 |
@@ -512,11 +512,11 @@ RA-01-01, before any secret is added: the approver account and environment setti
 
 ## 6. Order and dependencies
 
-Dates follow #152 section 2.2. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the proposed dates written inline and at the top of `docs/release/TESTFLIGHT.md` stand until the founder confirms.
+Dates follow #152 section 2.2. These dates no longer hold (28 Oct: most have passed, and no build exists yet); the dates written inline and at the top of `docs/release/TESTFLIGHT.md` stand: the freeze Tue 3 Nov and the go/no-go Mon 9 Nov were confirmed by the founder on 30 Oct (D-130), and build 1's date is still a proposal.
 
 ```
 Fri 16  window 1: #145 (with RA-20-06a if ready), the project-id PR. AF-02, AF-03, AF-04
-Mon 19  window 2: RA-20-00 ios-compile, RA-20-02a claude.yml. AF-01 Active (latest Fri 23), AF-06, AF-08, AF-09;
+Mon 19  window 2: RA-20-00 ios-compile, RA-20-02a claude.yml. AF-01 Active (latest Fri 23; done Thu 29), AF-06, AF-08, AF-09;
         RA-16-01 alpha texts, RA-17-04
 Tue 20  window 3: the keys PR. AF-10 build 1 (proposed by the coordinator: Mon 26 Oct, until the founder confirms); AF-11 Beta App Review for Friends
 Wed 21  window 4: RA-20-04 staging, the R-17 batch. AF-05 default branch (latest), AF-07, AF-12, AF-14;
@@ -525,9 +525,9 @@ Thu 22  window 5: RA-20-10a + RA-19-04 + RA-20-18 kill harness, RA-20-19 nightly
         AF-13 seeding and functions; first scheduled nightly; staging stop and functions rehearsals done
 Fri 23  R1: kill-path drill (B2-14), packDownloads drill; ios-compile green on #150
 Mon 26  R-17 sign-off (#152 F21)
-Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (proposed: freeze Tue 3 Nov 5:00 AM PT, which is 13:00 UTC because daylight saving time ends Sun 1 Nov; DECISIONS.md D-089, until the founder confirms)
+Tue 27  freeze 12:00 UTC; 500-kill gate overnight (B2-11); build 2 (freeze Tue 3 Nov, confirmed by the founder on 30 Oct, D-130; 5:00 AM PT, which is 13:00 UTC because daylight saving time ends Sun 1 Nov, is the coordinator's hour; DECISIONS.md D-089 had proposed the move)
 Wed 28  green nightly within 24 h of build 2 (B2-22); TestFlight expiry check
-Thu 29  go/no-go (proposed by the coordinator: Thu 5 Nov, until the founder confirms)
+Thu 29  go/no-go (Mon 9 Nov, confirmed by the founder on 30 Oct, D-130; it was proposed as Thu 5 Nov)
 after   RA-20-01, RA-20-03a/b/c, AF-20 (before Mon 2 Nov), RA-20-05/06/07/08/09/10/11/12, RA-07-*, AF-21 to AF-28
 ```
 

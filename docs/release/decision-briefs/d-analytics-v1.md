@@ -1,6 +1,6 @@
 # Brief (d): analytics in v1.0
 
-Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go), because the privacy label and the counsel packet need one answer.
+Status: open, not decided. Needed by Mon 9 Nov (the go/no-go, D-130), because the privacy label and the counsel packet need one answer.
 Default if unanswered: analytics stays off in every build, because the code already says so. The decision record stays ambiguous, and analytics tasks keep being offered to agents.
 Scope: the mobile app only. The website analytics PR #309 is covered by another memo.
 

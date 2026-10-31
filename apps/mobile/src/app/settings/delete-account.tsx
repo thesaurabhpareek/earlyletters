@@ -47,9 +47,15 @@ import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 
-/** v1.0 has no account (lib/capabilities.ts): Settings offers no row, and a stale route goes back to Settings. */
+/**
+ * v1.0 has no account, and a build without EXPO_PUBLIC_ACCOUNT_DELETION=on (the alpha, founder, 30 Oct 2026) offers no
+ * deletion (lib/capabilities.ts): Settings draws no row, and a stale route goes back to Settings. The open-request
+ * screen (components/settings/open-deletion.tsx) does not pass through here and is not behind this switch: a phone that
+ * lists no book and has an open request still gets the deletion screen with Cancel deletion. A phone that still lists a
+ * book does not, because its Cancel button is on this page.
+ */
 export default function DeleteAccountRoute() {
-  return capabilities.signIn ? <DeleteAccount /> : <Redirect href="/settings" />;
+  return capabilities.accountDeletion ? <DeleteAccount /> : <Redirect href="/settings" />;
 }
 
 /** Try again opens the page afresh (S14's state reloads with it); the first open is the one counted as started. */

@@ -1,6 +1,6 @@
 # Brief (g): record coordinator task #53 as a D-id
 
-Status: open, not decided. Needed by Thu 5 Nov (proposed go/no-go), because go/no-go row B2-7 rests on this rule.
+Status: open, not decided. Needed by Mon 9 Nov (the go/no-go, D-130), because go/no-go row B2-7 rests on this rule.
 Default if unanswered: the rule lives only in the F14 spec, the delivery plan, the board and the go/no-go. `docs/DECISIONS.md` does not mention it.
 Note: "task #53" is a coordinator task number. It is not GitHub #53, which is the counsel question pack PR.
 

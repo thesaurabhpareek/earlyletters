@@ -77,20 +77,22 @@ describe('[S40] Settings home', () => {
   it('keeps the P8 seams: Account, Back up my recordings and Delete account, each behind its capability', () => {
     expect(home).toMatch(/\{capabilities\.signIn \? <ListRow title=\{h\.accountLabel\}/);
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
-    expect(home).toMatch(/\{capabilities\.signIn && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
+    expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
   });
 
-  it('shows Delete account only while signed in, and never with server features off (#358 review)', () => {
+  it('shows Delete account only while signed in, and only in a build with the Delete account switch on (#358 review; founder, 30 Oct 2026)', () => {
     // The row's own condition, read from the screen and run for each case, so a change to it fails here.
     const m = home.match(/\{([^{}?]+)\?\s*\(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
     expect(m, 'the Delete account row and its condition').not.toBeNull();
-    const shown = new Function('capabilities', 'auth', `return Boolean(${m![1]});`) as (c: { signIn: boolean }, a: { signedIn: boolean }) => boolean;
-    expect(shown({ signIn: true }, { signedIn: true })).toBe(true); // signed in: the row
-    expect(shown({ signIn: true }, { signedIn: false })).toBe(false); // signed out: no row
-    expect(shown({ signIn: false }, { signedIn: false })).toBe(false); // server features off: no row
-    expect(shown({ signIn: false }, { signedIn: true })).toBe(false);
+    const shown = new Function('capabilities', 'auth', `return Boolean(${m![1]});`) as (c: { accountDeletion: boolean }, a: { signedIn: boolean }) => boolean;
+    expect(shown({ accountDeletion: true }, { signedIn: true })).toBe(true); // switched on, signed in: the row
+    expect(shown({ accountDeletion: true }, { signedIn: false })).toBe(false); // signed out: no row
+    expect(shown({ accountDeletion: false }, { signedIn: true })).toBe(false); // switch off (the alpha default), even signed in: no row
+    expect(shown({ accountDeletion: false }, { signedIn: false })).toBe(false);
     // `auth` is the session the screen already reads for the Account row.
     expect(home).toMatch(/const auth = useAuth\(\);/);
+    // The row reads the capability itself, which includes the server switch (test/account-deletion-switch.test.ts runs it against the real one).
+    expect(m![1]).toMatch(/capabilities\.accountDeletion/);
   });
 });
 

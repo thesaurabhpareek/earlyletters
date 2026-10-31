@@ -50,6 +50,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
+import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -69,11 +70,11 @@ export interface AuthApi {
   canSync: boolean;
   /**
    * This phone's letters belong to no account yet and the person has not
-   * confirmed this one: show the claim screen (masked email, "Keep them here")
+   * confirmed this one: show the claim screen (masked email, "Keep in this account")
    * before anything syncs (BL-347, F02-REQ-019).
    */
   claimPending: boolean;
-  /** "Keep them here": this phone's letters may now join the signed-in account. */
+  /** "Keep in this account": this phone's letters may now join the signed-in account. */
   keepLettersHere(): void;
   /** "Not my account": ends this session on this phone; nothing was claimed or uploaded. */
   notMyAccount(): Promise<void>;
@@ -186,6 +187,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
   useEffect(() => publishAuth(state), [state]);
+  // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
+  // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
+  // client exists: without one the state is signed out and the row says "Not signed in", as before.
+  useEffect(() => {
+    registerSensitiveDataRow();
+  }, []);
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {

@@ -19,7 +19,8 @@
  * the note is past its date, and nothing is known yet, a moment of paper stands in for the welcome (at most CHECK_CAP_MS).
  *
  * What the server has said belongs to the account that was asked: `answer.for` is that account, and `checked` and
- * `confirmed` count only while the same account is signed in.
+ * `confirmed` count only while the same account is signed in. A read for an earlier account that ends after a later
+ * one was asked does not touch it (askServer's `latestAsked`).
  *
  * Writes happen in effects, never in render: the stale note is removed there, and a timer re-reads the clock when a
  * cancelled wait (CANCELLED_WAIT_MS) or an open note's grace (NOTE_GRACE_MS) runs out, so the screen does not wait for
@@ -54,10 +55,23 @@ const NO_ANSWER: Answer = { for: null, checked: false, confirmed: false };
  * Asks the server whether a request is open, as `askedAs`. The answer is written to the note (recordStatus drops it if
  * another account has signed in meanwhile) whether or not the screen is still up: it is the server's word. A failed or
  * slow read changes nothing but `checked`, and `checked` is set however the write ends, so the paper never stays up.
+ * What the screen is told is another matter: `latestAsked` is the account of the newest ask in this mount (set here, at
+ * the start of each), and a read for any other account says nothing to the screen when it ends. Otherwise a read that
+ * outlives its account would take the answer slot back from the account asked after it, and that account would wait on
+ * paper for good (the with-book read has no cleanup at all).
  * Returns what to undo if the effect is torn down before the answer: the cap timer.
  */
-function askServer(client: DeletionClient, askedAs: string, setAnswer: (update: (a: Answer) => Answer) => void): () => void {
-  const say = (p: Partial<Answer>) => setAnswer((a) => ({ ...(a.for === askedAs ? a : { for: askedAs, checked: false, confirmed: false }), ...p }));
+function askServer(
+  client: DeletionClient,
+  askedAs: string,
+  setAnswer: (update: (a: Answer) => Answer) => void,
+  latestAsked: { current: string | null },
+): () => void {
+  latestAsked.current = askedAs;
+  const say = (p: Partial<Answer>) => {
+    if (latestAsked.current !== askedAs) return;
+    setAnswer((a) => ({ ...(a.for === askedAs ? a : { for: askedAs, checked: false, confirmed: false }), ...p }));
+  };
   const cap = setTimeout(() => say({ checked: true }), CHECK_CAP_MS);
   void loadStatus(client).then((s) => {
     clearTimeout(cap);
@@ -84,6 +98,8 @@ export function useFirstRunGate(): FirstRunGate {
   const wasDeletion = useRef(false);
   /** The account for which the with-book read has run in this mount. */
   const refreshedFor = useRef<string | null>(null);
+  /** The account of the newest read asked in this mount (either effect); the answer of an earlier account's read is dropped. */
+  const latestAsked = useRef<string | null>(null);
 
   // The account signed in: the session's own user, known during checkingConsent too (currentAuthUserId() is null then).
   // It is also who a read is asked as, read at render time: the auth store's snapshot is published by the provider's
@@ -103,7 +119,7 @@ export function useFirstRunGate(): FirstRunGate {
   // Signed in, no book: ask the server whether a request is open. Again for another account.
   useEffect(() => {
     if (!client || hasBook || !userId) return;
-    return askServer(client, userId, setAnswer);
+    return askServer(client, userId, setAnswer, latestAsked);
   }, [client, hasBook, userId]);
 
   // Signed in, a book listed, an open request still noted: ask once. Not undone with the effect (a book arriving, the
@@ -112,7 +128,7 @@ export function useFirstRunGate(): FirstRunGate {
   useEffect(() => {
     if (!client || !refreshWithBook || !userId || refreshedFor.current === userId) return;
     refreshedFor.current = userId;
-    askServer(client, userId, setAnswer);
+    askServer(client, userId, setAnswer, latestAsked);
   }, [client, refreshWithBook, userId]);
 
   // The book is back: a cancelled wait is over.

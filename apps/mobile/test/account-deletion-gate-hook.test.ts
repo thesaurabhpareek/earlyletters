@@ -73,6 +73,7 @@ vi.mock('../src/lib/account-deletion/note-store', async (orig) => {
   };
 });
 
+import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 import { CHECK_CAP_MS, useFirstRunGate } from '../src/lib/account-deletion/use-first-run-gate';
 import { CANCELLED_WAIT_MS, NOTE_GRACE_MS, OPEN_REQUEST_KEY, parseOpenRequest, type OpenRequest } from '../src/lib/account-deletion/open-request';
 import { renderHook } from './helpers/mini-react';
@@ -102,6 +103,11 @@ const signIn = (userId: string | null, publish = true) => {
 let reads: Array<(r: unknown) => void> = [];
 const answer = async (i: number, value: unknown) => {
   reads[i]({ ok: true, value });
+  await vi.advanceTimersByTimeAsync(0);
+};
+/** A read that ends without an answer (offline, or the server failed). */
+const fail = async (i: number) => {
+  reads[i]({ ok: false, reason: 'offline' });
   await vi.advanceTimersByTimeAsync(0);
 };
 const open = { state: 'scheduled' as const, requestId: 'req-1', scheduledFor: WHEN };
@@ -342,6 +348,124 @@ describe('[A4] what the server said belongs to the account that was asked', () =
   });
 });
 
+describe('[BL-496] a late answer from an earlier account is not the next account\'s', () => {
+  const lateEnds: Array<[string, (i: number) => Promise<void>]> = [
+    ['an open request', (i) => answer(i, open)],
+    ['none', (i) => answer(i, none)],
+    ['a failure (offline)', (i) => fail(i)],
+  ];
+
+  it.each(lateEnds)('Mama\'s read stalls, Papa signs in on the same mount and is told none, then Mama\'s read ends with %s: Papa still has the welcome, and keeps it', async (_name, end) => {
+    h.closedBook = true; // a closed book is still local: signed in with no book, so an unanswered read means paper
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking');
+    signIn(PAPA);
+    run.rerender();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await end(0); // Mama's read ends, after Papa's answer
+    expect(run.result.current.screen).toBe('welcome'); // Papa's `checked` is still true
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS * 2);
+    expect(run.result.current.screen).toBe('welcome'); // and nothing brings the paper back
+    expect(note()).toBeNull(); // her open request is not written as his note
+    run.unmount();
+  });
+
+  it('the with-book read has no cleanup of its own: Mama\'s ends late, after Papa (whose book is gone) was told none, and Papa still has the welcome', async () => {
+    h.books = [ASHA];
+    put(mine(MAMA));
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the with-book read
+    h.books = [];
+    h.closedBook = true;
+    signIn(PAPA);
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2); // Papa has no book: his own read
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await answer(0, none);
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('the with-book read\'s cap stays armed (no cleanup) and Mama\'s read never answers: her cap going off does not take the slot from Papa, who was told none', async () => {
+    h.books = [ASHA];
+    put(mine(MAMA));
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the with-book read, which stalls for good
+    h.books = [];
+    h.closedBook = true; // Papa's closed book is local
+    signIn(PAPA);
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS * 2); // Mama's cap goes off in here; the effect that made it was never torn down
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('Mama\'s read ending before Papa\'s says nothing about Papa: the paper stays for his own answer, and his answer is taken', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    signIn(PAPA);
+    run.rerender();
+    await answer(0, none);
+    expect(run.result.current.screen).toBe('checking');
+    await answer(1, none);
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+
+  it('what Mama\'s read confirmed is not Papa\'s: her open request does not make his past-date note count when his own read runs out of time', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion'); // confirmed, for Mama
+    signIn(PAPA);
+    run.rerender();
+    put(mine(PAPA, { scheduledFor: new Date(NOW_MS - NOTE_GRACE_MS - 1000).toISOString() })); // as in [A4], a note of his past its date
+    run.rerender();
+    expect(run.result.current.screen).toBe('checking'); // his own answer is awaited
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS); // it never comes: the cap ends the wait, saying only `checked`
+    expect(run.result.current.screen).toBe('welcome'); // `confirmed` was Mama's, not inherited
+    expect(note()).toBeNull();
+    run.unmount();
+  });
+});
+
+describe('[BL-496] a read that is torn down takes its cap with it', () => {
+  it('a book appears and goes while Mama is asked: the read made after it gets its own CHECK_CAP_MS, not what was left of the first', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking'); // read 1, cap due at 3000 ms
+    await vi.advanceTimersByTimeAsync(2000);
+    h.books = [ASHA]; // a pull lists a book: read 1 is torn down
+    notify();
+    expect(run.result.current.screen).toBe('app');
+    await vi.advanceTimersByTimeAsync(500);
+    h.books = []; // and it is gone again (2500 ms): read 2, cap due at 5500 ms
+    notify();
+    expect(h.loadStatus).toHaveBeenCalledTimes(2);
+    expect(run.result.current.screen).toBe('checking');
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS - 1); // 5499 ms: read 1's cap, if it had been left, went off at 3000
+    expect(run.result.current.screen).toBe('checking');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+});
+
 describe('[A5] the paper never stays up', () => {
   it('a local write that throws still ends the wait', async () => {
     h.closedBook = true;
@@ -425,5 +549,56 @@ describe('the answer of the server is taken as it is', () => {
     const again = renderHook(() => useFirstRunGate());
     expect(h.bookBackCalls).toBe(0);
     again.unmount();
+  });
+});
+
+// Protection against the gate being put behind the Delete account switch, with the source-grep test in account-deletion-switch.test.ts.
+// A phone that lists a book is out of scope on purpose: its Cancel button is on the hidden Delete account page (lib/capabilities.ts).
+describe('the gate does not read the Delete account switch (founder, 30 Oct 2026): no book and an open request still gets the deletion screen', () => {
+  afterEach(() => {
+    setServerFeaturesForTests(null);
+    setBuildFlagForTests('accountDeletion', null);
+  });
+
+  it('switch off, servers on (alpha build 2 as the freeze leaves it): no book and an open request is the deletion screen, the server\'s answer keeps it, and a returning book still leaves for the Book', async () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('accountDeletion', false);
+    expect(capabilities.accountDeletion).toBe(false);
+    signIn(MAMA);
+    put(mine(MAMA));
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('deletion');
+    expect(run.result.current.request).toMatchObject({ state: 'scheduled', requestId: 'req-1' });
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // it still asks the server, in the background
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion');
+    expect(note()).toMatchObject({ state: 'scheduled', userId: MAMA });
+    h.books = [ASHA]; // cancelled on another phone: the book comes back by a plain sync
+    notify();
+    expect(h.replace).toHaveBeenCalledWith('/book');
+    run.unmount();
+  });
+
+  it('switch off, a phone that learns of the open request only from the server (a sign-in on another phone): the deletion screen, not the welcome', async () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('accountDeletion', false);
+    h.closedBook = true;
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking');
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion');
+    expect(note()).toMatchObject({ state: 'scheduled', userId: MAMA });
+    run.unmount();
+  });
+
+  it('servers off and the switch off (alpha build 1): a note on the phone still gets its deletion screen, with nothing asked of a server', () => {
+    setServerFeaturesForTests(false);
+    setBuildFlagForTests('accountDeletion', false);
+    put({ state: 'cancelled', at: NOW, userId: MAMA });
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('deletion');
+    expect(h.loadStatus).not.toHaveBeenCalled();
+    run.unmount();
   });
 });

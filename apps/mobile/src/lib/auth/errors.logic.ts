@@ -13,6 +13,12 @@ import type { AuthErrorKind } from './machine.logic';
 
 export type AuthErrorContext = 'code' | 'link' | 'provider' | 'send' | 'passkey';
 
+/** The error carries an HTTP status of 500 or more: a server answered. Status 0 (a failed fetch) or none is not one. */
+function isServerError(e: unknown): boolean {
+  const status = errorStatus(e);
+  return status !== null && status >= 500;
+}
+
 export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorKind {
   if (e && typeof e === 'object') {
     const x = e as { error?: unknown };
@@ -24,7 +30,11 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
   const code = errorCode(e);
   // expo-apple-authentication: the person closed the Apple sheet.
   if (code === 'ERR_REQUEST_CANCELED') return 'cancelled';
-  if (isNetworkError(e)) return 'network';
+  // "Network" is a request that never got an answer. @supabase/auth-js also throws AuthRetryableFetchError for a
+  // 500 to 504 or a 520 to 530 it did get (status carried on the error, node_modules/@supabase/auth-js/src/lib/fetch.ts);
+  // for a failed fetch the status is 0. A person who is online and met a server error must not be told to come back
+  // online (BL-488): a status of 500 or more falls through to the provider or unknown words ("That did not work this time").
+  if (isNetworkError(e) && !isServerError(e)) return 'network';
   switch (code) {
     case 'otp_expired':
       // Supabase says "expired or invalid" for both; a typed code is most often a typo.
