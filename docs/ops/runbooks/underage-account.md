@@ -8,7 +8,7 @@ Early Letters is for adults 18 and over (D-006, Terms 2.1). Use this runbook whe
 Promise being kept (Privacy Policy, COPPA paragraph; LEGAL-REQ-002):
 - **Under 13:** we delete the account within 10 days of learning.
 - **13 to 17:** we close the account and, where the law allows, offer an export first.
-- **In both cases:** the inviter or co-parent is told neutrally.
+- **Under 13:** the inviter is told neutrally (LEGAL-REQ-002). We do the same for 13 to 17, as a matter of practice.
 
 Engineering reading, confirm with counsel. Owner: `regulatory-affairs` with `ops`; the Chief Compliance Officer (council role) reviews changes to this file.
 
@@ -21,7 +21,7 @@ Engineering reading, confirm with counsel. Owner: `regulatory-affairs` with `ops
 ## 1. Record the report (same day)
 Write one audit row before anything else. All SQL runs in Dashboard > SQL Editor as `postgres`.
 - Under 13: runbook `under_13`, which exists in `ops.audit_log`.
-- 13 to 17: runbook `deletion` with reason `under_18_closure`. There is no `under_18` runbook value yet; see section 5.
+- 13 to 17: runbook `deletion` with reason `under_18_closure`. There is no `under_18` runbook value yet; see the gaps table.
 
 ```sql
 select public.ops_audit_write('<your handle>', 'under_13', 'actual_knowledge', '<ticket>', '<profile id>');
@@ -41,7 +41,7 @@ If one exists, stop and take it to the founder. A hold wins over deletion (DATA-
 2. Where the law allows, offer an export first: the person can export from Settings before the account closes.
 3. Then open the account deletion (step 4).
 
-**Under 13:** open the account deletion (step 4) without the export offer. The 30-day grace is skipped when counsel requires it (DATA-REQ-027).
+**Under 13:** open the account deletion (step 4). Terms 2.1 offers an export to anyone under 18 "where the law allows"; whether to offer it to an under-13 is counsel's call (gaps table), so until counsel answers, ask the founder before offering it. The 30-day grace is skipped when counsel requires it (DATA-REQ-027).
 
 **4. Open the deletion: not yet possible from support.**
 - DATA-REQ-027 says support uses "the same functions under the service role with `source='support'`".
@@ -67,3 +67,4 @@ If one exists, stop and take it to the founder. A hold wins over deletion (DATA-
 | Neutral notice macro | `support` | Before the first non-family tester |
 | Store age signal (Declared Age Range; iOS 26 only, floor iOS 17) | `mobile` | The 1.0.x before 1 Jan 2027 (COUNSEL_PACKET Q5) |
 | Whether a store minor signal after a Yes is actual knowledge | counsel, through the CLO | COUNSEL_PACKET Q5(d) |
+| Whether an under-13 gets the export Terms 2.1 offers, and when the 30-day grace is skipped | counsel, through the CLO | Add to COUNSEL_PACKET before the first non-family tester |
