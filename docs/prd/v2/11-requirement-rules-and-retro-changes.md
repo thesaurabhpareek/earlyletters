@@ -198,7 +198,7 @@ Rulings are the coordinator's, on the founder's delegation. The founder may reve
 | Rule | Verdict | Change |
 |---|---|---|
 | RR-6 entry paths, RR-8 stand-ins, RR-9 no collisions, RR-11 freshness (no gate), RR-12 security by construction, RR-13 unknowns | Accepted | None |
-| RR-1, RR-4 | Accepted with change | New or changed rows only. No mass demotion of P0 rows before the 5 Nov go/no-go. The 50% P0 target stays a founder call |
+| RR-1, RR-4 | Accepted with change | New or changed rows only. No mass demotion of P0 rows before the go/no-go (Mon 9 Nov, D-130; was Thu 5 Nov). The 50% P0 target stays a founder call |
 | RR-2 | Accepted with change | After `scripts/trace.mjs` reads sub-IDs such as 029a (its ID pattern on line 33 reads three digits only) |
 | RR-3 | Accepted with change | A ratchet: fails only on P0 rows added or changed after a committed baseline of today's counts |
 | RR-5 | Accepted with change | Rows for F14, F16 and F08 first |
@@ -211,14 +211,14 @@ Rulings are the coordinator's, on the founder's delegation. The founder may reve
 | F14-REQ-037 table cells | Accepted, waits | On D-104 item 3, now closed (D-125 item 1) |
 | F14-REQ-NEW-A | Accepted with change | Needs a real number, not a placeholder |
 
-This week only docs, the parser fix as its own branch, and the C-NFR-005 duplicate-ID fix. No new blocking check before 5 Nov.
+This week only docs, the parser fix as its own branch, and the C-NFR-005 duplicate-ID fix. No new blocking check before the go/no-go (Mon 9 Nov, D-130; was 5 Nov).
 
 ### 8.2 Open decisions in section 6
 
 | # | Ruling | Where recorded |
 |---|---|---|
 | 1 | The first store build is on-device only and staged; submit Tue 1 Dec 2026, release about Tue 8 Dec; full scope later in 1.0.x stages | D-121 |
-| 2 | Freeze Tue 3 Nov and go/no-go Thu 5 Nov confirmed | D-124 |
+| 2 | Freeze Tue 3 Nov confirmed; go/no-go Mon 9 Nov (D-130 supersedes D-124's Thu 5 Nov) | D-124, D-130 |
 | 3 | DR-19 option A; D-104 item 3 closed | D-125 |
 | 4 | D-099 stands; the cap takes effect when co-parent sharing first ships | D-124 |
 | 5 | D-095 stands for the whole 1.0 line; F18 moves to v1.1 or later | D-124 |

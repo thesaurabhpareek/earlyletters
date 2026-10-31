@@ -117,3 +117,19 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |
+
+## Internal terms, and what a parent sees instead (CR-25, 31 Oct 2026)
+
+Two vocabularies, one door, one direction. Code, schema, test names and spec section 12 keep the internal term on the left, because those names hold the guarantees (renaming `raw_transcript` to something soft would invite an edit to it). Anything a parent can read uses the term on the right: app, store, website, email, help, the export README and the printed book. Spec sections that describe what a parent sees use the right-hand term too. `test/rules.test.ts` blocks the left-hand words in parent-facing copy. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are not changed here.
+
+| Internal term | What a parent sees | Notes |
+|---|---|---|
+| `raw_transcript`, raw text | "Exactly what you said"; setting "Exactly as said" | Immutable. Never renamed. |
+| `EditType`, edit, `verifyEdits` | small fix, marked and undoable | No parent word for the check itself. |
+| take | recording | "Take your time" and "this can take a minute" are the verb and stay. |
+| entry | letter (long) or note (short) | The export file `data/entries.json` is a format contract (D-096) and keeps its name. |
+| draft | "Waiting to be kept." | A recording whose words are not kept yet. |
+| held letter, Keep gate | "Waiting to be kept."; the action is Keep; the plan is Plus | The gate is never named in copy. |
+| language pack, speech pack, text-rules pack | language; Settings > Languages and speech; "download" for the act | "Speech models" may stay where the file itself is meant. |
+| chapter | month | Already in the table above. |
+| `scribe` | nothing | The codename lives in repo, packages and bundle id only. |

@@ -167,8 +167,6 @@ const PROFILE_VARIABLES = [
  * leaves it unset, which reads as off (lib/capabilities.ts; pinned per profile in capabilities.test.ts).
  */
 const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY'] as const;
-/** D-121 item 1 (D-124 item 1 lets it land before the freeze): the first store build is English only too. */
-const ENGLISH_ONLY_PROFILES: readonly string[] = ['preview', 'testflight', 'production'];
 const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
 
 /**
@@ -234,8 +232,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       it(`${name}: names only the build switches, writes each one out, and keeps project values in EAS`, () => {
         const env = eas.build[name].env ?? {};
         const alpha = ALPHA_PROFILES.includes(name);
-        const englishOnly = ENGLISH_ONLY_PROFILES.includes(name);
-        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(alpha ? ALPHA_ONLY_VARIABLES : NON_ALPHA_ONLY_VARIABLES), ...(englishOnly && !alpha ? ALPHA_ONLY_VARIABLES : [])].sort());
+        // D-121: production (the staged 1.0 store build) is English only too, and still shows Delete account.
+        const englishOnly = alpha || name === 'production';
+        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(englishOnly ? ALPHA_ONLY_VARIABLES : []), ...(alpha ? [] : NON_ALPHA_ONLY_VARIABLES)].sort());
         expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(englishOnly ? 'on' : undefined);
         expect(env.EXPO_PUBLIC_ACCOUNT_DELETION, name).toBe(alpha ? undefined : 'on');
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();

@@ -753,9 +753,9 @@ export const en = {
       orphansOne: "1 recording on this phone is not part of a letter yet. It stays on this phone.",
       orphansMany: "{count} recordings on this phone are not part of a letter yet. They stay on this phone.",
       // D-085: a take a kill cut off that would not open is kept, never dropped. Counts as a plain sentence.
-      unplayableTitle: "Takes that may not play",
-      unplayableOne: "This take may not play. Export keeps the file.",
-      unplayableMany: "{count} takes may not play. Export keeps the files.",
+      unplayableTitle: "Recordings that may not play",
+      unplayableOne: "This recording may not play. Export keeps the file.",
+      unplayableMany: "{count} recordings may not play. Export keeps the files.",
     },
     export: {
       title: "Export",
@@ -1152,7 +1152,7 @@ export const en = {
     privacyLabel: "Privacy",
     // Language packs and speech files, downloaded only when needed (D-065).
     storageLabel: "Storage",
-    storageHelp: "Language packs and space on this phone.",
+    storageHelp: "Languages and space on this phone.",
     recordingsLabel: "Recordings",
     appearanceLabel: "Appearance",
     deleteAccountLabel: "Delete account",

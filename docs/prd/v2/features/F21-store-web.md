@@ -236,6 +236,13 @@ Re-check: each row is closed with a link to the merged change, and the live rows
 
 Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
+Decisions that change the first store build (recorded 31 Oct 2026; the rows themselves are unchanged):
+- [D] D-121: the first store build is on-device only (server features, backup, status report and analytics off, English only, Plus on), target submission Tue 1 Dec 2026. Its listing and screenshots stop promising seven languages and co-parent sharing, and the Notes for Review say the build carries dormant server code (App Review 2.5.19, read by the coordinator on 28 Oct). F21-REQ-013's legal pages describe that build; the server features follow in 1.0.x stages.
+- [D] D-125 item 9: the App Store subtitle and listing do not use "exactly as you said it" until counsel clears it at T30; they use "in your own voice" and "see every change" (`04-market.md`). The in-app headline stays in the alpha.
+- [D] D-126: while server features are off, the store build hides the Family tab, the Settings row and the invite entry points; if that change is not ready, the Notes for Review describe the existing screens.
+- [D] D-125 item 6: the production App Store Connect record waits for the founder's individual or entity call, due Fri 13 Nov 2026.
+- D-118 (founder, 27 Oct) lets `apps/web/src/content/site.ts` name the founder's child. It proposes, and does not make, the matching change to F21-REQ-017; that row stands as written until the founder or its owner changes it (open conflict in the daily PRD update).
+
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
 | F21-REQ-001 | P0 | App name from `brand.storeName` | Given ASC, Then the name equals `Early Letters: Memory Book` (26 of 30) | Built (`packages/brand/index.ts`; not yet in ASC) | D-076 |

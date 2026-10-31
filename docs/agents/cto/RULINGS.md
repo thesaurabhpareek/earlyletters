@@ -227,7 +227,7 @@ Every ruling the delegated CTO makes on a question that would otherwise go to th
 Proxy note for every session (30 Oct): the agent proxy refuses repository settings writes from Claude sessions (`Repository settings writes are not permitted through this proxy`, HTTP 403 on `PATCH /repos/...`), and the environments and variables APIs. Settings rulings are therefore run by Saurabh with `scripts/release/apply-branch-settings.sh` from his own computer. The proxy also refuses tag pushes (HTTP 403 on `refs/tags/...`, seen 30 Oct), so CR-14's archive tags, and therefore the cleanup, also run from Saurabh's computer.
 
 ### CR-16 to CR-18 (31 Oct 2026, Karma via readiness session)
-- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session.
+- Recorded in Project doc `infra/cto-rulings-2026-10-31-karma.md` (English-only production profile #413, the D-126 correction, no staging or escrow projects this week). They land in this file through that session. CR-25 (naming: product terms and internal terms, one direction) is in the same doc.
 ### CR-19 Post-mortem: how a recommendation that breaks GitHub's Terms reached Saurabh (31 Oct 2026, Karma via retro session)
 - Question: Why did I recommend, on 30 Oct, that Saurabh create a second GitHub account to approve PRs, when GitHub's Terms allow one free account per person plus one machine account used only for automation?
 - Tier and type: T1 (my own process); complicated.
@@ -272,7 +272,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - (c) The industry-standard route: automation acts as a non-owner identity, and the human approves as himself. Here that means the one machine account GitHub allows, added with Write, with Claude sessions connected to GitHub through it. Saurabh then approves on `main` from his own account.
   - (d) Move the repo into a free organisation (AF-27). That alone changes nothing about who authors PRs.
 - Ruling:
-  - Now, through the go/no-go (Mon 9 Nov): (a). Approvals stay at 0, and I say so plainly: there is no human approval gate today, on `develop` or on `main`. The only thing GitHub enforces is the two required checks. D-107/D-117's two counted reviews are a written rule, not a control: the same account that merges posts them, and nothing stops a merge without them until (b) exists.
+  - Now, through the go/no-go (Mon 9 Nov): (a). Approvals stay at 0, and I say so plainly: there is no human approval gate today, on `develop` or on `main`. Once Saurabh runs the settings script (`docs/release/FOUNDER_QUEUE.md` row 7), the only thing GitHub enforces is the two required checks. Until then even that isn't true: on 31 Oct `develop` had no protection and `main` only the Copilot review ruleset (no deletion, no force push, no required PR or check; `GET /repos/thesaurabhpareek/earlyletters/rules/branches/main`, and classic protection returns 404). Corrected 31 Oct after a fact-check; the first version read as if protection were already on. D-107/D-117's two counted reviews are a written rule, not a control: the same account that merges posts them, and nothing stops a merge without them until (b) exists.
   - The live site: the coordinator may merge into `main` under D-107/D-117, as now. I'm not making Saurabh the only `main` merger, because it spends his hours on every site PR during the freeze. Be clear about what that costs: Vercel's Instant Rollback can put back an earlier production deploy (vercel.com/docs/instant-rollback, read 31 Oct; on the Hobby plan only the immediately previous one, and I haven't confirmed which plan the project is on), which fixes a broken site, but it does not unpublish what people already saw, and D-118's accepted risks say the repository is public and site content is "effectively permanent once deployed". Nothing independent of the merging session tells him a `main` merge happened; the session's own report to him is not an independent signal. Whether Vercel or GitHub can notify him of every production deploy is unverified; I'll check it before 9 Nov and add it to his queue only if it works with no setup risk.
   - After the go/no-go: build (b), as a T2 `.github/**` PR with two independent reviews. It turns D-107/D-117 from prose into a check, and needs nothing from Saurabh.
   - (c) is his decision and is held, not asked, until after the go/no-go (see below).
@@ -284,3 +284,103 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way. Nothing is applied by this ruling.
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
+
+### CR-25 Naming: two vocabularies, one door, one direction (31 Oct 2026, Karma via naming session)
+
+- Tier: T1, two-way. (I first filed this as CR-21 and then CR-22; both numbers were taken by the harness freeze ruling, which is CR-22 here.)
+- Decision: product names are what a parent already says (letter, note, recording, the red circle, Tonight, Keep, Read together, Word for word, small fix, Plus). Internal names say what the system guarantees (`raw_transcript`, `EditType`, `verifyEdits`, take, draft, pack, ADTS) and stay blunt on purpose. The glossary in `packages/content/BRAND.md` is the only door between them, and traffic goes one way: internal terms stay in code, schema, test names and spec section 12; a parent reads only the right-hand column.
+- Why: renaming `raw_transcript` to a soft word invites the next agent to treat it as editable. The constitution lives in those names. Meanwhile "take" and "language packs" were showing to parents, against the glossary.
+- Applied in the same PR: the three "take" strings and the two "pack" strings in `packages/content`, an internal-terms table in BRAND.md, a banned-term test in `rules.test.ts`, and one line in CLAUDE.md. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are untouched. The codename `scribe` stays in repo, packages, Supabase projects and the bundle id.
+- Not changed, on purpose: legal pages (may say "transcript"; the founder merges legal text), the export file `data/entries.json` (format contract, D-096), store keywords, and PRD specs outside section 12 (a lint of the 21 specs is a follow-up, not a freeze task).
+- Door: two-way. Way back: revert the PR.
+- Revisit when: a banned-term test blocks a legitimate string twice.
+
+### CR-22 The harness freeze runs to the go/no-go; a research team works inside it (31 Oct 2026, Karma via retro session)
+- Question: The founder adopted the freeze "until the 5 Nov go/no-go" (28 Oct), D-130 moved the go/no-go to Mon 9 Nov, and on 31 Oct he asked for "3 agent engineering expert team to work on harness part". Does the freeze end on 5 Nov, and can the team work during it?
+- Tier and type: T1 for the timing, but it is my reading of a founder decision ("until the 5 Nov go/no-go"), so he can overrule it in one line. The team's research spends shared usage that the build thread also needs; it stays capped at three agents and no PRs.
+- Options considered: (a) end the freeze on 5 Nov as written; (b) tie it to the go/no-go, so 9 Nov; (c) (b), with the team doing research and prototypes only, no PRs and no review load.
+- Ruling: (c). The freeze existed to protect the go/no-go and the build thread's share of usage, so it follows the go/no-go. The team's work sits on branch `wip/harness-free-route` (reports, lane design, eval, and my summary in `docs/agents/harness-team/SUMMARY.md`). It gets a PR and two lens reviews after 9 Nov. Nothing runs, and nothing is bought (D-127).
+- Why: the freeze's own reasons (`infra/harness-architecture-review-2026-10-28.md`, risks 1 and 2); D-130. What the team found: GitHub Models was retired on 30 Jul 2026 (github.blog changelog, read 31 Oct). OpenRouter's free models give 50 requests a day with nothing bought (openrouter.ai/docs/api-reference/limits, read 31 Oct), which is enough for one narrow lane, not for the 24-agent design. Two risks go with that route, and both are founder-only: whether OpenRouter signup asks for a card is unverified (D-127 rules out a card), and the strongest free models come from providers whose terms say they train on prompts. Opening the account and accepting those terms are his, asked once after the go/no-go with the terms quoted.
+- Door: two-way.
+- Way back: the founder can end the freeze or stop the team in one line.
+- Revisit when: Mon 9 Nov.
+
+### CR-23 The live site drops three Plus lines the founder's decisions contradict (31 Oct 2026, Karma via retro session)
+- Question: The site on `main` listed backup, Read together after the free sessions, and the whole family adding letters as Plus features. Does fixing that need the founder, since what the site promises is his call?
+- Tier and type: T1; clear.
+- Ruling: NOT A QUESTION. His decisions already settled the facts (D-111 item 6 and D-104 item 2: backup is free; D-083: Read together is free; D-055 and D-099: two parents only), and `docs/reviews/2026-10-claims-inventory.md` rows M6 to M8 mark the lines false. Removing them adds no promise. Merged as #417 after two counted reviews and green CI; production deploy `dpl_5T3b4aW7rU8PUAxzeqRdemJbRzNn` is READY. Anything new to say about Plus, and the claim "exactly as you said it", stay his and counsel's (D-125, CR-21).
+- Found and left with their owners (the claims inventory and its keeper; the live wording has changed since the inventory was taken, so not every line has its own row):
+  - "only the people you invite" and "You and Mama add to the same book", against the v1.0 sharing scope;
+  - "Your letters stay on your phone" (`apps/web/src/content/site.ts:73`, inventory row M1): false for `preview`, because letter text syncs once signed in (D-100);
+  - `plan.ts` gates `backup_upload` on Plus, against D-111 (app code; not touched during the freeze).
+- Door: two-way.
+- Way back: revert #417.
+- Revisit when: the founder or counsel changes what Plus contains.
+
+### CR-24 The machine-account route stays held: Vercel Hobby might not deploy a non-owner's commits (31 Oct 2026, Karma via retro session)
+- Question: The founder approved the CR-20 plan on 31 Oct ("Yes approve all", then "I approve but work with CTO for all implementation"). Do we move Claude sessions onto the one machine account now?
+- Tier and type: T3 for the account itself (his); T1 for the timing.
+- Ruling: not yet. Vercel's own guide says that on Hobby "only the account owner can trigger deployments, and contributors who aren't the owner cannot deploy" (vercel.com/kb/guide/commits-not-triggering-deployments, read 31 Oct). The guide states the commit-author check for private repositories; ours is public, and whether the same applies is unverified. If it does, site deploys from machine-account commits would stop, and the fix Vercel offers is a paid Pro team (D-127). After the go/no-go I run one probe, and it can't be a preview branch: Vercel previews are off for this project (D-111), so a preview commit would deploy nothing either way. The probe is a throwaway public repository and a throwaway Hobby Vercel project, both his, with one commit by the machine account. That touches nothing live. The alternative, a machine-authored merge to `main` with a rollback ready, risks the live site, so I won't use it. This replaces the preview-branch probe named in CR-20. The founder gets one question only if the route works for free, or if Pro is the only route and worth paying for.
+- Also checked (CR-20 follow-up): Vercel notifications are on all plans, web and email are on by default, and there are "Deployment Promotions" notifications for the deployment owner (vercel.com/docs/notifications, read 31 Oct). Whether a git-push production deploy counts as a promotion is unverified. GitHub doesn't notify a user of their own actions, and session merges are his actions, so GitHub is no independent signal.
+- The founder's 31 Oct instruction stands for all of this: Karma leads implementation, and the other executives advise through it (`docs/agents/exec/COUNCIL.md` once merged).
+- Door: two-way.
+- Way back: none needed; nothing changed.
+- Revisit when: Tue 10 Nov, after the probe.
+
+### CR-26 Compliance, infosec and user-research "employees", and the account-creation checks (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked for regulatory-compliance, infosec and user-research experts as agents with deep skills, checks at account creation for people under 18 and people on a sanctions list, open-source data sources, and audit and reporting tables. How much of that is new work, and what is his to decide?
+- Tier and type: T1 for the agents and skills; T2 for the backend (migration, auth hook); T3 for which places we block. Complicated.
+- What already existed (read on `develop`, 31 Oct): six agents in this space (`legal`, `compliance-engineer`, `privacy`, `security`, `security-architect`, `red-team`); the 18+ gate (D-006, D-026, LEGAL-REQ-002, `age-gate-screen.tsx`); Terms 2.4 (embargo and restricted-party attestation); `audit_events`, `ops.audit_log`, `policy_acceptances`, the deletion SLA report; CI scanning in open PR #30 (gitleaks, Dependabot, audit gate), held for D-041. No user-research agent, no regulatory watch, no sanctions control in code, no underage runbook.
+- Options considered:
+  - (a) Three new agents exactly as asked.
+  - (b) Skills for the existing agents, plus only the missing roles (user research; a regulatory-affairs owner for the door checks and the watch).
+  - (c) Do nothing until the server-feature releases are planned.
+  - (d) A commercial screening vendor (OpenSanctions or similar) for name screening.
+- Ruling: (b).
+  - Reconciled with the executive council (#421, merged the same day): the council's Chief Compliance Officer (`early-letters-cco`) is the CCO; `regulatory-affairs` is its working-level lead, `user-research` works for the CPO, and the `infosec` skill serves the CISO's agents.
+  - New: `regulatory-affairs` and `user-research` agents; three skills (`regulatory-compliance`, `infosec`, `user-research`); the existing compliance and security agents read them. Both new agents have `daily_runs: 0`, so they cost nothing on the (frozen, CR-22) lane and are consulted in interactive sessions; raise it after 9 Nov if wanted.
+  - Infosec gets no new agent: `security` and `security-architect` own it, and the real gap is that #30 is unmerged. Landing #30 after its D-041 review beats writing a second scanner PR.
+  - Backend: one draft PR for the server-feature releases (sign-in is in v1.0 per D-100, staged by D-121; alpha build 2 already signs people in, D-128), not merged before the 9 Nov go/no-go. It adds `ops.restricted_jurisdictions`, IP-to-country ranges from DB-IP Lite (CC BY 4.0), content-free daily check counts, a regulatory-watch log, a `before user created` auth hook (a Postgres function) and a report function. No name screening (d): it would make us collect legal names we never otherwise need, and OFAC asks for a risk-based program (ofac.treasury.gov/faqs/445, read 31 Oct). OpenSanctions is CC BY-NC, so it would cost money anyway.
+- Why: principle 2 (one source of truth) and Little's Law (about 50 PRs already open). Return of (a) over (b): none. Two more charters overlapping six existing ones splits ownership. Risk of (b): low, since it's docs and charters.
+- Debate: an independent challenger reviewed the first draft, and a second independent reviewer reviewed both branches (fixes: lock_timeout so the hook fails open during a geo load, IPv4-mapped addresses, stale decision ids, docs that contradicted code). It found three things, all accepted:
+  - Sign-up never touches Vercel, so the block must sit in a Supabase auth hook, not a Vercel header.
+  - Iran General License D-2, and possibly a Cuban equivalent, may authorize free internet communications, so blocking Iran and Cuba could shut out overseas grandparents once the web contribution page ships (D-055, which superseded D-002). That is a founder and counsel question.
+  - The regulatory watch must cover state law, not only the Federal Register. Partly met: the script is federal only, and state law is a monthly manual check (skill `references/checked-facts.md`) until a tracker is wired.
+- Door: two-way. Agents and skills revert with one PR. The migration is unapplied until Saurabh applies it.
+- Way back: revert the PR; remove the two roster entries.
+- Revisit when: the 9 Nov go/no-go is done (the backend PR can move to review), counsel answers the D-131 or name-screening questions, or the staging of server features (D-121) changes.
+- Founder decisions:
+  - Blocked countries: decided by the founder on 31 Oct as D-131 (all sanctioned countries, plus others that expose him to risk). The CCO's list: KP, IR, CU, SY, RU, BY and the four Ukrainian regions.
+  - Name screening: Karma and the CCO recommend none, because it would mean collecting legal names. Accepting that residual risk is his with counsel; the default holds until then.
+- Correction (Review B, 31 Oct): an earlier draft said accounts ship in v1.1. They don't: sign-in is v1.0 (D-100), staged in 1.0.x releases (D-121). The premise came from a stale note, not from DECISIONS.md. Karma
+
+### CR-27 Compliance code is fenced, and the Chief Compliance Officer co-signs (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked that compliance code live in its own folder, that nobody else can touch or break it, that only assigned engineer agents work on it through the harness with my approval, and that decisions be aligned with a chief compliance officer.
+- Tier and type: T2 (`.github/**`, a new required-check candidate); complicated.
+- Options considered:
+  - (a) A folder plus a line in CODEOWNERS. It enforces nothing while every session is his account (CR-20).
+  - (b) Rules in prompts and charters only. A wish, not a control (principle 1).
+  - (c) A CI check that reads its rules from the base commit and fails a PR touching compliance paths unless the right label and head-bound approvals are on it.
+  - (d) A guard inside the harness dispatcher. It covers agent runs only, not interactive sessions, and the harness is frozen until 9 Nov (CR-22).
+- Ruling: (c), plus the prose rule in OPERATING_MODEL section 8 and CODEOWNERS for the human owner.
+  - `compliance/` holds the fence (`FENCE.json`, `fence/`) and, after #424, the scripts.
+  - Code that tools need elsewhere (migrations, DB tests, skills, the workflow) is protected by name and, for `supabase/`, by what its diff mentions.
+  - Two tiers. Protected: assigned agents (`regulatory-affairs`, `compliance-engineer`, `security-architect`, `data-architect`) plus CCO (citing `CCO-<n>`) and Karma (citing `CR-<n>`) approvals on the head, from the owner's login only. The `infosec` skill is the CISO's and stays outside this fence (COUNCIL section 2.4). CCO review: the age gate and consent SQL, any owning agent, CCO approval on the head.
+  - The CCO is the executive council's Chief Compliance Officer (`early-letters-cco`, #421), with `regulatory-affairs` (CR-26) doing the working-level review. It is a Claude role, not counsel, and legal judgments still go to counsel.
+- Why: a check that reads its rules from the base cannot be loosened by the PR it judges. Approvals bound to the head SHA go stale on every push. The CCO tier came from the CCO's own review, so `mobile` keeps ownership of the age gate.
+- Debate (CCO alignment review, 31 Oct): concurred with changes, all accepted.
+  - The bootstrap path now runs only on a 404, and any other API error fails.
+  - `scripts/compliance/` and `docs/compliance/` are protected.
+  - Migrations are caught by content markers, and a migration with no diff from GitHub fails closed.
+  - The workflow header was fixed.
+  - The CCO-review tier was added, and two checklist items: a test for each door path, and DB-IP attribution.
+  - The CCO declined to fence `docs/legal/**`, which `legal` owns.
+- Second review round (lenses A and B), all accepted: GitHub takes `pull_request_target` workflows from the default branch since 8 Dec 2025 (github.blog changelog 2025-11-07), so the workflow must also reach `main` before it runs or can be required; `edited` re-runs on a base change; markers ignore case; bots cannot approve; CCO approvals cite `CCO-<n>`; the infosec skill left the fence.
+- Limits, said plainly:
+  - Runs only once the workflow is on `main`, and advisory until `compliance-fence` is a required check. `develop` has no protection today.
+  - The label and approvals prove the procedure ran, not who ran it (CR-20).
+  - The first merge cannot be checked by the fence itself; Karma merges it under D-132 after two counted reviews.
+- Door: two-way.
+- Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
+- Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
+- Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
