@@ -1,6 +1,6 @@
 # App Store listing and Notes for Review: the staged first build (proposal for counsel)
 
-Status: **Proposal, 28 Oct 2026.** Not approved by counsel, not applied to `packages/content/src/store.en.ts`, and `docs/store/app-store.md` (the full-scope listing) is unchanged. Written for D-121 (PR #340): the first store build is on-device only, with server features, backup, status report and analytics off, English only, Plus on. Counsel and Apple sign-off are not delegated; every claim below carries the question that gates it.
+Status: **Proposal, 28 Oct 2026; applied 31 Oct 2026** to `packages/content/src/store.en.ts` and the generated `docs/store/app-store.md` (comms validation LNG-33, the co-parent conflict), with the language review's fixes on top: "the baby memory book" descriptor (LNG-36's glossary rule), "We only fix small slips" (LNG-18), no "Notes and letters" section since v1.0 makes no notes (LNG-02), no "Hello." opener and "Terms of Service:" (LNG-34), screenshot 6 "Private by default". Still not approved by counsel: every claim below keeps the question that gates it, and the founder or counsel may reverse the application. Written for D-121 (PR #340): the first store build is on-device only, with server features, backup, status report and analytics off, English only, Plus on. Counsel and Apple sign-off are not delegated; every claim below carries the question that gates it.
 
 How this was made: from `docs/store/app-store.md`, `packages/content/src/store.en.ts`, the code on `develop` (28 Oct) and Apple's App Review Guidelines page (opened 28 Oct 2026; the fetch read the first 100,000 of 121,490 characters). Labels: [F] read in the repo or on Apple's page, [A] assumption, [Counsel] waits on a licensed attorney.
 
@@ -139,4 +139,4 @@ Q1 (individual publisher, D-125 item 6), Q5 (age assurance; AB 1043 from 1 Jan 2
 
 ## 9. Not done
 
-`store.en.ts`, the generated `app-store.md`, screenshots and the App Store Connect fields are not changed. Applying this is a content PR after counsel answers, and the keyword and description lengths must be re-checked by the generator script and the content rules test.
+Applied to `store.en.ts` and the generated `app-store.md` on 31 Oct 2026 (see Status); lengths are checked by the generator script and the content rules test. Still open: screenshots regenerated from build 1, the App Store Connect fields themselves, counsel's answers, and the template in `scripts/brand/store-listing.ts`, whose header and review-notes lines still describe the full scope (the generated file was patched by hand after the run; a rerun reverts those lines until the script is updated).

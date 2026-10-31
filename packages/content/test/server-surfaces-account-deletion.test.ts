@@ -41,7 +41,7 @@ const CHANGED: Record<string, string> = {
   'scheduled.emailNote': 'A confirmation is on its way to your email.',
   notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
   'errors.offline': 'Nothing has changed. Deleting an account needs a connection.',
-  'errors.failed': 'That did not work this time. Nothing has changed.',
+  'errors.failed': 'That did not go through. Nothing has changed.',
 };
 
 /** Held for counsel (C8): today's words stay on the key the page reads; S64's words wait beside them. */

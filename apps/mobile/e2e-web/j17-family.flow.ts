@@ -12,9 +12,8 @@ test('[J17] switch off: co-parent sharing is coming soon (the kill path)', async
   await app.getByText('Family', { exact: true }).last().click();
   await expect(app.getByText('Write to Asha, together')).toBeVisible();
   await step('happy', 'Family tab: coming soon', 'The tab keeps its place and describes what is coming (one book, two voices; each from their own phone; private to the family) with a promise that every letter stays on this phone until then. With server features off there is no invite flow (J21 is the same app with them on).');
-  await btn(app, /Tell me when it/).click();
-  await expect(app.getByText('Noted on this phone. When the update arrives, you will see it here.')).toBeVisible();
-  await step('happy', 'Tell me when it\'s here', 'The one action stores a local "tell me" flag and says only what is true: "Noted on this phone. When the update arrives, you will see it here." Nothing is sent to us except a count of the tap. (The card on Tonight that fulfils the second sentence ships with co-parent sharing in v1.1.)');
+  // SET-08: no "Tell me when it's here" until the arrival card that keeps its promise ships with sharing.
+  await expect(btn(app, /Tell me when it/)).toHaveCount(0);
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByRole('button', { name: 'Settings' }).click();
   await app.getByText('Asha', { exact: true }).first().click();

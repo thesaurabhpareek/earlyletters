@@ -30,6 +30,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 24 | `20261023050000_consent_grants_tightening.sql` | **Pending** | The consent tables' grants match their row security (section "File 24") |
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
+| 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -911,7 +912,7 @@ What it changes:
 - **Consent records.** `service_role` loses INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on `policy_acceptances` and `subscription_consents`, and keeps SELECT. The row guards let a delete through while `app.retention_purge` is on, which any session can set, so before this file the service key could delete every consent record. Every writer is a definer function and keeps working. Support-assisted acts (step 8.3) are recorded from the SQL Editor, as before.
 - **A former member's letters stay theirs.** When a book is purged (day 30 after the remaining parent deletes it, or with that parent's account), the letters, held drafts and recording backups of anyone who is no longer a member (they left, their join was undone, or they were removed) stay, with their book key, per-book terms and Storage objects. Everything of the current members goes as before. The `children` row stays, tombstoned, with `purged_at` set and only the name and dates kept, until nothing of theirs is left; then `purge_due` removes it as it removes any book. A book with no former member's rows is purged exactly as before. `purge_due` answers two more keys (`books_kept`, `kept_removed`) and `prepare_account_purge` one (`books_kept`); the purge worker reads only the keys it already knew.
 - **Undo** (`undo_parent_join`) no longer deletes the removed parent's held drafts on the server, and an author reads their own held drafts in any book.
-- **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`.
+- **`invite_redeem_by_code`** does not exist yet; `access_matrix` fails if it is ever created executable by PUBLIC, anon or authenticated, or not executable by `service_role`. File 27 (`20261028010000`) creates it.
 
 **After a database restore** (RB-8, `docs/ops/runbooks/restore-drill.md` Part 2): if the restore point is before an account purge that kept a book for a former member, the replay brings the book back live with the deleted person still its only parent, so deleting their Auth user again fails with `SCLPG` (Auth reports a database error). Nothing is lost and it heals once the restored account request runs: it is `executing` again (or, with a restore point before it started, a past-due `scheduled` request that `purge_due` hands to the worker the same way), and the worker's next run keeps the book for the former member and then deletes the user (`former_member_purge` section 5; during a restore the jobs are paused, so the runbook has the operator start that run).
 
@@ -1170,3 +1171,14 @@ commit;
 ```
 
 The migration history row stays, so `db push` never runs this file again. To apply the change again afterwards, run the file's SQL by hand in the SQL Editor (it is idempotent and works on the rolled-back state).
+
+## File 27: invite_redeem_by_code, the call behind a typed invite code (27 Oct 2026, stream S02)
+
+`20261028010000_invite_redeem_by_code.sql`. Before this file the `invite-redeem` Edge Function called an RPC that no migration created (review B N8 on #138 deferred it), so every typed code answered 503 `unavailable`. Links were not affected (`accept_child_invite` and `peek_invite` are separate).
+
+What it adds:
+- **`public.invite_redeem_by_code(p_user, p_mode, p_code_hash, p_user_subjects, p_device_subjects, p_ip_subjects)`**, executable by `service_role` only. In one transaction it locks each subject hash, checks the limits (10 failures an hour per person, 10 per device, 30 per address, 1,000 for the whole service), looks the code up and, for a wrong, used, expired, revoked or closed code, writes the failure before the answer leaves. Mode `peek` returns the inviter's sign-off and the role (and `joined` while the caller is a member); mode `accept` runs `accept_child_invite_by_code` and returns the book and role. A full book (`SCCAP`) and missing consent (`SCCON`) come back as `refused` and are not counted. Contract: `packages/api/src/server/family.ts`.
+- **`public.invite_redeem_failures`**: hashed subjects and times only, no link to a profile, closed to every role; rows older than 2 hours are deleted as new failures are written.
+- Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
+
+**Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.

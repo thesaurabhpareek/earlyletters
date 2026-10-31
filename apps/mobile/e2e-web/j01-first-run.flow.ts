@@ -86,7 +86,7 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await step('unhappy', 'A due date too far ahead', 'A due date can be at most 305 days away, the same range the phone picker offers.');
   await dateInput(app, 'Due date').fill(dayOffset(60));
   await expect(btn(app, 'Continue')).toBeEnabled();
-  await app.getByText('Birthday', { exact: true }).first().click();
+  await app.getByText('Born', { exact: true }).first().click(); // SET-04: the option is "Born"; "Birthday" is only above the date
 
   await app.getByRole('button', { name: /Add another child/ }).click();
   await expect(btn(app, 'Continue')).toBeDisabled();

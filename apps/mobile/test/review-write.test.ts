@@ -227,8 +227,11 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
     expect(land).not.toMatch(/router\.back\(\)/);
   });
 
-  it('5.8 row 5b: the first-letter sign-in sheet rises over the Book after the landing, never in place of Review', () => {
-    expect(review).toMatch(/offerSignIn\.current = firstLetter && auth\.configured && auth\.state\.status === 'signedOut'/);
+  // SET-01 (docs/reviews/2026-10-31/setup.md): this test used to pin the sheet to the first letter, which encoded the
+  // bug (DR-12 B puts Keep the book on the second letter or session 2). The order is now lib/asks, test/next-ask.test.ts.
+  it('5.8 row 5b: the Keep the book sheet rises over the Book after the landing, never in place of Review, when lib/asks says so', () => {
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/if \(askAfterLanding\.current === 'keep_book'\) \{/);
     expect(review).toMatch(/setTimeout\(\(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'first_letter' \} \}\), signInAfterLandingMs\(motion\.reduced\)\)/);
     expect(review).not.toMatch(/router\.replace\(\{ pathname: '\/sign-in'/);
   });
@@ -283,7 +286,7 @@ describe('S17: Review reads as a letter', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
     expect(footer.indexOf('{r.saveFailed}')).toBeGreaterThan(-1);
     expect(footer.indexOf('{r.saveFailed}')).toBeLessThan(footer.indexOf('savePrimaryLabel('));
-    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    expect(en.review.saveFailed).toBe('That did not save. Your words are still here.');
     // Said aloud too (iOS VoiceOver ignores live regions).
     expect(review).toMatch(/useEffect\(\(\) => \{\s*if \(saveFailed\) announce\(r\.saveFailed\);\s*\}, \[saveFailed, r\.saveFailed\]\);/);
   });
