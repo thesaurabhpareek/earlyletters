@@ -62,6 +62,8 @@ export const en = {
   },
 
   onboarding: {
+    // SET-05: said where a step needs the child and no name is typed yet (onboarding.tsx used to type it).
+    childFallback: "your child",
     welcome: {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
@@ -95,6 +97,10 @@ export const en = {
       nameLabelMore: "Another child's name",
       // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
       namePlaceholder: "First name, or a nickname",
+      // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
+      // date field. No {child}: with twins the step has more than one name.
+      bornQuestion: "Here yet, or on the way?",
+      bornLabel: "Born",
       birthdayLabel: "Birthday",
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before the birth go in Before You.",
@@ -321,8 +327,8 @@ export const en = {
       button: "Go to the book",
     },
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
-    // The words are safe first, then what happened (VOICE).
-    saveFailed: "Your words are still here. That did not work this time.",
+    // What happened, then where the words are (LNG-05).
+    saveFailed: "That did not save. Your words are still here.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -599,7 +605,7 @@ export const en = {
       cardBody: "{signsAs} wrote to {child}. Would you like it in the book?",
       addButton: "Add to the book",
       keepAsideButton: "Keep it aside",
-      keepAsideHelp: "It stays safe, just outside the book. {signsAs} will not be told.",
+      keepAsideHelp: "It stays just outside the book. {signsAs} will not be told.",
       thankButton: "Send a thank you",
       thankMessage: "Your letter is in {child}'s book. Thank you, {signsAs}.",
       addedToast: "{signsAs}'s letter is in the book.",

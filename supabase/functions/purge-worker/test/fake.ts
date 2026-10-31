@@ -31,6 +31,8 @@ export interface SentEmail {
   to: string;
   subject: string;
   text: string;
+  html?: string;
+  attachments?: { filename: string; content: string; content_type: string; content_id: string }[];
   idempotencyKey: string | null;
 }
 
@@ -130,7 +132,7 @@ export class FakeWorld {
       if (this.resendStatus !== 200) return json(this.resendStatus, { name: 'error', message: 'fake failure for asha.parent@example.invalid' });
       const b = JSON.parse(body);
       const headers = new Headers(init.headers);
-      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, idempotencyKey: headers.get('Idempotency-Key') });
+      this.emails.push({ from: b.from, to: b.to[0], subject: b.subject, text: b.text, html: b.html, attachments: b.attachments, idempotencyKey: headers.get('Idempotency-Key') });
       return json(200, { id: 'email-1' });
     }
     if (input.startsWith('https://api.resend.com/contacts/')) {

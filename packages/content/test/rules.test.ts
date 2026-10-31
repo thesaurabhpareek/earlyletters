@@ -578,10 +578,22 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders([...leaves(storeListing, 'store'), ...onboardingStories.map((c) => ({ path: c.id, text: `${c.headline} ${c.line}` }))], FAMILY)).toEqual([]);
   });
 
-  it('names the seven v1.0 languages in the store listing (D-056)', () => {
-    for (const lang of ['English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic', 'Portuguese']) {
-      expect(storeListing.description, lang).toContain(lang);
+  it('names only the languages the first store build ships (D-121 item 1 English only; supersedes D-056 for the listing)', () => {
+    // Each other language returns to the listing in the release that passes its gate (D-125 item 2).
+    expect(storeListing.description).toContain('English');
+    const text = [storeListing.description, storeListing.promotionalText, storeListing.keywords, storeListing.whatsNewV1].join(' ');
+    for (const lang of ['Hindi', 'Spanish', 'Mandarin', 'French', 'Arabic', 'Portuguese', 'bilingual']) {
+      expect(text.toLowerCase(), lang).not.toContain(lang.toLowerCase());
     }
+  });
+
+  it('promises no co-parent sharing, sign-in or invitation in the first store build (D-121, D-126)', () => {
+    const SHARING = /\b(co-parent|invite[sd]?|sign[- ]in|sync(s|ed)?|write it together|write together)\b/i;
+    expect(offenders(leaves(storeListing, 'store'), SHARING)).toEqual([]);
+  });
+
+  it('holds "exactly as you said it" out of the listing until counsel clears it (D-125 item 9)', () => {
+    expect(offenders(leaves(storeListing, 'store'), /exactly as you said/i)).toEqual([]);
   });
 
   it('points the store listing at the live legal pages (D-063)', () => {

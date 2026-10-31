@@ -8,7 +8,7 @@ import { BUCKETS, mirrorPrefixes, ownedObjectAction, profilePrefixes, rehomedChi
 import { ServiceError, safeEqual } from '../lib/http.ts';
 import { readConfig } from '../config.ts';
 import { workerCopy } from '../copy.ts';
-import { alertEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from '../emails.ts';
+import { alertEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail, withoutPlusLine } from '../emails.ts';
 import { conditionsFromSla } from '../alerts.ts';
 import { appleTestKey, KEK } from './helpers.ts';
 
@@ -120,5 +120,40 @@ Deno.test('every worker email follows the content rules and carries no content',
   assert.ok(/If you have Plus[^\n]*Subscriptions/.test(mails[3].text), 'billing line when unknown');
   assert.ok(/If you have Plus/.test(mails[0].text), 'billing line on the scheduled receipt');
   assert.ok(mails.slice(0, 4).every((m) => m.text.includes(ref)));
-  assert.match(mails[0].text, /December 5, 2026/);
+  assert.match(mails[0].text, /Saturday, December 5, 2026/, 'dates carry the weekday (D-028, TPL-08)');
+});
+
+// TPL-02: the three deletion receipts come from packages/emails (generated/resend.ts): HTML with the inline
+// logo, the plain-text twin and the two logo attachments; no placeholder left in any part.
+Deno.test('[TPL-02] deletion emails carry HTML, the plain-text twin and the inline logo', () => {
+  const ref = '3c0ffee0-0000-4000-8000-000000000001';
+  const mails = [
+    deletionRequestedEmail({ scheduledFor: '2026-12-05T10:00:00Z', reference: ref }),
+    deletionCancelledEmail({ reference: ref }),
+    deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: null }),
+  ];
+  for (const m of mails) {
+    assert.ok(m.html && m.html.includes(ref), 'HTML part with the reference');
+    assert.match(m.html!, /src="cid:el-logo-light"/);
+    assert.match(m.html!, /src="cid:el-logo-dark"/);
+    assert.deepEqual(m.attachments!.map((a) => a.content_id).sort(), ['el-logo-dark', 'el-logo-light']);
+    assert.doesNotMatch(m.subject + m.text + m.html, /\{[a-zA-Z]\w*\}/, 'no unfilled placeholder');
+    assert.doesNotMatch(m.html!, /<img[^>]+src="https?:/, 'nothing loads from a server');
+  }
+  assert.match(mails[0].html!, /Saturday, December 5, 2026/);
+});
+
+Deno.test('[DATA-REQ-022] the Plus line leaves both parts when there was no subscription, and only then', () => {
+  const ref = '3c0ffee0-0000-4000-8000-000000000001';
+  const none = deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: false });
+  const had = deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: true });
+  assert.doesNotMatch(none.text + none.html, /If you have Plus/);
+  assert.match(had.html!, /If you have Plus[^<]*Subscriptions/);
+  assert.match(had.text, /If you have Plus[^\n]*Subscriptions/);
+  // Exactly one paragraph went: the rest of the email is the same.
+  assert.equal((had.html!.match(/<p\b/g) ?? []).length - (none.html!.match(/<p\b/g) ?? []).length, 1);
+  assert.equal(none.text, had.text.replace(/If you have Plus[^\n]*\n\n/, ''));
+  // When the line cannot be found exactly once in each part, nothing is removed.
+  const odd = { subject: 's', text: 'If you have Plus, a.\n\nIf you have Plus, b.\n\n', html: '<p>If you have Plus, a.</p>' };
+  assert.deepEqual(withoutPlusLine(odd), odd);
 });

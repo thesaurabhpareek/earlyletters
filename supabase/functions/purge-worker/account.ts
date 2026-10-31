@@ -19,7 +19,7 @@ import { makeClientSecret, revokeAppleToken, unwrapAppleToken } from './lib/appl
 import { ServiceError } from './lib/http.ts';
 import { deleteContact, sendEmail } from './lib/resend.ts';
 import { codeOf, type Ctx, flag, isTransient, overBudget, sha256Hex } from './context.ts';
-import { contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from './emails.ts';
+import { type ComposedEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from './emails.ts';
 import type { EmailWork, ExecutingRequest, NoticeWork, StepStatus } from './rpc.ts';
 import { purgeAccountStorage } from './storage.ts';
 import type { StepName } from '../_shared/log/log.ts';
@@ -258,7 +258,7 @@ async function sendLifecycleEmail(
   ctx: Ctx,
   w: EmailWork,
   step: Extract<StepName, 'request_email' | 'cancel_email'>,
-  compose: () => { subject: string; text: string },
+  compose: () => ComposedEmail,
   idempotencyKey: string,
 ): Promise<void> {
   try {

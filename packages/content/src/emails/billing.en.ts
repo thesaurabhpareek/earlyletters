@@ -1,6 +1,6 @@
 /**
  * Plus billing and subscription emails (lane C2). Catalog: docs/emails/CATALOG.md section 7.
- * Schedule and windows: docs/DECISIONS.md D-022. Facts: docs/legal/subscription-terms.md 1.3.0.
+ * Schedule and windows: docs/DECISIONS.md D-022. Facts: docs/legal/subscription-terms.md (current version; SUB-13).
  *
  * Trigger (D-080, founder, 3 Oct 2026): the app reports subscription STATUS ONLY to our server (plan,
  * trial end date, renewal date, cancelled flag), when a purchase or trial completes in the app and on each
@@ -9,7 +9,8 @@
  * these emails go only to the payer (legal review LGL-12). A cancellation made in iOS Settings is seen
  * only when the app next opens, so every reminder carries ALREADY_CANCELLED.
  *
- * Every notice states: the plan, the price and billing period, the renewal or trial-end date,
+ * Every notice states (COMPLIANCE.md 5.2; SUB-03, tested in packages/emails/test/billing-notices.test.ts): the plan,
+ * the price and billing period, the renewal or trial-end date,
  * the cancel-by date where it matters, that it renews automatically until cancelled, the cancel
  * steps in words plus {manageUrl}, and that letters and recordings stay free to read, play and
  * export. No offers, no countdowns, no "are you sure". Dates, never "in 3 days".
@@ -28,8 +29,8 @@
  *   {accessEndDate}        last day Plus works after renewal is turned off or Plus ends
  *   {effectiveDate}        date a price change takes effect
  *   {oldPrice} {newPrice}  current and new localized prices
- *   {manageUrl}            https://earlyletters.com/cancel, our page explaining how to cancel with Apple
- *                          (COMPLIANCE.md 11; web route still to build)
+ *   {manageUrl}            https://apps.apple.com/account/subscriptions, Apple's own page (TPL-03, TPL-06). Our
+ *                          explainer at earlyletters.com/cancel (COMPLIANCE.md 11) is still to build; switch then.
  *
  * Dates in subjects are rendered without the weekday ("December 3"), so filled subjects stay within
  * 45 characters (content review CNT-15). Bodies keep the full date.
@@ -100,7 +101,7 @@ export const billingEmails = {
     preheader: "A copy of your plan, the price and how to cancel, for your records.",
     heading: "Plus is on. Thank you.",
     body: [
-      "Thank you for choosing Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
+      "This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
       "Your plan: {planName}, {price} {billingPeriod}, charged by Apple to your Apple Account.",
       PLUS_INCLUDES,
       "Plus renews automatically at {price} {billingPeriod} until you cancel. Your next renewal is on {renewalDate}.",
@@ -178,7 +179,7 @@ export const billingEmails = {
   'trial-ending-final': {
     id: 'trial-ending-final',
     subject: "Before your trial ends on {trialEndDate}",
-    preheader: "Unless you cancel by {cancelByDate}, Plus renews at {price} on {trialEndDate}.",
+    preheader: "Cancel by {cancelByDate} to avoid the charge, or Plus renews at {price}.",
     heading: "Your trial ends on {trialEndDate}",
     body: [
       "Your free trial of {planName} ends on {trialEndDate}. This is our last reminder before then.",
@@ -281,7 +282,7 @@ export const billingEmails = {
   'price-increase': {
     id: 'price-increase',
     subject: "A change to the price of Plus",
-    preheader: "Nothing changes unless you agree. Here is what is new, and when.",
+    preheader: "Nothing changes unless you agree. What is new, and when it starts.",
     heading: "The price of Plus changes on {effectiveDate}",
     body: [
       "From {effectiveDate}, your plan, {planName}, will cost {newPrice} {billingPeriod}. Today you pay {oldPrice}.",
@@ -310,7 +311,7 @@ export const billingEmails = {
     preheader: "Plus stays on until {accessEndDate}, and everything you made stays yours.",
     heading: "Done. Your plan will not renew.",
     body: [
-      "You turned off renewal for Plus, so there will be no further charges.",
+      "You turned off renewal for {planName}, so there will be no further charges.",
       "Plus keeps working until {accessEndDate}.",
       "After that, your books, letters and recordings all stay.",
       EXPORT_NOW_AND_THEN,
@@ -330,11 +331,10 @@ export const billingEmails = {
     preheader: "Every letter and recording stays yours, to read, play and export.",
     heading: "Everything you made is still here",
     body: [
-      "Your Plus plan ended on {accessEndDate}, and there will be no further charges.",
+      "Your plan, {planName}, ended on {accessEndDate}, and there will be no further charges.",
       FREE_ALWAYS,
       "Every book you already have stays open to read, play and export.",
       EXPORT_NOW_AND_THEN,
-      "Thank you for being part of Plus.",
     ],
     category: 'billing',
     kind: 'transactional',
@@ -344,12 +344,12 @@ export const billingEmails = {
   // it has been, never counts. Helps a payer stop paying. Kind is our reading; L2 confirms.
   'plus-quiet': {
     id: 'plus-quiet',
-    subject: "A quiet word about your plan",
-    preheader: "If Plus is not right for this season, here is how to stop it.",
-    heading: "Your plan, at your pace",
+    subject: "Your Plus plan, and how to stop it",
+    preheader: "What it costs, and how to stop it. Your book stays open either way.",
+    heading: "Plus is still on",
     body: [
-      "You have Plus at {price} {billingPeriod}. Some seasons are full of letters and some are not, and both are normal.",
-      "If Plus is not useful right now, you can cancel and keep everything you made. Your book stays open, free.",
+      "You have {planName} at {price} {billingPeriod}. If you are not using it right now, you can cancel and keep everything you made.",
+      "Your book stays open, free.",
       "If you want to keep it, there is nothing to do.",
       CANCEL_STEPS,
     ],

@@ -49,6 +49,10 @@ Deno.test('an account deletion runs every step in order and finalizes with a cou
   assert.match(receipt.text, new RegExp(req.id));
   assert.match(receipt.text, /If you have Plus[^\n]*Subscriptions/);
   assert.equal(receipt.idempotencyKey, `deletion-completed:${req.id}`);
+  // TPL-02: HTML with the inline logo, sent as two cid: attachments in Resend's REST shape.
+  assert.match(receipt.html!, /src="cid:el-logo-light"/);
+  assert.deepEqual(receipt.attachments!.map((a) => a.content_id).sort(), ['el-logo-dark', 'el-logo-light']);
+  assert.ok(receipt.attachments!.every((a) => a.content_type === 'image/png' && a.content.length > 100));
   // Auth user deleted; co-parent untouched; receipt finalized with counts and step outcomes only.
   assert.equal(w.users.has(uid), false);
   assert.equal(w.users.has(co), true);

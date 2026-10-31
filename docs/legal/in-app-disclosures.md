@@ -1,11 +1,11 @@
 ---
 title: Early Letters in-app and store disclosures
-version: 1.4.0
+version: 3.2.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-03
+last_updated: 2026-10-31
 owner: founder
-related: terms-of-service.md (1.5.0), subscription-terms.md (1.4.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md, docs/legal/memos/q-003-subscription-notices.md
+related: terms-of-service.md (4.0.0), subscription-terms.md (4.0.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md, docs/legal/memos/q-003-subscription-notices.md
 ---
 
 > **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice. Notes for counsel appear as **[COUNSEL: ...]**. From 1.4.0 the live strings are in `packages/content` (the single home of every user-facing word); this file records which disclosure each one makes and why, and quotes them as they stood on 3 Oct 2026.
@@ -46,8 +46,9 @@ From 1.4.0 the purchase screen is Apple's own `SubscriptionStoreView` (ADR 0013,
 
 | Key (packages/content) | Where | String (3 Oct 2026) | Disclosure it makes |
 |---|---|---|---|
-| `billingCopy.store.features` | Above Apple's plans | "Read together whenever you like, after the first 3 times in each book." / "Books for more children. Your first book is always free." | What Plus adds (Apple 3.1.2(c)); must match Subscription Terms "What Plus adds" |
-| `billingCopy.store.promise` | Same | Writing, reading, playing your recordings, export and writing with your co-parent are free, always. | Terms 13 |
+| `billingCopy.store.subtitle` | Above Apple's plans | Your first two letters are free. Plus lets you keep adding letters. | What Plus is (D-082); Terms 14.1 |
+| `billingCopy.store.features` | Same | "Keep adding letters to every book, as many as you like." | What Plus adds (Apple 3.1.2(c)); must match Subscription Terms "What Plus adds" (quoted 31 Oct 2026) |
+| `billingCopy.store.promise` | Same | Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. | Terms 13; Subscription Terms "What stays free" (quoted 31 Oct 2026) |
 | `billingCopy.store.renewal` | Same | Plans renew automatically until you cancel. To avoid the next charge, cancel at least 24 hours before a free trial or period ends. | Automatic renewal and cancel timing (CA 17602, ROSCA) |
 | `billingCopy.store.cancel` | Same | Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions. | How to cancel; names Apple only (App Review 2.3.10) |
 | `billingCopy.store.family` | Same | Plus can be shared with your family through Apple Family Sharing. | Terms 14.12 |
@@ -58,9 +59,9 @@ From 1.4.0 the purchase screen is Apple's own `SubscriptionStoreView` (ADR 0013,
 
 | Moment | Where | What it must say |
 |---|---|---|
-| Purchase confirmation | Sheet after Apple's sheet closes with `purchased` | Plus is on; the trial end date or first charge date; the price after (StoreKit's localized display price) and period; renews until you cancel; cancel at least 24 hours before; how to cancel; "Save a copy" button (share sheet: Mail to yourself, Files, Notes). This replaces `plus.ack.body` "and the same text in the confirmation email": we send no email |
+| Purchase confirmation | Sheet after Apple's sheet closes with `purchased` | Plus is on; the trial end date or first charge date; the price after (StoreKit's localized display price) and period **(not met as built, 31 Oct 2026: D-083 keeps the amount out; `billingCopy.confirmation.renewal` points to Apple's screen and receipt instead; review SUB-04, open for counsel)**; renews until you cancel; cancel at least 24 hours before; how to cancel; "Save a copy" button (share sheet: Mail to yourself, Files, Notes). This replaces `plus.ack.body` "and the same text in the confirmation email": we send no email |
 | Reminder ask | Same sheet, once | "Remind me before the free months end" (only for trials) or "Remind me before Plus renews" (annual). On Yes, the system notification prompt; on Not now, in-app notes only |
-| Reminders | Local notification (if allowed) plus a note in Settings, Plan and on next open inside the window | Notification text names no child and no price: "Plus renews on {date}. You can change this in Settings, Plan." (trial: "Your free months end on {date}. ..."). The note in Settings, Plan carries the date, price after, cancel-by date and the Manage subscription button. Fires only on the purchaser's phones (`ownershipType` purchased), in the windows of Q-003 memo section 5 |
+| Reminders | Local notification (if allowed) plus a note in Settings, Plan and on next open inside the window | Notification text names no child and no price: "Plus renews on {date}. You can change this in Settings, Plan." (trial: "Your free months end on {date}. ..."). The note in Settings, Plan carries the date, cancel-by date and the Manage subscription button; as built it names no price (D-083; `billingCopy.note`), so Terms 14.6 and the Subscription Terms (4.0.0) no longer promise one. Whether the amount must appear for California 17602(b) is review SUB-03, open for counsel. Fires only on the purchaser's phones (`ownershipType` purchased), in the windows of Q-003 memo section 5 |
 
 Rules:
 - Nothing above the plans may make the free period look more prominent than Apple's billed price.
@@ -100,8 +101,8 @@ Said calmly, word for word, in a few set places (`packages/content` `trust`; VOI
 | Key | Where it appears | String (3 Oct 2026, `packages/content/src/store.en.ts`) |
 |---|---|---|
 | Beta line | Not used. D-060 (founder): the store listing never says beta; App Review 2.2 | (none) |
-| Subscription paragraph | App Store description, after the feature list | Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing. |
-| Legal links | Last lines of the description | Terms of Use: https://earlyletters.com/terms Privacy Policy: https://earlyletters.com/privacy |
+| Subscription paragraph | App Store description, after the feature list | Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus is an optional subscription that lets you keep adding letters. It renews automatically until you cancel, and works with Family Sharing. (quoted from `store.en.ts`, 31 Oct 2026) |
+| Legal links | Last lines of the description | Terms of Service: https://earlyletters.com/terms Privacy Policy: https://earlyletters.com/privacy ("Terms of Service" from 31 Oct 2026, review LNG-34; it said "Terms of Use") |
 
 Rules: no "beta" in the app name, subtitle, description or promotional text. The Consumer Health Data Privacy Policy link (https://earlyletters.com/health-privacy) should also appear on the App Store page, because Washington treats an app's download page as a "homepage" (consumer-health-data-notice.md HN-6). **Request to the content owner:** add a third legal line, "Consumer Health Data Privacy Policy: https://earlyletters.com/health-privacy", unless counsel answers COUNSEL_PACKET Q3 otherwise.
 
@@ -120,6 +121,7 @@ Rules: no "beta" in the app name, subtitle, description or promotional text. The
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 3.2.0 | 2026-10-31 | draft-for-counsel | Section 3 and 4 quotes brought up to the strings on develop for the D-082 membership (store subtitle, features, promise; store listing subscription paragraph and its Terms of Service link label, LNG-34); confirmation and reminder rows marked where the build, under D-083, names no amount (review SUB-02 to SUB-04). Related versions: Terms 4.0.0, Subscription Terms 4.0.0. Version 3.2.0 because 1.5.0, 2.0.0, 3.0.0 and 3.1.0 were used by unmerged drafts on other branches (POLICY_VERSIONING 2.4). Records only; no string changes here. Minor. |
 | 1.4.0 | 2026-10-03 | draft-for-counsel | Alignment with D-053 (Apple's SubscriptionStoreView; our marketing content only), D-060 ("Early version" label; no store beta line), D-061 (trust lines and microphone string, new section 3b), D-055 (no web contributor strings in v1.0) and the Q-003 position: confirmation sheet with Save a copy, reminder ask and on-device reminders replace the confirmation email and the per-purchase consent log. Strings now quoted from `packages/content` as of 3 Oct. Requests to the content owner: hard-coded trial lengths in `plus.legal.renew*`; CHD policy link in the store description. Pre-publication; minor. |
 | 1.3.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3: `plus.legal.cancel` names only Apple (Plus is sold through the App Store only at v1.0, ADR 0013; App Review 2.3.10 bars other platforms' names in iOS copy); `store.description.betaLine` and `store.promotionalText.beta` marked pending D-030 (recommended: TestFlight beta, no store beta line); `web.legal.accept` ships with the web page in v1.1. Patch-level wording; counsel to confirm. |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: `subscriptionLine` uses "playing your recordings" and matches `store.en.ts` (K-11); beta ends only on the founder's decision (K-13). Patch-level wording; counsel to confirm. |

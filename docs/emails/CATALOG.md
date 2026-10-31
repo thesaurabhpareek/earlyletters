@@ -42,9 +42,9 @@ Listed so the catalog is complete. C1 owns the copy in `auth.en.ts`; ids are C1'
 |---|---|---|---|---|---|---|---|
 | `sign-in-link` | Email entered on the sign-in sheet (A-REQ-018): link plus 6-digit code | Auth | T | Email only | LB | Resend after 60 s; 5 per address per hour (A-REQ-025) | C1 / D2 / Supabase config (L3) |
 | `verify-email` | First sign-in with a new address (confirm email) | Auth | T | Email only | LB | As above | C1 / D2 / L3 |
-| `account-create-attempt` | Sign-up with an address that already has an account (enumeration-safe) | Auth | T | Email only | LB | 1 per address per hour | C1 / D2 / L3 |
+| `account-create-attempt` | Not applicable (SIGN-05, 31 Oct 2026): sign-in is one passwordless call (`signInWithOtp`, `shouldCreateUser: true`), so there is no sign-up branch and no "create attempt" event. A known address gets `sign-in-link` from Supabase. Copy kept for a future sign-up flow; no sender | none | T | n/a | n/a | n/a | C1 |
 | `welcome` | First successful sign-in of a parent who starts a book | Fn | T? (relationship; no promotion inside) | Email only | 1.0 | Once per account, ever | C1 / D2 / backend |
-| `sign-in-trouble` | "Having trouble?" on the check-your-email screen | Auth or Fn | T | Email only | LB | Same limits as sign-in | C1 / D2 / L3 |
+| `sign-in-trouble` | Deferred (SIGN-05): "Trouble signing in?" shows help text in the app; an expired link or code is handled by "Send a new email", which sends `sign-in-link` again. No sender until the app asks for one | none | T | Email only | later | Same limits as sign-in | C1 / D2 / L3 |
 | `reauthenticate-code` | Re-authentication before account deletion when the session is older than 24 h and no device passcode (DELETION spec 2.6.1 step 5; Supabase Reauthentication template) | Auth | T | Email only | LB | Same limits as sign-in | C1 / D2 / L3 |
 | `apple-account-linked` | Sign in with Apple added to an existing account | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
 | `email-changed-old-address`, `email-changed-new-address` | User changes their sign-in email (Supabase Change Email template; notice to the old address, confirmation to the new) | Auth | T | Email only | 1.0 | Per request | C1 / D2 / L3 |
@@ -68,7 +68,7 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 | id | Trigger | Sender | Kind | Channels | Priority | Cap | Owner |
 |---|---|---|---|---|---|---|---|
 | `coparent-invite` | A parent enters their co-parent's email address in the app (develop's CoParentInvite, D-055). The link works once, for 7 days (D-020) | Fn | T | Email | 1.0 | 1 per invite | C2 / D2 / backend |
-| `family-book-closing` | A sole parent deletes a book that has contributors (B-REQ-016, DATA-REQ-053). Sent to each contributor within 1 hour | Fn | T | Email + card (no push) | 1.1 (no contributors at v1.0, D-055) | 1 per contributor per deletion request | C2 / D2 / privacy engineer |
+| `family-book-closing` | A sole parent deletes a book that has contributors (B-REQ-016, DATA-REQ-053). Sent to each contributor within 1 hour. This is the only contributor notice: purge-worker's own `contributorNotice` (off-catalog, TPL-05) is unreachable under D-055 and should be removed by the server lane; from v1.1 it sends this id through `generated/resend.ts` | Fn | T | Email + card (no push) | 1.1 (no contributors at v1.0, D-055) | 1 per contributor per deletion request | C2 / D2 / privacy engineer |
 | `family-book-restored` | The parent cancels that deletion within 30 days. Sent only to people who got `family-book-closing` | Fn | T | Email + card | 1.1 | 1 per contributor per request | C2 / D2 / privacy engineer |
 | `family-letter` | A family letter waits for approval | push (`en.notifications.familyLetter`) | n/a | **Push and in-app only. No email.** | n/a | C owns timing | C |
 | `family-added` | A parent adds a contributor's letter to the book | push (`en.notifications.familyAdded`) | n/a | **Push and in-app only. No email.** | n/a | C owns timing | C |
@@ -101,7 +101,7 @@ Every notice in D-022 is here. Schedule, windows and suppression rules are D-022
 
 Not sent by us (decision E-6): renewal receipts, purchase receipts, refund confirmations, billing retry and grace period (D-048; Apple emails the customer and StoreKit shows its billing message in the app), restore conflicts (D-047, in-app).
 
-Billing copy rules (from Subscription terms 1.3.0 and D-022): every notice names the plan, the price and billing period, the date it renews or the trial ends, the date to cancel by where relevant, that it renews automatically until cancelled, and the cancel steps in words plus `{manageUrl}`. Every notice says letters and recordings stay free to read, play and export. No offer, discount or "are you sure" ever appears in a billing email (California B&P 17602 as amended by AB 2863 allows save offers only next to a "click to cancel" link; we simply never make them).
+Billing copy rules (from the current Subscription terms and D-022; tested in `packages/emails/test/validation-2026-10-31.test.ts`, SUB-03): every notice names the plan, the price and billing period, the date it renews or the trial ends, the date to cancel by where relevant, that it renews automatically until cancelled, and the cancel steps in words plus `{manageUrl}`. Every notice says letters and recordings stay free to read, play and export. No offer, discount or "are you sure" ever appears in a billing email (California B&P 17602 as amended by AB 2863 allows save offers only next to a "click to cancel" link; we simply never make them).
 
 ## 8. Data and privacy rights (copy: C2, `account.en.ts`)
 
@@ -113,7 +113,7 @@ Billing copy rules (from Subscription terms 1.3.0 and D-022): every notice names
 | `book-deletion-scheduled` | Sole parent deletes a book (`request_book_deletion()`) | Fn | T | Email + in-app | 1.0 | Once per request | C2 / D2 / privacy engineer |
 | `book-deletion-cancelled` | `cancel_book_deletion()` | Fn | T | Email + in-app | 1.0 | Once per request | C2 / D2 / privacy engineer |
 | `deletion-request-received` | Deletion asked for by email through `/delete-account` (D-042), before identity is confirmed | Ops | T | Email only | LB (D-042 route) | Once per request | C2 / D2 / support runbook |
-| `deletion-confirm` | Sent right after `deletion-request-received`. One-time link to `/delete-account/confirm` (web, any browser; route still to build), which shows the date and one button; pressing it files the request with `source='support'` (DATA-REQ-021) and `account-deletion-scheduled` follows (customer review CUS-14) | Ops or Fn | T | Email only | LB (D-042 route) | Once per request; link expires | C2 / D2 / web / support runbook |
+| `deletion-confirm` | Sent right after `deletion-request-received`. **Not sent until `/delete-account/confirm` exists on the website (TPL-06); until then support confirms identity by reply.** One-time link to `/delete-account/confirm` (web, any browser), which shows the date and one button; pressing it files the request with `source='support'` (DATA-REQ-021) and `account-deletion-scheduled` follows (customer review CUS-14) | Ops or Fn | T | Email only | LB (D-042 route) | Once per request; link expires | C2 / D2 / web / support runbook |
 | `coparent-left` | A co-parent's `request_account_deletion()` succeeds. To the remaining parent of each shared book, within 1 hour. Their letters left the book at request (DELETION spec 2.6.2); no email if the leaver cancels within the hour | Fn | T | Email + in-app card (`en.coParentLeft`) | 1.0 | Once per request per remaining parent | C2 / D2 / privacy engineer |
 | `privacy-request-received` | Access, correction, provider-list or other rights request by email (Privacy Policy section 14) | Ops | T | Email only | 1.0 | Once per request | C2 / D2 / support runbook |
 | `export-ready` | Server-built export finished (DATA-REQ-054); link valid 7 days | Fn | T | Email + card | 1.1 (BL-309) | Once per export | C2 / D2 / privacy engineer |
@@ -193,3 +193,20 @@ Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export li
 - Decision 5: family at launch is co-parent only. `welcome-family` moves to v1.1; `welcome-coparent` stays v1.0.
 - Decision 3: payments are Apple only. Billing emails were PARKED because no server of ours saw purchases. **Un-parked by D-080 (founder, 3 Oct 2026, 19:30 UTC):** the app reports subscription status only (plan, trial end date, renewal date, cancelled flag) so the D-022 reminders can be sent; see the trigger note in section 7. Apple still processes payments; no RevenueCat; no App Store Server Notifications. Prices are $4.99/month (1-month trial) and $49.99/year (2-month trial) (raised on 4 Oct 2026, D-082).
 - Decision 13: the health data policy lives at /health-privacy.
+
+## 14. Senders and website pages (email validation, 31 Oct 2026)
+
+**How our functions send.** Supabase Auth sends its six templates (`supabase/templates`, text wordmark, HTML only: Supabase Auth has no plain-text part, accepted, TPL-10). The escrow function sends the three recovery key emails from `supabase/functions/escrow/email/templates.ts` (text wordmark). Every other email is sent by our own Edge Functions with `renderForResend` from `packages/emails/generated/resend.ts` (TPL-02): HTML with the inline logo, the plain-text twin, the logo attachments in Resend's REST shape, values HTML-escaped, and a throw on any missing value. Dates use `longDate` from the same module ("Monday, November 2, 2026", D-028, TPL-08). Usage: `packages/emails/README.md`.
+
+**Website pages emails need.** `packages/emails/src/links.ts` is the email side of the route contract; a test fails when an email links to a path that is neither built nor listed. Built on `main`: `/`, `/privacy`, `/terms`, `/auth/callback`, `/auth/confirm`, `/j`, `/unsubscribe`. Still needed:
+
+| Path | Used by | Needed by |
+|---|---|---|
+| `/open` (page plus AASA path) | `{appUrl}` in 14 emails | build 2 (first release with server features, D-121) |
+| `/stop` | `backup-restore-requested` | before owner backup ships |
+| `/subscription-terms` | `trial-started`, `plus-started` | before reminder emails ship, or point `{subscriptionTermsUrl}` at `/terms` (SUB-10) |
+| `/delete-account/confirm` | `deletion-confirm` | before the D-042 email route takes requests |
+| `/open/export/<id>` | `export-ready` | v1.1 |
+
+The footer Help link now writes to the support mailbox (`/contact` does not exist). `{manageUrl}` is Apple's subscriptions page until an `/cancel` explainer exists. `policy-update` no longer links a separate changes page: the document page lists what changed.
+

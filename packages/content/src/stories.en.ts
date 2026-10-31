@@ -34,10 +34,11 @@ export const onboardingStories: readonly StoryCard[] = [
   },
   {
     type: 'story',
-    id: 'story.exact.v1',
+    // v2 (LNG-18, 31 Oct 2026): one description of a small fix everywhere. v1 said "We fix slips of the tongue."
+    id: 'story.exact.v2',
     order: 2,
     headline: "Exactly as you said it.",
-    line: "We fix slips of the tongue. We never rewrite your words.",
+    line: "We only fix small slips, like an um or a repeat. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {

@@ -40,7 +40,7 @@ export const site = {
     },
     {
       title: "A minute is plenty",
-      body: "Say a few words at bedtime or in the car. On a quiet day, tap \"Not much today\". No counters, no badges, no scores. Just letters, whenever you have them.",
+      body: "Say a few words at bedtime or in the car. On a quiet day, tap \"Not much today\". Nothing counts or scores you. Write when you have something to say.",
     },
     {
       title: "Write it together",
@@ -52,7 +52,7 @@ export const site = {
     steps: [
       {
         title: "Talk or type",
-        body: "Tell {child} about today. A note or a long letter, both belong.",
+        body: "Tell {child} about today. A sentence or a long letter, both belong.",
       },
       {
         title: "Read it back",
@@ -66,10 +66,10 @@ export const site = {
   },
   readTogether: {
     title: "Read together",
-    body: "Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page. Curl up together and listen to the story of the first steps, again and again.",
+    body: "Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page. Hear the night of the first steps again, as many times as {child} asks.",
   },
   family: {
-    title: "Room for everyone who loves {child}",
+    title: "Two parents, one book",
     // Grandparents and close family are a later update (D-055). Say "soon", never "now".
     body: "Today, you and your co-parent write in the same book. Letters from grandparents, aunts and uncles are coming in a later update, each one signed, with parents choosing what goes in.",
   },
@@ -77,7 +77,7 @@ export const site = {
     title: "Our promise, in plain words",
     lead: en.trust.promise,
     points: [
-      "Your letters are private by default. Only the people you invite can read what you add to the book.",
+      "Your letters are private by default. Only you, and your co-parent if you invite them, can read what you add to the book.",
       "We never rewrite your words. Transcription happens on your phone.",
       // D-085 (amends D-073): no backup of our own in v1.0.
       "Your recordings stay on your phone, and in your iPhone's own backup if you use one.",
@@ -98,7 +98,7 @@ export const site = {
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "That is completely fine. There is nothing to keep up with and nothing counting. On a quiet day you can tap \"Not much today\", or simply come back when you have something to say. Your book is still there.",
+      a: "That is fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
     },
     {
       q: "Can grandparents add letters?",
@@ -106,7 +106,7 @@ export const site = {
     },
     {
       q: "Does my co-parent need an iPhone?",
-      a: `Yes, for now. ${brand.name} is on iPhone first. Android is coming, and their place in the book will be waiting.`,
+      a: `Yes, for now. ${brand.name} is on iPhone first.`,
     },
     {
       q: "If one of us has Plus, does the other need it too?",

@@ -162,22 +162,46 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await expect(btn(app, 'Begin the book')).toBeVisible();
 });
 
-test('[J22b] the first kept letter: the sheet rises over the Book, never in place of Review', async ({ app, record }) => {
-  test.setTimeout(120_000);
+test('[J22b] DR-12 B: the reminder card after the first letter; Keep the book on the first save of session 2, over the Book', async ({ app, record }) => {
+  // SET-01, SET-02 (docs/reviews/2026-10-31/setup.md). This journey used to show the sheet after the first letter, which
+  // was the bug: the first ask slot is the reminder card (F13-REQ-023), and Keep the book waits for session 2 or letter 2.
+  test.setTimeout(150_000);
   const step = journey(record, 'J22', 'sign-in', 20, 'J07-03');
+  await app.clock.install();
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
   await openOn(app);
   await firstRun(app);
   await typeLetter(app, 'You put both hands on the window today and watched the rain.');
   await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
+  await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` })).toHaveCount(0);
+  await expect(btn(app, 'Yes, evenings')).toBeVisible();
+  await expect(btn(app, 'Pick a time')).toBeVisible();
+  await step('happy', 'After the first letter: the reminder card', 'The first ask after the first letter is the reminder card over the Book (C-REQ-001 Rev, F13-REQ-023). The account sheet does not open (DR-12 B).');
+
+  await btn(app, 'No reminders').click();
+  await expect(app.getByText('You can write whenever you like.')).toBeVisible();
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  await app.clock.fastForward(4000);
+  await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` }), 'one ask per session').toHaveCount(0);
+  expect(m.serverCalls(), 'the card asks nothing of the server').toEqual([]);
+
+  // Session 2, the next day: a relaunch.
+  const now = await app.evaluate(() => Date.now());
+  await app.clock.setSystemTime(now + 25 * 60 * MIN);
+  await app.reload();
+  await expect(btn(app, /^Type/)).toBeVisible({ timeout: 15_000 });
+  await typeLetter(app, 'You laughed at the dog all through breakfast.');
+  await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
   await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` })).toBeVisible({ timeout: 8000 });
   await expectSheet(app, `Keep ${CHILD}'s book on any phone`, BODY);
   await expect(app.getByRole('heading', { name: 'Read it back' })).toHaveCount(0);
-  await step('happy', 'Keep the book on any phone', 'After the first kept letter the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b). It is about this book, so its cover sits beside the title.');
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  await step('happy', 'Keep the book on any phone', 'On the first save of session 2 the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b, DR-12 B). It is about this book, so its cover sits beside the title.');
 
   await btn(app, 'Not now').click();
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
-  await expect(app.getByText('You put both hands on the window today and watched the rain.')).toBeVisible();
+  await expect(app.getByText('You laughed at the dog all through breakfast.')).toBeVisible();
   expect(m.serverCalls(), 'Not now asks nothing of the server').toEqual([]);
   await step('unhappy', 'Not now, on the Book', 'Not now leaves the person on the Book with the new letter, as it was. The ask is made once (PRD-REQ-001).');
 });
