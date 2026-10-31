@@ -54,6 +54,7 @@ The founder said: "Every time you ask me something ask CTO skill first and then 
 | What's in a release, scope, priority, metrics | CPO | CTO for cost, CDesO for experience |
 | How something looks, feels or reads in the app | CDesO | CPO; CPrivO if it shows personal data |
 | Website, store listing, launch, any public claim | CMO | CLO and CCO for claims; CPrivO for privacy claims |
+| The claims registry (every public claim and the evidence it is true of the shipped build) | CMO keeps it | CCO checks each claim against the build; CLO for legal exposure; CPrivO for privacy claims |
 | Pricing model, Plus, partners, print, distribution | CBO | CFO; CLO for contracts |
 | Spend, subscriptions, runway, tax, entity | CFO | CBO; CLO for entity and contracts |
 | Terms, contracts, IP, names, trademarks, disputes | CLO | CCO; CPrivO for data terms |
