@@ -39,6 +39,18 @@ async function spyOnAudio(page: Page) {
 const contexts = (page: Page) => page.evaluate(() => ((window as unknown as { __ctxs: AudioContext[] }).__ctxs ?? []).map((c) => c.state));
 const toggle = (page: Page) => page.locator('[data-ambient-toggle]');
 
+/**
+ * A person's first gesture, once the page is ready for one. The button appears after the page has hydrated and read the
+ * remembered choice, and the gesture listeners are armed just after; a click before that (a fast runner) would be lost,
+ * as it would for a visitor who tapped before the page woke up. Then it is a real click, and the sound is checked.
+ */
+async function firstGesture(page: Page) {
+  await expect(toggle(page)).toBeVisible();
+  await expect(toggle(page)).toHaveAttribute('data-state', 'blocked');
+  await page.waitForTimeout(250);
+  await page.mouse.click(720, 450);
+}
+
 test.describe('ambient sound', () => {
   test.use({ reducedMotion: 'no-preference' });
 
@@ -65,7 +77,7 @@ test.describe('ambient sound', () => {
   test('the button is a 44px, labelled, keyboard-reachable toggle that mutes, remembers and releases the context', async ({ page }) => {
     await spyOnAudio(page);
     await page.goto(filmUrl());
-    await page.mouse.click(720, 450);
+    await firstGesture(page);
     await expect(toggle(page)).toHaveText('Sound on');
 
     const box = await toggle(page).boundingBox();
@@ -107,7 +119,7 @@ test.describe('ambient sound', () => {
       });
     });
     await page.goto(filmUrl());
-    await page.mouse.click(720, 450);
+    await firstGesture(page);
     await expect(toggle(page)).toHaveText('Sound on');
     await toggle(page).click();
     await expect(toggle(page)).toHaveText('Sound off');
@@ -116,7 +128,7 @@ test.describe('ambient sound', () => {
   test('scrolling opens the filter and the sound settles again when the visitor stops', async ({ page }) => {
     await spyOnAudio(page);
     await page.goto(filmUrl());
-    await page.mouse.click(720, 450);
+    await firstGesture(page);
     await expect(toggle(page)).toHaveText('Sound on');
     await page.waitForTimeout(800);
     const cutoffs = () => page.evaluate(() => (window as unknown as { __cutoffs: number[] }).__cutoffs.slice());
@@ -137,7 +149,7 @@ test.describe('ambient sound', () => {
   test('a hidden tab pauses the sound and coming back wakes it', async ({ page }) => {
     await spyOnAudio(page);
     await page.goto(filmUrl());
-    await page.mouse.click(720, 450);
+    await firstGesture(page);
     await expect(toggle(page)).toHaveText('Sound on');
     const setHidden = (hidden: boolean) =>
       page.evaluate((h) => {
