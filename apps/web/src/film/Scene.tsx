@@ -81,7 +81,7 @@ export function Scene({ id, label, length = 2, tone = 'night', rest = 0.5, toneS
     const el = ref.current;
     const prev = el?.previousElementSibling as HTMLElement | null;
     // Only dissolve where the colour changes. Two scenes on the same paper would show both sets of words at once.
-    const differs = !!prev && prev.tagName === 'SECTION' && prev.dataset.tone !== el?.dataset.tone;
+    const differs = !!prev && prev.tagName === 'SECTION' && (prev.dataset.endTone ?? prev.dataset.tone) !== el?.dataset.tone;
     const on = !reduced && handoff > 0 && differs;
     setDissolve(on);
     el?.style.setProperty('--scene-handoff', on ? String(handoff) : '0');
@@ -129,6 +129,7 @@ export function Scene({ id, label, length = 2, tone = 'night', rest = 0.5, toneS
       id={id}
       aria-label={label}
       data-tone={tone}
+      data-end-tone={toneStops?.length ? toneStops[toneStops.length - 1].tone : tone}
       onFocusCapture={onFocusCapture}
       className={[styles.scene, className].filter(Boolean).join(' ')}
       style={{

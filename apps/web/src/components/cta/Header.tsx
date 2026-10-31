@@ -46,12 +46,12 @@ export function Header() {
 
 export function CtaPill() {
   const tone = useToneAt('bottom');
-  const hero = useSceneActive('evening', -Infinity, 0.13);
   const end = useSceneActive('start', -0.6, Infinity);
   // The playing letter in S07 sits low on phones; the pill steps aside while it plays.
   const peak = useSceneActive('years-later', 0.4, 0.92);
   const lenis = useLenis();
-  const hidden = hero || end || peak;
+  // Shown from the very first screen on phones: a parent who stops at the top still has one thing to do.
+  const hidden = end || peak;
   return (
     <div className={styles.pillBar} data-tone={tone} data-hidden={hidden || undefined} aria-hidden={hidden || undefined}>
       {launch.mode === 'live' ? (
