@@ -384,3 +384,19 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: delete the workflow and `compliance/fence/`, then remove the check from the required list.
 - Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
 - Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
+
+### CR-33 Settings applied through the founder's browser, and how the branch cleanup is restored (31 Oct 2026, Karma via retro session)
+- Question: The founder said "take browser control and do what you need" for the pending settings run. How do I apply it, given that the proxy refuses settings writes, tag pushes and branch deletions?
+- Tier and type: T2 (repository settings); clear.
+- What I found first: another actor had already set part of it at about 08:09 UTC. I don't know which session, or whether it was the founder. Merge settings were changed, and two rulesets were added: "Protect long-lived branches" (`main`, `develop`, `release/*`) and "Protect release tags" (`ios-v*`). The default branch later moved to `develop`, `compliance-fence` became a required check on `develop` (CR-32), and an "archive tags are kept" ruleset appeared. I didn't redo or undo any of that; I filled the gaps.
+- Ruling, and what was applied through GitHub's settings pages in the founder's signed-in built-in browser, each read back through the API:
+  - CR-7: classic protection on `develop` and `main`. A PR is required with 0 approvals; the required checks are `required` and `applied migrations unchanged` (app 15368); the up-to-date requirement is off; admins are enforced; force pushes and deletion are blocked.
+  - CR-9: the Copilot review ruleset (26012645) now targets `refs/heads/main` by name.
+  - CR-6: "Always suggest updating pull request branches" is on.
+  - CR-11: `db-v*` added to "Protect release tags".
+  - CR-5: `agents.yml` disabled (disabled_manually); it had registered once `develop` became the default branch.
+  - Founder's Q3: `release/ios-v1.0` deleted. Its tip, 1494d35, is in `main`. To delete it, I excluded that one branch from "Protect long-lived branches", then removed the exclusion; the ruleset is back to its original targets.
+- Checked first: the Vercel Production Branch is `main` (Vercel dashboard, Environments, Production, Branch Tracking); no `AGENTS_ENABLED` variable exists. A snapshot of the settings before any change is in the session's scratchpad.
+- Branch cleanup (amends CR-14): archive tags aren't needed. Every one of the 251 merged branches in pass 1 has a tip equal to its PR's head ref (`refs/pull/N/head`), which GitHub keeps. The three `auto/` branches are contained in `develop`. A live dry run on 31 Oct found all 254 still candidates. The proxy refused a branch deletion, and the session's permission check refused a bulk delete through the browser as a destructive git action. So the cleanup waits for the founder: `cleanup-branches.sh --apply` from his Mac, or his explicit go-ahead for the browser.
+- Way back: restore any deleted branch with `git fetch origin refs/pull/<N>/head && git push origin FETCH_HEAD:refs/heads/<branch>`, or with "Restore branch" on the closed PR's page. For the settings: classic protection can be deleted per branch, a ruleset can be edited back, and the workflow re-enabled from the Actions tab.
+- Revisit when: the cleanup has run.
