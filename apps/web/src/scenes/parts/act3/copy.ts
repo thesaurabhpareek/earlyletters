@@ -7,7 +7,7 @@ export const act3Copy = {
   skip: 'Skip the film',
   notify: {
     /** site.notify.hint: shown under the field label. */
-    hint: 'Just your email address, nothing else.',
+    hint: 'Only your email address. Nothing else.',
     /** site.notify.honeypotLabel: label of the hidden anti-bot field. People and screen readers never meet it. */
     honeypotLabel: 'Company',
     /** site.notify.errors: site.notify.error stays the message for an invalid address. */
