@@ -5,7 +5,7 @@
  *   0.00-0.16  Hero: the wordmark (the page's h1) and the brand line, still, on deep night.
  *   0.14-0.26  The hero recedes (up, a touch smaller, out).
  *   0.16-0.42  A window draws itself; the moon's cool light comes up behind it.
- *   0.30-0.47  "9:41 pm", then "Asha is asleep.", then the support line.
+ *   0.30-0.47  "9:41 pm", then "[child] is asleep.", then the support line.
  *   0.44-0.58  A bedside lamp draws itself; 0.56-0.66 it switches on and warm light pools low.
  *   0.62-0.78  Dust drifts in the lamp light.
  *   0.74-0.82  The words leave. 0.82-1.00 the window steps back; the lamp light holds (handoff to S02).
