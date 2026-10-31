@@ -72,3 +72,42 @@ Variables in the model's shell: `GH_TOKEN`, `OPENROUTER_API_KEY` (kept on purpos
 - The `spawn(... detached: true)` process-group kill and `stopReason` (not exercised; only config and env were).
 - That `git`/`gh` resolve through the Actions runner PATH the same way as the fake ones here.
 - Everything in the earlier UNVERIFIED list (OpenRouter provider, reasoning tokens, error events, other platforms or versions).
+
+## Round 3 (2026-10-31): W1 final patterns, 98dcbf84, on the real binary
+
+Same binary (opencode-ai 1.18.34), stub and fake `git`/`gh`. 58 commands, fixture `final-deny-matrix`.
+
+**Matcher versus engine: no disagreement** on any of the 58 (whole string, and each segment of `&&`, `;`, `|` compounds).
+
+**Now blocked (were RAN under d060a36f):** `git -C . push origin develop`, `git -c core.x=1 push origin develop` and `... main`, `git push -u origin develop`, `--set-upstream origin main`, double-space push, `git -C . push -u origin develop`, `gh -R a/b pr merge 1`, `gh api ... -f`, `-F`, `--field`, `--input`, `gh api graphql -f ...`. `git push origin $(echo develop)` is also blocked, by accident (the text " develop)" matches); do not rely on it.
+
+**Still RAN (shell indirection, not fixable with globs):** `FOO=1 git push ...`, `sh -c '...'`, variable, `sh push.sh`, `env git push ...`, `HEAD:'develop'`.
+
+### False positives: must-allow commands the real engine BLOCKED
+
+| Command | Result | Pattern responsible |
+|---|---|---|
+| `git push origin feat/maintenance` | BLOCKED | `git*push*/main*` |
+| `git push origin docs/mainline-notes` | BLOCKED | `git*push*/main*` |
+| `git push -u origin agent/product/main-page` | BLOCKED | `git*push*/main*` |
+| `git push origin fix/developer-docs` | BLOCKED | `git*push*/develop*` |
+| `git push origin agent/qa/develop-notes` | BLOCKED | `git*push*/develop*` |
+| `git push origin test/injection-lane` | allowed | n/a |
+| `git commit -m 'document the push to main page'` | BLOCKED | `git*push* main*` (the pattern starts at any `git`, so a commit message matches) |
+| `gh pr comment 1 --body 'ran gh api graphql locally'` | BLOCKED | `gh*api*graphql*` (same cause, in `gh`) |
+| `git push origin agent/qa/hardening`, `git push -u origin HEAD`, `git log --grep=push`, `gh pr create --title 'fix main page' --body 'no secret here'` | allowed | n/a |
+
+Impact: agent branches follow `agent/<handle>/<topic>`, so a topic starting with `main` or `develop` (or a commit message or comment containing "push ... main") is wrongly blocked. The tests are todo with the exact commands.
+
+### Suggested tighter pattern set (verified live, fixture `tighter-deny-matrix`)
+
+Replace the `git*push*` family with patterns anchored on the command start (`git push`, `git -C* push`, `git -c* push`) and on a whole branch token (the branch ends the string, or is followed by a space, or follows `:`):
+
+```
+for P in "git push" "git -C* push" "git -c* push":
+  P --force*   P*--force*   P* -f*   P*--delete*   P* +*   P* :*
+  for B in develop main:
+    P* B   P* B *   P*:B   P*:B *   P*:refs/heads/B   P*:refs/heads/B *   P* refs/heads/B
+```
+
+(`scripts/agents/opencode-contract.test.mjs` holds the exact generator, `tighterGit()`.) On the real binary this set allowed all six must-allow branches plus the commit message, and still blocked every protected-branch, force, delete and `gh -R` case above. The one change: `git push origin $(echo develop)` now RUNS again (it was never a promise). The `gh` patterns were left as W1 wrote them, so `gh pr comment ... graphql` is still blocked; anchoring those as `gh api*graphql*` and `gh -R* api*graphql*` instead of `gh*api*graphql*` is a suggestion that was NOT run on the real binary.

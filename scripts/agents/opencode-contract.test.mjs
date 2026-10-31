@@ -191,3 +191,77 @@ test("child env: the model's shell sees only the allowlist plus engine variables
   }
   assert.ok(!/canary/i.test(out));
 });
+
+// ---- Round 3: W1 final patterns (98dcbf84), re-run on the real binary ----
+
+const final = outcomesOf("final-deny-matrix");
+
+test("final deny: the glob matcher agrees with the real binary on all 58 recorded commands", () => {
+  for (const [cmd, res] of Object.entries(final)) assert.equal(denied(cmd), res === "blocked", cmd);
+  assert.equal(Object.keys(final).length, 58);
+});
+
+test("final deny: the commands that RAN under d060a36f are now blocked by the real binary", () => {
+  for (const c of [...FIXED, "git push origin $(echo develop)", "git -C . push -u origin develop", "git -c core.x=1 push origin main",
+    "gh api -F x=1 repos/a/b/issues", "gh api --field x=1 repos/a/b/issues", "gh api --input body.json repos/a/b/issues"]) {
+    assert.equal(final[c], "blocked", c);
+  }
+});
+
+test("final deny: shell indirection still runs on the real binary (tripwire, not a boundary)", () => {
+  for (const c of ["FOO=1 git push origin develop", "sh -c 'git push origin develop'", "B=develop; git push origin $B", "sh push.sh",
+    "env git push origin develop", "git push origin HEAD:'develop'"]) assert.equal(final[c], "ran", c);
+});
+
+// Must-allow commands whose text merely contains develop or main. The real binary blocked all but
+// one under 98dcbf84 ("git*push*/main*" and friends are substring matches).
+const MUST_ALLOW = ["git push origin feat/maintenance", "git push origin docs/mainline-notes", "git push -u origin agent/product/main-page",
+  "git push origin test/injection-lane", "git push origin fix/developer-docs", "git push origin agent/qa/develop-notes",
+  "git commit -m 'document the push to main page'"];
+
+test("final deny: commands without develop or main as a branch are not blocked", () => {
+  for (const c of ["git push origin test/injection-lane", "git push origin agent/qa/hardening", "git push -u origin HEAD", "git log --oneline --grep=push"]) {
+    assert.equal(final[c], "ran", c);
+  }
+});
+
+for (const cmd of MUST_ALLOW.filter((c) => final[c] === "blocked")) {
+  test(`[expected failure] must-allow is not blocked: "${cmd}"`, {
+    todo: `FALSE POSITIVE on the real binary (opencode-ai 1.18.34, 98dcbf84): ${cmd} was blocked. See the tighter pattern set in docs/agents/hardening/opencode-contract.md.`,
+  }, () => {
+    assert.equal(final[cmd], "ran");
+    assert.ok(!denied(cmd));
+  });
+}
+
+// Candidate tighter git patterns, recorded on the real binary in tighter-deny-matrix (W1's gh and
+// other patterns unchanged). The branch must be a whole token, so substrings do not match.
+const tighter = outcomesOf("tighter-deny-matrix");
+const tighterGit = () => {
+  const out = [];
+  for (const p of ["git push", "git -C* push", "git -c* push"]) {
+    out.push(`${p} --force*`, `${p}*--force*`, `${p}* -f*`, `${p}*--delete*`, `${p}* +*`, `${p}* :*`);
+    for (const b of ["develop", "main"]) {
+      out.push(`${p}* ${b}`, `${p}* ${b} *`, `${p}*:${b}`, `${p}*:${b} *`, `${p}*:refs/heads/${b}`, `${p}*:refs/heads/${b} *`, `${p}* refs/heads/${b}`);
+    }
+  }
+  return out;
+};
+const tighterDenied = (cmd) => {
+  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !p.startsWith("git"))];
+  return cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => pats.some((g) => globToRe(g).test(seg)));
+};
+
+test("tighter candidate: the real binary allows every must-allow command and still blocks protected-branch pushes", () => {
+  for (const c of MUST_ALLOW) assert.equal(tighter[c], "ran", c);
+  for (const c of ["git push origin HEAD:develop", "git push origin develop", "git push origin HEAD:main", "git push origin main",
+    "git push -u origin HEAD:refs/heads/develop", "git push origin +develop", "git push origin test/x:develop", "git -C . push origin develop",
+    "git -c core.x=1 push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
+    "git push --force origin x", "git push origin --delete foo", "git push origin :foo", "gh -R a/b pr merge 1"]) {
+    assert.equal(tighter[c], "blocked", c);
+  }
+});
+
+test("tighter candidate: the matcher agrees with the real binary on all 58 commands", () => {
+  for (const [cmd, res] of Object.entries(tighter)) assert.equal(tighterDenied(cmd), res === "blocked", cmd);
+});
