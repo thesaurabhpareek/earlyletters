@@ -223,6 +223,14 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
     }
   });
 
+  it('flags the variable however the line is spelled: with an inline comment, spaces around =, an export prefix, tabs or CRLF', () => {
+    for (const f of FILES) {
+      for (const line of [`${VAR}=on # drill`, `${VAR} = on`, `export ${VAR}=on`, `\t${VAR}=on`, `${VAR}=on\r`]) {
+        expect(envFileProblems(f, `${line}\n`).length, `${f} ${JSON.stringify(line)}`).toBe(1);
+      }
+    }
+  });
+
   it('still allows what is harmless if baked: the app env, and the server and analytics switches only as off', () => {
     for (const f of FILES) {
       expect(envFileProblems(f, 'EXPO_PUBLIC_APP_ENV=development\nEXPO_PUBLIC_SERVER_FEATURES=off\nEXPO_PUBLIC_ANALYTICS=off\n# note\n\n'), f).toEqual([]);
