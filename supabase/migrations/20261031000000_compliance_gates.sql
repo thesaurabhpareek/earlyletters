@@ -1,12 +1,13 @@
 -- Compliance gates at account creation, content-free counts, and the regulatory watch (CTO ruling CR-26).
 --
--- PENDING: not yet applied. v1.1 (accounts arrive in v1.1; v1.0 is on-device only, 15 Oct 2026). Do not
--- merge before the 9 Nov go/no-go. Apply after 20261028000000. Safe to run twice.
+-- PENDING: not yet applied. For the server features (sign-in, D-100): alpha build 2 already signs people in
+-- (D-128), and the public gets them in a 1.0.x after the first on-device store build (D-121). Do not merge
+-- before the 9 Nov go/no-go; apply before any server-feature release reaches people outside the family. Apply after 20261028000000. Safe to run twice.
 --
 -- What it adds, all in schema ops (service only, never reachable from the app):
 --   ops.restricted_jurisdictions  places we refuse sign-up from (Terms 2.4, register CR-121). Data, not code.
 --                                  Changing a status is a founder decision (skill regulatory-compliance,
---                                  references/sanctions.md). Seeded with the CR-26 default.
+--                                  references/sanctions.md). Seeded per founder decision D-131.
 --   ops.geo_ip_ranges, ops.geo_ip_meta
 --                                  IP to country, loaded monthly from DB-IP "IP to Country Lite" (CC BY 4.0,
 --                                  attribution to DB-IP.com) by compliance/scripts/load-geo-ip.mjs.
@@ -19,7 +20,7 @@
 --                                     execute to supabase_auth_admin only. Refuses sign-up from a blocked
 --                                     country with HTTP 403 and the machine message `signup_unavailable_region`
 --                                     (the app maps it to its own copy; no product words live in SQL).
---   ops_count_check(text,text,text)   service_role: the v1.1 web contribution page records its own check.
+--   ops_count_check(text,text,text)   service_role: the web contribution page (later, D-055) records its own check.
 --   ops_regwatch_record(jsonb)        service_role: the watch script stores what it found.
 --   ops_regwatch_triage(bigint,text,text)  service_role: mark an item relevant, not relevant or actioned.
 --   ops_compliance_report(date,date)  service_role: one JSON report for a date range.
@@ -39,7 +40,7 @@
 --     be an outage, not a control; the counts make it visible, and the report flags stale data (> 45 days).
 --   * Country level only. Region-level places (Crimea, Sevastopol, Donetsk, Luhansk) cannot be resolved from
 --     country data; their rows are kept for the web page, which gets a region header, and the hook ignores
---     region rows. At v1.1 those regions are covered only by the Terms 2.4 confirmation.
+--     region rows. At sign-up those regions are covered only by the Terms 2.4 confirmation.
 --   * No name screening (references/sanctions.md).
 --
 -- Enable on hosted (founder step, after apply; APPLY.md File 27): Dashboard > Authentication > Hooks > Before User Created >
@@ -74,21 +75,29 @@ comment on table ops.restricted_jurisdictions is
   'Places sign-up is refused from (Terms 2.4, register CR-121, CTO ruling CR-26). Status changes need a founder decision.';
 
 insert into ops.restricted_jurisdictions (code, name, program, scope, status, decided_by, source_url, checked_on, note) values
-  ('KP', 'North Korea', 'North Korea Sanctions Regulations, 31 CFR 510', 'country', 'block', 'CR-26 default',
+  ('KP', 'North Korea', 'North Korea Sanctions Regulations, 31 CFR 510', 'country', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', null),
-  ('IR', 'Iran', 'Iranian Transactions and Sanctions Regulations, 31 CFR 560', 'country', 'block', 'CR-26 default',
+  ('IR', 'Iran', 'Iranian Transactions and Sanctions Regulations, 31 CFR 560', 'country', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
-   'General License D-2 may authorize free internet communications; open founder and counsel question'),
-  ('CU', 'Cuba', 'Cuban Assets Control Regulations, 31 CFR 515', 'country', 'block', 'CR-26 default',
+   'Founder decision D-131: blocked regardless of GL D-2'),
+  ('CU', 'Cuba', 'Cuban Assets Control Regulations, 31 CFR 515', 'country', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31',
-   '31 CFR 515.578 may authorize internet communications (not verified); open founder and counsel question'),
-  ('UA-43', 'Crimea', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-26 default',
+   'Founder decision D-131: blocked regardless of 31 CFR 515.578'),
+  ('SY', 'Syria', 'EAR 15 CFR 746.9; Country Group E:1', 'country', 'block', 'D-131',
+   'https://www.ecfr.gov/current/title-15/section-746.9', '2026-10-31',
+   'OFAC countrywide program ended 2025, but the EAR still needs a licence for our encrypted software'),
+  ('RU', 'Russia', 'EAR 15 CFR 746.8; EO 14071', 'country', 'block', 'D-131',
+   'https://www.ecfr.gov/current/title-15/section-746.8', '2026-10-31',
+   'Lean to block: License Exception CCD may apply but needs end-user screening we do not do'),
+  ('BY', 'Belarus', 'EAR 15 CFR 746.8', 'country', 'block', 'D-131',
+   'https://www.ecfr.gov/current/title-15/section-746.8', '2026-10-31', 'As Russia'),
+  ('UA-43', 'Crimea', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-40', 'Sevastopol', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'CR-26 default',
+  ('UA-40', 'Sevastopol', 'Ukraine-/Russia-related, EO 13685', 'region', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-14', 'Donetsk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-26 default',
+  ('UA-14', 'Donetsk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only'),
-  ('UA-09', 'Luhansk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'CR-26 default',
+  ('UA-09', 'Luhansk (covered region)', 'Ukraine-/Russia-related, EO 14065', 'region', 'block', 'D-131',
    'https://ofac.treasury.gov/sanctions-programs-and-country-information', '2026-10-31', 'Region level: web page only')
 on conflict (code) do nothing;
 

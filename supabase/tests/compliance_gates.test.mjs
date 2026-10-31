@@ -67,9 +67,9 @@ check('stale data: KP still refused', (await hook('192.0.2.1'))?.error?.http_cod
 check('stale data: counted as geo_stale', (await counts()).includes('signup_region geo_stale - 1'));
 await sys(`update ops.geo_ip_meta set loaded_at = now()`);
 
-// 6. Seed: SY is not listed (countrywide sanctions terminated, EO 14312); the comprehensive set is.
+// 6. Seed (D-131): the embargoed and export-licence countries, and the four regions.
 const codes = (await sys(`select string_agg(code, ',' order by code) c from ops.restricted_jurisdictions`)).rows[0].c;
-check('seeded jurisdictions are KP, IR, CU and the four regions', codes === 'CU,IR,KP,UA-09,UA-14,UA-40,UA-43');
+check('seeded jurisdictions follow D-131', codes === 'BY,CU,IR,KP,RU,SY,UA-09,UA-14,UA-40,UA-43');
 check('a region code must be scope region', (await codeOf(() => sys(`insert into ops.restricted_jurisdictions
   (code, name, program, scope, status, decided_by, source_url, checked_on) values
   ('RU-XX', 'x', 'x', 'country', 'block', 'x', 'https://x.invalid', '2026-10-31')`))) === '23514');
