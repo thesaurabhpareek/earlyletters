@@ -162,7 +162,7 @@ describe('[F19-REQ-025] build flags backup and statusReport: off unless the buil
   });
 });
 
-describe('[D-111 item 4] English only: on in the two alpha profiles, off in development and e2e', () => {
+describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the staged 1.0 store profile, off in development and e2e', () => {
   type Eas = { build: Record<string, { env?: Record<string, string> }> };
   const eas = () => JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as Eas;
   afterEach(() => {
@@ -176,8 +176,9 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     expect(capabilities.englishOnly).toBe(false);
   });
 
-  it('is written out as "on" in both alpha profiles, testflight (build 1) and preview (build 2)', () => {
+  it('is written out as "on" in both alpha profiles, testflight (build 1) and preview (build 2), and in production (D-121: first store build is English only)', () => {
     const { build } = eas();
+    expect(build.production.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(build.preview.env?.EXPO_PUBLIC_ENGLISH_ONLY).toBe('on');
     expect(parseServerFeatures(build.testflight.env?.EXPO_PUBLIC_ENGLISH_ONLY)).toBe(true);
@@ -197,10 +198,10 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     }
   });
 
-  it('is on only in the two alpha profiles; every other profile is as before', () => {
+  it('is on only in the two alpha profiles and production; development and e2e are as before', () => {
     const { build } = eas();
     const on = Object.keys(build).filter((name) => parseServerFeatures(build[name].env?.EXPO_PUBLIC_ENGLISH_ONLY));
-    expect(on.sort()).toEqual(['preview', 'testflight']);
+    expect(on.sort()).toEqual(['preview', 'production', 'testflight']);
   });
 
   it('does not follow the server switch: on with servers off (testflight) and with servers on (preview)', () => {
@@ -248,13 +249,13 @@ describe('[D-111 item 4] English only: on in the two alpha profiles, off in deve
     expect([...new Set(spellings)]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
   });
 
-  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight and preview and names it nowhere else, in no other spelling', () => {
+  it('eas.json writes EXPO_PUBLIC_ENGLISH_ONLY as "on" in testflight, preview and production and names it nowhere else, in no other spelling', () => {
     const text = readFileSync(join(APP, 'eas.json'), 'utf8');
-    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(2);
+    expect(text.match(/"EXPO_PUBLIC_ENGLISH_ONLY": "on"/g)?.length).toBe(3);
     expect([...new Set(text.match(/\w*ENGLISH\w*/gi) ?? [])]).toEqual(['EXPO_PUBLIC_ENGLISH_ONLY']);
     const { build } = eas();
     const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_ENGLISH_ONLY' in p.env);
-    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'testflight']);
+    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'production', 'testflight']);
     for (const [n, p] of naming) expect(p.env?.EXPO_PUBLIC_ENGLISH_ONLY, n).toBe('on');
   });
 
