@@ -10,7 +10,11 @@ Facts checked since `docs/legal/compliance-register.md` was written. One line ea
 | 31 Oct 2026 | OpenSanctions data is CC BY-NC 4.0; commercial use is by paid licence. | https://www.opensanctions.org/faq/15/commercial-use | primary |
 | 31 Oct 2026 | DB-IP IP to Country Lite is CC BY 4.0, monthly, CSV and MMDB; attribution link to DB-IP.com required. | https://db-ip.com/db/download/ip-to-country-lite | primary |
 | 31 Oct 2026 | Supabase "before user created" hook gets `metadata.ip_address` and the user record; it can be a Postgres function; it blocks by returning `{"error": {"http_code", "message"}}`. The docs do not say which sign-in methods trigger it. | https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook | primary |
-| 31 Oct 2026 | Iran General License D-2 authorizes certain services and software incident to internet communications. Scope for our product not confirmed. | https://ofac.treasury.gov/media/928096/download (reported by the challenger, not opened by the author) | primary, unverified by author |
+| 31 Oct 2026 | Iran General License D-2 authorizes "fee-based or no-cost" services incident to internet communications, but excludes the Government of Iran and blocked persons, so allowing Iran reopens the name-screening question. | https://ofac.treasury.gov/media/928096/download | primary (opened by the CCO) |
+| 31 Oct 2026 | Cuba: 31 CFR 515.578 authorizes certain internet-based communication services (OFAC FAQ 1175). | https://ofac.treasury.gov/faqs/1175 | primary (opened by the CCO) |
+| 31 Oct 2026 | State Sponsors of Terrorism list: Cuba, North Korea, Iran. Syria is not on it; its designation was reportedly rescinded in 2026. Terms 2.4 and our block list match today; allowing IR or CU would contradict Terms 2.4 and need a Terms change. | https://www.state.gov/state-sponsors-of-terrorism ; https://www.thomsonreuters.com/en-us/help/onesource-global-trade/regulatory-insights/2026/september-9th/us-rescinds-syria-sst-designation | primary; secondary for the Syria date |
+| 31 Oct 2026 | DB-IP requires "a link back to DB-IP.com on pages that display or use results". | https://db-ip.com/db/download/ip-to-country-lite | primary |
+| 31 Oct 2026 | California AB 1043 effective date (1 Jan 2027) rests on secondary sources; leginfo did not load. A bill AB 1856, "Age verification signals", appeared in search results; effect unverified. | leginfo.legislature.ca.gov | unverified |
 
 ## Trackers to check monthly (state law)
 - Texas: https://texasdatalaw.com/tracker/sb-2420/
