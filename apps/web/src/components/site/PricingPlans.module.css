@@ -1,122 +1,172 @@
-/* The pricing block (PricingPlans.tsx). Night palette only; type and spacing from the same tokens as the rest of the page. */
+/*
+ * The pricing block (PricingPlans.tsx). Night palette only; type and spacing from the same tokens as the rest of the page.
+ * Quiet on purpose: two plain cards, one hairline each, no boxes inside boxes. It lays out by width and by height, so it fits a
+ * short phone without being scaled.
+ */
 .wrap {
-  margin-top: clamp(24px, 3.6vw, 44px);
-  max-width: 52rem;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
   text-align: left;
 }
-.tiers {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 760px) {
-  .tiers {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-    gap: 16px;
-    align-items: start;
-  }
-}
-.tier {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: clamp(18px, 2.2vw, 28px);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--night-raised) 60%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 10%, transparent);
-  backdrop-filter: blur(8px);
-}
-.plus {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-accent) 55%, transparent);
-}
-.tierName {
-  margin: 0;
-  font: 600 12px/1 var(--font-sans);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--night-accent);
-}
-.tierTitle {
-  margin: 6px 0 4px;
-  text-wrap: balance;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: clamp(22px, 2.2vw, 30px);
-  line-height: 1.2;
-}
-.note {
-  margin: 0;
-  font-size: clamp(16px, 1.4vw, 19px);
+.lede {
+  margin: 0 0 clamp(18px, 2.6vh, 28px);
+  max-width: 32em;
+  font-size: clamp(16px, 1.4vw, 20px);
   line-height: 1.5;
   color: var(--night-ink-muted);
+  text-wrap: balance;
 }
+
 .plans {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
-}
-@media (min-width: 560px) {
-  .plans {
-    grid-template-columns: 1fr 1fr;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 1.6vw, 18px);
 }
 .plan {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--night-ink) 6%, transparent);
+  align-items: flex-start;
+  gap: 6px;
+  padding: clamp(14px, 2vw, 24px);
+  border-radius: 18px;
+  border: 1px solid var(--night-line);
+  background: color-mix(in srgb, var(--night-raised) 55%, transparent);
+}
+.better {
+  border-color: color-mix(in srgb, var(--night-accent) 60%, transparent);
 }
 .planName {
   font: 600 12px/1.2 var(--font-sans);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--night-ink-muted);
+}
+.trial {
+  margin-top: 2px;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.2;
+  color: var(--night-accent);
+}
+.cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4em;
+  row-gap: 0;
+  line-height: 1.15;
+}
+.then,
+.per {
+  font: 400 clamp(15px, 1.3vw, 17px)/1.3 var(--font-sans);
   color: var(--night-ink-muted);
 }
 .price {
   font-family: var(--font-serif);
-  font-size: clamp(28px, 3vw, 38px);
-  line-height: 1.15;
+  font-weight: 500;
+  font-size: clamp(28px, 3.2vw, 44px);
   letter-spacing: -0.01em;
+  color: var(--night-ink);
 }
-.per {
-  font: 400 clamp(15px, 1.3vw, 17px)/1 var(--font-sans);
-  letter-spacing: 0;
-  color: var(--night-ink-muted);
-}
-.trial {
-  font-size: clamp(15px, 1.3vw, 17px);
+.note {
+  margin-top: 2px;
+  font: 500 clamp(14px, 1.2vw, 16px)/1.3 var(--font-sans);
   color: var(--night-accent);
 }
+
 .includes {
   list-style: none;
-  margin: 12px 0 0;
+  margin: clamp(16px, 2.4vh, 26px) 0 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 6px 28px;
   font-size: clamp(16px, 1.4vw, 19px);
   line-height: 1.4;
+  color: var(--night-ink);
 }
 .includes li {
   position: relative;
-  padding-left: 22px;
+  padding-left: 24px;
 }
 .includes li::before {
   content: '';
   position: absolute;
   left: 2px;
-  top: 0.5em;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--night-accent);
+  top: 0.46em;
+  width: 11px;
+  height: 6px;
+  border-left: 1.5px solid var(--night-accent);
+  border-bottom: 1.5px solid var(--night-accent);
+  transform: rotate(-45deg);
 }
+@media (min-width: 640px) {
+  .includes {
+    grid-template-columns: repeat(2, auto);
+    justify-content: start;
+  }
+}
+
 .promise {
-  margin: clamp(16px, 2vw, 24px) 0 0;
+  margin: clamp(14px, 2.2vh, 24px) 0 0;
+  padding-top: clamp(14px, 2.2vh, 24px);
+  border-top: 1px solid var(--night-line);
+  max-width: 36em;
   font-size: clamp(16px, 1.4vw, 19px);
   line-height: 1.5;
   color: var(--night-ink-muted);
+  text-wrap: pretty;
+}
+
+/* Short screens (a small phone, or a zoomed-in window): the same block, tighter. Nothing is dropped except the lede,
+   which the card names already say. */
+@media (max-height: 700px) {
+  .plan {
+    gap: 3px;
+    padding: 12px;
+  }
+  .price {
+    font-size: 26px;
+  }
+  .includes {
+    font-size: 15px;
+    gap: 3px 24px;
+  }
+  .promise {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+  .lede {
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+}
+@media (max-height: 600px) {
+  .lede {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .trial {
+    font-size: 16px;
+  }
+  .plan {
+    padding: 12px 10px;
+  }
+  .price {
+    font-size: 25px;
+  }
+}
+
+@media (forced-colors: active) {
+  .plan {
+    border-color: CanvasText;
+  }
+  .includes li::before {
+    border-color: CanvasText;
+  }
 }

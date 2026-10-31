@@ -9,7 +9,7 @@ import { type Dirent, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { plusPricing } from '../src/content/pricing';
+import { annualSavings, plusPricing } from '../src/content/pricing';
 import * as siteModule from '../src/content/site';
 
 type Text = { where: string; text: string };
@@ -56,6 +56,9 @@ const asMonths = (word: string) => (/^\d+$/.test(word) ? Number(word) : WORD_NUM
 
 const plans = Object.values(plusPricing);
 const PRICES: string[] = plans.map((p) => p.price);
+/** The only other dollar amount allowed: the yearly saving, which is derived from the constants (checked below). */
+const ALLOWED_DOLLARS: string[] = [...PRICES, annualSavings.price];
+const toCents = (price: string) => Math.round(Number(price.slice(1)) * 100);
 const TRIALS: number[] = plans.map((p) => p.trialMonths);
 
 describe('what is being checked', () => {
@@ -81,8 +84,8 @@ describe('every string under src, as written and as rendered', () => {
   });
 
   // RULE: a dollar amount anywhere is one of the constants.
-  it('states no dollar amount other than the constants', () => {
-    expect(found(matches(ALL, DOLLARS).filter((m) => !PRICES.includes(m.match)))).toEqual([]);
+  it('states no dollar amount other than the constants and the derived yearly saving', () => {
+    expect(found(matches(ALL, DOLLARS).filter((m) => !ALLOWED_DOLLARS.includes(m.match)))).toEqual([]);
   });
 
   // RULE: a free-trial length anywhere ("1-month free trial", "two months free", "free for 2 months") is one of the constants.
@@ -98,5 +101,28 @@ describe('the pricing sentence (s10)', () => {
     expect(siteModule.site.scenes.s10.support).toContain(
       `${monthly.price} a month with a ${monthly.trialMonths}-month free trial, or ${annual.price} a year with a ${annual.trialMonths}-month free trial.`,
     );
+  });
+});
+
+describe('the yearly saving', () => {
+  // RULE: any saving the page states is arithmetic-correct: twelve monthly payments less the yearly price.
+  it('is 12 x $4.99 = $59.88 less $49.99 = $9.89, and the page says exactly that', () => {
+    expect(12 * toCents(plusPricing.monthly.price)).toBe(5988);
+    expect(annualSavings.twelveMonthsCents).toBe(5988);
+    expect(annualSavings.cents).toBe(5988 - toCents(plusPricing.annual.price));
+    expect(annualSavings.cents).toBe(989);
+    expect(annualSavings.price).toBe('$9.89');
+    expect(annualSavings.cents).toBeGreaterThan(0);
+    const yearly = siteModule.site.scenes.s10.plus.plans.find((p) => p.name === 'Yearly');
+    expect(yearly?.note).toBe(`Save ${annualSavings.price} a year`);
+  });
+
+  // RULE: each plan card leads with its own free trial, read from the constants.
+  it('leads each plan with its free trial from the constants', () => {
+    const [monthly, yearly] = siteModule.site.scenes.s10.plus.plans;
+    expect(monthly.trial).toBe(`${plusPricing.monthly.trialMonths} month free`);
+    expect(yearly.trial).toBe(`${plusPricing.annual.trialMonths} months free`);
+    expect(monthly.price).toBe(plusPricing.monthly.price);
+    expect(yearly.price).toBe(plusPricing.annual.price);
   });
 });

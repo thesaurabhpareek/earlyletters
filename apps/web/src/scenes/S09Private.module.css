@@ -1,86 +1,121 @@
-/* S09: the envelope closes; five promises. */
+/* S09: the envelope closes; five promises, as quiet rows. Left-aligned reading; a tidy stack on a phone. */
 .column {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(18px, 2.4svh, 28px);
-  padding: 8svh var(--gutter) 6svh;
-  text-align: center;
+  /* Clear of the header above and the floating sign-up button below. */
+  padding: 72px var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 96px);
   color: var(--night-ink);
   z-index: 2;
 }
-.column h2 {
-  font-size: clamp(36px, 5vw, 80px);
+.grid {
+  width: 100%;
+  max-width: 68rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 3svh, 28px);
+  text-align: left;
+}
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(12px, 2.2svh, 22px);
+}
+.intro h2 {
+  font-size: clamp(32px, 4.6vw, 64px);
+  line-height: 1.06;
 }
 .envelope {
-  width: clamp(150px, 19vw, 280px);
-  color: color-mix(in srgb, var(--night-ink) 80%, transparent);
+  width: clamp(72px, 20vw, 96px);
+  color: color-mix(in srgb, var(--night-ink) 72%, transparent);
 }
 .points {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0;
-  max-width: 26em;
 }
 .point {
-  position: relative;
-  padding: 14px 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  padding: 11px 0;
   border-top: 1px solid var(--night-line);
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: clamp(19px, 1.9vw, 28px);
-  line-height: 1.45;
+  font-family: var(--font-sans);
+  font-size: clamp(16px, 1.45vw, 20px);
+  line-height: 1.4;
   color: color-mix(in srgb, var(--night-ink) 92%, transparent);
-  text-align: center;
+  text-wrap: pretty;
 }
-.point:first-child {
-  border-top: 0;
+.point:last-child {
+  border-bottom: 1px solid var(--night-line);
 }
-.tick {
-  position: absolute;
-  left: 2px;
-  top: 0.62em;
-  width: 14px;
-  height: 7px;
-  border-left: 1.6px solid var(--night-accent);
-  border-bottom: 1.6px solid var(--night-accent);
-  transform: translateY(-50%) rotate(-45deg);
-  border-radius: 1px;
+.icon {
+  width: 28px;
+  height: 28px;
+  color: var(--night-accent);
+  opacity: 0.9;
 }
 
-/* Phones: keep the last promise clear of the floating button, and let a short screen breathe. */
-@media (max-width: 759px) {
-  .column {
-    gap: 12px;
-    padding-top: 68px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+/* Wider than a phone: headline on the left, promises on the right. */
+@media (min-width: 720px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: center;
+    column-gap: clamp(36px, 6vw, 96px);
   }
   .envelope {
-    width: clamp(96px, 28vw, 130px);
+    width: clamp(110px, 11vw, 160px);
   }
   .point {
-    padding: 9px 0;
-    font-size: clamp(17px, 4.6vw, 20px);
-    line-height: 1.38;
+    padding: clamp(11px, 1.9svh, 18px) 0;
+    column-gap: 18px;
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .icon {
+    width: 32px;
+    height: 32px;
   }
 }
 
-@media (max-width: 759px) and (max-height: 640px) {
+/* A short screen (a small phone, or a window zoomed in): tighter, and the envelope steps aside. */
+@media (max-height: 700px) {
   .column {
-    gap: 8px;
-    padding-top: 56px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+    padding-top: 60px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
   }
+  .grid {
+    gap: 12px;
+  }
+  .intro h2 {
+    font-size: clamp(28px, 4vw, 44px);
+  }
+  .point {
+    padding: 8px 0;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+}
+@media (max-height: 620px) {
   .envelope {
     display: none;
   }
+}
+@media (max-height: 700px) and (min-width: 720px) {
   .point {
-    padding: 7px 0;
-    font-size: 16px;
+    padding: 8px 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .icon {
+    color: CanvasText;
+  }
+  .point {
+    border-color: CanvasText;
   }
 }
