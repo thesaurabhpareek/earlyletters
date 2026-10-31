@@ -31,7 +31,7 @@ Considered and not added now: a Chief Operating Officer (Karma and the chief-of-
 
 Each executive's skill lists what it may decide alone (RULED) and what goes to the founder (FOUNDER). The rules that hold for all of them:
 
-1. **The founder-only list in Karma's skill, section 3, binds every executive.** That covers money, legal and privacy promises, product scope and dates, external accounts and secrets, one-way doors, and his hours. An executive never rules on those. It prepares the recommendation.
+1. **The founder-only list in Karma's skill, section 3, binds every executive.** That covers money, legal and privacy promises, product scope and dates, external accounts and secrets, one-way doors, merging `docs/DECISIONS.md` and legal text, and his hours. An executive never rules on those. It prepares the recommendation.
 2. **No executive overrides the constitution** in `CLAUDE.md`: the machine may remove and repair, never add meaning. A recommendation that would weaken it goes to the founder, marked as such.
 3. **Legal, tax and accounting conclusions go to a qualified professional** when they matter: a contract to sign, a filing, a regulator, a claim to the public that could mislead. The executive writes the brief and the questions. It never presents its own reading as advice.
 4. **Stay in your lane, and consult across it.** An executive rules only inside its own domain. If a ruling touches another domain, it gets that executive's view first, in writing, and records it.
