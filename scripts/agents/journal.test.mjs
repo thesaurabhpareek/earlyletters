@@ -76,14 +76,46 @@ test("the count cannot be read: unreadable, no comments, never an oldest-first g
   }
 });
 
-test("a page that fails to load makes the whole read unreadable (no partial guess)", () => {
-  const r = read(mk(300), { failPage: 2 });
+test("a failed page does not drop the pages already read; the failed page count is reported", () => {
+  const all = mk(300);
+  const r = read(all, { failPage: 2 });
+  assert.equal(r.unreadable, false);
+  assert.equal(r.failedPages, 1);
+  assert.deepEqual(r.comments.map((c) => c.id), [...all.slice(0, 100), ...all.slice(200)].map((c) => c.id));
+  assert.equal(r.notRead, 100);
+});
+
+test("every page failing is unreadable", () => {
+  const r = readJournal({ gh: (p) => (/\/issues\/7$/.test(p) ? { comments: 250 } : null), repo: "o/r", num: 7 });
   assert.equal(r.unreadable, true);
   assert.deepEqual(r.comments, []);
+});
+
+test("the comment count is validated: only a finite non-negative integer or a digit string is accepted", () => {
+  const ok = (v) => readJournal({ gh: (p) => (/\/issues\/7$/.test(p) ? { comments: v } : []), repo: "o/r", num: 7 });
+  for (const bad of [null, "", false, true, [], [3], NaN, Infinity, -1, 1.5, "1.5", "-2", " 3", "3 ", "0x10", "1e2", {}, undefined]) {
+    assert.equal(ok(bad).unreadable, true, JSON.stringify(bad) + String(bad));
+  }
+  for (const good of [0, "0", 5, "5"]) assert.equal(ok(good).unreadable, false, String(good));
 });
 
 test("zero comments is readable and empty", () => {
   const r = read([]);
   assert.equal(r.unreadable, false);
   assert.deepEqual(r.comments, []);
+});
+
+test("dedupe by comment id: a comment that shows up on two pages (comments added between calls) is kept once", () => {
+  const mkc = (i) => ({ id: `c${i}`, body: `c${i}` });
+  const page = { 1: Array.from({ length: 100 }, (_, i) => mkc(i)), 2: [mkc(99), ...Array.from({ length: 99 }, (_, i) => mkc(100 + i))], 3: [mkc(198), mkc(199), mkc(200)] };
+  const r = readJournal({ gh: (p) => (/\/issues\/7$/.test(p) ? { comments: 250 } : page[Number(/&page=(\d+)/.exec(p)?.[1])] ?? null), repo: "o/r", num: 7 });
+  const ids = r.comments.map((c) => c.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(ids.length, 201);
+  assert.equal(r.notRead, 49);
+});
+
+test("comments without an id are never merged with each other", () => {
+  const r = readJournal({ gh: (p) => (/\/issues\/7$/.test(p) ? { comments: 3 } : [{ body: "a" }, { body: "a" }, { body: "a" }]), repo: "o/r", num: 7 });
+  assert.equal(r.comments.length, 3);
 });

@@ -909,7 +909,8 @@ const denied = (cmd) => {
 
 test("opencode lane: control, the deny list blocks the pushes and merges it was written for", () => {
   for (const cmd of ["git push origin develop", "git push origin main", "git push --force origin x", "gh pr merge 5 --squash", "gh secret list"]) assert.equal(denied(cmd), true, cmd);
-  assert.equal(denied("git push origin agent/qa/x"), false, "an agent branch push is allowed (round 5: only agent/* branches)");
+  assert.equal(denied("git push origin agent/qa/x"), true, "the model does not push at all (round 6)");
+  assert.equal(denied("git checkout -b agent/qa/x"), false, "branch creation stays allowed");
   assert.equal(opencodeConfig().share, "disabled");
 });
 
@@ -925,4 +926,48 @@ test("opencode lane: edits under .github/workflows are not allowed", { ...hole("
   const edit = opencodeConfig().permission.edit;
   const rules = typeof edit === "object" ? edit : { "*": edit };
   assert.ok(rules[".github/workflows/**"] === "deny" || rules[".github/**"] === "deny", JSON.stringify(rules));
+});
+
+// ---------- round 6: the model does not push; journal lookup ----------
+
+test("brief: no mode tells the model to push, and every mode says the workflow pushes", () => {
+  const prs = [agentPR(1, "mobile")];
+  for (const [mode, extra] of [["task", ["--task", "BL-900"]], ["standing", []], ["maintain", ["--pr", "1", "--reason", "failing checks: lint"]], ["review", ["--pr", "1"]], ["digest", []]]) {
+    const doc = brief("mobile", mode, extra, { prs });
+    assert.match(doc, /Do not run `git push`/, mode);
+    assert.match(doc, /the workflow pushes your branch/, mode);
+    for (const line of doc.split("\n").filter((l) => /\bpush\b/i.test(l) && !/^>/.test(l))) {
+      assert.match(line, /Do not|do not|never|workflow pushes|Branches pushed in the last 24 hours/i, `${mode}: ${line}`);
+    }
+    assert.ok(!/\bgit push\b/.test(doc.replace(/Do not run `git push`/g, "")), `${mode}: a bare git push instruction`);
+  }
+});
+
+test("brief: the task branch name uses the agent/<handle>/ prefix the guards expect", () => {
+  assert.match(brief("mobile", "task", ["--task", "BL-900"], {}), /Branch: `agent\/mobile\/bl-900-<slug>`/);
+});
+
+function briefNoJournalArg(w) {
+  const out = join(TREE, `brief-${++runNo}.md`);
+  const routes = briefRoutes(w);
+  routes.unshift(...(w.lookup === "fail" ? [] : [route(`${R}/issues\\?state=open&labels=journal,agent:mobile`, w.lookup ?? [])]));
+  run("brief.mjs", ["--agent", "mobile", "--mode", "task", "--task", "BL-900", "--out", out], routes);
+  return readFileSync(out, "utf8");
+}
+
+test("brief: a failed journal issue lookup marks the journal unreadable", () => {
+  const doc = briefNoJournalArg({ lookup: "fail", journal: [comment(FOUNDER, "Note that must not be guessed at.", "2026-10-27T00:00:00Z")] });
+  assert.match(doc, /Journal unreadable:\*\* the journal issue lookup failed/);
+  assert.ok(!doc.includes("must not be guessed"));
+});
+
+test("brief: a successful lookup with no journal issue says there is none, and is not 'unreadable'", () => {
+  const doc = briefNoJournalArg({ lookup: [] });
+  assert.match(doc, /No journal issue exists for this agent/);
+  assert.ok(!/Journal unreadable/.test(doc));
+});
+
+test("brief: a successful lookup finds the journal and reads it", () => {
+  const doc = briefNoJournalArg({ lookup: [{ number: JOURNAL }], journal: [comment(FOUNDER, "Found by lookup.", "2026-10-27T00:00:00Z")] });
+  assert.match(section(doc, "Founder instructions since your last run"), /Found by lookup/);
 });

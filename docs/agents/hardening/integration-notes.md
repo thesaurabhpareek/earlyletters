@@ -90,3 +90,32 @@ Known holes left on purpose, stated plainly:
 - The broad rule has false positives: any `git` command containing `push` or ` -c `.
 - Behaviour on the real engine is UNVERIFIED: last-match-wins, `*` crossing spaces, the optional trailing ` *`, and how compound commands are split were taken from Review C's model, not run here.
 - The deny list is a TRIPWIRE, not a boundary. The real controls are (a) branch protection on main and develop, (b) a write job that does the push so the model never holds push credentials, and (c) locking the journal, board and handoff issues so only collaborators can comment. None of the three is in place from this branch. This branch is not shown to be safe to enable.
+
+## Round 6: the model does not push
+
+Supersedes the round 5 push rules above (the allow for `git push origin agent/*` and its re-deny list are gone).
+
+- `run-opencode.mjs`: every command that has `git` and `push` in it is denied (`*git*push*`, `git*push*`), in any spacing, with any global option, env prefix, `sh -c`, chain, substitution or pipe. There is no allow rule for push; the only allow is the catch-all. `git -c k=v` is denied (`git -c*`, `git*-c *=*`); `git switch -c` and `git checkout -b` stay allowed. Commits and branch creation work. Cost: any command with both words, such as `git commit -m "push notes"`, is denied too.
+- The brief says: do not run `git push`, commit on `agent/<handle>/<topic>`, the workflow pushes. The task branch name is now `agent/<handle>/<task>-<slug>` (it was `<type>/<area>-<task>-<slug>`). `checkoutLine` and `OPERATING_MODEL.md` section "Save as you go" say the same.
+- The deny list is a TRIPWIRE, not a boundary. Behaviour on the real engine is UNVERIFIED (last-match-wins, `*` crossing spaces, the optional trailing ` *`, how compound commands are split): all of it comes from Review C's model, implemented once in `opencode-matcher.mjs` and used by every test file. Known holes: mixed-case gh verbs (`-XPatch`), anything the globs cannot see (a script the model wrote). Pushes recorded on the real binary under older rule sets cannot be compared any more; they are a documented exception (`isPush` in the contract test), checked only as "denied now". Every other recorded command is compared for equality again.
+- The real controls are (a) branch protection on main and develop, (b) the workflow's own push (below), (c) locking the journal, board and handoff issues so only collaborators can comment. None of them is verified or in place from this branch. The branch is not shown to be safe to enable.
+
+### Does salvage push new agent branches today? (read only: `scripts/agents/salvage.mjs`, `.github/workflows/agents.yml`)
+
+Yes, partly. The step "Save unfinished work" runs after the model step with `if: always()`, with the same App token the model had (`steps.app.outputs.token`). `salvage.mjs` pushes the CURRENT branch (`git push -u origin <branch>`) when the tree is dirty (it commits a WIP commit first) or has commits not on its upstream or not on `origin/develop`; a run on `develop`, `main` or a detached HEAD goes to `agent/<handle>/wip-<run id>`. It posts a journal comment with the branch link. Gaps that PR #429 (ci/agent-lane-gates) must close; nothing here is invented:
+1. It pushes whatever branch name the model chose, not only `agent/<handle>/<topic>`. It must refuse or rename any other name, and run `pathguard.mjs` (with `--branch`, `--author`) before the push.
+2. It does not open or label the pull request. The model used to run `gh pr create` after its own push; with push denied, the branch is not on GitHub until the salvage step, so a PR step (draft, labels `agent:<handle>` and `from:agent`) must follow it.
+3. It only runs as a salvage step: success paths with nothing unpushed do nothing (correct), but the step name, journal text and the push credential are the salvage ones. A dedicated write job, with the model job holding no push credential, is the design (b) above.
+4. `salvage.mjs` and `receipt.mjs` run from the model-editable checkout with the write token (see "Needs the workflow PR after 9 Nov").
+
+### Known limits, not solved here
+
+- Old-note resurfacing (named by Review C; not analysed or fixed here): the brief shows founder notes newer than the agent's last trusted journal entry, so a note can be shown again in a later run whenever no newer entry exists.
+- Stub-timestamp race (named by Review C; not analysed or fixed here): the journal stub posted at the start of a run and the final entry have different timestamps, so a founder note written in between can be treated as already seen or shown twice.
+- A founder note in the middle of a journal thread over 1,000 comments is still not read; the brief says how many comments were skipped. Locking the journal issue is the fix.
+- `readJournal` skips a page that fails while others load; those comments are reported as not read (with the number of failed pages) and are not retried.
+- `HARNESS.md`, `cto/RULINGS.md` and the older notes still mention `git push` as an agent step; they were not rewritten.
+
+### Round 6 test changes
+
+New tests failed on the old code first: the 112-shape push table and the config-injection and branch-creation rows (opencode-deny.test.mjs), the brief no-push and branch-name tests, the journal lookup tests (failed lookup, none, found), the `agent/` prefix tests (identity and pathguard CLI), the count-validation and failed-page tests. Added after Review A, each killed its mutation when tried: the 5 MB default, a rename's old path in the file cap, `readJournal` dedupe by id.

@@ -9,7 +9,8 @@
 // be treated as an agent PR. The guards use all three and FAIL CLOSED when they
 // disagree or when branch or author says "agent" but the label is missing.
 
-const BRANCH_RE = /^agent\/([a-z0-9][a-z0-9-]*)\//i;
+const BRANCH_RE = /^agent\/([a-z0-9][a-z0-9-]*)\/[^/\s].*$/i;
+const AGENT_PREFIX_RE = /^agent\//i;
 
 const labelName = (l) => (typeof l === "string" ? l : l?.name);
 
@@ -41,6 +42,9 @@ export function botAuthor(pr, appLogins = []) {
  *   conflict   two labels, or label and branch handle disagree: fail closed
  */
 export function identityOf(pr, { appLogins = [] } = {}) {
+  const ref = String(pr?.head?.ref ?? "").normalize("NFKC");
+  // A head branch that starts with agent/ but is not agent/<handle>/<topic> is never trusted, label or no label.
+  if (AGENT_PREFIX_RE.test(ref) && !BRANCH_RE.test(ref)) return { status: "conflict", reasons: [`branch '${ref}' starts with agent/ but is not agent/<handle>/<topic>`] };
   const labels = labelHandles(pr);
   const branch = branchHandle(pr);
   const bot = botAuthor(pr, appLogins);

@@ -60,16 +60,17 @@ test("deny list covers option, -C/-c, -R and implicit-write spellings (round 2)"
     assert.ok(denied(c), `should deny: ${c}`);
   }
   // known bypass shapes are NOT claimed: the list is a tripwire
-  assert.ok(!denied("FOO=1 git push origin develop"));
-  assert.ok(!denied("sh -c 'git push origin develop'"));
-  assert.ok(!denied("env git push origin develop"));
+  // Round 6: `*git*push*` also catches these shapes (no allow rule for push exists any more).
+  assert.ok(denied("FOO=1 git push origin develop"));
+  assert.ok(denied("sh -c 'git push origin develop'"));
+  assert.ok(denied("env git push origin develop"));
   // PR bodies that merely mention words are not blocked
   assert.ok(!denied('gh pr create --title x --body "rotate the secret and variable names"'));
 });
 
 test("deny list does not block normal agent work", () => {
   const mustAllow = [
-    "git push -u origin agent/qa/opencode-runner-hardening", "git push origin agent/qa/wip-42", "git status",
+    "git checkout -b agent/qa/opencode-runner-hardening", "git switch -c agent/qa/wip-42", "git commit -m wip", "git status",
     "gh pr create --title x --body y", "gh pr create --fill", "gh pr view 12", "gh pr list --label agent:qa",
     "gh api repos/o/r/pulls/12/comments", "gh issue comment 5 --body hi", "npm test",
   ];

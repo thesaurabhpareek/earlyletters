@@ -36,6 +36,18 @@ test("identityOf: look-alike branches and users are not agent signals", () => {
   assert.equal(isAgentLike(pr({ labels: [{ name: "from:agent" }] })), false);
 });
 
+test("a head branch that starts with agent/ but is not agent/<handle>/<topic> fails closed, with or without a label", () => {
+  for (const ref of ["agent/x", "agent/", "agent/qa/", "agent//x", "AGENT/x", "agent/-x/topic", "agent/qa x/topic", "\uFF41gent/x"]) {
+    for (const labels of [[], [{ name: "agent:qa" }]]) {
+      const r = identityOf(pr({ labels, head: { ref } }));
+      assert.equal(r.status, "conflict", `${ref} ${labels.length}`);
+      assert.match(r.reasons[0], /not agent\/<handle>\/<topic>/);
+    }
+  }
+  assert.equal(identityOf(pr({ labels: [{ name: "agent:qa" }], head: { ref: "agent/qa/topic" } })).status, "agent");
+  assert.equal(identityOf(pr({ head: { ref: "agents/x" } })).status, "none", "agents/ is a different prefix");
+});
+
 test("dispatcher: routing stays label-only, but the open-PR cap counts an unlabelled agent-branch PR", () => {
   const drive = pr({ head: { ref: "agent/qa/x" } });
   assert.equal(agentOfPR(drive), undefined, "a drive-by branch name never routes");

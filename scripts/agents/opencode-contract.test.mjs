@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as runner from "./run-opencode.mjs";
+import { deniedBy, denyOnly, isPush } from "./opencode-matcher.mjs";
 const { tally, newTotals, opencodeConfig } = runner;
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "opencode");
@@ -147,11 +148,11 @@ test("hardened deny: shell indirection to push develop is NOT blocked (tripwire,
 // Spelling variants a glob could cover. They ran today; the todo tests check the config and flip
 // to real passes when DENY_PATTERNS covers them. After that, refresh the fixture and move them up.
 const patterns = () => runner.DENY_PATTERNS ?? Object.entries(opencodeConfig().permission.bash).filter(([, v]) => v === "deny").map(([k]) => k);
-const globToRe = (g) => new RegExp("^" + g.split("*").map((s) => s.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "s");
-// Round 5: the rules are ordered and the LAST matching rule wins (allow `git push origin agent/*` comes after the broad deny).
-const RULES = Object.entries(opencodeConfig().permission.bash);
-const decide = (seg) => { let a = "allow"; for (const [g, act] of RULES) if (globToRe(g).test(seg)) a = act; return a; };
-const denied = (cmd) => cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => decide(seg) === "deny");
+// One faithful matcher (opencode-matcher.mjs, shared with opencode-deny.test.mjs). Round 6: the model does not
+// push, so every command with git and push in it is denied now. Recordings of pushes were made under older
+// rule sets and cannot be compared to the real binary any more: they are the documented exception
+// (isPush), checked only for "denied now". Every other command is still compared for equality.
+const denied = deniedBy(Object.entries(opencodeConfig().permission.bash));
 
 // Recorded as RAN under d060a36f (fixture left untouched); the round 2 patterns now cover them.
 const FIXED = ["git -C . push origin develop", "git push -u origin develop", "git push --set-upstream origin main", "git push  origin  develop",
@@ -162,9 +163,8 @@ test("hardened deny: the glob matcher used here agrees with the real binary on e
     if (FIXED.includes(cmd)) continue;
     // Incidentally matched by " develop*" now; not a promise (substitution is a known bypass shape).
     if (cmd === "git push origin $(echo develop)") continue;
-    // Round 5 blocks more than the recorded rule set did (every git push outside agent/*), so only
-    // "the real binary blocked it" is asserted: the new rules must never allow what was blocked.
-    if (res === "blocked") assert.ok(denied(cmd), cmd);
+    if (isPush(cmd)) { assert.ok(denied(cmd), `${cmd}: pushes are denied now; the recording is not comparable`); continue; }
+    assert.equal(denied(cmd), res === "blocked", cmd);
   }
 });
 
@@ -207,7 +207,9 @@ test("final deny: the glob matcher agrees with the real binary on all 58 recorde
   // graphql comment and the accidental substitution match, so those rows are expected to differ.
   const changedOnPurpose = new Set([...MUST_ALLOW, GRAPHQL_COMMENT, "git push origin $(echo develop)"]);
   for (const [cmd, res] of Object.entries(final)) {
-    if (!changedOnPurpose.has(cmd) && res === "blocked") assert.ok(denied(cmd), cmd); // round 5: one-way, see above
+    if (changedOnPurpose.has(cmd)) continue;
+    if (isPush(cmd)) { assert.ok(denied(cmd), cmd); continue; } // documented exception: see the comment at the top of this section
+    assert.equal(denied(cmd), res === "blocked", cmd);
   }
   assert.equal(Object.keys(final).length, 58);
 });
@@ -244,8 +246,7 @@ for (const cmd of MUST_ALLOW) {
     assert.equal(tighter[cmd], "ran", "recorded on the real binary with the tighter set");
     // Round 5 policy: only `git push [-u] origin agent/*` stays allowed; other pushes and any git command
     // containing "push" are denied on purpose (documented in integration-notes.md).
-    const agentPush = /^git push (-u )?origin agent\//.test(cmd);
-    assert.equal(denied(cmd), !agentPush, "current rules: allowed only for agent/* pushes");
+    assert.ok(denied(cmd), "round 6: the model does not push, so every command with git and push is denied");
   });
 }
 
@@ -281,8 +282,9 @@ const tighterGit = () => {
   return out;
 };
 const tighterDenied = (cmd) => {
-  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !p.startsWith("git"))];
-  return cmd.split(/&&|\|\||;|\|/).map((s) => s.trim()).some((seg) => pats.some((g) => globToRe(g).test(seg)));
+  // The frozen candidate git set plus the CURRENT non-git patterns (those that do not mention git or push).
+  const pats = [...tighterGit(), ...runner.DENY_PATTERNS.filter((p) => !/^\*?git/.test(p))];
+  return deniedBy(denyOnly(pats))(cmd);
 };
 
 test("tighter candidate: the real binary allows every must-allow command and still blocks protected-branch pushes", () => {

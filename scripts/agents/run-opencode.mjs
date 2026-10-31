@@ -24,13 +24,12 @@ import { tmpdir } from "node:os";
  * the push so the model never holds push credentials, and locked journal issues. See
  * docs/agents/hardening/integration-notes.md. Do not rely on this list.
  *
- * Shape of the git rules (round 5): deny every git command with `push` in it, whatever the
- * spacing or global option, and every `git ... -c ...`; then allow ONLY
- * `git push origin agent/*` and `git push -u origin agent/*`; then re-deny the few tokens that an
- * allowed prefix would otherwise let through (force, delete, plus or colon refspecs, develop and
- * main as separate words, --all, --mirror, --tags, --receive-pack). Known cost: the broad deny also
- * blocks harmless commands that contain the word push (`git commit -m "push notes"`).
- * Known hole: shell indirection after the allowed prefix (`git push origin agent/x $REFSPEC`).
+ * Shape of the git rules (round 6): the model does not push at all. Every command that has `git`
+ * and `push` in it is denied, in any spacing, with any global option or env prefix, inside `sh -c`,
+ * `env`, a chain, a substitution or a pipe, and there is NO allow rule for push. The workflow's
+ * salvage step pushes the branch after the run. `git -c k=v` (config injection) is denied too;
+ * `git switch -c` and `git checkout -b` stay allowed. Known cost: the broad deny also blocks harmless
+ * commands that contain both words (`git commit -m "push notes"`). Known hole: mixed-case gh verbs.
  */
 const QUOTE_FORMS = ["-X", "--method"].flatMap((f) => [" ", "  ", "=", ""].flatMap((sep) => ['"', "'"].map((q) => `gh*api*${f}${sep}${q}*`)));
 
@@ -67,21 +66,15 @@ const DENY_BEFORE_GIT = [
   "gh*api*protection*", "gh*api*rulesets*", "gh*api*/actions/secrets*", "gh*api*/actions/variables*",
   "gh*api*/actions/runners*", "gh*api*/hooks*", "gh*api*/keys*", "gh*api*/collaborators*",
   "gh*api*/merges*", "gh*api*/git/refs*", "gh*api*/pulls/*/merge*", "gh*api*/settings*",
-  // any git push, any spacing, any global option; and any git command with -c
-  "git*push*", "git*-c *",
-];
-const ALLOW_AGENT_PUSH = ["git push origin agent/*", "git push -u origin agent/*"];
-const DENY_AFTER_ALLOW = [
-  "git*push* --force*", "git*push* -f*", "git*push*--delete*", "git*push* +*", "git*push*:*",
-  "git*push* develop*", "git*push* main*", "git*push*--all*", "git*push*--mirror*", "git*push*--tags*", "git*push*--receive-pack*",
+  // any command with git and push in it, anywhere (spacing, global options, env prefix, sh -c, chains);
+  // and git config injection (`git -c k=v ...`, `git --no-pager -c k=v ...`)
+  "*git*push*", "git*push*", "git -c*", "git*-c *=*",
 ];
 
 /** The ordered bash rules as [pattern, action] pairs, catch-all first. */
 export const BASH_RULES = [
   ["*", "allow"],
   ...DENY_BEFORE_GIT.map((p) => [p, "deny"]),
-  ...ALLOW_AGENT_PUSH.map((p) => [p, "allow"]),
-  ...DENY_AFTER_ALLOW.map((p) => [p, "deny"]),
 ];
 
 /** Every pattern that is denied, in rule order (for tests that list them). */

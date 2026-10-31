@@ -39,16 +39,22 @@ if (!agent) {
 // ---------- journal ----------
 
 let journal = opt("journal");
+let journalLookupFailed = false;
 if (!journal) {
-  const issues = ghAll(`/repos/${repo}/issues?state=open&labels=journal,agent:${handle}`, { allowFail: true });
-  journal = String(issues[0]?.number ?? "");
+  // gh() returns null on an API error and an array on success, so a failed lookup is not read as "no journal".
+  const issues = gh(`/repos/${repo}/issues?state=open&labels=journal,agent:${handle}&per_page=5`, { allowFail: true });
+  if (Array.isArray(issues)) journal = String(issues[0]?.number ?? "");
+  else journalLookupFailed = true;
 }
 // Both ends of the thread, failing closed (readJournal in hardening.mjs).
-const journalRead = journal ? readJournal({ gh, repo, num: journal }) : { comments: [], unreadable: false, total: 0, notRead: 0 };
+const journalRead = journalLookupFailed
+  ? { comments: [], unreadable: true, total: 0, notRead: 0, failedPages: 0, why: "the journal issue lookup failed" }
+  : journal ? readJournal({ gh, repo, num: journal }) : { comments: [], unreadable: false, total: 0, notRead: 0, failedPages: 0 };
 const comments = journalRead.comments;
 const journalNotes = [
   journalRead.unreadable ? `**Journal unreadable:** ${journalRead.why}. Treat it as having no entries and no founder notes, do not guess, and say so in your journal.` : "",
-  journalRead.notRead ? `**${journalRead.notRead} of ${journalRead.total} journal comments were not read** (the middle of a long thread). A founder note could be among them. Ask the founder to lock the journal issue so only collaborators can comment.` : "",
+  !journal && !journalLookupFailed ? "**No journal issue exists for this agent** (the lookup worked and returned none). Say so in your journal; do not guess." : "",
+  journalRead.notRead ? `**${journalRead.notRead} of ${journalRead.total} journal comments were not read** (${journalRead.failedPages ? `${journalRead.failedPages} page(s) failed to load, and ` : ""}the middle of a long thread). A founder note could be among them. Ask the founder to lock the journal issue so only collaborators can comment.` : "",
 ].filter(Boolean);
 const entries = trustedJournalEntries(comments, trust);
 const lastEntryAt = entries.length ? new Date(entries.at(-1).created_at) : new Date(0);
@@ -68,7 +74,7 @@ function assignmentSection() {
   if (mode === "task") {
     const t = byId.get(taskId);
     lines.push(`**Do backlog task ${taskId}.** Follow "How a scheduled run uses this file" and the Definition of Done at the top of \`docs/BACKLOG.md\`.`);
-    lines.push(`Branch: \`<type>/<area>-${taskId.toLowerCase()}-<slug>\` from \`${roster.base_branch}\`. PR title: \`${taskId}: <title>\`. In the same PR, set this task's status line to \`in-review (PR #n)\`.`);
+    lines.push(`Branch: \`agent/${handle}/${taskId.toLowerCase()}-<slug>\` from \`${roster.base_branch}\`. PR title: \`${taskId}: <title>\`. In the same PR, set this task's status line to \`in-review (PR #n)\`.`);
     lines.push("", "The task, verbatim from `docs/BACKLOG.md`:", "", "```markdown", t ? t.block : `(${taskId} not found in docs/BACKLOG.md: stop and say so in your journal)`, "```");
   } else if (mode === "maintain") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
@@ -303,6 +309,7 @@ const doc = [
   `3. Post exactly one journal entry, as section 5 of the operating model says: a stub as soon as you start, completed at the end. Its first line is \`<!-- journal run:${runId} agent:${handle} -->\`. Post with \`gh api -X POST repos/${repo}/issues/${journal || "<journal>"}/comments -F body=@<file>\` and complete it with \`gh api -X PATCH repos/${repo}/issues/comments/<id> -F body=@<file>\`.`,
   "4. New BL, D or ADR numbers come from `node scripts/agents/next-id.mjs`, never from reading develop alone.",
   "5. Do one assignment only, then stop. A receipt with cost and duration is added after you finish.",
+  "6. Do not run `git push` or any other push. Commit on your branch (`agent/<handle>/<topic>`); the workflow pushes your branch after your run.",
   "",
 ].join("\n");
 

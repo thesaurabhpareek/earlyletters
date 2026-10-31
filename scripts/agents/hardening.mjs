@@ -62,25 +62,30 @@ export function nextIds(texts, adrFiles = []) {
  * with no sort option, and a stranger can post a thousand of them, so neither end alone is safe:
  * the first `first` pages and the last `last` pages are read (10 pages in all, the old cap),
  * deduplicated by comment id. Fails closed: if the comment count or any page cannot be read,
- * nothing is returned (`unreadable`), never an oldest-first guess. `notRead` is how many
+ * nothing is returned (`unreadable`), never an oldest-first guess. A page that fails while others load
+ * is skipped, the pages already read are kept, and `failedPages` says how many failed. `notRead` is how many
  * comments sit in the middle and were skipped, so the brief can say so.
  * @param {{gh: Function, repo: string, num: string|number, first?: number, last?: number}} a
  * @returns {{comments: object[], unreadable: boolean, total: number, notRead: number, why?: string}}
  */
 export function readJournal({ gh, repo, num, first = 5, last = 5 }) {
-  const fail = (why) => ({ comments: [], unreadable: true, total: 0, notRead: 0, why });
-  const total = Number(gh(`/repos/${repo}/issues/${num}`, { allowFail: true })?.comments);
-  if (!Number.isFinite(total) || total < 0) return fail("the comment count could not be read");
-  if (total === 0) return { comments: [], unreadable: false, total: 0, notRead: 0 };
+  const fail = (why) => ({ comments: [], unreadable: true, total: 0, notRead: 0, failedPages: 0, why });
+  const raw = gh(`/repos/${repo}/issues/${num}`, { allowFail: true })?.comments;
+  // Only a finite non-negative integer, or a string of digits, is a count. null, "", false, [], NaN, -1, 1.5 are not.
+  const total = typeof raw === "number" && Number.isInteger(raw) && raw >= 0 ? raw : typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : NaN;
+  if (!Number.isSafeInteger(total)) return fail("the comment count could not be read");
+  if (total === 0) return { comments: [], unreadable: false, total: 0, notRead: 0, failedPages: 0 };
   const pages = Math.ceil(total / 100);
   const want = pages <= first + last
     ? Array.from({ length: pages }, (_, i) => i + 1)
     : [...Array.from({ length: first }, (_, i) => i + 1), ...Array.from({ length: last }, (_, i) => pages - last + 1 + i)];
   const seen = new Set();
   const comments = [];
-  for (const page of [...new Set(want)]) {
+  let failedPages = 0;
+  const pagesWanted = [...new Set(want)];
+  for (const page of pagesWanted) {
     const res = gh(`/repos/${repo}/issues/${num}/comments?per_page=100&page=${page}`, { allowFail: true });
-    if (!Array.isArray(res)) return fail(`comment page ${page} could not be read`);
+    if (!Array.isArray(res)) { failedPages++; continue; } // keep what was read; count the failure
     for (const c of res) {
       const key = c?.id ?? `p${page}:${comments.length}`;
       if (seen.has(key)) continue;
@@ -88,7 +93,8 @@ export function readJournal({ gh, repo, num, first = 5, last = 5 }) {
       comments.push(c);
     }
   }
-  return { comments, unreadable: false, total, notRead: Math.max(0, total - comments.length) };
+  if (failedPages === pagesWanted.length) return fail(`no comment page could be read (${failedPages} failed)`);
+  return { comments, unreadable: false, total, notRead: Math.max(0, total - comments.length), failedPages };
 }
 
 // ---------- injection-dispatch fixes (H1 to H5, H11) ----------
@@ -216,7 +222,7 @@ export function safeBranch(ref) {
 export function checkoutLine(ref) {
   const r = safeBranch(ref);
   return r
-    ? `Work on its branch: \`git fetch origin ${r} && git checkout ${r}\`, commit, \`git push\`. Do not open a new PR.`
+    ? `Work on its branch: \`git fetch origin ${r} && git checkout ${r}\`, commit. Do not run \`git push\`: the workflow pushes your branch. Do not open a new PR.`
     : "The branch name of this PR is unusual, so no command is given. Do not run anything built from it: say so in your journal and stop.";
 }
 

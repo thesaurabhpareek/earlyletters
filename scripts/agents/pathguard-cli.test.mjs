@@ -45,6 +45,20 @@ test("identity flags: --labels without --branch or --author exits 2 (was exit 0 
   });
 });
 
+test("a branch that starts with agent/ but has no handle and topic exits 1, with a label or without", () => {
+  withRepo((d) => {
+    writeFileSync(path.join(d, "docs/a.md"), "x\n"); commit(d);
+    for (const branch of ["agent/x", "agent/qa/", "AGENT/x"]) {
+      for (const labels of ["bug", "agent:product"]) {
+        const r = cli(d, "--labels", labels, "--branch", branch, "--author", "someone", ...GIT);
+        assert.equal(r.status, 1, `${branch} ${labels} ${r.stdout}${r.stderr}`);
+        assert.match(r.stderr, /not agent\/<handle>\/<topic>/);
+      }
+      assert.equal(cli(d, "--agent", "product", "--offline", "--branch", branch, ...GIT).status, 1, `${branch} with --agent`);
+    }
+  });
+});
+
 test("identity flags: --agent alone exits 2; --agent with --offline is allowed without them", () => {
   withRepo((d) => {
     writeFileSync(path.join(d, "docs/a.md"), "x\n"); commit(d);
@@ -125,5 +139,34 @@ test("a merge commit in the range fails", () => {
     const r = cli(d, "--agent", "product", "--offline", ...GIT);
     assert.equal(r.status, 1, r.stdout + r.stderr);
     assert.match(r.stderr, /merge commit/);
+  });
+});
+
+test("size cap: the default is 5 MB without any flag", () => {
+  withRepo((d) => {
+    writeFileSync(path.join(d, "docs/under.bin"), Buffer.alloc(5 * 1024 * 1024 - 2048, 1)); commit(d, "under");
+    assert.equal(cli(d, "--agent", "product", "--offline", ...GIT).status, 0, "just under 5 MB passes");
+    writeFileSync(path.join(d, "docs/over.bin"), Buffer.alloc(4096, 2)); commit(d, "over");
+    const r = cli(d, "--agent", "product", "--offline", ...GIT);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.match(r.stderr, /too large.*limit is 5242880/);
+  });
+});
+
+test("file cap: a rename counts its old path and its new path (21 renames = 42 files)", () => {
+  withRepo((d) => {
+    git(d, "checkout", "-q", "develop");
+    mkdirSync(path.join(d, "docs/r"));
+    for (let i = 0; i < 21; i++) writeFileSync(path.join(d, `docs/r/f${i}.md`), `file ${i}\n`.repeat(30));
+    commit(d, "more base files");
+    git(d, "checkout", "-q", "agent/product/x");
+    git(d, "reset", "-q", "--hard", "develop");
+    mkdirSync(path.join(d, "docs/s"));
+    for (let i = 0; i < 21; i++) git(d, "mv", `docs/r/f${i}.md`, `docs/s/f${i}.md`);
+    commit(d, "rename all");
+    const r = cli(d, "--agent", "product", "--offline", ...GIT);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.match(r.stderr, /42 files/);
+    assert.equal(cli(d, "--agent", "product", "--offline", "--max-files", "42", ...GIT).status, 0, "42 is exactly the cap when raised");
   });
 });
