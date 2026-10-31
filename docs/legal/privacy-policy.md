@@ -14,6 +14,15 @@ Version 2.1.1. Effective [effective date].
 
 Early Letters is the baby memory book you fill by talking. Parents speak or type letters to their child. This policy explains what Early Letters collects, how we use it, who can see it, and the choices you have. It covers the Early Letters app for iPhone and our website, earlyletters.com.
 
+## Which builds of the app this covers
+
+This policy describes Early Letters as it is planned for the App Store. Not every part is in every build of the app. A part of this policy takes effect only when the feature it describes ships.
+
+- **Build 1 (the first test build) and the first App Store build.** Servers are off (D-121, D-126). There is no account, no sign-in, no sync and no sharing. Your letters and recordings stay on your phone, and the app sends nothing about them to us. The parts of sections 3, 7 and 9 about our servers, and all of section 4, describe features these builds do not have.
+- **Build 2 (the family test build).** Servers are on: sign-in, sync, sharing a book with a co-parent, and deleting your account. Recording backup is off, and so are the plan status report and reminder emails.
+- **Recording backup (D-100, D-102).** It is in no build yet. Section 4 takes effect only when it ships, and until then no recording is copied to our servers.
+- **Analytics.** There are none in any current build (D-095).
+
 ## 1. Who we are
 
 Early Letters is run by [legal name], an individual based in California ("we", "us"). Write to us at hello@earlyletters.com or [mailing address].
@@ -38,6 +47,8 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 ## 3. Who can see your letters
 
+*This section takes effect with sign-in and sync (build 2 and later). In builds with servers off, only you can see your letters, on your phone.*
+
 - **You.** A letter is private to you until you add it to a child's book.
 - **Your co-parent.** A child's book can have at most two parents. The other parent can read the letters in that book. They cannot see your original transcripts, your fixes or your recordings, and they cannot change or delete your letters.
 - **Us.** Letters on our servers are not end-to-end encrypted, so we could read them. We do so only if you ask us for help, to deal with a security problem or misuse of the service, or when the law requires it. Today only the founder has that access.
@@ -46,6 +57,8 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 If a co-parent leaves a book, letters already on their phone or in an export stay with them. We cannot reach those copies.
 
 ## 4. Recording backup and the recovery key
+
+*This section takes effect only when recording backup ships. No current build has it.*
 
 Recording backup is not available yet. When it is, it will be free and off until you turn it on, and it will work like this:
 
@@ -91,6 +104,8 @@ The current list is at https://earlyletters.com/subprocessors. We will update it
 
 ## 7. How long we keep things, and deleting
 
+*The parts about our servers take effect with sign-in and sync (build 2 and later). In builds with servers off, everything is on your phone and you delete it there.*
+
 We keep your book until you delete it or your account. We never delete them because you stopped using the app or ended Plus.
 
 - **A letter.** Deleting a letter moves it to Recently deleted for 30 days, so you can restore it. Then it is erased.
@@ -114,6 +129,8 @@ You can export your letters and the recordings on your phone at any time, free, 
 Early Letters is for adults. You must be 18 or older to use it. The app asks before first use and stops if the answer is no. Children do not use the app or sign in, and we do not knowingly collect information from children. What we hold about a child comes from the parents and is used only to keep that child's book. If we learn that someone under 18 has an account, we will close it.
 
 ## 9. Health details
+
+*The syncing parts of this section take effect with sign-in and sync (build 2 and later).*
 
 Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step, and you can withdraw it at any time. Withdrawing stops syncing, and we offer to delete what was synced. The control for this, in Settings, Privacy, is not in every build: the family test build (build 2) shows whether sync is on or off but has no withdrawal control (D-128), and the control is built before anyone outside the family signs in. Until it exists, ask us by email (section 10). We never use health details for advertising, and we never try to work out anything about anyone's health.
 
