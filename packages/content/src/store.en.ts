@@ -43,7 +43,7 @@ export const storeListing = {
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
 
 EVERY CHANGE SHOWN
-Your words are written down on your phone. We only fix small slips, like a stray "um", a misheard word or a missing full stop. Every fix is marked, you can put any of them back with one tap, and we never rewrite your words.
+Your words are written down on your phone. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. You can put any fix back with one tap, and we never rewrite your words.
 
 YOUR VOICE, KEPT
 The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. ${en.trust.voice}
@@ -68,7 +68,7 @@ Export your memory book any time, for free: your letters, your recordings and a 
 
 HOW IT WORKS
 1. Tap and talk, or type if you prefer.
-2. Read it back. Fix a word if the microphone slipped.
+2. Read it back. Fix a word if one is wrong.
 3. It goes into this month of your child's book.
 
 ${brand.name} is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.

@@ -38,7 +38,7 @@ export const onboardingStories: readonly StoryCard[] = [
     id: 'story.exact.v2',
     order: 2,
     headline: "Exactly as you said it.",
-    line: "We only fix small slips, like an um or a repeat. We never rewrite your words.",
+    line: "We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {

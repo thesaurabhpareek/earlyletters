@@ -9,7 +9,7 @@
  * these emails go only to the payer (legal review LGL-12). A cancellation made in iOS Settings is seen
  * only when the app next opens, so every reminder carries ALREADY_CANCELLED.
  *
- * Every notice states (COMPLIANCE.md 5.2; SUB-03, tested in packages/emails/test/billing-notices.test.ts): the plan,
+ * Every notice states (COMPLIANCE.md 5.2; SUB-03, tested in packages/emails/test/validation-2026-10-31.test.ts): the plan,
  * the price and billing period, the renewal or trial-end date,
  * the cancel-by date where it matters, that it renews automatically until cancelled, the cancel
  * steps in words plus {manageUrl}, and that letters and recordings stay free to read, play and

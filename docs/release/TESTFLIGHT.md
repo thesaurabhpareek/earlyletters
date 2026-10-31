@@ -82,7 +82,7 @@ The build number is the EAS remote counter; the version comes from `app.config.t
 - Email provider (4.4): the **Email OTP length** must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (6 when unset), or every typed code is refused. Set **Email OTP expiration to 900 seconds**: the templates in `supabase/templates/` tell people the link and code last 15 minutes (`config.toml.snippet`), as PRD V2 A-REQ-018 Rev asks.
 - **Your call, open (FOUNDER_TASKS Q item 8, PRD V2 F02 Q2, WP-F02-14):** A-REQ-018 Rev asks for an **8-digit** code; the app and AUTH_SETUP default to 6. For 8, set the length to 8 here **and** `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS `preview` environment (step 9) before build 2; the two must match. Either is fine for the family alpha; decide before anyone outside the family signs in.
 - AUTH_SETUP 4.4 (3600 seconds) and 5.1 ("exactly these two" redirect URLs) predate PRD V2; for staging follow this page. Updating AUTH_SETUP is a request to S01, its owner.
-- URL configuration (5.1): Site URL `https://earlyletters.com`; redirect URLs `https://earlyletters.com/auth/callback`, `https://earlyletters.com/auth/confirm` and `scribe://auth/callback`.
+- URL configuration (5.1): Site URL `https://earlyletters.com`; redirect URLs exactly one, `https://earlyletters.com/auth/callback` (SIGN-09).
 - Templates (6): paste `supabase/templates/magic_link.html` and `confirmation.html` with the subjects in `supabase/templates/config.toml.snippet`. Their link is `{{ .SiteURL }}/auth/callback#token_hash=...`, the path the app on `develop` reads; the website serves the same page at `/auth/callback` and `/auth/confirm` (step 10).
 - Anonymous sign-ins off, confirm email on, sign-ups on.
 *Unblocks:* email sign-in and the confirm-your-email message in build 2.

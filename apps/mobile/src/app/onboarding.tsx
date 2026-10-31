@@ -45,6 +45,7 @@ import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
 import { WELCOME_LOCKUP } from '@/components/onboarding/welcome-lockup.logic';
@@ -464,18 +465,20 @@ function FirstRun() {
                     </ChipGroup>
                     <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
-                  {/* The spoken language, under a hairline, with no footer (S06). */}
-                  <View className="gap-4">
-                    <Separator />
-                    <ListSection>
-                      <ListRow
-                        title={copy.settingsHome.languageLabel}
-                        trailing={languageInfo(spoken.primary.code).native}
-                        onPress={() => setLanguageOpen(true)}
-                        accessibilityHint={languageCopy.picker.rowHint}
-                      />
-                    </ListSection>
-                  </View>
+                  {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
+                  {showOnboardingLanguageRow(capabilities.englishOnly) && (
+                    <View className="gap-4">
+                      <Separator />
+                      <ListSection>
+                        <ListRow
+                          title={copy.settingsHome.languageLabel}
+                          trailing={languageInfo(spoken.primary.code).native}
+                          onPress={() => setLanguageOpen(true)}
+                          accessibilityHint={languageCopy.picker.rowHint}
+                        />
+                      </ListSection>
+                    </View>
+                  )}
                 </>
               )}
 

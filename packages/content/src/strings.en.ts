@@ -820,6 +820,8 @@ export const en = {
       offLabel: "Off",
       weeklyLabel: "Weekly",
       fewTimesLabel: "A few times a week",
+      // LNG-06 (31 Oct 2026): kept on purpose. PRD C-REQ-002 (P0) lists Every evening among the options; it labels the
+      // cadence a person chooses, not a rhythm the product sets, and `help` below no longer says "a few evenings".
       everyEveningLabel: "Every evening",
       help: "A nudge in the evening, as often as you choose. Never late at night.",
     },
@@ -842,7 +844,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only take out small slips and mark each one, so you can put it back.",
+    neverRewrite: "We never rewrite your words. We only fix small slips, like an um, a repeat or a misheard word, and mark each one, so you can put it back.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",

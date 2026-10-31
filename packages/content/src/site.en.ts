@@ -32,7 +32,7 @@ export const site = {
     {
       title: "Exactly as you said it",
       // D-074: the edit feature is Word for word.
-      body: "Word for word: transcription happens on your phone and fixes only small slips, like a stray um or a misheard name. Every small fix is marked, and you can undo it. We never rewrite your words.",
+      body: "Word for word: transcription happens on your phone. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. You can undo any fix. We never rewrite your words.",
     },
     {
       title: "Your voice, kept",
@@ -56,7 +56,7 @@ export const site = {
       },
       {
         title: "Read it back",
-        body: "See your words on the page, with any small fix marked. Fix a word if the microphone slipped. Nothing else changes.",
+        body: "See your words on the page, with any small fix marked. Fix a word if one is wrong. Nothing else changes.",
       },
       {
         title: "It joins the book",
@@ -94,7 +94,7 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. Word for word fixes only small slips: a stray um, a misheard name, a missing full stop, or a one-word grammar slip like we was to we were. Every small fix is marked, and you can undo it, or choose Exactly as said to keep every word as it came. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word: We only fix small slips, like an um, a repeat or a misheard word, and mark each one. A small fix can also be a missing full stop or a one-word grammar slip like we was to we were. You can undo any fix, or choose Exactly as said to keep every word as it came. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",

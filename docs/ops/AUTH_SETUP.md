@@ -166,10 +166,10 @@ Assumptions, each checked by device test 11.10: Supabase answers `GET /verify` f
 ### 5.1 Supabase URL configuration
 Supabase > Authentication > **URL Configuration**:
 - Site URL: `https://earlyletters.com`
-- Redirect URLs (exactly these two, A-NFR-010): `https://earlyletters.com/auth/callback` and `scribe://auth/callback`.
-  - `https://earlyletters.com/auth/callback`: confirmed by code. It is the only redirect any code sends: the app passes it as `emailRedirectTo` when it asks for an email and as `redirect_to` when it opens a link with PKCE (`apps/mobile/src/lib/auth/email.ts`), and Supabase puts the auth code on it (4.6).
-  - `scribe://auth/callback`: unverified. No code sends it as a redirect (the scheme only opens the code screen). It stays from the 3 Oct list until S01 decides; `supabase/auth-email.md` 3.4 says leave the scheme out, since any app can claim it.
-  - `https://earlyletters.com/auth/confirm`: not listed. No code sends it yet. Add it in the same change that moves the app and the templates to `/auth/confirm` (PRD V2 F02 6.3; F02-REQ-012 allows only `https://earlyletters.com/**` and the brand scheme).
+- Redirect URLs: exactly one, `https://earlyletters.com/auth/callback` (SIGN-09, 31 Oct 2026; `supabase/auth-email.md` 3.4).
+  - `https://earlyletters.com/auth/callback`: confirmed by code. It is the only redirect any code sends: the app passes it as `emailRedirectTo` when it asks for an email and as `redirect_to` when it opens a link with PKCE (`apps/mobile/src/lib/auth/email.ts`), and Supabase puts the auth code on it (4.6). `supabase/config.toml` holds the same single URL, checked by `supabase/tests/auth_config.test.mjs`.
+  - Not listed: `scribe://auth/callback`. No code sends it as a redirect (the scheme only opens the code screen), and any app can claim a custom scheme. The 3 Oct list had it; it is removed.
+  - Not listed: `https://earlyletters.com/auth/confirm`. The app accepts links on that path (SIGN-04), but no code sends it as a redirect. Add it only in the change that moves the templates to `/auth/confirm` (PRD V2 F02 6.3; F02-REQ-012 allows only `https://earlyletters.com/**` and the brand scheme).
 
 The email template (section 6) builds the link itself, so these mostly guard against someone passing another redirect.
 
