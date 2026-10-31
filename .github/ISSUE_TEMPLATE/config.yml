@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: App support
+    url: mailto:hello@earlyletters.com
+    about: Questions or problems with your own account or letters. Email us. Do not post them here.
+  - name: Report a security vulnerability
+    url: https://github.com/thesaurabhpareek/earlyletters/blob/develop/SECURITY.md
+    about: Please do not open a public issue for a vulnerability. Read SECURITY.md for how to report it privately.

@@ -1,0 +1,31 @@
+name: Task
+description: A piece of work that should be done.
+title: "task: "
+labels: ["inbox"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues are intake only (ADR 0011). The ordered plan is `docs/BACKLOG.md`. Agents do not work from an issue until it is in the backlog.
+        This is a public repo. Do not paste any letter text, transcript, audio or child name. Use the made-up family "Asha" for examples.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is wrong or missing, and who it affects.
+    validations:
+      required: true
+  - type: input
+    id: ids
+    attributes:
+      label: Requirement ID or BL id it serves
+      description: For example A-REQ-012, LEGAL-REQ-017 or BL-123. Write "none yet" if you do not know.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One or two checks anyone could run to say it is finished.
+    validations:
+      required: true
