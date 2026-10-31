@@ -285,6 +285,16 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: none needed.
 - Revisit when: Tue 10 Nov, with the two probes run, or sooner if a bad merge reaches `main`.
 
+### CR-25 Naming: two vocabularies, one door, one direction (31 Oct 2026, Karma via naming session)
+
+- Tier: T1, two-way. (I first filed this as CR-21 and then CR-22; both numbers were taken by the harness freeze ruling, which is CR-22 here.)
+- Decision: product names are what a parent already says (letter, note, recording, the red circle, Tonight, Keep, Read together, Word for word, small fix, Plus). Internal names say what the system guarantees (`raw_transcript`, `EditType`, `verifyEdits`, take, draft, pack, ADTS) and stay blunt on purpose. The glossary in `packages/content/BRAND.md` is the only door between them, and traffic goes one way: internal terms stay in code, schema, test names and spec section 12; a parent reads only the right-hand column.
+- Why: renaming `raw_transcript` to a soft word invites the next agent to treat it as editable. The constitution lives in those names. Meanwhile "take" and "language packs" were showing to parents, against the glossary.
+- Applied in the same PR: the three "take" strings and the two "pack" strings in `packages/content`, an internal-terms table in BRAND.md, a banned-term test in `rules.test.ts`, and one line in CLAUDE.md. Promise words ("Word for word", "Exactly as you said it") stay under D-125 and are untouched. The codename `scribe` stays in repo, packages, Supabase projects and the bundle id.
+- Not changed, on purpose: legal pages (may say "transcript"; the founder merges legal text), the export file `data/entries.json` (format contract, D-096), store keywords, and PRD specs outside section 12 (a lint of the 21 specs is a follow-up, not a freeze task).
+- Door: two-way. Way back: revert the PR.
+- Revisit when: a banned-term test blocks a legitimate string twice.
+
 ### CR-22 The harness freeze runs to the go/no-go; a research team works inside it (31 Oct 2026, Karma via retro session)
 - Question: The founder adopted the freeze "until the 5 Nov go/no-go" (28 Oct), D-130 moved the go/no-go to Mon 9 Nov, and on 31 Oct he asked for "3 agent engineering expert team to work on harness part". Does the freeze end on 5 Nov, and can the team work during it?
 - Tier and type: T1 for the timing, but it is my reading of a founder decision ("until the 5 Nov go/no-go"), so he can overrule it in one line. The team's research spends shared usage that the build thread also needs; it stays capped at three agents and no PRs.
