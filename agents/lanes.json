@@ -1,0 +1,11 @@
+{
+  "_comment": "Path lanes for agent PRs. Read by scripts/agents/pathguard.mjs. Humans edit this file; agents may not (pathguard forbids it). Docs: docs/agents/hardening/pathguard.md. An agent with no lane may change nothing.",
+  "lanes": {
+    "backlog-hygiene": {
+      "agent": "product",
+      "charter": "docs/agents/lanes/backlog-hygiene.md",
+      "allow": ["docs/BACKLOG.md", "docs/FOUNDER_TASKS.md"]
+    }
+  },
+  "scripts_allow": {}
+}
