@@ -397,8 +397,8 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Why not `main`: `main` has no `FENCE.json`, so the bootstrap path fails any PR into `main` that carries compliance paths. The release PR from `develop` will carry them, so requiring it there would block every release until the release itself landed.
 - Also in this PR:
   - `apply-branch-settings.sh` and `github-settings.ts` now carry the per-branch check, so a re-run neither removes it nor reports drift.
-  - CR-27, README and workflow-header text that said "runs only from `main`" is corrected.
+  - CR-27's text that the fence "runs only from `main`" is superseded by this ruling; the README and the workflow header are corrected.
 - Door: two-way.
 - Way back: remove the check from the `develop` rule in Settings, and revert this PR.
-- Revisit when: `main` has a `FENCE.json` (after the lineage and release merges, CR-30 of the deploy session); then require it on `main` too. Karma
+- Revisit when: `main` has a `FENCE.json` (after the lineage and release merges planned for after the 9 Nov go/no-go; Project doc `infra/cto-rulings-2026-10-31-karma-deploy.md`); then require it on `main` too. Karma
 
