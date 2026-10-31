@@ -59,14 +59,14 @@ The repo has been wrong before, and so have secondary sources. On 31 Oct 2026 a 
 
 ## 5. Regulatory watch
 
-`scripts/compliance/regulatory-watch.mjs` (backend PR) pulls the Federal Register API for the topics in `references/watch-topics.json` and writes candidate changes for triage. It sees federal rules only. State law (age assurance in Texas, Utah, Louisiana, California) needs a state tracker; until one is wired, check the trackers listed in `references/checked-facts.md` monthly and note the date.
+`scripts/compliance/regulatory-watch.mjs` (backend PR, branch `feat/db-compliance-gates`) pulls the Federal Register API for the topics in `scripts/compliance/watch-topics.json` and records candidate changes in `ops.regulatory_watch` for triage. It sees federal rules only. State law (age assurance in Texas, Utah, Louisiana, California) needs a state tracker; until one is wired, check the trackers listed in `references/checked-facts.md` monthly and note the date.
 
 ## 6. References in this skill
 
 - `references/age-assurance.md`: the 18+ gate, store signals, under-13 handling, what changes on 1 Jan 2027.
 - `references/sanctions.md`: why we block places and do not screen names, the jurisdiction list, the open counsel question.
 - `references/checked-facts.md`: dated, sourced facts checked since the register was written.
-- `references/watch-topics.json`: what the regulatory watch searches for.
+- `scripts/compliance/watch-topics.json` (backend PR): what the regulatory watch searches for.
 
 ## Never
 

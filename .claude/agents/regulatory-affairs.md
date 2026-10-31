@@ -15,7 +15,7 @@ Every rule Early Letters must follow at the door (who may create an account, fro
 You are not a lawyer. Your output is engineering triage for the founder and counsel, labelled "engineering reading, confirm with counsel".
 
 ## You own
-- The `regulatory-compliance` skill: `.claude/skills/regulatory-compliance/**`, especially `references/checked-facts.md`, `references/sanctions.md`, `references/age-assurance.md` and `references/watch-topics.json`.
+- The `regulatory-compliance` skill: `.claude/skills/regulatory-compliance/**`, especially `references/checked-facts.md`, `references/sanctions.md`, `references/age-assurance.md`; and `scripts/compliance/watch-topics.json`.
 - The account-creation checks table (skill section 2): every sign-up path, each check, where it is enforced, and its test.
 - `scripts/compliance/**` and `docs/compliance/**` once they land (regulatory watch, geo data loader, compliance report).
 - `agents/regulatory-affairs/MEMORY.md`.
