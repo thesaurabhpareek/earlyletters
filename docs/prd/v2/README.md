@@ -1,12 +1,12 @@
 # PRD V2: index
 
-Status: 13 Oct 2026, revised after critique round 1; delivery and traceability revised 15 Oct after critique round 2 (`reviews/DISPOSITION-R2-delivery.md`). Owner: PM lane, with the delivery lead for `08-delivery.md`. This file says what PRD V2 is, how to read it, what each file holds, which source wins, and where each spec stands.
+Status: 13 Oct 2026, revised after critique round 1; delivery and traceability revised 15 Oct after critique round 2 (`reviews/DISPOSITION-R2-delivery.md`). Spec of record since PR #124 merged on 16 Oct (D-105); kept current by the daily PRD update (last: Tue 27 Oct 2026, decisions to D-117). Owner: PM lane, with the delivery lead for `08-delivery.md`. This file says what PRD V2 is, how to read it, what each file holds, which source wins, and where each spec stands.
 
 ## What V2 is
 
 PRD V2 replaces `docs/prd/PRD.md` 1.3 as the product requirements for Early Letters (codename `scribe`). It covers the whole product: release v1.0 in depth, v1.1 and later as a ranked list with light specs (`_AUTHORING.md` section 1). It keeps every existing requirement ID (A-REQ, B-REQ, C-REQ, PRD-REQ, LEGAL-REQ, DATA-REQ) so `docs/BACKLOG.md` and test titles still trace (ADR 0011). New requirements use `F##-REQ-###`. Each legacy ID has one home spec; other specs cite it and add their own `F##-REQ` for their slice (R5 EQ-05).
 
-V2 carries the founder's 3 Oct brief (B1 to B16) and the decisions since (M1 to M17, `_AUTHORING.md` section 3b). The largest late changes, all 13 Oct: server features are on for v1.0 (M14); the full v1.0 scope stays and the date moves (M15); backup keys are recoverable and the copy says so (M16); free letters count only your own letters once their words exist and you have seen them (M17).
+V2 carries the founder's 3 Oct brief (B1 to B16) and the decisions since (M1 to M30, `_AUTHORING.md` section 3b; M18 to M30 are D-105 to D-117). The largest late changes, all 13 Oct: server features are on for v1.0 (M14); the full v1.0 scope stays and the date moves (M15); backup keys are recoverable and the copy says so (M16); free letters count only your own letters once their words exist and you have seen them (M17).
 
 **One source for each of these:**
 
@@ -114,7 +114,7 @@ Method: the script reads every ID in the first cell of a section 7 table whose h
 
 ## Open decisions and questions
 
-- **09 section 1:** 21 decision rows. 9 are answered (DR-02 to DR-08, DR-16, DR-17). **12 are open**, each with a spec default and a milestone. The founder said "continue" on 15 Oct without choosing, so three defaults now stand as **defaults awaiting confirmation** at T02 (Mon 19 Oct): DR-20 A (delegated docs, evidence and test-only merges), DR-18 A (backup free) and DR-19 A as refined by M17 (a voice-only letter counts only once its words exist and the author keeps it). Open: DR-20 (delegated merges, T02); DR-18 (backup free or Plus), DR-13, DR-14 (T07); DR-11, DR-19, DR-21, DR-09 (T15); DR-10 (counsel, T17); DR-01 (T18); DR-12 and DR-15 (T34).
+- **09 section 1:** 21 decision rows. 11 are answered (DR-02 to DR-08, DR-16, DR-17, and since 23 Oct DR-18 by D-111 item 6 and DR-20 by D-107, narrowed by D-117 on 27 Oct). **10 are open**, each with a spec default and a milestone. DR-19 A as refined by M17 (a voice-only letter counts only once its words exist and the author keeps it) is still a **default awaiting confirmation** (D-104 item 3). Open: DR-13, DR-14 (T07); DR-11, DR-19, DR-21, DR-09 (T15); DR-10 (counsel, T17); DR-01 (T18); DR-12 and DR-15 (T34).
 - **Carried from `docs/DECISIONS.md`** (09 section 1 footnote): D-033 free audio durability copy, D-031 Hindi script default, D-045 beta cohorts, D-050 second consent at first share; D-004 is DR-11.
 - **Section 13 of the specs** holds each spec's questions with who answers and a milestone. Triage rule (R1 PL-21): a question that blocks a wave names that wave's first milestone (T03, T14 or W4) as its due point; one that does not block v1.0 moves to `features/F30-later.md` or 1.0.x. F10, F12, F13, F14 and 08 now give every question a milestone id; the other lanes apply the rule as they revise.
 - **Not yet logged in `docs/DECISIONS.md`:** M14 (proposed as D-089, with what it reverses in D-085 and D-087 and makes untrue in D-088), M15, M16 and M17. The coordinator drafts them in wave 0 (`08-delivery.md` section 5.1). Logged by PR #128 as D-100 (M14), D-101 (M15), D-102 (M16) and D-103 (M17): D-089 to D-092 are the release-engineering decisions of PR #108.
