@@ -119,7 +119,6 @@ export function captureState(): CaptureState {
   return state;
 }
 
-/** Whether the app must stay silent now. */
 /** Whether the native recorder is recording now: true, false, or null when it cannot say. */
 export type RecorderProbe = () => boolean | null;
 let probe: RecorderProbe | null = null;

@@ -28,6 +28,7 @@ import {
   setCaptureClockForTests,
   setRecorderProbe,
 } from '../src/lib/speech-gate';
+import { startTake, type StartDeps } from '../src/components/capture/listen.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const src = (p: string) => readFileSync(join(SRC, p), 'utf8');
@@ -306,7 +307,8 @@ describe('wiring: every announcement passes the gate', () => {
     expect(l).toMatch(/setRecorderProbe\(\(\) => \{\s*try \{\s*return recorder\.isRecording;\s*\} catch \{\s*return null;\s*\}\s*\}\);/);
     expect(l).toMatch(/clearInterval\(id\);\s*setRecorderProbe\(null\);/);
     // ON before the audio session and the microphone go live.
-    expect(l).toMatch(/const token = openTake\(\);\s*takeToken\.current = token;\s*await setAudioMode\('recording'\);\s*const draft = await beginTake\(/);
+    // The start path (listen.logic startTake) gets the gate's own openTake and closeTake, and keeps the token.
+    expect(l).toMatch(/openTake,\s*closeTake,\s*onToken: \(token\) => \{\s*takeToken\.current = token;\s*\},/);
     expect(l).toMatch(/pauseTake\(takeToken\.current\);\s*recorder\.pause\(\);/);
     expect(l).toMatch(/resumeTake\(takeToken\.current\);\s*recorder\.record\(\);/);
     // Off only when the take ends, keyed to its token.
@@ -337,5 +339,121 @@ describe('wiring: every announcement passes the gate', () => {
     walk(SRC);
     const direct = files.filter((f) => /AccessibilityInfo\.announceForAccessibility/.test(code(readFileSync(f, 'utf8')))).map((f) => relative(SRC, f).split('\\').join('/'));
     expect(direct.sort()).toEqual(Object.keys(ALLOWED).sort());
+  });
+});
+
+/**
+ * [Review B nit, Karma on #523] The screen closing while a start is under way (the iOS microphone prompt included)
+ * never leaves the app silent: the real start path (listen.logic `startTake`) with the real gate, and each await held
+ * open so the screen can close at exactly that point.
+ */
+describe('the screen closes during a start: the gate always ends idle', () => {
+  function deferred<T>() {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => (resolve = r));
+    return { promise, resolve };
+  }
+  const settle = () => new Promise((res) => setTimeout(res, 0));
+
+  function startRig(o: { status: string; granted: boolean }) {
+    const calls: string[] = [];
+    let alive = true;
+    const prompt = deferred<{ granted: boolean; status: string }>();
+    const mode = deferred<void>();
+    const begin = deferred<{ id: string }>();
+    let token: number | null = null;
+    const deps: StartDeps = {
+      alive: () => alive,
+      getPermission: async () => ({ granted: o.granted, status: o.status }),
+      requestPermission: () => {
+        calls.push('prompt');
+        return prompt.promise;
+      },
+      freeBytes: () => null,
+      pressHaptic: () => void calls.push('haptic'),
+      setRecordingMode: () => {
+        calls.push('recordingMode');
+        return mode.promise;
+      },
+      setIdleMode: async () => void calls.push('idleMode'),
+      openTake: () => {
+        calls.push('openTake');
+        return openTake();
+      },
+      closeTake: (t) => {
+        calls.push('closeTake');
+        closeTake(t);
+      },
+      onToken: (t) => {
+        token = t;
+      },
+      begin: () => {
+        calls.push('begin');
+        return begin.promise;
+      },
+      keepOrphan: (id) => void calls.push(`keep:${id}`),
+    };
+    /** The screen closes; `withReset` is Listen's layout cleanup (resetCapture), off to prove the path closes alone. */
+    const close = (withReset: boolean) => {
+      alive = false;
+      if (withReset) resetCapture();
+    };
+    return { deps, calls, prompt, mode, begin, close, token: () => token };
+  }
+
+  it('closed while the iOS prompt is up: openTake never runs, and the gate is idle', async () => {
+    const r = startRig({ status: 'undetermined', granted: false });
+    const out = startTake(r.deps, true); // Continue on the primer
+    await settle();
+    expect(r.calls).toEqual(['prompt']);
+    r.close(true); // the screen closes with the prompt still up
+    r.prompt.resolve({ granted: true, status: 'granted' }); // the person allows after all
+    expect(await out).toEqual({ kind: 'gone' });
+    expect(r.calls).toEqual(['prompt']); // no haptic, no session, no gate, no take
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+  });
+
+  it('closed while the audio session starts: the gate it opened is closed and the session put back', async () => {
+    const r = startRig({ status: 'granted', granted: true });
+    const out = startTake(r.deps, false);
+    await settle();
+    expect(r.calls).toEqual(['haptic', 'openTake', 'recordingMode']); // the haptic plays before the session
+    expect(isRecorderCapturing()).toBe(true);
+    r.close(false);
+    r.mode.resolve();
+    expect(await out).toEqual({ kind: 'gone' });
+    expect(r.calls).toEqual(['haptic', 'openTake', 'recordingMode', 'closeTake', 'idleMode']);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+  });
+
+  it('a take that opens late is closed at once, then kept', async () => {
+    const r = startRig({ status: 'granted', granted: true });
+    const out = startTake(r.deps, false);
+    r.mode.resolve();
+    await settle();
+    expect(r.calls.at(-1)).toBe('begin');
+    r.close(false); // even with the unmount reset missed, the start path closes its own token
+    r.begin.resolve({ id: 'draft-asha-1' });
+    expect(await out).toEqual({ kind: 'gone' });
+    expect(r.calls.slice(-2)).toEqual(['closeTake', 'keep:draft-asha-1']);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+    confirmLive(r.token()); // a late poll for that take cannot reopen it
+    expect(isRecorderCapturing()).toBe(false);
+  });
+
+  it('a start that stays open goes live with the gate ON', async () => {
+    const r = startRig({ status: 'granted', granted: true });
+    const out = startTake(r.deps, false);
+    r.mode.resolve();
+    r.begin.resolve({ id: 'draft-asha-2' });
+    expect(await out).toEqual({ kind: 'live', token: r.token(), draftId: 'draft-asha-2' });
+    expect([captureState(), isRecorderCapturing()]).toEqual(['starting', true]);
+  });
+
+  it('the first tap while iOS has not asked shows the primer and opens nothing', async () => {
+    const r = startRig({ status: 'undetermined', granted: false });
+    expect(await startTake(r.deps, false)).toEqual({ kind: 'primer' });
+    expect(r.calls).toEqual([]);
+    expect(isRecorderCapturing()).toBe(false);
   });
 });

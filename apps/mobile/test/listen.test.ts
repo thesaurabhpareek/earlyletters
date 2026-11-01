@@ -233,9 +233,11 @@ describe('the screen uses them (source)', () => {
   });
 
   it('[review A L2] a take that finishes starting after the screen has gone is kept, as any other exit', () => {
+    // The path is listen.logic `startTake` (behaviour in listen-voiceover.test.ts); the screen wires "gone" to keeping it.
     const start = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
-    expect(start).toMatch(/if \(!mounted\.current\) \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draft\.id, 'dismiss', 0\)\.finally\(\(\) => closeTake\(token\)\);\s*return;\s*\}/);
-    expect(start.indexOf('if (!mounted.current)')).toBeLessThan(start.indexOf('takeId.current = draft.id'));
+    expect(start).toMatch(/alive: \(\) => mounted\.current,/);
+    expect(start).toMatch(/keepOrphan: \(draftId\) => \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draftId, 'dismiss', 0\);\s*\},/);
+    expect(start).toMatch(/if \(out\.kind === 'gone'\) return;\s*takeId\.current = out\.draftId;/);
   });
 
   it('5.8 rule 3: Pause and Finish are on screen in every moment of the room; Let it go keeps its slot', () => {
@@ -283,8 +285,14 @@ describe('the screen uses them (source)', () => {
     // speaks into a recording. The room's line and the red circle say it on screen.
     expect(begin).toMatch(/announcer\.say\(t\.listening, \{ phase: 'recording', capturing: capturingNow\(\) \}\)/);
     expect(begin).not.toMatch(/AccessibilityInfo/);
-    expect(begin.indexOf("haptic('press')")).toBeGreaterThan(-1);
-    expect(begin.indexOf("haptic('press')")).toBeLessThan(begin.indexOf("await setAudioMode('recording')"));
+    // The start haptic plays before the session activates (iOS mutes haptics while recording): the screen passes it to
+    // startTake, which calls it before setRecordingMode (order checked by behaviour in listen-voiceover.test.ts).
+    expect(begin).toMatch(/pressHaptic: \(\) => haptic\('press'\),/);
+    expect(begin).toMatch(/setRecordingMode: \(\) => setAudioMode\('recording'\),/);
+    const logic = code(src('components/capture/listen.logic.ts'));
+    const path = logic.slice(logic.indexOf('export async function startTake'));
+    expect(path.indexOf('d.pressHaptic()')).toBeGreaterThan(-1);
+    expect(path.indexOf('d.pressHaptic()')).toBeLessThan(path.indexOf('await d.setRecordingMode()'));
   });
 
   it('[review B L1] when a take ends the glow releases from where the voice left it, over releaseMs', () => {

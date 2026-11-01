@@ -41,10 +41,9 @@ import {
   isMicProblem,
   listenRoom,
   maySpeak,
-  permissionStep,
+  startTake,
   promptLine,
   reviewParams,
-  startBlocker,
   stableLabels,
   startFailure,
   type ListenPhase,
@@ -231,37 +230,36 @@ export default function Listen() {
   /** `primed`: the person has just read our primer and tapped Continue, so iOS may ask now (SR-C-05). */
   const start = async (primed: boolean) => {
     if (!child) return;
-    // Our own short primer first, while iOS has not asked yet (F04-REQ-034); iOS asks only after Continue. The purpose
-    // string iOS shows is `permissions.microphone` (counsel's wording, untouched here).
-    const current = await getRecordingPermissionsAsync();
-    const step = permissionStep(current, primed);
-    if (step === 'primer') {
-      setPhase('primer');
-      return;
-    }
-    const perm = step === 'ask' ? await requestRecordingPermissionsAsync() : current;
-    // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
-    const blocked = startBlocker({ granted: perm.granted, freeBytes: freeBytesNow() });
-    if (blocked) {
-      setPhase(blocked);
-      return;
-    }
-    // Haptic before the session activates: iOS mutes haptics while recording.
-    haptic('press');
-    // Silent from before the audio session and the microphone go live: `starting` is ON, and no status poll can turn
-    // it off while the start is in progress.
-    const token = openTake();
-    takeToken.current = token;
-    await setAudioMode('recording');
-    const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
-    if (!mounted.current) {
-      // The screen went away while the take was starting: keep what exists, as any other exit does. (Unmount already
-      // forced the gate off; closing the dead token is a no-op kept for symmetry.)
-      ended.current = true;
-      void finalizeTake(recorder, draft.id, 'dismiss', 0).finally(() => closeTake(token));
-      return;
-    }
-    takeId.current = draft.id;
+    // The whole path is listen.logic `startTake`: the primer before iOS asks (the purpose string iOS shows is
+    // `permissions.microphone`, counsel's wording, untouched here), the S13 blockers, and the gate opened before the
+    // microphone goes live. The screen closing at any await (the iOS prompt included) never leaves the gate open.
+    const out = await startTake(
+      {
+        alive: () => mounted.current,
+        getPermission: getRecordingPermissionsAsync,
+        requestPermission: requestRecordingPermissionsAsync,
+        freeBytes: freeBytesNow,
+        pressHaptic: () => haptic('press'),
+        setRecordingMode: () => setAudioMode('recording'),
+        setIdleMode: () => setAudioMode('idle'),
+        openTake,
+        closeTake,
+        onToken: (token) => {
+          takeToken.current = token;
+        },
+        begin: async () => beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null }),
+        keepOrphan: (draftId) => {
+          // The screen went away while the take was starting: keep what exists, as any other exit does.
+          ended.current = true;
+          void finalizeTake(recorder, draftId, 'dismiss', 0);
+        },
+      },
+      primed,
+    );
+    if (out.kind === 'primer') return setPhase('primer');
+    if (out.kind === 'blocked') return setPhase(out.problem);
+    if (out.kind === 'gone') return;
+    takeId.current = out.draftId;
     setPhase('recording');
     // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
     announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });

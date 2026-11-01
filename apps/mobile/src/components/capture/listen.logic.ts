@@ -63,6 +63,71 @@ export function permissionStep(perm: MicPermission, primed: boolean): Permission
   return 'ask';
 }
 
+/**
+ * The start path, from the tap to a live take (SR-C-05 primer, S13 blockers, SR-C-02 gate). Pure: every effect is
+ * injected, so the screen closing at any await is tested in Node (test/listen-voiceover.test.ts).
+ *
+ * The screen can close at any await (the iOS microphone prompt, the audio session, the draft write). After each one,
+ * `alive()` is asked again:
+ *   - gone before the gate is opened: nothing is opened (openTake never runs after unmount)
+ *   - gone after the gate opened but before the take began: the gate is closed and the session put back to idle
+ *   - gone after the take began: the gate is closed at once, then the take is kept (finalized) as any exit does
+ * So a screen that closes during a start can never leave the app silent (Review B on #523).
+ */
+export type StartDeps = {
+  alive: () => boolean;
+  getPermission: () => Promise<MicPermission>;
+  requestPermission: () => Promise<MicPermission>;
+  freeBytes: () => number | null;
+  /** The start haptic: before the session activates, since iOS mutes haptics while recording. */
+  pressHaptic: () => void;
+  setRecordingMode: () => Promise<void>;
+  setIdleMode: () => Promise<void>;
+  openTake: () => number;
+  closeTake: (token: number | null) => void;
+  /** The screen keeps the token, so its failure path and exits can close it. */
+  onToken: (token: number) => void;
+  begin: () => Promise<{ id: string }>;
+  /** Keep a take that began after the screen had gone (finalize with reason `dismiss`). */
+  keepOrphan: (draftId: string) => void;
+};
+
+export type StartOutcome =
+  | { kind: 'primer' }
+  | { kind: 'blocked'; problem: MicProblem }
+  | { kind: 'gone' }
+  | { kind: 'live'; token: number; draftId: string };
+
+export async function startTake(d: StartDeps, primed: boolean): Promise<StartOutcome> {
+  // Our own short primer first, while iOS has not asked yet (F04-REQ-034); iOS asks only after Continue.
+  const current = await d.getPermission();
+  if (!d.alive()) return { kind: 'gone' };
+  const step = permissionStep(current, primed);
+  if (step === 'primer') return { kind: 'primer' };
+  const perm = step === 'ask' ? await d.requestPermission() : current;
+  if (!d.alive()) return { kind: 'gone' }; // closed while the iOS prompt was up: nothing is opened
+  // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
+  const problem = startBlocker({ granted: perm.granted, freeBytes: d.freeBytes() });
+  if (problem) return { kind: 'blocked', problem };
+  d.pressHaptic();
+  // Silent from before the audio session and the microphone go live: `starting` is ON.
+  const token = d.openTake();
+  d.onToken(token);
+  await d.setRecordingMode();
+  if (!d.alive()) {
+    d.closeTake(token);
+    await d.setIdleMode().catch(() => {});
+    return { kind: 'gone' };
+  }
+  const draft = await d.begin();
+  if (!d.alive()) {
+    d.closeTake(token); // at once: the screen is gone, so nothing may keep the app silent
+    d.keepOrphan(draft.id);
+    return { kind: 'gone' };
+  }
+  return { kind: 'live', token, draftId: draft.id };
+}
+
 /* ------------------------------------------------------------------ */
 /* Nothing spoken into a take (SR-C-02, F04-REQ-040, F04-REQ-041, B2-21) */
 /* ------------------------------------------------------------------ */

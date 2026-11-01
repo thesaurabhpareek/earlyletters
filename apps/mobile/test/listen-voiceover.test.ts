@@ -192,10 +192,9 @@ describe('RT-REC-01: our primer first, then the iOS question (SR-C-05, F04-REQ-0
 
   it('the screen asks iOS only after the primer step says so, and the primer is its own screen', () => {
     const start = listen.slice(listen.indexOf('const start = async'), listen.indexOf('const grantedNow'));
-    expect(start).toMatch(/permissionStep\(current, primed\)/);
-    expect(start.indexOf("setPhase('primer')")).toBeGreaterThan(-1);
-    expect(start.indexOf("setPhase('primer')")).toBeLessThan(start.indexOf('requestRecordingPermissionsAsync()'));
-    expect(start).toMatch(/step === 'ask' \? await requestRecordingPermissionsAsync\(\)/);
+    // The path itself is startTake (its behaviour is in the start-path tests below); the screen wires it.
+    expect(start).toMatch(/getPermission: getRecordingPermissionsAsync,\s*requestPermission: requestRecordingPermissionsAsync,/);
+    expect(start).toMatch(/if \(out\.kind === 'primer'\) return setPhase\('primer'\);/);
     expect(listen).toMatch(/if \(phase === 'primer'\) \{/);
     expect(listen).toMatch(/<MicPrimer childName=\{child\.name\} onContinue=\{continueAfterPrimer\} onType=\{typeInstead\} onClose=\{close\} \/>/);
     expect(listen).toMatch(/const continueAfterPrimer = \(\) => startFromTap\(true\);/);
