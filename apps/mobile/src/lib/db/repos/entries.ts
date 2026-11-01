@@ -193,14 +193,15 @@ export function setInBook(ctx: RepoContext, id: string, inBook: boolean): boolea
  * month. Only `occurred_on` and `occurred_precision` change; the words, raw_transcript, captured_at, the book and the
  * author never do. Refused (false) for a missing or tombstoned row, a quiet-day mark (one per day, D-084, and no page
  * of its own), a malformed date, and a letter another author wrote (`owner` is this phone's account, or null before
- * the first sign-in, when every letter here is this phone's user's).
+ * the first sign-in; then only a row with no author is this phone's user's, the ledger's rule).
  */
 export function setOccurred(ctx: RepoContext, id: string, occurredOn: string, precision: OccurredPrecision, owner: string | null): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(occurredOn)) return false;
   ctx.db.run(
     `UPDATE entries SET occurred_on = ?, occurred_precision = ?, updated_at = ?
-     WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much' AND (author_id IS NULL OR ? IS NULL OR author_id = ?)`,
-    occurredOn, precision === 'month' ? 'month' : 'day', ctx.now(), id, owner, owner,
+     WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much' AND (author_id IS NULL OR author_id = ?)`,
+    // As ledger.ts: with no account yet, only rows with no author are this phone's user's.
+    occurredOn, precision === 'month' ? 'month' : 'day', ctx.now(), id, owner ?? '',
   );
   return changes(ctx.db) === 1;
 }

@@ -59,4 +59,4 @@ KEEPING IT SAFE
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.4.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.5.0. Questions: hello@earlyletters.com

@@ -116,6 +116,14 @@ describe('[F09-REQ-004] change the date of one\'s own letter', () => {
     expect(store.getEntry(id)?.occurredOn).toBe('2026-08-01');
   });
 
+  it('before any account, a row that names an author is not this phone\'s to move (the ledger\'s rule)', () => {
+    const c = asha();
+    const id = keep(c);
+    raw.run('UPDATE entries SET author_id = ? WHERE id = ?', PAPA, id);
+    expect(store.setEntryDate(id, '2026-05-13', 'month')).toBe(false);
+    expect(store.getEntry(id)?.occurredOn).toBe('2026-08-20');
+  });
+
   it('with sync on, the move is one entry.upsert carrying occurred_on and occurred_precision, never new words', () => {
     const c = asha();
     takeOwnership(raw, MAMA, { now: now(), newId });

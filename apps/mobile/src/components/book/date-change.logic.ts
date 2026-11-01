@@ -13,6 +13,7 @@
  * Nothing here is gated by a plan (F09-REQ-014), and nothing here reads or writes a letter's words.
  */
 import { copy, fill } from '@/lib/copy';
+import { monthOnlyDateline } from '@/lib/dates';
 import type { Child, Entry, OccurredPrecision } from '@/lib/store';
 import { chapterKey, chapterTitle, datelineA11y, monthFor, monthStart, shortDateline } from './chapters';
 
@@ -106,13 +107,8 @@ export function isUnchanged(entry: Pick<Entry, 'occurredOn' | 'occurredPrecision
   return !next || (next.occurredOn === entry.occurredOn && next.precision === (entry.occurredPrecision ?? 'day'));
 }
 
-/** The month-only dateline (F09-REQ-003): no weekday and no day. */
-export function monthOnlyDateline(child: Pick<Child, 'birthday'>, occurredOn: string): string {
-  const month = monthFor(child, occurredOn);
-  if (month === null) return copy.book.beforeYouChapter;
-  if (month === 0) return copy.book.dateline.monthOnlyNewborn;
-  return fill(copy.book.dateline.monthOnly, { month });
-}
+/** The month-only dateline (F09-REQ-003): one function for the app, the export and Tonight (lib/dates). */
+export { monthOnlyDateline };
 
 /** A letter's dateline as shown on its card and its page: the day, or its month only. */
 export function entryDateline(child: Child, entry: Pick<Entry, 'occurredOn' | 'occurredPrecision'>): string {

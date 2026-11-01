@@ -89,7 +89,7 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0']) {
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0']) {
     it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
       const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
       const cases: [string, string][] = [
