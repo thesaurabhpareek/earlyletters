@@ -57,6 +57,7 @@ import {
   parseStatusReport, SALT_RE, STATUS_REPORT_MAX_BYTES, STORED_OUTCOMES, CONSENT_OUTCOMES, type StatusReportResult,
 } from '../../../packages/api/src/server/subscription-status.ts';
 import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
+import { publishableKeyOf } from '../_shared/keys/keys.ts';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
   bearerOf, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
@@ -98,7 +99,7 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
     try {
       // GET or HEAD /subscription-status/health (RA-07-06): settings present or not, nothing else.
       if (isHealthRequest(req, 'subscription-status')) {
-        const configured = Boolean((env('SUPABASE_URL') ?? '').trim() && (env('SUPABASE_ANON_KEY') ?? '').trim());
+        const configured = Boolean((env('SUPABASE_URL') ?? '').trim() && publishableKeyOf(env));
         log.info('request.done', { status: configured ? 200 : 503, outcome: configured ? 'ok' : 'server_error' });
         return healthResponse(req, configured, id);
       }
@@ -112,7 +113,7 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
         return pausedReply('statusReport', id);
       }
       const supabaseUrl = (env('SUPABASE_URL') ?? '').replace(/\/+$/, '');
-      const anonKey = env('SUPABASE_ANON_KEY') ?? '';
+      const anonKey = publishableKeyOf(env) ?? '';
       if (!supabaseUrl || !anonKey) {
         log.error('status.failed', { code: 'config', task });
         return failReply({ code: 'unavailable', retryable: true }, id, 503);

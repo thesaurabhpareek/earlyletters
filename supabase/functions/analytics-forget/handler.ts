@@ -25,6 +25,7 @@ import {
   failure, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID, httpStatusFor, IDEMPOTENCY_KEY_RE, success, type ApiErrorCode,
 } from '../../../packages/api/src/envelope.ts';
 import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
+import { secretKeyOf, serviceHeaders } from '../_shared/keys/keys.ts';
 import { createLogger, type ErrorCode, type LogSink, type Reason } from '../_shared/log/log.ts';
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
@@ -80,7 +81,7 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
     };
 
     const supabaseUrl = (env('SUPABASE_URL') ?? '').replace(/\/+$/, '');
-    const serviceKey = env('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const serviceKey = secretKeyOf(env) ?? '';
     const phKey = env('POSTHOG_PERSONAL_API_KEY') ?? '';
     const phProject = env('POSTHOG_PROJECT_ID') ?? '';
     const phHost = (env('POSTHOG_HOST') || 'https://us.posthog.com').replace(/\/+$/, '');
@@ -146,7 +147,7 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
     // Rate limit: DAILY_CALLS per person per day. Counts only; the ids are not stored.
     const q = await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/ops_consume_forget_quota`, {
       method: 'POST',
-      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      headers: { ...serviceHeaders(serviceKey), 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_profile: profileId, p_limit: DAILY_CALLS }),
     }, timeoutMs);
     if (!q || !q.ok) {

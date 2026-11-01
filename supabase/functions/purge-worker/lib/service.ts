@@ -13,6 +13,7 @@
  *  - Errors keep the HTTP status and SQLSTATE only (ServiceError).
  */
 import { drain, fetchWithTimeout, httpCode, jsonOf, ServiceError, type FetchFn } from './http.ts';
+import { serviceHeaders } from '../../_shared/keys/keys.ts';
 
 export interface ServiceConfig {
   /** https://<project-ref>.supabase.co */
@@ -104,8 +105,7 @@ export function createServiceClient(cfg: ServiceConfig): ServiceClient {
   const f: FetchFn = cfg.fetch ?? ((input, init) => fetch(input, init));
   const timeout = cfg.timeoutMs ?? 15_000;
   const headers = (extra: Record<string, string> = {}): Record<string, string> => ({
-    apikey: cfg.serviceKey,
-    Authorization: `Bearer ${cfg.serviceKey}`,
+    ...serviceHeaders(cfg.serviceKey),
     ...extra,
   });
   const call = (provider: 'postgrest' | 'storage' | 'auth', path: string, init: RequestInit) =>
