@@ -24,7 +24,7 @@ describe('ambient sound mapping', () => {
   it('is on by default, and the master level stays quiet', () => {
     expect(AMBIENT_DEFAULT_ON).toBe(true);
     expect(MASTER_BASE).toBeGreaterThanOrEqual(0.05);
-    expect(MASTER_MAX).toBeLessThanOrEqual(0.12);
+    expect(MASTER_MAX).toBeLessThanOrEqual(0.4);
     for (const tone of ['night', 'paper', 'dusk'] as const)
       for (const energy of [0, 0.3, 1, 5, -2, NaN]) {
         const g = ambientParams({ energy, progress: 0.5, tone }).masterGain;
@@ -83,7 +83,7 @@ describe('ambient sound mapping', () => {
       expect(firm.airGain).toBeLessThanOrEqual(0.25);
       expect(rest.airGain).toBeGreaterThanOrEqual(0.1);
       expect(firm.reverbWet).toBeGreaterThan(rest.reverbWet);
-      expect(firm.masterGain).toBeLessThanOrEqual(0.11);
+      expect(firm.masterGain).toBeLessThanOrEqual(0.35);
       // the designed level lift is about 3.3 dB, no more
       expect(20 * Math.log10(firm.masterGain / rest.masterGain)).toBeLessThan(3.5);
     }

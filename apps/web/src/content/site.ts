@@ -136,7 +136,7 @@ export const site = {
     s03: {
       label: 'Talking',
       headline: 'Talk like you normally do.',
-      support: 'Say it the way you would say it to Meera. Stop halfway, laugh, lose your thread. It does not have to be tidy.',
+      support: 'Say it the way you would say it to Meera. Stop halfway, laugh, lose your thread.',
       appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
