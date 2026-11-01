@@ -3,8 +3,8 @@
  * they are unit tested in test/tonight-plus.test.ts.
  *
  * 1. The standing line. Once the free letters are used and Plus is off, Tonight says so before the person records, not
- *    only at Review after the recording: one line above Speak and Type, `billingCopy.tonight.plusLine`, with "See Plus".
- *    A state, never a count, never a price. The rule is the Keep step's own (packages/core decideKeepLetter), read
+ *    only at Review after the recording: one line above Speak and Type, `billingCopy.tonight.plusLine`. A state, never
+ *    a count, never a price, and no button (F14-REQ-040). The rule is the Keep step's own (packages/core decideKeepLetter), read
  *    through the billing API (usePlan, lettersKeptNow, freeLettersAllowance), so the line and the gate never disagree.
  *
  * 2. Held letters. One held letter keeps its own card. Two or more fold into one row, "{count} letters waiting to be
@@ -41,13 +41,10 @@ export function plusLineShows(input: PlusLineInput): boolean {
   return decideKeepLetter({ now: input.now, plan: input.plan, lettersKept: input.lettersKept, allowance: input.allowance }).kind === 'offer';
 }
 
-/** What the line says, and its one action. No number, no price. */
-export function plusLine(): { text: string; action: string } {
-  return { text: billingCopy.tonight.plusLine, action: billingCopy.keepGate.seePlus };
+/** What the line says. No number, no price, no action. */
+export function plusLine(): string {
+  return billingCopy.tonight.plusLine;
 }
-
-/** Where "See Plus" goes: Settings, Plan, which opens Apple's own sheet (the one place a price is shown). */
-export const PLUS_ROUTE = '/settings/plus' as const;
 
 /* ------------------------------------------------------------------ */
 /* Held letters                                                        */
