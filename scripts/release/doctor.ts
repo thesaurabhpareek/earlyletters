@@ -7,9 +7,10 @@
 // This script covers what those leave out: the repository's Expo and App Store Connect wiring, and that the
 // credentials you hold actually reach Expo and Apple.
 //
-// The founder runs it on their own computer (agents have no keys and the agent sandbox cannot reach Apple or
-// Expo). Every request is a GET, or `eas whoami`. It changes nothing. It never prints a key, a token or a
-// password: a failure names the variable and the reason, never the value.
+// The founder runs it on their own computer: agent sandboxes can reach Expo and App Store Connect over the
+// network, but hold none of the credentials these checks need. Every request is a GET, or `eas whoami`. It
+// changes nothing. It never prints a key, a token or a password: a failure names the variable and the reason,
+// never the value.
 //
 //   npx tsx scripts/release/doctor.ts          # static checks, plus each live check whose variables are set
 //   npx tsx scripts/release/doctor.ts --live   # as above; a live check whose variable is missing, or a missing ascAppId, is FAIL
