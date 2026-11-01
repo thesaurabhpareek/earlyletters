@@ -453,7 +453,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Steps: the question is already in FT-18; ask for the answer in November (`docs/backlog/future/05-trust-platform-insights.md` T5-15).
   - By: Mon 30 Nov. Blocks: BL-345 (a 1.0.x release before 1 Jan 2027 if the duty applies).
 
-- [ ] **FT-48 D-004 hedge: start an entity in parallel, or not**
+- [x] **FT-48 D-004 hedge: start an entity in parallel, or not** (closed by D-134, 31 Oct 2026: no entity now; the founder declined the parallel LLC)
   - Time: 1 hour to decide; formation is a separate project. Cost: state filing fees and an accountant [U].
   - Steps: `docs/DECISIONS.md` D-004 points 3 to 5 (triggers: the public TestFlight link, paid marketing, 1,000 families, US $2,000 a month in proceeds, a first hire, Android, selling print; Apple's app-transfer conditions).
   - By: Fri 27 Nov. Blocks: the fast fallback if App Review cites 5.1.1(ix); Android (G-21); paid marketing (G-06, T5-03); print (BK-14).
