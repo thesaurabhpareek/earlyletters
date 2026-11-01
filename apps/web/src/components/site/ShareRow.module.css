@@ -77,6 +77,11 @@
   box-shadow: inset 0 0 0 1px var(--night-accent);
 }
 /* Short phones: the film's last card is tight, so the line above the icons gives way first. */
+@media (max-height: 700px) {
+  .wrap {
+    margin-top: 6px;
+  }
+}
 @media (max-height: 640px) {
   .heading {
     position: absolute;
