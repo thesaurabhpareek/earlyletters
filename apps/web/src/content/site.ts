@@ -185,7 +185,7 @@ export const site = {
     },
     s08: {
       label: 'Languages',
-      headline: 'Every new language is read by a native speaker first.',
+      headline: 'Checked by a native speaker.',
       support: 'English comes first, then Hindi, Spanish, Mandarin, French, Arabic and Portuguese.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
