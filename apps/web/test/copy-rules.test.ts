@@ -93,7 +93,7 @@ describe('what is being checked', () => {
   it('walks every string in site.ts', () => {
     const fromSite = ALL.filter((l) => l.path.startsWith('site.ts:'));
     expect(fromSite.some((l) => l.path === 'site.ts:sampleLetter.text')).toBe(true);
-    expect(fromSite.some((l) => l.path === 'site.ts:site.scenes.s08.lines[6].text')).toBe(true);
+    expect(fromSite.some((l) => l.path === 'site.ts:site.scenes.s08.lines[0].text')).toBe(true);
     expect(fromSite.length).toBeGreaterThan(60);
   });
 });
@@ -254,16 +254,14 @@ describe('s08 language lines (translations need native-speaker confirmation, see
   };
   const STOP: Record<string, string> = { en: '.', es: '.', fr: '.', pt: '.', hi: '।', zh: '。', ar: '.' };
 
-  // RULE: exactly the seven v1.0 languages (BRIEF decision 6), in the order the support line names them.
-  it('lists the seven v1.0 languages, in order, and the support line names them', () => {
-    // Primary subtag only: lang may carry a script or region (zh-Hans, pt-BR).
-    expect(lines.map((l) => l.lang.split('-')[0])).toEqual(['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt']);
-    const names = lines.map((l) => l.name);
-    // English first, the rest as a native speaker signs each (D-121): the line still names all seven, in this order.
-    const support = siteModule.site.scenes.s08.support;
-    const at = names.map((n) => support.indexOf(n));
-    expect(at.every((i) => i >= 0)).toBe(true);
-    expect([...at].sort((a, b) => a - b)).toEqual(at);
+  // RULE (exec council 1 Nov 2026, D-115, D-125 item 2): until a native reviewer is on record, the page shows the English
+  // line only, and neither the headline nor the support says any language is already checked.
+  it('shows the English line only, and promises review before any other language', () => {
+    expect(lines.map((l) => l.lang)).toEqual(['en']);
+    const { headline, support } = siteModule.site.scenes.s08;
+    expect(support).toMatch(/native speaker has checked/);
+    expect(`${headline} ${support}`).not.toMatch(/\b(Hindi|Spanish|Mandarin|French|Arabic|Portuguese)\b/);
+    expect(headline).not.toMatch(/checked|reviewed|verified/i);
   });
 
   // RULE: each line is in its own script, ends with its language's full stop, and is right to left only for Arabic.

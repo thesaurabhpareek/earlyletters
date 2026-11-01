@@ -71,7 +71,7 @@ export const site = {
   comingSoon: {
     line: 'A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.',
     // Re-check at the first release with sync or backup (1.0.x): "stay on your iPhone" is true for the first build only (D-121).
-    trust: 'Your letters stay on your iPhone. Only the people you invite can see them.',
+    trust: 'Your letters and recordings stay on your iPhone, and none of it is sent to us.',
     shareButton: 'Share with a friend',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
@@ -148,7 +148,7 @@ export const site = {
     s04: {
       label: 'Your words',
       headline: 'It stays in your words.',
-      support: `${NAME} clears the ums and mends a misheard name. It never adds a word, and every fix can be put back.`,
+      support: 'Ums and repeats come out. Nothing is added, and every fix can be put back.',
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -158,7 +158,7 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice comes with it.',
-      support: 'Each spoken letter keeps its recording, tired end-of-day voice and all.',
+      support: 'Each spoken letter keeps its original recording, unchanged, tired end-of-day voice and all.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
@@ -185,27 +185,22 @@ export const site = {
     },
     s08: {
       label: 'Languages',
-      headline: 'Checked by a native speaker.',
-      support: 'English comes first, then Hindi, Spanish, Mandarin, French, Arabic and Portuguese.',
+      headline: 'Starting in English.',
+      support: 'More languages follow one at a time, each after a native speaker has checked it.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
        */
+      // English only until a native reviewer is on record for each other language (D-115, D-125 item 2).
       lines: [
         { lang: 'en', dir: 'ltr', name: 'English', text: 'Today you found the light switch.' },
-        { lang: 'hi', dir: 'ltr', name: 'Hindi', text: 'आज तुमने लाइट का स्विच ढूँढ लिया।' },
-        { lang: 'es', dir: 'ltr', name: 'Spanish', text: 'Hoy encontraste el interruptor de la luz.' },
-        { lang: 'zh-Hans', dir: 'ltr', name: 'Mandarin', text: '今天你找到了灯的开关。' },
-        { lang: 'fr', dir: 'ltr', name: 'French', text: "Aujourd'hui, tu as trouvé l'interrupteur." },
-        { lang: 'ar', dir: 'rtl', name: 'Arabic', text: 'اليوم أنت وجدت مفتاح الضوء.' },
-        { lang: 'pt-BR', dir: 'ltr', name: 'Portuguese', text: 'Hoje você encontrou o interruptor da luz.' },
       ],
     },
     s09: {
       label: 'Private',
-      headline: 'For your family only.',
+      headline: 'Kept on your iPhone.',
       points: [
-        'Only the people you invite can see your letters.',
+        'Letters and recordings stay on your iPhone. We never receive them.',
         'No ads. We never sell your data.',
         'Your letters are never used to train AI.',
         'Export your letters whenever you want.',
@@ -289,8 +284,8 @@ export const site = {
     promisesTitle: 'What we promise',
     promises: [
       'We never rewrite your words.',
-      'Each letter you speak keeps its recording.',
-      'Only the people you invite can see your letters. No ads, and we never sell your data.',
+      'Each letter you speak keeps its original recording, unchanged.',
+      'Your letters and recordings stay on your iPhone. No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
