@@ -111,6 +111,9 @@ export default function EraseEverything() {
         <Text variant="subhead" tone="muted">
           {e.onThisPhone}
         </Text>
+        <Text variant="subhead" tone="muted">
+          {e.backups}
+        </Text>
       </View>
 
       <Card variant="raised" radius="md" padding={4}>

@@ -10,7 +10,11 @@
  * by the next launch, the free-letter count starts again after Erase everything, and nothing is sent anywhere.
  * Fictional Asha family only.
  */
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -258,6 +262,72 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
   });
 });
 
+describe('[D-103] deleting a book never lowers the free-letter count (only Erase everything resets it)', () => {
+  /**
+   * The count starts behind the letters present: these letters were saved without the Keep path, so neither the
+   * database mirror nor the Keychain holds them, as after a backup restore before the launch heal. A quiet note is
+   * kept too, which counts once notes count (#510) and not before; the tests compare with the count before the
+   * delete, so they hold either way.
+   */
+  async function behind() {
+    const app = await launch();
+    const f = family(app);
+    app.store.saveEntry(letter({ id: '0199a5b0-0000-7000-8000-0000000a0004', childId: f.asha, kind: 'note', captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a note for later.' }));
+    const kept = () => app.ledger.lettersKept(app.store.ledgerDb());
+    expect(app.store.getSetting('letters.keptEver')).toBeNull(); // the mirror holds nothing yet
+    expect(h.keychain.size).toBe(0);
+    const before = await kept();
+    expect(before).toBeGreaterThanOrEqual(4); // a1, a2 (deleted still counts), typed, v1
+    return { app, f, kept, before };
+  }
+
+  it('Delete, Restore, then Delete and Erase now: the count is the same after each', async () => {
+    const { app, f, kept, before } = await behind();
+    app.store.deleteBook(f.asha);
+    expect(await kept()).toBe(before);
+    app.store.restoreBook(f.asha);
+    expect(await kept()).toBe(before);
+    app.store.deleteBook(f.asha);
+    expect(app.erase.eraseDeletedBook(f.asha)).toBe(true);
+    expect(app.store.listEntriesForChild(f.avi).length).toBe(1); // only Avi's letter is left on the phone
+    expect(await kept()).toBe(before);
+    expect(app.store.getSetting('letters.keptEver')).not.toBeNull(); // raised before the rows went
+  });
+
+  it('the day-30 purge at launch, before the ledger heal has run: the count is the same after a relaunch', async () => {
+    let { app, f, before } = await behind();
+    app.store.deleteBook(f.asha);
+    vi.setSystemTime(T0 + 30 * DAY + 1000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(app.store.listDeletedBooks()).toEqual([]);
+    expect(await app.ledger.lettersKept(app.store.ledgerDb())).toBe(before);
+  });
+
+  it('a kill part way through the book erase, finished by the next launch: the count is the same', async () => {
+    let { app, f, before } = await behind();
+    app.store.deleteBook(f.asha);
+    let n = 0;
+    app.store.eraseBook(f.asha, (uri, id) => {
+      if (n++ === 1) throw new Error('killed');
+      app.erase.eraseAudioFile(uri, id);
+    });
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(db.get('SELECT id FROM children WHERE id = ?', f.asha)).toBeNull();
+    expect(await app.ledger.lettersKept(app.store.ledgerDb())).toBe(before);
+  });
+
+  it('Erase everything still resets the count to 0, after a book was erased', async () => {
+    const { app, f, kept } = await behind();
+    app.store.deleteBook(f.asha);
+    app.erase.eraseDeletedBook(f.asha);
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(await kept()).toBe(0);
+    expect([...h.keychain.keys()]).toEqual([]);
+  });
+});
+
 describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out', () => {
   async function filled() {
     const app = await launch();
@@ -358,6 +428,80 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(app.store.listChildren().map((c) => c.name)).toEqual(['Asha', 'Avi']);
     expect([f.a1, f.v1].every(has)).toBe(true);
     expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(true);
+  });
+});
+
+describe('[DATA-REQ-024] erased words leave the database file itself, not only its rows (privacy Review A on #520)', () => {
+  // A real database file in WAL mode with the phone's open pragmas, so the bytes an iPhone backup would copy can be read.
+  const WORD = 'Zinniaquill'; // a word only these letters say
+  let dir = '';
+  let file = '';
+
+  beforeEach(() => {
+    closeDb();
+    dir = mkdtempSync(join(tmpdir(), 'erase-bytes-'));
+    file = join(dir, 'scribe.db');
+    const n = nodeDb(file);
+    n.db.exec(OPEN_PRAGMAS);
+    db = n.db;
+    closeDb = n.close;
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** Every byte of scribe.db and scribe.db-wal, as a backup would copy them. */
+  const bytesOnDisk = () => Buffer.concat([file, `${file}-wal`].filter(existsSync).map((p) => readFileSync(p)));
+  const found = (s: string) => bytesOnDisk().includes(Buffer.from(s, 'utf8'));
+
+  function words(app: App, id: string, childId: string, audioUri: string | null) {
+    app.store.saveEntry(
+      letter({ id, childId, audioUri, rawTranscript: `um ${WORD} at the window`, finalText: `${WORD} at the window.`, ...(audioUri ? {} : { captureMode: 'typed', audioSha256: null, audioBytes: null, audioDurationMs: null }) }),
+    );
+  }
+
+  it('Erase now on one letter in Recently deleted', async () => {
+    const app = await launch();
+    const avi = app.store.addChild({ name: 'Avi', birthday: null, dueDate: null, signsAs: 'Papa' }).id;
+    const id = '0199a5b0-0000-7000-8000-0000000c0001';
+    words(app, id, avi, null);
+    expect(found(WORD)).toBe(true);
+    app.store.deleteEntry(id);
+    expect(app.erase.eraseDeletedLetter(id)).toBe(true);
+    expect(found(WORD)).toBe(false);
+  });
+
+  it('the 30-day erase of a letter at launch', async () => {
+    let app = await launch();
+    const avi = app.store.addChild({ name: 'Avi', birthday: null, dueDate: null, signsAs: 'Papa' }).id;
+    const id = '0199a5b0-0000-7000-8000-0000000c0002';
+    words(app, id, avi, null);
+    app.store.deleteEntry(id);
+    vi.setSystemTime(T0 + 30 * DAY + 1000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(app.store.getEntry(id)).toBeNull();
+    expect(found(WORD)).toBe(false);
+  });
+
+  it("Erase now on a deleted book: its letters' words and the child's name", async () => {
+    const app = await launch();
+    const asha = app.store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' }).id;
+    app.store.addChild({ name: 'Avi', birthday: null, dueDate: null, signsAs: 'Papa' });
+    words(app, '0199a5b0-0000-7000-8000-0000000c0003', asha, take('0A1B2C3D-0000-4000-8000-0000000C0C03'));
+    expect(found('Asha')).toBe(true);
+    app.store.deleteBook(asha);
+    expect(app.erase.eraseDeletedBook(asha)).toBe(true);
+    expect(found(WORD)).toBe(false);
+    expect(found('Asha')).toBe(false);
+  });
+
+  it('Erase everything: no words and no name anywhere in the file', async () => {
+    const app = await launch();
+    const asha = app.store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' }).id;
+    words(app, '0199a5b0-0000-7000-8000-0000000c0004', asha, take('0A1B2C3D-0000-4000-8000-0000000C0C04'));
+    expect(await app.all.eraseEverything()).toBe('erased');
+    for (const s of [WORD, 'Asha', 'Mama']) expect([s, found(s)]).toEqual([s, false]);
   });
 });
 

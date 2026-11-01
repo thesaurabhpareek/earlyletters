@@ -843,6 +843,8 @@ export const en = {
       // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
       speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
       onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
+      // Privacy Review A on #520: the same fact the deletion page states (pages.en.ts, "What stays").
+      backups: "Backups of this phone you already made, such as iCloud Backup, are not changed.",
       confirmHeading: "Erase everything on this phone?",
       confirmBody: "Nothing goes to Recently deleted, so this cannot be undone.",
       typeLabel: "Type delete to confirm",

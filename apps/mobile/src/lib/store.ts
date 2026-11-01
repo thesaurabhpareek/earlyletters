@@ -769,11 +769,14 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   }
   let done = false;
   c.db.transaction(() => {
+    // D-103: a deleted letter still counts. Raise the mirror to every letter that counts before this one's row goes.
+    ledger.raiseTo(c, ledger.countPresent(c));
     done = entries.eraseRow(c, id);
     // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
     // holds, and the author's other phones erase their copy (never restorable there).
     if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
   });
+  if (done) compactAfterErase(c);
   if (done) bus.emit('entries');
   if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
@@ -788,6 +791,7 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
 export function finishServerErased(eraseAudio: AudioEraser): number {
   const c = ctx();
   let n = 0;
+  ledger.raiseTo(c, ledger.countPresent(c)); // D-103: the rows below still counted; the count stays
   for (const r of c.db.all<{ id: string; audio_uri: string | null }>(
     "SELECT id, audio_uri FROM entries WHERE sync_state = 'erased' AND deleted_at IS NOT NULL ORDER BY id",
   )) {
@@ -798,6 +802,7 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
     }
     if (entries.eraseRow(c, r.id)) n++;
   }
+  if (n > 0) compactAfterErase(c);
   if (n > 0) bus.emit('entries');
   return n;
 }
@@ -832,6 +837,22 @@ export function recordLaunch(nowMs: number): void {
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && last >= nowMs) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
+// ── After a hard erase (BL-387; privacy Review A on #520) ────────────────
+/**
+ * After rows were erased for good: the WAL is checkpointed and truncated, so the old page images of the erased rows
+ * leave `scribe.db-wal` (secure_delete, set at open, has already zeroed them in the database's pages). `full` (Erase
+ * everything) also runs VACUUM, which rebuilds the file and drops free pages written before secure_delete was on.
+ * Outside any transaction. Never throws: the rows are already gone, and the next erase or launch tries again.
+ */
+function compactAfterErase(c: RepoContext, full = false): void {
+  try {
+    if (full) c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+  } catch {
+    // A reader holds the WAL (rare on one connection); the next erase or the next checkpoint finishes it.
+  }
 }
 
 // ── Delete a book (BL-387; F17 6.2 D; DATA-REQ-014, F17-REQ-080) ──────────
@@ -896,7 +917,15 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
       return false;
     }
   }
-  c.db.transaction(() => wipe.removeBook(c, id));
+  c.db.transaction(() => {
+    // D-103: the free-letter count never goes down, except on Erase everything. The book's letters are one of the
+    // ledger's three sources, so the mirror is first raised to every letter that counts now (ledger.countPresent,
+    // the same rule as the Keep gate, whichever kinds it counts), then the rows go. A mirror behind them (a backup
+    // restore before the launch heal, a note kept before notes counted) can no longer drop the count.
+    ledger.raiseTo(c, ledger.countPresent(c));
+    wipe.removeBook(c, id);
+  });
+  compactAfterErase(c);
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
 }
@@ -936,13 +965,16 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
     return 'incomplete';
   }
   c.db.transaction(() => wipe.removeEverything(c));
+  compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
   return 'erased';
 }
 
 /** The last step of Erase everything: removes the pending mark. The phone is now as on first run. */
 export function finishEraseEverything(): void {
-  settings.deleteSetting(ctx(), wipe.ERASE_EVERYTHING_SETTING);
+  const c = ctx();
+  settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SETTING);
+  compactAfterErase(c);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
 }
 

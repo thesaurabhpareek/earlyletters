@@ -45,7 +45,7 @@ export function useAgeGate(): { decision: GateDecision; refresh: () => void } {
   const [decision, setDecision] = useState<GateDecision>(() => readDecision());
   const refresh = useCallback(() => setDecision(readDecision()), []);
   // Erase everything (lib/erase-everything.ts) removes the stored answer with every other setting: the question
-  // comes back at once, as on first run. Only reads; nothing is written here.
+  // comes back at once, as on first run. It re-reads the stored answer through the same readDecision; no rule changes.
   useEffect(() => subscribeTo('settings', refresh), [refresh]);
   useEffect(() => {
     // Re-check when the app returns to the foreground and once a minute while stopped,
