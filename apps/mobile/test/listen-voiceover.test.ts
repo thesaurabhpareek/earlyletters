@@ -15,6 +15,7 @@ import {
   createListenAnnouncer,
   maySpeak,
   permissionStep,
+  stableLabels,
   type ListenPhase,
   type SpeakState,
   type WhenCapturing,
@@ -99,15 +100,81 @@ describe('RT-REC-09: no announcement is emitted while a take is recording (SR-C-
     expect(listen).toMatch(/recorder\.isRecording/);
     // Pause holds "Paused." for the stop; the room settles the gate on every recorder status.
     expect(listen).toMatch(/say\(t\.paused, \{ phase: 'paused', capturing: capturingNow\(\) \}, 'hold'\)/);
-    expect(listen).toMatch(/announcer\.settle\(\{ phase, capturing: capturingNow\(\) \}\)/);
+    expect(listen).toMatch(/const capturing = capturingNow\(\);[\s\S]{0,120}announcer\.settle\(\{ phase, capturing \}\)/);
     expect(listen).toMatch(/announcer\.clear\(\)/);
   });
 
-  it('nothing on Listen changes what VoiceOver reads while capturing: the live region is off and the elapsed label holds still', () => {
+  it('[Review B nit] Finish from paused drops a held "Paused." on the way to Review, even once capture stops', () => {
+    const { spoken, a } = harness();
+    a.say(en.tonight.states.paused, { phase: 'paused', capturing: true }, 'hold');
+    a.settle({ phase: 'finishing', capturing: true });
+    a.settle({ phase: 'finishing', capturing: false });
+    a.settle({ phase: 'paused', capturing: false });
+    expect(spoken).toEqual([]);
+  });
+});
+
+/**
+ * [Review A 1] No Listen element changes its accessibility label while a take is live (07 line 276, F04-REQ-041).
+ * Node cannot render React Native, so this drives the exact function listen.tsx renders its labels from
+ * (`stableLabels`) through a whole take, with the clock running, the "Still here." switch on metering, and pause and
+ * resume; the source checks below pin that every label on screen comes from it.
+ */
+describe('[Review A 1] every label holds still from record() to stop', () => {
+  const p = en.listen;
+  const t = en.tonight.states;
+  const clock = (ms: number) => `${Math.floor(ms / 60000)} min ${Math.floor(ms / 1000) % 60} s recorded`;
+  type Step = { phase: ListenPhase; capturing: boolean; ms: number; quiet?: boolean };
+  const lineFor = (s: Step) => (s.phase === 'asking' ? null : s.phase === 'paused' ? t.paused : s.quiet ? t.stillHere : t.listening);
+
+  function run(steps: Step[]) {
+    let prev: ReturnType<typeof stableLabels> | null = null;
+    return steps.map((s) => {
+      const next = stableLabels({ clock: clock(s.ms), line: lineFor(s), toggle: p.toggleA11y }, prev, maySpeak(s));
+      prev = next;
+      return { s, labels: next };
+    });
+  }
+
+  it('from the first captured frame to the stop, no label changes; they catch up once capture stops', () => {
+    const out = run([
+      { phase: 'asking', capturing: false, ms: 0 },
+      { phase: 'asking', capturing: true, ms: 0 }, // record() called, phase not yet live
+      { phase: 'recording', capturing: true, ms: 50 },
+      { phase: 'recording', capturing: true, ms: 9_000, quiet: true }, // "Still here." on screen
+      { phase: 'recording', capturing: true, ms: 61_000 }, // a minute passes
+      { phase: 'paused', capturing: true, ms: 61_050 }, // pause pressed, iOS still writing
+      { phase: 'paused', capturing: false, ms: 61_050 }, // stopped: labels may move
+      { phase: 'recording', capturing: true, ms: 61_100 }, // resume
+      { phase: 'recording', capturing: true, ms: 75_000, quiet: true },
+      { phase: 'finishing', capturing: true, ms: 75_000 },
+    ]);
+    const live = (i: number, j: number) => out.slice(i, j).map((o) => o.labels);
+    // Take 1: from record() to the stop.
+    const first = live(1, 6);
+    // The line's Text appears with the take (no element had a label before); from then on all four frames are equal.
+    expect(first[0].line).toBeNull();
+    expect({ ...first[0], line: first[1].line }).toEqual(first[1]);
+    expect(new Set(first.slice(1).map((l) => JSON.stringify(l))).size).toBe(1);
+    expect(first[1]).toEqual({ clock: clock(0), line: t.listening, toggle: p.toggleA11y });
+    // Once stopped they catch up: the time and "Paused." are true again.
+    expect(out[6].labels).toEqual({ clock: clock(61_050), line: t.paused, toggle: p.toggleA11y });
+    // Take 2: resume to the stop: nothing changes, not even "Paused." becoming "Listening.".
+    const second = live(7, 10);
+    expect(new Set(second.map((l) => JSON.stringify(l))).size).toBe(1);
+    // The toggle has one label in every frame of the take, paused or not.
+    expect(new Set(out.map((o) => o.labels.toggle))).toEqual(new Set([p.toggleA11y]));
+  });
+
+  it('the screen takes every label from stableLabels: the clock, Finish hint, the line and the toggle', () => {
     expect(listen).toMatch(/accessibilityLiveRegion=\{speakable \? 'polite' : 'none'\}/);
-    // The clock's label and Finish's hint use the time at the last stop, not the running time (F04-REQ-041).
-    expect(listen).toMatch(/if \(speakable\) heardMs\.current = status\.durationMillis;/);
-    expect(listen).toMatch(/minutes: Math\.floor\(heardMs\.current \/ 60000\)/);
+    expect(listen).toMatch(/const labels = stableLabels\(/);
+    expect(listen).toMatch(/labelsRef\.current = labels;\s*const elapsedA11y = labels\.clock;/);
+    expect(listen).toMatch(/accessibilityLabel=\{elapsedA11y\}/);
+    expect(listen).toMatch(/accessibilityHint=\{elapsedA11y\}/);
+    expect(listen).toMatch(/className="text-center" accessibilityLabel=\{labels\.line \?\? line\}>\s*\{line\}/);
+    expect(listen).toMatch(/onPress=\{togglePause\}\s*label=\{phase === 'paused' \? t\.resumeButton : copy\.common\.pauseButton\}\s*accessibilityLabel=\{labels\.toggle\}/);
+    expect(p.toggleA11y).toBe('Pause or keep talking');
   });
 });
 
@@ -130,11 +197,23 @@ describe('RT-REC-01: our primer first, then the iOS question (SR-C-05, F04-REQ-0
     expect(start.indexOf("setPhase('primer')")).toBeLessThan(start.indexOf('requestRecordingPermissionsAsync()'));
     expect(start).toMatch(/step === 'ask' \? await requestRecordingPermissionsAsync\(\)/);
     expect(listen).toMatch(/if \(phase === 'primer'\) \{/);
-    expect(listen).toMatch(/onPress: continueAfterPrimer, testID: 'listen\.primer\.continue'/);
+    expect(listen).toMatch(/<MicPrimer childName=\{child\.name\} onContinue=\{continueAfterPrimer\} onType=\{typeInstead\} onClose=\{close\} \/>/);
     expect(listen).toMatch(/const continueAfterPrimer = \(\) => startFromTap\(true\);/);
     // A tap on the red circle or Try again never skips the primer (onPress passes an event, never `true`).
     expect(listen).toMatch(/const begin = \(\) => startFromTap\(false\);/);
-    expect(listen).toMatch(/testID: 'listen\.primer\.type'/);
+  });
+
+  it('[Review A 2] Continue and Type instead have equal weight, and VoiceOver starts on the heading', () => {
+    const primer = listen.slice(listen.indexOf('function MicPrimer'));
+    const cont = primer.match(/<Button ([^>]*)testID="listen\.primer\.continue" \/>/);
+    const type = primer.match(/<Button ([^>]*)testID="listen\.primer\.type" \/>/);
+    expect(cont).not.toBeNull();
+    expect(type).not.toBeNull();
+    const weight = (attrs: string) => attrs.match(/variant="(\w+)" size="(\w+)" fullWidth/)?.slice(1);
+    expect(weight(cont![1])).toEqual(['secondary', 'lg']);
+    expect(weight(type![1])).toEqual(weight(cont![1]));
+    expect(primer).toMatch(/const heading = useRef<RNText>\(null\);\s*useFocusOnMount\(heading\);/);
+    expect(primer).toMatch(/<Text ref=\{heading\} variant=\{STATE_LAYOUT\.title\} asHeading/);
   });
 
   it('the primer words come from packages/content, fill {child}, and make no storage claim', () => {
@@ -143,6 +222,6 @@ describe('RT-REC-01: our primer first, then the iOS question (SR-C-05, F04-REQ-0
     expect(p.body).toContain('{child}');
     expect(p.body).toContain('{app}');
     for (const s of Object.values(p)) expect(s).not.toMatch(/stay|stored|kept|cloud|upload|backup|phone only/i);
-    expect(listen).toMatch(/const pr = p\.primer;/);
+    expect(listen).toMatch(/const pr = pendingCopy\.listen\.primer;/);
   });
 });

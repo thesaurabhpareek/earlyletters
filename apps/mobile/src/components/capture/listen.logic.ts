@@ -97,6 +97,8 @@ export type ListenAnnouncer = {
  */
 export function createListenAnnouncer(speak: (message: string) => void): ListenAnnouncer {
   let held: string | null = null;
+  /** The moment a held line belongs to: it is spoken only if the room is still in that moment. */
+  let heldIn: ListenPhase | null = null;
   return {
     say(message, s, whenCapturing = 'drop') {
       if (!message) return;
@@ -105,12 +107,14 @@ export function createListenAnnouncer(speak: (message: string) => void): ListenA
         speak(message);
       } else if (whenCapturing === 'hold') {
         held = message;
+        heldIn = s.phase;
       }
     },
     settle(s) {
       if (held === null) return;
-      if (s.phase === 'recording') {
-        held = null; // the take resumed: "Paused." is no longer true
+      if (s.phase !== heldIn) {
+        // The room moved on (resumed, or Finish on the way to Review): "Paused." is no longer true, so it is dropped.
+        held = null;
         return;
       }
       if (maySpeak(s)) {
@@ -168,6 +172,23 @@ export function listenRoom(phase: RoomPhase): {
   };
 }
 
+/**
+ * Every accessibility label the room exposes while a take can be live (07 quality bar: no Listen element changes its
+ * label while a take is live; F04-REQ-041). VoiceOver re-reads a focused element whose label changes, so while the
+ * recorder captures each label keeps the value it had when capture began (or, for an element that appeared during the
+ * take, the first value it showed). They catch up once capture stops.
+ *
+ *   clock       the elapsed time ("1 min 5 s recorded"); also Finish's hint
+ *   line        "Listening." / "Still here." / "Paused." (null when the room shows no line)
+ *   toggle      Pause / Keep talking: one label for the whole take, `listen.toggleA11y` (state is said by "Paused.")
+ */
+export type RoomLabels = { clock: string; line: string | null; toggle: string };
+
+export function stableLabels(next: RoomLabels, prev: RoomLabels | null, speakable: boolean): RoomLabels {
+  if (speakable || prev === null) return next;
+  return { clock: prev.clock, line: prev.line ?? next.line, toggle: prev.toggle };
+}
+
 /** Before the microphone goes live (S13): permission off first, then a phone with no room for a take. */
 export function startBlocker(s: { granted: boolean; freeBytes: number | null }): MicProblem | null {
   if (!s.granted) return 'denied';
@@ -185,7 +206,8 @@ export function startFailure(s: { takeBegun: boolean; granted: boolean | null })
   return s.granted === false ? 'denied' : 'busy';
 }
 
-/** The app came back to the front (S13): with permission now on, "The microphone is off" gives way to idle Listening. */export function afterForeground(phase: ListenPhase, granted: boolean): ListenPhase {
+/** The app came back to the front (S13): with permission now on, "The microphone is off" gives way to idle Listening. */
+export function afterForeground(phase: ListenPhase, granted: boolean): ListenPhase {
   return phase === 'denied' && granted ? 'ready' : phase;
 }
 

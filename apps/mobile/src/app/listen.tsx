@@ -28,7 +28,7 @@ import { MicrophoneSlashIcon } from 'phosphor-react-native/src/icons/MicrophoneS
 import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
@@ -45,18 +45,22 @@ import {
   promptLine,
   reviewParams,
   startBlocker,
+  stableLabels,
   startFailure,
   type ListenPhase,
+  type RoomLabels,
 } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
-import { StateScreen } from '@/components/ui/state-screen';
+import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
+import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
-import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
+import { setRecorderCapturing } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -103,8 +107,8 @@ export default function Listen() {
   if (tapped.current === null) tapped.current = consumeListenStart();
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
-  /** The take's length when VoiceOver last could hear it: the clock's label while capturing (F04-REQ-041). */
-  const heardMs = useRef(0);
+  /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
+  const labelsRef = useRef<RoomLabels | null>(null);
   const mounted = useRef(true);
   useEffect(
     () => () => {
@@ -140,8 +144,12 @@ export default function Listen() {
     } catch {}
     return live || status.isRecording === true;
   };
+  // The app-wide gate (lib/speech-gate.ts) follows the recorder's real state, so no toast or other `announce()` anywhere
+  // in the app speaks into the take either. A live phase counts as capturing before the native flag catches up.
   useEffect(() => {
-    announcer.settle({ phase, capturing: capturingNow() });
+    const capturing = capturingNow();
+    setRecorderCapturing(capturing || phase === 'recording');
+    announcer.settle({ phase, capturing });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, phase]);
   useEffect(() => () => announcer.clear(), [announcer]);
@@ -172,7 +180,12 @@ export default function Listen() {
     if (!id || ended.current) return;
     ended.current = true;
     setPhase('finishing');
-    const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
+    let draft: Awaited<ReturnType<typeof finalizeTake>>;
+    try {
+      draft = await finalizeTake(recorder, id, reason, lastDuration.current);
+    } finally {
+      setRecorderCapturing(false); // the recorder has stopped: the app may speak again (on Review)
+    }
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
     if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
@@ -200,11 +213,13 @@ export default function Listen() {
     // Haptic before the session activates: iOS mutes haptics while recording.
     haptic('press');
     await setAudioMode('recording');
+    // Silent from before the microphone goes live; the effect above then follows the recorder (a failed start resets it).
+    setRecorderCapturing(true);
     const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
     if (!mounted.current) {
       // The screen went away while the take was starting: keep what exists, as any other exit does.
       ended.current = true;
-      void finalizeTake(recorder, draft.id, 'dismiss', 0);
+      void finalizeTake(recorder, draft.id, 'dismiss', 0).finally(() => setRecorderCapturing(false));
       return;
     }
     takeId.current = draft.id;
@@ -289,7 +304,10 @@ export default function Listen() {
       const id = takeId.current;
       if (id && !ended.current) {
         ended.current = true;
-        void finalizeTake(recorder, id, 'dismiss', lastDuration.current);
+        // The app stays silent until the recorder has really stopped, then may speak again.
+        void finalizeTake(recorder, id, 'dismiss', lastDuration.current).finally(() => setRecorderCapturing(false));
+      } else if (!id) {
+        setRecorderCapturing(false); // no take ever began (a failed or abandoned start)
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -305,6 +323,7 @@ export default function Listen() {
       // Held until the recorder has really stopped capturing, then spoken once (F04-U30); a quick resume drops it.
       announcer.say(t.paused, { phase: 'paused', capturing: capturingNow() }, 'hold');
     } else if (phase === 'paused') {
+      setRecorderCapturing(true); // silent before the microphone is live again
       recorder.record();
       setPhase('recording');
       // Live again, so the gate drops this.
@@ -325,8 +344,12 @@ export default function Listen() {
           ended.current = true;
           trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
           const uri = recorder.uri;
-          if (id) await abandonTake(recorder, id);
-          else await setAudioMode('idle').catch(() => {});
+          try {
+            if (id) await abandonTake(recorder, id);
+            else await setAudioMode('idle').catch(() => {});
+          } finally {
+            setRecorderCapturing(false);
+          }
           // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
           // haptics while recording.
           haptic('warning');
@@ -352,18 +375,7 @@ export default function Listen() {
   if (phase === 'primer') {
     // Our own short note before the iOS question (SR-C-05, F04-REQ-034), in the same one-state layout as the three
     // start problems: nothing is recorded or asked until Continue. Typing stays an equal way (Type instead).
-    const pr = p.primer;
-    return (
-      <StateScreen
-        kind="empty"
-        glyph={MicrophoneIcon}
-        title={pr.title}
-        body={fill(pr.body, { child: child.name })}
-        header={<ModalHeader onClose={close} />}
-        primary={{ label: pr.continueButton, onPress: continueAfterPrimer, testID: 'listen.primer.continue' }}
-        quiet={[{ label: copy.errors.micDenied.typeButton, onPress: typeInstead, testID: 'listen.primer.type' }]}
-      />
-    );
+    return <MicPrimer childName={child.name} onContinue={continueAfterPrimer} onType={typeInstead} onClose={close} />;
   }
 
   if (isMicProblem(phase)) {
@@ -386,16 +398,23 @@ export default function Listen() {
   const room = listenRoom(phase);
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
-  // While capturing nothing on this screen changes what VoiceOver reads (F04-REQ-041): the live region is off and the
-  // clock's label (and Finish's hint) keep the time at the last stop; they catch up once capture stops.
-  const speakable = maySpeak({ phase, capturing: capturingNow() });
-  if (speakable) heardMs.current = status.durationMillis;
-  const elapsedA11y = fill(p.elapsedA11y, {
-    minutes: Math.floor(heardMs.current / 60000),
-    seconds: Math.floor(heardMs.current / 1000) % 60,
-  });
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
   const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
+  // While capturing nothing on this screen changes what VoiceOver reads (07 line 276, F04-REQ-041): the live region is
+  // off, and every label (the clock, Finish's hint, the line, Pause / Keep talking) holds still; they catch up once
+  // capture stops (listen.logic `stableLabels`).
+  const speakable = maySpeak({ phase, capturing: capturingNow() });
+  const labels = stableLabels(
+    {
+      clock: fill(p.elapsedA11y, { minutes: Math.floor(status.durationMillis / 60000), seconds: Math.floor(status.durationMillis / 1000) % 60 }),
+      line,
+      toggle: p.toggleA11y,
+    },
+    labelsRef.current,
+    speakable,
+  );
+  labelsRef.current = labels;
+  const elapsedA11y = labels.clock;
 
   // The clock and the room's line: in the room, or pinned with the controls at accessibility sizes (S5).
   const clockAndLine = (
@@ -408,7 +427,7 @@ export default function Listen() {
       )}
       <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
-          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
+          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
             {line}
           </Text>
         ) : null}
@@ -486,6 +505,7 @@ export default function Listen() {
             disabled={!room.controls}
             onPress={togglePause}
             label={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}
+            accessibilityLabel={labels.toggle}
           />
           <Button size="lg" disabled={!room.controls} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
         </ButtonRow>
@@ -502,6 +522,38 @@ export default function Listen() {
             </Button>
           </View>
         )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+/**
+ * Our own short note before the iOS microphone question (SR-C-05, F04-REQ-034). The state layout of S13 (glyph in its
+ * soft circle, title2, body, Close top right), with one difference from StateScreen: Continue and Type instead are the
+ * same variant and size, since typing is an equal way to write (DESIGN_LANGUAGE principle 5). VoiceOver starts on the
+ * heading: the red circle that had focus is gone. Nothing is asked or recorded until Continue.
+ */
+function MicPrimer({ childName, onContinue, onType, onClose }: { childName: string; onContinue: () => void; onType: () => void; onClose: () => void }) {
+  const pr = pendingCopy.listen.primer;
+  const heading = useRef<RNText>(null);
+  useFocusOnMount(heading);
+  return (
+    <SafeAreaView className="flex-1 bg-background" testID="listen.primer">
+      <ModalHeader onClose={onClose} />
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: STATE_LAYOUT.gutter }}>
+        <View className="items-center gap-4">
+          <StateGlyph icon={MicrophoneIcon} />
+          <Text ref={heading} variant={STATE_LAYOUT.title} asHeading className="text-center" testID="listen.primer.title">
+            {pr.title}
+          </Text>
+          <Text variant={STATE_LAYOUT.body} tone="muted" className="text-center">
+            {fill(pr.body, { child: childName })}
+          </Text>
+        </View>
+      </ScrollView>
+      <View className="gap-2 px-5 pb-4">
+        <Button variant="secondary" size="lg" fullWidth label={pr.continueButton} onPress={onContinue} testID="listen.primer.continue" />
+        <Button variant="secondary" size="lg" fullWidth label={copy.errors.micDenied.typeButton} icon={PencilSimpleIcon} onPress={onType} testID="listen.primer.type" />
       </View>
     </SafeAreaView>
   );

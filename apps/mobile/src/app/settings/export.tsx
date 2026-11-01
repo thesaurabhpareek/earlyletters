@@ -8,7 +8,7 @@ import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Linking, ScrollView, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import { supportMailto } from '@scribe/brand';
 import { BookCover } from '@/components/book/book-cover';
 import { exportEmpty, exportFailure, INSIDE } from '@/components/settings/export.logic';
@@ -43,7 +43,7 @@ function readLastExport(): string | null {
     return null;
   }
 }
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 
 type State =
   | { kind: 'idle' }
@@ -114,7 +114,7 @@ export default function ExportScreen() {
       pending.current = result;
       trackExportCompleted({ bytes: result.bytes, durationMs: Date.now() - startedAt });
       haptic('success');
-      AccessibilityInfo.announceForAccessibility(e.ready);
+      announce(e.ready); // through the app's gate: never spoken into a take (SR-C-02)
       setState({ kind: 'ready', result });
     } catch (err) {
       if (err instanceof ExportCancelledError) {
