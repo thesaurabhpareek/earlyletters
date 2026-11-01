@@ -1,6 +1,7 @@
 # E2E-01a  18+ entry gate: No, then the 24-hour stop.
 # Proves: PRD-REQ-019 (gate before any first-run screen, nothing preselected,
-# No closes the app for 24 hours, a clock set back keeps it closed), LEGAL-REQ-002,
+# a No is confirmed before anything is stored and Go back stores nothing
+# (F01-U01, F01-REQ-002, SR-C-04), a confirmed No closes the app for 24 hours, a clock set back keeps it closed), LEGAL-REQ-002,
 # A-REQ-002 (first route renders with no network; the 3 s budget itself is
 # measured on device, DEVICE_TEST_PLAN S1-03).
 # After this flow the runner calls `bin/inspect-container.sh gate-stopped`
@@ -14,6 +15,7 @@ tags:
   - p0-nightly
   - PRD-REQ-019
   - LEGAL-REQ-002
+  - F01-REQ-002
   - A-REQ-002
 ---
 - runFlow:
@@ -30,12 +32,43 @@ tags:
     id: "onboarding.step.welcome"
 - assertNotVisible:
     id: "tab.tonight"
-# 2. No: the stop screen, with no way to record or write and no way back yet.
+# 2. No, Continue: the confirm step, nothing stored yet (F01-U01, F01-REQ-002).
+#    Go back returns to the question with nothing selected.
 - tapOn:
     id: "gate.no"
 - tapOn:
     id: "gate.continue"
     enabled: true
+- assertVisible:
+    id: "gate.confirm"
+- assertNotVisible:
+    id: "gate.stop"
+- tapOn:
+    id: "gate.confirm.back"
+- assertNotVisible:
+    id: "gate.confirm"
+- assertVisible:
+    id: "gate.continue"
+    enabled: false
+# 2b. Going back stored nothing: a relaunch shows the question, not the stop.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- assertVisible:
+    id: "gate.continue"
+    enabled: false
+- assertNotVisible:
+    id: "gate.stop"
+# 2c. No, Continue, "Yes, I am under 18": the stop screen, with no way to
+#     record or write and no way back yet.
+- tapOn:
+    id: "gate.no"
+- tapOn:
+    id: "gate.continue"
+    enabled: true
+- tapOn:
+    id: "gate.confirm.yes"
 - assertVisible:
     id: "gate.stop"
 - assertNotVisible:

@@ -4,8 +4,12 @@
  * layout instead of any route, so nothing (first run, Tonight, an invite or
  * any deep link) is reachable until it passes.
  *
- * Neutral question, nothing preselected. Yes stores a boolean only. No shows
- * a calm stop screen and stores only the time of the No (DECISIONS D-026); no
+ * Neutral question, nothing preselected. Yes stores a boolean only. No first
+ * shows one confirm step (F01-U01, F01-REQ-002, R3 DX-16): "You chose under 18.
+ * Is that right?" with "Yes, I am under 18" and "Go back". Nothing is stored
+ * while it shows, and Go back returns to the question with nothing selected.
+ * Only a confirmed No shows the calm stop screen and stores only the time of
+ * the No (DECISIONS D-026); no
  * child, letter, recording or request exists afterwards. The stop screen has
  * no way back until those 24 hours have passed; only then does it offer
  * "I answered by mistake".
@@ -18,7 +22,8 @@
  * right.
  * Motion: the mark fades in (fadeMs, QuotePair); the question enters at 60 ms; the answers and Continue are there
  * from the first frame. Yes, Continue: the mark and question go up and out (exitMs), then the gate passes and the
- * welcome takes the light. No, Continue: the question and answers cross-fade into the stop line (fadeMs). Reduce
+ * welcome takes the light. No, Continue: the question and answers cross-fade into the confirm step, and "Yes, I am
+ * under 18" cross-fades it into the stop line (fadeMs); Go back cross-fades back to the empty question. Reduce
  * Motion: fades only, and the lamp holds still.
  * Haptics: `tap` (selection) on an answer; none on Continue (MOTION 6).
  */
@@ -34,7 +39,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { answerAgeGate, reopenAgeGate } from '@/lib/age-gate';
-import type { GateDecision } from '@/lib/age-gate.logic';
+import { confirmGate, continueGate, type GateDecision, type GateStep } from '@/lib/age-gate.logic';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
@@ -55,12 +60,15 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   const g = copy.ageGate;
   const motion = useMotion();
   const largeText = useIsLargeText();
-  const [view, setView] = useState<'ask' | 'stop'>(decision);
+  const [view, setView] = useState<'ask' | 'confirm' | 'stop'>(decision);
   const [adult, setAdult] = useState<boolean | null>(null); // nothing preselected (K-07)
   const question = useRef<RNText>(null);
+  const confirmQuestion = useRef<RNText>(null);
 
-  // VoiceOver lands on the question when it appears (and again after "I answered by mistake").
+  // VoiceOver lands on the question when it appears (and again after "I answered by mistake" or Go back).
   useFocusOnMount(question, view === 'ask', view);
+  // And on the confirm question after No, Continue.
+  useFocusOnMount(confirmQuestion, view === 'confirm', view);
 
   // Announce the stop line (iOS has no live regions in RN; TDD 09 A11Y-F08).
   useEffect(() => {
@@ -71,17 +79,28 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   const leave = useSharedValue(0);
   const leaving = useAnimatedStyle(() => ({ opacity: 1 - leave.value, transform: [{ translateY: motion.reduced ? 0 : -M.enter.dy * leave.value }] }));
 
+  // Continue on the question. Yes is stored at once; No only opens the confirm step and stores nothing (F01-U01).
   const submit = () => {
-    if (adult === null) return;
-    answerAgeGate(adult ? 'yes' : 'no');
-    if (!adult) {
-      setView('stop');
-      refresh();
+    const step = continueGate(adult);
+    if (step.view === 'ask') return;
+    if (step.view === 'confirm') {
+      setView('confirm');
       return;
     }
+    if (step.write) answerAgeGate(step.write);
     leave.value = withTiming(1, { duration: motion.reduced ? M.fadeMs : M.exitMs, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }, (done) => {
       if (done) runOnJS(refresh)();
     });
+  };
+
+  // The confirm step: "Yes, I am under 18" stores the stop (24 hours, unchanged); Go back stores nothing and
+  // returns to the question with nothing selected.
+  const confirm = (choice: 'under18' | 'back') => {
+    const step: GateStep = confirmGate(choice);
+    if (step.write) answerAgeGate(step.write);
+    setAdult(step.adult);
+    setView(step.view === 'stop' ? 'stop' : 'ask');
+    if (step.write) refresh();
   };
 
   const answeredByMistake = () => {
@@ -96,7 +115,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   const windowPassed = decision === 'ask';
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-background" testID="gate.screen">
       <LampView scene="gate" persistKey="firstRun" />
       <SafeAreaView className="flex-1">
         {/* Both views scroll (S01, S02 at Dynamic Type): with flexGrow the column fills the screen and nothing moves when it
@@ -123,8 +142,21 @@ export function AgeGateScreen({ decision, refresh }: Props) {
                 <Button size="lg" fullWidth disabled={adult === null} label={copy.common.continueButton} onPress={submit} testID="gate.continue" />
               </View>
             </Animated.View>
+          ) : view === 'confirm' ? (
+            <Animated.View key="confirm" entering={SWAP_IN} exiting={SWAP_OUT} className="flex-1" testID="gate.confirm">
+              <View style={{ marginTop: ROOM.questionGap, alignItems: 'center' }}>
+                <Text ref={confirmQuestion} variant="display" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
+                  {g.confirmTitle}
+                </Text>
+              </View>
+              {/* Two answers of equal weight, so neither looks like the right one. */}
+              <View style={{ marginTop: ROOM.answersGap, gap: ROOM.answerGap }}>
+                <Button size="lg" variant="secondary" fullWidth label={g.confirmYes} onPress={() => confirm('under18')} testID="gate.confirm.yes" />
+                <Button size="lg" variant="secondary" fullWidth label={g.confirmBack} onPress={() => confirm('back')} testID="gate.confirm.back" />
+              </View>
+            </Animated.View>
           ) : (
-            <Animated.View key="stop" entering={SWAP_IN} className="flex-1 items-center">
+            <Animated.View key="stop" entering={SWAP_IN} className="flex-1 items-center" testID="gate.stop">
               <View accessibilityLiveRegion="polite" style={{ marginTop: ROOM.questionGap }}>
                 <Text variant="title1" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
                   {g.stopTitle}
@@ -133,7 +165,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
               {windowPassed ? (
                 <Animated.View entering={SWAP_IN} style={{ marginTop: ROOM.answersGap, alignSelf: largeText ? 'stretch' : 'center' }}>
                   {/* Full width at accessibility sizes, so the words wrap in a wide pill, not a round one. */}
-                  <Button size="lg" variant="secondary" fullWidth={largeText} label={g.mistakeButton} onPress={answeredByMistake} />
+                  <Button size="lg" variant="secondary" fullWidth={largeText} label={g.mistakeButton} onPress={answeredByMistake} testID="gate.stop.mistake" />
                 </Animated.View>
               ) : null}
             </Animated.View>
