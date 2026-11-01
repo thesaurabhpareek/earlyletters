@@ -1163,11 +1163,6 @@ export const en = {
     helpLabel: "Help",
     helpValue: "Write to us",
     helpSubject: "Help with the app",
-    // When Mail cannot open (no Mail account, Mail removed): our address to copy (F20-REQ-007).
-    noMailTitle: "Write to us",
-    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
-    copyAddress: "Copy address",
-    addressCopied: "Address copied",
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
     versionLabel: "Version",
@@ -1191,37 +1186,37 @@ export const en = {
         name: "National Maternal Mental Health Hotline",
         how: "Call or text 1-833-852-6262, any time, in English or Spanish.",
         tel: "18338526262",
-        // The number as people read it: shown to copy when this device cannot call (F20-REQ-005).
-        number: "1-833-852-6262",
-        // The line takes texts, so the page offers a Text row too (F20-REQ-002 "call or text").
-        sms: "18338526262",
       },
       {
         name: "988 Lifeline",
         how: "Call or text 988, any time.",
         tel: "988",
-        number: "988",
-        sms: "988",
       },
       {
         name: "Postpartum Support International",
         how: "Call 1-800-944-4773 and a trained volunteer calls you back.",
         tel: "18009444773",
-        number: "1-800-944-4773",
       },
     ],
     emergency: "If you or your baby are in danger right now, call 911.",
-    // Rows and their VoiceOver hints. Each row says what a tap does: the line's own row starts a call,
-    // the Text row starts a message (F20-REQ-002).
-    textRow: "Send a text",
+  },
+
+  // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
+  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  helpLinks: {
+    // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
     callHint: "Starts a call.",
-    textHint: "Starts a text message.",
-    // When this device cannot call or text (an iPad, a phone with no SIM): the number to copy (F20-REQ-005).
+    callHintNoPhone: "Shows the number to call from a phone or copy.",
+    // When this device cannot call: the number to copy.
     noCallTitle: "Call from a phone",
-    noTextTitle: "Text from a phone",
-    noPhoneBody: "This device cannot make calls or send texts right now. Copy the number and use it on a phone.",
+    noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
     copyNumber: "Copy number",
     numberCopied: "Number copied",
+    // When Mail cannot open: our address to copy.
+    noMailTitle: "Write to us",
+    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    copyAddress: "Copy address",
+    addressCopied: "Address copied",
   },
 
   // Calm privacy reassurance (D-061). One promise, said the same way wherever a parent might

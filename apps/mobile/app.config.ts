@@ -205,9 +205,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
-      // Linking.canOpenURL answers only for declared schemes. The crisis lines (tel, sms) and Write to us (mailto)
-      // ask it first, then show the number or address to copy when the device cannot (F20-REQ-005, F20-REQ-007).
-      LSApplicationQueriesSchemes: ['tel', 'sms', 'mailto'],
+      // Declared so Linking.canOpenURL answers for them (Apple requires declared schemes; that tel and mailto need it
+      // is to be confirmed by the S1-23 V-10 device check). The crisis lines (tel) and Write to us (mailto) ask it
+      // first, then show the number or address to copy when the device reports it cannot (F20-REQ-005, F20-REQ-007).
+      LSApplicationQueriesSchemes: ['tel', 'mailto'],
     },
     // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
     usesAppleSignIn: true,
