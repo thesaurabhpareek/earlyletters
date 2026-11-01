@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
-import { eraseOutcome, restoredLine, shelfActions, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
+import { eraseOutcome, restoredLine, shelfActions, shelfBookDays, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,11 +16,11 @@ import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import { capabilities } from '@/lib/capabilities';
-import { eraseDeletedLetter } from '@/lib/capture/erase';
+import { eraseDeletedBook, eraseDeletedLetter } from '@/lib/capture/erase';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
-import { getActiveChild, getChild, listDeleted, subscribeTo, undeleteEntry, type DeletedEntry } from '@/lib/store';
+import { getActiveChild, getChild, listDeleted, listDeletedBooks, restoreBook, subscribeTo, undeleteEntry, type DeletedBook, type DeletedEntry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { bookCopy } from '@/components/book/copy';
 
@@ -56,7 +56,11 @@ function Shelf() {
   const read = useCallback(() => listDeleted(), []);
   const [rows, setRows] = useState(read);
   const [erasing, setErasing] = useState<string | null>(null);
+  // Deleted books (BL-387, F17 6.2 D step 5): each waits as one card, above the letters, with Restore the book.
+  const [books, setBooks] = useState(listDeletedBooks);
+  const [erasingBook, setErasingBook] = useState<DeletedBook | null>(null);
   useEffect(() => subscribeTo('entries', () => setRows(read())), [read]);
+  useEffect(() => subscribeTo(['children', 'settings'], () => setBooks(listDeletedBooks())), []);
   const actions = shelfActions({ sync: capabilities.sync });
 
   const restore = (e: DeletedEntry) => {
@@ -86,7 +90,48 @@ function Shelf() {
     else if (outcome === 'kept') toast.show({ message: d.eraseFailedToast });
   };
 
-  if (rows.length === 0) {
+  const restoreTheBook = (b: DeletedBook) => {
+    haptic('tap');
+    if (restoreBook(b.id)) toast.show({ message: fill(d.bookRestoredToast, { child: b.name }) });
+    setBooks(listDeletedBooks());
+    setRows(read());
+  };
+
+  const eraseTheBook = () => {
+    const b = erasingBook;
+    setErasingBook(null);
+    if (!b) return;
+    haptic('warning');
+    // False when a recording would not go: the book stays marked, and the next launch finishes the erase.
+    toast.show({ message: eraseDeletedBook(b.id) ? d.bookErasedToast : d.bookEraseFailedToast });
+    setBooks(listDeletedBooks());
+  };
+
+  const bookCards = books.map((b) => (
+    <Card key={`book-${b.id}`} radius="md" padding={4} className="gap-3" testID="shelf.book">
+      <View accessible className="gap-2">
+        <Text variant="headline">{fill(d.bookCardTitle, { child: b.name })}</Text>
+        <Text variant="footnote">{shelfDateLine(shelfBookDays(b.deletedAt), d)}</Text>
+      </View>
+      <View className="flex-row flex-wrap items-center gap-2">
+        <Button variant="secondary" size="md" label={d.restoreBookButton} onPress={() => restoreTheBook(b)} testID="shelf.restoreBook" />
+        {actions.eraseNow ? <Button variant="destructive" size="md" icon={TrashIcon} label={d.eraseNow} onPress={() => setErasingBook(b)} testID="shelf.eraseBook" /> : null}
+      </View>
+    </Card>
+  ));
+  const bookSheet = (
+    <ConfirmSheet
+      open={erasingBook !== null}
+      title={fill(d.bookEraseNowTitle, { child: erasingBook?.name ?? '' })}
+      body={d.bookEraseNowBody}
+      confirmLabel={d.eraseNow}
+      keepLabel={d.keepButton}
+      onKeep={() => setErasingBook(null)}
+      onConfirm={eraseTheBook}
+    />
+  );
+
+  if (rows.length === 0 && books.length === 0) {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ title: d.recentlyDeleted }} />
@@ -103,6 +148,7 @@ function Shelf() {
       <Text variant="subhead" tone="muted">
         {d.shelfHelp}
       </Text>
+      {bookCards}
       {rows.map((e) => (
         <Animated.View key={e.id} layout={layout} exiting={FadeOut.duration(reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}>
           <ShelfCard v={shelfRow(e)} from={signatureOf(e)} eraseNow={actions.eraseNow} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
@@ -117,6 +163,7 @@ function Shelf() {
         onKeep={() => setErasing(null)}
         onConfirm={erase}
       />
+      {bookSheet}
     </ScrollView>
   );
 }

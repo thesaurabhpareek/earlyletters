@@ -8,8 +8,8 @@
  *  2. The store marks the erase pending, removes every recording file (letters, deleted letters, drafts and strays
  *     in both recording folders), every listening copy, every temporary whole-frame copy and every export ZIP, then
  *     every row of every table, settings included.
- *  3. The Keychain: the free-letter count (D-083: Erase everything starts the count again, `clearLedger`) and any
- *     invite link kept from before. After the rows, so a relaunch in between cannot raise the count again from
+ *  3. The Keychain: the free-letter count (D-083: Erase everything starts the count again, `clearLedger`), any
+ *     invite link kept from before, and what an unfinished sign-in left (SIGN_IN_LEFTOVERS). After the rows, so a relaunch in between cannot raise the count again from
  *     letters still present (letter-ledger.ts takes the largest of the three).
  *  4. Our reminders, scheduled and shown, so no note with a child's name stays in Notification Center.
  *  5. The pending mark goes. The age question and first run come next, because their settings are gone.
@@ -23,12 +23,15 @@ import { Directory, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { stopAnalyticsForErase } from './analytics';
 import { sweepListeningCopies } from './audio-enhance';
+import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
+import { PENDING_REQUEST_KEY } from './auth/pending';
 import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
 import { clearPendingInvite } from './family/pending-invite';
 import { forgetReminders } from './reminders/scheduler';
+import { secureStorage } from './supabase/secure-storage';
 import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb } from './store';
 
 export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
@@ -56,11 +59,18 @@ export function eraseDeviceFiles(): void {
   }
 }
 
+/**
+ * Keychain items a phone that never finished signing in can still hold (they outlive a reinstall on iOS): the name
+ * Apple gave at a first sign-in that did not complete, Apple's user id, and an email sign-in link's request time.
+ */
+const SIGN_IN_LEFTOVERS = [PENDING_NAME_KEY, APPLE_USER_KEY, PENDING_REQUEST_KEY] as const;
+
 /** Steps 3 to 5. Each is safe to repeat. */
 async function finish(): Promise<void> {
   sweepListeningCopies(); // no rows are left, so every listening copy goes
   await clearLedger(ledgerDb());
   await clearPendingInvite();
+  for (const key of SIGN_IN_LEFTOVERS) await secureStorage.removeItem(key).catch(() => {});
   await forgetReminders();
   finishEraseEverything();
 }

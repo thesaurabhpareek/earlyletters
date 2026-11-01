@@ -19,6 +19,8 @@ import { letter } from './helpers/store-fixture';
 const h = vi.hoisted(() => ({
   disk: null as unknown as Disk,
   calls: [] as string[],
+  /** The Keychain, as a map that outlives a kill (it survives a reinstall on a real phone). */
+  keychain: new Map<string, string>(),
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -44,6 +46,16 @@ vi.mock('../src/lib/audio-enhance', () => ({
 }));
 vi.mock('../src/lib/analytics', () => ({ stopAnalyticsForErase: async () => void h.calls.push('analytics:stop') }));
 vi.mock('../src/lib/family/pending-invite', () => ({ clearPendingInvite: async () => void h.calls.push('invite:clear') }));
+// The app's Keychain wrapper, over the same map as the ledger's Keychain (the auth modules only lend their key names).
+vi.mock('../src/lib/supabase/secure-storage', () => ({
+  secureStorage: {
+    getItem: async (k: string) => h.keychain.get(k) ?? null,
+    setItem: async (k: string, v: string) => void h.keychain.set(k, v),
+    removeItem: async (k: string) => void h.keychain.delete(k),
+  },
+}));
+vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'scribe.auth.appleUser', PENDING_NAME_KEY: 'scribe.auth.pendingName' }));
+vi.mock('../src/lib/auth/pending', () => ({ PENDING_REQUEST_KEY: 'scribe.auth.pendingEmailRequest' }));
 vi.mock('../src/lib/reminders/scheduler', () => ({ forgetReminders: async () => void h.calls.push('reminders:forget') }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
@@ -62,8 +74,6 @@ let seq = 0;
 let db: SqlDb;
 let closeDb: () => void = () => {};
 let fetches = 0;
-/** The Keychain, as a map that outlives a kill (it survives a reinstall on a real phone). */
-let keychain = new Map<string, string>();
 
 async function launch() {
   vi.resetModules();
@@ -76,9 +86,9 @@ async function launch() {
   expect(opened.ok).toBe(true);
   const ledger = await import('../src/lib/billing/letter-ledger');
   ledger.configureLedgerStorage({
-    getItem: async (k) => keychain.get(k) ?? null,
-    setItem: async (k, v) => void keychain.set(k, v),
-    removeItem: async (k) => void keychain.delete(k),
+    getItem: async (k) => h.keychain.get(k) ?? null,
+    setItem: async (k, v) => void h.keychain.set(k, v),
+    removeItem: async (k) => void h.keychain.delete(k),
   });
   const erase = await import('../src/lib/capture/erase');
   const sweep = await import('../src/lib/capture/sweep');
@@ -122,7 +132,7 @@ beforeEach(() => {
   vi.setSystemTime(T0);
   seq = 0;
   h.calls = [];
-  keychain = new Map();
+  h.keychain = new Map();
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -255,7 +265,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     // Two letters kept: the free-letter count is 2 in the database mirror and the Keychain (D-082).
     app.store.ledgerDb().raiseTo(2);
     await app.ledger.syncLedger(app.store.ledgerDb());
-    expect(keychain.size).toBe(1);
+    expect(h.keychain.size).toBe(1);
     expect(await app.ledger.lettersKept(app.store.ledgerDb())).toBe(4); // 4 worded letters present, the deleted one too (the count never decreases)
     app.store.setSetting('ageGate.passed', '1');
     app.store.setSetting('appearance', 'dark');
@@ -264,7 +274,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const frames = put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000);
     const zip = put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000);
     const recovery = put(h.disk, `${h.disk.caches}recovery-export/recovery-2026-10-03.zip`, 9_000);
-    keychain.set('scribe.family.pendingInvite', 'stand-in');
+    h.keychain.set('scribe.auth.pendingName', 'Mama'); // an Apple sign-in that never finished
+    h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
     return { app, f, stray, frames, zip, recovery };
   }
 
@@ -283,8 +294,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
     expect(namesIn(h.disk, `${h.disk.documents}models`)).toEqual(['ggml-large-v3-turbo-q5_0.bin']); // F17 6.2 F step 3
     expect(h.calls).toEqual(expect.arrayContaining(['analytics:stop', 'listening:sweep', 'invite:clear', 'reminders:forget']));
-    // D-083, D-103: the free count starts again; the next kept letter is free letter 1.
-    expect(keychain.has('earlyletters.letters.keptEver')).toBe(false);
+    // D-083, D-103: the free count starts again; the next kept letter is free letter 1. Nothing else stays in the Keychain.
+    expect([...h.keychain.keys()]).toEqual([]);
     expect(await app.ledger.lettersKept(app.store.ledgerDb())).toBe(0);
     expect(app.store.eraseEverythingPending()).toBe(false);
     // First run: no book, no age answer.
@@ -317,7 +328,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
     expectEmpty();
     expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
-    expect(keychain.has('earlyletters.letters.keptEver')).toBe(false);
+    expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(false);
     expect(await next.ledger.lettersKept(next.store.ledgerDb())).toBe(0);
     expect(await next.sweep.runLaunchSweep()).toEqual({});
     expect(rows('drafts')).toBe(0);
@@ -327,12 +338,12 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
   it('a kill after the rows went but before the Keychain was cleared: the next launch clears the count, never raises it again', async () => {
     const { app } = await filled();
     expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('erased');
-    expect(keychain.has('earlyletters.letters.keptEver')).toBe(true); // killed here
+    expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(true); // killed here
     expect(app.store.eraseEverythingPending()).toBe(true);
 
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
-    expect(keychain.has('earlyletters.letters.keptEver')).toBe(false);
+    expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(false);
     expect(next.store.getSetting('letters.keptEver')).toBeNull();
     expect(await next.ledger.lettersKept(next.store.ledgerDb())).toBe(0);
     expect(next.store.eraseEverythingPending()).toBe(false);
@@ -346,6 +357,6 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(app.store.eraseEverythingPending()).toBe(false);
     expect(app.store.listChildren().map((c) => c.name)).toEqual(['Asha', 'Avi']);
     expect([f.a1, f.v1].every(has)).toBe(true);
-    expect(keychain.has('earlyletters.letters.keptEver')).toBe(true);
+    expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(true);
   });
 });
