@@ -43,6 +43,10 @@ import {
 export const CELLULAR_FREE_BYTES = 5_000_000;
 /** Range chunk size. Larger means fewer requests (HF counts each as a resolver call), smaller means less lost on a drop. */
 export const DEFAULT_CHUNK_BYTES = 16 * 1024 * 1024;
+/** No new bytes for this long stops a request as stalled (a slow but steady link never does). */
+export const STALL_MS = 30_000;
+/** Bytes a run may fetch and then lose to stalled or broken requests, in chunks, before it stops (`download_failed`). */
+export const WASTED_CHUNKS_PER_RUN = 2;
 /** Free space kept after a large download, so recording never runs out first (TDD 01 3.4 warns under 1 GB). */
 export const LARGE_PACK_RESERVE_BYTES = 1_000_000_000;
 export const SMALL_PACK_RESERVE_BYTES = 20_000_000;
@@ -155,7 +159,15 @@ export interface PackHttp {
     dest: string,
     start: number,
     end: number,
-    opts: { signal: AbortSignal; timeoutMs: number; onBytes?: (bytesInChunk: number) => void },
+    opts: {
+      signal: AbortSignal;
+      /**
+       * A stall window, not a limit on the request: the request is stopped (an `AbortError`) only when no new bytes
+       * arrive for this long, so a slow but steady link always finishes (stall-timer.ts).
+       */
+      stallMs: number;
+      onBytes?: (bytesInChunk: number) => void;
+    },
   ): Promise<void>;
 }
 
@@ -598,20 +610,30 @@ export class PackManager {
     let host = firstHost % hosts.length;
     let attempt = 0;
     let first = true;
+    // A failed request halves the next request (down to a sixteenth), a good one doubles it back: on a link that
+    // cannot carry a whole chunk before it drops, smaller requests still move forward. What a failed request had
+    // fetched is lost (the platform writes a download only when it completes), so the run stops once it has lost
+    // WASTED_CHUNKS_PER_RUN chunks' worth, and the retry policy above it decides when to try again.
+    const minSize = Math.max(1, Math.floor(this.chunkBytes / 16));
+    let size = this.chunkBytes;
+    let wasted = 0;
     this.emit({ id: entry.id, version: entry.version, phase: 'downloading', bytesDone: have, bytesTotal: entry.bytes }, true);
     while (have < entry.bytes) {
       if (signal.aborted) throw new PackError('cancelled');
       // Re-checked at every chunk: a kill switch, a move from Wi-Fi to mobile data or a full disk stops the download; the .part stays.
       if (!first) await this.checkCanDownload(entry, opts);
       first = false;
-      const end = Math.min(have + this.chunkBytes, entry.bytes) - 1;
+      const end = Math.min(have + size, entry.bytes) - 1;
       fs.remove(chunk);
+      let arrived = 0;
       try {
         await this.env.http.downloadRange(hosts[host], chunk, have, end, {
           signal,
-          timeoutMs: cls.timeoutMs,
-          onBytes: (n) =>
-            this.emit({ id: entry.id, version: entry.version, phase: 'downloading', bytesDone: have + n, bytesTotal: entry.bytes }),
+          stallMs: STALL_MS,
+          onBytes: (n) => {
+            arrived = Math.max(arrived, n);
+            this.emit({ id: entry.id, version: entry.version, phase: 'downloading', bytesDone: have + n, bytesTotal: entry.bytes });
+          },
         });
         const got = fs.fileSize(chunk) ?? 0;
         const want = end - have + 1;
@@ -627,17 +649,22 @@ export class PackManager {
         fs.remove(chunk);
         have = fs.fileSize(part) ?? 0;
         attempt = 0;
+        size = Math.min(this.chunkBytes, size * 2);
         this.emit({ id: entry.id, version: entry.version, phase: 'downloading', bytesDone: have, bytesTotal: entry.bytes });
       } catch (e) {
         fs.remove(chunk);
-        // Only the caller's own signal is a cancel. An AbortError without it is the adapter's per-request timeout
-        // (a slow chunk, or a request the system froze while the app was away): a failed attempt, retried below,
-        // never a silent "cancelled" that nothing retries.
+        // Only the caller's own signal is a cancel. An AbortError without it is the adapter's stall timer (no bytes for
+        // STALL_MS, or a request the system froze while the app was away): a failed attempt, retried below, never a
+        // silent "cancelled" that nothing retries.
         if (signal.aborted) throw new PackError('cancelled');
         if (e instanceof PackError) throw e;
         attempt++;
+        wasted += arrived;
         host = (host + 1) % hosts.length;
-        if (attempt >= cls.maxAttempts * hosts.length) throw new PackError('download_failed');
+        size = Math.max(minSize, Math.floor(size / 2));
+        if (attempt >= cls.maxAttempts * hosts.length || wasted > WASTED_CHUNKS_PER_RUN * this.chunkBytes) {
+          throw new PackError('download_failed');
+        }
         try {
           await this.sleep(retryDelayMs('pack_file', Math.ceil(attempt / hosts.length), this.random), signal);
         } catch {

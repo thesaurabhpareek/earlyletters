@@ -90,6 +90,37 @@ describe('the first-run card line', () => {
     expect(consentLine({ ...idle, failure: 'something_new' }, 575).text).toBe(packsCopy.failures.generic);
   });
 
+  it('no space and offline are said in words, with no bar and no tap that cannot help', () => {
+    expect(consentLine({ ...idle, hold: 'no_space' }, 575)).toEqual({ text: 'Needs more free space, 575 MB', bar: null, retry: false });
+    expect(consentLine({ ...idle, hold: 'offline' }, 575)).toEqual({ text: speechSettingsCopy.downloadFailures.offline, bar: null, retry: false });
+  });
+
+  it('a stopped (cancelled) download is not "Getting ready" forever: it says Paused, with Try again', () => {
+    expect(consentLine({ ...idle, failure: 'cancelled' }, 575)).toEqual({ text: packsCopy.phases.cancelled, bar: null, retry: true });
+    expect(consentLine({ ...idle, failure: 'cancelled' }, 575).text).not.toBe(speechConsentCopy.chosenYes);
+  });
+
+  it('after the automatic tries stop, the line asks for the tap instead of promising a retry', () => {
+    const l = consentLine({ ...idle, failure: 'download_stopped' }, 575);
+    expect(l.retry).toBe(true);
+    expect(l.text).toBe(speechSettingsCopy.downloadFailures.download_stopped);
+    expect(l.text).not.toMatch(/by itself/);
+  });
+
+  it('a pack waiting on an unknown network (the engine holds it as waiting_for_wifi) never yields a percent', () => {
+    expect(motion({ [ASR]: { phase: 'waiting_for_wifi', bytesDone: 0 } }, [VAD]).progress).toBeNull();
+    expect(consentLine({ ...idle, hold: 'waiting_for_wifi' }, 575).bar).toBeNull();
+  });
+
+  it('combineProgress and the queue read the same pure rule (no second copy of it)', () => {
+    const packs = src('lib/models/speech-packs.ts');
+    expect(packs).toMatch(/return downloadMotion\(planFor\(\[language\]\)\.packs/);
+    expect(packs).toMatch(/return speechDownloadMotion\(language, latest\)\.progress/);
+    const queue = src('lib/transcription-queue/index.ts');
+    expect(queue).toMatch(/if \(p\?\.phase === 'cancelled'\) return 'cancelled'/);
+    expect(queue).toMatch(/retries\.gaveUp\(language\) \? 'download_stopped'/);
+  });
+
   it('before the first event it keeps the line said at the tap; once installed it says so', () => {
     expect(consentLine(idle, 575).text).toBe(speechConsentCopy.chosenYes);
     expect(doneLine(575).text).toBe('On this phone, 575 MB');

@@ -246,6 +246,7 @@ export function retryWords(id: string): void {
  * so it also records a yes. Nothing else may call this on its own.
  */
 export async function startSpeechDownload(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+  retries.asked(language); // a tap starts the automatic retries over
   setSpeechDownloadChoice('yes');
   await requestSpeechFor(language, opts);
 }
@@ -288,7 +289,12 @@ export function speechDownloadFailure(language: SpeechLanguage): string | null {
   for (const id of planFor([language]).packs) {
     if (host.packPath(id)) continue;
     const p = packProgress.get(id);
-    if (p?.phase === 'failed' && p.failure) return p.failure;
+    if (p?.phase === 'failed' && p.failure) {
+      // After MAX_STOPPED_RUNS automatic runs the retries wait for a tap: the line must not say "by itself".
+      return p.failure === 'download_failed' && retries.gaveUp(language) ? 'download_stopped' : p.failure;
+    }
+    // Stopped (Settings, or an abort nobody asked for): nothing restarts it, so it is shown with Try again.
+    if (p?.phase === 'cancelled') return 'cancelled';
   }
   return null;
 }

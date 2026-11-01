@@ -31,6 +31,7 @@ export interface ConsentLine {
 const NO_RETRY = new Set(['no_manifest', 'not_in_manifest', 'downloads_paused', 'needs_app_update']);
 
 export function consentLine(d: ConsentDownload, mb: number): ConsentLine {
+  if (d.failure === 'cancelled') return { text: packsCopy.phases.cancelled, bar: null, retry: true }; // stopped: nothing restarts it
   if (d.failure) {
     const text = speechSettingsCopy.downloadFailures[d.failure] ?? packsCopy.failures.generic;
     return { text, bar: null, retry: !NO_RETRY.has(d.failure) };

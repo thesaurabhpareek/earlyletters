@@ -11,6 +11,7 @@
 import * as fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { generateSigningKey, base64ToBytes, parsePackManifest, signDocument, type PackManifest } from '@scribe/api';
+import { ENDPOINT_CLASSES } from '@scribe/api';
 import { CELLULAR_FREE_BYTES, PackManager, type PackEnv, type PackFs, type PackHttp, type PackProgress } from '../engine';
 import { SignedDocumentClient } from '../../remote/documents';
 import { MemoryDisk, MemoryFs, MemoryHttp, recordCalls, treeOf } from './memory-ports';
@@ -211,15 +212,17 @@ describe('resume', () => {
   });
 });
 
-describe('a timed-out request', () => {
+describe('a stalled request (TF1-DL, PR #541 reviews)', () => {
+  const stalled = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
+
   it('[TF1-DL] is a failed attempt that is retried, never a silent cancel', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
     const memory = new MemoryHttp({ [`/${pt.id}/1/file.bin`]: { body: pt.body } }, disk);
-    let timeouts = 1;
+    let stalls = 1;
     const http: PackHttp = {
       async downloadRange(url, dest, start, end, opts) {
-        // The adapter's own timer fired: an AbortError while the caller's signal is not aborted.
-        if (timeouts-- > 0) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+        // The adapter's stall timer fired: an AbortError while the caller's signal is not aborted.
+        if (stalls-- > 0) throw stalled();
         return memory.downloadRange(url, dest, start, end, opts);
       },
     };
@@ -232,17 +235,98 @@ describe('a timed-out request', () => {
     expect(phases.at(-1)).toBe('installed');
   });
 
+  it('[TF1-DL] every request stalls: download_failed after maxAttempts x hosts calls, with backoff that never shrinks', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500), mirrors: ['https://mirror.test/text-rules.pt/1/file.bin'] };
+    let calls = 0;
+    const http: PackHttp = {
+      async downloadRange() {
+        calls++;
+        throw stalled();
+      },
+    };
+    const delays: number[] = [];
+    const sleep = async (ms: number) => void delays.push(ms);
+    const r = await makeManager({ http, sleep, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt');
+    expect(r).toEqual({ ok: false, reason: 'download_failed' });
+    expect(calls).toBe(ENDPOINT_CLASSES.pack_file.maxAttempts * 2);
+    for (let i = 1; i < delays.length; i++) expect(delays[i]).toBeGreaterThanOrEqual(delays[i - 1]);
+  });
+
+  it('[TF1-DL] a slow but steady link that cannot carry a whole chunk still finishes, with smaller requests', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
+    const memory = new MemoryHttp({ [`/${pt.id}/1/file.bin`]: { body: pt.body } }, disk);
+    const sizes: number[] = [];
+    const http: PackHttp = {
+      async downloadRange(url, dest, start, end, opts) {
+        sizes.push(end - start + 1);
+        // This link stalls on anything over 300 bytes per request (CHUNK is 1000).
+        if (end - start + 1 > 300) throw stalled();
+        return memory.downloadRange(url, dest, start, end, opts);
+      },
+    };
+    const r = await makeManager({ http, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(sha256(disk.read(r.path))).toBe(sha256(pt.body));
+    expect(Math.min(...sizes)).toBeLessThanOrEqual(300);
+  });
+
+  it('[TF1-DL] stops a run once stalled requests have lost two chunks of bytes, so a bad link never eats data', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(5000) };
+    let fetched = 0;
+    const http: PackHttp = {
+      async downloadRange(_url, _dest, start, end, opts) {
+        // Most of each request arrives, then it goes quiet: the bytes are lost with the request.
+        const n = Math.floor((end - start + 1) * 0.9);
+        fetched += n;
+        opts.onBytes?.(n);
+        throw stalled();
+      },
+    };
+    const r = await makeManager({ http, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt');
+    expect(r).toEqual({ ok: false, reason: 'download_failed' });
+    expect(fetched).toBeLessThanOrEqual(3 * CHUNK);
+  });
+
   it('[TF1-DL] still stops at once when the caller cancels', async () => {
     const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
     const ctrl = new AbortController();
     const http: PackHttp = {
       async downloadRange() {
         ctrl.abort();
-        throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+        throw stalled();
       },
     };
     const r = await makeManager({ http, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt', { signal: ctrl.signal });
     expect(r).toEqual({ ok: false, reason: 'cancelled' });
+  });
+
+  it('[TF1-DL] cancel(id) mid-request ends as cancelled (the card then offers Try again)', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
+    let m: PackManager;
+    const http: PackHttp = {
+      downloadRange: (_u, _d, _s, _e, opts) =>
+        new Promise((_resolve, reject) => {
+          opts.signal.addEventListener('abort', () => reject(stalled()), { once: true });
+          queueMicrotask(() => m.cancel('text-rules.pt'));
+        }),
+    };
+    m = makeManager({ http, manifest: async () => manifestOf([pt]) });
+    const phases: string[] = [];
+    m.onProgress((p) => phases.push(p.phase));
+    expect(await m.ensurePack('text-rules.pt')).toEqual({ ok: false, reason: 'cancelled' });
+    expect(phases.at(-1)).toBe('cancelled');
+  });
+
+  it('[TF1-DL] a connection iOS reports as unknown (a VPN on Wi-Fi) holds a large pack as waiting_for_wifi', async () => {
+    const big: PackSpec = { id: 'speech-model.test', version: 1, body: bytesOf(CELLULAR_FREE_BYTES + 1), kind: 'speech-model', language: 'mul', required: false };
+    let calls = 0;
+    const http: PackHttp = { downloadRange: async () => void calls++ };
+    const m = makeManager({ http, manifest: async () => manifestOf([big]), network: new FakeNetwork('unknown') });
+    const events: PackProgress[] = [];
+    m.onProgress((p) => events.push(p));
+    expect(await m.ensurePack('speech-model.test')).toEqual({ ok: false, reason: 'waiting_for_wifi' });
+    expect(events.at(-1)).toMatchObject({ phase: 'waiting_for_wifi', bytesDone: 0 });
+    expect(calls).toBe(0);
   });
 });
 

@@ -18,6 +18,9 @@
  *   download from every host, so it retries at most
  *   `MAX_FULL_RETRIES_PER_DAY` times in any 24 hours; the next one waits for
  *   the window to open.
+ * - A download that stopped (`download_failed`: its requests kept stalling or breaking) costs data each run, so
+ *   after `MAX_STOPPED_RUNS` automatic runs in a row end that way, the retries stop and wait for the person's
+ *   Try again (`gaveUp`); the first-run card then says so instead of "it tries again by itself".
  * - Every automatic retry is Wi-Fi only (`wifiOnly`), even with "Use mobile
  *   data" on: mobile data needs a fresh yes (a tap on Use mobile data).
  * - Nothing runs in the background or without the person's yes: a retry
@@ -29,6 +32,8 @@
 export const DOWNLOAD_RETRY_DELAYS_MS: readonly number[] = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000, 6 * 60 * 60_000];
 export const MAX_FULL_RETRIES_PER_DAY = 3;
 export const DAY_MS = 24 * 60 * 60_000;
+/** Automatic runs in a row that may end `download_failed` before the retries wait for a tap. */
+export const MAX_STOPPED_RUNS = 5;
 
 const RETRYABLE: ReadonlySet<string> = new Set([
   'no_manifest',
@@ -65,6 +70,8 @@ export interface RetryPorts<L extends string> {
 
 interface Entry {
   attempt: number;
+  /** Runs in a row that ended `download_failed`. */
+  stopped: number;
   /** When each automatic full re-download was (or is) due, for the 24-hour cap. */
   full: number[];
   dueAt: number;
@@ -73,6 +80,7 @@ interface Entry {
 
 export class DownloadRetries<L extends string> {
   private readonly entries = new Map<L, Entry>();
+  private readonly gaveUpOn = new Set<L>();
 
   constructor(private readonly ports: RetryPorts<L>) {}
 
@@ -84,6 +92,13 @@ export class DownloadRetries<L extends string> {
     }
     const now = this.ports.now();
     const prev = this.entries.get(language);
+    const stopped = reason === 'download_failed' ? (prev?.stopped ?? 0) + 1 : 0;
+    if (stopped > MAX_STOPPED_RUNS) {
+      // The first failure is the person's own run; then MAX_STOPPED_RUNS automatic ones. Now it waits for a tap.
+      this.clear(language);
+      this.gaveUpOn.add(language);
+      return null;
+    }
     if (prev?.timer != null) this.ports.clearTimer(prev.timer);
     const attempt = (prev?.attempt ?? 0) + 1;
     let delay = downloadRetryDelayMs(attempt);
@@ -94,7 +109,7 @@ export class DownloadRetries<L extends string> {
       if (inWindow.length >= MAX_FULL_RETRIES_PER_DAY) delay = Math.max(delay, inWindow[inWindow.length - MAX_FULL_RETRIES_PER_DAY] + DAY_MS - now);
       full.push(now + delay);
     }
-    const entry: Entry = { attempt, full, dueAt: now + delay, timer: null };
+    const entry: Entry = { attempt, stopped, full, dueAt: now + delay, timer: null };
     entry.timer = this.ports.setTimer(() => this.fire(language), delay);
     this.entries.set(language, entry);
     return delay;
@@ -105,7 +120,18 @@ export class DownloadRetries<L extends string> {
     this.clear(language);
   }
 
+  /** True when the automatic retries stopped for this language and wait for the person's Try again. */
+  gaveUp(language: L): boolean {
+    return this.gaveUpOn.has(language);
+  }
+
+  /** The person asked again (Try again, Download): the count starts over. */
+  asked(language: L): void {
+    this.clear(language);
+  }
+
   clear(language: L): void {
+    this.gaveUpOn.delete(language);
     const e = this.entries.get(language);
     if (e?.timer != null) this.ports.clearTimer(e.timer);
     this.entries.delete(language);

@@ -5,6 +5,7 @@ import {
   DOWNLOAD_RETRY_DELAYS_MS,
   DownloadRetries,
   MAX_FULL_RETRIES_PER_DAY,
+  MAX_STOPPED_RUNS,
   downloadRetryDelayMs,
   isRetryableDownloadFailure,
 } from '../src/lib/transcription-queue/download-retry';
@@ -331,5 +332,31 @@ describe('[F05-U29] speech downloads that fail try again by themselves (download
       h.retries.failed('en', 'download_failed');
     }
     expect(h.requests.length).toBeGreaterThan(MAX_FULL_RETRIES_PER_DAY);
+  });
+});
+
+describe('[TF1-DL] a download that keeps stopping waits for a tap after MAX_STOPPED_RUNS automatic runs', () => {
+  it('stops scheduling, says it gave up, and a tap starts the count over', () => {
+    const h = retryHarness();
+    let delay = h.retries.failed('en', 'download_failed'); // the person's own run
+    for (let i = 0; i < MAX_STOPPED_RUNS; i++) {
+      expect(delay).not.toBeNull();
+      h.advance(delay!);
+      delay = h.retries.failed('en', 'download_failed');
+    }
+    expect(h.requests).toHaveLength(MAX_STOPPED_RUNS);
+    expect(delay).toBeNull();
+    expect(h.retries.gaveUp('en')).toBe(true);
+    h.advance(7 * DAY_MS);
+    expect(h.requests).toHaveLength(MAX_STOPPED_RUNS);
+    h.retries.asked('en');
+    expect(h.retries.gaveUp('en')).toBe(false);
+    expect(h.retries.failed('en', 'download_failed')).not.toBeNull();
+  });
+
+  it('other failures in between start the stopped count over', () => {
+    const h = retryHarness();
+    for (let i = 0; i < 3 * MAX_STOPPED_RUNS; i++) h.retries.failed('en', i % 2 ? 'offline' : 'download_failed');
+    expect(h.retries.gaveUp('en')).toBe(false);
   });
 });

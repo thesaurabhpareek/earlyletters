@@ -15,7 +15,7 @@
  * as 0% (speech-consent-card.logic.ts). Or "Your voice is kept either way."
  */
 import { speechConsentCopy } from '@scribe/content';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import { announce, useIsLargeText } from '@/lib/a11y';
 import { fill } from '@/lib/copy';
 import type { SpeechLanguage } from '@/lib/models/catalog';
 import { setSpeechDownloadChoice, speechAskFor, speechDownloadChoice, type SpeechDownloadChoice } from '@/lib/models/speech-consent';
+import { shownPercent } from '@/lib/models/speech-download.logic';
 import { installedPathsFor } from '@/lib/models/speech-packs';
 import { useMotion } from '@/lib/motion';
 import { formatBytes, packsCopy } from '@/lib/packs/copy';
@@ -61,13 +62,18 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
     announce(t.chosenLater);
   };
 
-  // The words are already on this phone: nothing to ask.
-  if (ready) return null;
-
   // A percent and the bar only while bytes move; a wait, a check or a failure is said in words (consentLine).
   const mb = Math.round(ask.bytes / 1e6);
   // Once every file is here the line says so, instead of the line said at the tap (re-read on each download tick).
   const line = choice === 'yes' && onThisPhone(language) ? doneLine(mb) : consentLine(download, mb);
+  // VoiceOver has no live regions on iOS: a failure that offers Try again is announced once, when it appears.
+  useEffect(() => {
+    if (choice === 'yes' && line.retry) announce(line.text);
+  }, [choice, line.retry, line.text]);
+
+  // The words are already on this phone: nothing to ask.
+  if (ready) return null;
+
   const retry = () => {
     announce(t.chosenYes);
     void startSpeechDownload(language);
@@ -105,7 +111,7 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
               <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no">
                 {line.text}
               </Text>
-              <ProgressLine value={Math.floor(line.bar * 100)} label={line.text} />
+              <ProgressLine value={shownPercent(line.bar) ?? 0} label={line.text} />
             </>
           )}
           {line.retry ? (
