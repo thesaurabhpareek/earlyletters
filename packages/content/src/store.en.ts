@@ -22,60 +22,73 @@
 import { brand } from '@scribe/brand';
 import { en } from './strings.en';
 
-/** The six App Store screenshots, in order. Frames are rendered by scripts/brand/screenshots.mts. */
+/**
+ * The App Store screenshots, in order (store lane 1.0, 1 Nov 2026). Frames 1 to 6 are the set; 7 and 8 are optional.
+ * Captured from the real app on web and composed by docs/store/screenshots/tools (see its README). `scheme` is the
+ * appearance of the captured screen. Frame 5's subline says what Read together does: it goes through the whole book,
+ * oldest first (there is no "open a month").
+ */
 const screenshots = [
-  { id: 'talk', caption: "Talk to your child for a minute", subline: "A sentence is plenty. It becomes a letter.", scheme: 'light' },
-  { id: 'exact', caption: "Every change is marked", subline: "We fix small slips. Never your words.", scheme: 'light' },
-  { id: 'voice', caption: "Your voice stays with every letter", subline: "One day your child can hear you say it.", scheme: 'light' },
-  { id: 'book', caption: "A memory book, month by month", subline: "Every letter finds its month on its own.", scheme: 'light' },
-  { id: 'together', caption: "Read together at bedtime", subline: "The letters you spoke, in your own voice.", scheme: 'dark' },
-  { id: 'private', caption: "Private by default", subline: "Never sold. Never used for ads.", scheme: 'light' },
+  { id: '01-tonight', caption: "Tell your child about today.", subline: "A minute is plenty. It becomes a letter.", scheme: 'dark' },
+  { id: '02-review', caption: "Every change is marked.", subline: "We only fix small slips. Tap one to put it back.", scheme: 'light' },
+  { id: '03-letter', caption: "Your voice stays with each letter.", subline: "The original recording is kept unchanged.", scheme: 'light' },
+  { id: '04-book', caption: "A book that grows by month.", subline: "Each letter goes into your child's month of age.", scheme: 'light' },
+  { id: '05-letter-night', caption: "Read together at bedtime.", subline: "One letter at a time, oldest first.", scheme: 'dark' },
+  { id: '06-privacy', caption: "Your book stays on your phone.", subline: "Private by default. Never sold, never used for ads.", scheme: 'light' },
+  { id: '07-quiet-day', caption: "Quiet days are fine.", subline: "Tap Not much today. That is enough.", scheme: 'dark' },
+  { id: '08-listening', caption: "Pause, laugh, start again.", subline: "Take your time. Say it however it comes.", scheme: 'dark' },
 ] as const;
 
 export const storeListing = {
   appName: brand.storeName,
   subtitle: brand.subtitle,
   promotionalText:
-    "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. Read it together for years.",
-  keywords: "diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,dictation",
+    "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
+  keywords: "diary,keepsake,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,private,talk,mama",
   description: `${brand.name} is the baby memory book you fill by talking.
 
-Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
+Tell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.
+
+Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your speech is written down on your phone. ${brand.name} fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
-Each letter you speak keeps its original recording, unchanged. It stays on your phone, and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. ${en.trust.voice}
+Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. ${en.trust.voice}
 
-READ TOGETHER
-Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.
+READ TOGETHER AT BEDTIME
+Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
 
-A SENTENCE IS PLENTY
-Some days you have a sentence, some days a long letter. If today was quiet, tap "Not much today" and that is enough. Nothing keeps score. Write when you have something to say.
+A MINUTE IS PLENTY
+Some nights it is a sentence, some nights a long letter. Stuck for words? There is a question to begin with. If today was quiet, tap "Not much today" and that is enough. Nothing keeps score.
 
-IN ENGLISH
-This version works in English. The English speech model is a one-time download that you choose at the end of setup, so the app stays small.
+A BOOK THAT GROWS BY MONTH
+Each letter goes into your child's month of age, so the book reads in order. Expecting? Start before the birth, in a part of the book called Before You. Twins or more each get their own book.
+
+NAMES SPELLED YOUR WAY
+Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Your book stays on your phone. You can export everything or delete everything, any time, from Settings.
+${en.trust.promise} There is no account to make, and your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
-A BOOK FOR EACH CHILD
-Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.
+REMINDERS, ONLY IF YOU WANT THEM
+Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
 
 TAKE IT WITH YOU
-Export your memory book any time, for free: your letters, your recordings and a PDF of the book.
+Export your book any time, for free: your letters, your recordings and a PDF of the book.
 
-HOW IT WORKS
-1. Tap and talk, or type if you prefer.
-2. Read it back. Fix a word if one is wrong.
-3. It goes into this month of your child's book.
+IN ENGLISH
+This version writes down letters spoken in English. The speech model is a one-time download on Wi-Fi, 575 MB on most iPhones and smaller on some, and you choose when it starts. Until it is ready, your recordings are kept and the words follow.
 
-${brand.name} is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
+PLUS
+Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits on your phone until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
 
-Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus is an optional subscription that lets you keep adding letters. It renews automatically until you cancel, and works with Family Sharing.
+Payment is charged to your Apple Account. Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.
 
-Terms of Service: ${brand.web.terms}
+For parents of babies and young children, from the first weeks to the first years.
+
+Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,
   // App Store Connect fields (D-063).
   supportUrl: brand.web.origin,

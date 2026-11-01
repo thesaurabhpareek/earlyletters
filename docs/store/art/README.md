@@ -34,39 +34,56 @@ Copy uses only BRAND.md lines and the content rules (no em dashes, curly quotes,
 5. **Wordmark was not typeset anywhere**; the stacked lockup (symbol over name) in the live `og-image.png` is not in the approved set seen here (only horizontal), so previews use the horizontal lockup. Confirm with the registry whether a stacked lockup is approved.
 6. **Video footage** (below) needs a native capture and a decision on the voice.
 
-## Preview video: "A minute is plenty" (22 s)
+## App preview storyboard: "A minute is plenty" (rewritten for build 1)
 
-Same cut serves App Store (15 to 30 s) and Play promo (YouTube, public or unlisted, ads off). Built only from real app UI, type, paper and light: no people, hands, children, stock, or AI imagery.
+24.2 s, 886x1920 portrait, 30 fps, silent. One preview for iPhone 6.9" (Apple scales it to the smaller iPhone sizes; the app is iPhone only, `supportsTablet: false` in `apps/mobile/app.config.ts`).
 
-**Hard prerequisite.** Apple requires preview footage captured from the app itself. The screens in `docs/store/screenshots/` are web re-renders (`apps/web/src/components/app-ui`), fine for screenshots but not for the Apple preview. Capture from a TestFlight build on a real device or the simulator (iPhone 6.9", 886x1920 portrait, up to 30 fps, H.264/HEVC .mov or .mp4) and Android (1080x1920 or 1920x1080 for YouTube). Use the fictional family "Asha" and the sample letter already in the UI. No real family data.
+This replaces the earlier 22 s storyboard that was here. Every frame below is something build 1 does today, checked in `apps/mobile` on `develop` (d6e83f9e, 1 Nov 2026). The draft cut `preview-draft.mp4` follows this board exactly.
 
-**Audio.** Silent-first, since both stores autoplay muted. Every spoken word is on screen as the Read together highlight or a type card. Optional: an original, unprocessed real recording from a consenting parent (high-pass only), no music, no sting. Do not synthesise or imitate a voice. If no consenting real recording exists, ship silent with on-screen type only. Decision needed from the founder.
+### What changed from the old board, and why
 
-**Look.** Paper to dusk to night is one slow light change: paper `#FBF8F3` frames, dusk `#3B302A`, night `#161412`, lamp glow `#F3C98B` rising only on the night frames. Type cards in Literata 500, sentence case, at most 6 words, straight punctuation only. Motion per `docs/design/MOTION.md`: springs, 200 ms cross-fades, no zoom punches, no shake, no sparkle. Reduce-motion-safe by default (cuts are cross-fades).
-
-| # | Time | Frame | Source | Caption / on-screen type | Light |
-|---|---|---|---|---|---|
-| 1 | 0.0 to 2.5 | Paper card, approved symbol fades in over lockup | Brand lockup SVG | "Early Letters" | Paper |
-| 2 | 2.5 to 6.0 | Tonight screen, prompt card, thumb never shown; the Speak button pulses once (UI press state only) | Native capture, Tonight | Type card: "A minute is plenty." | Paper to dusk |
-| 3 | 6.0 to 11.0 | Listening: breathing glow, transcript lines arriving ("Mama pretended not to notice...") | Native capture, Listening | Type card: "Just talk." The words arriving are the caption | Night |
-| 4 | 11.0 to 14.5 | Review: the one small fix underlined, then Save. Show that every change is marked | Native capture, Review | Type card: "Every change is marked." | Paper |
-| 5 | 14.5 to 17.5 | Book: the letter settles into its month chapter; chapters scroll back | Native capture, Book | Type card: "A book that grows by month." | Paper warm |
-| 6 | 17.5 to 20.5 | Letter in night mode, Read together, highlight moving word by word | Native capture, Letter night | The highlight is the caption | Night + lamp |
-| 7 | 20.5 to 22.0 | Night card, lockup, tagline | Brand lockup SVG | "Said once. Heard for years." then lockup | Night |
-
-### Shot list
-
-| Shot | Capture | Notes |
+| Old frame | Problem in build 1 | Fix |
 |---|---|---|
-| S1 | Lockup on paper, 1 s hold + 1.5 s fade | Render from approved SVG, ink on paper. No redraw. |
-| S2 | Tonight screen, 3.5 s, light mode | Device in light mode; status bar 9:41, full battery. |
-| S3 | Listening, 5 s, dark mode | Record real in-app flow with the Asha script; capture the live transcript, not a scripted overlay. |
-| S4 | Review, 3.5 s | Needs a letter with one allowed edit (EditType) so "every change is marked" and "nothing added" are visible truthfully. |
-| S5 | Book/chapter, 3 s | Months with several signed letters; no counts of gaps, no streaks. |
-| S6 | Letter night, 3 s, Read together | Highlight must be real playback of the Asha sample. |
-| S7 | Closing card, 1.5 s | Render from approved lockup, night. |
-| T1 to T4 | Type cards (Literata 500, paper/dusk/night) | Can reuse the `build.mjs` page template; export as 886x1920 stills, animate in editor. |
+| 1. Lockup fades in on paper, 2.5 s | Spends the autoplay hook on a logo. Muted viewers in search results see 2.5 s of title art and nothing about what the app does. Guideline 2.3.3 / 2.3.4 want the app in use. | Open on the app at frame 0, with the job in one line: "Tell your child about today." The lockup moves to the end card. |
+| 3. Listening with "transcript lines arriving" | Not true. Listening shows the prompt, a glow that follows the voice, a clock, Pause, Finish and Let it go. The words are written down after Finish, on Review ("Writing down what you said."). `listen.tsx` has no live transcript; the e2e note in `e2e-web/j05-voice-capture.flow.ts` says the same. MOTION.md 5c ("Speech becoming words") is a design, not build 1. | Listening shows only what it shows. A short beat of the real "Writing down what you said." screen follows Finish, so no dissolve implies instant words (Apple: transitions must not "imply functionality that your app doesn't include"). |
+| 6. Read together "highlight moving word by word" | Not in build 1. `read-together.tsx` header: "v1.0 is plain playback ... no word highlight (D-059)". | Read together shows the real page: the letter, "From Mama", the Hear Mama player, and a page turn (Back one). No highlight anywhere. |
+| "Every spoken word is on screen as the Read together highlight" (audio note) | Same as above. | The cut is silent; every word a viewer needs is in the type cards or the app's own text. |
+| Frame 6 "Letter in night mode" | There is no app "night mode". Read together follows the phone's appearance (Dark Mode). | Called "phone in Dark Mode" here and never named on screen. |
+| No subscription line | Apple's App Previews page: "If you display features that are only available through in-app purchase, or if your app uses a subscription model ... you must disclose this. Disclaimer copy can be included within the footage or in the end frame." Build 1 gates keeping a third letter behind Plus (`review.tsx`, Keep gate, D-082, D-083). | End card carries "Your first two letters are free. To keep adding letters, subscribe to Plus." No price (Apple: "Don't include specific prices"). |
+| Captions up to 6 words, free text | Not aligned with the copy lane. | Headlines and support lines come from `copy/captions.json` where a screen matches; two lines are taken from approved listing copy (see the table). |
 
-**Play variant.** Same sequence, 16:9 (1920x1080) or 9:16 on YouTube; the feature graphic must also work as the video thumbnail: `play/feature-graphic-1024x500.png`. Keep key content inside the centre 80%.
+Also kept out on the coordinator's instruction (each checked in `apps/mobile`): the Family tab (hidden in the store build by D-126; build 1 on `develop` still shows it, see "Known gaps"), a second parent (no co-parent in build 1, D-121), live words while talking, the name "Maria", "night mode", and any demo letter that genders the child. The seeded letters that name Nani (letter 1) and Papa (letter 3) never appear: the listing rules in `packages/content/test/rules.test.ts` keep grandparents and family listening out of store surfaces.
 
-**Rules of the cut.** No people, hands or faces. No child name beyond the fictional Asha already in the UI. No rewrite or "AI" language anywhere (content rules). No price, ratings or award claims. No pressure or streak language. Final check: run captions through `packages/content` rules before export.
+### The board
+
+Times are output seconds. "Card" is the caption band above the footage (Literata 500 headline, Mukta 400 support line; brand palette from `docs/store/art/README.md`). Footage is the app at its own UI resolution, scaled down to 700x1517 inside the frame, never zoomed in (Apple recommends native UI, not zooming). Cuts are dissolves of 280 ms (`tokens.motion.route.dissolveMs`); caption changes are 200 ms fades (`tokens.motion.fadeMs`). No zoom punches, shake or sparkle (MOTION.md).
+
+| # | Time | App footage (true of build 1) | Card headline / support | Card colour | Source of the words |
+|---|---|---|---|---|---|
+| 1 | 0.00 to 2.55 | **Hook.** Tonight in the evening: "ASHA · 7 MONTHS", "Good evening, Mama.", the question "What food did Asha try this week? What was the face?", Speak and Type. Speak is tapped at 2.40. | Tell your child about today. / A minute is plenty. It becomes a letter. | Dusk `#3B302A` | captions.json 01-tonight |
+| 2 | 2.55 to 7.05 | Listening: "To Asha", "Only you, until you add it to the book.", the prompt, the glow moving with the voice, the clock counting, Pause, Finish. Finish tapped at 7.0. | Pause, laugh, start again. / Take your time. Say it however it comes. | Night `#161412` | captions.json 08-listening |
+| 3 | 7.05 to 8.40 | Review opens and says "Writing down what you said." with the moon and the recording's length. | Written down on your phone. / Your recording is kept unchanged. | Night | New line, true of build 1 (on-device speech model, ADR 0015; D-133 promise wording for the second line) |
+| 4 | 8.40 to 12.55 | "Read it back": "TO ASHA · MONTH 7", "FROM MAMA", the letter with two marks (a struck "um," and a struck repeated "you"). The "um" mark is tapped at 10.0: "Took out a sound. An um or an uh, taken out. You said "um,"", Put it back. "Add to Asha's book" tapped at 12.4. | Every change is marked. / We only fix small slips. Tap one to put it back. | Paper `#FBF8F3` | captions.json 02-review |
+| 5 | 12.55 to 16.80 | The saved moment: the letter files down, "Kept in Month 7", "Added to Asha's book." Then the Book: "Asha's book", Read together, THIS MONTH 7 with the new letter, Month 6 below. | A book that grows by month. / Each letter goes into your child's month of age. | Warm paper (paper with lamp glow `#F3C98B`) | captions.json 04-book |
+| 6 | 16.80 to 21.20 | Read together, phone in Dark Mode: the bath letter ("This one was typed. Read it aloud together."), Back one at 18.4, the page turns to the rain letter (Month 5, "From Mama", Hear Mama 0:42). | Read together at bedtime. / The letters you spoke, in your own voice. | Night | captions.json 05-letter-night headline; support line is the approved screenshot subline in `packages/content/src/store.en.ts`. On the device the book has only spoken letters, so the take is the laugh letter, Next letter, the rain letter (CAPTURE_GUIDE take3) |
+| 7 | 21.20 to 24.20 | End card (0.4 s dissolve in): approved horizontal lockup, "It stays in your words." (read from `packages/brand`), and the disclosure line. | Your first two letters are free. To keep adding letters, subscribe to Plus. | Night | Tagline: `packages/brand` (D-133). Disclosure: coordinator wording, 1 Nov ("optional" dropped as misleading: after two letters, adding one needs Plus, D-082) |
+
+**Poster frame:** 11.0 s (Review with the "um" card open under "Every change is marked."), exported as `poster.png`. Apple's default poster is 5 s, which in this cut lands on Listening; set it by hand in App Store Connect (Edit Poster Frame). The poster is a frame of the video, as Apple requires.
+
+**Sound off first 3 seconds:** frame 0 already shows the card line and a real question to a child by name, with Speak under it. Nothing fades in at the start, so the autoplay thumbnail and the first frame are the same strong frame.
+
+### Words on screen, checked
+
+All card text passes the house rules: no em or en dashes, curly quotes, ellipsis or emoji (checked in `cards.mjs` before rendering); no fear, guilt or loss words; nothing implies AI writes or rewrites ("We only fix small slips" is the copy lane's line and matches the constitution); the child is never gendered; no counts of gaps, streaks or badges; no "beta"; no price; no seasonal or dated reference (Apple's guidance). The app's own text visible in the footage includes real dates on cards ("SUNDAY, NOVEMBER 1, 2026" on the Book): see "Known gaps".
+
+### Known gaps in the draft (fixed by the device capture)
+
+1. **Family tab.** Build 1 on `develop` shows three tabs. The draft hides the Family tab with one style rule (`capture.mjs`), the only change made to the app's screens, because the store build hides it (D-126, code change after the 9 Nov go/no-go). The final capture must come from a build where D-126 has landed. If it has not landed, do not ship this preview with the tab hidden by any trick: capture whatever the submitted build shows, and settle the Family tab question first (D-126 fallback).
+2. **"Exactly as said".** The Review toggle "With small fixes | Exactly as said" and the letter page's "Exactly as said" link are visible. They are true UI labels (that view shows the raw words), but D-125 item 9 and D-133 hold "exactly as you said it" out of the listing. Review lane or counsel to confirm the in-app label is fine in footage. See REPORT.md question 2.
+3. **Dates on the Book cards** ("SUNDAY, NOVEMBER 1, 2026") will age the video slightly; Apple advises against dates. They are the app's own UI and are small; acceptable, but the capture guide sets the letters up so the newest card is not the focus.
+4. The draft's Listening glow is driven by Chromium's fake microphone tone, so it pulses evenly. On a phone it follows a real voice.
+5. The draft's "Writing down what you said." never finishes on the web (no speech model there), so the draft dissolves from it to a seeded Review. On the phone the same take gets its words; the final cut is one continuous take.
+
+**Capturing the final cut:** follow [`docs/store/preview/CAPTURE_GUIDE.md`](../preview/CAPTURE_GUIDE.md). Apple requires preview footage captured from the app on a device (guideline 2.3.4), so the web draft only sets the cut and timing. The draft video, its cards and compose scripts (`preview-draft.mp4`, `cards.mjs`, `capture.mjs`, the `work/` folder) and the video lane's REPORT.md stay with the store 1.0 working folder and are not in this repo.
+
+Note: the support line on board row 6, "The letters you spoke, in your own voice.", was the screenshot subline in `store.en.ts` when the board was written. Store listing 1.0 changes that subline to "One letter at a time, oldest first." (Read together goes through the whole book). The video lane should confirm which line the card keeps.
