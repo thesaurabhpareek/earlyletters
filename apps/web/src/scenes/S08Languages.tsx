@@ -4,7 +4,7 @@
  *
  *   0.00-0.04  Handoff from S07: night, empty.
  *   0.04-0.12  "Say it in your language." and the support line, at the top; they hold to 0.90.
- *   0.12-0.89  One sentence, seven times: English, Hindi, Spanish, Mandarin, French, Arabic, Portuguese,
+ *   0.12-0.89  One sentence, (English only for now),
  *              each in a typeface made for its script. Each arrives, holds, and gives way to the next;
  *              Arabic, written right to left, arrives from the right.
  *   0.90-0.98  Everything leaves (handoff to S09: night, empty).
@@ -36,7 +36,7 @@ export function S08Languages() {
 
 function Line({ p, i, last, line }: { p: MotionValue<number>; i: number; last: boolean; line: (typeof copy.lines)[number] }) {
   const s = START + i * STEP;
-  const rtl = line.dir === 'rtl';
+  const rtl = (line.dir as string) === 'rtl';
   const opacity = useTransform(p, last ? [s, s + 0.03, 0.9, 0.96] : [s, s + 0.03, s + STEP - 0.025, s + STEP], [0, 1, 1, 0]);
   const y = useTransform(p, last ? [s, s + 0.03] : [s, s + 0.03, s + STEP - 0.025, s + STEP], last ? [18, 0] : [18, 0, 0, -14]);
   const x = useTransform(p, [s, s + 0.035], rtl ? [28, 0] : [0, 0]);
