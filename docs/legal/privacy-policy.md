@@ -42,7 +42,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 **Technical details.** When the app or website connects to our providers, they see your IP address and device type, as any website does. When you create an account, our server also uses that IP address to work out which country the request comes from (section 12).
 
-**What we do not collect.** We do not collect your location, contacts, photos, advertising ID or payment details. In no current build does the app send us usage analytics or crash reports. We never create a voiceprint or any other biometric identifier. Your reminder times stay on your phone. Your choices for each book, such as whether it appears in reminders, are kept with your book.
+**What we do not collect.** We do not collect your location (the country check in section 12 keeps none), contacts, photos, advertising ID or payment details. In no current build does the app send us usage analytics or crash reports. We never create a voiceprint or any other biometric identifier. Your reminder times stay on your phone. Your choices for each book, such as whether it appears in reminders, are kept with your book.
 
 **How speech becomes text.** The app turns your voice into text on your phone. No audio or text is sent to any outside service to be turned into text. The app fixes only small slips, such as a stray "um" or a misheard name, and you can undo every fix. It never rewrites your words.
 
@@ -150,7 +150,7 @@ Traffic is encrypted in transit, and data on our servers is encrypted at rest. A
 
 The app is offered only on the United States App Store, and your information is stored in the United States.
 
-We do not offer Early Letters in places where US sanctions or export rules restrict it. When you create an account, our server uses the IP address of that request to work out which country it comes from, and refuses the sign-up if it comes from one of those places. We do not keep the IP address for this check. We keep only a daily count of checks and their results by country code, which does not identify you. The country lookup uses data from DB-IP (https://db-ip.com). A lookup can be wrong; if you think it was, write to us and we will look into it without asking where you are.
+We do not offer Early Letters in places where US sanctions or export rules restrict it. When you create an account, our server uses the IP address of that request to work out which country it comes from, and refuses the sign-up if the country is one of them. We do not keep the IP address or your country for this check. We keep only daily counts of checks by result, with the country only for refused sign-ups, which do not identify you, for two years. The country lookup uses data from DB-IP (https://db-ip.com). A lookup can be wrong; if you think it was, write to us and we will look into it without asking where you are.
 
 ## 13. Changes to this policy
 

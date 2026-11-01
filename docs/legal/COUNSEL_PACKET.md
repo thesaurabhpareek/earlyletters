@@ -2,7 +2,7 @@
 title: Counsel packet, Early Letters v1.0 (option B) and after
 version: 1.5.0
 status: for counsel
-date: 2026-10-16
+date: 2026-11-01
 owner: founder
 prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 ---
