@@ -1,6 +1,7 @@
 /**
  * The help-link fallback (F20-REQ-005, F20-REQ-007; RT-SET-02, SR-C-09). A crisis line or Write to us row that this
- * device cannot open (an iPad cannot call, a phone with no SIM, no Mail account) opens this sheet in the same tap:
+ * device reports it cannot open opens this sheet in the same tap (expected on an iPad, with no SIM, or with no Mail
+ * account; to be confirmed by the S1-23 V-10 device check):
  * the number or address as selectable text, and one Copy button. Once copied it says so ("Number copied") in place
  * and to VoiceOver. Nothing is counted, logged or sent (D-034).
  *
@@ -14,7 +15,20 @@ import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import { Text } from '@/components/ui/text';
 import { announce } from '@/lib/a11y';
-import { fallbackWords, openHelpTarget, type HelpTarget } from './help-links.logic';
+import { fallbackWords, openHelpTarget, probePhone, type HelpTarget, type PhoneAbility } from './help-links.logic';
+
+/** Whether this device reports it can call (canOpenURL), asked once when the page opens; drives the rows' VoiceOver hints. */
+export function usePhoneAbility(): PhoneAbility {
+  const [can, setCan] = React.useState<PhoneAbility>({ call: null });
+  React.useEffect(() => {
+    let live = true;
+    void probePhone(Linking).then((a) => live && setCan(a));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return can;
+}
 
 export function useHelpLink(): { open: (target: HelpTarget) => void; sheet: React.ReactNode } {
   const [target, setTarget] = React.useState<HelpTarget | null>(null);
