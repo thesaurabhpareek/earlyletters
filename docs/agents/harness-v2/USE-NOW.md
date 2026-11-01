@@ -17,7 +17,7 @@ Written 1 Nov 2026 by Karma's session. One page. Source: the retrospective, requ
 | When merged | What changes | Manual version today |
 |---|---|---|
 | #564 (merge commit, not squash) | Live claims move to `docs/agents/CLAIMS.md`; `BOARD.md` becomes a stub | Claim in `BOARD.md` as `COORDINATION.md` section 2 says |
-| #559, #581 area | Review gate counts reviews at the exact sha | Count by eye per item 2 |
+| #559 | Review gate counts reviews at the exact sha | Count by eye per item 2 |
 | #565 | One generated founder status page | Read `FOUNDER_QUEUE.md` and treat its status line as dated |
 | #566 | Skip guard | State skipped suites in the PR |
 | #577 | Decisions checker (Amended by, id collisions) | Item 1 |
