@@ -115,3 +115,49 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back: start screening at sign-up; the runbook and BL-552 still apply.
 - Revisit when: any D-137 trigger, or counsel answers Q57.
 - Signed: Chief Compliance Officer (Claude role, not counsel), with the Chief Legal Officer (Claude role, not a lawyer) and Karma
+
+### CPO-2 Alpha stays at 100 letters; the note drops its promise after 9 Nov (1 Nov 2026, 15:57 UTC, CPO via Karma)
+- Question: #552 made alpha builds skip the 2-letter limit through the allowance path, so "unlimited" is the core ceiling of 100, and the alpha note says "Every letter is free while you test". What now?
+- Tier and type: T1 on the ruling; the founder's "no limit in alpha" is already decided, and he then said "Decide with executives" (D-139); complicated
+- Options considered: A leave 100; B make alpha truly unlimited on the alpha path; C reword the note; D keep 100 now, reword after 9 Nov, B only on a trigger.
+- Ruling: D. Change nothing before the freeze. After Mon 9 Nov reword `billingCopy.alpha.note` and `plusLine` so they promise no count. Reopen B if a script or tester keeps over 90 letters (Karma lowers the bar to 80, CR-48).
+- Why: letter 101 is near impossible in a few-week family test. A blocked Keep is S1 on impact (07-quality-bar 4.3), so the trigger is watched. B edits the billing gate beside open #508 and #517, and `plan.ts` clamps remote config to 100 too (F14-REQ-018), so unbounded needs a core change or new alpha branches.
+- Not verified: any phone run; tester count or pace; the code of #508 and #510. The web journeys J06e and J07d build as preview and may fail the gate once #534 runs them (BL-604 checks).
+- Door: two-way
+- Way back: revert the reword PR; the ceiling never moved.
+- Revisit when: Mon 9 Nov.
+- Signed: Chief Product Officer (Claude role)
+
+### CBO-1 The letter ceiling does not touch the Plus model; keep alpha out of the Plus evidence (1 Nov 2026, 15:57 UTC, CBO via Karma)
+- Question: does either option affect the Plus model, pricing tests or the launch story?
+- Tier and type: T1, business angle only; the A to D choice is the CPO's
+- Ruling: A now, C after Mon 9 Nov, never B. None of them touches the Plus model, prices or the F14 6.9 rules. Guardrails: alpha feedback on price or the gate is biased and stays out of 6.9; the paywall studies (C1, Study 3) run on a production-profile build; testers are told the store build starts with two free letters.
+- Why: a `.preview` build cannot load the products and analytics are off for 1.0, so the alpha never gave willingness-to-pay evidence; #552 removed a dead-end gate, not evidence. B edits the billing path for a case no family reaches, and `MAX_FREE_LETTERS` also caps a typo in remote config on the store gate. C is one line of copy.
+- Not verified: whether App Store Connect counts TestFlight installs as first-time downloads; which build C1 and Study 3 use.
+- Door: two-way
+- Way back: none needed; no code changes before 9 Nov.
+- Revisit when: Mon 9 Nov, or the studies are scheduled.
+- Signed: Chief Business Officer (Claude role)
+
+### CFO-1 The letter ceiling costs no money (1 Nov 2026, 15:57 UTC, CFO via Karma)
+- Question: does either option cost money or change the unit economics we are testing?
+- Tier and type: T1; clear. Verdict NOT A QUESTION from the money seat: no option moves money.
+- Ruling: D (reword now or after 9 Nov, keep 100, B only if a tester nears 80). The CFO's own bar of 80 letters is the one adopted (D-139).
+- Why: the CFO's arithmetic from the letter caps of 20,000 and 40,000 characters in the `scribe_core` migration and the 256 KiB push limit in `sync.ts` gives under 6 million characters per tester at 100 letters. The alpha cannot test the two-letter paywall (the 5% pay rate is the weakest input): a `.preview` build cannot sell Plus and family are no conversion sample. `plan.ts` stays alone, because its 100 ceiling also protects production revenue.
+- Not verified: Supabase plan limits and spend-cap pages (supabase.com was blocked in that session) and the plan `scribe-staging` is on. Neither changes the answer.
+- Door: two-way
+- Way back: none needed.
+- Revisit when: a tester nears 80 letters, or staging is created and its plan is read.
+- Signed: Chief Financial Officer (Claude role)
+
+### CLO-4 A sentence that is untrue at letter 101 is a bug, not a pre-freeze exposure (1 Nov 2026, 15:57 UTC, CLO via Karma; not legal advice)
+- Question: is "Every letter is free while you test" a legal or consumer-protection problem at letter 101 in a private TestFlight alpha?
+- Tier and type: the CLO returned FOUNDER because D-132 leaves what testers are promised with the founder; the founder then delegated ("Decide with executives"), which closes it (D-139). Complicated.
+- Ruling: D. Change nothing before 9 Nov. At letter 101 the letter is held and nothing can be bought, and "while you test" bounds the claim. It is a bug and a breach of our own rule that a published statement may not be false, not an S1 exposure; counsel must confirm. After 9 Nov the CLO preferred B (alpha path only); if B slips, C: promise "you will not be asked to pay", never a count. Fix the same line in What to test (`plusLine` in `testflight.en.ts`).
+- Why: the CLO read `plus-gate.logic.ts` (at letter 101 there is no store button, only a hold button), `TESTFLIGHT_TESTERS.md` (silent on free letters) and `terms-of-service.md` 8.1 (the first 2 letters free, no test carve-out; #552 touches nothing under `docs/legal`).
+- Finding, not re-checked by Karma: the claims registry file that LEGAL-REQ-044 names (`claims-registry.yaml`) does not exist, and `claims-capabilities.test.ts` reads production only, so alpha lines sit in no claims check (BL-605).
+- Not verified: every law (FTC Act section 5 was not opened); device behaviour; how often a tester reaches 101; which Terms build 2 shows.
+- Door: two-way
+- Way back: none needed.
+- Revisit when: counsel answers, or BL-604 is picked up.
+- Signed: Chief Legal Officer (Claude role, not a lawyer)

@@ -512,3 +512,14 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog lines.
 - Revisit when: #424 is picked up after 9 Nov. Karma
+
+### CR-48 The alpha letter ceiling: four roles, one ruling (1 Nov 2026, 15:57 UTC, Karma with the CPO, CBO, CFO and CLO roles)
+- Question: #552 left "unlimited" at 100 letters in alpha builds, and the alpha note says "Every letter is free while you test". The founder said "Decide with executives" and then "Ok go with those recommendations".
+- Tier and type: T3 delegated by the founder; complicated
+- Options considered: A leave 100; B make alpha truly unlimited on the alpha allowance path; C reword the note so it promises no count; D keep 100 and change nothing before the go/no-go, reword after it, B only on a trigger.
+- Ruling: D, recorded as D-139. Nothing changes before Mon 9 Nov. After it, BL-604 rewords `billingCopy.alpha.note` and the TestFlight `plusLine`. B is reopened only if a tester or script passes 80 letters.
+- Debate: CPO D (trigger 90 letters), CBO A now and C later and never B, CFO C with B at 80 letters, CLO D with B after 9 Nov and C as the fallback. All four agree on no change before the freeze. Tie-break: the reword (C) makes the sentence true without touching the billing gate, which answers the CLO and the CBO together. The lower trigger (80, the CFO's) is the cheap insurance against the CPO's and CLO's worry that a script or a long test reaches the ceiling.
+- Why: letter 101 is unlikely in the window, no option costs money, and B would edit the billing gate beside open PRs #508 and #517. The CLO's legal reading (a bug, not an S1 exposure) is "counsel must confirm"; it is not a lawyer's view.
+- Door: two-way
+- Way back: revert the reword PR; the ceiling never moves.
+- Revisit when: Mon 9 Nov, or a tester or script passes 80 letters. Karma
