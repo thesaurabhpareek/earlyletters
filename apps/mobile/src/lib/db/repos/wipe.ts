@@ -128,14 +128,17 @@ export function allAudioRows({ db }: RepoContext): { id: string; audioUri: strin
 /**
  * Erase everything, the rows (inside the caller's transaction): every row of every table on this phone, read from
  * the schema so a table added later is never missed. Settings go too, all but the pending mark, which the caller
- * removes last. The schema version stays, so the next open needs no migration.
+ * removes last, and `keepSettings` (an active 18+ stop, store.ts). The schema version stays, so the next open needs no migration.
  */
-export function removeEverything({ db }: RepoContext): void {
+export function removeEverything({ db }: RepoContext, keepSettings: readonly string[] = []): void {
   const tables = db
     .all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
     .map((r) => r.name);
   for (const t of tables) {
-    if (t === 'settings') db.run('DELETE FROM settings WHERE key <> ?', ERASE_EVERYTHING_SETTING);
+    if (t === 'settings') {
+      const keep = [ERASE_EVERYTHING_SETTING, ...keepSettings];
+      db.run(`DELETE FROM settings WHERE key NOT IN (${keep.map(() => '?').join(', ')})`, ...keep);
+    }
     else db.run(`DELETE FROM "${t.replace(/"/g, '""')}"`);
   }
 }

@@ -526,6 +526,77 @@ describe('[DATA-REQ-024] erased words leave the database file itself, not only i
   });
 });
 
+describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age stop early (CCO view on #520)', () => {
+  const src = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
+
+  it('(a) a stopped person cannot reach Settings or Erase everything: no route renders until the gate passes', () => {
+    const layout = src('src/app/_layout.tsx');
+    const gate = layout.indexOf("gate.decision !== 'pass' ? (");
+    const stopScreen = layout.indexOf('<AgeGateScreen', gate);
+    const stack = layout.indexOf('<Stack screenOptions', gate);
+    expect(gate).toBeGreaterThan(0);
+    expect(stopScreen).toBeGreaterThan(gate);
+    expect(stack).toBeGreaterThan(stopScreen); // the Stack (every route, Settings included) is the other branch only
+    // The erase screen is a route under that Stack, and only it starts an erase. A deep link is gated too (+native-intent).
+    expect(existsSync(join(__dirname, '..', 'src/app/settings/erase.tsx'))).toBe(true);
+    expect(src('src/app/+native-intent.tsx')).toMatch(/decideGate\(/);
+    const callers = ['src/app/settings/erase.tsx', 'src/app/settings/index.tsx', 'src/app/_layout.tsx'].filter((p) => /\beraseEverything\(\)/.test(src(p)));
+    expect(callers).toEqual(['src/app/settings/erase.tsx']);
+  });
+
+  it('(b) a stop still running is kept, exactly as stored', async () => {
+    const app = await launch();
+    family(app);
+    const at = new Date(T0 - 2 * 60 * 60 * 1000).toISOString(); // a No two hours ago
+    app.store.setSetting('ageGate.stoppedAt', at);
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(app.store.getSetting('ageGate.stoppedAt')).toBe(at);
+    expect(app.store.getSetting('ageGate.passed')).toBeNull();
+    expect(app.store.listChildren()).toEqual([]);
+  });
+
+  it('(b) the same when the erase is finished by the next launch after a kill', async () => {
+    let app = await launch();
+    family(app);
+    const at = new Date(T0 - 60 * 1000).toISOString();
+    app.store.setSetting('ageGate.stoppedAt', at);
+    let n = 0;
+    app.store.eraseEverythingLocal((uri, id) => {
+      if (n++ === 1) throw new Error('killed');
+      app.erase.eraseAudioFile(uri, id);
+    }, app.all.eraseDeviceFiles);
+    app = await launch();
+    expect(await app.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(app.store.getSetting('ageGate.stoppedAt')).toBe(at);
+  });
+
+  it('(b) an expired stop (24 hours or more) goes with everything else', async () => {
+    const app = await launch();
+    family(app);
+    app.store.setSetting('ageGate.stoppedAt', new Date(T0 - 25 * 60 * 60 * 1000).toISOString());
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(app.store.getSetting('ageGate.stoppedAt')).toBeNull();
+  });
+
+  it('(b) the stop lives only in settings: nothing in the Keychain holds an age answer', () => {
+    const keys = ['src/lib/age-gate.ts', 'src/lib/age-gate.logic.ts'].map(src).join('\n');
+    expect(keys).not.toMatch(/secureStorage|SecureStore/);
+  });
+
+  it("age-gate.ts's subscription returns the unsubscribe as the effect's cleanup, and the unsubscribe stops it", async () => {
+    expect(src('src/lib/age-gate.ts')).toMatch(/useEffect\(\(\) => subscribeTo\('settings', refresh\), \[refresh\]\);/);
+    const app = await launch();
+    let calls = 0;
+    const off = app.store.subscribeTo('settings', () => (calls += 1));
+    expect(typeof off).toBe('function');
+    app.store.setSetting('appearance', 'dark');
+    expect(calls).toBe(1);
+    off();
+    app.store.setSetting('appearance', 'light');
+    expect(calls).toBe(1);
+  });
+});
+
 describe("the screens' rules (components/settings/wipe.logic.ts, components/book/shelf.logic.ts)", () => {
   it('the typed confirm takes the word in any case, with spaces around it, and nothing else', async () => {
     const { typedWordMatches } = await import('../src/components/settings/wipe.logic');

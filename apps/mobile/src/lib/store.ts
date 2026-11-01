@@ -23,6 +23,7 @@
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
+import { decideGate } from './age-gate.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
@@ -181,6 +182,9 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
 }
 
 /** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
+/** The 18+ stop record (age-gate.ts, D-026). Read here only so Erase everything keeps a stop still running. */
+const AGE_STOPPED_AT = 'ageGate.stoppedAt';
+
 export const SECURE_DELETE_VACUUM_SETTING = 'db.secureDeleteVacuumAt';
 
 /**
@@ -989,7 +993,11 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   } catch {
     return 'incomplete';
   }
-  c.db.transaction(() => wipe.removeEverything(c));
+  // LEGAL-REQ-002, D-026: an erase never ends the 24-hour age stop early. A stop still running is kept (it lives only
+  // in `settings`, never in the Keychain); an expired one goes with everything else.
+  const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
+  const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
   return 'erased';
