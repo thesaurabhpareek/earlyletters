@@ -283,6 +283,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   extra: {
     appEnv: APP_ENV,
     ...capabilityFlags(),
+    // Expo project @earlyletters/scribe (expo.dev). Read from the project on 1 Nov 2026; not a secret.
+    eas: { projectId: 'd1b5270f-034a-41e9-8408-d0b21b3c8c08' },
   },
   });
 };
