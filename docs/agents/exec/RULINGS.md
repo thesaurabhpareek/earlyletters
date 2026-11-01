@@ -52,6 +52,15 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back: delete the test line when counsel clears it.
 - Revisit when: counsel answers Q16.
 
+### CCO-2 The fence corrections and the per-branch required check (31 Oct 2026, CCO via the compliance session; not counsel)
+- Question: does the change that makes `compliance-fence` required on `develop`, keeps it advisory on `main`, and corrects the fence's documentation (CR-32) keep the compliance programme's evidence true?
+- Ruling: yes.
+  - The fence's rules and checker are unchanged.
+  - The README and workflow now describe what actually runs: the fence runs from the default branch `develop`, is required there, and is advisory on `main` until a `FENCE.json` exists there.
+  - This is evidence for register CR-121 and D-131 changes being gated, not a new obligation.
+- Way back: CR-32's.
+- Chief Compliance Officer (Claude role, not counsel)
+
 ### CCO-4 PR #161's export reads of the consent record pass the compliance fence (31 Oct 2026, CCO via session_01JQRV3b)
 - Question: PR #161 (BL-323, export schema 1.3.0) adds `supabase/tests/export_reads.test.mjs`, which names `policy_acceptances` (the fence scans only `supabase/**` for content markers), so the fence's `cco_review` tier asks for a CCO approval on head e7349e9. Does the change meet the CCO checklist in `compliance/README.md`?
 - Tier and type: T1; clear

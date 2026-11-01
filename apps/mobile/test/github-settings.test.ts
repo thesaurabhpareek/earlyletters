@@ -10,6 +10,7 @@ import {
   plan,
   protectionDrift,
   REQUIRED_CHECKS,
+  checksFor,
   RULESETS,
   rulesetBody,
   rulesetDrift,
@@ -68,12 +69,18 @@ describe('the plan', () => {
     for (const c of plan(APPROVER_ID)) expect(c.path).not.toMatch(/secrets|variables|actions\//);
   });
 
+  it('requires compliance-fence on develop only (CR-27)', () => {
+    expect(checksFor(BRANCHES.find((b) => b.branch === 'develop')!)).toEqual([...REQUIRED_CHECKS, 'compliance-fence']);
+    expect(checksFor(BRANCHES.find((b) => b.branch === 'main')!)).toEqual(REQUIRED_CHECKS);
+  });
+
   it('protects develop and main with the required checks, no bypass, no force push, and one approval on main', () => {
     const calls = plan(APPROVER_ID).filter((c) => c.path.endsWith('/protection'));
     expect(calls.map((c) => c.path.split('/')[4])).toEqual(BRANCHES.map((b) => b.branch));
     for (const c of calls) {
       const body = c.body as Record<string, any>;
-      expect(body.required_status_checks.contexts).toEqual(REQUIRED_CHECKS);
+      const spec = BRANCHES.find((b) => b.branch === c.path.split('/')[4])!;
+      expect(body.required_status_checks.contexts).toEqual(checksFor(spec));
       expect(body.enforce_admins).toBe(true);
       expect(body.allow_force_pushes).toBe(false);
       expect(body.allow_deletions).toBe(false);
