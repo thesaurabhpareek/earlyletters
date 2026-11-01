@@ -42,6 +42,9 @@ type BrandModule = typeof import('../../packages/brand/index');
 
 /** Lowest supported iOS (D-098). The billing copy keeps its "needs iOS 17" fallback for safety. */
 export const IOS_DEPLOYMENT_TARGET = '17.0';
+/** EAS project id and owner (expo.dev, organization earlyletters-team, project slug `scribe`). Public identifiers. */
+export const EAS_PROJECT_ID = '0bc517fb-a526-4f0f-892a-5ab676a86e6b';
+export const EAS_OWNER = 'earlyletters-team';
 type PermissionCopyModule = typeof import('./src/lib/permission-copy');
 
 const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
@@ -176,6 +179,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   ...config,
   name: brand.name,
   slug: brand.codename,
+  owner: EAS_OWNER,
   version: readVersion(),
   orientation: 'portrait',
   // The approved mark (docs/brand/BRAND_SYSTEM.md 6). icon*.png are byte copies of the 1024 masters the
@@ -283,6 +287,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   extra: {
     appEnv: APP_ENV,
     ...capabilityFlags(),
+    // EAS project `scribe` in the organization earlyletters-team (created 1 Nov 2026, docs/release/TESTFLIGHT.md step 3). Not a secret.
+    eas: { projectId: EAS_PROJECT_ID },
   },
   });
 };
