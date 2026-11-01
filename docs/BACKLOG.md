@@ -2533,12 +2533,12 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 
 #### BL-563 Listen never sticks on "finishing" (APP-01)
 - Owner: `mobile`. Severity: S0. Area: front.
-- Problem: `apps/mobile/src/app/listen.tsx:134-144` calls `endTake` without a catch, and every caller uses `void`. If `finalizeDraftAudio` throws (a full disk makes the SQLite write in `recorder.ts:150` throw), the screen stays on "finishing" and the only control left is "Let it go", which deletes the take (`listen.logic.ts:74-76`).
+- Problem: `apps/mobile/src/app/listen.tsx:134-144` calls `endTake` without a catch, and most callers use `void` (`finish` at :263 awaits nothing either). If `finalizeDraftAudio` throws (a full disk makes the SQLite write in `recorder.ts:150` throw), the screen stays on "finishing" and the only control left is "Let it go", which deletes the take (`listen.logic.ts:74-76`).
 - Requirement: every way out of a take reaches Review or Tonight within 3 s, and the take is kept.
 - Acceptance:
   - Given the finalize step is forced to throw in a unit test, when Finish is tapped, then the screen leaves "finishing" within 3 s and the draft row is still there.
-  - Given an iPhone SE 3 with under 1 MB free, when Finish is tapped, then a calm screen with a way out that keeps the take appears.
-  - Given the "finishing" state, then "Let it go" is not offered.
+  - Given an iPhone SE 3 with under 1 MB free, when Finish is tapped, then a screen appears that says the phone is full and offers Keep, and the take is kept.
+  - Given the "finishing" state, when the screen renders, then "Let it go" is not offered.
 - Tests: a `listen.logic` unit test named `[BL-563]`; one device row in `docs/qa/DEVICE_TEST_PLAN.md`.
 
 #### BL-564 Consent sheet links only to pages that exist (COMP-02)
@@ -2615,13 +2615,13 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Requirement: corruption is detected once after each update and on SQLITE_CORRUPT; the file is copied aside, never deleted; recovery export is offered.
 - Acceptance:
   - Given a corrupt `scribe.db` fixture, when the app launches, then the check fails, the file is copied aside and recovery export is offered.
-  - Given a healthy file after an update, then the check runs once and takes under 200 ms for 2,000 letters on an SE 3.
-  - Given a signed-in person, then a fresh file re-pulls from the server and unsynced rows from the copy can be exported.
+  - Given a healthy file, when the app first launches after an update, then the check runs once and takes under 200 ms for 2,000 letters on an SE 3.
+  - Given a signed-in person with a corrupt file, when recovery runs, then a fresh file re-pulls from the server and unsynced rows from the copy can be exported.
 - Extends: BL-134.
 
 #### BL-571 The Book does not re-read every letter on unrelated changes (APP-08)
 - Owner: `mobile`. Severity: S2.
-- Problem: `book.tsx:101-103` subscribes to every table, and `book.tsx:112` parses a settings JSON once per letter.
+- Problem: `book.tsx:105` subscribes to every table, and `book.tsx:112` parses a settings JSON once per letter.
 - Requirement: a 60-letter chapter renders at p95 500 ms or less on an SE 3; no frame over 16.7 ms while scrolling 240 letters.
 - Acceptance:
   - Given 2,000 Asha letters in a CI fixture, then listing a book has p95 of 50 ms or less.
@@ -2630,7 +2630,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 
 #### BL-572 Transcription waits while a new take records, and only real memory kills downgrade the model (APP-07, APP-12)
 - Owner: `speech`. Severity: S1.
-- Problem: the queue pauses only in the background (`transcription-queue/index.ts:170-180`), so a large model can run while the next letter records on a 3 to 4 GB phone. Any kill during a job counts as a memory failure, and two move the phone to the compact model for good (`transcription-queue/index.ts:443-455`, `tiers.ts:32`).
+- Problem: the queue pauses only in the background (`transcription-queue/index.ts:170-180`), so a large model can run while the next letter records on a 3 to 4 GB phone. Any kill during a job counts as a memory failure, and two move the phone to the compact model for good (`transcription-queue/index.ts:461-470` and `:522`, `tiers.ts:32`).
 - Requirement: the queue pauses during a take; only a jetsam or a model load failure counts toward the downgrade; a 2-minute letter transcribes in 30 s or less on an SE 3.
 - Acceptance:
   - Given an XR or SE 2, when a take records during a job, then the job pauses and there is no jetsam.
@@ -2650,7 +2650,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 #### BL-574 Fix the backup consent before backup is ever switched on (COMP-11)
 - Owner: `mobile`. Severity: S2.
 - Problem: `apps/mobile/src/lib/backup/runtime.ts:308` sends `p_method: 'backup_sheet'`, which the table's check refuses (`20261002020000_data_governance.sql:632-634`), and `:311` hard-codes `ios`.
-- Requirement: backup consent uses `consent_sheet` with context mode `standard` (POLICY_VERSIONING.md:341) through the shared record builder (BL-577).
+- Requirement: backup consent uses `consent_sheet` with context mode `standard` (`docs/legal/POLICY_VERSIONING.md:414`) through the shared record builder (BL-577).
 - Acceptance:
   - Given the backup sheet, when Agree is tapped against embedded Postgres, then one `backup` accept row exists with context mode `standard`.
 - Extends: LEGAL-REQ-061.
@@ -2659,7 +2659,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 
 #### BL-575 Where the agree line sits at sign-in (COMP-05)
 - Owner: `product`, then `mobile`. Severity: S1. **Founder decision first**; counsel confirms the sign-in-wrap. Recommendation: put the line above the sign-in buttons, as LEGAL-REQ-001 and `docs/legal/in-app-disclosures.md:24` already say.
-- Problem: Terms are shown after sign-in (`sign-in/index.tsx:10`); `apple.ts:56-63` creates the account, sends Apple's code and stores the Apple user id before any acceptance.
+- Problem: Terms are shown after sign-in (`sign-in/index.tsx:10`); `apple.ts:55-61` creates the account, sends Apple's code and stores the Apple user id before any acceptance.
 - Requirement: the code and the two specs agree.
 - Acceptance:
   - Given the sign-in sheet, when it renders, then the agree line with versioned links sits directly above the provider buttons (or both specs say "after sign-in", if the founder chooses that).
@@ -2677,7 +2677,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 #### BL-577 Every consent record is complete and built in one place (COMP-03, COMP-09, DATA-05)
 - Owner: `mobile` (builder), `data-architect` (migration), `privacy` (review). Severity: S1: rows written in build 2 cannot be fixed later.
 - Problem: the app sends no `rendered_sha256` and hard-codes locale `en` (`consent.ts:103-116`); `app_version` is the marketing version only, so build 1 and build 2 both record "1.0.0"; there is no OS version or `age_signal`; links open floating URLs, not the versioned URL (POLICY_VERSIONING.md:104).
-- Requirement: every act is written through one shared builder that fills every PRIV-R21 field; a new migration adds `app_build` and `os_major` and makes `rendered_sha256` and `text_locale` NOT NULL for sheet methods.
+- Requirement: every act is written through one shared builder that fills every PRIV-R21 field; a new migration adds `app_build` and `os_major` and makes `rendered_sha256` and `locale` (now meaning the language of the text shown) NOT NULL for sheet methods. DATA_CLASSIFICATION 4.5 gains rows for `app_build` and `os_major` and the new meaning of `locale` (founder merge).
 - Acceptance:
   - Given the sensitive-data sheet, when Agree is tapped, then `rendered_sha256` equals the bundled manifest hash for that version and locale.
   - Given a bundled consent text whose hash is not in the manifest, when CI runs, then the build fails.
@@ -2690,8 +2690,8 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Owner: `data-architect`. Severity: S1.
 - Problem: `finalize_account_deletion` nulls `deletion_requests.profile_id` and keeps no hash; the only link is the raw uuid in `purge_ledger`, trimmed at 60 days (`data_governance.sql:892`). After day 60 the request id in the receipt email cannot find the consent rows.
 - Acceptance:
-  - Given a completed deletion, then `deletion_requests` keeps the same peppered `subject_hash`, and a service-only lookup by request id returns the consent rows.
-  - Given an Asha deletion and the clock moved 61 days, then that lookup still returns the rows.
+  - Given a completed deletion, when the service role looks up the request id, then `deletion_requests` holds the same peppered `subject_hash` and the lookup returns the consent rows.
+  - Given an Asha deletion and the clock moved 61 days, when the lookup runs, then it still returns the rows.
 
 #### BL-579 The phone keeps a small record of the Terms in force before any account (COMP-12)
 - Owner: `legal` decides notice-only or tap-to-accept with counsel; then `mobile`. Severity: S2.
@@ -2715,7 +2715,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Acceptance:
   - Given an auth user with no `terms` accept and no content older than 7 days, when the daily worker runs, then the user and profile are deleted and a content-free count is logged.
   - Given an unverified email sign-up older than 24 hours, when the worker runs, then it is deleted.
-  - The windows are in DATA_CLASSIFICATION and Privacy 7 (founder merge).
+  - Given the change ships, when DATA_CLASSIFICATION and Privacy 7 are read, then both state the 7-day and 24-hour windows (founder merge).
 - Extends: LEGAL-REQ-001, LEGAL-REQ-033.
 
 #### BL-582 Stop collecting Apple's full name, or give it a purpose (COMP-08)
@@ -2723,7 +2723,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Problem: `apple.ts:51` requests FULL_NAME and `session-provider.tsx:479-486` writes it to `profiles.display_name`, which nothing shows except export; invites use `signs_as`. Apple 5.1.1(iii) asks apps to collect only what they need (read 1 Nov 2026).
 - Recommendation (CPrivO): stop requesting the name; clear existing values in a migration.
 - Acceptance:
-  - Given Sign in with Apple, when the request is built, then the scopes match a documented use.
+  - Given Sign in with Apple, when the request is built, then it asks for email only, unless a screen that shows the name has shipped.
   - Given an existing `display_name` with no use, when the change ships, then a migration clears it, and Privacy 2 and DATA_CLASSIFICATION match.
 
 ### Account security
@@ -2739,7 +2739,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 
 #### BL-596 During the alpha only listed family addresses can sign up (SEC-03)
 - Owner: `data-architect` with `security`. Severity: S1.
-- Problem: staging has `enable_signup = true` (`supabase/config.toml:44,64`) and email sign-in creates users (`email.ts:36`); 100 emails an hour cover the whole project (`config.toml:54`). Anyone with the build 2 publishable key can create accounts on the project that holds family letters, or use up the email budget.
+- Problem: staging has `enable_signup = true` (`supabase/config.toml:44,64`) and email sign-in creates users (`email.ts:37`); 100 emails an hour cover the whole project (`config.toml:54`). These are the repo's local settings; the hosted values are unverified. Anyone with the build 2 publishable key can create accounts on the project that holds family letters, or use up the email budget.
 - Requirement: while the alpha runs, the `before user created` hook refuses addresses not on a founder-held list stored as hashes; before outside sign-in, CAPTCHA is on for code requests.
 - Acceptance:
   - Given an address not on the list, when sign-up is tried through the API, then the hook refuses it and no `auth.users` row exists.
@@ -2761,7 +2761,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Requirement: identity proof steps; support never changes an email or links an identity by hand; a suspected takeover means suspend (BL-552), end sessions (BL-597), then investigate.
 - Acceptance:
   - Given a support request to change a sign-in email, when the runbook is followed, then nothing changes without confirmation from the existing address or provider.
-  - Given a reported takeover, when the runbook runs, then the account's sessions end and it is suspended within one working session.
+  - Given a reported takeover, when the runbook runs, then the account's sessions end and it is suspended within 4 hours of the report.
 
 #### BL-599 A test pins the Keychain class for the session (SEC-06)
 - Owner: `mobile`. Severity: S1.
@@ -2794,7 +2794,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 
 #### BL-603 Know what Supabase logs about the family on staging, and who can read it (SEC-10)
 - Owner: `ops`. Severity: S1.
-- Problem: the email link token travels in a GET query string (`apps/mobile/src/lib/auth/email.ts:79`); what Supabase logs and for how long is unverified; any session with the Supabase connector can read staging logs, and staging holds the family's data.
+- Problem: the email link token travels in a GET query string (`apps/mobile/src/lib/auth/email.ts:82`); what Supabase logs and for how long is unverified; any session with the Supabase connector can read staging logs, and staging holds the family's data.
 - Acceptance:
   - Given staging, when the founder reads back the log fields and retention, then they are recorded in `docs/legal/evidence/`.
   - Given the alpha running, when the connector list is read, then no agent session can reach the staging organization.
@@ -2807,8 +2807,8 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Problem: `.github/migrations-applied.txt` is one flat list (`early-letters` has files 1 and 2); staging gets 1 to 27 on 2 Nov; until a later PR records them, applied files can be edited without the guard failing.
 - Acceptance:
   - Given `deploy-db.yml` has pushed to staging, when the job ends, then it fails if any version in staging's `schema_migrations` is missing from the staging list.
-  - Given a PR that edits a file applied on any project, then the migration guard fails.
-  - Given a new file that sorts before staging's newest applied version, then the guard fails.
+  - Given a PR that edits a file applied on any project, when CI runs, then the migration guard fails.
+  - Given a new file that sorts before staging's newest applied version, when CI runs, then the guard fails.
 
 #### BL-584 An outside alert when purge or retention stops running (DATA-03)
 - Owner: `ops`. Severity: S1.
@@ -2816,7 +2816,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Acceptance:
   - Given no `purge_run` audit row for 2 hours, then the founder gets an alert from outside Supabase (a scheduled workflow reading a content-free health RPC).
   - Given a failed `scribe-*` run in `cron.job_run_details`, then the same alert fires within 2 hours.
-  - Given a stubbed stale last run, then the checker exits non-zero (unit test).
+  - Given a stubbed stale last run, when the checker runs, then it exits non-zero (unit test).
 
 #### BL-585 Audit and consent tables refuse rewrites and truncation (DATA-06)
 - Owner: `data-architect`. Severity: S2.
@@ -2831,7 +2831,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Problem: rows go to `auth.audit_log_entries` with user id, IP and user agent only when "Write audit logs to the database" is on (supabase.com/docs/guides/auth/audit-logs, read 1 Nov 2026); nothing records the setting or deletes those rows.
 - Acceptance:
   - Given staging and production, then the toggle state is recorded in `docs/ops/SECURITY.md`.
-  - Given the toggle on and a deletion completes, then `verify-deletion.ts` finds no `auth.audit_log_entries` row with the old id.
+  - Given the toggle on, when a deletion completes, then `verify-deletion.ts` finds no `auth.audit_log_entries` or `auth.sessions` row (sessions hold an IP) with the old id.
 - Extends: OQ-5.
 
 #### BL-587 A rehearsed plan, or a decision, for alpha data when production opens (DATA-09)
@@ -2855,9 +2855,9 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Owner: `ops`, with `design-systems` for fonts. Severity: S2.
 - Problem: native size is "not measured yet" (`docs/ops/APP_SIZE.md`); CI has no size step. Measured this session in a Linux export, not a phone: Hermes bundle 9.18 MB against a 12 MB budget. Fonts ship twice (expo-font plugin plus `loadAsync`, about 1.37 MB), and `expo-glass-effect`, `@rn-primitives/portal` and `buffer` have no imports.
 - Acceptance:
-  - Given build 1's page in App Store Connect, then the largest thinned variant is recorded in APP_SIZE.md and is under 40 MB.
+  - Given build 1's page in App Store Connect, when the size table is read, then the largest thinned variant is recorded in APP_SIZE.md and is under 40 MB.
   - Given a PR that grows the Hermes bundle past 12 MB, then CI fails.
-  - Given an IPA, then each .ttf appears once, and a dependency with no import fails a CI check.
+  - Given an IPA, when its contents are listed, then each .ttf appears once; given a dependency with no import, when CI runs, then the check fails.
 - Extends: BL-392, BL-044, RT-REL-09.
 
 #### BL-590 Someone reads TestFlight crashes every day of the alpha, and source maps are kept (APP-04)
@@ -2865,8 +2865,8 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Problem: crash reporting is off in v1.0 (D-095); TESTFLIGHT.md covers feedback only; nothing keeps Hermes source maps, so JS stacks cannot be read.
 - Acceptance:
   - Given a deliberate crash in a development build on a phone, when the owner opens App Store Connect, then the crash shows within 24 hours and its JS frame maps to a file.
-  - Given each build, then its source map is stored with the build number.
-  - Given the tester note, then it asks testers what they did before any "something went wrong" screen.
+  - Given a new build, when EAS finishes, then its source map is stored with the build number.
+  - Given the tester note, when a tester reads it, then it asks what they did before any "something went wrong" screen.
 - Extends: BL-021, RT-REL-15.
 
 #### BL-591 Kill-during-take on a real phone, with no word lost (APP-13)
@@ -2880,7 +2880,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Owner: `ops`. Severity: S1.
 - Problem: no tag marks build 1's commit, and nobody has installed build 2 over build 1 with letters in it.
 - Acceptance:
-  - Given build 1's commit, then it carries the tag `ios-v1.0.0-rc.1` (or the name RELEASE.md gives).
+  - Given build 1's commit, when `git ls-remote --tags` runs, then it shows the tag RELEASE.md names for build 1 (founder step: tag pushes are blocked for sessions).
   - Given an SE 3 on build 1 with 5 letters and 1 waiting take, when build 2 installs from TestFlight, then all 6 open and the take plays.
 
 #### BL-593 A battery number for recording (APP-09)

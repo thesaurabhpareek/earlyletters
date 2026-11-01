@@ -1,6 +1,6 @@
 # Robustness and compliance audit after build 1 (1 Nov 2026)
 
-Status: done. 45 gaps found, 41 backlog items (BL-563 to BL-603), 4 to the founder. Ruling: CR-47.
+Status: done. 45 gaps found, now 41 backlog items (BL-563 to BL-603); 4 of those need a founder call first. Ruling: CR-47.
 
 The founder asked, on 1 Nov 2026 after build 1 reached TestFlight, for the compliance agents to check how sturdy the system is today and to turn the gaps into a detailed backlog for the app, the backend, data, account security, speed and size, with the door (sign-in, the account holder's name, Terms acceptance, explicit consent) and the consent records held to a strict standard.
 
@@ -20,7 +20,7 @@ Each finding names a file and line on develop, or the search that came up empty.
 ## What is already sound
 
 The audits checked these and found them holding, so they are not in the backlog:
-- `npm run test:db` passes (38 files). Row-level security is on every `public` table; the `ops` and `sync_private` schemas are closed to client roles.
+- `npm run test:db` passes (38 files on 1 Nov; CLAUDE.md still says 32). Row-level security is on every `public` table; the `ops` and `sync_private` schemas are closed to client roles.
 - Edge Functions check the JWT at the gateway (except `config`, `content` and `purge-worker`, which has its own secret checked in constant time), log only closed lists of codes, and send no CORS headers. Invite codes count each guess in the same transaction; invite tokens are stored as hashes.
 - Sync writes are idempotent (`sync_op_receipts`, UUIDv7 ids); letter text uses compare-and-set under a row lock; every server time is `timestamptz`; search works the same in all seven languages.
 - The phone database uses WAL with `synchronous=FULL`, migrates one transaction per step and leaves a newer file alone; data protection is `CompleteUntilFirstUserAuthentication`, checked by a test. Sign-out waits for queued uploads and never deletes local letters.
@@ -76,7 +76,7 @@ The audits checked these and found them holding, so they are not in the backlog:
 
 ## The consent record standard
 
-The compliance audit wrote the field list, its source, purpose and level, and the never-list. It is now PRIV-R21 in `docs/engineering/07-privacy-engineering.md`, and BL-577 builds it. In short: every act records the document and version, the action, method and screen, the server and phone times, the app version and build number, the OS major version, the platform, the language of the words shown, the hash of those words before any name is filled in, and an allowlisted context (including whether a store age signal was possible). It never records an IP, a device identifier, an age or birth date, a name or email, or free text.
+The compliance audit wrote the field list, its source, purpose and level, and the never-list. It is now PRIV-R21 in `docs/engineering/07-privacy-engineering.md`, and BL-577 builds it. Every act records the document and version, the action, method and screen, the server and phone times, the app version and build number, the OS major version, the platform, the language of the words shown, the hash of those words before any name is filled in, and an allowlisted context (including whether a store age signal was possible). It never records an IP, a device identifier, an age or birth date, a name or email, or free text.
 
 ## How everyone writes requirements from now on
 

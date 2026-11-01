@@ -50,7 +50,7 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 
 **PRIV-R09 (MUST)** A consent version change follows POLICY_VERSIONING sections 5 and 6, and never gates export or deletion. *Why:* LEGAL-REQ-009. *Enforced by:* review (compliance-engineer); CI controls in POLICY_VERSIONING section 9 are `not yet`.
 
-**PRIV-R21 (MUST)** A record of what a person agreed to holds exactly these fields, built by one shared function on the phone and checked by the server. Added 1 Nov 2026 after the build 1 audit (CR-47, BL-577). It extends PRIV-R06 and does not replace it.
+**PRIV-R21 (MUST)** A record of what a person agreed to holds at least these fields (plus its row `id` and `pseudonymised_at`), built by one shared function on the phone and checked by the server. Added 1 Nov 2026 after the build 1 audit (CR-47, BL-577). It extends PRIV-R06 and does not replace it.
 
 | Field | Source | Why | Level |
 |---|---|---|---|
@@ -62,9 +62,9 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 | `app_version` and `app_build` (new) | marketing version and the EAS build number | which build drew the screen | L2 |
 | `os_major` (new) | the major OS version only, for example 17 | shows when no store age signal could exist | L2 |
 | `platform` | ios, android or web | which screen | L2 |
-| `text_locale` | the language of the text shown, not the phone's setting | which translation | L2 |
+| `locale` | the language of the text shown, not the phone's setting | which translation | L3 (DATA_CLASSIFICATION; counsel may make it L2) |
 | `rendered_sha256` | sha256 of the bundled template text, before any name is filled in | the exact words shown | L2 |
-| `context` | allowlisted keys only: `auth`, `age_attested` (true only), `age_signal` (declared_range, none or unavailable_os), `mode`, `scope` | conditions of the act | L2 |
+| `context` | the server's allowlist only: `auth`, `age_attested` (true only), `age_signal` (declared_range, none or unavailable_os), `scope`, `mode`, and for analytics and purchase acts `crash`, `usage`, `product`, `intro_offer`, `storefront` | conditions of the act | L2 |
 
 Retention: the life of the account, then pseudonymised and kept 3 years (counsel confirms, COUNSEL_PACKET Q41 e). A deletion request id must still lead to the pseudonymised rows for those 3 years (BL-578).
 
