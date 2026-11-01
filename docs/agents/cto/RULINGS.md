@@ -512,3 +512,29 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog lines.
 - Revisit when: #424 is picked up after 9 Nov. Karma
+
+
+### CR-43 Close #316, hold #326 (1 Nov 2026, Karma via the credit thread; filed here from the Project doc `infra/cto-rulings-2026-11-01-karma-credit.md`)
+- Numbering note: this was first filed as CR-39 in the Project doc and in comments on #316 and #326. #490 had already used CR-39 to CR-41, so read "CR-39" in those two PR comments as CR-43.
+- Question: merge, close or hold #316 (five harness agents on Claude Code, funded by the Console credit) and #326 (one-line `brief.mjs` author fallback)?
+- Tier and type: T1; clear
+- Ruling: #316 closed, branch kept. #326 held with a note, queued with the H1 harness work after the 9 Nov go/no-go.
+- Why: the founder said on 31 Oct that the Console credit is used only after the plan's usual limits are exhausted, never on its own; #316 spends it on every tick. D-127 already keeps paid inference out of the harness, and `agents.yml` stays disabled until 9 Nov. #326 is correct but only runs inside the disabled workflow, so its cost of delay is zero and merging it during the freeze adds review load for nothing.
+- Door: two-way
+- Way back: reopen #316 and rebase; the roster change is one file.
+- Revisit when: the founder funds paid inference for the harness, or after the 9 Nov go/no-go for #326.
+
+### CR-44 One merge owner per PR, and the gate binds to the head sha (1 Nov 2026, Karma via the credit thread; founder approved the direction in chat; filed here from the Project doc `infra/cto-rulings-2026-11-01-karma-credit.md`)
+- Question: who merges, now that several sessions act as Karma at once?
+- Tier and type: T1; clear
+- What happened: #460 (D-134) was merged at b9d8175 by one session while two counted reviews on that same head, posted minutes earlier by another, were FAIL. #490 was merged on a chat approval with no counted reviews posted at all. On #492 two sessions pushed to the same branch within the same ten minutes, and a Review B PASS was posted against a head two commits old. None of this was bad faith; the rule did not say who owns a merge or how a review is bound to a head.
+- Ruling, effective for every PR Karma may merge under D-132:
+  1. The session that opens a PR, or the first session to post a counted review on it, writes a one-line claim comment `<!-- merge-owner: <session short id> -->` plus the plain words "I own the merge of this PR". Only that session merges. Another session that wants to merge first asks in the PR thread and waits for a handover comment.
+  2. A review counts only if its first line names the full head sha at the time of merge: `## Review A at <40-char sha>: PASS`. A PASS on an older sha is history, not a gate. A new push resets both reviews.
+  3. Before pushing to a branch another session has touched in the last hour, fetch and read its last commit and the PR comments first; say in the commit message which review point the push answers.
+  4. A chat approval from the founder ("approve", "continue") authorises Karma to act; it does not stand in for the two counted reviews, which protect him from our own mistakes. If reviews cannot be posted from a session, the session asks another session to post them, or it runs independent reviewer agents and posts their output as the counted reviews, stating that it did so.
+  5. The merge commit message or the merge comment names the two review comments by URL.
+- Why: D-107 and D-117 already require two passes on the head, so this adds ownership and binding, not a new gate. Machines over prose: a required-status check that reads the claim and the two sha-bound reviews is the proper enforcement. Its design is `docs/agents/harness-v2/REVIEW-GATE.md` (PR #551); it is queued after 9 Nov and changes nothing under `.github/` before then (D-124).
+- Door: two-way
+- Way back: delete this ruling; nothing mechanical changes until the status check exists.
+- Revisit when: the status check lands, or a merge is blocked for over a day by a missing owner.
