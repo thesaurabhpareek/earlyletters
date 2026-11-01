@@ -9,7 +9,8 @@
  * Standard parts only: Sheet (@gorhom/bottom-sheet), ChoiceGroup for the tabs and the month rows (radio semantics,
  * stacked at large text), DateField (@react-native-community/datetimepicker), Button. The month rows scroll inside the
  * sheet (BottomSheetScrollView), so at AX5 every row is reachable and no label truncates. Save stays off until the pick
- * differs from the letter's date. Never gated by a plan (F09-REQ-014).
+ * differs from the letter's date. Never gated by a plan (F09-REQ-014). VoiceOver hears "When was this?" once, as the
+ * sheet title; the tabs ("Day or month") and the picker ("Day") have their own labels.
  */
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as React from 'react';
@@ -81,7 +82,7 @@ export function DateSheet({
       <View className="gap-4">
         {hasMonthTab(child) ? (
           <ChoiceGroup<Tab>
-            label={d.label}
+            label={d.tabsLabel}
             value={tab}
             onChange={setTab}
             options={[
@@ -93,7 +94,7 @@ export function DateSheet({
         ) : null}
         {tab === 'day' ? (
           <View className="items-start">
-            <DateField label={d.label} value={day} onChange={setDay} startISO={day} min={bounds.min} max={bounds.max} chooseLabel={d.dayTab} />
+            <DateField label={d.dayLabel} value={day} onChange={setDay} startISO={day} min={bounds.min} max={bounds.max} chooseLabel={d.dayTab} />
           </View>
         ) : (
           <BottomSheetScrollView style={{ maxHeight: Math.round(height * 0.45) }}>

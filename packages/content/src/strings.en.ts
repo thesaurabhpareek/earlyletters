@@ -308,6 +308,9 @@ export const en = {
       label: "When was this?",
       dayTab: "A day",
       monthTab: "A month",
+      // VoiceOver labels, so the sheet title is the only "When was this?" read (Review B on #513).
+      tabsLabel: "Day or month",
+      dayLabel: "Day",
     },
     // The edit feature is called "Word for word" (D-074) and only where the feature is named (D-086: the promise,
     // Settings, store, website). Here, plain words: a "small fix" is named by what happened, and "Exactly as said"

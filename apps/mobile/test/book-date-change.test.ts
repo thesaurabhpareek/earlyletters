@@ -5,6 +5,8 @@
  * new chapter. The store half (one write, the outbox, the ledger) is in store.letter-date.test.ts. Fictional family
  * "Asha" only: Mama and Papa.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
@@ -142,5 +144,16 @@ describe('[F09-REQ-004] a moved letter files into its new chapter', () => {
     const to = resolvePick(ASHA, { precision: 'day', occurredOn: '2026-02-01' }, TODAY)!;
     expect(groupChapters([letter('x', to.occurredOn)], ASHA).map((c) => c.key)).toEqual(['before']);
     expect(movedToast(ASHA, to.occurredOn)).toBe('Moved to Before You.');
+  });
+});
+
+describe('VoiceOver hears "When was this?" once (Review B on #513)', () => {
+  it('the title carries it; the tabs and the picker have their own labels', () => {
+    const src = readFileSync(join(__dirname, '../src/components/book/date-sheet.tsx'), 'utf8');
+    expect(src.match(/\bd\.label\b/g)).toEqual(['d.label']); // the Sheet title only
+    expect(src).toContain('label={d.tabsLabel}');
+    expect(src).toContain('<DateField label={d.dayLabel}');
+    expect([en.review.date.tabsLabel, en.review.date.dayLabel]).toEqual(['Day or month', 'Day']);
+    expect(en.review.date.tabsLabel).not.toBe(en.review.date.label);
   });
 });
