@@ -8,6 +8,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { brand } from '@scribe/brand';
 import { site } from '../src/content/site';
 import { analyticsEnabled } from '../src/lib/analytics';
 import { legalCopy } from '../src/lib/legal/legal-copy';
@@ -303,14 +304,58 @@ describe('the claims hold in the code', () => {
   });
 });
 
-describe('theme (the pages follow the phone: paper in light, night in dark)', () => {
+/** A CSS rule with the @media query it sits in (null at top level). Comments are stripped; one level of nesting. */
+type CssRule = { media: string | null; selector: string; decls: Record<string, string> };
+function parseCss(source: string): CssRule[] {
+  const css = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules: CssRule[] = [];
+  const decls = (body: string) =>
+    Object.fromEntries(
+      body
+        .split(';')
+        .map((d) => d.trim())
+        .filter((d) => d.includes(':'))
+        .map((d) => [d.slice(0, d.indexOf(':')).trim(), d.slice(d.indexOf(':') + 1).trim()]),
+    );
+  let i = 0;
+  let media: string | null = null;
+  let depth = 0;
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    const close = css.indexOf('}', i);
+    if (close === -1) break;
+    if (open !== -1 && open < close) {
+      const head = css.slice(i, open).trim();
+      if (head.startsWith('@media')) {
+        media = head.replace(/^@media\s*/, '').replace(/\s+/g, ' ');
+        depth = 1;
+        i = open + 1;
+        continue;
+      }
+      const end = css.indexOf('}', open);
+      rules.push({ media, selector: head.replace(/\s+/g, ' '), decls: decls(css.slice(open + 1, end)) });
+      i = end + 1;
+      continue;
+    }
+    // A bare closing brace ends the @media block.
+    if (depth === 1) {
+      media = null;
+      depth = 0;
+    }
+    i = close + 1;
+  }
+  return rules;
+}
+
+describe('theme (the pages follow the phone: paper in light, night in dark; print stays light)', () => {
   const css = read('src/components/site/Legal.module.css');
+  const rules = parseCss(css);
   const globals = read('src/app/globals.css');
   const layout = read('src/app/(legal)/layout.tsx');
   const token = (name: string) => {
     const m = globals.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
     if (!m) throw new Error(`no token --${name}`);
-    return m[1];
+    return m[1].toLowerCase();
   };
   const luminance = (hex: string) => {
     const [r, g, b] = [1, 3, 5].map((i) => {
@@ -323,43 +368,65 @@ describe('theme (the pages follow the phone: paper in light, night in dark)', ()
     const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
     return (hi + 0.05) / (lo + 0.05);
   };
-  /** The --legal-* roles each theme block maps to tokens. */
-  const roles = (block: string) =>
-    Object.fromEntries([...block.matchAll(/--legal-(\w+):\s*var\(--([\w-]+)\)/g)].map((m) => [m[1], m[2]]));
-  const light = roles(css.slice(css.indexOf('.frame {'), css.indexOf('@media (prefers-color-scheme: dark)')));
-  const darkStart = css.indexOf('@media (prefers-color-scheme: dark)');
-  const dark = roles(css.slice(darkStart, css.indexOf('}\n}', darkStart)));
+  const ROLES = ['bg', 'ink', 'muted', 'link', 'focus'] as const;
+  /** The .frame rule in one media context, as role -> token name. */
+  const frame = (media: string | null) => {
+    const found = rules.filter((r) => r.selector === '.frame' && r.media === media);
+    expect(found, `.frame rule in ${media ?? 'top level'}`).toHaveLength(1);
+    const { decls } = found[0];
+    const roles = Object.fromEntries(
+      ROLES.map((role) => [role, decls[`--legal-${role}`]?.match(/^var\(--([\w-]+)\)$/)?.[1]]),
+    ) as Record<(typeof ROLES)[number], string | undefined>;
+    return { decls, roles };
+  };
+  const light = frame(null);
+  const dark = frame('(prefers-color-scheme: dark)');
+  const print = frame('print');
 
   it('does not force a light colour scheme on screen, and hardcodes no colour', () => {
-    const screen = css.slice(0, css.indexOf('@media print'));
-    expect(screen).not.toMatch(/color-scheme:\s*light\s*;/);
-    expect(screen).toMatch(/color-scheme:\s*light dark/);
+    expect(light.decls['color-scheme']).toBe('light dark');
+    for (const r of rules.filter((r) => r.media !== 'print')) expect(r.decls['color-scheme'] ?? 'light dark').not.toBe('light');
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(/);
   });
 
-  it('maps every role in both themes, to the paper tokens in light and the night tokens in dark', () => {
-    for (const role of ['bg', 'ink', 'muted', 'link', 'focus']) {
-      expect(light[role], `light ${role}`).toBeDefined();
-      expect(dark[role], `dark ${role}`).toMatch(/^night/);
+  it('maps every role in each theme: paper tokens in light, night tokens in dark', () => {
+    for (const role of ROLES) {
+      expect(light.roles[role], `light ${role}`).toMatch(/^(?!night)/);
+      expect(dark.roles[role], `dark ${role}`).toMatch(/^night/);
     }
   });
 
-  it('body, muted text and links pass 4.5:1, and the focus ring 3:1, in both themes', () => {
-    for (const [name, theme] of [['light', light], ['dark', dark]] as const) {
-      const bg = token(theme.bg);
-      for (const role of ['ink', 'muted', 'link']) {
-        expect(contrast(token(theme[role]), bg), `${name} ${role}`).toBeGreaterThanOrEqual(4.5);
+  it('prints in the light tokens whatever the phone theme', () => {
+    expect(print.decls['color-scheme']).toBe('light');
+    for (const role of ROLES) {
+      expect(print.roles[role], `print ${role}`).toBeDefined();
+      expect(print.roles[role], `print ${role}`).not.toMatch(/^night/);
+    }
+    // The print block must come after the dark block (same specificity, so the later one wins).
+    expect(css.lastIndexOf('@media print')).toBeGreaterThan(css.indexOf('@media (prefers-color-scheme: dark)'));
+  });
+
+  it('body, muted text and links pass 4.5:1, and the focus ring 3:1, on screen in both themes and in print', () => {
+    for (const [name, { roles }] of [['light', light], ['dark', dark], ['print', print]] as const) {
+      const bg = token(roles.bg!);
+      for (const role of ['ink', 'muted', 'link'] as const) {
+        expect(contrast(token(roles[role]!), bg), `${name} ${role}`).toBeGreaterThanOrEqual(4.5);
       }
-      expect(contrast(token(theme.focus), bg), `${name} focus`).toBeGreaterThanOrEqual(3);
+      expect(contrast(token(roles.focus!), bg), `${name} focus`).toBeGreaterThanOrEqual(3);
     }
   });
 
   it('keeps links underlined, so colour is never the only signal', () => {
-    expect(css).not.toMatch(/\.prose a\s*\{[^}]*text-decoration:\s*none/);
+    const links = rules.filter((r) => /\.prose a\b/.test(r.selector));
+    expect(links.length).toBeGreaterThan(0);
+    for (const r of links) expect(r.decls['text-decoration'] ?? '').not.toMatch(/none/);
   });
 
-  it('gives the browser bar a theme colour for each scheme', () => {
+  it('gives the browser bar the page colour for each scheme', () => {
     expect(layout).toMatch(/prefers-color-scheme: light\)', color: brand\.colors\.paper \}/);
     expect(layout).toMatch(/prefers-color-scheme: dark\)', color: brand\.colors\.paperDark \}/);
+    // The bar colours are brand values; pin them to the page backgrounds so they cannot drift apart.
+    expect(brand.colors.paper.toLowerCase()).toBe(token(light.roles.bg!));
+    expect(brand.colors.paperDark.toLowerCase()).toBe(token(dark.roles.bg!));
   });
 });

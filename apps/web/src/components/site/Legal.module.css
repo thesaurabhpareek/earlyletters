@@ -171,6 +171,7 @@
     --legal-ink: var(--ink);
     --legal-muted: var(--ink-muted);
     --legal-link: var(--accent);
+    --legal-focus: var(--focus);
     color-scheme: light;
   }
 }
