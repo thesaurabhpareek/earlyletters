@@ -119,11 +119,9 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 ---
 
-**W0-16 Four calls from the build 1 audit (CR-47).** Open, asked 1 Nov. 5 minutes. Each has a recommendation and a default.
-- BL-565: publish a beta version of the app's own Terms and Privacy (0.9.0, marked as a test version for family testers) before build 2 signs anyone in. Recommended yes; counsel's Q31 still applies. Default if unanswered by Mon 2 Nov: build 2 does not sign anyone in until the texts are live.
-- BL-566: staging backup while it holds family letters. Recommended: Supabase Pro on staging (from $25 a month, daily backups kept 7 days; supabase.com/pricing, read 1 Nov 2026). The free option is a nightly encrypted dump kept off Supabase, which we would have to build and keep. Default: no build 2 sign-in until one of the two exists.
-- BL-575: the agree line sits above the sign-in buttons, as LEGAL-REQ-001 already says. Recommended yes. Default: above.
-- BL-593: a 30-minute take may use 5% of battery or less on an SE 3. Recommended yes, as a number to measure against, not a gate. Default: 5%.
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
 
 ## 2. Next: build 2 and the alpha
 

@@ -2550,7 +2550,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the Terms step, when it renders, then it lists Terms and Privacy and nothing else.
 
 #### BL-565 Publish the app's own Terms and Privacy before build 2 signs anyone in (COMP-01)
-- Owner: `legal`, through the CLO. Severity: S0. Area: legal. **Founder decision first** (FOUNDER_QUEUE): publishing draft text before counsel reviews it is his call, and COUNSEL_PACKET Q31 asks counsel about draft text for testers.
+- Owner: `legal`, through the CLO; the website lane publishes. Severity: S0. Area: legal. **Decided: publish (D-138 item 1).** COUNSEL_PACKET Q31 still asks counsel about draft text for testers; the founder merges legal text (D-125).
 - Problem: the live /terms and /privacy say they do not cover the app (`apps/web/src/lib/legal/terms-copy.ts:24`, `privacy-copy.ts:1-3`), yet the app links to them at sign-in and in Settings. The app texts are drafts (`docs/legal/privacy-policy.md` 3.0.0, `terms-of-service.md` 4.1.0). Sign-in needs published `terms` and `sensitive-data` rows with a URL and hash (`docs/ops/AUTH_SETUP.md:34`, `supabase/APPLY.md:193`).
 - Requirement: a beta version of each app text (0.9.0 under POLICY_VERSIONING 2.4) is live at a permanent URL before the first build 2 sign-in, and each `policy_versions` row carries that URL and hash.
 - Acceptance:
@@ -2559,7 +2559,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the D-129 outcome on 2 Nov, then the published build list says whether build 2 has Delete account.
 
 #### BL-566 Staging has a daily backup and one restore drill before real letters land (DATA-01)
-- Owner: `ops`. Severity: S0. Area: ops. **Founder decision first**: Supabase Pro is spend (D-127 rules out paid tools without him). The free option is a nightly encrypted `supabase db dump` kept off Supabase.
+- Owner: `ops`. Severity: S0. Area: ops. **Decided: no paid backup; the free path (D-138 item 2).** Build it per `docs/ops/runbooks/staging-backup-free.md`: a nightly encrypted dump in a private GitHub repository, plus a monthly restore drill from the founder's Mac.
 - Problem: staging will hold family letters in build 2. No backup tier is recorded (`docs/release/ENVIRONMENTS.md:70-75`), Free has no backups (supabase.com/docs/guides/platform/backups, read 1 Nov 2026), and the restore drill log is empty (`docs/ops/runbooks/restore-drill.md:27`). Storage objects are never in Supabase backups.
 - Requirement: before the first build 2 sign-in, staging has a backup under 24 hours old and one restore drill has passed on a synthetic project.
 - Acceptance:
@@ -2658,7 +2658,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 ### Sign-in, the account holder and consent records
 
 #### BL-575 Where the agree line sits at sign-in (COMP-05)
-- Owner: `product`, then `mobile`. Severity: S1. **Founder decision first**; counsel confirms the sign-in-wrap. Recommendation: put the line above the sign-in buttons, as LEGAL-REQ-001 and `docs/legal/in-app-disclosures.md:24` already say.
+- Owner: `mobile`, copy by `content`. Severity: S1. **Decided: above the buttons (D-138 item 3).** Counsel confirms the sign-in-wrap.
 - Problem: Terms are shown after sign-in (`sign-in/index.tsx:10`); `apple.ts:55-61` creates the account, sends Apple's code and stores the Apple user id before any acceptance.
 - Requirement: the code and the two specs agree.
 - Acceptance:
@@ -2884,7 +2884,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given an SE 3 on build 1 with 5 letters and 1 waiting take, when build 2 installs from TestFlight, then all 6 open and the take plays.
 
 #### BL-593 A battery number for recording (APP-09)
-- Owner: `speech`. Severity: S3. The founder sets the number; proposal: a 30-minute take uses 5% or less on an SE 3.
+- Owner: `speech`. Severity: S3. **Decided: 5% or less for a 30-minute take on an SE 3, measured, not a gate (D-138 item 4).**
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
