@@ -115,7 +115,7 @@ Levels:
 Comfort grid, 1 to 5, per level, plus two nudge wordings: inferred ("Tell more about your recent trip") versus neutral ("Some photos from this weekend. Want to talk about them?"). The inferred one is the riskiest: the app is guessing what the photos mean. It also goes through the constitution check, because on-device classification is AI-like and the app must never add meaning [verified: CLAUDE.md]. Test the neutral version as the baseline; the inferred one is the hypothesis to falsify.
 
 Thresholds:
-- Build L2 only if at least 7 of 10 score 4 or 5 on L2 and at least 7 of 10 prefer the nudge to no nudge. Otherwise L0 first, L1 second.
+- L2 is never built from this study: it needs a change to M13 rule 4, the privacy steward, counsel and a founder decision first. The score only records comfort. Otherwise L0 first, L1 second.
 - If at least 6 of 10 say they would use L0 weekly or more, L0 is the first F46 slice regardless of L2.
 - Inferred wording passes only if at least 8 of 10 find it welcome and none finds it presumptuous; otherwise ship the neutral one. Any hard season participant calling any photo nudge "painful" blocks date-triggered nudges until reviewed.
 - Privacy label guard: any level that reads the library changes the privacy story (label says Data Not Collected; reading on device only keeps that, but needs counsel confirmation [unverified]).

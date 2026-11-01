@@ -536,12 +536,12 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 6. **Copy** lives in `packages/content` only after every row passes `npm test` there (titles 40 characters at most, bodies 110, no exclamation marks, nothing on the fear, guilt, gap-count, AI, gender or internal-term lists). The inventory is a draft in `docs/` until then. No streaks, counts of days, "missed" or "it has been".
 7. **Evidence honesty.** Mark each claim verified, vendor claim or unverified. The best notification time for new parents has no public evidence; 8:30 PM is a hypothesis. Do not quote a figure you did not open.
 8. **Freeze.** Build 2 freeze is Tue 3 Nov 5:00 AM PT (13:00 UTC); after it only S0 and S1 fixes until the go/no-go on Mon 9 Nov (D-130). Tasks marked "1.0" (BL-530, BL-532, BL-535, BL-549) land before the freeze or move to 1.0.1; tasks marked "1.1" wait. BL-535 bumps `PROMPT_LIBRARY_VERSION` (3 today), so mind merge order.
-9. **Hard seasons.** A visible, always-reachable stop for all reminders is a v1.1 requirement (BL-538 is the timed version, not the stop; the master switch in Settings is the stop for 1.0). A loss path is also a v1.1 requirement: after pregnancy loss or a NICU stay, a parent must be able to stop everything and change or remove a date in a few taps, and milestone, birthday and expecting-book reminders must not fire on a date the parent has removed. Nothing is inferred; the planner cannot know. One tap stops everything. Never a countdown, nothing tied to a due date, and a research participant who finds a notification distressing halts it for everyone.
+9. **Hard seasons.** A visible, always-reachable stop for all reminders is a v1.1 requirement (BL-538 is the timed version, not the stop; the master switch in Settings is the stop for 1.0). A loss path is also a v1.1 requirement: after pregnancy loss or a NICU stay, a parent must be able to stop everything and change or remove a date in a few taps, and milestone, birthday and expecting-book reminders must not fire on a date the parent has removed. Nothing is inferred; the planner cannot know. In 1.0 the stop is the master switch in Settings (reminders off), and a wrong birth date can be edited from the birthday row in child settings (`settings/children/[id].tsx`, `DateEditor`), which moves the month and birthday messages with it; the per-child reminders switch is a second stop. Not run on a phone. The target for 1.1 is a stop that is one tap from wherever the parent is. Never a countdown, nothing tied to a due date, and a research participant who finds a notification distressing halts it for everyone.
 
 ### Version 1.0 (before the freeze, or 1.0.1)
 
 #### BL-530 Weekly reminders default to Saturday, as F13 says [Medium]
-- Status: ready. Mode: agent. Owner: reminders owner. Size: XS.
+- Status: done (PR #483, merged 1 Nov 2026; planner test fails on the old default). Mode: agent. Owner: reminders owner. Size: XS.
 - Satisfies: F13 section 6 ("Weekly fires on Saturday at the chosen time", K-03). Found by: reminders design effort, 1 Nov 2026.
 - Scope: `DEFAULT_WEEKLY_DAY` is 0 (Sunday) in `planner.ts`; the spec says Saturday. Set it to 6; update the table comment in `prefs.ts`, the settings screen default, and the tests that name the default. A phone that already stored a weekly day keeps it (the stored value wins).
 - Done when: a planner test with no stored weekly day fails on the old code and passes on the new; no other default changes.
@@ -553,9 +553,9 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: changing `LATEST_MINUTES` in a test changes the help text and the picker limit; content tests pass.
 
 #### BL-532 The reminder card names the child [Medium]
-- Status: ready. Mode: agent. Owner: content, reminders owner. Size: XS.
+- Status: in-review (PR #484). Mode: agent. Owner: content, reminders owner. Size: XS.
 - Satisfies: the founder's ask on 1 Nov 2026 to make the setup personal with the child's name. In-app only; the lock screen stays neutral (rule 3).
-- Scope: change `onboarding.reminder.body` to use `{child}` (it has none today), add the placeholder to the `onboarding.reminder` entry in the per-surface placeholder lists in `packages/content/test/rules.test.ts` if that test needs it, and have the card fill it (it is shown only after a first letter, so a name exists). No new buttons. Copy presumes nothing about sleep or the household.
+- Scope: change `onboarding.reminder.body` to use `{child}` (it has none today), add the placeholder to the `onboarding.reminder` entry in the `placeholders` field of `packages/content/test/support/copy-surfaces.ts` if the surface does not allow `child` yet (`rules.test.ts` only reads that list), and have the card fill it (it is shown only after a first letter, so a name exists). No new buttons. Copy presumes nothing about sleep or the household.
 - Done when: the card shows the name in a screen test; content tests pass; the neutral lock-screen copy is unchanged.
 
 #### BL-533 Reminders on a real phone, WP-F13-08 [High]
@@ -609,7 +609,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 
 #### BL-542 Celebrations, opt-in [Medium]
 - Status: needs-decision (the founder approves the list and the lock-screen line; `NOTIFICATIONS.md` section 7 item 4). Mode: agent. Owner: content, reminders owner. Size: L.
-- Scope: a short list the parent picks from, default none; the parent confirms the date (lunar and Eid dates shift; we ship no date table that claims to know); the lock screen always says "A celebration today"; the festival name shows only behind a new "Show celebration names" switch; Mother's Day, Father's Day and due-date items are out. Needs a settings string and a reviewer per tradition for the copy.
+- Scope: a short list the parent picks from, default none; the parent confirms the date (lunar and Eid dates shift; we ship no date table that claims to know); the lock screen always says "A celebration today"; the festival name shows only behind a new "Show celebration names" switch, and both that switch and "Names in notifications" must be on for the named text (either off gives the neutral text); counsel and `privacy` sign off before it ships; Mother's Day, Father's Day and due-date items are out. Needs a settings string and a reviewer per tradition for the copy.
 
 #### BL-543 Moments: a parent-set date and one nudge after [Medium]
 - Status: deferred (1.1). Mode: agent. Owner: reminders owner. Size: M. Depends on: BL-541.
