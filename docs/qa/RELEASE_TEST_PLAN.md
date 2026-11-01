@@ -47,8 +47,8 @@ Status follows the row's own lane and Expected, not the best case it cites. A ro
 | covered | 6 | An automated test or workflow runs in CI today and proves the Expected |
 | automated | 14 | An automated case proves it when run (web journeys); no pipeline runs it yet |
 | planned | 94 | A case is written (Maestro, phone item, run sheet, StoreKit check) but has never run |
-| partial | 32 | Part of the Expected is proven or written |
-| gap | 91 | No case anywhere; this plan adds it |
+| partial | 31 | Part of the Expected is proven or written |
+| gap | 92 | No case anywhere; this plan adds it |
 | stale | 2 | The written case contradicts a decision (E2E-06, E2E-07) |
 | decision | 1 | Needs a decision before it can be a test (RT-A11Y-17, portrait lock against WCAG 1.3.4) |
 

@@ -51,7 +51,7 @@ RT-REC-14,Speak,Microphone in use; phone full at Speak,unhappy,P0,both,web,local
 RT-REC-15,Speak,Recordings kept for safety,error,P0,both,kill,sim,SIM,DL-01;apps/mobile/test/qa-kill-harness.test.ts,partial,"Kill mid-take; open Settings, Recordings","An unplayable take is listed as may not play, never deleted (D-085); export keeps it"
 RT-REC-16,Speak,Discard during Listen,unhappy,P1,both,device,tf-build1,REF,J05,partial,"Start, Discard, cancel, then confirm",Cancel keeps recording; confirm discards with no orphan file
 RT-REC-17,Speak,Listening copy keeps the original unchanged,happy,P0,both,device,tf-build1,REF,S1-19;F08-REQ-003,planned,Record with background noise; wait for the clearer copy,Original hash unchanged; copy aligned to the words; original always playable
-RT-WRD-01,Words,Signed pack loads; unsigned pack refused,happy,P0,both,unit,local,n/a,SR-C-01,partial,Load a signed manifest; load a tampered one,Signed loads; tampered refused with the recording kept
+RT-WRD-01,Words,Signed pack loads; unsigned pack refused,happy,P0,both,unit,local,n/a,SR-C-01;apps/mobile/src/lib/packs/__tests__/engine.test.ts;packages/api/test/manifest-verification.test.ts,partial,Load a signed manifest; load a tampered one,Signed loads; tampered refused with the recording kept
 RT-WRD-02,Words,A spoken letter gets words on the device,happy,P0,both,testflight,tf-build1,ALL,AL-02;B2-8,planned,"Record, wait for words",Words in Review; 2-minute letter in <= 30 s on SE 3
 RT-WRD-03,Words,Compact tier on 3 GB phones,perf,P0,both,device,tf-build1,"D1,D3",S1-17;S1-26,planned,Fresh install on an SE 2 or XR (3 GB),Compact model chosen (190 MB); no jetsam kill; size on the card matches
 RT-WRD-04,Words,"Model download resume, Wi-Fi wait, cellular opt-in",unhappy,P0,both,device,tf-build1,REF,S1-15;S1-26,planned,Kill at 40%; airplane mid-download; Use mobile data,Resumes from bytes; waits for Wi-Fi by default; one-off mobile data only
@@ -149,7 +149,7 @@ RT-SUB-13,Subscription,A payer whose renewal falls while offline,edge,P0,both,te
 RT-SUB-14,Subscription,Family Sharing stopped,edge,P1,both,testflight,sandbox,D5,D-6,gap,Purchaser stops sharing for the family member,Member's Plus goes off without a relaunch (revocation); letters kept
 RT-EXP-01,Export,"Export offline, ZIP contents and hashes",happy,P0,both,maestro,sim,SIM,E2E-10;E2E-17;J15,planned,"Export, inspect the ZIP","Manifest hashes match; originals only, byte for byte"
 RT-EXP-02,Export,Open on Mac and Windows 11,happy,P0,both,device,tf-build1,REF,S1-21,planned,AirDrop to a Mac; copy to Windows,Opens with built-in tools; Devanagari names show
-RT-EXP-03,Export,Share the book as a PDF,happy,P0,B1,web,local,WEB,SR-C-11,partial,"Book, Share as PDF",PDF per child in the share sheet
+RT-EXP-03,Export,Share the book as a PDF,happy,P0,B1,web,local,WEB,SR-C-11,gap,"Book, Share as PDF",PDF per child in the share sheet
 RT-EXP-04,Export,A year of letters in under 2 minutes,perf,P1,both,device,tf-build1,D2,S1-21,planned,"Seed about 240 letters, 230 MB",Under 2 minutes on SE 3
 RT-EXP-05,Export,Cancel the share sheet; low space during export,error,P1,both,unit,local,n/a,docs/qa/COVERAGE.md,gap,Close the share sheet; fill disk mid-export,Temp ZIP removed; clear message; nothing left in cache
 RT-SET-01,Settings,Every row opens and returns,happy,P0,both,web,local,WEB,J16;S1-31,partial,Open each row,"J16 covers 6 rows; Plan, Reminders, Recordings and Export rows still need a step each"

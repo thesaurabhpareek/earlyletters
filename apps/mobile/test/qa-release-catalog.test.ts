@@ -5,10 +5,12 @@
  * - the CSV matches the rows;
  * - every `covered_by` token is either a case id checked against the file that owns it
  *   (E2E, J and J steps, S1, S2, TF, DL, V, B1, B2, AL, P, the ASC D-n checks, D-nnn
- *   decisions), a repo path that exists, or an id from an allow-listed family that lives
- *   outside the repo or in specs (SR-, IMP-, MOB-, CR-, C-NFR-, F##-REQ-, LEGAL-REQ-,
- *   PRD-REQ-, #n). Anything else fails, so a row cannot claim coverage from a case that
- *   was renamed, never written, or named only in prose;
+ *   decisions), a repo path that exists, an SR-, IMP- or MOB- id listed in the plan's
+ *   section 9, a CR- id in RULINGS.md, a requirement id (C-NFR-, F##-REQ-, LEGAL-REQ-,
+ *   PRD-REQ-) found under docs/, or a #n number (format only). Anything else fails, so a
+ *   row cannot claim coverage from a case that was renamed, never written, or named only
+ *   in prose;
+ * - a planned or partial row cites at least one case or path, not only asks and requirements;
  * - a covered row cites a test file or workflow, an automated row cites one or a journey.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -151,6 +153,8 @@ describe('[S19] release test catalog', () => {
       if (status === 'covered' && !ts.some((t) => resolve(t) === 'path')) bad.push(`${r[0]} covered without a test or workflow path`);
       if (status === 'automated' && !ts.some((t) => resolve(t) === 'path' || /^J\d{2}(-\d{2})?$/.test(t))) bad.push(`${r[0]} automated without a test or journey`);
       if (status !== 'gap' && status !== 'decision' && ts.every((t) => t === 'none')) bad.push(`${r[0]} is ${status} but cites nothing`);
+      const asksOnly = ts.every((t) => t === 'none' || OUTSIDE_ID.test(t) || REQ_ID.test(t) || /^CR-\d+$/.test(t) || /^#\d+$/.test(t));
+      if ((status === 'planned' || status === 'partial') && asksOnly) bad.push(`${r[0]} is ${status} but cites only asks or requirements, no case or path`);
     }
     expect(bad).toEqual([]);
   });
