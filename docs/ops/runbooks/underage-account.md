@@ -21,7 +21,7 @@ Engineering reading, confirm with counsel. Owner: `regulatory-affairs` with `ops
 ## 1. Record the report (same day)
 Write one audit row before anything else. All SQL runs in Dashboard > SQL Editor as `postgres`.
 - Under 13: runbook `under_13`, which exists in `ops.audit_log`.
-- 13 to 17: runbook `deletion` with reason `under_18_closure`. No separate `under_18` value is needed (CR-39).
+- 13 to 17: runbook `deletion` with reason `under_18_closure`. No separate `under_18` value is needed (CR-40).
 
 ```sql
 select public.ops_audit_write('<your handle>', 'under_13', 'actual_knowledge', '<ticket>', '<profile id>');
@@ -48,7 +48,7 @@ If one exists, stop and take it to the founder. A hold wins over deletion (DATA-
 - But `public.request_account_deletion` works only for the signed-in person (`require_user()`), and it refuses `source='support'` (20261003000000).
 - No service-role function opens an account deletion for another person (checked 31 Oct 2026).
 - Until one exists, the only path is to ask the person to delete the account from Settings. That does not meet the under-13 promise if they don't act.
-- Fix: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`. It is service-role only, writes `source='support'` and a `support_access` audit event, and is tested in `supabase/tests`. Owner: `data-architect`, after the 9 Nov go/no-go (BL-551, CR-39).
+- Fix: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`. It is service-role only, writes `source='support'` and a `support_access` audit event, and is tested in `supabase/tests`. Owner: `data-architect`, after the 9 Nov go/no-go (BL-551, CR-40).
 
 ## 5. Tell the family, neutrally (within 10 days for under 13)
 - If the person was a contributor or co-parent, tell the inviter only that the person can no longer take part, because the app is for adults.

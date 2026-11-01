@@ -9,11 +9,12 @@ Early Letters does not screen every name (D-137). This runbook is the check we d
 
 ## 1. Check
 1. Open OFAC's Sanctions List Search (https://sanctionssearch.ofac.treas.gov). Search the name as given. Use only details the person already gave us; do not ask for an ID or a birth date.
-2. No result, or a result that clearly differs (another country, another kind of entity): stop. Write one audit row with outcome `clear` and close.
-3. A result that may be the same person: go to section 2. Do not tell the person why.
+2. No result, or a result that clearly differs (another country, another kind of entity): stop. Write one audit row with reason `sanctions_clear` and close.
+3. A result that may be the same person: write one audit row with reason `sanctions_possible_match`, then go to section 2. Do not tell the person why.
 
 ```sql
-select public.ops_audit_write('<your handle>', 'legal_process', 'sanctions_review', '<ticket>', '<profile id>');
+-- reason: sanctions_clear or sanctions_possible_match
+select public.ops_audit_write('<your handle>', 'legal_process', '<reason>', '<ticket>', '<profile id>');
 ```
 Keep names and ids on screen only, as in every runbook. The ticket holds only its reference.
 

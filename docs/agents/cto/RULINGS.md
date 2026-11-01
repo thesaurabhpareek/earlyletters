@@ -456,17 +456,17 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way.
 - Way back: revert the `db-cli.yml` step (one commit); the script and `postgrestReader` can stay, since `device.ts` uses `postgrestReader` with no behaviour change.
 - Revisit when: `scribe-staging` exists (point the check at it, with the fixture SQL sent over a pooler URL instead of `docker exec`); or the step fails on a PR that does not touch the export (a mobile dependency bump included). Karma
-### CR-38 Fence approval lines may start with up to three spaces (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+### CR-39 Fence approval lines may start with up to three spaces (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
 - Question: on #443 the founder's approval comments failed the fence because each line began with three spaces copied from my indented instructions. Do we loosen the match or keep it?
 - Tier and type: T2 (the fence is fenced, CR-27); clear
 - Options considered: keep the match and only fix how lines are handed over; accept any leading whitespace; accept up to three spaces, the most a Markdown heading may carry.
 - Ruling: accept up to three leading spaces (`^ {0,3}## ...`) in both approval patterns in `compliance/FENCE.json`, with tests in `compliance/fence/fence.test.mjs`. Four spaces or a tab is a code block in Markdown and stays refused. It ships in one fenced PR with the `regulatory-compliance` skill refresh (stale rows found on 1 Nov), so the founder posts approvals once. Hand-overs also stop indenting the lines (D-135 email carries them flush left).
-- Why: the lines still count only from the owner's login and only on the head SHA, so the spaces add no trust path. A rule a person must remember failed once already; the machine should accept what GitHub renders as the same heading. Return: no repeat of a failed check. Risk: 1x2.
+- Why: the lines still count only from the owner's login and only on the head SHA. One new exposure, found in review: every session posts as the owner (CR-20), so an indented approval line inside an instruction comment on a PR would now count, as a flush-left one already did. So sessions never post approval lines, or instructions containing them, as PR comments; they go by email (D-135) and the founder posts them himself. A rule a person must remember failed once already; the machine should accept what GitHub renders as the same heading. Return: no repeat of a failed check. Risk: 1x2.
 - Door: two-way
 - Way back: revert the two patterns in `FENCE.json`.
 - Revisit when: an approval is ever counted that the owner did not mean to post. Karma
 
-### CR-39 No new audit value for under-18 closures; the support deletion function stays after 9 Nov (1 Nov 2026, 05:19 UTC, Karma via the compliance session, with the CDO's data-model view)
+### CR-40 No new audit value for under-18 closures; the support deletion function stays after 9 Nov (1 Nov 2026, 05:19 UTC, Karma via the compliance session, with the CDO's data-model view)
 - Question: the underage runbook (#451) listed two gaps for `data-architect`: a service-role `ops_open_account_deletion`, and an `under_18` value in `ops.audit_log`. Build both now?
 - Tier and type: T2; clear
 - Options considered: build both now as a draft; add only the enum value; drop the enum and keep the function after 9 Nov.
@@ -476,7 +476,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: add the value in a new migration if a report needs it.
 - Revisit when: BL-551 starts, or the first non-family sign-in is scheduled. Karma
 
-### CR-40 How a basic hand-off is emailed (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+### CR-41 How a basic hand-off is emailed (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
 - Question: D-135 says save-and-forward steps go by email to earlyletters@gmail.com with a timestamp. What exactly does a session do?
 - Tier and type: T1; clear
 - Options considered: email only; email plus a repo PR per send; email plus one line in a Project log.
