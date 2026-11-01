@@ -1,16 +1,19 @@
 /**
- * The synth behind the film's ambient sound. Web Audio only: two banks of detuned sine and triangle voices on a calm
- * chord, a slow swell on each voice, a slow drift in the filter and the stereo field, a warm low-pass and a soft
- * generated reverb. No audio files, no samples, no AI model (docs/web/ambient-sound.md).
+ * The synth behind the film's ambient sound: a slow, original melody in raga Bhoopali on a plucked, sitar-like string
+ * with meend (slides), over a soft tanpura-style drone and a few sympathetic strings, in a generated room.
+ * Web Audio plus our own plucked-string model (pluck.ts) that fills short AudioBuffers at run time on the device.
+ * No audio files, no samples, no recordings, no AI model, no third-party music (docs/web/ambient-sound.md).
  *
- * Nothing slides in pitch. A chord change fills the idle bank with the new notes while it is silent, then crossfades
- * the two banks over CROSSFADE_SECONDS with equal-power curves, so the ear never hears two pitches glide past each
- * other (no beating). Scroll-driven values (filter, level, reverb, air) move by setTargetAtTime, never by a jump.
+ * The melody comes from raga.ts: phrases chosen by rules and played with small differences in time, strength and
+ * pitch every time. Scroll-driven values (filter, level, reverb, shimmer) move by setTargetAtTime, never by a jump.
+ * Every note has its own gain envelope and starts from a faded-in buffer, so nothing clicks; muting fades the master.
  *
  * Browsers refuse sound before a user gesture, so start() must be called from inside a gesture handler: it makes
  * and resumes the context synchronously there (iOS Safari needs exactly that).
  */
-import { CROSSFADE_SECONDS, TONE_EVERY_SECONDS, type AmbientParams } from './ambient-map';
+import { lerp, type AmbientParams } from './ambient-map';
+import { renderPluck, sitarSpec, tanpuraSpec } from './pluck';
+import { MELODY_SA_HZ, TONIC_HZ, hzOf, perform, pickPhrase, type Stage } from './raga';
 
 type AudioCtor = typeof AudioContext;
 
@@ -47,54 +50,87 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 3.6): AudioBuffer {
   return buffer;
 }
 
-/** Equal-power fade curve, from 0 up to 1 (or 1 down to 0), for setValueCurveAtTime. */
-function powerCurve(up: boolean, scale = 1, n = 128): Float32Array {
-  const c = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const x = i / (n - 1);
-    c[i] = scale * (up ? Math.sin((x * Math.PI) / 2) : Math.cos((x * Math.PI) / 2));
-  }
-  return c;
+
+/** Small seeded generator (mulberry32), 0..1. The film sound is different on every visit unless a seed is given. */
+function makeRand(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-/** Cents that put a note `hz` apart by `offsetHz`: the chorus is a few tenths of a hertz at every pitch, so it beats slowly. */
-const centsFor = (hz: number, offsetHz: number): number => 1200 * Math.log2((hz + offsetHz) / hz);
-
-/** One chord's worth of voices. Made when a chord is needed and thrown away once it has faded out, so only one bank (two during a crossfade) ever plays. */
-type Bank = {
-  gain: GainNode;
-  air: GainNode;
-  /** Stop the oscillators at context time `at` and let go of everything this bank connected to. */
-  dispose: (at: number) => void;
-};
+const MELODY_RATE = 32000; // sample rate the pluck buffers are made at; the browser resamples to the device's
+const DRONE_RATE = 24000;
+const LOOKAHEAD = 3.5; // seconds of notes scheduled ahead
+const PUMP_MS = 250;
+// Output design: see docs/web/ambient-sound.md (measured). The master gain (ambient-map.ts) sits after these.
+const MELODY_AMP = 1.45;
+const DRONE_AMP = 0.3;
+const SYMP_SEND = 0.018;
+const SYMP_OUT = 1;
+/** The drone's cycle: Pa, Sa, Sa, low Sa, one string every 1.55 s (a cycle of 6.2 s). */
+const DRONE_STRINGS: { hz: number; pan: number; amp: number }[] = [
+  { hz: TONIC_HZ * 1.5, pan: -0.3, amp: 0.8 },
+  { hz: TONIC_HZ * 2, pan: 0.2, amp: 1 },
+  { hz: TONIC_HZ * 2 * 1.0014, pan: -0.15, amp: 0.9 },
+  { hz: TONIC_HZ, pan: 0.3, amp: 0.85 },
+];
+/** The sympathetic strings: the five notes of the raga, which ring when the melody plays them. */
+const SYMPATHETIC_SEMIS = [0, 2, 4, 7, 9];
 
 type Graph = {
-  oscs: OscillatorNode[];
-  bank: Bank; // the chord that is playing (or fading in)
-  fading: Bank | null; // the chord fading out, during a crossfade
-  make: (p: AmbientParams, gain: number, at: number) => Bank;
-  chord: number;
-  trim: number;
-  voicesHz: number[];
-  fadingUntil: number; // context time when a running crossfade ends
+  melody: GainNode;
+  drone: GainNode;
+  sympSend: GainNode;
   lowpass: BiquadFilterNode;
   wet: GainNode;
   level: GainNode;
   fade: GainNode;
+  stoppers: Set<AudioBufferSourceNode>;
+  oscs: OscillatorNode[];
 };
+
+export type NoteLog = { t: number; hz: number; semis: number; to?: number; kan?: number; vel: number; phrase: string; dur: number };
+export type EngineOptions = { seed?: number; log?: NoteLog[]; drone?: boolean; melody?: boolean; shimmer?: boolean };
 
 const PARAM_GLIDE = 0.7; // seconds: time constant of scroll-driven changes
 const FADE_IN = 1.4; // seconds: time constant of the first fade-in
 const FADE_OUT = 0.18;
+const FIRST_PHRASE_AT = 7; // seconds after start: the drone is alone first, then the melody begins
 
 export class AmbientEngine {
   private ctx: AudioContext | null = null;
   private graph: Graph | null = null;
   private paused = false;
+  private offline = false;
   private timers = new Set<ReturnType<typeof setTimeout>>();
-  private toneTimer: ReturnType<typeof setTimeout> | null = null;
+  private pumpTimer: ReturnType<typeof setInterval> | null = null;
+  private rand: () => number; // the melody's: its own stream, so the same seed gives the same melody with or without the drone
+  private droneRand: () => number;
+  private params: AmbientParams | null = null;
+  // Scheduler state, all in context time.
+  private droneBufs: (AudioBuffer | null)[] = [null, null, null, null];
+  private nextDroneAt = 0;
+  private droneIndex = 0;
+  private nextPhraseAt = 0;
+  private pending: { at: number; dur: number; semis: number; to?: number; kan?: number; vel: number; cents: number; phrase: string }[] = [];
+  private history: string[] = [];
+  private prevStage: Stage | null = null;
+  /** The melody is one string: a new pluck ends the note before it, as the player's hand would. */
+  private last: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
 
-  constructor(private readonly onChange: () => void = () => {}) {}
+  constructor(
+    private readonly onChange: () => void = () => {},
+    private readonly options: EngineOptions = {},
+  ) {
+    const seed = options.seed ?? ((Date.now() ^ Math.floor(Math.random() * 2 ** 31)) >>> 0);
+    this.rand = makeRand(seed);
+    this.droneRand = makeRand(seed ^ 0x5bd1e995);
+  }
 
   /** True only while the context is really running and not paused by the tab going away. */
   get playing(): boolean {
@@ -132,7 +168,7 @@ export class AmbientEngine {
     const resumed = ctx.state === 'running' ? Promise.resolve() : ctx.resume().catch(() => undefined);
     if (!this.graph) {
       this.graph = this.build(ctx, initial);
-      this.scheduleTone(TONE_EVERY_SECONDS[0] * 0.4);
+      this.begin(ctx, initial);
     }
     this.fadeTo(1, FADE_IN, 0.05);
     // Chrome can leave resume() pending until a gesture it accepts; do not hang on it.
@@ -141,70 +177,204 @@ export class AmbientEngine {
     return this.playing;
   }
 
-  /** Glide to new scroll-driven values, and start a chord crossfade when the chord has changed. Safe to call every tick. */
+  /**
+   * For offline rendering and measurement only: build the graph on any context (an OfflineAudioContext) and
+   * schedule `seconds` of music up front. Nothing in the page calls this.
+   */
+  renderOffline(ctx: BaseAudioContext, initial: AmbientParams, seconds: number): void {
+    const c = ctx as unknown as AudioContext;
+    this.offline = true;
+    this.ctx = c;
+    this.graph = this.build(c, initial);
+    this.graph.fade.gain.setValueAtTime(1, 0);
+    this.begin(c, initial);
+    if (this.pumpTimer) clearInterval(this.pumpTimer); // offline, time is not the wall clock
+    this.pumpTimer = null;
+    this.scheduleAhead(seconds, Infinity);
+  }
+
+  private begin(ctx: AudioContext, initial: AmbientParams): void {
+    this.params = initial;
+    this.nextDroneAt = ctx.currentTime + 0.15;
+    this.droneIndex = 0;
+    this.nextPhraseAt = ctx.currentTime + FIRST_PHRASE_AT;
+    this.pending = [];
+    this.history = [];
+    this.prevStage = null;
+    this.last = null;
+    if (this.pumpTimer) clearInterval(this.pumpTimer);
+    this.scheduleAhead(LOOKAHEAD, 1);
+    this.pumpTimer = setInterval(() => this.scheduleAhead(LOOKAHEAD, 1), PUMP_MS);
+  }
+
+  /** Glide to new scroll-driven values. Safe to call every tick. */
   update(p: AmbientParams): void {
     const { ctx, graph } = this;
     if (!ctx || !graph || ctx.state === 'closed') return;
+    this.params = p;
     const t = ctx.currentTime;
     graph.lowpass.frequency.setTargetAtTime(p.cutoffHz, t, PARAM_GLIDE);
     graph.level.gain.setTargetAtTime(p.masterGain, t, PARAM_GLIDE);
     graph.wet.gain.setTargetAtTime(p.reverbWet, t, PARAM_GLIDE * 2);
-    for (const bank of [graph.bank, graph.fading]) bank?.air.gain.setTargetAtTime(p.airGain, t, PARAM_GLIDE * 2);
-    if (p.chord !== graph.chord && t >= graph.fadingUntil) this.crossfadeTo(p);
+    graph.sympSend.gain.setTargetAtTime(SYMP_SEND * p.shimmer, t, PARAM_GLIDE * 2);
   }
 
-  /** Make the next chord's bank (silent), then fade the two past each other. The pitch of a playing note never moves. */
-  private crossfadeTo(p: AmbientParams): void {
+  /**
+   * Make and place every drone pluck and melody note that falls before now + horizon. `budget` is how many pluck
+   * buffers it may compute in this call (each takes a few milliseconds): live, one per tick, so no tick is long.
+   */
+  scheduleAhead(horizon: number, budget: number): void {
     const { ctx, graph } = this;
-    if (!ctx || !graph) return;
-    const t = ctx.currentTime;
-    const from = graph.bank;
-    const to = graph.make(p, 0, t);
-    // The outgoing bank fades from its own trim, the incoming one to its own.
-    to.gain.gain.setValueCurveAtTime(powerCurve(true, p.bankTrim), t, CROSSFADE_SECONDS);
-    from.gain.gain.cancelScheduledValues(t);
-    from.gain.gain.setValueCurveAtTime(powerCurve(false, graph.trim), t, CROSSFADE_SECONDS);
-    graph.bank = to;
-    graph.fading = from;
-    graph.chord = p.chord;
-    graph.trim = p.bankTrim;
-    graph.voicesHz = [...p.voicesHz];
-    graph.fadingUntil = t + CROSSFADE_SECONDS + 0.1;
-    this.later(() => {
-      from.dispose(ctx.currentTime + 0.05);
-      if (this.graph === graph && graph.fading === from) graph.fading = null;
-    }, (CROSSFADE_SECONDS + 0.4) * 1000);
+    if (!ctx || !graph || !this.params) return;
+    if (this.paused || (ctx.state !== 'running' && !this.offline)) return;
+    let left = budget;
+    const until = ctx.currentTime + horizon;
+
+    if (this.options.drone !== false) {
+      while (this.nextDroneAt < until) {
+        const i = this.droneIndex % DRONE_STRINGS.length;
+        let buf = this.droneBufs[i];
+        if (!buf) {
+          if (left <= 0) break;
+          left--;
+          buf = this.makeBuffer(ctx, renderPluck(tanpuraSpec(DRONE_STRINGS[i].hz, DRONE_RATE, 1000 + i * 77)), DRONE_RATE);
+          this.droneBufs[i] = buf;
+        }
+        this.playDrone(ctx, graph, buf, DRONE_STRINGS[i], Math.max(this.nextDroneAt, ctx.currentTime + 0.02));
+        this.droneIndex++;
+        this.nextDroneAt += 1.55 + (this.droneRand() - 0.5) * 0.08;
+      }
+    }
+
+    if (this.options.melody === false) return;
+    for (;;) {
+      if (this.pending.length === 0 && this.nextPhraseAt < until) this.composeNext(this.nextPhraseAt);
+      while (this.pending.length && this.pending[0].at < until && left > 0) {
+        const n = this.pending.shift()!;
+        left--;
+        this.playNote(ctx, graph, n);
+      }
+      // Another phrase can fall inside the window only when the window is long (offline rendering) or after a stall.
+      if (!(this.pending.length === 0 && this.nextPhraseAt < until && left > 0)) break;
+    }
   }
 
-  /** One very quiet chord tone now and then: 3 s attack, 6 s decay, a note of the chord that is playing, never a tune. */
-  private scheduleTone(delaySec: number): void {
-    if (this.toneTimer) clearTimeout(this.toneTimer);
-    this.toneTimer = setTimeout(() => {
-      this.toneTimer = null;
-      const { ctx, graph } = this;
-      if (!ctx || !graph) return;
-      if (!this.paused && ctx.state === 'running') this.playTone(ctx, graph);
-      const [lo, hi] = TONE_EVERY_SECONDS;
-      this.scheduleTone(lo + Math.random() * (hi - lo));
-    }, delaySec * 1000);
+  /** Choose and perform the next phrase; its notes wait in `pending`, and the gap after it is set. */
+  private composeNext(start: number): void {
+    const p = this.params!;
+    const { phrase, stage } = pickPhrase(this.history, this.prevStage, p.tone, p.progress, p.register, this.rand);
+    this.history = [...this.history, phrase.id].slice(-4);
+    this.prevStage = stage;
+    const { notes, seconds, alt } = perform(phrase, this.rand);
+    for (const n of notes) this.pending.push({ at: start + n.at, dur: n.dur, semis: n.p, to: n.to, kan: n.kan, vel: n.vel, cents: n.cents, phrase: phrase.id + (alt ? '*' : '') });
+    // Silence is part of the line: about 1 to 4 s after the last note's nominal end; the note has usually died away 2 to 3 s before that, so the quiet that is heard is about 3 to 7 s, longer after a resting phrase and at night.
+    const settle = stage === 'home' || stage === 'answer' ? 1.15 : 1;
+    const night = p.tone === 'night' ? 1.15 : 1;
+    this.nextPhraseAt = start + seconds + Math.min(4, (1 + this.rand() * 2.6) * p.gapScale * settle * night);
   }
 
-  private playTone(ctx: AudioContext, graph: Graph): void {
-    const hz = graph.voicesHz[Math.floor(Math.random() * graph.voicesHz.length)];
-    const note = hz < 500 && Math.random() < 0.5 ? hz * 2 : hz;
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = note;
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0, t);
-    // About -38 dBFS peak at the output (path gain about 0.75 x master 0.075 at the time; master is now 0.24, so +10 dB). At -30 it lifted the pad by about 3 dB while it rang, which is not "very quiet".
-    env.gain.setTargetAtTime(0.2, t, 1.0); // reaches about 95 % at 3 s
-    env.gain.setTargetAtTime(0, t + 3, 2.0); // gone by about 12 s after that
-    osc.connect(env).connect(graph.lowpass);
-    osc.start(t);
-    osc.stop(t + 3 + 14);
-    osc.onended = () => env.disconnect();
+  private makeBuffer(ctx: AudioContext, data: Float32Array, rate: number): AudioBuffer {
+    const buf = ctx.createBuffer(1, data.length, rate);
+    buf.copyToChannel(data as Float32Array<ArrayBuffer>, 0);
+    return buf;
+  }
+
+  private pan(ctx: AudioContext, value: number): StereoPannerNode | null {
+    if (typeof ctx.createStereoPanner !== 'function') return null;
+    const p = ctx.createStereoPanner();
+    p.pan.value = value;
+    return p;
+  }
+
+  private playDrone(ctx: AudioContext, graph: Graph, buf: AudioBuffer, s: { pan: number; amp: number }, at: number): void {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const g = ctx.createGain();
+    const amp = DRONE_AMP * s.amp * (1 + (this.droneRand() - 0.5) * 0.2);
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(amp, at + 0.03);
+    const pan = this.pan(ctx, s.pan);
+    src.connect(g);
+    if (pan) g.connect(pan).connect(graph.drone);
+    else g.connect(graph.drone);
+    this.track(graph, src, [g, pan]);
+    src.start(at);
+  }
+
+  private track(graph: Graph, src: AudioBufferSourceNode, nodes: (AudioNode | null)[]): void {
+    graph.stoppers.add(src);
+    src.onended = () => {
+      graph.stoppers.delete(src);
+      try {
+        src.disconnect();
+        for (const n of nodes) n?.disconnect();
+      } catch {
+        // already let go
+      }
+    };
+  }
+
+  /** One sitar note: a fresh plucked string, a short bend at the attack, a kan if asked, a meend if asked. */
+  private playNote(ctx: AudioContext, graph: Graph, n: { at: number; dur: number; semis: number; to?: number; kan?: number; vel: number; cents: number; phrase: string }): void {
+    const p = this.params!;
+    const at = Math.max(n.at, ctx.currentTime + 0.02);
+    const hz = hzOf(n.semis + n.cents / 100);
+    const bright = lerp(0.45, 0.68, p.register) * lerp(0.92, 1, Math.min(1, n.vel));
+    const r = () => this.rand() * 2 - 1;
+    // A string that is going to be pulled (meend) is played to ring longer, as a player sustains it.
+    const data = renderPluck(sitarSpec(hz, MELODY_RATE, r, bright, n.to !== undefined ? 1.6 : 1));
+    const buf = this.makeBuffer(ctx, data, MELODY_RATE);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    // Pitch over time, in semitones from the plucked pitch.
+    const pts: [number, number][] = [];
+    if (n.kan !== undefined) {
+      const k = n.kan - n.semis;
+      pts.push([0, k], [0.06, k], [0.11, 0]);
+    } else {
+      pts.push([0, 0.4], [0.07, 0]); // the string is a hair sharp as it leaves the finger
+    }
+    if (n.to !== undefined) {
+      const hold = Math.max(0.3, Math.min(0.5, n.dur * 0.15));
+      const glide = Math.max(0.6, Math.min(1.0, n.dur * 0.3));
+      const dist = n.to - n.semis;
+      pts.push([hold, 0]);
+      for (let i = 1; i <= 16; i++) {
+        const x = i / 16;
+        pts.push([hold + glide * x, dist * (x * x * (3 - 2 * x))]);
+      }
+    }
+    const rate = src.playbackRate;
+    rate.setValueAtTime(Math.pow(2, pts[0][1] / 12), at);
+    for (let i = 1; i < pts.length; i++) rate.linearRampToValueAtTime(Math.pow(2, pts[i][1] / 12), at + pts[i][0]);
+
+    const g = ctx.createGain();
+    const amp = MELODY_AMP * n.vel * p.velocity;
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(amp, at + 0.004);
+    if (n.to !== undefined) {
+      // Pulling the string keeps it singing: the level is carried up a little through the slide, then it decays again.
+      const t0 = at + Math.max(0.3, Math.min(0.5, n.dur * 0.15));
+      g.gain.setTargetAtTime(amp * 1.7, t0, 0.35);
+      g.gain.setTargetAtTime(amp * 0.9, t0 + 1.0, 1.2);
+    }
+    const pan = this.pan(ctx, (this.rand() - 0.5) * 0.24);
+    src.connect(g);
+    if (pan) g.connect(pan).connect(graph.melody);
+    else g.connect(graph.melody);
+    this.track(graph, src, [g, pan]);
+    src.start(at);
+    if (this.last) {
+      this.last.gain.gain.setTargetAtTime(0, at, 0.045);
+      try {
+        this.last.src.stop(at + 0.7);
+      } catch {
+        // already ended
+      }
+    }
+    this.last = { src, gain: g };
+    this.options.log?.push({ t: at, hz, semis: n.semis, to: n.to, kan: n.kan, vel: n.vel * p.velocity, phrase: n.phrase, dur: n.dur });
   }
 
   /** The tab is hidden: fade out quickly, then hold the context. */
@@ -237,8 +407,8 @@ export class AmbientEngine {
     this.ctx = null;
     this.graph = null;
     this.paused = false;
-    if (this.toneTimer) clearTimeout(this.toneTimer);
-    this.toneTimer = null;
+    if (this.pumpTimer) clearInterval(this.pumpTimer);
+    this.pumpTimer = null;
     if (!ctx) return;
     ctx.removeEventListener('statechange', this.onChange);
     if (ctx.state !== 'closed') {
@@ -250,6 +420,7 @@ export class AmbientEngine {
       this.later(() => {
         try {
           graph?.oscs.forEach((o) => o.stop());
+          graph?.stoppers.forEach((s) => s.stop());
         } catch {
           // already stopped
         }
@@ -266,13 +437,14 @@ export class AmbientEngine {
     this.graph = null;
     this.timers.forEach(clearTimeout);
     this.timers.clear();
-    if (this.toneTimer) clearTimeout(this.toneTimer);
-    this.toneTimer = null;
+    if (this.pumpTimer) clearInterval(this.pumpTimer);
+    this.pumpTimer = null;
     if (!ctx) return;
     ctx.removeEventListener('statechange', this.onChange);
     try {
       graph?.fade.gain.setTargetAtTime(0, ctx.currentTime, 0.03);
       graph?.oscs.forEach((o) => o.stop(ctx.currentTime + 0.2));
+      graph?.stoppers.forEach((s) => s.stop(ctx.currentTime + 0.2));
     } catch {
       // already stopped
     }
@@ -301,152 +473,82 @@ export class AmbientEngine {
   private build(ctx: AudioContext, p: AmbientParams): Graph {
     const now = ctx.currentTime;
     const oscs: OscillatorNode[] = [];
-    const start = (o: OscillatorNode) => {
-      o.start(now);
-      oscs.push(o);
-      return o;
-    };
 
     const fade = ctx.createGain();
     fade.gain.setValueAtTime(0, now); // silent until the fade-in: no start transient
     const level = ctx.createGain();
     level.gain.setValueAtTime(p.masterGain, now);
+    // A gentle safety net for the sharp front of a pluck: it only touches the loudest peaks.
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -10;
+    comp.knee.value = 8;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.25;
 
-    // Keep the very low end out: phone and laptop speakers cannot play it and it only muddies. Then the warm lid.
+    // Keep the very low end out: phone speakers cannot play it and it only muddies. Then the lid.
     const highpass = ctx.createBiquadFilter();
     highpass.type = 'highpass';
-    highpass.frequency.value = 110;
+    highpass.frequency.value = 100;
     highpass.Q.value = 0.5;
     const lowpass = ctx.createBiquadFilter();
     lowpass.type = 'lowpass';
     lowpass.Q.value = 0.4;
     lowpass.frequency.setValueAtTime(p.cutoffHz, now);
-    // The cutoff breathes by about +/-150 Hz every 33 s.
-    const cutLfo = start(ctx.createOscillator());
-    cutLfo.frequency.value = 0.03;
-    const cutDepth = ctx.createGain();
-    cutDepth.gain.value = 150;
-    cutLfo.connect(cutDepth).connect(lowpass.frequency);
 
     const dry = ctx.createGain();
-    dry.gain.value = 0.75;
+    dry.gain.value = 0.8;
     const wet = ctx.createGain();
     wet.gain.setValueAtTime(p.reverbWet, now);
     const verb = ctx.createConvolver();
     verb.buffer = makeImpulse(ctx);
 
+    const pre = ctx.createGain(); // everything is summed here
+    pre.connect(highpass);
     highpass.connect(lowpass);
     lowpass.connect(dry).connect(level);
     lowpass.connect(verb).connect(wet).connect(level);
-    level.connect(fade).connect(ctx.destination);
+    level.connect(comp).connect(fade).connect(ctx.destination);
 
-    // Four slow swells, one per voice, never in step: a breath every 14 to 21 seconds.
-    const lfoRates = [0.047, 0.061, 0.073, 0.052];
-    const swells = lfoRates.map((rate) => {
-      const lfo = start(ctx.createOscillator());
-      lfo.frequency.value = rate;
-      const depth = ctx.createGain();
-      depth.gain.value = 0.02;
-      lfo.connect(depth);
-      return depth;
-    });
+    // The sitar's body is a gourd: a broad, nasal lift around 1.5 kHz.
+    const melody = ctx.createGain();
+    const body = ctx.createBiquadFilter();
+    body.type = 'peaking';
+    body.frequency.value = 1500;
+    body.Q.value = 0.9;
+    body.gain.value = 1.5;
+    melody.connect(body).connect(pre);
 
-    const hasPanner = typeof ctx.createStereoPanner === 'function';
-    const make = (bp: AmbientParams, gain: number, at: number): Bank => {
-      const mine: OscillatorNode[] = []; // this bank's own oscillators
-      const links: [AudioNode, AudioParam][] = []; // swell connections to let go of
-      const begin = (o: OscillatorNode) => {
-        o.start(at);
-        mine.push(o);
-        oscs.push(o);
-        return o;
-      };
-      const bankGain = ctx.createGain();
-      bankGain.gain.setValueAtTime(gain, at);
-      bankGain.connect(highpass);
-      const panBus = (sign: 1 | -1) => {
-        const bus = ctx.createGain();
-        if (hasPanner) {
-          // The bus sits in the stereo field and drifts across it by +/-0.4 every 50 s (0.02 Hz).
-          const pan = ctx.createStereoPanner();
-          const lfo = begin(ctx.createOscillator());
-          lfo.frequency.value = 0.02;
-          const depth = ctx.createGain();
-          depth.gain.value = 0.4 * sign;
-          lfo.connect(depth).connect(pan.pan);
-          bus.connect(pan).connect(bankGain);
-        } else bus.connect(bankGain);
-        return bus;
-      };
-      const setA = panBus(1); // sine + triangle, slightly detuned
-      const setB = panBus(-1); // a second set: other detune, drifting the other way
-      bp.voicesHz.forEach((hz, i) => {
-        const voiceA = ctx.createGain();
-        voiceA.gain.value = 0.17;
-        voiceA.connect(setA);
-        swells[i].connect(voiceA.gain);
-        links.push([swells[i], voiceA.gain]);
-        const voiceB = ctx.createGain();
-        voiceB.gain.value = 0.07;
-        voiceB.connect(setB);
-        const other = swells[(i + 1) % swells.length];
-        other.connect(voiceB.gain);
-        links.push([other, voiceB.gain]);
-        // Detune in hertz, a few tenths each way, so no two oscillators beat faster than about 0.7 Hz.
-        const spec: [OscillatorType, number, number, GainNode][] = [
-          ['sine', -0.14 - 0.02 * i, 1, voiceA],
-          ['triangle', 0.16 + 0.02 * i, 0.35, voiceA],
-          ['sine', 0.33 - 0.03 * i, 1, voiceB],
-          ['triangle', -0.3 + 0.03 * i, 0.3, voiceB],
-        ];
-        for (const [type, offsetHz, level, dest] of spec) {
-          const osc = begin(ctx.createOscillator());
-          osc.type = type;
-          osc.frequency.setValueAtTime(hz, at);
-          osc.detune.value = centsFor(hz, offsetHz);
-          const g = ctx.createGain();
-          g.gain.value = level;
-          osc.connect(g).connect(dest);
-        }
-      });
-      const air = ctx.createGain();
-      air.gain.setValueAtTime(bp.airGain, at);
-      air.connect(bankGain);
-      for (const offsetHz of [-0.2, 0.24]) {
-        const osc = begin(ctx.createOscillator());
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(bp.airHz, at);
-        osc.detune.value = centsFor(bp.airHz, offsetHz);
-        const g = ctx.createGain();
-        g.gain.value = 0.2;
-        osc.connect(g).connect(air);
+    const drone = ctx.createGain();
+    drone.connect(pre);
+
+    // Sympathetic strings: five resonant delay loops tuned to the raga's notes. Each rings when the melody plays its
+    // note (or a harmonic of it) and fades in about 2 s. The delay is a whole number of periods, at least 4 ms.
+    const sympSend = ctx.createGain();
+    sympSend.gain.setValueAtTime(SYMP_SEND * p.shimmer, now);
+    const sympOut = ctx.createGain();
+    sympOut.gain.value = SYMP_OUT;
+    sympOut.connect(pre);
+    if (this.options.shimmer !== false) {
+      melody.connect(sympSend);
+      for (const semis of SYMPATHETIC_SEMIS) {
+        const hz = MELODY_SA_HZ * Math.pow(2, semis / 12);
+        const m = Math.ceil(0.004 * hz);
+        const delay = ctx.createDelay(0.1);
+        delay.delayTime.value = m / hz;
+        const damp = ctx.createBiquadFilter();
+        damp.type = 'lowpass';
+        damp.frequency.value = 3500;
+        damp.Q.value = -3; // Q is in dB for a biquad low-pass: -3 dB is the flat (Butterworth) shape, so the loop can never gain
+        const fb = ctx.createGain();
+        fb.gain.value = 0.985;
+        sympSend.connect(delay);
+        delay.connect(damp).connect(fb).connect(delay);
+        const tap = ctx.createGain();
+        tap.gain.value = 1 / SYMPATHETIC_SEMIS.length;
+        damp.connect(tap).connect(sympOut);
       }
-      const dispose = (when: number) => {
-        for (const o of mine) {
-          try {
-            o.stop(when);
-          } catch {
-            // already stopped
-          }
-          const i = oscs.indexOf(o);
-          if (i >= 0) oscs.splice(i, 1);
-        }
-        for (const [from, to] of links) {
-          try {
-            from.disconnect(to);
-          } catch {
-            // already let go
-          }
-        }
-        try {
-          bankGain.disconnect();
-        } catch {
-          // already let go
-        }
-      };
-      return { gain: bankGain, air, dispose };
-    };
-
-    return { oscs, bank: make(p, p.bankTrim, now), fading: null, make, chord: p.chord, trim: p.bankTrim, voicesHz: [...p.voicesHz], fadingUntil: 0, lowpass, wet, level, fade };
+    }
+    return { melody, drone, sympSend, lowpass, wet, level, fade, stoppers: new Set(), oscs };
   }
 }

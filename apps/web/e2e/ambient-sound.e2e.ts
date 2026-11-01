@@ -139,7 +139,7 @@ test.describe('ambient sound', () => {
     }
     const busy = Math.max(...(await cutoffs()));
     expect(busy).toBeGreaterThan(rest + 300);
-    expect(busy).toBeLessThan(2800); // the rest cutoff is 900 to 1200 Hz and scrolling opens it by at most 1500 Hz
+    expect(busy).toBeLessThan(6000); // the rest cutoff is 2600 to 4000 Hz (the sitar needs its upper partials) and scrolling opens it by at most 1500 Hz
     // Still: the most recent targets come back down.
     await page.waitForTimeout(9000);
     const all = await cutoffs();

@@ -1,7 +1,8 @@
 /**
  * The calm ambient sound of the film: the pure part. No Web Audio, no DOM, no React, so it is unit-tested alone
  * (test/ambient-map.test.ts). It turns how fast the visitor is scrolling, how far down the film they are and the
- * tone of the scene under them into the numbers the synth (ambient-engine.ts) glides to.
+ * tone of the scene under them into the numbers the synth (ambient-engine.ts) glides to. The melody itself (an
+ * original short piece in raga Bhoopali) lives in raga.ts, the plucked-string model in pluck.ts.
  *
  * The sound is made by our own code in the browser: no audio files, no samples, no AI model, no third-party
  * music (docs/web/ambient-sound.md). Every number here is ours.
@@ -17,7 +18,7 @@ export const AMBIENT_DEFAULT_ON = true;
 /** Where the visitor's own choice is remembered (this browser only). */
 export const STORAGE_KEY = 'el-ambient-sound';
 
-/** The quiet resting level of the master gain, and the most scrolling can lift it to. Both stay well under 0.12. */
+/** The quiet resting level of the master gain, and the most scrolling can lift it to. Both are the master gain after the mix; the melody and drone levels are set inside the engine so the output sits near -23 LUFS at rest. */
 export const MASTER_BASE = 0.24;
 export const MASTER_MAX = 0.35;
 
@@ -27,37 +28,14 @@ export const clamp01 = (v: number): number => (Number.isFinite(v) ? (v < 0 ? 0 :
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 export const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12);
 
-/**
- * Four open, unhurried chords (MIDI notes, four voices each), no hard thirds: suspended and added-ninth shapes
- * that stay gentle whichever way they are joined. They sit about an octave above the first version (lowest note
- * around 260 Hz), where phone and laptop speakers can actually play them. The film moves through them as the
- * visitor moves down it, by a slow crossfade between two voice banks (ambient-engine.ts), never by a pitch slide.
- */
-export const CHORDS: readonly (readonly [number, number, number, number])[] = [
-  [62, 69, 76, 81], // D  A  E  A   (D sus2)
-  [60, 67, 74, 79], // C  G  D  G   (C sus2)
-  [65, 72, 76, 81], // F  C  E  A   (F major 7, open)
-  [67, 74, 78, 83], // G  D  F# B   (G major 7)
-];
-
-/** Resting low-pass cutoff (Hz) per tone: the warm lid on the sound. Tone changes brightness, never pitch. */
-export const TONE_CUTOFF: Record<SoundTone, number> = { night: 900, dusk: 1020, paper: 1200 };
-/** The high "air" voice (an octave above the chord's second note) at rest, per tone: night quieter, paper a touch brighter. */
-export const TONE_AIR: Record<SoundTone, number> = { night: 0.1, dusk: 0.14, paper: 0.18 };
-/** Resting reverb per tone: night a little roomier and softer. */
-export const TONE_REVERB: Record<SoundTone, number> = { night: 0.46, dusk: 0.42, paper: 0.36 };
-
-/**
- * Level trim per chord, from measuring the live output: the same gain on every chord is not the same loudness (the
- * higher voicings sit nearer the low-pass and the voice leading changes how the partials add), so each chord is
- * trimmed to about the same RMS. Applied to the chord's voice bank, so it moves with the crossfade, not before it.
- */
-export const CHORD_TRIM: readonly number[] = [1.8, 1.1, 1.6, 1.2];
-
-/** Seconds a chord change takes: the old voice bank fades out as the new one fades in (equal power). */
-export const CROSSFADE_SECONDS = 10;
-/** The sparse single tone: one every 20 to 40 s, a chord tone only, about -30 dBFS, 3 s attack, 6 s decay. */
-export const TONE_EVERY_SECONDS: readonly [number, number] = [20, 40];
+/** Resting low-pass cutoff (Hz) per tone: the lid on the whole mix. Night is rounder, paper is brighter. Tone changes brightness, never the raga. */
+export const TONE_CUTOFF: Record<SoundTone, number> = { night: 2600, dusk: 3200, paper: 4000 };
+/** Where in the melody's range each tone prefers to sit, 0 (low phrases) to 1 (high phrases). Used by the phrase picker (raga.ts). */
+export const TONE_REGISTER: Record<SoundTone, number> = { night: 0.2, dusk: 0.5, paper: 0.85 };
+/** Resting reverb per tone: night a little roomier. */
+export const TONE_REVERB: Record<SoundTone, number> = { night: 0.4, dusk: 0.36, paper: 0.3 };
+/** How hard the strings are plucked at rest, per tone: night softer, paper a touch fuller. 1 is the reference. */
+export const TONE_VELOCITY: Record<SoundTone, number> = { night: 0.8, dusk: 0.88, paper: 0.9 };
 
 /** Scroll speed (px per second) to a 0..1 energy. Soft saturation, so a hard fling is not twice a firm scroll. */
 export function energyFromSpeed(pxPerSec: number): number {
@@ -76,45 +54,45 @@ export function smoothEnergy(prev: number, target: number, dtSec: number): numbe
   return clamp01(prev + (target - prev) * a);
 }
 
-/** Which chord a position in the film (0 at the top, 1 at the bottom) sits in. */
-export function chordIndexAt(progress: number): number {
-  return Math.min(CHORDS.length - 1, Math.floor(clamp01(progress) * CHORDS.length));
-}
-
 export type AmbientInput = { energy: number; progress: number; tone: SoundTone };
 
 export type AmbientParams = {
   /** Low-pass cutoff in Hz. */
   cutoffHz: number;
-  /** Level of the whole pad (the node after the mix, before the fade). Never above MASTER_MAX. */
+  /** Level of the whole mix (the node after the mix, before the fade). Never above MASTER_MAX. */
   masterGain: number;
   /** How much of the soft reverb is let in, 0..1. */
   reverbWet: number;
-  /** Frequencies of the four chord voices, Hz. */
-  voicesHz: [number, number, number, number];
-  /** The high "air" voice: an octave above the chord's second note, Hz, and how loud it is (0.1 to 0.25). */
-  airHz: number;
-  airGain: number;
-  /** Which chord this is. The engine crossfades banks when it changes. */
-  chord: number;
-  /** The level trim of that chord's voice bank. */
-  bankTrim: number;
+  tone: SoundTone;
+  /** Which part of the film, 0..1. The phrase picker leans on it a little. */
+  progress: number;
+  /** Preferred register of the next phrase, 0 (low) to 1 (high). */
+  register: number;
+  /** Pluck strength, about 0.8 to 1.15. Scrolling lifts it a little: slightly more present, never faster. */
+  velocity: number;
+  /** Scroll energy, 0..1. */
+  energy: number;
+  /** Multiplier on the silence between phrases: 1 at rest, down to 0.75 while scrolling. Never a faster tempo. */
+  gapScale: number;
+  /** How much of the melody feeds the sympathetic strings, 0..1. */
+  shimmer: number;
 };
 
 export function ambientParams({ energy, progress, tone }: AmbientInput): AmbientParams {
   const e = clamp01(energy);
-  const chord = chordIndexAt(progress);
-  const base = TONE_CUTOFF[tone] ?? TONE_CUTOFF.night;
-  const notes = CHORDS[chord].map((n) => midiToHz(n)) as AmbientParams['voicesHz'];
+  const t: SoundTone = tone in TONE_CUTOFF ? tone : 'night';
+  const base = TONE_CUTOFF[t];
   return {
     cutoffHz: lerp(base, base + 1500, Math.pow(e, 0.8)),
     masterGain: lerp(MASTER_BASE, MASTER_MAX, e),
-    reverbWet: lerp(TONE_REVERB[tone] ?? TONE_REVERB.night, 0.68, e),
-    voicesHz: notes,
-    airHz: midiToHz(CHORDS[chord][1] + 12),
-    airGain: Math.min(0.25, lerp(TONE_AIR[tone] ?? TONE_AIR.night, 0.25, e)),
-    chord,
-    bankTrim: CHORD_TRIM[chord] ?? 1,
+    reverbWet: lerp(TONE_REVERB[t], 0.55, e),
+    tone: t,
+    progress: clamp01(progress),
+    register: TONE_REGISTER[t],
+    velocity: lerp(TONE_VELOCITY[t], TONE_VELOCITY[t] * 1.12, e),
+    energy: e,
+    gapScale: lerp(1, 0.75, e),
+    shimmer: lerp(0.7, 1, e),
   };
 }
 
