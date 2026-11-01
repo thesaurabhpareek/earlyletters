@@ -150,7 +150,7 @@ describe('freeLettersFrom: whole numbers between the default and the cap', () =>
 });
 
 describe('decide: rule order when several rules apply (TDD 08 2.2)', () => {
-  it('first run beats a birthday, a birthday beats the contributor rule, the contributor rule beats offline', () => {
+  it('[C-REQ-023] first run beats a birthday, a birthday beats the contributor rule, the contributor rule beats offline', () => {
     const everything = { surface: 'first_run' as const, isBirthday: true, online: false, viewer: { roleInBook: 'contributor' as const } };
     expect(decide(input(everything))).toEqual({ kind: 'quiet', reason: 'first_run' });
     expect(decide(input({ ...everything, surface: 'normal' }))).toEqual({ kind: 'quiet', reason: 'birthday' });
