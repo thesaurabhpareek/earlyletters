@@ -1,11 +1,11 @@
 # Real Supabase stack checks for database changes (CI-03). On pull requests
-# that touch supabase/**: start the local stack, rebuild it from every
+# that touch the paths below: start the local stack, rebuild it from every
 # migration with `supabase db reset`, lint the schema (fail on error level),
 # run the export's server reads over the stack's real API (BL-323, BL-529),
 # then run the PGlite access-rule suite, without Supabase's automatic grants and
 # again with the old ones. The nightly workflow calls this file
 # too (workflow_call). Not part of the `required` aggregator, because it only
-# runs when supabase/** changes.
+# runs on the paths below (supabase/**, the export reader and its live check).
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: DB CLI
 
@@ -15,6 +15,9 @@ on:
       - 'supabase/**'
       - '.github/workflows/db-cli.yml'
       - 'apps/mobile/src/lib/export/**'
+      - 'apps/mobile/src/lib/db/repos/ids.ts'
+      # supabase-js version (the reader's query builder; device.ts casts it, so tsc cannot see a shape change)
+      - 'apps/mobile/package.json'
       - 'apps/mobile/test/live/**'
   workflow_call:
 
@@ -50,6 +53,7 @@ jobs:
         run: supabase db reset --local
       # The app's own export reader (server-records.logic.ts) against real GoTrue, PostgREST and the
       # migrations' access rules: signed-in fictional users, own rows only. Blocking.
+      # The container name is supabase_db_<project_id> (supabase/config.toml).
       - name: Export reads over the real API (BL-323, BL-529)
         run: |
           eval "$(supabase status -o env | sed -n 's/^\(API_URL\|ANON_KEY\|SERVICE_ROLE_KEY\)=/export \1=/p')"

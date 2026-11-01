@@ -120,11 +120,17 @@ async function main() {
   check('it holds A\'s two acts, terms then sensitive-data', r.consent.acts.map((x) => x.document).join() === 'terms,sensitive-data', r.consent.acts.map((x) => x.document));
   check('the terms act carries the age attestation as stored', r.consent.acts[0]?.context?.age_attested === true, r.consent.acts[0]?.context);
   check('my_policy_state gives the latest act per document', r.consent.current.map((x) => `${x.document}:${x.action}`).join() === 'sensitive-data:accept,terms:accept', r.consent.current);
-  check('no account id anywhere in the record', !JSON.stringify(r.consent).includes(a.id) && !JSON.stringify(r.consent).includes(b.id));
+  const all = JSON.stringify(r);
+  check('no account id anywhere in what the export reads (consent and profile)', !all.includes(a.id) && !all.includes(b.id));
+  const keys = (o: object) => Object.keys(o).sort().join();
+  const ACT_KEYS = 'action,app_version,at,client_recorded_at,context,document,id,locale,method,platform,rendered_sha256,surface,version';
+  check('each act carries exactly the exported fields (no profile_id, subject_hash or retention columns)', r.consent.acts.length > 0 && r.consent.acts.every((x) => keys(x) === ACT_KEYS), r.consent.acts.map(keys));
+  check('each current row carries exactly document, version, action, at', r.consent.current.length > 0 && r.consent.current.every((x) => keys(x) === 'action,at,document,version'), r.consent.current.map(keys));
+  check('the profile carries exactly its exported fields (no id)', keys(r.profile) === 'created_at,display_name,read_at,signs_as,status', keys(r.profile));
   check('profile included, A\'s own only', r.profile.status === 'included' && r.profile.display_name === 'Asha Mama', r.profile);
   check('B\'s profile never enters A\'s export', !JSON.stringify(r).includes('Asha Papa'));
 
-  // The other statuses, over the same API.
+  // The other statuses. The first two are decided on the phone before any read; the third reaches the API with no session.
   const other = await read({ sb: a.sb, uid: a.id, owner: b.id });
   check('a different account than the owner of the letters: nothing read', other.consent.status === 'different_account' && other.profile.status === 'different_account', other);
   const signedOut = await read({ sb: null, uid: null });
@@ -136,7 +142,8 @@ async function main() {
 
   // The spelling list stays on the device: the API refuses the table to a signed-in person.
   const dict = await a.sb.from('dictionary_terms').select('term').limit(1);
-  check('dictionary_terms is refused over the API (the export reads it from the phone)', !!dict.error, dict.error ?? dict.data);
+  // A permission refusal, not any error: a missing or renamed table must not pass this.
+  check('dictionary_terms is refused over the API (the export reads it from the phone)', dict.error?.code === '42501', dict.error ?? dict.data);
 }
 
 main()
