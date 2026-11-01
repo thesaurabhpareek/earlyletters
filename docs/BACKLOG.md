@@ -547,13 +547,13 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: a planner test with no stored weekly day fails on the old code and passes on the new; no other default changes.
 
 #### BL-531 Quiet hours are written once, not three times [Low]
-- Status: ready. Mode: agent. Owner: content, reminders owner. Size: XS.
-- Satisfies: F13-REQ-019 (the window can change by remote config, so no screen may hard-code it).
-- Scope: `reminderCopy.settings.quietHelp` says "7 AM and 9:30 PM" and the reminder card caps its time picker at 21:30 in code. Both read the planner window (`DEFAULT_WINDOW`, `formatReminderTime`). Add the placeholders to the copy and to the placeholder allowlist in `packages/content/test/rules.test.ts` for that surface only.
+- Status: deferred (low value until the window is configurable; ruled by Karma 1 Nov 2026, see below). Mode: agent. Owner: content, reminders owner. Size: XS.
+- Satisfies: F13-REQ-019 (remote config may narrow the window inside 07:00 to 21:30, so no screen may hard-code it once that config exists).
+- Scope: `reminderCopy.settings.quietHelp` says "7 AM and 9:30 PM" and the reminder card caps its time picker at 21:30 in code (`reminder-prime-ask.tsx`). Read both from the planner window (`DEFAULT_WINDOW`, `formatReminderTime`). Adding placeholders to a copy line means updating the per-surface placeholder lists in `packages/content/test/rules.test.ts`, so do it when the remote window config lands, not in the freeze. Until then the window is fixed at 07:00 to 21:30 and the text is true.
 - Done when: changing `LATEST_MINUTES` in a test changes the help text and the picker limit; content tests pass.
 
 #### BL-532 The reminder card names the child [Medium]
-- Status: ready. Mode: agent. Owner: content, reminders owner. Size: XS. Depends on: BL-531.
+- Status: ready. Mode: agent. Owner: content, reminders owner. Size: XS.
 - Satisfies: the founder's ask on 1 Nov 2026 to make the setup personal with the child's name. In-app only; the lock screen stays neutral (rule 3).
 - Scope: `onboarding.reminder.body` uses `{child}` and the card fills it (it is shown only after a first letter, so a name exists). No new buttons. Copy presumes nothing about sleep or the household.
 - Done when: the card shows the name in a screen test; content tests pass; the neutral lock-screen copy is unchanged.
@@ -584,7 +584,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 ### Version 1.0.1 and 1.1
 
 #### BL-536 The reminder card offers a cadence and asks about bedtime [Medium]
-- Status: deferred (1.0.1 or 1.1; founder's scope call, `docs/design/NOTIFICATIONS.md` section 7). Mode: agent. Owner: design systems, reminders owner. Size: M. Depends on: BL-531, BL-532.
+- Status: deferred (1.0.1 or 1.1; founder's scope call, `docs/design/NOTIFICATIONS.md` section 7). Mode: agent. Owner: design systems, reminders owner. Size: M. Depends on: BL-532.
 - Scope: per `SETUP_JOURNEY.md`: "About when does {child} fall asleep?" in rough bands (only the resulting time is stored), the cadence labels (Once a week, A few evenings a week, Every evening, No reminders), a time chip row seeded from the answer, the names switch (off), a live preview of the next real dates and words, the existing iOS pre-sheet, a confirmation and a denied variant. Test with five parents before keeping the sleep question (BL-547).
 - Done when: screen tests cover every state; VoiceOver and Dynamic Type pass; the cap of two showings ever still holds.
 

@@ -14,7 +14,7 @@ Two different things hide behind the word.
 What is true, and checked in the code:
 
 1. **Weekly fires on Sunday in code, Saturday in the spec** (`DEFAULT_WEEKLY_DAY = 0` against F13 section 6 and K-03). BL-530.
-2. **Quiet hours are written in two places by hand.** `quietHelp` says "7 AM and 9:30 PM", and the card's time picker is capped at 9:30 PM in code. Both go wrong the day the window moves. BL-531.
+2. **Quiet hours are written by hand in two places.** `quietHelp` says "7 AM and 9:30 PM" and the card's time picker is capped at 9:30 PM in code. Both are true today (the window is fixed, and remote config may only narrow it), so I deferred BL-531 until the window becomes configurable.
 3. **The card asks no personal question.** It does not use the child's name and offers no cadence choice. BL-532 (name, copy only) and BL-536 (cadence choice).
 4. **Prompts repeat too soon.** The selector avoids the last 10 prompts (`AVOID_RECENT = 10`); the spec wants 365 days (F13-REQ-004, WP-F13-07 not built). The `before` band has 8 prompts; F13-REQ-008 wants 12. BL-534, BL-535.
 5. **Back-off (C-REQ-008) is in the spec but not in the planner.** BL-537.
@@ -98,7 +98,7 @@ This is a new feature plus a privacy-label and children's-data question. It is n
 
 **Ruled (I decide, reversible):**
 - K1. Keep the ask card as built, after the first letter. Put the child's name in its body (copy only, BL-532) if the content tests pass before the freeze; the cadence choice and the sleep question are BL-536 (1.0.1 or 1.1, your scope call).
-- K2. Align the weekly default to the spec (Saturday), BL-530, and template the quiet hours (BL-531).
+- K2. Align the weekly default to the spec (Saturday), BL-530 (PR #483). Template the quiet hours only when the window becomes configurable (BL-531, deferred): a copy change in the freeze for a text that is still true is not worth the review load.
 - K3. No change for expecting books (withdrawn; see the correction above).
 - K4. Doc fixes (BL-549): F13's co-parent-push line moves to v1.1, and the Calm label in R1 becomes a vendor claim.
 - K5. The inventory lives in `docs/`, not `packages/content`, until each row passes the content tests.
