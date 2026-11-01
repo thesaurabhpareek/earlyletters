@@ -553,7 +553,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: changing `LATEST_MINUTES` in a test changes the help text and the picker limit; content tests pass.
 
 #### BL-532 The reminder card names the child [Medium]
-- Status: in-review (PR #484). Mode: agent. Owner: content, reminders owner. Size: XS.
+- Status: done (PR #484, merged 1 Nov 2026; source test pins `{child}` and the card render; device check is BL-533). Mode: agent. Owner: content, reminders owner. Size: XS.
 - Satisfies: the founder's ask on 1 Nov 2026 to make the setup personal with the child's name. In-app only; the lock screen stays neutral (rule 3).
 - Scope: change `onboarding.reminder.body` to use `{child}` (it has none today), add the placeholder to the `onboarding.reminder` entry in the `placeholders` field of `packages/content/test/support/copy-surfaces.ts` if the surface does not allow `child` yet (`rules.test.ts` only reads that list), and have the card fill it (it is shown only after a first letter, so a name exists). No new buttons. Copy presumes nothing about sleep or the household.
 - Done when: the card shows the name in a screen test; content tests pass; the neutral lock-screen copy is unchanged.
