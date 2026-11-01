@@ -63,3 +63,12 @@ console.log(renderPage(model, { extraLines: [metricsLine, staleLine] }).join("\n
 ```
 
 Up to `EXTRA_SLOTS` (2) extra lines are printed before the last line. Anything beyond that is cut, so the note never passes 15 lines.
+
+## TODAY page (`scripts/status/today.mjs`, harness v2 HV2-B07)
+
+```bash
+node scripts/status/today.mjs                   # 15 lines: what needs the founder today
+node --test scripts/status/today.test.mjs       # fixture tests, no network
+```
+
+Run by hand; there is no cron or workflow yet. It reuses this file's `buildModel`, `collect` and `founderLine` and `scripts/founder/check.mjs` `runChecks`, reads with GET only and writes nothing. Line 1 gives the generation time and when the page expires (6 h); a page re-rendered after that starts with STALE. The output holds numbers, `D-` ids matched by pattern and fixed words only, never a PR title, comment, branch or label name. Line 2 reads `docs/release/dates.json` (founder-edited). Line 9 stays "not built" until the review gate exists. Line 14 needs `scripts/agents/board-check.mjs` and says so when it is absent. A run makes about 2 calls per open or recently merged PR, so it takes a few minutes.

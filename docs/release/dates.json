@@ -1,0 +1,7 @@
+{
+  "note": "Founder-edited. Read by scripts/status/today.mjs for line 2 of the TODAY page. Each entry: id, label (letters, digits, space, slash, hyphen), date (YYYY-MM-DD, UTC day), source. Keep to dates the founder has confirmed.",
+  "dates": [
+    { "id": "freeze", "label": "freeze", "date": "2026-11-03", "source": "D-130" },
+    { "id": "go_no_go", "label": "go/no-go", "date": "2026-11-09", "source": "D-130" }
+  ]
+}
