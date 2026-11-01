@@ -354,7 +354,10 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);
     expect(screen).toContain('draftCards(room?.drafts ?? [], room?.at)');
-    expect(screen).toMatch(/cards\.map\(\(card, i\) =>/);
+    // F14-REQ-041 (SR-C-08): every draft is still drawn, through tonightRows, which folds two or more held letters into
+    // one row that opens their list (test/tonight-plus.test.ts); every other draft keeps its own card.
+    expect(screen).toContain('tonightRows(cards)');
+    expect(screen).toMatch(/rows\.map\(\(row, i\) =>/);
   });
 
   it('one question on screen: the prompt, no subtitle, and its old caps label only as the prompt\'s hint', () => {
