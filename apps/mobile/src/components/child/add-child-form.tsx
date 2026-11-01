@@ -10,7 +10,7 @@
  * cross-fades (swapMs); controls never animate in. Accessibility: the heading takes focus, the waiting primary is
  * read as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to what is missing.
  */
-import { checkChildName, clampText, CHILD_NAME_MAX, latestDueDate, nearLimit, textLength } from '@scribe/core';
+import { checkChildName, clampText, CHILD_NAME_MAX, nearLimit, textLength } from '@scribe/core';
 import { router } from 'expo-router';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import * as React from 'react';
@@ -30,6 +30,7 @@ import { useMotion } from '@/lib/motion';
 import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
 import { CoverHeading, useCoverPlace } from './cover-heading';
 import { DateField, type DateFieldHandle } from './date-field';
+import { dateRange } from './date-field.logic';
 import { addChildBlock, addChildCta, addChildValues } from './add-child-form.logic';
 
 /** The cover takes a typed name after this pause, with no motion per letter (S05, as first run). */
@@ -140,8 +141,7 @@ export function AddChildForm() {
                     value={expecting ? dueDate : birthday}
                     onChange={expecting ? setDueDate : setBirthday}
                     startISO={today}
-                    min={expecting ? today : undefined}
-                    max={expecting ? latestDueDate(today) : today}
+                    {...dateRange(expecting ? 'due' : 'born', today)}
                   />
                 </View>
               </View>
