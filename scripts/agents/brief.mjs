@@ -218,23 +218,18 @@ function latestBrief() {
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
 import { trustedJournalEntries, oneLine } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
+import { claimsLines } from "./board-check.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
-// docs/agents/BOARD.md on develop. Their live claims are off limits.
+// docs/agents/CLAIMS.md on develop. Their live claims are off limits.
 function otherThreadsSection() {
-  // Read the board as it is on the base branch now (a local checkout may be stale).
-  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
+  // Read the claims as they are on the base branch now (a local checkout may be stale).
+  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/CLAIMS.md?ref=${roster.base_branch}`, { allowFail: true });
   let text = fromApi?.content ? Buffer.from(fromApi.content, "base64").toString("utf8") : undefined;
-  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { text = ""; } }
-  const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
-    .split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l) && !/\|\s*Agent\s*\|/.test(l))
-    .map((l) => l.split("|").map((c) => c.trim()))
-    .filter((c) => c.length > 5 && !/^done/i.test(c[5]) && !/merge only/i.test(c[3]));
+  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "CLAIMS.md")); } catch { text = undefined; } }
   const lines = ["## Other threads working in this repo", "",
-    "The founder's build thread and its agents claim files in `docs/agents/BOARD.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
-  lines.push("", rows.length
-    ? rows.map((c) => `- ${c[1]}: ${c[3]} (since ${c[4]})`).join("\n")
-    : "No live claims right now.", "");
+    "The founder's build thread and its agents claim files in `docs/agents/CLAIMS.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
+  lines.push("", ...claimsLines(text), "");
   // Work pushed in the last 24 hours that has no open PR yet (another session's branch).
   const since = Date.now() - 24 * 3600_000;
   const prRefs = new Set(openPRs.map((p) => p.head.ref));

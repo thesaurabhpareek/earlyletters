@@ -161,3 +161,41 @@ test('the sweep reads open PRs by GET with paging, and a REST error throws', asy
   assert.equal(calls.length, 2);
   await assert.rejects(listOpenPrs(async () => ({ status: 500, body: null }), 'o/r'), /unreadable/);
 });
+
+// brief.mjs reads claims through claimsLines (CLAIMS.md, not the BOARD.md stub).
+import { claimsLines, liveClaims } from './board-check.mjs';
+
+test('brief: live rows are listed with owner, globs, PR and claimed time', () => {
+  const lines = claimsLines(HEAD + row({ owner: 'sess-x', globs: '`docs/a/**`, `b.md`' }), Date.parse(NOW));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /sess-x: `docs\/a\/\*\*`, `b\.md` \(PR #10, since 2026-11-01 10:00 UTC\)/);
+});
+
+test('brief: expired rows are not live and a PR of none says so', () => {
+  const text = HEAD + row({ id: 'old', expires: '2026-11-01T11:00Z' }) + row({ id: 'new', pr: 'none' });
+  const lines = claimsLines(text, Date.parse(NOW));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /no PR yet/);
+});
+
+test('brief: empty table says no live claims; unreadable file says unknown', () => {
+  assert.deepEqual(claimsLines(HEAD, Date.parse(NOW)), ['No live claims right now.']);
+  assert.match(claimsLines(undefined)[0], /could not be read/);
+});
+
+test('brief: the BOARD.md stub is not read as claims (no rows, never an invented claim)', () => {
+  const stub = fs.readFileSync(new URL('../../docs/agents/BOARD.md', import.meta.url), 'utf8');
+  assert.deepEqual(liveClaims(stub, Date.parse(NOW)).rows, []);
+});
+
+test('brief: a malformed row is reported, not silently dropped', () => {
+  const lines = claimsLines(HEAD + '| only | three | fields |\n' + row(), Date.parse(NOW));
+  assert.equal(lines.length, 2);
+  assert.match(lines[1], /1 malformed row/);
+});
+
+test('brief.mjs no longer references BOARD.md for live claims', () => {
+  const src = fs.readFileSync(new URL('./brief.mjs', import.meta.url), 'utf8');
+  assert.ok(!/BOARD\.md/.test(src));
+  assert.match(src, /CLAIMS\.md/);
+});
