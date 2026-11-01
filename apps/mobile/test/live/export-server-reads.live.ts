@@ -16,8 +16,9 @@
  * Exits 1 on any failed check; never skips.
  */
 import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { uuidv7From } from '../../src/lib/db/repos/ids';
 import { postgrestReader, readServerRecords, type PostgrestLike } from '../../src/lib/export/server-records.logic';
 
 const env = (k: string): string => {
@@ -106,7 +107,7 @@ async function main() {
   await setName(b, 'Asha Papa');
 
   // A book for A, and B as its co-parent (a direct fixture: the invite flow is tested elsewhere).
-  const child = randomUUID();
+  const child = uuidv7From(randomBytes(16), Date.now()); // the server takes only a device-made UUIDv7
   const made = await a.sb.rpc('create_child', { p_id: child, p_name: 'Asha', p_date_of_birth: '2026-03-08' });
   if (made.error) throw new Error(`create_child: ${made.error.message}`);
   sql(`insert into public.child_members (child_id, profile_id, role) values ('${child}', '${b.id}', 'parent') on conflict do nothing`);
