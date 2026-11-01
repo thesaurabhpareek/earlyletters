@@ -26,11 +26,15 @@
  * A call with a token that is not the open take's does nothing, so a late poll or a late `finally` from an ended take
  * cannot change a newer one, or turn anything back on.
  *
- * Safety net: an ON state expires if Listen's heartbeat has not refreshed it for STALE_CAPTURE_MS (3 s). Listen beats
- * every CAPTURE_HEARTBEAT_MS (500 ms) for as long as it is mounted with a take open, so 3 s is six missed beats: the
- * screen is gone without its reset, or the JS thread is stalled. A stalled JS thread cannot announce anything either
- * (every announcement starts in JS), and the next beat turns the take back on, so expiry never opens a path into a
- * live take; it only ends a silence that a missed reset would otherwise leave on the whole app.
+ * Safety net, failing closed (Karma's ruling on #523: speech in a recording outranks a stuck flag, which unmount's
+ * resetCapture() already bounds). Time alone never lifts the silence. Listen beats every CAPTURE_HEARTBEAT_MS
+ * (500 ms) while mounted; once an ON state has had no beat for STALE_CAPTURE_MS (3 s, six missed beats), the gate asks
+ * the native recorder through the probe Listen registers (`recorder.isRecording`). It lifts only when:
+ *   - the recorder positively reports "not recording" (an unknown answer, a throw, or no probe stays ON), and
+ *   - the take is past its live part: `pausing` or `finishing`. In `starting` and `live` the microphone is meant to be
+ *     on or about to be, so a "not recording" answer there may only be the moment before it goes live: stay ON.
+ * A JS stall over 3 s mid-take therefore stays silent: timers that fire when the stall ends see a recorder that says
+ * recording, or a take that is live, and drop their message.
  */
 export const STALE_CAPTURE_MS = 3000;
 export const CAPTURE_HEARTBEAT_MS = 500;
@@ -116,9 +120,40 @@ export function captureState(): CaptureState {
 }
 
 /** Whether the app must stay silent now. */
+/** Whether the native recorder is recording now: true, false, or null when it cannot say. */
+export type RecorderProbe = () => boolean | null;
+let probe: RecorderProbe | null = null;
+
+/** Listen registers its recorder's native state while mounted, and clears it on unmount. */
+export function setRecorderProbe(fn: RecorderProbe | null): void {
+  probe = fn;
+}
+
+function askRecorder(): boolean | null {
+  if (!probe) return null;
+  try {
+    const v = probe();
+    return typeof v === 'boolean' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether the app must stay silent now. Fails closed: see the safety net above. */
 export function isRecorderCapturing(): boolean {
   if (state === 'idle' || state === 'paused') return false;
-  return clock.now() - refreshedAt <= STALE_CAPTURE_MS; // the safety net
+  if (clock.now() - refreshedAt <= STALE_CAPTURE_MS) return true;
+  // Stale: lift only on a positive "not recording" from the recorder, and only once the take is past its live part.
+  if ((state === 'pausing' || state === 'finishing') && askRecorder() === false) {
+    if (state === 'pausing') {
+      state = 'paused'; // the take stays open, so a resume still turns it back ON
+    } else {
+      openToken = null; // a finished take whose close was missed: closed now
+      state = 'idle';
+    }
+    return false;
+  }
+  return true;
 }
 
 export type GateDeps = {

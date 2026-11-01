@@ -26,6 +26,7 @@ import {
   resetCapture,
   resumeTake,
   setCaptureClockForTests,
+  setRecorderProbe,
 } from '../src/lib/speech-gate';
 
 const SRC = join(__dirname, '..', 'src');
@@ -192,27 +193,95 @@ describe('the capture state machine (Reviews A and B on #523)', () => {
     expect([captureState(), isRecorderCapturing()]).toEqual(['live', true]);
   });
 
-  it(`safety net: an ON state with no heartbeat for more than ${STALE_CAPTURE_MS} ms expires; a heartbeat keeps it`, () => {
+  it(`[Karma ruling, flipped] time alone never lifts the silence: an ON state stale for over ${STALE_CAPTURE_MS} ms stays silent`, () => {
     expect(STALE_CAPTURE_MS).toBe(3000);
     expect(CAPTURE_HEARTBEAT_MS).toBe(500);
-    expect(STALE_CAPTURE_MS / CAPTURE_HEARTBEAT_MS).toBeGreaterThanOrEqual(6); // six missed beats before expiry
     const r = rig();
     const take = openTake();
+    confirmLive(take);
     for (let i = 0; i < 20; i++) {
       tick(CAPTURE_HEARTBEAT_MS);
       heartbeat(take);
       expect(isRecorderCapturing()).toBe(true);
     }
-    // The screen went away without its reset: no more beats.
-    tick(STALE_CAPTURE_MS);
-    expect(isRecorderCapturing()).toBe(true); // exactly at the limit, still on
-    tick(1);
-    expect(isRecorderCapturing()).toBe(false);
-    r.say('Invite cancelled.');
-    expect(r.spoken).toEqual(['Invite cancelled.']);
-    // A stalled JS thread that beats again turns the open take back on.
-    heartbeat(take);
+    // A JS stall far past the limit, with no probe registered: the gate cannot ask, so it stays ON.
+    tick(STALE_CAPTURE_MS * 10);
     expect(isRecorderCapturing()).toBe(true);
+    // The timer that fell due during the stall (Invite's setTimeout) fires first: dropped.
+    r.say('Invite cancelled.');
+    expect(r.spoken).toEqual([]);
+  });
+});
+
+describe('[Karma ruling] when the heartbeat is stale the gate asks the recorder, and fails closed', () => {
+  afterEach(() => setRecorderProbe(null));
+  const stale = () => tick(STALE_CAPTURE_MS + 1);
+  /** Ask the gate first (the stale check may move the state), then read the state. */
+  const askThenState = () => {
+    const on = isRecorderCapturing();
+    return [captureState(), on];
+  };
+
+  it('stale plus recording stays ON', () => {
+    setRecorderProbe(() => true);
+    const take = openTake();
+    confirmLive(take);
+    stale();
+    expect(isRecorderCapturing()).toBe(true);
+    finishTake(take); // even on the way out, a recorder still writing keeps it ON
+    stale();
+    expect(isRecorderCapturing()).toBe(true);
+  });
+
+  it('stale plus unknown stays ON: no probe, a null answer, or a probe that throws', () => {
+    const take = openTake();
+    finishTake(take);
+    stale();
+    for (const p of [null, () => null, () => { throw new Error('released'); }] as const) {
+      setRecorderProbe(p);
+      expect(isRecorderCapturing()).toBe(true);
+    }
+  });
+
+  it('stale plus not recording stays ON while the take is starting or live (the microphone may be about to go on)', () => {
+    setRecorderProbe(() => false);
+    const take = openTake();
+    stale();
+    expect(askThenState()).toEqual(['starting', true]);
+    confirmLive(take);
+    stale();
+    expect(askThenState()).toEqual(['live', true]);
+  });
+
+  it('stale plus not recording with the take closed goes OFF; a finished take whose close was missed is closed', () => {
+    const r = rig();
+    setRecorderProbe(() => false);
+    const take = openTake();
+    confirmLive(take);
+    closeTake(take);
+    stale();
+    expect(askThenState()).toEqual(['idle', false]);
+    // The missed-close case: finished, the recorder says it stopped, the close never came.
+    const next = openTake();
+    confirmLive(next);
+    finishTake(next);
+    stale();
+    expect(askThenState()).toEqual(['idle', false]);
+    confirmLive(next); // a late poll cannot reopen it
+    expect(isRecorderCapturing()).toBe(false);
+    r.say('Letter kept.');
+    expect(r.spoken).toEqual(['Letter kept.']);
+  });
+
+  it('stale plus not recording while pausing becomes paused, and a resume still turns the take back ON', () => {
+    setRecorderProbe(() => false);
+    const take = openTake();
+    confirmLive(take);
+    pauseTake(take);
+    stale();
+    expect(askThenState()).toEqual(['paused', false]);
+    resumeTake(take);
+    expect(askThenState()).toEqual(['live', true]);
   });
 });
 
@@ -233,6 +302,9 @@ describe('wiring: every announcement passes the gate', () => {
     expect(l).toMatch(/if \(capturing\) confirmLive\(takeToken\.current\);\s*else if \(phase === 'paused'\) pauseConfirmed\(takeToken\.current\);\s*announcer\.settle\(\{ phase, capturing \}\);/);
     // The heartbeat runs for as long as the screen is mounted.
     expect(l).toMatch(/setInterval\(\(\) => heartbeat\(takeToken\.current\), CAPTURE_HEARTBEAT_MS\)/);
+    // The probe the stale check asks: this recorder's native state, cleared with the screen.
+    expect(l).toMatch(/setRecorderProbe\(\(\) => \{\s*try \{\s*return recorder\.isRecording;\s*\} catch \{\s*return null;\s*\}\s*\}\);/);
+    expect(l).toMatch(/clearInterval\(id\);\s*setRecorderProbe\(null\);/);
     // ON before the audio session and the microphone go live.
     expect(l).toMatch(/const token = openTake\(\);\s*takeToken\.current = token;\s*await setAudioMode\('recording'\);\s*const draft = await beginTake\(/);
     expect(l).toMatch(/pauseTake\(takeToken\.current\);\s*recorder\.pause\(\);/);

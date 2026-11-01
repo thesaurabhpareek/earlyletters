@@ -60,7 +60,19 @@ import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
-import { CAPTURE_HEARTBEAT_MS, closeTake, confirmLive, finishTake, heartbeat, openTake, pauseConfirmed, pauseTake, resetCapture, resumeTake } from '@/lib/speech-gate';
+import {
+  CAPTURE_HEARTBEAT_MS,
+  closeTake,
+  confirmLive,
+  finishTake,
+  heartbeat,
+  openTake,
+  pauseConfirmed,
+  pauseTake,
+  resetCapture,
+  resumeTake,
+  setRecorderProbe,
+} from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -157,11 +169,23 @@ export default function Listen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, phase]);
   useEffect(() => () => announcer.clear(), [announcer]);
-  // The heartbeat that keeps an open take's ON state from expiring (STALE_CAPTURE_MS). It stops with the screen, so a
-  // missed reset can never leave the app silent for more than a few seconds.
+  // The heartbeat keeps an open take fresh (STALE_CAPTURE_MS). When it goes stale the gate asks this recorder's native
+  // state through the probe, and lifts only on a positive "not recording" once the take is past its live part (fails
+  // closed). Both stop with the screen; unmount's resetCapture() is what ends the silence when the screen goes.
   useEffect(() => {
+    setRecorderProbe(() => {
+      try {
+        return recorder.isRecording;
+      } catch {
+        return null;
+      }
+    });
     const id = setInterval(() => heartbeat(takeToken.current), CAPTURE_HEARTBEAT_MS);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      setRecorderProbe(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Elapsed time once a minute, not every second (COMPONENTS 2.18), offered to the gate: a minute only passes while
