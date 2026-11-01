@@ -205,6 +205,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
+      // Linking.canOpenURL answers only for declared schemes. The crisis lines (tel, sms) and Write to us (mailto)
+      // ask it first, then show the number or address to copy when the device cannot (F20-REQ-005, F20-REQ-007).
+      LSApplicationQueriesSchemes: ['tel', 'sms', 'mailto'],
     },
     // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
     usesAppleSignIn: true,

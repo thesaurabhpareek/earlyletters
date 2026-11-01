@@ -102,8 +102,11 @@ describe('[S40] If you are struggling', () => {
   it('is one tap from Settings home and shows the line, the three resources and the 911 line, unchanged', () => {
     expect(en.struggling.resources).toHaveLength(3);
     expect(page).toMatch(/\{s\.body\}/);
-    expect(page).toMatch(/s\.resources\.map\(\(r\) => \(\s*<ListRow key=\{r\.tel\} title=\{r\.name\} subtitle=\{r\.how\}/);
-    expect(page).toMatch(/Linking\.openURL\(`tel:\$\{r\.tel\}`\)/);
+    // Each line is its own group; its first row is the name and how to reach it, and starts the call
+    // (through help-links.logic.ts, which falls back to the number to copy: RT-SET-02, F20-REQ-005).
+    expect(page).toMatch(/crisisRows\(s\.resources\)\.map\(\(\{ line: r, call, text \}\) => \(\s*<ListSection key=\{r\.tel\}>\s*<ListRow title=\{r\.name\} subtitle=\{r\.how\}[^>]*onPress=\{\(\) => link\.open\(call\)\}/);
+    expect(page).toMatch(/useHelpLink\(\)/);
+    expect(page).toMatch(/\{link\.sheet\}/);
     expect(page).toMatch(/\{s\.emergency\}/);
     expect(en.struggling.emergency).toBe('If you or your baby are in danger right now, call 911.');
   });
