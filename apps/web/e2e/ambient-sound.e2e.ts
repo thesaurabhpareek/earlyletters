@@ -1,5 +1,5 @@
 /**
- * The film's ambient sound (src/film/sound). It is made in the browser by our own code, so what can be checked here
+ * The film's ambient sound (src/film/sound): a licensed recording played through Web Audio. What can be checked here
  * is the behaviour, not the taste: the button, what it says, the AudioContext's real state, the remembered choice,
  * reduced motion, a hidden tab, and that scrolling moves the filter. A person has to listen for the rest.
  * Runs against the film build (E2E_FILM_URL); the launch-day page has no sound.
@@ -139,7 +139,7 @@ test.describe('ambient sound', () => {
     }
     const busy = Math.max(...(await cutoffs()));
     expect(busy).toBeGreaterThan(rest + 300);
-    expect(busy).toBeLessThan(6000); // the rest cutoff is 2600 to 4000 Hz (the sitar needs its upper partials) and scrolling opens it by at most 1500 Hz
+    expect(busy).toBeLessThan(13000); // bound moved with the design: the rest cutoff is now 5.5 to 10 kHz (a lid on a real recording) and scrolling opens it by at most 2.5 kHz
     // Still: the most recent targets come back down.
     await page.waitForTimeout(9000);
     const all = await cutoffs();
@@ -191,6 +191,54 @@ test.describe('ambient sound', () => {
       await expect(toggle(page)).toHaveCount(0);
       expect(await contexts(page)).toEqual([]);
     }
+  });
+});
+
+test.describe('ambient music files', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  const audioRequests = (page: Page) => {
+    const urls: string[] = [];
+    page.on('request', (r) => {
+      if (new URL(r.url()).pathname.startsWith('/audio/')) urls.push(new URL(r.url()).pathname);
+    });
+    return urls;
+  };
+
+  test('no audio is fetched before the first gesture; then only the default track, from our own origin', async ({ page }) => {
+    await spyOnAudio(page);
+    const urls = audioRequests(page);
+    await page.goto(filmUrl());
+    await expect(toggle(page)).toBeVisible();
+    await page.mouse.wheel(0, 400);
+    await page.waitForTimeout(800);
+    expect(urls).toEqual([]);
+    await firstGesture(page);
+    await expect(toggle(page)).toHaveText('Sound on');
+    await expect.poll(() => urls.length, { timeout: 8000 }).toBe(1);
+    expect(urls).toEqual(['/audio/vaporware.mp3']);
+    // The file decoded and is playing: a failed load would flip the button back to "Tap to start sound".
+    await page.waitForTimeout(2500);
+    await expect(toggle(page)).toHaveText('Sound on');
+  });
+
+  test('?music=<id> picks another track, an invalid id falls back, and nothing is stored', async ({ page }) => {
+    await spyOnAudio(page);
+    const urls = audioRequests(page);
+    await page.goto(new URL('/?music=lifewave', filmUrl()).toString());
+    await firstGesture(page);
+    await expect.poll(() => urls.length, { timeout: 8000 }).toBe(1);
+    expect(urls).toEqual(['/audio/lifewave.mp3']);
+    expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).toBe('{}');
+
+    const again = await page.context().newPage();
+    await again.addInitScript(() => undefined);
+    const urls2 = audioRequests(again);
+    await spyOnAudio(again);
+    await again.goto(new URL('/?music=nonsense', filmUrl()).toString());
+    await firstGesture(again);
+    await expect.poll(() => urls2.length, { timeout: 8000 }).toBe(1);
+    expect(urls2).toEqual(['/audio/vaporware.mp3']);
   });
 });
 

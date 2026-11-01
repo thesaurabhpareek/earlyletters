@@ -1,132 +1,112 @@
 # Ambient sound on the film home page
 
-Licence and provenance note. Code: `apps/web/src/film/sound/`.
-
-## Where the sound comes from
-
-The sound is generated live, in the visitor's browser, by our own code using the Web Audio API.
-
-- No audio files. No samples. No recordings. Nothing is downloaded or streamed.
-- No AI music and no AI model of any kind, at build time or run time.
-- No third-party music, loops, sound libraries or packages. No new dependency was added.
-- The notes are plain oscillators (sine and triangle waves) at fixed pitches written in `ambient-map.ts`, shaped by a
-  high-pass, a low-pass filter and a soft reverb whose impulse is made from seeded noise in `ambient-engine.ts`.
+Code: `apps/web/src/film/sound/` (`tracks.ts`, `ambient-engine.ts`, `ambient-map.ts`, `AmbientSound.tsx`). Files: `apps/web/public/audio/`.
+Tests: `test/tracks.test.ts`, `test/ambient-map.test.ts`, `e2e/ambient-sound.e2e.ts`.
 
 ## What it is
 
-A slow pad on four open chords (D sus2, C sus2, F major 7, G major 7; no hard thirds, no melody, no rhythm), played
-about an octave above the first version (lowest note about 262 Hz) so phone and laptop speakers can play it.
+The film plays one real, openly licensed recording (calm piano or ambient), hosted on our own origin, on a seamless loop.
+Nothing is generated. An earlier version synthesised a sitar-like raga and an earlier one still a chord pad; the founder
+heard the sitar ("too boring") and asked for open-source music instead. Those synthesisers were removed (below).
 
-- Two voice banks. A chord change does not slide any pitch: the next chord's bank is made silent, then the two banks
-  crossfade over 10 s with equal-power curves, and the old bank is discarded. The scene tone (night, dusk, paper) never
-  changes pitch; it changes the filter lid (900, 1020, 1200 Hz), the quiet "air" voice and the reverb.
-- Slow life: the filter cutoff drifts by 150 Hz every 33 s; each chord has a second voice set with another detune that
-  drifts across the stereo field (pan -0.4 to +0.4, every 50 s); every voice swells slowly and never in step; and
-  about every 20 to 40 s one very quiet chord tone rings (3 s in, 6 s out, always a note of the chord playing).
-- Detune is a few tenths of a hertz at every pitch, so the chorus beats under 1 Hz and never as a fast wobble.
-- Scroll: smoothed scroll speed (not direction) lifts the reverb, the air voice (0.10 to 0.25), the cutoff (up to
-  +1500 Hz) and the master gain (0.075 to at most 0.11, about +3.3 dB). It rises in about half a second and settles
-  back over a few seconds. The master gain never goes above 0.11.
-- Each chord has a small level trim, measured, so no part of the film is quieter than another by more than about 1 dB.
+## Design
 
-Why it is ours: every pitch, detune, envelope and number is written in `ambient-map.ts` and `ambient-engine.ts`. The
-chords are four common shapes; nothing is taken from a recording, a library or a model.
+- **Files.** mp3 (96 kbps stereo) under `public/audio/`, served from the site's own origin like any asset. No CDN, no
+  third-party request. mp3 plays in iPhone Safari and Chrome; do not add ogg (Safari is unreliable with it). m4a (AAC) is
+  allowed too. Each file at most 6 MB, all together under 20 MB (tests).
+- **Lazy.** Nothing is requested on page load. At the first gesture, `start()` makes and resumes the AudioContext
+  synchronously (iOS needs that), then fetches the one chosen track, decodes it (`decodeAudioData`) and fades it in over about
+  1.2 s. A test checks that no `/audio/` request happens before the gesture and that only one file is fetched.
+- **Loop.** The decoded track is scheduled as overlapping passes: each pass starts `crossfadeSeconds` before the last ends,
+  with an equal-power fade-in on the new pass and fade-out on the old one. The files already carry a fade in and out, so the
+  seam is a gentle dip-and-return rather than a hard cut (4 s). Passes are scheduled 20 s ahead on the audio clock.
+- **Chain.** passes, level (track `gainDb`, tone, scroll), low-pass (the only filter, glided with `setTargetAtTime`), a safety
+  limiter (threshold -4 dB; it should never act), fade, output.
+- **Scroll and tone** (`ambient-map.ts`, unchanged in spirit). Smoothed scroll speed lifts the level by at most 3.3 dB and
+  opens the low-pass by at most 2.5 kHz; both ease back over a few seconds. Tone sets the level (night 0.8, dusk 0.9, paper 1)
+  and the resting lid (night 5.5 kHz, dusk 7.5 kHz, paper 10 kHz). Nothing changes the music's tempo or notes.
+- **Level.** Tracks were normalised before they were added to about -23 LUFS integrated, peak under -7 dBFS, so `gainDb` is 0.
+  For a new file: `ffmpeg -i in.wav -af loudnorm=I=-23:TP=-8:LRA=7 -b:a 96k out.mp3`, check with
+  `ffmpeg -i out.mp3 -af ebur128=peak=true -f null -`, and set `gainDb` to the remaining difference.
 
-Because there is no third-party or machine-composed recording, there is no one else's copyright to licence, and no
-AI-music provenance question to answer. The chord notes are a handful of common intervals (suspended and added-ninth
-shapes); a set of pitches is not a protectable composition. The code is ours, UNLICENSED like the rest of `apps/web`.
+### Behaviour (unchanged)
 
-If a recording or a library is ever added later, it needs its own licence note here first.
+- Default on (`AMBIENT_DEFAULT_ON`), but only from the first real gesture (pointerdown, touchend, keydown, click). Scrolling is
+  not a gesture. Tab, Shift, Space, arrows, Page Up/Down, Home, End and anything inside the sign-up form never start it.
+  Until then the button reads "Tap to start sound".
+- One button, 44 px, `aria-pressed`. "Sound on" only while the context is running and the track has loaded; if the file
+  fails to load the button goes back to "Tap to start sound" and the next tap retries.
+- Reduced motion never auto-starts. A hidden tab fades out and suspends; coming back resumes. Leaving the page releases the
+  context. `navigator.audioSession.type = 'playback'` is set so the iPhone silent switch does not mute it.
+- The only stored value is still the on/off choice in `localStorage` (`el-ambient-sound`). **No new storage.**
+- Only the film home page mounts it; `/privacy`, `/terms` and the sign-up pages never make a sound.
 
-## How it behaves
+### Choosing a track: `?music=<id>`
 
-- Default: `AMBIENT_DEFAULT_ON` in `ambient-map.ts` (true). Flip it to false to make the sound start off for everyone.
-- Browsers refuse sound before a user gesture, and scrolling is not a gesture. "On by default" therefore means: on in
-  state, fading in at the first pointerdown, touchend, keydown or click. Until then the button reads "Tap to start
-  sound" and is not pressed; it reads "Sound on" only while the AudioContext is really running.
-- Reduced motion: never starts on its own, whatever was stored. The visitor presses the button.
-- The choice is remembered in `localStorage` (`el-ambient-sound`, the single value "on" or "off"), inside try/catch. It
-  stays on the visitor's device and is never sent anywhere. The site's rule until now was "no browser storage"
-  (`test/legal.test.ts`, comment in `privacy-copy.ts`); the Privacy page itself says only "We do not use cookies",
-  which stays true. `legal.test.ts` now allows this one file and nothing else. Whether the Privacy page should mention
-  the remembered sound choice is a founder and legal decision. To drop the storage, make `readChoice`/`writeChoice`
-  no-ops and remove the allowance.
-- A hidden tab pauses it (fade out, then `suspend`); leaving the page closes the context; muting fades out, stops the
-  oscillators and closes the context.
-- Only the film home page (`Film.tsx`) mounts it. `/privacy`, `/terms` and the sign-up pages never do.
-- Level: master gain 0.075 at rest, at most 0.11 while scrolling fast, plus a fade-in over a few seconds. Nothing
-  starts or stops with a jump; every scroll-driven change is a `setTargetAtTime` glide and every chord change is a
-  crossfade.
-- Keys that only move around the page (Tab, Shift, Space, arrows, Page Up and Down, Home, End) never start the sound.
-  Neither does anything inside the sign-up form.
+`/?music=lifewave` plays that track. The id is read once from the address bar and kept in a variable in memory for the visit
+(it survives moving between pages of the site, not a reload without the parameter). It is never written anywhere. A missing or
+invalid value falls back to the default, the first entry in `TRACKS`. To compare on a phone, open four addresses:
 
-## Honest risks
+| Address | Track |
+|---|---|
+| `/` or `/?music=vaporware` | Calm Piano 1 (default) |
+| `/?music=lifewave` | Calm Ambient 3 |
+| `/?music=contemplation` | Contemplation |
+| `/?music=first-light` | First Light Particles |
 
-- Unexpected sound. A parent may open the page at night next to a sleeping baby. Sound begins at their first tap or key
-  press, never on its own, and it is quiet, but it is still sound they did not ask for in words. The founder can set
-  `AMBIENT_DEFAULT_ON = false` to make it opt-in.
-- Autoplay rules differ. Chrome, Safari and Firefox each decide what counts as a gesture; iOS Safari wants a tap that
-  ends (touchend or click), not a scroll swipe. On a browser that holds the sound back the button keeps saying "Tap to
-  start sound" and nothing is claimed that is not true.
-- WCAG 2.2 1.4.2 (Audio Control): sound that plays automatically for more than three seconds needs a way to stop it.
-  The button is on the page from the first paint, is keyboard reachable and is a labelled `aria-pressed` toggle. It
-  is reachable before the sound begins, because the sound begins only after a gesture.
-- Not verified by ear. The sound was checked by script (context state, parameter values over a scripted scroll), not
-  listened to. A person must judge whether it is calm, pleasant and quiet enough on phone speakers, laptop speakers
-  and headphones before launch.
+### Credits
 
-## Measurements
+`credits()` in `tracks.ts` builds a credit line for every track whose licence is in the CC "BY" family. The footer renders
+those lines (label from `site.sound.credit`, with a link to the source page and the licence). It is generated from the list, so
+attribution cannot be forgotten, and a test fails if a BY-family track would have no credit. Today all four tracks are CC0, so
+the footer shows nothing. Adding a CC-BY track (or a CC-BY-SA one) needs only a list entry; see the share-alike question below.
 
-Two ways, both on a local production build in headless Chromium with no audio device, and neither is a listening test.
+## Licence register
 
-1. Live capture: a ScriptProcessor tap on the real page, a scripted visit of about 4.5 minutes (gesture, rest, firm
-   scroll, a hold on each of the four chords, a slow walk down the film, mute, unmute). The tap runs on the main
-   thread and sometimes drops a block, which shows as a step at a 4096-sample block edge; those are excluded and
-   are not in the engine (the offline render below has none).
-2. Offline render: the same engine run in an OfflineAudioContext for 70 s with a scripted scroll, and again with no
-   scroll as a control. Exact, so the scroll lift is measured against the identical render without the scroll.
+Tracks, authors, licence and source pages were found and checked by the coordinator before they were handed over; I
+(the engine author) copied them as given and did not re-check the pages. I tried to read the CC BY 4.0 and CC0 1.0 legal code
+for this note and was blocked from fetching them, so **no statement here is quoted from a licence text**.
 
-| | Before (#445) | After |
-|---|---|---|
-| Peak, live capture | -19.3 dBFS | -21.4 dBFS |
-| RMS, live capture | -33.5 | -34.3 |
-| Integrated loudness (K-weighted, mono) | -34.4 LUFS | -34.8 LUFS |
-| Share of power below 60 Hz | 0.0 % | 0.0 % |
-| Share of power below 200 Hz | 38 % (31 % offline) | 0 % |
-| Share of power 200 to 2000 Hz | 62 % | 100 % |
-| Spectral centroid at rest | 226 Hz | 715 Hz |
-| Level lift from a firm scroll, against an identical no-scroll render | +0.4 to +2.7 dB, only at full energy | +1.8, +3.4, +1.8 dB over the 4 s of a full-energy scroll; +1.6, +2.9, +2.2 dB in the live paired capture |
-| Same lift judged without a control (what the first review did) | -2.2 dB (lower) | -0.4 to 0.0 dB, because the slow swell moves the level by about 3 dB by itself |
-| Settling after the scroll | back within 0.2 dB in 3 s | back within 0.1 dB in 3 s |
-| Fast amplitude wobble (3 to 15 Hz) across a chord or tone change | 7.5 to 9.6 % (index) | 2.9 to 4.5 % (2.0 to 3.2 % offline) |
-| Same index at rest | 5 % | 5 % |
-| Level difference between the four parts of the film | 4.7 dB | 0.6 dB |
-| Timbre self-similarity over a walk down the film, lag 10 s and 40 s | 0.28 and 0.07 | 0.66 and 0.28 |
-| Click check at start, mute, unmute (largest step off block edges, live) | 0.003, 0.002, 0.003 | 0.008, 0.005, 0.008 |
-| Largest step in the exact offline render | 0.004 | 0.007 (none above 0.012) |
-| Audio load, offline render speed | 13 x realtime | 8 x realtime |
+| id | Title | Author | Licence | Source | Length | Size | Loudness / peak (measured here with ffmpeg ebur128) |
+|---|---|---|---|---|---|---|---|
+| vaporware | Calm Piano 1 (Vaporware) | cynicmusic | CC0 1.0 | https://opengameart.org/content/calm-piano-1-vaporware | 165 s | 2.0 MB | -22.8 LUFS / -7.3 dBFS |
+| lifewave | Calm Ambient 3 (Lifewave 2k) | cynicmusic | CC0 1.0 | https://opengameart.org/content/calm-ambient-3-lifewave-2k | 187 s | 2.2 MB | -23.8 LUFS / -8.1 dBFS |
+| contemplation | Contemplation | Joth | CC0 1.0 | https://opengameart.org/content/contemplation-0 | 120 s | 1.4 MB | -23.3 LUFS / -7.2 dBFS |
+| first-light | First Light Particles | Yoiyami | CC0 1.0 | https://opengameart.org/content/first-light-particles-%E2%80%93-cc0-atmospheric-pianoambient-track | 132 s | 1.6 MB | -23.4 LUFS / -9.3 dBFS |
 
-How to read it:
+Our files are mp3 re-encodes of the originals (normalised, with fades), made by the coordinator. CC0 is a dedication to the
+public domain that asks nothing of the user; that is the general purpose of CC0, and counsel should confirm it for these four
+pages before launch (including that each uploader had the right to dedicate the work, which no site can prove for us).
+Keep a dated copy of each source page (screenshot or archive link) in the release file as evidence.
 
-- "Before" matches the reviewer's capture of the live site (peak -20.4, RMS -31.6, -33.5 LUFS, about half the power
-  at or below 200 Hz) closely enough to trust the method.
-- The first review found a fast scroll "lower, not higher". That was the chord and tone moving during the scroll plus
-  the pad's own swell, not the scroll mapping. With a matched no-scroll control the old design lifted by up to 2.7 dB
-  and the new one by 3.4 dB at most.
-- The timbre self-similarity measure is lower for the old version because the old tone changes transposed the whole
-  chord and slid its pitch, which is exactly the beating the review wanted gone. In a still stretch the new pad is as
-  steady as the old one (0.9 or more at 40 s in live capture): the "slow life" is deliberately subtle. Whether it is
-  enough variety is for a listener to say.
-- Level breathing from the slow swells is still about 3 to 4 dB peak to peak over 20 s; the scroll lift is a faster
-  and separate movement.
-- The sparse chord tone is about 8 dB under the pad's RMS, not the -30 dBFS in the brief: at -30 dBFS it lifted the
-  whole pad by about 3 dB while it rang, which is not very quiet.
-- The new engine costs about 1.7 times the audio processing of the old one. That is still small, but it has not been
-  tried on an older phone.
+Rules for adding a track: read its licence page and the licence text; put the licence in the `Licence` type only after
+reading it; fill every field in `tracks.ts`; if the licence is BY, the credit appears automatically; if it is BY-SA, ask
+counsel whether our normalise, fade, crossfade and filter count as an adaptation that must itself be shared alike; never add
+NC or ND licences (a commercial site) or any track whose uploader is not its author without a stated source.
 
-## What nobody has heard
+## Privacy and legal pins
 
-This was built and measured by a program that cannot hear. Nothing above says it sounds good. A person needs to listen
-on a phone speaker, a laptop and headphones, at night and in a quiet room, to judge whether it is calm, whether the
-scroll response is pleasant and not distracting, whether the chord changes are smooth, and whether the sparse tone
-belongs.
+Audio is fetched from our own origin after the first gesture, like an image. No new data leaves the browser, the
+Content-Security-Policy is unchanged (`default-src 'self'` covers `connect-src` fetches of `/audio/`), and no new storage is
+used, so the Privacy page needs no change. The footer credit (when one exists) is a link to the source page, not a load.
+
+## Removed
+
+The synthesised sound is gone (it stays in git history, PR #496's first commit): `pluck.ts` (Karplus-Strong sitar and tanpura
+model), `raga.ts` (the Bhoopali phrases and picker), the scheduler, drone, sympathetic strings and reverb in the engine, and
+`test/pluck.test.ts` and `test/raga.test.ts`. They are not kept as a fallback: a fallback would ship about 60 KB of
+code to every visitor for a case (a failed same-origin file) that the retry on the next tap already covers. The tone and
+scroll parameters that only the synth used (reverb, shimmer, pluck strength, gap scale, register) were removed from
+`ambient-map.ts`; the filter, level, tone and scroll mapping stay.
+
+## Risks and what has not been checked
+
+- **Nobody has listened** to these files through this player on a phone; level, the 4 s loop dip, and the low-pass lid are
+  numbers, not judgement. Try all four addresses on the iPhone, with the ringer switch on silent too.
+- **Memory.** A decoded track is held as 32-bit stereo audio: about 58 MB (vaporware), 66 MB (lifewave), 42 MB, 47 MB. Fine on
+  recent phones; untested on old ones. Keep new tracks under about 3.5 minutes.
+- **Download.** 1.4 to 2.2 MB on the first tap, on the visitor's data. On a slow link there is a short silence before the music
+  fades in; the button already says "Sound on".
+- **Loop.** Equal-power crossfade of two correlated copies of the same audio can bump by up to 3 dB at the seam for tonal
+  material; not measured in a browser render.
+- **Browsers.** Verified in headless Chromium only (mp3 decode, requests, button states). Safari was not run.
