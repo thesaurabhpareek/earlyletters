@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { brand } from '@scribe/brand';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { alt as ogAlt } from '../src/app/opengraph-image';
 import * as siteModule from '../src/content/site';
 
 type Leaf = { path: string; text: string; lang?: string; meta?: boolean };
@@ -168,6 +169,23 @@ describe('site vocabulary', () => {
     const BANNED =
       /\b(learn(s|ed|ing|er|ers)?|ABC|early learning|literac(y|ies)|educat(ion|ional)|AI[- ]?(written|generated|powered)|generat(e|es|ed|ing)|legacy|hereafter|cherish(es|ed|ing)?|precious|journey(s|ed|ing)?|unlock(s|ed|ing)?|seamless(ly)?|magic(al)?|effortless(ly)?)\b/i;
     expect(offenders(PROSE, BANNED)).toEqual([]);
+  });
+
+  // RULE (claims and trust rulings, 1 Nov 2026, docs/exec-rulings-claims-trust-2026-11-01.md, Q1, Q5 and Q6): no "exactly as you
+  // said it" and no "word for word" in public site copy or in the share image's alt text. The default Review view removes ums and
+  // repeats and adds capitals and full stops, so a promise of exactness is not true of the words. What is true: it stays in your
+  // words, every change is marked, the original recording is kept unchanged. "Never adds a word" is deliberately NOT banned: the
+  // ruling kept it as true (verifyEdits rejects inserted_content_word), so do not widen this rule to it.
+  it('makes no "exactly as you said it" or "word for word" promise, in the site copy or the share image alt text', () => {
+    const HELD = /\b(exactly as (you|they|i|we|it was|they were) (said|spoke|say)\b(?: it)?|exactly as said|word[\s-]+for[\s-]+word|every word exactly)/i;
+    expect(offenders(PROSE, HELD)).toEqual([]);
+    const alts: Leaf[] = [{ path: 'src/app/opengraph-image.ts:alt', text: ogAlt }];
+    expect(offenders(alts, HELD)).toEqual([]);
+    // The rule sees what it should: it catches the held phrases and leaves "never adds a word" alone.
+    expect(HELD.test('Kept exactly as you said it.')).toBe(true);
+    expect(HELD.test('Every word kept exactly as it was said.')).toBe(true);
+    expect(HELD.test('Your letters, word for word.')).toBe(true);
+    expect(HELD.test('It never adds a word, and every fix can be put back.')).toBe(false);
   });
 
   // RULE: the product name is spelled exactly as in packages/brand (never EarlyLetters, Early letters or early-letters) and the codename never shows.
