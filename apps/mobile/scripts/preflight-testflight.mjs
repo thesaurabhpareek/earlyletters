@@ -675,7 +675,7 @@ if (cfg) {
     if (prof?.environment === 'preview')
       notes.push('This profile reads the same EAS "preview" environment as build 2, so the staging URL and publishable key are inlined in this bundle too. Both are public by design and unused here: with the switch off no client is constructed. A secret key in that environment would ship in this build as well (the 4a check above).');
   }
-  notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under the production App Store Connect record only: product ids are unique across the account (observed 1 Nov 2026), so a .preview build cannot load Plus; test Plus with a development build on the production bundle id. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
+  notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under the production App Store Connect record only: product ids are unique across the account (observed 1 Nov 2026), so a .preview build cannot load Plus; Plus in the sandbox needs a TestFlight build of the production profile (after the 9 Nov go/no-go, D-124); until then use the Xcode StoreKit configuration file. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }
 
 // ---------------------------------------------------------------- founder steps this script cannot see
