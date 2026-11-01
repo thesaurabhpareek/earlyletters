@@ -100,7 +100,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
-import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
+import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -452,11 +452,14 @@ export default function Review() {
       // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PAY-17): hold the letter exactly as
       // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
       // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
-      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses.
-      holdOnce(holding, () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
-      toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote });
-      if (router.canGoBack()) router.back();
-      else router.replace('/');
+      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses. A second
+      // tap does nothing (holdWithoutSheet: one hold, one line, one back). No letter_held event: that one counts holds
+      // chosen at the Keep sheet, and no sheet was shown here (keepSheetFor notes nothing for a hold either).
+      holdWithoutSheet(holding, {
+        hold: () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })),
+        say: () => toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote }),
+        leave: () => (router.canGoBack() ? router.back() : router.replace('/')),
+      });
       return true;
     }
     setGate(g);

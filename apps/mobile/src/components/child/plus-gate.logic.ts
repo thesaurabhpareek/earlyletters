@@ -165,6 +165,20 @@ export function holdOnce(guard: { current: boolean }, hold: () => boolean): Hold
 }
 
 /**
+ * The Keep step's `hold` (RT-PAY-17: Plus not known yet on this phone, so no Keep sheet): hold the letter once, then say
+ * the held line and leave Review, once. A second Keep tap in the same moment does nothing: one hold, one line, one
+ * navigation (`holdOnce`'s 'again'). A hold that does not take still says the line and leaves, as "Keep it here for now"
+ * does, because the draft is still where it was. Never throws past `holdOnce`.
+ */
+export function holdWithoutSheet(guard: { current: boolean }, steps: { hold: () => boolean; say: () => void; leave: () => void }): HoldOutcome {
+  const outcome = holdOnce(guard, steps.hold);
+  if (outcome === 'again') return outcome;
+  steps.say();
+  steps.leave();
+  return outcome;
+}
+
+/**
  * The card's tilt (S22 Visual: "rotated -2 degrees"). Held still at accessibility text sizes, where a tilted block of
  * large type is harder to read and its corners would crowd the screen edge.
  */
