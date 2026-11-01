@@ -60,7 +60,7 @@ import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
-import { setRecorderCapturing } from '@/lib/speech-gate';
+import { CAPTURE_HEARTBEAT_MS, closeTake, confirmLive, finishTake, heartbeat, openTake, pauseConfirmed, pauseTake, resetCapture, resumeTake } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -144,15 +144,25 @@ export default function Listen() {
     } catch {}
     return live || status.isRecording === true;
   };
-  // The app-wide gate (lib/speech-gate.ts) follows the recorder's real state, so no toast or other `announce()` anywhere
-  // in the app speaks into the take either. A live phase counts as capturing before the native flag catches up.
+  // The app-wide gate (lib/speech-gate.ts), so no toast or other `announce()` anywhere in the app speaks into the take.
+  // Its state machine is keyed to this take's token: this screen opens, pauses, resumes, finishes and closes it; a
+  // status poll can only confirm ON for the open take (never turn it off, never on after the end). The one way off
+  // during a take is a pause the person made, once the recorder has really stopped writing.
+  const takeToken = useRef<number | null>(null);
   useEffect(() => {
     const capturing = capturingNow();
-    setRecorderCapturing(capturing || phase === 'recording');
+    if (capturing) confirmLive(takeToken.current);
+    else if (phase === 'paused') pauseConfirmed(takeToken.current);
     announcer.settle({ phase, capturing });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, phase]);
   useEffect(() => () => announcer.clear(), [announcer]);
+  // The heartbeat that keeps an open take's ON state from expiring (STALE_CAPTURE_MS). It stops with the screen, so a
+  // missed reset can never leave the app silent for more than a few seconds.
+  useEffect(() => {
+    const id = setInterval(() => heartbeat(takeToken.current), CAPTURE_HEARTBEAT_MS);
+    return () => clearInterval(id);
+  }, []);
 
   // Elapsed time once a minute, not every second (COMPONENTS 2.18), offered to the gate: a minute only passes while
   // recording, so it is dropped, and the clock's label carries the time at the next pause (F04-U30).
@@ -179,12 +189,14 @@ export default function Listen() {
     const id = takeId.current;
     if (!id || ended.current) return;
     ended.current = true;
+    const token = takeToken.current;
+    finishTake(token); // ON until the recorder has stopped, even from paused
     setPhase('finishing');
     let draft: Awaited<ReturnType<typeof finalizeTake>>;
     try {
       draft = await finalizeTake(recorder, id, reason, lastDuration.current);
     } finally {
-      setRecorderCapturing(false); // the recorder has stopped: the app may speak again (on Review)
+      closeTake(token); // the recorder has stopped: the app may speak again (on Review); a late poll cannot undo this
     }
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
@@ -212,14 +224,17 @@ export default function Listen() {
     }
     // Haptic before the session activates: iOS mutes haptics while recording.
     haptic('press');
+    // Silent from before the audio session and the microphone go live: `starting` is ON, and no status poll can turn
+    // it off while the start is in progress.
+    const token = openTake();
+    takeToken.current = token;
     await setAudioMode('recording');
-    // Silent from before the microphone goes live; the effect above then follows the recorder (a failed start resets it).
-    setRecorderCapturing(true);
     const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
     if (!mounted.current) {
-      // The screen went away while the take was starting: keep what exists, as any other exit does.
+      // The screen went away while the take was starting: keep what exists, as any other exit does. (Unmount already
+      // forced the gate off; closing the dead token is a no-op kept for symmetry.)
       ended.current = true;
-      void finalizeTake(recorder, draft.id, 'dismiss', 0).finally(() => setRecorderCapturing(false));
+      void finalizeTake(recorder, draft.id, 'dismiss', 0).finally(() => closeTake(token));
       return;
     }
     takeId.current = draft.id;
@@ -248,6 +263,8 @@ export default function Listen() {
       const failure = startFailure({ takeBegun: takeId.current !== null, granted: await grantedNow() });
       if (failure === 'interrupted') void endTake('interruption');
       else {
+        // No take began: the start's token is closed, so the app may speak on the busy or off screen.
+        closeTake(takeToken.current);
         await setAudioMode('idle').catch(() => {});
         setPhase(failure);
       }
@@ -304,11 +321,11 @@ export default function Listen() {
       const id = takeId.current;
       if (id && !ended.current) {
         ended.current = true;
-        // The app stays silent until the recorder has really stopped, then may speak again.
-        void finalizeTake(recorder, id, 'dismiss', lastDuration.current).finally(() => setRecorderCapturing(false));
-      } else if (!id) {
-        setRecorderCapturing(false); // no take ever began (a failed or abandoned start)
+        void finalizeTake(recorder, id, 'dismiss', lastDuration.current);
       }
+      // Unmount always forces the gate off, whatever state the take was in (Review B on #523): with the screen gone,
+      // nothing can keep the app silent. The recorder is being stopped above; the screen leaving is the take's end.
+      resetCapture();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -317,13 +334,14 @@ export default function Listen() {
   const togglePause = () => {
     haptic('tap');
     if (phase === 'recording') {
+      pauseTake(takeToken.current); // still ON until the recorder has really stopped (pauseConfirmed)
       recorder.pause();
       seenLive.current = false;
       setPhase('paused');
       // Held until the recorder has really stopped capturing, then spoken once (F04-U30); a quick resume drops it.
       announcer.say(t.paused, { phase: 'paused', capturing: capturingNow() }, 'hold');
     } else if (phase === 'paused') {
-      setRecorderCapturing(true); // silent before the microphone is live again
+      resumeTake(takeToken.current); // silent before the microphone is live again
       recorder.record();
       setPhase('recording');
       // Live again, so the gate drops this.
@@ -344,11 +362,13 @@ export default function Listen() {
           ended.current = true;
           trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
           const uri = recorder.uri;
+          const token = takeToken.current;
+          finishTake(token);
           try {
             if (id) await abandonTake(recorder, id);
             else await setAudioMode('idle').catch(() => {});
           } finally {
-            setRecorderCapturing(false);
+            closeTake(token);
           }
           // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
           // haptics while recording.
@@ -553,7 +573,7 @@ function MicPrimer({ childName, onContinue, onType, onClose }: { childName: stri
       </ScrollView>
       <View className="gap-2 px-5 pb-4">
         <Button variant="secondary" size="lg" fullWidth label={pr.continueButton} onPress={onContinue} testID="listen.primer.continue" />
-        <Button variant="secondary" size="lg" fullWidth label={copy.errors.micDenied.typeButton} icon={PencilSimpleIcon} onPress={onType} testID="listen.primer.type" />
+        <Button variant="secondary" size="lg" fullWidth label={copy.errors.micDenied.typeButton} onPress={onType} testID="listen.primer.type" />
       </View>
     </SafeAreaView>
   );

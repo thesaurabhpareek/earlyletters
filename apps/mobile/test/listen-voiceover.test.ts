@@ -100,7 +100,7 @@ describe('RT-REC-09: no announcement is emitted while a take is recording (SR-C-
     expect(listen).toMatch(/recorder\.isRecording/);
     // Pause holds "Paused." for the stop; the room settles the gate on every recorder status.
     expect(listen).toMatch(/say\(t\.paused, \{ phase: 'paused', capturing: capturingNow\(\) \}, 'hold'\)/);
-    expect(listen).toMatch(/const capturing = capturingNow\(\);[\s\S]{0,120}announcer\.settle\(\{ phase, capturing \}\)/);
+    expect(listen).toMatch(/const capturing = capturingNow\(\);[\s\S]{0,200}announcer\.settle\(\{ phase, capturing \}\)/);
     expect(listen).toMatch(/announcer\.clear\(\)/);
   });
 
@@ -212,6 +212,9 @@ describe('RT-REC-01: our primer first, then the iOS question (SR-C-05, F04-REQ-0
     const weight = (attrs: string) => attrs.match(/variant="(\w+)" size="(\w+)" fullWidth/)?.slice(1);
     expect(weight(cont![1])).toEqual(['secondary', 'lg']);
     expect(weight(type![1])).toEqual(weight(cont![1]));
+    // [Review A nit] no icon on either, so neither carries more weight.
+    expect(cont![1]).not.toMatch(/icon=/);
+    expect(type![1]).not.toMatch(/icon=/);
     expect(primer).toMatch(/const heading = useRef<RNText>\(null\);\s*useFocusOnMount\(heading\);/);
     expect(primer).toMatch(/<Text ref=\{heading\} variant=\{STATE_LAYOUT\.title\} asHeading/);
   });

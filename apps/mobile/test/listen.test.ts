@@ -234,7 +234,7 @@ describe('the screen uses them (source)', () => {
 
   it('[review A L2] a take that finishes starting after the screen has gone is kept, as any other exit', () => {
     const start = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
-    expect(start).toMatch(/if \(!mounted\.current\) \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draft\.id, 'dismiss', 0\)\.finally\(\(\) => setRecorderCapturing\(false\)\);\s*return;\s*\}/);
+    expect(start).toMatch(/if \(!mounted\.current\) \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draft\.id, 'dismiss', 0\)\.finally\(\(\) => closeTake\(token\)\);\s*return;\s*\}/);
     expect(start.indexOf('if (!mounted.current)')).toBeLessThan(start.indexOf('takeId.current = draft.id'));
   });
 

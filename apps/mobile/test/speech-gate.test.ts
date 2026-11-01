@@ -1,18 +1,41 @@
 /// <reference types="node" />
 /**
  * The app-wide recording hold (SR-C-02: F04-REQ-040, F04-REQ-041; B2-21 never waived; RT-REC-09). Every `announce()`
- * in the app (toasts, status lines, timers such as Invite's) passes lib/speech-gate.ts; while the recorder captures it
- * says nothing, and nothing it was asked to say is replayed into the take later. Node cannot load React Native, so the
- * gate runs here with a fake speaker and timer, and the wiring of lib/a11y.ts, the toast and Listen is checked in source.
+ * in the app (toasts, status lines, timers such as Invite's) passes lib/speech-gate.ts; while a take is on it says
+ * nothing, and nothing it was asked to say is replayed into the take later. The capture state is a state machine keyed
+ * to the take's token (Reviews A and B on #523). Node cannot load React Native, so the gate runs here with a fake
+ * speaker, timer and clock, and the wiring of lib/a11y.ts, the toast and Listen is checked in source.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { PLAYBACK_RETRY_MS, createGatedAnnounce, isRecorderCapturing, setRecorderCapturing } from '../src/lib/speech-gate';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  CAPTURE_HEARTBEAT_MS,
+  PLAYBACK_RETRY_MS,
+  STALE_CAPTURE_MS,
+  captureState,
+  closeTake,
+  confirmLive,
+  createGatedAnnounce,
+  finishTake,
+  heartbeat,
+  isRecorderCapturing,
+  openTake,
+  pauseConfirmed,
+  pauseTake,
+  resetCapture,
+  resumeTake,
+  setCaptureClockForTests,
+} from '../src/lib/speech-gate';
 
 const SRC = join(__dirname, '..', 'src');
 const src = (p: string) => readFileSync(join(SRC, p), 'utf8');
 const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+let now = 0;
+const tick = (ms: number) => {
+  now += ms;
+};
 
 function rig() {
   const spoken: string[] = [];
@@ -32,7 +55,14 @@ function rig() {
   return { spoken, say, runTimers, setMode: (m: typeof mode) => void (mode = m) };
 }
 
-afterEach(() => setRecorderCapturing(false));
+beforeEach(() => {
+  now = 1_000_000;
+  setCaptureClockForTests(() => now);
+});
+afterEach(() => {
+  resetCapture();
+  setCaptureClockForTests(null);
+});
 
 describe('RT-REC-09: no app announcement reaches a take', () => {
   it('outside a take a toast is spoken as before', () => {
@@ -44,35 +74,38 @@ describe('RT-REC-09: no app announcement reaches a take', () => {
   it('a toast during a take says nothing, and is not replayed after a pause, a resume or the stop', () => {
     const r = rig();
     r.setMode('recording');
-    setRecorderCapturing(true);
+    const take = openTake();
+    confirmLive(take);
     r.say('Invite cancelled. Undo.');
     r.say('Your export is ready.');
     r.runTimers();
     expect(r.spoken).toEqual([]);
-    setRecorderCapturing(false); // paused, or the take ended
+    pauseTake(take);
+    pauseConfirmed(take); // paused: the app may speak, but nothing from before is replayed
     r.runTimers();
-    setRecorderCapturing(true); // resumed
+    resumeTake(take);
     r.runTimers();
-    setRecorderCapturing(false);
+    finishTake(take);
+    closeTake(take);
     r.setMode('idle');
     r.runTimers();
     expect(r.spoken).toEqual([]);
   });
 
-  it('a message waiting behind playback is dropped, not spoken, if a take is capturing when it comes due', () => {
+  it('a message waiting behind playback is dropped, not spoken, if a take is on when it comes due', () => {
     const r = rig();
     r.setMode('playback');
     r.say('Letter deleted. Undo available.');
     expect(r.spoken).toEqual([]);
     r.setMode('recording');
-    setRecorderCapturing(true);
+    const take = openTake();
     r.runTimers();
-    setRecorderCapturing(false);
+    closeTake(take);
     r.runTimers();
     expect(r.spoken).toEqual([]);
   });
 
-  it('the playback wait still works when no take is capturing (TDD 09 rule S2)', () => {
+  it('the playback wait still works when no take is on (TDD 09 rule S2)', () => {
     const r = rig();
     r.setMode('playback');
     r.say('One.');
@@ -82,10 +115,103 @@ describe('RT-REC-09: no app announcement reaches a take', () => {
     r.runTimers();
     expect(r.spoken).toEqual(['One.', 'Two.']);
   });
+});
 
-  it('the flag is a plain module value Listen sets', () => {
+describe('the capture state machine (Reviews A and B on #523)', () => {
+  it('starting, live, pausing and finishing are ON; idle and a confirmed pause are off', () => {
     expect(isRecorderCapturing()).toBe(false);
-    setRecorderCapturing(true);
+    const take = openTake();
+    expect([captureState(), isRecorderCapturing()]).toEqual(['starting', true]);
+    confirmLive(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['live', true]);
+    pauseTake(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['pausing', true]);
+    pauseConfirmed(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['paused', false]);
+    resumeTake(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['live', true]);
+    finishTake(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['finishing', true]);
+    closeTake(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+  });
+
+  it('[Review A race] a status poll during a start in progress cannot turn it off before the microphone is live', () => {
+    const r = rig();
+    const take = openTake();
+    // Polls that say "not recording yet": none of the calls a poll can make turns the state off.
+    confirmLive(null);
+    heartbeat(take);
+    pauseConfirmed(take); // only from `pausing`, which only the person's pause enters
+    expect([captureState(), isRecorderCapturing()]).toEqual(['starting', true]);
+    r.say('Invite cancelled.'); // the first moment of the take
+    confirmLive(take); // the recorder is live
+    r.say('Your export is ready.');
+    expect(r.spoken).toEqual([]);
+  });
+
+  it('[Review B race] a late isRecording:true poll after finish cannot turn it back on', () => {
+    const r = rig();
+    const take = openTake();
+    confirmLive(take);
+    finishTake(take);
+    closeTake(take); // finalize resolved
+    confirmLive(take); // the late poll
+    heartbeat(take);
+    resumeTake(take);
+    pauseTake(take);
+    finishTake(take);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+    r.say('Letter kept.');
+    expect(r.spoken).toEqual(['Letter kept.']);
+  });
+
+  it('[Review B] unmount after finish (or mid-take) always forces off, and a late poll does not reopen it', () => {
+    const take = openTake();
+    confirmLive(take);
+    finishTake(take);
+    resetCapture(); // Listen unmounts before finalize resolves
+    expect(isRecorderCapturing()).toBe(false);
+    confirmLive(take);
+    closeTake(take); // the late finally: a no-op
+    expect([captureState(), isRecorderCapturing()]).toEqual(['idle', false]);
+    // Mid-take unmount, no finish at all.
+    const next = openTake();
+    confirmLive(next);
+    resetCapture();
+    expect(isRecorderCapturing()).toBe(false);
+  });
+
+  it('late calls from an older take never touch a newer take', () => {
+    const first = openTake();
+    closeTake(first);
+    const second = openTake();
+    confirmLive(second);
+    closeTake(first);
+    pauseTake(first);
+    expect([captureState(), isRecorderCapturing()]).toEqual(['live', true]);
+  });
+
+  it(`safety net: an ON state with no heartbeat for more than ${STALE_CAPTURE_MS} ms expires; a heartbeat keeps it`, () => {
+    expect(STALE_CAPTURE_MS).toBe(3000);
+    expect(CAPTURE_HEARTBEAT_MS).toBe(500);
+    expect(STALE_CAPTURE_MS / CAPTURE_HEARTBEAT_MS).toBeGreaterThanOrEqual(6); // six missed beats before expiry
+    const r = rig();
+    const take = openTake();
+    for (let i = 0; i < 20; i++) {
+      tick(CAPTURE_HEARTBEAT_MS);
+      heartbeat(take);
+      expect(isRecorderCapturing()).toBe(true);
+    }
+    // The screen went away without its reset: no more beats.
+    tick(STALE_CAPTURE_MS);
+    expect(isRecorderCapturing()).toBe(true); // exactly at the limit, still on
+    tick(1);
+    expect(isRecorderCapturing()).toBe(false);
+    r.say('Invite cancelled.');
+    expect(r.spoken).toEqual(['Invite cancelled.']);
+    // A stalled JS thread that beats again turns the open take back on.
+    heartbeat(take);
     expect(isRecorderCapturing()).toBe(true);
   });
 });
@@ -101,13 +227,23 @@ describe('wiring: every announcement passes the gate', () => {
     expect(toast).not.toMatch(/AccessibilityInfo\.announce/);
   });
 
-  it('Listen sets the flag from the recorder: before the microphone goes live, on every status, and off only after the recorder stops', () => {
+  it('Listen drives the state machine by token; polls only confirm; unmount always resets', () => {
     const l = code(src('app/listen.tsx'));
-    expect(l).toMatch(/setRecorderCapturing\(capturing \|\| phase === 'recording'\);\s*announcer\.settle\(\{ phase, capturing \}\);/);
-    expect(l).toMatch(/setRecorderCapturing\(true\);\s*const draft = await beginTake\(/);
-    expect(l).toMatch(/setRecorderCapturing\(true\);\s*recorder\.record\(\);/);
-    expect(l).toMatch(/draft = await finalizeTake\(recorder, id, reason, lastDuration\.current\);\s*\} finally \{\s*setRecorderCapturing\(false\);/);
-    expect(l).toMatch(/finalizeTake\(recorder, id, 'dismiss', lastDuration\.current\)\.finally\(\(\) => setRecorderCapturing\(false\)\)/);
+    // Polls: confirm ON for the open take, or confirm the person's pause; nothing else.
+    expect(l).toMatch(/if \(capturing\) confirmLive\(takeToken\.current\);\s*else if \(phase === 'paused'\) pauseConfirmed\(takeToken\.current\);\s*announcer\.settle\(\{ phase, capturing \}\);/);
+    // The heartbeat runs for as long as the screen is mounted.
+    expect(l).toMatch(/setInterval\(\(\) => heartbeat\(takeToken\.current\), CAPTURE_HEARTBEAT_MS\)/);
+    // ON before the audio session and the microphone go live.
+    expect(l).toMatch(/const token = openTake\(\);\s*takeToken\.current = token;\s*await setAudioMode\('recording'\);\s*const draft = await beginTake\(/);
+    expect(l).toMatch(/pauseTake\(takeToken\.current\);\s*recorder\.pause\(\);/);
+    expect(l).toMatch(/resumeTake\(takeToken\.current\);\s*recorder\.record\(\);/);
+    // Off only when the take ends, keyed to its token.
+    expect(l).toMatch(/finishTake\(token\);\s*setPhase\('finishing'\);[\s\S]{0,200}draft = await finalizeTake\(recorder, id, reason, lastDuration\.current\);\s*\} finally \{\s*closeTake\(token\);/);
+    expect(l).toMatch(/finishTake\(token\);\s*try \{\s*if \(id\) await abandonTake\(recorder, id\);[\s\S]{0,120}\} finally \{\s*closeTake\(token\);/);
+    // Unmount: always off, last thing in the cleanup.
+    expect(l).toMatch(/void finalizeTake\(recorder, id, 'dismiss', lastDuration\.current\);\s*\}\s*resetCapture\(\);\s*\},/);
+    // Nothing in Listen sets the flag by value any more.
+    expect(l).not.toMatch(/setRecorderCapturing/);
   });
 
   it('no screen calls AccessibilityInfo.announce* directly, except the ones that cannot be on screen during a take', () => {
