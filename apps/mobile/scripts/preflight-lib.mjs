@@ -83,6 +83,34 @@ export function packManifestPublished(publishedSource) {
   return /\bexport\s+const\s+PACK_MANIFEST\s*(?::[^=]*)?=\s*(["'`])(?:\\.|(?!\1)[^\\])+\1/.test(code);
 }
 
+/**
+ * EAS Update channels without expo-updates (RS-07, D-091). A build profile that sets `channel` makes `eas build`
+ * configure EAS Update, and with expo-updates not installed a `--non-interactive` build stops: that is what broke
+ * alpha build 1, and #538 removed the channel from the alpha profiles. Read by preflight-production.mjs and by
+ * scripts/release/doctor.ts, so both say the same thing.
+ *
+ * - `eas`: apps/mobile/eas.json, parsed (null or {} when it could not be read)
+ * - `mobilePackage`: apps/mobile/package.json, parsed. Only `dependencies` counts: expo-updates is a native module
+ *   and must be in the app's runtime dependencies for the build to include it. Anything unreadable counts as absent.
+ *
+ * Returns whether expo-updates is a dependency and, when it is not, every build profile (sorted) that sets a channel.
+ */
+export function updateChannelProblems(eas, mobilePackage) {
+  const deps = mobilePackage && typeof mobilePackage === 'object' ? mobilePackage.dependencies : undefined;
+  const hasUpdates = Boolean(deps && typeof deps === 'object' && Object.prototype.hasOwnProperty.call(deps, 'expo-updates'));
+  const build = eas && typeof eas === 'object' && eas.build && typeof eas.build === 'object' ? eas.build : {};
+  const withChannel = Object.entries(build)
+    .filter(([, p]) => p && typeof p === 'object' && Object.prototype.hasOwnProperty.call(p, 'channel'))
+    .map(([name]) => name)
+    .sort();
+  return { hasUpdates, withChannel, profiles: hasUpdates ? [] : withChannel };
+}
+
+/** The FAIL text for one profile that sets a channel without expo-updates. */
+export function updateChannelMessage(profile, channel) {
+  return `eas.json build profile "${profile}" sets "channel": ${JSON.stringify(channel)}, but expo-updates is not a dependency of apps/mobile/package.json: \`eas build --profile ${profile} --non-interactive\` stops while configuring EAS Update. Remove the channel from that profile, or install expo-updates first (D-091; #538 removed it from the alpha profiles).`;
+}
+
 /** True when an evaluated ios.privacyManifests says tracking false and declares at least one required-reason category. */
 export function privacyManifestDeclared(pm) {
   return Boolean(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0);

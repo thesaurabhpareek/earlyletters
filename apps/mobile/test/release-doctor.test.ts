@@ -3,7 +3,9 @@
 // fictional.
 import { generateKeyPairSync, verify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { appLookupPath, ascToken, checkApple, checkExpo, interpretAppLookup, PREVIEW_BUNDLE_ID, redact, render, repoFindings, signingKeyIds } from '../../../scripts/release/doctor';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { appLookupPath, ascToken, checkApple, checkExpo, interpretAppLookup, PREVIEW_BUNDLE_ID, redact, render, repoFindings, signingKeyIds, updateChannelFindings } from '../../../scripts/release/doctor';
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
 const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
@@ -62,6 +64,42 @@ describe('signing keys, read like the preflight reads them', () => {
   it('ignores line and block comments', () => {
     expect(signingKeyIds("[\n  // { keyId: 'el-1', publicKey: 'x' },\n  /* { keyId: 'b' } */\n]")).toEqual([]);
     expect(signingKeyIds("[{ keyId: 'el-2026-10', publicKey: 'x' }, { keyId: \"el-2026-10-backup\", publicKey: 'y' }]")).toEqual(['el-2026-10', 'el-2026-10-backup']);
+  });
+});
+
+describe('EAS Update channel without expo-updates (RS-07, D-091, #538)', () => {
+  const eas = (channel?: string) => ({ build: { production: { autoIncrement: true, ...(channel ? { channel } : {}) }, testflight: { autoIncrement: true } } });
+  const pkg = (updates: boolean) => JSON.stringify({ name: '@scribe/mobile', dependencies: { expo: '~57.0.0', ...(updates ? { 'expo-updates': '~57.0.0' } : {}) } });
+
+  it('FAILs a profile with a channel and no expo-updates, naming the profile, D-091 and #538', () => {
+    const f = updateChannelFindings(eas('production'), pkg(false));
+    expect(f.map((x) => x.level)).toEqual(['FAIL']);
+    expect(f[0].message).toContain('"production"');
+    expect(f[0].message).toContain('D-091');
+    expect(f[0].message).toContain('#538');
+  });
+  it('PASSes the same profile with expo-updates', () => {
+    expect(updateChannelFindings(eas('production'), pkg(true)).map((x) => x.level)).toEqual(['PASS']);
+  });
+  it('PASSes when no profile sets a channel', () => {
+    expect(updateChannelFindings(eas(), pkg(false)).map((x) => x.level)).toEqual(['PASS']);
+  });
+  it('fails closed when package.json is missing or unreadable', () => {
+    expect(updateChannelFindings(eas('production'), undefined).map((x) => x.level)).toEqual(['FAIL']);
+    expect(updateChannelFindings(eas('production'), '{').map((x) => x.level)).toEqual(['FAIL']);
+  });
+  it('is a repo FAIL in repoFindings in the alpha scope, not NOT NEEDED', () => {
+    const f = repoFindings({ appConfig: '', easJson: JSON.stringify(eas('production')), keysTs: '', mobilePackageJson: pkg(false) });
+    expect(f.filter((x) => x.level === 'FAIL' && x.message.includes('EAS Update'))).toHaveLength(1);
+  });
+  it('on the real repository FAILs on production until REL-06/RS-15 removes the channel (after 9 Nov, D-124 item 1)', () => {
+    // Wanted: eas.json build.production sets "channel": "production" and expo-updates is not installed, so
+    // `eas build --profile production --non-interactive` in release-ios.yml would stop. When RS-15 lands this
+    // becomes a single PASS: change the expectation then, never before.
+    const app = join(__dirname, '..');
+    const f = updateChannelFindings(JSON.parse(readFileSync(join(app, 'eas.json'), 'utf8')), readFileSync(join(app, 'package.json'), 'utf8'));
+    expect(f.map((x) => x.level)).toEqual(['FAIL']);
+    expect(f[0].message).toContain('"production"');
   });
 });
 

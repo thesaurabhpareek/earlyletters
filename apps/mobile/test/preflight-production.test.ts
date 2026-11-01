@@ -59,6 +59,14 @@ function good(): Input {
   };
 }
 
+/** The production profile with an EAS Update channel, and an apps/mobile/package.json with or without expo-updates. */
+const withChannel = (updates: boolean, profile = 'production'): Input => {
+  const i = good();
+  const build = (i.eas as { build: Record<string, Record<string, unknown>> }).build;
+  build[profile] = { ...(build[profile] ?? {}), channel: 'production' };
+  return { ...i, mobilePackage: { name: '@scribe/mobile', dependencies: { expo: '~57.0.0', ...(updates ? { 'expo-updates': '~57.0.0' } : {}) } } };
+};
+
 const fails = (input: Input) => (productionChecks(input) as Result[]).filter((r) => r.level === 'FAIL').map((r) => r.id);
 const withEnv = (patch: Record<string, string | undefined>): Input => {
   const i = good();
@@ -91,6 +99,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'privacy-manifest',
       'version',
       'project-id',
+      'update-channel',
       'asc-app-id',
       'seams',
       'secrets',
@@ -138,6 +147,9 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['version', 'app.config.ts writes a version literal', { ...good(), appConfigSource: "export default () => ({ version: '1.0.0' });\n" }],
     ['project-id', 'no extra.eas.projectId (develop today)', withCfg((c) => delete c.extra.eas)],
     ['project-id', 'a project id that is not a UUID', withCfg((c) => (c.extra.eas.projectId = 'asha'))],
+    ['update-channel', 'a channel on production and no expo-updates (develop today; RS-07)', withChannel(false)],
+    ['update-channel', 'a channel on another profile and no expo-updates', withChannel(false, 'preview')],
+    ['update-channel', 'a channel and expo-updates only in devDependencies', { ...withChannel(false), mobilePackage: { devDependencies: { 'expo-updates': '~57.0.0' } } }],
     ['asc-app-id', 'no submit.production.ios.ascAppId (develop today)', { ...good(), eas: { ...(good().eas as object), submit: { production: {} } } }],
     ['asc-app-id', 'an ascAppId that is not numeric', { ...good(), eas: { ...(good().eas as object), submit: { production: { ios: { ascAppId: 'asha' } } } } }],
     ['seams', 'EXPO_PUBLIC_E2E in the profile', withEnv({ EXPO_PUBLIC_E2E: '1' })],
@@ -175,6 +187,37 @@ describe('one failing fixture per check: only that check FAILs', () => {
   });
 });
 
+describe('EAS Update channel without expo-updates (RS-07, D-091, #538)', () => {
+  const channelResults = (input: Input) => (productionChecks(input) as Result[]).filter((r) => r.id === 'update-channel');
+
+  it('FAILs a profile with a channel and no expo-updates, naming the profile, D-091 and #538', () => {
+    const r = channelResults(withChannel(false));
+    expect(r.map((x) => x.level)).toEqual(['FAIL']);
+    expect(r[0].msg).toContain('"production"');
+    expect(r[0].msg).toContain('D-091');
+    expect(r[0].msg).toContain('#538');
+  });
+
+  it('PASSes the same profile once expo-updates is a dependency', () => {
+    expect(channelResults(withChannel(true)).map((x) => x.level)).toEqual(['PASS']);
+    expect(fails(withChannel(true))).toEqual([]);
+  });
+
+  it('PASSes when no profile sets a channel, with or without expo-updates', () => {
+    expect(channelResults(good()).map((x) => x.level)).toEqual(['PASS']);
+    expect(channelResults({ ...good(), mobilePackage: { dependencies: { 'expo-updates': '~57.0.0' } } }).map((x) => x.level)).toEqual(['PASS']);
+  });
+
+  it('gives one FAIL per offending profile', () => {
+    const i = withChannel(false);
+    (i.eas as { build: Record<string, unknown> }).build.testflight = { channel: 'testflight' };
+    const r = channelResults(i);
+    expect(r.map((x) => x.level)).toEqual(['FAIL', 'FAIL']);
+    expect(r[0].msg).toContain('"production"');
+    expect(r[1].msg).toContain('"testflight"');
+  });
+});
+
 describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md', () => {
   it('reads on, off and not written from the profile table', () => {
     expect(accountDeletionDecision(ENVIRONMENTS)).toBe('on');
@@ -192,7 +235,7 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder step still open (the production ascAppId); every other check passes', () => {
+  it('fails exactly the founder step still open (the production ascAppId) and the production update channel (RS-07); every other check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
@@ -202,7 +245,12 @@ describe('the real repository', () => {
     // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
     // asc-app-id from this set. project-id passes since #487 and must stay passing.
     // pack-manifest passes since #527 (pack release v1, signed by el-2026-11, live at packs.earlyletters.app) and must stay passing.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id']);
+    // update-channel FAILs on purpose (RS-07): eas.json build.production sets "channel": "production" and expo-updates
+    // is not a dependency, so `eas build --profile production --non-interactive` would stop (D-091; build 1, #538).
+    // REL-06/RS-15 removes the channel after the 9 Nov go/no-go (D-124 item 1) and removes update-channel from this set.
+    // Do not drop it from this list to make the test pass: fix eas.json instead.
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'update-channel']);
+    expect(failing.find((r) => r.id === 'update-channel')?.msg).toContain('"production"');
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
