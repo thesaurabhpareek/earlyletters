@@ -21,8 +21,8 @@
  * "Keep it here for now" runs once (`holdOnce`): a second tap in the same moment does nothing, and a hold that fails
  * still closes the sheet but is not counted as held.
  */
-import type { StoreViewSupport } from '../../../modules/scribe-store/types';
-import { billingCopy } from '@scribe/content';
+import type { OfferCodeOutcome, StoreSheetOutcome, StoreViewSupport } from '../../../modules/scribe-store/types';
+import { billingCopy, en } from '@scribe/content';
 import { draftWords, spoken } from '@/components/tonight/draft-card.logic';
 
 export type HeldOn = 'tonight' | 'letter';
@@ -46,6 +46,8 @@ export type KeepSheetInput = {
   synced: boolean;
   /** "See Plus" answered that the store could not be reached. */
   offline: boolean;
+  /** "Redeem a code": Apple's code sheet answered `failed` (RT-PLS-10). */
+  codeFailed?: boolean;
   storeSupport: StoreViewSupport;
 };
 
@@ -68,17 +70,58 @@ export const SYNCED_HELD_NOTE_CLEARED = false;
 const k = billingCopy.keepGate;
 const g = billingCopy.gate;
 
-export function keepSheetView({ lapsed, heldOn, synced, offline, storeSupport }: KeepSheetInput): KeepSheetView {
+export function keepSheetView({ lapsed, heldOn, synced, offline, codeFailed = false, storeSupport }: KeepSheetInput): KeepSheetView {
   const onLetter = heldOn === 'letter';
   const canOpenStore = storeSupport === 'available';
   const note =
-    storeSupport === 'needs_ios_17' ? g.needsNewerIos : storeSupport === 'unsupported' ? g.unavailable : offline ? (onLetter ? k.offlineLetter : k.offline) : null;
+    storeSupport === 'needs_ios_17'
+      ? g.needsNewerIos
+      : storeSupport === 'unsupported'
+        ? g.unavailable
+        : offline
+          ? onLetter
+            ? k.offlineLetter
+            : k.offline
+          : codeFailed
+            ? en.errors.generic.body
+            : null;
   return {
     body: lapsed ? k.lapsedBody : k.body,
     heldNote: onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote,
     note,
     canOpenStore,
   };
+}
+
+/** What a tap on "See Plus" or "Redeem a code" leaves under the button. */
+export type SheetTapNote = 'offline' | 'codeFailed' | null;
+
+/**
+ * One tap on "See Plus" or "Redeem a code" (RT-PAY-09, RT-OFC-06, RT-PLS-10). Offline, Apple's sheet would open with
+ * its own error (the store view) or answer `failed` (the code sheet), and the sheet would say nothing. So reachability
+ * is checked first, with the app's own network check: known offline, Apple's sheet is not opened and our offline line
+ * shows. Unknown counts as online (Apple's sheet then says what it knows). After the sheet: `unavailable` is the
+ * offline line, as before; a `failed` code sheet is a calm try-again line. Never throws.
+ */
+export async function sheetTap<O extends StoreSheetOutcome | OfferCodeOutcome>(
+  tap: 'seePlus' | 'redeem',
+  deps: { offline: () => Promise<boolean>; open: () => Promise<O> },
+): Promise<{ outcome: O | 'offline'; note: SheetTapNote }> {
+  let offline = false;
+  try {
+    offline = await deps.offline();
+  } catch {
+    offline = false;
+  }
+  if (offline) return { outcome: 'offline', note: 'offline' };
+  let outcome: O;
+  try {
+    outcome = await deps.open();
+  } catch {
+    outcome = (tap === 'redeem' ? 'failed' : 'unavailable') as O;
+  }
+  const note: SheetTapNote = outcome === 'unavailable' ? 'offline' : tap === 'redeem' && outcome === 'failed' ? 'codeFailed' : null;
+  return { outcome, note };
 }
 
 /** The letter's words on one line: runs of white space become one space, so two lines show its first words. */

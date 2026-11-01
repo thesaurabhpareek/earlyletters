@@ -219,9 +219,18 @@ final class OnceResume: @unchecked Sendable {
 
 /// Finishes every verified transaction Apple delivers and reports a change.
 /// Unverified transactions are ignored and left unfinished (Apple's sample code).
+///
+/// At start it also walks Transaction.unfinished (RT-PAY-17's launch half, RT-SUB-13):
+/// a purchase, renewal or Ask to Buy approval that arrived while the app was closed, or
+/// one whose finish() never ran (the app was killed mid-purchase), sits there until we
+/// finish it, and Apple redelivers it on every launch. Each verified one is finished;
+/// then one "update" event tells JavaScript to re-read Transaction.currentEntitlements
+/// (plan-store refreshPlan). Only that read grants Plus, and it reads verified
+/// transactions only, so an unverified one never grants anything and stays unfinished.
 final class TransactionListener: @unchecked Sendable {
   private let lock = NSLock()
   private var task: Task<Void, Never>?
+  private var unfinishedTask: Task<Void, Never>?
 
   func start(onChange: @escaping (_ purchased: Bool) -> Void) {
     lock.lock()
@@ -234,6 +243,18 @@ final class TransactionListener: @unchecked Sendable {
         onChange(Entitlements.isLive(transaction))
       }
     }
+    unfinishedTask = Task.detached(priority: .background) {
+      var finishedAny = false
+      for await result in Transaction.unfinished {
+        if Task.isCancelled { return }
+        guard case .verified(let transaction) = result else { continue }
+        await transaction.finish()
+        finishedAny = true
+      }
+      // "update", never "purchase": nothing was bought on a sheet now open, so the store
+      // sheet is not closed. JavaScript re-reads the entitlements either way.
+      if finishedAny && !Task.isCancelled { onChange(false) }
+    }
   }
 
   func stop() {
@@ -241,6 +262,8 @@ final class TransactionListener: @unchecked Sendable {
     defer { lock.unlock() }
     task?.cancel()
     task = nil
+    unfinishedTask?.cancel()
+    unfinishedTask = nil
   }
 }
 

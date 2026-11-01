@@ -38,9 +38,14 @@ const DAY_MS = 86_400_000;
 /**
  * Apple still lists a subscription whose period end has passed (billing grace
  * without a date, or a renewal not yet on this phone): keep Plus on until the
- * next check, at most this long.
+ * next check, at most this long after the last read. 7 days, from PRD C-NFR-004
+ * (docs/prd/C-habits-pricing-settings.md: "The last known entitlement is cached
+ * for 7 days."), carried into PRD v2 by F14-REQ-003 and 06-nfr ("C-NFR-004 Rev").
+ * Failing open for a payer is the promise (Karma, CR-39; RT-SUB-13). A fresh
+ * read that no longer lists it turns Plus off at once, so this only matters
+ * while the phone cannot read StoreKit again.
  */
-const STILL_LISTED_MS = DAY_MS;
+export const STILL_LISTED_MS = 7 * DAY_MS;
 /** Subscription Terms: cancel at least 24 hours before a free trial or period ends. */
 const CANCEL_LEAD_MS = DAY_MS;
 

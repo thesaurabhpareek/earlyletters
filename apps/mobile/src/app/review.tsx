@@ -445,6 +445,15 @@ export default function Review() {
     if (devPass.current) return false;
     const g = await keepSheetFor(wordsOnScreen);
     if (g === null) return false;
+    if (g.decision.kind === 'hold') {
+      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PAY-17): hold the letter exactly as
+      // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
+      // it waiting; by the next Keep the read has landed and the gate decides.
+      holdOnce(holding, () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
+      return true;
+    }
     setGate(g);
     return true;
   };
