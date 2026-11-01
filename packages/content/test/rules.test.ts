@@ -1164,7 +1164,12 @@ describe('claims that must be true of what the first build does', () => {
   });
 
   it('the website, book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
-    const retired = /exactly as you said (it|them)|kept exactly as (they were said|they said|you said)/i;
+    const retired = /exactly as (you said (it|them)|they were said|they said)/i;
     expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
+  });
+
+  it('the site promises only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
+    const overclaim = /grammar|we was|misheard word/i;
+    expect(offenders(SITE, overclaim)).toEqual([]);
   });
 });

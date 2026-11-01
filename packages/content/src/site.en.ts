@@ -5,7 +5,7 @@
 // It states only what is true of the FIRST store build (D-121): on this phone, English only, no sign-in,
 // no invite, no sync, no backup of our own. Co-parent, family, sync and other-language wording is held until
 // the release that ships it (D-126; docs/exec-rulings-claims-trust-2026-11-01.md, Q3 to Q6). Words about
-// edits follow the D-133 line: it stays in your words, every change is marked, the recording is kept unchanged.
+// edits follow the D-133 line (PR #439, open): it stays in your words, every change is marked, the recording is kept unchanged.
 // Read together plays recordings on this phone with no word highlight (D-059).
 // The privacy promise is `en.trust.promise` word for word (D-061). Legal pages: packages/brand
 // `web.*` (D-063).
@@ -33,7 +33,7 @@ export const site = {
     {
       title: "It stays in your words",
       // D-074: the edit feature is Word for word.
-      body: "Word for word: transcription happens on your phone. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. You can undo any fix. We never rewrite your words.",
+      body: "Word for word: transcription happens on your phone. It takes out the ums and accidental repeats, spells your names your way, and marks each fix. You can undo any fix. We never rewrite your words.",
     },
     {
       title: "Your voice, kept",
@@ -89,7 +89,7 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. Word for word: We only fix small slips, like an um, a repeat or a misheard word, and mark each one. A small fix can also be a missing full stop or a one-word grammar slip like we was to we were. You can undo any fix, or choose Exactly as said to keep every word as it came. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
