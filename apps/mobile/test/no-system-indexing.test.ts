@@ -34,7 +34,12 @@ const NATIVE_TOKENS = [
   'becomeCurrent',
   'setInitialURL',
 ];
-const FORBIDDEN_PACKAGE = /^(expo-router\/head|expo-quick-actions)$|spotlight|siri|user-?activity|handoff/i;
+/**
+ * A package name or any subpath of it: `expo-quick-actions` and `expo-quick-actions/router`; expo-router's head
+ * module however it is reached (`expo-router/head`, `expo-router/head.js`, `expo-router/build/head`), but not
+ * `expo-router` itself; and any spotlight, siri, user-activity or handoff package.
+ */
+const FORBIDDEN_PACKAGE = /^expo-quick-actions(\/|$)|^expo-router\/(.+\/)?head(\.[cm]?[jt]sx?)?(\/|$)|spotlight|siri|user-?activity|handoff/i;
 /** A third-party package that wraps these APIs. The app's own files (relative or `@/` paths) are not packages: `welcome-handoff.logic` is a screen handing over to the next, not Apple Handoff. */
 const isForbiddenPackage = (m: string) => !m.startsWith('.') && !m.startsWith('@/') && FORBIDDEN_PACKAGE.test(m);
 
@@ -73,6 +78,12 @@ describe('[RT-PRV-07] [F17-REQ-007] no letter content in Spotlight, Siri suggest
   it('the scan catches each kind of use (so a clean result means something)', () => {
     expect(findings("import * as QuickActions from 'expo-quick-actions';")).toEqual(['import expo-quick-actions']);
     expect(findings("import Head from 'expo-router/head';")).toEqual(['import expo-router/head']);
+    // Subpaths of a forbidden package are the same package (review A on #511).
+    expect(findings("import Head from 'expo-router/head.js';")).toEqual(['import expo-router/head.js']);
+    expect(findings("const Head = require('expo-router/build/head');")).toEqual(['import expo-router/build/head']);
+    expect(findings("import { QuickActionsRouter } from 'expo-quick-actions/router';")).toEqual(['import expo-quick-actions/router']);
+    expect(findings("import { Stack } from 'expo-router/stack';")).toEqual([]);
+    expect(findings("import x from 'expo-quick-actionsfoo';")).toEqual([]);
     expect(findings("const s = require('react-native-spotlight-search');")).toEqual(['import react-native-spotlight-search']);
     expect(findings('<Head><meta property="expo:handoff" /></Head>; nav.userActivity = a;')).toEqual(['userActivity']);
     expect(findings('Linking.setInitialURL(url)')).toEqual(['setInitialURL']);
