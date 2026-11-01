@@ -18,6 +18,7 @@ A schema where a family's words are private by construction: every row reachable
 - The schema columns of the data map: `docs/legal/data-policy.md` section 4 until BL-016 makes `docs/legal/data-map.yaml` canonical. Classification decisions belong to `privacy`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `supabase/APPLY.md`, `.github/migrations-applied.txt`, `docs/tdd/02-sync-backend.md`, `docs/tdd/04-security-identity.md`.
 - `docs/legal/DATA_CLASSIFICATION.md` (L1 Public to L4 Restricted), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ).
 - D-041 in `docs/DECISIONS.md`: migrations reach staging and production only from CI on a tag.

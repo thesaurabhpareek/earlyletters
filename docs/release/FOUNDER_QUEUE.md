@@ -124,6 +124,10 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 ---
 
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
+
 ## 2. Next: build 2 and the alpha
 
 Order follows TESTFLIGHT "What each build needs". Status for each is unverified unless stated.

@@ -513,3 +513,18 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog lines.
 - Revisit when: #424 is picked up after 9 Nov. Karma
+
+### CR-47 The build 1 robustness and compliance audit: order, owners and four founder questions (1 Nov 2026, Karma via the compliance session)
+- Question: the founder asked for the compliance agents to find every gap in robustness, security, data, speed, size and the door, and to turn them into a detailed backlog with strict consent records. What goes first, and what is his?
+- Tier and type: T1 for the backlog and the standards; T3 items sent to him; complicated
+- Options considered: fix everything now; backlog everything and fix nothing before the freeze; backlog everything, and fix only the S0 items that change code, as freeze exceptions.
+- Ruling: the third. 41 items, BL-563 to BL-603, in `docs/BACKLOG.md` with owners and Given/When/Then acceptance; full findings in `docs/reviews/2026-11-01-robustness-compliance-audit.md`.
+  - S0 code fixes (BL-563 Listen stuck on finishing, BL-564 the 404 legal link, BL-594 function keys) go to the build thread as freeze exceptions (AUTOMATION 0.2 item 17), each with two counted reviews.
+  - BL-594 interim: until the functions read the new keys, AF-06 keeps the legacy keys on staging. The founder does not deactivate them.
+  - Consent records follow PRIV-R21 (new). Every requirement follows COORDINATION section 10 (new); 25 of 26 charters point to it. The `regulatory-affairs` charter is a fenced path (CR-27), so its line follows in a fenced PR with the CCO and Karma approvals.
+  - Four founder questions: publish beta app texts before build 2 signs anyone in (BL-565), the staging backup (BL-566, spend), where the agree line sits (BL-575), and a battery number (BL-593).
+- Why: S0 items can lose a take, leave a dead legal link at the moment of agreement, or break sign-in and Apple token capture on staging; everything else has no cost of delay before the go/no-go and would add review load (principle 4). Records written in build 2 cannot be fixed later, so BL-577 is S1 and first after the go/no-go.
+- Debate: self-challenged only, and the four audits challenged each other's areas. Objection: S1 items such as BL-596 (open sign-up on staging) matter during the family alpha. Answer: row-level security already keeps strangers out of the family's books; the exposure is the email budget and stray accounts, which BL-581 and BL-596 close before anyone outside the family is invited.
+- Door: two-way
+- Way back: delete the backlog section and the two standards in one revert.
+- Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma

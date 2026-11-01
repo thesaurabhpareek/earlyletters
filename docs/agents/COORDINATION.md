@@ -77,3 +77,16 @@ This covers anything the founder reads: PR descriptions, reports, status updates
 - Say "unverified" when it is. Don't hedge what you checked.
 - A decision for the founder comes with a recommendation and the date it's needed.
 - Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.
+
+## 10. Writing requirements (1 Nov 2026, CR-47)
+This covers every requirement, backlog item, spec row, design note and acceptance criterion, from any agent, session or partner. Write it so a person reads it as written by a careful colleague, not a model.
+- **Voice.** `docs/prd/v2/_AUTHORING.md` section 7 and section 9 above. Plain words, short sentences, active voice, numbers instead of adjectives. No em dashes, en dashes, curly quotes, ellipsis characters or emoji. None of the banned words. No closing summary that repeats the item.
+- **Shape.** The requirement rules RR-1 to RR-13 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md` section 1, adopted with changes in D-123): one behaviour per id, Given/When/Then with a number or an observable state, the device it is checked on, the test that proves it, and who answers anything unknown, by when.
+- **The door.** A requirement that touches sign-in, the account holder's name or email, Terms or Privacy acceptance, any consent, the age step, account deletion or a support action on an account also has these lines:
+  - **Shown:** the exact words the person sees, by `packages/content` key, and the versioned links.
+  - **Records:** which act it writes and that the row follows PRIV-R21 (`docs/engineering/07-privacy-engineering.md`): document, version, action, method, surface, server and phone times, app version and build number, OS major version, platform, text language, the hash of the words shown, allowlisted context.
+  - **Never:** what it must not collect or store (PRIV-R02, PRIV-R10 and the PRIV-R21 never-list).
+  - **Decline and withdraw:** what happens on No, Not now and later withdrawal, and that export and deletion still work (PRIV-R09).
+- **Who writes what.** `product` writes the requirement and acceptance criteria; `design-systems` and `content` write the Shown line and its states, including the largest Dynamic Type; `mobile`, `sync` and `data-architect` write the Records line and the tests; `privacy`, `compliance-engineer` and `regulatory-affairs` review the Records and Never lines; `legal` confirms anything a user is promised, and the founder merges legal text (D-125). Partners and outside contributors follow the same rules.
+- **Evidence.** A fact about a law, Apple, a vendor or a device carries a source read that session and its date, or is marked unverified (`_AUTHORING.md` section 6).
+
