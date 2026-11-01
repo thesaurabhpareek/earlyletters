@@ -8,11 +8,11 @@ Generated from listing.json by render.mjs.
 
 Early Letters: Memory Book
 
-### Short description (65/80)
+### Short description (75/80)
 
 Letters to your child, in your own words and voice. It stays in your words.
 
-### Full description (2615/4000)
+### Full description (2623/4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.

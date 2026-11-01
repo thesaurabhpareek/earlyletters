@@ -30,7 +30,7 @@ journal,diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,di
 - Secondary: Productivity (suggestion only; not stated in the repo. Alternative: leave unset).
 - Avoid Education and Kids: the brand never positions the product as learning, and the app is for adults.
 
-### Description (2775/4000)
+### Description (2783/4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
