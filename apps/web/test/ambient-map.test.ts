@@ -2,15 +2,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   AMBIENT_DEFAULT_ON,
-  CHORDS,
   MASTER_BASE,
   MASTER_MAX,
+  TONE_GAIN,
   STORAGE_KEY,
-  CROSSFADE_SECONDS,
-  TONE_EVERY_SECONDS,
+  TONE_CUTOFF,
   ambientParams,
   asTone,
-  chordIndexAt,
   energyFromSpeed,
   initialWanted,
   readChoice,
@@ -21,15 +19,16 @@ import {
 } from '../src/film/sound/ambient-map';
 
 describe('ambient sound mapping', () => {
-  it('is on by default, and the master level stays quiet', () => {
+  it('is on by default, and the level multiplier stays within its bounds', () => {
     expect(AMBIENT_DEFAULT_ON).toBe(true);
-    expect(MASTER_BASE).toBeGreaterThanOrEqual(0.05);
-    expect(MASTER_MAX).toBeLessThanOrEqual(0.4);
+    expect(MASTER_BASE).toBe(1);
+    // scrolling lifts the level by about 3.3 dB at most
+    expect(20 * Math.log10(MASTER_MAX / MASTER_BASE)).toBeLessThan(3.5);
     for (const tone of ['night', 'paper', 'dusk'] as const)
       for (const energy of [0, 0.3, 1, 5, -2, NaN]) {
         const g = ambientParams({ energy, progress: 0.5, tone }).masterGain;
-        expect(g).toBeGreaterThanOrEqual(MASTER_BASE);
-        expect(g).toBeLessThanOrEqual(MASTER_MAX);
+        expect(g).toBeGreaterThanOrEqual(TONE_GAIN[tone] * MASTER_BASE);
+        expect(g).toBeLessThanOrEqual(TONE_GAIN[tone] * MASTER_MAX);
       }
   });
 
@@ -58,84 +57,36 @@ describe('ambient sound mapping', () => {
   it('opens the filter and lifts the level with scroll energy, and eases back to calm', () => {
     const calm = ambientParams({ energy: 0, progress: 0.3, tone: 'night' });
     const busy = ambientParams({ energy: 1, progress: 0.3, tone: 'night' });
-    expect(busy.cutoffHz).toBeGreaterThan(calm.cutoffHz + 1000);
+    expect(busy.cutoffHz).toBeGreaterThan(calm.cutoffHz + 1500);
     expect(busy.masterGain).toBeGreaterThan(calm.masterGain);
-    expect(busy.reverbWet).toBeGreaterThan(calm.reverbWet);
     const mid = ambientParams({ energy: 0.5, progress: 0.3, tone: 'night' });
     expect(mid.cutoffHz).toBeGreaterThan(calm.cutoffHz);
     expect(mid.cutoffHz).toBeLessThan(busy.cutoffHz);
   });
 
-  it('keeps the filter a warm lid: 900 to 1200 Hz at rest, never brighter than about 2.8 kHz', () => {
+  it('keeps the filter a gentle lid on a real recording: 5.5 to 10 kHz at rest, never above 12.5 kHz', () => {
     for (const tone of ['night', 'paper', 'dusk'] as const) {
       const rest = ambientParams({ energy: 0, progress: 0, tone }).cutoffHz;
-      expect(rest).toBeGreaterThanOrEqual(900);
-      expect(rest).toBeLessThanOrEqual(1200);
-      expect(ambientParams({ energy: 1, progress: 0, tone }).cutoffHz).toBeLessThan(2800);
+      expect(rest).toBeGreaterThanOrEqual(5500);
+      expect(rest).toBeLessThanOrEqual(10000);
+      expect(ambientParams({ energy: 1, progress: 0, tone }).cutoffHz).toBeLessThanOrEqual(12500);
     }
   });
 
-  it('makes a firm scroll audible but gentle: more air, more reverb, more level, all within bounds', () => {
-    for (const tone of ['night', 'paper', 'dusk'] as const) {
-      const rest = ambientParams({ energy: 0, progress: 0.3, tone });
-      const firm = ambientParams({ energy: 1, progress: 0.3, tone });
-      expect(firm.airGain).toBeGreaterThan(rest.airGain);
-      expect(firm.airGain).toBeLessThanOrEqual(0.25);
-      expect(rest.airGain).toBeGreaterThanOrEqual(0.1);
-      expect(firm.reverbWet).toBeGreaterThan(rest.reverbWet);
-      expect(firm.masterGain).toBeLessThanOrEqual(0.35);
-      // the designed level lift is about 3.3 dB, no more
-      expect(20 * Math.log10(firm.masterGain / rest.masterGain)).toBeLessThan(3.5);
-    }
-  });
-
-  it('lets the scene tone change brightness, air and reverb, but never pitch', () => {
+  it('lets the scene tone choose level and brightness: night softer and rounder, paper fuller and more open', () => {
     const at = (tone: 'night' | 'paper' | 'dusk') => ambientParams({ energy: 0, progress: 0.1, tone });
     expect(at('night').cutoffHz).toBeLessThan(at('dusk').cutoffHz);
     expect(at('dusk').cutoffHz).toBeLessThan(at('paper').cutoffHz);
-    expect(at('night').airGain).toBeLessThan(at('paper').airGain);
-    expect(at('night').reverbWet).toBeGreaterThan(at('paper').reverbWet);
-    // Same notes whatever the tone: a tone change never moves a pitch (and so cannot beat).
-    expect(at('night').voicesHz).toEqual(at('paper').voicesHz);
-    expect(at('night').voicesHz).toEqual(at('dusk').voicesHz);
-    expect(at('night').airHz).toBe(at('paper').airHz);
-    for (const p of [0, 0.3, 0.6, 0.9])
-      expect(ambientParams({ energy: 0, progress: p, tone: 'night' }).voicesHz).toEqual(ambientParams({ energy: 0, progress: p, tone: 'paper' }).voicesHz);
+    expect(at('night').masterGain).toBeLessThan(at('dusk').masterGain);
+    expect(at('dusk').masterGain).toBeLessThan(at('paper').masterGain);
+    for (const tone of Object.keys(TONE_CUTOFF) as ('night' | 'paper' | 'dusk')[]) expect(at(tone).tone).toBe(tone);
   });
 
-  it('crossfades slowly between chords and rings a quiet chord tone only now and then', () => {
-    expect(CROSSFADE_SECONDS).toBeGreaterThanOrEqual(8);
-    expect(CROSSFADE_SECONDS).toBeLessThanOrEqual(12);
-    expect(TONE_EVERY_SECONDS[0]).toBeGreaterThanOrEqual(20);
-    expect(TONE_EVERY_SECONDS[1]).toBeLessThanOrEqual(40);
-  });
-
-  it('drifts through the chords as the film goes down, and stays in range', () => {
-    expect(chordIndexAt(0)).toBe(0);
-    expect(chordIndexAt(1)).toBe(CHORDS.length - 1);
-    expect(chordIndexAt(-3)).toBe(0);
-    expect(chordIndexAt(9)).toBe(CHORDS.length - 1);
-    expect(chordIndexAt(NaN)).toBe(0);
-    const seen = [0, 0.3, 0.6, 0.9].map((p) => chordIndexAt(p));
-    expect(new Set(seen).size).toBe(CHORDS.length);
-    expect([...seen].sort()).toEqual(seen); // never goes backwards as progress grows
-    const a = ambientParams({ energy: 0, progress: 0.05, tone: 'night' });
-    const b = ambientParams({ energy: 0, progress: 0.6, tone: 'night' });
-    expect(a.voicesHz).not.toEqual(b.voicesHz);
-  });
-
-  it('keeps every voice in a calm register', () => {
-    for (const tone of ['night', 'paper', 'dusk'] as const)
-      for (let p = 0; p <= 1; p += 0.1) {
-        const r = ambientParams({ energy: 1, progress: p, tone });
-        // About an octave up from the first version: nothing under 250 Hz (phone speakers), nothing shrill.
-        for (const hz of [...r.voicesHz, r.airHz]) {
-          expect(hz).toBeGreaterThan(250);
-          expect(hz).toBeLessThan(1300);
-        }
-        expect(r.airGain).toBeGreaterThanOrEqual(0.1);
-        expect(r.airGain).toBeLessThanOrEqual(0.25);
-      }
+  it('passes the position in the film through, clamped', () => {
+    expect(ambientParams({ energy: 0, progress: -3, tone: 'night' }).progress).toBe(0);
+    expect(ambientParams({ energy: 0, progress: 9, tone: 'night' }).progress).toBe(1);
+    expect(ambientParams({ energy: 0, progress: NaN, tone: 'night' }).progress).toBe(0);
+    expect(ambientParams({ energy: 0, progress: 0.4, tone: 'night' }).progress).toBeCloseTo(0.4);
   });
 
   it('measures progress and reads tones safely', () => {

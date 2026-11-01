@@ -1132,6 +1132,12 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
 // Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md), ported from main's
 // #485 onto develop's keys. Each rule names the ruling it enforces. If one fails, fix the copy, not the test.
 describe('claims that must be true of what the first build does', () => {
+  it('store text carries the D-133 line and never says words are kept exactly as said or promises any misheard word (#495, D-133)', () => {
+    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
+    expect(storeListing.description).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
+    expect(offenders(STORE, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|misheard word|grammar/i)).toEqual([]);
+  });
+
   it('never calls the fixes tidying (D-086, Q2)', () => {
     expect(offenders(EVERY, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
   });

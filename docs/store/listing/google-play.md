@@ -1,6 +1,6 @@
 # Google Play listing, US English (draft, not for v1.0)
 
-NOT FOR v1.0. Android is out of v1.0 (docs/ROADMAP.md section 6). Hold until Android and Google Play Billing ship (BL-311).
+NOT FOR v1.0. Android is out of v1.0 (docs/ROADMAP.md section 6). Hold until Android and Google Play Billing ship (BL-311). Re-trace every claim against the Android build before use: the storage sentence here is untraced for Android.
 
 Generated from listing.json by render.mjs.
 
@@ -8,53 +8,50 @@ Generated from listing.json by render.mjs.
 
 Early Letters: Memory Book
 
-### Short description (70/80)
+### Short description (65/80)
 
-The baby memory book you fill by talking. Kept exactly as you said it.
+The baby memory book you fill by talking. It stays in your words.
 
-### Full description (2956/4000)
+### Full description (2615/4000)
 
 ```text
 Early Letters is the baby memory book you fill by talking.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
-EXACTLY AS YOU SAID IT
-The app only listens. It fixes what a microphone gets wrong, like a misheard name, an um or a false start, and nothing else. We never rewrite your words. Every sentence in your book is one you actually said, and you can read it back and put any fix back the way it was.
+IT STAYS IN YOUR WORDS
+Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
-The original recording stays with each letter, on your phone. Years from now, your child can hear how you sounded when you said it.
+Each letter you speak keeps its original recording, unchanged. It stays on your phone. Years from now, your child can hear how you sounded when you said it.
 
 READ TOGETHER
-Open a letter and it plays in the voice of the person who wrote it, with the words on the page. Listen together at bedtime. Your first 3 Read together sessions are free; after that, Read together is part of Plus.
+Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.
 
-NOTES AND LETTERS
-Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
+A SENTENCE IS PLENTY
+Some days you have a sentence, some days a long letter. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores.
 
-A BOOK FOR THE WHOLE FAMILY
-Invite your co-parent, grandparents and close family to add their own letters from the free app on their own phone. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
-
-SAY IT IN YOUR LANGUAGE
-Speak English, Hindi, Spanish, Mandarin, French, Arabic or Portuguese. Early Letters keeps your words in the language you said them, in their own script.
+IN ENGLISH
+Early Letters works in English.
 
 PRIVATE BY DEFAULT
-Your letters are yours. Only the family you invite can read them. No ads. We never sell your data, and your letters are never used to train models.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Your book stays on your phone. Delete a letter and it waits 30 days in Recently deleted, or you can erase it at once.
 
 A BOOK FOR EACH CHILD
-Each child gets their own book, with their own months. Plus covers every child's book.
+Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.
 
 TAKE IT WITH YOU
 Export your memory book any time: your letters, your recordings and a PDF of the book. Every letter you have made stays yours to read, play and export, even if you stop.
 
 HOW IT WORKS
 1. Tap and talk, or type if you prefer.
-2. Read it back. Fix a word if the microphone slipped.
+2. Read it back. Fix a word if one is wrong.
 3. It is saved to this month in your child's memory book.
 
-Early Letters is for parents of children from birth to five, and for the grandparents, aunts, uncles and close friends who love them. Written early. Kept for good. Read again and again.
+Early Letters is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
 
 PRICING
-Your first two letters are free, so you can try it. To keep adding letters, choose Plus: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. One membership covers the whole family book. Subscriptions renew automatically until you cancel. Manage or cancel any time in the Subscriptions section of Google Play.
+Your first two letters are free, so you can try it. To keep adding letters, choose Plus: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. One membership covers every child's book. Subscriptions renew automatically until you cancel. Manage or cancel any time in the Subscriptions section of Google Play.
 
 Privacy Policy: https://earlyletters.com/privacy
 Terms: https://earlyletters.com/terms
