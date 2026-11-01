@@ -9,8 +9,10 @@
  *
  * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
  * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
- * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals (or, when none is waiting,
- * "A month ago"); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
+ * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals, except that two or more
+ * letters held at the Keep step fold into one row that opens their list (F14-REQ-041) (or, when none is waiting,
+ * "A month ago"); once the free letters are used and Plus is off, one standing line above Speak and Type says new
+ * letters need Plus, with "See Plus" (SR-C-08, F14-REQ-040); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
  * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
  * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
  *
@@ -46,6 +48,8 @@ import { tokens } from '@scribe/design-tokens';
 import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
+import { HeldRow } from '@/components/tonight/held-row';
+import { PlusLine } from '@/components/tonight/plus-line';
 import {
   draftCards,
   greetingParts,
@@ -57,6 +61,7 @@ import {
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
 import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
+import { PLUS_ROUTE, plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -64,6 +69,7 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
+import { freeLettersAllowance, lettersKeptNow, usePlan } from '@/lib/billing';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
@@ -122,6 +128,12 @@ export default function Tonight() {
   const [arriving, setArriving] = useState(() => tonightArrival.pending());
   // While a card's page is up (CardToPage), Tonight is hidden from screen readers under it.
   const behind = useHiddenBehindCardPage();
+  // Plus (SR-C-08, F14-REQ-040): the plan from usePlan, and letters kept read again with the room on focus and on a
+  // return to the front (never awaited before the first frame). Null until read, so the line never shows on a guess.
+  const plan = usePlan();
+  const [lettersKept, setLettersKept] = useState<number | null>(null);
+  // Two or more held letters fold into one row (F14-REQ-041); the row opens their list in place.
+  const [heldOpen, setHeldOpen] = useState(false);
 
   const load = useCallback(() => setRoom(readRoom()), []);
   const focused = useRef(false);
@@ -132,6 +144,7 @@ export default function Tonight() {
   // The room and the prompt's inputs, read again: on focus, and when the app comes back to the front.
   const refresh = useCallback(() => {
     load();
+    void lettersKeptNow().then(setLettersKept);
     const entries = listEntries();
     setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
     setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
@@ -177,6 +190,8 @@ export default function Tonight() {
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
+  const rows = useMemo(() => tonightRows(cards), [cards]);
+  const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance() });
   const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 
   if (room === undefined) return null;
@@ -230,6 +245,8 @@ export default function Tonight() {
   // Speak, Type and the quiet link: pinned under the scroll, or inline under the prompt at accessibility sizes.
   const actions = (
     <View className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}>
+      {/* Before the person records, not only at Review: new letters need Plus (SR-C-08). Never a count or a price. */}
+      {showPlusLine ? <PlusLine onSeePlus={() => router.push(PLUS_ROUTE)} /> : null}
       <ButtonRow>
         <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
@@ -289,11 +306,17 @@ export default function Tonight() {
 
         {cards.length > 0 ? (
           <View className="mt-8 gap-3">
-            {cards.map((card, i) => (
-              <Animated.View key={card.id} entering={enter(3 + i)}>
-                <DraftCard card={card} onPress={() => router.push(card.route)} />
-              </Animated.View>
-            ))}
+            {rows.map((row, i) =>
+              row.kind === 'held' ? (
+                <Animated.View key={row.id} entering={enter(3 + i)}>
+                  <HeldRow row={row} open={heldOpen} onToggle={() => setHeldOpen((o) => !o)} onOpenCard={(card) => router.push(card.route)} />
+                </Animated.View>
+              ) : (
+                <Animated.View key={row.card.id} entering={enter(3 + i)}>
+                  <DraftCard card={row.card} onPress={() => router.push(row.card.route)} />
+                </Animated.View>
+              ),
+            )}
           </View>
         ) : monthAgo ? (
           <Animated.View entering={enter(3)} className="mt-8">
