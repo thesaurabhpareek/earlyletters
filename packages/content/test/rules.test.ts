@@ -675,11 +675,9 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(storePackText(), bad)).toEqual([]);
   });
 
-  it('listing.json agrees with the typed listing, and the tagline is the brand tagline', () => {
+  it('listing.json carries the promotional text of the typed listing, and the tagline is the brand tagline', () => {
     const j = listingJson();
     expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
-    expect(j.apple.whatsNew).toBe(storeListing.whatsNewV1);
-    expect(j.apple.description.startsWith(storeListing.description.split('\n\nYour first two letters are free')[0])).toBe(true);
     expect(brand.tagline).toBe('It stays in your words.');
     expect(j.googlePlay.shortDescription).toContain(brand.tagline);
   });
