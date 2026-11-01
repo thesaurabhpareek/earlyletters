@@ -1,6 +1,33 @@
-## What and why
+<!--
+Title: type(scope): outcome in plain words (BL-123). Aim for 72 characters, never over 100. Put the BL id in the title when one exists.
+Types: feat fix perf refactor test docs chore. The scope is the area (db, mobile, web, core, api, content, release, ci, agents, process).
+Stacked on another PR, or replacing one? Say so in the first line of the body ("Stacked on #N", "Supersedes #N").
+Prose may be as long as the change needs. Keep the fixed sections below short.
+-->
 
-<!-- One concern per pull request. Link the backlog item (BL-...) and the requirement IDs it serves. -->
+## Summary and why
+
+One sentence on what changed. Then the problem it solves, and the backlog item, requirement and decision ids it serves.
+
+Satisfies:
+Data classes touched:
+Agent: (agent PRs only, with Mode:)
+
+## Not verified
+
+Required on every PR. Say what you did not run or could not check. "Nothing" is allowed only with the reason.
+
+## Risk and rollback
+
+Required when the risk label is med or high (and always for migrations and workflows): what could break, and the exact undo. Write "N/A: reason" for risk:low.
+
+## Performance
+
+perf: n/a | checked-by: (test or command) | not-measured
+
+## Review notes
+
+Who must review (independent reviews under D-107; `supabase/`, `.github/workflows/` and auth also D-041), what to look at first, and merge order if it matters.
 
 ## How it was checked
 
