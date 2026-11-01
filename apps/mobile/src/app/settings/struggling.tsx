@@ -13,7 +13,7 @@ import { useHelpLink } from '@/components/settings/help-fallback';
 import { crisisRows } from '@/components/settings/help-links.logic';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
-import { copy, fill } from '@/lib/copy';
+import { copy } from '@/lib/copy';
 
 export default function StrugglingScreen() {
   const s = copy.struggling;
@@ -28,7 +28,7 @@ export default function StrugglingScreen() {
         <ListSection key={r.tel}>
           <ListRow title={r.name} subtitle={r.how} accessibilityRole="link" accessibilityHint={s.callHint} trailing="chevron" onPress={() => link.open(call)} testID={`struggling.${r.tel}`} />
           {text ? (
-            <ListRow title={fill(s.textRow, { number: r.number })} accessibilityRole="link" accessibilityHint={s.textHint} trailing="chevron" onPress={() => link.open(text)} testID={`struggling.sms.${r.tel}`} />
+            <ListRow title={s.textRow} subtitle={r.number} accessibilityRole="link" accessibilityHint={s.textHint} trailing="chevron" onPress={() => link.open(text)} testID={`struggling.sms.${r.tel}`} />
           ) : null}
         </ListSection>
       ))}
