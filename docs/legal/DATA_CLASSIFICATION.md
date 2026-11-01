@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.4.0
+version: 1.5.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.5.0
+    date: 2026-10-16
+    summary: Option B (founder, 15 Oct 2026). New section 4.3.1 classifies every table of the unapplied migration 20261015230000_backup_server.sql (branch feat/backup-server, first at commit 7a0f45d, re-read at ad222eb on 16 Oct: escrow_rotation_notices gains id and attempts and is deleted 90 days after sent_at; pending audio_blobs rows are swept after 24 hours), including escrow_rotation_notices, with the levels of its column comments and the retention PRD V2 F08 section 8 and F17 section 8.4 set. The `entry-audio` bucket (4.4) moves to v1.0. The planned `audio_blobs` and escrow rows of 4.3 are replaced by 4.3.1. Nothing else re-read in this pass.
   - version: 1.4.0
     date: 2026-10-03
     summary: Legal alignment (legal-alignment agent). Section 4.8 processors updated for v1.0 (sync on Supabase only, D-023; no crash SDK; Resend named; download host Cloudflare R2 candidate and Hugging Face, D-065, Q-001). Open issue 9 answered by app-store-privacy-labels.md 1.3.0. Note that the 1.3.0 summary below describes the alignment edits; the analytics owner's same-day regeneration (4.1 from migrations, 4.5 and 4.6 device keys, sync tables, packs, ops schema, ops-ledger, store_* removed, 4.9 insights) is also part of 1.3.0. Minor.
@@ -555,11 +558,27 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
 | `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language) |
 | `member_return_links` (hashed bearer token) | Hash L3 |
-| `audio_blobs` (path, size, sha256, wrapped file key; v1.1 shared voice) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
-| `child_key_grants`, escrow wraps | L4 |
+| `child_key_grants` (family members hearing each other's recordings; v1.1 shared voice) | L4 |
 | `waitlist` (web) | Email L3 |
 
 `ops_audit_log` (LEGAL-REQ-025) is built as `ops.audit_log` (4.1.2).
+
+### 4.3.1 Recording backup tables (migration `20261015230000_backup_server.sql`, branch `feat/backup-server` at ad222eb; not yet applied)
+
+Levels are the ones the migration's column comments set; every column has one. All tables have RLS on; clients read only their own rows, and only where the "Client access" column says so. Retention follows PRD V2 F08 section 8 and the F17 section 8.4 deletion matrix; the purge steps are in `backup_svc_sweep` (run daily by the purge worker). Re-read at ad222eb on 16 Oct 2026: only `escrow_rotation_notices` and the pending sweep changed since 7a0f45d. When the migration is applied, 4.1 is regenerated from its comments and these rows move there.
+
+| Table | Columns and levels | Client access | Retention |
+|---|---|---|---|
+| `backup_devices` | `device_id` L3 (random install id, not a hardware id), `profile_id` L3, `public_key` L3 (X25519 public key; the private key never leaves the device), `platform` L2, `enrolled_at` L2, `last_seen_at` L2, `revoked_at` L2, `revoked_reason` L2 | Owner read | Until account deletion (cascade) |
+| `child_keys` | `child_id` L3, `profile_id` L3, `key_version` L2, `escrow_wrap` **L4** (book key sealed to the escrow public key; opened only inside the escrow function), `escrow_key_version` L2, `key_check` L3, `created_at` L2, `rewrapped_at` L2 | Owner read of every column except `escrow_wrap` | Until account deletion, or the book's purge |
+| `audio_blobs` | `entry_id` L3, `child_id` L3, `author_id` L3, `object_path` L3 (ids only), `key_version` L2, `wrapped_file_key` **L4**, `cipher_sha256` L3 (of the ciphertext, never the original), `bytes` L2, `format_version` L2, `state` L2, `created_at`, `updated_at`, `confirmed_at` L2 | Owner read | As its object: until the letter is purged, the held letter is discarded, the backup is deleted, or the account is deleted. A `pending` row (upload reserved, never confirmed) is swept 24 hours after its last update; a row whose letter no longer exists is swept after 30 days. Each delete enqueues the exact object path and writes `purge_ledger` rows |
+| `backup_usage` | `profile_id` L3; `quota_bytes`, `used_bytes`, `begin_window_start`, `begin_window_hits`, `updated_at` L2 | Owner read | Until account deletion |
+| `restore_requests` | `id` L3, `profile_id` L3, `device_id` L3, `approved_by_device` L3, `stop_token_hash` L3; `state`, `requested_at`, `hold_until`, `notified_at`, `approved_at`, `released_at`, `cancelled_at`, `cancel_source`, `expired_at`, `request_id`, `stop_token_expires_at`, `stop_used_at` L2 | Owner read except `stop_token_hash` | 90 days after a final state; deleted at account deletion |
+| `restore_approvals` | `request_id` L3, `device_id` L3, `sealed_code` L3 (random code sealed to one enrolled device), `code_hash` L3; `created_at`, `used_at` L2 | Owner read except `code_hash` | With its restore request |
+| `escrow_unwraps` | `profile_id` L3 (null after deletion), `subject_hash` L3 (peppered hash of the deleted account id), `device_id` L3, `child_id` L3, `restore_request_id` L3; `id`, `key_version`, `escrow_key_version`, `reason`, `outcome`, `request_id`, `occurred_at` L2. Append-only; no content, no key bytes | Owner read of own rows | 24 months, pseudonymised at account deletion (named exception); daily copy in `ops-ledger/escrow/` 60 days. D-021 says 12 months for key-unwrap logs: open (COUNSEL_PACKET Q51) |
+| `escrow_rotation_notices` | `id` L2 (the notice, also the email idempotency key), `profile_id` L3; `to_version` L2 (escrow key version the account moved to), `created_at` L2, `attempts` L2 (failed sends), `sent_at` L2 (when the email went). One row per account per escrow key rotation, made with the account's first rewrapped key; retried until sent. No content | None (RLS on; table privileges revoked from anon, authenticated and the service role; reached only through the `escrow_rotation_notices_due` and `escrow_rotation_notice_sent` functions and the sweep) | Deleted 90 days after `sent_at` (`backup_svc_sweep`); an unsent row stays until it is sent; all rows go at account deletion (cascade on the profile). The rotation itself is recorded in `escrow_unwraps` (reason `rotation`), so the 90 days cover only the email record |
+
+The `backup` policy document (its own consent act) is a row in `policy_documents` created by the same migration; its acceptances are `policy_acceptances` rows (4.1).
 
 ### 4.4 Supabase Storage buckets
 
@@ -570,7 +589,7 @@ Registry in code: `supabase/functions/purge-worker/lib/buckets.ts` (every bucket
 | `entry-photos` | `{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}` (enforced by `entries_photo_path_scoped`) | Photos with letters | L4 (path itself L3) | Live, private |
 | `child-photos` | `{child_id}/{uuid}.{ext}` (`children_photo_path_scoped`) | Child profile photo | L4 | v1.0, private |
 | `ops-ledger` | `purges/YYYY-MM-DD.jsonl` | Ids of purged letters, books, people and objects, so a restore can replay deletions (DATA-REQ-030). No content | L3 | Created by migration 20261004200000; service role only (no policies); 60 days; excluded from the purge's own residue scans |
-| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of recordings (ADR 0006) | L4 | v1.1 (no audio upload in v1.0, decision 9) |
+| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of the owner's recordings (PRD V2 F08 6.5; ADR 0006 amendment pending) | L4 | v1.0 (option B): private bucket, 20 MB objects, `application/octet-stream`, owner-only policies, created by `20261015230000_backup_server.sql` on `feat/backup-server` (not yet applied). `purge-worker/lib/buckets.ts` still says `since: 'v1.1'`; that branch updates it |
 | `inbox` | `{child_id}/{contributor}/{entry_id}.enc` | Web contributor audio, encrypted in the browser | L4 | v1.1 |
 | `avatars` | `{profile_id}/{uuid}.{ext}` | Member photo | L3 | P1 |
 | `exports` | `{profile_id}/{export_id}.zip` | Server-built exports, 7 days | L4 | P1 (v1.0 exports are made on the phone) |
